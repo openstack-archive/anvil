@@ -1,0 +1,263 @@
+#!/usr/bin/env python
+
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+
+import os
+import os.path
+import sys
+import operator
+
+#TODO is this needed?
+sys.path.append("devstack")
+
+import Logger
+import Options
+import Util
+from Util import (
+                    welcome,
+                    rcf8222date,
+                    fsSafeDate,
+                    determine_os,
+                    get_pkg_list
+                 )
+import Shell
+from Shell import (mkdir, joinpths)
+import Config
+import Glance
+import Horizon
+import Keystone
+import Nova
+import Quantum
+import Config
+import Swift
+import Db
+import Rabbit
+import Trace
+
+LOG = Logger.getLogger("install")
+
+# This determines what classes to use to install/uninstall/...
+ACTION_CLASSES = {
+    Util.INSTALL: {
+        Util.NOVA: Nova.NovaInstaller,
+        Util.GLANCE: Glance.GlanceInstaller,
+        Util.QUANTUM: Quantum.QuantumInstaller,
+        Util.SWIFT: Swift.SwiftInstaller,
+        Util.HORIZON: Horizon.HorizonInstaller,
+        Util.KEYSTONE: Keystone.KeystoneInstaller,
+        Util.DB: Db.DBInstaller,
+        Util.RABBIT: Rabbit.RabbitInstaller,
+    },
+    Util.UNINSTALL: {
+        Util.NOVA: Nova.NovaUninstaller,
+        Util.GLANCE: Glance.GlanceUninstaller,
+        Util.QUANTUM: Quantum.QuantumUninstaller,
+        Util.SWIFT: Swift.SwiftUninstaller,
+        Util.HORIZON: Horizon.HorizonUninstaller,
+        Util.KEYSTONE: Keystone.KeystoneUninstaller,
+        Util.DB: Db.DBUninstaller,
+        Util.RABBIT: Rabbit.RabbitUninstaller,
+    },
+    Util.START: {
+        Util.NOVA: Nova.NovaRuntime,
+        Util.GLANCE: Glance.GlanceRuntime,
+        Util.QUANTUM: Quantum.QuantumRuntime,
+        Util.SWIFT: Swift.SwiftRuntime,
+        Util.HORIZON: Horizon.HorizonRuntime,
+        Util.KEYSTONE: Keystone.KeystoneRuntime,
+        Util.DB: Db.DBRuntime,
+        Util.RABBIT: Rabbit.RabbitRuntime,
+    },
+    Util.STOP: {
+        Util.NOVA: Nova.NovaRuntime,
+        Util.GLANCE: Glance.GlanceRuntime,
+        Util.QUANTUM: Quantum.QuantumRuntime,
+        Util.SWIFT: Swift.SwiftRuntime,
+        Util.HORIZON: Horizon.HorizonRuntime,
+        Util.KEYSTONE: Keystone.KeystoneRuntime,
+        Util.DB: Db.DBRuntime,
+        Util.RABBIT: Rabbit.RabbitRuntime,
+    },
+}
+
+# Actions which need dependent actions to occur
+DEP_ACTIONS_NEEDED = set([Util.START, Util.STOP, Util.INSTALL])
+
+
+def get_pkg_manager(distro):
+    klass = None
+    if(distro == Util.UBUNTU12):
+        #late import required
+        #TODO better way to do this?
+        from packaging import Apt
+        klass = Apt.AptPackager
+    elif(distro == Util.RHEL6):
+        #late import required
+        #TODO better way to do this?
+        from packaging import Yum
+        klass = Yum.YumPackager
+    return klass()
+
+
+def get_config():
+    LOG.info("Loading config from %s" % (Util.CFG_LOC))
+    cfg = Config.EnvConfigParser()
+    cfg.read(Util.CFG_LOC)
+    return cfg
+
+
+def stop(components, distro, rootdir):
+    pkg_manager = get_pkg_manager(distro)
+    cfg = get_config()
+    LOG.info("Will stop [%s] from %s" % (", ".join(components), rootdir))
+    klass_lookup = ACTION_CLASSES.get(Util.START)
+    for c in components:
+        klass = klass_lookup.get(c)
+        instance = klass(components=components, distro=distro, pkg=pkg_manager, cfg=cfg, root=rootdir)
+        LOG.info("Stopping %s." % (c))
+        instance.stop()
+        LOG.info("Finished stop of %s" % (c))
+    return None
+
+
+def start(components, distro, rootdir):
+    pkg_manager = get_pkg_manager(distro)
+    cfg = get_config()
+    LOG.info("Will start [%s] from %s" % (", ".join(components), rootdir))
+    klass_lookup = ACTION_CLASSES.get(Util.START)
+    locations = []
+    for c in components:
+        klass = klass_lookup.get(c)
+        instance = klass(components=components, distro=distro, pkg=pkg_manager, cfg=cfg, root=rootdir)
+        LOG.info("Starting %s." % (c))
+        trace_locs = instance.start() or []
+        LOG.info("Finished start of %s - check [%s] for traces of what happened." % (c, ", ".join(trace_locs)))
+        locations = locations + trace_locs
+    return locations
+
+
+def install(components, distro, rootdir):
+    pkg_manager = get_pkg_manager(distro)
+    cfg = get_config()
+    mkdir(rootdir)
+    LOG.info("Will install [%s] and store in %s." % (", ".join(components), rootdir))
+    klass_lookup = ACTION_CLASSES.get(Util.INSTALL)
+    traces = []
+    for c in components:
+        klass = klass_lookup.get(c)
+        instance = klass(components=components, distro=distro, pkg=pkg_manager, cfg=cfg, root=rootdir)
+        LOG.info("Downloading %s." % (c))
+        instance.download()
+        LOG.info("Configuring %s." % (c))
+        instance.configure()
+        LOG.info("Installing %s." % (c))
+        trace = instance.install()
+        LOG.info("Finished install of %s - check %s for traces of what happened." % (c, trace))
+        traces.append(trace)
+    return traces
+
+
+def uninstall(components, distro, uninstalldir):
+    pkg_manager = get_pkg_manager(distro)
+    cfg = get_config()
+    LOG.info("Will uninstall [%s] with traces from directory %s." % (", ".join(components), uninstalldir))
+    klass_lookup = ACTION_CLASSES.get(Util.UNINSTALL)
+    for c in components:
+        klass = klass_lookup.get(c)
+        instance = klass(components=components, distro=distro, pkg=pkg_manager, cfg=cfg, root=uninstalldir)
+        LOG.info("Unconfiguring %s." % (c))
+        instance.unconfigure()
+        LOG.info("Uninstalling %s." % (c))
+        instance.uninstall()
+    return None
+
+
+#what functions to activate for each action
+FUNC_MAP = {
+    Util.INSTALL: install,
+    Util.UNINSTALL: uninstall,
+    Util.START: start,
+    Util.STOP: stop
+}
+
+
+def main():
+    me = __file__
+    args = Options.parse()
+    components = args.get("component") or []
+    if(len(components) == 0):
+        #assume them all??
+        components = list(Util.NAMES)
+    components = set([x.lower() for x in components])
+    applicable = set(Util.NAMES).intersection(components)
+    if(len(applicable) == 0):
+        LOG.error("No valid components specified!")
+        LOG.info("Perhaps you should try %s --help" % (me))
+        return 1
+    action = args.get("action") or ""
+    action = action.strip()
+    action = action.lower()
+    if(not (action in Util.ACTIONS)):
+        LOG.error("No valid action specified!")
+        LOG.info("Perhaps you should try %s --help" % (me))
+        return 1
+    rootdir = args.get("dir") or ""
+    if(len(rootdir) == 0):
+        LOG.error("No valid root directory specified!")
+        LOG.info("Perhaps you should try %s --help" % (me))
+        return 1
+    #check if implemented yet
+    if(not action in ACTION_CLASSES or not action in FUNC_MAP):
+        LOG.error("Action %s not implemented yet!" % (action))
+        return 1
+    #ensure os is known
+    (install_os, plt) = determine_os()
+    if(install_os == None):
+        LOG.error("Unsupported operating system/distro: %s" % (plt))
+        return 1
+    if(os.path.isdir(rootdir) and action == Util.INSTALL):
+        LOG.error("Root directory [%s] already exists! Please remove it!" % (rootdir))
+        return 1
+    #start it
+    welcome(action)
+    if(action in DEP_ACTIONS_NEEDED):
+        # need to figure out deps for components (if any)
+        deps = list()
+        for c in applicable:
+            cdeps = list(set(Util.fetch_deps(c)))
+            if(len(cdeps)):
+                LOG.info("Having to %s [%s] since they are dependencies for %s." % (action, ", ".join(cdeps), c))
+                deps = deps + cdeps
+            deps = deps + [c]
+        applicable = set(deps)
+    #get the right component order (by priority)
+    mporder = dict()
+    for c in applicable:
+        mporder[c] = Util.NAMES_PRIORITY.get(c)
+    #sort by priority value
+    priororder = sorted(mporder.iteritems(), key=operator.itemgetter(1))
+    componentorder = [x[0] for x in priororder]
+    funcAction = FUNC_MAP.get(action)
+    LOG.info("Starting action [%s] on %s for operating system/distro [%s]" % (action, rcf8222date(), install_os))
+    resultList = funcAction(componentorder, install_os, rootdir)
+    LOG.info("Finished action [%s] on %s" % (action, rcf8222date()))
+    if(resultList):
+        msg = "Check [%s] for traces of what happened." % (", ".join(resultList))
+        LOG.info(msg)
+    return 0
+
+
+if __name__ == "__main__":
+    rc = main()
+    sys.exit(rc)

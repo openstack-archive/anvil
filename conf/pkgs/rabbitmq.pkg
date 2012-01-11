@@ -1,0 +1,10 @@
+{
+  "ubuntu-oneiric": {
+    "rabbitmq-server": {
+      "version": "2.5.0-1ubuntu2",
+      "allowed": ">=",
+      "removable": true
+    }
+  },
+  "rhel-6": {}
+}

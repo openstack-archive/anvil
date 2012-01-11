@@ -1,0 +1,106 @@
+{
+  "ubuntu-oneiric": {
+    "apache2": {
+      "version": "2.2.20-1ubuntu1",
+      "allowed": ">="
+    },
+    "libapache2-mod-wsgi": {
+      "version": "3.3-2ubuntu3",
+      "allowed": ">="
+    },
+    "python-dateutil": {
+      "version": "1.4.1-4",
+      "allowed": ">="
+    },
+    "python-paste": {
+      "version": "1.7.5.1-4ubuntu1",
+      "allowed": ">="
+    },
+    "python-pastedeploy": {
+      "version": "1.5.0-2",
+      "allowed": ">="
+    },
+    "python-anyjson": {
+      "version": "0.3.1-1",
+      "allowed": ">="
+    },
+    "python-routes": {
+      "version": "1.12.3-1",
+      "allowed": ">="
+    },
+    "python-xattr": {
+      "version": "0.6-1ubuntu2",
+      "allowed": ">="
+    },
+    "python-sqlalchemy": {
+      "version": "0.6.8-1",
+      "allowed": ">="
+    },
+    "python-webob": {
+      "version": "1.0.8-1",
+      "allowed": ">="
+    },
+    "python-kombu": {
+      "version": "1.0.4-2",
+      "allowed": ">="
+    },
+    "pylint": {
+      "version": "0.23.0-1",
+      "allowed": ">="
+    },
+    "pep8": {
+      "version": "0.6.1-2ubuntu1",
+      "allowed": ">="
+    },
+    "python-eventlet": {
+      "version": "0.9.15-0ubuntu4",
+      "allowed": ">="
+    },
+    "python-nose": {
+      "version": "1.0.0-1ubuntu1",
+      "allowed": ">="
+    },
+    "python-sphinx": {
+      "version": "1.0.7+dfsg-1",
+      "allowed": ">="
+    },
+    "python-mox": {
+      "version": "0.5.3-1ubuntu4",
+      "allowed": ">="
+    },
+    "python-coverage": {
+      "version": "3.4-1",
+      "allowed": ">="
+    },
+    "python-cherrypy3": {
+      "version": "3.1.2-1",
+      "allowed": ">="
+    },
+    "python-django": {
+      "version": "1.3-2ubuntu1",
+      "allowed": ">="
+    },
+    "python-django-mailer": {
+      "version": "0.2a1.dev3-0ubuntu1",
+      "allowed": ">="
+    },
+    "python-django-nose": {
+      "version": "0.1.2-2",
+      "allowed": ">="
+    },
+    "python-django-registration": {
+      "version": "0.7-2",
+      "allowed": ">="
+    },
+    "python-cloudfiles": {
+      "version": "1.7.9.2-0ubuntu1",
+      "allowed": ">="
+    },
+    "python-migrate": {
+      "version": "0.7.1-1",
+      "allowed": ">="
+    }
+  },
+  "rhel-6": {
+  }
+}

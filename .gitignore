@@ -1,0 +1,14 @@
+*.pyc
+.settings/
+.venv
+build/
+dist/
+doc/source/sourcecode
+*.db
+.*.swp
+*.log
+*.pid
+pidfile
+*.komodoproject
+.coverage
+.DS_Store

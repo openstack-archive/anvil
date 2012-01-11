@@ -1,0 +1,18 @@
+{
+  "ubuntu-oneiric": {
+    "iscsitarget": {
+      "version": "1.4.20.2-5ubuntu1",
+      "allowed": ">="
+    },
+    "iscsitarget-dkms": {
+      "version": "1.4.20.2-5ubuntu1",
+      "allowed": ">="
+    },
+    "lvm2": {
+      "version": "2.02.66-4ubuntu3",
+      "allowed": ">="
+    }
+  },
+  "rhel-6": {
+  }
+}

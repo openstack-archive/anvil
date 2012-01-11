@@ -1,0 +1,96 @@
+{
+  "ubuntu-oneiric": {
+    "pep8": {
+      "version": "0.6.1-2ubuntu1",
+      "allowed": ">=",
+      "removable" : false
+    },
+    "pylint": {
+      "version": "0.23.0-1",
+      "allowed": ">=",
+      "removable" : false
+    },
+    "python-pip": {
+      "version": "1.0-1",
+      "allowed": ">=",
+      "removable" : false
+    },
+    "screen": {
+      "version": "4.0.3-14ubuntu8",
+      "allowed": ">=",
+      "removable" : false
+    },
+    "unzip": {
+      "version": "6.0-4ubuntu1",
+      "allowed": ">=",
+      "removable" : false
+    },
+    "wget": {
+      "version": "1.12-3.1ubuntu1",
+      "allowed": ">=",
+      "removable" : false
+    },
+    "psmisc": {
+      "version": "22.14-1",
+      "allowed": ">=",
+      "removable" : false
+    },
+    "git-core": {
+      "version": "1:1.7.5.4-1",
+      "allowed": ">=",
+      "removable" : false
+    },
+    "lsof": {
+      "version": "4.81.dfsg.1-1build1",
+      "allowed": ">=",
+      "removable" : false
+    },
+    "openssh-server": {
+      "version": "1:5.8p1-7ubuntu1",
+      "allowed": ">=",
+      "removable" : false
+    },
+    "vim-nox": {
+      "version": "2:7.3.154+hg~74503f6ee649-2ubuntu3",
+      "allowed": ">=",
+      "removable" : false
+    },
+    "locate": {
+      "version": "4.4.2-1ubuntu3",
+      "allowed": ">=",
+      "removable" : false
+    },
+    "python-virtualenv": {
+      "version": "1.6.4-0ubuntu1",
+      "allowed": ">=",
+      "removable" : false
+    },
+    "python-unittest2": {
+      "version": "0.5.1-1",
+      "allowed": ">=",
+      "removable" : false
+    },
+    "iputils-ping": {
+      "version": "3:20101006-1",
+      "allowed": ">=",
+      "removable" : false
+    },
+    "curl": {
+      "version": "7.21.6-3ubuntu3",
+      "allowed": ">=",
+      "removable" : false
+    },
+    "tcpdump": {
+      "version": "4.1.1-2ubuntu2",
+      "allowed": ">=",
+      "removable" : false
+    },
+    "euca2ools": {
+      "version": "2.0.0~bzr464-0ubuntu2",
+      "allowed": ">=",
+      "removable" : false
+    }
+  },
+  "rhel-6": {
+  }
+}
