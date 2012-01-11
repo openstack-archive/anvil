@@ -27,7 +27,6 @@ import Util
 from Util import (
                     welcome,
                     rcf8222date,
-                    fsSafeDate,
                     determine_os,
                     get_pkg_list
                  )

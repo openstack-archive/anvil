@@ -34,6 +34,11 @@ This will typically produce:
                            stack component, ie (rabbit, db, nova, keystone,
                            horizon, quantum, glance, swift)
 
+# Stack prerequisites
+
+* easy_install termcolor (used for colored console logging)
+* easy_install netifaces (not used yet)
+
 # Actions
 
 You will note that *stack* can uninstall, install, start and stop openstack components. Typically the interaction would be that you install a set of components and then start them. 

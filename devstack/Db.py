@@ -26,7 +26,7 @@ from Trace import (TraceWriter, TraceReader)
 import Shell
 from Shell import (mkdirslist, execute, deldir)
 
-LOG = Logger.getLogger("install.mysql")
+LOG = Logger.getLogger("install.db")
 TYPE = DB
 
 #TODO maybe someday this should be in the pkg info?
