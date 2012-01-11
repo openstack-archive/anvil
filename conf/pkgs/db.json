@@ -31,7 +31,7 @@
                         "mysql-server-5.1 mysql-server/start_on_boot boolean %BOOT_START%"
                     ]
                 }
-            ],
+            ]
         }
     },
     "rhel-6": {}

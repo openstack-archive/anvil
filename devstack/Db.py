@@ -112,7 +112,7 @@ class DBInstaller(ComponentBase, InstallComponent):
         if(dbtype == 'mysql'):
             grant_cmd = TYPE_ACTIONS.get('mysql').get('grant_all')
             if(grant_cmd):
-                #Update the DB to give user ‘USER’@’%’ full control of the all databases:
+                #Update the DB to give user 'USER'@'%' full control of the all databases:
                 user = self.cfg.get("db", "sql_user")
                 pw = self.cfg.get("passwords", "sql")
                 params = dict()
@@ -124,7 +124,7 @@ class DBInstaller(ComponentBase, InstallComponent):
                     'run_as_root': False,
                 })
                 execute_template(cmds, params)
-            # Edit /etc/mysql/my.cnf to change ‘bind-address’ from localhost (127.0.0.1) to any (0.0.0.0) 
+            # Edit /etc/mysql/my.cnf to change 'bind-address' from localhost (127.0.0.1) to any (0.0.0.0) 
             contents = load_file("/etc/mysql/my.cnf")
             re.sub(re.escape('127.0.0.1'), '0.0.0.0', contents)
             write_file('/etc/mysql/my.cnf', contents)
