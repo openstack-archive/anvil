@@ -1,0 +1,10 @@
+{
+  "ubuntu-oneiric": {
+    "python-numpy": {
+      "version": "1:1.5.1-2ubuntu2",
+      "allowed": ">="
+    }
+  },
+  "rhel-6": {
+  }
+}

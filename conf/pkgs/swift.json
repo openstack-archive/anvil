@@ -1,0 +1,74 @@
+{
+  "ubuntu-oneiric": {
+    "curl": {
+      "version": "7.21.6-3ubuntu3",
+      "allowed": ">="
+    },
+    "gcc": {
+      "version": "4:4.6.1-2ubuntu5",
+      "allowed": ">="
+    },
+    "memcached": {
+      "version": "1.4.7-0.1ubuntu1",
+      "allowed": ">="
+    },
+    "python-configobj": {
+      "version": "4.7.2+ds-3",
+      "allowed": ">="
+    },
+    "python-coverage": {
+      "version": "3.4-1",
+      "allowed": ">="
+    },
+    "python-dev": {
+      "version": "2.7.2-7ubuntu2",
+      "allowed": ">="
+    },
+    "python-eventlet": {
+      "version": "0.9.15-0ubuntu4",
+      "allowed": ">="
+    },
+    "python-greenlet": {
+      "version": "0.3.1-1ubuntu4",
+      "allowed": ">="
+    },
+    "python-netifaces": {
+      "version": "0.5-2.1ubuntu2",
+      "allowed": ">="
+    },
+    "python-nose": {
+      "version": "1.0.0-1ubuntu1",
+      "allowed": ">="
+    },
+    "python-pastedeploy": {
+      "version": "1.5.0-2",
+      "allowed": ">="
+    },
+    "python-setuptools": {
+      "version": "0.6.16-1",
+      "allowed": ">="
+    },
+    "python-simplejson": {
+      "version": "2.1.6-1",
+      "allowed": ">="
+    },
+    "python-webob": {
+      "version": "1.0.8-1",
+      "allowed": ">="
+    },
+    "python-xattr": {
+      "version": "0.6-1ubuntu2",
+      "allowed": ">="
+    },
+    "sqlite3": {
+      "version": "3.7.7-2ubuntu2",
+      "allowed": ">="
+    },
+    "xfsprogs": {
+      "version": "3.1.5ubuntu1",
+      "allowed": ">="
+    }
+  },
+  "rhel-6": {
+  }
+}
