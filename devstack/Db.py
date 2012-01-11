@@ -31,37 +31,39 @@ TYPE = DB
 
 #TODO maybe someday this should be in the pkg info?
 TYPE_ACTIONS = {
-    'mysql': {
-        'start': ["/etc/init.d/mysql", "start"],
-        'stop' : ["/etc/init.d/mysql", "stop"],
-        'create_db': 'CREATE DATABASE %s;',
-        'drop_db': 'DROP DATABASE IF EXISTS %s;',
-        "before_install": [ 
-            {
-                'cmd': ["debconf-set-selections"],
-                'stdin': [
-                    "mysql-server-5.1 mysql-server/root_password password %PASSWORD%",
-                    "mysql-server-5.1 mysql-server/root_password_again password %PASSWORD%",
-                    "mysql-server-5.1 mysql-server/start_on_boot boolean %BOOT_START%",
-                ],
-                'run_as_root': True,
-            },
-        ],
-        'after_install': [
-            {
-                'cmd': [
-                    "mysql",
-                    '-uroot',
-                    '-p%PASSWORD%',
-                    '-h127.0.0.1',
-                    '-e',
-                    "GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' identified by '%PASSWORD%';",
-                ],
-                'stdin': [],
-                'run_as_root': False,
-            }
-        ]
-    },
+    Util.UBUNTU12: {
+        'mysql': {
+            'start': ["/etc/init.d/mysql", "start"],
+            'stop': ["/etc/init.d/mysql", "stop"],
+            'create_db': 'CREATE DATABASE %s;',
+            'drop_db': 'DROP DATABASE IF EXISTS %s;',
+            "before_install": [
+                {
+                    'cmd': ["debconf-set-selections"],
+                    'stdin': [
+                        "mysql-server-5.1 mysql-server/root_password password %PASSWORD%",
+                        "mysql-server-5.1 mysql-server/root_password_again password %PASSWORD%",
+                        "mysql-server-5.1 mysql-server/start_on_boot boolean %BOOT_START%",
+                    ],
+                    'run_as_root': True,
+                },
+            ],
+            'after_install': [
+                {
+                    'cmd': [
+                        "mysql",
+                        '-uroot',
+                        '-p%PASSWORD%',
+                        '-h127.0.0.1',
+                        '-e',
+                        "GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' identified by '%PASSWORD%';",
+                    ],
+                    'stdin': [],
+                    'run_as_root': False,
+                }
+            ]
+        },
+    }
 }
 
 BASE_ERROR = 'Currently we do not know how to %s for database type [%s]'
@@ -134,18 +136,32 @@ class DBInstaller(ComponentBase, InstallComponent):
         return out
 
     def _pre_install(self, pkgs):
+        distroactions = TYPE_ACTIONS.get(self.distro)
+        if(not distroactions):
+            return
         dbtype = self.cfg.get("db", "type")
-        dbactions = TYPE_ACTIONS.get(dbtype)
-        if(dbactions and dbactions.get("before_install")):
-            LOG.info("Running pre-install commands.")
-            self._run_install_cmds(dbactions.get("before_install"))
+        dbactions = distroactions.get(dbtype)
+        if(not dbactions):
+            return
+        cmds = dbactions.get("before_install")
+        if(not cmds):
+            return
+        LOG.info("Running pre-install commands.")
+        self._run_install_cmds(cmds)
 
     def _post_install(self, pkgs):
+        distroactions = TYPE_ACTIONS.get(self.distro)
+        if(not distroactions):
+            return
         dbtype = self.cfg.get("db", "type")
-        dbactions = TYPE_ACTIONS.get(dbtype)
-        if(dbactions and dbactions.get("after_install")):
-            LOG.info("Running post-install commands.")
-            self._run_install_cmds(dbactions.get("after_install"))
+        dbactions = distroactions.get(dbtype)
+        if(not dbactions):
+            return
+        cmds = dbactions.get("after_install")
+        if(not cmds):
+            return
+        LOG.info("Running pre-install commands.")
+        self._run_install_cmds(cmds)
 
     def install(self):
         #just install the pkgs

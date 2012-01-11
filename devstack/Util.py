@@ -252,6 +252,7 @@ def get_pkg_list(distro, component):
 def joinlinesep(*pieces):
     return os.linesep.join(*pieces)
 
+
 def param_replace(text, replacements):
     if(len(replacements) == 0 or len(text) == 0):
         return text

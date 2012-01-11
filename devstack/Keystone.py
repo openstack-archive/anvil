@@ -26,7 +26,7 @@ import Trace
 from Trace import (TraceWriter, TraceReader)
 import Shell
 from Shell import (execute, mkdirslist, write_file,
-                    load_file, joinpths, touch_file, 
+                    load_file, joinpths, touch_file,
                     unlink)
 
 LOG = Logger.getLogger("install.keystone")
@@ -37,6 +37,7 @@ CONFIGS = [ROOT_CONF]
 BIN_DIR = "bin"
 DATA_SCRIPT = "keystone_data.sh"
 DB_NAME = "keystone"
+
 
 class KeystoneBase(Component.ComponentBase):
     def __init__(self, *args, **kargs):
@@ -115,7 +116,7 @@ class KeystoneInstaller(KeystoneBase, Component.InstallComponent):
         pass
 
     def _setup_data(self):
-        pass    
+        pass
 
     def _config_apply(self, contents, fn):
         lines = contents.splitlines()

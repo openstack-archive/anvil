@@ -53,8 +53,7 @@ def execute(*cmd, **kwargs):
 
     LOG.debug(('Running cmd: %s') % (' '.join(cmd)))
     if(process_input != None):
-        LOG.debug(('With stdin: %s') % (process_input))
-    
+        LOG.debug(('With stdin > %s') % (process_input))
 
     _PIPE = subprocess.PIPE  # pylint: disable=E1101
     obj = subprocess.Popen(cmd,

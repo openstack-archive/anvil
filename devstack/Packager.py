@@ -25,10 +25,11 @@ from Shell import execute
 
 LOG = Logger.getLogger("install.packager")
 
+
 class Packager():
     def __init__(self):
         pass
-    
+
     def install_batch(self, pkgs):
         raise NotImplementedError()
 
