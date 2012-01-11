@@ -13,6 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import re
+
 import Logger
 import Component
 from Component import (ComponentBase, RuntimeComponent,
@@ -20,50 +22,37 @@ from Component import (ComponentBase, RuntimeComponent,
 import Util
 from Util import (DB,
                   get_pkg_list, param_replace,
-                  joinlinesep)
+                  execute_template)
 import Trace
 from Trace import (TraceWriter, TraceReader)
 import Shell
-from Shell import (mkdirslist, execute, deldir)
+from Shell import (mkdirslist, execute, deldir,
+                  load_file, write_file)
 
 LOG = Logger.getLogger("install.db")
 TYPE = DB
-
-#TODO maybe someday this should be in the pkg info?
-TYPE_ACTIONS = {
-    Util.UBUNTU12: {
-        'mysql': {
-            'start': ["/etc/init.d/mysql", "start"],
-            'stop': ["/etc/init.d/mysql", "stop"],
-            'create_db': 'CREATE DATABASE %s;',
-            'drop_db': 'DROP DATABASE IF EXISTS %s;',
-            "before_install": [
-                {
-                    'cmd': ["debconf-set-selections"],
-                    'stdin': [
-                        "mysql-server-5.1 mysql-server/root_password password %PASSWORD%",
-                        "mysql-server-5.1 mysql-server/root_password_again password %PASSWORD%",
-                        "mysql-server-5.1 mysql-server/start_on_boot boolean %BOOT_START%",
-                    ],
-                    'run_as_root': True,
-                },
-            ],
-            'after_install': [
-                {
-                    'cmd': [
-                        "mysql",
-                        '-uroot',
-                        '-p%PASSWORD%',
-                        '-h127.0.0.1',
-                        '-e',
-                        "GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' identified by '%PASSWORD%';",
-                    ],
-                    'stdin': [],
-                    'run_as_root': False,
-                }
-            ]
-        },
-    }
+DB_ACTIONS = {
+    'mysql': {
+        #hopefully these are distro independent
+        'start': ["/etc/init.d/mysql", "start"],
+        'stop': ["/etc/init.d/mysql", "stop"],
+        'create_db': ['mysql', '-u%USER%', '-p%PASSWORD%', '-e', 'CREATE DATABASE %DB%;'],
+        'drop_db': ['mysql', '-u%USER%', '-p%PASSWORD%', '-e', 'DROP DATABASE IF EXISTS %DB%;'], 
+        'grant_all': [
+            "mysql",
+            "-uroot",
+            "-p%PASSWORD%",
+            "-h127.0.0.1",
+            "-e",
+            "GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' identified by '%PASSWORD%';"
+        ],
+        'host_adjust': [
+            "sed",
+            "-i",
+            "'s/127.0.0.1/0.0.0.0/g'",
+            "/etc/mysql/my.cnf"
+        ],
+    },
 }
 
 BASE_ERROR = 'Currently we do not know how to %s for database type [%s]'
@@ -108,25 +97,8 @@ class DBInstaller(ComponentBase, InstallComponent):
         pass
 
     def _run_install_cmds(self, cmds):
-        if(not cmds or len(cmds) == 0):
-            return
         installparams = self._get_install_params()
-        for cmdinfo in cmds:
-            cmd_to_run_templ = cmdinfo.get("cmd")
-            if(not cmd_to_run_templ):
-                continue
-            cmd_to_run = list()
-            for piece in cmd_to_run_templ:
-                cmd_to_run.append(param_replace(piece, installparams))
-            stdin_templ = cmdinfo.get('stdin')
-            stdin = None
-            if(stdin_templ):
-                stdin_full = list()
-                for piece in stdin_templ:
-                    stdin_full.append(param_replace(piece, installparams))
-                stdin = joinlinesep(stdin_full)
-            root_run = cmdinfo.get('run_as_root', True)
-            execute(*cmd_to_run, process_input=stdin, run_as_root=root_run)
+        return execute_template(cmds, installparams)
 
     def _get_install_params(self):
         out = dict()
@@ -135,33 +107,36 @@ class DBInstaller(ComponentBase, InstallComponent):
         out['USER'] = self.cfg.get("db", "sql_user")
         return out
 
-    def _pre_install(self, pkgs):
-        distroactions = TYPE_ACTIONS.get(self.distro)
-        if(not distroactions):
-            return
-        dbtype = self.cfg.get("db", "type")
-        dbactions = distroactions.get(dbtype)
-        if(not dbactions):
-            return
-        cmds = dbactions.get("before_install")
-        if(not cmds):
-            return
-        LOG.info("Running pre-install commands.")
-        self._run_install_cmds(cmds)
-
     def _post_install(self, pkgs):
-        distroactions = TYPE_ACTIONS.get(self.distro)
-        if(not distroactions):
-            return
         dbtype = self.cfg.get("db", "type")
-        dbactions = distroactions.get(dbtype)
-        if(not dbactions):
-            return
-        cmds = dbactions.get("after_install")
-        if(not cmds):
-            return
-        LOG.info("Running pre-install commands.")
-        self._run_install_cmds(cmds)
+        if(dbtype == 'mysql'):
+            grant_cmd = TYPE_ACTIONS.get('mysql').get('grant_all')
+            if(grant_cmd):
+                #Update the DB to give user ‘USER’@’%’ full control of the all databases:
+                user = self.cfg.get("db", "sql_user")
+                pw = self.cfg.get("passwords", "sql")
+                params = dict()
+                params['PASSWORD'] = pw
+                params['USER'] = pw
+                cmds = list()
+                cmds.append({
+                    'cmd': grant_cmd,
+                    'run_as_root': False,
+                })
+                execute_template(cmds, params)
+            # Edit /etc/mysql/my.cnf to change ‘bind-address’ from localhost (127.0.0.1) to any (0.0.0.0) 
+            contents = load_file("/etc/mysql/my.cnf")
+            re.sub(re.escape('127.0.0.1'), '0.0.0.0', contents)
+            write_file('/etc/mysql/my.cnf', contents)
+
+    def _pre_install(self, pkgs):
+        pkgnames = sorted(pkgs.keys())
+        for name in pkgnames:
+            packageinfo = pkgs.get(name)
+            preinstallcmds = packageinfo.get(Util.PRE_INSTALL)
+            if(preinstallcmds and len(preinstallcmds)):
+                LOG.info("Running pre-install commands for package %s." % (name))
+                self._run_install_cmds(preinstallcmds)
 
     def install(self):
         #just install the pkgs
@@ -184,12 +159,6 @@ class DBInstaller(ComponentBase, InstallComponent):
         self.tracewriter.dir_made(*dirsmade)
         #run any post-installs cmds
         self._post_install(pkgs)
-        #TODO
-        # # Update the DB to give user "$MYSQL_USER"@"%" full control of the all databases:
-        #sudo mysql -uroot -p$MYSQL_PASSWORD -h127.0.0.1 -e "GRANT ALL PRIVILEGES ON *.* TO '$MYSQL_USER'@'%' identified by '$MYSQL_PASSWORD';"
-        #TODO
-        # Edit /etc/mysql/my.cnf to change "bind-address" from localhost (127.0.0.1) to any (0.0.0.0) and stop the mysql service:
-        #sudo sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mysql/my.cnf
         return self.tracedir
 
 
@@ -230,31 +199,43 @@ class DBRuntime(ComponentBase, RuntimeComponent):
 
 def drop_db(cfg, dbname):
     dbtype = cfg.get("db", "type")
-    dbtypelo = dbtype.lower()
-    if(dbtypelo == 'mysql'):
-        #drop it
-        basesql = TYPE_ACTIONS.get(dbtypelo).get('drop_db')
-        sql = basesql % (dbname)
-        user = cfg.get("db", "sql_user")
-        pw = cfg.get("passwords", "sql")
-        cmd = ['mysql', '-u' + user, '-p' + pw, '-e', sql]
-        execute(*cmd)
+    if(dbtype == 'mysql'):
+        basecmd = TYPE_ACTIONS.get('mysql').get('drop_db')
+        if(basecmd):
+            user = cfg.get("db", "sql_user")
+            pw = cfg.get("passwords", "sql")
+            params = dict()
+            params['PASSWORD'] = pw
+            params['USER'] = pw
+            params['DB'] = dbname
+            cmds = list()
+            cmds.append({
+                'cmd': basecmd,
+                'run_as_root': False,
+            })
+            execute_template(cmds, params)
     else:
         msg = BASE_ERROR % ('drop', dbtype)
         raise NotImplementedError(msg)
 
-
 def create_db(cfg, dbname):
     dbtype = cfg.get("db", "type")
-    dbtypelo = dbtype.lower()
-    if(dbtypelo == 'mysql'):
-        #create it
-        basesql = TYPE_ACTIONS.get(dbtypelo).get('create_db')
-        sql = basesql % (dbname)
-        user = cfg.get("db", "sql_user")
-        pw = cfg.get("passwords", "sql")
-        cmd = ['mysql', '-u' + user, '-p' + pw, '-e', sql]
-        execute(*cmd)
+    if(dbtype == 'mysql'):
+        basecmd = TYPE_ACTIONS.get('mysql').get('create_db')
+        if(basecmd):
+            user = cfg.get("db", "sql_user")
+            pw = cfg.get("passwords", "sql")
+            params = dict()
+            params['PASSWORD'] = pw
+            params['USER'] = pw
+            params['DB'] = dbname
+            cmds = list()
+            cmds.append({
+                'cmd': basecmd,
+                'run_as_root': False,
+            })
+            execute_template(cmds, params)
     else:
         msg = BASE_ERROR % ('create', dbtype)
         raise NotImplementedError(msg)
+

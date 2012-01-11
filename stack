@@ -31,7 +31,7 @@ from Util import (
                     get_pkg_list
                  )
 import Shell
-from Shell import (mkdir, joinpths)
+from Shell import (mkdir, joinpths, unlink)
 import Config
 import Glance
 import Horizon
@@ -167,18 +167,24 @@ def install(components, distro, rootdir):
     return traces
 
 
-def uninstall(components, distro, uninstalldir):
+def uninstall(components, distro, rootdir):
     pkg_manager = get_pkg_manager(distro)
     cfg = get_config()
-    LOG.info("Will uninstall [%s] with traces from directory %s." % (", ".join(components), uninstalldir))
+    LOG.info("Will uninstall [%s] with traces from directory %s." % (", ".join(components), rootdir))
     klass_lookup = ACTION_CLASSES.get(Util.UNINSTALL)
     for c in components:
         klass = klass_lookup.get(c)
-        instance = klass(components=components, distro=distro, pkg=pkg_manager, cfg=cfg, root=uninstalldir)
+        instance = klass(components=components, distro=distro, pkg=pkg_manager, cfg=cfg, root=rootdir)
         LOG.info("Unconfiguring %s." % (c))
         instance.unconfigure()
         LOG.info("Uninstalling %s." % (c))
         instance.uninstall()
+    #Trash the root if we can
+    try:
+        os.rmdir(rootdir)
+    except OSError:
+        #ignore
+        pass
     return None
 
 

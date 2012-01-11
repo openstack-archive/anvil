@@ -23,6 +23,7 @@ from Shell import execute
 APT_GET = ['apt-get']
 APT_REMOVE = ["purge", "-y"]  # should we use remove or purge?
 APT_INSTALL = ["install", "-y"]
+APT_AUTOREMOVE = ['autoremove', '-y']
 
 #make sure its non-interactive
 os.putenv('DEBIAN_FRONTEND', 'noninteractive')
@@ -55,6 +56,9 @@ class AptPackager(Packager.Packager):
 
     def remove_batch(self, pkgs):
         self._do_cmd(APT_REMOVE, pkgs)
+        #clean them out
+        cmd = APT_GET + APT_AUTOREMOVE
+        execute(*cmd, run_as_root=True)
 
     def install_batch(self, pkgs, params=None):
         self._do_cmd(APT_INSTALL, pkgs)

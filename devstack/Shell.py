@@ -51,7 +51,7 @@ def execute(*cmd, **kwargs):
 
     cmd = map(str, cmd)
 
-    LOG.debug(('Running cmd: %s') % (' '.join(cmd)))
+    LOG.debug(('Running cmd: [%s]') % (' '.join(cmd)))
     if(process_input != None):
         LOG.debug(('With stdin > %s') % (process_input))
 

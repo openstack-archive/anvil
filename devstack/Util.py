@@ -19,7 +19,7 @@ from Exceptions import (BadRegexException,
                         FileException)
 import Logger
 import Shell
-from Shell import (joinpths, load_json)
+from Shell import (joinpths, load_json, execute)
 
 from time import (localtime, strftime)
 from termcolor import colored
@@ -42,6 +42,8 @@ MASTER_BRANCH = "master"
 
 #other constants
 DB_DSN = '%s://%s:%s@%s/%s'
+PRE_INSTALL = 'pre-install'
+POST_INSTALL = 'post-install'
 
 #component name mappings
 NOVA = "nova"
@@ -117,36 +119,36 @@ KNOWN_OS = {
 PKG_MAP = {
     NOVA:
            [
-             joinpths(STACK_CONFIG_DIR, "pkgs", "nova.pkg"),
-             joinpths(STACK_CONFIG_DIR, "pkgs", "general.pkg"),
+             joinpths(STACK_CONFIG_DIR, "pkgs", "nova.json"),
+             joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
            ],
     GLANCE:
            [
-             joinpths(STACK_CONFIG_DIR, "pkgs", "general.pkg"),
-             joinpths(STACK_CONFIG_DIR, "pkgs", 'glance.pkg'),
+             joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
+             joinpths(STACK_CONFIG_DIR, "pkgs", 'glance.json'),
            ],
     KEYSTONE:
            [
-             joinpths(STACK_CONFIG_DIR, "pkgs", "general.pkg"),
-             joinpths(STACK_CONFIG_DIR, "pkgs", 'keystone.pkg'),
+             joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
+             joinpths(STACK_CONFIG_DIR, "pkgs", 'keystone.json'),
            ],
     HORIZON:
            [
-             joinpths(STACK_CONFIG_DIR, "pkgs", "general.pkg"),
-             joinpths(STACK_CONFIG_DIR, "pkgs", 'horizon.pkg'),
+             joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
+             joinpths(STACK_CONFIG_DIR, "pkgs", 'horizon.json'),
            ],
     SWIFT:
            [
-             joinpths(STACK_CONFIG_DIR, "pkgs", "general.pkg"),
-             joinpths(STACK_CONFIG_DIR, "pkgs", 'swift.pkg'),
+             joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
+             joinpths(STACK_CONFIG_DIR, "pkgs", 'swift.json'),
            ],
     DB:
            [
-             joinpths(STACK_CONFIG_DIR, "pkgs", 'db.pkg'),
+             joinpths(STACK_CONFIG_DIR, "pkgs", 'db.json'),
            ],
     RABBIT:
            [
-             joinpths(STACK_CONFIG_DIR, "pkgs", 'rabbitmq.pkg'),
+             joinpths(STACK_CONFIG_DIR, "pkgs", 'rabbitmq.json'),
            ],
 }
 
@@ -161,6 +163,33 @@ CONFIG_DIR = "config"
 REGEX_MATCHER = re.compile("^/(.*?)/([a-z]*)$")
 
 LOG = Logger.getLogger("install.util")
+
+
+def execute_template(cmds, params_replacements=None):
+    if(not cmds or len(cmds) == 0):
+        return
+    for cmdinfo in cmds:
+        cmd_to_run_templ = cmdinfo.get("cmd")
+        if(not cmd_to_run_templ):
+            continue
+        cmd_to_run = list()
+        for piece in cmd_to_run_templ:
+            if(params_replacements and len(params_replacements)):
+                cmd_to_run.append(param_replace(piece, params_replacements))
+            else:
+                cmd_to_run.append(piece)
+        stdin_templ = cmdinfo.get('stdin')
+        stdin = None
+        if(stdin_templ and len(stdin_templ)):
+            stdin_full = list()
+            for piece in stdin_templ:
+                if(params_replacements and len(params_replacements)):
+                    stdin_full.append(param_replace(piece, params_replacements))
+                else:
+                    stdin_full.append(piece)
+            stdin = joinlinesep(stdin_full)
+        root_run = cmdinfo.get('run_as_root', False)
+        execute(*cmd_to_run, process_input=stdin, run_as_root=root_run)
 
 
 def fetch_deps(component, add=False):
@@ -254,7 +283,7 @@ def joinlinesep(*pieces):
 
 
 def param_replace(text, replacements):
-    if(len(replacements) == 0 or len(text) == 0):
+    if(not replacements or len(replacements) == 0 or len(text) == 0):
         return text
 
     def replacer(m):
