@@ -1,10 +1,38 @@
 {
-  "ubuntu-oneiric": {
-    "mysql-server": {
-      "version": "5.1.58-1ubuntu1",
-      "allowed": ">=",
-      "removable": true
-    }
-  },
-  "rhel-6": {}
+    "ubuntu-oneiric": {
+        "mysql-client-5.1": {
+            "version": "5.1.58-1ubuntu1",
+            "allowed": ">=",
+            "removable": true
+        },
+        "mysql-server-core-5.1": {
+            "version": "5.1.58-1ubuntu1",
+            "allowed": ">=",
+            "removable": true
+        },
+        "mysql-common": {
+            "version": "5.1.58-1ubuntu1",
+            "allowed": ">=",
+            "removable": true
+        },
+        "mysql-server-5.1": {
+            "version": "5.1.58-1ubuntu1",
+            "allowed": ">=",
+            "removable": true,
+            "pre-install": [
+                {
+                    "run_as_root": true,
+                    "cmd": [
+                        "debconf-set-selections"
+                    ],
+                    "stdin": [
+                        "mysql-server-5.1 mysql-server/root_password password %PASSWORD%",
+                        "mysql-server-5.1 mysql-server/root_password_again password %PASSWORD%",
+                        "mysql-server-5.1 mysql-server/start_on_boot boolean %BOOT_START%"
+                    ]
+                }
+            ],
+        }
+    },
+    "rhel-6": {}
 }
