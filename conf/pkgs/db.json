@@ -48,7 +48,21 @@
         "mysql-server": {
             "version": "5.1.52-1.el6_0.1",
             "allowed": ">=",
-            "removable": true
+            "removable": true,
+            "post-install": [
+                { 
+                    #Start the mysql service
+                    "run_as_root": true,
+                    "cmd" : [ "service", "mysqld", "start"]
+                },
+                {  
+                    # Set the root password
+                    "cmd" : [ "mysql", "-u", "root"],
+                    "stdin": [
+                       "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('%PASSWORD%');"
+                    ]
+                }
+            ]
         }
     }
 }
