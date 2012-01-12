@@ -19,7 +19,7 @@ In order to determine what *stack* can do run the following.
  
 This will typically produce:
 
-    $ ./stack --help
+    ./stack --help
     Usage: stack [options]
     
     Options:

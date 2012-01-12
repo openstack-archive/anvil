@@ -71,7 +71,7 @@ class TraceWriter():
         else:
             dirs = mkdirslist(self.root)
             self.fn = touch_trace(self.root, self.name)
-            self.tracer = Trace(fn)
+            self.tracer = Trace(self.fn)
             self.tracer.trace(TRACE_VERSION, str(TRACE_VER))
             if(len(dirs)):
                 for d in dirs:
