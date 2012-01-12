@@ -39,5 +39,34 @@
             ]
         }
     },
-    "rhel-6": {}
+    "rhel-6": {
+        "mysql": {
+            "version": "5.1.52-1.el6_0.1",
+            "allowed": ">=",
+            "removable": true
+        },
+        "mysql-server": {
+            "version": "5.1.52-1.el6_0.1",
+            "allowed": ">=",
+            "removable": true,
+            "post-install": [
+                { 
+                    #Make sure it'll start on rebuut
+                    "run_as_root": true,
+                    "cmd" : [ "chkconfig", "mysqld", "on"]
+                },
+                { 
+                    #Start the mysql service
+                    "run_as_root": true,
+                    "cmd" : [ "service", "mysqld", "start"]
+                },
+                {  
+                    # Set the root password
+                    "run_as_root": true,
+                    "cmd" : [ "mysqladmin", "-u", "root", 
+                               "password", "%PASSWORD%" ]
+                }
+            ]
+        }
+    }
 }
