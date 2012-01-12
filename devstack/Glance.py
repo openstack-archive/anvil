@@ -18,6 +18,8 @@ import os.path
 
 import Logger
 import Component
+from Component import (ComponentBase, RuntimeComponent,
+                       UninstallComponent, InstallComponent)
 import Shell
 import Util
 import Trace
@@ -57,14 +59,14 @@ APP_OPTIONS = {
 }
 
 
-class GlanceBase(Component.ComponentBase):
+class GlanceBase(ComponentBase):
     def __init__(self, *args, **kargs):
-        Component.ComponentBase.__init__(self, TYPE, *args, **kargs)
-        #note not config that parent sets
+        ComponentBase.__init__(self, TYPE, *args, **kargs)
+        #note, not config that parent sets
         self.cfgdir = joinpths(self.appdir, "etc")
 
 
-class GlanceUninstaller(GlanceBase, Component.UninstallComponent):
+class GlanceUninstaller(GlanceBase, UninstallComponent):
     def __init__(self, *args, **kargs):
         GlanceBase.__init__(self, *args, **kargs)
         self.tracereader = TraceReader(self.tracedir, Trace.IN_TRACE)
@@ -73,8 +75,7 @@ class GlanceUninstaller(GlanceBase, Component.UninstallComponent):
         #get rid of all files configured
         cfgfiles = self.tracereader.files_configured()
         if(len(cfgfiles)):
-            am = len(cfgfiles)
-            LOG.info("Removing %s configuration files" % (am))
+            LOG.info("Removing %s configuration files" % (len(cfgfiles)))
             for fn in cfgfiles:
                 if(len(fn)):
                     unlink(fn)
@@ -84,14 +85,12 @@ class GlanceUninstaller(GlanceBase, Component.UninstallComponent):
         #clean out removeable packages
         pkgsfull = self.tracereader.packages_installed()
         if(len(pkgsfull)):
-            am = len(pkgsfull)
-            LOG.info("Removing %s packages" % (am))
+            LOG.info("Removing %s packages" % (len(pkgsfull)))
             self.packager.remove_batch(pkgsfull)
         #clean out files touched
         filestouched = self.tracereader.files_touched()
         if(len(filestouched)):
-            am = len(pkgsfull)
-            LOG.info("Removing %s touched files" % (am))
+            LOG.info("Removing %s touched files" % (len(filestouched)))
             for fn in filestouched:
                 if(len(fn)):
                     unlink(fn)
@@ -104,14 +103,13 @@ class GlanceUninstaller(GlanceBase, Component.UninstallComponent):
         #clean out dirs created
         dirsmade = self.tracereader.dirs_made()
         if(len(dirsmade)):
-            am = len(dirsmade)
-            LOG.info("Removing %s created directories" % (am))
+            LOG.info("Removing %s created directories" % (len(dirsmade)))
             for dirname in dirsmade:
                 deldir(dirname)
                 LOG.info("Removed %s" % (dirname))
 
 
-class GlanceRuntime(GlanceBase, Component.RuntimeComponent):
+class GlanceRuntime(GlanceBase, RuntimeComponent):
     def __init__(self, *args, **kargs):
         GlanceBase.__init__(self, *args, **kargs)
         self.foreground = kargs.get("foreground", True)
@@ -119,19 +117,31 @@ class GlanceRuntime(GlanceBase, Component.RuntimeComponent):
         self.tracewriter = TraceWriter(self.tracedir, Trace.START_TRACE)
         self.starttracereader = TraceReader(self.tracedir, Trace.START_TRACE)
 
+    def _getstartercls(self):
+        if(self.foreground):
+            return ForegroundRunner
+        else:
+            raise NotImplementedError("Can not yet start in non-foreground mode")
+
+    def _getstoppercls(self, starttype):
+        if(starttype == Foreground.RUN_TYPE):
+            return ForegroundRunner
+        else:
+            raise NotImplementedError("Can not yet stop type [%s]" % (starttype))
+
     def start(self):
         #ensure it was installed
         pylisting = self.tracereader.py_listing()
         if(len(pylisting) == 0):
             msg = "Can not start %s since it was not installed" % (TYPE)
             raise StartException(msg)
-        #select how we are going to start i
-        if(self.foreground):
-            starter = ForegroundRunner()
-        else:
-            raise NotImplementedError("Can not yet start in screen mode")
+        #select how we are going to start it
+        startercls = self._getstoppercls()
+        starter = startercls()
         #start all apps
+        #this fns list will have info about what was started
         fns = list()
+        #this dictionary will be used to adjust our start templates with actual values
         replacements = dict()
         replacements['ROOT'] = self.appdir
         for app in APPS_TO_START:
@@ -141,12 +151,11 @@ class GlanceRuntime(GlanceBase, Component.RuntimeComponent):
                 program_opts.append(param_replace(opt, replacements))
             LOG.info("Starting %s with options [%s]" % (app, ", ".join(program_opts)))
             #start it with the given settings
-            fn = starter.start(app, app, *program_opts,
-                app_dir=self.appdir, trace_dir=self.tracedir)
+            fn = starter.start(app, app, *program_opts, app_dir=self.appdir, trace_dir=self.tracedir)
             if(fn):
                 fns.append(fn)
                 LOG.info("Started %s, details are in %s" % (app, fn))
-                # This trace is used to locate details about what to stop
+                #this trace is used to locate details about what to stop
                 self.tracewriter.started_info(app, fn)
             else:
                 LOG.info("Started %s" % (app))
@@ -170,15 +179,17 @@ class GlanceRuntime(GlanceBase, Component.RuntimeComponent):
                 continue
             #figure out which class will stop it
             contents = Trace.parse_fn(fn)
-            runtype = None
+            killcls = None
             for (cmd, action) in contents:
-                if(cmd == Runner.RUN_TYPE and action == Foreground.RUN_TYPE):
-                    runtype = ForegroundRunner
+                if(cmd == Runner.RUN_TYPE):
+                    killcls = self._getstoppercls(action)
                     break
-            #we can try to stop it
-            if(runtype != None):
+            #did we find a class that can do it?
+            if(killcls):
+                #we can try to stop it
                 LOG.info("Stopping %s with %s in %s" % (name, runtype, self.tracedir))
-                killer = runtype()
+                #create an instance of the killer class and attempt to stop
+                killer = killcls()
                 killer.stop(name, trace_dir=self.tracedir)
                 killedam += 1
         #if we got rid of them all get rid of the trace
@@ -188,7 +199,7 @@ class GlanceRuntime(GlanceBase, Component.RuntimeComponent):
             unlink(fn)
 
 
-class GlanceInstaller(GlanceBase, Component.InstallComponent):
+class GlanceInstaller(GlanceBase, InstallComponent):
     def __init__(self, *args, **kargs):
         GlanceBase.__init__(self, *args, **kargs)
         self.gitloc = self.cfg.get("git", "glance_repo")
@@ -197,9 +208,9 @@ class GlanceInstaller(GlanceBase, Component.InstallComponent):
 
     def download(self):
         dirsmade = Downloader.download(self.appdir, self.gitloc, self.brch)
-        # This trace isn't used yet but could be
+        #this trace isn't used yet but could be
         self.tracewriter.downloaded(self.appdir, self.gitloc)
-        # This trace is used to remove the dirs created
+        #this trace is used to remove the dirs created
         self.tracewriter.dir_made(*dirsmade)
         return self.tracedir
 
@@ -211,18 +222,18 @@ class GlanceInstaller(GlanceBase, Component.InstallComponent):
         Packager.pre_install(pkgs, self._get_param_map())
         self.packager.install_batch(pkgs)
         Packager.post_install(pkgs, self._get_param_map())
+        #add trace used to remove the pkgs
         for name in pkgnames:
             packageinfo = pkgs.get(name)
             version = packageinfo.get("version", "")
             remove = packageinfo.get("removable", True)
-            # This trace is used to remove the pkgs
             self.tracewriter.package_install(name, remove, version)
         #make a directory for the python trace file (if its not already there)
         dirsmade = mkdirslist(self.tracedir)
-        # This trace is used to remove the dirs created
+        #this trace is used to remove the dirs created
         self.tracewriter.dir_made(*dirsmade)
         recordwhere = Trace.touch_trace(self.tracedir, Trace.PY_TRACE)
-        # This trace is used to remove the trace created
+        #this trace is used to remove the trace created
         self.tracewriter.py_install(recordwhere)
         (sysout, stderr) = execute(*PY_INSTALL, cwd=self.appdir, run_as_root=True)
         write_file(recordwhere, sysout)
@@ -230,7 +241,7 @@ class GlanceInstaller(GlanceBase, Component.InstallComponent):
 
     def configure(self):
         dirsmade = mkdirslist(self.cfgdir)
-        # This trace is used to remove the dirs created
+        #this trace is used to remove the dirs created
         self.tracewriter.dir_made(*dirsmade)
         parameters = self._get_param_map()
         for fn in CONFIGS:
@@ -249,7 +260,7 @@ class GlanceInstaller(GlanceBase, Component.InstallComponent):
             self._config_apply(contents, fn)
             LOG.info("Writing configuration file %s" % (tgtfn))
             write_file(tgtfn, contents)
-            # This trace is used to remove the files configured
+            #this trace is used to remove the files configured
             self.tracewriter.cfg_write(tgtfn)
         return self.tracedir
 
@@ -269,38 +280,38 @@ class GlanceInstaller(GlanceBase, Component.InstallComponent):
                 continue
             #now we take special actions
             if(key == 'filesystem_store_datadir'):
-                # Delete existing images
+                #delete existing images
                 deldir(val)
-                # Recreate
+                #recreate the image directory
                 dirsmade = mkdirslist(val)
                 self.tracewriter.dir_made(*dirsmade)
             elif(key == 'log_file'):
-                # Ensure that we can write to the log file
+                #ensure that we can write to the log file
                 dirname = os.path.dirname(val)
                 if(len(dirname)):
                     dirsmade = mkdirslist(dirname)
-                    # This trace is used to remove the dirs created
+                    #this trace is used to remove the dirs created
                     self.tracewriter.dir_made(*dirsmade)
-                # Destroy then recreate it
+                #destroy then recreate it (the log file)
                 unlink(val)
                 touch_file(val)
                 self.tracewriter.file_touched(val)
             elif(key == 'image_cache_datadir'):
-                # Destroy then recreate it
+                #destroy then recreate the image cache directory
                 deldir(val)
                 dirsmade = mkdirslist(val)
-                # This trace is used to remove the dirs created
+                #this trace is used to remove the dirs created
                 self.tracewriter.dir_made(*dirsmade)
             elif(key == 'scrubber_datadir'):
-                # Destroy then recreate it
+                #destroy then recreate the scrubber data directory
                 deldir(val)
                 dirsmade = mkdirslist(val)
-                # This trace is used to remove the dirs created
+                #this trace is used to remove the dirs created
                 self.tracewriter.dir_made(*dirsmade)
 
     def _get_param_map(self):
-        # These be used to fill in the configuration
-        # params with actual values
+        #this dict will be used to fill in the configuration
+        #params with actual values
         mp = dict()
         mp['DEST'] = self.appdir
         mp['SYSLOG'] = self.cfg.getboolean("default", "syslog")

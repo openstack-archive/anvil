@@ -46,11 +46,10 @@ DB_ACTIONS = {
             "--password=%PASSWORD%",
             "-e \"GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' identified by '%PASSWORD%';\"",
         ],
+        #we could do this in python directly, but executing allows us to not have to sudo the whole program
+        'host_adjust':  ['perl', '-p', '-i', '-e'] + ["'s/127.0.0.1/0.0.0.0/g'", '/etc/mysql/my.cnf'],
     },
 }
-
-# We could do this in python directly, but executing allows us to not have to sudo the whole program
-MYSQL_HOST_ADJUST = ['perl', '-p', '-i', '-e'] + ["'s/127.0.0.1/0.0.0.0/g'", '/etc/mysql/my.cnf']
 
 BASE_ERROR = 'Currently we do not know how to %s for database type [%s]'
 
@@ -94,6 +93,8 @@ class DBInstaller(ComponentBase, InstallComponent):
         pass
 
     def _get_install_params(self):
+        #this dictionary will be used for parameter replacement
+        #in pre-install and post-install sections
         out = dict()
         out['PASSWORD'] = self.cfg.getpw("passwords", "sql")
         out['BOOT_START'] = str(True).lower()
@@ -107,7 +108,7 @@ class DBInstaller(ComponentBase, InstallComponent):
         dbtype = self.cfg.get("db", "type")
         dbactions = DB_ACTIONS.get(dbtype)
         if(dbactions and dbactions.get('grant_all')):
-            #Update the DB to give user 'USER'@'%' full control of the all databases:
+            #update the DB to give user 'USER'@'%' full control of the all databases:
             grant_cmd = dbactions.get('grant_all')
             params = self._get_install_params()
             cmds = list()
@@ -120,8 +121,9 @@ class DBInstaller(ComponentBase, InstallComponent):
             execute_template(cmds, params, shell=True)
         #special mysql actions
         if(dbtype == MYSQL):
-            cmd = MYSQL_HOST_ADJUST
-            execute(*cmd, run_as_root=True, shell=True)
+            cmd = dbactions.get('host_adjust')
+            if(cmd):
+                execute(*cmd, run_as_root=True, shell=True)
 
     def _pre_install(self, pkgs):
         #run whatever the pkgs have specified
@@ -137,19 +139,16 @@ class DBInstaller(ComponentBase, InstallComponent):
         #now install the pkgs
         installparams = self._get_install_params()
         self.packager.install_batch(pkgs, installparams)
+        #add trace used to remove the pkgs
         for name in pkgnames:
             packageinfo = pkgs.get(name)
             version = packageinfo.get("version", "")
             remove = packageinfo.get("removable", True)
-            # This trace is used to remove the pkgs
             self.tracewriter.package_install(name, remove, version)
-        dirsmade = mkdirslist(self.tracedir)
-        # This trace is used to remove the dirs created
-        self.tracewriter.dir_made(*dirsmade)
         #run any post-installs cmds
         self._post_install(pkgs)
-        # TODO - stop it (since it usually autostarts)
-        # so that we control the start/stop, not it
+        #todo - stop it (since it usually autostarts)
+        #so that we control the start/stop, not the distro...
         return self.tracedir
 
 
@@ -159,32 +158,36 @@ class DBRuntime(ComponentBase, RuntimeComponent):
         self.tracereader = TraceReader(self.tracedir, Trace.IN_TRACE)
 
     def start(self):
+        #ensure it was actually installed
         pkgsinstalled = self.tracereader.packages_installed()
         if(len(pkgsinstalled) == 0):
             msg = "Can not start %s since it was not installed" % (TYPE)
             raise StartException(msg)
+        #figure out how to start it
         dbtype = cfg.get("db", "type")
-        typeactions = DB_ACTIONS.get(dbtype.lower())
-        if(typeactions == None):
+        typeactions = DB_ACTIONS.get(dbtype)
+        if(typeactions == None or not typeactions.get('start')):
             msg = BASE_ERROR % ('start', dbtype)
             raise NotImplementedError(msg)
+        #run whatever the command is to get it going
         startcmd = typeactions.get('start')
-        if(startcmd):
-            execute(*startcmd, run_as_root=True)
+        execute(*startcmd, run_as_root=True)
         return None
 
     def stop(self):
+        #make sure it was actually installed
         pkgsinstalled = self.tracereader.packages_installed()
         if(len(pkgsinstalled) == 0):
             msg = "Can not stop %s since it was not installed" % (TYPE)
             raise StopException(msg)
+        #figure out how to stop it
         dbtype = cfg.get("db", "type")
-        typeactions = DB_ACTIONS.get(dbtype.lower())
-        if(typeactions == None):
-            msg = BASE_ERROR % ('start', dbtype)
+        typeactions = DB_ACTIONS.get(dbtype)
+        if(typeactions == None or not typeactions.get('stop')):
+            msg = BASE_ERROR % ('stop', dbtype)
+        #run whatever the command is to get it stopped
         stopcmd = typeactions.get('stop')
-        if(stopcmd):
-            execute(*stopcmd, run_as_root=True)
+        execute(*stopcmd, run_as_root=True)
         return None
 
 
