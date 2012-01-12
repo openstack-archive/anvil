@@ -139,10 +139,7 @@ class DBInstaller(ComponentBase, InstallComponent):
         self.packager.install_batch(pkgs, installparams)
         #add trace used to remove the pkgs
         for name in pkgnames:
-            packageinfo = pkgs.get(name)
-            version = packageinfo.get("version", "")
-            remove = packageinfo.get("removable", True)
-            self.tracewriter.package_install(name, remove, version)
+            self.tracewriter.package_install(name, pkgs.get(name))
         #run any post-installs cmds
         self._post_install(pkgs)
         #todo - stop it (since it usually autostarts)

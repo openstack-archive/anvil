@@ -224,10 +224,7 @@ class GlanceInstaller(GlanceBase, InstallComponent):
         Packager.post_install(pkgs, self._get_param_map())
         #add trace used to remove the pkgs
         for name in pkgnames:
-            packageinfo = pkgs.get(name)
-            version = packageinfo.get("version", "")
-            remove = packageinfo.get("removable", True)
-            self.tracewriter.package_install(name, remove, version)
+            self.tracewriter.package_install(name, pkgs.get(name))
         #make a directory for the python trace file (if its not already there)
         dirsmade = mkdirslist(self.tracedir)
         #this trace is used to remove the dirs created

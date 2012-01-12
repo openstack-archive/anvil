@@ -70,70 +70,51 @@ class TraceWriter():
             return
         else:
             dirs = mkdirslist(self.root)
-            fn = touch_trace(self.root, self.name)
+            self.fn = touch_trace(self.root, self.name)
             self.tracer = Trace(fn)
-            cmd = TRACE_VERSION
-            action = str(TRACE_VER)
-            self.tracer.trace(cmd, action)
-            cmd = DIR_MADE
-            for d in dirs:
-                action = d
-                self.tracer.trace(cmd, action)
+            self.tracer.trace(TRACE_VERSION, str(TRACE_VER))
+            if(len(dirs)):
+                for d in dirs:
+                    self.tracer.trace(DIR_MADE, d)
             self.started = True
 
     def py_install(self, where):
         self._start()
-        cmd = PYTHON_INSTALL
-        action = where
-        self.tracer.trace(cmd, action)
+        self.tracer.trace(PYTHON_INSTALL, where)
 
     def cfg_write(self, cfgfile):
         self._start()
-        cmd = CFG_WRITING_FILE
-        action = cfgfile
-        self.tracer.trace(cmd, action)
+        self.tracer.trace(CFG_WRITING_FILE, cfgfile)
 
     def downloaded(self, tgt, fromwhere):
         self._start()
-        cmd = DOWNLOADED
-        action = dict()
-        action['target'] = tgt
-        action['from'] = fromwhere
-        store = json.dumps(action)
-        self.tracer.trace(cmd, store)
+        what = dict()
+        what['target'] = tgt
+        what['from'] = fromwhere
+        self.tracer.trace(DOWNLOADED, json.dumps(what))
 
     def dir_made(self, *dirs):
         self._start()
-        cmd = DIR_MADE
         for d in dirs:
-            action = d
-            self.tracer.trace(cmd, action)
+            self.tracer.trace(DIR_MADE, d)
 
     def file_touched(self, fn):
         self._start()
-        cmd = FILE_TOUCHED
-        action = fn
-        self.tracer.trace(cmd, action)
+        self.tracer.trace(FILE_TOUCHED, fn)
 
-    def package_install(self, name, removeable, version):
+    def package_install(self, name, pkg_info):
         self._start()
-        pkgmeta = dict()
-        pkgmeta['name'] = name
-        pkgmeta['removable'] = removeable
-        pkgmeta['version'] = version
-        tracedata = json.dumps(pkgmeta)
-        cmd = PKG_INSTALL
-        action = tracedata
-        self.tracer.trace(cmd, action)
+        what = dict()
+        what['name'] = name
+        what['pkg_meta'] = pkg_info
+        self.tracer.trace(PKG_INSTALL, json.dumps(what))
 
     def started_info(self, name, info_fn):
         self._start()
-        cmd = AP_STARTED
-        out = dict()
-        out['name'] = name
-        out['trace_fn'] = info_fn
-        action = json.dumps(out)
-        self.tracer.trace(cmd, action)
+        data = dict()
+        data['name'] = name
+        data['trace_fn'] = info_fn
+        self.tracer.trace(AP_STARTED, json.dumps(data))
 
 
 class TraceReader():
@@ -209,28 +190,21 @@ class TraceReader():
     def packages_installed(self):
         lines = self._read()
         pkgsinstalled = dict()
-        actions = list()
+        pkgjdata = list()
         for (cmd, action) in lines:
             if(cmd == PKG_INSTALL and len(action)):
-                actions.append(action)
-        for action in actions:
-            pv = json.loads(action)
-            if(type(pv) is dict):
-                name = pv.get("name", "")
-                remove = pv.get("removable", True)
-                version = pv.get("version", "")
-                if(remove and len(name)):
-                    if(len(version)):
-                        pkgsinstalled[name] = {"version": version}
-                    else:
-                        pkgsinstalled[name] = {}
+                pkgjdata.append(action)
+        for jdata in pkgjdata:
+            pkg_info = json.loads(jdata)
+            if(type(pkg_info) is dict):
+                name = pkg_info.get('name')
+                pkgsinstalled[name] = pkg_info.get('pkg_meta')
         return pkgsinstalled
 
 
 def trace_fn(rootdir, name):
     fullname = name + TRACE_EXT
-    tracefn = joinpths(rootdir, fullname)
-    return tracefn
+    return joinpths(rootdir, fullname)
 
 
 def touch_trace(rootdir, name):
