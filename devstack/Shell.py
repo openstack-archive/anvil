@@ -59,12 +59,28 @@ def execute(*cmd, **kwargs):
     if(process_input != None):
         LOG.debug('With stdin > %s' % (process_input))
 
-    _PIPE = subprocess.PIPE  # pylint: disable=E1101
+    stdin_fh = subprocess.PIPE
+    stdout_fh = subprocess.PIPE
+    stderr_fh = subprocess.PIPE
+    close_filedescriptors = True
+
+    if('stdout_fh' in kwargs.keys()):
+        stdout_fh = kwargs.get('stdout_fh')
+        LOG.debug("Redirecting stdout to file handle %s" % (stdout_fh))
+
+    if('stdin_fh' in kwargs.keys()):
+        stdin_fh = kwargs.get('stdin_fh')
+        LOG.debug("Redirecting stdin to file handle %s" % (stdin_fh))
+
+    if('stderr_fh' in kwargs.keys()):
+        stderr_fh = kwargs.get('stderr_fh')
+        LOG.debug("Redirecting stderr to file handle %s" % (stderr_fh))
+
     obj = subprocess.Popen(cmd,
-            stdin=_PIPE,
-            stdout=_PIPE,
-            stderr=_PIPE,
-            close_fds=True,
+            stdin=stdin_fh,
+            stdout=stdout_fh,
+            stderr=stderr_fh,
+            close_fds=close_filedescriptors,
             cwd=cwd,
             shell=shell)
 
@@ -74,8 +90,8 @@ def execute(*cmd, **kwargs):
     else:
         result = obj.communicate()
 
-    obj.stdin.close()  # pylint: disable=E1101
-    _returncode = obj.returncode  # pylint: disable=E1101
+    obj.stdin.close()
+    _returncode = obj.returncode
     LOG.debug('Cmd result had return code %s' % _returncode)
 
     if((not ignore_exit_code) and (_returncode not in check_exit_code)):

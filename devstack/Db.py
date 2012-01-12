@@ -116,7 +116,7 @@ class DBInstaller(ComponentBase, InstallComponent):
             })
             #shell seems to be needed here
             #since python escapes this to much...
-            execute_template(cmds, params, shell=True)
+            execute_template(*cmds, params=params, shell=True)
         #special mysql actions
         if(dbactions and dbtype == MYSQL):
             cmd = dbactions.get('host_adjust')
@@ -200,7 +200,7 @@ def drop_db(cfg, dbname):
             'cmd': dropcmd,
             'run_as_root': False,
         })
-        execute_template(cmds, params)
+        execute_template(*cmds, params=params)
     else:
         msg = BASE_ERROR % ('drop', dbtype)
         raise NotImplementedError(msg)
@@ -220,7 +220,7 @@ def create_db(cfg, dbname):
             'cmd': createcmd,
             'run_as_root': False,
         })
-        execute_template(cmds, params)
+        execute_template(*cmds, params=params)
     else:
         msg = BASE_ERROR % ('create', dbtype)
         raise NotImplementedError(msg)
