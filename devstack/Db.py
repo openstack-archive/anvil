@@ -67,13 +67,11 @@ class DBUninstaller(ComponentBase, UninstallComponent):
         #clean out removeable packages
         pkgsfull = self.tracereader.packages_installed()
         if(len(pkgsfull)):
-            am = len(pkgsfull)
-            LOG.info("Removing %s packages" % (am))
+            LOG.info("Removing %s packages" % (len(pkgsfull)))
             self.packager.remove_batch(pkgsfull)
         dirsmade = self.tracereader.dirs_made()
         if(len(dirsmade)):
-            am = len(dirsmade)
-            LOG.info("Removing %s created directories" % (am))
+            LOG.info("Removing %s created directories" % (len(dirsmade)))
             for dirname in dirsmade:
                 deldir(dirname)
                 LOG.info("Removed %s" % (dirname))
@@ -120,7 +118,7 @@ class DBInstaller(ComponentBase, InstallComponent):
             #since python escapes this to much...
             execute_template(cmds, params, shell=True)
         #special mysql actions
-        if(dbtype == MYSQL):
+        if(dbactions and dbtype == MYSQL):
             cmd = dbactions.get('host_adjust')
             if(cmd):
                 execute(*cmd, run_as_root=True, shell=True)
