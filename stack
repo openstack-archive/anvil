@@ -280,7 +280,7 @@ def main():
     #now do it!
     funcAction = ACTION_FUNC_MAP.get(action)
     LOG.info("Starting action [%s] on %s for operating system/distro [%s]" % (action, rcf8222date(), install_os))
-    resultList = funcAction(component_order, install_os, rootdir)
+    resultList = funcAction(components, install_os, rootdir)
     LOG.info("Finished action [%s] on %s" % (action, rcf8222date()))
     if(resultList):
         msg = "Check [%s] for traces of what happened." % (", ".join(resultList))
