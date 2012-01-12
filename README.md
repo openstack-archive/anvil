@@ -15,29 +15,31 @@ IMPORTANT: Be sure to carefully read *stack* and any other scripts you execute b
 
 In order to determine what *stack* can do run the following.
 
-    ./stack  --help
+    ./stack --help
  
 This will typically produce:
 
-    $ ./stack  --help
+    ./stack --help
     Usage: stack [options]
     
     Options:
+      --version             show program's version number and exit
       -h, --help            show this help message and exit
       -a ACTION, --action=ACTION
-                            action to perform, ie (start, stop, install,
+                            action to perform, ie (install, start, stop,
                             uninstall)
       -d DIR, --directory=DIR
                             root DIR for new components or DIR with existing
                             components (ACTION dependent)
       -c COMPONENT, --component=COMPONENT
-                           stack component, ie (rabbit, db, nova, keystone,
-                           horizon, quantum, glance, swift)
+                            stack component, ie (db, glance, horizon, keystone,
+                            nova, quantum, rabbit, swift)
+    
 
 # Stack prerequisites
 
 * easy_install termcolor (used for colored console logging)
-* easy_install netifaces (not used yet)
+* easy_install netifaces (used to determine host ip information)
 
 # Actions
 

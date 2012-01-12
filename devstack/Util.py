@@ -44,6 +44,10 @@ MASTER_BRANCH = "master"
 DB_DSN = '%s://%s:%s@%s/%s'
 PRE_INSTALL = 'pre-install'
 POST_INSTALL = 'post-install'
+IPV4 = 'IPv4'
+IPV6 = 'IPv6'
+DEFAULT_NET_INTERFACE = 'eth0'
+DEFAULT_NET_INTERFACE_IP_VERSION = IPV4
 
 #component name mappings
 NOVA = "nova"
@@ -215,11 +219,37 @@ def component_pths(root, compnent_type):
     return out
 
 
+def get_host_ip(cfg=None):
+    if(cfg):
+        ip = cfg.get('default', 'host_ip')
+        if(ip and len(ip)):
+            return ip
+    interfaces = get_interfaces()
+    def_info = interfaces.get(DEFAULT_NET_INTERFACE)
+    if(not def_info):
+        return None
+    ipinfo = def_info.get(DEFAULT_NET_INTERFACE_IP_VERSION)
+    if(not ipinfo):
+        return None
+    return ipinfo.get('addr')
+
+
 def get_interfaces():
     import netifaces
     interfaces = dict()
     for intfc in netifaces.interfaces():
-        interfaces[intfc] = netifaces.ifaddresses(intfc)
+        interface_info = dict()
+        interface_addresses = netifaces.ifaddresses(intfc)
+        ip6 = interface_addresses.get(netifaces.AF_INET6)
+        if(ip6 and len(ip6)):
+            #just take the first
+            interface_info[IPV6] = ip6[0]
+        ip4 = interface_addresses.get(netifaces.AF_INET)
+        if(ip4 and len(ip4)):
+            #just take the first
+            interface_info[IPV4] = ip4[0]
+        #there are others but this is good for now
+        interfaces[intfc] = interface_info
     return interfaces
 
 

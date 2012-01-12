@@ -18,6 +18,7 @@ import Logger
 import Component
 from Component import (ComponentBase, RuntimeComponent,
                        UninstallComponent, InstallComponent)
+import Packager
 import Util
 from Util import (RABBIT,
                   get_pkg_list)
@@ -78,23 +79,21 @@ class RabbitInstaller(ComponentBase, InstallComponent):
 
     def install(self):
         #just install the pkg
-        pkgs = get_pkg_list(self.os, TYPE)
-        pkgnames = pkgs.keys()
-        pkgnames.sort()
+        pkgs = get_pkg_list(self.distro, TYPE)
+        pkgnames = sorted(pkgs.keys())
         LOG.debug("Installing packages %s" % (", ".join(pkgnames)))
+        Packager.pre_install(pkgs)
         self.packager.install_batch(pkgs)
+        Packager.post_install(pkgs)
         for name in pkgnames:
-            packageinfo = pkgs.get(name)
-            version = packageinfo.get("version", "")
-            remove = packageinfo.get("removable", True)
-            # This trace is used to remove the pkgs
-            self.tracewriter.package_install(name, remove, version)
+            #this trace is used to remove the pkgs
+            self.tracewriter.package_install(name, pkgs.get(name))
         dirsmade = mkdirslist(self.tracedir)
-        # This trace is used to remove the dirs created
+        #this trace is used to remove the dirs created
         self.tracewriter.dir_made(*dirsmade)
         self._setup_pw()
-        # TODO - stop it (since it usually autostarts)
-        # so that we control the start/stop, not it
+        #TODO - stop it (since it usually autostarts)
+        #so that we control the start/stop, not it
         return self.tracedir
 
 

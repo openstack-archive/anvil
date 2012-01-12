@@ -46,7 +46,7 @@ import Trace
 
 LOG = Logger.getLogger("install")
 
-# This determines what classes to use to install/uninstall/...
+#this determines what classes to use to install/uninstall/...
 ACTION_CLASSES = {
     Util.INSTALL: {
         Util.NOVA: Nova.NovaInstaller,
@@ -90,7 +90,7 @@ ACTION_CLASSES = {
     },
 }
 
-# Actions which need dependent actions to occur
+#actions which need dependent actions to occur
 DEP_ACTIONS_NEEDED = set([Util.START, Util.STOP, Util.INSTALL])
 
 
@@ -179,7 +179,7 @@ def uninstall(components, distro, rootdir):
         instance.unconfigure()
         LOG.info("Uninstalling %s." % (c))
         instance.uninstall()
-    #Trash the root if we can
+    #trash the root if we can
     try:
         os.rmdir(rootdir)
     except OSError:
@@ -188,8 +188,45 @@ def uninstall(components, distro, rootdir):
     return None
 
 
+def resolve_dependencies(action, components):
+    if(action in DEP_ACTIONS_NEEDED):
+        new_components = list()
+        for c in components:
+            component_deps = list(set(Util.fetch_deps(c)))
+            if(len(component_deps)):
+                LOG.info("Having to %s [%s] since they are dependencies for %s." % (action, ", ".join(component_deps), c))
+                new_components = new_components + component_deps
+            new_components.append(c)
+        return set(new_components)
+    else:
+        return set(components)
+
+
+def check_root(action, rootdir):
+    if(action == Util.INSTALL and os.path.isdir(rootdir)):
+        LOG.error("Root directory [%s] already exists! Please remove it!" % (rootdir))
+        return False
+    else:
+        return True
+
+
+def prioritize_components(action, components):
+    #get the right component order (by priority)
+    mporder = dict()
+    for c in components:
+        priority = Util.NAMES_PRIORITY.get(c)
+        if(priority == None):
+            priority = sys.maxint
+        mporder[c] = priority
+    #sort by priority value
+    priority_order = sorted(mporder.iteritems(), key=operator.itemgetter(1))
+    #extract the right order
+    component_order = [x[0] for x in priority_order]
+    return component_order
+
+
 #what functions to activate for each action
-FUNC_MAP = {
+ACTION_FUNC_MAP = {
     Util.INSTALL: install,
     Util.UNINSTALL: uninstall,
     Util.START: start,
@@ -205,8 +242,8 @@ def main():
         #assume them all??
         components = list(Util.NAMES)
     components = set([x.lower() for x in components])
-    applicable = set(Util.NAMES).intersection(components)
-    if(len(applicable) == 0):
+    components = set(Util.NAMES).intersection(components)
+    if(len(components) == 0):
         LOG.error("No valid components specified!")
         LOG.info("Perhaps you should try %s --help" % (me))
         return 1
@@ -218,15 +255,15 @@ def main():
         LOG.info("Perhaps you should try %s --help" % (me))
         return 1
     rootdir = args.get("dir") or ""
-    if(len(rootdir) == 0):
+    if(len(rootdir) == 0 or not check_root(action, rootdir)):
         LOG.error("No valid root directory specified!")
         LOG.info("Perhaps you should try %s --help" % (me))
         return 1
     #check if implemented yet
-    if(not action in ACTION_CLASSES or not action in FUNC_MAP):
+    if(not action in ACTION_CLASSES or not action in ACTION_FUNC_MAP):
         LOG.error("Action %s not implemented yet!" % (action))
         return 1
-    #ensure os is known
+    #ensure os/distro is known
     (install_os, plt) = determine_os()
     if(install_os == None):
         LOG.error("Unsupported operating system/distro: %s" % (plt))
@@ -236,27 +273,14 @@ def main():
         return 1
     #start it
     welcome(action)
-    # need to figure out deps for components (if any)
-    if(action in DEP_ACTIONS_NEEDED):
-        deps = list()
-        for c in applicable:
-            cdeps = list(set(Util.fetch_deps(c)))
-            if(len(cdeps)):
-                LOG.info("Having to %s [%s] since they are dependencies for %s." % (action, ", ".join(cdeps), c))
-                deps = deps + cdeps
-            deps = deps + [c]
-        applicable = set(deps)
+    #need to figure out dependencies for components (if any)
+    components = resolve_dependencies(action, components)
     #get the right component order (by priority)
-    mporder = dict()
-    for c in applicable:
-        mporder[c] = Util.NAMES_PRIORITY.get(c)
-    #sort by priority value
-    priororder = sorted(mporder.iteritems(), key=operator.itemgetter(1))
-    componentorder = [x[0] for x in priororder]
+    components = prioritize_components(action, components)
     #now do it!
-    funcAction = FUNC_MAP.get(action)
+    funcAction = ACTION_FUNC_MAP.get(action)
     LOG.info("Starting action [%s] on %s for operating system/distro [%s]" % (action, rcf8222date(), install_os))
-    resultList = funcAction(componentorder, install_os, rootdir)
+    resultList = funcAction(components, install_os, rootdir)
     LOG.info("Finished action [%s] on %s" % (action, rcf8222date()))
     if(resultList):
         msg = "Check [%s] for traces of what happened." % (", ".join(resultList))

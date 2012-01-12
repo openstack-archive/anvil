@@ -40,8 +40,7 @@ class AptPackager(Packager.Packager):
         return cmd
 
     def _do_cmd(self, base_cmd, pkgs):
-        pkgnames = pkgs.keys()
-        pkgnames.sort()
+        pkgnames = sorted(pkgs.keys())
         cmds = []
         for name in pkgnames:
             version = None

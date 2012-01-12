@@ -60,9 +60,9 @@ class KeystoneInstaller(KeystoneBase, Component.InstallComponent):
 
     def download(self):
         dirsmade = Downloader.download(self.appdir, self.gitloc, self.brch)
-        # This trace isn't used yet but could be
+        #this trace isn't used yet but could be
         self.tracewriter.downloaded(self.appdir, self.gitloc)
-        # This trace is used to remove the dirs created
+        #this trace is used to remove the dirs created
         self.tracewriter.dir_made(*dirsmade)
         return self.tracedir
 
@@ -73,16 +73,13 @@ class KeystoneInstaller(KeystoneBase, Component.InstallComponent):
         LOG.debug("Installing packages %s" % (", ".join(pkgnames)))
         self.packager.install_batch(pkgs)
         for name in pkgnames:
-            packageinfo = pkgs.get(name)
-            version = packageinfo.get("version", "")
-            remove = packageinfo.get("removable", True)
-            # This trace is used to remove the pkgs
-            self.tracewriter.package_install(name, remove, version)
+            #this trace is used to remove the pkgs
+            self.tracewriter.package_install(name, pkgs.get(name))
         dirsmade = mkdirslist(self.tracedir)
-        # This trace is used to remove the dirs created
+        #this trace is used to remove the dirs created
         self.tracewriter.dir_made(*dirsmade)
         recordwhere = Trace.touch_trace(self.tracedir, Trace.PY_TRACE)
-        # This trace is used to remove the trace created
+        #this trace is used to remove the trace created
         self.tracewriter.py_install(recordwhere)
         (sysout, stderr) = execute(*PY_INSTALL, cwd=self.appdir, run_as_root=True)
         write_file(recordwhere, sysout)
@@ -108,7 +105,7 @@ class KeystoneInstaller(KeystoneBase, Component.InstallComponent):
             self._config_apply(contents, fn)
             LOG.info("Writing configuration file %s" % (tgtfn))
             write_file(tgtfn, contents)
-            # This trace is used to remove the files configured
+            #this trace is used to remove the files configured
             self.tracewriter.cfg_write(tgtfn)
         return self.tracedir
 
@@ -146,8 +143,8 @@ class KeystoneInstaller(KeystoneBase, Component.InstallComponent):
                 self.tracewriter.file_touched(val)
 
     def _get_param_map(self, fn):
-        # These be used to fill in the configuration
-        # params with actual values
+        #these be used to fill in the configuration
+        #params with actual values
         mp = dict()
         mp['DEST'] = self.appdir
         mp['SQL_CONN'] = get_dbdsn(self.cfg, DB_NAME)
