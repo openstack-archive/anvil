@@ -60,7 +60,7 @@ APP_OPTIONS = {
 class GlanceBase(Component.ComponentBase):
     def __init__(self, *args, **kargs):
         Component.ComponentBase.__init__(self, TYPE, *args, **kargs)
-        #note not config
+        #note not config that parent sets
         self.cfgdir = joinpths(self.appdir, "etc")
 
 

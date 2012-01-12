@@ -1,5 +1,7 @@
 #!/bin/bash
+
 BIN_DIR=${BIN_DIR:-.}
+
 # Tenants
 $BIN_DIR/keystone-manage $* tenant add admin
 $BIN_DIR/keystone-manage $* tenant add demo

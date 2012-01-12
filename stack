@@ -110,9 +110,9 @@ def get_pkg_manager(distro):
 
 
 def get_config():
-    LOG.info("Loading config from %s" % (Util.CFG_LOC))
+    LOG.info("Loading config from %s" % (Util.STACK_CFG_LOC))
     cfg = Config.EnvConfigParser()
-    cfg.read(Util.CFG_LOC)
+    cfg.read(Util.STACK_CFG_LOC)
     return cfg
 
 
@@ -211,8 +211,8 @@ def main():
         LOG.info("Perhaps you should try %s --help" % (me))
         return 1
     action = args.get("action") or ""
-    action = action.strip()
-    action = action.lower()
+    #normalize the action
+    action = action.strip().lower()
     if(not (action in Util.ACTIONS)):
         LOG.error("No valid action specified!")
         LOG.info("Perhaps you should try %s --help" % (me))
@@ -236,8 +236,8 @@ def main():
         return 1
     #start it
     welcome(action)
+    # need to figure out deps for components (if any)
     if(action in DEP_ACTIONS_NEEDED):
-        # need to figure out deps for components (if any)
         deps = list()
         for c in applicable:
             cdeps = list(set(Util.fetch_deps(c)))
@@ -253,6 +253,7 @@ def main():
     #sort by priority value
     priororder = sorted(mporder.iteritems(), key=operator.itemgetter(1))
     componentorder = [x[0] for x in priororder]
+    #now do it!
     funcAction = FUNC_MAP.get(action)
     LOG.info("Starting action [%s] on %s for operating system/distro [%s]" % (action, rcf8222date(), install_os))
     resultList = funcAction(componentorder, install_os, rootdir)

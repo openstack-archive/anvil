@@ -105,7 +105,7 @@ WELCOME_MAP = {
 
 #where we should get the config file...
 STACK_CONFIG_DIR = "conf"
-CFG_LOC = joinpths(STACK_CONFIG_DIR, "stack.ini")
+STACK_CFG_LOC = joinpths(STACK_CONFIG_DIR, "stack.ini")
 
 #this regex is how we match python platform output to
 #a known constant
@@ -269,10 +269,24 @@ def get_pkg_list(distro, component):
     #load + merge them
     for fn in fns:
         js = load_json(fn)
-        if(type(js) is dict):
-            distromp = js.get(distro)
-            if(distromp != None and type(distromp) is dict):
-                all_pkgs = dict(all_pkgs.items() + distromp.items())
+        distro_pkgs = js.get(distro)
+        if(distro_pkgs and len(distro_pkgs)):
+            combined = dict(all_pkgs)
+            for (pkgname, pkginfo) in distro_pkgs.items():
+                if(pkgname in all_pkgs.keys()):
+                    oldpkginfo = all_pkgs.get(pkgname) or dict()
+                    newpkginfo = dict(oldpkginfo)
+                    for (infokey, infovalue) in pkginfo.items():
+                        #this is expected to be a list of cmd actions
+                        #so merge that accordingly
+                        if(infokey == 'pre-install' or infokey == 'post-install'):
+                            oldinstalllist = oldpkginfo.get(infokey) or []
+                            infovalue = oldinstalllist + infovalue
+                        newpkginfo[infokey] = infovalue
+                    combined[pkgname] = newpkginfo
+                else:
+                    combined[pkgname] = pkginfo
+            all_pkgs = combined
     return all_pkgs
 
 

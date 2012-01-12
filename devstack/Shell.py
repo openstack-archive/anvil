@@ -38,20 +38,18 @@ def execute(*cmd, **kwargs):
     cwd = kwargs.pop('cwd', None)
     ignore_exit_code = False
 
-    if isinstance(check_exit_code, bool):
+    if(isinstance(check_exit_code, bool)):
         ignore_exit_code = not check_exit_code
         check_exit_code = [0]
-    elif isinstance(check_exit_code, int):
+    elif(isinstance(check_exit_code, int)):
         check_exit_code = [check_exit_code]
 
     run_as_root = kwargs.pop('run_as_root', False)
     shell = kwargs.pop('shell', False)
-
     if run_as_root:
         cmd = ROOT_HELPER + list(cmd)
 
     cmd = map(str, cmd)
-
     if(shell):
         cmd = " ".join(cmd)
         LOG.debug('Running shell cmd: [%s]' % (cmd))
@@ -71,7 +69,7 @@ def execute(*cmd, **kwargs):
             shell=shell)
 
     result = None
-    if process_input is not None:
+    if(process_input != None):
         result = obj.communicate(str(process_input))
     else:
         result = obj.communicate()
@@ -80,14 +78,16 @@ def execute(*cmd, **kwargs):
     _returncode = obj.returncode  # pylint: disable=E1101
     LOG.debug('Cmd result had return code %s' % _returncode)
 
-    if not ignore_exit_code \
-        and _returncode not in check_exit_code:
+    if((not ignore_exit_code) and (_returncode not in check_exit_code)):
         (stdout, stderr) = result
+        ecmd = cmd
+        if(not shell):
+            ecmd = ' '.join(cmd)
         raise ProcessExecutionError(
                 exit_code=_returncode,
                 stdout=stdout,
                 stderr=stderr,
-                cmd=' '.join(cmd))
+                cmd=ecmd)
     else:
         return result
 
@@ -139,6 +139,13 @@ def mkdirslist(pth):
 
 def load_json(fn):
     data = load_file(fn)
+    lines = data.splitlines()
+    nlines = list()
+    for line in lines:
+        if(line.lstrip().startswith('#')):
+            continue
+        nlines.append(line)
+    data = os.linesep.join(nlines)
     return json.loads(data)
 
 

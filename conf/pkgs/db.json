@@ -1,3 +1,7 @@
+#this is a extended json package definition file - we allow simple comments (starting with a hash symbol)
+#for a given distro, when the component is installed
+#the following packages will be installed with
+#the distribution specific package installation class
 {
     "ubuntu-oneiric": {
         "mysql-client-5.1": {
@@ -21,6 +25,7 @@
             "removable": true,
             "pre-install": [
                 {
+                    #this apparently is a action needed for ubuntu/debian to not prompt for passwords...
                     "run_as_root": true,
                     "cmd": [
                         "debconf-set-selections"

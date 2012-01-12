@@ -49,6 +49,9 @@ DB_ACTIONS = {
     },
 }
 
+# We could do this in python directly, but executing allows us to not have to sudo the whole program
+MYSQL_HOST_ADJUST = ['perl', '-p', '-i', '-e'] + ["'s/127.0.0.1/0.0.0.0/g'", '/etc/mysql/my.cnf']
+
 BASE_ERROR = 'Currently we do not know how to %s for database type [%s]'
 
 
@@ -117,9 +120,8 @@ class DBInstaller(ComponentBase, InstallComponent):
             execute_template(cmds, params, shell=True)
         #special mysql actions
         if(dbtype == MYSQL):
-            # We could do this in python directly, but executing allows us to not have to sudo the whole program
-            cmd = ['perl', '-p', '-i', '-e'] + ["'s/127.0.0.1/0.0.0.0/g'", '/etc/mysql/my.cnf']
-            execute(*cmd, run_as_root=True)
+            cmd = MYSQL_HOST_ADJUST
+            execute(*cmd, run_as_root=True, shell=True)
 
     def _pre_install(self, pkgs):
         #run whatever the pkgs have specified
