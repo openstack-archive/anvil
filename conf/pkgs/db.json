@@ -51,16 +51,20 @@
             "removable": true,
             "post-install": [
                 { 
+                    #Make sure it'll start on rebuut
+                    "run_as_root": true,
+                    "cmd" : [ "chkconfig", "mysqld", "on"]
+                },
+                { 
                     #Start the mysql service
                     "run_as_root": true,
                     "cmd" : [ "service", "mysqld", "start"]
                 },
                 {  
                     # Set the root password
-                    "cmd" : [ "mysql", "-u", "root"],
-                    "stdin": [
-                       "SET PASSWORD FOR 'root'@'localhost' = PASSWORD('%PASSWORD%');"
-                    ]
+                    "run_as_root": true,
+                    "cmd" : [ "mysqladmin", "-u", "root", 
+                               "password", "%PASSWORD%" ]
                 }
             ]
         }
