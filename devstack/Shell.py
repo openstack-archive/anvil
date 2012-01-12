@@ -37,6 +37,7 @@ def execute(*cmd, **kwargs):
     check_exit_code = kwargs.pop('check_exit_code', [0])
     cwd = kwargs.pop('cwd', None)
     ignore_exit_code = False
+
     if isinstance(check_exit_code, bool):
         ignore_exit_code = not check_exit_code
         check_exit_code = [0]
@@ -51,9 +52,14 @@ def execute(*cmd, **kwargs):
 
     cmd = map(str, cmd)
 
-    LOG.debug(('Running cmd: [%s]') % (' '.join(cmd)))
+    if(shell):
+        cmd = " ".join(cmd)
+        LOG.debug('Running shell cmd: [%s]' % (cmd))
+    else:
+        LOG.debug('Running cmd: [%s]' % (' '.join(cmd)))
+
     if(process_input != None):
-        LOG.debug(('With stdin > %s') % (process_input))
+        LOG.debug('With stdin > %s' % (process_input))
 
     _PIPE = subprocess.PIPE  # pylint: disable=E1101
     obj = subprocess.Popen(cmd,
@@ -66,13 +72,14 @@ def execute(*cmd, **kwargs):
 
     result = None
     if process_input is not None:
-        result = obj.communicate(process_input)
+        result = obj.communicate(str(process_input))
     else:
         result = obj.communicate()
 
     obj.stdin.close()  # pylint: disable=E1101
     _returncode = obj.returncode  # pylint: disable=E1101
-    LOG.debug(('Cmd result had return code %s') % _returncode)
+    LOG.debug('Cmd result had return code %s' % _returncode)
+
     if not ignore_exit_code \
         and _returncode not in check_exit_code:
         (stdout, stderr) = result

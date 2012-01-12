@@ -36,21 +36,13 @@ DB_ACTIONS = {
         #hopefully these are distro independent
         'start': ["/etc/init.d/mysql", "start"],
         'stop': ["/etc/init.d/mysql", "stop"],
-        'create_db': ['mysql', '-u%USER%', '-p%PASSWORD%', '-e', 'CREATE DATABASE %DB%;'],
-        'drop_db': ['mysql', '-u%USER%', '-p%PASSWORD%', '-e', 'DROP DATABASE IF EXISTS %DB%;'], 
+        'create_db': ['mysql', '--user=%USER%', '--password=%PASSWORD%', '-e', 'CREATE DATABASE %DB%;'],
+        'drop_db': ['mysql', '--user=%USER%', '--password=%PASSWORD%', '-e', 'DROP DATABASE IF EXISTS %DB%;'], 
         'grant_all': [
             "mysql",
-            "-uroot",
-            "-p%PASSWORD%",
-            "-h127.0.0.1",
-            "-e",
-            "GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' identified by '%PASSWORD%';"
-        ],
-        'host_adjust': [
-            "sed",
-            "-i",
-            "'s/127.0.0.1/0.0.0.0/g'",
-            "/etc/mysql/my.cnf"
+            "--user=%USER%",
+            "--password=%PASSWORD%",
+            "-e \"GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' identified by '%PASSWORD%';\"",
         ],
     },
 }
@@ -109,25 +101,21 @@ class DBInstaller(ComponentBase, InstallComponent):
 
     def _post_install(self, pkgs):
         dbtype = self.cfg.get("db", "type")
+        dbactions = DB_ACTIONS.get(dbtype)
+        if(dbactions and dbactions.get('grant_all')):
+            #Update the DB to give user 'USER'@'%' full control of the all databases:
+            grant_cmd = dbactions.get('grant_all')
+            params = self._get_install_params()
+            cmds = list()
+            cmds.append({
+                'cmd': grant_cmd,
+                'run_as_root': False,
+            })
+            execute_template(cmds, params, shell=True)
         if(dbtype == 'mysql'):
-            grant_cmd = TYPE_ACTIONS.get('mysql').get('grant_all')
-            if(grant_cmd):
-                #Update the DB to give user 'USER'@'%' full control of the all databases:
-                user = self.cfg.get("db", "sql_user")
-                pw = self.cfg.get("passwords", "sql")
-                params = dict()
-                params['PASSWORD'] = pw
-                params['USER'] = pw
-                cmds = list()
-                cmds.append({
-                    'cmd': grant_cmd,
-                    'run_as_root': False,
-                })
-                execute_template(cmds, params)
-            # Edit /etc/mysql/my.cnf to change 'bind-address' from localhost (127.0.0.1) to any (0.0.0.0) 
-            contents = load_file("/etc/mysql/my.cnf")
-            re.sub(re.escape('127.0.0.1'), '0.0.0.0', contents)
-            write_file('/etc/mysql/my.cnf', contents)
+            # We could do this in python directly, but executing allows us to not have to sudo the whole program
+            cmd = ['perl', '-p', '-i', '-e'] + ["'s/127.0.0.1/0.0.0.0/g'", '/etc/mysql/my.cnf']
+            execute(*cmd, run_as_root=True)
 
     def _pre_install(self, pkgs):
         pkgnames = sorted(pkgs.keys())
@@ -141,11 +129,11 @@ class DBInstaller(ComponentBase, InstallComponent):
     def install(self):
         #just install the pkgs
         pkgs = get_pkg_list(self.distro, TYPE)
+        pkgnames = sorted(pkgs.keys())
+        LOG.info("Installing packages %s" % (", ".join(pkgnames)))
         #run any pre-installs cmds
         self._pre_install(pkgs)
         #now install the pkgs
-        pkgnames = sorted(pkgs.keys())
-        LOG.debug("Installing packages %s" % (", ".join(pkgnames)))
         installparams = self._get_install_params()
         self.packager.install_batch(pkgs, installparams)
         for name in pkgnames:
@@ -173,7 +161,7 @@ class DBRuntime(ComponentBase, RuntimeComponent):
             msg = "Can not start %s since it was not installed" % (TYPE)
             raise StartException(msg)
         dbtype = cfg.get("db", "type")
-        typeactions = TYPE_ACTIONS.get(dbtype.lower())
+        typeactions = DB_ACTIONS.get(dbtype.lower())
         if(typeactions == None):
             msg = BASE_ERROR % ('start', dbtype)
             raise NotImplementedError(msg)
@@ -188,7 +176,7 @@ class DBRuntime(ComponentBase, RuntimeComponent):
             msg = "Can not stop %s since it was not installed" % (TYPE)
             raise StopException(msg)
         dbtype = cfg.get("db", "type")
-        typeactions = TYPE_ACTIONS.get(dbtype.lower())
+        typeactions = DB_ACTIONS.get(dbtype.lower())
         if(typeactions == None):
             msg = BASE_ERROR % ('start', dbtype)
         stopcmd = typeactions.get('stop')
@@ -199,18 +187,19 @@ class DBRuntime(ComponentBase, RuntimeComponent):
 
 def drop_db(cfg, dbname):
     dbtype = cfg.get("db", "type")
-    if(dbtype == 'mysql'):
-        basecmd = TYPE_ACTIONS.get('mysql').get('drop_db')
-        if(basecmd):
+    dbactions = DB_ACTIONS.get(dbtype)
+    if(dbactions and dbactions.get('drop_db')):
+        dropcmd = dbactions.get('drop_db')
+        if(dropcmd):
             user = cfg.get("db", "sql_user")
             pw = cfg.get("passwords", "sql")
             params = dict()
             params['PASSWORD'] = pw
-            params['USER'] = pw
+            params['USER'] = user
             params['DB'] = dbname
             cmds = list()
             cmds.append({
-                'cmd': basecmd,
+                'cmd': dropcmd,
                 'run_as_root': False,
             })
             execute_template(cmds, params)
@@ -220,18 +209,19 @@ def drop_db(cfg, dbname):
 
 def create_db(cfg, dbname):
     dbtype = cfg.get("db", "type")
-    if(dbtype == 'mysql'):
-        basecmd = TYPE_ACTIONS.get('mysql').get('create_db')
-        if(basecmd):
+    dbactions = DB_ACTIONS.get(dbtype)
+    if(dbactions and dbactions.get('create_db')):
+        createcmd = dbactions.get('create_db')
+        if(createcmd):
             user = cfg.get("db", "sql_user")
             pw = cfg.get("passwords", "sql")
             params = dict()
             params['PASSWORD'] = pw
-            params['USER'] = pw
+            params['USER'] = user
             params['DB'] = dbname
             cmds = list()
             cmds.append({
-                'cmd': basecmd,
+                'cmd': createcmd,
                 'run_as_root': False,
             })
             execute_template(cmds, params)

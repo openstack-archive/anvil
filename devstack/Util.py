@@ -165,13 +165,11 @@ REGEX_MATCHER = re.compile("^/(.*?)/([a-z]*)$")
 LOG = Logger.getLogger("install.util")
 
 
-def execute_template(cmds, params_replacements=None):
+def execute_template(cmds, params_replacements=None, shell=False):
     if(not cmds or len(cmds) == 0):
         return
     for cmdinfo in cmds:
         cmd_to_run_templ = cmdinfo.get("cmd")
-        if(not cmd_to_run_templ):
-            continue
         cmd_to_run = list()
         for piece in cmd_to_run_templ:
             if(params_replacements and len(params_replacements)):
@@ -189,7 +187,7 @@ def execute_template(cmds, params_replacements=None):
                     stdin_full.append(piece)
             stdin = joinlinesep(stdin_full)
         root_run = cmdinfo.get('run_as_root', False)
-        execute(*cmd_to_run, process_input=stdin, run_as_root=root_run)
+        execute(*cmd_to_run, process_input=stdin, run_as_root=root_run, shell=shell)
 
 
 def fetch_deps(component, add=False):
@@ -283,9 +281,8 @@ def joinlinesep(*pieces):
 
 
 def param_replace(text, replacements):
-    if(not replacements or len(replacements) == 0 or len(text) == 0):
-        return text
-
+    LOG.debug("Performing parameter replacements on %s" % (text))
+    
     def replacer(m):
         org = m.group()
         name = m.group(1)
@@ -293,6 +290,8 @@ def param_replace(text, replacements):
         if(v == None):
             msg = "No replacement found for parameter %s" % (org)
             raise NoReplacementException(msg)
+        else:
+            LOG.debug("Replacing [%s] with [%s]" % (org, str(v)))
         return str(v)
 
     ntext = re.sub("%([\\w\\d]+?)%", replacer, text)
