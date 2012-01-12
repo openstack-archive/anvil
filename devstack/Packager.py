@@ -46,7 +46,7 @@ def pre_install(pkgs, installparams=None):
         preinstallcmds = packageinfo.get(Util.PRE_INSTALL)
         if(preinstallcmds and len(preinstallcmds)):
             LOG.info("Running pre-install commands for package %s." % (name))
-            execute_template(preinstallcmds, installparams)
+            execute_template(*preinstallcmds, params=installparams)
 
 
 def post_install(pkgs, installparams=None):
@@ -56,4 +56,4 @@ def post_install(pkgs, installparams=None):
         postinstallcmds = packageinfo.get(Util.POST_INSTALL)
         if(postinstallcmds and len(postinstallcmds)):
             LOG.info("Running post-install commands for package %s." % (name))
-            execute_template(postinstallcmds, installparams)
+            execute_template(*postinstallcmds, params=installparams)

@@ -29,6 +29,7 @@ from Shell import (mkdirslist, execute, deldir)
 
 LOG = Logger.getLogger("install.rabbit")
 TYPE = RABBIT
+#hopefully these are distro independent..
 START_CMD = ["/etc/init.d/rabbitmq-server", "start"]
 STOP_CMD = ["/etc/init.d/rabbitmq-server", "stop"]
 PWD_CMD = ['rabbitmqctl', 'change_password', 'guest']

@@ -169,9 +169,10 @@ REGEX_MATCHER = re.compile("^/(.*?)/([a-z]*)$")
 LOG = Logger.getLogger("install.util")
 
 
-def execute_template(cmds, params_replacements=None, shell=False):
+def execute_template(*cmds, **kargs):
     if(not cmds or len(cmds) == 0):
         return
+    params_replacements = kargs.pop('params')
     for cmdinfo in cmds:
         cmd_to_run_templ = cmdinfo.get("cmd")
         cmd_to_run = list()
@@ -191,7 +192,7 @@ def execute_template(cmds, params_replacements=None, shell=False):
                     stdin_full.append(piece)
             stdin = joinlinesep(stdin_full)
         root_run = cmdinfo.get('run_as_root', False)
-        execute(*cmd_to_run, process_input=stdin, run_as_root=root_run, shell=shell)
+        execute(*cmd_to_run, process_input=stdin, **kargs)
 
 
 def fetch_deps(component, add=False):
