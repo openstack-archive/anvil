@@ -24,6 +24,8 @@ import Util
 from Util import (DB,
                   get_pkg_list,
                   execute_template)
+import Exceptions
+from Exceptions import StartException, StopException, StatusException
 import Trace
 from Trace import (TraceWriter, TraceReader)
 import Shell
@@ -35,9 +37,11 @@ TYPE = DB
 MYSQL = 'mysql'
 DB_ACTIONS = {
     MYSQL: {
-        #hopefully these are distro independent
-        'start': ["/etc/init.d/mysql", "start"],
-        'stop': ["/etc/init.d/mysql", "stop"],
+        #hopefully these are distro independent, these should be since they are invoking system init scripts
+        'start': ["service", "mysql", 'start'],
+        'stop': ["service", 'mysql', "stop"],
+        'status': ["service", 'mysql', "status"],
+        #
         'create_db': ['mysql', '--user=%USER%', '--password=%PASSWORD%', '-e', 'CREATE DATABASE %DB%;'],
         'drop_db': ['mysql', '--user=%USER%', '--password=%PASSWORD%', '-e', 'DROP DATABASE IF EXISTS %DB%;'],
         'grant_all': [
@@ -81,6 +85,7 @@ class DBInstaller(ComponentBase, InstallComponent):
     def __init__(self, *args, **kargs):
         ComponentBase.__init__(self, TYPE, *args, **kargs)
         self.tracewriter = TraceWriter(self.tracedir, Trace.IN_TRACE)
+        self.runtime = DBRuntime(*args, **kargs)
 
     def download(self):
         #nothing to download, we are just a pkg
@@ -141,8 +146,8 @@ class DBInstaller(ComponentBase, InstallComponent):
             self.tracewriter.package_install(name, pkgs.get(name))
         #run any post-installs cmds
         self._post_install(pkgs)
-        #todo - stop it (since it usually autostarts)
-        #so that we control the start/stop, not the distro...
+        #it should be started now, if not start it
+        self.runtime.start()
         return self.tracedir
 
 
@@ -158,14 +163,16 @@ class DBRuntime(ComponentBase, RuntimeComponent):
             msg = "Can not start %s since it was not installed" % (TYPE)
             raise StartException(msg)
         #figure out how to start it
-        dbtype = cfg.get("db", "type")
+        dbtype = self.cfg.get("db", "type")
         typeactions = DB_ACTIONS.get(dbtype)
         if(typeactions == None or not typeactions.get('start')):
             msg = BASE_ERROR % ('start', dbtype)
             raise NotImplementedError(msg)
-        #run whatever the command is to get it going
-        startcmd = typeactions.get('start')
-        execute(*startcmd, run_as_root=True)
+        #check if already going
+        if(self.status().find('start') == -1):
+            #run whatever the command is to get it going
+            startcmd = typeactions.get('start')
+            execute(*startcmd, run_as_root=True)
         return None
 
     def stop(self):
@@ -175,14 +182,32 @@ class DBRuntime(ComponentBase, RuntimeComponent):
             msg = "Can not stop %s since it was not installed" % (TYPE)
             raise StopException(msg)
         #figure out how to stop it
-        dbtype = cfg.get("db", "type")
+        dbtype = self.cfg.get("db", "type")
         typeactions = DB_ACTIONS.get(dbtype)
         if(typeactions == None or not typeactions.get('stop')):
             msg = BASE_ERROR % ('stop', dbtype)
-        #run whatever the command is to get it stopped
-        stopcmd = typeactions.get('stop')
-        execute(*stopcmd, run_as_root=True)
+            raise NotImplementedError(msg)
+        #check if already stopped
+        if(self.status().find('stop') == -1):
+            #run whatever the command is to get it stopped
+            stopcmd = typeactions.get('stop')
+            execute(*stopcmd, run_as_root=True)
         return None
+
+    def status(self):
+        #make sure it was actually installed
+        pkgsinstalled = self.tracereader.packages_installed()
+        if(len(pkgsinstalled) == 0):
+            msg = "Can not check the status of %s since it was not installed" % (TYPE)
+            raise StatusException(msg)
+        #figure out how to get the status of it
+        dbtype = self.cfg.get("db", "type")
+        if(typeactions == None or not typeactions.get('status')):
+            msg = BASE_ERROR % ('status', dbtype)
+            raise NotImplementedError(msg)
+        statuscmd = typeactions.get('status')
+        (sysout, stderr) = execute(*statuscmd, run_as_root=True)
+        return sysout.strip()
 
 
 def drop_db(cfg, dbname):

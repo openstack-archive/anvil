@@ -192,7 +192,7 @@ def execute_template(*cmds, **kargs):
                     stdin_full.append(piece)
             stdin = joinlinesep(stdin_full)
         root_run = cmdinfo.get('run_as_root', False)
-        execute(*cmd_to_run, process_input=stdin, **kargs)
+        execute(*cmd_to_run, run_as_root=root_run, process_input=stdin, **kargs)
 
 
 def fetch_deps(component, add=False):

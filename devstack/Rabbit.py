@@ -18,6 +18,8 @@ import Logger
 import Component
 from Component import (ComponentBase, RuntimeComponent,
                        UninstallComponent, InstallComponent)
+import Exceptions
+from Exceptions import StartException, StopException, StatusException
 import Packager
 import Util
 from Util import (RABBIT,
@@ -29,9 +31,11 @@ from Shell import (mkdirslist, execute, deldir)
 
 LOG = Logger.getLogger("install.rabbit")
 TYPE = RABBIT
+
 #hopefully these are distro independent..
-START_CMD = ["/etc/init.d/rabbitmq-server", "start"]
-STOP_CMD = ["/etc/init.d/rabbitmq-server", "stop"]
+START_CMD = ['service', "rabbitmq-server", "start"]
+STOP_CMD = ['service', "rabbitmq-server", "stop"]
+STATUS_CMD = ['service', "rabbitmq-server", "status"]
 PWD_CMD = ['rabbitmqctl', 'change_password', 'guest']
 
 
@@ -64,6 +68,7 @@ class RabbitInstaller(ComponentBase, InstallComponent):
     def __init__(self, *args, **kargs):
         ComponentBase.__init__(self, TYPE, *args, **kargs)
         self.tracewriter = TraceWriter(self.tracedir, Trace.IN_TRACE)
+        self.runtime = RabbitRuntime(*args, **kargs)
 
     def download(self):
         #nothing to download, we are just a pkg
@@ -93,8 +98,8 @@ class RabbitInstaller(ComponentBase, InstallComponent):
         #this trace is used to remove the dirs created
         self.tracewriter.dir_made(*dirsmade)
         self._setup_pw()
-        #TODO - stop it (since it usually autostarts)
-        #so that we control the start/stop, not it
+        #it should be started now, if not start it
+        self.runtime.start()
         return self.tracedir
 
 
@@ -108,13 +113,25 @@ class RabbitRuntime(ComponentBase, RuntimeComponent):
         if(len(pkgsinstalled) == 0):
             msg = "Can not start %s since it was not installed" % (TYPE)
             raise StartException(msg)
-        execute(*START_CMD, run_as_root=True)
+        #check if already going
+        if(self.status().find('start') == -1):
+            execute(*START_CMD, run_as_root=True)
         return None
+
+    def status(self):
+        pkgsinstalled = self.tracereader.packages_installed()
+        if(len(pkgsinstalled) == 0):
+            msg = "Can not check the status of %s since it was not installed" % (TYPE)
+            raise StatusException(msg)
+        (sysout, stderr) = execute(*STATUS_CMD, run_as_root=True)
+        return sysout.strip().lower()
 
     def stop(self):
         pkgsinstalled = self.tracereader.packages_installed()
         if(len(pkgsinstalled) == 0):
             msg = "Can not stop %s since it was not installed" % (TYPE)
             raise StopException(msg)
-        execute(*STOP_CMD, run_as_root=True)
+        #check if already stopped
+        if(self.status().find('stop') == -1):
+            execute(*STOP_CMD, run_as_root=True)
         return None

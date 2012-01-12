@@ -65,3 +65,9 @@ class RuntimeComponent():
 
     def stop(self):
         raise NotImplementedError()
+
+    #this should return a status string
+    #with "stop" in it if its stopped
+    #"start" in it if its started (not both)
+    def status(self):
+        raise NotImplementedError()
