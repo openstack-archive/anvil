@@ -68,7 +68,7 @@ class AptPackager(Packager.Packager):
         cmd = APT_GET + APT_AUTOREMOVE
         execute(*cmd, run_as_root=True)
 
-    def install_batch(self, pkgs, params=None):
+    def install_batch(self, pkgs):
         pkgnames = sorted(pkgs.keys())
         #form the needed commands
         cmds = []

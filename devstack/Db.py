@@ -135,8 +135,7 @@ class DBInstaller(ComponentBase, InstallComponent):
         #run any pre-installs cmds
         self._pre_install(pkgs)
         #now install the pkgs
-        installparams = self._get_install_params()
-        self.packager.install_batch(pkgs, installparams)
+        self.packager.install_batch(pkgs)
         #add trace used to remove the pkgs
         for name in pkgnames:
             self.tracewriter.package_install(name, pkgs.get(name))
