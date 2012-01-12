@@ -16,12 +16,13 @@
 import re
 
 import Logger
+import Packager
 import Component
 from Component import (ComponentBase, RuntimeComponent,
                        UninstallComponent, InstallComponent)
 import Util
 from Util import (DB,
-                  get_pkg_list, param_replace,
+                  get_pkg_list,
                   execute_template)
 import Trace
 from Trace import (TraceWriter, TraceReader)
@@ -31,8 +32,9 @@ from Shell import (mkdirslist, execute, deldir,
 
 LOG = Logger.getLogger("install.db")
 TYPE = DB
+MYSQL = 'mysql'
 DB_ACTIONS = {
-    'mysql': {
+    MYSQL: {
         #hopefully these are distro independent
         'start': ["/etc/init.d/mysql", "start"],
         'stop': ["/etc/init.d/mysql", "stop"],
@@ -88,10 +90,6 @@ class DBInstaller(ComponentBase, InstallComponent):
         #nothing to configure, we are just a pkg
         pass
 
-    def _run_install_cmds(self, cmds):
-        installparams = self._get_install_params()
-        return execute_template(cmds, installparams)
-
     def _get_install_params(self):
         out = dict()
         out['PASSWORD'] = self.cfg.getpw("passwords", "sql")
@@ -100,6 +98,9 @@ class DBInstaller(ComponentBase, InstallComponent):
         return out
 
     def _post_install(self, pkgs):
+        #run whatever the pkgs have specified
+        Packager.post_install(pkgs, self._get_install_params())
+        #extra actions to ensure we are granted access
         dbtype = self.cfg.get("db", "type")
         dbactions = DB_ACTIONS.get(dbtype)
         if(dbactions and dbactions.get('grant_all')):
@@ -112,19 +113,15 @@ class DBInstaller(ComponentBase, InstallComponent):
                 'run_as_root': False,
             })
             execute_template(cmds, params, shell=True)
-        if(dbtype == 'mysql'):
+        #special mysql actions
+        if(dbtype == MYSQL):
             # We could do this in python directly, but executing allows us to not have to sudo the whole program
             cmd = ['perl', '-p', '-i', '-e'] + ["'s/127.0.0.1/0.0.0.0/g'", '/etc/mysql/my.cnf']
             execute(*cmd, run_as_root=True)
 
     def _pre_install(self, pkgs):
-        pkgnames = sorted(pkgs.keys())
-        for name in pkgnames:
-            packageinfo = pkgs.get(name)
-            preinstallcmds = packageinfo.get(Util.PRE_INSTALL)
-            if(preinstallcmds and len(preinstallcmds)):
-                LOG.info("Running pre-install commands for package %s." % (name))
-                self._run_install_cmds(preinstallcmds)
+        #run whatever the pkgs have specified
+        Packager.pre_install(pkgs, self._get_install_params())
 
     def install(self):
         #just install the pkgs

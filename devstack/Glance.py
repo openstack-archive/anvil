@@ -23,6 +23,7 @@ import Util
 import Trace
 from Trace import (TraceWriter, TraceReader)
 import Downloader
+import Packager
 import Runner
 import runners.Foreground as Foreground
 from runners.Foreground import (ForegroundRunner)
@@ -205,10 +206,11 @@ class GlanceInstaller(GlanceBase, Component.InstallComponent):
     def install(self):
         #get all the packages for glance for the specified distro
         pkgs = get_pkg_list(self.distro, TYPE)
-        pkgnames = pkgs.keys()
-        pkgnames.sort()
+        pkgnames = sorted(pkgs.keys())
         LOG.debug("Installing packages %s" % (", ".join(pkgnames)))
+        Packager.pre_install(pkgs)
         self.packager.install_batch(pkgs)
+        Packager.post_install(pkgs)
         for name in pkgnames:
             packageinfo = pkgs.get(name)
             version = packageinfo.get("version", "")

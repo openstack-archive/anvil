@@ -22,6 +22,8 @@ frameworks (ie apt, yum) can inherit from
 import Logger
 import Shell
 from Shell import execute
+import Util
+from Util import execute_template
 
 LOG = Logger.getLogger("install.packager")
 
@@ -35,3 +37,23 @@ class Packager():
 
     def remove_batch(self, pkgs):
         raise NotImplementedError()
+
+
+def pre_install(pkgs, installparams=None):
+    pkgnames = sorted(pkgs.keys())
+    for name in pkgnames:
+        packageinfo = pkgs.get(name)
+        preinstallcmds = packageinfo.get(Util.PRE_INSTALL)
+        if(preinstallcmds and len(preinstallcmds)):
+            LOG.info("Running pre-install commands for package %s." % (name))
+            execute_template(preinstallcmds, installparams)
+
+
+def post_install(pkgs, installparams=None):
+    pkgnames = sorted(pkgs.keys())
+    for name in pkgnames:
+        packageinfo = pkgs.get(name)
+        postinstallcmds = packageinfo.get(Util.POST_INSTALL)
+        if(postinstallcmds and len(postinstallcmds)):
+            LOG.info("Running post-install commands for package %s." % (name))
+            execute_template(postinstallcmds, installparams)
