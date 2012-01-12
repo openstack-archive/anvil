@@ -15,27 +15,42 @@
 
 import Packager
 import Logger
+import Util
+from Util import param_replace
+import Shell
+from Shell import execute
 
 LOG = Logger.getLogger("install.package.Yum")
+YUM_CMD = ['yum']
+YUM_INSTALL = ["install", "-y"]
 
 class YumPackager(Packager.Packager):
     def __init__(self):
+        LOG.info("Init called")
         Packager.Packager.__init__(self)
 
-    def install_batch(self, pkgs):
+    def _form_cmd(self, name, version):
+        cmd = name
+        if(version and len(version)):
+            cmd = cmd + "-" + version
+        return cmd
+
+    def _do_cmd(self, base_cmd, pkgs):
         pkgnames = pkgs.keys()
         pkgnames.sort()
         cmds = []
-        LOG.debug("Attempt to install pkgs:%s" % pkgnames)
         for name in pkgnames:
             version = None
-            torun = name
             info = pkgs.get(name)
-            if(info != None):
+            if(info):
                 version = info.get("version")
-            if(version != None):
-                torun = torun + "-" + version
+            torun = self._form_cmd(name, version)
             cmds.append(torun)
         if(len(cmds)):
-            LOG.debug("Final command:%s" % cmds)
-            #execute(*cmd, run_as_root=True)
+            cmd = YUM_CMD + base_cmd + cmds
+            LOG.debug("About to run:%s" % (cmd))
+            execute(*cmd, run_as_root=True)
+
+    def install_batch(self, pkgs, params=None):
+        LOG.info("install_batch called")
+        self._do_cmd(YUM_INSTALL, pkgs)
