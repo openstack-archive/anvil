@@ -12,10 +12,12 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
 import os
 import re
 import tempfile
 from tempfile import TemporaryFile
+import time
 
 import Packager
 import Util
@@ -27,9 +29,13 @@ import Logger
 LOG = Logger.getLogger("install.package.apt")
 
 APT_GET = ['apt-get']
-APT_REMOVE = ["purge", "-y"]  # should we use remove or purge?
+APT_PURGE = ["purge", "-y"]
+APT_REMOVE = ["remove", "-y"]
 APT_INSTALL = ["install", "-y"]
 APT_AUTOREMOVE = ['autoremove', '-y']
+
+#should we use remove or purge?
+APT_DO_REMOVE = APT_PURGE
 
 #make sure its non-interactive
 os.putenv('DEBIAN_FRONTEND', 'noninteractive')
@@ -62,7 +68,7 @@ class AptPackager(Packager.Packager):
             torun = self._form_cmd(name, info.get("version"))
             cmds.append(torun)
         if(len(cmds)):
-            cmd = APT_GET + APT_REMOVE + cmds
+            cmd = APT_GET + APT_DO_REMOVE + cmds
             execute(*cmd, run_as_root=True)
         #clean them out
         cmd = APT_GET + APT_AUTOREMOVE
@@ -85,31 +91,65 @@ class AptPackager(Packager.Packager):
             execute(*cmd, run_as_root=True)
 
 
+def _extract_version(version):
+    version_info = dict()
+    if(version.lower().find("ubuntu") != -1):
+        mtch = UB_PKG_VERSION_REGEX.search(version)
+        if(mtch):
+            major = mtch.group(1)
+            if(major == None):
+                major = -1
+            else:
+                major = int(major)
+            minor = mtch.group(2)
+            if(minor == None):
+                minor = -1
+            else:
+                minor = int(minor)
+            release = mtch.group(3)
+            if(release == None):
+                release = -1
+            else:
+                release = int(release)
+            debian_version = mtch.group(4)
+            if(debian_version == None):
+                debian_version = -1
+            else:
+                debian_version = int(debian_version)
+            ubuntu_version = mtch.group(5)
+            if(ubuntu_version == None):
+                ubuntu_version = -1
+            else:
+                ubuntu_version = int(ubuntu_version)
+            version_info['type'] = 'ubuntu'
+            version_info['major'] = major
+            version_info['minor'] = minor
+            version_info['release'] = release
+            version_info['debian_version'] = debian_version
+            version_info['ubuntu_version'] = ubuntu_version
+    return version_info
+
+
 def _pkg_remove_special(name, pkginfo):
     #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
     #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
     if(name == 'rabbitmq-server'):
         version = pkginfo.get('version')
-        if(version):
-            mtch = UB_PKG_VERSION_REGEX.search(version)
-            if(mtch):
-                major = (mtch.group(1))
-                if(major == None or len(major) == 0):
-                    major = 0
-                else:
-                    major = int(major)
-                minor = (mtch.group(2))
-                if(minor == None or len(minor) == 0):
-                    minor = 0
-                else:
-                    minor = int(minor)
-                if(major <= 2 and minor < 6):
-                    LOG.info("Handling special remove of %s v%s" % (name, version))
-                    cmd = APT_GET + APT_REMOVE + [name + "=" + version]
-                    #wtf, but it seems to work...
-                    execute(*cmd, run_as_root=True, check_exit_code=False)
-                    execute(*cmd, run_as_root=True)
-                    return True
+        version_info = _extract_version(version)
+        if(len(version_info)):
+            if(version_info.get('type') == 'ubuntu' and
+                version_info.get('major') <= 2 and
+                version_info.get('minor') < 6):
+                LOG.info("Handling special remove of %s v%s" % (name, version))
+                #the first time seems to fail with exit code 100 but the second
+                #time seems to not fail, pretty weird, most likely the above bugs
+                cmd = APT_GET + APT_REMOVE + [name + "=" + version]
+                execute(*cmd, run_as_root=True, check_exit_code=False)
+                #probably useful to do this
+                time.sleep(1)
+                cmd = APT_GET + APT_PURGE + [name + "=" + version]
+                execute(*cmd, run_as_root=True)
+                return True
     return False
 
 
@@ -118,25 +158,16 @@ def _pkg_install_special(name, pkginfo):
     #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
     if(name == 'rabbitmq-server'):
         version = pkginfo.get('version')
-        if(version):
-            mtch = UB_PKG_VERSION_REGEX.search(version)
-            if(mtch):
-                major = (mtch.group(1))
-                if(major == None or len(major) == 0):
-                    major = 0
-                else:
-                    major = int(major)
-                minor = (mtch.group(2))
-                if(minor == None or len(minor) == 0):
-                    minor = 0
-                else:
-                    minor = int(minor)
-                if(major <= 2 and minor < 6):
-                    LOG.info("Handling special install of %s v%s" % (name, version))
-                    #wtf, but it seems to work...
-                    with TemporaryFile() as f:
-                        cmd = APT_GET + APT_INSTALL + [name + "=" + version]
-                        execute(*cmd, run_as_root=True,
-                                stdout_fh=f, stderr_fh=f)
-                        return True
+        version_info = _extract_version(version)
+        if(len(version_info)):
+            if(version_info.get('type') == 'ubuntu' and
+                version_info.get('major') <= 2 and
+                version_info.get('minor') < 6):
+                LOG.info("Handling special install of %s v%s" % (name, version))
+                #this seems to be a temporary fix for that bug
+                with TemporaryFile() as f:
+                    cmd = APT_GET + APT_INSTALL + [name + "=" + version]
+                    execute(*cmd, run_as_root=True,
+                            stdout_fh=f, stderr_fh=f)
+                    return True
     return False
