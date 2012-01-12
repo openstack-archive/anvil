@@ -14,8 +14,28 @@
 #    under the License.
 
 import Packager
+import Logger
 
+LOG = Logger.getLogger("install.package.Yum")
 
 class YumPackager(Packager.Packager):
     def __init__(self):
         Packager.Packager.__init__(self)
+
+    def install_batch(self, pkgs):
+        pkgnames = pkgs.keys()
+        pkgnames.sort()
+        cmds = []
+        LOG.debug("Attempt to install pkgs:%s" % pkgnames)
+        for name in pkgnames:
+            version = None
+            torun = name
+            info = pkgs.get(name)
+            if(info != None):
+                version = info.get("version")
+            if(version != None):
+                torun = torun + "-" + version
+            cmds.append(torun)
+        if(len(cmds)):
+            LOG.debug("Final command:%s" % cmds)
+            #execute(*cmd, run_as_root=True)
