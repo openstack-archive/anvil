@@ -282,7 +282,7 @@ def joinlinesep(*pieces):
 
 def param_replace(text, replacements):
     LOG.debug("Performing parameter replacements on %s" % (text))
-    
+
     def replacer(m):
         org = m.group()
         name = m.group(1)

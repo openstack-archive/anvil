@@ -39,7 +39,7 @@ DB_ACTIONS = {
         'start': ["/etc/init.d/mysql", "start"],
         'stop': ["/etc/init.d/mysql", "stop"],
         'create_db': ['mysql', '--user=%USER%', '--password=%PASSWORD%', '-e', 'CREATE DATABASE %DB%;'],
-        'drop_db': ['mysql', '--user=%USER%', '--password=%PASSWORD%', '-e', 'DROP DATABASE IF EXISTS %DB%;'], 
+        'drop_db': ['mysql', '--user=%USER%', '--password=%PASSWORD%', '-e', 'DROP DATABASE IF EXISTS %DB%;'],
         'grant_all': [
             "mysql",
             "--user=%USER%",
@@ -112,6 +112,8 @@ class DBInstaller(ComponentBase, InstallComponent):
                 'cmd': grant_cmd,
                 'run_as_root': False,
             })
+            #shell seems to be needed here
+            #since python escapes this to much...
             execute_template(cmds, params, shell=True)
         #special mysql actions
         if(dbtype == MYSQL):
@@ -144,6 +146,8 @@ class DBInstaller(ComponentBase, InstallComponent):
         self.tracewriter.dir_made(*dirsmade)
         #run any post-installs cmds
         self._post_install(pkgs)
+        # TODO - stop it (since it usually autostarts)
+        # so that we control the start/stop, not it
         return self.tracedir
 
 
@@ -187,42 +191,36 @@ def drop_db(cfg, dbname):
     dbactions = DB_ACTIONS.get(dbtype)
     if(dbactions and dbactions.get('drop_db')):
         dropcmd = dbactions.get('drop_db')
-        if(dropcmd):
-            user = cfg.get("db", "sql_user")
-            pw = cfg.get("passwords", "sql")
-            params = dict()
-            params['PASSWORD'] = pw
-            params['USER'] = user
-            params['DB'] = dbname
-            cmds = list()
-            cmds.append({
-                'cmd': dropcmd,
-                'run_as_root': False,
-            })
-            execute_template(cmds, params)
+        params = dict()
+        params['PASSWORD'] = cfg.getpw("passwords", "sql")
+        params['USER'] = cfg.get("db", "sql_user")
+        params['DB'] = dbname
+        cmds = list()
+        cmds.append({
+            'cmd': dropcmd,
+            'run_as_root': False,
+        })
+        execute_template(cmds, params)
     else:
         msg = BASE_ERROR % ('drop', dbtype)
         raise NotImplementedError(msg)
+
 
 def create_db(cfg, dbname):
     dbtype = cfg.get("db", "type")
     dbactions = DB_ACTIONS.get(dbtype)
     if(dbactions and dbactions.get('create_db')):
         createcmd = dbactions.get('create_db')
-        if(createcmd):
-            user = cfg.get("db", "sql_user")
-            pw = cfg.get("passwords", "sql")
-            params = dict()
-            params['PASSWORD'] = pw
-            params['USER'] = user
-            params['DB'] = dbname
-            cmds = list()
-            cmds.append({
-                'cmd': createcmd,
-                'run_as_root': False,
-            })
-            execute_template(cmds, params)
+        params = dict()
+        params['PASSWORD'] = cfg.getpw("passwords", "sql")
+        params['USER'] = cfg.get("db", "sql_user")
+        params['DB'] = dbname
+        cmds = list()
+        cmds.append({
+            'cmd': createcmd,
+            'run_as_root': False,
+        })
+        execute_template(cmds, params)
     else:
         msg = BASE_ERROR % ('create', dbtype)
         raise NotImplementedError(msg)
-

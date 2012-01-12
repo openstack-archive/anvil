@@ -208,9 +208,9 @@ class GlanceInstaller(GlanceBase, Component.InstallComponent):
         pkgs = get_pkg_list(self.distro, TYPE)
         pkgnames = sorted(pkgs.keys())
         LOG.debug("Installing packages %s" % (", ".join(pkgnames)))
-        Packager.pre_install(pkgs)
+        Packager.pre_install(pkgs, self._get_param_map())
         self.packager.install_batch(pkgs)
-        Packager.post_install(pkgs)
+        Packager.post_install(pkgs, self._get_param_map())
         for name in pkgnames:
             packageinfo = pkgs.get(name)
             version = packageinfo.get("version", "")
@@ -232,6 +232,7 @@ class GlanceInstaller(GlanceBase, Component.InstallComponent):
         dirsmade = mkdirslist(self.cfgdir)
         # This trace is used to remove the dirs created
         self.tracewriter.dir_made(*dirsmade)
+        parameters = self._get_param_map()
         for fn in CONFIGS:
             #go through each config in devstack (which is really a template)
             #and adjust that template to have real values and then go through
@@ -241,10 +242,9 @@ class GlanceInstaller(GlanceBase, Component.InstallComponent):
             tgtfn = joinpths(self.cfgdir, fn)
             LOG.info("Configuring template file %s" % (sourcefn))
             contents = load_file(sourcefn)
-            pmap = self._get_param_map(fn)
             LOG.info("Replacing parameters in file %s" % (sourcefn))
-            LOG.debug("Replacements = %s" % (pmap))
-            contents = param_replace(contents, pmap)
+            LOG.debug("Replacements = %s" % (parameters))
+            contents = param_replace(contents, parameters)
             LOG.debug("Applying side-effects of param replacement for template %s" % (sourcefn))
             self._config_apply(contents, fn)
             LOG.info("Writing configuration file %s" % (tgtfn))
@@ -298,7 +298,7 @@ class GlanceInstaller(GlanceBase, Component.InstallComponent):
                 # This trace is used to remove the dirs created
                 self.tracewriter.dir_made(*dirsmade)
 
-    def _get_param_map(self, fn):
+    def _get_param_map(self):
         # These be used to fill in the configuration
         # params with actual values
         mp = dict()
