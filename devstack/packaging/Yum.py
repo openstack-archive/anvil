@@ -20,7 +20,7 @@ from Util import param_replace
 import Shell
 from Shell import execute
 
-LOG = Logger.getLogger("install.package.Yum")
+LOG = Logger.getLogger("install.package.yum")
 YUM_CMD = ['yum']
 YUM_INSTALL = ["install", "-y"]
 
