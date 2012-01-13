@@ -21,7 +21,8 @@ frameworks (ie apt, yum) can inherit from
 
 import Logger
 import Shell
-from Util import (execute_template)
+from Util import (execute_template,
+                    PRE_INSTALL, POST_INSTALL)
 
 LOG = Logger.getLogger("install.packager")
 
@@ -40,7 +41,7 @@ class Packager():
         pkgnames = sorted(pkgs.keys())
         for name in pkgnames:
             packageinfo = pkgs.get(name)
-            preinstallcmds = packageinfo.get(Util.PRE_INSTALL)
+            preinstallcmds = packageinfo.get(PRE_INSTALL)
             if(preinstallcmds and len(preinstallcmds)):
                 LOG.info("Running pre-install commands for package %s." % (name))
                 execute_template(*preinstallcmds, params=installparams)
@@ -49,7 +50,7 @@ class Packager():
         pkgnames = sorted(pkgs.keys())
         for name in pkgnames:
             packageinfo = pkgs.get(name)
-            postinstallcmds = packageinfo.get(Util.POST_INSTALL)
+            postinstallcmds = packageinfo.get(POST_INSTALL)
             if(postinstallcmds and len(postinstallcmds)):
                 LOG.info("Running post-install commands for package %s." % (name))
                 execute_template(*postinstallcmds, params=installparams)
