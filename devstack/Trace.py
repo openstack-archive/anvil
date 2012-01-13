@@ -33,6 +33,7 @@ DIR_MADE = "DIR_MADE"
 FILE_TOUCHED = "FILE_TOUCHED"
 DOWNLOADED = "DOWNLOADED"
 AP_STARTED = "AP_STARTED"
+PIP_INSTALL = 'PIP_INSTALL'
 
 #trace file types
 PY_TRACE = "python"
@@ -92,6 +93,13 @@ class TraceWriter():
         what['target'] = tgt
         what['from'] = fromwhere
         self.tracer.trace(DOWNLOADED, json.dumps(what))
+
+    def pip_install(self, name, pip_info):
+        self._start()
+        what = dict()
+        what['name'] = name
+        what['pip_meta'] = pip_info
+        self.tracer.trace(PIP_INSTALL, json.dumps(what))
 
     def dir_made(self, *dirs):
         self._start()
@@ -184,18 +192,34 @@ class TraceReader():
         files.sort()
         return files
 
+    def pips_installed(self):
+        lines = self._read()
+        pipsinstalled = dict()
+        pip_list = list()
+        for (cmd, action) in lines:
+            if(cmd == PIP_INSTALL and len(action)):
+                pip_list.append(action)
+        for pdata in pip_list:
+            pip_info_full = json.loads(pdata)
+            if(type(pip_info_full) is dict):
+                name = pip_info_full.get('name')
+                if(name and len(name)):
+                    pipsinstalled[name] = pip_info_full.get('pip_meta')
+        return pipsinstalled
+
     def packages_installed(self):
         lines = self._read()
         pkgsinstalled = dict()
-        pkgjdata = list()
+        pkg_list = list()
         for (cmd, action) in lines:
             if(cmd == PKG_INSTALL and len(action)):
-                pkgjdata.append(action)
-        for jdata in pkgjdata:
-            pkg_info = json.loads(jdata)
+                pkg_list.append(action)
+        for pdata in pkg_list:
+            pkg_info = json.loads(pdata)
             if(type(pkg_info) is dict):
                 name = pkg_info.get('name')
-                pkgsinstalled[name] = pkg_info.get('pkg_meta')
+                if(name and len(name)):
+                    pkgsinstalled[name] = pkg_info.get('pkg_meta')
         return pkgsinstalled
 
 

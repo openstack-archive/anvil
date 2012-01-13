@@ -1,0 +1,12 @@
+# This is a extended json package definition file 
+# We allow simple comments (lines starting with a hash symbol)
+{
+    "ubuntu-oneiric": {
+        "passlib": {
+            "version": "1.5.3",
+            #this seems broke on uninstall so skip errors on uinstall
+            "skip_uninstall_errors": true
+        }
+    },
+    "rhel-6": {}
+}

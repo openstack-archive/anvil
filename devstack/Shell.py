@@ -24,6 +24,7 @@ import sys
 
 from Exceptions import (ProcessExecutionError, FileException)
 import Logger
+from Environment import (get_environment_bool, get_environment)
 
 ROOT_HELPER = ["sudo"]
 MKPW_CMD = ["openssl", 'rand', '-hex']
@@ -77,7 +78,7 @@ def execute(*cmd, **kwargs):
         stderr_fh = kwargs.get('stderr_fh')
         LOG.debug("Redirecting stderr to file handle: %s" % (stderr_fh))
 
-    process_env = dict(os.environ)
+    process_env = get_environment()
     LOG.debug("With environment: %s" % (process_env))
     if(env_overrides and len(env_overrides)):
         LOG.debug("With additional environment overrides: %s" % (env_overrides))
@@ -126,10 +127,13 @@ def joinpths(*pths):
 
 
 def password(prompt=None, genlen=8):
-    if(prompt):
-        rd = getpass.getpass(prompt)
-    else:
-        rd = getpass.getpass()
+    rd = ""
+    pass_ask = get_environment_bool("PASS_ASK", True)
+    if(pass_ask):
+        if(prompt):
+            rd = getpass.getpass(prompt)
+        else:
+            rd = getpass.getpass()
     if(len(rd) == 0):
         LOG.debug("Generating you a password of length: %s" % (genlen))
         cmd = MKPW_CMD + [genlen]

@@ -115,42 +115,65 @@ KNOWN_OS = {
     RHEL6: '/redhat-6\.(\d+)/i',
 }
 
+#the pip files that each component
+#needs
+PIP_MAP = {
+    NOVA:
+        [],
+    GLANCE:
+        [],
+    KEYSTONE:
+        [
+            joinpths(STACK_CONFIG_DIR, "pips", 'keystone.json'),
+        ],
+    HORIZON:
+        [
+            joinpths(STACK_CONFIG_DIR, "pips", 'horizon.json'),
+        ],
+    SWIFT:
+        [],
+    DB:
+        [],
+    RABBIT:
+        [],
+}
+
 #the pkg files that each component
 #needs
 PKG_MAP = {
     NOVA:
-           [
-             joinpths(STACK_CONFIG_DIR, "pkgs", "nova.json"),
-             joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
-           ],
+        [
+            joinpths(STACK_CONFIG_DIR, "pkgs", "nova.json"),
+            joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
+        ],
     GLANCE:
-           [
-             joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
-             joinpths(STACK_CONFIG_DIR, "pkgs", 'glance.json'),
-           ],
+        [
+            joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
+            joinpths(STACK_CONFIG_DIR, "pkgs", 'glance.json'),
+        ],
     KEYSTONE:
-           [
-             joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
-             joinpths(STACK_CONFIG_DIR, "pkgs", 'keystone.json'),
-           ],
+        [
+            joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
+            joinpths(STACK_CONFIG_DIR, "pkgs", 'keystone.json'),
+        ],
     HORIZON:
-           [
-             joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
-             joinpths(STACK_CONFIG_DIR, "pkgs", 'horizon.json'),
-           ],
+        [
+            joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
+            joinpths(STACK_CONFIG_DIR, "pkgs", 'horizon.json'),
+        ],
     SWIFT:
-           [
-             joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
-             joinpths(STACK_CONFIG_DIR, "pkgs", 'swift.json'),
-           ],
+        [
+            joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
+            joinpths(STACK_CONFIG_DIR, "pkgs", 'swift.json'),
+        ],
     DB:
-           [
-             joinpths(STACK_CONFIG_DIR, "pkgs", 'db.json'),
-           ],
+        [
+            joinpths(STACK_CONFIG_DIR, "pkgs", 'db.json'),
+        ],
     RABBIT:
-           [
-             joinpths(STACK_CONFIG_DIR, "pkgs", 'rabbitmq.json'),
-           ],
+        [
+            joinpths(STACK_CONFIG_DIR, "pkgs", 'rabbitmq.json'),
+        ],
 }
 
 #subdirs of a components dir
@@ -292,12 +315,29 @@ def determine_os():
     return (os, plt)
 
 
+def get_pip_list(distro, component):
+    LOG.info("Getting pip packages for distro %s and component %s." % (distro, component))
+    all_pkgs = dict()
+    fns = PIP_MAP.get(component)
+    if(fns == None):
+        return all_pkgs
+    #load + merge them
+    for fn in fns:
+        js = load_json(fn)
+        distro_pkgs = js.get(distro)
+        if(distro_pkgs and len(distro_pkgs)):
+            combined = dict(all_pkgs)
+            for (pkgname, pkginfo) in distro_pkgs.items():
+                combined[pkgname] = pkginfo
+            all_pkgs = combined
+    return all_pkgs
+
+
 def get_pkg_list(distro, component):
     LOG.info("Getting packages for distro %s and component %s." % (distro, component))
     all_pkgs = dict()
     fns = PKG_MAP.get(component)
     if(fns == None):
-        #guess none needed
         return all_pkgs
     #load + merge them
     for fn in fns:

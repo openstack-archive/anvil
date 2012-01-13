@@ -7,6 +7,11 @@
       "allowed": ">=",
       "removable": false
     },
+    "python-eventlet": {
+      "version": "0.9.15-0ubuntu4",
+      "allowed": ">=",
+      "removable": true
+    },
     "python-dev": {
       "version": "2.7.2-7ubuntu2",
       "allowed": ">=",
@@ -21,6 +26,11 @@
       "version": "1.7.3-7",
       "allowed": ">=",
       "removable": true
+    },
+    "python-mysqldb": {
+      "version": "1.2.3-0ubuntu1",
+      "allowed": ">=",
+      "removable" : true
     },
     "python-pastedeploy": {
       "version": "1.5.0-2",

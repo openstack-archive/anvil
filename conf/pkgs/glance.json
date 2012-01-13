@@ -22,6 +22,11 @@
       "allowed": ">=",
       "removable": true
     },
+    "python-mysqldb": {
+      "version": "1.2.3-0ubuntu1",
+      "allowed": ">=",
+      "removable" : true
+    },
     "python-sqlalchemy": {
       "version": "0.6.8-1",
       "allowed": ">=",

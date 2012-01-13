@@ -20,6 +20,7 @@ import re
 from Exceptions import (BadParamException)
 import Logger
 import Shell
+from Environment import (get_environment_key)
 
 LOG = Logger.getLogger("install.config")
 PW_TMPL = "Enter a password for %s: "
@@ -48,17 +49,15 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
             return v
         mtch = ENV_PAT.match(v)
         if(mtch):
-            env = mtch.group(1).strip()
+            key = mtch.group(1).strip()
             defv = mtch.group(2)
-            if(len(defv) == 0 and len(env) == 0):
+            if(len(defv) == 0 and len(key) == 0):
                 msg = "Invalid bash-like value %s for %s" % (v, key)
                 raise BadParamException(msg)
-            if(len(env) == 0):
+            if(len(key) == 0):
                 return defv
-            LOG.debug("Looking up environment variable %s" % (env))
-            v = os.getenv(env)
+            v = get_environment_key(key)
             if(v == None):
-                LOG.debug("Could not find anything in environment variable %s (using default value)" % (env))
                 v = defv
             return v
         else:

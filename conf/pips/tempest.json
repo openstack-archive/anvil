@@ -1,0 +1,10 @@
+# This is a extended json package definition file 
+# We allow simple comments (lines starting with a hash symbol)
+{
+    "ubuntu-oneiric": {
+        "pika": {
+            "version": "0.9.5"
+        }
+    },
+    "rhel-6": {}
+}

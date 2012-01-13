@@ -186,12 +186,13 @@ def uninstall(components, distro, rootdir, args):
             instance.uninstall()
         except NoTraceException, e:
             if(ignore_traces_missing):
-                pass
+                LOG.info("Passing on uninstalling %s since no trace file was found." % (c))
             else:
                 raise
     #trash the root if we can
     try:
         os.rmdir(rootdir)
+        LOG.info("Removed root dir %s" % (rootdir))
     except OSError:
         #ignore
         pass
