@@ -147,6 +147,20 @@ def start(components, distro, rootdir, args):
     return locations
 
 
+def print_cfgs(cfg, action):
+    pws = dict(cfg.pws)
+    configs_fetched = dict(cfg.configs_fetched)
+    LOG.info("After %s your passwords are:" % (action))
+    for (pwkey, val) in pws.items():
+        LOG.info("%s = %s" % (pwkey, val))
+    LOG.info("After %s your other configuration is:" % (action))
+    for (key, val) in configs_fetched.items():
+        if(key in pws):
+            #already shown
+            continue
+        LOG.info("%s = %s" % (key, val))
+
+
 def install(components, distro, rootdir, args):
     pkg_manager_cls = get_package_manager_kls(distro)
     pkg_manager = pkg_manager_cls()
@@ -166,6 +180,7 @@ def install(components, distro, rootdir, args):
         trace = instance.install()
         LOG.info("Finished install of %s - check %s for traces of what happened." % (c, trace))
         traces.append(trace)
+    print_cfgs(cfg, INSTALL)
     return traces
 
 

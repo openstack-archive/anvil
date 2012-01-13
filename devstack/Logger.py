@@ -14,6 +14,7 @@
 #    under the License.
 
 import logging
+import logging.config
 import os
 import sys
 
@@ -21,14 +22,13 @@ import sys
 #but the colors make it worth it :-)
 from termcolor import colored
 
-#take this in from config??
-LOG_LEVEL = logging.DEBUG
-LOG_FORMAT = '%(levelname)s: @%(name)s : %(message)s'
+#take this in from config
+LOG_CONF = 'conf/logging.ini'
 
 
 class TermFormatter(logging.Formatter):
-    def __init__(self, fmt):
-        logging.Formatter.__init__(self, fmt)
+    def __init__(self, reg_fmt, date_format):
+        logging.Formatter.__init__(self, reg_fmt, date_format)
 
     def format(self, record):
         lvl = record.levelno
@@ -66,12 +66,7 @@ class TermHandler(logging.Handler):
 
 
 def setupLogging():
-    logger = logging.getLogger()
-    handler = TermHandler()
-    formatter = TermFormatter(LOG_FORMAT)
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    logger.setLevel(LOG_LEVEL)
+    logging.config.fileConfig(LOG_CONF)
 
 
 def getLogger(name):

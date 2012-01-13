@@ -31,15 +31,21 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
     def __init__(self):
         ConfigParser.RawConfigParser.__init__(self)
         self.pws = dict()
+        self.configs_fetched = dict()
 
     def _makekey(self, section, option):
         return option + "@" + section
 
     def get(self, section, option):
         key = self._makekey(section, option)
-        LOG.debug("Fetching value for param %s" % (key))
-        v = self._get_special(section, option)
-        LOG.debug("Fetched \"%s\" for %s" % (v, key))
+        v = None
+        if(key in self.configs_fetched):
+            v = self.configs_fetched.get(key)
+        else:
+            LOG.debug("Fetching value for param %s" % (key))
+            v = self._get_special(section, option)
+            LOG.debug("Fetched \"%s\" for %s (will now be cached)" % (v, key))
+            self.configs_fetched[key] = v
         return v
 
     def _get_special(self, section, option):
