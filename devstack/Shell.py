@@ -67,18 +67,19 @@ def execute(*cmd, **kwargs):
 
     if('stdout_fh' in kwargs.keys()):
         stdout_fh = kwargs.get('stdout_fh')
-        LOG.debug("Redirecting stdout to file handle %s" % (stdout_fh))
+        LOG.debug("Redirecting stdout to file handle: %s" % (stdout_fh))
 
     if('stdin_fh' in kwargs.keys()):
         stdin_fh = kwargs.get('stdin_fh')
-        LOG.debug("Redirecting stdin to file handle %s" % (stdin_fh))
+        LOG.debug("Redirecting stdin to file handle: %s" % (stdin_fh))
 
     if('stderr_fh' in kwargs.keys()):
         stderr_fh = kwargs.get('stderr_fh')
-        LOG.debug("Redirecting stderr to file handle %s" % (stderr_fh))
+        LOG.debug("Redirecting stderr to file handle: %s" % (stderr_fh))
 
-    process_env = os.environ or {}
+    process_env = None
     if(env_overrides and len(env_overrides)):
+        process_env = dict(os.environ)
         LOG.debug("With additional environment overrides: %s" % (env_overrides))
         for (k, v) in env_overrides.items():
             process_env[k] = str(v)
@@ -100,7 +101,7 @@ def execute(*cmd, **kwargs):
 
     obj.stdin.close()
     _returncode = obj.returncode
-    LOG.debug('Cmd result had return code %s' % _returncode)
+    LOG.debug('Cmd result had return code: %s' % _returncode)
 
     if((not ignore_exit_code) and (_returncode not in check_exit_code)):
         (stdout, stderr) = result
