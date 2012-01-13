@@ -43,7 +43,6 @@ PY_UNINSTALL = ['python', 'setup.py', 'develop', '--uninstall']
 ROOT_CONF = "keystone.conf"
 CONFIGS = [ROOT_CONF]
 BIN_DIR = "bin"
-DATA_CMDS = "keystone_data_cmds.json"
 DB_NAME = "keystone"
 
 
@@ -165,12 +164,9 @@ class KeystoneInstaller(KeystoneBase, InstallComponent):
         Db.create_db(self.cfg, DB_NAME)
 
     def _setup_data(self):
-        cmds = load_json(self.scriptfn)
-        #we don't break on the missing ones
-        #since it appears that this config "script"
-        #also uses the same param format for its own templates...
         params = self._get_param_map()
         params['BIN_DIR'] = self.bindir
+        cmds = _keystone_setup_cmds(self.othercomponents)
         execute_template(*cmds, params=params, ignore_missing=True)
 
     def _config_apply(self, contents, fn):
@@ -216,3 +212,277 @@ class KeystoneInstaller(KeystoneBase, InstallComponent):
 class KeystoneRuntime(KeystoneBase, RuntimeComponent):
     def __init__(self, *args, **kargs):
         KeystoneBase.__init__(self, *args, **kargs)
+
+
+# Keystone setup commands are the the following
+def _keystone_setup_cmds(components):
+
+    # See http://keystone.openstack.org/man/keystone-manage.html
+
+    # Tenants
+    tenant_cmds = [
+        {
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "tenant", "add",
+                    "admin"
+            ]
+        },
+        {
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "tenant", "add",
+                    "demo"
+            ]
+        },
+        {
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "tenant", "add",
+                    "invisible_to_admin"
+            ]
+        },
+    ]
+
+    # Users
+    user_cmds = [
+        {
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "user", "add",
+                    "admin", "%ADMIN_PASSWORD%"
+            ]
+        },
+        {
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "user", "add",
+                    "demo", "%ADMIN_PASSWORD%"
+            ]
+        },
+    ]
+
+    # Roles
+    role_cmds = [
+        {
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "role", "add",
+                    "Admin"
+            ]
+        },
+        {
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "role", "add",
+                    "Member"
+            ]
+        },
+        {
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "role", "add",
+                    "KeystoneAdmin"
+            ]
+        },
+        {
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "role", "add",
+                    "KeystoneServiceAdmin"
+            ]
+        },
+        {
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "role", "add",
+                    "sysadmin"
+            ]
+        },
+        {
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "role", "add",
+                    "netadmin"
+            ]
+        },
+        {
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "role", "grant",
+                    "Admin", "admin", "admin"
+            ]
+        },
+        {
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "role", "grant",
+                    "Member", "demo", "demo"
+            ]
+        },
+        {
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "role", "grant",
+                    "sysadmin", "demo", "demo"
+            ]
+        },
+        {
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "role", "grant",
+                    "netadmin", "demo", "demo"
+            ]
+        },
+        {
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "role", "grant",
+                    "Member", "demo", "invisible_to_admin"
+            ]
+        },
+        {
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "role", "grant",
+                    "Admin", "admin", "demo"
+            ]
+        },
+        {
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "role", "grant",
+                    "Admin", "admin"
+            ]
+        },
+        {
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "role", "grant",
+                    "KeystoneAdmin", "admin"
+            ]
+        },
+        {
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "role", "grant",
+                    "KeystoneServiceAdmin", "admin"
+            ]
+        }
+    ]
+
+    # Services
+    services = []
+    services.append({
+        "cmd": [
+            "%BIN_DIR%/keystone-manage", "service", "add",
+                "keystone", "identity", "Keystone Identity Service"
+        ]
+    })
+
+    if(Util.NOVA in components):
+        services.append({
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "service", "add",
+                    "nova", "compute", "Nova Compute Service"
+            ]
+        })
+        services.append({
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "service", "add",
+                    "ec2", "ec2", "EC2 Compatability Layer"
+            ]
+        })
+
+    if(Util.GLANCE in components):
+        services.append({
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "service", "add", "glance",
+                    "image", "Glance Image Service"
+            ]
+        })
+
+    if(Util.SWIFT in components):
+        services.append({
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "service", "add",
+                    "swift", "object-store", "Swift Service"
+            ]
+        })
+
+    # Endpoint templates
+    endpoint_templates = list()
+    endpoint_templates.append({
+        "cmd": [
+            "%BIN_DIR%/keystone-manage", "endpointTemplates", "add",
+                "RegionOne", "keystone",
+                "http://%HOST_IP%:5000/v2.0",
+                "http://%HOST_IP%:35357/v2.0",
+                "http://%HOST_IP%:5000/v2.0",
+                "1",
+                "1"
+        ]
+    })
+
+    if(Util.NOVA in components):
+        endpoint_templates.append({
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "endpointTemplates", "add",
+                    "RegionOne", "nova",
+                    "http://%HOST_IP%:8774/v1.1/%tenant_id%",
+                    "http://%HOST_IP%:8774/v1.1/%tenant_id%",
+                    "http://%HOST_IP%:8774/v1.1/%tenant_id%",
+                    "1",
+                    "1"
+            ]
+        })
+        endpoint_templates.append({
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "endpointTemplates", "add",
+                    "RegionOne", "ec2",
+                    "http://%HOST_IP%:8773/services/Cloud",
+                    "http://%HOST_IP%:8773/services/Admin",
+                    "http://%HOST_IP%:8773/services/Cloud",
+                    "1",
+                    "1"
+            ]
+        })
+
+    if(Util.GLANCE in components):
+        endpoint_templates.append({
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "endpointTemplates", "add",
+                    "RegionOne", "glance",
+                    "http://%HOST_IP%:9292/v1.1/%tenant_id%",
+                    "http://%HOST_IP%:9292/v1.1/%tenant_id%",
+                    "http://%HOST_IP%:9292/v1.1/%tenant_id%",
+                    "1",
+                    "1"
+            ]
+        })
+
+    if(Util.SWIFT in components):
+        endpoint_templates.append({
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "endpointTemplates", "add",
+                    "RegionOne", "swift",
+                    "http://%HOST_IP%:8080/v1/AUTH_%tenant_id%",
+                    "http://%HOST_IP%:8080/",
+                    "http://%HOST_IP%:8080/v1/AUTH_%tenant_id%",
+                    "1",
+                    "1"
+            ]
+        })
+
+    # Tokens
+    tokens = [
+        {
+            "cmd": [
+                "%BIN_DIR%/keystone-manage", "token", "add",
+                    "%SERVICE_TOKEN%", "admin", "admin", "2015-02-05T00:00"
+            ]
+        },
+    ]
+
+    # EC2 related creds - note we are setting the secret key to ADMIN_PASSWORD
+    # but keystone doesn't parse them - it is just a blob from keystone's
+    # point of view
+    ec2_creds = []
+    if(Util.NOVA in components):
+        ec2_creds = [
+            {
+                "cmd": [
+                    "%BIN_DIR%/keystone-manage", "credentials", "add",
+                        "admin", "EC2", "admin", "%ADMIN_PASSWORD%", "admin"
+                ]
+            },
+            {
+                "cmd": [
+                    "%BIN_DIR%/keystone-manage", "credentials", "add",
+                        "demo", "EC2", "demo", "%ADMIN_PASSWORD%", "demo"
+                ]
+            }
+        ]
+
+    all_cmds = ec2_creds + tokens + endpoint_templates + services + role_cmds + user_cmds + tenant_cmds
+    return all_cmds

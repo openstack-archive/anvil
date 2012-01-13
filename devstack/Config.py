@@ -33,8 +33,7 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         self.pws = dict()
 
     def _makekey(self, section, option):
-        key = option + "@" + section
-        return key
+        return option + "@" + section
 
     def get(self, section, option):
         key = self._makekey(section, option)

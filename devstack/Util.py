@@ -23,7 +23,6 @@ from Shell import (joinpths, load_json, execute)
 
 from time import (localtime, strftime)
 from termcolor import colored
-
 import subprocess
 import platform
 import re
@@ -59,7 +58,6 @@ HORIZON = "horizon"
 KEYSTONE = "keystone"
 DB = "db"
 RABBIT = "rabbit"
-
 NAMES = [NOVA, GLANCE, QUANTUM,
          SWIFT, HORIZON, KEYSTONE,
          DB, RABBIT]
@@ -96,7 +94,6 @@ INSTALL = "install"
 UNINSTALL = "uninstall"
 START = "start"
 STOP = "stop"
-
 ACTIONS = [INSTALL, UNINSTALL, START, STOP]
 
 #this is used to map an action to a useful string for

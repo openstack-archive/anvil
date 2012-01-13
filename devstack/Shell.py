@@ -131,7 +131,7 @@ def password(prompt=None, genlen=8):
     else:
         rd = getpass.getpass()
     if(len(rd) == 0):
-        LOG.debug("Generating you a password of length %s" % (genlen))
+        LOG.debug("Generating you a password of length: %s" % (genlen))
         cmd = MKPW_CMD + [genlen]
         (stdout, stderr) = execute(*cmd)
         return stdout.strip()
@@ -142,7 +142,6 @@ def password(prompt=None, genlen=8):
 def mkdirslist(pth):
     dirsmade = list()
     if(os.path.isdir(pth)):
-        #already there...
         return dirsmade
     dirspossible = set()
     dirspossible.add(pth)
@@ -154,8 +153,7 @@ def mkdirslist(pth):
         if(len(base) == 0):
             break
     dirstobe = list(dirspossible)
-    dirstobe.sort()
-    for pth in dirstobe:
+    for pth in sorted(dirstobe):
         if(not os.path.isdir(pth)):
             os.mkdir(pth)
             dirsmade.append(pth)

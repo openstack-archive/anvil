@@ -15,6 +15,7 @@
 
 import logging
 import sys
+import os
 
 #requires http://pypi.python.org/pypi/termcolor
 #but the colors make it worth it :-)
@@ -50,7 +51,7 @@ class TermFormatter(logging.Formatter):
 class TermHandler(logging.Handler):
     STREAM = sys.stdout
     DO_FLUSH = True
-    NL = "\n"
+    NL = os.linesep
 
     def __init__(self):
         logging.Handler.__init__(self)
