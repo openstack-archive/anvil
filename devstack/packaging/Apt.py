@@ -38,7 +38,7 @@ APT_AUTOREMOVE = ['autoremove', '-y']
 APT_DO_REMOVE = APT_PURGE
 
 #make sure its non-interactive
-os.putenv('DEBIAN_FRONTEND', 'noninteractive')
+ENV_ADDITIONS = {'DEBIAN_FRONTEND': 'noninteractive'}
 
 #not 100% right but it will work for us
 #ie we aren't handling : for epochs
@@ -62,6 +62,9 @@ class AptPackager(Packager.Packager):
         cmds = []
         for name in pkgnames:
             info = pkgs.get(name) or {}
+            removable = info.get('removable', True)
+            if(not removable):
+                continue
             if(_pkg_remove_special(name, info)):
                 #handled by the special remove
                 continue
@@ -69,10 +72,12 @@ class AptPackager(Packager.Packager):
             cmds.append(torun)
         if(len(cmds)):
             cmd = APT_GET + APT_DO_REMOVE + cmds
-            execute(*cmd, run_as_root=True)
+            execute(*cmd, run_as_root=True, 
+                env_overrides=ENV_ADDITIONS)
         #clean them out
         cmd = APT_GET + APT_AUTOREMOVE
-        execute(*cmd, run_as_root=True)
+        execute(*cmd, run_as_root=True, 
+            env_overrides=ENV_ADDITIONS)
 
     def install_batch(self, pkgs):
         pkgnames = sorted(pkgs.keys())
@@ -88,7 +93,8 @@ class AptPackager(Packager.Packager):
         #install them
         if(len(cmds)):
             cmd = APT_GET + APT_INSTALL + cmds
-            execute(*cmd, run_as_root=True)
+            execute(*cmd, run_as_root=True, 
+                env_overrides=ENV_ADDITIONS)
 
 
 def _extract_version(version):
@@ -144,11 +150,13 @@ def _pkg_remove_special(name, pkginfo):
                 #the first time seems to fail with exit code 100 but the second
                 #time seems to not fail, pretty weird, most likely the above bugs
                 cmd = APT_GET + APT_REMOVE + [name + "=" + version]
-                execute(*cmd, run_as_root=True, check_exit_code=False)
+                execute(*cmd, run_as_root=True,
+                    check_exit_code=False, env_overrides=ENV_ADDITIONS)
                 #probably useful to do this
                 time.sleep(1)
                 cmd = APT_GET + APT_PURGE + [name + "=" + version]
-                execute(*cmd, run_as_root=True)
+                execute(*cmd, run_as_root=True, 
+                    env_overrides=ENV_ADDITIONS)
                 return True
     return False
 
@@ -168,6 +176,7 @@ def _pkg_install_special(name, pkginfo):
                 with TemporaryFile() as f:
                     cmd = APT_GET + APT_INSTALL + [name + "=" + version]
                     execute(*cmd, run_as_root=True,
-                            stdout_fh=f, stderr_fh=f)
+                            stdout_fh=f, stderr_fh=f,
+                            env_overrides=ENV_ADDITIONS)
                     return True
     return False

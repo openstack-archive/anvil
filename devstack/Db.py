@@ -22,10 +22,11 @@ from Component import (ComponentBase, RuntimeComponent,
                        UninstallComponent, InstallComponent)
 import Util
 from Util import (DB,
-                  get_pkg_list,
+                  get_pkg_list, get_host_ip,
                   execute_template)
 import Exceptions
-from Exceptions import StartException, StopException, StatusException
+from Exceptions import (StartException, StopException,
+                    StatusException, RestartException)
 import Trace
 from Trace import (TraceWriter, TraceReader)
 import Shell
@@ -41,6 +42,7 @@ DB_ACTIONS = {
         'start': ["service", "mysql", 'start'],
         'stop': ["service", 'mysql', "stop"],
         'status': ["service", 'mysql', "status"],
+        'restart': ["service", 'mysql', "status"],
         #
         'create_db': ['mysql', '--user=%USER%', '--password=%PASSWORD%', '-e', 'CREATE DATABASE %DB%;'],
         'drop_db': ['mysql', '--user=%USER%', '--password=%PASSWORD%', '-e', 'DROP DATABASE IF EXISTS %DB%;'],
@@ -62,6 +64,7 @@ class DBUninstaller(ComponentBase, UninstallComponent):
     def __init__(self, *args, **kargs):
         ComponentBase.__init__(self, TYPE, *args, **kargs)
         self.tracereader = TraceReader(self.tracedir, Trace.IN_TRACE)
+        self.runtime = DBRuntime(*args, **kargs)
 
     def unconfigure(self):
         #nothing to unconfigure, we are just a pkg
@@ -71,7 +74,7 @@ class DBUninstaller(ComponentBase, UninstallComponent):
         #clean out removeable packages
         pkgsfull = self.tracereader.packages_installed()
         if(len(pkgsfull)):
-            LOG.info("Removing %s packages" % (len(pkgsfull)))
+            LOG.info("Potentially removing %s packages" % (len(pkgsfull)))
             self.packager.remove_batch(pkgsfull)
         dirsmade = self.tracereader.dirs_made()
         if(len(dirsmade)):
@@ -102,6 +105,9 @@ class DBInstaller(ComponentBase, InstallComponent):
         out['PASSWORD'] = self.cfg.getpw("passwords", "sql")
         out['BOOT_START'] = str(True).lower()
         out['USER'] = self.cfg.get("db", "sql_user")
+        hostip = get_host_ip(self.cfg)
+        out['SERVICE_HOST'] = hostip
+        out['HOST_IP'] = hostip
         return out
 
     def _post_install(self, pkgs):
@@ -146,8 +152,8 @@ class DBInstaller(ComponentBase, InstallComponent):
             self.tracewriter.package_install(name, pkgs.get(name))
         #run any post-installs cmds
         self._post_install(pkgs)
-        #it should be started now, if not start it
-        self.runtime.start()
+        #restart it to make sure all good
+        self.runtime.restart()
         return self.tracedir
 
 
@@ -156,56 +162,38 @@ class DBRuntime(ComponentBase, RuntimeComponent):
         ComponentBase.__init__(self, TYPE, *args, **kargs)
         self.tracereader = TraceReader(self.tracedir, Trace.IN_TRACE)
 
-    def start(self):
-        #ensure it was actually installed
+    def _gettypeactions(self, act, exception_cls):
         pkgsinstalled = self.tracereader.packages_installed()
         if(len(pkgsinstalled) == 0):
-            msg = "Can not start %s since it was not installed" % (TYPE)
-            raise StartException(msg)
-        #figure out how to start it
+            msg = "Can not %s %s since it was not installed" % (act, TYPE)
+            raise exception_cls(msg)
+        #figure out how to do it
         dbtype = self.cfg.get("db", "type")
         typeactions = DB_ACTIONS.get(dbtype)
-        if(typeactions == None or not typeactions.get('start')):
-            msg = BASE_ERROR % ('start', dbtype)
+        if(typeactions == None or not typeactions.get(act)):
+            msg = BASE_ERROR % (act, dbtype)
             raise NotImplementedError(msg)
-        #check if already going
+        return typeactions.get(act)
+
+    def start(self):
         if(self.status().find('start') == -1):
-            #run whatever the command is to get it going
-            startcmd = typeactions.get('start')
+            startcmd = self._gettypeactions('start', StartException)
             execute(*startcmd, run_as_root=True)
         return None
 
     def stop(self):
-        #make sure it was actually installed
-        pkgsinstalled = self.tracereader.packages_installed()
-        if(len(pkgsinstalled) == 0):
-            msg = "Can not stop %s since it was not installed" % (TYPE)
-            raise StopException(msg)
-        #figure out how to stop it
-        dbtype = self.cfg.get("db", "type")
-        typeactions = DB_ACTIONS.get(dbtype)
-        if(typeactions == None or not typeactions.get('stop')):
-            msg = BASE_ERROR % ('stop', dbtype)
-            raise NotImplementedError(msg)
-        #check if already stopped
         if(self.status().find('stop') == -1):
-            #run whatever the command is to get it stopped
-            stopcmd = typeactions.get('stop')
+            stopcmd = self._gettypeactions('stop', StopException)
             execute(*stopcmd, run_as_root=True)
         return None
 
+    def restart(self):
+        restartcmd = self._gettypeactions('restart', RestartException)
+        execute(*restartcmd, run_as_root=True)
+        return None
+
     def status(self):
-        #make sure it was actually installed
-        pkgsinstalled = self.tracereader.packages_installed()
-        if(len(pkgsinstalled) == 0):
-            msg = "Can not check the status of %s since it was not installed" % (TYPE)
-            raise StatusException(msg)
-        #figure out how to get the status of it
-        dbtype = self.cfg.get("db", "type")
-        if(typeactions == None or not typeactions.get('status')):
-            msg = BASE_ERROR % ('status', dbtype)
-            raise NotImplementedError(msg)
-        statuscmd = typeactions.get('status')
+        statuscmd = self._gettypeactions('status', StatusException)
         (sysout, stderr) = execute(*statuscmd, run_as_root=True)
         return sysout.strip()
 

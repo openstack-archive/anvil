@@ -31,6 +31,7 @@ import os
 
 #constant goodies
 VERSION = 0x2
+DEVSTACK = 'DEVSTACK'
 
 #these also have meaning outside python
 #ie in the pkg listings so update there also!
@@ -221,18 +222,20 @@ def component_pths(root, compnent_type):
 
 
 def get_host_ip(cfg=None):
+    ip = None
     if(cfg):
-        ip = cfg.get('default', 'host_ip')
-        if(ip and len(ip)):
-            return ip
-    interfaces = get_interfaces()
-    def_info = interfaces.get(DEFAULT_NET_INTERFACE)
-    if(not def_info):
-        return None
-    ipinfo = def_info.get(DEFAULT_NET_INTERFACE_IP_VERSION)
-    if(not ipinfo):
-        return None
-    return ipinfo.get('addr')
+        cfg_ip = cfg.get('default', 'host_ip')
+        if(cfg_ip and len(cfg_ip)):
+            ip = cfg_ip
+    if(ip == None):
+        interfaces = get_interfaces()
+        def_info = interfaces.get(DEFAULT_NET_INTERFACE)
+        if(def_info):
+            ipinfo = def_info.get(DEFAULT_NET_INTERFACE_IP_VERSION)
+            if(ipinfo):
+                ip = ipinfo.get('addr')
+    LOG.debug("Got host ip %s" % (ip))
+    return ip
 
 
 def get_interfaces():
@@ -325,14 +328,19 @@ def joinlinesep(*pieces):
     return os.linesep.join(*pieces)
 
 
-def param_replace(text, replacements):
-    LOG.debug("Performing parameter replacements on %s" % (text))
+def param_replace(text, replacements, ignore_missing=False):
+    if(ignore_missing):
+        LOG.debug("Performing parameter replacements (ignoring missing) on %s" % (text))
+    else:
+        LOG.debug("Performing parameter replacements (not ignoring missing) on %s" % (text))
 
     def replacer(m):
-        org = m.group()
+        org = m.group(0)
         name = m.group(1)
         v = replacements.get(name)
-        if(v == None):
+        if(v == None and ignore_missing):
+            v = org
+        elif(v == None and not ignore_missing):
             msg = "No replacement found for parameter %s" % (org)
             raise NoReplacementException(msg)
         else:
@@ -355,8 +363,8 @@ def welcome(program_action):
 
 '''
     welcome = "  " + welcome.strip()
-    lowerc = " " * 21 + colored(lower, 'blue')
-    msg = welcome + "\n" + lowerc
+    lower_out = (" " * 17) + colored(DEVSTACK, 'green') + ": " + colored(lower, 'blue')
+    msg = welcome + os.linesep + lower_out
     print(msg)
 
 

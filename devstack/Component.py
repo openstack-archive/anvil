@@ -28,7 +28,7 @@ class ComponentBase():
         self.packager = kargs.get("pkg")
         self.distro = kargs.get("distro")
         self.root = kargs.get("root")
-        self.othercomponents = kargs.get("components")
+        self.othercomponents = set(kargs.get("components"))
         pths = Util.component_pths(self.root, component_name)
         self.componentroot = pths.get('root_dir')
         self.tracedir = pths.get("trace_dir")
@@ -66,8 +66,8 @@ class RuntimeComponent():
     def stop(self):
         raise NotImplementedError()
 
-    #this should return a status string
-    #with "stop" in it if its stopped
-    #"start" in it if its started (not both)
     def status(self):
+        raise NotImplementedError()
+
+    def restart(self):
         raise NotImplementedError()

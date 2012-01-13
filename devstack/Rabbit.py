@@ -19,7 +19,8 @@ import Component
 from Component import (ComponentBase, RuntimeComponent,
                        UninstallComponent, InstallComponent)
 import Exceptions
-from Exceptions import StartException, StopException, StatusException
+from Exceptions import (StartException, StopException, 
+                    StatusException, RestartException)
 import Packager
 import Util
 from Util import (RABBIT,
@@ -36,6 +37,7 @@ TYPE = RABBIT
 START_CMD = ['service', "rabbitmq-server", "start"]
 STOP_CMD = ['service', "rabbitmq-server", "stop"]
 STATUS_CMD = ['service', "rabbitmq-server", "status"]
+RESTART_CMD = ['service', "rabbitmq-server", "restart"]
 PWD_CMD = ['rabbitmqctl', 'change_password', 'guest']
 
 
@@ -52,13 +54,11 @@ class RabbitUninstaller(ComponentBase, UninstallComponent):
         #clean out removeable packages
         pkgsfull = self.tracereader.packages_installed()
         if(len(pkgsfull)):
-            am = len(pkgsfull)
-            LOG.info("Removing %s packages" % (am))
+            LOG.info("Potentially removing %s packages" % (len(pkgsfull)))
             self.packager.remove_batch(pkgsfull)
         dirsmade = self.tracereader.dirs_made()
         if(len(dirsmade)):
-            am = len(dirsmade)
-            LOG.info("Removing %s created directories" % (am))
+            LOG.info("Removing %s created directories" % (len(dirsmade)))
             for dirname in dirsmade:
                 deldir(dirname)
                 LOG.info("Removed %s" % (dirname))
@@ -98,8 +98,8 @@ class RabbitInstaller(ComponentBase, InstallComponent):
         #this trace is used to remove the dirs created
         self.tracewriter.dir_made(*dirsmade)
         self._setup_pw()
-        #it should be started now, if not start it
-        self.runtime.start()
+        #restart it to make sure its ok to go
+        self.runtime.restart()
         return self.tracedir
 
 
@@ -113,7 +113,6 @@ class RabbitRuntime(ComponentBase, RuntimeComponent):
         if(len(pkgsinstalled) == 0):
             msg = "Can not start %s since it was not installed" % (TYPE)
             raise StartException(msg)
-        #check if already going
         if(self.status().find('start') == -1):
             execute(*START_CMD, run_as_root=True)
         return None
@@ -126,12 +125,19 @@ class RabbitRuntime(ComponentBase, RuntimeComponent):
         (sysout, stderr) = execute(*STATUS_CMD, run_as_root=True)
         return sysout.strip().lower()
 
+    def restart(self):
+        pkgsinstalled = self.tracereader.packages_installed()
+        if(len(pkgsinstalled) == 0):
+            msg = "Can not check the status of %s since it was not installed" % (TYPE)
+            raise RestartException(msg)
+        execute(*RESTART_CMD, run_as_root=True)
+        return None
+
     def stop(self):
         pkgsinstalled = self.tracereader.packages_installed()
         if(len(pkgsinstalled) == 0):
             msg = "Can not stop %s since it was not installed" % (TYPE)
             raise StopException(msg)
-        #check if already stopped
         if(self.status().find('stop') == -1):
             execute(*STOP_CMD, run_as_root=True)
         return None

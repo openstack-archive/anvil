@@ -30,7 +30,7 @@ import Runner
 import runners.Foreground as Foreground
 from runners.Foreground import (ForegroundRunner)
 from Util import (GLANCE,
-                  get_pkg_list,
+                  get_pkg_list, get_host_ip,
                   param_replace, get_dbdsn,
                   )
 from Shell import (execute, deldir, mkdirslist, unlink,
@@ -85,7 +85,7 @@ class GlanceUninstaller(GlanceBase, UninstallComponent):
         #clean out removeable packages
         pkgsfull = self.tracereader.packages_installed()
         if(len(pkgsfull)):
-            LOG.info("Removing %s packages" % (len(pkgsfull)))
+            LOG.info("Potentially removing %s packages" % (len(pkgsfull)))
             self.packager.remove_batch(pkgsfull)
         #clean out files touched
         filestouched = self.tracereader.files_touched()
@@ -314,4 +314,7 @@ class GlanceInstaller(GlanceBase, InstallComponent):
         mp['SYSLOG'] = self.cfg.getboolean("default", "syslog")
         mp['SERVICE_TOKEN'] = self.cfg.getpw("passwords", "service_token")
         mp['SQL_CONN'] = get_dbdsn(self.cfg, DB_NAME)
+        hostip = get_host_ip(self.cfg)
+        mp['SERVICE_HOST'] = hostip
+        mp['HOST_IP'] = hostip
         return mp

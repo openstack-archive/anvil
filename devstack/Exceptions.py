@@ -38,6 +38,10 @@ class StopException(Exception):
     pass
 
 
+class RestartException(Exception):
+    pass
+
+
 class StatusException(Exception):
     pass
 

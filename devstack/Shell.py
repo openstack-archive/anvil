@@ -36,6 +36,7 @@ def execute(*cmd, **kwargs):
     process_input = kwargs.pop('process_input', None)
     check_exit_code = kwargs.pop('check_exit_code', [0])
     cwd = kwargs.pop('cwd', None)
+    env_overrides = kwargs.pop('env_overrides', None)
     ignore_exit_code = False
 
     if(isinstance(check_exit_code, bool)):
@@ -57,12 +58,12 @@ def execute(*cmd, **kwargs):
         LOG.debug('Running cmd: [%s]' % (' '.join(cmd)))
 
     if(process_input != None):
-        LOG.debug('With stdin > %s' % (process_input))
+        LOG.debug('With stdin: %s' % (process_input))
 
     stdin_fh = subprocess.PIPE
     stdout_fh = subprocess.PIPE
     stderr_fh = subprocess.PIPE
-    close_filedescriptors = True
+    close_file_descriptors = True
 
     if('stdout_fh' in kwargs.keys()):
         stdout_fh = kwargs.get('stdout_fh')
@@ -76,13 +77,20 @@ def execute(*cmd, **kwargs):
         stderr_fh = kwargs.get('stderr_fh')
         LOG.debug("Redirecting stderr to file handle %s" % (stderr_fh))
 
+    process_env = os.environ or {}
+    if(env_overrides and len(env_overrides)):
+        LOG.debug("With additional environment overrides: %s" % (env_overrides))
+        for (k, v) in env_overrides.items():
+            process_env[k] = str(v)
+
     obj = subprocess.Popen(cmd,
             stdin=stdin_fh,
             stdout=stdout_fh,
             stderr=stderr_fh,
-            close_fds=close_filedescriptors,
+            close_fds=close_file_descriptors,
             cwd=cwd,
-            shell=shell)
+            shell=shell,
+            env=process_env)
 
     result = None
     if(process_input != None):

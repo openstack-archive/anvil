@@ -203,9 +203,18 @@ def resolve_dependencies(action, components):
 
 
 def check_root(action, rootdir):
-    if(action == Util.INSTALL and os.path.isdir(rootdir)):
-        LOG.error("Root directory [%s] already exists! Please remove it!" % (rootdir))
-        return False
+    if(action == Util.INSTALL):
+        root_there = False
+        if(os.path.isdir(rootdir)):
+            sublisting = os.listdir(rootdir)
+            if(len(sublisting) != 0):
+                #something exists, not good
+                root_there = True 
+        if(root_there):
+            LOG.error("Root directory [%s] already exists (and it's not empty)! Please remove it or uninstall components!" % (rootdir))
+            return False
+        else:
+            return True
     else:
         return True
 
@@ -267,9 +276,6 @@ def main():
     (install_os, plt) = determine_os()
     if(install_os == None):
         LOG.error("Unsupported operating system/distro: %s" % (plt))
-        return 1
-    if(os.path.isdir(rootdir) and action == Util.INSTALL):
-        LOG.error("Root directory [%s] already exists! Please remove it!" % (rootdir))
         return 1
     #start it
     welcome(action)
