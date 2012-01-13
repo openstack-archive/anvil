@@ -13,7 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import Util
+from Util import (component_pths)
 
 """
 An abstraction that different components
@@ -29,7 +29,7 @@ class ComponentBase():
         self.distro = kargs.get("distro")
         self.root = kargs.get("root")
         self.othercomponents = set(kargs.get("components"))
-        pths = Util.component_pths(self.root, component_name)
+        pths = component_pths(self.root, component_name)
         self.componentroot = pths.get('root_dir')
         self.tracedir = pths.get("trace_dir")
         self.appdir = pths.get("app_dir")

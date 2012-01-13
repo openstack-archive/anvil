@@ -15,21 +15,22 @@
 
 
 import Logger
-import Component
+from Component import (ComponentBase, RuntimeComponent,
+                       UninstallComponent, InstallComponent)
 
 LOG = Logger.getLogger("install.nova")
 
 
-class NovaUninstaller(Component.UninstallComponent):
+class NovaUninstaller(UninstallComponent):
     def __init__(self, *args, **kargs):
         pass
 
 
-class NovaInstaller(Component.InstallComponent):
+class NovaInstaller(InstallComponent):
     def __init__(self, *args, **kargs):
         pass
 
 
-class NovaRuntime(Component.RuntimeComponent):
+class NovaRuntime(RuntimeComponent):
     def __init__(self, *args, **kargs):
         pass

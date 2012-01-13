@@ -17,25 +17,24 @@ import json
 import os.path
 
 import Logger
-import Component
 from Component import (ComponentBase, RuntimeComponent,
                        UninstallComponent, InstallComponent)
 import Shell
 import Util
-import Trace
-from Trace import (TraceWriter, TraceReader)
+from Trace import (TraceWriter, TraceReader,
+                    IN_TRACE, START_TRACE, PY_TRACE,
+                    parse_fn, touch_trace)
 import Downloader
 import Packager
 import Runner
-import runners.Foreground as Foreground
 from runners.Foreground import (ForegroundRunner)
 from Util import (GLANCE,
+                  STACK_CONFIG_DIR,
                   get_pkg_list, get_host_ip,
                   param_replace, get_dbdsn,
                   )
 from Shell import (execute, deldir, mkdirslist, unlink,
                    joinpths, load_file, write_file, touch_file)
-import Exceptions
 from Exceptions import (StopException, StartException, InstallException)
 
 LOG = Logger.getLogger("install.glance")
@@ -69,7 +68,7 @@ class GlanceBase(ComponentBase):
 class GlanceUninstaller(GlanceBase, UninstallComponent):
     def __init__(self, *args, **kargs):
         GlanceBase.__init__(self, *args, **kargs)
-        self.tracereader = TraceReader(self.tracedir, Trace.IN_TRACE)
+        self.tracereader = TraceReader(self.tracedir, IN_TRACE)
 
     def unconfigure(self):
         #get rid of all files configured
@@ -113,9 +112,9 @@ class GlanceRuntime(GlanceBase, RuntimeComponent):
     def __init__(self, *args, **kargs):
         GlanceBase.__init__(self, *args, **kargs)
         self.foreground = kargs.get("foreground", True)
-        self.tracereader = TraceReader(self.tracedir, Trace.IN_TRACE)
-        self.tracewriter = TraceWriter(self.tracedir, Trace.START_TRACE)
-        self.starttracereader = TraceReader(self.tracedir, Trace.START_TRACE)
+        self.tracereader = TraceReader(self.tracedir, IN_TRACE)
+        self.tracewriter = TraceWriter(self.tracedir, START_TRACE)
+        self.starttracereader = TraceReader(self.tracedir, START_TRACE)
 
     def _getstartercls(self):
         if(self.foreground):
@@ -178,7 +177,7 @@ class GlanceRuntime(GlanceBase, RuntimeComponent):
             if(fn == None or name == None):
                 continue
             #figure out which class will stop it
-            contents = Trace.parse_fn(fn)
+            contents = parse_fn(fn)
             killcls = None
             for (cmd, action) in contents:
                 if(cmd == Runner.RUN_TYPE):
@@ -204,7 +203,7 @@ class GlanceInstaller(GlanceBase, InstallComponent):
         GlanceBase.__init__(self, *args, **kargs)
         self.gitloc = self.cfg.get("git", "glance_repo")
         self.brch = self.cfg.get("git", "glance_branch")
-        self.tracewriter = TraceWriter(self.tracedir, Trace.IN_TRACE)
+        self.tracewriter = TraceWriter(self.tracedir, IN_TRACE)
 
     def download(self):
         dirsmade = Downloader.download(self.appdir, self.gitloc, self.brch)
@@ -233,7 +232,7 @@ class GlanceInstaller(GlanceBase, InstallComponent):
         dirsmade = mkdirslist(self.tracedir)
         #this trace is used to remove the dirs created
         self.tracewriter.dir_made(*dirsmade)
-        recordwhere = Trace.touch_trace(self.tracedir, Trace.PY_TRACE)
+        recordwhere = touch_trace(self.tracedir, PY_TRACE)
         #this trace is used to remove the trace created
         self.tracewriter.py_install(recordwhere)
         (sysout, stderr) = execute(*PY_INSTALL, cwd=self.appdir, run_as_root=True)
@@ -250,7 +249,7 @@ class GlanceInstaller(GlanceBase, InstallComponent):
             #and adjust that template to have real values and then go through
             #the resultant config file and perform and adjustments (directory creation...)
             #and then write that to the glance configuration directory.
-            sourcefn = joinpths(Util.STACK_CONFIG_DIR, TYPE, fn)
+            sourcefn = joinpths(STACK_CONFIG_DIR, TYPE, fn)
             tgtfn = joinpths(self.cfgdir, fn)
             LOG.info("Configuring template file %s" % (sourcefn))
             contents = load_file(sourcefn)

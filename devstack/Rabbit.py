@@ -15,19 +15,15 @@
 
 
 import Logger
-import Component
 from Component import (ComponentBase, RuntimeComponent,
                        UninstallComponent, InstallComponent)
-import Exceptions
 from Exceptions import (StartException, StopException,
                     StatusException, RestartException)
 import Packager
-import Util
 from Util import (RABBIT,
                   get_pkg_list)
-import Trace
-from Trace import (TraceWriter, TraceReader)
-import Shell
+from Trace import (TraceWriter, TraceReader, 
+                    IN_TRACE)
 from Shell import (mkdirslist, execute, deldir)
 
 LOG = Logger.getLogger("install.rabbit")
@@ -44,7 +40,7 @@ PWD_CMD = ['rabbitmqctl', 'change_password', 'guest']
 class RabbitUninstaller(ComponentBase, UninstallComponent):
     def __init__(self, *args, **kargs):
         ComponentBase.__init__(self, TYPE, *args, **kargs)
-        self.tracereader = TraceReader(self.tracedir, Trace.IN_TRACE)
+        self.tracereader = TraceReader(self.tracedir, IN_TRACE)
 
     def unconfigure(self):
         #nothing to unconfigure, we are just a pkg
@@ -67,7 +63,7 @@ class RabbitUninstaller(ComponentBase, UninstallComponent):
 class RabbitInstaller(ComponentBase, InstallComponent):
     def __init__(self, *args, **kargs):
         ComponentBase.__init__(self, TYPE, *args, **kargs)
-        self.tracewriter = TraceWriter(self.tracedir, Trace.IN_TRACE)
+        self.tracewriter = TraceWriter(self.tracedir, IN_TRACE)
         self.runtime = RabbitRuntime(*args, **kargs)
 
     def download(self):
@@ -109,7 +105,7 @@ class RabbitInstaller(ComponentBase, InstallComponent):
 class RabbitRuntime(ComponentBase, RuntimeComponent):
     def __init__(self, *args, **kargs):
         ComponentBase.__init__(self, TYPE, *args, **kargs)
-        self.tracereader = TraceReader(self.tracedir, Trace.IN_TRACE)
+        self.tracereader = TraceReader(self.tracedir, IN_TRACE)
 
     def start(self):
         pkgsinstalled = self.tracereader.packages_installed()

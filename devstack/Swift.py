@@ -15,21 +15,22 @@
 
 
 import Logger
-import Component
+from Component import (ComponentBase, RuntimeComponent,
+                       UninstallComponent, InstallComponent)
 
 LOG = Logger.getLogger("install.swift")
 
 
-class SwiftUninstaller(Component.UninstallComponent):
+class SwiftUninstaller(UninstallComponent):
     def __init__(self, *args, **kargs):
         pass
 
 
-class SwiftInstaller(Component.InstallComponent):
+class SwiftInstaller(InstallComponent):
     def __init__(self, *args, **kargs):
         pass
 
 
-class SwiftRuntime(Component.RuntimeComponent):
+class SwiftRuntime(RuntimeComponent):
     def __init__(self, *args, **kargs):
         pass

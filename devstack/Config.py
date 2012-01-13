@@ -13,14 +13,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import ConfigParser
 import os
 import re
-import ConfigParser
 
-import Shell
-import Logger
-import Exceptions
 from Exceptions import (BadParamException)
+import Logger
+import Shell
 
 LOG = Logger.getLogger("install.config")
 PW_TMPL = "Enter a password for %s: "

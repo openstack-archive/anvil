@@ -14,8 +14,8 @@
 #    under the License.
 
 import logging
-import sys
 import os
+import sys
 
 #requires http://pypi.python.org/pypi/termcolor
 #but the colors make it worth it :-)

@@ -13,14 +13,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import os.path
 import json
+import os.path
 
-import Util
+from Exceptions import (NoTraceException)
 from Util import (rcf8222date)
-
-import Shell
-from Shell import (touch_file, append_file, joinpths, load_file, mkdirslist)
+from Shell import (touch_file, append_file, 
+                    joinpths, load_file, mkdirslist,
+                    isfile)
 
 TRACE_FMT = "%s - %s\n"
 TRACE_EXT = ".trace"
@@ -148,7 +148,6 @@ class TraceReader():
         for (cmd, action) in lines:
             if(cmd == FILE_TOUCHED and len(action)):
                 files.append(action)
-        #ensure no dups
         files = list(set(files))
         files.sort()
         return files
@@ -159,9 +158,8 @@ class TraceReader():
         for (cmd, action) in lines:
             if(cmd == DIR_MADE and len(action)):
                 dirs.append(action)
-        #ensure not dups
-        dirs = list(set(dirs))
         #ensure in ok order (ie /tmp is before /)
+        dirs = list(set(dirs))
         dirs.sort()
         dirs.reverse()
         return dirs
@@ -182,7 +180,6 @@ class TraceReader():
         for (cmd, action) in lines:
             if(cmd == CFG_WRITING_FILE and len(action)):
                 files.append(action)
-        #ensure not dups
         files = list(set(files))
         files.sort()
         return files
@@ -231,6 +228,9 @@ def read(rootdir, name):
 
 
 def parse_fn(fn):
+    if(not isfile(fn)):
+        msg = "No trace found at filename %s" % (fn)
+        raise NoTraceException(msg)
     contents = load_file(fn)
     lines = contents.splitlines()
     accum = list()
@@ -243,4 +243,5 @@ def parse_fn(fn):
 
 
 def parse_name(rootdir, name):
-    return parse_fn(trace_fn(rootdir, name))
+    fn = trace_fn(rootdir, name)
+    return parse_fn(fn)

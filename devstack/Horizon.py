@@ -15,7 +15,8 @@
 
 
 import Logger
-import Component
+from Component import (ComponentBase, RuntimeComponent,
+                       UninstallComponent, InstallComponent)
 
 LOG = Logger.getLogger("install.horizon")
 
@@ -30,16 +31,16 @@ class HorizonTraceReader():
         pass
 
 
-class HorizonUninstaller(Component.UninstallComponent):
+class HorizonUninstaller(UninstallComponent):
     def __init__(self, *args, **kargs):
         pass
 
 
-class HorizonInstaller(Component.InstallComponent):
+class HorizonInstaller(InstallComponent):
     def __init__(self, *args, **kargs):
         pass
 
 
-class HorizonRuntime(Component.RuntimeComponent):
+class HorizonRuntime(RuntimeComponent):
     def __init__(self, *args, **kargs):
         pass

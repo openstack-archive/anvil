@@ -15,31 +15,22 @@
 
 
 import Logger
-import Component
+from Component import (ComponentBase, RuntimeComponent,
+                       UninstallComponent, InstallComponent)
 
 LOG = Logger.getLogger("install.quantum")
 
 
-class QuantumTraceWriter():
-    def __init__(self, root):
-        pass
-
-
-class QuantumTraceReader():
-    def __init__(self, root):
-        pass
-
-
-class QuantumUninstaller(Component.UninstallComponent):
+class QuantumUninstaller(UninstallComponent):
     def __init__(self, *args, **kargs):
         pass
 
 
-class QuantumInstaller(Component.InstallComponent):
+class QuantumInstaller(InstallComponent):
     def __init__(self, *args, **kargs):
         pass
 
 
-class QuantumRuntime(Component.RuntimeComponent):
+class QuantumRuntime(RuntimeComponent):
     def __init__(self, *args, **kargs):
         pass

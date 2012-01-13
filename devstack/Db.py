@@ -17,19 +17,15 @@ import re
 
 import Logger
 import Packager
-import Component
 from Component import (ComponentBase, RuntimeComponent,
                        UninstallComponent, InstallComponent)
-import Util
 from Util import (DB,
                   get_pkg_list, get_host_ip,
                   execute_template)
-import Exceptions
 from Exceptions import (StartException, StopException,
                     StatusException, RestartException)
-import Trace
-from Trace import (TraceWriter, TraceReader)
-import Shell
+from Trace import (TraceWriter, TraceReader,
+                   IN_TRACE)
 from Shell import (mkdirslist, execute, deldir,
                   load_file, write_file)
 
@@ -63,7 +59,7 @@ BASE_ERROR = 'Currently we do not know how to %s for database type [%s]'
 class DBUninstaller(ComponentBase, UninstallComponent):
     def __init__(self, *args, **kargs):
         ComponentBase.__init__(self, TYPE, *args, **kargs)
-        self.tracereader = TraceReader(self.tracedir, Trace.IN_TRACE)
+        self.tracereader = TraceReader(self.tracedir, IN_TRACE)
         self.runtime = DBRuntime(*args, **kargs)
 
     def unconfigure(self):
@@ -87,7 +83,7 @@ class DBUninstaller(ComponentBase, UninstallComponent):
 class DBInstaller(ComponentBase, InstallComponent):
     def __init__(self, *args, **kargs):
         ComponentBase.__init__(self, TYPE, *args, **kargs)
-        self.tracewriter = TraceWriter(self.tracedir, Trace.IN_TRACE)
+        self.tracewriter = TraceWriter(self.tracedir, IN_TRACE)
         self.runtime = DBRuntime(*args, **kargs)
 
     def download(self):
@@ -156,7 +152,7 @@ class DBInstaller(ComponentBase, InstallComponent):
 class DBRuntime(ComponentBase, RuntimeComponent):
     def __init__(self, *args, **kargs):
         ComponentBase.__init__(self, TYPE, *args, **kargs)
-        self.tracereader = TraceReader(self.tracedir, Trace.IN_TRACE)
+        self.tracereader = TraceReader(self.tracedir, IN_TRACE)
 
     def _gettypeactions(self, act, exception_cls):
         pkgsinstalled = self.tracereader.packages_installed()

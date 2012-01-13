@@ -21,9 +21,7 @@ frameworks (ie apt, yum) can inherit from
 
 import Logger
 import Shell
-from Shell import execute
-import Util
-from Util import execute_template
+from Util import (execute_template)
 
 LOG = Logger.getLogger("install.packager")
 

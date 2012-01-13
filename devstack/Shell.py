@@ -13,17 +13,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import subprocess
-import shlex
 import getpass
-import sys
-import os.path
-import os
-import shutil
 import json
+import os
+import os.path
+import shlex
+import shutil
+import subprocess
+import sys
 
-import Exceptions
-from Exceptions import ProcessExecutionError, FileException
+from Exceptions import (ProcessExecutionError, FileException)
 import Logger
 
 ROOT_HELPER = ["sudo"]
@@ -33,6 +32,7 @@ LOG = Logger.getLogger("install.shell")
 
 
 def execute(*cmd, **kwargs):
+
     process_input = kwargs.pop('process_input', None)
     check_exit_code = kwargs.pop('check_exit_code', [0])
     cwd = kwargs.pop('cwd', None)
@@ -77,9 +77,9 @@ def execute(*cmd, **kwargs):
         stderr_fh = kwargs.get('stderr_fh')
         LOG.debug("Redirecting stderr to file handle: %s" % (stderr_fh))
 
-    process_env = None
+    process_env = dict(os.environ)
+    LOG.debug("With environment: %s" % (process_env))
     if(env_overrides and len(env_overrides)):
-        process_env = dict(os.environ)
         LOG.debug("With additional environment overrides: %s" % (env_overrides))
         for (k, v) in env_overrides.items():
             process_env[k] = str(v)

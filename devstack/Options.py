@@ -13,19 +13,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import optparse
 from optparse import OptionParser
 
-import Util
-
-VERSION_ID = "%0.2f" % (Util.VERSION)
-
+from Util import (VERSION, VERSION_STR, ACTIONS, COMPONENT_NAMES)
 
 def parse():
-    versionstr = "%prog v" + VERSION_ID
+
+    versionstr = "%prog v" + VERSION_STR
     parser = OptionParser(version=versionstr)
 
-    known_actions = sorted(set(Util.ACTIONS))
+    known_actions = sorted(ACTIONS)
     actions = "(" + ", ".join(known_actions) + ")"
     parser.add_option("-a", "--action",
             action="store",
@@ -41,13 +38,19 @@ def parse():
         metavar="DIR",
         help="root DIR for new components or DIR with existing components (ACTION dependent)")
 
-    known_components = sorted(set(Util.NAMES))
+    known_components = sorted(COMPONENT_NAMES)
     components = "(" + ", ".join(known_components) + ")"
     parser.add_option("-c",  "--component",
         action="append",
         dest="component",
         help="stack component, ie %s" % (components))
 
+    parser.add_option("-f",  "--force",
+        action="store_true",
+        dest="force",
+        help="force ACTION even if no trace found (ACTION dependent)",
+        default=False)
+    
     (options, args) = parser.parse_args()
 
     #extract only what we care about
@@ -56,4 +59,5 @@ def parse():
     output['dir'] = options.dir
     output['action'] = options.action
     output['extras'] = args
+    output['force'] = options.force
     return output

@@ -13,28 +13,27 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import Exceptions
+from time import (localtime, strftime)
+from termcolor import colored
+import os
+import platform
+import re
+import subprocess
+
 from Exceptions import (BadRegexException,
                         NoReplacementException,
                         FileException)
 import Logger
-import Shell
 from Shell import (joinpths, load_json, execute)
-
-from time import (localtime, strftime)
-from termcolor import colored
-import subprocess
-import platform
-import re
-import os
 
 #constant goodies
 VERSION = 0x2
+VERSION_STR = "%0.2f" % (VERSION)
 DEVSTACK = 'DEVSTACK'
 
 #these also have meaning outside python
 #ie in the pkg listings so update there also!
-UBUNTU12 = "ubuntu-oneiric"
+UBUNTU11 = "ubuntu-oneiric"
 RHEL6 = "rhel-6"
 
 #GIT master
@@ -58,7 +57,7 @@ HORIZON = "horizon"
 KEYSTONE = "keystone"
 DB = "db"
 RABBIT = "rabbit"
-NAMES = [NOVA, GLANCE, QUANTUM,
+COMPONENT_NAMES = [NOVA, GLANCE, QUANTUM,
          SWIFT, HORIZON, KEYSTONE,
          DB, RABBIT]
 
@@ -112,7 +111,7 @@ STACK_CFG_LOC = joinpths(STACK_CONFIG_DIR, "stack.ini")
 #this regex is how we match python platform output to
 #a known constant
 KNOWN_OS = {
-    UBUNTU12: '/Ubuntu(.*)oneiric/i',
+    UBUNTU11: '/Ubuntu(.*)oneiric/i',
     RHEL6: '/redhat-6\.(\d+)/i',
 }
 

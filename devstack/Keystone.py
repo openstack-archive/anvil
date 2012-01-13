@@ -16,22 +16,21 @@
 import os
 import os.path
 
-import Util
-from Util import (KEYSTONE,
+from Util import (KEYSTONE, 
+                  CONFIG_DIR, STACK_CONFIG_DIR,
+                  NOVA, GLANCE, SWIFT,
                   get_pkg_list, get_dbdsn,
                   param_replace, get_host_ip,
                   execute_template)
 import Logger
-import Component
 import Downloader
-import Trace
 import Db
-from Trace import (TraceWriter, TraceReader)
-import Shell
+from Trace import (TraceWriter, TraceReader,
+                    touch_trace,
+                    IN_TRACE, PY_TRACE)
 from Shell import (execute, mkdirslist, write_file,
                     load_file, joinpths, touch_file,
                     unlink, deldir)
-import Component
 from Component import (ComponentBase, RuntimeComponent,
                        UninstallComponent, InstallComponent)
 
@@ -49,15 +48,14 @@ DB_NAME = "keystone"
 class KeystoneBase(ComponentBase):
     def __init__(self, *args, **kargs):
         ComponentBase.__init__(self, TYPE, *args, **kargs)
-        self.cfgdir = joinpths(self.appdir, Util.CONFIG_DIR)
+        self.cfgdir = joinpths(self.appdir, CONFIG_DIR)
         self.bindir = joinpths(self.appdir, BIN_DIR)
-        self.scriptfn = joinpths(Util.STACK_CONFIG_DIR, TYPE, DATA_SCRIPT)
 
 
 class KeystoneUninstaller(KeystoneBase, UninstallComponent):
     def __init__(self, *args, **kargs):
         KeystoneBase.__init__(self, *args, **kargs)
-        self.tracereader = TraceReader(self.tracedir, Trace.IN_TRACE)
+        self.tracereader = TraceReader(self.tracedir, IN_TRACE)
 
     def unconfigure(self):
         #get rid of all files configured
@@ -102,7 +100,7 @@ class KeystoneInstaller(KeystoneBase, InstallComponent):
         KeystoneBase.__init__(self, *args, **kargs)
         self.gitloc = self.cfg.get("git", "keystone_repo")
         self.brch = self.cfg.get("git", "keystone_branch")
-        self.tracewriter = TraceWriter(self.tracedir, Trace.IN_TRACE)
+        self.tracewriter = TraceWriter(self.tracedir, IN_TRACE)
 
     def download(self):
         dirsmade = Downloader.download(self.appdir, self.gitloc, self.brch)
@@ -128,7 +126,7 @@ class KeystoneInstaller(KeystoneBase, InstallComponent):
         dirsmade = mkdirslist(self.tracedir)
         #this trace is used to remove the dirs created
         self.tracewriter.dir_made(*dirsmade)
-        recordwhere = Trace.touch_trace(self.tracedir, Trace.PY_TRACE)
+        recordwhere = touch_trace(self.tracedir, PY_TRACE)
         #this trace is used to remove the trace created
         self.tracewriter.py_install(recordwhere)
         (sysout, stderr) = execute(*PY_INSTALL, cwd=self.appdir, run_as_root=True)
@@ -143,7 +141,7 @@ class KeystoneInstaller(KeystoneBase, InstallComponent):
         dirsmade = mkdirslist(self.cfgdir)
         self.tracewriter.dir_made(*dirsmade)
         for fn in CONFIGS:
-            sourcefn = joinpths(Util.STACK_CONFIG_DIR, TYPE, fn)
+            sourcefn = joinpths(STACK_CONFIG_DIR, TYPE, fn)
             tgtfn = joinpths(self.cfgdir, fn)
             LOG.info("Configuring template file %s" % (sourcefn))
             contents = load_file(sourcefn)
@@ -165,7 +163,6 @@ class KeystoneInstaller(KeystoneBase, InstallComponent):
 
     def _setup_data(self):
         params = self._get_param_map()
-        params['BIN_DIR'] = self.bindir
         cmds = _keystone_setup_cmds(self.othercomponents)
         execute_template(*cmds, params=params, ignore_missing=True)
 
@@ -203,9 +200,9 @@ class KeystoneInstaller(KeystoneBase, InstallComponent):
         mp['DEST'] = self.appdir
         mp['SQL_CONN'] = get_dbdsn(self.cfg, DB_NAME)
         mp['ADMIN_PASSWORD'] = self.cfg.getpw('passwords', 'horizon_keystone_admin')
-        hostip = get_host_ip(self.cfg)
-        mp['SERVICE_HOST'] = hostip
-        mp['HOST_IP'] = hostip
+        mp['HOST_IP'] = get_host_ip(self.cfg)
+        mp['SERVICE_TOKEN'] = self.cfg.getpw("passwords", "service_token")
+        mp['BIN_DIR'] = self.bindir
         return mp
 
 
@@ -360,7 +357,7 @@ def _keystone_setup_cmds(components):
         ]
     })
 
-    if(Util.NOVA in components):
+    if(NOVA in components):
         services.append({
             "cmd": [
                 "%BIN_DIR%/keystone-manage", "service", "add",
@@ -374,7 +371,7 @@ def _keystone_setup_cmds(components):
             ]
         })
 
-    if(Util.GLANCE in components):
+    if(GLANCE in components):
         services.append({
             "cmd": [
                 "%BIN_DIR%/keystone-manage", "service", "add", "glance",
@@ -382,7 +379,7 @@ def _keystone_setup_cmds(components):
             ]
         })
 
-    if(Util.SWIFT in components):
+    if(SWIFT in components):
         services.append({
             "cmd": [
                 "%BIN_DIR%/keystone-manage", "service", "add",
@@ -404,7 +401,7 @@ def _keystone_setup_cmds(components):
         ]
     })
 
-    if(Util.NOVA in components):
+    if(NOVA in components):
         endpoint_templates.append({
             "cmd": [
                 "%BIN_DIR%/keystone-manage", "endpointTemplates", "add",
@@ -428,7 +425,7 @@ def _keystone_setup_cmds(components):
             ]
         })
 
-    if(Util.GLANCE in components):
+    if(GLANCE in components):
         endpoint_templates.append({
             "cmd": [
                 "%BIN_DIR%/keystone-manage", "endpointTemplates", "add",
@@ -441,7 +438,7 @@ def _keystone_setup_cmds(components):
             ]
         })
 
-    if(Util.SWIFT in components):
+    if(SWIFT in components):
         endpoint_templates.append({
             "cmd": [
                 "%BIN_DIR%/keystone-manage", "endpointTemplates", "add",
@@ -468,7 +465,7 @@ def _keystone_setup_cmds(components):
     # but keystone doesn't parse them - it is just a blob from keystone's
     # point of view
     ec2_creds = []
-    if(Util.NOVA in components):
+    if(NOVA in components):
         ec2_creds = [
             {
                 "cmd": [

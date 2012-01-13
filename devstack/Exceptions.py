@@ -26,6 +26,10 @@ class BadParamException(Exception):
     pass
 
 
+class NoTraceException(Exception):
+    pass
+
+
 class NoReplacementException(Exception):
     pass
 
