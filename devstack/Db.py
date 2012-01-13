@@ -110,16 +110,20 @@ class DBInstaller(ComponentBase, InstallComponent):
         out['HOST_IP'] = hostip
         return out
 
-    def _post_install(self, pkgs):
-        #run whatever the pkgs have specified
-        Packager.post_install(pkgs, self._get_install_params())
+    def _do_install(self, pkgs):
+        mp = self._get_install_params()
+        self.packager.pre_install(pkgs, mp)
+        self.packager.install_batch(pkgs)
+        self.packager.post_install(pkgs, mp)
+        #
         #extra actions to ensure we are granted access
+        #
         dbtype = self.cfg.get("db", "type")
         dbactions = DB_ACTIONS.get(dbtype)
         if(dbactions and dbactions.get('grant_all')):
             #update the DB to give user 'USER'@'%' full control of the all databases:
             grant_cmd = dbactions.get('grant_all')
-            params = self._get_install_params()
+            params = mp
             cmds = list()
             cmds.append({
                 'cmd': grant_cmd,
@@ -128,30 +132,22 @@ class DBInstaller(ComponentBase, InstallComponent):
             #shell seems to be needed here
             #since python escapes this to much...
             execute_template(*cmds, params=params, shell=True)
+        #
         #special mysql actions
         if(dbactions and dbtype == MYSQL):
             cmd = dbactions.get('host_adjust')
             if(cmd):
                 execute(*cmd, run_as_root=True, shell=True)
 
-    def _pre_install(self, pkgs):
-        #run whatever the pkgs have specified
-        Packager.pre_install(pkgs, self._get_install_params())
-
     def install(self):
         #just install the pkgs
         pkgs = get_pkg_list(self.distro, TYPE)
         pkgnames = sorted(pkgs.keys())
         LOG.info("Installing packages %s" % (", ".join(pkgnames)))
-        #run any pre-installs cmds
-        self._pre_install(pkgs)
-        #now install the pkgs
-        self.packager.install_batch(pkgs)
+        self._do_install(pkgs)
         #add trace used to remove the pkgs
         for name in pkgnames:
             self.tracewriter.package_install(name, pkgs.get(name))
-        #run any post-installs cmds
-        self._post_install(pkgs)
         #restart it to make sure all good
         self.runtime.restart()
         return self.tracedir

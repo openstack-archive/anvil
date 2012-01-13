@@ -17,9 +17,10 @@ import os
 import os.path
 
 import Util
-from Util import (KEYSTONE, 
+from Util import (KEYSTONE,
                   get_pkg_list, get_dbdsn,
-                  param_replace, get_host_ip)
+                  param_replace, get_host_ip,
+                  execute_template)
 import Logger
 import Component
 import Downloader
@@ -42,7 +43,7 @@ PY_UNINSTALL = ['python', 'setup.py', 'develop', '--uninstall']
 ROOT_CONF = "keystone.conf"
 CONFIGS = [ROOT_CONF]
 BIN_DIR = "bin"
-DATA_SCRIPT = "keystone_data.sh"
+DATA_CMDS = "keystone_data_cmds.json"
 DB_NAME = "keystone"
 
 
@@ -58,7 +59,7 @@ class KeystoneUninstaller(KeystoneBase, UninstallComponent):
     def __init__(self, *args, **kargs):
         KeystoneBase.__init__(self, *args, **kargs)
         self.tracereader = TraceReader(self.tracedir, Trace.IN_TRACE)
- 
+
     def unconfigure(self):
         #get rid of all files configured
         cfgfiles = self.tracereader.files_configured()
@@ -112,13 +113,18 @@ class KeystoneInstaller(KeystoneBase, InstallComponent):
         self.tracewriter.dir_made(*dirsmade)
         return self.tracedir
 
+    def _do_install(self, pkgs):
+        self.packager.pre_install(pkgs)
+        self.packager.install_batch(pkgs)
+        self.packager.post_install(pkgs)
+
     def install(self):
         pkgs = get_pkg_list(self.distro, TYPE)
         pkgnames = sorted(pkgs.keys())
         LOG.debug("Installing packages %s" % (", ".join(pkgnames)))
-        self.packager.install_batch(pkgs)
+        self._do_install(pkgs)
+        #this trace is used to remove the pkgs
         for name in pkgnames:
-            #this trace is used to remove the pkgs
             self.tracewriter.package_install(name, pkgs.get(name))
         dirsmade = mkdirslist(self.tracedir)
         #this trace is used to remove the dirs created
@@ -159,21 +165,13 @@ class KeystoneInstaller(KeystoneBase, InstallComponent):
         Db.create_db(self.cfg, DB_NAME)
 
     def _setup_data(self):
-        contents = load_file(self.scriptfn)
+        cmds = load_json(self.scriptfn)
         #we don't break on the missing ones
         #since it appears that this config "script"
         #also uses the same param format for its own templates...
-        repcontents = param_replace(contents, self._get_param_map(), ignore_missing=True)
-        tgtfn = joinpths(self.appdir, 'bin', DATA_SCRIPT)
-        write_file(tgtfn, repcontents)
-        #this trace is used to remove the files configured
-        self.tracewriter.cfg_write(tgtfn)
-        #now run it
-        env_additions = dict()
-        env_additions['ENABLED_SERVICES'] = ",".join(self.othercomponents)
-        env_additions['BIN_DIR'] = joinpths(self.appdir, 'bin')
-        cmd = ['bash', tgtfn]
-        execute(*cmd, env_overrides=env_additions)
+        params = self._get_param_map()
+        params['BIN_DIR'] = self.bindir
+        execute_template(cmds, params=params, ignore_missing=True)
 
     def _config_apply(self, contents, fn):
         lines = contents.splitlines()

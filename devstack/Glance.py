@@ -214,14 +214,18 @@ class GlanceInstaller(GlanceBase, InstallComponent):
         self.tracewriter.dir_made(*dirsmade)
         return self.tracedir
 
+    def _do_install(self, pkgs):
+        mp = self._get_param_map()
+        self.packager.pre_install(pkgs, mp)
+        self.packager.install_batch(pkgs)
+        self.packager.post_install(pkgs, mp)
+
     def install(self):
         #get all the packages for glance for the specified distro
         pkgs = get_pkg_list(self.distro, TYPE)
         pkgnames = sorted(pkgs.keys())
         LOG.debug("Installing packages %s" % (", ".join(pkgnames)))
-        Packager.pre_install(pkgs, self._get_param_map())
-        self.packager.install_batch(pkgs)
-        Packager.post_install(pkgs, self._get_param_map())
+        self._do_install(pkgs)
         #add trace used to remove the pkgs
         for name in pkgnames:
             self.tracewriter.package_install(name, pkgs.get(name))

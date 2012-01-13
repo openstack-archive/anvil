@@ -174,12 +174,14 @@ def execute_template(*cmds, **kargs):
     if(not cmds or len(cmds) == 0):
         return
     params_replacements = kargs.pop('params')
+    ignore_missing = kargs.pop('ignore_missing', False)
     for cmdinfo in cmds:
         cmd_to_run_templ = cmdinfo.get("cmd")
         cmd_to_run = list()
         for piece in cmd_to_run_templ:
             if(params_replacements and len(params_replacements)):
-                cmd_to_run.append(param_replace(piece, params_replacements))
+                cmd_to_run.append(param_replace(piece, params_replacements,
+                    ignore_missing=ignore_missing))
             else:
                 cmd_to_run.append(piece)
         stdin_templ = cmdinfo.get('stdin')
@@ -188,7 +190,8 @@ def execute_template(*cmds, **kargs):
             stdin_full = list()
             for piece in stdin_templ:
                 if(params_replacements and len(params_replacements)):
-                    stdin_full.append(param_replace(piece, params_replacements))
+                    stdin_full.append(param_replace(piece, params_replacements,
+                        ignore_missing=ignore_missing))
                 else:
                     stdin_full.append(piece)
             stdin = joinlinesep(stdin_full)

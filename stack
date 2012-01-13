@@ -209,7 +209,7 @@ def check_root(action, rootdir):
             sublisting = os.listdir(rootdir)
             if(len(sublisting) != 0):
                 #something exists, not good
-                root_there = True 
+                root_there = True
         if(root_there):
             LOG.error("Root directory [%s] already exists (and it's not empty)! Please remove it or uninstall components!" % (rootdir))
             return False

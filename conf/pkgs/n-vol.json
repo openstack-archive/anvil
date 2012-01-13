@@ -1,7 +1,5 @@
-#this is a extended json package definition file - we allow simple comments (starting with a hash symbol)
-#for a given distro, when the component is installed
-#the following packages will be installed with
-#the distribution specific package installation class
+# This is a extended json package definition file 
+# We allow simple comments (lines starting with a hash symbol)
 {
   "ubuntu-oneiric": {
     "iscsitarget": {

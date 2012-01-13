@@ -72,11 +72,11 @@ class AptPackager(Packager.Packager):
             cmds.append(torun)
         if(len(cmds)):
             cmd = APT_GET + APT_DO_REMOVE + cmds
-            execute(*cmd, run_as_root=True, 
+            execute(*cmd, run_as_root=True,
                 env_overrides=ENV_ADDITIONS)
         #clean them out
         cmd = APT_GET + APT_AUTOREMOVE
-        execute(*cmd, run_as_root=True, 
+        execute(*cmd, run_as_root=True,
             env_overrides=ENV_ADDITIONS)
 
     def install_batch(self, pkgs):
@@ -93,7 +93,7 @@ class AptPackager(Packager.Packager):
         #install them
         if(len(cmds)):
             cmd = APT_GET + APT_INSTALL + cmds
-            execute(*cmd, run_as_root=True, 
+            execute(*cmd, run_as_root=True,
                 env_overrides=ENV_ADDITIONS)
 
 
@@ -155,7 +155,7 @@ def _pkg_remove_special(name, pkginfo):
                 #probably useful to do this
                 time.sleep(1)
                 cmd = APT_GET + APT_PURGE + [name + "=" + version]
-                execute(*cmd, run_as_root=True, 
+                execute(*cmd, run_as_root=True,
                     env_overrides=ENV_ADDITIONS)
                 return True
     return False

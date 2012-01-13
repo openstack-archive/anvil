@@ -19,7 +19,7 @@ import Component
 from Component import (ComponentBase, RuntimeComponent,
                        UninstallComponent, InstallComponent)
 import Exceptions
-from Exceptions import (StartException, StopException, 
+from Exceptions import (StartException, StopException,
                     StatusException, RestartException)
 import Packager
 import Util
@@ -83,14 +83,17 @@ class RabbitInstaller(ComponentBase, InstallComponent):
         cmd = PWD_CMD + [passwd]
         execute(*cmd, run_as_root=True)
 
+    def _do_install(self, pkgs):
+        self.packager.pre_install(pkgs)
+        self.packager.install_batch(pkgs)
+        self.packager.post_install(pkgs)
+
     def install(self):
         #just install the pkg
         pkgs = get_pkg_list(self.distro, TYPE)
         pkgnames = sorted(pkgs.keys())
         LOG.debug("Installing packages %s" % (", ".join(pkgnames)))
-        Packager.pre_install(pkgs)
-        self.packager.install_batch(pkgs)
-        Packager.post_install(pkgs)
+        self._do_install(pkgs)
         for name in pkgnames:
             #this trace is used to remove the pkgs
             self.tracewriter.package_install(name, pkgs.get(name))

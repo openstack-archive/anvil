@@ -1,7 +1,5 @@
-#this is a extended json package definition file - we allow simple comments (starting with a hash symbol)
-#for a given distro, when the component is installed
-#the following packages will be installed with
-#the distribution specific package installation class
+# This is a extended json package definition file 
+# We allow simple comments (lines starting with a hash symbol)
 {
     "ubuntu-oneiric": {
         "mysql-client-5.1": {
@@ -25,7 +23,7 @@
             "removable": true,
             "pre-install": [
                 {
-                    #this apparently is a action needed for ubuntu/debian to not prompt for passwords...
+                    # This apparently is a action needed for ubuntu/debian to not prompt for passwords...
                     "run_as_root": true,
                     "cmd": [
                         "debconf-set-selections"
@@ -51,17 +49,17 @@
             "removable": true,
             "post-install": [
                 { 
-                    #Make sure it'll start on reboot
+                    # Make sure it'll start on reboot
                     "run_as_root": true,
                     "cmd" : [ "chkconfig", "mysqld", "on"]
                 },
                 { 
-                    #Start the mysql service
+                    # Start the mysql service
                     "run_as_root": true,
                     "cmd" : [ "service", "mysqld", "start"]
                 },
                 {  
-                    #Set the root password
+                    # Set the root password
                     "run_as_root": true,
                     "cmd" : [ "mysqladmin", "-u", "root", 
                                "password", "%PASSWORD%" ]

@@ -24,6 +24,7 @@ LOG = Logger.getLogger("install.package.yum")
 YUM_CMD = ['yum']
 YUM_INSTALL = ["install", "-y"]
 
+
 class YumPackager(Packager.Packager):
     def __init__(self):
         LOG.info("Init called")
@@ -51,6 +52,6 @@ class YumPackager(Packager.Packager):
             LOG.debug("About to run:%s" % (cmd))
             execute(*cmd, run_as_root=True)
 
-    def install_batch(self, pkgs, params=None):
+    def install_batch(self, pkgs):
         LOG.info("install_batch called")
         self._do_cmd(YUM_INSTALL, pkgs)
