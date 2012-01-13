@@ -87,12 +87,12 @@
       "allowed": ">=",
       "removable": true
     },
-    "python-pastescript": {
+    "python-paste-script": {
       "version": "1.7.3-4.el6",
       "allowed": ">=",
       "removable": true
     },
-    "python-pastedeploy": {
+    "python-paste-deploy": {
       "version": "1.3.3-2.1.el6",
       "allowed": ">=",
       "removable": true
