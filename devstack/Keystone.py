@@ -171,7 +171,7 @@ class KeystoneInstaller(KeystoneBase, InstallComponent):
         #also uses the same param format for its own templates...
         params = self._get_param_map()
         params['BIN_DIR'] = self.bindir
-        execute_template(cmds, params=params, ignore_missing=True)
+        execute_template(*cmds, params=params, ignore_missing=True)
 
     def _config_apply(self, contents, fn):
         lines = contents.splitlines()
