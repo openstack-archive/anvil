@@ -23,7 +23,7 @@ sys.path.append("devstack")
 
 import Logger
 import Options
-from Util import (welcome, rcf8222date, determine_os, get_pkg_list)
+from Util import (welcome, rcf8222date, determine_os, get_pkg_list, fetch_deps)
 from Util import (NOVA, GLANCE, QUANTUM, SWIFT, KEYSTONE, HORIZON, DB, RABBIT,
                   INSTALL, UNINSTALL, START, STOP, 
                   ACTIONS, COMPONENT_NAMES, NAMES_PRIORITY,
@@ -202,7 +202,7 @@ def resolve_dependencies(action, components):
     if(action in DEP_ACTIONS_NEEDED):
         new_components = list()
         for c in components:
-            component_deps = list(set(Util.fetch_deps(c)))
+            component_deps = list(set(fetch_deps(c)))
             if(len(component_deps)):
                 LOG.info("Having to %s [%s] since they are dependencies for %s." % (action, ", ".join(component_deps), c))
                 new_components = new_components + component_deps
