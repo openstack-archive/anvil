@@ -96,5 +96,10 @@
     }
   },
   "rhel-6": {
+    "python-nose": {
+      "version": "0.10.4-3.1.el6",
+      "allowed": ">=",
+      "removable": true
+    }
   }
 }
