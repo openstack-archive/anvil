@@ -15,10 +15,12 @@
 
 from Util import (component_pths,
                   get_pkg_list,
+                  get_pip_list,
                   param_replace,
                   STACK_CONFIG_DIR)
 import Downloader
 import Logger
+import Pip
 from Shell import (execute, mkdirslist, write_file,
                     load_file, joinpths, touch_file,
                     unlink, deldir)
@@ -27,6 +29,7 @@ from Trace import (TraceWriter, TraceReader,
                     IN_TRACE, PY_TRACE, START_TRACE)
 import Runner
 from runners.Foreground import (ForegroundRunner)
+from Exceptions import (StopException, StartException, InstallException)
 
 LOG = Logger.getLogger("install.component")
 PY_INSTALL = ['python', 'setup.py', 'develop']
@@ -46,7 +49,6 @@ class ComponentBase():
         self.appdir = pths.get("app_dir")
         self.cfgdir = pths.get('config_dir')
         self.component_name = component_name
-        
 
 #
 #the following are just interfaces...
@@ -93,7 +95,7 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
     def __init__(self, component_name, *args, **kargs):
         ComponentBase.__init__(self, component_name, *args, **kargs)
         self.tracewriter = TraceWriter(self.tracedir, IN_TRACE)
-        
+
     def _get_download_location(self):
         raise NotImplementedError()
 
@@ -108,10 +110,10 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
             #this trace is used to remove the dirs created
             self.tracewriter.dir_made(*dirsmade)
         return self.tracedir
-        
+
     def _get_param_map(self, fn=None):
         return None
-        
+
     def _do_pkg_install(self):
         pkgs = get_pkg_list(self.distro, self.component_name)
         if(len(pkgs)):
@@ -132,7 +134,7 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
 
     def _get_config_files(self):
         return list()
-        
+
     def _config_adjust(fn, contents):
         return contents
 
@@ -188,10 +190,10 @@ class PkgUninstallComponent(ComponentBase, UninstallComponent):
     def __init__(self, component_name, *args, **kargs):
         ComponentBase.__init__(self, component_name, *args, **kargs)
         self.tracereader = TraceReader(self.tracedir, IN_TRACE)
-    
+
     def unconfigure(self):
         self._unconfigure_files()
-        
+
     def _unconfigure_files(self):
         cfgfiles = self.tracereader.files_configured()
         if(len(cfgfiles)):
@@ -220,7 +222,7 @@ class PkgUninstallComponent(ComponentBase, UninstallComponent):
                 if(len(fn)):
                     unlink(fn)
                     LOG.info("Removed %s" % (fn))
-                    
+
     def _uninstall_dirs(self):
         dirsmade = self.tracereader.dirs_made()
         if(len(dirsmade)):
@@ -265,7 +267,7 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
             return ForegroundRunner
         else:
             raise NotImplementedError("Can not yet stop type [%s]" % (starttype))
-            
+
     def _was_installed(self):
         pkgsinstalled = self.tracereader.packages_installed()
         if(len(pkgsinstalled) == 0):
@@ -273,7 +275,7 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
 
     def _get_apps_to_start(self):
         raise NotImplementedError()
-        
+
     def _get_app_options(self, app, params):
         return list()
 
@@ -281,7 +283,7 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
         replacements = dict()
         replacements['ROOT'] = self.appdir
         return replacements
-        
+
     def start(self):
         #ensure it was installed
         if(not self._was_installed()):

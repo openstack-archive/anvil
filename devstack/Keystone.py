@@ -17,7 +17,7 @@ import os
 import os.path
 
 import Pip
-from Util import (KEYSTONE, 
+from Util import (KEYSTONE,
                   CONFIG_DIR,
                   NOVA, GLANCE, SWIFT,
                   get_dbdsn,
@@ -35,11 +35,13 @@ CONFIGS = [ROOT_CONF]
 BIN_DIR = "bin"
 DB_NAME = "keystone"
 
+
 class KeystoneUninstaller(PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
         self.cfgdir = joinpths(self.appdir, CONFIG_DIR)
         self.bindir = joinpths(self.appdir, BIN_DIR)
+
 
 class KeystoneInstaller(PythonInstallComponent):
     def __init__(self, *args, **kargs):
@@ -70,7 +72,7 @@ class KeystoneInstaller(PythonInstallComponent):
         Db.create_db(self.cfg, DB_NAME)
 
     def _setup_data(self):
-        params = self._get_param_map(None)
+        params = self._get_param_map()
         cmds = _keystone_setup_cmds(self.othercomponents)
         execute_template(*cmds, params=params, ignore_missing=True)
 
@@ -78,7 +80,7 @@ class KeystoneInstaller(PythonInstallComponent):
         lines = contents.splitlines()
         for line in lines:
             cleaned = line.strip()
-            if(len(cleaned) == 0 or 
+            if(len(cleaned) == 0 or
                 cleaned[0] == '#' or cleaned[0] == '['):
                 #not useful to examine these
                 continue
@@ -301,7 +303,7 @@ def _keystone_setup_cmds(components):
         ec2_creds = [
             {
                 "cmd": root_cmd + ["credentials", "add",
-                        "admin", "EC2", "admin", "%ADMIN_PASSWORD%", "admin" ]
+                        "admin", "EC2", "admin", "%ADMIN_PASSWORD%", "admin"]
             },
             {
                 "cmd": root_cmd + ["credentials", "add",
@@ -310,5 +312,5 @@ def _keystone_setup_cmds(components):
         ]
 
     # Order matters here...
-    all_cmds =  tenant_cmds + user_cmds + role_cmds + services + endpoint_templates + tokens + ec2_creds
+    all_cmds = tenant_cmds + user_cmds + role_cmds + services + endpoint_templates + tokens + ec2_creds
     return all_cmds

@@ -18,7 +18,7 @@ import os.path
 
 from Exceptions import (NoTraceException)
 from Util import (rcf8222date)
-from Shell import (touch_file, append_file, 
+from Shell import (touch_file, append_file,
                     joinpths, load_file, mkdirslist,
                     isfile)
 

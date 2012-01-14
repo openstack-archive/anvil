@@ -26,9 +26,11 @@ def _str2bool(value_str):
         return True
     return False
 
+
 def get_environment():
     env_copy = dict(os.environ)
     return env_copy
+
 
 def get_environment_key(key, default_val=None):
     LOG.debug("Looking up environment variable %s" % (key))
@@ -37,6 +39,7 @@ def get_environment_key(key, default_val=None):
         LOG.debug("Could not find anything in environment variable %s (using default value %s)" % (key, default_val))
         val = default_val
     return val
+
 
 def get_environment_bool(key, default_val=False):
     val = get_environment_key(key, None)

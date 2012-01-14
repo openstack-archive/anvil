@@ -16,15 +16,14 @@
 
 import Logger
 from Component import (ComponentBase, RuntimeComponent,
-                       UninstallComponent, InstallComponent)
+                       PkgUninstallComponent, PkgInstallComponent)
 from Exceptions import (StartException, StopException,
                     StatusException, RestartException)
 import Packager
-from Util import (RABBIT,
-                  get_pkg_list)
-from Trace import (TraceWriter, TraceReader, 
+from Util import (RABBIT)
+from Trace import (TraceReader,
                     IN_TRACE)
-from Shell import (mkdirslist, execute, deldir)
+from Shell import (execute)
 
 LOG = Logger.getLogger("install.rabbit")
 TYPE = RABBIT
@@ -37,65 +36,27 @@ RESTART_CMD = ['service', "rabbitmq-server", "restart"]
 PWD_CMD = ['rabbitmqctl', 'change_password', 'guest']
 
 
-class RabbitUninstaller(ComponentBase, UninstallComponent):
+class RabbitUninstaller(PkgUninstallComponent):
     def __init__(self, *args, **kargs):
-        ComponentBase.__init__(self, TYPE, *args, **kargs)
-        self.tracereader = TraceReader(self.tracedir, IN_TRACE)
-
-    def unconfigure(self):
-        #nothing to unconfigure, we are just a pkg
-        pass
-
-    def uninstall(self):
-        #clean out removeable packages
-        pkgsfull = self.tracereader.packages_installed()
-        if(len(pkgsfull)):
-            LOG.info("Potentially removing %s packages" % (len(pkgsfull)))
-            self.packager.remove_batch(pkgsfull)
-        dirsmade = self.tracereader.dirs_made()
-        if(len(dirsmade)):
-            LOG.info("Removing %s created directories" % (len(dirsmade)))
-            for dirname in dirsmade:
-                deldir(dirname)
-                LOG.info("Removed %s" % (dirname))
+        PkgUninstallComponent.__init__(self, TYPE, *args, **kargs)
 
 
-class RabbitInstaller(ComponentBase, InstallComponent):
+class RabbitInstaller(PkgInstallComponent):
     def __init__(self, *args, **kargs):
-        ComponentBase.__init__(self, TYPE, *args, **kargs)
-        self.tracewriter = TraceWriter(self.tracedir, IN_TRACE)
+        PkgInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.runtime = RabbitRuntime(*args, **kargs)
 
-    def download(self):
-        #nothing to download, we are just a pkg
-        pass
-
-    def configure(self):
-        #nothing to configure, we are just a pkg
-        pass
+    def _get_download_location(self):
+        return (None, None)
 
     def _setup_pw(self):
         passwd = self.cfg.getpw("passwords", "rabbit")
         cmd = PWD_CMD + [passwd]
         execute(*cmd, run_as_root=True)
 
-    def _do_install(self, pkgs):
-        self.packager.pre_install(pkgs)
-        self.packager.install_batch(pkgs)
-        self.packager.post_install(pkgs)
-
     def install(self):
-        #just install the pkg
-        pkgs = get_pkg_list(self.distro, TYPE)
-        pkgnames = sorted(pkgs.keys())
-        LOG.debug("Installing packages %s" % (", ".join(pkgnames)))
-        self._do_install(pkgs)
-        for name in pkgnames:
-            #this trace is used to remove the pkgs
-            self.tracewriter.package_install(name, pkgs.get(name))
-        dirsmade = mkdirslist(self.tracedir)
-        #this trace is used to remove the dirs created
-        self.tracewriter.dir_made(*dirsmade)
+        pres = PkgInstallComponent.install(self)
+        #ensure setup right
         self._setup_pw()
         #restart it to make sure its ok to go
         self.runtime.restart()

@@ -25,7 +25,7 @@ import Logger
 import Options
 from Util import (welcome, rcf8222date, determine_os, get_pkg_list, fetch_deps)
 from Util import (NOVA, GLANCE, QUANTUM, SWIFT, KEYSTONE, HORIZON, DB, RABBIT,
-                  INSTALL, UNINSTALL, START, STOP, 
+                  INSTALL, UNINSTALL, START, STOP,
                   ACTIONS, COMPONENT_NAMES, NAMES_PRIORITY,
                   UBUNTU11, RHEL6,
                   STACK_CFG_LOC)

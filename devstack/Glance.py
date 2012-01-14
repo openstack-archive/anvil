@@ -20,17 +20,12 @@ import Logger
 from Component import (PythonUninstallComponent,
                        PythonInstallComponent,
                        ProgramRuntime)
-import Shell
-import Util
-import Runner
-from runners.Foreground import (ForegroundRunner)
 from Util import (GLANCE,
                   get_host_ip,
                   param_replace, get_dbdsn,
                   )
 from Shell import (deldir, mkdirslist, unlink,
                    joinpths, touch_file)
-from Exceptions import (StopException, StartException, InstallException)
 
 LOG = Logger.getLogger("install.glance")
 
@@ -55,6 +50,7 @@ class GlanceUninstaller(PythonUninstallComponent):
         PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
         self.cfgdir = joinpths(self.appdir, CONFIG_ACTUAL_DIR)
 
+
 class GlanceRuntime(ProgramRuntime):
     def __init__(self, *args, **kargs):
         ProgramRuntime.__init__(self, TYPE, *args, **kargs)
@@ -78,7 +74,8 @@ class GlanceRuntime(ProgramRuntime):
             for opt in APP_OPTIONS.get(app):
                 opts.append(param_replace(opt, params))
         return opts
-        
+
+
 class GlanceInstaller(PythonInstallComponent):
     def __init__(self, *args, **kargs):
         PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
@@ -93,7 +90,7 @@ class GlanceInstaller(PythonInstallComponent):
 
     def _get_config_files(self):
         return list(CONFIGS)
-        
+
     def _config_adjust(self, contents, fn):
         lines = contents.splitlines()
         for line in lines:

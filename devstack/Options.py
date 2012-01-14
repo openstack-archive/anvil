@@ -17,6 +17,7 @@ from optparse import OptionParser
 
 from Util import (VERSION, VERSION_STR, ACTIONS, COMPONENT_NAMES)
 
+
 def parse():
 
     versionstr = "%prog v" + VERSION_STR
@@ -50,7 +51,7 @@ def parse():
         dest="force",
         help="force ACTION even if no trace found (ACTION dependent)",
         default=False)
-    
+
     (options, args) = parser.parse_args()
 
     #extract only what we care about
