@@ -18,175 +18,68 @@ import os.path
 
 import Pip
 from Util import (KEYSTONE, 
-                  CONFIG_DIR, STACK_CONFIG_DIR,
+                  CONFIG_DIR,
                   NOVA, GLANCE, SWIFT,
-                  get_pkg_list, get_pip_list,
                   get_dbdsn,
-                  param_replace, get_host_ip,
+                  get_host_ip,
                   execute_template)
 import Logger
-import Downloader
 import Db
-from Trace import (TraceWriter, TraceReader,
-                    touch_trace,
-                    IN_TRACE, PY_TRACE)
-from Shell import (execute, mkdirslist, write_file,
-                    load_file, joinpths, touch_file,
-                    unlink, deldir)
-from Component import (ComponentBase, RuntimeComponent,
-                       UninstallComponent, InstallComponent)
-
+from Component import (PythonUninstallComponent, PythonInstallComponent, ProgramRuntime)
+from Shell import (mkdirslist, unlink, touch_file, joinpths)
 LOG = Logger.getLogger("install.keystone")
 
 TYPE = KEYSTONE
-PY_INSTALL = ['python', 'setup.py', 'develop']
-PY_UNINSTALL = ['python', 'setup.py', 'develop', '--uninstall']
 ROOT_CONF = "keystone.conf"
 CONFIGS = [ROOT_CONF]
 BIN_DIR = "bin"
 DB_NAME = "keystone"
 
-
-class KeystoneBase(ComponentBase):
+class KeystoneUninstaller(PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        ComponentBase.__init__(self, TYPE, *args, **kargs)
+        PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
         self.cfgdir = joinpths(self.appdir, CONFIG_DIR)
         self.bindir = joinpths(self.appdir, BIN_DIR)
 
-
-class KeystoneUninstaller(KeystoneBase, UninstallComponent):
+class KeystoneInstaller(PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        KeystoneBase.__init__(self, *args, **kargs)
-        self.tracereader = TraceReader(self.tracedir, IN_TRACE)
-
-    def unconfigure(self):
-        #get rid of all files configured
-        cfgfiles = self.tracereader.files_configured()
-        if(len(cfgfiles)):
-            LOG.info("Removing %s configuration files" % (len(cfgfiles)))
-            for fn in cfgfiles:
-                if(len(fn)):
-                    unlink(fn)
-                    LOG.info("Removed %s" % (fn))
-
-    def uninstall(self):
-        #clean out removeable packages
-        pkgsfull = self.tracereader.packages_installed()
-        if(len(pkgsfull)):
-            LOG.info("Potentially removing %s packages" % (len(pkgsfull)))
-            self.packager.remove_batch(pkgsfull)
-        #clean out pips
-        pipsfull = self.tracereader.pips_installed()
-        if(len(pipsfull)):
-            LOG.info("Potentially removing %s pips" % (len(pipsfull)))
-            Pip.uninstall(pipsfull)
-        #clean out files touched
-        filestouched = self.tracereader.files_touched()
-        if(len(filestouched)):
-            LOG.info("Removing %s touched files" % (len(filestouched)))
-            for fn in filestouched:
-                if(len(fn)):
-                    unlink(fn)
-                    LOG.info("Removed %s" % (fn))
-        #undevelop python???
-        #how should this be done??
-        pylisting = self.tracereader.py_listing()
-        if(pylisting != None):
-            execute(*PY_UNINSTALL, cwd=self.appdir, run_as_root=True)
-        #clean out dirs created
-        dirsmade = self.tracereader.dirs_made()
-        if(len(dirsmade)):
-            LOG.info("Removing %s created directories" % (len(dirsmade)))
-            for dirname in dirsmade:
-                deldir(dirname)
-                LOG.info("Removed %s" % (dirname))
-
-
-class KeystoneInstaller(KeystoneBase, InstallComponent):
-    def __init__(self, *args, **kargs):
-        KeystoneBase.__init__(self, *args, **kargs)
+        PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.gitloc = self.cfg.get("git", "keystone_repo")
         self.brch = self.cfg.get("git", "keystone_branch")
-        self.tracewriter = TraceWriter(self.tracedir, IN_TRACE)
+        self.cfgdir = joinpths(self.appdir, CONFIG_DIR)
+        self.bindir = joinpths(self.appdir, BIN_DIR)
 
-    def download(self):
-        dirsmade = Downloader.download(self.appdir, self.gitloc, self.brch)
-        #this trace isn't used yet but could be
-        self.tracewriter.downloaded(self.appdir, self.gitloc)
-        #this trace is used to remove the dirs created
-        self.tracewriter.dir_made(*dirsmade)
-        return self.tracedir
-
-    def _do_install(self, pkgs):
-        LOG.debug("Installing packages %s" % (", ".join(pkgs.keys())))
-        self.packager.pre_install(pkgs)
-        self.packager.install_batch(pkgs)
-        self.packager.post_install(pkgs)
+    def _get_download_location(self):
+        uri = self.gitloc
+        branch = self.brch
+        return (uri, branch)
 
     def install(self):
-        #install needed pkgs
-        pkgs = get_pkg_list(self.distro, TYPE)
-        if(len(pkgs)):
-            #do the install
-            self._do_install(pkgs)
-            #this trace is used to remove the pkgs installed
-            for name in pkgs.keys():
-                self.tracewriter.package_install(name, pkgs.get(name))
-        #install the needed pips
-        pips = get_pip_list(self.distro, TYPE)
-        if(len(pips)):
-            Pip.install(pips)
-            #this trace is used to remove the pips installed
-            for name in pips.keys():
-                self.tracewriter.pip_install(name, pips.get(name))
-        #this trace is used to remove the dirs created
-        dirsmade = mkdirslist(self.tracedir)
-        self.tracewriter.dir_made(*dirsmade)
-        recordwhere = touch_trace(self.tracedir, PY_TRACE)
-        #this trace is used to remove the trace created
-        self.tracewriter.py_install(recordwhere)
-        (sysout, stderr) = execute(*PY_INSTALL, cwd=self.appdir, run_as_root=True)
-        write_file(recordwhere, sysout)
+        PythonInstallComponent.install(self)
         #adjust db
         self._setup_db()
         #setup any data
         self._setup_data()
         return self.tracedir
 
-    def configure(self):
-        dirsmade = mkdirslist(self.cfgdir)
-        self.tracewriter.dir_made(*dirsmade)
-        for fn in CONFIGS:
-            sourcefn = joinpths(STACK_CONFIG_DIR, TYPE, fn)
-            tgtfn = joinpths(self.cfgdir, fn)
-            LOG.info("Configuring template file %s" % (sourcefn))
-            contents = load_file(sourcefn)
-            pmap = self._get_param_map()
-            LOG.info("Replacing parameters in file %s" % (sourcefn))
-            LOG.debug("Replacements = %s" % (pmap))
-            contents = param_replace(contents, pmap)
-            LOG.debug("Applying side-effects of param replacement for template %s" % (sourcefn))
-            self._config_apply(contents, fn)
-            LOG.info("Writing configuration file %s" % (tgtfn))
-            write_file(tgtfn, contents)
-            #this trace is used to remove the files configured
-            self.tracewriter.cfg_write(tgtfn)
-        return self.tracedir
+    def _get_config_files(self):
+        return list(CONFIGS)
 
     def _setup_db(self):
         Db.drop_db(self.cfg, DB_NAME)
         Db.create_db(self.cfg, DB_NAME)
 
     def _setup_data(self):
-        params = self._get_param_map()
+        params = self._get_param_map(None)
         cmds = _keystone_setup_cmds(self.othercomponents)
         execute_template(*cmds, params=params, ignore_missing=True)
 
-    def _config_apply(self, contents, fn):
+    def _config_adjust(self, contents, fn):
         lines = contents.splitlines()
         for line in lines:
             cleaned = line.strip()
-            if(len(cleaned) == 0 or cleaned[0] == '#' or cleaned[0] == '['):
+            if(len(cleaned) == 0 or 
+                cleaned[0] == '#' or cleaned[0] == '['):
                 #not useful to examine these
                 continue
             pieces = cleaned.split("=", 1)
@@ -208,8 +101,9 @@ class KeystoneInstaller(KeystoneBase, InstallComponent):
                 unlink(val)
                 touch_file(val)
                 self.tracewriter.file_touched(val)
+        return contents
 
-    def _get_param_map(self):
+    def _get_param_map(self, fn=None):
         #these be used to fill in the configuration/cmds +
         #params with actual values
         mp = dict()
@@ -223,9 +117,11 @@ class KeystoneInstaller(KeystoneBase, InstallComponent):
         return mp
 
 
-class KeystoneRuntime(KeystoneBase, RuntimeComponent):
+class KeystoneRuntime(ProgramRuntime):
     def __init__(self, *args, **kargs):
-        KeystoneBase.__init__(self, *args, **kargs)
+        ProgramRuntime.__init__(self, TYPE, *args, **kargs)
+        self.cfgdir = joinpths(self.appdir, CONFIG_DIR)
+        self.bindir = joinpths(self.appdir, BIN_DIR)
 
 
 # Keystone setup commands are the the following

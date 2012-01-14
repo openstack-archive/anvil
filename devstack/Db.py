@@ -17,17 +17,16 @@ import re
 
 import Logger
 import Packager
-from Component import (ComponentBase, RuntimeComponent,
-                       UninstallComponent, InstallComponent)
+from Component import (PkgUninstallComponent, PkgInstallComponent,
+                        ComponentBase, RuntimeComponent)
 from Util import (DB,
-                  get_pkg_list, get_host_ip,
+                  get_host_ip,
                   execute_template)
 from Exceptions import (StartException, StopException,
                     StatusException, RestartException)
-from Trace import (TraceWriter, TraceReader,
-                   IN_TRACE)
-from Shell import (mkdirslist, execute, deldir,
-                  load_file, write_file)
+from Shell import (execute)
+from Trace import (TraceReader,
+                    IN_TRACE)
 
 LOG = Logger.getLogger("install.db")
 TYPE = DB
@@ -56,45 +55,20 @@ DB_ACTIONS = {
 BASE_ERROR = 'Currently we do not know how to %s for database type [%s]'
 
 
-class DBUninstaller(ComponentBase, UninstallComponent):
+class DBUninstaller(PkgUninstallComponent):
     def __init__(self, *args, **kargs):
-        ComponentBase.__init__(self, TYPE, *args, **kargs)
-        self.tracereader = TraceReader(self.tracedir, IN_TRACE)
+        PkgUninstallComponent.__init__(self, TYPE, *args, **kargs)
+
+
+class DBInstaller(PkgInstallComponent):
+    def __init__(self, *args, **kargs):
+        PkgInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.runtime = DBRuntime(*args, **kargs)
 
-    def unconfigure(self):
-        #nothing to unconfigure, we are just a pkg
-        pass
+    def _get_download_location(self):
+        return (None, None)
 
-    def uninstall(self):
-        #clean out removeable packages
-        pkgsfull = self.tracereader.packages_installed()
-        if(len(pkgsfull)):
-            LOG.info("Potentially removing %s packages" % (len(pkgsfull)))
-            self.packager.remove_batch(pkgsfull)
-        dirsmade = self.tracereader.dirs_made()
-        if(len(dirsmade)):
-            LOG.info("Removing %s created directories" % (len(dirsmade)))
-            for dirname in dirsmade:
-                deldir(dirname)
-                LOG.info("Removed %s" % (dirname))
-
-
-class DBInstaller(ComponentBase, InstallComponent):
-    def __init__(self, *args, **kargs):
-        ComponentBase.__init__(self, TYPE, *args, **kargs)
-        self.tracewriter = TraceWriter(self.tracedir, IN_TRACE)
-        self.runtime = DBRuntime(*args, **kargs)
-
-    def download(self):
-        #nothing to download, we are just a pkg
-        pass
-
-    def configure(self):
-        #nothing to configure, we are just a pkg
-        pass
-
-    def _get_install_params(self):
+    def _get_param_map(self, fn=None):
         #this dictionary will be used for parameter replacement
         #in pre-install and post-install sections
         out = dict()
@@ -106,20 +80,15 @@ class DBInstaller(ComponentBase, InstallComponent):
         out['HOST_IP'] = hostip
         return out
 
-    def _do_install(self, pkgs):
-        mp = self._get_install_params()
-        self.packager.pre_install(pkgs, mp)
-        self.packager.install_batch(pkgs)
-        self.packager.post_install(pkgs, mp)
-        #
+    def install(self):
+        PkgInstallComponent.install(self)
         #extra actions to ensure we are granted access
-        #
         dbtype = self.cfg.get("db", "type")
         dbactions = DB_ACTIONS.get(dbtype)
         if(dbactions and dbactions.get('grant_all')):
             #update the DB to give user 'USER'@'%' full control of the all databases:
             grant_cmd = dbactions.get('grant_all')
-            params = mp
+            params = self._get_param_map()
             cmds = list()
             cmds.append({
                 'cmd': grant_cmd,
@@ -128,25 +97,13 @@ class DBInstaller(ComponentBase, InstallComponent):
             #shell seems to be needed here
             #since python escapes this to much...
             execute_template(*cmds, params=params, shell=True)
-        #
         #special mysql actions
         if(dbactions and dbtype == MYSQL):
             cmd = dbactions.get('host_adjust')
             if(cmd):
                 execute(*cmd, run_as_root=True, shell=True)
-
-    def install(self):
-        #just install the pkgs
-        pkgs = get_pkg_list(self.distro, TYPE)
-        pkgnames = sorted(pkgs.keys())
-        LOG.info("Installing packages %s" % (", ".join(pkgnames)))
-        self._do_install(pkgs)
-        #add trace used to remove the pkgs
-        for name in pkgnames:
-            self.tracewriter.package_install(name, pkgs.get(name))
         #restart it to make sure all good
         self.runtime.restart()
-        return self.tracedir
 
 
 class DBRuntime(ComponentBase, RuntimeComponent):

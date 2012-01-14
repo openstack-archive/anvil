@@ -150,15 +150,15 @@ def start(components, distro, rootdir, args):
 def print_cfgs(cfg, action):
     pws = dict(cfg.pws)
     configs_fetched = dict(cfg.configs_fetched)
-    LOG.info("After %s your passwords are:" % (action))
+    LOG.info("After %s your fetched/generated passwords are:" % (action))
     for (pwkey, val) in pws.items():
-        LOG.info("%s = %s" % (pwkey, val))
-    LOG.info("After %s your other configuration is:" % (action))
+        LOG.info("\t%s = %s" % (pwkey, val))
+    LOG.info("After %s your other fetched configuration was:" % (action))
     for (key, val) in configs_fetched.items():
         if(key in pws):
             #already shown
             continue
-        LOG.info("%s = %s" % (key, val))
+        LOG.info("\t%s = %s" % (key, val))
 
 
 def install(components, distro, rootdir, args):
