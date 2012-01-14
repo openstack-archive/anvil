@@ -14,13 +14,15 @@
 #    under the License.
 
 
+from tempfile import TemporaryFile
+
 import Logger
 from Component import (ComponentBase, RuntimeComponent,
                        PkgUninstallComponent, PkgInstallComponent)
 from Exceptions import (StartException, StopException,
                     StatusException, RestartException)
 import Packager
-from Util import (RABBIT)
+from Util import (RABBIT, UBUNTU11)
 from Trace import (TraceReader,
                     IN_TRACE)
 from Shell import (execute)
@@ -74,7 +76,7 @@ class RabbitRuntime(ComponentBase, RuntimeComponent):
             msg = "Can not start %s since it was not installed" % (TYPE)
             raise StartException(msg)
         if(self.status().find('start') == -1):
-            execute(*START_CMD, run_as_root=True)
+            self._run_cmd(START_CMD)
         return None
 
     def status(self):
@@ -85,12 +87,21 @@ class RabbitRuntime(ComponentBase, RuntimeComponent):
         (sysout, stderr) = execute(*STATUS_CMD, run_as_root=True)
         return sysout.strip().lower()
 
+    def _run_cmd(self, cmd):
+        if(self.distro == UBUNTU11):
+            with TemporaryFile() as f:
+                execute(*cmd, run_as_root=True,
+                            stdout_fh=f, stderr_fh=f)
+        else:
+            execute(*cmd, run_as_root=True)    
+
     def restart(self):
         pkgsinstalled = self.tracereader.packages_installed()
         if(len(pkgsinstalled) == 0):
             msg = "Can not check the status of %s since it was not installed" % (TYPE)
             raise RestartException(msg)
-        execute(*RESTART_CMD, run_as_root=True)
+        cmd = RESTART_CMD
+        self._run_cmd(RESTART_CMD)
         return None
 
     def stop(self):
@@ -99,5 +110,5 @@ class RabbitRuntime(ComponentBase, RuntimeComponent):
             msg = "Can not stop %s since it was not installed" % (TYPE)
             raise StopException(msg)
         if(self.status().find('stop') == -1):
-            execute(*STOP_CMD, run_as_root=True)
+            self._run_cmd(STOP_CMD)
         return None

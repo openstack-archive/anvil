@@ -15,14 +15,11 @@
 
 import os
 import re
-import tempfile
 from tempfile import TemporaryFile
 import time
 
 import Packager
-import Util
 from Util import param_replace
-import Shell
 from Shell import execute
 import Logger
 
