@@ -72,8 +72,7 @@ def setupLogging():
 
 
 def getLogger(name):
-    logger = logging.getLogger(name)
-    return logger
+    return logging.getLogger(name)
 
 
 #this should happen first (and once)

@@ -100,30 +100,15 @@ def _extract_version(version):
         mtch = UB_PKG_VERSION_REGEX.search(version)
         if(mtch):
             major = mtch.group(1)
-            if(major == None):
-                major = -1
-            else:
-                major = int(major)
+            major = int(major) if major != None else -1
             minor = mtch.group(2)
-            if(minor == None):
-                minor = -1
-            else:
-                minor = int(minor)
+            minor = int(minor) if minor != None else -1
             release = mtch.group(3)
-            if(release == None):
-                release = -1
-            else:
-                release = int(release)
+            release = int(release) if release != None else -1
             debian_version = mtch.group(4)
-            if(debian_version == None):
-                debian_version = -1
-            else:
-                debian_version = int(debian_version)
+            debian_version = int(debian_version) if debian_version != None else -1
             ubuntu_version = mtch.group(5)
-            if(ubuntu_version == None):
-                ubuntu_version = -1
-            else:
-                ubuntu_version = int(ubuntu_version)
+            ubuntu_version = int(ubuntu_version) if ubuntu_version != None else -1
             version_info['type'] = 'ubuntu'
             version_info['major'] = major
             version_info['minor'] = minor
