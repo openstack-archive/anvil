@@ -62,7 +62,7 @@ class RabbitInstaller(PkgInstallComponent):
         self._setup_pw()
         #restart it to make sure its ok to go
         self.runtime.restart()
-        return self.tracedir
+        return pres
 
 
 class RabbitRuntime(ComponentBase, RuntimeComponent):
