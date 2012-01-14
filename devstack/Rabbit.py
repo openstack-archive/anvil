@@ -100,7 +100,6 @@ class RabbitRuntime(ComponentBase, RuntimeComponent):
         if(len(pkgsinstalled) == 0):
             msg = "Can not check the status of %s since it was not installed" % (TYPE)
             raise RestartException(msg)
-        cmd = RESTART_CMD
         self._run_cmd(RESTART_CMD)
         return None
 
