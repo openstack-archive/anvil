@@ -93,7 +93,7 @@ ACTION_CLASSES = {
 DEP_ACTIONS_NEEDED = set([START, STOP, INSTALL])
 
 
-def get_package_manager_kls(distro):
+def get_package_manager_class(distro):
     klass = None
     if(distro == UBUNTU11):
         #late import required
@@ -108,43 +108,11 @@ def get_package_manager_kls(distro):
     return klass
 
 
-def get_config():
+def get_config(action):
     LOG.info("Loading config from %s" % (STACK_CFG_LOC))
     cfg = EnvConfigParser()
     cfg.read(STACK_CFG_LOC)
     return cfg
-
-
-def stop(components, distro, rootdir, args):
-    pkg_manager_cls = get_package_manager_kls(distro)
-    pkg_manager = pkg_manager_cls()
-    cfg = get_config()
-    LOG.info("Will stop [%s] from %s" % (", ".join(components), rootdir))
-    klass_lookup = ACTION_CLASSES.get(START)
-    for c in components:
-        klass = klass_lookup.get(c)
-        instance = klass(components=components, distro=distro, pkg=pkg_manager, cfg=cfg, root=rootdir)
-        LOG.info("Stopping %s." % (c))
-        instance.stop()
-        LOG.info("Finished stop of %s" % (c))
-    return None
-
-
-def start(components, distro, rootdir, args):
-    pkg_manager_cls = get_package_manager_kls(distro)
-    pkg_manager = pkg_manager_cls()
-    cfg = get_config()
-    LOG.info("Will start [%s] from %s" % (", ".join(components), rootdir))
-    klass_lookup = ACTION_CLASSES.get(START)
-    locations = []
-    for c in components:
-        klass = klass_lookup.get(c)
-        instance = klass(components=components, distro=distro, pkg=pkg_manager, cfg=cfg, root=rootdir)
-        LOG.info("Starting %s." % (c))
-        trace_locs = instance.start() or []
-        LOG.info("Finished start of %s - check [%s] for traces of what happened." % (c, ", ".join(trace_locs)))
-        locations = locations + trace_locs
-    return locations
 
 
 def print_cfgs(cfg, action):
@@ -153,7 +121,6 @@ def print_cfgs(cfg, action):
         LOG.info("After %s your fetched/generated passwords are:" % (action))
         for (pwkey, val) in pws.items():
             LOG.info("\t%s = %s" % (pwkey, val))
-
     configs_fetched = (cfg.configs_fetched)
     if(configs_fetched and len(configs_fetched)):
         LOG.info("After %s your other fetched configuration was:" % (action))
@@ -164,57 +131,58 @@ def print_cfgs(cfg, action):
             LOG.info("\t%s = %s" % (key, val))
 
 
-def install(components, distro, rootdir, args):
-    pkg_manager_cls = get_package_manager_kls(distro)
+def runner(action_name, component_set, distro, root_dir, program_args):
+    #have to make the root dir....
+    if(action_name == INSTALL):
+        mkdir(root_dir)
+    pkg_manager_cls = get_package_manager_class(distro)
     pkg_manager = pkg_manager_cls()
-    cfg = get_config()
-    mkdir(rootdir)
-    LOG.info("Will install [%s] and store in %s." % (", ".join(components), rootdir))
-    klass_lookup = ACTION_CLASSES.get(INSTALL)
-    traces = []
+    config = get_config(action)
+    LOG.info("Will %s [%s] using root directory %s" % (action, ", ".join(component_set), root_dir))
+    results = list()
+    class_lookup = ACTION_CLASSES.get(action_name)
     for c in components:
-        klass = klass_lookup.get(c)
-        instance = klass(components=components, distro=distro, pkg=pkg_manager, cfg=cfg, root=rootdir)
-        LOG.info("Downloading %s." % (c))
-        instance.download()
-        LOG.info("Configuring %s." % (c))
-        instance.configure()
-        LOG.info("Installing %s." % (c))
-        trace = instance.install()
-        LOG.info("Finished install of %s - check %s for traces of what happened." % (c, trace))
-        traces.append(trace)
-    print_cfgs(cfg, INSTALL)
-    return traces
-
-
-def uninstall(components, distro, rootdir, args):
-    ignore_traces_missing = args.get('force', False)
-    pkg_manager_cls = get_package_manager_kls(distro)
-    pkg_manager = pkg_manager_cls()
-    cfg = get_config()
-    LOG.info("Will uninstall [%s] with traces from directory %s." % (", ".join(components), rootdir))
-    klass_lookup = ACTION_CLASSES.get(UNINSTALL)
-    for c in components:
-        klass = klass_lookup.get(c)
+        klass = class_lookup.get(c)
+        instance = klass(components=components, distro=distro, pkg=pkg_manager, cfg=config, root=root_dir)
+        if(action_name == INSTALL):
+            LOG.info("Downloading %s." % (c))
+            instance.download()
+            LOG.info("Configuring %s." % (c))
+            instance.configure()
+            LOG.info("Installing %s." % (c))
+            trace = instance.install()
+            LOG.info("Finished install of %s - check %s for traces of what happened." % (c, trace))
+            results.append(trace)
+        elif(action_name == STOP):
+            LOG.info("Stopping %s." % (c))
+            instance.stop()
+            LOG.info("Finished stop of %s" % (c))
+        elif(action_name == START):
+            LOG.info("Starting %s." % (c))
+            trace_locs = instance.start() or list()
+            LOG.info("Finished start of %s - check [%s] for traces of what happened." % (c, ", ".join(trace_locs)))
+            results = results + trace_locs
+        elif(action_name == UNINSTALL):
+            gnore_traces_missing = program_args.get('force', False)
+            try:
+                LOG.info("Unconfiguring %s." % (c))
+                instance.unconfigure()
+                LOG.info("Uninstalling %s." % (c))
+                instance.uninstall()
+            except NoTraceException, e:
+                if(ignore_traces_missing):
+                    LOG.info("Passing on uninstalling %s since no trace file was found." % (c))
+                else:
+                    raise
+    #display any configs touched...
+    print_cfgs(config, action)
+    #attempt to remove the root dir (might fail if not empty)
+    if(action == UNINSTALL):
         try:
-            instance = klass(components=components, distro=distro, pkg=pkg_manager, cfg=cfg, root=rootdir)
-            LOG.info("Unconfiguring %s." % (c))
-            instance.unconfigure()
-            LOG.info("Uninstalling %s." % (c))
-            instance.uninstall()
-        except NoTraceException, e:
-            if(ignore_traces_missing):
-                LOG.info("Passing on uninstalling %s since no trace file was found." % (c))
-            else:
-                raise
-    #trash the root if we can
-    try:
-        os.rmdir(rootdir)
-        LOG.info("Removed root dir %s" % (rootdir))
-    except OSError:
-        #ignore
-        pass
-    return None
+            os.rmdir(root_dir)
+        except OSError, e:
+            pass
+    return results
 
 
 def resolve_dependencies(action, components):
@@ -262,16 +230,6 @@ def prioritize_components(action, components):
     component_order = [x[0] for x in priority_order]
     return component_order
 
-
-#what functions to activate for each action
-ACTION_FUNC_MAP = {
-    INSTALL: install,
-    UNINSTALL: uninstall,
-    START: start,
-    STOP: stop
-}
-
-
 def main():
     me = __file__
     args = Options.parse()
@@ -312,11 +270,10 @@ def main():
     #get the right component order (by priority)
     components = prioritize_components(action, components)
     #now do it!
-    funcAction = ACTION_FUNC_MAP.get(action)
     LOG.info("Starting action [%s] on %s for operating system/distro [%s]" % (action, rcf8222date(), install_os))
-    resultList = funcAction(components, install_os, rootdir, args)
+    resultList = runner(action, components, install_os, rootdir, args)
     LOG.info("Finished action [%s] on %s" % (action, rcf8222date()))
-    if(resultList):
+    if(resultList and len(resultList)):
         msg = "Check [%s] for traces of what happened." % (", ".join(resultList))
         LOG.info(msg)
     return 0
