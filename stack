@@ -175,9 +175,9 @@ def runner(action_name, component_set, distro, root_dir, program_args):
                 else:
                     raise
     #display any configs touched...
-    print_cfgs(config, action)
+    print_cfgs(config, action_name)
     #attempt to remove the root dir (might fail if not empty)
-    if(action == UNINSTALL):
+    if(action_name == UNINSTALL):
         try:
             os.rmdir(root_dir)
         except OSError, e:
