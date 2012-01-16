@@ -137,13 +137,13 @@ def runner(action_name, component_set, distro, root_dir, program_args):
         mkdir(root_dir)
     pkg_manager_cls = get_package_manager_class(distro)
     pkg_manager = pkg_manager_cls()
-    config = get_config(action)
-    LOG.info("Will %s [%s] using root directory %s" % (action, ", ".join(component_set), root_dir))
+    config = get_config(action_name)
+    LOG.info("Will %s [%s] using root directory %s" % (action_name, ", ".join(component_set), root_dir))
     results = list()
     class_lookup = ACTION_CLASSES.get(action_name)
-    for c in components:
+    for c in component_set:
         klass = class_lookup.get(c)
-        instance = klass(components=components, distro=distro, pkg=pkg_manager, cfg=config, root=root_dir)
+        instance = klass(components=component_set, distro=distro, pkg=pkg_manager, cfg=config, root=root_dir)
         if(action_name == INSTALL):
             LOG.info("Downloading %s." % (c))
             instance.download()
