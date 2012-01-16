@@ -254,10 +254,6 @@ def main():
         LOG.error("No valid root directory specified!")
         LOG.info("Perhaps you should try %s --help" % (me))
         return 1
-    #check if implemented yet
-    if(not action in ACTION_CLASSES or not action in ACTION_FUNC_MAP):
-        LOG.error("Action %s not implemented yet!" % (action))
-        return 1
     #ensure os/distro is known
     (install_os, plt) = determine_os()
     if(install_os == None):
