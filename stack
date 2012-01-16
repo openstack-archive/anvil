@@ -163,7 +163,7 @@ def runner(action_name, component_set, distro, root_dir, program_args):
             LOG.info("Finished start of %s - check [%s] for traces of what happened." % (c, ", ".join(trace_locs)))
             results = results + trace_locs
         elif(action_name == UNINSTALL):
-            gnore_traces_missing = program_args.get('force', False)
+            ignore_traces_missing = program_args.get('force', False)
             try:
                 LOG.info("Unconfiguring %s." % (c))
                 instance.unconfigure()
