@@ -42,7 +42,6 @@ RHEL6 = "rhel-6"
 MASTER_BRANCH = "master"
 
 #other constants
-DB_DSN = '%s://%s:%s@%s/%s'
 PRE_INSTALL = 'pre-install'
 POST_INSTALL = 'post-install'
 IPV4 = 'IPv4'
@@ -309,14 +308,6 @@ def create_regex(format):
         if(options.find("u") != -1):
             flags = flags | re.UNICODE
         return re.compile(toberegex, flags)
-
-
-def get_dbdsn(cfg, dbname):
-    user = cfg.get("db", "sql_user")
-    host = cfg.get("db", "sql_host")
-    dbtype = cfg.get("db", "type")
-    pw = cfg.getpw("passwords", "sql")
-    return DB_DSN % (dbtype, user, pw, host, dbname)
 
 
 def determine_os():

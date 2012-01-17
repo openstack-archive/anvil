@@ -19,11 +19,9 @@ import os.path
 import Logger
 from Component import (PythonUninstallComponent,
                        PythonInstallComponent,
-                       ProgramRuntime)
+                       PythonRuntime)
 from Util import (GLANCE,
-                  get_host_ip,
-                  param_replace, get_dbdsn,
-                  )
+                  get_host_ip, param_replace)
 from Shell import (deldir, mkdirslist, unlink,
                    joinpths, touch_file)
 
@@ -37,7 +35,6 @@ CONFIGS = [API_CONF, REG_CONF]
 DB_NAME = "glance"
 
 #what to start
-APPS_TO_START = ['glance-api', 'glance-registry']
 APP_OPTIONS = {
     'glance-api': ['--config-file', joinpths('%ROOT%', "etc", API_CONF)],
     'glance-registry': ['--config-file', joinpths('%ROOT%', "etc", REG_CONF)]
@@ -51,29 +48,16 @@ class GlanceUninstaller(PythonUninstallComponent):
         self.cfgdir = joinpths(self.appdir, CONFIG_ACTUAL_DIR)
 
 
-class GlanceRuntime(ProgramRuntime):
+class GlanceRuntime(PythonRuntime):
     def __init__(self, *args, **kargs):
-        ProgramRuntime.__init__(self, TYPE, *args, **kargs)
+        PythonRuntime.__init__(self, TYPE, *args, **kargs)
         self.cfgdir = joinpths(self.appdir, CONFIG_ACTUAL_DIR)
 
-    def _was_installed(self):
-        pres = ProgramRuntime._was_installed(self)
-        if(pres == False):
-            return False
-        pylisting = self.tracereader.py_listing()
-        if(pylisting and len(pylisting)):
-            return True
-        return False
-
     def _get_apps_to_start(self):
-        raise list(APPS_TO_START)
+        return sorted(APP_OPTIONS.keys())
 
-    def _get_app_options(self, app, params):
-        opts = list()
-        if(app in APP_OPTIONS):
-            for opt in APP_OPTIONS.get(app):
-                opts.append(param_replace(opt, params))
-        return opts
+    def _get_app_options(self, app):
+        return APP_OPTIONS.get(app)
 
 
 class GlanceInstaller(PythonInstallComponent):
@@ -84,11 +68,11 @@ class GlanceInstaller(PythonInstallComponent):
         self.cfgdir = joinpths(self.appdir, CONFIG_ACTUAL_DIR)
 
     def _get_download_location(self):
-        uri = self.gitloc
-        branch = self.brch
-        return (uri, branch)
+        #where we get glance from
+        return (self.gitloc, self.brch)
 
     def _get_config_files(self):
+        #these are the config files we will be adjusting
         return list(CONFIGS)
 
     def _config_adjust(self, contents, fn):
@@ -144,7 +128,7 @@ class GlanceInstaller(PythonInstallComponent):
         mp['DEST'] = self.appdir
         mp['SYSLOG'] = self.cfg.getboolean("default", "syslog")
         mp['SERVICE_TOKEN'] = self.cfg.getpw("passwords", "service_token")
-        mp['SQL_CONN'] = get_dbdsn(self.cfg, DB_NAME)
+        mp['SQL_CONN'] = self.cfg.get_dbdsn(DB_NAME)
         hostip = get_host_ip(self.cfg)
         mp['SERVICE_HOST'] = hostip
         mp['HOST_IP'] = hostip

@@ -27,11 +27,13 @@ PW_TMPL = "Enter a password for %s: "
 ENV_PAT = re.compile(r"^\s*\$\{([\w\d]+):\-(.*)\}\s*$")
 
 
+
 class EnvConfigParser(ConfigParser.RawConfigParser):
     def __init__(self):
         ConfigParser.RawConfigParser.__init__(self)
         self.pws = dict()
         self.configs_fetched = dict()
+        self.dbdsns = dict()
 
     def _makekey(self, section, option):
         return option + "@" + section
@@ -47,6 +49,24 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
             LOG.debug("Fetched \"%s\" for %s (will now be cached)" % (v, key))
             self.configs_fetched[key] = v
         return v
+
+    def __str__(self):
+        str_repr = ""
+        if(len(self.pws)):
+            str_repr += "Passwords:" + os.linesep
+            for (k,v) in self.pws.items():
+                str_repr += "\t" + str(k) + " = " + str(v) + os.linesep
+        if(len(self.configs_fetched)):
+            str_repr += "Configs:" + os.linesep
+            for (k,v) in self.configs_fetched.items():
+                if(k in self.pws):
+                    continue
+                str_repr += "\t" + str(k) + " = " + str(v) + os.linesep
+        if(len(self.dbdsns)):
+            str_repr += "Data source names:" + os.linesep
+            for (k, v) in self.dbdsns.items():
+                str_repr += "\t" + str(k) + " = " + str(v) + os.linesep
+        return str_repr
 
     def _get_special(self, section, option):
         key = self._makekey(section, option)
@@ -68,6 +88,41 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
             return v
         else:
             return v
+
+    def get_dbdsn(dbname):
+        user = self.get("db", "sql_user")
+        host = self.get("db", "sql_host")
+        port = self.get("db", "port")
+        pw = self.getpw("passwords", "sql")
+        #check the dsn cache
+        if(dbname in self.dbdsns):
+            return self.dbdsns[dbname]
+        #form the dsn (from components we have...)
+        #dsn = "<driver>://<username>:<password>@<host>:<port>/<database>"
+        if(not host):
+            msg = "Unable to fetch a database dsn - no host found"
+            raise BadParamException(msg)
+        driver = self.get("db", "type")
+        if(not driver):
+            msg = "Unable to fetch a database dsn - no driver type found"
+            raise BadParamException(msg)
+        dsn = driver + "://"
+        if(user):
+            dsn += user
+        if(password):
+            dsn += ":" + password
+        if(user or password):
+            dsn += "@"
+        dsn += host
+        if(port):
+            dsn += ":" + port
+        if(dbname):
+            dsn += "/" + dbname
+        else:
+            dsn += "/"
+        #store for later...
+        self.dbdsns[dbname] = dsn
+        return dsn
 
     def getpw(self, section, option):
         key = self._makekey(section, option)

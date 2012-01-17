@@ -18,6 +18,7 @@ import sys
 import resource
 import signal
 import errno
+import time
 
 import Runner
 import Util
@@ -32,6 +33,7 @@ import Trace
 # Maximum for the number of available file descriptors (when not found)
 MAXFD = 2048
 MAX_KILL_TRY = 4
+SLEEP_TIME = 1
 
 LOG = Logger.getLogger("install.runners.foreground")
 
@@ -67,7 +69,9 @@ class ForegroundRunner(Runner.Runner):
                     if(ec == errno.ESRCH):
                         killed = True
                         break
-                    lastmsg = msg
+                    else:
+                        lastmsg = msg
+                        time.sleep(SLEEP_TIME)
             #trash the files
             if(killed):
                 LOG.info("Killed pid %s in %s attempts" % (str(pid), str(attempts)))

@@ -116,19 +116,8 @@ def get_config(action):
 
 
 def print_cfgs(cfg, action):
-    pws = (cfg.pws)
-    if(pws and len(pws)):
-        LOG.info("After %s your fetched/generated passwords are:" % (action))
-        for (pwkey, val) in pws.items():
-            LOG.info("\t%s = %s" % (pwkey, val))
-    configs_fetched = (cfg.configs_fetched)
-    if(configs_fetched and len(configs_fetched)):
-        LOG.info("After %s your other fetched configuration was:" % (action))
-        for (key, val) in configs_fetched.items():
-            if(key in pws):
-                #already shown
-                continue
-            LOG.info("\t%s = %s" % (key, val))
+    LOG.info("After %s your config is:" % (action))
+    LOG.info(str(cfg).rstrip())
 
 
 def runner(action_name, component_set, distro, root_dir, program_args):
@@ -141,6 +130,7 @@ def runner(action_name, component_set, distro, root_dir, program_args):
     LOG.info("Will %s [%s] using root directory %s" % (action_name, ", ".join(component_set), root_dir))
     results = list()
     class_lookup = ACTION_CLASSES.get(action_name)
+    force = program_args.get('force', False)
     for c in component_set:
         klass = class_lookup.get(c)
         instance = klass(components=component_set, distro=distro, pkg=pkg_manager, cfg=config, root=root_dir)
@@ -151,26 +141,35 @@ def runner(action_name, component_set, distro, root_dir, program_args):
             instance.configure()
             LOG.info("Installing %s." % (c))
             trace = instance.install()
-            LOG.info("Finished install of %s - check %s for traces of what happened." % (c, trace))
-            results.append(trace)
+            if(trace):
+                LOG.info("Finished install of %s - check %s for traces of what happened." % (c, trace))
+                results.append(trace)
+            else:
+                LOG.info("Finished install of %s" % (c))
         elif(action_name == STOP):
-            LOG.info("Stopping %s." % (c))
-            instance.stop()
-            LOG.info("Finished stop of %s" % (c))
+            try:
+                LOG.info("Stopping %s." % (c))
+                instance.stop()
+                LOG.info("Finished stop of %s" % (c))
+            except NoTraceException, e:
+                if(force):
+                    LOG.info("Passing on stopping %s since no trace file was found." % (c))
+                else:
+                    raise
         elif(action_name == START):
             LOG.info("Starting %s." % (c))
             trace_locs = instance.start() or list()
             LOG.info("Finished start of %s - check [%s] for traces of what happened." % (c, ", ".join(trace_locs)))
-            results = results + trace_locs
+            if(trace_locs):
+                results = results + trace_locs
         elif(action_name == UNINSTALL):
-            ignore_traces_missing = program_args.get('force', False)
             try:
                 LOG.info("Unconfiguring %s." % (c))
                 instance.unconfigure()
                 LOG.info("Uninstalling %s." % (c))
                 instance.uninstall()
             except NoTraceException, e:
-                if(ignore_traces_missing):
+                if(force):
                     LOG.info("Passing on uninstalling %s since no trace file was found." % (c))
                 else:
                     raise

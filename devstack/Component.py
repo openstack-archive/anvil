@@ -28,7 +28,9 @@ from Trace import (TraceWriter, TraceReader,
                     touch_trace, parse_fn,
                     IN_TRACE, PY_TRACE, START_TRACE)
 import Runner
+from runners import Foreground, Screen
 from runners.Foreground import (ForegroundRunner)
+from runners.Screen import ScreenRunner
 from Exceptions import (StopException, StartException, InstallException)
 
 LOG = Logger.getLogger("install.component")
@@ -249,40 +251,51 @@ class PythonUninstallComponent(PkgUninstallComponent):
 
 
 class ProgramRuntime(ComponentBase, RuntimeComponent):
+    #this here determines how we start and stop and 
+    #what classes handle different running/stopping types
+    STARTER_CLS_MAPPING = {
+        Foreground.RUN_TYPE: ForegroundRunner,
+        Screen.RUN_TYPE: ScreenRunner,
+    }
+    STOPPER_CLS_MAPPING = {
+        Foreground.RUN_TYPE: ForegroundRunner,
+        Screen.RUN_TYPE: ScreenRunner,
+    }
     def __init__(self, component_name, *args, **kargs):
         ComponentBase.__init__(self, component_name, *args, **kargs)
-        self.foreground = kargs.get("foreground", True)
+        self.run_type = kargs.get("run_type", Foreground.RUN_TYPE)
         self.tracereader = TraceReader(self.tracedir, IN_TRACE)
         self.tracewriter = TraceWriter(self.tracedir, START_TRACE)
         self.starttracereader = TraceReader(self.tracedir, START_TRACE)
+        self.check_installed_pkgs = kargs.get("check_installed_pkgs", True)
 
-    def _getstartercls(self):
-        if(self.foreground):
-            return ForegroundRunner
-        else:
-            raise NotImplementedError("Can not yet start in non-foreground mode")
+    def _getstartercls(self, start_mode):
+        if(start_mode not in ProgramRuntime.STARTER_CLS_MAPPING):
+            raise NotImplementedError("Can not yet start %s mode" % (start_mode))
+        return ProgramRuntime.STARTER_CLS_MAPPING.get(start_mode)
 
-    def _getstoppercls(self, starttype):
-        if(starttype == Foreground.RUN_TYPE):
-            return ForegroundRunner
-        else:
-            raise NotImplementedError("Can not yet stop type [%s]" % (starttype))
+    def _getstoppercls(self, stop_mode):
+        if(stop_mode not in ProgramRuntime.STOPPER_CLS_MAPPING):
+            raise NotImplementedError("Can not yet stop %s mode" % (stop_mode))
+        return ProgramRuntime.STOPPER_CLS_MAPPING.get(stop_mode)
 
     def _was_installed(self):
-        pkgsinstalled = self.tracereader.packages_installed()
-        if(len(pkgsinstalled) == 0):
-            return False
+        if(not self.check_installed_pkgs):
+            return True
+        if(len(self.tracereader.packages_installed())):
+            return True
+        return False
 
     def _get_apps_to_start(self):
         raise NotImplementedError()
 
-    def _get_app_options(self, app, params):
-        return list()
+    def _get_app_options(self, app):
+        return None
 
     def _get_param_map(self, app=None):
-        replacements = dict()
-        replacements['ROOT'] = self.appdir
-        return replacements
+        return {
+            'ROOT': self.appdir,
+        }
 
     def start(self):
         #ensure it was installed
@@ -299,7 +312,12 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
         for app in apps:
             #adjust the program options now that we have real locations
             params = self._get_param_map(app)
-            program_opts = self._get_app_options(app, params)
+            program_opts = self._get_app_options(app)
+            if(params and program_opts):
+                adjusted_opts = list()
+                for opt in program_opts:
+                    adjusted_opts.append(param_replace(opt, params))
+                program_opts = adjusted_opts
             LOG.info("Starting %s with options [%s]" % (app, ", ".join(program_opts)))
             #start it with the given settings
             fn = starter.start(app, app, *program_opts, app_dir=self.appdir, trace_dir=self.tracedir)
@@ -337,7 +355,7 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
             #did we find a class that can do it?
             if(killcls):
                 #we can try to stop it
-                LOG.info("Stopping %s with %s in %s" % (name, runtype, self.tracedir))
+                LOG.info("Stopping %s" % (name))
                 #create an instance of the killer class and attempt to stop
                 killer = killcls()
                 killer.stop(name, trace_dir=self.tracedir)
@@ -347,3 +365,18 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
             fn = self.starttracereader.trace_fn
             LOG.info("Deleting trace file %s" % (fn))
             unlink(fn)
+
+
+class PythonRuntime(ProgramRuntime):
+    def __init__(self, component_name, *args, **kargs):
+        ProgramRuntime.__init__(self, component_name, *args, **kargs)
+    
+    def _was_installed(self):
+        parent_result = ProgramRuntime._was_installed(self)
+        if(not parent_result):
+            return False
+        python_installed = self.tracereader.py_listing()
+        if(len(python_installed) == 0):
+            return False
+        else:
+            return True

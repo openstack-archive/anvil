@@ -20,12 +20,13 @@ import Pip
 from Util import (KEYSTONE,
                   CONFIG_DIR,
                   NOVA, GLANCE, SWIFT,
-                  get_dbdsn,
                   get_host_ip,
-                  execute_template)
+                  execute_template,
+                  param_replace)
 import Logger
 import Db
-from Component import (PythonUninstallComponent, PythonInstallComponent, ProgramRuntime)
+from Component import (PythonUninstallComponent, 
+                PythonInstallComponent, PythonRuntime)
 from Shell import (mkdirslist, unlink, touch_file, joinpths)
 LOG = Logger.getLogger("install.keystone")
 
@@ -34,6 +35,11 @@ ROOT_CONF = "keystone.conf"
 CONFIGS = [ROOT_CONF]
 BIN_DIR = "bin"
 DB_NAME = "keystone"
+
+#what to start
+APP_OPTIONS = {
+    'keystone': ['--config-file', joinpths('%ROOT%', "config", ROOT_CONF), "--verbose"],
+}
 
 
 class KeystoneUninstaller(PythonUninstallComponent):
@@ -110,7 +116,7 @@ class KeystoneInstaller(PythonInstallComponent):
         #params with actual values
         mp = dict()
         mp['DEST'] = self.appdir
-        mp['SQL_CONN'] = get_dbdsn(self.cfg, DB_NAME)
+        mp['SQL_CONN'] = self.cfg.get_dbdsn(DB_NAME)
         mp['ADMIN_PASSWORD'] = self.cfg.getpw('passwords', 'horizon_keystone_admin')
         mp['HOST_IP'] = get_host_ip(self.cfg)
         mp['SERVICE_TOKEN'] = self.cfg.getpw("passwords", "service_token")
@@ -119,11 +125,17 @@ class KeystoneInstaller(PythonInstallComponent):
         return mp
 
 
-class KeystoneRuntime(ProgramRuntime):
+class KeystoneRuntime(PythonRuntime):
     def __init__(self, *args, **kargs):
-        ProgramRuntime.__init__(self, TYPE, *args, **kargs)
+        PythonRuntime.__init__(self, TYPE, *args, **kargs)
         self.cfgdir = joinpths(self.appdir, CONFIG_DIR)
         self.bindir = joinpths(self.appdir, BIN_DIR)
+
+    def _get_apps_to_start(self):
+        return sorted(APP_OPTIONS.keys())
+
+    def _get_app_options(self, app):
+        return APP_OPTIONS.get(app)
 
 
 # Keystone setup commands are the the following

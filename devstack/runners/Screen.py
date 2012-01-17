@@ -26,9 +26,9 @@ from Shell import (execute)
 LOG = Logger.getLogger("install.screen")
 SCREEN_MAKE = ['screen', '-d', '-m', '-S', '%NAME%', '-t', '%NAME%']
 NAME_POSTFIX = ".devstack"
+RUN_TYPE = "SCREEN"
 
-
-class Screen(Runner.Runner):
+class ScreenRunner(Runner.Runner):
     def __init__(self):
         Runner.Runner.__init__(self)
 
