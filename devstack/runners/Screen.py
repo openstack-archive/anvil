@@ -13,9 +13,55 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import time
+import os
+import re
+
 import Runner
+import Logger
+from Exceptions import (StartException, StopException)
+from Util import (execute_template)
+from Shell import (execute)
+
+LOG = Logger.getLogger("install.screen")
+SCREEN_MAKE = ['screen', '-d', '-m', '-S', '%NAME%', '-t', '%NAME%']
+NAME_POSTFIX = ".devstack"
 
 
 class Screen(Runner.Runner):
     def __init__(self):
         Runner.Runner.__init__(self)
+
+    def stop(self, name, *args, **kargs):
+        real_name = name + NAME_POSTFIX
+        list_cmd = ['screen', '-list']
+        (sysout, stderr) = execute(*list_cmd)
+        lines = sysout.splitlines()
+        entries = list()
+        lookfor = r"^(\d+\." + re.escape(real_name) + r")\s+(.*)$"
+        for line in lines:
+            cleaned_line = line.strip()
+            if(len(cleaned_line) == 0):
+                continue
+            mtch = re.match(lookfor, cleaned_line)
+            if(not mtch):
+                continue
+            kill_entry = mtch.group(1)
+            entries.append(kill_entry)
+        for entry in entries:
+            kill_cmd = ['screen', '-r', entry, '-X', 'kill']
+            execute(*kill_cmd)
+            time.sleep(2)
+            quit_cmd = ['screen', '-r', entry, '-X', 'quit']
+            execute(*quit_cmd)
+
+    def start(self, name, program, *args, **kargs):
+        app_dir = kargs.get('app_dir')
+        params = dict()
+        params['NAME'] = name + NAME_POSTFIX
+        runcmd = SCREEN_MAKE + [program] + list(args)
+        cmds = [{'cmd':runcmd}]
+        execute_template(*cmds, params=params, cwd=app_dir, **kargs)
+        return None
+        
+        

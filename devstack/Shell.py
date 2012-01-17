@@ -164,18 +164,6 @@ def mkdirslist(pth):
     return dirsmade
 
 
-def load_json(fn):
-    data = load_file(fn)
-    lines = data.splitlines()
-    nlines = list()
-    for line in lines:
-        if(line.lstrip().startswith('#')):
-            continue
-        nlines.append(line)
-    data = os.linesep.join(nlines)
-    return json.loads(data)
-
-
 def append_file(fn, text, flush=True):
     with open(fn, "a") as f:
         f.write(text)

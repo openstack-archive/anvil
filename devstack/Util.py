@@ -18,13 +18,15 @@ from termcolor import colored
 import os
 import platform
 import re
+import json
 import subprocess
+import netifaces
 
 from Exceptions import (BadRegexException,
                         NoReplacementException,
                         FileException)
 import Logger
-from Shell import (joinpths, load_json, execute)
+from Shell import (joinpths, load_file, execute)
 
 #constant goodies
 VERSION = 0x2
@@ -47,6 +49,7 @@ IPV4 = 'IPv4'
 IPV6 = 'IPv6'
 DEFAULT_NET_INTERFACE = 'eth0'
 DEFAULT_NET_INTERFACE_IP_VERSION = IPV4
+PARAM_SUB_REGEX = "%([\\w\\d]+?)%"
 
 #component name mappings
 NOVA = "nova"
@@ -194,6 +197,7 @@ def execute_template(*cmds, **kargs):
         return
     params_replacements = kargs.pop('params')
     ignore_missing = kargs.pop('ignore_missing', False)
+    outs = dict()
     for cmdinfo in cmds:
         cmd_to_run_templ = cmdinfo.get("cmd")
         cmd_to_run = list()
@@ -213,7 +217,7 @@ def execute_template(*cmds, **kargs):
                         ignore_missing=ignore_missing))
                 else:
                     stdin_full.append(piece)
-            stdin = joinlinesep(stdin_full)
+            stdin = joinlinesep(*stdin_full)
         root_run = cmdinfo.get('run_as_root', False)
         execute(*cmd_to_run, run_as_root=root_run, process_input=stdin, **kargs)
 
@@ -243,6 +247,18 @@ def component_pths(root, compnent_type):
     return out
 
 
+def load_json(fn):
+    data = load_file(fn)
+    lines = data.splitlines()
+    new_lines = list()
+    for line in lines:
+        if(line.lstrip().startswith('#')):
+            continue
+        new_lines.append(line)
+    data = joinlinesep(*new_lines)
+    return json.loads(data)
+
+
 def get_host_ip(cfg=None):
     ip = None
     if(cfg):
@@ -261,7 +277,6 @@ def get_host_ip(cfg=None):
 
 
 def get_interfaces():
-    import netifaces
     interfaces = dict()
     for intfc in netifaces.interfaces():
         interface_info = dict()
@@ -328,6 +343,7 @@ def get_pip_list(distro, component):
         if(distro_pkgs and len(distro_pkgs)):
             combined = dict(all_pkgs)
             for (pkgname, pkginfo) in distro_pkgs.items():
+                #we currently just overwrite
                 combined[pkgname] = pkginfo
             all_pkgs = combined
     return all_pkgs
@@ -352,7 +368,7 @@ def get_pkg_list(distro, component):
                     for (infokey, infovalue) in pkginfo.items():
                         #this is expected to be a list of cmd actions
                         #so merge that accordingly
-                        if(infokey == 'pre-install' or infokey == 'post-install'):
+                        if(infokey == PRE_INSTALL or infokey == POST_INSTALL):
                             oldinstalllist = oldpkginfo.get(infokey) or []
                             infovalue = oldinstalllist + infovalue
                         newpkginfo[infokey] = infovalue
@@ -364,10 +380,17 @@ def get_pkg_list(distro, component):
 
 
 def joinlinesep(*pieces):
-    return os.linesep.join(*pieces)
+    return os.linesep.join(pieces)
 
 
 def param_replace(text, replacements, ignore_missing=False):
+
+    if(not replacements or len(replacements) == 0):
+        return text
+
+    if(len(text) == 0):
+        return text
+
     if(ignore_missing):
         LOG.debug("Performing parameter replacements (ignoring missing) on %s" % (text))
     else:
@@ -386,8 +409,7 @@ def param_replace(text, replacements, ignore_missing=False):
             LOG.debug("Replacing [%s] with [%s]" % (org, str(v)))
         return str(v)
 
-    ntext = re.sub("%([\\w\\d]+?)%", replacer, text)
-    return ntext
+    return re.sub(PARAM_SUB_REGEX, replacer, text)
 
 
 def welcome(program_action):

@@ -27,8 +27,8 @@ class Runner():
     def __init__(self):
         pass
 
-    def start(self):
+    def stop(self, name, *args, **kargs):
         raise NotImplementedError()
 
-    def stop(self, pkgs):
+    def start(self, name, program, *args, **kargs):
         raise NotImplementedError()
