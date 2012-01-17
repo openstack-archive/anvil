@@ -7,7 +7,7 @@ Devstack v2 is a set of python scripts and utilities to quickly deploy an OpenSt
 * To make it easier for developers to dive into OpenStack so that they can productively contribute without having to understand every part of the system at once
 * To make it easy to prototype cross-project features
 
-Read more at <http://devstack.org>
+Read more at <http://devstack.org> (TBD)
 
 IMPORTANT: Be sure to carefully read *stack* and any other scripts you execute before you run them, as they install software and may alter your networking configuration.  We strongly recommend that you run stack in a clean and disposable vm when you are first getting started.
 
@@ -34,7 +34,7 @@ This will typically produce:
       -c COMPONENT, --component=COMPONENT
                             stack component, ie (db, glance, horizon, keystone,
                             nova, quantum, rabbit, swift)
-    
+      -f, --force           force ACTION even if no trace found (ACTION dependent)
 
 # Stack prerequisites
 
