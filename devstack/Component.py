@@ -252,7 +252,7 @@ class PythonUninstallComponent(PkgUninstallComponent):
 
 
 class ProgramRuntime(ComponentBase, RuntimeComponent):
-    #this here determines how we start and stop and 
+    #this here determines how we start and stop and
     #what classes handle different running/stopping types
     STARTER_CLS_MAPPING = {
         Foreground.RUN_TYPE: ForegroundRunner,
@@ -262,6 +262,7 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
         Foreground.RUN_TYPE: ForegroundRunner,
         Screen.RUN_TYPE: ScreenRunner,
     }
+
     def __init__(self, component_name, *args, **kargs):
         ComponentBase.__init__(self, component_name, *args, **kargs)
         self.run_type = kargs.get("run_type", Foreground.RUN_TYPE)
@@ -371,7 +372,7 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
 class PythonRuntime(ProgramRuntime):
     def __init__(self, component_name, *args, **kargs):
         ProgramRuntime.__init__(self, component_name, *args, **kargs)
-    
+
     def _was_installed(self):
         parent_result = ProgramRuntime._was_installed(self)
         if(not parent_result):

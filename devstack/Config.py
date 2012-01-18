@@ -27,7 +27,6 @@ PW_TMPL = "Enter a password for %s: "
 ENV_PAT = re.compile(r"^\s*\$\{([\w\d]+):\-(.*)\}\s*$")
 
 
-
 class EnvConfigParser(ConfigParser.RawConfigParser):
     def __init__(self):
         ConfigParser.RawConfigParser.__init__(self)

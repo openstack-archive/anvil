@@ -93,7 +93,7 @@ class RabbitRuntime(ComponentBase, RuntimeComponent):
                 execute(*cmd, run_as_root=True,
                             stdout_fh=f, stderr_fh=f)
         else:
-            execute(*cmd, run_as_root=True)    
+            execute(*cmd, run_as_root=True)
 
     def restart(self):
         pkgsinstalled = self.tracereader.packages_installed()

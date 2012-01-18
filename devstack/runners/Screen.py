@@ -28,6 +28,7 @@ SCREEN_MAKE = ['screen', '-d', '-m', '-S', '%NAME%', '-t', '%NAME%']
 NAME_POSTFIX = ".devstack"
 RUN_TYPE = "SCREEN"
 
+
 class ScreenRunner(Runner.Runner):
     def __init__(self):
         Runner.Runner.__init__(self)
@@ -63,5 +64,3 @@ class ScreenRunner(Runner.Runner):
         cmds = [{'cmd':runcmd}]
         execute_template(*cmds, params=params, cwd=app_dir, **kargs)
         return None
-        
-        

@@ -116,10 +116,9 @@ def get_config(action):
 
 
 def print_cfgs(cfg, action):
-    cfg_str = str(cfg).strip()
     if(len(cfg)):
         LOG.info("After %s your config is:" % (action))
-        LOG.info(cfg_str)
+        LOG.info(str(cfg).strip())
 
 
 def runner(action_name, component_set, distro, root_dir, program_args):
@@ -230,6 +229,7 @@ def prioritize_components(action, components):
     #extract the right order
     component_order = [x[0] for x in priority_order]
     return component_order
+
 
 def main():
     me = __file__

@@ -25,7 +25,7 @@ from Util import (KEYSTONE,
                   param_replace)
 import Logger
 import Db
-from Component import (PythonUninstallComponent, 
+from Component import (PythonUninstallComponent,
                 PythonInstallComponent, PythonRuntime)
 from Shell import (mkdirslist, unlink, touch_file, joinpths)
 LOG = Logger.getLogger("install.keystone")
@@ -172,7 +172,7 @@ def _keystone_setup_cmds(components):
             "cmd": root_cmd + ["role", "add", "Admin"]
         },
         {
-            "cmd": root_cmd + ["role", "add",  "Member"]
+            "cmd": root_cmd + ["role", "add", "Member"]
         },
         {
             "cmd": root_cmd + ["role", "add", "KeystoneAdmin"]

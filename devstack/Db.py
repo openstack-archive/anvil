@@ -48,7 +48,7 @@ DB_ACTIONS = {
             "-e \"GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' identified by '%PASSWORD%';\"",
         ],
         #we could do this in python directly, but executing allows us to not have to sudo the whole program
-        'host_adjust':  ['perl', '-p', '-i', '-e'] + ["'s/127.0.0.1/0.0.0.0/g'", '/etc/mysql/my.cnf'],
+        'host_adjust': ['perl', '-p', '-i', '-e'] + ["'s/127.0.0.1/0.0.0.0/g'", '/etc/mysql/my.cnf'],
     },
 }
 

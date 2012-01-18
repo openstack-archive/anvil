@@ -32,7 +32,7 @@ def parse():
             metavar="ACTION",
             help="action to perform, ie %s" % (actions))
 
-    parser.add_option("-d",  "--directory",
+    parser.add_option("-d", "--directory",
         action="store",
         type="string",
         dest="dir",
@@ -41,12 +41,12 @@ def parse():
 
     known_components = sorted(COMPONENT_NAMES)
     components = "(" + ", ".join(known_components) + ")"
-    parser.add_option("-c",  "--component",
+    parser.add_option("-c", "--component",
         action="append",
         dest="component",
         help="stack component, ie %s" % (components))
 
-    parser.add_option("-f",  "--force",
+    parser.add_option("-f", "--force",
         action="store_true",
         dest="force",
         help="force ACTION even if no trace found (ACTION dependent)",
