@@ -60,11 +60,12 @@ QUANTUM = "quantum"
 SWIFT = "swift"
 HORIZON = "horizon"
 KEYSTONE = "keystone"
+KEYSTONE_CLIENT = 'keystone-client'
 DB = "db"
 RABBIT = "rabbit"
 COMPONENT_NAMES = [NOVA, GLANCE, QUANTUM,
          SWIFT, HORIZON, KEYSTONE,
-         DB, RABBIT]
+         DB, RABBIT, KEYSTONE_CLIENT]
 
 #ordering of install (lower priority means earlier)
 NAMES_PRIORITY = {
@@ -75,6 +76,7 @@ NAMES_PRIORITY = {
     QUANTUM: 4,
     NOVA: 5,
     SWIFT: 6,
+    KEYSTONE_CLIENT: 6,
     HORIZON: 7,
 }
 
@@ -83,12 +85,13 @@ NAMES_PRIORITY = {
 #map is listed here...
 COMPONENT_DEPENDENCIES = {
     DB: [],
+    KEYSTONE_CLIENT: [],
     RABBIT: [],
     GLANCE: [KEYSTONE, DB],
     KEYSTONE: [DB],
     NOVA: [KEYSTONE, GLANCE, DB, RABBIT],
     SWIFT: [],
-    HORIZON: [],
+    HORIZON: [KEYSTONE_CLIENT],
     QUANTUM: [],
 }
 
@@ -137,6 +140,8 @@ PIP_MAP = {
         ],
     SWIFT:
         [],
+    KEYSTONE_CLIENT:
+        [],
     DB:
         [],
     RABBIT:
@@ -170,6 +175,10 @@ PKG_MAP = {
         [
             joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
             joinpths(STACK_CONFIG_DIR, "pkgs", 'swift.json'),
+        ],
+    KEYSTONE_CLIENT:
+        [
+            joinpths(STACK_CONFIG_DIR, "pkgs", "keystone-client.json"),
         ],
     DB:
         [

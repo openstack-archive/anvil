@@ -26,7 +26,7 @@ import Options
 #TODO fix these
 from Util import (welcome, rcf8222date, determine_os,
                     prioritize_components, resolve_dependencies)
-from Util import (NOVA, GLANCE, QUANTUM, SWIFT, KEYSTONE, HORIZON, DB, RABBIT,
+from Util import (NOVA, GLANCE, QUANTUM, SWIFT, KEYSTONE, HORIZON, DB, RABBIT, KEYSTONE_CLIENT,
                   INSTALL, UNINSTALL, START, STOP,
                   ACTIONS, COMPONENT_NAMES, NAMES_PRIORITY,
                   UBUNTU11, RHEL6,
@@ -44,6 +44,7 @@ import Swift
 import Db
 import Rabbit
 import Config
+import KeystoneClient
 
 LOG = Logger.getLogger("install")
 
@@ -58,6 +59,7 @@ ACTION_CLASSES = {
         KEYSTONE: Keystone.KeystoneInstaller,
         DB: Db.DBInstaller,
         RABBIT: Rabbit.RabbitInstaller,
+        KEYSTONE_CLIENT: KeystoneClient.KeyStoneClientInstaller,
     },
     UNINSTALL: {
         NOVA: Nova.NovaUninstaller,
@@ -68,6 +70,7 @@ ACTION_CLASSES = {
         KEYSTONE: Keystone.KeystoneUninstaller,
         DB: Db.DBUninstaller,
         RABBIT: Rabbit.RabbitUninstaller,
+        KEYSTONE_CLIENT: KeystoneClient.KeyStoneClientUninstaller,
     },
     START: {
         NOVA: Nova.NovaRuntime,
@@ -78,6 +81,7 @@ ACTION_CLASSES = {
         KEYSTONE: Keystone.KeystoneRuntime,
         DB: Db.DBRuntime,
         RABBIT: Rabbit.RabbitRuntime,
+        KEYSTONE_CLIENT: KeystoneClient.KeyStoneClientRuntime,
     },
     STOP: {
         NOVA: Nova.NovaRuntime,
@@ -88,6 +92,7 @@ ACTION_CLASSES = {
         KEYSTONE: Keystone.KeystoneRuntime,
         DB: Db.DBRuntime,
         RABBIT: Rabbit.RabbitRuntime,
+        KEYSTONE_CLIENT: KeystoneClient.KeyStoneClientRuntime,
     },
 }
 
@@ -133,13 +138,16 @@ def print_cfgs(cfg, action):
             LOG.info("Passwords:")
             map_print(passwords_gotten)
         if(len(full_cfgs)):
+            #TOD
+            #better way to do this?? (ie a list difference?)
             filtered_mp = dict()
             for key in full_cfgs.keys():
                 if(key in passwords_gotten):
                     continue
                 filtered_mp[key] = full_cfgs.get(key)
-            LOG.info("Configs:")
-            map_print(filtered_mp)
+            if(len(filtered_mp)):
+                LOG.info("Configs:")
+                map_print(filtered_mp)
         if(len(db_dsns)):
             LOG.info("Data source names:")
             map_print(db_dsns)
@@ -161,9 +169,11 @@ def runner(action_name, component_set, distro, root_dir, program_args):
         instance = klass(components=component_set, distro=distro, pkg=pkg_manager, cfg=config, root=root_dir)
         if(action_name == INSTALL):
             LOG.info("Downloading %s." % (c))
-            instance.download()
+            am_downloaded = instance.download()
+            LOG.info("Performed %s downloads." % (str(am_downloaded)))
             LOG.info("Configuring %s." % (c))
-            instance.configure()
+            am_configured = instance.configure()
+            LOG.info("Configuring %s files." % (str(am_configured)))
             LOG.info("Pre-installing %s." % (c))
             instance.pre_install()
             LOG.info("Installing %s." % (c))
@@ -178,7 +188,8 @@ def runner(action_name, component_set, distro, root_dir, program_args):
         elif(action_name == STOP):
             try:
                 LOG.info("Stopping %s." % (c))
-                instance.stop()
+                stop_am = instance.stop()
+                LOG.info("Stopped %s applications." % (str(stop_am)))
                 LOG.info("Finished stop of %s" % (c))
             except NoTraceException, e:
                 if(force):
@@ -187,10 +198,13 @@ def runner(action_name, component_set, distro, root_dir, program_args):
                     raise
         elif(action_name == START):
             LOG.info("Starting %s." % (c))
-            trace_locs = instance.start() or list()
-            LOG.info("Finished start of %s - check [%s] for traces of what happened." % (c, ", ".join(trace_locs)))
-            if(trace_locs):
-                results = results + trace_locs
+            start_info = instance.start()
+            if(type(start_info) == list):
+                LOG.info("Check [%s] for traces of what happened." % (", ".join(start_info)))
+                results = results + start_info
+            elif(type(start_info) == int):
+                LOG.info("Started %s applications." % (str(start_info)))
+            LOG.info("Finished start of %s." % (c))
         elif(action_name == UNINSTALL):
             try:
                 LOG.info("Unconfiguring %s." % (c))

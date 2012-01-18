@@ -67,9 +67,6 @@ class DBInstaller(PkgInstallComponent):
         PkgInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.runtime = DBRuntime(*args, **kargs)
 
-    def _get_download_location(self):
-        return (None, None)
-
     def _get_param_map(self, fn=None):
         #this dictionary will be used for parameter replacement
         #in pre-install and post-install sections
@@ -137,12 +134,13 @@ class DBRuntime(ComponentBase, RuntimeComponent):
         if(self.status().find('stop') == -1):
             stopcmd = self._gettypeactions('stop', StopException)
             execute(*stopcmd, run_as_root=True)
-        return None
+            return 1
+        return 0
 
     def restart(self):
         restartcmd = self._gettypeactions('restart', RestartException)
         execute(*restartcmd, run_as_root=True)
-        return None
+        return 1
 
     def status(self):
         statuscmd = self._gettypeactions('status', StatusException)

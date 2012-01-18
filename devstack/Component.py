@@ -106,20 +106,29 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
         ComponentBase.__init__(self, component_name, *args, **kargs)
         self.tracewriter = TraceWriter(self.tracedir, IN_TRACE)
 
-    def _get_download_location(self):
-        raise NotImplementedError()
+    def _get_download_locations(self):
+        return list()
 
     def download(self):
-        #find out where to get it
-        (uri, branch) = self._get_download_location()
-        if(uri):
-            #now get it
-            dirsmade = Downloader.download(self.appdir, uri, branch)
-            #this trace isn't used yet but could be
-            self.tracewriter.downloaded(self.appdir, uri)
-            #this trace is used to remove the dirs created
+        locations = self._get_download_locations()
+        base_dir = self.appdir
+        am_downloaded = 0
+        for location_info in locations:
+            uri = location_info.get("uri")
+            if(not uri):
+                continue
+            branch = location_info.get("branch")
+            subdir = location_info.get("subdir")
+            target_loc = None
+            if(subdir and len(subdir)):
+                target_loc = joinpths(base_dir, subdir)
+            else:
+                target_loc = base_dir
+            dirsmade = Downloader.download(target_loc, uri, branch)
+            self.tracewriter.downloaded(target_loc, uri)
             self.tracewriter.dir_made(*dirsmade)
-        return self.tracedir
+            am_downloaded += 1
+        return am_downloaded
 
     def _get_param_map(self, fn=None):
         return None
@@ -159,23 +168,23 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
         dirsmade = mkdirslist(self.cfgdir)
         self.tracewriter.dir_made(*dirsmade)
         configs = self._get_config_files()
-        if(configs and len(configs)):
-            for fn in configs:
-                parameters = self._get_param_map(fn)
-                sourcefn = joinpths(STACK_CONFIG_DIR, self.component_name, fn)
-                tgtfn = joinpths(self.cfgdir, fn)
-                LOG.info("Configuring template file %s" % (sourcefn))
-                contents = load_file(sourcefn)
-                LOG.info("Replacing parameters in file %s" % (sourcefn))
-                LOG.debug("Replacements = %s" % (parameters))
-                contents = param_replace(contents, parameters)
-                LOG.debug("Applying side-effects of param replacement for template %s" % (sourcefn))
-                contents = self._config_adjust(contents, fn)
-                LOG.info("Writing configuration file %s" % (tgtfn))
-                write_file(tgtfn, contents)
-                #this trace is used to remove the files configured
-                self.tracewriter.cfg_write(tgtfn)
-        return self.tracedir
+        am = len(configs)
+        for fn in configs:
+            parameters = self._get_param_map(fn)
+            sourcefn = joinpths(STACK_CONFIG_DIR, self.component_name, fn)
+            tgtfn = joinpths(self.cfgdir, fn)
+            LOG.info("Configuring template file %s" % (sourcefn))
+            contents = load_file(sourcefn)
+            LOG.info("Replacing parameters in file %s" % (sourcefn))
+            LOG.debug("Replacements = %s" % (parameters))
+            contents = param_replace(contents, parameters)
+            LOG.debug("Applying side-effects of param replacement for template %s" % (sourcefn))
+            contents = self._config_adjust(contents, fn)
+            LOG.info("Writing configuration file %s" % (tgtfn))
+            write_file(tgtfn, contents)
+            #this trace is used to remove the files configured
+            self.tracewriter.cfg_write(tgtfn)
+        return am
 
 
 class PythonInstallComponent(PkgInstallComponent):
@@ -382,6 +391,7 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
             fn = self.starttracereader.trace_fn
             LOG.info("Deleting trace file %s" % (fn))
             unlink(fn)
+        return killedam
 
 
 class PythonRuntime(ProgramRuntime):
@@ -392,7 +402,7 @@ class PythonRuntime(ProgramRuntime):
         return None
 
     def restart(self):
-        return None
+        return 0
 
     def _was_installed(self):
         parent_result = ProgramRuntime._was_installed(self)
@@ -403,3 +413,20 @@ class PythonRuntime(ProgramRuntime):
             return False
         else:
             return True
+
+
+class NullRuntime(ComponentBase, RuntimeComponent):
+    def __init__(self, component_name, *args, **kargs):
+        ComponentBase.__init__(self, component_name, *args, **kargs)
+
+    def start(self):
+        return 0
+
+    def stop(self):
+        return 0
+
+    def status(self):
+        return None
+
+    def restart(self):
+        return 0

@@ -63,8 +63,13 @@ class KeystoneInstaller(PythonInstallComponent):
         self.cfgdir = joinpths(self.appdir, CONFIG_DIR)
         self.bindir = joinpths(self.appdir, BIN_DIR)
 
-    def _get_download_location(self):
-        return (self.gitloc, self.brch)
+    def _get_download_locations(self):
+        places = PythonInstallComponent._get_download_locations(self)
+        places.append({
+            'uri': self.gitloc,
+            'branch': self.brch,
+        })
+        return places
 
     def post_install(self):
         parent_result = PythonInstallComponent.post_install(self)

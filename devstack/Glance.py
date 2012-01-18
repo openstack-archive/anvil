@@ -73,9 +73,13 @@ class GlanceInstaller(PythonInstallComponent):
         self.brch = self.cfg.get("git", "glance_branch")
         self.cfgdir = joinpths(self.appdir, CONFIG_ACTUAL_DIR)
 
-    def _get_download_location(self):
-        #where we get glance from
-        return (self.gitloc, self.brch)
+    def _get_download_locations(self):
+        places = PythonInstallComponent._get_download_locations(self)
+        places.append({
+            'uri': self.gitloc,
+            'branch': self.brch,
+        })
+        return places
 
     def _get_config_files(self):
         #these are the config files we will be adjusting

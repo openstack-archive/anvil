@@ -50,9 +50,6 @@ class RabbitInstaller(PkgInstallComponent):
         PkgInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.runtime = RabbitRuntime(*args, **kargs)
 
-    def _get_download_location(self):
-        return (None, None)
-
     def _setup_pw(self):
         passwd = self.cfg.getpw("passwords", "rabbit")
         cmd = PWD_CMD + [passwd]
