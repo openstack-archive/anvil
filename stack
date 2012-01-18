@@ -201,7 +201,21 @@ def check_root(action, rootdir):
         return True
 
 
+def check_python():
+    py_version = sys.version_info
+    major = py_version[0]
+    minor = py_version[1]
+    if(major < 2 or (major == 2 and minor < 6)):
+        return False
+    if(major >= 3):
+        LOG.warn("This script has not been tested in python %s, use at your own risk!" % (major))
+    return True
+
+
 def main():
+    if(not check_python()):
+        LOG.error("Your python version is to old, please upgrade to >= 2.6!")
+        return 1
     me = __file__
     args = Options.parse()
     components = args.pop("component") or []
