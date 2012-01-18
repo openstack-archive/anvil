@@ -182,6 +182,7 @@ class PythonInstallComponent(PkgInstallComponent):
         (sysout, stderr) = execute(*PY_INSTALL, cwd=self.appdir, run_as_root=True)
         write_file(recordwhere, sysout)
 
+    # Overridden
     def install(self):
         self._do_pkg_install()
         self._python_install()

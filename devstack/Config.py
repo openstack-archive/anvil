@@ -33,7 +33,7 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         ConfigParser.RawConfigParser.__init__(self)
         self.pws = dict()
         self.configs_fetched = dict()
-        self.dbdsns = dict()
+        self.db_dsns = dict()
 
     def _makekey(self, section, option):
         return option + "@" + section
@@ -50,23 +50,42 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
             self.configs_fetched[key] = v
         return v
 
+    def __len__(self):
+        return (len(self.pws) +
+               len(self.configs_fetched) +
+               len(self.db_dsns))
+
     def __str__(self):
-        str_repr = ""
+        #this will make the items nice and pretty
+        def item_format(k, v):
+            return "\t%s=%s" % (str(k), str(v))
+        #collect all the lines
+        password_lines = list()
         if(len(self.pws)):
-            str_repr += "Passwords:" + os.linesep
-            for (k,v) in self.pws.items():
-                str_repr += "\t" + str(k) + " = " + str(v) + os.linesep
+            password_lines.append("Passwords:")
+            keys = sorted(self.pws.keys())
+            for key in keys:
+                value = self.pws.get(key)
+                password_lines.append(item_format(key, value))
+        cfg_lines = list()
         if(len(self.configs_fetched)):
-            str_repr += "Configs:" + os.linesep
-            for (k,v) in self.configs_fetched.items():
-                if(k in self.pws):
+            cfg_lines.append("Configs:")
+            keys = sorted(self.configs_fetched.keys())
+            for key in keys:
+                if(key in self.pws):
                     continue
-                str_repr += "\t" + str(k) + " = " + str(v) + os.linesep
-        if(len(self.dbdsns)):
-            str_repr += "Data source names:" + os.linesep
-            for (k, v) in self.dbdsns.items():
-                str_repr += "\t" + str(k) + " = " + str(v) + os.linesep
-        return str_repr
+                value = self.configs_fetched.get(key)
+                cfg_lines.append(item_format(key, value))
+        dsn_lines = list()
+        if(len(self.db_dsns)):
+            dsn_lines.append("Data source names:")
+            keys = sorted(self.db_dsns.keys())
+            for key in keys:
+                value = self.db_dsns.get(key)
+                dsn_lines.append(item_format(key, value))
+        #make a nice string
+        combined_lines = cfg_lines + password_lines + dsn_lines
+        return os.linesep.join(combined_lines)
 
     def _get_special(self, section, option):
         key = self._makekey(section, option)
@@ -89,14 +108,14 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         else:
             return v
 
-    def get_dbdsn(dbname):
+    def get_dbdsn(self, dbname):
         user = self.get("db", "sql_user")
         host = self.get("db", "sql_host")
         port = self.get("db", "port")
         pw = self.getpw("passwords", "sql")
         #check the dsn cache
-        if(dbname in self.dbdsns):
-            return self.dbdsns[dbname]
+        if(dbname in self.db_dsns):
+            return self.db_dsns[dbname]
         #form the dsn (from components we have...)
         #dsn = "<driver>://<username>:<password>@<host>:<port>/<database>"
         if(not host):
@@ -109,9 +128,9 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         dsn = driver + "://"
         if(user):
             dsn += user
-        if(password):
-            dsn += ":" + password
-        if(user or password):
+        if(pw):
+            dsn += ":" + pw
+        if(user or pw):
             dsn += "@"
         dsn += host
         if(port):
@@ -120,8 +139,9 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
             dsn += "/" + dbname
         else:
             dsn += "/"
+        LOG.debug("For database %s fetched dsn %s" % (dbname, dsn))
         #store for later...
-        self.dbdsns[dbname] = dsn
+        self.db_dsns[dbname] = dsn
         return dsn
 
     def getpw(self, section, option):

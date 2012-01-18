@@ -116,8 +116,10 @@ def get_config(action):
 
 
 def print_cfgs(cfg, action):
-    LOG.info("After %s your config is:" % (action))
-    LOG.info(str(cfg).rstrip())
+    cfg_str = str(cfg).strip()
+    if(len(cfg)):
+        LOG.info("After %s your config is:" % (action))
+        LOG.info(cfg_str)
 
 
 def runner(action_name, component_set, distro, root_dir, program_args):

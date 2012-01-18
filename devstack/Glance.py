@@ -24,6 +24,7 @@ from Util import (GLANCE,
                   get_host_ip, param_replace)
 from Shell import (deldir, mkdirslist, unlink,
                    joinpths, touch_file)
+import Db
 
 LOG = Logger.getLogger("install.glance")
 
@@ -74,6 +75,16 @@ class GlanceInstaller(PythonInstallComponent):
     def _get_config_files(self):
         #these are the config files we will be adjusting
         return list(CONFIGS)
+
+    def install(self):
+        parent_res = PythonInstallComponent.install(self)
+        #setup the database
+        self._setup_db()
+        return parent_res
+
+    def _setup_db(self):
+        Db.drop_db(self.cfg, DB_NAME)
+        Db.create_db(self.cfg, DB_NAME)
 
     def _config_adjust(self, contents, fn):
         lines = contents.splitlines()

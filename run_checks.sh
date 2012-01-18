@@ -39,8 +39,9 @@ function run_pep8 {
   srcfiles=`find devstack -type f | grep "py\$"`
   srcfiles+=" stack"
   pep_ignores="E202"
+  tee_fn="pep8.log"
   pep8_opts="--ignore=$pep_ignores --repeat"
-  echo "$(${wrapper} pep8 ${pep8_opts} ${srcfiles} 2>&1)"
+  echo "$(${wrapper} pep8 ${pep8_opts} ${srcfiles} 2>&1 | tee $tee_fn)"
   if [ "$?" -ne "0" ]; then
     echo "Sorry, cannot run pep8 ..."
     exit 1
@@ -54,8 +55,9 @@ function run_pylint {
   echo "Running pylint ..."
   srcfiles=`find devstack -type f | grep "py\$"`
   srcfiles+=" stack"
+  tee_fn="pylint.log"
   pylint_opts="--rcfile=$pylintrc_fn"
-  echo "$(${wrapper} pylint ${pylint_opts} ${srcfiles} 2>&1)"
+  echo "$(${wrapper} pylint ${pylint_opts} ${srcfiles} 2>&1 | tee $tee_fn)"
   if [ "$?" -ne "0" ]; then
    echo "Sorry, cannot run pylint ..."
    exit 1
