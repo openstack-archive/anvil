@@ -32,7 +32,7 @@ import Trace
 
 # Maximum for the number of available file descriptors (when not found)
 MAXFD = 2048
-MAX_KILL_TRY = 4
+MAX_KILL_TRY = 5
 SLEEP_TIME = 1
 
 LOG = Logger.getLogger("install.runners.foreground")
@@ -64,16 +64,17 @@ class ForegroundRunner(Runner.Runner):
             for attempt in range(0, MAX_KILL_TRY):
                 try:
                     LOG.info("Attempting to kill pid %s" % (pid))
-                    os.kill(pid, signal.SIGKILL)
-                    LOG.info("Sleeping for a little before next attempt to kill pid %s" % (pid))
-                    time.sleep(SLEEP_TIME)
                     attempts += 1
+                    os.kill(pid, signal.SIGKILL)
+                    LOG.info("Sleeping for %s seconds before next attempt to kill pid %s" % (SLEEP_TIME, pid))
+                    time.sleep(SLEEP_TIME)
                 except OSError as (ec, msg):
                     if(ec == errno.ESRCH):
                         killed = True
                         break
                     else:
-                        lastmsg = "[%s] %s" % (ec, msg)
+                        lastmsg = "[Errno: %s] %s" % (ec, msg)
+                        LOG.info("Sleeping for %s seconds before next attempt to kill pid %s" % (SLEEP_TIME, pid))
                         time.sleep(SLEEP_TIME)
             #trash the files
             if(killed):
@@ -90,7 +91,7 @@ class ForegroundRunner(Runner.Runner):
                 msg = "Could not stop program named %s after %s attempts - [%s]" % (name, MAX_KILL_TRY, lastmsg)
                 raise StopException(msg)
         else:
-            msg = "No pid file could be found to terminate at %s" % (pidfile)
+            msg = "No pid or trace file could be found to terminate at %s" % (rootdir)
             raise StopException(msg)
 
     def start(self, name, program, *args, **kargs):
