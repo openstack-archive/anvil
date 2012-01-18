@@ -32,7 +32,6 @@ from Util import (NOVA, GLANCE, QUANTUM, SWIFT, KEYSTONE, HORIZON, DB, RABBIT,
                   UBUNTU11, RHEL6,
                   STACK_CFG_LOC)
 from Shell import (mkdir, joinpths, unlink)
-from Config import (EnvConfigParser)
 from Exceptions import (NoTraceException)
 
 import Glance
@@ -44,6 +43,7 @@ import Config
 import Swift
 import Db
 import Rabbit
+import Config
 
 LOG = Logger.getLogger("install")
 
@@ -108,16 +108,41 @@ def get_package_manager_class(distro):
 
 
 def get_config(action):
-    LOG.info("Loading config from %s" % (STACK_CFG_LOC))
-    cfg = EnvConfigParser()
-    cfg.read(STACK_CFG_LOC)
+    fn = STACK_CFG_LOC
+    LOG.info("Loading config from %s" % (fn))
+    cfg = Config.EnvConfigParser()
+    cfg.read(fn)
     return cfg
 
 
 def print_cfgs(cfg, action):
-    if(len(cfg)):
+    #this will make the items nice and pretty
+    def item_format(k, v):
+        return "\t%s=%s" % (str(k), str(v))
+    def map_print(mp):
+        for key in sorted(mp.keys()):
+            value = mp.get(key)
+            LOG.info(item_format(key, value))
+    #now make it pretty
+    passwords_gotten = cfg.pws
+    full_cfgs = cfg.configs_fetched
+    db_dsns = cfg.db_dsns
+    if(len(passwords_gotten) or len(full_cfgs) or len(db_dsns)):
         LOG.info("After %s your config is:" % (action))
-        LOG.info(str(cfg).strip())
+        if(len(passwords_gotten)):
+            LOG.info("Passwords:")
+            map_print(passwords_gotten)
+        if(len(full_cfgs)):
+            filtered_mp = dict()
+            for key in full_cfgs.keys():
+                if(key in passwords_gotten):
+                    continue
+                filtered_mp[key] = full_cfgs.get(key)
+            LOG.info("Configs:")
+            map_print(filtered_mp)
+        if(len(db_dsns)):
+            LOG.info("Data source names:")
+            map_print(db_dsns)
 
 
 def runner(action_name, component_set, distro, root_dir, program_args):
@@ -125,7 +150,7 @@ def runner(action_name, component_set, distro, root_dir, program_args):
     if(action_name == INSTALL):
         mkdir(root_dir)
     pkg_manager_cls = get_package_manager_class(distro)
-    pkg_manager = pkg_manager_cls()
+    pkg_manager = pkg_manager_cls(distro)
     config = get_config(action_name)
     LOG.info("Will %s [%s] using root directory %s" % (action_name, ", ".join(component_set), root_dir))
     results = list()
@@ -139,8 +164,12 @@ def runner(action_name, component_set, distro, root_dir, program_args):
             instance.download()
             LOG.info("Configuring %s." % (c))
             instance.configure()
+            LOG.info("Pre-installing %s." % (c))
+            instance.pre_install()
             LOG.info("Installing %s." % (c))
-            trace = instance.install()
+            instance.install()
+            LOG.info("Post-installing %s." % (c))
+            trace = instance.post_install()
             if(trace):
                 LOG.info("Finished install of %s - check %s for traces of what happened." % (c, trace))
                 results.append(trace)

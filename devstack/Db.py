@@ -82,8 +82,8 @@ class DBInstaller(PkgInstallComponent):
         out['HOST_IP'] = hostip
         return out
 
-    def install(self):
-        pres = PkgInstallComponent.install(self)
+    def post_install(self):
+        parent_result = PkgInstallComponent.post_install(self)
         #extra actions to ensure we are granted access
         dbtype = self.cfg.get("db", "type")
         dbactions = DB_ACTIONS.get(dbtype)
@@ -106,7 +106,7 @@ class DBInstaller(PkgInstallComponent):
                 execute(*cmd, run_as_root=True, shell=True)
         #restart it to make sure all good
         self.runtime.restart()
-        return pres
+        return parent_result
 
 
 class DBRuntime(ComponentBase, RuntimeComponent):

@@ -66,7 +66,13 @@ class InstallComponent():
     def configure(self):
         raise NotImplementedError()
 
+    def pre_install(self):
+        raise NotImplementedError()
+
     def install(self):
+        raise NotImplementedError()
+        
+    def post_install(self):
         raise NotImplementedError()
 
 
@@ -118,28 +124,35 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
     def _get_param_map(self, fn=None):
         return None
 
-    def _do_pkg_install(self):
+    def install(self):
         pkgs = get_pkg_list(self.distro, self.component_name)
         if(len(pkgs)):
             pkgnames = sorted(pkgs.keys())
-            LOG.debug("Installing packages %s" % (", ".join(pkgnames)))
-            mp = self._get_param_map()
-            #run pre, install, then post
-            self.packager.pre_install(pkgs, mp)
+            LOG.info("Installing packages %s" % (", ".join(pkgnames)))
             self.packager.install_batch(pkgs)
-            self.packager.post_install(pkgs, mp)
             #add trace used to remove the pkgs
             for name in pkgnames:
                 self.tracewriter.package_install(name, pkgs.get(name))
+        return self.tracedir
 
-    def install(self):
-        self._do_pkg_install()
+    def pre_install(self):
+        pkgs = get_pkg_list(self.distro, self.component_name)
+        if(len(pkgs)):
+            mp = self._get_param_map()
+            self.packager.pre_install(pkgs, mp)
+        return self.tracedir
+
+    def post_install(self):
+        pkgs = get_pkg_list(self.distro, self.component_name)
+        if(len(pkgs)):
+            mp = self._get_param_map()
+            self.packager.post_install(pkgs, mp)
         return self.tracedir
 
     def _get_config_files(self):
         return list()
 
-    def _config_adjust(fn, contents):
+    def _config_adjust(contents, name):
         return contents
 
     def configure(self):
@@ -186,9 +199,9 @@ class PythonInstallComponent(PkgInstallComponent):
 
     # Overridden
     def install(self):
-        self._do_pkg_install()
+        parent_result = PkgInstallComponent.install(self)
         self._python_install()
-        return self.tracedir
+        return parent_result
 
 
 class PkgUninstallComponent(ComponentBase, UninstallComponent):
@@ -294,7 +307,7 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
         raise NotImplementedError()
 
     def _get_app_options(self, app):
-        return None
+        return list()
 
     def _get_param_map(self, app=None):
         return {
@@ -374,6 +387,12 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
 class PythonRuntime(ProgramRuntime):
     def __init__(self, component_name, *args, **kargs):
         ProgramRuntime.__init__(self, component_name, *args, **kargs)
+
+    def status(self):
+        return None
+
+    def restart(self):
+        return None
 
     def _was_installed(self):
         parent_result = ProgramRuntime._was_installed(self)
