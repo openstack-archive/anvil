@@ -304,7 +304,7 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
             msg = "Can not start %s since it was not installed" % (self.component_name)
             raise StartException(msg)
         #select how we are going to start it
-        startercls = self._getstartercls()
+        startercls = self._getstartercls(self.run_type)
         starter = startercls()
         #start all apps
         #this fns list will have info about what was started
