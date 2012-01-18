@@ -21,11 +21,14 @@ import re
 import json
 import subprocess
 import netifaces
+import operator
 
+import Logger
+
+#TODO fix these
 from Exceptions import (BadRegexException,
                         NoReplacementException,
                         FileException)
-import Logger
 from Shell import (joinpths, load_file, execute)
 
 #constant goodies
@@ -188,7 +191,24 @@ CONFIG_DIR = "config"
 #for modifiers...
 REGEX_MATCHER = re.compile("^/(.*?)/([a-z]*)$")
 
+#these actions need to have there components depenencies
+#to occur first (ie keystone starts before glance...)
+DEP_ACTIONS_NEEDED = [START, STOP, INSTALL]
+
 LOG = Logger.getLogger("install.util")
+
+
+def resolve_dependencies(action, components):
+    if(action in DEP_ACTIONS_NEEDED):
+        new_components = list()
+        for c in components:
+            component_deps = list(set(fetch_deps(c)))
+            if(len(component_deps)):
+                new_components = new_components + component_deps
+            new_components.append(c)
+        return set(new_components)
+    else:
+        return set(components)
 
 
 def execute_template(*cmds, **kargs):
@@ -231,6 +251,21 @@ def fetch_deps(component, add=False):
         for d in cdeps:
             deps = deps + fetch_deps(d, True)
     return deps
+
+
+def prioritize_components(components):
+    #get the right component order (by priority)
+    mporder = dict()
+    for c in components:
+        priority = NAMES_PRIORITY.get(c)
+        if(priority == None):
+            priority = sys.maxint
+        mporder[c] = priority
+    #sort by priority value
+    priority_order = sorted(mporder.iteritems(), key=operator.itemgetter(1))
+    #extract the right order
+    component_order = [x[0] for x in priority_order]
+    return component_order
 
 
 def component_pths(root, compnent_type):

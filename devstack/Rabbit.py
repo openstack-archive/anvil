@@ -17,11 +17,13 @@
 from tempfile import TemporaryFile
 
 import Logger
+import Packager
+
+#TODO fix these
 from Component import (ComponentBase, RuntimeComponent,
                        PkgUninstallComponent, PkgInstallComponent)
 from Exceptions import (StartException, StopException,
                     StatusException, RestartException)
-import Packager
 from Util import (RABBIT, UBUNTU11)
 from Trace import (TraceReader,
                     IN_TRACE)

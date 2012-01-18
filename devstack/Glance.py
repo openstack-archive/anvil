@@ -17,6 +17,9 @@ import json
 import os.path
 
 import Logger
+import Db
+
+#TODO fix these
 from Component import (PythonUninstallComponent,
                        PythonInstallComponent,
                        PythonRuntime)
@@ -24,7 +27,6 @@ from Util import (GLANCE,
                   get_host_ip, param_replace)
 from Shell import (deldir, mkdirslist, unlink,
                    joinpths, touch_file)
-import Db
 
 LOG = Logger.getLogger("install.glance")
 

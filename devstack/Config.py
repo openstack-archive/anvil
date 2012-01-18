@@ -17,10 +17,12 @@ import ConfigParser
 import os
 import re
 
+#TODO fix these
 from Exceptions import (BadParamException)
+from Environment import (get_environment_key)
+
 import Logger
 import Shell
-from Environment import (get_environment_key)
 
 LOG = Logger.getLogger("install.config")
 PW_TMPL = "Enter a password for %s: "

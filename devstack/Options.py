@@ -15,6 +15,7 @@
 
 from optparse import OptionParser
 
+#TODO fix these
 from Util import (VERSION, VERSION_STR, ACTIONS, COMPONENT_NAMES)
 
 

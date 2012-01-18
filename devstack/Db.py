@@ -17,6 +17,8 @@ import re
 
 import Logger
 import Packager
+
+#TODO fix these
 from Component import (PkgUninstallComponent, PkgInstallComponent,
                         ComponentBase, RuntimeComponent)
 from Util import (DB,

@@ -17,8 +17,10 @@
 from urlparse import urlparse
 import re
 
+#TODO fix these
 from Shell import (execute, mkdirslist)
 from Util import (create_regex, MASTER_BRANCH)
+
 import Logger
 
 LOG = Logger.getLogger("install.downloader")

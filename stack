@@ -13,7 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import operator
 import os
 import os.path
 import sys
@@ -23,7 +22,10 @@ sys.path.append("devstack")
 
 import Logger
 import Options
-from Util import (welcome, rcf8222date, determine_os, get_pkg_list, fetch_deps)
+
+#TODO fix these
+from Util import (welcome, rcf8222date, determine_os,
+                    prioritize_components, resolve_dependencies)
 from Util import (NOVA, GLANCE, QUANTUM, SWIFT, KEYSTONE, HORIZON, DB, RABBIT,
                   INSTALL, UNINSTALL, START, STOP,
                   ACTIONS, COMPONENT_NAMES, NAMES_PRIORITY,
@@ -185,20 +187,6 @@ def runner(action_name, component_set, distro, root_dir, program_args):
     return results
 
 
-def resolve_dependencies(action, components):
-    if(action in DEP_ACTIONS_NEEDED):
-        new_components = list()
-        for c in components:
-            component_deps = list(set(fetch_deps(c)))
-            if(len(component_deps)):
-                LOG.info("Having to %s [%s] since they are dependencies for %s." % (action, ", ".join(component_deps), c))
-                new_components = new_components + component_deps
-            new_components.append(c)
-        return set(new_components)
-    else:
-        return set(components)
-
-
 def check_root(action, rootdir):
     if(action == INSTALL):
         root_there = False
@@ -216,29 +204,17 @@ def check_root(action, rootdir):
         return True
 
 
-def prioritize_components(action, components):
-    #get the right component order (by priority)
-    mporder = dict()
-    for c in components:
-        priority = NAMES_PRIORITY.get(c)
-        if(priority == None):
-            priority = sys.maxint
-        mporder[c] = priority
-    #sort by priority value
-    priority_order = sorted(mporder.iteritems(), key=operator.itemgetter(1))
-    #extract the right order
-    component_order = [x[0] for x in priority_order]
-    return component_order
-
-
 def main():
     me = __file__
     args = Options.parse()
     components = args.pop("component") or []
     if(len(components) == 0):
+        #assume user wants them all
         components = list(COMPONENT_NAMES)
-    components = set([x.lower() for x in components])
-    components = set(COMPONENT_NAMES).intersection(components)
+    else:
+        #clean the names up and see what is valid after an intersection
+        components = set([x.lower().strip() for x in components])
+        components = set(COMPONENT_NAMES).intersection(components)
     if(len(components) == 0):
         LOG.error("No valid components specified!")
         LOG.info("Perhaps you should try %s --help" % (me))
@@ -263,9 +239,13 @@ def main():
     #start it
     welcome(action)
     #need to figure out dependencies for components (if any)
-    components = resolve_dependencies(action, components)
+    new_components = resolve_dependencies(action, components)
+    component_diff = new_components.difference(components)
+    if(len(component_diff)):
+        LOG.info("Having to install dependent components: [%s]" % (",".join(component_diff)))
+    components = new_components
     #get the right component order (by priority)
-    components = prioritize_components(action, components)
+    components = prioritize_components(components)
     #now do it!
     LOG.info("Starting action [%s] on %s for operating system/distro [%s]" % (action, rcf8222date(), install_os))
     resultList = runner(action, components, install_os, rootdir, args)

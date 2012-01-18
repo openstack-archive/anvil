@@ -15,6 +15,8 @@
 
 
 import Logger
+
+#TODO fix these
 from Component import (ComponentBase, RuntimeComponent,
                        UninstallComponent, InstallComponent)
 

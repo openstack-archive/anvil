@@ -13,25 +13,27 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+#TODO fix these
 from Util import (component_pths,
                   get_pkg_list,
                   get_pip_list,
                   param_replace,
                   STACK_CONFIG_DIR)
-import Downloader
-import Logger
-import Pip
 from Shell import (execute, mkdirslist, write_file,
                     load_file, joinpths, touch_file,
                     unlink, deldir)
 from Trace import (TraceWriter, TraceReader,
                     touch_trace, parse_fn,
                     IN_TRACE, PY_TRACE, START_TRACE)
-import Runner
 from runners import Foreground, Screen
 from runners.Foreground import (ForegroundRunner)
 from runners.Screen import ScreenRunner
 from Exceptions import (StopException, StartException, InstallException)
+
+import Downloader
+import Logger
+import Pip
+import Runner
 
 LOG = Logger.getLogger("install.component")
 PY_INSTALL = ['python', 'setup.py', 'develop']
@@ -44,7 +46,7 @@ class ComponentBase():
         self.packager = kargs.get("pkg")
         self.distro = kargs.get("distro")
         self.root = kargs.get("root")
-        self.othercomponents = set(kargs.get("components"))
+        self.othercomponents = set(kargs.get("components", []))
         pths = component_pths(self.root, component_name)
         self.componentroot = pths.get('root_dir')
         self.tracedir = pths.get("trace_dir")

@@ -13,8 +13,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from Shell import (execute)
 import Logger
+
+#TODO fix these
+from Shell import (execute)
 from Exceptions import (ProcessExecutionError)
 
 LOG = Logger.getLogger("install.pip")

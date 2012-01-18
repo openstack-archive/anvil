@@ -17,17 +17,20 @@ import os
 import os.path
 
 import Pip
+import Logger
+import Db
+
+#TODO fix these
 from Util import (KEYSTONE,
                   CONFIG_DIR,
                   NOVA, GLANCE, SWIFT,
                   get_host_ip,
                   execute_template,
                   param_replace)
-import Logger
-import Db
 from Component import (PythonUninstallComponent,
                 PythonInstallComponent, PythonRuntime)
 from Shell import (mkdirslist, unlink, touch_file, joinpths)
+
 LOG = Logger.getLogger("install.keystone")
 
 TYPE = KEYSTONE

@@ -16,9 +16,11 @@
 import Packager
 import Logger
 import Util
-from Util import param_replace
 import Shell
+
+#TODO fix these
 from Shell import execute
+from Util import param_replace
 
 LOG = Logger.getLogger("install.package.yum")
 YUM_CMD = ['yum']

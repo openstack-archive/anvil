@@ -23,12 +23,14 @@ import time
 import Runner
 import Util
 import Exceptions
-from Exceptions import (StartException, StopException)
+import Trace
 import Logger
 import Shell
+
+#TODO fix these
+from Exceptions import (StartException, StopException)
 from Shell import (unlink, mkdir, joinpths, write_file,
                    load_file, isfile)
-import Trace
 
 # Maximum for the number of available file descriptors (when not found)
 MAXFD = 2048

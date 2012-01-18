@@ -19,9 +19,11 @@ from tempfile import TemporaryFile
 import time
 
 import Packager
+import Logger
+
+#TODO fix these
 from Util import param_replace
 from Shell import execute
-import Logger
 
 LOG = Logger.getLogger("install.package.apt")
 
