@@ -63,14 +63,17 @@ class ForegroundRunner(Runner.Runner):
             attempts = 1
             for attempt in range(0, MAX_KILL_TRY):
                 try:
+                    LOG.info("Attempting to kill pid %s" % (pid))
                     os.kill(pid, signal.SIGKILL)
+                    LOG.info("Sleeping for a little before next attempt to kill pid %s" % (pid))
+                    time.sleep(SLEEP_TIME)
                     attempts += 1
                 except OSError as (ec, msg):
                     if(ec == errno.ESRCH):
                         killed = True
                         break
                     else:
-                        lastmsg = msg
+                        lastmsg = "[%s] %s" % (ec, msg)
                         time.sleep(SLEEP_TIME)
             #trash the files
             if(killed):
