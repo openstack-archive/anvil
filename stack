@@ -91,9 +91,6 @@ ACTION_CLASSES = {
     },
 }
 
-#actions which need dependent actions to occur
-DEP_ACTIONS_NEEDED = set([START, STOP, INSTALL])
-
 
 def get_package_manager_class(distro):
     klass = None
