@@ -18,7 +18,8 @@ import Exceptions
 import Logger
 import Pip
 import Runner
-import runners
+import runners.Foreground
+import runners.Screen
 import Shell
 import Trace
 import Util
@@ -193,7 +194,7 @@ class PythonInstallComponent(PkgInstallComponent):
 class PkgUninstallComponent(ComponentBase, UninstallComponent):
     def __init__(self, component_name, *args, **kargs):
         ComponentBase.__init__(self, component_name, *args, **kargs)
-        UnistallComponent.__init__(self)
+        UninstallComponent.__init__(self)
         self.tracereader = Trace.TraceReader(self.tracedir, Trace.IN_TRACE)
 
     def unconfigure(self):
@@ -257,12 +258,12 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
     #this here determines how we start and stop and
     #what classes handle different running/stopping types
     STARTER_CLS_MAPPING = {
-        runners.Foreground.RUN_TYPE: runners.ForegroundRunner,
-        runners.Screen.RUN_TYPE: runners.ScreenRunner,
+        runners.Foreground.RUN_TYPE: runners.Foreground.ForegroundRunner,
+        runners.Screen.RUN_TYPE: runners.Screen.ScreenRunner,
     }
     STOPPER_CLS_MAPPING = {
-        runners.Foreground.RUN_TYPE: runners.ForegroundRunner,
-        runners.Screen.RUN_TYPE: runners.ScreenRunner,
+        runners.Foreground.RUN_TYPE: runners.Foreground.ForegroundRunner,
+        runners.Screen.RUN_TYPE: runners.Screen.ScreenRunner,
     }
 
     def __init__(self, component_name, *args, **kargs):
