@@ -19,7 +19,7 @@ import re
 
 #TODO fix these
 from Shell import (execute, mkdirslist)
-from Util import (create_regex, MASTER_BRANCH)
+from Util import (MASTER_BRANCH)
 
 import Logger
 

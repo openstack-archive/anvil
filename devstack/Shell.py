@@ -127,21 +127,25 @@ def isfile(fn):
     return os.path.isfile(fn)
 
 
-def joinpths(*pths):
-    return os.path.join(*pths)
+def isdir(path):
+    return os.path.isdir(path)
 
 
-def _gen_password(genlen):
-    if(genlen <= 0):
-        msg = "Generated password length %s can not be less than or equal to zero" % (genlen)
+def joinpths(*paths):
+    return os.path.join(*paths)
+
+
+def _gen_password(pw_len):
+    if(pw_len <= 0):
+        msg = "Password length %s can not be less than or equal to zero" % (pw_len)
         raise BadParamException(msg)
-    LOG.debug("Generating you a pseudo-random password of byte length: %s" % (genlen))
-    cmd = MKPW_CMD + [genlen]
+    LOG.debug("Generating you a pseudo-random password of byte length: %s" % (pw_len))
+    cmd = MKPW_CMD + [pw_len]
     (stdout, stderr) = execute(*cmd)
     return stdout.strip()
 
 
-def password(prompt=None, genlen=8):
+def password(prompt=None, pw_len=8):
     rd = ""
     pass_ask = get_environment_bool("PASS_ASK", True)
     if(pass_ask):
@@ -150,30 +154,30 @@ def password(prompt=None, genlen=8):
         else:
             rd = getpass.getpass()
     if(len(rd) == 0):
-        return _gen_password(genlen)
+        return _gen_password(pw_len)
     else:
         return rd
 
 
-def mkdirslist(pth):
-    dirsmade = list()
-    if(os.path.isdir(pth)):
-        return dirsmade
-    dirspossible = set()
-    dirspossible.add(pth)
+def mkdirslist(path):
+    LOG.debug("Determining potential paths to create for target path %s" % (path))
+    dirs_possible = set()
+    dirs_possible.add(path)
+    #TODO maybe just use string split with os.sep?
     while(True):
-        splitup = os.path.split(pth)
-        pth = splitup[0]
-        base = splitup[1]
-        dirspossible.add(pth)
-        if(pth == os.sep):
+        (base, dirname) = os.path.split(path)
+        dirs_possible.add(base)
+        path = base
+        if(path == os.sep):
             break
-    dirstobe = list(dirspossible)
-    for pth in sorted(dirstobe):
-        if(not os.path.isdir(pth)):
-            os.mkdir(pth)
-            dirsmade.append(pth)
-    return dirsmade
+    #sorting is important so that we go in the right order.. (/ before /tmp and so on)
+    dirs_made = list()
+    for check_path in sorted(dirs_possible):
+        if(not isdir(check_path)):
+            LOG.debug("Creating directory %s" % (check_path))
+            mkdir(check_path, False)
+            dirs_made.append(check_path)
+    return dirs_made
 
 
 def append_file(fn, text, flush=True):
@@ -190,12 +194,12 @@ def write_file(fn, text, flush=True):
             f.flush()
 
 
-def touch_file(fn, diethere=True):
-    if(not os.path.exists(fn)):
+def touch_file(fn, die_if_there=True):
+    if(not isfile(fn)):
         with open(fn, "w") as f:
             f.truncate(0)
     else:
-        if(diethere):
+        if(die_if_there):
             msg = "Can not touch file %s since it already exists" % (fn)
             raise FileException(msg)
 
@@ -207,30 +211,31 @@ def load_file(fn):
     return data
 
 
-def mkdir(pth, recurse=True):
-    if(not os.path.isdir(pth)):
+def mkdir(path, recurse=True):
+    if(not isdir(path)):
         if(recurse):
-            os.makedirs(pth)
+            os.makedirs(path)
         else:
-            os.mkdir(pth)
+            os.mkdir(path)
 
 
-def deldir(pth, force=True):
-    if(os.path.isdir(pth)):
+def deldir(path, force=True):
+    if(isdir(path)):
         if(force):
-            shutil.rmtree(pth)
+            shutil.rmtree(path)
         else:
-            os.removedirs(pth)
+            os.removedirs(path)
 
 
 def prompt(prompt):
-    rd = raw_input(prompt)
-    return rd
+    return raw_input(prompt)
 
 
-def unlink(pth, ignore=True):
+def unlink(path, ignore_errors=True):
     try:
-        os.unlink(pth)
-    except OSError as (errono, emsg):
-        if(not ignore):
+        os.unlink(path)
+    except OSError, e:
+        if(not ignore_errors):
             raise
+        else:
+            pass

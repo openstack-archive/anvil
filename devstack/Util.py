@@ -73,8 +73,8 @@ NAMES_PRIORITY = {
     QUANTUM: 3,
     NOVA: 3,
     SWIFT: 3,
-    KEYSTONE_CLIENT: 4,
     HORIZON: 3,
+    KEYSTONE_CLIENT: 4,
 }
 
 #when a component is asked for it may
@@ -99,6 +99,10 @@ UNINSTALL = "uninstall"
 START = "start"
 STOP = "stop"
 ACTIONS = [INSTALL, UNINSTALL, START, STOP]
+
+#these actions need to have there components dependencies
+#to occur first (ie keystone starts before glance...)
+DEP_ACTIONS_NEEDED = [START, STOP, INSTALL]
 
 #this is used to map an action to a useful string for
 #the welcome display...
@@ -191,10 +195,6 @@ PKG_MAP = {
 TRACE_DIR = "traces"
 APP_DIR = "app"
 CONFIG_DIR = "config"
-
-#these actions need to have there components depenencies
-#to occur first (ie keystone starts before glance...)
-DEP_ACTIONS_NEEDED = [START, STOP, INSTALL]
 
 LOG = Logger.getLogger("install.util")
 
