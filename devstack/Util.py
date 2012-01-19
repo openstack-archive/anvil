@@ -73,11 +73,11 @@ NAMES_PRIORITY = {
     RABBIT: 1,
     KEYSTONE: 2,
     GLANCE: 3,
-    QUANTUM: 4,
-    NOVA: 5,
-    SWIFT: 6,
-    KEYSTONE_CLIENT: 6,
-    HORIZON: 7,
+    QUANTUM: 3,
+    NOVA: 3,
+    SWIFT: 3,
+    KEYSTONE_CLIENT: 4,
+    HORIZON: 3,
 }
 
 #when a component is asked for it may
