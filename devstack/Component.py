@@ -210,7 +210,7 @@ class PythonInstallComponent(PkgInstallComponent):
         })
         return py_dirs
 
-    def _python_install(self):
+    def _install_pips(self):
         pips = Util.get_pip_list(self.distro, self.component_name)
         #install any need pip items
         if(len(pips)):
@@ -218,7 +218,8 @@ class PythonInstallComponent(PkgInstallComponent):
             Pip.install(pips)
             for name in pips.keys():
                 self.tracewriter.pip_install(name, pips.get(name))
-        #now setup python
+
+    def _install_python_setups(self):
         pydirs = self._get_python_directories()
         if(len(pydirs)):
             LOG.info("Setting up %s python directories" % (len(pydirs)))
@@ -238,7 +239,10 @@ class PythonInstallComponent(PkgInstallComponent):
                 Shell.write_file(recordwhere, combined_output)
                 self.tracewriter.py_install(name, recordwhere, working_dir)
 
-    # Overridden
+    def _python_install(self):
+        self._install_pips()
+        self._install_python_setups()
+
     def install(self):
         parent_result = PkgInstallComponent.install(self)
         self._python_install()

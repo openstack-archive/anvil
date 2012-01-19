@@ -30,7 +30,7 @@ from Util import (NOVA, GLANCE, QUANTUM, SWIFT, KEYSTONE, HORIZON, DB, RABBIT, K
                   INSTALL, UNINSTALL, START, STOP,
                   ACTIONS, COMPONENT_NAMES, NAMES_PRIORITY,
                   UBUNTU11, RHEL6,
-                  STACK_CFG_LOC)
+                  STACK_CFG_LOC, DEVSTACK)
 from Shell import (mkdir, joinpths, unlink)
 from Exceptions import (NoTraceException)
 
@@ -255,7 +255,7 @@ def check_python():
     if(major < 2 or (major == 2 and minor < 6)):
         return False
     if(major >= 3):
-        LOG.warn("This script has not been tested in python %s, use at your own risk!" % (major))
+        LOG.warn("%s has not been tested in python %s, use at your own risk!" % (DEVSTACK, major))
     return True
 
 
