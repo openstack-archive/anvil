@@ -55,7 +55,6 @@ function run_pylint {
   echo "Running pylint ..."
   srcfiles=`find devstack -type f | grep "py\$" | sed 's/devstack\/\(.*\)\.py/\1/' | tr '/' '.'`
   srcfiles+=" stack"
-  echo $srcfiles
   tee_fn="pylint.log"
   pylint_opts="--rcfile=$pylintrc_fn"
   echo "$(${wrapper} pylint ${pylint_opts} ${srcfiles} 2>&1 | tee $tee_fn)"
