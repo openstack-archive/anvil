@@ -133,7 +133,7 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
             am_downloaded += 1
         return am_downloaded
 
-    def _get_param_map(self, fn=None):
+    def _get_param_map(self, _=None):
         return None
 
     def install(self):
@@ -164,7 +164,7 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
     def _get_config_files(self):
         return list()
 
-    def _config_adjust(self, contents, name):
+    def _config_adjust(self, contents, _):
         return contents
         
     def _get_full_config_name(self, name):
@@ -238,9 +238,8 @@ class PythonInstallComponent(PkgInstallComponent):
                 combined_output += sysout + os.linesep
                 combined_output += "===STDERR===" + os.linesep
                 combined_output += stderr  + os.linesep
-                self.tracewriter.py_install(name, recordwhere, working_dir)
                 Shell.write_file(recordwhere, combined_output)
-                self.tracewriter.py_install(name, recordwhere)
+                self.tracewriter.py_install(name, recordwhere, working_dir)
 
     # Overridden
     def install(self):
@@ -363,10 +362,10 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
     def _get_apps_to_start(self):
         return list()
 
-    def _get_app_options(self, app):
+    def _get_app_options(self, _):
         return list()
 
-    def _get_param_map(self, app=None):
+    def _get_param_map(self, _=None):
         return {
             'ROOT': self.appdir,
         }
@@ -398,7 +397,8 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
                 program_opts = adjusted_opts
             LOG.info("Starting [%s] with options [%s]" % (app_name, ", ".join(program_opts)))
             #start it with the given settings
-            fn = starter.start(app_name, app_pth, *program_opts, app_dir=app_dir, trace_dir=self.tracedir)
+            fn = starter.start(app_name, app_pth, *program_opts, app_dir=app_dir, \
+                               trace_dir=self.tracedir)
             if(fn):
                 fns.append(fn)
                 LOG.info("Started %s, details are in %s" % (app_name, fn))
@@ -445,6 +445,12 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
             Shell.unlink(fn)
         return killedam
 
+    def status(self):
+        return None
+
+    def restart(self):
+        return 0
+
 
 class PythonRuntime(ProgramRuntime):
     def __init__(self, component_name, *args, **kargs):
@@ -470,6 +476,7 @@ class PythonRuntime(ProgramRuntime):
 class NullRuntime(ComponentBase, RuntimeComponent):
     def __init__(self, component_name, *args, **kargs):
         ComponentBase.__init__(self, component_name, *args, **kargs)
+        RuntimeComponent.__init__(self)
 
     def start(self):
         return 0

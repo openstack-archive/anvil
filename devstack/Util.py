@@ -18,6 +18,7 @@ from termcolor import colored
 import os
 import platform
 import re
+import sys
 import json
 import subprocess
 import netifaces
