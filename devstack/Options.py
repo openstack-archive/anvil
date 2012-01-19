@@ -15,16 +15,15 @@
 
 from optparse import OptionParser
 
-#TODO fix these
-from Util import (VERSION, VERSION_STR, ACTIONS, COMPONENT_NAMES)
+import Util
 
 
 def parse():
 
-    versionstr = "%prog v" + VERSION_STR
+    versionstr = "%prog v" + Util.VERSION_STR
     parser = OptionParser(version=versionstr)
 
-    known_actions = sorted(ACTIONS)
+    known_actions = sorted(Util.ACTIONS)
     actions = "(" + ", ".join(known_actions) + ")"
     parser.add_option("-a", "--action",
             action="store",
@@ -38,9 +37,10 @@ def parse():
         type="string",
         dest="dir",
         metavar="DIR",
-        help="root DIR for new components or DIR with existing components (ACTION dependent)")
+        help="root DIR for new components or "\
+             "DIR with existing components (ACTION dependent)")
 
-    known_components = sorted(COMPONENT_NAMES)
+    known_components = sorted(Util.COMPONENT_NAMES)
     components = "(" + ", ".join(known_components) + ")"
     parser.add_option("-c", "--component",
         action="append",
