@@ -35,14 +35,14 @@ class KeyStoneClientUninstaller(PythonUninstallComponent):
 class KeyStoneClientInstaller(PythonInstallComponent):
     def __init__(self, *args, **kargs):
         PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
-        self.gitloc = self.cfg.get("git", "keystoneclient_repo")
-        self.brch = self.cfg.get("git", "keystoneclient_branch")
+        self.git_loc = self.cfg.get("git", "keystoneclient_repo")
+        self.git_branch = self.cfg.get("git", "keystoneclient_branch")
 
     def _get_download_locations(self):
         places = PythonInstallComponent._get_download_locations(self)
         places.append({
-            'uri': self.gitloc,
-            'branch': self.brch,
+            'uri': self.git_loc,
+            'branch': self.git_branch,
         })
         return places
 
