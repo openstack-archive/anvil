@@ -16,6 +16,7 @@
 
 import Logger
 import Util
+import Shell
 
 #TODO fix these
 from Component import (PythonUninstallComponent,    
@@ -24,6 +25,10 @@ from Component import (PythonUninstallComponent,
 
 LOG = Logger.getLogger("install.horizon")
 TYPE = Util.HORIZON
+ROOT_HORIZON = 'horizon'
+HORIZON_NAME = 'horizon'
+ROOT_DASH = 'openstack-dashboard'
+DASH_NAME = 'dashboard'
 
 
 class HorizonUninstaller(PythonUninstallComponent):
@@ -36,6 +41,8 @@ class HorizonInstaller(PythonInstallComponent):
         PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.gitloc = self.cfg.get("git", "horizon_repo")
         self.brch = self.cfg.get("git", "horizon_branch")
+        self.horizon_dir = Shell.joinpths(self.appdir, ROOT_HORIZON)
+        self.dash_dir = Shell.joinpths(self.appdir, ROOT_DASH)
 
     def _get_download_locations(self):
         places = PythonInstallComponent._get_download_locations(self)
@@ -44,6 +51,19 @@ class HorizonInstaller(PythonInstallComponent):
             'branch': self.brch,
         })
         return places
+
+    def _get_python_directories(self):
+        py_dirs = list()
+        py_dirs.append({
+            'name': HORIZON_NAME,
+            'work_dir': self.horizon_dir,
+        })
+        py_dirs.append({
+            'name': DASH_NAME,
+            'work_dir': self.dash_dir,
+        })
+        return py_dirs
+
 
 class HorizonRuntime(NullRuntime):
     def __init__(self, *args, **kargs):

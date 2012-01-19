@@ -86,9 +86,9 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         if(key in self.configs_fetched):
             v = self.configs_fetched.get(key)
         else:
-            LOG.debug("Fetching value for param %s" % (key))
+            LOG.debug("Fetching value for param \"%s\"" % (key))
             v = self._get_special(section, option)
-            LOG.debug("Fetched \"%s\" for %s %s" % (v, key, CACHE_MSG))
+            LOG.debug("Fetched \"%s\" for \"%s\" %s" % (v, key, CACHE_MSG))
             self.configs_fetched[key] = v
         return v
 
@@ -103,7 +103,7 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
             key = mtch.group(1).strip()
             defv = mtch.group(2)
             if(len(defv) == 0 and len(key) == 0):
-                msg = "Invalid bash-like value %s for %s" % (v, key)
+                msg = "Invalid bash-like value \"%s\" for \"%s\"" % (v, key)
                 raise BadParamException(msg)
             if(len(key) == 0):
                 return defv
@@ -145,7 +145,7 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
             dsn += "/" + dbname
         else:
             dsn += "/"
-        LOG.debug("For database %s fetched dsn %s %s" % (dbname, dsn, CACHE_MSG))
+        LOG.debug("For database \"%s\" fetched dsn \"%s\" %s" % (dbname, dsn, CACHE_MSG))
         #store for later...
         self.db_dsns[dbname] = dsn
         return dsn
@@ -161,6 +161,6 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         if(len(pw) == 0):
             while(len(pw) == 0):
                 pw = Shell.password(PW_TMPL % (key))
-        LOG.debug("Password for %s will be %s %s" % (key, pw, CACHE_MSG))
+        LOG.debug("Password for \"%s\" will be \"%s\" %s" % (key, pw, CACHE_MSG))
         self.pws[key] = pw
         return pw
