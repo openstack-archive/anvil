@@ -166,7 +166,7 @@ def mkdirslist(pth):
         pth = splitup[0]
         base = splitup[1]
         dirspossible.add(pth)
-        if(len(base) == 0):
+        if(pth == os.sep):
             break
     dirstobe = list(dirspossible)
     for pth in sorted(dirstobe):
