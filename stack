@@ -163,7 +163,7 @@ def runner(action_name, component_set, distro, root_dir, program_args):
     pkg_manager_cls = get_package_manager_class(distro)
     pkg_manager = pkg_manager_cls(distro)
     config = get_config(action_name)
-    LOG.info("Will %s [%s] using root directory %s" % (action_name, ", ".join(component_set), root_dir))
+    LOG.info("Will %s [%s] using root directory \"%s\"" % (action_name, ", ".join(component_set), root_dir))
     results = list()
     class_lookup = ACTION_CLASSES.get(action_name)
     force = program_args.get('force', False)

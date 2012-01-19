@@ -33,13 +33,12 @@ VERSION_STR = "%0.2f" % (VERSION)
 DEVSTACK = 'DEVSTACK'
 
 #these also have meaning outside python
-#ie in the pkg listings so update there also!
+#ie in the pkg/pip listings so update there also!
 UBUNTU11 = "ubuntu-oneiric"
 RHEL6 = "rhel-6"
 
 #GIT master
 MASTER_BRANCH = "master"
-
 
 #other constants
 PRE_INSTALL = 'pre-install'
@@ -48,7 +47,9 @@ IPV4 = 'IPv4'
 IPV6 = 'IPv6'
 DEFAULT_NET_INTERFACE = 'eth0'
 DEFAULT_NET_INTERFACE_IP_VERSION = IPV4
-PARAM_SUB_REGEX = re.compile("%([\\w\\d]+?)%")
+
+#this regex is used for parameter substitution
+PARAM_SUB_REGEX = re.compile(r"%([\w\d]+?)%")
 
 #component name mappings
 NOVA = "nova"
@@ -116,6 +117,11 @@ WELCOME_MAP = {
 #where we should get the config file...
 STACK_CONFIG_DIR = "conf"
 STACK_CFG_LOC = Shell.joinpths(STACK_CONFIG_DIR, "stack.ini")
+
+#default subdirs of a components dir (valid unless overriden)
+TRACE_DIR = "traces"
+APP_DIR = "app"
+CONFIG_DIR = "config"
 
 #this regex is how we match python platform output to
 #a known constant
@@ -191,11 +197,6 @@ PKG_MAP = {
         ],
 }
 
-#subdirs of a components dir
-TRACE_DIR = "traces"
-APP_DIR = "app"
-CONFIG_DIR = "config"
-
 LOG = Logger.getLogger("install.util")
 
 
@@ -268,17 +269,12 @@ def prioritize_components(components):
     return component_order
 
 
-def component_pths(root, compnent_type):
-    component_root = Shell.joinpths(root, compnent_type)
+def component_paths(root, component_name):
+    component_root = Shell.joinpths(root, component_name)
     tracedir = Shell.joinpths(component_root, TRACE_DIR)
     appdir = Shell.joinpths(component_root, APP_DIR)
     cfgdir = Shell.joinpths(component_root, CONFIG_DIR)
-    out = dict()
-    out['root_dir'] = component_root
-    out['trace_dir'] = tracedir
-    out['app_dir'] = appdir
-    out['config_dir'] = cfgdir
-    return out
+    return (component_root, tracedir, appdir, cfgdir)
 
 
 def load_json(fn):
@@ -306,7 +302,10 @@ def get_host_ip(cfg=None):
             ipinfo = def_info.get(DEFAULT_NET_INTERFACE_IP_VERSION)
             if(ipinfo):
                 ip = ipinfo.get('addr')
-    LOG.debug("Got host ip %s" % (ip))
+    if(ip == None):
+        msg = "Your host does not have an ip address!"
+        raise Exceptions.NoIpException(msg)
+    LOG.debug("Determined host ip to be: \"%s\"" % (ip))
     return ip
 
 

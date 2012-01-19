@@ -39,12 +39,9 @@ class ComponentBase():
         self.packager = kargs.get("pkg")
         self.distro = kargs.get("distro")
         self.root = kargs.get("root")
-        self.othercomponents = set(kargs.get("components", []))
-        pths = Util.component_pths(self.root, component_name)
-        self.componentroot = pths.get('root_dir')
-        self.tracedir = pths.get("trace_dir")
-        self.appdir = pths.get("app_dir")
-        self.cfgdir = pths.get('config_dir')
+        self.all_components = set(kargs.get("components", []))
+        (self.componentroot, self.tracedir,
+            self.appdir, self.cfgdir) = Util.component_paths(self.root, component_name)
         self.component_name = component_name
 
 #
@@ -264,7 +261,6 @@ class PkgUninstallComponent(ComponentBase, UninstallComponent):
             for fn in cfgfiles:
                 if(len(fn)):
                     Shell.unlink(fn)
-                    LOG.info("Removed %s" % (fn))
 
     def uninstall(self):
         self._uninstall_pkgs()
@@ -284,7 +280,6 @@ class PkgUninstallComponent(ComponentBase, UninstallComponent):
             for fn in filestouched:
                 if(len(fn)):
                     Shell.unlink(fn)
-                    LOG.info("Removed %s" % (fn))
 
     def _uninstall_dirs(self):
         dirsmade = self.tracereader.dirs_made()
@@ -292,7 +287,6 @@ class PkgUninstallComponent(ComponentBase, UninstallComponent):
             LOG.info("Removing %s created directories" % (len(dirsmade)))
             for dirname in dirsmade:
                 Shell.deldir(dirname)
-                LOG.info("Removed %s" % (dirname))
 
 
 class PythonUninstallComponent(PkgUninstallComponent):

@@ -86,7 +86,7 @@ class KeystoneInstaller(PythonInstallComponent):
 
     def _setup_data(self):
         params = self._get_param_map()
-        cmds = _keystone_setup_cmds(self.othercomponents)
+        cmds = _keystone_setup_cmds(self.all_components)
         execute_template(*cmds, params=params, ignore_missing=True)
 
     def _config_adjust(self, contents, name):
