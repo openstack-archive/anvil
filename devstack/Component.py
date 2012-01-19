@@ -217,6 +217,7 @@ class PythonInstallComponent(PkgInstallComponent):
         pips = Util.get_pip_list(self.distro, self.component_name)
         #install any need pip items
         if(len(pips)):
+            LOG.info("Setting up %s pips" % (len(pips)))
             Pip.install(pips)
             for name in pips.keys():
                 self.tracewriter.pip_install(name, pips.get(name))
@@ -301,9 +302,16 @@ class PythonUninstallComponent(PkgUninstallComponent):
 
     def uninstall(self):
         self._uninstall_pkgs()
+        self._uninstall_pips()
         self._uninstall_touched_files()
         self._uninstall_python()
         self._uninstall_dirs()
+        
+    def _uninstall_pips(self):
+        pips = self.tracereader.pips_installed()
+        if(pips and len(pips)):
+            LOG.info("Uninstalling %s pips" % (len(pips)))
+            Pip.uninstall(pips)
 
     def _uninstall_python(self):
         pylisting = self.tracereader.py_listing()
