@@ -63,6 +63,9 @@ def execute(*cmd, **kwargs):
     if(process_input != None):
         LOG.debug('With stdin: %s' % (process_input))
 
+    if(cwd):
+        LOG.debug("In working directory: %s" % (cwd))
+
     stdin_fh = subprocess.PIPE
     stdout_fh = subprocess.PIPE
     stderr_fh = subprocess.PIPE
