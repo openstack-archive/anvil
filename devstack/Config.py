@@ -27,11 +27,52 @@ import Shell
 LOG = Logger.getLogger("install.config")
 PW_TMPL = "Enter a password for %s: "
 ENV_PAT = re.compile(r"^\s*\$\{([\w\d]+):\-(.*)\}\s*$")
+CACHE_MSG = "(value will now be internally cached)"
+
+
+class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
+    DEF_INT = 0
+    DEF_FLOAT = 0.0
+    DEF_BOOLEAN = False
+
+    def __init__(self):
+        ConfigParser.RawConfigParser.__init__(self, allow_no_value=True)
+
+    def get(self, section, option):
+        value = None
+        try:
+            value = ConfigParser.RawConfigParser.get(self, section, option)
+        except ConfigParser.NoSectionError, e:
+            pass
+        except ConfigParser.NoOptionError, e:
+            pass
+        return value
+
+    def getboolean(self, section, option):
+        value = self.get(section, option)
+        if(value == None):
+            #not there so don't let the parent blowup
+            return IgnoreMissingConfigParser.DEF_BOOLEAN
+        return ConfigParser.RawConfigParser.getboolean(self, section, option)
+
+    def getfloat(self, section, option):
+        value = self.get(section, option)
+        if(value == None):
+            #not there so don't let the parent blowup
+            return IgnoreMissingConfigParser.DEF_FLOAT
+        return ConfigParser.RawConfigParser.getfloat(self, section, option)
+
+    def getint(self, section, option):
+        value = self.get(section, option)
+        if(value == None):
+            #not there so don't let the parent blowup
+            return IgnoreMissingConfigParser.DEF_INT
+        return ConfigParser.RawConfigParser.getint(self, section, option)
 
 
 class EnvConfigParser(ConfigParser.RawConfigParser):
     def __init__(self):
-        ConfigParser.RawConfigParser.__init__(self)
+        ConfigParser.RawConfigParser.__init__(self, allow_no_value=True)
         self.pws = dict()
         self.configs_fetched = dict()
         self.db_dsns = dict()
@@ -47,46 +88,10 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         else:
             LOG.debug("Fetching value for param %s" % (key))
             v = self._get_special(section, option)
-            LOG.debug("Fetched \"%s\" for %s (will now be cached)" % (v, key))
+            LOG.debug("Fetched \"%s\" for %s %s" % (v, key, CACHE_MSG))
             self.configs_fetched[key] = v
         return v
 
-    def __len__(self):
-        return (len(self.pws) +
-               len(self.configs_fetched) +
-               len(self.db_dsns))
-
-    def __str__(self):
-        #this will make the items nice and pretty
-        def item_format(k, v):
-            return "\t%s=%s" % (str(k), str(v))
-        #collect all the lines
-        password_lines = list()
-        if(len(self.pws)):
-            password_lines.append("Passwords:")
-            keys = sorted(self.pws.keys())
-            for key in keys:
-                value = self.pws.get(key)
-                password_lines.append(item_format(key, value))
-        cfg_lines = list()
-        if(len(self.configs_fetched)):
-            cfg_lines.append("Configs:")
-            keys = sorted(self.configs_fetched.keys())
-            for key in keys:
-                if(key in self.pws):
-                    continue
-                value = self.configs_fetched.get(key)
-                cfg_lines.append(item_format(key, value))
-        dsn_lines = list()
-        if(len(self.db_dsns)):
-            dsn_lines.append("Data source names:")
-            keys = sorted(self.db_dsns.keys())
-            for key in keys:
-                value = self.db_dsns.get(key)
-                dsn_lines.append(item_format(key, value))
-        #make a nice string
-        combined_lines = cfg_lines + password_lines + dsn_lines
-        return os.linesep.join(combined_lines)
 
     def _get_special(self, section, option):
         key = self._makekey(section, option)
@@ -140,7 +145,7 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
             dsn += "/" + dbname
         else:
             dsn += "/"
-        LOG.debug("For database %s fetched dsn %s" % (dbname, dsn))
+        LOG.debug("For database %s fetched dsn %s %s" % (dbname, dsn, CACHE_MSG))
         #store for later...
         self.db_dsns[dbname] = dsn
         return dsn
@@ -156,6 +161,6 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         if(len(pw) == 0):
             while(len(pw) == 0):
                 pw = Shell.password(PW_TMPL % (key))
-        LOG.debug("Password for %s will be %s" % (key, pw))
+        LOG.debug("Password for %s will be %s %s" % (key, pw, CACHE_MSG))
         self.pws[key] = pw
         return pw

@@ -30,8 +30,8 @@ LOG = Logger.getLogger("install.packager")
 
 
 class Packager():
-    def __init__(self):
-        pass
+    def __init__(self, distro):
+        self.distro = distro
 
     def install_batch(self, pkgs):
         raise NotImplementedError()

@@ -46,6 +46,7 @@ PID_FN = "PID_FN"
 STDOUT_FN = "STDOUT_FN"
 STDERR_FN = "STDERR_FN"
 NAME = "NAME"
+FORK_TEMPL = "%s.fork"
 
 
 class ForegroundRunner(Runner.Runner):
@@ -54,10 +55,11 @@ class ForegroundRunner(Runner.Runner):
 
     def stop(self, name, *args, **kargs):
         rootdir = kargs.get("trace_dir")
-        pidfile = joinpths(rootdir, name + ".pid")
-        stderr = joinpths(rootdir, name + ".stderr")
-        stdout = joinpths(rootdir, name + ".stdout")
-        tfname = Trace.trace_fn(rootdir, name)
+        fn_name = FORK_TEMPL % (name)
+        pidfile = joinpths(rootdir, fn_name + ".pid")
+        stderr = joinpths(rootdir, fn_name + ".stderr")
+        stdout = joinpths(rootdir, fn_name + ".stdout")
+        tfname = Trace.trace_fn(rootdir, fn_name)
         if(isfile(pidfile) and isfile(tfname)):
             pid = int(load_file(pidfile).strip())
             killed = False
@@ -99,16 +101,17 @@ class ForegroundRunner(Runner.Runner):
     def start(self, name, program, *args, **kargs):
         tracedir = kargs.get("trace_dir")
         appdir = kargs.get("app_dir")
-        pidfile = joinpths(tracedir, name + ".pid")
-        stderr = joinpths(tracedir, name + ".stderr")
-        stdout = joinpths(tracedir, name + ".stdout")
-        tracefn = Trace.trace_fn(tracedir, name)
-        tracefn = Trace.touch_trace(tracedir, name)
+        fn_name = FORK_TEMPL % (name)
+        pidfile = joinpths(tracedir, fn_name + ".pid")
+        stderr = joinpths(tracedir, fn_name + ".stderr")
+        stdout = joinpths(tracedir, fn_name + ".stdout")
+        tracefn = Trace.touch_trace(tracedir, fn_name)
         runtrace = Trace.Trace(tracefn)
         runtrace.trace(RUN, RUN_TYPE)
         runtrace.trace(PID_FN, pidfile)
         runtrace.trace(STDERR_FN, stderr)
         runtrace.trace(STDOUT_FN, stdout)
+        LOG.info("Forking [%s] by running command [%s]" % (name, program))
         #fork to get daemon out
         pid = os.fork()
         if(pid == 0):

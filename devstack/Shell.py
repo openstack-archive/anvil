@@ -25,7 +25,7 @@ import sys
 import Logger
 
 #TODO fix these
-from Exceptions import (ProcessExecutionError, FileException)
+from Exceptions import (ProcessExecutionError, FileException, BadParamException)
 from Environment import (get_environment_bool, get_environment)
 
 ROOT_HELPER = ["sudo"]
@@ -128,6 +128,16 @@ def joinpths(*pths):
     return os.path.join(*pths)
 
 
+def _gen_password(genlen):
+    if(genlen <= 0):
+        msg = "Generated password length %s can not be less than or equal to zero" % (genlen)
+        raise BadParamException(msg)
+    LOG.debug("Generating you a pseudo-random password of byte length: %s" % (genlen))
+    cmd = MKPW_CMD + [genlen]
+    (stdout, stderr) = execute(*cmd)
+    return stdout.strip()
+
+
 def password(prompt=None, genlen=8):
     rd = ""
     pass_ask = get_environment_bool("PASS_ASK", True)
@@ -137,10 +147,7 @@ def password(prompt=None, genlen=8):
         else:
             rd = getpass.getpass()
     if(len(rd) == 0):
-        LOG.debug("Generating you a password of length: %s" % (genlen))
-        cmd = MKPW_CMD + [genlen]
-        (stdout, stderr) = execute(*cmd)
-        return stdout.strip()
+        return _gen_password(genlen)
     else:
         return rd
 

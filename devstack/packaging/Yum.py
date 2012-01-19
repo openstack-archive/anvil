@@ -28,9 +28,8 @@ YUM_INSTALL = ["install", "-y"]
 
 
 class YumPackager(Packager.Packager):
-    def __init__(self):
-        LOG.info("Init called")
-        Packager.Packager.__init__(self)
+    def __init__(self, distro):
+        Packager.Packager.__init__(self, distro)
 
     def _form_cmd(self, name, version):
         cmd = name
