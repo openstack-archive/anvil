@@ -206,12 +206,12 @@ class PythonInstallComponent(PkgInstallComponent):
         PkgInstallComponent.__init__(self, component_name, *args, **kargs)
 
     def _get_python_directories(self):
-        pylist = list()
-        pylist.append({
+        py_dirs = list()
+        py_dirs.append({
                 'name': 'base',
                 'work_dir': self.appdir,
         })
-        return pylist
+        return py_dirs
 
     def _python_install(self):
         pips = get_pip_list(self.distro, self.component_name)
@@ -238,7 +238,7 @@ class PythonInstallComponent(PkgInstallComponent):
                 combined_output += "===STDERR===" + os.linesep
                 combined_output += stderr  + os.linesep
                 write_file(recordwhere, combined_output)
-                self.tracewriter.py_install(name, recordwhere)
+                self.tracewriter.py_install(name, recordwhere, working_dir)
 
     # Overridden
     def install(self):

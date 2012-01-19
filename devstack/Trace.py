@@ -80,10 +80,11 @@ class TraceWriter():
                     self.tracer.trace(DIR_MADE, d)
             self.started = True
 
-    def py_install(self, name, where):
+    def py_install(self, name, trace_fn, where):
         self._start()
         what = dict()
         what['name'] = name
+        what['trace'] = trace_fn
         what['where'] = where
         self.tracer.trace(PYTHON_INSTALL, json.dumps(what))
 
