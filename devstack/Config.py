@@ -17,23 +17,65 @@ import ConfigParser
 import os
 import re
 
+#TODO fix these
 from Exceptions import (BadParamException)
+from Environment import (get_environment_key)
+
 import Logger
 import Shell
-from Environment import (get_environment_key)
 
 LOG = Logger.getLogger("install.config")
 PW_TMPL = "Enter a password for %s: "
 ENV_PAT = re.compile(r"^\s*\$\{([\w\d]+):\-(.*)\}\s*$")
+CACHE_MSG = "(value will now be internally cached)"
 
+
+class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
+    DEF_INT = 0
+    DEF_FLOAT = 0.0
+    DEF_BOOLEAN = False
+
+    def __init__(self):
+        ConfigParser.RawConfigParser.__init__(self, allow_no_value=True)
+
+    def get(self, section, option):
+        value = None
+        try:
+            value = ConfigParser.RawConfigParser.get(self, section, option)
+        except ConfigParser.NoSectionError, e:
+            pass
+        except ConfigParser.NoOptionError, e:
+            pass
+        return value
+
+    def getboolean(self, section, option):
+        value = self.get(section, option)
+        if(value == None):
+            #not there so don't let the parent blowup
+            return IgnoreMissingConfigParser.DEF_BOOLEAN
+        return ConfigParser.RawConfigParser.getboolean(self, section, option)
+
+    def getfloat(self, section, option):
+        value = self.get(section, option)
+        if(value == None):
+            #not there so don't let the parent blowup
+            return IgnoreMissingConfigParser.DEF_FLOAT
+        return ConfigParser.RawConfigParser.getfloat(self, section, option)
+
+    def getint(self, section, option):
+        value = self.get(section, option)
+        if(value == None):
+            #not there so don't let the parent blowup
+            return IgnoreMissingConfigParser.DEF_INT
+        return ConfigParser.RawConfigParser.getint(self, section, option)
 
 
 class EnvConfigParser(ConfigParser.RawConfigParser):
     def __init__(self):
-        ConfigParser.RawConfigParser.__init__(self)
+        ConfigParser.RawConfigParser.__init__(self, allow_no_value=True)
         self.pws = dict()
         self.configs_fetched = dict()
-        self.dbdsns = dict()
+        self.db_dsns = dict()
 
     def _makekey(self, section, option):
         return option + "@" + section
@@ -44,29 +86,11 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         if(key in self.configs_fetched):
             v = self.configs_fetched.get(key)
         else:
-            LOG.debug("Fetching value for param %s" % (key))
+            LOG.debug("Fetching value for param \"%s\"" % (key))
             v = self._get_special(section, option)
-            LOG.debug("Fetched \"%s\" for %s (will now be cached)" % (v, key))
+            LOG.debug("Fetched \"%s\" for \"%s\" %s" % (v, key, CACHE_MSG))
             self.configs_fetched[key] = v
         return v
-
-    def __str__(self):
-        str_repr = ""
-        if(len(self.pws)):
-            str_repr += "Passwords:" + os.linesep
-            for (k,v) in self.pws.items():
-                str_repr += "\t" + str(k) + " = " + str(v) + os.linesep
-        if(len(self.configs_fetched)):
-            str_repr += "Configs:" + os.linesep
-            for (k,v) in self.configs_fetched.items():
-                if(k in self.pws):
-                    continue
-                str_repr += "\t" + str(k) + " = " + str(v) + os.linesep
-        if(len(self.dbdsns)):
-            str_repr += "Data source names:" + os.linesep
-            for (k, v) in self.dbdsns.items():
-                str_repr += "\t" + str(k) + " = " + str(v) + os.linesep
-        return str_repr
 
     def _get_special(self, section, option):
         key = self._makekey(section, option)
@@ -78,7 +102,7 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
             key = mtch.group(1).strip()
             defv = mtch.group(2)
             if(len(defv) == 0 and len(key) == 0):
-                msg = "Invalid bash-like value %s for %s" % (v, key)
+                msg = "Invalid bash-like value \"%s\" for \"%s\"" % (v, key)
                 raise BadParamException(msg)
             if(len(key) == 0):
                 return defv
@@ -89,14 +113,14 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         else:
             return v
 
-    def get_dbdsn(dbname):
+    def get_dbdsn(self, dbname):
         user = self.get("db", "sql_user")
         host = self.get("db", "sql_host")
         port = self.get("db", "port")
         pw = self.getpw("passwords", "sql")
         #check the dsn cache
-        if(dbname in self.dbdsns):
-            return self.dbdsns[dbname]
+        if(dbname in self.db_dsns):
+            return self.db_dsns[dbname]
         #form the dsn (from components we have...)
         #dsn = "<driver>://<username>:<password>@<host>:<port>/<database>"
         if(not host):
@@ -109,9 +133,9 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         dsn = driver + "://"
         if(user):
             dsn += user
-        if(password):
-            dsn += ":" + password
-        if(user or password):
+        if(pw):
+            dsn += ":" + pw
+        if(user or pw):
             dsn += "@"
         dsn += host
         if(port):
@@ -120,8 +144,9 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
             dsn += "/" + dbname
         else:
             dsn += "/"
+        LOG.debug("For database \"%s\" fetched dsn \"%s\" %s" % (dbname, dsn, CACHE_MSG))
         #store for later...
-        self.dbdsns[dbname] = dsn
+        self.db_dsns[dbname] = dsn
         return dsn
 
     def getpw(self, section, option):
@@ -135,6 +160,6 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         if(len(pw) == 0):
             while(len(pw) == 0):
                 pw = Shell.password(PW_TMPL % (key))
-        LOG.debug("Password for %s will be %s" % (key, pw))
+        LOG.debug("Password for \"%s\" will be \"%s\" %s" % (key, pw, CACHE_MSG))
         self.pws[key] = pw
         return pw

@@ -16,6 +16,7 @@
 import json
 import os.path
 
+#TODO fix these
 from Exceptions import (NoTraceException)
 from Util import (rcf8222date)
 from Shell import (touch_file, append_file,
@@ -79,9 +80,13 @@ class TraceWriter():
                     self.tracer.trace(DIR_MADE, d)
             self.started = True
 
-    def py_install(self, where):
+    def py_install(self, name, trace_fn, where):
         self._start()
-        self.tracer.trace(PYTHON_INSTALL, where)
+        what = dict()
+        what['name'] = name
+        what['trace'] = trace_fn
+        what['where'] = where
+        self.tracer.trace(PYTHON_INSTALL, json.dumps(what))
 
     def cfg_write(self, cfgfile):
         self._start()
@@ -133,16 +138,13 @@ class TraceReader():
 
     def _readpy(self):
         lines = self._read()
-        pyfn = None
-        pylines = list()
+        pyentries = list()
         for (cmd, action) in lines:
             if(cmd == PYTHON_INSTALL and len(action)):
-                pyfn = action
-                break
-        if(pyfn != None):
-            lines = load_file(pyfn).splitlines()
-            pylines = lines
-        return pylines
+                jentry = json.loads(action)
+                if(type(jentry) is dict):
+                    pyentries.append(jentry)
+        return pyentries
 
     def _read(self):
         return parse_name(self.root, self.name)

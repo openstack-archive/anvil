@@ -15,15 +15,15 @@
 
 from optparse import OptionParser
 
-from Util import (VERSION, VERSION_STR, ACTIONS, COMPONENT_NAMES)
+import Util
 
 
 def parse():
 
-    versionstr = "%prog v" + VERSION_STR
+    versionstr = "%prog v" + Util.VERSION_STR
     parser = OptionParser(version=versionstr)
 
-    known_actions = sorted(ACTIONS)
+    known_actions = sorted(Util.ACTIONS)
     actions = "(" + ", ".join(known_actions) + ")"
     parser.add_option("-a", "--action",
             action="store",
@@ -32,21 +32,22 @@ def parse():
             metavar="ACTION",
             help="action to perform, ie %s" % (actions))
 
-    parser.add_option("-d",  "--directory",
+    parser.add_option("-d", "--directory",
         action="store",
         type="string",
         dest="dir",
         metavar="DIR",
-        help="root DIR for new components or DIR with existing components (ACTION dependent)")
+        help="root DIR for new components or "\
+             "DIR with existing components (ACTION dependent)")
 
-    known_components = sorted(COMPONENT_NAMES)
+    known_components = sorted(Util.COMPONENT_NAMES)
     components = "(" + ", ".join(known_components) + ")"
-    parser.add_option("-c",  "--component",
+    parser.add_option("-c", "--component",
         action="append",
         dest="component",
         help="stack component, ie %s" % (components))
 
-    parser.add_option("-f",  "--force",
+    parser.add_option("-f", "--force",
         action="store_true",
         dest="force",
         help="force ACTION even if no trace found (ACTION dependent)",

@@ -15,8 +15,13 @@
 
 import json
 import os.path
+import io
 
+import Config
 import Logger
+import Db
+
+#TODO fix these
 from Component import (PythonUninstallComponent,
                        PythonInstallComponent,
                        PythonRuntime)
@@ -33,6 +38,7 @@ API_CONF = "glance-api.conf"
 REG_CONF = "glance-registry.conf"
 CONFIGS = [API_CONF, REG_CONF]
 DB_NAME = "glance"
+CFG_SECTION = 'DEFAULT'
 
 #what to start
 APP_OPTIONS = {
@@ -40,6 +46,7 @@ APP_OPTIONS = {
     'glance-registry': ['--config-file', joinpths('%ROOT%', "etc", REG_CONF)]
 }
 CONFIG_ACTUAL_DIR = 'etc'
+BIN_DIR = 'bin'
 
 
 class GlanceUninstaller(PythonUninstallComponent):
@@ -54,7 +61,13 @@ class GlanceRuntime(PythonRuntime):
         self.cfgdir = joinpths(self.appdir, CONFIG_ACTUAL_DIR)
 
     def _get_apps_to_start(self):
-        return sorted(APP_OPTIONS.keys())
+        apps = list()
+        for app_name in APP_OPTIONS.keys():
+            apps.append({
+                'name': app_name,
+                'path': joinpths(self.appdir, BIN_DIR, app_name),
+            })
+        return apps
 
     def _get_app_options(self, app):
         return APP_OPTIONS.get(app)
@@ -67,58 +80,79 @@ class GlanceInstaller(PythonInstallComponent):
         self.brch = self.cfg.get("git", "glance_branch")
         self.cfgdir = joinpths(self.appdir, CONFIG_ACTUAL_DIR)
 
-    def _get_download_location(self):
-        #where we get glance from
-        return (self.gitloc, self.brch)
+    def _get_download_locations(self):
+        places = PythonInstallComponent._get_download_locations(self)
+        places.append({
+            'uri': self.gitloc,
+            'branch': self.brch,
+        })
+        return places
 
     def _get_config_files(self):
         #these are the config files we will be adjusting
         return list(CONFIGS)
 
-    def _config_adjust(self, contents, fn):
-        lines = contents.splitlines()
-        for line in lines:
-            cleaned = line.strip()
-            if(len(cleaned) == 0 or cleaned[0] == '#' or cleaned[0] == '['):
-                #not useful to examine these
-                continue
-            pieces = cleaned.split("=", 1)
-            if(len(pieces) != 2):
-                continue
-            key = pieces[0].strip()
-            val = pieces[1].strip()
-            if(len(key) == 0 or len(val) == 0):
-                continue
-            #now we take special actions
-            if(key == 'filesystem_store_datadir'):
-                #delete existing images
-                deldir(val)
-                #recreate the image directory
-                dirsmade = mkdirslist(val)
-                self.tracewriter.dir_made(*dirsmade)
-            elif(key == 'log_file'):
-                #ensure that we can write to the log file
-                dirname = os.path.dirname(val)
-                if(len(dirname)):
-                    dirsmade = mkdirslist(dirname)
+    def post_install(self):
+        parent_result = PythonInstallComponent.post_install(self)
+        self._setup_db()
+        return parent_result
+
+    def _setup_db(self):
+        Db.drop_db(self.cfg, DB_NAME)
+        Db.create_db(self.cfg, DB_NAME)
+
+    def _config_adjust(self, contents, name):
+        if(name not in CONFIGS):
+            return contents
+        #use config parser and
+        #then extract known configs that
+        #will need locations/directories/files made (or touched)...
+        with io.BytesIO(contents) as stream:
+            config = Config.IgnoreMissingConfigParser()
+            config.readfp(stream)
+            if(config.getboolean('image_cache_enabled', CFG_SECTION)):
+                cache_dir = config.get("image_cache_datadir", CFG_SECTION)
+                if(cache_dir):
+                    LOG.info("Ensuring image cache data directory %s exists (and is empty)" % (cache_dir))
+                    #destroy then recreate the image cache directory
+                    deldir(cache_dir)
+                    dirsmade = mkdirslist(cache_dir)
+                    #this trace is used to remove the dirs created
+                    self.tracewriter.dir_made(*dirsmade)
+            if(config.get('default_store', CFG_SECTION) == 'file'):
+                file_dir = config.get('filesystem_store_datadir', CFG_SECTION)
+                if(file_dir):
+                    LOG.info("Ensuring file system store directory %s exists and is empty" % (file_dir))
+                    #delete existing images
+                    deldir(file_dir)
+                    #recreate the image directory
+                    dirsmade = mkdirslist(file_dir)
+                    #this trace is used to remove the dirs created
+                    self.tracewriter.dir_made(*dirsmade)
+            log_filename = config.get('log_file', CFG_SECTION)
+            if(log_filename):
+                LOG.info("Ensuring log file %s exists and is empty" % (log_filename))
+                log_dir = os.path.dirname(log_filename)
+                if(log_dir):
+                    LOG.info("Ensuring log directory %s exists" % (log_dir))
+                    dirsmade = mkdirslist(log_dir)
                     #this trace is used to remove the dirs created
                     self.tracewriter.dir_made(*dirsmade)
                 #destroy then recreate it (the log file)
-                unlink(val)
-                touch_file(val)
-                self.tracewriter.file_touched(val)
-            elif(key == 'image_cache_datadir'):
-                #destroy then recreate the image cache directory
-                deldir(val)
-                dirsmade = mkdirslist(val)
-                #this trace is used to remove the dirs created
-                self.tracewriter.dir_made(*dirsmade)
-            elif(key == 'scrubber_datadir'):
-                #destroy then recreate the scrubber data directory
-                deldir(val)
-                dirsmade = mkdirslist(val)
-                #this trace is used to remove the dirs created
-                self.tracewriter.dir_made(*dirsmade)
+                unlink(log_filename)
+                touch_file(log_filename)
+                self.tracewriter.file_touched(log_filename)
+            if(config.getboolean('delayed_delete', CFG_SECTION)):
+                data_dir = config.get('scrubber_datadir', CFG_SECTION)
+                if(data_dir):
+                    LOG.info("Ensuring scrubber data dir %s exists and is empty" % (data_dir))
+                    #destroy then recreate the scrubber data directory
+                    deldir(data_dir)
+                    dirsmade = mkdirslist(data_dir)
+                    #this trace is used to remove the dirs created
+                    self.tracewriter.dir_made(*dirsmade)
+            #we might need to handle more in the future...
+        #nothing modified so just return the original
         return contents
 
     def _get_param_map(self, fn=None):

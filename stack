@@ -13,7 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import operator
 import os
 import os.path
 import sys
@@ -23,14 +22,16 @@ sys.path.append("devstack")
 
 import Logger
 import Options
-from Util import (welcome, rcf8222date, determine_os, get_pkg_list, fetch_deps)
-from Util import (NOVA, GLANCE, QUANTUM, SWIFT, KEYSTONE, HORIZON, DB, RABBIT,
+
+#TODO fix these
+from Util import (welcome, rcf8222date, determine_os,
+                    prioritize_components, resolve_dependencies)
+from Util import (NOVA, GLANCE, QUANTUM, SWIFT, KEYSTONE, HORIZON, DB, RABBIT, KEYSTONE_CLIENT,
                   INSTALL, UNINSTALL, START, STOP,
                   ACTIONS, COMPONENT_NAMES, NAMES_PRIORITY,
                   UBUNTU11, RHEL6,
-                  STACK_CFG_LOC)
+                  STACK_CFG_LOC, DEVSTACK)
 from Shell import (mkdir, joinpths, unlink)
-from Config import (EnvConfigParser)
 from Exceptions import (NoTraceException)
 
 import Glance
@@ -42,6 +43,8 @@ import Config
 import Swift
 import Db
 import Rabbit
+import Config
+import KeystoneClient
 
 LOG = Logger.getLogger("install")
 
@@ -56,6 +59,7 @@ ACTION_CLASSES = {
         KEYSTONE: Keystone.KeystoneInstaller,
         DB: Db.DBInstaller,
         RABBIT: Rabbit.RabbitInstaller,
+        KEYSTONE_CLIENT: KeystoneClient.KeyStoneClientInstaller,
     },
     UNINSTALL: {
         NOVA: Nova.NovaUninstaller,
@@ -66,6 +70,7 @@ ACTION_CLASSES = {
         KEYSTONE: Keystone.KeystoneUninstaller,
         DB: Db.DBUninstaller,
         RABBIT: Rabbit.RabbitUninstaller,
+        KEYSTONE_CLIENT: KeystoneClient.KeyStoneClientUninstaller,
     },
     START: {
         NOVA: Nova.NovaRuntime,
@@ -76,6 +81,7 @@ ACTION_CLASSES = {
         KEYSTONE: Keystone.KeystoneRuntime,
         DB: Db.DBRuntime,
         RABBIT: Rabbit.RabbitRuntime,
+        KEYSTONE_CLIENT: KeystoneClient.KeyStoneClientRuntime,
     },
     STOP: {
         NOVA: Nova.NovaRuntime,
@@ -86,11 +92,9 @@ ACTION_CLASSES = {
         KEYSTONE: Keystone.KeystoneRuntime,
         DB: Db.DBRuntime,
         RABBIT: Rabbit.RabbitRuntime,
+        KEYSTONE_CLIENT: KeystoneClient.KeyStoneClientRuntime,
     },
 }
-
-#actions which need dependent actions to occur
-DEP_ACTIONS_NEEDED = set([START, STOP, INSTALL])
 
 
 def get_package_manager_class(distro):
@@ -109,15 +113,47 @@ def get_package_manager_class(distro):
 
 
 def get_config(action):
-    LOG.info("Loading config from %s" % (STACK_CFG_LOC))
-    cfg = EnvConfigParser()
-    cfg.read(STACK_CFG_LOC)
+    fn = STACK_CFG_LOC
+    LOG.info("Loading config from %s" % (fn))
+    cfg = Config.EnvConfigParser()
+    cfg.read(fn)
     return cfg
 
 
 def print_cfgs(cfg, action):
-    LOG.info("After %s your config is:" % (action))
-    LOG.info(str(cfg).rstrip())
+
+    #this will make the items nice and pretty
+    def item_format(k, v):
+        return "\t%s=%s" % (str(k), str(v))
+
+    def map_print(mp):
+        for key in sorted(mp.keys()):
+            value = mp.get(key)
+            LOG.info(item_format(key, value))
+
+    #now make it pretty
+    passwords_gotten = cfg.pws
+    full_cfgs = cfg.configs_fetched
+    db_dsns = cfg.db_dsns
+    if(len(passwords_gotten) or len(full_cfgs) or len(db_dsns)):
+        LOG.info("After %s your config is:" % (action))
+        if(len(passwords_gotten)):
+            LOG.info("Passwords:")
+            map_print(passwords_gotten)
+        if(len(full_cfgs)):
+            #TOD
+            #better way to do this?? (ie a list difference?)
+            filtered_mp = dict()
+            for key in full_cfgs.keys():
+                if(key in passwords_gotten):
+                    continue
+                filtered_mp[key] = full_cfgs.get(key)
+            if(len(filtered_mp)):
+                LOG.info("Configs:")
+                map_print(filtered_mp)
+        if(len(db_dsns)):
+            LOG.info("Data source names:")
+            map_print(db_dsns)
 
 
 def runner(action_name, component_set, distro, root_dir, program_args):
@@ -125,7 +161,7 @@ def runner(action_name, component_set, distro, root_dir, program_args):
     if(action_name == INSTALL):
         mkdir(root_dir)
     pkg_manager_cls = get_package_manager_class(distro)
-    pkg_manager = pkg_manager_cls()
+    pkg_manager = pkg_manager_cls(distro)
     config = get_config(action_name)
     LOG.info("Will %s [%s] using root directory %s" % (action_name, ", ".join(component_set), root_dir))
     results = list()
@@ -136,11 +172,17 @@ def runner(action_name, component_set, distro, root_dir, program_args):
         instance = klass(components=component_set, distro=distro, pkg=pkg_manager, cfg=config, root=root_dir)
         if(action_name == INSTALL):
             LOG.info("Downloading %s." % (c))
-            instance.download()
+            am_downloaded = instance.download()
+            LOG.info("Performed %s downloads." % (str(am_downloaded)))
             LOG.info("Configuring %s." % (c))
-            instance.configure()
+            am_configured = instance.configure()
+            LOG.info("Configured %s files." % (str(am_configured)))
+            LOG.info("Pre-installing %s." % (c))
+            instance.pre_install()
             LOG.info("Installing %s." % (c))
-            trace = instance.install()
+            instance.install()
+            LOG.info("Post-installing %s." % (c))
+            trace = instance.post_install()
             if(trace):
                 LOG.info("Finished install of %s - check %s for traces of what happened." % (c, trace))
                 results.append(trace)
@@ -149,7 +191,8 @@ def runner(action_name, component_set, distro, root_dir, program_args):
         elif(action_name == STOP):
             try:
                 LOG.info("Stopping %s." % (c))
-                instance.stop()
+                stop_am = instance.stop()
+                LOG.info("Stopped %s applications." % (str(stop_am)))
                 LOG.info("Finished stop of %s" % (c))
             except NoTraceException, e:
                 if(force):
@@ -158,10 +201,13 @@ def runner(action_name, component_set, distro, root_dir, program_args):
                     raise
         elif(action_name == START):
             LOG.info("Starting %s." % (c))
-            trace_locs = instance.start() or list()
-            LOG.info("Finished start of %s - check [%s] for traces of what happened." % (c, ", ".join(trace_locs)))
-            if(trace_locs):
-                results = results + trace_locs
+            start_info = instance.start()
+            if(type(start_info) == list):
+                LOG.info("Check [%s] for traces of what happened." % (", ".join(start_info)))
+                results = results + start_info
+            elif(type(start_info) == int):
+                LOG.info("Started %s applications." % (str(start_info)))
+            LOG.info("Finished start of %s." % (c))
         elif(action_name == UNINSTALL):
             try:
                 LOG.info("Unconfiguring %s." % (c))
@@ -184,20 +230,6 @@ def runner(action_name, component_set, distro, root_dir, program_args):
     return results
 
 
-def resolve_dependencies(action, components):
-    if(action in DEP_ACTIONS_NEEDED):
-        new_components = list()
-        for c in components:
-            component_deps = list(set(fetch_deps(c)))
-            if(len(component_deps)):
-                LOG.info("Having to %s [%s] since they are dependencies for %s." % (action, ", ".join(component_deps), c))
-                new_components = new_components + component_deps
-            new_components.append(c)
-        return set(new_components)
-    else:
-        return set(components)
-
-
 def check_root(action, rootdir):
     if(action == INSTALL):
         root_there = False
@@ -207,7 +239,8 @@ def check_root(action, rootdir):
                 #something exists, not good
                 root_there = True
         if(root_there):
-            LOG.error("Root directory [%s] already exists (and it's not empty)! Please remove it or uninstall components!" % (rootdir))
+            LOG.error("Root directory [%s] already exists (and it's not empty)! "\
+                      "Please remove it or uninstall components!" % (rootdir))
             return False
         else:
             return True
@@ -215,28 +248,31 @@ def check_root(action, rootdir):
         return True
 
 
-def prioritize_components(action, components):
-    #get the right component order (by priority)
-    mporder = dict()
-    for c in components:
-        priority = NAMES_PRIORITY.get(c)
-        if(priority == None):
-            priority = sys.maxint
-        mporder[c] = priority
-    #sort by priority value
-    priority_order = sorted(mporder.iteritems(), key=operator.itemgetter(1))
-    #extract the right order
-    component_order = [x[0] for x in priority_order]
-    return component_order
+def check_python():
+    py_version = sys.version_info
+    major = py_version[0]
+    minor = py_version[1]
+    if(major < 2 or (major == 2 and minor < 6)):
+        return False
+    if(major >= 3):
+        LOG.warn("%s has not been tested in python %s, use at your own risk!" % (DEVSTACK, major))
+    return True
+
 
 def main():
+    if(not check_python()):
+        LOG.error("Your python version is to old, please upgrade to >= 2.6!")
+        return 1
     me = __file__
     args = Options.parse()
     components = args.pop("component") or []
     if(len(components) == 0):
+        #assume user wants them all
         components = list(COMPONENT_NAMES)
-    components = set([x.lower() for x in components])
-    components = set(COMPONENT_NAMES).intersection(components)
+    else:
+        #clean the names up and see what is valid after an intersection
+        components = set([x.lower().strip() for x in components])
+        components = set(COMPONENT_NAMES).intersection(components)
     if(len(components) == 0):
         LOG.error("No valid components specified!")
         LOG.info("Perhaps you should try %s --help" % (me))
@@ -261,9 +297,13 @@ def main():
     #start it
     welcome(action)
     #need to figure out dependencies for components (if any)
-    components = resolve_dependencies(action, components)
+    new_components = resolve_dependencies(action, components)
+    component_diff = new_components.difference(components)
+    if(len(component_diff)):
+        LOG.info("Having to install dependent components: [%s]" % (",".join(component_diff)))
+    components = new_components
     #get the right component order (by priority)
-    components = prioritize_components(action, components)
+    components = prioritize_components(components)
     #now do it!
     LOG.info("Starting action [%s] on %s for operating system/distro [%s]" % (action, rcf8222date(), install_os))
     resultList = runner(action, components, install_os, rootdir, args)

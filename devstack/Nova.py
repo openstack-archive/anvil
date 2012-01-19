@@ -15,6 +15,8 @@
 
 
 import Logger
+
+#TODO fix these
 from Component import (ComponentBase, RuntimeComponent,
                        UninstallComponent, InstallComponent)
 import os
@@ -25,6 +27,9 @@ CONFIGS = [API_CONF]
 DB_NAME = "nova"
 #
 
+from Util import (NOVA)
+from NovaConf import (NovaConf)
+
 TYPE = NOVA
 
 #what to start
@@ -34,6 +39,7 @@ TYPE = NOVA
 #    'glance-api': ['--config-file', joinpths('%ROOT%', "etc", API_CONF)],
 #    'glance-registry': ['--config-file', joinpths('%ROOT%', "etc", REG_CONF)]
 #}
+
 
 class NovaUninstaller(UninstallComponent):
     def __init__(self, *args, **kargs):
@@ -57,9 +63,9 @@ class NovaInstaller(InstallComponent):
         return list(CONFIGS)
 
     def _config_adjust(self, contents, fn):
-	nc = NovaConf.NovaConf(self)
-	lines = nc.generate()
-	return os.linesep.join(lines)
+        nc = NovaConf(self)
+        lines = nc.generate()
+        return os.linesep.join(lines)
 
     def _get_param_map(self, fn=None):
         # Not used. NovaConf will be used to generate the config file

@@ -87,6 +87,11 @@
       "allowed": ">=",
       "removable" : false
     },
+    "python-coverage": {
+      "version": "3.4-1",
+      "allowed": ">=",
+      "removable": true
+    },
     "euca2ools": {
       "version": "2.0.0~bzr464-0ubuntu2",
       "allowed": ">=",

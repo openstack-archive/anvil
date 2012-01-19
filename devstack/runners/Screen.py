@@ -19,6 +19,8 @@ import re
 
 import Runner
 import Logger
+
+#TODO fix these
 from Exceptions import (StartException, StopException)
 from Util import (execute_template)
 from Shell import (execute)
@@ -27,6 +29,7 @@ LOG = Logger.getLogger("install.screen")
 SCREEN_MAKE = ['screen', '-d', '-m', '-S', '%NAME%', '-t', '%NAME%']
 NAME_POSTFIX = ".devstack"
 RUN_TYPE = "SCREEN"
+
 
 class ScreenRunner(Runner.Runner):
     def __init__(self):
@@ -63,5 +66,3 @@ class ScreenRunner(Runner.Runner):
         cmds = [{'cmd':runcmd}]
         execute_template(*cmds, params=params, cwd=app_dir, **kargs)
         return None
-        
-        

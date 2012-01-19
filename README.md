@@ -2,7 +2,7 @@ Devstack v2 is a set of python scripts and utilities to quickly deploy an OpenSt
 
 # Goals
 
-* To quickly build dev OpenStack environments in a clean environment (as well as start, stop, and uninstall those environments)
+* To quickly build dev OpenStack environments in a clean environment (as well as start, stop, and uninstall those environments) with as little baggage as possible
 * To describe working configurations of OpenStack (which code branches work together?  what do config files look like for those branches? what packages are needed for installation?)
 * To make it easier for developers to dive into OpenStack so that they can productively contribute without having to understand every part of the system at once
 * To make it easy to prototype cross-project features
@@ -38,6 +38,9 @@ This will typically produce:
 
 # Stack prerequisites
 
+* linux (tested on ubuntu 11 and rhel 6)
+* python 2.6 or 2.7 (not tested with python 3.0)
+* git
 * easy_install termcolor (used for colored console logging)
 * easy_install netifaces (used to determine host ip information)
 

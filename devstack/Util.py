@@ -18,15 +18,14 @@ from termcolor import colored
 import os
 import platform
 import re
+import sys
 import json
-import subprocess
 import netifaces
+import operator
 
-from Exceptions import (BadRegexException,
-                        NoReplacementException,
-                        FileException)
+import Exceptions
 import Logger
-from Shell import (joinpths, load_file, execute)
+import Shell
 
 #constant goodies
 VERSION = 0x2
@@ -41,6 +40,7 @@ RHEL6 = "rhel-6"
 #GIT master
 MASTER_BRANCH = "master"
 
+
 #other constants
 PRE_INSTALL = 'pre-install'
 POST_INSTALL = 'post-install'
@@ -48,7 +48,7 @@ IPV4 = 'IPv4'
 IPV6 = 'IPv6'
 DEFAULT_NET_INTERFACE = 'eth0'
 DEFAULT_NET_INTERFACE_IP_VERSION = IPV4
-PARAM_SUB_REGEX = "%([\\w\\d]+?)%"
+PARAM_SUB_REGEX = re.compile("%([\\w\\d]+?)%")
 
 #component name mappings
 NOVA = "nova"
@@ -57,11 +57,12 @@ QUANTUM = "quantum"
 SWIFT = "swift"
 HORIZON = "horizon"
 KEYSTONE = "keystone"
+KEYSTONE_CLIENT = 'keystone-client'
 DB = "db"
 RABBIT = "rabbit"
 COMPONENT_NAMES = [NOVA, GLANCE, QUANTUM,
          SWIFT, HORIZON, KEYSTONE,
-         DB, RABBIT]
+         DB, RABBIT, KEYSTONE_CLIENT]
 
 #ordering of install (lower priority means earlier)
 NAMES_PRIORITY = {
@@ -69,10 +70,11 @@ NAMES_PRIORITY = {
     RABBIT: 1,
     KEYSTONE: 2,
     GLANCE: 3,
-    QUANTUM: 4,
-    NOVA: 5,
-    SWIFT: 6,
-    HORIZON: 7,
+    QUANTUM: 3,
+    NOVA: 3,
+    SWIFT: 3,
+    HORIZON: 3,
+    KEYSTONE_CLIENT: 4,
 }
 
 #when a component is asked for it may
@@ -80,12 +82,13 @@ NAMES_PRIORITY = {
 #map is listed here...
 COMPONENT_DEPENDENCIES = {
     DB: [],
+    KEYSTONE_CLIENT: [],
     RABBIT: [],
     GLANCE: [KEYSTONE, DB],
     KEYSTONE: [DB],
     NOVA: [KEYSTONE, GLANCE, DB, RABBIT],
     SWIFT: [],
-    HORIZON: [],
+    HORIZON: [KEYSTONE_CLIENT, GLANCE],
     QUANTUM: [],
 }
 
@@ -96,6 +99,10 @@ UNINSTALL = "uninstall"
 START = "start"
 STOP = "stop"
 ACTIONS = [INSTALL, UNINSTALL, START, STOP]
+
+#these actions need to have there components dependencies
+#to occur first (ie keystone starts before glance...)
+DEP_ACTIONS_NEEDED = [START, STOP, INSTALL]
 
 #this is used to map an action to a useful string for
 #the welcome display...
@@ -108,13 +115,13 @@ WELCOME_MAP = {
 
 #where we should get the config file...
 STACK_CONFIG_DIR = "conf"
-STACK_CFG_LOC = joinpths(STACK_CONFIG_DIR, "stack.ini")
+STACK_CFG_LOC = Shell.joinpths(STACK_CONFIG_DIR, "stack.ini")
 
 #this regex is how we match python platform output to
 #a known constant
 KNOWN_OS = {
-    UBUNTU11: '/Ubuntu(.*)oneiric/i',
-    RHEL6: '/redhat-6\.(\d+)/i',
+    UBUNTU11: re.compile('Ubuntu(.*)oneiric', re.IGNORECASE),
+    RHEL6: re.compile('redhat-6\.(\d+)', re.IGNORECASE),
 }
 
 #the pip files that each component
@@ -126,13 +133,15 @@ PIP_MAP = {
         [],
     KEYSTONE:
         [
-            joinpths(STACK_CONFIG_DIR, "pips", 'keystone.json'),
+            Shell.joinpths(STACK_CONFIG_DIR, "pips", 'keystone.json'),
         ],
     HORIZON:
         [
-            joinpths(STACK_CONFIG_DIR, "pips", 'horizon.json'),
+            Shell.joinpths(STACK_CONFIG_DIR, "pips", 'horizon.json'),
         ],
     SWIFT:
+        [],
+    KEYSTONE_CLIENT:
         [],
     DB:
         [],
@@ -145,36 +154,40 @@ PIP_MAP = {
 PKG_MAP = {
     NOVA:
         [
-            joinpths(STACK_CONFIG_DIR, "pkgs", "nova.json"),
-            joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
+            Shell.joinpths(STACK_CONFIG_DIR, "pkgs", "nova.json"),
+            Shell.joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
         ],
     GLANCE:
         [
-            joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
-            joinpths(STACK_CONFIG_DIR, "pkgs", 'glance.json'),
+            Shell.joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
+            Shell.joinpths(STACK_CONFIG_DIR, "pkgs", 'glance.json'),
         ],
     KEYSTONE:
         [
-            joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
-            joinpths(STACK_CONFIG_DIR, "pkgs", 'keystone.json'),
+            Shell.joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
+            Shell.joinpths(STACK_CONFIG_DIR, "pkgs", 'keystone.json'),
         ],
     HORIZON:
         [
-            joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
-            joinpths(STACK_CONFIG_DIR, "pkgs", 'horizon.json'),
+            Shell.joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
+            Shell.joinpths(STACK_CONFIG_DIR, "pkgs", 'horizon.json'),
         ],
     SWIFT:
         [
-            joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
-            joinpths(STACK_CONFIG_DIR, "pkgs", 'swift.json'),
+            Shell.joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
+            Shell.joinpths(STACK_CONFIG_DIR, "pkgs", 'swift.json'),
+        ],
+    KEYSTONE_CLIENT:
+        [
+            Shell.joinpths(STACK_CONFIG_DIR, "pkgs", "keystone-client.json"),
         ],
     DB:
         [
-            joinpths(STACK_CONFIG_DIR, "pkgs", 'db.json'),
+            Shell.joinpths(STACK_CONFIG_DIR, "pkgs", 'db.json'),
         ],
     RABBIT:
         [
-            joinpths(STACK_CONFIG_DIR, "pkgs", 'rabbitmq.json'),
+            Shell.joinpths(STACK_CONFIG_DIR, "pkgs", 'rabbitmq.json'),
         ],
 }
 
@@ -183,12 +196,20 @@ TRACE_DIR = "traces"
 APP_DIR = "app"
 CONFIG_DIR = "config"
 
-#our ability to create regexes
-#which is more like php, which is nicer
-#for modifiers...
-REGEX_MATCHER = re.compile("^/(.*?)/([a-z]*)$")
-
 LOG = Logger.getLogger("install.util")
+
+
+def resolve_dependencies(action, components):
+    if(action in DEP_ACTIONS_NEEDED):
+        new_components = list()
+        for c in components:
+            component_deps = list(set(fetch_deps(c)))
+            if(len(component_deps)):
+                new_components = new_components + component_deps
+            new_components.append(c)
+        return set(new_components)
+    else:
+        return set(components)
 
 
 def execute_template(*cmds, **kargs):
@@ -196,7 +217,6 @@ def execute_template(*cmds, **kargs):
         return
     params_replacements = kargs.pop('params')
     ignore_missing = kargs.pop('ignore_missing', False)
-    outs = dict()
     for cmdinfo in cmds:
         cmd_to_run_templ = cmdinfo.get("cmd")
         cmd_to_run = list()
@@ -218,7 +238,7 @@ def execute_template(*cmds, **kargs):
                     stdin_full.append(piece)
             stdin = joinlinesep(*stdin_full)
         root_run = cmdinfo.get('run_as_root', False)
-        execute(*cmd_to_run, run_as_root=root_run, process_input=stdin, **kargs)
+        Shell.execute(*cmd_to_run, run_as_root=root_run, process_input=stdin, **kargs)
 
 
 def fetch_deps(component, add=False):
@@ -233,11 +253,26 @@ def fetch_deps(component, add=False):
     return deps
 
 
+def prioritize_components(components):
+    #get the right component order (by priority)
+    mporder = dict()
+    for c in components:
+        priority = NAMES_PRIORITY.get(c)
+        if(priority == None):
+            priority = sys.maxint
+        mporder[c] = priority
+    #sort by priority value
+    priority_order = sorted(mporder.iteritems(), key=operator.itemgetter(1))
+    #extract the right order
+    component_order = [x[0] for x in priority_order]
+    return component_order
+
+
 def component_pths(root, compnent_type):
-    component_root = joinpths(root, compnent_type)
-    tracedir = joinpths(component_root, TRACE_DIR)
-    appdir = joinpths(component_root, APP_DIR)
-    cfgdir = joinpths(component_root, CONFIG_DIR)
+    component_root = Shell.joinpths(root, compnent_type)
+    tracedir = Shell.joinpths(component_root, TRACE_DIR)
+    appdir = Shell.joinpths(component_root, APP_DIR)
+    cfgdir = Shell.joinpths(component_root, CONFIG_DIR)
     out = dict()
     out['root_dir'] = component_root
     out['trace_dir'] = tracedir
@@ -247,7 +282,7 @@ def component_pths(root, compnent_type):
 
 
 def load_json(fn):
-    data = load_file(fn)
+    data = Shell.load_file(fn)
     lines = data.splitlines()
     new_lines = list()
     for line in lines:
@@ -293,32 +328,14 @@ def get_interfaces():
     return interfaces
 
 
-def create_regex(format):
-    mtch = REGEX_MATCHER.match(format)
-    if(not mtch):
-        raise BadRegexException("Badly formatted pre-regex: " + format)
-    else:
-        toberegex = mtch.group(1)
-        options = mtch.group(2).lower()
-        flags = 0
-        if(options.find("i") != -1):
-            flags = flags | re.IGNORECASE
-        if(options.find("m") != -1):
-            flags = flags | re.MULTILINE
-        if(options.find("u") != -1):
-            flags = flags | re.UNICODE
-        return re.compile(toberegex, flags)
-
-
 def determine_os():
-    os = None
+    found_os = None
     plt = platform.platform()
-    for aos, pat in KNOWN_OS.items():
-        reg = create_regex(pat)
-        if(reg.search(plt)):
-            os = aos
+    for (known_os, pattern) in KNOWN_OS.items():
+        if(pattern.search(plt)):
+            found_os = known_os
             break
-    return (os, plt)
+    return (found_os, plt)
 
 
 def get_pip_list(distro, component):
@@ -387,20 +404,20 @@ def param_replace(text, replacements, ignore_missing=False):
     else:
         LOG.debug("Performing parameter replacements (not ignoring missing) on %s" % (text))
 
-    def replacer(m):
-        org = m.group(0)
-        name = m.group(1)
+    def replacer(match):
+        org = match.group(0)
+        name = match.group(1)
         v = replacements.get(name)
         if(v == None and ignore_missing):
             v = org
         elif(v == None and not ignore_missing):
             msg = "No replacement found for parameter %s" % (org)
-            raise NoReplacementException(msg)
+            raise Exceptions.NoReplacementException(msg)
         else:
             LOG.debug("Replacing [%s] with [%s]" % (org, str(v)))
         return str(v)
 
-    return re.sub(PARAM_SUB_REGEX, replacer, text)
+    return PARAM_SUB_REGEX.sub(replacer, text)
 
 
 def welcome(program_action):
@@ -424,5 +441,5 @@ def rcf8222date():
     return strftime("%a, %d %b %Y %H:%M:%S", localtime())
 
 
-def fsSafeDate():
+def fs_safe_date():
     return strftime("%m_%d_%G-%H-%M-%S", localtime())

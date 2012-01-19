@@ -21,6 +21,8 @@ frameworks (ie apt, yum) can inherit from
 
 import Logger
 import Shell
+
+#TODO fix these
 from Util import (execute_template,
                     PRE_INSTALL, POST_INSTALL)
 
@@ -28,8 +30,8 @@ LOG = Logger.getLogger("install.packager")
 
 
 class Packager():
-    def __init__(self):
-        pass
+    def __init__(self, distro):
+        self.distro = distro
 
     def install_batch(self, pkgs):
         raise NotImplementedError()

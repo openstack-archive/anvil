@@ -13,25 +13,20 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from Util import (component_pths,
-                  get_pkg_list,
-                  get_pip_list,
-                  param_replace,
-                  STACK_CONFIG_DIR)
+import os
+import os.path
+
 import Downloader
+import Exceptions
 import Logger
 import Pip
-from Shell import (execute, mkdirslist, write_file,
-                    load_file, joinpths, touch_file,
-                    unlink, deldir)
-from Trace import (TraceWriter, TraceReader,
-                    touch_trace, parse_fn,
-                    IN_TRACE, PY_TRACE, START_TRACE)
 import Runner
-from runners import Foreground, Screen
-from runners.Foreground import (ForegroundRunner)
-from runners.Screen import ScreenRunner
-from Exceptions import (StopException, StartException, InstallException)
+import runners.Foreground
+import runners.Screen
+import Shell
+import Trace
+import Util
+
 
 LOG = Logger.getLogger("install.component")
 PY_INSTALL = ['python', 'setup.py', 'develop']
@@ -39,13 +34,13 @@ PY_UNINSTALL = ['python', 'setup.py', 'develop', '--uninstall']
 
 
 class ComponentBase():
-    def __init__(self, component_name, *args, **kargs):
+    def __init__(self, component_name, **kargs):
         self.cfg = kargs.get("cfg")
         self.packager = kargs.get("pkg")
         self.distro = kargs.get("distro")
         self.root = kargs.get("root")
-        self.othercomponents = set(kargs.get("components"))
-        pths = component_pths(self.root, component_name)
+        self.othercomponents = set(kargs.get("components", []))
+        pths = Util.component_pths(self.root, component_name)
         self.componentroot = pths.get('root_dir')
         self.tracedir = pths.get("trace_dir")
         self.appdir = pths.get("app_dir")
@@ -58,17 +53,29 @@ class ComponentBase():
 
 
 class InstallComponent():
+    def __init__(self):
+        pass
+
     def download(self):
         raise NotImplementedError()
 
     def configure(self):
         raise NotImplementedError()
 
+    def pre_install(self):
+        raise NotImplementedError()
+
     def install(self):
+        raise NotImplementedError()
+
+    def post_install(self):
         raise NotImplementedError()
 
 
 class UninstallComponent():
+    def __init__(self):
+        pass
+
     def unconfigure(self):
         raise NotImplementedError()
 
@@ -77,6 +84,9 @@ class UninstallComponent():
 
 
 class RuntimeComponent():
+    def __init__(self):
+        pass
+
     def start(self):
         raise NotImplementedError()
 
@@ -96,102 +106,157 @@ class RuntimeComponent():
 class PkgInstallComponent(ComponentBase, InstallComponent):
     def __init__(self, component_name, *args, **kargs):
         ComponentBase.__init__(self, component_name, *args, **kargs)
-        self.tracewriter = TraceWriter(self.tracedir, IN_TRACE)
+        InstallComponent.__init__(self)
+        self.tracewriter = Trace.TraceWriter(self.tracedir, Trace.IN_TRACE)
 
-    def _get_download_location(self):
-        raise NotImplementedError()
+    def _get_download_locations(self):
+        return list()
 
     def download(self):
-        #find out where to get it
-        (uri, branch) = self._get_download_location()
-        if(uri):
-            #now get it
-            dirsmade = Downloader.download(self.appdir, uri, branch)
-            #this trace isn't used yet but could be
-            self.tracewriter.downloaded(self.appdir, uri)
-            #this trace is used to remove the dirs created
+        locations = self._get_download_locations()
+        base_dir = self.appdir
+        am_downloaded = 0
+        for location_info in locations:
+            uri = location_info.get("uri")
+            if(not uri):
+                continue
+            branch = location_info.get("branch")
+            subdir = location_info.get("subdir")
+            target_loc = None
+            if(subdir and len(subdir)):
+                target_loc = Shell.joinpths(base_dir, subdir)
+            else:
+                target_loc = base_dir
+            dirsmade = Downloader.download(target_loc, uri, branch)
+            self.tracewriter.downloaded(target_loc, uri)
             self.tracewriter.dir_made(*dirsmade)
-        return self.tracedir
+            am_downloaded += 1
+        return am_downloaded
 
-    def _get_param_map(self, fn=None):
+    def _get_param_map(self, _=None):
         return None
 
-    def _do_pkg_install(self):
-        pkgs = get_pkg_list(self.distro, self.component_name)
+    def install(self):
+        pkgs = Util.get_pkg_list(self.distro, self.component_name)
         if(len(pkgs)):
             pkgnames = sorted(pkgs.keys())
-            LOG.debug("Installing packages %s" % (", ".join(pkgnames)))
-            mp = self._get_param_map()
-            #run pre, install, then post
-            self.packager.pre_install(pkgs, mp)
+            LOG.info("Installing packages %s" % (", ".join(pkgnames)))
             self.packager.install_batch(pkgs)
-            self.packager.post_install(pkgs, mp)
             #add trace used to remove the pkgs
             for name in pkgnames:
                 self.tracewriter.package_install(name, pkgs.get(name))
+        return self.tracedir
 
-    def install(self):
-        self._do_pkg_install()
+    def pre_install(self):
+        pkgs = Util.get_pkg_list(self.distro, self.component_name)
+        if(len(pkgs)):
+            mp = self._get_param_map()
+            self.packager.pre_install(pkgs, mp)
+        return self.tracedir
+
+    def post_install(self):
+        pkgs = Util.get_pkg_list(self.distro, self.component_name)
+        if(len(pkgs)):
+            mp = self._get_param_map()
+            self.packager.post_install(pkgs, mp)
         return self.tracedir
 
     def _get_config_files(self):
         return list()
 
-    def _config_adjust(fn, contents):
+    def _config_adjust(self, contents, _):
         return contents
 
+    def _get_full_config_name(self, name):
+        return Shell.joinpths(self.cfgdir, name)
+
+    def _get_source_config_name(self, name):
+        return Shell.joinpths(Util.STACK_CONFIG_DIR, self.component_name, name)
+
     def configure(self):
-        dirsmade = mkdirslist(self.cfgdir)
+        dirsmade = Shell.mkdirslist(self.cfgdir)
         self.tracewriter.dir_made(*dirsmade)
         configs = self._get_config_files()
-        if(configs and len(configs)):
-            for fn in configs:
-                parameters = self._get_param_map(fn)
-                sourcefn = joinpths(STACK_CONFIG_DIR, self.component_name, fn)
-                tgtfn = joinpths(self.cfgdir, fn)
-                LOG.info("Configuring template file %s" % (sourcefn))
-                contents = load_file(sourcefn)
-                LOG.info("Replacing parameters in file %s" % (sourcefn))
-                LOG.debug("Replacements = %s" % (parameters))
-                contents = param_replace(contents, parameters)
-                LOG.debug("Applying side-effects of param replacement for template %s" % (sourcefn))
-                contents = self._config_adjust(contents, fn)
-                LOG.info("Writing configuration file %s" % (tgtfn))
-                write_file(tgtfn, contents)
-                #this trace is used to remove the files configured
-                self.tracewriter.cfg_write(tgtfn)
-        return self.tracedir
+        am = len(configs)
+        for fn in configs:
+            #get the params and where it should come from and where it should go
+            parameters = self._get_param_map(fn)
+            sourcefn = self._get_source_config_name(fn)
+            tgtfn = self._get_full_config_name(fn)
+            #ensure directory is there (if not created previously)
+            dirsmade = Shell.mkdirslist(os.path.dirname(tgtfn))
+            self.tracewriter.dir_made(*dirsmade)
+            #now configure it
+            LOG.info("Configuring template file %s" % (sourcefn))
+            contents = Shell.load_file(sourcefn)
+            LOG.info("Replacing parameters in file %s" % (sourcefn))
+            LOG.debug("Replacements = %s" % (parameters))
+            contents = Util.param_replace(contents, parameters)
+            LOG.debug("Applying side-effects of param replacement for template %s" % (sourcefn))
+            contents = self._config_adjust(contents, fn)
+            LOG.info("Writing configuration file %s" % (tgtfn))
+            #this trace is used to remove the files configured
+            Shell.write_file(tgtfn, contents)
+            self.tracewriter.cfg_write(tgtfn)
+        return am
 
 
 class PythonInstallComponent(PkgInstallComponent):
     def __init__(self, component_name, *args, **kargs):
         PkgInstallComponent.__init__(self, component_name, *args, **kargs)
 
-    def _python_install(self):
-        pips = get_pip_list(self.distro, self.component_name)
+    def _get_python_directories(self):
+        py_dirs = list()
+        py_dirs.append({
+                'name': 'base',
+                'work_dir': self.appdir,
+        })
+        return py_dirs
+
+    def _install_pips(self):
+        pips = Util.get_pip_list(self.distro, self.component_name)
         #install any need pip items
         if(len(pips)):
+            LOG.info("Setting up %s pips" % (len(pips)))
             Pip.install(pips)
             for name in pips.keys():
                 self.tracewriter.pip_install(name, pips.get(name))
-        #do the actual python install
-        dirsmade = mkdirslist(self.tracedir)
-        self.tracewriter.dir_made(*dirsmade)
-        recordwhere = touch_trace(self.tracedir, PY_TRACE)
-        self.tracewriter.py_install(recordwhere)
-        (sysout, stderr) = execute(*PY_INSTALL, cwd=self.appdir, run_as_root=True)
-        write_file(recordwhere, sysout)
+
+    def _install_python_setups(self):
+        pydirs = self._get_python_directories()
+        if(len(pydirs)):
+            LOG.info("Setting up %s python directories" % (len(pydirs)))
+            dirsmade = Shell.mkdirslist(self.tracedir)
+            self.tracewriter.dir_made(*dirsmade)
+            for pydir_info in pydirs:
+                name = pydir_info.get("name")
+                working_dir = pydir_info.get('work_dir', self.appdir)
+                py_trace_name = "%s-%s" % (Trace.PY_TRACE, name)
+                recordwhere = Trace.touch_trace(self.tracedir, py_trace_name)
+                self.tracewriter.file_touched(recordwhere)
+                (sysout, stderr) = Shell.execute(*PY_INSTALL, cwd=working_dir, run_as_root=True)
+                combined_output = "===STDOUT===" + os.linesep
+                combined_output += sysout + os.linesep
+                combined_output += "===STDERR===" + os.linesep
+                combined_output += stderr + os.linesep
+                Shell.write_file(recordwhere, combined_output)
+                self.tracewriter.py_install(name, recordwhere, working_dir)
+
+    def _python_install(self):
+        self._install_pips()
+        self._install_python_setups()
 
     def install(self):
-        self._do_pkg_install()
+        parent_result = PkgInstallComponent.install(self)
         self._python_install()
-        return self.tracedir
+        return parent_result
 
 
 class PkgUninstallComponent(ComponentBase, UninstallComponent):
     def __init__(self, component_name, *args, **kargs):
         ComponentBase.__init__(self, component_name, *args, **kargs)
-        self.tracereader = TraceReader(self.tracedir, IN_TRACE)
+        UninstallComponent.__init__(self)
+        self.tracereader = Trace.TraceReader(self.tracedir, Trace.IN_TRACE)
 
     def unconfigure(self):
         self._unconfigure_files()
@@ -202,7 +267,7 @@ class PkgUninstallComponent(ComponentBase, UninstallComponent):
             LOG.info("Removing %s configuration files" % (len(cfgfiles)))
             for fn in cfgfiles:
                 if(len(fn)):
-                    unlink(fn)
+                    Shell.unlink(fn)
                     LOG.info("Removed %s" % (fn))
 
     def uninstall(self):
@@ -222,7 +287,7 @@ class PkgUninstallComponent(ComponentBase, UninstallComponent):
             LOG.info("Removing %s touched files" % (len(filestouched)))
             for fn in filestouched:
                 if(len(fn)):
-                    unlink(fn)
+                    Shell.unlink(fn)
                     LOG.info("Removed %s" % (fn))
 
     def _uninstall_dirs(self):
@@ -230,7 +295,7 @@ class PkgUninstallComponent(ComponentBase, UninstallComponent):
         if(len(dirsmade)):
             LOG.info("Removing %s created directories" % (len(dirsmade)))
             for dirname in dirsmade:
-                deldir(dirname)
+                Shell.deldir(dirname)
                 LOG.info("Removed %s" % (dirname))
 
 
@@ -240,33 +305,45 @@ class PythonUninstallComponent(PkgUninstallComponent):
 
     def uninstall(self):
         self._uninstall_pkgs()
+        self._uninstall_pips()
         self._uninstall_touched_files()
         self._uninstall_python()
         self._uninstall_dirs()
 
+    def _uninstall_pips(self):
+        pips = self.tracereader.pips_installed()
+        if(pips and len(pips)):
+            LOG.info("Uninstalling %s pips" % (len(pips)))
+            Pip.uninstall(pips)
+
     def _uninstall_python(self):
         pylisting = self.tracereader.py_listing()
         if(pylisting and len(pylisting)):
-            execute(*PY_UNINSTALL, cwd=self.appdir, run_as_root=True)
+            LOG.info("Uninstalling %s python setups" % (len(pylisting)))
+            for entry in pylisting:
+                where = entry.get('where')
+                Shell.execute(*PY_UNINSTALL, cwd=where, run_as_root=True)
 
 
 class ProgramRuntime(ComponentBase, RuntimeComponent):
-    #this here determines how we start and stop and 
+    #this here determines how we start and stop and
     #what classes handle different running/stopping types
     STARTER_CLS_MAPPING = {
-        Foreground.RUN_TYPE: ForegroundRunner,
-        Screen.RUN_TYPE: ScreenRunner,
+        runners.Foreground.RUN_TYPE: runners.Foreground.ForegroundRunner,
+        runners.Screen.RUN_TYPE: runners.Screen.ScreenRunner,
     }
     STOPPER_CLS_MAPPING = {
-        Foreground.RUN_TYPE: ForegroundRunner,
-        Screen.RUN_TYPE: ScreenRunner,
+        runners.Foreground.RUN_TYPE: runners.Foreground.ForegroundRunner,
+        runners.Screen.RUN_TYPE: runners.Screen.ScreenRunner,
     }
+
     def __init__(self, component_name, *args, **kargs):
         ComponentBase.__init__(self, component_name, *args, **kargs)
-        self.run_type = kargs.get("run_type", Foreground.RUN_TYPE)
-        self.tracereader = TraceReader(self.tracedir, IN_TRACE)
-        self.tracewriter = TraceWriter(self.tracedir, START_TRACE)
-        self.starttracereader = TraceReader(self.tracedir, START_TRACE)
+        RuntimeComponent.__init__(self)
+        self.run_type = kargs.get("run_type", runners.Foreground.RUN_TYPE)
+        self.tracereader = Trace.TraceReader(self.tracedir, Trace.IN_TRACE)
+        self.tracewriter = Trace.TraceWriter(self.tracedir, Trace.START_TRACE)
+        self.starttracereader = Trace.TraceReader(self.tracedir, Trace.START_TRACE)
         self.check_installed_pkgs = kargs.get("check_installed_pkgs", True)
 
     def _getstartercls(self, start_mode):
@@ -287,12 +364,12 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
         return False
 
     def _get_apps_to_start(self):
-        raise NotImplementedError()
+        return list()
 
-    def _get_app_options(self, app):
-        return None
+    def _get_app_options(self, _):
+        return list()
 
-    def _get_param_map(self, app=None):
+    def _get_param_map(self, _=None):
         return {
             'ROOT': self.appdir,
         }
@@ -301,40 +378,45 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
         #ensure it was installed
         if(not self._was_installed()):
             msg = "Can not start %s since it was not installed" % (self.component_name)
-            raise StartException(msg)
+            raise Exceptions.StartException(msg)
         #select how we are going to start it
-        startercls = self._getstartercls()
+        startercls = self._getstartercls(self.run_type)
         starter = startercls()
         #start all apps
         #this fns list will have info about what was started
         fns = list()
         apps = self._get_apps_to_start()
-        for app in apps:
+        for app_info in apps:
+            #extract needed keys
+            app_name = app_info.get("name")
+            app_pth = app_info.get("path", app_name)
+            app_dir = app_info.get("app_dir", self.appdir)
             #adjust the program options now that we have real locations
-            params = self._get_param_map(app)
-            program_opts = self._get_app_options(app)
+            params = self._get_param_map(app_name)
+            program_opts = self._get_app_options(app_name)
             if(params and program_opts):
                 adjusted_opts = list()
                 for opt in program_opts:
-                    adjusted_opts.append(param_replace(opt, params))
+                    adjusted_opts.append(Util.param_replace(opt, params))
                 program_opts = adjusted_opts
-            LOG.info("Starting %s with options [%s]" % (app, ", ".join(program_opts)))
+            LOG.info("Starting [%s] with options [%s]" % (app_name, ", ".join(program_opts)))
             #start it with the given settings
-            fn = starter.start(app, app, *program_opts, app_dir=self.appdir, trace_dir=self.tracedir)
-            if(fn and len(fn)):
+            fn = starter.start(app_name, app_pth, *program_opts, app_dir=app_dir, \
+                               trace_dir=self.tracedir)
+            if(fn):
                 fns.append(fn)
-                LOG.info("Started %s, details are in %s" % (app, fn))
+                LOG.info("Started %s, details are in %s" % (app_name, fn))
                 #this trace is used to locate details about what to stop
-                self.tracewriter.started_info(app, fn)
+                self.tracewriter.started_info(app_name, fn)
             else:
-                LOG.info("Started %s" % (app))
+                LOG.info("Started %s" % (app_name))
         return fns
 
     def stop(self):
         #ensure it was installed
         if(not self._was_installed()):
             msg = "Can not stop %s since it was not installed" % (self.component_name)
-            raise StopException(msg)
+            raise Exceptions.StopException(msg)
         #we can only stop what has a started trace
         start_traces = self.starttracereader.apps_started()
         killedam = 0
@@ -346,7 +428,7 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
             if(fn == None or name == None):
                 continue
             #figure out which class will stop it
-            contents = parse_fn(fn)
+            contents = Trace.parse_fn(fn)
             killcls = None
             for (cmd, action) in contents:
                 if(cmd == Runner.RUN_TYPE):
@@ -364,13 +446,26 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
         if(killedam == len(start_traces)):
             fn = self.starttracereader.trace_fn
             LOG.info("Deleting trace file %s" % (fn))
-            unlink(fn)
+            Shell.unlink(fn)
+        return killedam
+
+    def status(self):
+        return None
+
+    def restart(self):
+        return 0
 
 
 class PythonRuntime(ProgramRuntime):
     def __init__(self, component_name, *args, **kargs):
         ProgramRuntime.__init__(self, component_name, *args, **kargs)
-    
+
+    def status(self):
+        return None
+
+    def restart(self):
+        return 0
+
     def _was_installed(self):
         parent_result = ProgramRuntime._was_installed(self)
         if(not parent_result):
@@ -380,3 +475,21 @@ class PythonRuntime(ProgramRuntime):
             return False
         else:
             return True
+
+
+class NullRuntime(ComponentBase, RuntimeComponent):
+    def __init__(self, component_name, *args, **kargs):
+        ComponentBase.__init__(self, component_name, *args, **kargs)
+        RuntimeComponent.__init__(self)
+
+    def start(self):
+        return 0
+
+    def stop(self):
+        return 0
+
+    def status(self):
+        return None
+
+    def restart(self):
+        return 0

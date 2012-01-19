@@ -15,19 +15,24 @@
 
 import os
 import os.path
+import io
 
 import Pip
+import Logger
+import Db
+import Config
+
+#TODO fix these
 from Util import (KEYSTONE,
                   CONFIG_DIR,
                   NOVA, GLANCE, SWIFT,
                   get_host_ip,
                   execute_template,
                   param_replace)
-import Logger
-import Db
-from Component import (PythonUninstallComponent, 
+from Component import (PythonUninstallComponent,
                 PythonInstallComponent, PythonRuntime)
 from Shell import (mkdirslist, unlink, touch_file, joinpths)
+
 LOG = Logger.getLogger("install.keystone")
 
 TYPE = KEYSTONE
@@ -35,6 +40,7 @@ ROOT_CONF = "keystone.conf"
 CONFIGS = [ROOT_CONF]
 BIN_DIR = "bin"
 DB_NAME = "keystone"
+CFG_SECTION = 'DEFAULT'
 
 #what to start
 APP_OPTIONS = {
@@ -57,18 +63,19 @@ class KeystoneInstaller(PythonInstallComponent):
         self.cfgdir = joinpths(self.appdir, CONFIG_DIR)
         self.bindir = joinpths(self.appdir, BIN_DIR)
 
-    def _get_download_location(self):
-        uri = self.gitloc
-        branch = self.brch
-        return (uri, branch)
+    def _get_download_locations(self):
+        places = PythonInstallComponent._get_download_locations(self)
+        places.append({
+            'uri': self.gitloc,
+            'branch': self.brch,
+        })
+        return places
 
-    def install(self):
-        PythonInstallComponent.install(self)
-        #adjust db
+    def post_install(self):
+        parent_result = PythonInstallComponent.post_install(self)
         self._setup_db()
-        #setup any data
         self._setup_data()
-        return self.tracedir
+        return parent_result
 
     def _get_config_files(self):
         return list(CONFIGS)
@@ -82,33 +89,30 @@ class KeystoneInstaller(PythonInstallComponent):
         cmds = _keystone_setup_cmds(self.othercomponents)
         execute_template(*cmds, params=params, ignore_missing=True)
 
-    def _config_adjust(self, contents, fn):
-        lines = contents.splitlines()
-        for line in lines:
-            cleaned = line.strip()
-            if(len(cleaned) == 0 or
-                cleaned[0] == '#' or cleaned[0] == '['):
-                #not useful to examine these
-                continue
-            pieces = cleaned.split("=", 1)
-            if(len(pieces) != 2):
-                continue
-            key = pieces[0].strip()
-            val = pieces[1].strip()
-            if(len(key) == 0 or len(val) == 0):
-                continue
-            #now we take special actions
-            if(key == 'log_file'):
-                # Ensure that we can write to the log file
-                dirname = os.path.dirname(val)
-                if(len(dirname)):
-                    dirsmade = mkdirslist(dirname)
-                    # This trace is used to remove the dirs created
+    def _config_adjust(self, contents, name):
+        if(name not in CONFIGS):
+            return contents
+        #use config parser and
+        #then extract known configs that
+        #will need locations/directories/files made (or touched)...
+        with io.BytesIO(contents) as stream:
+            config = Config.IgnoreMissingConfigParser()
+            config.readfp(stream)
+            log_filename = config.get('log_file', CFG_SECTION)
+            if(log_filename):
+                LOG.info("Ensuring log file %s exists and is empty" % (log_filename))
+                log_dir = os.path.dirname(log_filename)
+                if(log_dir):
+                    LOG.info("Ensuring log directory %s exists" % (log_dir))
+                    dirsmade = mkdirslist(log_dir)
+                    #this trace is used to remove the dirs created
                     self.tracewriter.dir_made(*dirsmade)
-                # Destroy then recreate it
-                unlink(val)
-                touch_file(val)
-                self.tracewriter.file_touched(val)
+                #destroy then recreate it (the log file)
+                unlink(log_filename)
+                touch_file(log_filename)
+                self.tracewriter.file_touched(log_filename)
+            #we might need to handle more in the future...
+        #nothing modified so just return the original
         return contents
 
     def _get_param_map(self, fn=None):
@@ -132,7 +136,13 @@ class KeystoneRuntime(PythonRuntime):
         self.bindir = joinpths(self.appdir, BIN_DIR)
 
     def _get_apps_to_start(self):
-        return sorted(APP_OPTIONS.keys())
+        apps = list()
+        for app_name in APP_OPTIONS.keys():
+            apps.append({
+                'name': app_name,
+                'path': joinpths(self.bindir, app_name),
+            })
+        return apps
 
     def _get_app_options(self, app):
         return APP_OPTIONS.get(app)
@@ -174,7 +184,7 @@ def _keystone_setup_cmds(components):
             "cmd": root_cmd + ["role", "add", "Admin"]
         },
         {
-            "cmd": root_cmd + ["role", "add",  "Member"]
+            "cmd": root_cmd + ["role", "add", "Member"]
         },
         {
             "cmd": root_cmd + ["role", "add", "KeystoneAdmin"]

@@ -17,11 +17,13 @@
 from tempfile import TemporaryFile
 
 import Logger
+import Packager
+
+#TODO fix these
 from Component import (ComponentBase, RuntimeComponent,
                        PkgUninstallComponent, PkgInstallComponent)
 from Exceptions import (StartException, StopException,
                     StatusException, RestartException)
-import Packager
 from Util import (RABBIT, UBUNTU11)
 from Trace import (TraceReader,
                     IN_TRACE)
@@ -48,21 +50,16 @@ class RabbitInstaller(PkgInstallComponent):
         PkgInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.runtime = RabbitRuntime(*args, **kargs)
 
-    def _get_download_location(self):
-        return (None, None)
-
     def _setup_pw(self):
         passwd = self.cfg.getpw("passwords", "rabbit")
         cmd = PWD_CMD + [passwd]
         execute(*cmd, run_as_root=True)
 
-    def install(self):
-        pres = PkgInstallComponent.install(self)
-        #ensure setup right
+    def post_install(self):
+        parent_result = PkgInstallComponent.post_install(self)
         self._setup_pw()
-        #restart it to make sure its ok to go
         self.runtime.restart()
-        return pres
+        return parent_result
 
 
 class RabbitRuntime(ComponentBase, RuntimeComponent):
@@ -93,7 +90,7 @@ class RabbitRuntime(ComponentBase, RuntimeComponent):
                 execute(*cmd, run_as_root=True,
                             stdout_fh=f, stderr_fh=f)
         else:
-            execute(*cmd, run_as_root=True)    
+            execute(*cmd, run_as_root=True)
 
     def restart(self):
         pkgsinstalled = self.tracereader.packages_installed()
