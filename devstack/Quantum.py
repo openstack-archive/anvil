@@ -16,23 +16,55 @@
 
 import Logger
 
-#TODO fix these
-from Component import (ComponentBase, RuntimeComponent,
-                       UninstallComponent, InstallComponent)
+import Component
 
 LOG = Logger.getLogger("install.quantum")
 
 
-class QuantumUninstaller(UninstallComponent):
+class QuantumUninstaller(Component.UninstallComponent):
     def __init__(self, *args, **kargs):
+        Component.UninstallComponent.__init__(self)
+
+    def unconfigure(self):
+        pass
+
+    def uninstall(self):
         pass
 
 
-class QuantumInstaller(InstallComponent):
+class QuantumInstaller(Component.InstallComponent):
     def __init__(self, *args, **kargs):
+        Component.InstallComponent.__init__(self)
+
+    def download(self):
+        pass
+
+    def configure(self):
+        pass
+
+    def pre_install(self):
+        pass
+
+    def install(self):
+        pass
+        
+    def post_install(self):
         pass
 
 
-class QuantumRuntime(RuntimeComponent):
+class QuantumRuntime(Component.RuntimeComponent):
     def __init__(self, *args, **kargs):
+        Component.RuntimeComponent.__init__(self)
+
+    def start(self):
         pass
+
+    def stop(self):
+        pass
+
+    def status(self):
+        pass
+
+    def restart(self):
+        pass
+
