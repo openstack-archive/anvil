@@ -40,6 +40,7 @@ RHEL6 = "rhel-6"
 #GIT master
 MASTER_BRANCH = "master"
 
+
 #other constants
 PRE_INSTALL = 'pre-install'
 POST_INSTALL = 'post-install'
@@ -47,7 +48,7 @@ IPV4 = 'IPv4'
 IPV6 = 'IPv6'
 DEFAULT_NET_INTERFACE = 'eth0'
 DEFAULT_NET_INTERFACE_IP_VERSION = IPV4
-PARAM_SUB_REGEX = "%([\\w\\d]+?)%"
+PARAM_SUB_REGEX = re.compile("%([\\w\\d]+?)%")
 
 #component name mappings
 NOVA = "nova"
@@ -115,8 +116,8 @@ STACK_CFG_LOC = Shell.joinpths(STACK_CONFIG_DIR, "stack.ini")
 #this regex is how we match python platform output to
 #a known constant
 KNOWN_OS = {
-    UBUNTU11: '/Ubuntu(.*)oneiric/i',
-    RHEL6: '/redhat-6\.(\d+)/i',
+    UBUNTU11: re.compile('Ubuntu(.*)oneiric', re.IGNORECASE),
+    RHEL6: re.compile('redhat-6\.(\d+)', re.IGNORECASE),
 }
 
 #the pip files that each component
@@ -190,11 +191,6 @@ PKG_MAP = {
 TRACE_DIR = "traces"
 APP_DIR = "app"
 CONFIG_DIR = "config"
-
-#our ability to create regexes
-#which is more like php, which is nicer
-#for modifiers...
-REGEX_MATCHER = re.compile("^/(.*?)/([a-z]*)$")
 
 #these actions need to have there components depenencies
 #to occur first (ie keystone starts before glance...)
@@ -332,32 +328,14 @@ def get_interfaces():
     return interfaces
 
 
-def create_regex(format):
-    mtch = REGEX_MATCHER.match(format)
-    if(not mtch):
-        raise Exceptions.BadRegexException("Badly formatted pre-regex: " + format)
-    else:
-        toberegex = mtch.group(1)
-        options = mtch.group(2).lower()
-        flags = 0
-        if(options.find("i") != -1):
-            flags = flags | re.IGNORECASE
-        if(options.find("m") != -1):
-            flags = flags | re.MULTILINE
-        if(options.find("u") != -1):
-            flags = flags | re.UNICODE
-        return re.compile(toberegex, flags)
-
-
 def determine_os():
-    os_ = None
+    found_os = None
     plt = platform.platform()
-    for aos, pat in KNOWN_OS.items():
-        reg = create_regex(pat)
-        if(reg.search(plt)):
-            os_ = aos
+    for (known_os, pattern) in KNOWN_OS.items():
+        if(pattern.search(plt)):
+            found_os = known_os
             break
-    return (os_, plt)
+    return (found_os, plt)
 
 
 def get_pip_list(distro, component):
@@ -439,7 +417,7 @@ def param_replace(text, replacements, ignore_missing=False):
             LOG.debug("Replacing [%s] with [%s]" % (org, str(v)))
         return str(v)
 
-    return re.sub(PARAM_SUB_REGEX, replacer, text)
+    return PARAM_SUB_REGEX.sub(replacer, text)
 
 
 def welcome(program_action):

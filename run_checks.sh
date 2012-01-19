@@ -38,7 +38,7 @@ function run_pep8 {
   echo "Running pep8 ..."
   srcfiles=`find devstack -type f | grep "py\$"`
   srcfiles+=" stack"
-  pep_ignores="E202"
+  pep_ignores="E202,E501"
   tee_fn="pep8.log"
   pep8_opts="--ignore=$pep_ignores --repeat"
   echo "$(${wrapper} pep8 ${pep8_opts} ${srcfiles} 2>&1 | tee $tee_fn)"
