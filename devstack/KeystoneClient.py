@@ -16,33 +16,27 @@
 
 import Logger
 import Util
-import Shell
 
 #TODO fix these
 from Component import (PythonUninstallComponent,
-                       PythonInstallComponent,
-                       NullRuntime)
-
-LOG = Logger.getLogger("install.horizon")
-TYPE = Util.HORIZON
-ROOT_HORIZON = 'horizon'
-HORIZON_NAME = 'horizon'
-ROOT_DASH = 'openstack-dashboard'
-DASH_NAME = 'dashboard'
+                        PythonInstallComponent,
+                        NullRuntime)
 
 
-class HorizonUninstaller(PythonUninstallComponent):
+LOG = Logger.getLogger("install.keystone.client")
+TYPE = Util.KEYSTONE_CLIENT
+
+
+class KeyStoneClientUninstaller(PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
 
 
-class HorizonInstaller(PythonInstallComponent):
+class KeyStoneClientInstaller(PythonInstallComponent):
     def __init__(self, *args, **kargs):
         PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
-        self.gitloc = self.cfg.get("git", "horizon_repo")
-        self.brch = self.cfg.get("git", "horizon_branch")
-        self.horizon_dir = Shell.joinpths(self.appdir, ROOT_HORIZON)
-        self.dash_dir = Shell.joinpths(self.appdir, ROOT_DASH)
+        self.gitloc = self.cfg.get("git", "keystoneclient_repo")
+        self.brch = self.cfg.get("git", "keystoneclient_branch")
 
     def _get_download_locations(self):
         places = PythonInstallComponent._get_download_locations(self)
@@ -52,19 +46,7 @@ class HorizonInstaller(PythonInstallComponent):
         })
         return places
 
-    def _get_python_directories(self):
-        py_dirs = list()
-        py_dirs.append({
-            'name': HORIZON_NAME,
-            'work_dir': self.horizon_dir,
-        })
-        py_dirs.append({
-            'name': DASH_NAME,
-            'work_dir': self.dash_dir,
-        })
-        return py_dirs
 
-
-class HorizonRuntime(NullRuntime):
+class KeyStoneClientRuntime(NullRuntime):
     def __init__(self, *args, **kargs):
         NullRuntime.__init__(self, TYPE, *args, **kargs)

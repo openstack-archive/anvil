@@ -5,8 +5,8 @@ set -eu
 
 function usage {
   echo "Usage: $0 [OPTION]..."
-  echo "  -p, --no-pep8               Don't run pep8"
-  echo "  -y, --no-pylint             Don't run pylint"
+  echo "  --no-pep8               Don't run pep8"
+  echo "  --no-pylint             Don't run pylint"
   echo "  -h, --help               Print this usage message"
   exit
 }
@@ -15,8 +15,8 @@ function usage {
 function process_option {
   case "$1" in
     -h|--help) usage;;
-    -p|--pep8) pep8=0;;
-    -y|--pylint) pylint=0;;
+    --no-pep8) pep8=0;;
+    --no-pylint) pylint=0;;
     -*);;
     *);;
   esac
@@ -38,7 +38,7 @@ function run_pep8 {
   echo "Running pep8 ..."
   srcfiles=`find devstack -type f | grep "py\$"`
   srcfiles+=" stack"
-  pep_ignores="E202"
+  pep_ignores="E202,E501"
   tee_fn="pep8.log"
   pep8_opts="--ignore=$pep_ignores --repeat"
   echo "$(${wrapper} pep8 ${pep8_opts} ${srcfiles} 2>&1 | tee $tee_fn)"
@@ -53,7 +53,7 @@ function run_pep8 {
 
 function run_pylint {
   echo "Running pylint ..."
-  srcfiles=`find devstack -type f | grep "py\$"`
+  srcfiles=`find devstack -type f | grep "py\$" | sed 's/devstack\/\(.*\)\.py/\1/' | tr '/' '.'`
   srcfiles+=" stack"
   tee_fn="pylint.log"
   pylint_opts="--rcfile=$pylintrc_fn"

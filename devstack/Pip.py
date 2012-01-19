@@ -58,6 +58,7 @@ def uninstall(pips):
             execute(*cmd, run_as_root=True)
         except ProcessExecutionError, e:
             if(skip_errors):
+                LOG.warn("Ignoring execution error that occured when uninstalling %s" % (name))
                 pass
             else:
                 raise

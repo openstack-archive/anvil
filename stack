@@ -26,13 +26,12 @@ import Options
 #TODO fix these
 from Util import (welcome, rcf8222date, determine_os,
                     prioritize_components, resolve_dependencies)
-from Util import (NOVA, GLANCE, QUANTUM, SWIFT, KEYSTONE, HORIZON, DB, RABBIT,
+from Util import (NOVA, GLANCE, QUANTUM, SWIFT, KEYSTONE, HORIZON, DB, RABBIT, KEYSTONE_CLIENT,
                   INSTALL, UNINSTALL, START, STOP,
                   ACTIONS, COMPONENT_NAMES, NAMES_PRIORITY,
                   UBUNTU11, RHEL6,
                   STACK_CFG_LOC, DEVSTACK)
 from Shell import (mkdir, joinpths, unlink)
-from Config import (EnvConfigParser)
 from Exceptions import (NoTraceException)
 
 import Glance
@@ -44,6 +43,8 @@ import Config
 import Swift
 import Db
 import Rabbit
+import Config
+import KeystoneClient
 
 LOG = Logger.getLogger("install")
 
@@ -58,6 +59,7 @@ ACTION_CLASSES = {
         KEYSTONE: Keystone.KeystoneInstaller,
         DB: Db.DBInstaller,
         RABBIT: Rabbit.RabbitInstaller,
+        KEYSTONE_CLIENT: KeystoneClient.KeyStoneClientInstaller,
     },
     UNINSTALL: {
         NOVA: Nova.NovaUninstaller,
@@ -68,6 +70,7 @@ ACTION_CLASSES = {
         KEYSTONE: Keystone.KeystoneUninstaller,
         DB: Db.DBUninstaller,
         RABBIT: Rabbit.RabbitUninstaller,
+        KEYSTONE_CLIENT: KeystoneClient.KeyStoneClientUninstaller,
     },
     START: {
         NOVA: Nova.NovaRuntime,
@@ -78,6 +81,7 @@ ACTION_CLASSES = {
         KEYSTONE: Keystone.KeystoneRuntime,
         DB: Db.DBRuntime,
         RABBIT: Rabbit.RabbitRuntime,
+        KEYSTONE_CLIENT: KeystoneClient.KeyStoneClientRuntime,
     },
     STOP: {
         NOVA: Nova.NovaRuntime,
@@ -88,6 +92,7 @@ ACTION_CLASSES = {
         KEYSTONE: Keystone.KeystoneRuntime,
         DB: Db.DBRuntime,
         RABBIT: Rabbit.RabbitRuntime,
+        KEYSTONE_CLIENT: KeystoneClient.KeyStoneClientRuntime,
     },
 }
 
@@ -108,16 +113,47 @@ def get_package_manager_class(distro):
 
 
 def get_config(action):
-    LOG.info("Loading config from %s" % (STACK_CFG_LOC))
-    cfg = EnvConfigParser()
-    cfg.read(STACK_CFG_LOC)
+    fn = STACK_CFG_LOC
+    LOG.info("Loading config from %s" % (fn))
+    cfg = Config.EnvConfigParser()
+    cfg.read(fn)
     return cfg
 
 
 def print_cfgs(cfg, action):
-    if(len(cfg)):
+
+    #this will make the items nice and pretty
+    def item_format(k, v):
+        return "\t%s=%s" % (str(k), str(v))
+
+    def map_print(mp):
+        for key in sorted(mp.keys()):
+            value = mp.get(key)
+            LOG.info(item_format(key, value))
+
+    #now make it pretty
+    passwords_gotten = cfg.pws
+    full_cfgs = cfg.configs_fetched
+    db_dsns = cfg.db_dsns
+    if(len(passwords_gotten) or len(full_cfgs) or len(db_dsns)):
         LOG.info("After %s your config is:" % (action))
-        LOG.info(str(cfg).strip())
+        if(len(passwords_gotten)):
+            LOG.info("Passwords:")
+            map_print(passwords_gotten)
+        if(len(full_cfgs)):
+            #TOD
+            #better way to do this?? (ie a list difference?)
+            filtered_mp = dict()
+            for key in full_cfgs.keys():
+                if(key in passwords_gotten):
+                    continue
+                filtered_mp[key] = full_cfgs.get(key)
+            if(len(filtered_mp)):
+                LOG.info("Configs:")
+                map_print(filtered_mp)
+        if(len(db_dsns)):
+            LOG.info("Data source names:")
+            map_print(db_dsns)
 
 
 def runner(action_name, component_set, distro, root_dir, program_args):
@@ -125,7 +161,7 @@ def runner(action_name, component_set, distro, root_dir, program_args):
     if(action_name == INSTALL):
         mkdir(root_dir)
     pkg_manager_cls = get_package_manager_class(distro)
-    pkg_manager = pkg_manager_cls()
+    pkg_manager = pkg_manager_cls(distro)
     config = get_config(action_name)
     LOG.info("Will %s [%s] using root directory %s" % (action_name, ", ".join(component_set), root_dir))
     results = list()
@@ -136,11 +172,17 @@ def runner(action_name, component_set, distro, root_dir, program_args):
         instance = klass(components=component_set, distro=distro, pkg=pkg_manager, cfg=config, root=root_dir)
         if(action_name == INSTALL):
             LOG.info("Downloading %s." % (c))
-            instance.download()
+            am_downloaded = instance.download()
+            LOG.info("Performed %s downloads." % (str(am_downloaded)))
             LOG.info("Configuring %s." % (c))
-            instance.configure()
+            am_configured = instance.configure()
+            LOG.info("Configured %s files." % (str(am_configured)))
+            LOG.info("Pre-installing %s." % (c))
+            instance.pre_install()
             LOG.info("Installing %s." % (c))
-            trace = instance.install()
+            instance.install()
+            LOG.info("Post-installing %s." % (c))
+            trace = instance.post_install()
             if(trace):
                 LOG.info("Finished install of %s - check %s for traces of what happened." % (c, trace))
                 results.append(trace)
@@ -149,7 +191,8 @@ def runner(action_name, component_set, distro, root_dir, program_args):
         elif(action_name == STOP):
             try:
                 LOG.info("Stopping %s." % (c))
-                instance.stop()
+                stop_am = instance.stop()
+                LOG.info("Stopped %s applications." % (str(stop_am)))
                 LOG.info("Finished stop of %s" % (c))
             except NoTraceException, e:
                 if(force):
@@ -158,10 +201,13 @@ def runner(action_name, component_set, distro, root_dir, program_args):
                     raise
         elif(action_name == START):
             LOG.info("Starting %s." % (c))
-            trace_locs = instance.start() or list()
-            LOG.info("Finished start of %s - check [%s] for traces of what happened." % (c, ", ".join(trace_locs)))
-            if(trace_locs):
-                results = results + trace_locs
+            start_info = instance.start()
+            if(type(start_info) == list):
+                LOG.info("Check [%s] for traces of what happened." % (", ".join(start_info)))
+                results = results + start_info
+            elif(type(start_info) == int):
+                LOG.info("Started %s applications." % (str(start_info)))
+            LOG.info("Finished start of %s." % (c))
         elif(action_name == UNINSTALL):
             try:
                 LOG.info("Unconfiguring %s." % (c))
@@ -193,7 +239,8 @@ def check_root(action, rootdir):
                 #something exists, not good
                 root_there = True
         if(root_there):
-            LOG.error("Root directory [%s] already exists (and it's not empty)! Please remove it or uninstall components!" % (rootdir))
+            LOG.error("Root directory [%s] already exists (and it's not empty)! "\
+                      "Please remove it or uninstall components!" % (rootdir))
             return False
         else:
             return True
