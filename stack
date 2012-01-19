@@ -236,7 +236,8 @@ def check_root(action, rootdir):
                 #something exists, not good
                 root_there = True
         if(root_there):
-            LOG.error("Root directory [%s] already exists (and it's not empty)! Please remove it or uninstall components!" % (rootdir))
+            LOG.error("Root directory [%s] already exists (and it's not empty)! "\
+                      "Please remove it or uninstall components!" % (rootdir))
             return False
         else:
             return True

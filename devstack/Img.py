@@ -14,20 +14,20 @@
 #    under the License.
 
 
-class Img():
-    def download():
+class Img:
+    def download(self):
         pass
 
-    def install():
+    def install(self):
         pass
 
-    def remove():
+    def remove(self):
         pass
 
 
-class ImgDB():
-    def availableImages():
+class ImgDB:
+    def availableImages(self):
         pass
 
-    def installedImages():
+    def installedImages(self):
         pass

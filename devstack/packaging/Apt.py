@@ -105,7 +105,7 @@ class AptPackager(Packager.Packager):
             full_cmd = self._form_cmd(name, pkginfo.get("version"))
             if(full_cmd):
                 cmd = APT_GET + APT_REMOVE + [full_cmd]
-                self._execute_apt(cmd, True. True)
+                self._execute_apt(cmd, True, True)
                 #probably useful to do this
                 time.sleep(1)
                 #purge
