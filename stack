@@ -173,7 +173,7 @@ def runner(action_name, component_set, distro, root_dir, program_args):
             LOG.info("Performed %s downloads." % (str(am_downloaded)))
             LOG.info("Configuring %s." % (c))
             am_configured = instance.configure()
-            LOG.info("Configuring %s files." % (str(am_configured)))
+            LOG.info("Configured %s files." % (str(am_configured)))
             LOG.info("Pre-installing %s." % (c))
             instance.pre_install()
             LOG.info("Installing %s." % (c))

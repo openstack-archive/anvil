@@ -136,7 +136,13 @@ class KeystoneRuntime(PythonRuntime):
         self.bindir = joinpths(self.appdir, BIN_DIR)
 
     def _get_apps_to_start(self):
-        return sorted(APP_OPTIONS.keys())
+        apps = list()
+        for app_name in APP_OPTIONS.keys():
+            apps.append({
+                'name': app_name,
+                'path': joinpths(self.bindir, app_name),
+            })
+        return apps
 
     def _get_app_options(self, app):
         return APP_OPTIONS.get(app)

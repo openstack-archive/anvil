@@ -46,6 +46,7 @@ APP_OPTIONS = {
     'glance-registry': ['--config-file', joinpths('%ROOT%', "etc", REG_CONF)]
 }
 CONFIG_ACTUAL_DIR = 'etc'
+BIN_DIR = 'bin'
 
 
 class GlanceUninstaller(PythonUninstallComponent):
@@ -60,7 +61,13 @@ class GlanceRuntime(PythonRuntime):
         self.cfgdir = joinpths(self.appdir, CONFIG_ACTUAL_DIR)
 
     def _get_apps_to_start(self):
-        return sorted(APP_OPTIONS.keys())
+        apps = list()
+        for app_name in APP_OPTIONS.keys():
+            apps.append({
+                'name': app_name,
+                'path': joinpths(self.appdir, BIN_DIR, app_name),
+            })
+        return apps
 
     def _get_app_options(self, app):
         return APP_OPTIONS.get(app)

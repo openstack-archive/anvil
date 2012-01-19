@@ -34,7 +34,16 @@ class HorizonUninstaller(PythonUninstallComponent):
 class HorizonInstaller(PythonInstallComponent):
     def __init__(self, *args, **kargs):
         PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+        self.gitloc = self.cfg.get("git", "horizon_repo")
+        self.brch = self.cfg.get("git", "horizon_branch")
 
+    def _get_download_locations(self):
+        places = PythonInstallComponent._get_download_locations(self)
+        places.append({
+            'uri': self.gitloc,
+            'branch': self.brch,
+        })
+        return places
 
 class HorizonRuntime(NullRuntime):
     def __init__(self, *args, **kargs):

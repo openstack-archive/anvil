@@ -13,6 +13,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import os
+import os.path
+
 #TODO fix these
 from Util import (component_pths,
                   get_pkg_list,
@@ -161,8 +164,14 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
     def _get_config_files(self):
         return list()
 
-    def _config_adjust(contents, name):
+    def _config_adjust(self, contents, name):
         return contents
+        
+    def _get_full_config_name(self, name):
+        return joinpths(self.cfgdir, name)
+    
+    def _get_source_config_name(self, name):
+        return joinpths(STACK_CONFIG_DIR, self.component_name, name)
 
     def configure(self):
         dirsmade = mkdirslist(self.cfgdir)
@@ -170,9 +179,14 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
         configs = self._get_config_files()
         am = len(configs)
         for fn in configs:
+            #get the params and where it should come from and where it should go
             parameters = self._get_param_map(fn)
-            sourcefn = joinpths(STACK_CONFIG_DIR, self.component_name, fn)
-            tgtfn = joinpths(self.cfgdir, fn)
+            sourcefn = self._get_source_config_name(fn)
+            tgtfn = self._get_full_config_name(fn)
+            #ensure directory is there (if not created previously)
+            dirsmade = mkdirslist(os.path.dirname(tgtfn))
+            self.tracewriter.dir_made(*dirsmade)
+            #now configure it
             LOG.info("Configuring template file %s" % (sourcefn))
             contents = load_file(sourcefn)
             LOG.info("Replacing parameters in file %s" % (sourcefn))
@@ -181,8 +195,8 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
             LOG.debug("Applying side-effects of param replacement for template %s" % (sourcefn))
             contents = self._config_adjust(contents, fn)
             LOG.info("Writing configuration file %s" % (tgtfn))
-            write_file(tgtfn, contents)
             #this trace is used to remove the files configured
+            write_file(tgtfn, contents)
             self.tracewriter.cfg_write(tgtfn)
         return am
 
@@ -191,6 +205,14 @@ class PythonInstallComponent(PkgInstallComponent):
     def __init__(self, component_name, *args, **kargs):
         PkgInstallComponent.__init__(self, component_name, *args, **kargs)
 
+    def _get_python_directories(self):
+        pylist = list()
+        pylist.append({
+                'name': 'base',
+                'work_dir': self.appdir,
+        })
+        return pylist
+
     def _python_install(self):
         pips = get_pip_list(self.distro, self.component_name)
         #install any need pip items
@@ -198,13 +220,25 @@ class PythonInstallComponent(PkgInstallComponent):
             Pip.install(pips)
             for name in pips.keys():
                 self.tracewriter.pip_install(name, pips.get(name))
-        #do the actual python install
-        dirsmade = mkdirslist(self.tracedir)
-        self.tracewriter.dir_made(*dirsmade)
-        recordwhere = touch_trace(self.tracedir, PY_TRACE)
-        self.tracewriter.py_install(recordwhere)
-        (sysout, stderr) = execute(*PY_INSTALL, cwd=self.appdir, run_as_root=True)
-        write_file(recordwhere, sysout)
+        #now setup python
+        pydirs = self._get_python_directories()
+        if(len(pydirs)):
+            LOG.info("Setting up %s python directories" % (len(pydirs)))
+            dirsmade = mkdirslist(self.tracedir)
+            self.tracewriter.dir_made(*dirsmade)
+            for pydir_info in pydirs:
+                name = pydir_info.get("name")
+                working_dir = pydir_info.get('work_dir', self.appdir)
+                py_trace_name = "%s-%s" % (PY_TRACE, name)
+                recordwhere = touch_trace(self.tracedir, py_trace_name)
+                self.tracewriter.file_touched(recordwhere)
+                (sysout, stderr) = execute(*PY_INSTALL, cwd=working_dir, run_as_root=True)
+                combined_output = "===STDOUT===" + os.linesep
+                combined_output += sysout + os.linesep
+                combined_output += "===STDERR===" + os.linesep
+                combined_output += stderr  + os.linesep
+                write_file(recordwhere, combined_output)
+                self.tracewriter.py_install(name, recordwhere)
 
     # Overridden
     def install(self):
@@ -272,7 +306,10 @@ class PythonUninstallComponent(PkgUninstallComponent):
     def _uninstall_python(self):
         pylisting = self.tracereader.py_listing()
         if(pylisting and len(pylisting)):
-            execute(*PY_UNINSTALL, cwd=self.appdir, run_as_root=True)
+            LOG.info("Uninstalling %s python setups" % (len(pylisting)))
+            for entry in pylisting:
+                where = entry.get('where')
+                execute(*PY_UNINSTALL, cwd=where, run_as_root=True)
 
 
 class ProgramRuntime(ComponentBase, RuntimeComponent):
@@ -313,7 +350,7 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
         return False
 
     def _get_apps_to_start(self):
-        raise NotImplementedError()
+        return list()
 
     def _get_app_options(self, app):
         return list()
@@ -335,25 +372,29 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
         #this fns list will have info about what was started
         fns = list()
         apps = self._get_apps_to_start()
-        for app in apps:
+        for app_info in apps:
+            #extract needed keys
+            app_name = app_info.get("name")
+            app_pth = app_info.get("path", app_name)
+            app_dir = app_info.get("app_dir", self.appdir)
             #adjust the program options now that we have real locations
-            params = self._get_param_map(app)
-            program_opts = self._get_app_options(app)
+            params = self._get_param_map(app_name)
+            program_opts = self._get_app_options(app_name)
             if(params and program_opts):
                 adjusted_opts = list()
                 for opt in program_opts:
                     adjusted_opts.append(param_replace(opt, params))
                 program_opts = adjusted_opts
-            LOG.info("Starting %s with options [%s]" % (app, ", ".join(program_opts)))
+            LOG.info("Starting [%s] with options [%s]" % (app_name, ", ".join(program_opts)))
             #start it with the given settings
-            fn = starter.start(app, app, *program_opts, app_dir=self.appdir, trace_dir=self.tracedir)
-            if(fn and len(fn)):
+            fn = starter.start(app_name, app_pth, *program_opts, app_dir=app_dir, trace_dir=self.tracedir)
+            if(fn):
                 fns.append(fn)
-                LOG.info("Started %s, details are in %s" % (app, fn))
+                LOG.info("Started %s, details are in %s" % (app_name, fn))
                 #this trace is used to locate details about what to stop
-                self.tracewriter.started_info(app, fn)
+                self.tracewriter.started_info(app_name, fn)
             else:
-                LOG.info("Started %s" % (app))
+                LOG.info("Started %s" % (app_name))
         return fns
 
     def stop(self):
