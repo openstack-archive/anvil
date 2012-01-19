@@ -5,8 +5,8 @@ set -eu
 
 function usage {
   echo "Usage: $0 [OPTION]..."
-  echo "  -p, --no-pep8               Don't run pep8"
-  echo "  -y, --no-pylint             Don't run pylint"
+  echo "  --no-pep8               Don't run pep8"
+  echo "  --no-pylint             Don't run pylint"
   echo "  -h, --help               Print this usage message"
   exit
 }
@@ -15,8 +15,8 @@ function usage {
 function process_option {
   case "$1" in
     -h|--help) usage;;
-    -p|--pep8) pep8=0;;
-    -y|--pylint) pylint=0;;
+    --no-pep8) pep8=0;;
+    --no-pylint) pylint=0;;
     -*);;
     *);;
   esac

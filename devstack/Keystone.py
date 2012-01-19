@@ -92,8 +92,8 @@ class KeystoneInstaller(PythonInstallComponent):
     def _config_adjust(self, contents, name):
         if(name not in CONFIGS):
             return contents
-        #use config parser and 
-        #then extract known configs that 
+        #use config parser and
+        #then extract known configs that
         #will need locations/directories/files made (or touched)...
         with io.BytesIO(contents) as stream:
             config = Config.IgnoreMissingConfigParser()

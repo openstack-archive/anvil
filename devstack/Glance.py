@@ -96,7 +96,7 @@ class GlanceInstaller(PythonInstallComponent):
         parent_result = PythonInstallComponent.post_install(self)
         self._setup_db()
         return parent_result
-        
+
     def _setup_db(self):
         Db.drop_db(self.cfg, DB_NAME)
         Db.create_db(self.cfg, DB_NAME)
@@ -104,8 +104,8 @@ class GlanceInstaller(PythonInstallComponent):
     def _config_adjust(self, contents, name):
         if(name not in CONFIGS):
             return contents
-        #use config parser and 
-        #then extract known configs that 
+        #use config parser and
+        #then extract known configs that
         #will need locations/directories/files made (or touched)...
         with io.BytesIO(contents) as stream:
             config = Config.IgnoreMissingConfigParser()

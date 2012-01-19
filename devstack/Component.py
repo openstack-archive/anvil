@@ -67,7 +67,7 @@ class InstallComponent():
 
     def install(self):
         raise NotImplementedError()
-        
+
     def post_install(self):
         raise NotImplementedError()
 
@@ -166,10 +166,10 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
 
     def _config_adjust(self, contents, _):
         return contents
-        
+
     def _get_full_config_name(self, name):
         return Shell.joinpths(self.cfgdir, name)
-    
+
     def _get_source_config_name(self, name):
         return Shell.joinpths(Util.STACK_CONFIG_DIR, self.component_name, name)
 
@@ -237,7 +237,7 @@ class PythonInstallComponent(PkgInstallComponent):
                 combined_output = "===STDOUT===" + os.linesep
                 combined_output += sysout + os.linesep
                 combined_output += "===STDERR===" + os.linesep
-                combined_output += stderr  + os.linesep
+                combined_output += stderr + os.linesep
                 Shell.write_file(recordwhere, combined_output)
                 self.tracewriter.py_install(name, recordwhere, working_dir)
 
@@ -305,7 +305,7 @@ class PythonUninstallComponent(PkgUninstallComponent):
         self._uninstall_touched_files()
         self._uninstall_python()
         self._uninstall_dirs()
-        
+
     def _uninstall_pips(self):
         pips = self.tracereader.pips_installed()
         if(pips and len(pips)):

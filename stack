@@ -121,13 +121,16 @@ def get_config(action):
 
 
 def print_cfgs(cfg, action):
+
     #this will make the items nice and pretty
     def item_format(k, v):
         return "\t%s=%s" % (str(k), str(v))
+
     def map_print(mp):
         for key in sorted(mp.keys()):
             value = mp.get(key)
             LOG.info(item_format(key, value))
+
     #now make it pretty
     passwords_gotten = cfg.pws
     full_cfgs = cfg.configs_fetched

@@ -92,7 +92,6 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
             self.configs_fetched[key] = v
         return v
 
-
     def _get_special(self, section, option):
         key = self._makekey(section, option)
         v = ConfigParser.RawConfigParser.get(self, section, option)

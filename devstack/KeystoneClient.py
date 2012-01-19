@@ -19,7 +19,7 @@ import Util
 
 #TODO fix these
 from Component import (PythonUninstallComponent,
-                        PythonInstallComponent, 
+                        PythonInstallComponent,
                         NullRuntime)
 
 

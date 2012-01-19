@@ -56,7 +56,7 @@ class AptPackager(Packager.Packager):
         return cmd
 
     def _execute_apt(self, cmd, run_as_root, check_exit=True):
-        execute(*cmd, run_as_root=run_as_root, 
+        execute(*cmd, run_as_root=run_as_root,
             check_exit_code=check_exit,
             env_overrides=ENV_ADDITIONS)
 

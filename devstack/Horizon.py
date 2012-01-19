@@ -19,9 +19,9 @@ import Util
 import Shell
 
 #TODO fix these
-from Component import (PythonUninstallComponent,    
+from Component import (PythonUninstallComponent,
                        PythonInstallComponent,
-                       RuntimeComponent, ComponentBase, NullRuntime)
+                       NullRuntime)
 
 LOG = Logger.getLogger("install.horizon")
 TYPE = Util.HORIZON

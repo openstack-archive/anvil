@@ -26,6 +26,7 @@ import Logger
 LOG = Logger.getLogger("install.downloader")
 EXT_REG = re.compile(r"^(.*?)\.git\s*$", re.IGNORECASE)
 
+
 def _gitdownload(storewhere, uri, branch=None):
     dirsmade = mkdirslist(storewhere)
     LOG.info("Downloading from %s to %s" % (uri, storewhere))
