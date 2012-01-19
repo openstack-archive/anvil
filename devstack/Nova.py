@@ -19,18 +19,58 @@ import Logger
 #TODO fix these
 from Component import (ComponentBase, RuntimeComponent,
                        UninstallComponent, InstallComponent)
+import os
 
 LOG = Logger.getLogger("install.nova")
+API_CONF = "nova.conf"
+CONFIGS = [API_CONF]
+DB_NAME = "nova"
+#
+
+from Util import (NOVA)
+from NovaConf import (NovaConf)
+
+TYPE = NOVA
+
+#what to start
+# Does this start nova-compute, nova-volume, nova-network, nova-scheduler
+# and optionally nova-wsproxy?
+#APP_OPTIONS = {
+#    'glance-api': ['--config-file', joinpths('%ROOT%', "etc", API_CONF)],
+#    'glance-registry': ['--config-file', joinpths('%ROOT%', "etc", REG_CONF)]
+#}
 
 
 class NovaUninstaller(UninstallComponent):
     def __init__(self, *args, **kargs):
-        pass
+        PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        #self.cfgdir = joinpths(self.appdir, CONFIG_ACTUAL_DIR)
 
 
 class NovaInstaller(InstallComponent):
     def __init__(self, *args, **kargs):
-        pass
+        PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+        self.gitloc = self.cfg.get("git", "nova_repo")
+        self.brch = self.cfg.get("git", "nova_branch")
+        #self.cfgdir = joinpths(self.appdir, CONFIG_ACTUAL_DIR)
+
+    def _get_download_location(self):
+        #where we get nova from
+        return (self.gitloc, self.brch)
+
+    def _get_config_files(self):
+        #these are the config files we will be adjusting
+        return list(CONFIGS)
+
+    def _config_adjust(self, contents, fn):
+        nc = NovaConf(self)
+        lines = nc.generate()
+        return os.linesep.join(lines)
+
+    def _get_param_map(self, fn=None):
+        # Not used. NovaConf will be used to generate the config file
+        mp = dict()
+        return mp
 
 
 class NovaRuntime(RuntimeComponent):
