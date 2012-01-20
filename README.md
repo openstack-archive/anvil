@@ -7,7 +7,7 @@ Devstack v2 is a set of python scripts and utilities to quickly deploy an OpenSt
 * To make it easier for developers to dive into OpenStack so that they can productively contribute without having to understand every part of the system at once
 * To make it easy to prototype cross-project features
 
-Read more at <http://devstack.org> (TBD)
+Read more at <http://devstack.org> (TBD) or <https://github.com/yahoo/Openstack-Devstack2/wiki>
 
 IMPORTANT: Be sure to carefully read *stack* and any other scripts you execute before you run them, as they install software and may alter your networking configuration.  We strongly recommend that you run stack in a clean and disposable vm when you are first getting started.
 
@@ -47,13 +47,14 @@ This will typically produce:
 * git
     * In ubuntu oneiric *apt-get install git*
 * easy_install termcolor (used for colored console logging)
-    * This may require in ubuntu oneiric *apt-get install python-pip*
+    * In ubuntu oneiric *apt-get install python-pip*
 * easy_install netifaces (used to determine host ip information)
-    * This may require in ubuntu oneiric *apt-get install python-pip* and *apt-get install python-dev*
+    * In ubuntu oneiric *apt-get install python-pip* and *apt-get install python-dev*
  
 # Actions
 
-You will note that *stack* can uninstall, install, start and stop openstack components. Typically the interaction would be that you install a set of components and then start them. 
+You will note that *stack* can uninstall, install, start and stop openstack components. 
+Typically the interaction would be that you install a set of components and then start them. 
 
 # Config
 
@@ -73,4 +74,4 @@ When the script finishes executing, you should be able to access OpenStack endpo
 
 # Customizing
 
-You can override environment variables used in *stack* by editing *stack.ini* or by sourcing a file that contains your overrides before your run *stack*.
+You can override environment variables used in *stack* by editing *stack.ini* or by sourcing a file that contains your environment overrides before your run *stack*.

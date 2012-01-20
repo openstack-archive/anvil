@@ -70,7 +70,7 @@ def print_cfgs(cfg, action):
             LOG.info("Passwords:")
             map_print(passwords_gotten)
         if(len(full_cfgs)):
-            #TOD
+            #TODO
             #better way to do this?? (ie a list difference?)
             filtered_mp = dict()
             for key in full_cfgs.keys():
@@ -108,17 +108,17 @@ def run_components(action_name, component_order, components_info, distro, root_d
     force = program_args.get('force', False)
     for c in component_order:
         klass = actions.get_action_cls(action_name, c)
-        component_info = components_info.get(c) or list()
+        component_opts = components_info.get(c, list())
         instance = klass(components=set(component_order), distro=distro,
                             pkg=pkg_manager, cfg=config, root=root_dir,
-                            component_info=component_info)
+                            component_opts=component_opts)
         if(action_name == constants.INSTALL):
             LOG.info("Downloading %s." % (c))
             am_downloaded = instance.download()
-            LOG.info("Performed %s downloads." % (str(am_downloaded)))
+            LOG.info("Performed %s downloads." % (am_downloaded))
             LOG.info("Configuring %s." % (c))
             am_configured = instance.configure()
-            LOG.info("Configured %s files." % (str(am_configured)))
+            LOG.info("Configured %s files." % (am_configured))
             LOG.info("Pre-installing %s." % (c))
             instance.pre_install()
             LOG.info("Installing %s." % (c))
@@ -133,8 +133,8 @@ def run_components(action_name, component_order, components_info, distro, root_d
         elif(action_name == constants.STOP):
             try:
                 LOG.info("Stopping %s." % (c))
-                stop_am = instance.stop()
-                LOG.info("Stopped %s applications." % (str(stop_am)))
+                stop_amount = instance.stop()
+                LOG.info("Stopped %s applications." % (stop_amount))
                 LOG.info("Finished stop of %s" % (c))
             except NoTraceException, e:
                 if(force):
@@ -148,7 +148,7 @@ def run_components(action_name, component_order, components_info, distro, root_d
                 LOG.info("Check [%s] for traces of what happened." % (", ".join(start_info)))
                 results = results + start_info
             elif(type(start_info) == int):
-                LOG.info("Started %s applications." % (str(start_info)))
+                LOG.info("Started %s applications." % (start_info))
             LOG.info("Finished start of %s." % (c))
         elif(action_name == constants.UNINSTALL):
             try:
@@ -181,7 +181,7 @@ def check_root(action, rootdir):
     return True
 
 
-def parse_action(action):
+def clean_action(action):
     if(action == None):
         return None
     action = action.strip().lower()
@@ -200,10 +200,9 @@ def parse_components(components, assume_all=False):
     for c in components:
         mtch = EXT_COMPONENT.match(c)
         if(mtch):
-            component_name = mtch.group(1)
-            component_name = component_name.lower().strip()
+            component_name = mtch.group(1).lower().strip()
             if(component_name not in constants.COMPONENT_NAMES):
-                LOG.warn("Unknown component named %s" % (c))
+                LOG.warn("Unknown component named %s" % (component_name))
             else:
                 component_opts = mtch.group(2)
                 components_opts_cleaned = list()
@@ -219,11 +218,10 @@ def parse_components(components, assume_all=False):
         else:
             LOG.warn("Unparseable component %s" % (c))
     #should we adjust them to be all the components?
-    if(len(adjusted_components) == 0):
+    if(len(adjusted_components) == 0 and assume_all):
         all_components = dict()
-        if(assume_all):
-            for c in constants.COMPONENT_NAMES:
-                all_components[c] = list()
+        for c in COMPONENT_NAMES:
+            all_components[c] = list()
         adjusted_components = all_components
     return adjusted_components
 
@@ -274,9 +272,8 @@ def run_action(prog, args):
         LOG.error("No components specified!")
         LOG.info("Perhaps you should try %s --help" % (prog))
         return False
-    #extract + normalize the action
-    ignore_deps = args.pop('ignore_deps')
-    action = parse_action(args.pop("action"))
+    #extract + clean the action
+    action = clean_action(args.pop("action"))
     if(not action):
         LOG.error("No valid action specified!")
         LOG.info("Perhaps you should try %s --help" % (prog))
@@ -294,6 +291,7 @@ def run_action(prog, args):
     #start it
     utils.welcome(action)
     #need to figure out dependencies for components (if any)
+    ignore_deps = args.pop('ignore_deps', False)
     if(not ignore_deps):
         new_components = utils.resolve_dependencies(components.keys())
         component_diff = new_components.difference(components.keys())

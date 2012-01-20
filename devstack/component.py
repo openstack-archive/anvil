@@ -97,7 +97,7 @@ class ComponentBase():
         (self.componentroot, self.tracedir,
             self.appdir, self.cfgdir) = utils.component_paths(self.root, component_name)
         self.component_name = component_name
-        self.component_info = kargs.get('component_info')
+        self.component_opts = kargs.get('component_opts')
 
 
 class PkgInstallComponent(ComponentBase, InstallComponent):
@@ -170,9 +170,7 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
     def _get_source_config_name(self, name):
         return sh.joinpths(c.STACK_CONFIG_DIR, self.component_name, name)
 
-    def configure(self):
-        dirsmade = sh.mkdirslist(self.cfgdir)
-        self.tracewriter.dir_made(*dirsmade)
+    def _configure_files(self):
         configs = self._get_config_files()
         if(len(configs)):
             LOG.info("Configuring %s files" % (len(configs)))
@@ -182,8 +180,7 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
                 sourcefn = self._get_source_config_name(fn)
                 tgtfn = self._get_target_config_name(fn)
                 #ensure directory is there (if not created previously)
-                dirsmade = sh.mkdirslist(sh.dirname(tgtfn))
-                self.tracewriter.dir_made(*dirsmade)
+                self.tracewriter.make_dir(os.path.dirname(tgtfn))
                 #now configure it
                 LOG.info("Configuring template file %s" % (sourcefn))
                 contents = sh.load_file(sourcefn)
@@ -197,6 +194,11 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
                 sh.write_file(tgtfn, contents)
                 self.tracewriter.cfg_write(tgtfn)
         return len(configs)
+
+    def configure(self):
+        self.tracewriter.make_dir(self.cfgdir)
+        files_configured = self._configure_files()
+        return files_configured
 
 
 class PythonInstallComponent(PkgInstallComponent):
@@ -239,8 +241,7 @@ class PythonInstallComponent(PkgInstallComponent):
         pydirs = self._get_python_directories()
         if(len(pydirs)):
             LOG.info("Setting up %s python directories" % (len(pydirs)))
-            dirsmade = sh.mkdirslist(self.tracedir)
-            self.tracewriter.dir_made(*dirsmade)
+            self.tracewriter.make_dir(self.tracedir)
             for pydir_info in pydirs:
                 name = pydir_info.get("name")
                 if(not name):

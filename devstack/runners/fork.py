@@ -27,13 +27,12 @@ from devstack import shell as sh
 from devstack import trace as tr
 from devstack import utils
 
-
 # Maximum for the number of available file descriptors (when not found)
 MAXFD = 2048
 MAX_KILL_TRY = 5
 SLEEP_TIME = 1
 
-LOG = logging.getLogger("devstack.runners.foreground")
+LOG = logging.getLogger("devstack.runners.fork")
 
 #trace constants
 RUN = runner.RUN_TYPE
@@ -52,9 +51,11 @@ class ForkRunner(runner.Runner):
     def _stop_pid(self, pid):
         killed = False
         lastmsg = ""
+        attempts = 0
         for attempt in range(0, MAX_KILL_TRY):
             try:
                 LOG.info("Attempting to kill pid %s" % (pid))
+                attempts += 1
                 os.kill(pid, signal.SIGKILL)
                 LOG.info("Sleeping for %s seconds before next attempt to kill pid %s" % (SLEEP_TIME, pid))
                 time.sleep(SLEEP_TIME)
@@ -63,36 +64,38 @@ class ForkRunner(runner.Runner):
                     killed = True
                     break
                 else:
-                    lastmsg = "[Errno: %s] %s" % (ec, msg)
                     LOG.info("Sleeping for %s seconds before next attempt to kill pid %s" % (SLEEP_TIME, pid))
                     time.sleep(SLEEP_TIME)
-        return killed
+        return (killed, attempts)
 
     def stop(self, name, *args, **kargs):
-        tracedir = kargs.get("trace_dir")
+        trace_dir = kargs.get("trace_dir")
+        if(not trace_dir or not isdir(trace_dir)):
+            msg = "No trace directory found from which to stop %s" % (name)
+            raise excp.StopException(msg)
         fn_name = FORK_TEMPL % (name)
-        (pidfile, stderr, stdout) = self._form_file_names(tracedir, fn_name)
-        tfname = tr.trace_fn(tracedir, fn_name)
-        if(isfile(pidfile) and isfile(tfname)):
-            pid = int(load_file(pidfile).strip())
-            killed = self._stop_pid(pid)
+        (pid_file, stderr_fn, stdout_fn) = self._form_file_names(trace_dir, fn_name)
+        trace_fn = tr.trace_fn(trace_dir, fn_name)
+        if(isfile(pid_file) and isfile(trace_fn)):
+            pid = int(load_file(pid_file).strip())
+            (killed, attempts) = self._stop_pid(pid)
             #trash the files
             if(killed):
-                LOG.info("Killed pid %s" % (pid))
-                LOG.info("Removing pid file %s" % (pidfile))
-                unlink(pidfile)
-                LOG.info("Removing stderr file %s" % (stderr))
-                unlink(stderr)
-                LOG.info("Removing stdout file %s" % (stdout))
-                unlink(stdout)
-                LOG.info("Removing %s trace file %s" % (name, tfname))
-                unlink(tfname)
+                LOG.info("Killed pid %s after %s attempts" % (pid, attempts))
+                LOG.info("Removing pid file %s" % (pid_file))
+                unlink(pid_file)
+                LOG.info("Removing stderr file %s" % (stderr_fn))
+                unlink(stderr_fn)
+                LOG.info("Removing stdout file %s" % (stdout_fn))
+                unlink(stdout_fn)
+                LOG.info("Removing %s trace file %s" % (name, trace_fn))
+                unlink(trace_fn)
             else:
-                msg = "Could not stop program named %s after %s attempts" % (name, MAX_KILL_TRY)
-                raise StopException(msg)
+                msg = "Could not stop %s after %s attempts" % (name, attempts)
+                raise excp.StopException(msg)
         else:
-            msg = "No pid or trace file could be found to terminate at %s" % (tracedir)
-            raise StopException(msg)
+            msg = "No pid or trace file could be found to stop %s in directory %s" % (name, trace_dir)
+            raise excp.StopException(msg)
 
     def _form_file_names(self, tracedir, file_name):
         pidfile = joinpths(tracedir, file_name + ".pid")
