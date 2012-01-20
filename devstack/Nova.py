@@ -16,9 +16,11 @@
 
 import Logger
 
-#TODO fix these
-from Component import (ComponentBase, RuntimeComponent,
-                       UninstallComponent, InstallComponent)
+from Component import (PythonUninstallComponent,
+                       PythonInstallComponent,
+                       PythonRuntime)
+
+import Shell
 import os
 
 LOG = Logger.getLogger("install.nova")
@@ -41,38 +43,49 @@ TYPE = NOVA
 #}
 
 
-class NovaUninstaller(UninstallComponent):
+class NovaUninstaller(PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
         #self.cfgdir = joinpths(self.appdir, CONFIG_ACTUAL_DIR)
 
 
-class NovaInstaller(InstallComponent):
+class NovaInstaller(PythonInstallComponent):
     def __init__(self, *args, **kargs):
         PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.gitloc = self.cfg.get("git", "nova_repo")
         self.brch = self.cfg.get("git", "nova_branch")
+        # TBD is this the install location of the conf file?
         #self.cfgdir = joinpths(self.appdir, CONFIG_ACTUAL_DIR)
 
     def _get_download_location(self):
-        #where we get nova from
-        return (self.gitloc, self.brch)
+        places = PythonInstallComponent._get_download_locations(self)
+        places.append({
+            'uri': self.gitloc,
+            'branch': self.brch,
+        })
+        return places
 
-    def _get_config_files(self):
-        #these are the config files we will be adjusting
-        return list(CONFIGS)
+    def configure(self):
+        # FIXME, is this necessary? Is it for the template source?
+        dirsmade = Shell.mkdirslist(self.cfgdir)
+        self.tracewriter.dir_made(*dirsmade)
+        nconf = NovaConf(self)
+        LOG.info("Getting dynamic content for nova.conf")
+        # Get dynamic content for nova.conf
+        lines = nconf.generate()
+        LOG.debug("Got conf lines, %s" % (lines))
+        # Set up and write lines to the file
+        fn = API_CONF
+        tgtfn = self._get_full_config_name(fn)
+        dirsmade = Shell.mkdirslist(os.path.dirname(tgtfn))
+        self.tracewriter.dir_made(*dirsmade)
+        LOG.info("Writing configuration file %s" % (tgtfn))
+        #this trace is used to remove the files configured
+        Shell.write_file(tgtfn, os.linesep.join(lines))
+        self.tracewriter.cfg_write(tgtfn)
+        return 1
 
-    def _config_adjust(self, contents, fn):
-        nc = NovaConf(self)
-        lines = nc.generate()
-        return os.linesep.join(lines)
 
-    def _get_param_map(self, config_fn):
-        # Not used. NovaConf will be used to generate the config file
-        mp = dict()
-        return mp
-
-
-class NovaRuntime(RuntimeComponent):
+class NovaRuntime(PythonRuntime):
     def __init__(self, *args, **kargs):
-        pass
+        PythonRuntime.__init__(self, TYPE, *args, **kargs)
