@@ -104,10 +104,8 @@ class KeystoneInstaller(PythonInstallComponent):
                 log_dir = os.path.dirname(log_filename)
                 if(log_dir):
                     LOG.info("Ensuring log directory %s exists" % (log_dir))
-                    dirsmade = mkdirslist(log_dir)
-                    #this trace is used to remove the dirs created
-                    self.tracewriter.dir_made(*dirsmade)
-                #destroy then recreate it (the log file)
+                    self.tracewriter.make_dir(log_dir)
+                #destroy then recreate the log file
                 unlink(log_filename)
                 touch_file(log_filename)
                 self.tracewriter.file_touched(log_filename)

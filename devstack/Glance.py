@@ -116,28 +116,22 @@ class GlanceInstaller(PythonInstallComponent):
                     LOG.info("Ensuring image cache data directory %s exists (and is empty)" % (cache_dir))
                     #destroy then recreate the image cache directory
                     deldir(cache_dir)
-                    dirsmade = mkdirslist(cache_dir)
-                    #this trace is used to remove the dirs created
-                    self.tracewriter.dir_made(*dirsmade)
+                    self.tracewriter.make_dir(cache_dir)
             if(config.get('default_store', CFG_SECTION) == 'file'):
                 file_dir = config.get('filesystem_store_datadir', CFG_SECTION)
                 if(file_dir):
                     LOG.info("Ensuring file system store directory %s exists and is empty" % (file_dir))
                     #delete existing images
+                    #and recreate the image directory
                     deldir(file_dir)
-                    #recreate the image directory
-                    dirsmade = mkdirslist(file_dir)
-                    #this trace is used to remove the dirs created
-                    self.tracewriter.dir_made(*dirsmade)
+                    self.tracewriter.make_dir(file_dir)
             log_filename = config.get('log_file', CFG_SECTION)
             if(log_filename):
                 LOG.info("Ensuring log file %s exists and is empty" % (log_filename))
                 log_dir = os.path.dirname(log_filename)
                 if(log_dir):
                     LOG.info("Ensuring log directory %s exists" % (log_dir))
-                    dirsmade = mkdirslist(log_dir)
-                    #this trace is used to remove the dirs created
-                    self.tracewriter.dir_made(*dirsmade)
+                    self.tracewriter.make_dir(log_dir)
                 #destroy then recreate it (the log file)
                 unlink(log_filename)
                 touch_file(log_filename)
@@ -148,9 +142,7 @@ class GlanceInstaller(PythonInstallComponent):
                     LOG.info("Ensuring scrubber data dir %s exists and is empty" % (data_dir))
                     #destroy then recreate the scrubber data directory
                     deldir(data_dir)
-                    dirsmade = mkdirslist(data_dir)
-                    #this trace is used to remove the dirs created
-                    self.tracewriter.dir_made(*dirsmade)
+                    self.tracewriter.make_dir(data_dir)
             #we might need to handle more in the future...
         #nothing modified so just return the original
         return contents

@@ -171,9 +171,7 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
     def _get_source_config_name(self, name):
         return Shell.joinpths(Util.STACK_CONFIG_DIR, self.component_name, name)
 
-    def configure(self):
-        dirsmade = Shell.mkdirslist(self.cfgdir)
-        self.tracewriter.dir_made(*dirsmade)
+    def _configure_files(self):
         configs = self._get_config_files()
         if(len(configs)):
             LOG.info("Configuring %s files" % (len(configs)))
@@ -183,8 +181,7 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
                 sourcefn = self._get_source_config_name(fn)
                 tgtfn = self._get_target_config_name(fn)
                 #ensure directory is there (if not created previously)
-                dirsmade = Shell.mkdirslist(os.path.dirname(tgtfn))
-                self.tracewriter.dir_made(*dirsmade)
+                self.tracewriter.make_dir(os.path.dirname(tgtfn))
                 #now configure it
                 LOG.info("Configuring template file %s" % (sourcefn))
                 contents = Shell.load_file(sourcefn)
@@ -198,6 +195,11 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
                 Shell.write_file(tgtfn, contents)
                 self.tracewriter.cfg_write(tgtfn)
         return len(configs)
+
+    def configure(self):
+        self.tracewriter.make_dir(self.cfgdir)
+        files_configured = self._configure_files()
+        return files_configured
 
 
 class PythonInstallComponent(PkgInstallComponent):
@@ -240,8 +242,7 @@ class PythonInstallComponent(PkgInstallComponent):
         pydirs = self._get_python_directories()
         if(len(pydirs)):
             LOG.info("Setting up %s python directories" % (len(pydirs)))
-            dirsmade = Shell.mkdirslist(self.tracedir)
-            self.tracewriter.dir_made(*dirsmade)
+            self.tracewriter.make_dir(self.tracedir)
             for pydir_info in pydirs:
                 name = pydir_info.get("name")
                 if(not name):

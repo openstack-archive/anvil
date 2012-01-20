@@ -106,6 +106,12 @@ class TraceWriter():
         what['pip_meta'] = pip_info
         self.tracer.trace(PIP_INSTALL, json.dumps(what))
 
+    def make_dir(self, path):
+        self._start()
+        dirs = mkdirslist(path)
+        self.dir_made(*dirs)
+        return path
+
     def dir_made(self, *dirs):
         self._start()
         for d in dirs:
