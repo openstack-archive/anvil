@@ -54,6 +54,7 @@ class NovaClientInstaller(PythonInstallComponent):
         mp['OPENSTACK_HOST'] = Util.get_host_ip(self.cfg)
         return mp
 
+
 class NovaClientRuntime(NullRuntime):
     def __init__(self, *args, **kargs):
         NullRuntime.__init__(self, TYPE, *args, **kargs)

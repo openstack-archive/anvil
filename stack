@@ -27,7 +27,7 @@ import Options
 #TODO fix these
 from Util import (welcome, rcf8222date, determine_os,
                     prioritize_components, resolve_dependencies)
-from Util import (NOVA, GLANCE, QUANTUM, SWIFT, KEYSTONE, 
+from Util import (NOVA, GLANCE, QUANTUM, SWIFT, KEYSTONE,
                     HORIZON, DB, RABBIT, KEYSTONE_CLIENT,
                     NOVA_CLIENT, OPENSTACK_X)
 from Util import(INSTALL, UNINSTALL, START, STOP,
@@ -183,7 +183,7 @@ def runner(action_name, component_order, components_info, distro, root_dir, prog
     for c in component_order:
         component_info = components_info.get(c) or list()
         klass = class_lookup.get(c)
-        instance = klass(components=set(component_order), distro=distro, 
+        instance = klass(components=set(component_order), distro=distro,
                             pkg=pkg_manager, cfg=config, root=root_dir,
                             component_info=component_info)
         if(action_name == INSTALL):
@@ -263,6 +263,7 @@ def check_root(action, rootdir):
     else:
         return True
 
+
 def parse_action(action):
     if(action == None):
         return None
@@ -270,6 +271,7 @@ def parse_action(action):
     if(not (action in ACTIONS)):
         return None
     return action
+
 
 def parse_components(components, assume_all=False):
     #none provided
@@ -333,7 +335,7 @@ def run_list_only(prog, args):
                 cname += "s"
             cname += ":"
         if(len(deps) == 0):
-           cname = "no components."
+            cname = "no components."
         LOG.info("%s depends on %s" % (c, cname))
         if(len(deps)):
             for d in deps:
