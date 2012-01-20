@@ -20,7 +20,9 @@ In order to determine what *stack* can do run the following.
 This will typically produce:
 
     ./stack --help
+    
     Usage: stack [options]
+    
     Options:
       --version             show program's version number and exit
       -h, --help            show this help message and exit
@@ -36,7 +38,9 @@ This will typically produce:
                             quantum, rabbit, swift)
       -f, --force           force ACTION even if no trace found (ACTION dependent)
       -i, --ignoredeps      ignore dependencies when performing ACTION
-      -l, --listdeps        just show dependencies of COMPONENT
+      -e, --ensuredeps      ensure dependencies occur when performing ACTION
+      -s, --listdeps        show dependencies of COMPONENT
+
 
 # Stack prerequisites
 
