@@ -88,7 +88,7 @@ class ForegroundRunner(Runner.Runner):
             if(killed):
                 LOG.info("Killed pid %s after %s attempts" % (pid, attempts))
                 LOG.info("Removing pid file %s" % (pid_file))
-                unlink(pidfile)
+                unlink(pid_file)
                 LOG.info("Removing stderr file %s" % (stderr_fn))
                 unlink(stderr_fn)
                 LOG.info("Removing stdout file %s" % (stdout_fn))
