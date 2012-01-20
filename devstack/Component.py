@@ -165,7 +165,7 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
     def _config_adjust(self, contents, config_fn):
         return contents
 
-    def _get_full_config_name(self, name):
+    def _get_target_config_name(self, name):
         return Shell.joinpths(self.cfgdir, name)
 
     def _get_source_config_name(self, name):
@@ -180,7 +180,7 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
             #get the params and where it should come from and where it should go
             parameters = self._get_param_map(fn)
             sourcefn = self._get_source_config_name(fn)
-            tgtfn = self._get_full_config_name(fn)
+            tgtfn = self._get_target_config_name(fn)
             #ensure directory is there (if not created previously)
             dirsmade = Shell.mkdirslist(os.path.dirname(tgtfn))
             self.tracewriter.dir_made(*dirsmade)

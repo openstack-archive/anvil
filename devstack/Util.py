@@ -216,11 +216,18 @@ PKG_MAP = {
 LOG = Logger.getLogger("install.util")
 
 
+def get_dependencies(component):
+    deps = COMPONENT_DEPENDENCIES.get(component)
+    if(deps == None):
+        return list()
+    return list(deps)
+
+
 def resolve_dependencies(action, components):
     if(action in DEP_ACTIONS_NEEDED):
         new_components = list()
         for c in components:
-            component_deps = list(set(fetch_deps(c)))
+            component_deps = list(set(fetch_dependencies(c)))
             if(len(component_deps)):
                 new_components = new_components + component_deps
             new_components.append(c)
@@ -258,15 +265,15 @@ def execute_template(*cmds, **kargs):
         Shell.execute(*cmd_to_run, run_as_root=root_run, process_input=stdin, **kargs)
 
 
-def fetch_deps(component, add=False):
+def fetch_dependencies(component, add=False):
     if(add):
         deps = list([component])
     else:
         deps = list()
-    cdeps = COMPONENT_DEPENDENCIES.get(component)
+    cdeps = get_dependencies(component)
     if(cdeps and len(cdeps)):
         for d in cdeps:
-            deps = deps + fetch_deps(d, True)
+            deps = deps + fetch_dependencies(d, True)
     return deps
 
 

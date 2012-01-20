@@ -26,12 +26,13 @@ import Options
 
 #TODO fix these
 from Util import (welcome, rcf8222date, determine_os,
-                    prioritize_components, resolve_dependencies)
+                    prioritize_components, resolve_dependencies,
+                    get_dependencies)
 from Util import (NOVA, GLANCE, QUANTUM, SWIFT, KEYSTONE,
                     HORIZON, DB, RABBIT, KEYSTONE_CLIENT,
                     NOVA_CLIENT, OPENSTACK_X)
 from Util import(INSTALL, UNINSTALL, START, STOP,
-                  ACTIONS, COMPONENT_NAMES, NAMES_PRIORITY, COMPONENT_DEPENDENCIES,
+                  ACTIONS, COMPONENT_NAMES, NAMES_PRIORITY,
                   UBUNTU11, RHEL6,
                   STACK_CFG_LOC, DEVSTACK)
 from Shell import (mkdir, joinpths, unlink)
@@ -247,6 +248,8 @@ def runner(action_name, component_order, components_info, distro, root_dir, prog
 
 
 def check_root(action, rootdir):
+    if(rootdir == None or len(rootdir) == 0):
+        return False
     if(action == INSTALL):
         root_there = False
         if(os.path.isdir(rootdir)):
@@ -327,7 +330,7 @@ def run_list_only(prog, args):
     left_show = list(components)
     while(len(left_show) != 0):
         c = left_show.pop()
-        deps = COMPONENT_DEPENDENCIES.get(c) or []
+        deps = get_dependencies(c)
         cname = ""
         if(len(deps) >= 1):
             cname = "component"
@@ -360,8 +363,8 @@ def run_action(prog, args):
         LOG.error("No valid action specified!")
         LOG.info("Perhaps you should try %s --help" % (prog))
         return False
-    rootdir = args.pop("dir") or ""
-    if(len(rootdir) == 0 or not check_root(action, rootdir)):
+    rootdir = args.pop("dir")
+    if(not check_root(action, rootdir)):
         LOG.error("No valid root directory specified!")
         LOG.info("Perhaps you should try %s --help" % (prog))
         return False

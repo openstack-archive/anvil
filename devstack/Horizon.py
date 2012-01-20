@@ -32,6 +32,7 @@ ROOT_DASH = 'openstack-dashboard'
 DASH_NAME = 'dashboard'
 
 HORIZON_PY_CONF = "horizon_settings.py"
+HORIZON_PY_CONF_TGT = ['local', 'local_settings.py']
 CONFIGS = [HORIZON_PY_CONF]
 
 
@@ -55,6 +56,12 @@ class HorizonInstaller(PythonInstallComponent):
             'branch': self.git_branch,
         })
         return places
+
+    def _get_target_config_name(self, config_name):
+        if(config_name == HORIZON_PY_CONF):
+            return Shell.joinpths(self.dash_dir, *HORIZON_PY_CONF_TGT)
+        else:
+            return PythonInstallComponent._get_target_config_name(self, config_name)
 
     def _get_python_directories(self):
         py_dirs = list()
