@@ -206,7 +206,7 @@ class PythonInstallComponent(PkgInstallComponent):
     def _get_python_directories(self):
         py_dirs = list()
         py_dirs.append({
-                'name': 'base',
+                'name': self.component_name,
                 'work_dir': self.appdir,
         })
         return py_dirs
@@ -220,6 +220,20 @@ class PythonInstallComponent(PkgInstallComponent):
             for name in pips.keys():
                 self.tracewriter.pip_install(name, pips.get(name))
 
+    def _format_stderr_out(self, stderr, stdout):
+        if(stdout == None):
+            stdout = ''
+        if(stderr == None):
+            stderr = ''
+        combined_output = "===STDOUT===" + os.linesep
+        combined_output += stdout + os.linesep
+        combined_output += "===STDERR===" + os.linesep
+        combined_output += stderr + os.linesep
+        return combined_output
+
+    def _format_trace_name(self, name):
+        return "%s-%s" % (Trace.PY_TRACE, name)
+
     def _install_python_setups(self):
         pydirs = self._get_python_directories()
         if(len(pydirs)):
@@ -229,16 +243,11 @@ class PythonInstallComponent(PkgInstallComponent):
             for pydir_info in pydirs:
                 name = pydir_info.get("name")
                 working_dir = pydir_info.get('work_dir', self.appdir)
-                py_trace_name = "%s-%s" % (Trace.PY_TRACE, name)
-                recordwhere = Trace.touch_trace(self.tracedir, py_trace_name)
-                self.tracewriter.file_touched(recordwhere)
-                (sysout, stderr) = Shell.execute(*PY_INSTALL, cwd=working_dir, run_as_root=True)
-                combined_output = "===STDOUT===" + os.linesep
-                combined_output += sysout + os.linesep
-                combined_output += "===STDERR===" + os.linesep
-                combined_output += stderr + os.linesep
-                Shell.write_file(recordwhere, combined_output)
-                self.tracewriter.py_install(name, recordwhere, working_dir)
+                record_fn = Trace.touch_trace(self.tracedir, self._format_trace_name(name))
+                self.tracewriter.file_touched(record_fn)
+                (stdout, stderr) = Shell.execute(*PY_INSTALL, cwd=working_dir, run_as_root=True)
+                Shell.write_file(record_fn, self._format_stderr_out(stderr, stdout))
+                self.tracewriter.py_install(name, record_fn, working_dir)
 
     def _python_install(self):
         self._install_pips()
