@@ -97,7 +97,7 @@ class ComponentBase():
         (self.componentroot, self.tracedir,
             self.appdir, self.cfgdir) = utils.component_paths(self.root, component_name)
         self.component_name = component_name
-        self.component_opts = kargs.get('component_opts')
+        self.component_opts = kargs.get('component_opts', [])
 
 
 class PkgInstallComponent(ComponentBase, InstallComponent):

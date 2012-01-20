@@ -36,7 +36,7 @@ LOG = logging.getLogger("devstack.components.horizon")
 
 class HorizonUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
 
 
 class HorizonInstaller(comp.PythonInstallComponent):
