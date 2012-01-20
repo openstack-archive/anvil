@@ -26,9 +26,11 @@ import Options
 #TODO fix these
 from Util import (welcome, rcf8222date, determine_os,
                     prioritize_components, resolve_dependencies)
-from Util import (NOVA, GLANCE, QUANTUM, SWIFT, KEYSTONE, HORIZON, DB, RABBIT, KEYSTONE_CLIENT,
-                  INSTALL, UNINSTALL, START, STOP,
-                  ACTIONS, COMPONENT_NAMES, NAMES_PRIORITY,
+from Util import (NOVA, GLANCE, QUANTUM, SWIFT, KEYSTONE, 
+                    HORIZON, DB, RABBIT, KEYSTONE_CLIENT,
+                    NOVA_CLIENT, OPENSTACK_X)
+from Util import(INSTALL, UNINSTALL, START, STOP,
+                  ACTIONS, COMPONENT_NAMES, NAMES_PRIORITY, COMPONENT_DEPENDENCIES,
                   UBUNTU11, RHEL6,
                   STACK_CFG_LOC, DEVSTACK)
 from Shell import (mkdir, joinpths, unlink)
@@ -45,6 +47,8 @@ import Db
 import Rabbit
 import Config
 import KeystoneClient
+import NovaClient
+import OpenstackX
 
 LOG = Logger.getLogger("install")
 
@@ -60,6 +64,8 @@ ACTION_CLASSES = {
         DB: Db.DBInstaller,
         RABBIT: Rabbit.RabbitInstaller,
         KEYSTONE_CLIENT: KeystoneClient.KeyStoneClientInstaller,
+        NOVA_CLIENT: NovaClient.NovaClientInstaller,
+        OPENSTACK_X: OpenstackX.OpenstackXInstaller,
     },
     UNINSTALL: {
         NOVA: Nova.NovaUninstaller,
@@ -71,6 +77,8 @@ ACTION_CLASSES = {
         DB: Db.DBUninstaller,
         RABBIT: Rabbit.RabbitUninstaller,
         KEYSTONE_CLIENT: KeystoneClient.KeyStoneClientUninstaller,
+        NOVA_CLIENT: NovaClient.NovaClientUninstaller,
+        OPENSTACK_X: OpenstackX.OpenstackXUninstaller,
     },
     START: {
         NOVA: Nova.NovaRuntime,
@@ -82,6 +90,8 @@ ACTION_CLASSES = {
         DB: Db.DBRuntime,
         RABBIT: Rabbit.RabbitRuntime,
         KEYSTONE_CLIENT: KeystoneClient.KeyStoneClientRuntime,
+        NOVA_CLIENT: NovaClient.NovaClientRuntime,
+        OPENSTACK_X: OpenstackX.OpenstackXRuntime,
     },
     STOP: {
         NOVA: Nova.NovaRuntime,
@@ -93,6 +103,8 @@ ACTION_CLASSES = {
         DB: Db.DBRuntime,
         RABBIT: Rabbit.RabbitRuntime,
         KEYSTONE_CLIENT: KeystoneClient.KeyStoneClientRuntime,
+        NOVA_CLIENT: NovaClient.NovaClientRuntime,
+        OPENSTACK_X: OpenstackX.OpenstackXRuntime,
     },
 }
 
@@ -259,49 +271,80 @@ def check_python():
     return True
 
 
-def main():
-    if(not check_python()):
-        LOG.error("Your python version is to old, please upgrade to >= 2.6!")
-        return 1
-    me = __file__
-    args = Options.parse()
-    components = args.pop("component") or []
+def run_list_only(prog, args):
+    components = args.pop("components") or []
+    #clean the names up and see what is valid after an intersection
+    components = set([x.lower().strip() for x in components])
+    components = set(COMPONENT_NAMES).intersection(components)
     if(len(components) == 0):
-        #assume user wants them all
         components = list(COMPONENT_NAMES)
+        components = sorted(components)
+        components.reverse()
+    shown = set()
+    left_show = list(components)
+    while(len(left_show) != 0):
+        c = left_show.pop()
+        deps = COMPONENT_DEPENDENCIES.get(c) or []
+        cname = ""
+        if(len(deps) >= 1):
+            cname = "component"
+            if(cname > 1):
+                cname += "s"
+            cname += ":"
+        if(len(deps) == 0):
+           cname = "no components."
+        LOG.info("%s depends on %s" % (c, cname))
+        if(len(deps)):
+            for d in deps:
+                LOG.info("\t%s" % (d))
+        shown.add(c)
+        for d in deps:
+            if(d not in shown and d not in left_show):
+                left_show.append(d)
+    return True
+
+
+def run_action(prog, args):
+    components = args.pop("components") or []
+    if(len(components) == 0):
+        LOG.error("No components specified!")
+        LOG.info("Perhaps you should try %s --help" % (prog))
+        return False
     else:
         #clean the names up and see what is valid after an intersection
         components = set([x.lower().strip() for x in components])
         components = set(COMPONENT_NAMES).intersection(components)
     if(len(components) == 0):
         LOG.error("No valid components specified!")
-        LOG.info("Perhaps you should try %s --help" % (me))
-        return 1
+        LOG.info("Perhaps you should try %s --help" % (prog))
+        return False
+    #extract + normalize the action
+    ignore_deps = args.pop('ignore_deps', False)
     action = args.pop("action") or ""
-    #normalize the action
     action = action.strip().lower()
     if(not (action in ACTIONS)):
         LOG.error("No valid action specified!")
-        LOG.info("Perhaps you should try %s --help" % (me))
-        return 1
+        LOG.info("Perhaps you should try %s --help" % (prog))
+        return False
     rootdir = args.pop("dir") or ""
     if(len(rootdir) == 0 or not check_root(action, rootdir)):
         LOG.error("No valid root directory specified!")
-        LOG.info("Perhaps you should try %s --help" % (me))
-        return 1
+        LOG.info("Perhaps you should try %s --help" % (prog))
+        return False
     #ensure os/distro is known
     (install_os, plt) = determine_os()
     if(install_os == None):
         LOG.error("Unsupported operating system/distro: %s" % (plt))
-        return 1
+        return False
     #start it
     welcome(action)
     #need to figure out dependencies for components (if any)
-    new_components = resolve_dependencies(action, components)
-    component_diff = new_components.difference(components)
-    if(len(component_diff)):
-        LOG.info("Having to install dependent components: [%s]" % (",".join(component_diff)))
-    components = new_components
+    if(not ignore_deps):
+        new_components = resolve_dependencies(action, components)
+        component_diff = new_components.difference(components)
+        if(len(component_diff)):
+            LOG.info("Having to install dependent components: [%s]" % (", ".join(component_diff)))
+        components = new_components
     #get the right component order (by priority)
     components = prioritize_components(components)
     #now do it!
@@ -311,7 +354,27 @@ def main():
     if(resultList and len(resultList)):
         msg = "Check [%s] for traces of what happened." % (", ".join(resultList))
         LOG.info(msg)
-    return 0
+    return True
+
+
+def main():
+    if(not check_python()):
+        LOG.error("Your python version is to old, please upgrade to >= 2.6!")
+        return 1
+    #parse and get it done!
+    args = Options.parse()
+    me = os.path.basename(sys.argv[0])
+    #figure out what to do
+    only_list_deps = args.pop('list_deps', False)
+    rc_ok = False
+    if(only_list_deps):
+        rc_ok = run_list_only(me, args)
+    else:
+        rc_ok = run_action(me, args)
+    if(rc_ok):
+        return 0
+    else:
+        return 1
 
 
 if __name__ == "__main__":

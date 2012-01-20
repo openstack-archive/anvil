@@ -1,0 +1,17 @@
+# This is a extended json package definition file 
+# We allow simple comments (lines starting with a hash symbol)
+{
+    "ubuntu-oneiric": {
+        "python-prettytable": {
+            "version": "0.5-1ubuntu1",
+            "allowed": ">=",
+            "removable": true
+        },
+        "python-argparse": {
+            "version": "1.1-1ubuntu1",
+            "allowed": ">=",
+            "removable": false
+        }
+    },
+    "rhel-6": {}
+}

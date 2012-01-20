@@ -20,9 +20,11 @@ import Util
 
 def parse():
 
-    versionstr = "%prog v" + Util.VERSION_STR
-    parser = OptionParser(version=versionstr)
+    #version
+    version_str = "%prog v" + Util.VERSION_STR
+    parser = OptionParser(version=version_str)
 
+    #non-boolean options
     known_actions = sorted(Util.ACTIONS)
     actions = "(" + ", ".join(known_actions) + ")"
     parser.add_option("-a", "--action",
@@ -47,19 +49,35 @@ def parse():
         dest="component",
         help="stack component, ie %s" % (components))
 
+    #boolean options
     parser.add_option("-f", "--force",
         action="store_true",
         dest="force",
         help="force ACTION even if no trace found (ACTION dependent)",
         default=False)
 
+    parser.add_option("-i", "--ignoredeps",
+        action="store_true",
+        dest="ignore_deps",
+        help="ignore dependencies when performing ACTION",
+        default=False)
+
+    parser.add_option("-l", "--listdeps",
+        action="store_true",
+        dest="list_deps",
+        help="just show dependencies of COMPONENT",
+        default=False)
+
     (options, args) = parser.parse_args()
 
     #extract only what we care about
     output = dict()
-    output['component'] = options.component
+    output['components'] = options.component
     output['dir'] = options.dir
     output['action'] = options.action
-    output['extras'] = args
+    output['list_deps'] = options.list_deps
     output['force'] = options.force
+    output['ignore_deps'] = options.ignore_deps
+    output['extras'] = args
+
     return output

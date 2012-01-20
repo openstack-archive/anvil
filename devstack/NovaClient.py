@@ -16,37 +16,27 @@
 
 import Logger
 import Util
-import Shell
 
 #TODO fix these
 from Component import (PythonUninstallComponent,
-                       PythonInstallComponent,
-                       NullRuntime)
-
-LOG = Logger.getLogger("install.horizon")
-TYPE = Util.HORIZON
-
-ROOT_HORIZON = 'horizon'
-HORIZON_NAME = 'horizon'
-ROOT_DASH = 'openstack-dashboard'
-DASH_NAME = 'dashboard'
-
-HORIZON_PY_CONF = "horizon_settings.py"
-CONFIGS = [HORIZON_PY_CONF]
+                        PythonInstallComponent,
+                        NullRuntime)
 
 
-class HorizonUninstaller(PythonUninstallComponent):
+LOG = Logger.getLogger("install.nova.client")
+TYPE = Util.NOVA_CLIENT
+
+
+class NovaClientUninstaller(PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
 
 
-class HorizonInstaller(PythonInstallComponent):
+class NovaClientInstaller(PythonInstallComponent):
     def __init__(self, *args, **kargs):
         PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
-        self.git_loc = self.cfg.get("git", "horizon_repo")
-        self.git_branch = self.cfg.get("git", "horizon_branch")
-        self.horizon_dir = Shell.joinpths(self.appdir, ROOT_HORIZON)
-        self.dash_dir = Shell.joinpths(self.appdir, ROOT_DASH)
+        self.git_loc = self.cfg.get("git", "novaclient_repo")
+        self.git_branch = self.cfg.get("git", "novaclient_branch")
 
     def _get_download_locations(self):
         places = PythonInstallComponent._get_download_locations(self)
@@ -56,30 +46,14 @@ class HorizonInstaller(PythonInstallComponent):
         })
         return places
 
-    def _get_python_directories(self):
-        py_dirs = list()
-        py_dirs.append({
-            'name': HORIZON_NAME,
-            'work_dir': self.horizon_dir,
-        })
-        py_dirs.append({
-            'name': DASH_NAME,
-            'work_dir': self.dash_dir,
-        })
-        return py_dirs
-
-    def _get_config_files(self):
-        #these are the config files we will be adjusting
-        return list(CONFIGS)
-
     def _get_param_map(self, config_fn):
         #this dict will be used to fill in the configuration
         #params with actual values
         mp = dict()
+        mp['DEST'] = self.appdir
         mp['OPENSTACK_HOST'] = Util.get_host_ip(self.cfg)
         return mp
 
-
-class HorizonRuntime(NullRuntime):
+class NovaClientRuntime(NullRuntime):
     def __init__(self, *args, **kargs):
         NullRuntime.__init__(self, TYPE, *args, **kargs)

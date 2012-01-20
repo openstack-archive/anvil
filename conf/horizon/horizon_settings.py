@@ -40,7 +40,7 @@ HORIZON_CONFIG = {
     'user_home': 'dashboard.views.user_home',
 }
 
-OPENSTACK_HOST = "127.0.0.1"
+OPENSTACK_HOST = "%OPENSTACK_HOST%"
 OPENSTACK_KEYSTONE_URL = "http://%s:5000/v2.0" % OPENSTACK_HOST
 # FIXME: this is only needed until keystone fixes its GET /tenants call
 # so that it doesn't return everything for admins

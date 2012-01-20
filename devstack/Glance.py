@@ -155,7 +155,7 @@ class GlanceInstaller(PythonInstallComponent):
         #nothing modified so just return the original
         return contents
 
-    def _get_param_map(self, fn=None):
+    def _get_param_map(self, config_fn):
         #this dict will be used to fill in the configuration
         #params with actual values
         mp = dict()

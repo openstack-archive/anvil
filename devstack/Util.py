@@ -53,6 +53,7 @@ PARAM_SUB_REGEX = re.compile(r"%([\w\d]+?)%")
 
 #component name mappings
 NOVA = "nova"
+NOVA_CLIENT = 'nova-client'
 GLANCE = "glance"
 QUANTUM = "quantum"
 SWIFT = "swift"
@@ -61,21 +62,27 @@ KEYSTONE = "keystone"
 KEYSTONE_CLIENT = 'keystone-client'
 DB = "db"
 RABBIT = "rabbit"
-COMPONENT_NAMES = [NOVA, GLANCE, QUANTUM,
-         SWIFT, HORIZON, KEYSTONE,
-         DB, RABBIT, KEYSTONE_CLIENT]
+OPENSTACK_X = 'openstack-x'
+COMPONENT_NAMES = [NOVA, NOVA_CLIENT,
+         GLANCE, QUANTUM,
+         SWIFT, HORIZON,
+         KEYSTONE, KEYSTONE_CLIENT,
+         OPENSTACK_X,
+         DB, RABBIT]
 
 #ordering of install (lower priority means earlier)
 NAMES_PRIORITY = {
     DB: 1,
-    RABBIT: 1,
-    KEYSTONE: 2,
-    GLANCE: 3,
-    QUANTUM: 3,
-    NOVA: 3,
-    SWIFT: 3,
-    HORIZON: 3,
-    KEYSTONE_CLIENT: 4,
+    RABBIT: 2,
+    KEYSTONE: 3,
+    GLANCE: 4,
+    QUANTUM: 4,
+    SWIFT: 4,
+    NOVA: 5,
+    KEYSTONE_CLIENT: 6,
+    NOVA_CLIENT: 6,
+    OPENSTACK_X: 6,
+    HORIZON: 10,
 }
 
 #when a component is asked for it may
@@ -89,7 +96,7 @@ COMPONENT_DEPENDENCIES = {
     KEYSTONE: [DB],
     NOVA: [KEYSTONE, GLANCE, DB, RABBIT],
     SWIFT: [],
-    HORIZON: [KEYSTONE_CLIENT, GLANCE],
+    HORIZON: [KEYSTONE_CLIENT, GLANCE, NOVA_CLIENT, OPENSTACK_X],
     QUANTUM: [],
 }
 
@@ -163,6 +170,11 @@ PKG_MAP = {
             Shell.joinpths(STACK_CONFIG_DIR, "pkgs", "nova.json"),
             Shell.joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
         ],
+    NOVA_CLIENT:
+        [
+            Shell.joinpths(STACK_CONFIG_DIR, "pkgs", "nova-client.json"),
+            Shell.joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
+        ],
     GLANCE:
         [
             Shell.joinpths(STACK_CONFIG_DIR, "pkgs", "general.json"),
@@ -194,6 +206,10 @@ PKG_MAP = {
     RABBIT:
         [
             Shell.joinpths(STACK_CONFIG_DIR, "pkgs", 'rabbitmq.json'),
+        ],
+    OPENSTACK_X:
+        [
+            Shell.joinpths(STACK_CONFIG_DIR, "pkgs", 'openstackx.json'),
         ],
 }
 

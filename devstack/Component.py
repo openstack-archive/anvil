@@ -130,7 +130,7 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
             am_downloaded += 1
         return am_downloaded
 
-    def _get_param_map(self, _=None):
+    def _get_param_map(self, config_fn):
         return None
 
     def install(self):
@@ -147,21 +147,21 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
     def pre_install(self):
         pkgs = Util.get_pkg_list(self.distro, self.component_name)
         if(len(pkgs)):
-            mp = self._get_param_map()
+            mp = self._get_param_map(None)
             self.packager.pre_install(pkgs, mp)
         return self.tracedir
 
     def post_install(self):
         pkgs = Util.get_pkg_list(self.distro, self.component_name)
         if(len(pkgs)):
-            mp = self._get_param_map()
+            mp = self._get_param_map(None)
             self.packager.post_install(pkgs, mp)
         return self.tracedir
 
     def _get_config_files(self):
         return list()
 
-    def _config_adjust(self, contents, _):
+    def _config_adjust(self, contents, config_fn):
         return contents
 
     def _get_full_config_name(self, name):
@@ -360,10 +360,10 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
     def _get_apps_to_start(self):
         return list()
 
-    def _get_app_options(self, _):
+    def _get_app_options(self, app_name):
         return list()
 
-    def _get_param_map(self, _=None):
+    def _get_param_map(self, app_name):
         return {
             'ROOT': self.appdir,
         }

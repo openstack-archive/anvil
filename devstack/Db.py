@@ -67,7 +67,7 @@ class DBInstaller(PkgInstallComponent):
         PkgInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.runtime = DBRuntime(*args, **kargs)
 
-    def _get_param_map(self, fn=None):
+    def _get_param_map(self, config_fn):
         #this dictionary will be used for parameter replacement
         #in pre-install and post-install sections
         out = dict()
@@ -87,7 +87,7 @@ class DBInstaller(PkgInstallComponent):
         if(dbactions and dbactions.get('grant_all')):
             #update the DB to give user 'USER'@'%' full control of the all databases:
             grant_cmd = dbactions.get('grant_all')
-            params = self._get_param_map()
+            params = self._get_param_map(None)
             cmds = list()
             cmds.append({
                 'cmd': grant_cmd,

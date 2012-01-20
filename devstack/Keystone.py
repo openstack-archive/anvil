@@ -85,7 +85,7 @@ class KeystoneInstaller(PythonInstallComponent):
         Db.create_db(self.cfg, DB_NAME)
 
     def _setup_data(self):
-        params = self._get_param_map()
+        params = self._get_param_map(None)
         cmds = _keystone_setup_cmds(self.all_components)
         execute_template(*cmds, params=params, ignore_missing=True)
 
@@ -115,7 +115,7 @@ class KeystoneInstaller(PythonInstallComponent):
         #nothing modified so just return the original
         return contents
 
-    def _get_param_map(self, fn=None):
+    def _get_param_map(self, config_fn):
         #these be used to fill in the configuration/cmds +
         #params with actual values
         mp = dict()

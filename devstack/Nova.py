@@ -67,7 +67,7 @@ class NovaInstaller(InstallComponent):
         lines = nc.generate()
         return os.linesep.join(lines)
 
-    def _get_param_map(self, fn=None):
+    def _get_param_map(self, config_fn):
         # Not used. NovaConf will be used to generate the config file
         mp = dict()
         return mp

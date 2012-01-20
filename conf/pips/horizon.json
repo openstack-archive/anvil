@@ -8,7 +8,9 @@
             "skip_uninstall_errors": true
         },
         "pycrypto": {
-            "version": "2.3"
+            "version": "2.3",
+            #this seems broke on uninstall so skip errors on uinstall
+            "skip_uninstall_errors": true
         }
     },
     "rhel-6": {}
