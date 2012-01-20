@@ -38,15 +38,14 @@ This will typically produce:
 
 # Stack prerequisites
 
-* linux (tested on ubuntu 11 and rhel 6)
+* linux (tested on ubuntu 11 (ie oneiric) and rhel 6.1)
 * python 2.6 or 2.7 (not tested with python 3.0)
 * git
     * In ubuntu oneiric *apt-get install git*
 * easy_install termcolor (used for colored console logging)
     * This may require in ubuntu oneiric *apt-get install python-pip*
 * easy_install netifaces (used to determine host ip information)
-    * This may require in ubuntu oneiric *apt-get install python-pip*
-    * This may require in ubuntu oneiric *apt-get install python-dev*
+    * This may require in ubuntu oneiric *apt-get install python-pip* and *apt-get install python-dev*
  
 # Actions
 
