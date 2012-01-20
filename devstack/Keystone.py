@@ -58,16 +58,16 @@ class KeystoneUninstaller(PythonUninstallComponent):
 class KeystoneInstaller(PythonInstallComponent):
     def __init__(self, *args, **kargs):
         PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
-        self.gitloc = self.cfg.get("git", "keystone_repo")
-        self.brch = self.cfg.get("git", "keystone_branch")
+        self.git_loc = self.cfg.get("git", "keystone_repo")
+        self.git_branch = self.cfg.get("git", "keystone_branch")
         self.cfgdir = joinpths(self.appdir, CONFIG_DIR)
         self.bindir = joinpths(self.appdir, BIN_DIR)
 
     def _get_download_locations(self):
         places = PythonInstallComponent._get_download_locations(self)
         places.append({
-            'uri': self.gitloc,
-            'branch': self.brch,
+            'uri': self.git_loc,
+            'branch': self.git_branch,
         })
         return places
 
@@ -85,8 +85,8 @@ class KeystoneInstaller(PythonInstallComponent):
         Db.create_db(self.cfg, DB_NAME)
 
     def _setup_data(self):
-        params = self._get_param_map()
-        cmds = _keystone_setup_cmds(self.othercomponents)
+        params = self._get_param_map(None)
+        cmds = _keystone_setup_cmds(self.all_components)
         execute_template(*cmds, params=params, ignore_missing=True)
 
     def _config_adjust(self, contents, name):
@@ -115,7 +115,7 @@ class KeystoneInstaller(PythonInstallComponent):
         #nothing modified so just return the original
         return contents
 
-    def _get_param_map(self, fn=None):
+    def _get_param_map(self, config_fn):
         #these be used to fill in the configuration/cmds +
         #params with actual values
         mp = dict()

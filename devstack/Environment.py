@@ -28,21 +28,22 @@ def _str2bool(value_str):
 
 
 def get_environment():
-    env_copy = dict(os.environ)
-    return env_copy
+    return dict(os.environ)
 
 
-def get_environment_key(key, default_val=None):
-    LOG.debug("Looking up environment variable %s" % (key))
-    val = get_environment().get(key)
-    if(val == None):
-        LOG.debug("Could not find anything in environment variable %s (using default value %s)" % (key, default_val))
-        val = default_val
-    return val
+def get_environment_key(key, default_value=None):
+    LOG.debug("Looking up environment variable \"%s\"" % (key))
+    value = get_environment().get(key)
+    if(value == None):
+        LOG.debug("Could not find anything in environment variable \"%s\"" % (key))
+        value = default_value
+    else:
+        LOG.debug("Found \"%s\" in environment variable \"%s\"" % (value, key))
+    return value
 
 
-def get_environment_bool(key, default_val=False):
-    val = get_environment_key(key, None)
-    if(val == None):
-        return default_val
-    return _str2bool(val)
+def get_environment_bool(key, default_value=False):
+    value = get_environment_key(key, None)
+    if(value == None):
+        return default_value
+    return _str2bool(value)

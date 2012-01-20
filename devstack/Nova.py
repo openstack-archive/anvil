@@ -58,6 +58,7 @@ class NovaInstaller(PythonInstallComponent):
         #self.cfgdir = joinpths(self.appdir, CONFIG_ACTUAL_DIR)
 
     def _get_download_location(self):
+<<<<<<< HEAD
         places = PythonInstallComponent._get_download_locations(self)
         places.append({
             'uri': self.gitloc,
@@ -87,5 +88,26 @@ class NovaInstaller(PythonInstallComponent):
 
 
 class NovaRuntime(PythonRuntime):
+=======
+        #where we get nova from
+        return (self.gitloc, self.brch)
+
+    def _get_config_files(self):
+        #these are the config files we will be adjusting
+        return list(CONFIGS)
+
+    def _config_adjust(self, contents, fn):
+        nc = NovaConf(self)
+        lines = nc.generate()
+        return os.linesep.join(lines)
+
+    def _get_param_map(self, config_fn):
+        # Not used. NovaConf will be used to generate the config file
+        mp = dict()
+        return mp
+
+
+class NovaRuntime(RuntimeComponent):
+>>>>>>> 45afa4718f95569398af155d7e4dec368edcd46b
     def __init__(self, *args, **kargs):
         PythonRuntime.__init__(self, TYPE, *args, **kargs)

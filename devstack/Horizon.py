@@ -25,10 +25,14 @@ from Component import (PythonUninstallComponent,
 
 LOG = Logger.getLogger("install.horizon")
 TYPE = Util.HORIZON
+
 ROOT_HORIZON = 'horizon'
 HORIZON_NAME = 'horizon'
 ROOT_DASH = 'openstack-dashboard'
 DASH_NAME = 'dashboard'
+
+HORIZON_PY_CONF = "horizon_settings.py"
+CONFIGS = [HORIZON_PY_CONF]
 
 
 class HorizonUninstaller(PythonUninstallComponent):
@@ -39,16 +43,16 @@ class HorizonUninstaller(PythonUninstallComponent):
 class HorizonInstaller(PythonInstallComponent):
     def __init__(self, *args, **kargs):
         PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
-        self.gitloc = self.cfg.get("git", "horizon_repo")
-        self.brch = self.cfg.get("git", "horizon_branch")
+        self.git_loc = self.cfg.get("git", "horizon_repo")
+        self.git_branch = self.cfg.get("git", "horizon_branch")
         self.horizon_dir = Shell.joinpths(self.appdir, ROOT_HORIZON)
         self.dash_dir = Shell.joinpths(self.appdir, ROOT_DASH)
 
     def _get_download_locations(self):
         places = PythonInstallComponent._get_download_locations(self)
         places.append({
-            'uri': self.gitloc,
-            'branch': self.brch,
+            'uri': self.git_loc,
+            'branch': self.git_branch,
         })
         return places
 
@@ -63,6 +67,17 @@ class HorizonInstaller(PythonInstallComponent):
             'work_dir': self.dash_dir,
         })
         return py_dirs
+
+    def _get_config_files(self):
+        #these are the config files we will be adjusting
+        return list(CONFIGS)
+
+    def _get_param_map(self, config_fn):
+        #this dict will be used to fill in the configuration
+        #params with actual values
+        mp = dict()
+        mp['OPENSTACK_HOST'] = Util.get_host_ip(self.cfg)
+        return mp
 
 
 class HorizonRuntime(NullRuntime):

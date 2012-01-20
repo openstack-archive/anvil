@@ -76,15 +76,15 @@ class GlanceRuntime(PythonRuntime):
 class GlanceInstaller(PythonInstallComponent):
     def __init__(self, *args, **kargs):
         PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
-        self.gitloc = self.cfg.get("git", "glance_repo")
-        self.brch = self.cfg.get("git", "glance_branch")
+        self.git_loc = self.cfg.get("git", "glance_repo")
+        self.git_branch = self.cfg.get("git", "glance_branch")
         self.cfgdir = joinpths(self.appdir, CONFIG_ACTUAL_DIR)
 
     def _get_download_locations(self):
         places = PythonInstallComponent._get_download_locations(self)
         places.append({
-            'uri': self.gitloc,
-            'branch': self.brch,
+            'uri': self.git_loc,
+            'branch': self.git_branch,
         })
         return places
 
@@ -155,7 +155,7 @@ class GlanceInstaller(PythonInstallComponent):
         #nothing modified so just return the original
         return contents
 
-    def _get_param_map(self, fn=None):
+    def _get_param_map(self, config_fn):
         #this dict will be used to fill in the configuration
         #params with actual values
         mp = dict()

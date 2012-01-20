@@ -16,6 +16,7 @@
 import os
 import os.path
 import sys
+import re
 
 #TODO is this needed?
 sys.path.append("devstack")
@@ -26,9 +27,11 @@ import Options
 #TODO fix these
 from Util import (welcome, rcf8222date, determine_os,
                     prioritize_components, resolve_dependencies)
-from Util import (NOVA, GLANCE, QUANTUM, SWIFT, KEYSTONE, HORIZON, DB, RABBIT, KEYSTONE_CLIENT,
-                  INSTALL, UNINSTALL, START, STOP,
-                  ACTIONS, COMPONENT_NAMES, NAMES_PRIORITY,
+from Util import (NOVA, GLANCE, QUANTUM, SWIFT, KEYSTONE,
+                    HORIZON, DB, RABBIT, KEYSTONE_CLIENT,
+                    NOVA_CLIENT, OPENSTACK_X)
+from Util import(INSTALL, UNINSTALL, START, STOP,
+                  ACTIONS, COMPONENT_NAMES, NAMES_PRIORITY, COMPONENT_DEPENDENCIES,
                   UBUNTU11, RHEL6,
                   STACK_CFG_LOC, DEVSTACK)
 from Shell import (mkdir, joinpths, unlink)
@@ -45,6 +48,8 @@ import Db
 import Rabbit
 import Config
 import KeystoneClient
+import NovaClient
+import OpenstackX
 
 LOG = Logger.getLogger("install")
 
@@ -60,6 +65,8 @@ ACTION_CLASSES = {
         DB: Db.DBInstaller,
         RABBIT: Rabbit.RabbitInstaller,
         KEYSTONE_CLIENT: KeystoneClient.KeyStoneClientInstaller,
+        NOVA_CLIENT: NovaClient.NovaClientInstaller,
+        OPENSTACK_X: OpenstackX.OpenstackXInstaller,
     },
     UNINSTALL: {
         NOVA: Nova.NovaUninstaller,
@@ -71,6 +78,8 @@ ACTION_CLASSES = {
         DB: Db.DBUninstaller,
         RABBIT: Rabbit.RabbitUninstaller,
         KEYSTONE_CLIENT: KeystoneClient.KeyStoneClientUninstaller,
+        NOVA_CLIENT: NovaClient.NovaClientUninstaller,
+        OPENSTACK_X: OpenstackX.OpenstackXUninstaller,
     },
     START: {
         NOVA: Nova.NovaRuntime,
@@ -82,6 +91,8 @@ ACTION_CLASSES = {
         DB: Db.DBRuntime,
         RABBIT: Rabbit.RabbitRuntime,
         KEYSTONE_CLIENT: KeystoneClient.KeyStoneClientRuntime,
+        NOVA_CLIENT: NovaClient.NovaClientRuntime,
+        OPENSTACK_X: OpenstackX.OpenstackXRuntime,
     },
     STOP: {
         NOVA: Nova.NovaRuntime,
@@ -93,6 +104,8 @@ ACTION_CLASSES = {
         DB: Db.DBRuntime,
         RABBIT: Rabbit.RabbitRuntime,
         KEYSTONE_CLIENT: KeystoneClient.KeyStoneClientRuntime,
+        NOVA_CLIENT: NovaClient.NovaClientRuntime,
+        OPENSTACK_X: OpenstackX.OpenstackXRuntime,
     },
 }
 
@@ -156,20 +169,23 @@ def print_cfgs(cfg, action):
             map_print(db_dsns)
 
 
-def runner(action_name, component_set, distro, root_dir, program_args):
+def runner(action_name, component_order, components_info, distro, root_dir, program_args):
     #have to make the root dir....
     if(action_name == INSTALL):
         mkdir(root_dir)
     pkg_manager_cls = get_package_manager_class(distro)
     pkg_manager = pkg_manager_cls(distro)
     config = get_config(action_name)
-    LOG.info("Will %s [%s] using root directory %s" % (action_name, ", ".join(component_set), root_dir))
+    LOG.info("Will %s [%s] (in that order) using root directory \"%s\"" % (action_name, ", ".join(component_order), root_dir))
     results = list()
     class_lookup = ACTION_CLASSES.get(action_name)
     force = program_args.get('force', False)
-    for c in component_set:
+    for c in component_order:
+        component_info = components_info.get(c) or list()
         klass = class_lookup.get(c)
-        instance = klass(components=component_set, distro=distro, pkg=pkg_manager, cfg=config, root=root_dir)
+        instance = klass(components=set(component_order), distro=distro,
+                            pkg=pkg_manager, cfg=config, root=root_dir,
+                            component_info=component_info)
         if(action_name == INSTALL):
             LOG.info("Downloading %s." % (c))
             am_downloaded = instance.download()
@@ -248,6 +264,50 @@ def check_root(action, rootdir):
         return True
 
 
+def parse_action(action):
+    if(action == None):
+        return None
+    action = action.strip().lower()
+    if(not (action in ACTIONS)):
+        return None
+    return action
+
+
+def parse_components(components, assume_all=False):
+    #none provided
+    if(components == None):
+        components = list()
+    #
+    EXT_COMPONENT = re.compile(r"^\s*([\w-]+)(?:\((.*)\))?\s*$")
+    adjusted_components = dict()
+    for c in components:
+        mtch = EXT_COMPONENT.match(c)
+        if(mtch):
+            component_name = mtch.group(1)
+            component_name = component_name.lower().strip()
+            if(component_name not in COMPONENT_NAMES):
+                continue
+            component_opts = mtch.group(2)
+            components_opts_cleaned = list()
+            if(component_opts == None or len(component_opts) == 0):
+                pass
+            else:
+                sp_component_opts = component_opts.split(",")
+                for co in sp_component_opts:
+                    cleaned_opt = co.strip()
+                    if(len(cleaned_opt)):
+                        components_opts_cleaned.append(cleaned_opt)
+            adjusted_components[component_name] = components_opts_cleaned
+    #should we adjust them??
+    if(len(adjusted_components) == 0):
+        all_components = dict()
+        if(assume_all):
+            for c in (COMPONENT_NAMES):
+                all_components[c] = list()
+        adjusted_components = all_components
+    return adjusted_components
+
+
 def check_python():
     py_version = sys.version_info
     major = py_version[0]
@@ -259,59 +319,98 @@ def check_python():
     return True
 
 
-def main():
-    if(not check_python()):
-        LOG.error("Your python version is to old, please upgrade to >= 2.6!")
-        return 1
-    me = __file__
-    args = Options.parse()
-    components = args.pop("component") or []
+def run_list_only(prog, args):
+    components = parse_components(args.pop("components"), True).keys()
+    components = sorted(components)
+    components.reverse()
+    shown = set()
+    left_show = list(components)
+    while(len(left_show) != 0):
+        c = left_show.pop()
+        deps = COMPONENT_DEPENDENCIES.get(c) or []
+        cname = ""
+        if(len(deps) >= 1):
+            cname = "component"
+            if(cname > 1):
+                cname += "s"
+            cname += ":"
+        if(len(deps) == 0):
+            cname = "no components."
+        LOG.info("%s depends on %s" % (c, cname))
+        if(len(deps)):
+            for d in deps:
+                LOG.info("\t%s" % (d))
+        shown.add(c)
+        for d in deps:
+            if(d not in shown and d not in left_show):
+                left_show.append(d)
+    return True
+
+
+def run_action(prog, args):
+    components = parse_components(args.pop("components"))
     if(len(components) == 0):
-        #assume user wants them all
-        components = list(COMPONENT_NAMES)
-    else:
-        #clean the names up and see what is valid after an intersection
-        components = set([x.lower().strip() for x in components])
-        components = set(COMPONENT_NAMES).intersection(components)
-    if(len(components) == 0):
-        LOG.error("No valid components specified!")
-        LOG.info("Perhaps you should try %s --help" % (me))
-        return 1
-    action = args.pop("action") or ""
-    #normalize the action
-    action = action.strip().lower()
-    if(not (action in ACTIONS)):
+        LOG.error("No components specified!")
+        LOG.info("Perhaps you should try %s --help" % (prog))
+        return False
+    #extract + normalize the action
+    ignore_deps = args.pop('ignore_deps', False)
+    action = parse_action(args.pop("action"))
+    if(not action):
         LOG.error("No valid action specified!")
-        LOG.info("Perhaps you should try %s --help" % (me))
-        return 1
+        LOG.info("Perhaps you should try %s --help" % (prog))
+        return False
     rootdir = args.pop("dir") or ""
     if(len(rootdir) == 0 or not check_root(action, rootdir)):
         LOG.error("No valid root directory specified!")
-        LOG.info("Perhaps you should try %s --help" % (me))
-        return 1
+        LOG.info("Perhaps you should try %s --help" % (prog))
+        return False
     #ensure os/distro is known
     (install_os, plt) = determine_os()
     if(install_os == None):
         LOG.error("Unsupported operating system/distro: %s" % (plt))
-        return 1
+        return False
     #start it
     welcome(action)
     #need to figure out dependencies for components (if any)
-    new_components = resolve_dependencies(action, components)
-    component_diff = new_components.difference(components)
-    if(len(component_diff)):
-        LOG.info("Having to install dependent components: [%s]" % (",".join(component_diff)))
-    components = new_components
+    if(not ignore_deps):
+        new_components = resolve_dependencies(action, components.keys())
+        component_diff = new_components.difference(components.keys())
+        if(len(component_diff)):
+            LOG.info("Having to install dependent components: [%s]" % (", ".join(component_diff)))
+            #TBD - probably need to do this better
+            for new_component in component_diff:
+                components[new_component] = list()
     #get the right component order (by priority)
-    components = prioritize_components(components)
+    component_order = prioritize_components(components.keys())
     #now do it!
     LOG.info("Starting action [%s] on %s for operating system/distro [%s]" % (action, rcf8222date(), install_os))
-    resultList = runner(action, components, install_os, rootdir, args)
+    resultList = runner(action, component_order, components, install_os, rootdir, args)
     LOG.info("Finished action [%s] on %s" % (action, rcf8222date()))
     if(resultList and len(resultList)):
         msg = "Check [%s] for traces of what happened." % (", ".join(resultList))
         LOG.info(msg)
-    return 0
+    return True
+
+
+def main():
+    if(not check_python()):
+        LOG.error("Your python version is to old, please upgrade to >= 2.6!")
+        return 1
+    #parse and get it done!
+    args = Options.parse()
+    me = os.path.basename(sys.argv[0])
+    #figure out what to do
+    only_list_deps = args.pop('list_deps', False)
+    rc_ok = False
+    if(only_list_deps):
+        rc_ok = run_list_only(me, args)
+    else:
+        rc_ok = run_action(me, args)
+    if(rc_ok):
+        return 0
+    else:
+        return 1
 
 
 if __name__ == "__main__":

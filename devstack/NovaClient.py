@@ -23,20 +23,20 @@ from Component import (PythonUninstallComponent,
                         NullRuntime)
 
 
-LOG = Logger.getLogger("install.keystone.client")
-TYPE = Util.KEYSTONE_CLIENT
+LOG = Logger.getLogger("install.nova.client")
+TYPE = Util.NOVA_CLIENT
 
 
-class KeyStoneClientUninstaller(PythonUninstallComponent):
+class NovaClientUninstaller(PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
 
 
-class KeyStoneClientInstaller(PythonInstallComponent):
+class NovaClientInstaller(PythonInstallComponent):
     def __init__(self, *args, **kargs):
         PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
-        self.git_loc = self.cfg.get("git", "keystoneclient_repo")
-        self.git_branch = self.cfg.get("git", "keystoneclient_branch")
+        self.git_loc = self.cfg.get("git", "novaclient_repo")
+        self.git_branch = self.cfg.get("git", "novaclient_branch")
 
     def _get_download_locations(self):
         places = PythonInstallComponent._get_download_locations(self)
@@ -46,7 +46,15 @@ class KeyStoneClientInstaller(PythonInstallComponent):
         })
         return places
 
+    def _get_param_map(self, config_fn):
+        #this dict will be used to fill in the configuration
+        #params with actual values
+        mp = dict()
+        mp['DEST'] = self.appdir
+        mp['OPENSTACK_HOST'] = Util.get_host_ip(self.cfg)
+        return mp
 
-class KeyStoneClientRuntime(NullRuntime):
+
+class NovaClientRuntime(NullRuntime):
     def __init__(self, *args, **kargs):
         NullRuntime.__init__(self, TYPE, *args, **kargs)

@@ -23,20 +23,20 @@ from Component import (PythonUninstallComponent,
                         NullRuntime)
 
 
-LOG = Logger.getLogger("install.keystone.client")
-TYPE = Util.KEYSTONE_CLIENT
+LOG = Logger.getLogger("install.openstackx")
+TYPE = Util.OPENSTACK_X
 
 
-class KeyStoneClientUninstaller(PythonUninstallComponent):
+class OpenstackXUninstaller(PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
 
 
-class KeyStoneClientInstaller(PythonInstallComponent):
+class OpenstackXInstaller(PythonInstallComponent):
     def __init__(self, *args, **kargs):
         PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
-        self.git_loc = self.cfg.get("git", "keystoneclient_repo")
-        self.git_branch = self.cfg.get("git", "keystoneclient_branch")
+        self.git_loc = self.cfg.get("git", "openstackx_repo")
+        self.git_branch = self.cfg.get("git", "openstackx_branch")
 
     def _get_download_locations(self):
         places = PythonInstallComponent._get_download_locations(self)
@@ -47,6 +47,6 @@ class KeyStoneClientInstaller(PythonInstallComponent):
         return places
 
 
-class KeyStoneClientRuntime(NullRuntime):
+class OpenstackXRuntime(NullRuntime):
     def __init__(self, *args, **kargs):
         NullRuntime.__init__(self, TYPE, *args, **kargs)

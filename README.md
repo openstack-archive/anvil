@@ -21,7 +21,6 @@ This will typically produce:
 
     ./stack --help
     Usage: stack [options]
-    
     Options:
       --version             show program's version number and exit
       -h, --help            show this help message and exit
@@ -33,17 +32,23 @@ This will typically produce:
                             components (ACTION dependent)
       -c COMPONENT, --component=COMPONENT
                             stack component, ie (db, glance, horizon, keystone,
-                            nova, quantum, rabbit, swift)
+                            keystone-client, nova, nova-client, openstack-x,
+                            quantum, rabbit, swift)
       -f, --force           force ACTION even if no trace found (ACTION dependent)
+      -i, --ignoredeps      ignore dependencies when performing ACTION
+      -l, --listdeps        just show dependencies of COMPONENT
 
 # Stack prerequisites
 
-* linux (tested on ubuntu 11 and rhel 6)
+* linux (tested on ubuntu 11 (aka oneiric) and rhel 6.1)
 * python 2.6 or 2.7 (not tested with python 3.0)
 * git
+    * In ubuntu oneiric *apt-get install git*
 * easy_install termcolor (used for colored console logging)
+    * This may require in ubuntu oneiric *apt-get install python-pip*
 * easy_install netifaces (used to determine host ip information)
-
+    * This may require in ubuntu oneiric *apt-get install python-pip* and *apt-get install python-dev*
+ 
 # Actions
 
 You will note that *stack* can uninstall, install, start and stop openstack components. Typically the interaction would be that you install a set of components and then start them. 

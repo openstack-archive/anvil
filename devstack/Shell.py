@@ -30,7 +30,7 @@ from Environment import (get_environment_bool, get_environment)
 
 ROOT_HELPER = ["sudo"]
 MKPW_CMD = ["openssl", 'rand', '-hex']
-
+PASS_ASK_ENV = 'PASS_ASK'
 LOG = Logger.getLogger("install.shell")
 
 
@@ -107,7 +107,7 @@ def execute(*cmd, **kwargs):
 
     obj.stdin.close()
     _returncode = obj.returncode
-    LOG.debug('Cmd result had return code: %s' % _returncode)
+    LOG.debug('Cmd result had exit code: %s' % _returncode)
 
     if((not ignore_exit_code) and (_returncode not in check_exit_code)):
         (stdout, stderr) = result
@@ -145,14 +145,18 @@ def _gen_password(pw_len):
     return stdout.strip()
 
 
+def _prompt_password(prompt=None):
+    if(prompt):
+        return getpass.getpass(prompt)
+    else:
+        return getpass.getpass()
+
+
 def password(prompt=None, pw_len=8):
     rd = ""
-    pass_ask = get_environment_bool("PASS_ASK", True)
-    if(pass_ask):
-        if(prompt):
-            rd = getpass.getpass(prompt)
-        else:
-            rd = getpass.getpass()
+    ask_for_pw = get_environment_bool(PASS_ASK_ENV, True)
+    if(ask_for_pw):
+        rd = _prompt_password(prompt)
     if(len(rd) == 0):
         return _gen_password(pw_len)
     else:
@@ -160,7 +164,7 @@ def password(prompt=None, pw_len=8):
 
 
 def mkdirslist(path):
-    LOG.debug("Determining potential paths to create for target path %s" % (path))
+    LOG.debug("Determining potential paths to create for target path \"%s\"" % (path))
     dirs_possible = set()
     dirs_possible.add(path)
     #TODO maybe just use string split with os.sep?
@@ -174,7 +178,6 @@ def mkdirslist(path):
     dirs_made = list()
     for check_path in sorted(dirs_possible):
         if(not isdir(check_path)):
-            LOG.debug("Creating directory %s" % (check_path))
             mkdir(check_path, False)
             dirs_made.append(check_path)
     return dirs_made
@@ -214,17 +217,17 @@ def load_file(fn):
 def mkdir(path, recurse=True):
     if(not isdir(path)):
         if(recurse):
+            LOG.debug("Recursively creating directory \"%s\"" % (path))
             os.makedirs(path)
         else:
+            LOG.debug("Creating directory \"%s\"" % (path))
             os.mkdir(path)
 
 
-def deldir(path, force=True):
+def deldir(path):
     if(isdir(path)):
-        if(force):
-            shutil.rmtree(path)
-        else:
-            os.removedirs(path)
+        LOG.debug("Recursively deleting directory tree starting at \"%s\"" % (path))
+        shutil.rmtree(path)
 
 
 def prompt(prompt):
@@ -233,6 +236,7 @@ def prompt(prompt):
 
 def unlink(path, ignore_errors=True):
     try:
+        LOG.debug("Unlinking (removing) %s" % (path))
         os.unlink(path)
     except OSError, e:
         if(not ignore_errors):

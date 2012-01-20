@@ -38,6 +38,10 @@ class StartException(Exception):
     pass
 
 
+class NoIpException(Exception):
+    pass
+
+
 class StopException(Exception):
     pass
 
