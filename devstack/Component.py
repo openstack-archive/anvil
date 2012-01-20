@@ -43,6 +43,7 @@ class ComponentBase():
         (self.componentroot, self.tracedir,
             self.appdir, self.cfgdir) = Util.component_paths(self.root, component_name)
         self.component_name = component_name
+        self.component_info = kargs.get('component_info')
 
 #
 #the following are just interfaces...
