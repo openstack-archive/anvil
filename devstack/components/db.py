@@ -15,23 +15,17 @@
 
 import re
 
-import Logger
-import Packager
+from devstack import component as comp
+from devstack import constants
+from devstack import exceptions as excp
+from devstack import log as logging
+from devstack import shell as sh
+from devstack import trace as tr
+from devstack import utils
+ 
 
-#TODO fix these
-from Component import (PkgUninstallComponent, PkgInstallComponent,
-                        ComponentBase, RuntimeComponent)
-from Util import (DB,
-                  get_host_ip,
-                  execute_template)
-from Exceptions import (StartException, StopException,
-                    StatusException, RestartException)
-from Shell import (execute)
-from Trace import (TraceReader,
-                    IN_TRACE)
-
-LOG = Logger.getLogger("install.db")
-TYPE = DB
+LOG = logging.getLogger("devstack.components.db")
+TYPE = constants.DB
 MYSQL = 'mysql'
 DB_ACTIONS = {
     MYSQL: {
@@ -57,14 +51,14 @@ DB_ACTIONS = {
 BASE_ERROR = 'Currently we do not know how to %s for database type [%s]'
 
 
-class DBUninstaller(PkgUninstallComponent):
+class DBUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
-        PkgUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PkgUninstallComponent.__init__(self, TYPE, *args, **kargs)
 
 
-class DBInstaller(PkgInstallComponent):
+class DBInstaller(comp.PkgInstallComponent):
     def __init__(self, *args, **kargs):
-        PkgInstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PkgInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.runtime = DBRuntime(*args, **kargs)
 
     def _get_param_map(self, config_fn):
@@ -74,13 +68,13 @@ class DBInstaller(PkgInstallComponent):
         out['PASSWORD'] = self.cfg.getpw("passwords", "sql")
         out['BOOT_START'] = str(True).lower()
         out['USER'] = self.cfg.get("db", "sql_user")
-        hostip = get_host_ip(self.cfg)
+        hostip = utils.get_host_ip(self.cfg)
         out['SERVICE_HOST'] = hostip
         out['HOST_IP'] = hostip
         return out
 
     def post_install(self):
-        parent_result = PkgInstallComponent.post_install(self)
+        parent_result = comp.PkgInstallComponent.post_install(self)
         #extra actions to ensure we are granted access
         dbtype = self.cfg.get("db", "type")
         dbactions = DB_ACTIONS.get(dbtype)
@@ -95,21 +89,21 @@ class DBInstaller(PkgInstallComponent):
             })
             #shell seems to be needed here
             #since python escapes this to much...
-            execute_template(*cmds, params=params, shell=True)
+            utils.execute_template(*cmds, params=params, shell=True)
         #special mysql actions
         if(dbactions and dbtype == MYSQL):
             cmd = dbactions.get('host_adjust')
             if(cmd):
-                execute(*cmd, run_as_root=True, shell=True)
+                sh.execute(*cmd, run_as_root=True, shell=True)
         #restart it to make sure all good
         self.runtime.restart()
         return parent_result
 
 
-class DBRuntime(ComponentBase, RuntimeComponent):
+class DBRuntime(comp.ComponentBase, comp.RuntimeComponent):
     def __init__(self, *args, **kargs):
-        ComponentBase.__init__(self, TYPE, *args, **kargs)
-        self.tracereader = TraceReader(self.tracedir, IN_TRACE)
+        comp.ComponentBase.__init__(self, TYPE, *args, **kargs)
+        self.tracereader = tr.TraceReader(self.tracedir, tr.IN_TRACE)
 
     def _gettypeactions(self, act, exception_cls):
         pkgsinstalled = self.tracereader.packages_installed()
@@ -126,25 +120,25 @@ class DBRuntime(ComponentBase, RuntimeComponent):
 
     def start(self):
         if(self.status().find('start') == -1):
-            startcmd = self._gettypeactions('start', StartException)
-            execute(*startcmd, run_as_root=True)
+            startcmd = self._gettypeactions('start', excp.StartException)
+            sh.execute(*startcmd, run_as_root=True)
         return None
 
     def stop(self):
         if(self.status().find('stop') == -1):
-            stopcmd = self._gettypeactions('stop', StopException)
-            execute(*stopcmd, run_as_root=True)
+            stopcmd = self._gettypeactions('stop', excp.StopException)
+            sh.execute(*stopcmd, run_as_root=True)
             return 1
         return 0
 
     def restart(self):
-        restartcmd = self._gettypeactions('restart', RestartException)
-        execute(*restartcmd, run_as_root=True)
+        restartcmd = self._gettypeactions('restart', excp.RestartException)
+        sh.execute(*restartcmd, run_as_root=True)
         return 1
 
     def status(self):
-        statuscmd = self._gettypeactions('status', StatusException)
-        (sysout, stderr) = execute(*statuscmd, run_as_root=True)
+        statuscmd = self._gettypeactions('status', excp.StatusException)
+        (sysout, stderr) = sh.execute(*statuscmd, run_as_root=True)
         return sysout.strip()
 
 
@@ -162,7 +156,7 @@ def drop_db(cfg, dbname):
             'cmd': dropcmd,
             'run_as_root': False,
         })
-        execute_template(*cmds, params=params)
+        utils.execute_template(*cmds, params=params)
     else:
         msg = BASE_ERROR % ('drop', dbtype)
         raise NotImplementedError(msg)
@@ -182,7 +176,7 @@ def create_db(cfg, dbname):
             'cmd': createcmd,
             'run_as_root': False,
         })
-        execute_template(*cmds, params=params)
+        utils.execute_template(*cmds, params=params)
     else:
         msg = BASE_ERROR % ('create', dbtype)
         raise NotImplementedError(msg)

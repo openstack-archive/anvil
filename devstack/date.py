@@ -13,26 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from time import (localtime, strftime)
 
-import Logger
-
-#TODO fix these
-from Component import (ComponentBase, RuntimeComponent,
-                       UninstallComponent, InstallComponent)
-
-LOG = Logger.getLogger("install.swift")
-
-
-class SwiftUninstaller(UninstallComponent):
-    def __init__(self, *args, **kargs):
-        pass
-
-
-class SwiftInstaller(InstallComponent):
-    def __init__(self, *args, **kargs):
-        pass
-
-
-class SwiftRuntime(RuntimeComponent):
-    def __init__(self, *args, **kargs):
-        pass
+def rcf8222date():
+    return strftime("%a, %d %b %Y %H:%M:%S", localtime())

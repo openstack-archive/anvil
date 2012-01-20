@@ -14,18 +14,24 @@
 #    under the License.
 
 from optparse import OptionParser
+from optparse import IndentedHelpFormatter
 
-import Util
+from devstack import constants
+from devstack import utils
+from devstack import version
+
+HELP_WIDTH = 80
 
 
 def parse():
 
     #version
-    version_str = "%prog v" + Util.VERSION_STR
-    parser = OptionParser(version=version_str)
+    version_str = "%prog v" + version.version_string()
+    help_formatter = IndentedHelpFormatter(width=HELP_WIDTH)
+    parser = OptionParser(version=version_str, formatter=help_formatter)
 
     #non-boolean options
-    known_actions = sorted(Util.ACTIONS)
+    known_actions = sorted(constants.ACTIONS)
     actions = "(" + ", ".join(known_actions) + ")"
     parser.add_option("-a", "--action",
             action="store",
@@ -42,7 +48,7 @@ def parse():
         help="root DIR for new components or "\
              "DIR with existing components (ACTION dependent)")
 
-    known_components = sorted(Util.COMPONENT_NAMES)
+    known_components = sorted(constants.COMPONENT_NAMES)
     components = "(" + ", ".join(known_components) + ")"
     parser.add_option("-c", "--component",
         action="append",
@@ -84,5 +90,4 @@ def parse():
     output['force'] = options.force
     output['ignore_deps'] = options.ignore_deps
     output['extras'] = args
-    
     return output

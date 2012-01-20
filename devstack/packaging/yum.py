@@ -13,46 +13,35 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import Packager
-import Logger
-import Util
-import Shell
+from devstack import packager as pack
+from devstack import shell as sh
+from devstack import log as logging
 
-#TODO fix these
-from Shell import execute
-from Util import param_replace
-
-LOG = Logger.getLogger("install.package.yum")
+LOG = logging.getLogger("devstack.packaging.yum")
 YUM_CMD = ['yum']
 YUM_INSTALL = ["install", "-y"]
 
 
-class YumPackager(Packager.Packager):
+class YumPackager(pack.Packager):
     def __init__(self, distro):
-        Packager.Packager.__init__(self, distro)
+        pack.Packager.__init__(self, distro)
 
-    def _form_cmd(self, name, version):
+    def _format_pkg_name(self, name, version):
         cmd = name
-        if(version and len(version)):
+        if(version != None and len(version)):
             cmd = cmd + "-" + version
         return cmd
 
     def _do_cmd(self, base_cmd, pkgs):
-        pkgnames = pkgs.keys()
-        pkgnames.sort()
-        cmds = []
+        pkgnames = sorted(pkgs.keys())
+        cmds = list()
         for name in pkgnames:
-            version = None
-            info = pkgs.get(name)
-            if(info):
-                version = info.get("version")
-            torun = self._form_cmd(name, version)
+            pkg_info = pkgs.get(name)
+            torun = self._format_pkg_name(name, pkg_info.get("version"))
             cmds.append(torun)
         if(len(cmds)):
             cmd = YUM_CMD + base_cmd + cmds
-            LOG.debug("About to run:%s" % (cmd))
-            execute(*cmd, run_as_root=True)
+            sh.execute(*cmd, run_as_root=True)
 
     def install_batch(self, pkgs):
-        LOG.info("install_batch called")
         self._do_cmd(YUM_INSTALL, pkgs)

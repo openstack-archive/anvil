@@ -13,58 +13,51 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import io
 import os
 import os.path
-import io
 
-import Pip
-import Logger
-import Db
-import Config
+from devstack import cfg
+from devstack import component as comp
+from devstack import constants
+from devstack import log as logging
+from devstack import shell as sh
+from devstack import utils
+from devstack.components import db
 
-#TODO fix these
-from Util import (KEYSTONE,
-                  CONFIG_DIR,
-                  NOVA, GLANCE, SWIFT,
-                  get_host_ip,
-                  execute_template,
-                  param_replace)
-from Component import (PythonUninstallComponent,
-                PythonInstallComponent, PythonRuntime)
-from Shell import (mkdirslist, unlink, touch_file, joinpths)
+LOG = logging.getLogger("devstack.components.keystone")
 
-LOG = Logger.getLogger("install.keystone")
-
-TYPE = KEYSTONE
+TYPE = constants.KEYSTONE
 ROOT_CONF = "keystone.conf"
 CONFIGS = [ROOT_CONF]
 BIN_DIR = "bin"
+CONFIG_DIR = "config"
 DB_NAME = "keystone"
 CFG_SECTION = 'DEFAULT'
 
 #what to start
 APP_OPTIONS = {
-    'keystone': ['--config-file', joinpths('%ROOT%', "config", ROOT_CONF), "--verbose"],
+    'keystone': ['--config-file', sh.joinpths('%ROOT%', "config", ROOT_CONF), "--verbose"],
 }
 
 
-class KeystoneUninstaller(PythonUninstallComponent):
+class KeystoneUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
-        self.cfgdir = joinpths(self.appdir, CONFIG_DIR)
-        self.bindir = joinpths(self.appdir, BIN_DIR)
+        comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
+        self.bindir = sh.joinpths(self.appdir, BIN_DIR)
 
 
-class KeystoneInstaller(PythonInstallComponent):
+class KeystoneInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.git_loc = self.cfg.get("git", "keystone_repo")
         self.git_branch = self.cfg.get("git", "keystone_branch")
-        self.cfgdir = joinpths(self.appdir, CONFIG_DIR)
-        self.bindir = joinpths(self.appdir, BIN_DIR)
+        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
+        self.bindir = sh.joinpths(self.appdir, BIN_DIR)
 
     def _get_download_locations(self):
-        places = PythonInstallComponent._get_download_locations(self)
+        places = comp.PythonInstallComponent._get_download_locations(self)
         places.append({
             'uri': self.git_loc,
             'branch': self.git_branch,
@@ -72,7 +65,7 @@ class KeystoneInstaller(PythonInstallComponent):
         return places
 
     def post_install(self):
-        parent_result = PythonInstallComponent.post_install(self)
+        parent_result = comp.PythonInstallComponent.post_install(self)
         self._setup_db()
         self._setup_data()
         return parent_result
@@ -81,13 +74,13 @@ class KeystoneInstaller(PythonInstallComponent):
         return list(CONFIGS)
 
     def _setup_db(self):
-        Db.drop_db(self.cfg, DB_NAME)
-        Db.create_db(self.cfg, DB_NAME)
+        db.drop_db(self.cfg, DB_NAME)
+        db.create_db(self.cfg, DB_NAME)
 
     def _setup_data(self):
         params = self._get_param_map(None)
         cmds = _keystone_setup_cmds(self.all_components)
-        execute_template(*cmds, params=params, ignore_missing=True)
+        utils.execute_template(*cmds, params=params, ignore_missing=True)
 
     def _config_adjust(self, contents, name):
         if(name not in CONFIGS):
@@ -96,7 +89,7 @@ class KeystoneInstaller(PythonInstallComponent):
         #then extract known configs that
         #will need locations/directories/files made (or touched)...
         with io.BytesIO(contents) as stream:
-            config = Config.IgnoreMissingConfigParser()
+            config = cfg.IgnoreMissingConfigParser()
             config.readfp(stream)
             log_filename = config.get('log_file', CFG_SECTION)
             if(log_filename):
@@ -104,12 +97,12 @@ class KeystoneInstaller(PythonInstallComponent):
                 log_dir = os.path.dirname(log_filename)
                 if(log_dir):
                     LOG.info("Ensuring log directory %s exists" % (log_dir))
-                    dirsmade = mkdirslist(log_dir)
+                    dirsmade = sh.mkdirslist(log_dir)
                     #this trace is used to remove the dirs created
                     self.tracewriter.dir_made(*dirsmade)
                 #destroy then recreate it (the log file)
-                unlink(log_filename)
-                touch_file(log_filename)
+                sh.unlink(log_filename)
+                sh.touch_file(log_filename)
                 self.tracewriter.file_touched(log_filename)
             #we might need to handle more in the future...
         #nothing modified so just return the original
@@ -122,25 +115,25 @@ class KeystoneInstaller(PythonInstallComponent):
         mp['DEST'] = self.appdir
         mp['SQL_CONN'] = self.cfg.get_dbdsn(DB_NAME)
         mp['ADMIN_PASSWORD'] = self.cfg.getpw('passwords', 'horizon_keystone_admin')
-        mp['HOST_IP'] = get_host_ip(self.cfg)
+        mp['HOST_IP'] = utils.get_host_ip(self.cfg)
         mp['SERVICE_TOKEN'] = self.cfg.getpw("passwords", "service_token")
         mp['BIN_DIR'] = self.bindir
-        mp['CONFIG_FILE'] = joinpths(self.cfgdir, ROOT_CONF)
+        mp['CONFIG_FILE'] = sh.joinpths(self.cfgdir, ROOT_CONF)
         return mp
 
 
-class KeystoneRuntime(PythonRuntime):
+class KeystoneRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
-        PythonRuntime.__init__(self, TYPE, *args, **kargs)
-        self.cfgdir = joinpths(self.appdir, CONFIG_DIR)
-        self.bindir = joinpths(self.appdir, BIN_DIR)
+        comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
+        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
+        self.bindir = sh.joinpths(self.appdir, BIN_DIR)
 
     def _get_apps_to_start(self):
         apps = list()
         for app_name in APP_OPTIONS.keys():
             apps.append({
                 'name': app_name,
-                'path': joinpths(self.bindir, app_name),
+                'path': sh.joinpths(self.bindir, app_name),
             })
         return apps
 
@@ -233,7 +226,7 @@ def _keystone_setup_cmds(components):
         "cmd": root_cmd + ["service", "add", "keystone", "identity", "Keystone Identity Service"]
     })
 
-    if(NOVA in components):
+    if(constants.NOVA in components):
         services.append({
                 "cmd": root_cmd + ["service", "add", "nova", "compute", "Nova Compute Service"]
         })
@@ -241,12 +234,12 @@ def _keystone_setup_cmds(components):
                 "cmd": root_cmd + ["service", "add", "ec2", "ec2", "EC2 Compatability Layer"]
         })
 
-    if(GLANCE in components):
+    if(constants.GLANCE in components):
         services.append({
                 "cmd": root_cmd + ["service", "add", "glance", "image", "Glance Image Service"]
         })
 
-    if(SWIFT in components):
+    if(constants.SWIFT in components):
         services.append({
                 "cmd": root_cmd + ["service", "add", "swift", "object-store", "Swift Service"]
         })
@@ -264,7 +257,7 @@ def _keystone_setup_cmds(components):
             ]
     })
 
-    if(NOVA in components):
+    if(constants.NOVA in components):
         endpoint_templates.append({
                 "cmd": root_cmd + ["endpointTemplates", "add",
                     "RegionOne", "nova",
@@ -286,7 +279,7 @@ def _keystone_setup_cmds(components):
             ]
         })
 
-    if(GLANCE in components):
+    if(constants.GLANCE in components):
         endpoint_templates.append({
                 "cmd": root_cmd + ["endpointTemplates", "add",
                     "RegionOne", "glance",
@@ -298,7 +291,7 @@ def _keystone_setup_cmds(components):
             ]
         })
 
-    if(SWIFT in components):
+    if(constants.SWIFT in components):
         endpoint_templates.append({
                 "cmd": root_cmd + ["endpointTemplates", "add",
                     "RegionOne", "swift",
@@ -321,7 +314,7 @@ def _keystone_setup_cmds(components):
     # but keystone doesn't parse them - it is just a blob from keystone's
     # point of view
     ec2_creds = []
-    if(NOVA in components):
+    if(constants.NOVA in components):
         ec2_creds = [
             {
                 "cmd": root_cmd + ["credentials", "add",

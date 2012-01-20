@@ -13,33 +13,29 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from devstack import component as comp
+from devstack import constants
+from devstack import log as logging
+from devstack import shell as sh
+from devstack import utils
 
-import Logger
-import Util
-
-#TODO fix these
-from Component import (PythonUninstallComponent,
-                        PythonInstallComponent,
-                        NullRuntime)
-
-
-LOG = Logger.getLogger("install.nova.client")
-TYPE = Util.NOVA_CLIENT
+LOG = logging.getLogger("devstack.components.nova_client")
+TYPE = constants.NOVA_CLIENT
 
 
-class NovaClientUninstaller(PythonUninstallComponent):
+class NovaClientUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
 
 
-class NovaClientInstaller(PythonInstallComponent):
+class NovaClientInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.git_loc = self.cfg.get("git", "novaclient_repo")
         self.git_branch = self.cfg.get("git", "novaclient_branch")
 
     def _get_download_locations(self):
-        places = PythonInstallComponent._get_download_locations(self)
+        places = comp.PythonInstallComponent._get_download_locations(self)
         places.append({
             'uri': self.git_loc,
             'branch': self.git_branch,
@@ -51,10 +47,10 @@ class NovaClientInstaller(PythonInstallComponent):
         #params with actual values
         mp = dict()
         mp['DEST'] = self.appdir
-        mp['OPENSTACK_HOST'] = Util.get_host_ip(self.cfg)
+        mp['OPENSTACK_HOST'] = utils.get_host_ip(self.cfg)
         return mp
 
 
-class NovaClientRuntime(NullRuntime):
+class NovaClientRuntime(comp.NullRuntime):
     def __init__(self, *args, **kargs):
-        NullRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.NullRuntime.__init__(self, TYPE, *args, **kargs)

@@ -14,17 +14,13 @@
 #    under the License.
 
 
-import Logger
-import Util
-import Shell
+from devstack import component as comp
+from devstack import constants
+from devstack import log as logging
+from devstack import shell as sh
+from devstack import utils
 
-#TODO fix these
-from Component import (PythonUninstallComponent,
-                       PythonInstallComponent,
-                       NullRuntime)
-
-LOG = Logger.getLogger("install.horizon")
-TYPE = Util.HORIZON
+TYPE = constants.HORIZON
 
 ROOT_HORIZON = 'horizon'
 HORIZON_NAME = 'horizon'
@@ -35,22 +31,24 @@ HORIZON_PY_CONF = "horizon_settings.py"
 HORIZON_PY_CONF_TGT = ['local', 'local_settings.py']
 CONFIGS = [HORIZON_PY_CONF]
 
+LOG = logging.getLogger("devstack.components.horizon")
 
-class HorizonUninstaller(PythonUninstallComponent):
+
+class HorizonUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
 
 
-class HorizonInstaller(PythonInstallComponent):
+class HorizonInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.git_loc = self.cfg.get("git", "horizon_repo")
         self.git_branch = self.cfg.get("git", "horizon_branch")
-        self.horizon_dir = Shell.joinpths(self.appdir, ROOT_HORIZON)
-        self.dash_dir = Shell.joinpths(self.appdir, ROOT_DASH)
+        self.horizon_dir = sh.joinpths(self.appdir, ROOT_HORIZON)
+        self.dash_dir = sh.joinpths(self.appdir, ROOT_DASH)
 
     def _get_download_locations(self):
-        places = PythonInstallComponent._get_download_locations(self)
+        places = comp.PythonInstallComponent._get_download_locations(self)
         places.append({
             'uri': self.git_loc,
             'branch': self.git_branch,
@@ -59,9 +57,9 @@ class HorizonInstaller(PythonInstallComponent):
 
     def _get_target_config_name(self, config_name):
         if(config_name == HORIZON_PY_CONF):
-            return Shell.joinpths(self.dash_dir, *HORIZON_PY_CONF_TGT)
+            return sh.joinpths(self.dash_dir, *HORIZON_PY_CONF_TGT)
         else:
-            return PythonInstallComponent._get_target_config_name(self, config_name)
+            return comp.PythonInstallComponent._get_target_config_name(self, config_name)
 
     def _get_python_directories(self):
         py_dirs = list()
@@ -83,10 +81,10 @@ class HorizonInstaller(PythonInstallComponent):
         #this dict will be used to fill in the configuration
         #params with actual values
         mp = dict()
-        mp['OPENSTACK_HOST'] = Util.get_host_ip(self.cfg)
+        mp['OPENSTACK_HOST'] = utils.get_host_ip(self.cfg)
         return mp
 
 
-class HorizonRuntime(NullRuntime):
+class HorizonRuntime(comp.NullRuntime):
     def __init__(self, *args, **kargs):
-        NullRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.NullRuntime.__init__(self, TYPE, *args, **kargs)

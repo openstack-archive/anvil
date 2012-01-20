@@ -13,27 +13,23 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import io
 import json
 import os.path
-import io
 
-import Config
-import Logger
-import Db
+from devstack import cfg
+from devstack import component as comp
+from devstack import constants
+from devstack import exceptions as excp
+from devstack import log as logging
+from devstack import shell as sh
+from devstack import utils
+from devstack.components import db
 
-#TODO fix these
-from Component import (PythonUninstallComponent,
-                       PythonInstallComponent,
-                       PythonRuntime)
-from Util import (GLANCE,
-                  get_host_ip, param_replace)
-from Shell import (deldir, mkdirslist, unlink,
-                   joinpths, touch_file)
-
-LOG = Logger.getLogger("install.glance")
+LOG = logging.getLogger("devstack.components.glance")
 
 #naming + config files
-TYPE = GLANCE
+TYPE = constants.GLANCE
 API_CONF = "glance-api.conf"
 REG_CONF = "glance-registry.conf"
 CONFIGS = [API_CONF, REG_CONF]
@@ -42,30 +38,30 @@ CFG_SECTION = 'DEFAULT'
 
 #what to start
 APP_OPTIONS = {
-    'glance-api': ['--config-file', joinpths('%ROOT%', "etc", API_CONF)],
-    'glance-registry': ['--config-file', joinpths('%ROOT%', "etc", REG_CONF)]
+    'glance-api': ['--config-file', sh.joinpths('%ROOT%', "etc", API_CONF)],
+    'glance-registry': ['--config-file', sh.joinpths('%ROOT%', "etc", REG_CONF)]
 }
 CONFIG_ACTUAL_DIR = 'etc'
 BIN_DIR = 'bin'
 
 
-class GlanceUninstaller(PythonUninstallComponent):
+class GlanceUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
-        self.cfgdir = joinpths(self.appdir, CONFIG_ACTUAL_DIR)
+        comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        self.cfgdir = sh.joinpths(self.appdir, CONFIG_ACTUAL_DIR)
 
 
-class GlanceRuntime(PythonRuntime):
+class GlanceRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
-        PythonRuntime.__init__(self, TYPE, *args, **kargs)
-        self.cfgdir = joinpths(self.appdir, CONFIG_ACTUAL_DIR)
+        comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
+        self.cfgdir = sh.joinpths(self.appdir, CONFIG_ACTUAL_DIR)
 
     def _get_apps_to_start(self):
         apps = list()
         for app_name in APP_OPTIONS.keys():
             apps.append({
                 'name': app_name,
-                'path': joinpths(self.appdir, BIN_DIR, app_name),
+                'path': sh.joinpths(self.appdir, BIN_DIR, app_name),
             })
         return apps
 
@@ -73,15 +69,15 @@ class GlanceRuntime(PythonRuntime):
         return APP_OPTIONS.get(app)
 
 
-class GlanceInstaller(PythonInstallComponent):
+class GlanceInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.git_loc = self.cfg.get("git", "glance_repo")
         self.git_branch = self.cfg.get("git", "glance_branch")
-        self.cfgdir = joinpths(self.appdir, CONFIG_ACTUAL_DIR)
+        self.cfgdir = sh.joinpths(self.appdir, CONFIG_ACTUAL_DIR)
 
     def _get_download_locations(self):
-        places = PythonInstallComponent._get_download_locations(self)
+        places = comp.PythonInstallComponent._get_download_locations(self)
         places.append({
             'uri': self.git_loc,
             'branch': self.git_branch,
@@ -93,13 +89,13 @@ class GlanceInstaller(PythonInstallComponent):
         return list(CONFIGS)
 
     def post_install(self):
-        parent_result = PythonInstallComponent.post_install(self)
+        parent_result = comp.PythonInstallComponent.post_install(self)
         self._setup_db()
         return parent_result
 
     def _setup_db(self):
-        Db.drop_db(self.cfg, DB_NAME)
-        Db.create_db(self.cfg, DB_NAME)
+        db.drop_db(self.cfg, DB_NAME)
+        db.create_db(self.cfg, DB_NAME)
 
     def _config_adjust(self, contents, name):
         if(name not in CONFIGS):
@@ -108,7 +104,7 @@ class GlanceInstaller(PythonInstallComponent):
         #then extract known configs that
         #will need locations/directories/files made (or touched)...
         with io.BytesIO(contents) as stream:
-            config = Config.IgnoreMissingConfigParser()
+            config = cfg.IgnoreMissingConfigParser()
             config.readfp(stream)
             if(config.getboolean('image_cache_enabled', CFG_SECTION)):
                 cache_dir = config.get("image_cache_datadir", CFG_SECTION)
@@ -163,7 +159,7 @@ class GlanceInstaller(PythonInstallComponent):
         mp['SYSLOG'] = self.cfg.getboolean("default", "syslog")
         mp['SERVICE_TOKEN'] = self.cfg.getpw("passwords", "service_token")
         mp['SQL_CONN'] = self.cfg.get_dbdsn(DB_NAME)
-        hostip = get_host_ip(self.cfg)
+        hostip = utils.get_host_ip(self.cfg)
         mp['SERVICE_HOST'] = hostip
         mp['HOST_IP'] = hostip
         return mp

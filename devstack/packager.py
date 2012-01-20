@@ -13,20 +13,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from devstack import constants
+from devstack import log as logging
+from devstack import utils
 
-"""
-An abstraction that different packaging
-frameworks (ie apt, yum) can inherit from
-"""
-
-import Logger
-import Shell
-
-#TODO fix these
-from Util import (execute_template,
-                    PRE_INSTALL, POST_INSTALL)
-
-LOG = Logger.getLogger("install.packager")
+LOG = logging.getLogger("devstack.packager")
 
 
 class Packager():
@@ -43,16 +34,16 @@ class Packager():
         pkgnames = sorted(pkgs.keys())
         for name in pkgnames:
             packageinfo = pkgs.get(name)
-            preinstallcmds = packageinfo.get(PRE_INSTALL)
+            preinstallcmds = packageinfo.get(constants.PRE_INSTALL)
             if(preinstallcmds and len(preinstallcmds)):
                 LOG.info("Running pre-install commands for package %s." % (name))
-                execute_template(*preinstallcmds, params=installparams)
+                utils.execute_template(*preinstallcmds, params=installparams)
 
     def post_install(self, pkgs, installparams=None):
         pkgnames = sorted(pkgs.keys())
         for name in pkgnames:
             packageinfo = pkgs.get(name)
-            postinstallcmds = packageinfo.get(POST_INSTALL)
+            postinstallcmds = packageinfo.get(constants.POST_INSTALL)
             if(postinstallcmds and len(postinstallcmds)):
                 LOG.info("Running post-install commands for package %s." % (name))
-                execute_template(*postinstallcmds, params=installparams)
+                utils.execute_template(*postinstallcmds, params=installparams)

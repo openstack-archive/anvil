@@ -14,32 +14,29 @@
 #    under the License.
 
 
-import Logger
-import Util
+from devstack import component as comp
+from devstack import constants
+from devstack import log as logging
+from devstack import shell as sh
+from devstack import utils
 
-#TODO fix these
-from Component import (PythonUninstallComponent,
-                        PythonInstallComponent,
-                        NullRuntime)
-
-
-LOG = Logger.getLogger("install.openstackx")
-TYPE = Util.OPENSTACK_X
+TYPE = constants.KEYSTONE_CLIENT
+LOG = logging.getLogger("devstack.components.keystone_client")
 
 
-class OpenstackXUninstaller(PythonUninstallComponent):
+class KeyStoneClientUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
 
 
-class OpenstackXInstaller(PythonInstallComponent):
+class KeyStoneClientInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
-        self.git_loc = self.cfg.get("git", "openstackx_repo")
-        self.git_branch = self.cfg.get("git", "openstackx_branch")
+        comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+        self.git_loc = self.cfg.get("git", "keystoneclient_repo")
+        self.git_branch = self.cfg.get("git", "keystoneclient_branch")
 
     def _get_download_locations(self):
-        places = PythonInstallComponent._get_download_locations(self)
+        places = comp.PythonInstallComponent._get_download_locations(self)
         places.append({
             'uri': self.git_loc,
             'branch': self.git_branch,
@@ -47,6 +44,6 @@ class OpenstackXInstaller(PythonInstallComponent):
         return places
 
 
-class OpenstackXRuntime(NullRuntime):
+class KeyStoneClientRuntime(comp.NullRuntime):
     def __init__(self, *args, **kargs):
-        NullRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.NullRuntime.__init__(self, TYPE, *args, **kargs)

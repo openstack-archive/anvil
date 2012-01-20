@@ -13,18 +13,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import ConfigParser
 import os
 import re
+import ConfigParser
 
-#TODO fix these
-from Exceptions import (BadParamException)
-from Environment import (get_environment_key)
+from devstack import env
+from devstack import exceptions as excp
+from devstack import log as logging
+from devstack import shell as sh
 
-import Logger
-import Shell
-
-LOG = Logger.getLogger("install.config")
+LOG = logging.getLogger("devstack.cfg")
 PW_TMPL = "Enter a password for %s: "
 ENV_PAT = re.compile(r"^\s*\$\{([\w\d]+):\-(.*)\}\s*$")
 CACHE_MSG = "(value will now be internally cached)"
@@ -103,10 +101,10 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
             defv = mtch.group(2)
             if(len(defv) == 0 and len(key) == 0):
                 msg = "Invalid bash-like value \"%s\" for \"%s\"" % (v, key)
-                raise BadParamException(msg)
+                raise excp.BadParamException(msg)
             if(len(key) == 0):
                 return defv
-            v = get_environment_key(key)
+            v = env.get_key(key)
             if(v == None):
                 v = defv
             return v
@@ -125,11 +123,11 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         #dsn = "<driver>://<username>:<password>@<host>:<port>/<database>"
         if(not host):
             msg = "Unable to fetch a database dsn - no host found"
-            raise BadParamException(msg)
+            raise excp.BadParamException(msg)
         driver = self.get("db", "type")
         if(not driver):
             msg = "Unable to fetch a database dsn - no driver type found"
-            raise BadParamException(msg)
+            raise excp.BadParamException(msg)
         dsn = driver + "://"
         if(user):
             dsn += user
@@ -159,7 +157,7 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
             pw = ""
         if(len(pw) == 0):
             while(len(pw) == 0):
-                pw = Shell.password(PW_TMPL % (key))
+                pw = sh.password(PW_TMPL % (key))
         LOG.debug("Password for \"%s\" will be \"%s\" %s" % (key, pw, CACHE_MSG))
         self.pws[key] = pw
         return pw

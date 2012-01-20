@@ -13,3 +13,26 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+
+from devstack import component as comp
+from devstack import constants
+from devstack import log as logging
+from devstack import shell as sh
+from devstack import utils
+
+LOG = logging.getLogger("devstack.components.swift")
+
+
+class SwiftUninstaller(comp.UninstallComponent):
+    def __init__(self, *args, **kargs):
+        pass
+
+
+class SwiftInstaller(comp.InstallComponent):
+    def __init__(self, *args, **kargs):
+        pass
+
+
+class SwiftRuntime(comp.RuntimeComponent):
+    def __init__(self, *args, **kargs):
+        pass

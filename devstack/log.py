@@ -75,8 +75,4 @@ def getLogger(name):
     return logging.getLogger(name)
 
 
-#this should happen first (and once)
-INIT_LOGGING = False
-if(not INIT_LOGGING):
-    setupLogging()
-    INIT_LOGGING = True
+

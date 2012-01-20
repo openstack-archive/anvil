@@ -22,16 +22,14 @@ import shutil
 import subprocess
 import sys
 
-import Logger
-
-#TODO fix these
-from Exceptions import (ProcessExecutionError, FileException, BadParamException)
-from Environment import (get_environment_bool, get_environment)
+from devstack import log as logging
+from devstack import exceptions as excp
+from devstack import env
 
 ROOT_HELPER = ["sudo"]
 MKPW_CMD = ["openssl", 'rand', '-hex']
 PASS_ASK_ENV = 'PASS_ASK'
-LOG = Logger.getLogger("install.shell")
+LOG = logging.getLogger("devstack.shell")
 
 
 def execute(*cmd, **kwargs):
@@ -78,12 +76,13 @@ def execute(*cmd, **kwargs):
     if('stdin_fh' in kwargs.keys()):
         stdin_fh = kwargs.get('stdin_fh')
         LOG.debug("Redirecting stdin to file handle: %s" % (stdin_fh))
+        process_input = None
 
     if('stderr_fh' in kwargs.keys()):
         stderr_fh = kwargs.get('stderr_fh')
         LOG.debug("Redirecting stderr to file handle: %s" % (stderr_fh))
 
-    process_env = get_environment()
+    process_env = env.get()
     LOG.debug("With environment: %s" % (process_env))
     if(env_overrides and len(env_overrides)):
         LOG.debug("With additional environment overrides: %s" % (env_overrides))
@@ -114,13 +113,17 @@ def execute(*cmd, **kwargs):
         ecmd = cmd
         if(not shell):
             ecmd = ' '.join(cmd)
-        raise ProcessExecutionError(
+        raise excp.ProcessExecutionError(
                 exit_code=_returncode,
                 stdout=stdout,
                 stderr=stderr,
                 cmd=ecmd)
     else:
         return result
+
+
+def listdir(path):
+    return os.listdir(path)
 
 
 def isfile(fn):
@@ -138,7 +141,7 @@ def joinpths(*paths):
 def _gen_password(pw_len):
     if(pw_len <= 0):
         msg = "Password length %s can not be less than or equal to zero" % (pw_len)
-        raise BadParamException(msg)
+        raise excp.BadParamException(msg)
     LOG.debug("Generating you a pseudo-random password of byte length: %s" % (pw_len))
     cmd = MKPW_CMD + [pw_len]
     (stdout, stderr) = execute(*cmd)
@@ -154,7 +157,7 @@ def _prompt_password(prompt=None):
 
 def password(prompt=None, pw_len=8):
     rd = ""
-    ask_for_pw = get_environment_bool(PASS_ASK_ENV, True)
+    ask_for_pw = env.get_bool(PASS_ASK_ENV, True)
     if(ask_for_pw):
         rd = _prompt_password(prompt)
     if(len(rd) == 0):
@@ -204,7 +207,7 @@ def touch_file(fn, die_if_there=True):
     else:
         if(die_if_there):
             msg = "Can not touch file %s since it already exists" % (fn)
-            raise FileException(msg)
+            raise excp.FileException(msg)
 
 
 def load_file(fn):
@@ -230,8 +233,30 @@ def deldir(path):
         shutil.rmtree(path)
 
 
-def prompt(prompt):
-    return raw_input(prompt)
+def rmdir(path, quiet=True):
+    if(not isdir(path)):
+        return
+    try:
+        LOG.debug("Deleting directory \"%s\" with the cavet that we will fail if it's not empty." % (path))
+        os.rmdir(path)
+        LOG.debug("Deleted directory \"%s\"" % (path))
+    except OSError, e:
+        if(not quiet):
+            raise
+        else:
+            pass
+
+
+def dirname(path):
+    return os.path.dirname(path)
+
+
+def canon_path(path):
+    return os.path.realpath(path)
+
+
+def prompt(prompt_str):
+    return raw_input(prompt_str)
 
 
 def unlink(path, ignore_errors=True):

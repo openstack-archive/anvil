@@ -12,11 +12,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import Logger
+from devstack import component as comp
+from devstack import constants
+from devstack import log as logging
+from devstack import shell as sh
+from devstack import utils
 
-from Util import (QUANTUM, get_host_ip)
-
-LOG = Logger.getLogger("install.nova_conf")
+LOG = logging.getLogger("devstack.components.nova_conf")
 
 QUANTUM_OPENSWITCH_OPS = [
   '--libvirt_vif_type=ethernet',

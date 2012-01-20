@@ -13,17 +13,18 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from devstack import component as comp
+from devstack import constants
+from devstack import log as logging
+from devstack import shell as sh
+from devstack import utils
 
-import Logger
+LOG = logging.getLogger("devstack.components.quantum")
+TYPE = constants.QUANTUM
 
-import Component
-
-LOG = Logger.getLogger("install.quantum")
-
-
-class QuantumUninstaller(Component.UninstallComponent):
+class QuantumUninstaller(comp.UninstallComponent):
     def __init__(self, *args, **kargs):
-        Component.UninstallComponent.__init__(self)
+        comp.UninstallComponent.__init__(self)
 
     def unconfigure(self):
         pass
@@ -32,9 +33,9 @@ class QuantumUninstaller(Component.UninstallComponent):
         pass
 
 
-class QuantumInstaller(Component.InstallComponent):
+class QuantumInstaller(comp.InstallComponent):
     def __init__(self, *args, **kargs):
-        Component.InstallComponent.__init__(self)
+        comp.InstallComponent.__init__(self)
 
     def download(self):
         pass
@@ -52,9 +53,9 @@ class QuantumInstaller(Component.InstallComponent):
         pass
 
 
-class QuantumRuntime(Component.RuntimeComponent):
+class QuantumRuntime(comp.RuntimeComponent):
     def __init__(self, *args, **kargs):
-        Component.RuntimeComponent.__init__(self)
+        comp.RuntimeComponent.__init__(self)
 
     def start(self):
         pass

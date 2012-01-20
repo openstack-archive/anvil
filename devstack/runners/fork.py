@@ -20,27 +20,23 @@ import signal
 import errno
 import time
 
-import Runner
-import Util
-import Exceptions
-import Trace
-import Logger
-import Shell
+from devstack import exceptions as excp
+from devstack import log as logging
+from devstack import runner
+from devstack import shell as sh
+from devstack import trace as tr
+from devstack import utils
 
-#TODO fix these
-from Exceptions import (StartException, StopException)
-from Shell import (unlink, mkdir, joinpths, write_file,
-                   load_file, isfile)
 
 # Maximum for the number of available file descriptors (when not found)
 MAXFD = 2048
 MAX_KILL_TRY = 5
 SLEEP_TIME = 1
 
-LOG = Logger.getLogger("install.runners.foreground")
+LOG = logging.getLogger("devstack.runners.foreground")
 
 #trace constants
-RUN = Runner.RUN_TYPE
+RUN = runner.RUN_TYPE
 RUN_TYPE = "FORK"
 PID_FN = "PID_FN"
 STDOUT_FN = "STDOUT_FN"
@@ -49,9 +45,9 @@ NAME = "NAME"
 FORK_TEMPL = "%s.fork"
 
 
-class ForegroundRunner(Runner.Runner):
+class ForkRunner(runner.Runner):
     def __init__(self):
-        Runner.Runner.__init__(self)
+        runner.Runner.__init__(self)
 
     def _stop_pid(self, pid):
         killed = False
@@ -76,7 +72,7 @@ class ForegroundRunner(Runner.Runner):
         tracedir = kargs.get("trace_dir")
         fn_name = FORK_TEMPL % (name)
         (pidfile, stderr, stdout) = self._form_file_names(tracedir, fn_name)
-        tfname = Trace.trace_fn(tracedir, fn_name)
+        tfname = tr.trace_fn(tracedir, fn_name)
         if(isfile(pidfile) and isfile(tfname)):
             pid = int(load_file(pidfile).strip())
             killed = self._stop_pid(pid)
@@ -158,8 +154,8 @@ class ForegroundRunner(Runner.Runner):
         appdir = kargs.get("app_dir")
         fn_name = FORK_TEMPL % (name)
         (pidfile, stderrfn, stdoutfn) = self._form_file_names(tracedir, fn_name)
-        tracefn = Trace.touch_trace(tracedir, fn_name)
-        runtrace = Trace.Trace(tracefn)
+        tracefn = tr.touch_trace(tracedir, fn_name)
+        runtrace = tr.Trace(tracefn)
         runtrace.trace(RUN, RUN_TYPE)
         runtrace.trace(PID_FN, pidfile)
         runtrace.trace(STDERR_FN, stderrfn)

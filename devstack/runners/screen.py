@@ -17,28 +17,27 @@ import time
 import os
 import re
 
-import Runner
-import Logger
+from devstack import exceptions as excp
+from devstack import log as logging
+from devstack import runner
+from devstack import shell as sh
+from devstack import trace as tr
+from devstack import utils
 
-#TODO fix these
-from Exceptions import (StartException, StopException)
-from Util import (execute_template)
-from Shell import (execute)
-
-LOG = Logger.getLogger("install.screen")
+LOG = logging.getLogger("install.screen")
 SCREEN_MAKE = ['screen', '-d', '-m', '-S', '%NAME%', '-t', '%NAME%']
 NAME_POSTFIX = ".devstack"
 RUN_TYPE = "SCREEN"
 
 
-class ScreenRunner(Runner.Runner):
+class ScreenRunner(runner.Runner):
     def __init__(self):
-        Runner.Runner.__init__(self)
+        runner.Runner.__init__(self)
 
     def stop(self, name, *args, **kargs):
         real_name = name + NAME_POSTFIX
         list_cmd = ['screen', '-list']
-        (sysout, stderr) = execute(*list_cmd)
+        (sysout, stderr) = sh.execute(*list_cmd)
         lines = sysout.splitlines()
         entries = list()
         lookfor = r"^(\d+\." + re.escape(real_name) + r")\s+(.*)$"
@@ -64,5 +63,5 @@ class ScreenRunner(Runner.Runner):
         params['NAME'] = name + NAME_POSTFIX
         runcmd = SCREEN_MAKE + [program] + list(args)
         cmds = [{'cmd':runcmd}]
-        execute_template(*cmds, params=params, cwd=app_dir, **kargs)
+        utils.execute_template(*cmds, params=params, cwd=app_dir, **kargs)
         return None

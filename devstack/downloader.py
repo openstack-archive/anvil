@@ -17,25 +17,25 @@
 from urlparse import urlparse
 import re
 
-#TODO fix these
-from Shell import (execute, mkdirslist)
-from Util import (MASTER_BRANCH)
+from devstack import log as logging
+from devstack import shell as sh
 
-import Logger
-
-LOG = Logger.getLogger("install.downloader")
+LOG = logging.getLogger("devstack.downloader")
 EXT_REG = re.compile(r"^(.*?)\.git\s*$", re.IGNORECASE)
+
+# What the git master string is
+GIT_MASTER_BRANCH = "master"
 
 
 def _gitdownload(storewhere, uri, branch=None):
-    dirsmade = mkdirslist(storewhere)
+    dirsmade = sh.mkdirslist(storewhere)
     LOG.info("Downloading from %s to %s" % (uri, storewhere))
     cmd = ["git", "clone"] + [uri, storewhere]
-    execute(*cmd)
-    if(branch and branch != MASTER_BRANCH):
+    sh.execute(*cmd)
+    if(branch and branch != GIT_MASTER_BRANCH):
         LOG.info("Adjusting git branch to %s" % (branch))
         cmd = ['git', 'checkout'] + [branch]
-        execute(*cmd, cwd=storewhere)
+        sh.execute(*cmd, cwd=storewhere)
     return dirsmade
 
 

@@ -14,15 +14,12 @@
 #    under the License.
 
 import json
-import os.path
 
-#TODO fix these
-from Exceptions import (NoTraceException)
-from Util import (rcf8222date)
-from Shell import (touch_file, append_file,
-                    joinpths, load_file, mkdirslist,
-                    isfile)
+from devstack import exceptions as excp
+from devstack import shell as sh
+from devstack import date
 
+#trace per line output and file extension formats
 TRACE_FMT = "%s - %s\n"
 TRACE_EXT = ".trace"
 
@@ -55,9 +52,9 @@ class Trace():
 
     def trace(self, cmd, action=None):
         if(action == None):
-            action = rcf8222date()
+            action = date.rcf8222date()
         line = TRACE_FMT % (cmd, action)
-        append_file(self.tracefn, line)
+        sh.append_file(self.tracefn, line)
 
 
 class TraceWriter():
@@ -71,7 +68,7 @@ class TraceWriter():
         if(self.started):
             return
         else:
-            dirs = mkdirslist(self.root)
+            dirs = sh.mkdirslist(self.root)
             self.fn = touch_trace(self.root, self.name)
             self.tracer = Trace(self.fn)
             self.tracer.trace(TRACE_VERSION, str(TRACE_VER))
@@ -227,12 +224,12 @@ class TraceReader():
 
 def trace_fn(rootdir, name):
     fullname = name + TRACE_EXT
-    return joinpths(rootdir, fullname)
+    return sh.joinpths(rootdir, fullname)
 
 
 def touch_trace(rootdir, name):
     tracefn = trace_fn(rootdir, name)
-    touch_file(tracefn)
+    sh.touch_file(tracefn)
     return tracefn
 
 
@@ -248,16 +245,16 @@ def split_line(line):
 
 def read(rootdir, name):
     pth = trace_fn(rootdir, name)
-    contents = load_file(pth)
+    contents = sh.load_file(pth)
     lines = contents.splitlines()
     return lines
 
 
 def parse_fn(fn):
-    if(not isfile(fn)):
+    if(not sh.isfile(fn)):
         msg = "No trace found at filename %s" % (fn)
-        raise NoTraceException(msg)
-    contents = load_file(fn)
+        raise excp.NoTraceException(msg)
+    contents = sh.load_file(fn)
     lines = contents.splitlines()
     accum = list()
     for line in lines:

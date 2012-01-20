@@ -13,13 +13,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import Logger
 
-#TODO fix these
-from Shell import (execute)
-from Exceptions import (ProcessExecutionError)
+from devstack import exceptions as excp
+from devstack import log as logging
+from devstack import shell as sh
 
-LOG = Logger.getLogger("install.pip")
+LOG = logging.getLogger("devstack.pip")
 
 INSTALL_CMD = ['pip', 'install']
 UNINSTALL_CMD = ['pip', 'uninstall']
@@ -41,7 +40,7 @@ def install(pips):
     if(len(actions)):
         LOG.info("Installing python packages [%s]" % (", ".join(actions)))
         cmd = INSTALL_CMD + actions
-        execute(*cmd, run_as_root=True)
+        sh.execute(*cmd, run_as_root=True)
 
 
 def uninstall(pips):
@@ -55,10 +54,10 @@ def uninstall(pips):
         skip_errors = pipinfo.get('skip_uninstall_errors', False)
         try:
             cmd = UNINSTALL_CMD + [name]
-            execute(*cmd, run_as_root=True)
-        except ProcessExecutionError, e:
+            sh.execute(*cmd, run_as_root=True)
+        except excp.ProcessExecutionError, e:
             if(skip_errors):
-                LOG.warn("Ignoring execution error that occured when uninstalling %s" % (name))
+                LOG.warn("Ignoring execution error that occured when uninstalling %s!" % (name))
                 pass
             else:
                 raise
