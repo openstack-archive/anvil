@@ -175,28 +175,29 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
         dirsmade = Shell.mkdirslist(self.cfgdir)
         self.tracewriter.dir_made(*dirsmade)
         configs = self._get_config_files()
-        am = len(configs)
-        for fn in configs:
-            #get the params and where it should come from and where it should go
-            parameters = self._get_param_map(fn)
-            sourcefn = self._get_source_config_name(fn)
-            tgtfn = self._get_target_config_name(fn)
-            #ensure directory is there (if not created previously)
-            dirsmade = Shell.mkdirslist(os.path.dirname(tgtfn))
-            self.tracewriter.dir_made(*dirsmade)
-            #now configure it
-            LOG.info("Configuring template file %s" % (sourcefn))
-            contents = Shell.load_file(sourcefn)
-            LOG.info("Replacing parameters in file %s" % (sourcefn))
-            LOG.debug("Replacements = %s" % (parameters))
-            contents = Util.param_replace(contents, parameters)
-            LOG.debug("Applying side-effects of param replacement for template %s" % (sourcefn))
-            contents = self._config_adjust(contents, fn)
-            LOG.info("Writing configuration file %s" % (tgtfn))
-            #this trace is used to remove the files configured
-            Shell.write_file(tgtfn, contents)
-            self.tracewriter.cfg_write(tgtfn)
-        return am
+        if(len(configs)):
+            LOG.info("Configuring %s files" % (len(configs)))
+            for fn in configs:
+                #get the params and where it should come from and where it should go
+                parameters = self._get_param_map(fn)
+                sourcefn = self._get_source_config_name(fn)
+                tgtfn = self._get_target_config_name(fn)
+                #ensure directory is there (if not created previously)
+                dirsmade = Shell.mkdirslist(os.path.dirname(tgtfn))
+                self.tracewriter.dir_made(*dirsmade)
+                #now configure it
+                LOG.info("Configuring template file %s" % (sourcefn))
+                contents = Shell.load_file(sourcefn)
+                LOG.info("Replacing parameters in file %s" % (sourcefn))
+                LOG.debug("Replacements = %s" % (parameters))
+                contents = Util.param_replace(contents, parameters)
+                LOG.debug("Applying side-effects of param replacement for template %s" % (sourcefn))
+                contents = self._config_adjust(contents, fn)
+                LOG.info("Writing configuration file %s" % (tgtfn))
+                #this trace is used to remove the files configured
+                Shell.write_file(tgtfn, contents)
+                self.tracewriter.cfg_write(tgtfn)
+        return len(configs)
 
 
 class PythonInstallComponent(PkgInstallComponent):
@@ -206,14 +207,14 @@ class PythonInstallComponent(PkgInstallComponent):
     def _get_python_directories(self):
         py_dirs = list()
         py_dirs.append({
-                'name': self.component_name,
-                'work_dir': self.appdir,
+            'name': self.component_name,
+            'work_dir': self.appdir,
         })
         return py_dirs
 
     def _install_pips(self):
-        pips = Util.get_pip_list(self.distro, self.component_name)
         #install any need pip items
+        pips = Util.get_pip_list(self.distro, self.component_name)
         if(len(pips)):
             LOG.info("Setting up %s pips" % (len(pips)))
             Pip.install(pips)
@@ -235,6 +236,7 @@ class PythonInstallComponent(PkgInstallComponent):
         return "%s-%s" % (Trace.PY_TRACE, name)
 
     def _install_python_setups(self):
+        #setup any python directories
         pydirs = self._get_python_directories()
         if(len(pydirs)):
             LOG.info("Setting up %s python directories" % (len(pydirs)))
@@ -242,6 +244,9 @@ class PythonInstallComponent(PkgInstallComponent):
             self.tracewriter.dir_made(*dirsmade)
             for pydir_info in pydirs:
                 name = pydir_info.get("name")
+                if(not name):
+                    #TODO should we raise an exception here?
+                    continue
                 working_dir = pydir_info.get('work_dir', self.appdir)
                 record_fn = Trace.touch_trace(self.tracedir, self._format_trace_name(name))
                 self.tracewriter.file_touched(record_fn)
@@ -316,13 +321,13 @@ class PythonUninstallComponent(PkgUninstallComponent):
 
     def _uninstall_pips(self):
         pips = self.tracereader.pips_installed()
-        if(pips and len(pips)):
+        if(len(pips)):
             LOG.info("Uninstalling %s pips" % (len(pips)))
             Pip.uninstall(pips)
 
     def _uninstall_python(self):
         pylisting = self.tracereader.py_listing()
-        if(pylisting and len(pylisting)):
+        if(len(pylisting)):
             LOG.info("Uninstalling %s python setups" % (len(pylisting)))
             for entry in pylisting:
                 where = entry.get('where')

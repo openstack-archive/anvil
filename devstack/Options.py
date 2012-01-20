@@ -59,13 +59,18 @@ def parse():
     parser.add_option("-i", "--ignoredeps",
         action="store_true",
         dest="ignore_deps",
-        help="ignore dependencies when performing ACTION",
+        help="ignore dependencies when performing ACTION")
+
+    parser.add_option("-e", "--ensuredeps",
+        action="store_false",
+        dest="ignore_deps",
+        help="ensure dependencies occur when performing ACTION",
         default=False)
 
-    parser.add_option("-l", "--listdeps",
+    parser.add_option("-s", "--listdeps",
         action="store_true",
         dest="list_deps",
-        help="just show dependencies of COMPONENT",
+        help="show dependencies of COMPONENT",
         default=False)
 
     (options, args) = parser.parse_args()
@@ -79,5 +84,5 @@ def parse():
     output['force'] = options.force
     output['ignore_deps'] = options.ignore_deps
     output['extras'] = args
-
+    
     return output

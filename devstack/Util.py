@@ -108,10 +108,6 @@ START = "start"
 STOP = "stop"
 ACTIONS = [INSTALL, UNINSTALL, START, STOP]
 
-#these actions need to have there components dependencies
-#to occur first (ie keystone starts before glance...)
-DEP_ACTIONS_NEEDED = [START, STOP, INSTALL]
-
 #this is used to map an action to a useful string for
 #the welcome display...
 WELCOME_MAP = {
@@ -223,17 +219,14 @@ def get_dependencies(component):
     return list(deps)
 
 
-def resolve_dependencies(action, components):
-    if(action in DEP_ACTIONS_NEEDED):
-        new_components = list()
-        for c in components:
-            component_deps = list(set(fetch_dependencies(c)))
-            if(len(component_deps)):
-                new_components = new_components + component_deps
-            new_components.append(c)
-        return set(new_components)
-    else:
-        return set(components)
+def resolve_dependencies(components):
+    new_components = list()
+    for c in components:
+        component_deps = list(set(fetch_dependencies(c)))
+        if(len(component_deps)):
+            new_components = new_components + component_deps
+        new_components.append(c)
+    return set(new_components)
 
 
 def execute_template(*cmds, **kargs):

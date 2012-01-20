@@ -357,7 +357,7 @@ def run_action(prog, args):
         LOG.info("Perhaps you should try %s --help" % (prog))
         return False
     #extract + normalize the action
-    ignore_deps = args.pop('ignore_deps', False)
+    ignore_deps = args.pop('ignore_deps')
     action = parse_action(args.pop("action"))
     if(not action):
         LOG.error("No valid action specified!")
@@ -377,10 +377,10 @@ def run_action(prog, args):
     welcome(action)
     #need to figure out dependencies for components (if any)
     if(not ignore_deps):
-        new_components = resolve_dependencies(action, components.keys())
+        new_components = resolve_dependencies(components.keys())
         component_diff = new_components.difference(components.keys())
         if(len(component_diff)):
-            LOG.info("Having to install dependent components: [%s]" % (", ".join(component_diff)))
+            LOG.info("Having to activate dependent components: [%s]" % (", ".join(component_diff)))
             #TBD - probably need to do this better
             for new_component in component_diff:
                 components[new_component] = list()
