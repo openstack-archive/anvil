@@ -73,6 +73,3 @@ def setupLogging():
 
 def getLogger(name):
     return logging.getLogger(name)
-
-
-

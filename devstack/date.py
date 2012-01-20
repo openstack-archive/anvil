@@ -15,5 +15,6 @@
 
 from time import (localtime, strftime)
 
+
 def rcf8222date():
     return strftime("%a, %d %b %Y %H:%M:%S", localtime())

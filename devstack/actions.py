@@ -91,4 +91,3 @@ def get_action_cls(action_name, component_name):
         return None
     cls = action_cls_map.get(component_name)
     return cls
-

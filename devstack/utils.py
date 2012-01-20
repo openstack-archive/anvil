@@ -261,7 +261,6 @@ def param_replace(text, replacements, ignore_missing=False):
     return PARAM_SUB_REGEX.sub(replacer, text)
 
 
-
 def welcome(program_action):
     formatted_action = constants.WELCOME_MAP.get(program_action, "")
     ver_str = version.version_string()
@@ -282,7 +281,7 @@ def welcome(program_action):
             max_len = len(line)
     lower_out = colored(constants.PROG_NICE_NAME, 'green') + \
         ": " + colored(lower, 'blue')
-    center_len = (max_len + max_len/3)
+    center_len = (max_len + max_len / 3)
     lower_out = string.center(lower_out, center_len)
     msg = welcome + os.linesep + lower_out
     print(msg)

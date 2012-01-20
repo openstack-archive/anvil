@@ -16,7 +16,7 @@
 DEVSTACK = 'DEVSTACK'
 DEVSTACK_VERSION = ['2012', '1']
 YEAR, COUNT = DEVSTACK_VERSION
-FINAL = False # May never be final ;-)
+FINAL = False  # May never be final ;-)
 
 
 def canonical_version_string():

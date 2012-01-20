@@ -46,7 +46,7 @@ VERSION_TEMPL = "%s=%s"
 class AptPackager(pack.Packager):
     def __init__(self, distro):
         pack.Packager.__init__(self, distro)
-        
+
     def _format_version(self, name, version):
         return VERSION_TEMPL % (name, version)
 
@@ -60,7 +60,7 @@ class AptPackager(pack.Packager):
     def _execute_apt(self, cmd, **kargs):
         sh.execute(*cmd, run_as_root=True,
             check_exit_code=True,
-            env_overrides=ENV_ADDITIONS, 
+            env_overrides=ENV_ADDITIONS,
             **kargs)
 
     def remove_batch(self, pkgs):
