@@ -18,7 +18,7 @@ import os
 import re
 import time
 
-from devstack import constants
+from devstack import constants as co
 from devstack import log as logging
 from devstack import packager as pack
 from devstack import shell as sh
@@ -99,7 +99,7 @@ class AptPackager(pack.Packager):
             self._execute_apt(cmd)
 
     def _pkg_remove_special(self, name, pkginfo):
-        if(name == 'rabbitmq-server' and self.distro == UBUNTU11):
+        if(name == 'rabbitmq-server' and self.distro == co.UBUNTU11):
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
             LOG.info("Handling special remove of %s" % (name))
@@ -115,7 +115,7 @@ class AptPackager(pack.Packager):
         return False
 
     def _pkg_install_special(self, name, pkginfo):
-        if(name == 'rabbitmq-server' and self.distro == UBUNTU11):
+        if(name == 'rabbitmq-server' and self.distro == co.UBUNTU11):
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
             LOG.info("Handling special install of %s" % (name))
