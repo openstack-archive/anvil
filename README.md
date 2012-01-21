@@ -167,6 +167,22 @@ On finish you should see something like the following:
     INFO: @devstack.runners.fork : Removing glance-registry trace file /tmp/openstack/glance/traces/glance-registry.fork.trace
     INFO: @devstack.component : Deleting trace file /tmp/openstack/glance/traces/start.trace
 
+### Uninstalling
+
+1. Run *./stack -a uninstall -d $HOME/openstack -c glance*
+    * *Note:* This will also uninstall glances dependencies (to show dependencies run *./stack -s*)
+        * If this is undesired try the *--ignoredeps* option
+
+On finish you should see something like the following:
+
+    INFO: @devstack.component : Removing 2 configuration files
+    INFO: @devstack : Uninstalling glance.
+    INFO: @devstack.component : Potentially removing 29 packages
+    INFO: @devstack.component : Removing 1 touched files
+    INFO: @devstack.component : Uninstalling 1 python setups
+    INFO: @devstack.component : Removing 3 created directories
+    INFO: @devstack : Finished action [uninstall] on Fri, 20 Jan 2012 19:15:43
+
 # Customizing
 
 You can override environment variables used in *stack* by editing *stack.ini* or by sourcing a file that contains your environment overrides before your run *stack*.
