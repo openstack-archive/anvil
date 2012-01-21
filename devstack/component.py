@@ -72,9 +72,6 @@ class RuntimeComponent():
     def __init__(self):
         pass
 
-    def start(self):
-        raise NotImplementedError()
-
     def stop(self):
         raise NotImplementedError()
 
@@ -82,6 +79,15 @@ class RuntimeComponent():
         raise NotImplementedError()
 
     def restart(self):
+        raise NotImplementedError()
+
+    def pre_start(self):
+        raise NotImplementedError()
+
+    def start(self):
+        raise NotImplementedError()
+
+    def post_start(self):
         raise NotImplementedError()
 
 
@@ -385,7 +391,10 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
             'ROOT': self.appdir,
         }
 
-    def _post_apps_start(self):
+    def pre_start(self):
+        pass
+
+    def post_start(self):
         pass
 
     def start(self):
@@ -424,7 +433,6 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
                 self.tracewriter.started_info(app_name, fn)
             else:
                 LOG.info("Started %s" % (app_name))
-        self._post_apps_start()
         return fns
 
     def stop(self):
@@ -496,6 +504,12 @@ class NullRuntime(ComponentBase, RuntimeComponent):
     def __init__(self, component_name, *args, **kargs):
         ComponentBase.__init__(self, component_name, *args, **kargs)
         RuntimeComponent.__init__(self)
+
+    def pre_start(self):
+        pass
+
+    def post_start(self):
+        pass
 
     def start(self):
         return 0

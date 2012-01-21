@@ -53,7 +53,7 @@ function run_pep8 {
 
 function run_pylint {
   echo "Running pylint ..."
-  srcfiles=`find devstack -type f | grep "py\$" | sed 's/devstack\/\(.*\)\.py/\1/' | tr '/' '.'`
+  srcfiles=`find devstack -type f | grep "py\$"`
   srcfiles+=" stack"
   tee_fn="pylint.log"
   pylint_opts="--rcfile=$pylintrc_fn"

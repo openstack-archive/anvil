@@ -14,8 +14,6 @@
 #    under the License.
 
 import io
-import os
-import os.path
 
 from devstack import cfg
 from devstack import component as comp
@@ -94,7 +92,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             log_filename = config.get('log_file', CFG_SECTION)
             if(log_filename):
                 LOG.info("Ensuring log file %s exists and is empty" % (log_filename))
-                log_dir = os.path.dirname(log_filename)
+                log_dir = sh.dirname(log_filename)
                 if(log_dir):
                     LOG.info("Ensuring log directory %s exists" % (log_dir))
                     self.tracewriter.make_dir(log_dir)

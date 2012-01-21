@@ -96,10 +96,10 @@ class HorizonInstaller(comp.PythonInstallComponent):
         #The user system is external (keystone).
         cmd = DB_SYNC_CMD
         sh.execute(*cmd, cwd=self.dash_dir)
-    
+
     def _fake_quantum(self):
-        #Horizon currently imports quantum even if you aren't using it. 
-        #Instead of installing quantum we can create a simple module 
+        #Horizon currently imports quantum even if you aren't using it.
+        #Instead of installing quantum we can create a simple module
         #that will pass the initial imports.
         if(constants.QUANTUM in self.all_components):
             return
@@ -116,7 +116,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         self._sync_db()
         self._setup_blackhole()
         return parent_res
-        
+
     def _get_apache_user(self):
         #TODO will this be the right user?
         user = self.cfg.get('horizon', 'apache_user')

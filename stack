@@ -142,8 +142,12 @@ def run_components(action_name, component_order, components_info, distro, root_d
                 else:
                     raise
         elif(action_name == constants.START):
+            LOG.info("Pre-starting %s." % (c))
+            instance.pre_start()
             LOG.info("Starting %s." % (c))
             start_info = instance.start()
+            LOG.info("Post-starting %s." % (c))
+            instance.post_start()
             if(type(start_info) == list):
                 LOG.info("Check [%s] for traces of what happened." % (", ".join(start_info)))
                 results = results + start_info

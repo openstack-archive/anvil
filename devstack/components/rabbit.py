@@ -57,9 +57,9 @@ class RabbitInstaller(comp.PkgInstallComponent):
         return parent_result
 
 
-class RabbitRuntime(comp.ComponentBase, comp.RuntimeComponent):
+class RabbitRuntime(comp.NullRuntime):
     def __init__(self, *args, **kargs):
-        comp.ComponentBase.__init__(self, TYPE, *args, **kargs)
+        comp.NullRuntime.__init__(self, TYPE, *args, **kargs)
         self.tracereader = tr.TraceReader(self.tracedir, tr.IN_TRACE)
 
     def start(self):

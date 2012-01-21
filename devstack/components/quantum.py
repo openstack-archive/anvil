@@ -22,6 +22,7 @@ from devstack import utils
 LOG = logging.getLogger("devstack.components.quantum")
 TYPE = constants.QUANTUM
 
+
 class QuantumUninstaller(comp.UninstallComponent):
     def __init__(self, *args, **kargs):
         comp.UninstallComponent.__init__(self)
@@ -48,7 +49,7 @@ class QuantumInstaller(comp.InstallComponent):
 
     def install(self):
         pass
-        
+
     def post_install(self):
         pass
 
@@ -68,4 +69,3 @@ class QuantumRuntime(comp.RuntimeComponent):
 
     def restart(self):
         pass
-

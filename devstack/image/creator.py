@@ -98,11 +98,11 @@ class Image:
             self.image = self.download_file_name
 
         else:
-            raise IOError('Unknown image format')
+            raise IOError('Unknown image format for download %s' % (self.download_name))
 
     def _register(self):
         if self.kernel:
-            LOG.info('adding kernel %s to glance', self.kernel)
+            LOG.info('Adding kernel %s to glance', self.kernel)
             params = {'TOKEN': self.token, 'IMAGE_NAME': self.image_name}
             cmd = {'cmd': KERNEL_FORMAT}
             with open(self.kernel) as file_:
@@ -110,14 +110,14 @@ class Image:
             self.kernel_id = res[0].split(':')[1].strip()
 
         if self.initrd:
-            LOG.info('adding ramdisk %s to glance', self.initrd)
+            LOG.info('Adding ramdisk %s to glance', self.initrd)
             params = {'TOKEN': self.token, 'IMAGE_NAME': self.image_name}
             cmd = {'cmd': INITRD_FORMAT}
             with open(self.initrd) as file_:
                 res = utils.execute_template(cmd, params=params, stdin_fh=file_)
             self.initrd_id = res[0].split(':')[1].strip()
 
-        LOG.info('adding image %s to glance', self.image_name)
+        LOG.info('Adding image %s to glance', self.image_name)
         params = {'TOKEN': self.token, 'IMAGE_NAME': self.image_name, \
                   'KERNEL_ID': self.kernel_id, 'INITRD_ID': self.initrd_id}
         cmd = {'cmd': IMAGE_FORMAT}
@@ -139,25 +139,27 @@ class Image:
 
 
 class ImageCreationService:
-
     def __init__(self, cfg=None, flat_urls=None, token=None):
+        flat_urls = None
+        token = None
 
         if cfg:
-            self.token = cfg.getpw("passwords", "service_token")
+            token = cfg.getpw("passwords", "service_token")
             flat_urls = cfg.get('img', 'image_urls')
 
         if flat_urls:
             self.urls = [x.strip() for x in flat_urls.split(',')]
+        else:
+            self.urls = []
 
-        if token:
-            self.token = token
+        self.token = token
 
     def install(self):
         for url in self.urls:
             try:
                 Image(url, self.token).install()
-            except:
-                LOG.exception('Installing "%s" failed', url)
+            except Exception, e:
+                LOG.exception('Installing "%s" failed due to "%s"', url, e.message)
 
 if __name__ == "__main__":
     import logging

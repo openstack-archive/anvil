@@ -14,8 +14,6 @@
 #    under the License.
 
 import io
-import json
-import os.path
 
 from devstack import cfg
 from devstack import component as comp
@@ -69,7 +67,9 @@ class GlanceRuntime(comp.PythonRuntime):
     def _get_app_options(self, app):
         return APP_OPTIONS.get(app)
 
-    def _post_apps_start(self):
+    def post_start(self):
+        comp.PythonRuntime.post_start(self)
+        #install any images that need activating...
         creator.ImageCreationService(self.cfg).install()
 
 
@@ -128,7 +128,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
             log_filename = config.get('log_file', CFG_SECTION)
             if(log_filename):
                 LOG.info("Ensuring log file %s exists and is empty" % (log_filename))
-                log_dir = os.path.dirname(log_filename)
+                log_dir = sh.dirname(log_filename)
                 if(log_dir):
                     LOG.info("Ensuring log directory %s exists" % (log_dir))
                     self.tracewriter.make_dir(log_dir)

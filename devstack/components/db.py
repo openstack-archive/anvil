@@ -99,9 +99,9 @@ class DBInstaller(comp.PkgInstallComponent):
         return parent_result
 
 
-class DBRuntime(comp.ComponentBase, comp.RuntimeComponent):
+class DBRuntime(comp.NullRuntime):
     def __init__(self, *args, **kargs):
-        comp.ComponentBase.__init__(self, TYPE, *args, **kargs)
+        comp.NullRuntime.__init__(self, TYPE, *args, **kargs)
         self.tracereader = tr.TraceReader(self.tracedir, tr.IN_TRACE)
 
     def _gettypeactions(self, act, exception_cls):
