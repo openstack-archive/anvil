@@ -70,26 +70,26 @@ class ForkRunner(runner.Runner):
 
     def stop(self, name, *args, **kargs):
         trace_dir = kargs.get("trace_dir")
-        if(not trace_dir or not isdir(trace_dir)):
+        if(not trace_dir or not sh.isdir(trace_dir)):
             msg = "No trace directory found from which to stop %s" % (name)
             raise excp.StopException(msg)
         fn_name = FORK_TEMPL % (name)
         (pid_file, stderr_fn, stdout_fn) = self._form_file_names(trace_dir, fn_name)
         trace_fn = tr.trace_fn(trace_dir, fn_name)
-        if(isfile(pid_file) and isfile(trace_fn)):
-            pid = int(load_file(pid_file).strip())
+        if(sh.isfile(pid_file) and sh.isfile(trace_fn)):
+            pid = int(sh.load_file(pid_file).strip())
             (killed, attempts) = self._stop_pid(pid)
             #trash the files
             if(killed):
                 LOG.info("Killed pid %s after %s attempts" % (pid, attempts))
                 LOG.info("Removing pid file %s" % (pid_file))
-                unlink(pid_file)
+                sh.unlink(pid_file)
                 LOG.info("Removing stderr file %s" % (stderr_fn))
-                unlink(stderr_fn)
+                sh.unlink(stderr_fn)
                 LOG.info("Removing stdout file %s" % (stdout_fn))
-                unlink(stdout_fn)
+                sh.unlink(stdout_fn)
                 LOG.info("Removing %s trace file %s" % (name, trace_fn))
-                unlink(trace_fn)
+                sh.unlink(trace_fn)
             else:
                 msg = "Could not stop %s after %s attempts" % (name, attempts)
                 raise excp.StopException(msg)
@@ -98,9 +98,9 @@ class ForkRunner(runner.Runner):
             raise excp.StopException(msg)
 
     def _form_file_names(self, tracedir, file_name):
-        pidfile = joinpths(tracedir, file_name + ".pid")
-        stderr = joinpths(tracedir, file_name + ".stderr")
-        stdout = joinpths(tracedir, file_name + ".stdout")
+        pidfile = sh.joinpths(tracedir, file_name + ".pid")
+        stderr = sh.joinpths(tracedir, file_name + ".stderr")
+        stdout = sh.joinpths(tracedir, file_name + ".stdout")
         return (pidfile, stderr, stdout)
 
     def _fork_start(self, program, appdir, pid_fn, stdout_fn, stderr_fn, *args):
@@ -145,7 +145,7 @@ class ForkRunner(runner.Runner):
             else:
                 #write out the child pid
                 contents = str(pid) + os.linesep
-                write_file(pid_fn, contents)
+                sh.write_file(pid_fn, contents)
                 #not exit or sys.exit, this is recommended
                 #since it will do the right cleanups that we want
                 #not calling any atexit functions, which would

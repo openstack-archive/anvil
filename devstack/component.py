@@ -20,6 +20,7 @@ from devstack import downloader as down
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import pip
+from devstack import runner
 from devstack import shell as sh
 from devstack import trace as tr
 from devstack import utils
@@ -440,7 +441,7 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
             contents = tr.parse_fn(fn)
             killcls = None
             for (cmd, action) in contents:
-                if(cmd == Runner.RUN_TYPE):
+                if(cmd == runner.RUN_TYPE):
                     killcls = self._getstoppercls(action)
                     break
             #did we find a class that can do it?

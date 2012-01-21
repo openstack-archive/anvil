@@ -1,12 +1,11 @@
 # This is a extended json package definition file 
 # We allow simple comments (lines starting with a hash symbol)
 {
-  "ubuntu-oneiric": {
-    "python-numpy": {
-      "version": "1:1.5.1-2ubuntu2",
-      "allowed": ">="
-    }
-  },
-  "rhel-6": {
-  }
+    "ubuntu-oneiric": {
+        "python-numpy": {
+            "version": "1:1.5.1-2ubuntu2",
+            "allowed": ">="
+        }
+    },
+    "rhel-6": {}
 }

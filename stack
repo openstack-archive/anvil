@@ -136,7 +136,7 @@ def run_components(action_name, component_order, components_info, distro, root_d
                 stop_amount = instance.stop()
                 LOG.info("Stopped %s applications." % (stop_amount))
                 LOG.info("Finished stop of %s" % (c))
-            except NoTraceException, e:
+            except excp.NoTraceException, e:
                 if(force):
                     LOG.info("Passing on stopping %s since no trace file was found." % (c))
                 else:
@@ -220,7 +220,7 @@ def parse_components(components, assume_all=False):
     #should we adjust them to be all the components?
     if(len(adjusted_components) == 0 and assume_all):
         all_components = dict()
-        for c in COMPONENT_NAMES:
+        for c in constants.COMPONENT_NAMES:
             all_components[c] = list()
         adjusted_components = all_components
     return adjusted_components
