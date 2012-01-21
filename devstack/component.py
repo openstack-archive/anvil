@@ -291,7 +291,8 @@ class PkgUninstallComponent(ComponentBase, UninstallComponent):
         pkgsfull = self.tracereader.packages_installed()
         if(len(pkgsfull)):
             LOG.info("Potentially removing %s packages" % (len(pkgsfull)))
-            self.packager.remove_batch(pkgsfull)
+            am_removed = self.packager.remove_batch(pkgsfull)
+            LOG.info("Removed %s packages" % (am_removed))
 
     def _uninstall_touched_files(self):
         filestouched = self.tracereader.files_touched()

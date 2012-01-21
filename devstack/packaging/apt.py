@@ -67,21 +67,25 @@ class AptPackager(pack.Packager):
         pkgnames = sorted(pkgs.keys())
         #form the needed commands
         cmds = []
+        am_removed = 0
         for name in pkgnames:
             info = pkgs.get(name) or {}
             removable = info.get('removable', True)
             if(not removable):
                 continue
             if(self._pkg_remove_special(name, info)):
+                am_removed += 1
                 continue
             pkg_full = self._format_pkg(name, info.get("version"))
             cmds.append(pkg_full)
+            am_removed += 1
         if(len(cmds)):
             cmd = APT_GET + APT_DO_REMOVE + cmds
             self._execute_apt(cmd)
         #clean them out
         cmd = APT_GET + APT_AUTOREMOVE
         self._execute_apt(cmd)
+        return am_removed
 
     def install_batch(self, pkgs):
         pkgnames = sorted(pkgs.keys())

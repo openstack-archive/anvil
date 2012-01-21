@@ -172,6 +172,7 @@ On finish you should see something like the following:
 1. Run *./stack -a uninstall -d $HOME/openstack -c glance*
     * *Note:* This will also uninstall glances dependencies (to show dependencies run *./stack -s*)
         * If this is undesired try the *--ignoredeps* option
+    * *Note:* This may also require *sudo* access to cleanup all the necessary directories that python sets up.
 
 On finish you should see something like the following:
 
