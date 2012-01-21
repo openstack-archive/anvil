@@ -155,9 +155,13 @@ class ImageCreationService:
     def install(self):
         for url in self.urls:
             try:
-                Image(url, self.token).install()
-            except Exception, e:
-                LOG.exception('Installing "%s" failed due to "%s"', url, e.message)
+                if(len(url)):
+                    Image(url, self.token).install()
+            except IOError, e:
+                LOG.exception('Installing "%s" failed', url)
+            except tarfile.TarError, e:
+                LOG.exception('Extracting "%s" failed', url)
+
 
 if __name__ == "__main__":
     import logging
