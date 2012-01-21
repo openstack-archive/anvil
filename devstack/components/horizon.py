@@ -81,7 +81,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         #this dict will be used to fill in the configuration
         #params with actual values
         mp = dict()
-        mp['OPENSTACK_HOST'] = utils.get_host_ip(self.cfg)
+        mp['OPENSTACK_HOST'] = self.cfg.get_host_ip()
         return mp
 
 

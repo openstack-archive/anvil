@@ -21,6 +21,7 @@ from devstack import env
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import shell as sh
+from devstack import utils
 
 LOG = logging.getLogger("devstack.cfg")
 PW_TMPL = "Enter a password for %s: "
@@ -83,10 +84,11 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         v = None
         if(key in self.configs_fetched):
             v = self.configs_fetched.get(key)
+            LOG.debug("Fetched cached value \"%s\" for param \"%s\"" % (v, key))
         else:
             LOG.debug("Fetching value for param \"%s\"" % (key))
             v = self._get_special(section, option)
-            LOG.debug("Fetched \"%s\" for \"%s\" %s" % (v, key, CACHE_MSG))
+            LOG.debug("Fetched \"%s\" for \"%s\"" % (v, key))
             self.configs_fetched[key] = v
         return v
 
@@ -110,6 +112,15 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
             return v
         else:
             return v
+
+    def get_host_ip(self):
+        host_ip = self.get('default', 'host_ip')
+        if(not host_ip):
+            host_ip = utils.get_host_ip()
+        key = self._makekey('default', 'host_ip')
+        self.configs_fetched[key] = host_ip
+        LOG.debug("Determined host ip to be: \"%s\"" % (host_ip))
+        return host_ip
 
     def get_dbdsn(self, dbname):
         user = self.get("db", "sql_user")

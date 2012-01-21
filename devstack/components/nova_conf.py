@@ -56,7 +56,7 @@ class NovaConfigurator():
         #TODO split up into sections??
 
         nova_conf = NovaConf()
-        hostip = utils.get_host_ip()
+        hostip = self.cfg.get_host_ip()
 
         #verbose on?
         if(self._getbool('verbose')):

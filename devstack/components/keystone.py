@@ -113,7 +113,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         mp['DEST'] = self.appdir
         mp['SQL_CONN'] = self.cfg.get_dbdsn(DB_NAME)
         mp['ADMIN_PASSWORD'] = self.cfg.getpw('passwords', 'horizon_keystone_admin')
-        mp['HOST_IP'] = utils.get_host_ip(self.cfg)
+        mp['HOST_IP'] = self.cfg.get_host_ip()
         mp['SERVICE_TOKEN'] = self.cfg.getpw("passwords", "service_token")
         mp['BIN_DIR'] = self.bindir
         mp['CONFIG_FILE'] = sh.joinpths(self.cfgdir, ROOT_CONF)
