@@ -383,6 +383,9 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
             'ROOT': self.appdir,
         }
 
+    def _post_apps_start(self):
+        pass
+
     def start(self):
         #ensure it was installed
         if(not self._was_installed()):
@@ -419,6 +422,7 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
                 self.tracewriter.started_info(app_name, fn)
             else:
                 LOG.info("Started %s" % (app_name))
+        self._post_apps_start()
         return fns
 
     def stop(self):

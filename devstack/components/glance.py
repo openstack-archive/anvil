@@ -25,6 +25,7 @@ from devstack import log as logging
 from devstack import shell as sh
 from devstack import utils
 from devstack.components import db
+from devstack.image import creator
 
 LOG = logging.getLogger("devstack.components.glance")
 
@@ -68,6 +69,8 @@ class GlanceRuntime(comp.PythonRuntime):
     def _get_app_options(self, app):
         return APP_OPTIONS.get(app)
 
+    def _post_apps_start(self):
+        ImageCreationService(self.cfg).install()
 
 class GlanceInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
