@@ -259,6 +259,10 @@ def prompt(prompt_str):
     return raw_input(prompt_str)
 
 
+def getuser():
+    return getpass.getuser()
+
+
 def unlink(path, ignore_errors=True):
     try:
         LOG.debug("Unlinking (removing) %s" % (path))

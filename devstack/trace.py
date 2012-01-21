@@ -109,6 +109,12 @@ class TraceWriter():
         self.dir_made(*dirs)
         return path
 
+    def touch_file(self, path):
+        self._start()
+        sh.touch_file(path)
+        self.file_touched(path)
+        return path
+
     def dir_made(self, *dirs):
         self._start()
         for d in dirs:
