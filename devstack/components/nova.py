@@ -13,27 +13,22 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
 from devstack import component as comp
-from devstack import constants
+from devstack import constants as co
 from devstack import log as logging
 from devstack import shell as sh
 from devstack import utils
 from devstack.components import nova_conf as nc
 
 LOG = logging.getLogger("devstack.components.nova")
-API_CONF = "nova.conf"
-CONFIGS = [API_CONF]
-DB_NAME = "nova"
-TYPE = constants.NOVA
 
-#what to start
-# Does this start nova-compute, nova-volume, nova-network, nova-scheduler
-# and optionally nova-wsproxy?
-#APP_OPTIONS = {
-#    'glance-api': ['--config-file', joinpths('%ROOT%', "etc", API_CONF)],
-#    'glance-registry': ['--config-file', joinpths('%ROOT%', "etc", REG_CONF)]
-#}
+API_CONF = "nova.conf"
+PASTE_CONF = 'nova-api-paste.ini'
+CONFIGS = [API_CONF]
+
+DB_NAME = "nova"
+BIN_DIR = 'bin'
+TYPE = co.NOVA
 
 
 class NovaUninstaller(comp.PythonUninstallComponent):
@@ -45,38 +40,36 @@ class NovaUninstaller(comp.PythonUninstallComponent):
 class NovaInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
-        self.gitloc = self.cfg.get("git", "nova_repo")
-        self.brch = self.cfg.get("git", "nova_branch")
-        # TBD is this the install location of the conf file?
-        #self.cfgdir = joinpths(self.appdir, CONFIG_ACTUAL_DIR)
+        self.git_repo = self.cfg.get("git", "nova_repo")
+        self.git_branch = self.cfg.get("git", "nova_branch")
+        self.bindir = sh.joinpths(self.appdir, BIN_DIR)
 
-    def _get_download_location(self):
+    def _get_download_locations(self):
         places = comp.PythonInstallComponent._get_download_locations(self)
         places.append({
-            'uri': self.gitloc,
-            'branch': self.brch,
+            'uri': self.git_repo,
+            'branch': self.git_branch,
         })
         return places
 
-    def configure(self):
-        # FIXME, is this necessary? Is it for the template source?
-        dirsmade = sh.mkdirslist(self.cfgdir)
-        self.tracewriter.dir_made(*dirsmade)
-        nconf = nc.NovaConf(self)
-        LOG.info("Getting dynamic content for nova.conf")
-        # Get dynamic content for nova.conf
-        lines = nconf.generate()
-        LOG.debug("Got conf lines, %s" % (lines))
-        # Set up and write lines to the file
-        fn = API_CONF
-        tgtfn = self._get_full_config_name(fn)
-        dirsmade = sh.mkdirslist(os.path.dirname(tgtfn))
-        self.tracewriter.dir_made(*dirsmade)
-        LOG.info("Writing configuration file %s" % (tgtfn))
-        #this trace is used to remove the files configured
-        sh.write_file(tgtfn, os.linesep.join(lines))
-        self.tracewriter.cfg_write(tgtfn)
+    def _generate_nova_conf(self):
+        LOG.debug("Generating dynamic content for nova configuration")
+        dirs = dict()
+        dirs['app'] = self.appdir
+        dirs['cfg'] = self.cfgdir
+        dirs['bin'] = self.bindir
+        conf_gen = nc.NovaConfigurator(self.cfg, self.all_components)
+        nova_conf = conf_gen.configure(dirs)
+        tgtfn = self._get_target_config_name(API_CONF)
+        LOG.info("Created nova configuration:")
+        LOG.info(nova_conf)
+        LOG.debug("Placing it in %s" % (tgtfn))
+        sh.write_file(tgtfn, nova_conf)
+        #we configured one file, return that we did that
         return 1
+
+    def _configure_files(self):
+        return self._generate_nova_conf()
 
 
 class NovaRuntime(comp.PythonRuntime):

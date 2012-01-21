@@ -70,7 +70,7 @@ def parse():
     parser.add_option("-e", "--ensuredeps",
         action="store_false",
         dest="ignore_deps",
-        help="ensure dependencies occur when performing ACTION",
+        help="ensure dependencies occur when performing ACTION (the default)",
         default=False)
 
     parser.add_option("-s", "--listdeps",

@@ -1,20 +1,19 @@
 # This is a extended json package definition file 
 # We allow simple comments (lines starting with a hash symbol)
 {
-  "ubuntu-oneiric": {
-    "lvm2": {
-      "version": "2.02.66-4ubuntu3",
-      "allowed": ">="
+    "ubuntu-oneiric": {
+        "lvm2": {
+            "version": "2.02.66-4ubuntu3",
+            "allowed": ">="
+        },
+        "open-iscsi": {
+            "version": "2.0.871-0ubuntu8",
+            "allowed": ">="
+        },
+        "open-iscsi-utils": {
+            "version": "2.0.871-0ubuntu8",
+            "allowed": ">="
+        }
     },
-    "open-iscsi": {
-      "version": "2.0.871-0ubuntu8",
-      "allowed": ">="
-    },
-    "open-iscsi-utils": {
-      "version": "2.0.871-0ubuntu8",
-      "allowed": ">="
-    }
-  },
-  "rhel-6": {
-  }
+    "rhel-6": {}
 }

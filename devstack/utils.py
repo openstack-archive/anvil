@@ -126,23 +126,17 @@ def load_json(fn):
     return json.loads(data)
 
 
-def get_host_ip(cfg=None):
+def get_host_ip():
     ip = None
-    if(cfg):
-        cfg_ip = cfg.get('default', 'host_ip')
-        if(cfg_ip and len(cfg_ip)):
-            ip = cfg_ip
-    if(ip == None):
-        interfaces = get_interfaces()
-        def_info = interfaces.get(constants.DEFAULT_NET_INTERFACE)
-        if(def_info):
-            ipinfo = def_info.get(constants.DEFAULT_NET_INTERFACE_IP_VERSION)
-            if(ipinfo):
-                ip = ipinfo.get('addr')
+    interfaces = get_interfaces()
+    def_info = interfaces.get(constants.DEFAULT_NET_INTERFACE)
+    if(def_info):
+        ipinfo = def_info.get(constants.DEFAULT_NET_INTERFACE_IP_VERSION)
+        if(ipinfo):
+            ip = ipinfo.get('addr')
     if(ip == None):
         msg = "Your host does not have an ip address!"
         raise excp.NoIpException(msg)
-    LOG.debug("Determined host ip to be: \"%s\"" % (ip))
     return ip
 
 

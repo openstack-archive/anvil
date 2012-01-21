@@ -13,7 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-DEVSTACK = 'DEVSTACK'
 DEVSTACK_VERSION = ['2012', '1']
 YEAR, COUNT = DEVSTACK_VERSION
 FINAL = False  # May never be final ;-)

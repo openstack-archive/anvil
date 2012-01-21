@@ -18,7 +18,7 @@ import os
 import re
 import time
 
-from devstack import constants
+from devstack import constants as co
 from devstack import log as logging
 from devstack import packager as pack
 from devstack import shell as sh
@@ -67,21 +67,25 @@ class AptPackager(pack.Packager):
         pkgnames = sorted(pkgs.keys())
         #form the needed commands
         cmds = []
+        am_removed = 0
         for name in pkgnames:
             info = pkgs.get(name) or {}
             removable = info.get('removable', True)
             if(not removable):
                 continue
             if(self._pkg_remove_special(name, info)):
+                am_removed += 1
                 continue
             pkg_full = self._format_pkg(name, info.get("version"))
             cmds.append(pkg_full)
+            am_removed += 1
         if(len(cmds)):
             cmd = APT_GET + APT_DO_REMOVE + cmds
             self._execute_apt(cmd)
         #clean them out
         cmd = APT_GET + APT_AUTOREMOVE
         self._execute_apt(cmd)
+        return am_removed
 
     def install_batch(self, pkgs):
         pkgnames = sorted(pkgs.keys())
@@ -99,10 +103,10 @@ class AptPackager(pack.Packager):
             self._execute_apt(cmd)
 
     def _pkg_remove_special(self, name, pkginfo):
-        if(name == 'rabbitmq-server' and self.distro == UBUNTU11):
+        if(name == 'rabbitmq-server' and self.distro == co.UBUNTU11):
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
-            LOG.info("Handling special remove of %s" % (name))
+            LOG.info("Handling special remove of %s." % (name))
             pkg_full = self._format_pkg(name, pkginfo.get("version"))
             cmd = APT_GET + APT_REMOVE + [pkg_full]
             self._execute_apt(cmd)
@@ -115,14 +119,14 @@ class AptPackager(pack.Packager):
         return False
 
     def _pkg_install_special(self, name, pkginfo):
-        if(name == 'rabbitmq-server' and self.distro == UBUNTU11):
+        if(name == 'rabbitmq-server' and self.distro == co.UBUNTU11):
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
-            LOG.info("Handling special install of %s" % (name))
+            LOG.info("Handling special install of %s." % (name))
             #this seems to be a temporary fix for that bug
             with TemporaryFile() as f:
                 pkg_full = self._format_pkg(name, pkginfo.get("version"))
                 cmd = APT_GET + APT_INSTALL + [pkg_full]
-                self._execute_apt(*cmd, stdout_fh=f, stderr_fh=f)
+                self._execute_apt(cmd, stdout_fh=f, stderr_fh=f)
                 return True
         return False

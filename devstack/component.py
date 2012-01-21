@@ -20,6 +20,7 @@ from devstack import downloader as down
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import pip
+from devstack import runner
 from devstack import shell as sh
 from devstack import trace as tr
 from devstack import utils
@@ -290,7 +291,8 @@ class PkgUninstallComponent(ComponentBase, UninstallComponent):
         pkgsfull = self.tracereader.packages_installed()
         if(len(pkgsfull)):
             LOG.info("Potentially removing %s packages" % (len(pkgsfull)))
-            self.packager.remove_batch(pkgsfull)
+            am_removed = self.packager.remove_batch(pkgsfull)
+            LOG.info("Removed %s packages" % (am_removed))
 
     def _uninstall_touched_files(self):
         filestouched = self.tracereader.files_touched()
@@ -444,7 +446,7 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
             contents = tr.parse_fn(fn)
             killcls = None
             for (cmd, action) in contents:
-                if(cmd == Runner.RUN_TYPE):
+                if(cmd == runner.RUN_TYPE):
                     killcls = self._getstoppercls(action)
                     break
             #did we find a class that can do it?

@@ -68,9 +68,8 @@ class DBInstaller(comp.PkgInstallComponent):
         out['PASSWORD'] = self.cfg.getpw("passwords", "sql")
         out['BOOT_START'] = str(True).lower()
         out['USER'] = self.cfg.get("db", "sql_user")
-        hostip = utils.get_host_ip(self.cfg)
-        out['SERVICE_HOST'] = hostip
-        out['HOST_IP'] = hostip
+        out['SERVICE_HOST'] = self.cfg.get_host_ip()
+        out['HOST_IP'] = self.cfg.get_host_ip()
         return out
 
     def post_install(self):
