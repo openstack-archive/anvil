@@ -104,7 +104,8 @@ def execute(*cmd, **kwargs):
     else:
         result = obj.communicate()
 
-    obj.stdin.close()
+    if 'stdin_fh' not in kwargs.keys():
+        obj.stdin.close()
     _returncode = obj.returncode
     LOG.debug('Cmd result had exit code: %s' % _returncode)
 
