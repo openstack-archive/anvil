@@ -105,7 +105,7 @@ class TraceWriter():
 
     def make_dir(self, path):
         self._start()
-        dirs = mkdirslist(path)
+        dirs = sh.mkdirslist(path)
         self.dir_made(*dirs)
         return path
 
