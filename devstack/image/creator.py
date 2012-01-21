@@ -14,8 +14,6 @@
 #    under the License.
 
 
-import os
-import sys
 import tarfile
 import tempfile
 import urllib
@@ -47,7 +45,7 @@ class Image:
         self.url = url
         self.token = token
         self.download_name = url.split('/')[-1].lower()
-        self.download_file_name = Image.tmpdir + os.sep + self.download_name
+        self.download_file_name = shell.joinpths(Image.tmpdir, self.download_name)
         self.image_name = None
         self.image = None
         self.kernel = None
@@ -76,7 +74,7 @@ class Image:
             LOG.info('Extracting %s', self.download_file_name)
             self.image_name = self.download_name\
                 .replace('.tgz', '').replace('.tar.gz', '')
-            self.tmp_folder = Image.tmpdir + os.sep + parts[0]
+            self.tmp_folder = shell.joinpths(Image.tmpdir, parts[0])
             shell.mkdir(self.tmp_folder)
 
             tar = tarfile.open(self.download_file_name)
@@ -84,11 +82,11 @@ class Image:
 
             for file_ in shell.listdir(self.tmp_folder):
                 if file_.find('vmlinuz') != -1:
-                    self.kernel = self.tmp_folder + os.sep + file_
+                    self.kernel = shell.joinpths(self.tmp_folder, file_)
                 elif file_.find('initrd') != -1:
-                    self.initrd = self.tmp_folder + os.sep + file_
+                    self.initrd = shell.joinpths(self.tmp_folder, file_)
                 elif file_.endswith('.img'):
-                    self.image = self.tmp_folder + os.sep + file_
+                    self.image = shell.joinpths(self.tmp_folder, file_)
                 else:
                     pass
 
@@ -164,6 +162,7 @@ class ImageCreationService:
 
 
 if __name__ == "__main__":
+    import sys
     import logging
     logging.basicConfig()
     LOG = logging.getLogger('image.create')
