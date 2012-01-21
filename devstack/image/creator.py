@@ -30,14 +30,13 @@ LOG = log.getLogger("devstack.image.creator")
 
 KERNEL_FORMAT = ['glance', 'add', '-A', '%TOKEN%', \
     'name="%IMAGE_NAME%-kernel"', 'is_public=true', 'container_format=aki', \
-    'disk_format=aki', '<', '"%KERNEL_FILE%"']
+    'disk_format=aki']
 INITRD_FORMAT = ['glance', 'add', '-A', '%TOKEN%', \
     'name="%IMAGE_NAME%-ramdisk"', 'is_public=true', 'container_format=ari', \
-    'disk_format=ari', '<', '"%INITRD_FILE%"']
+    'disk_format=ari']
 IMAGE_FORMAT = ['glance', 'add', '-A', '%TOKEN%', 'name="%IMAGE_NAME%.img"', \
     'is_public=true', 'container_format=ami', 'disk_format=ami', \
-    'kernel_id=%KERNEL_ID%', 'ramdisk_id=%INITRD_ID%', '<', '<(zcat', \
-    '--force' '"%IMAGE_FILE%")']
+    'kernel_id=%KERNEL_ID%', 'ramdisk_id=%INITRD_ID%']
 
 
 class Image:
@@ -104,26 +103,26 @@ class Image:
     def _register(self):
         if self.kernel:
             LOG.info('adding kernel %s to glance', self.kernel)
-            params = {'TOKEN': self.token, 'IMAGE_NAME': self.image_name, \
-                      'KERNEL_FILE': self.kernel}
+            params = {'TOKEN': self.token, 'IMAGE_NAME': self.image_name}
             cmd = {'cmd': KERNEL_FORMAT}
-            res = utils.execute_template(cmd, params=params)
+            with open(self.kernel) as file_:
+                res = utils.execute_template(cmd, params=params, stdin_fh=file_)
             self.kernel_id = res[0].split(':')[1].strip()
 
         if self.initrd:
             LOG.info('adding ramdisk %s to glance', self.initrd)
-            params = {'TOKEN': self.token, 'IMAGE_NAME': self.image_name, \
-                      'INITRD_FILE': self.initrd}
+            params = {'TOKEN': self.token, 'IMAGE_NAME': self.image_name}
             cmd = {'cmd': INITRD_FORMAT}
-            res = utils.execute_template(cmd, params=params)
+            with open(self.initrd) as file_:
+                res = utils.execute_template(cmd, params=params, stdin_fh=file_)
             self.initrd_id = res[0].split(':')[1].strip()
 
         LOG.info('adding image %s to glance', self.image_name)
         params = {'TOKEN': self.token, 'IMAGE_NAME': self.image_name, \
-                  'KERNEL_ID': self.kernel_id, 'INITRD_ID': self.initrd_id, \
-                  'IMAGE_FILE': self.image}
+                  'KERNEL_ID': self.kernel_id, 'INITRD_ID': self.initrd_id}
         cmd = {'cmd': IMAGE_FORMAT}
-        utils.execute_template(cmd, params=params)
+        with open(self.image) as file_:
+            utils.execute_template(cmd, params=params, stdin_fh=file_)
 
     def _cleanup(self):
         if self.tmp_folder:

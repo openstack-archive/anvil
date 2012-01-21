@@ -70,7 +70,8 @@ class GlanceRuntime(comp.PythonRuntime):
         return APP_OPTIONS.get(app)
 
     def _post_apps_start(self):
-        ImageCreationService(self.cfg).install()
+        creator.ImageCreationService(self.cfg).install()
+
 
 class GlanceInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
