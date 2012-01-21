@@ -65,7 +65,7 @@ def print_cfgs(cfg, action):
     full_cfgs = cfg.configs_fetched
     db_dsns = cfg.db_dsns
     if(len(passwords_gotten) or len(full_cfgs) or len(db_dsns)):
-        LOG.info("After %s your config is:" % (action))
+        LOG.info("After action (%s) your settings are:" % (action))
         if(len(passwords_gotten)):
             LOG.info("Passwords:")
             map_print(passwords_gotten)
