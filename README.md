@@ -65,17 +65,25 @@ Typically the interaction would be that you install a set of components and then
 
 # Config
 
-If you want to change which git branches or other various *stack* configurations:
+For those of you that are brave enough to change *stack* here are some starting points.
+
+###  conf/stack.ini
 
 Check out *conf/stack.ini* for various configuration settings applied (branches, git repositories...).  
-> When you see a configuration in *stack.ini* with the format *${NAME:-DEFAULT}* this means that the environment the *stack* script is running in while be referred to and if a environment value exists for *NAME* it will be used (otherwise the *DEFAULT* will be used).  
 
-Also check out *conf/* for various component specific settings and files. 
-> Note that some of these files are templates (*TODO* rename the files so that people can see this). 
-> These files may have strings of the format *%NAME%* where *NAME* will most often be adjusted to a real value by the *stack* script.  
+When you see a configuration in *stack.ini* with the format *${NAME:-DEFAULT}* this means that the environment the *stack* script is running in while be referred to and if a environment value exists for *NAME* it will be used (otherwise the *DEFAULT* will be used).  
 
-Also check *conf/pkgs* for package listings and *conf/pips* for python packages for various distributions. 
->Note that these files are in a modified json format which allows for simple comments (lines starting with #). These comments are useful for explanations of why a version was chosen or the like.
+### conf/
+
+Check out *conf/* for various component specific settings and files. 
+
+Note that some of these files are templates (*TODO* rename the files so that people can see this). These files may have strings of the format *%NAME%* where *NAME* will most often be adjusted to a real value by the *stack* script.  
+
+### conf/pkgs
+
+Check out *conf/pkgs* for package listings and *conf/pips* for python packages for various distributions. 
+
+Note that these files are in a modified json format which allows for simple comments (lines starting with #). These comments are useful for explanations of why a version was chosen or the like.
 
 # Starting
 
@@ -166,4 +174,5 @@ You can override environment variables used in *stack* by editing *stack.ini* or
 ## Logging
 
 To adjust logging edit the *conf/logging.ini* file which controls the logging levels and handlers. 
-> You can also change which logging file name python will select ([format defined here](http://docs.python.org/dev/library/logging.config.html)) by setting the environment variable *LOG_FILE*.
+
+* You can also change which logging file name python will select ([format defined here](http://docs.python.org/dev/library/logging.config.html)) by setting the environment variable *LOG_FILE*.
