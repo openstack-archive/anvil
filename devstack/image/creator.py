@@ -140,8 +140,6 @@ class Image:
 
 class ImageCreationService:
     def __init__(self, cfg=None, flat_urls=None, token=None):
-        flat_urls = None
-        token = None
 
         if cfg:
             token = cfg.getpw("passwords", "service_token")
