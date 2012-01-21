@@ -20,139 +20,44 @@ from devstack import utils
 
 LOG = logging.getLogger("devstack.components.nova_conf")
 
-QUANTUM_OPENSWITCH_OPS = [
-  '--libvirt_vif_type=ethernet',
-  '--libvirt_vif_driver=nova.virt.libvirt.vif.LibvirtOpenVswitchDriver',
-  '--linuxnet_interface_driver=nova.network.linux_net.LinuxOVSInterfaceDriver',
-  '--quantum_use_dhcp']
 
-OS_EXTENSIONS = [
-  '--osapi_compute_extension='
-    'nova.api.openstack.compute.contrib.standard_extensions',
-  '--osapi_compute_extension=extensions.admin.Admin']
+class NovaConf():
+    def __init__(self):
+        self.lines = list()
 
-MULTI_HOST_OPS = ['--multi_host', '--send_arp_for_ha']
+    def add_list(self, key, *params):
+        self.lines.append({'key': key, 'options': params})
+        LOG.debug("Added nova conf key %s with values [%s]" % (key, ",".join(params)))
 
+    def add_simple(self, key):
+        self.lines.append({'key': key, 'options': None})
+        LOG.debug("Added nova conf key %s" % (key))
 
-class NovaConf:
-    # Our accumlator for lines that will go into nova.conf
-    lines = []
+    def add(self, key, value):
+        self.lines.append({'key': key, 'options': [value]})
+        LOG.debug("Added nova conf key %s with value [%s]" % (key, value))
 
-    # We should be passed the config object that holds all the values we need
-    def __init__(self, nova_component):
-        # Get handles to info from the main Nova component that we'll need
-        self.nova_component = nova_component
-        # This is a handy short cut to get to the Nova config data
-        self.cfg = nova_component.cfg
-        # This is a handy short cut to get to the Nova othercomponents data
-        self.othercomponents = nova_component.othercomponents
+    def _form_key(self, key, has_opts):
+        key_str = "--" + str(key)
+        if(has_opts):
+            key_str += "="
+        return key_str
 
-    # Add a line to the output that contains one value from the config
-    def _resolve(self, prefix, section, variable, postfix=''):
-        value = self.cfg.get(section, variable)
-        self._add(prefix + value + postfix)
-
-    # Just a convience method to have the list appending in one place
-    def _add(self, ldata):
-        self.lines.append(ldata)
-
-    def generate(self):
-        self.lines = []
-        self._add('--verbose')
-        self._add('--allow_admin_api')
-        self._resolve('--scheduler_driver=', 'nova', 'scheduler')
-        nova_dir = self.nova_component.appdir   # FIXME, is this correct?
-        self._add('--dhcpbridge_flagfile=' + nova_dir + '/bin/nova.conf')
-        self._resolve('--fixed_range=', 'nova', 'fixed_range')
-
-        # Check if quantum is enabled, and if so, add all the necessary
-        # config magic that goes with it
-        if (QUANTUM in self.othercomponents):
-            # Set network manager to multi lines
-            self._add(
-               '--network_manager=nova.network.quantum.manager.QuantumManager')
-            self._add(
-               '--network_manager=nova.network.quantum.manager.QuantumManager')
-            self._resolve('--quantum_connection_host=', 'quantum', 'q_host')
-            self._resolve('--quantum_connection_port=', 'quantum', 'q_port')
-            if ('q-svc' in self.othercomponents and
-                self.cfg.get('quantum', 'q_plugin') == 'openvswitch'):
-                self.lines.extend(QUANTUM_OPENSWITCH_OPS)
-        else:
-            self._resolve('--network_manager=nova.network.manager.',
-                          'nova', 'network_manager')
-        if ('n-vol' in self.othercomponents):
-            self._resolve('--volume_group=', 'nova', 'volume_group')
-            self._resolve('--volume_name_template=',
-                          'nova', 'volume_name_prefix', '%08x')
-            self._add('--iscsi_helper=tgtadm')
-
-        hostip = get_host_ip(self.cfg)
-        self._add('--my_ip=' + hostip)
-
-        # The value for vlan_interface may default to the the current value
-        # of public_interface. We'll grab the value and keep it handy
-        public_interface = self.cfg.get("nova", "public_interface")
-        vlan_interface = self.cfg.get("nova", "vlan_interface")
-        # If there's no vlan_interface value, use public_interface
-        if (not vlan_interface):
-            vlan_interface = public_interface
-        self._add('--public_interface=' + public_interface)
-        self._add('--vlan_interface=' + vlan_interface)
-        self._add('--sql_connection=' + self.cfg.get_dbdsn('nova'))
-        self._resolve('--libvirt_type=', 'nova', 'libvirt_type')
-        self._resolve('--instance_name_template=',
-                      'nova', 'instance_name_prefix', '%08x')
-        if ('openstackx' in self.othercomponents):
-            self.lines.extend(OS_EXTENSIONS)
-
-        if ('n-vnc' in self.othercomponents):
-            vncproxy_url = self.cfg.get("nova", "vncproxy_url")
-            if (not vncproxy_url):
-                vncproxy_url = 'http://' + hostip + ':6080'
-            self._add('--vncproxy_url=' + vncproxy_url)
-            self._add('vncproxy_wwwroot=' + nova_dir + '/')
-
-        self._add('--api_paste_config=' + nova_dir + '/bin/nova-api-paste.ini')
-        self._add('--image_service=nova.image.glance.GlanceImageService')
-        ec2_dmz_host = self.cfg.get("nova", "ec2_dmz_host")
-        if (not ec2_dmz_host):
-            ec2_dmz_host = hostip
-        self._add('--ec2_dmz_host=' + ec2_dmz_host)
-        self._resolve('--rabbit_host=', 'default', 'rabbit_host')
-        self._add('--rabbit_password=' + self.cfg.getpw("passwords", "rabbit"))
-        self._add('--glance_api_servers=' + hostip + ':9292')
-        self._add('--force_dhcp_release')
-
-        instances_path = self.cfg.get("nova", "instances_path")
-        if (instances_path):
-            self._add('--instances_path=' + instances_path)
-
-        multi_host = self.cfg.getboolean("nova", "multi_host")
-        if (multi_host == 1):
-            self.lines.extend(MULTI_HOST_OPS)
-
-        if (self.cfg.getboolean("default", "syslog")):
-            self._add('--use_syslog')
-
-        extra_flags = self.cfg.get("nova", "extra_flags")
-        if (extra_flags):
-            # FIXME, this is assuming that multiple flags are newline delimited
-            self._add(extra_flags)
-
-        virt_driver = self.cfg.get("nova", "virt_driver")
-        if (virt_driver == 'xenserver'):
-            self._add('--connection_type=xenapi')
-            self._add('--xenapi_connection_url=http://169.254.0.1')
-            self._add('--xenapi_connection_username=root')
-            # TBD, check that this is the right way to get the password
-            self._add('--xenapi_connection_password=' +
-                          self.cfg.getpw("passwords", "xenapi"))
-            self._add('--noflat_injected')
-            self._add('--flat_interface=eth1')
-            self._add('--flat_network_bridge=xapi1')
-        else:
-            self._resolve('--flat_network_bridge=',
-                         'nova', 'flat_network_bridge')
-            self._resolve('--flat_interface=', 'nova', 'flat_interface')
-        return self.lines
+    def generate(self, param_dict=None):
+        gen_lines = list()
+        for line_entry in self.lines:
+            key = line_entry.get('key')
+            opts = line_entry.get('options')
+            if(not key or len(key) == 0):
+                continue
+            if(opts == None):
+                key_str = self._form_key(key, False)
+                full_line = key_str
+            else:
+                key_str = self._form_key(key, len(opts))
+                filled_opts = list()
+                for opt in opts:
+                    filled_opts.append(utils.param_replace(str(opt), param_dict))
+                full_line = key_str + ",".join(filled_opts)
+            gen_lines.append(full_line)
+        return utils.joinlinesep(*gen_lines)
