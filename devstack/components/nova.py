@@ -30,8 +30,10 @@ DB_NAME = "nova"
 BIN_DIR = 'bin'
 TYPE = co.NOVA
 QUANTUM_MANAGER = 'nova.network.quantum.manager.QuantumManager'
-NET_MAN_TEMPL = 'nova.network.manager.%s'
-IMG_SVC = 'nova.image.glance.GlanceImageService'
+NET_MANGER_TEMPLATE = 'nova.network.manager.%s'
+DEF_IMAGE_SERVICE = 'nova.image.glance.GlanceImageService'
+DEF_SCHEDULER = 'nova.scheduler.simple.SimpleScheduler'
+DEF_GLANCE_PORT = 9292
 
 QUANTUM_OPENSWITCH_OPS = [
     {
@@ -48,6 +50,7 @@ class NovaUninstaller(comp.PythonUninstallComponent):
         comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
         #self.cfgdir = joinpths(self.appdir, CONFIG_ACTUAL_DIR)
 
+
 class NovaConfigurator():
     def __init__(self, cfg, active_components):
         self.cfg = cfg
@@ -55,17 +58,17 @@ class NovaConfigurator():
 
     def _getbool(self, name):
         return self.cfg.getboolean('nova', name)
-        
+
     def _getstr(self, name):
         return self.cfg.get('nova', name)
 
     def configure(self, dirs):
-        
+
         #TODO split up into sections??
-        
+
         nova_conf = nc.NovaConf()
         hostip = utils.get_host_ip()
-        
+
         #verbose on?
         if(self._getbool('verbose')):
             nova_conf.add_simple('verbose')
@@ -74,10 +77,13 @@ class NovaConfigurator():
         if(self._getbool('allow_admin_api')):
             nova_conf.add_simple('allow_admin_api')
 
-        #which sheculder do u want
-        nova_conf.add('scheduler_driver', self._getstr('scheduler'))
+        #which scheduler do u want?
+        scheduler = self._getstr('scheduler')
+        if(not scheduler):
+            scheduler = DEF_SCHEDULER
+        nova_conf.add('scheduler_driver', scheduler)
 
-        #??? 
+        # TODO is this the right directory?
         nova_conf.add('dhcpbridge_flagfile', utils.joinpths(dirs.get('bin'), API_CONF))
 
         #whats the network fixed range?
@@ -93,7 +99,7 @@ class NovaConfigurator():
             #   self.cfg.get('quantum', 'q_plugin') == 'openvswitch'):
             #   self.lines.extend(QUANTUM_OPENSWITCH_OPS)
         else:
-            nova_conf.add('network_manager', NET_MAN_TEMPL % (self._getstr('network_manager')))
+            nova_conf.add('network_manager', NET_MANGER_TEMPLATE % (self._getstr('network_manager')))
 
         # TODO
         #       if ('n-vol' in self.othercomponents):
@@ -113,11 +119,14 @@ class NovaConfigurator():
         nova_conf.add('public_interface', public_interface)
         nova_conf.add('vlan_interface', vlan_interface)
 
-
+        #setup your sql connection and what type of virt u will be doing
         nova_conf.add('sql_connection', self.cfg.get_dbdsn('nova'))
-        nova_conf.add('libvirt_type', self._getstr('libvirt_type'))
 
-        instance_template = self._getstr('instance_name_prefix') + '%08x';
+        #configure anything libvirt releated?
+        self._configure_libvirt(self._getstr('libvirt_type'), nova_conf)
+
+        #how instances will be presented
+        instance_template = self._getstr('instance_name_prefix') + '%08x'
         nova_conf.add('instance_name_template', instance_template)
 
         if(co.OPENSTACK_X in self.active_components):
@@ -131,38 +140,49 @@ class NovaConfigurator():
         #      vncproxy_url = 'http://' + hostip + ':6080'
         #  self._add('--vncproxy_url=' + vncproxy_url)
         #  self._add('vncproxy_wwwroot=' + nova_dir + '/')
-        # 
+        #
 
         # TODO is this right?
         nova_conf.add('api_paste_config', utils.joinpths(dirs.get('bin'), PASTE_CONF))
 
-        nova_conf.add('image_service', IMG_SVC)
+        img_service = self._getstr('img_service')
+        if(not img_service):
+            img_service = DEF_IMAGE_SERVICE
+        nova_conf.add('image_service', img_service)
 
         ec2_dmz_host = self._getstr('ec2_dmz_host')
         if(not ec2_dmz_host):
-            ec2_dmz_host = utils.get_host_ip()
-
+            ec2_dmz_host = hostip
         nova_conf.add('ec2_dmz_host', ec2_dmz_host)
 
+        #how is your rabbit setup?
         nova_conf.add('rabbit_host', self.cfg.get('default', 'rabbit_host'))
         nova_conf.add('rabbit_password', self.cfg.getpw("passwords", "rabbit"))
 
-        glance_svr = "%s:9292" % (hostip)
-        nova_conf.add('glance_api_servers', glance_svr)
+        #where is glance located?
+        glance_api_server = self._getstr('glance_server')
+        if(not glance_api_server):
+            glance_api_server = "%s:%d" % (hostip, DEF_GLANCE_PORT)
+        nova_conf.add('glance_api_servers', glance_api_server)
 
+        #??
         nova_conf.add_simple('force_dhcp_release')
 
+        #where instances will be stored
         instances_path = self._getstr('instances_path')
         if(instances_path):
             nova_conf.add('instances_path', instances_path)
 
+        #is this a multihost setup?
         if(self._getbool('multi_host')):
             nova_conf.add_simple('multi_host')
             nova_conf.add_simple('send_arp_for_ha')
 
+        #enable syslog??
         if(self.cfg.getboolean('default', 'syslog')):
             nova_conf.add_simple('use_syslog')
 
+        #handle any virt driver specifics
         virt_driver = self._getstr('virt_driver')
         self._configure_virt_driver(virt_driver, nova_conf)
 
@@ -176,7 +196,12 @@ class NovaConfigurator():
             complete_file = utils.joinlinesep(*full_file)
 
         return complete_file
-        
+
+    def _configure_libvirt(self, virt_type, nova_conf):
+        if(not virt_type):
+            return
+        nova_conf.add('libvirt_type', virt_type)
+
     #configures any virt driver settings
     def _configure_virt_driver(self, driver, nova_conf):
         if(not driver):
@@ -210,7 +235,7 @@ class NovaInstaller(comp.PythonInstallComponent):
             'branch': self.git_branch,
         })
         return places
-    
+
     def _generate_nova_conf(self):
         LOG.debug("Generating dynamic content for nova.conf")
         dirs = dict()
@@ -221,6 +246,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         nova_conf = conf_gen.configure(dirs)
         tgtfn = self._get_target_config_name(API_CONF)
         sh.write_file(tgtfn, nova_conf)
+        #we configured one file, return that we did that
         return 1
 
     def _configure_files(self):
