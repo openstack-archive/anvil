@@ -52,10 +52,10 @@ class ScreenRunner(runner.Runner):
             entries.append(kill_entry)
         for entry in entries:
             kill_cmd = ['screen', '-r', entry, '-X', 'kill']
-            execute(*kill_cmd)
+            sh.execute(*kill_cmd)
             time.sleep(2)
             quit_cmd = ['screen', '-r', entry, '-X', 'quit']
-            execute(*quit_cmd)
+            sh.execute(*quit_cmd)
 
     def start(self, name, program, *args, **kargs):
         app_dir = kargs.get('app_dir')
