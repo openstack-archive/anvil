@@ -158,10 +158,10 @@ def run_components(action_name, component_order, components_info, distro, root_d
     for c in component_order:
         klass = actions.get_action_cls(action_name, c)
         component_opts = components_info.get(c, list())
-        instance = klass(components=set(active_components), 
+        instance = klass(components=set(active_components),
                             distro=distro,
-                            pkg=pkg_manager, 
-                            cfg=config, 
+                            pkg=pkg_manager,
+                            cfg=config,
                             root=root_dir,
                             component_opts=component_opts)
         if(action_name == constants.INSTALL):

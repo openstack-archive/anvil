@@ -280,10 +280,15 @@ def param_replace(text, replacements, ignore_missing=False):
     return PARAM_SUB_REGEX.sub(replacer, text)
 
 
-def welcome(program_action):
-    formatted_action = constants.WELCOME_MAP.get(program_action, "")
+def welcome(action):
+    formatted_action = constants.WELCOME_MAP.get(action, "")
     ver_str = version.version_string()
-    lower = "!%s %s!" % (formatted_action.upper(), ver_str)
+    lower = "|"
+    if(formatted_action):
+        lower += formatted_action.upper()
+        lower += " "
+    lower += ver_str 
+    lower += "|"
     welcome = r'''
   ___  ____  _____ _   _ ____ _____  _    ____ _  __
  / _ \|  _ \| ____| \ | / ___|_   _|/ \  / ___| |/ /
@@ -292,15 +297,11 @@ def welcome(program_action):
  \___/|_|   |_____|_| \_|____/ |_/_/   \_\____|_|\_\
 
 '''
-    #this seems needed, weird...
-    welcome = "  " + welcome.strip()
-    max_len = 0
-    for line in welcome.splitlines():
-        if(len(line) > max_len):
-            max_len = len(line)
+    welcome = welcome.strip("\n\r")
+    max_len = len(max(welcome.splitlines(), key=len))
     lower_out = colored(constants.PROG_NICE_NAME, 'green') + \
-        ": " + colored(lower, 'blue')
-    center_len = (max_len + max_len / 3)
+                ": " + colored(lower, 'blue')
+    uncolored_lower_len = (len(constants.PROG_NICE_NAME + ": " + lower))
+    center_len = max_len + (max_len - uncolored_lower_len)
     lower_out = string.center(lower_out, center_len)
-    msg = welcome + os.linesep + lower_out
-    print(msg)
+    print((welcome + os.linesep + lower_out))
