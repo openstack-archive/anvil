@@ -193,7 +193,7 @@ class ImageCreationService:
     def __init__(self, cfg=None, flat_urls=None, token=None):
 
         if cfg:
-            token = cfg.getpw("passwords", "service_token")
+            token = cfg.get("passwords", "service_token")
             flat_urls = cfg.get('img', 'image_urls')
 
         if flat_urls:

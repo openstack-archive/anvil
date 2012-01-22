@@ -81,18 +81,37 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         parts = [section, option]
         return "/".join(parts)
 
+    def _resolve_special(self, section, option, value_gotten):
+        if(value_gotten and len(value_gotten)):
+            #you already got something, so no need to figure it out
+            return value_gotten
+        if(section == 'host' and option == 'ip'):
+            LOG.debug("Host ip from configuration/environment was empty, programatically attempting to determine it.")
+            host_ip = utils.get_host_ip()
+            LOG.debug("Determined host ip to be: \"%s\"" % (host_ip))
+            return host_ip
+        elif(section == 'passwords'):
+            key = self._makekey(section, option)
+            LOG.debug("Being forced to ask for password for \"%s\" since the configuration/environment value is empty.", key)
+            pw = sh.password(PW_TMPL % (key))
+            self.pws[key] = pw
+            return pw
+        else:
+            return value_gotten
+
     def get(self, section, option):
         key = self._makekey(section, option)
-        v = None
+        value = None
         if(key in self.configs_fetched):
-            v = self.configs_fetched.get(key)
-            LOG.debug("Fetched cached value \"%s\" for param \"%s\"" % (v, key))
+            value = self.configs_fetched.get(key)
+            LOG.debug("Fetched cached value \"%s\" for param \"%s\"" % (value, key))
         else:
             LOG.debug("Fetching value for param \"%s\"" % (key))
-            v = self._get_special(section, option)
-            LOG.debug("Fetched \"%s\" for \"%s\"" % (v, key))
-            self.configs_fetched[key] = v
-        return v
+            gotten_value = self._get_special(section, option)
+            value = self._resolve_special(section, option, gotten_value)
+            LOG.debug("Fetched \"%s\" for \"%s\"" % (value, key))
+            self.configs_fetched[key] = value
+        return value
 
     def _extract_default(self, default_value):
         if(not SUB_MATCH.search(default_value)):
@@ -112,6 +131,7 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         key = self._makekey(section, option)
         parent_val = ConfigParser.RawConfigParser.get(self, section, option)
         if(parent_val == None):
+            #parent didn't have anything, we are unable to do anything with it then
             return None
         extracted_val = None
         mtch = ENV_PAT.match(parent_val)
@@ -135,21 +155,11 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
             extracted_val = parent_val
         return extracted_val
 
-    def get_host_ip(self):
-        host_ip = self.get('default', 'host_ip')
-        if(not host_ip):
-            LOG.debug("Host ip from configuration/environment was empty, programatically attempting to determine it.")
-            host_ip = utils.get_host_ip()
-        key = self._makekey('default', 'host_ip')
-        self.configs_fetched[key] = host_ip
-        LOG.debug("Determined host ip to be: \"%s\"" % (host_ip))
-        return host_ip
-
     def get_dbdsn(self, dbname):
         user = self.get("db", "sql_user")
         host = self.get("db", "sql_host")
         port = self.get("db", "port")
-        pw = self.getpw("passwords", "sql")
+        pw = self.get("passwords", "sql")
         #check the dsn cache
         if(dbname in self.db_dsns):
             return self.db_dsns[dbname]
@@ -180,19 +190,3 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         #store for later...
         self.db_dsns[dbname] = dsn
         return dsn
-
-    def getpw(self, section, option):
-        key = self._makekey(section, option)
-        pw = self.pws.get(key)
-        if(pw != None):
-            return pw
-        pw = self.get(section, option)
-        if(pw == None):
-            pw = ""
-        if(len(pw) == 0):
-            LOG.debug("Being forced to ask for password for \"%s\" since the configuration/environment value is empty.", key)
-            while(len(pw) == 0):
-                pw = sh.password(PW_TMPL % (key))
-        LOG.debug("Password for \"%s\" will be \"%s\" %s" % (key, pw, CACHE_MSG))
-        self.pws[key] = pw
-        return pw

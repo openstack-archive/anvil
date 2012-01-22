@@ -56,7 +56,7 @@ class NovaConfigurator():
         #TODO split up into sections??
 
         nova_conf = NovaConf()
-        hostip = self.cfg.get_host_ip()
+        hostip = self.cfg.get('host', 'ip')
 
         #verbose on?
         if(self._getbool('verbose')):
@@ -148,7 +148,7 @@ class NovaConfigurator():
 
         #how is your rabbit setup?
         nova_conf.add('rabbit_host', self.cfg.get('default', 'rabbit_host'))
-        nova_conf.add('rabbit_password', self.cfg.getpw("passwords", "rabbit"))
+        nova_conf.add('rabbit_password', self.cfg.get("passwords", "rabbit"))
 
         #where is glance located?
         glance_api_server = self._getstr('glance_server')
@@ -204,7 +204,7 @@ class NovaConfigurator():
             nova_conf.add('xenapi_connection_url', 'http://169.254.0.1')
             nova_conf.add('xenapi_connection_username', 'root')
             # TODO, check that this is the right way to get the password
-            nova_conf.add('xenapi_connection_password', self.cfg.getpw("passwords", "xenapi"))
+            nova_conf.add('xenapi_connection_password', self.cfg.get("passwords", "xenapi"))
             nova_conf.add_simple('noflat_injected')
             nova_conf.add('flat_interface', 'eth1')
             nova_conf.add('flat_network_bridge', 'xapi1')

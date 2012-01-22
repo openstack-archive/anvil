@@ -133,7 +133,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         else:
             #Enable quantum in dashboard, if requested
             mp['QUANTUM_ENABLED'] = "%s" % (constants.QUANTUM in self.all_components)
-            mp['OPENSTACK_HOST'] = self.cfg.get_host_ip()
+            mp['OPENSTACK_HOST'] = self.cfg.get('host', 'ip')
         return mp
 
 

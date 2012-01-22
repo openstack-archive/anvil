@@ -45,7 +45,7 @@ class NovaClientInstaller(comp.PythonInstallComponent):
         #params with actual values
         mp = dict()
         mp['DEST'] = self.appdir
-        mp['OPENSTACK_HOST'] = self.cfg.get_host_ip()
+        mp['OPENSTACK_HOST'] = self.cfg.get('host', 'ip')
         return mp
 
 

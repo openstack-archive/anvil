@@ -63,11 +63,12 @@ class DBInstaller(comp.PkgInstallComponent):
         #this dictionary will be used for parameter replacement
         #in pre-install and post-install sections
         out = dict()
-        out['PASSWORD'] = self.cfg.getpw("passwords", "sql")
+        out['PASSWORD'] = self.cfg.get("passwords", "sql")
         out['BOOT_START'] = str(True).lower()
         out['USER'] = self.cfg.get("db", "sql_user")
-        out['SERVICE_HOST'] = self.cfg.get_host_ip()
-        out['HOST_IP'] = self.cfg.get_host_ip()
+        host_ip = self.cfg.get('host', 'ip')
+        out['SERVICE_HOST'] = host_ip
+        out['HOST_IP'] = host_ip
         return out
 
     def post_install(self):
@@ -145,7 +146,7 @@ def drop_db(cfg, dbname):
     if(dbactions and dbactions.get('drop_db')):
         dropcmd = dbactions.get('drop_db')
         params = dict()
-        params['PASSWORD'] = cfg.getpw("passwords", "sql")
+        params['PASSWORD'] = cfg.get("passwords", "sql")
         params['USER'] = cfg.get("db", "sql_user")
         params['DB'] = dbname
         cmds = list()
@@ -165,7 +166,7 @@ def create_db(cfg, dbname):
     if(dbactions and dbactions.get('create_db')):
         createcmd = dbactions.get('create_db')
         params = dict()
-        params['PASSWORD'] = cfg.getpw("passwords", "sql")
+        params['PASSWORD'] = cfg.get("passwords", "sql")
         params['USER'] = cfg.get("db", "sql_user")
         params['DB'] = dbname
         cmds = list()

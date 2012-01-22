@@ -152,8 +152,8 @@ class GlanceInstaller(comp.PythonInstallComponent):
         mp = dict()
         mp['DEST'] = self.appdir
         mp['SYSLOG'] = self.cfg.getboolean("default", "syslog")
-        mp['SERVICE_TOKEN'] = self.cfg.getpw("passwords", "service_token")
+        mp['SERVICE_TOKEN'] = self.cfg.get("passwords", "service_token")
         mp['SQL_CONN'] = self.cfg.get_dbdsn(DB_NAME)
-        mp['SERVICE_HOST'] = self.cfg.get_host_ip()
-        mp['HOST_IP'] = self.cfg.get_host_ip()
+        mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
+        mp['HOST_IP'] = self.cfg.get('host', 'ip')
         return mp

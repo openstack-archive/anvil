@@ -45,7 +45,7 @@ class RabbitInstaller(comp.PkgInstallComponent):
         self.runtime = RabbitRuntime(*args, **kargs)
 
     def _setup_pw(self):
-        passwd = self.cfg.getpw("passwords", "rabbit")
+        passwd = self.cfg.get("passwords", "rabbit")
         cmd = PWD_CMD + [passwd]
         sh.execute(*cmd, run_as_root=True)
 
