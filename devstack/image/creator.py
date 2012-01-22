@@ -208,7 +208,11 @@ class ImageCreationService:
             try:
                 if(len(url)):
                     Image(url, self.token).install()
-            except:  # setting up images should never stop the setup
+            except (IOError, tarfile.TarError):
+                #these are the known exceptions we will catch and all that 
+                #should be emitted (except core python errors, catching all
+                #exceptions is not good...), since this service is not critical
+                #just log them and carry on.
                 LOG.exception('Installing "%s" failed', url)
 
 
