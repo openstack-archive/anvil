@@ -33,20 +33,20 @@ This will typically produce:
                              action to perform, ie (install, start, stop, uninstall)
          -d DIR, --directory=DIR
                              empty root DIR for install or DIR with existing
-                             components (ACTION dependent)
+                             components for start/stop/uninstall
          -c COMPONENT, --component=COMPONENT
                              openstack component, ie (db, glance, horizon, keystone,
                              keystone-client, nova, nova-client, openstack-x,
                              quantum, rabbit, swift)
          -i, --ignore-deps   ignore dependencies when performing ACTION
-         -e, --ensure-deps   ensure dependencies occur when performing ACTION
-                             (default: True)
+         -e, --ensure-deps   ensure dependencies when performing ACTION (default:
+                             True)
          -r COMPONENT, --ref-component=COMPONENT
                              component which will not have ACTION applied but will be
                              referenced as if it was (ACTION dependent)
      
        Uninstall/stop options:
-         -f, --force         force ACTION even if no trace found
+         -f, --force         force ACTION even if no trace file found
      
        Dependency options:
          -s, --list-deps     show dependencies of COMPONENT (default: False)

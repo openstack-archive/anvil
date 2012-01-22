@@ -45,7 +45,7 @@ def parse():
         dest="dir",
         metavar="DIR",
         help="empty root DIR for install or "\
-             "DIR with existing components (ACTION dependent)")
+             "DIR with existing components for start/stop/uninstall")
     known_components = sorted(constants.COMPONENT_NAMES)
     components = "(" + ", ".join(known_components) + ")"
     base_group.add_option("-c", "--component",
@@ -59,7 +59,7 @@ def parse():
     base_group.add_option("-e", "--ensure-deps",
         action="store_true",
         dest="ensure_deps",
-        help="ensure dependencies occur when performing ACTION (default: %default)",
+        help="ensure dependencies when performing ACTION (default: %default)",
         default=True)
     base_group.add_option("-r", "--ref-component",
         action="append",
@@ -72,7 +72,7 @@ def parse():
     stop_un_group.add_option("-f", "--force",
         action="store_true",
         dest="force",
-        help="force ACTION even if no trace found",
+        help="force ACTION even if no trace file found",
         default=False)
     parser.add_option_group(stop_un_group)
 
