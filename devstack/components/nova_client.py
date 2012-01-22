@@ -16,8 +16,6 @@
 from devstack import component as comp
 from devstack import constants
 from devstack import log as logging
-from devstack import shell as sh
-from devstack import utils
 
 LOG = logging.getLogger("devstack.components.nova_client")
 TYPE = constants.NOVA_CLIENT

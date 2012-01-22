@@ -17,7 +17,6 @@ from devstack import component as comp
 from devstack import constants as co
 from devstack import log as logging
 from devstack import shell as sh
-from devstack import utils
 from devstack.components import nova_conf as nc
 
 LOG = logging.getLogger("devstack.components.nova")
