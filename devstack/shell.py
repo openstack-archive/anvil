@@ -187,25 +187,28 @@ def mkdirslist(path):
     return dirs_made
 
 
-def append_file(fn, text, flush=True):
-    LOG.debug("Appending to file %s (%d bytes)", fn, len(text))
+def append_file(fn, text, flush=True, quiet=False):
+    if(not quiet):
+        LOG.debug("Appending to file %s (%d bytes)", fn, len(text))
     with open(fn, "a") as f:
         f.write(text)
         if(flush):
             f.flush()
 
 
-def write_file(fn, text, flush=True):
-    LOG.debug("Writing to file %s (%d bytes)", fn, len(text))
+def write_file(fn, text, flush=True, quiet=False):
+    if(not quiet):
+        LOG.debug("Writing to file %s (%d bytes)", fn, len(text))
     with open(fn, "w") as f:
         f.write(text)
         if(flush):
             f.flush()
 
 
-def touch_file(fn, die_if_there=True):
+def touch_file(fn, die_if_there=True, quiet=False):
     if(not isfile(fn)):
-        LOG.debug("Touching and truncating file %s", fn)
+        if(not quiet):
+            LOG.debug("Touching and truncating file %s", fn)
         with open(fn, "w") as f:
             f.truncate(0)
     else:
@@ -214,12 +217,14 @@ def touch_file(fn, die_if_there=True):
             raise excp.FileException(msg)
 
 
-def load_file(fn):
-    LOG.debug("Loading data from file %s", fn)
+def load_file(fn, quiet=False):
+    if(not quiet):
+        LOG.debug("Loading data from file %s", fn)
     data = ""
     with open(fn, "r") as f:
         data = f.read()
-    LOG.debug("Loaded (%d) bytes from file %s", len(data), fn)
+    if(not quiet):
+        LOG.debug("Loaded (%d) bytes from file %s", len(data), fn)
     return data
 
 
