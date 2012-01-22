@@ -26,6 +26,8 @@ from devstack import utils
 LOG = logging.getLogger("devstack.cfg")
 PW_TMPL = "Enter a password for %s: "
 ENV_PAT = re.compile(r"^\s*\$\{([\w\d]+):\-(.*)\}\s*$")
+SUB_MATCH = re.compile(r"(?:([\w\d]+):([\w\d]+))")
+EVAL_MATCH = re.compile(r"\$\((.*)\)")
 CACHE_MSG = "(value will now be internally cached)"
 
 
@@ -93,29 +95,60 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
             self.configs_fetched[key] = v
         return v
 
+    def _eval_expr(self, expr):
+        LOG.debug("Evaluating expression %s", expr)
+        if(SUB_MATCH.search(expr)):
+            def replacer(match):
+                section = match.group(1).strip()
+                option = match.group(2).strip()
+                #recursion may happen alot here
+                #but you can shot yourself if u want to
+                return self.get(section, option)
+            full_expr = SUB_MATCH.sub(replacer, expr)
+            LOG.debug("Evaluating complete expression %s", full_expr)
+            expr = full_expr
+        #this isn't the safest, but we aren't
+        #expecting crazy user inputs...
+        local_vars = dict()
+        global_vars = dict()
+        eval_result = eval(expr, global_vars, local_vars)
+        return str(eval_result)
+
+    def _extract_default(self, value):
+        eval_mtch = EVAL_MATCH.match(value)
+        if(not eval_mtch):
+            return value
+        expr = eval_mtch.group(1)
+        if(len(expr) == 0):
+            return value
+        return self._eval_expr(expr)
+
     def _get_special(self, section, option):
         key = self._makekey(section, option)
-        v = ConfigParser.RawConfigParser.get(self, section, option)
-        if(v == None):
-            return v
-        mtch = ENV_PAT.match(v)
+        parent_val = ConfigParser.RawConfigParser.get(self, section, option)
+        if(parent_val == None):
+            return None
+        extracted_val = None
+        mtch = ENV_PAT.match(parent_val)
         if(mtch):
-            key = mtch.group(1).strip()
-            defv = mtch.group(2)
-            if(len(defv) == 0 and len(key) == 0):
-                msg = "Invalid bash-like value \"%s\" for \"%s\"" % (v, key)
+            env_key = mtch.group(1).strip()
+            def_val = mtch.group(2)
+            if(len(def_val) == 0 and len(env_key) == 0):
+                msg = "Invalid bash-like value \"%s\" for \"%s\"" % (parent_val, key)
                 raise excp.BadParamException(msg)
-            if(len(key) == 0):
-                v = defv
-                LOG.debug("Using config provided value \"%s\" for \"%s\" (no environment key)" % (v, key))
+            if(len(env_key) == 0 or env.get_key(env_key) == None):
+                LOG.debug("Extracting default value from config provided default value \"%s\" for \"%s\"" % (def_val, key))
+                actual_def_val = self._extract_default(def_val)
+                LOG.debug("Using config provided default value \"%s\" for \"%s\" (no environment key)" % (actual_def_val, key))
+                extracted_val = actual_def_val
             else:
-                v = env.get_key(key)
-                if(v == None):
-                    v = defv
-                    LOG.debug("Using config provided value \"%s\" for \"%s\"" % (v, key))
-            return v
+                env_val = env.get_key(env_key)
+                LOG.debug("Using enviroment provided value \"%s\" for \"%s\"" % (env_val, key))
+                extracted_val = env_val
         else:
-            return v
+            LOG.debug("Using raw config provided value \"%s\" for \"%s\"" % (parent_val, key))
+            extracted_val = parent_val
+        return extracted_val
 
     def get_host_ip(self):
         host_ip = self.get('default', 'host_ip')
