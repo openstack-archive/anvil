@@ -250,13 +250,13 @@ def _run_components(action_name, component_order, components_info, distro, root_
         if(action_name == c.INSTALL):
             install_result = _install(component, instance)
             if(install_result):
-                results.append(install_result)
+                results += install_result
         elif(action_name == c.STOP):
             _stop(component, instance, program_args.get('force', False))
         elif(action_name == c.START):
             start_result = _start(component, instance)
             if(start_result):
-                results.append(start_result)
+                results += start_result
         elif(action_name == c.UNINSTALL):
             _uninstall(component, instance, program_args.get('force', False))
     #display any configs touched...
@@ -307,7 +307,8 @@ def _run_action(args):
     results = _run_components(action, component_order, components, distro, rootdir, args)
     LOG.info("Finished action [%s] on %s" % (action, date.rcf8222date()))
     if(results and len(results)):
-        msg = "Check [%s] for traces of what happened." % (", ".join(results))
+        print results
+        msg = 'Check [%s] for traces of what happened.' % ", ".join(results)
         LOG.info(msg)
     return True
 
