@@ -324,7 +324,7 @@ def welcome(action):
     if(formatted_action):
         lower += formatted_action.upper()
         lower += " "
-    lower += ver_str 
+    lower += ver_str
     lower += "|"
     welcome = r'''
   ___  ____  _____ _   _ ____ _____  _    ____ _  __

@@ -22,7 +22,6 @@ from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import shell as sh
 from devstack import trace as tr
-from devstack import utils
 
 LOG = logging.getLogger("devstack.components.rabbit")
 TYPE = constants.RABBIT
@@ -76,7 +75,7 @@ class RabbitRuntime(comp.NullRuntime):
         if(len(pkgsinstalled) == 0):
             msg = "Can not check the status of %s since it was not installed" % (TYPE)
             raise excp.StatusException(msg)
-        (sysout, stderr) = sh.execute(*STATUS_CMD, run_as_root=True)
+        (sysout, _) = sh.execute(*STATUS_CMD, run_as_root=True)
         return sysout.strip().lower()
 
     def _run_cmd(self, cmd):
