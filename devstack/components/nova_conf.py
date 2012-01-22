@@ -204,7 +204,6 @@ class NovaConfigurator():
             nova_conf.add('connection_type', 'xenapi')
             nova_conf.add('xenapi_connection_url', 'http://169.254.0.1')
             nova_conf.add('xenapi_connection_username', 'root')
-            # TODO, check that this is the right way to get the password
             nova_conf.add('xenapi_connection_password', self.cfg.get("passwords", "xenapi"))
             nova_conf.add_simple('noflat_injected')
             nova_conf.add('flat_interface', 'eth1')
