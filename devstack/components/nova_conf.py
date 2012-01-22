@@ -116,7 +116,8 @@ class NovaConfigurator():
         self._configure_libvirt(self._getstr('libvirt_type'), nova_conf)
 
         #how instances will be presented
-        instance_template = self._getstr('instance_name_prefix') + '%08x'
+        instance_template = (self._getstr('instance_name_prefix') +
+                                self._getstr('instance_name_postfix'))
         nova_conf.add('instance_name_template', instance_template)
 
         if(co.OPENSTACK_X in self.active_components):
