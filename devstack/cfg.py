@@ -83,7 +83,10 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
 
     def _resolve_special(self, section, option, value_gotten):
         if(value_gotten and len(value_gotten)):
-            #you already got something, so no need to figure it out
+            if(section == 'passwords'):
+                #ensure we store it as a password
+                key = self._makekey(section, option)
+                self.pws[key] = value_gotten
             return value_gotten
         if(section == 'host' and option == 'ip'):
             LOG.debug("Host ip from configuration/environment was empty, programatically attempting to determine it.")
