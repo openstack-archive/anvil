@@ -14,13 +14,10 @@
 #    under the License.
 
 import getpass
-import json
 import os
 import os.path
-import shlex
 import shutil
 import subprocess
-import sys
 
 from devstack import log as logging
 from devstack import exceptions as excp
@@ -51,7 +48,7 @@ def execute(*cmd, **kwargs):
     if run_as_root:
         cmd = ROOT_HELPER + list(cmd)
 
-    cmd = map(str, cmd)
+    cmd = [str(c) for c in cmd]
     if(shell):
         cmd = " ".join(cmd)
         LOG.debug('Running shell cmd: [%s]' % (cmd))
@@ -145,22 +142,22 @@ def _gen_password(pw_len):
         raise excp.BadParamException(msg)
     LOG.debug("Generating you a pseudo-random password of byte length: %s" % (pw_len))
     cmd = MKPW_CMD + [pw_len]
-    (stdout, stderr) = execute(*cmd)
+    (stdout, _) = execute(*cmd)
     return stdout.strip()
 
 
-def _prompt_password(prompt=None):
-    if(prompt):
-        return getpass.getpass(prompt)
+def _prompt_password(prompt_=None):
+    if(prompt_):
+        return getpass.getpass(prompt_)
     else:
         return getpass.getpass()
 
 
-def password(prompt=None, pw_len=8):
+def password(prompt_=None, pw_len=8):
     rd = ""
     ask_for_pw = env.get_bool(PASS_ASK_ENV, True)
     if(ask_for_pw):
-        rd = _prompt_password(prompt)
+        rd = _prompt_password(prompt_)
     if(len(rd) == 0):
         return _gen_password(pw_len)
     else:
@@ -171,9 +168,9 @@ def mkdirslist(path):
     LOG.debug("Determining potential paths to create for target path \"%s\"" % (path))
     dirs_possible = set()
     dirs_possible.add(path)
-    #TODO maybe just use string split with os.sep?
+
     while(True):
-        (base, dirname) = os.path.split(path)
+        (base, _) = os.path.split(path)
         dirs_possible.add(base)
         path = base
         if(path == os.sep):
@@ -251,7 +248,7 @@ def rmdir(path, quiet=True):
         LOG.debug("Deleting directory \"%s\" with the cavet that we will fail if it's not empty." % (path))
         os.rmdir(path)
         LOG.debug("Deleted directory \"%s\"" % (path))
-    except OSError, e:
+    except OSError:
         if(not quiet):
             raise
         else:
@@ -278,7 +275,7 @@ def unlink(path, ignore_errors=True):
     try:
         LOG.debug("Unlinking (removing) %s" % (path))
         os.unlink(path)
-    except OSError, e:
+    except OSError:
         if(not ignore_errors):
             raise
         else:

@@ -47,7 +47,7 @@ class Trace():
     def __init__(self, tracefn):
         self.tracefn = tracefn
 
-    def fn(self):
+    def filename(self):
         return self.tracefn
 
     def trace(self, cmd, action=None):
@@ -62,6 +62,7 @@ class TraceWriter():
         self.tracer = None
         self.root = root
         self.name = name
+        self.filename = None
         self.started = False
 
     def _start(self):
@@ -69,19 +70,19 @@ class TraceWriter():
             return
         else:
             dirs = sh.mkdirslist(self.root)
-            self.fn = touch_trace(self.root, self.name)
-            self.tracer = Trace(self.fn)
+            self.filename = touch_trace(self.root, self.name)
+            self.tracer = Trace(self.filename)
             self.tracer.trace(TRACE_VERSION, str(TRACE_VER))
             if(len(dirs)):
                 for d in dirs:
                     self.tracer.trace(DIR_MADE, d)
             self.started = True
 
-    def py_install(self, name, trace_fn, where):
+    def py_install(self, name, trace_filename, where):
         self._start()
         what = dict()
         what['name'] = name
-        what['trace'] = trace_fn
+        what['trace'] = trace_filename
         what['where'] = where
         self.tracer.trace(PYTHON_INSTALL, json.dumps(what))
 

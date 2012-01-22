@@ -14,14 +14,11 @@
 #    under the License.
 
 import time
-import os
 import re
 
-from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import runner
 from devstack import shell as sh
-from devstack import trace as tr
 from devstack import utils
 
 LOG = logging.getLogger("install.screen")
@@ -37,7 +34,7 @@ class ScreenRunner(runner.Runner):
     def stop(self, name, *args, **kargs):
         real_name = name + NAME_POSTFIX
         list_cmd = ['screen', '-list']
-        (sysout, stderr) = sh.execute(*list_cmd)
+        (sysout, _) = sh.execute(*list_cmd)
         lines = sysout.splitlines()
         entries = list()
         lookfor = r"^(\d+\." + re.escape(real_name) + r")\s+(.*)$"
