@@ -14,6 +14,7 @@
 #    under the License.
 
 
+import os
 import tarfile
 import tempfile
 import urllib
@@ -22,22 +23,23 @@ from devstack import log
 from devstack import shell
 from devstack import utils
 
-REPORTSIZE = 10485760
 
 LOG = log.getLogger("devstack.image.creator")
 
-KERNEL_FORMAT = ['glance', 'add', '-A', '%TOKEN%', \
-    'name="%IMAGE_NAME%-kernel"', 'is_public=true', 'container_format=aki', \
-    'disk_format=aki']
-INITRD_FORMAT = ['glance', 'add', '-A', '%TOKEN%', \
-    'name="%IMAGE_NAME%-ramdisk"', 'is_public=true', 'container_format=ari', \
-    'disk_format=ari']
-IMAGE_FORMAT = ['glance', 'add', '-A', '%TOKEN%', 'name="%IMAGE_NAME%.img"', \
-    'is_public=true', 'container_format=ami', 'disk_format=ami', \
-    'kernel_id=%KERNEL_ID%', 'ramdisk_id=%INITRD_ID%']
-
 
 class Image:
+
+    KERNEL_FORMAT = ['glance', '-A', '%TOKEN%', 'add', \
+        'name="%IMAGE_NAME%-kernel"', 'is_public=true', 'container_format=aki', \
+        'disk_format=aki']
+    INITRD_FORMAT = ['glance', 'add', '-A', '%TOKEN%', \
+        'name="%IMAGE_NAME%-ramdisk"', 'is_public=true', 'container_format=ari', \
+        'disk_format=ari']
+    IMAGE_FORMAT = ['glance', 'add', '-A', '%TOKEN%', 'name="%IMAGE_NAME%.img"', \
+        'is_public=true', 'container_format=ami', 'disk_format=ami', \
+        'kernel_id=%KERNEL_ID%', 'ramdisk_id=%INITRD_ID%']
+
+    REPORTSIZE = 10485760
 
     tmpdir = tempfile.gettempdir()
 
@@ -53,11 +55,12 @@ class Image:
         self.initrd = None
         self.initrd_id = ''
         self.tmp_folder = None
+        self.registry = ImageRegistry(token)
         self.last_report = 0
 
     def _report(self, blocks, block_size, size):
         downloaded = blocks * block_size
-        if downloaded - self.last_report > REPORTSIZE:
+        if downloaded - self.last_report > Image.REPORTSIZE:
             LOG.info('Downloading: %d/%d ', blocks * block_size, size)
             self.last_report = downloaded
 
@@ -102,7 +105,7 @@ class Image:
         if self.kernel:
             LOG.info('Adding kernel %s to glance', self.kernel)
             params = {'TOKEN': self.token, 'IMAGE_NAME': self.image_name}
-            cmd = {'cmd': KERNEL_FORMAT}
+            cmd = {'cmd': Image.KERNEL_FORMAT}
             with open(self.kernel) as file_:
                 res = utils.execute_template(cmd, params=params, stdin_fh=file_)
             self.kernel_id = res[0][0].split(':')[1].strip()
@@ -110,7 +113,7 @@ class Image:
         if self.initrd:
             LOG.info('Adding ramdisk %s to glance', self.initrd)
             params = {'TOKEN': self.token, 'IMAGE_NAME': self.image_name}
-            cmd = {'cmd': INITRD_FORMAT}
+            cmd = {'cmd': Image.INITRD_FORMAT}
             with open(self.initrd) as file_:
                 res = utils.execute_template(cmd, params=params, stdin_fh=file_)
             self.initrd_id = res[0][0].split(':')[1].strip()
@@ -118,7 +121,7 @@ class Image:
         LOG.info('Adding image %s to glance', self.image_name)
         params = {'TOKEN': self.token, 'IMAGE_NAME': self.image_name, \
                   'KERNEL_ID': self.kernel_id, 'INITRD_ID': self.initrd_id}
-        cmd = {'cmd': IMAGE_FORMAT}
+        cmd = {'cmd': Image.IMAGE_FORMAT}
         with open(self.image) as file_:
             utils.execute_template(cmd, params=params, stdin_fh=file_)
 
@@ -127,13 +130,63 @@ class Image:
             shell.deldir(self.tmp_folder)
         shell.unlink(self.download_file_name)
 
+    def _generate_image_name(self, name):
+        return name.replace('.tar.gz', '.img').replace('.tgz', '.img')\
+            .replace('.img.gz', '.img')
+
     def install(self):
-        try:
-            self._download()
-            self._unpack()
-            self._register()
-        finally:
-            self._cleanup()
+        possible_name = self._generate_image_name(self.download_name)
+        if not self.registry.has_image(possible_name):
+            try:
+                self._download()
+                self._unpack()
+                if not self.registry.has_image(self.image_name + '.img'):
+                    self._register()
+            finally:
+                self._cleanup()
+
+
+class ImageRegistry:
+
+    CMD = ['glance', '-A', '%TOKEN%', 'details']
+
+    def __init__(self, token):
+        self._token = token
+        self._info = {}
+        self._load()
+
+    def _parse(self, text):
+        current = {}
+
+        for line in text.split(os.linesep):
+            if not line:
+                continue
+
+            if line.startswith("==="):
+                if 'id' in current:
+                    id_ = current['id']
+                    del(current['id'])
+                    self._info[id_] = current
+                current = {}
+            else:
+                l = line.split(':', 1)
+                current[l[0].strip().lower()] = l[1].strip().replace('"', '')
+
+    def _load(self):
+        LOG.info('Loading glance image information')
+        params = {'TOKEN': self._token}
+        cmd = {'cmd': ImageRegistry.CMD}
+        res = utils.execute_template(cmd, params=params)
+        self._parse(res[0])
+
+    def has_image(self, image):
+        return image in self.get_image_names()
+
+    def get_image_names(self):
+        return [self._info[k]['name'] for k in self._info.keys()]
+
+    def __getitem__(self, id_):
+        return self._info[id_]
 
 
 class ImageCreationService:
@@ -155,10 +208,8 @@ class ImageCreationService:
             try:
                 if(len(url)):
                     Image(url, self.token).install()
-            except IOError, e:
+            except:  # setting up images should never stop the setup
                 LOG.exception('Installing "%s" failed', url)
-            except tarfile.TarError, e:
-                LOG.exception('Extracting "%s" failed', url)
 
 
 if __name__ == "__main__":
