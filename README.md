@@ -69,9 +69,8 @@ For those of you that are brave enough to change *stack* here are some starting 
 
 ###  conf/stack.ini
 
-Check out *conf/stack.ini* for various configuration settings applied (branches, git repositories...).  
+Check out *conf/stack.ini* for various configuration settings applied (branches, git repositories...).  Check out the header of that file for how the customized configuration values are parsed and what they may result in.
 
-When you see a configuration in *stack.ini* with the format *${NAME:-DEFAULT}* this means that the environment the *stack* script is running in while be referred to and if a environment value exists for *NAME* it will be used (otherwise the *DEFAULT* will be used).  
 
 ### conf/
 
