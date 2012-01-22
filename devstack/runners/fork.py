@@ -25,7 +25,6 @@ from devstack import log as logging
 from devstack import runner
 from devstack import shell as sh
 from devstack import trace as tr
-from devstack import utils
 
 # Maximum for the number of available file descriptors (when not found)
 MAXFD = 2048
@@ -50,17 +49,18 @@ class ForkRunner(runner.Runner):
 
     def _stop_pid(self, pid):
         killed = False
-        lastmsg = ""
         attempts = 0
-        for attempt in range(0, MAX_KILL_TRY):
+        for _ in range(0, MAX_KILL_TRY):
             try:
                 LOG.info("Attempting to kill pid %s" % (pid))
                 attempts += 1
                 os.kill(pid, signal.SIGKILL)
-                LOG.info("Sleeping for %s seconds before next attempt to kill pid %s" % (SLEEP_TIME, pid))
+                LOG.info("Sleeping for %s seconds before next attempt to "\
+                             "kill pid %s" % (SLEEP_TIME, pid))
                 time.sleep(SLEEP_TIME)
-            except OSError as (ec, msg):
-                if(ec == errno.ESRCH):
+            except OSError, e:
+                ec, _ = e
+                if ec == errno.ESRCH:
                     killed = True
                     break
                 else:
