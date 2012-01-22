@@ -304,10 +304,10 @@ def _run_action(args):
     for c in ref_components.keys():
         if(c not in components):
             components[c] = ref_components.get(c)
-    resultList = _run_components(action, component_order, components, distro, rootdir, args)
+    results = _run_components(action, component_order, components, distro, rootdir, args)
     LOG.info("Finished action [%s] on %s" % (action, date.rcf8222date()))
-    if(resultList and len(resultList)):
-        msg = "Check [%s] for traces of what happened." % (", ".join(resultList))
+    if(results and len(results)):
+        msg = "Check [%s] for traces of what happened." % (", ".join(results))
         LOG.info(msg)
     return True
 
