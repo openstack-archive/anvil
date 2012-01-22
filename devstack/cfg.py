@@ -78,8 +78,7 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         self.db_dsns = dict()
 
     def _makekey(self, section, option):
-        parts = [section, option]
-        return "/".join(parts)
+        return "/".join([str(section), str(option)])
 
     def _resolve_special(self, section, option, value_gotten):
         if(value_gotten and len(value_gotten)):
