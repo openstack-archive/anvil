@@ -18,7 +18,6 @@ from devstack import component as comp
 from devstack import constants
 from devstack import log as logging
 from devstack import shell as sh
-from devstack import utils
 
 TYPE = constants.HORIZON
 
