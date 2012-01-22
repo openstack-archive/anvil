@@ -14,15 +14,12 @@
 #    under the License.
 
 from tempfile import TemporaryFile
-import os
-import re
 import time
 
 from devstack import constants as co
 from devstack import log as logging
 from devstack import packager as pack
 from devstack import shell as sh
-from devstack import utils
 
 LOG = logging.getLogger("devstack.packaging.apt")
 
