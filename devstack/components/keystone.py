@@ -32,12 +32,15 @@ BIN_DIR = "bin"
 CONFIG_DIR = "config"
 DB_NAME = "keystone"
 CFG_SECTION = 'DEFAULT'
+MANAGE_JSON_CONF = 'keystone-manage-cmds.json'
 
 #what to start
 APP_OPTIONS = {
     'keystone': ['--config-file', sh.joinpths('%ROOT%', "config", ROOT_CONF), "--verbose"],
 }
 
+#how we invoke the manage command
+KEYSTONE_MNG_CMD = ["%BIN_DIR%/keystone-manage", '--config-file=%CONFIG_FILE%']
 
 class KeystoneUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -76,9 +79,54 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         db.create_db(self.cfg, DB_NAME)
 
     def _setup_data(self):
-        params = self._get_param_map(None)
-        cmds = _keystone_setup_cmds(self.all_components)
-        utils.execute_template(*cmds, params=params, ignore_missing=True)
+        #load the json file which has the keystone setup commands
+        cmds_pth = sh.joinpths(constants.STACK_CONFIG_DIR, TYPE, MANAGE_JSON_CONF)
+        cmd_map = utils.load_json(cmds_pth)
+
+        #order matters here
+        base_cmds = list()
+
+        tenant_cmds = cmd_map.get('tenants', list())
+        base_cmds.extend(tenant_cmds)
+
+        user_cmds = cmd_map.get('users', list())
+        base_cmds.extend(user_cmds)
+
+        role_cmds = cmd_map.get('roles', list())
+        base_cmds.extend(role_cmds)
+
+        token_cmds = cmd_map.get('tokens', list())
+        base_cmds.extend(token_cmds)
+
+        service_cmds = cmd_map.get('services', list())
+        base_cmds.extend(service_cmds)
+
+        endpoint_cmds = cmd_map.get('endpoints', list())
+        base_cmds.extend(endpoint_cmds)
+
+        if(constants.GLANCE in self.all_components):
+            glance_cmds = cmd_map.get('glance', list())
+            base_cmds.extend(glance_cmds)
+        if(constants.NOVA in self.all_components):
+            nova_cmds = cmd_map.get('nova', list())
+            base_cmds.extend(nova_cmds)
+        if(constants.SWIFT in self.all_components):
+            swift_cmds = cmd_map.get('swift', list())
+            base_cmds.extend(swift_cmds)
+
+        #the above commands are only templates
+        #now we fill in the actual application that will run it
+        full_cmds = list()
+        for cmd in base_cmds:
+            actual_cmd = KEYSTONE_MNG_CMD + cmd
+            full_cmds.append({
+                'cmd': actual_cmd,
+            })
+
+        if(len(full_cmds)):
+            #execute as templates with replacements coming from the given map
+            params = self._get_param_map(MANAGE_JSON_CONF)
+            utils.execute_template(*full_cmds, params=params, ignore_missing=True)
 
     def _config_adjust(self, contents, name):
         if(name not in CONFIGS):
@@ -108,13 +156,32 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         #these be used to fill in the configuration/cmds +
         #params with actual values
         mp = dict()
-        mp['DEST'] = self.appdir
-        mp['SQL_CONN'] = self.cfg.get_dbdsn(DB_NAME)
-        mp['ADMIN_PASSWORD'] = self.cfg.getpw('passwords', 'horizon_keystone_admin')
-        mp['HOST_IP'] = self.cfg.get_host_ip()
-        mp['SERVICE_TOKEN'] = self.cfg.getpw("passwords", "service_token")
-        mp['BIN_DIR'] = self.bindir
-        mp['CONFIG_FILE'] = sh.joinpths(self.cfgdir, ROOT_CONF)
+        if(config_fn == ROOT_CONF):
+            mp['DEST'] = self.appdir
+            mp['SQL_CONN'] = self.cfg.get_dbdsn(DB_NAME)
+        elif(config_fn == MANAGE_JSON_CONF):
+            host_ip = self.cfg.get_host_ip()
+            mp['ADMIN_PASSWORD'] = self.cfg.getpw('passwords', 'horizon_keystone_admin')
+            mp['SERVICE_HOST'] = host_ip
+            mp['SERVICE_TOKEN'] = self.cfg.getpw("passwords", "service_token")
+            mp['BIN_DIR'] = self.bindir
+            mp['CONFIG_FILE'] = sh.joinpths(self.cfgdir, ROOT_CONF)
+            keystone_auth_host = self.cfg.get('keystone', 'keystone_auth_host')
+            if(not keystone_auth_host):
+                keystone_auth_host = host_ip
+            mp['KEYSTONE_AUTH_HOST'] = keystone_auth_host
+            mp['KEYSTONE_AUTH_PORT'] = self.cfg.get('keystone', 'keystone_auth_port')
+            mp['KEYSTONE_AUTH_PROTOCOL'] = self.cfg.get('keystone', 'keystone_auth_protocol')
+            keystone_service_host = self.cfg.get('keystone', 'keystone_service_host')
+            if(not keystone_service_host):
+                keystone_service_host = host_ip
+            mp['KEYSTONE_SERVICE_HOST'] = keystone_service_host
+            mp['KEYSTONE_SERVICE_PORT'] = self.cfg.get('keystone', 'keystone_service_port')
+            mp['KEYSTONE_SERVICE_PROTOCOL'] = self.cfg.get('keystone', 'keystone_service_protocol')
+        else:
+            mp['DEST'] = self.appdir
+            mp['BIN_DIR'] = self.bindir
+            mp['CONFIG_FILE'] = sh.joinpths(self.cfgdir, ROOT_CONF)
         return mp
 
 
@@ -135,193 +202,3 @@ class KeystoneRuntime(comp.PythonRuntime):
 
     def _get_app_options(self, app):
         return APP_OPTIONS.get(app)
-
-
-# Keystone setup commands are the the following
-def _keystone_setup_cmds(components):
-
-    # See http://keystone.openstack.org/man/keystone-manage.html
-
-    root_cmd = ["%BIN_DIR%/keystone-manage", '--config-file=%CONFIG_FILE%']
-
-    # Tenants
-    tenant_cmds = [
-        {
-            "cmd": root_cmd + ["tenant", "add", "admin"],
-        },
-        {
-            "cmd": root_cmd + ["tenant", "add", "demo"]
-        },
-        {
-            "cmd": root_cmd + ["tenant", "add", "invisible_to_admin"]
-        },
-    ]
-
-    # Users
-    user_cmds = [
-        {
-            "cmd": root_cmd + ["user", "add", "admin", "%ADMIN_PASSWORD%"]
-        },
-        {
-            "cmd": root_cmd + ["user", "add", "demo", "%ADMIN_PASSWORD%"]
-        },
-    ]
-
-    # Roles
-    role_cmds = [
-        {
-            "cmd": root_cmd + ["role", "add", "Admin"]
-        },
-        {
-            "cmd": root_cmd + ["role", "add", "Member"]
-        },
-        {
-            "cmd": root_cmd + ["role", "add", "KeystoneAdmin"]
-        },
-        {
-            "cmd": root_cmd + ["role", "add", "KeystoneServiceAdmin"]
-        },
-        {
-            "cmd": root_cmd + ["role", "add", "sysadmin"]
-        },
-        {
-            "cmd": root_cmd + ["role", "add", "netadmin"]
-        },
-        {
-            "cmd": root_cmd + ["role", "grant", "Admin", "admin", "admin"]
-        },
-        {
-            "cmd": root_cmd + ["role", "grant", "Member", "demo", "demo"]
-        },
-        {
-            "cmd": root_cmd + ["role", "grant", "sysadmin", "demo", "demo"]
-        },
-        {
-            "cmd": root_cmd + ["role", "grant", "netadmin", "demo", "demo"]
-        },
-        {
-            "cmd": root_cmd + ["role", "grant", "Member", "demo", "invisible_to_admin"]
-        },
-        {
-            "cmd": root_cmd + ["role", "grant", "Admin", "admin", "demo"]
-        },
-        {
-            "cmd": root_cmd + ["role", "grant", "Admin", "admin"]
-        },
-        {
-            "cmd": root_cmd + ["role", "grant", "KeystoneAdmin", "admin"]
-        },
-        {
-            "cmd": root_cmd + ["role", "grant", "KeystoneServiceAdmin", "admin"]
-        }
-    ]
-
-    # Services
-    services = []
-    services.append({
-        "cmd": root_cmd + ["service", "add", "keystone", "identity", "Keystone Identity Service"]
-    })
-
-    if(constants.NOVA in components):
-        services.append({
-                "cmd": root_cmd + ["service", "add", "nova", "compute", "Nova Compute Service"]
-        })
-        services.append({
-                "cmd": root_cmd + ["service", "add", "ec2", "ec2", "EC2 Compatability Layer"]
-        })
-
-    if(constants.GLANCE in components):
-        services.append({
-                "cmd": root_cmd + ["service", "add", "glance", "image", "Glance Image Service"]
-        })
-
-    if(constants.SWIFT in components):
-        services.append({
-                "cmd": root_cmd + ["service", "add", "swift", "object-store", "Swift Service"]
-        })
-
-    # Endpoint templates
-    endpoint_templates = list()
-    endpoint_templates.append({
-            "cmd": root_cmd + ["endpointTemplates", "add",
-                "RegionOne", "keystone",
-                "http://%HOST_IP%:5000/v2.0",
-                "http://%HOST_IP%:35357/v2.0",
-                "http://%HOST_IP%:5000/v2.0",
-                "1",
-                "1"
-            ]
-    })
-
-    if(constants.NOVA in components):
-        endpoint_templates.append({
-                "cmd": root_cmd + ["endpointTemplates", "add",
-                    "RegionOne", "nova",
-                    "http://%HOST_IP%:8774/v1.1/%tenant_id%",
-                    "http://%HOST_IP%:8774/v1.1/%tenant_id%",
-                    "http://%HOST_IP%:8774/v1.1/%tenant_id%",
-                    "1",
-                    "1"
-            ]
-        })
-        endpoint_templates.append({
-                "cmd": root_cmd + ["endpointTemplates", "add",
-                    "RegionOne", "ec2",
-                    "http://%HOST_IP%:8773/services/Cloud",
-                    "http://%HOST_IP%:8773/services/Admin",
-                    "http://%HOST_IP%:8773/services/Cloud",
-                    "1",
-                    "1"
-            ]
-        })
-
-    if(constants.GLANCE in components):
-        endpoint_templates.append({
-                "cmd": root_cmd + ["endpointTemplates", "add",
-                    "RegionOne", "glance",
-                    "http://%HOST_IP%:9292/v1.1/%tenant_id%",
-                    "http://%HOST_IP%:9292/v1.1/%tenant_id%",
-                    "http://%HOST_IP%:9292/v1.1/%tenant_id%",
-                    "1",
-                    "1"
-            ]
-        })
-
-    if(constants.SWIFT in components):
-        endpoint_templates.append({
-                "cmd": root_cmd + ["endpointTemplates", "add",
-                    "RegionOne", "swift",
-                    "http://%HOST_IP%:8080/v1/AUTH_%tenant_id%",
-                    "http://%HOST_IP%:8080/",
-                    "http://%HOST_IP%:8080/v1/AUTH_%tenant_id%",
-                    "1",
-                    "1"
-            ]
-        })
-
-    # Tokens
-    tokens = [
-        {
-            "cmd": root_cmd + ["token", "add", "%SERVICE_TOKEN%", "admin", "admin", "2015-02-05T00:00"]
-        },
-    ]
-
-    # EC2 related creds - note we are setting the secret key to ADMIN_PASSWORD
-    # but keystone doesn't parse them - it is just a blob from keystone's
-    # point of view
-    ec2_creds = []
-    if(constants.NOVA in components):
-        ec2_creds = [
-            {
-                "cmd": root_cmd + ["credentials", "add",
-                        "admin", "EC2", "admin", "%ADMIN_PASSWORD%", "admin"]
-            },
-            {
-                "cmd": root_cmd + ["credentials", "add",
-                    "demo", "EC2", "demo", "%ADMIN_PASSWORD%", "demo"]
-            }
-        ]
-
-    # Order matters here...
-    all_cmds = tenant_cmds + user_cmds + role_cmds + services + endpoint_templates + tokens + ec2_creds
-    return all_cmds

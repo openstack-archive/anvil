@@ -145,7 +145,7 @@ class ForkRunner(runner.Runner):
             else:
                 #write out the child pid
                 contents = str(pid) + os.linesep
-                sh.write_file(pid_fn, contents)
+                sh.write_file(pid_fn, contents, quiet=True)
                 #not exit or sys.exit, this is recommended
                 #since it will do the right cleanups that we want
                 #not calling any atexit functions, which would

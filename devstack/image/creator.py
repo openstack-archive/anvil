@@ -108,7 +108,7 @@ class Image:
             cmd = {'cmd': Image.KERNEL_FORMAT}
             with open(self.kernel) as file_:
                 res = utils.execute_template(cmd, params=params, stdin_fh=file_)
-            self.kernel_id = res[0].split(':')[1].strip()
+            self.kernel_id = res[0][0].split(':')[1].strip()
 
         if self.initrd:
             LOG.info('Adding ramdisk %s to glance', self.initrd)
@@ -116,7 +116,7 @@ class Image:
             cmd = {'cmd': Image.INITRD_FORMAT}
             with open(self.initrd) as file_:
                 res = utils.execute_template(cmd, params=params, stdin_fh=file_)
-            self.initrd_id = res[0].split(':')[1].strip()
+            self.initrd_id = res[0][0].split(':')[1].strip()
 
         LOG.info('Adding image %s to glance', self.image_name)
         params = {'TOKEN': self.token, 'IMAGE_NAME': self.image_name, \

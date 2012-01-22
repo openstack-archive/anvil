@@ -30,23 +30,8 @@ from devstack import exceptions as excp
 from devstack import opts
 from devstack import shell as sh
 from devstack import utils
-from devstack.packaging import apt
-from devstack.packaging import yum
 
 LOG = logging.getLogger("devstack")
-
-PKGR_MAP = {
-    constants.UBUNTU11: apt.AptPackager,
-    constants.RHEL6: yum.YumPackager,
-}
-
-
-def get_config():
-    cfg_fn = sh.canon_path(constants.STACK_CONFIG_LOCATION)
-    LOG.info("Loading config from [%s]" % (cfg_fn))
-    config_instance = cfg.EnvConfigParser()
-    config_instance.read(cfg_fn)
-    return config_instance
 
 
 def print_cfgs(cfg, action):
@@ -99,76 +84,102 @@ def post_run_components(action_name, **kargs):
             sh.rmdir(root_dir)
 
 
+def run_install(component_name, instance):
+    LOG.info("Downloading %s." % (component_name))
+    am_downloaded = instance.download()
+    LOG.info("Performed %s downloads." % (am_downloaded))
+    LOG.info("Configuring %s." % (component_name))
+    am_configured = instance.configure()
+    LOG.info("Configured %s items." % (am_configured))
+    LOG.info("Pre-installing %s." % (component_name))
+    instance.pre_install()
+    LOG.info("Installing %s." % (component_name))
+    instance.install()
+    LOG.info("Post-installing %s." % (component_name))
+    trace = instance.post_install()
+    if(trace):
+        LOG.info("Finished install of %s - check %s for traces of what happened." % (component_name, trace))
+    else:
+        LOG.info("Finished install of %s" % (component_name))
+    return trace
+
+
+def run_stop(component_name, instance, skip_notrace):
+    try:
+        LOG.info("Stopping %s." % (component_name))
+        stop_amount = instance.stop()
+        LOG.info("Stopped %s items." % (stop_amount))
+        LOG.info("Finished stop of %s" % (component_name))
+    except excp.NoTraceException, e:
+        if(skip_notrace):
+            LOG.info("Passing on stopping %s since no trace file was found." % (component_name))
+        else:
+            raise
+
+
+def run_start(component_name, instance):
+    LOG.info("Pre-starting %s." % (component_name))
+    instance.pre_start()
+    LOG.info("Starting %s." % (component_name))
+    start_info = instance.start()
+    LOG.info("Post-starting %s." % (component_name))
+    instance.post_start()
+    if(type(start_info) == list):
+        LOG.info("Check [%s] for traces of what happened." % (", ".join(start_info)))
+    elif(type(start_info) == int):
+        LOG.info("Started %s applications." % (start_info))
+        start_info = None
+    LOG.info("Finished start of %s." % (component_name))
+    return start_info
+
+
+def run_uninstall(component_name, instance, skip_notrace):
+    try:
+        LOG.info("Unconfiguring %s." % (component_name))
+        instance.unconfigure()
+        LOG.info("Uninstalling %s." % (component_name))
+        instance.uninstall()
+    except excp.NoTraceException, e:
+        if(skip_notrace):
+            LOG.info("Passing on uninstalling %s since no trace file was found." % (component_name))
+        else:
+            raise
+
+
 def run_components(action_name, component_order, components_info, distro, root_dir, program_args):
-    pkg_manager = PKGR_MAP.get(distro)(distro)
-    config = get_config()
-    pre_run_components(action_name, root_dir=root_dir, pkg=pkg_manager, cfg=config)
     LOG.info("Will %s [%s] (in that order) using root directory \"%s\"" % (action_name, ", ".join(component_order), root_dir))
+    pkg_manager = utils.get_pkg_manager(distro)
+    config = utils.get_config()
     results = list()
-    force = program_args.get('force', False)
+    #this key list may be different than the order due to reference components
+    active_components = components_info.keys()
+    #run anything before it gets going...
+    pre_run_components(action_name, root_dir=root_dir, pkg=pkg_manager, cfg=config)
     for c in component_order:
         klass = actions.get_action_cls(action_name, c)
         component_opts = components_info.get(c, list())
-        instance = klass(components=set(component_order), distro=distro,
-                            pkg=pkg_manager, cfg=config, root=root_dir,
+        instance = klass(components=set(active_components),
+                            distro=distro,
+                            pkg=pkg_manager,
+                            cfg=config,
+                            root=root_dir,
                             component_opts=component_opts)
         if(action_name == constants.INSTALL):
-            LOG.info("Downloading %s." % (c))
-            am_downloaded = instance.download()
-            LOG.info("Performed %s downloads." % (am_downloaded))
-            LOG.info("Configuring %s." % (c))
-            am_configured = instance.configure()
-            LOG.info("Configured %s files." % (am_configured))
-            LOG.info("Pre-installing %s." % (c))
-            instance.pre_install()
-            LOG.info("Installing %s." % (c))
-            instance.install()
-            LOG.info("Post-installing %s." % (c))
-            trace = instance.post_install()
-            if(trace):
-                LOG.info("Finished install of %s - check %s for traces of what happened." % (c, trace))
-                results.append(trace)
-            else:
-                LOG.info("Finished install of %s" % (c))
+            install_result = run_install(c, instance)
+            if(install_result):
+                results.append(install_result)
         elif(action_name == constants.STOP):
-            try:
-                LOG.info("Stopping %s." % (c))
-                stop_amount = instance.stop()
-                LOG.info("Stopped %s applications." % (stop_amount))
-                LOG.info("Finished stop of %s" % (c))
-            except excp.NoTraceException, e:
-                if(force):
-                    LOG.info("Passing on stopping %s since no trace file was found." % (c))
-                else:
-                    raise
+            run_stop(c, instance, program_args.get('force', False))
         elif(action_name == constants.START):
-            LOG.info("Pre-starting %s." % (c))
-            instance.pre_start()
-            LOG.info("Starting %s." % (c))
-            start_info = instance.start()
-            LOG.info("Post-starting %s." % (c))
-            instance.post_start()
-            if(type(start_info) == list):
-                LOG.info("Check [%s] for traces of what happened." % (", ".join(start_info)))
-                results = results + start_info
-            elif(type(start_info) == int):
-                LOG.info("Started %s applications." % (start_info))
-            LOG.info("Finished start of %s." % (c))
+            start_result = run_start(c, instance)
+            if(start_result):
+                results.append(start_result)
         elif(action_name == constants.UNINSTALL):
-            try:
-                LOG.info("Unconfiguring %s." % (c))
-                instance.unconfigure()
-                LOG.info("Uninstalling %s." % (c))
-                instance.uninstall()
-            except excp.NoTraceException, e:
-                if(force):
-                    LOG.info("Passing on uninstalling %s since no trace file was found." % (c))
-                else:
-                    raise
+            run_uninstall(c, instance, program_args.get('force', False))
     #display any configs touched...
     print_cfgs(config, action_name)
     #any post run actions go now
-    post_run_components(action_name, root_dir=root_dir)
+    post_run_components(action_name, root_dir=root_dir, pkg=pkg_manager, cfg=config)
     return results
 
 
@@ -242,7 +253,7 @@ def check_python():
     return True
 
 
-def run_list_only(prog, args):
+def run_list_deps(prog, args):
     components = parse_components(args.pop("components"), True).keys()
     components = sorted(components)
     components.reverse()
@@ -270,7 +281,7 @@ def run_list_only(prog, args):
     return True
 
 
-def run_action(prog, args):
+def run_actions(prog, args):
     components = parse_components(args.pop("components"))
     if(len(components) == 0):
         LOG.error("No components specified!")
@@ -307,6 +318,11 @@ def run_action(prog, args):
     component_order = utils.prioritize_components(components.keys())
     #now do it!
     LOG.info("Starting action [%s] on %s for distro [%s]" % (action, date.rcf8222date(), distro))
+    #add in any that will just be referenced but which will not actually do anything
+    ref_components = parse_components(args.pop("ref_components"))
+    for c in ref_components.keys():
+        if(c not in components):
+            components[c] = ref_components.get(c)
     resultList = run_components(action, component_order, components, distro, rootdir, args)
     LOG.info("Finished action [%s] on %s" % (action, date.rcf8222date()))
     if(resultList and len(resultList)):
@@ -326,9 +342,9 @@ def main():
     #now do it
     rc_ok = False
     if(only_list_deps):
-        rc_ok = run_list_only(me, args)
+        rc_ok = run_list_deps(me, args)
     else:
-        rc_ok = run_action(me, args)
+        rc_ok = run_actions(me, args)
     if(rc_ok):
         return 0
     else:

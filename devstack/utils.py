@@ -30,9 +30,31 @@ from devstack import log as logging
 from devstack import shell as sh
 from devstack import version
 
+
 PARAM_SUB_REGEX = re.compile(r"%([\w\d]+?)%")
 LOG = logging.getLogger("devstack.util")
 
+
+def get_pkg_manager(distro):
+    from devstack.packaging import apt
+    from devstack.packaging import yum
+    #this map controls which distro has
+    #which package management class
+    PKGR_MAP = {
+        constants.UBUNTU11: apt.AptPackager,
+        constants.RHEL6: yum.YumPackager,
+    }
+    cls = PKGR_MAP.get(distro)
+    return cls(distro)
+
+
+def get_config():
+    from devstack import cfg
+    cfg_fn = sh.canon_path(constants.STACK_CONFIG_LOCATION)
+    LOG.info("Loading config from [%s]" % (cfg_fn))
+    config_instance = cfg.EnvConfigParser()
+    config_instance.read(cfg_fn)
+    return config_instance
 
 def get_dependencies(component):
     deps = constants.COMPONENT_DEPENDENCIES.get(component, list())
@@ -54,6 +76,7 @@ def execute_template(*cmds, **kargs):
         return
     params_replacements = kargs.pop('params')
     ignore_missing = kargs.pop('ignore_missing', False)
+    cmd_results = list()
     for cmdinfo in cmds:
         cmd_to_run_templ = cmdinfo.get("cmd")
         cmd_to_run = list()
@@ -75,7 +98,9 @@ def execute_template(*cmds, **kargs):
                     stdin_full.append(piece)
             stdin = joinlinesep(*stdin_full)
         root_run = cmdinfo.get('run_as_root', False)
-        return sh.execute(*cmd_to_run, run_as_root=root_run, process_input=stdin, **kargs)
+        exec_res = sh.execute(*cmd_to_run, run_as_root=root_run, process_input=stdin, **kargs)
+        cmd_results.append(exec_res)
+    return cmd_results
 
 
 def fetch_dependencies(component, add=False):
@@ -255,10 +280,15 @@ def param_replace(text, replacements, ignore_missing=False):
     return PARAM_SUB_REGEX.sub(replacer, text)
 
 
-def welcome(program_action):
-    formatted_action = constants.WELCOME_MAP.get(program_action, "")
+def welcome(action):
+    formatted_action = constants.WELCOME_MAP.get(action, "")
     ver_str = version.version_string()
-    lower = "!%s %s!" % (formatted_action.upper(), ver_str)
+    lower = "|"
+    if(formatted_action):
+        lower += formatted_action.upper()
+        lower += " "
+    lower += ver_str 
+    lower += "|"
     welcome = r'''
   ___  ____  _____ _   _ ____ _____  _    ____ _  __
  / _ \|  _ \| ____| \ | / ___|_   _|/ \  / ___| |/ /
@@ -267,15 +297,11 @@ def welcome(program_action):
  \___/|_|   |_____|_| \_|____/ |_/_/   \_\____|_|\_\
 
 '''
-    #this seems needed, weird...
-    welcome = "  " + welcome.strip()
-    max_len = 0
-    for line in welcome.splitlines():
-        if(len(line) > max_len):
-            max_len = len(line)
+    welcome = welcome.strip("\n\r")
+    max_len = len(max(welcome.splitlines(), key=len))
     lower_out = colored(constants.PROG_NICE_NAME, 'green') + \
-        ": " + colored(lower, 'blue')
-    center_len = (max_len + max_len / 3)
+                ": " + colored(lower, 'blue')
+    uncolored_lower_len = (len(constants.PROG_NICE_NAME + ": " + lower))
+    center_len = max_len + (max_len - uncolored_lower_len)
     lower_out = string.center(lower_out, center_len)
-    msg = welcome + os.linesep + lower_out
-    print(msg)
+    print((welcome + os.linesep + lower_out))
