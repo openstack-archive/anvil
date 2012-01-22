@@ -82,13 +82,13 @@ class RuntimeComponent():
         raise NotImplementedError()
 
     def pre_start(self):
-        raise NotImplementedError()
+        pass
 
     def start(self):
         raise NotImplementedError()
 
     def post_start(self):
-        raise NotImplementedError()
+        pass
 
 
 # useful impls

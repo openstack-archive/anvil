@@ -32,6 +32,7 @@ from devstack import shell as sh
 from devstack import utils
 
 LOG = logging.getLogger("devstack")
+DEVSTACK = 'devstack'
 
 
 def print_cfgs(cfg, action):
@@ -332,13 +333,17 @@ def run_actions(prog, args):
 
 
 def main():
+    me = os.path.basename(sys.argv[0])
+
     if(not check_python()):
         return 1
+
     #parse and get it done!
     args = opts.parse()
-    me = os.path.basename(sys.argv[0])
+
     #figure out what to do
     only_list_deps = args.pop('list_deps', False)
+
     #now do it
     rc_ok = False
     if(only_list_deps):

@@ -13,8 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import re
-
 from devstack import component as comp
 from devstack import constants
 from devstack import exceptions as excp
@@ -137,7 +135,7 @@ class DBRuntime(comp.NullRuntime):
 
     def status(self):
         statuscmd = self._gettypeactions('status', excp.StatusException)
-        (sysout, stderr) = sh.execute(*statuscmd, run_as_root=True)
+        (sysout, _) = sh.execute(*statuscmd, run_as_root=True)
         return sysout.strip()
 
 
