@@ -77,7 +77,8 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         self.db_dsns = dict()
 
     def _makekey(self, section, option):
-        return option + "@" + section
+        parts = [section, option]
+        return "/".join(parts)
 
     def get(self, section, option):
         key = self._makekey(section, option)
@@ -105,10 +106,13 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
                 msg = "Invalid bash-like value \"%s\" for \"%s\"" % (v, key)
                 raise excp.BadParamException(msg)
             if(len(key) == 0):
-                return defv
-            v = env.get_key(key)
-            if(v == None):
                 v = defv
+                LOG.debug("Using config provided value \"%s\" for \"%s\" (no environment key)" % (v, key))
+            else:
+                v = env.get_key(key)
+                if(v == None):
+                    v = defv
+                    LOG.debug("Using config provided value \"%s\" for \"%s\"" % (v, key))
             return v
         else:
             return v
@@ -116,6 +120,7 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
     def get_host_ip(self):
         host_ip = self.get('default', 'host_ip')
         if(not host_ip):
+            LOG.debug("Host ip from configuration/environment was empty, programatically attempting to determine it.")
             host_ip = utils.get_host_ip()
         key = self._makekey('default', 'host_ip')
         self.configs_fetched[key] = host_ip
@@ -167,6 +172,7 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         if(pw == None):
             pw = ""
         if(len(pw) == 0):
+            LOG.debug("Being forced to ask for password for \"%s\" since the configuration/environment value is empty.", key)
             while(len(pw) == 0):
                 pw = sh.password(PW_TMPL % (key))
         LOG.debug("Password for \"%s\" will be \"%s\" %s" % (key, pw, CACHE_MSG))

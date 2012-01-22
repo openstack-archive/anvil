@@ -79,12 +79,19 @@ def parse():
         help="show dependencies of COMPONENT",
         default=False)
 
+    parser.add_option("-r", "--refcomponent",
+        action="append",
+        dest="r_component",
+        metavar="COMPONENT",
+        help="stack component which will not have ACTION applied but will be referenced as if it was (ACTION dependent)")
+
     (options, args) = parser.parse_args()
 
     #extract only what we care about
     output = dict()
     output['components'] = options.component
     output['dir'] = options.dir
+    output['ref_components'] = options.r_component
     output['action'] = options.action
     output['list_deps'] = options.list_deps
     output['force'] = options.force

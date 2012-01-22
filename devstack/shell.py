@@ -188,6 +188,7 @@ def mkdirslist(path):
 
 
 def append_file(fn, text, flush=True):
+    LOG.debug("Appending to file %s (%d bytes)", fn, len(text))
     with open(fn, "a") as f:
         f.write(text)
         if(flush):
@@ -195,6 +196,7 @@ def append_file(fn, text, flush=True):
 
 
 def write_file(fn, text, flush=True):
+    LOG.debug("Writing to file %s (%d bytes)", fn, len(text))
     with open(fn, "w") as f:
         f.write(text)
         if(flush):
@@ -203,6 +205,7 @@ def write_file(fn, text, flush=True):
 
 def touch_file(fn, die_if_there=True):
     if(not isfile(fn)):
+        LOG.debug("Touching and truncating file %s", fn)
         with open(fn, "w") as f:
             f.truncate(0)
     else:
@@ -212,9 +215,11 @@ def touch_file(fn, die_if_there=True):
 
 
 def load_file(fn):
+    LOG.debug("Loading data from file %s", fn)
     data = ""
     with open(fn, "r") as f:
         data = f.read()
+    LOG.debug("Loaded (%d) bytes from file %s", len(data), fn)
     return data
 
 
