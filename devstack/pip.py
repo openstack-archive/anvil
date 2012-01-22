@@ -46,7 +46,6 @@ def install(pips):
 def uninstall(pips):
     if(not pips or len(pips) == 0):
         return
-    actions = list()
     pipnames = sorted(pips.keys())
     LOG.info("Uninstalling python packages [%s]" % (", ".join(pipnames)))
     for name in pipnames:
@@ -55,9 +54,8 @@ def uninstall(pips):
         try:
             cmd = UNINSTALL_CMD + [name]
             sh.execute(*cmd, run_as_root=True)
-        except excp.ProcessExecutionError, e:
+        except excp.ProcessExecutionError:
             if(skip_errors):
                 LOG.warn("Ignoring execution error that occured when uninstalling %s!" % (name))
-                pass
             else:
                 raise
