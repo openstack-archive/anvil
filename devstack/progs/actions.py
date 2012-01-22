@@ -32,7 +32,7 @@ from devstack.components import quantum
 from devstack.components import rabbit
 from devstack.components import swift
 
-LOG = logging.getLogger("devstack.actions")
+LOG = logging.getLogger("devstack.progs.actions")
 
 # This determines what classes to use to install/uninstall/...
 _ACTION_CLASSES = {

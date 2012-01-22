@@ -16,7 +16,7 @@
 from devstack import utils
 from devstack import log as logging
 
-LOG = logging.getLogger("devstack.deps")
+LOG = logging.getLogger("devstack.progs.deps")
 
 
 def log_deps(components):
