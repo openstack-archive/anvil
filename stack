@@ -21,15 +21,18 @@ import sys
 from devstack import log as logging
 logging.setup()
 
-from devstack import actions
+#this handles our option parsing
 from devstack import opts
-from devstack import deps
+from devstack import constants
+
+#these are the program runtimes that actually do the running
+from devstack.progs import actions
+from devstack.progs import deps
 
 LOG = logging.getLogger("devstack")
-DEVSTACK = 'devstack'
 
 
-def check_python():
+def check_python(prog):
     py_version = sys.version_info
     major = py_version[0]
     minor = py_version[1]
@@ -37,14 +40,14 @@ def check_python():
         LOG.error("Your python version is to old, please upgrade to >= 2.6!")
         return False
     if(major >= 3):
-        LOG.warn("%s has not been tested in python %s, use at your own risk!" % (DEVSTACK, major))
+        LOG.warn("%s has not been tested in python %s, use at your own risk!" % (prog, major))
     return True
 
 
 def main():
     me = os.path.basename(sys.argv[0])
 
-    if(not check_python()):
+    if(not check_python(me)):
         return 1
 
     #parse and get it done!
