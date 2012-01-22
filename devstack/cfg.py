@@ -26,8 +26,7 @@ from devstack import utils
 LOG = logging.getLogger("devstack.cfg")
 PW_TMPL = "Enter a password for %s: "
 ENV_PAT = re.compile(r"^\s*\$\{([\w\d]+):\-(.*)\}\s*$")
-SUB_MATCH = re.compile(r"(?:([\w\d]+):([\w\d]+))")
-EVAL_MATCH = re.compile(r"\$\((.*)\)")
+SUB_MATCH = re.compile(r"(?:\$\(([\w\d]+):([\w\d]+))\)")
 CACHE_MSG = "(value will now be internally cached)"
 
 
@@ -95,33 +94,19 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
             self.configs_fetched[key] = v
         return v
 
-    def _eval_expr(self, expr):
-        LOG.debug("Evaluating expression %s", expr)
-        if(SUB_MATCH.search(expr)):
-            def replacer(match):
-                section = match.group(1).strip()
-                option = match.group(2).strip()
-                #recursion may happen alot here
-                #but you can shot yourself if u want to
-                return self.get(section, option)
-            full_expr = SUB_MATCH.sub(replacer, expr)
-            LOG.debug("Evaluating complete expression %s", full_expr)
-            expr = full_expr
-        #this isn't the safest, but we aren't
-        #expecting crazy user inputs...
-        local_vars = dict()
-        global_vars = dict()
-        eval_result = eval(expr, global_vars, local_vars)
-        return str(eval_result)
+    def _extract_default(self, default_value):
+        if(not SUB_MATCH.search(default_value)):
+            return default_value
 
-    def _extract_default(self, value):
-        eval_mtch = EVAL_MATCH.match(value)
-        if(not eval_mtch):
-            return value
-        expr = eval_mtch.group(1)
-        if(len(expr) == 0):
-            return value
-        return self._eval_expr(expr)
+        LOG.debug("Performing simple replacement on %s", default_value)
+
+        #allow for our simple replacement to occur
+        def replacer(match):
+            section = match.group(1)
+            option = match.group(2)
+            return self.get(section, option)
+
+        return SUB_MATCH.sub(replacer, default_value)
 
     def _get_special(self, section, option):
         key = self._makekey(section, option)
