@@ -137,7 +137,7 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
             am_downloaded += 1
         return am_downloaded
 
-    def _get_param_map(self, config_fn):
+    def _get_param_map(self, _):
         return None
 
     def install(self):
@@ -168,7 +168,7 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
     def _get_config_files(self):
         return list()
 
-    def _config_adjust(self, contents, config_fn):
+    def _config_adjust(self, contents, _):
         return contents
 
     def _get_target_config_name(self, name):
@@ -383,10 +383,10 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
     def _get_apps_to_start(self):
         return list()
 
-    def _get_app_options(self, app_name):
+    def _get_app_options(self, _):
         return list()
 
-    def _get_param_map(self, app_name):
+    def _get_param_map(self, _):
         return {
             'ROOT': self.appdir,
         }

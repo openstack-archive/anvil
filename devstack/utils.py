@@ -19,7 +19,6 @@ import operator
 import os
 import platform
 import re
-import string
 import sys
 
 from termcolor import colored
@@ -223,7 +222,7 @@ def get_interfaces():
 def determine_distro():
     plt = platform.platform()
     #ensure its a linux distro
-    (distname, version, id) = platform.linux_distribution()
+    (distname, _, _) = platform.linux_distribution()
     if(not distname):
         return (None, plt)
     #attempt to match it to our platforms
@@ -326,7 +325,7 @@ def welcome(action):
         lower += " "
     lower += ver_str
     lower += "|"
-    welcome = r'''
+    welcome_ = r'''
   ___  ____  _____ _   _ ____ _____  _    ____ _  __
  / _ \|  _ \| ____| \ | / ___|_   _|/ \  / ___| |/ /
 | | | | |_) |  _| |  \| \___ \ | | / _ \| |   | ' /
@@ -334,11 +333,11 @@ def welcome(action):
  \___/|_|   |_____|_| \_|____/ |_/_/   \_\____|_|\_\
 
 '''
-    welcome = welcome.strip("\n\r")
-    max_len = len(max(welcome.splitlines(), key=len))
+    welcome_ = welcome_.strip("\n\r")
+    max_len = len(max(welcome_.splitlines(), key=len))
     lower_out = colored(constants.PROG_NICE_NAME, 'green') + \
                 ": " + colored(lower, 'blue')
     uncolored_lower_len = (len(constants.PROG_NICE_NAME + ": " + lower))
     center_len = max_len + (max_len - uncolored_lower_len)
-    lower_out = string.center(lower_out, center_len)
-    print((welcome + os.linesep + lower_out))
+    lower_out = lower_out.center(center_len)
+    print((welcome_ + os.linesep + lower_out))
