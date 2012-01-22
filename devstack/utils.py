@@ -62,13 +62,18 @@ def get_dependencies(component):
 
 
 def resolve_dependencies(components):
-    new_components = list()
-    for c in components:
-        component_deps = list(set(fetch_dependencies(c)))
-        if(len(component_deps)):
-            new_components = new_components + component_deps
-        new_components.append(c)
-    return set(new_components)
+    active_components = list(components)
+    new_components = set()
+    while(len(active_components)):
+        curr_comp = active_components.pop()
+        component_deps = get_dependencies(curr_comp)
+        new_components.add(curr_comp)
+        for c in component_deps:
+            if(c in new_components or c in active_components):
+                pass
+            else:
+                active_components.append(c)
+    return new_components
 
 
 def execute_template(*cmds, **kargs):
@@ -101,18 +106,6 @@ def execute_template(*cmds, **kargs):
         exec_res = sh.execute(*cmd_to_run, run_as_root=root_run, process_input=stdin, **kargs)
         cmd_results.append(exec_res)
     return cmd_results
-
-
-def fetch_dependencies(component, add=False):
-    if(add):
-        deps = list([component])
-    else:
-        deps = list()
-    cdeps = get_dependencies(component)
-    if(cdeps and len(cdeps)):
-        for d in cdeps:
-            deps = deps + fetch_dependencies(d, True)
-    return deps
 
 
 def parse_components(components, assume_all=False):
