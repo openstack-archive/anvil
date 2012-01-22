@@ -22,24 +22,34 @@ In order to determine what *stack* can do for you run the following.
  
 This will typically produce:
     
-    Usage: stack [options]
-    
-    Options:
-      --version             show program's version number and exit
-      -h, --help            show this help message and exit
-      -a ACTION, --action=ACTION
-                            action to perform, ie (install, start, stop, uninstall)
-      -d DIR, --directory=DIR
-                            root DIR for new components or DIR with existing
-                            components (ACTION dependent)
-      -c COMPONENT, --component=COMPONENT
-                            stack component, ie (db, glance, horizon, keystone,
-                            keystone-client, nova, nova-client, openstack-x,
-                            quantum, rabbit, swift)
-      -f, --force           force ACTION even if no trace found (ACTION dependent)
-      -i, --ignoredeps      ignore dependencies when performing ACTION
-      -e, --ensuredeps      ensure dependencies occur when performing ACTION
-      -s, --listdeps        show dependencies of COMPONENT
+     Usage: stack [options]
+     
+     Options:
+       --version             show program's version number and exit
+       -h, --help            show this help message and exit
+     
+       Install/uninstall/start/stop options:
+         -a ACTION, --action=ACTION
+                             action to perform, ie (install, start, stop, uninstall)
+         -d DIR, --directory=DIR
+                             empty root DIR for install or DIR with existing
+                             components (ACTION dependent)
+         -c COMPONENT, --component=COMPONENT
+                             openstack component, ie (db, glance, horizon, keystone,
+                             keystone-client, nova, nova-client, openstack-x,
+                             quantum, rabbit, swift)
+         -i, --ignore-deps   ignore dependencies when performing ACTION
+         -e, --ensure-deps   ensure dependencies occur when performing ACTION
+                             (default: True)
+         -r COMPONENT, --ref-component=COMPONENT
+                             component which will not have ACTION applied but will be
+                             referenced as if it was (ACTION dependent)
+     
+       Uninstall/stop options:
+         -f, --force         force ACTION even if no trace found
+     
+       Dependency options:
+         -s, --list-deps     show dependencies of COMPONENT (default: False)
 
 # Stack prerequisites
 
