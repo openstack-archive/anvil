@@ -42,6 +42,7 @@ APP_OPTIONS = {
 #how we invoke the manage command
 KEYSTONE_MNG_CMD = ["%BIN_DIR%/keystone-manage", '--config-file=%CONFIG_FILE%']
 
+
 class KeystoneUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)

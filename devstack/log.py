@@ -64,7 +64,7 @@ class TermHandler(logging.Handler):
                 TermHandler.STREAM.flush()
 
 
-def setupLogging():
+def setup():
     logfn = os.getenv(LOG_FN_ENV)
     if(logfn == None):
         logfn = 'conf/logging.ini'

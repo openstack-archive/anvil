@@ -75,7 +75,7 @@ def parse():
         help="force ACTION even if no trace found",
         default=False)
     parser.add_option_group(stop_un_group)
-    
+
     dep_group = OptionGroup(parser, "Dependency options")
     dep_group.add_option("-s", "--list-deps",
         action="store_true",
@@ -85,7 +85,7 @@ def parse():
     parser.add_option_group(dep_group)
 
     (options, args) = parser.parse_args()
-    
+
     #extract only what we care about
     output = dict()
     output['components'] = options.component

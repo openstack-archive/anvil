@@ -15,230 +15,17 @@
 
 import os
 import os.path
-import re
 import sys
 
 # This needs to happen immediately
 from devstack import log as logging
-logging.setupLogging()
+logging.setup()
 
 from devstack import actions
-from devstack import cfg
-from devstack import constants
-from devstack import date
-from devstack import exceptions as excp
 from devstack import opts
-from devstack import shell as sh
-from devstack import utils
+from devstack import deps
 
 LOG = logging.getLogger("devstack")
-
-
-def print_cfgs(cfg, action):
-
-    #this will make the items nice and pretty
-    def item_format(k, v):
-        return "\t%s=%s" % (str(k), str(v))
-
-    def map_print(mp):
-        for key in sorted(mp.keys()):
-            value = mp.get(key)
-            LOG.info(item_format(key, value))
-
-    #now make it pretty
-    passwords_gotten = cfg.pws
-    full_cfgs = cfg.configs_fetched
-    db_dsns = cfg.db_dsns
-    if(len(passwords_gotten) or len(full_cfgs) or len(db_dsns)):
-        LOG.info("After action (%s) your settings are:" % (action))
-        if(len(passwords_gotten)):
-            LOG.info("Passwords:")
-            map_print(passwords_gotten)
-        if(len(full_cfgs)):
-            #TODO
-            #better way to do this?? (ie a list difference?)
-            filtered_mp = dict()
-            for key in full_cfgs.keys():
-                if(key in passwords_gotten):
-                    continue
-                filtered_mp[key] = full_cfgs.get(key)
-            if(len(filtered_mp)):
-                LOG.info("Configs:")
-                map_print(filtered_mp)
-        if(len(db_dsns)):
-            LOG.info("Data source names:")
-            map_print(db_dsns)
-
-
-def pre_run_components(action_name, **kargs):
-    if(action_name == constants.INSTALL):
-        root_dir = kargs.get("root_dir")
-        if(root_dir):
-            sh.mkdir(root_dir)
-
-
-def post_run_components(action_name, **kargs):
-    if(action_name == constants.UNINSTALL):
-        root_dir = kargs.get("root_dir")
-        if(root_dir):
-            sh.rmdir(root_dir)
-
-
-def run_install(component_name, instance):
-    LOG.info("Downloading %s." % (component_name))
-    am_downloaded = instance.download()
-    LOG.info("Performed %s downloads." % (am_downloaded))
-    LOG.info("Configuring %s." % (component_name))
-    am_configured = instance.configure()
-    LOG.info("Configured %s items." % (am_configured))
-    LOG.info("Pre-installing %s." % (component_name))
-    instance.pre_install()
-    LOG.info("Installing %s." % (component_name))
-    instance.install()
-    LOG.info("Post-installing %s." % (component_name))
-    trace = instance.post_install()
-    if(trace):
-        LOG.info("Finished install of %s - check %s for traces of what happened." % (component_name, trace))
-    else:
-        LOG.info("Finished install of %s" % (component_name))
-    return trace
-
-
-def run_stop(component_name, instance, skip_notrace):
-    try:
-        LOG.info("Stopping %s." % (component_name))
-        stop_amount = instance.stop()
-        LOG.info("Stopped %s items." % (stop_amount))
-        LOG.info("Finished stop of %s" % (component_name))
-    except excp.NoTraceException, e:
-        if(skip_notrace):
-            LOG.info("Passing on stopping %s since no trace file was found." % (component_name))
-        else:
-            raise
-
-
-def run_start(component_name, instance):
-    LOG.info("Pre-starting %s." % (component_name))
-    instance.pre_start()
-    LOG.info("Starting %s." % (component_name))
-    start_info = instance.start()
-    LOG.info("Post-starting %s." % (component_name))
-    instance.post_start()
-    if(type(start_info) == list):
-        LOG.info("Check [%s] for traces of what happened." % (", ".join(start_info)))
-    elif(type(start_info) == int):
-        LOG.info("Started %s applications." % (start_info))
-        start_info = None
-    LOG.info("Finished start of %s." % (component_name))
-    return start_info
-
-
-def run_uninstall(component_name, instance, skip_notrace):
-    try:
-        LOG.info("Unconfiguring %s." % (component_name))
-        instance.unconfigure()
-        LOG.info("Uninstalling %s." % (component_name))
-        instance.uninstall()
-    except excp.NoTraceException, e:
-        if(skip_notrace):
-            LOG.info("Passing on uninstalling %s since no trace file was found." % (component_name))
-        else:
-            raise
-
-
-def run_components(action_name, component_order, components_info, distro, root_dir, program_args):
-    LOG.info("Will %s [%s] (in that order) using root directory \"%s\"" % (action_name, ", ".join(component_order), root_dir))
-    pkg_manager = utils.get_pkg_manager(distro)
-    config = utils.get_config()
-    results = list()
-    #this key list may be different than the order due to reference components
-    active_components = components_info.keys()
-    #run anything before it gets going...
-    pre_run_components(action_name, root_dir=root_dir, pkg=pkg_manager, cfg=config)
-    for c in component_order:
-        klass = actions.get_action_cls(action_name, c)
-        component_opts = components_info.get(c, list())
-        instance = klass(components=set(active_components),
-                            distro=distro,
-                            pkg=pkg_manager,
-                            cfg=config,
-                            root=root_dir,
-                            component_opts=component_opts)
-        if(action_name == constants.INSTALL):
-            install_result = run_install(c, instance)
-            if(install_result):
-                results.append(install_result)
-        elif(action_name == constants.STOP):
-            run_stop(c, instance, program_args.get('force', False))
-        elif(action_name == constants.START):
-            start_result = run_start(c, instance)
-            if(start_result):
-                results.append(start_result)
-        elif(action_name == constants.UNINSTALL):
-            run_uninstall(c, instance, program_args.get('force', False))
-    #display any configs touched...
-    print_cfgs(config, action_name)
-    #any post run actions go now
-    post_run_components(action_name, root_dir=root_dir, pkg=pkg_manager, cfg=config)
-    return results
-
-
-def check_root(action, rootdir):
-    if(rootdir == None or len(rootdir) == 0):
-        return False
-    if(action == constants.INSTALL):
-        if(sh.isdir(rootdir)):
-            sublisting = sh.listdir(rootdir)
-            if(len(sublisting) != 0):
-                LOG.error("Root directory [%s] already exists (and it's not empty)! "\
-                          "Please remove it or uninstall components!" % (rootdir))
-                return False
-    return True
-
-
-def clean_action(action):
-    if(action == None):
-        return None
-    action = action.strip().lower()
-    if(not (action in constants.ACTIONS)):
-        return None
-    return action
-
-
-def parse_components(components, assume_all=False):
-    #none provided, init it
-    if(components == None):
-        components = list()
-    #this regex is used to extract a components options (if any) and its name
-    EXT_COMPONENT = re.compile(r"^\s*([\w-]+)(?:\((.*)\))?\s*$")
-    adjusted_components = dict()
-    for c in components:
-        mtch = EXT_COMPONENT.match(c)
-        if(mtch):
-            component_name = mtch.group(1).lower().strip()
-            if(component_name not in constants.COMPONENT_NAMES):
-                LOG.warn("Unknown component named %s" % (component_name))
-            else:
-                component_opts = mtch.group(2)
-                components_opts_cleaned = list()
-                if(component_opts == None or len(component_opts) == 0):
-                    pass
-                else:
-                    sp_component_opts = component_opts.split(",")
-                    for co in sp_component_opts:
-                        cleaned_opt = co.strip()
-                        if(len(cleaned_opt)):
-                            components_opts_cleaned.append(cleaned_opt)
-                adjusted_components[component_name] = components_opts_cleaned
-        else:
-            LOG.warn("Unparseable component %s" % (c))
-    #should we adjust them to be all the components?
-    if(len(adjusted_components) == 0 and assume_all):
-        all_components = dict()
-        for c in constants.COMPONENT_NAMES:
-            all_components[c] = list()
-        adjusted_components = all_components
-    return adjusted_components
 
 
 def check_python():
@@ -253,84 +40,6 @@ def check_python():
     return True
 
 
-def run_list_deps(prog, args):
-    components = parse_components(args.pop("components"), True).keys()
-    components = sorted(components)
-    components.reverse()
-    shown = set()
-    left_show = list(components)
-    while(len(left_show) != 0):
-        c = left_show.pop()
-        deps = utils.get_dependencies(c)
-        dep_str = ""
-        dep_len = len(deps)
-        if(dep_len >= 1):
-            dep_str = "component"
-            if(dep_len > 1):
-                dep_str += "s"
-            dep_str += ":"
-        elif(dep_len == 0):
-            dep_str = "no components."
-        LOG.info("%s depends on %s" % (c, dep_str))
-        for d in deps:
-            LOG.info("\t%s" % (d))
-        shown.add(c)
-        for d in deps:
-            if(d not in shown and d not in left_show):
-                left_show.append(d)
-    return True
-
-
-def run_actions(prog, args):
-    components = parse_components(args.pop("components"))
-    if(len(components) == 0):
-        LOG.error("No components specified!")
-        LOG.info("Perhaps you should try %s --help" % (prog))
-        return False
-    #extract + clean the action
-    action = clean_action(args.pop("action"))
-    if(not action):
-        LOG.error("No valid action specified!")
-        LOG.info("Perhaps you should try %s --help" % (prog))
-        return False
-    rootdir = args.pop("dir")
-    if(not check_root(action, rootdir)):
-        LOG.error("No valid root directory specified!")
-        LOG.info("Perhaps you should try %s --help" % (prog))
-        return False
-    #ensure os/distro is known
-    (distro, platform) = utils.determine_distro()
-    if(distro == None):
-        LOG.error("Unsupported platform: %s" % (platform))
-        return False
-    #start it
-    utils.welcome(action)
-    #need to figure out dependencies for components (if any)
-    ignore_deps = args.pop('ignore_deps', False)
-    if(not ignore_deps):
-        new_components = utils.resolve_dependencies(components.keys())
-        component_diff = new_components.difference(components.keys())
-        if(len(component_diff)):
-            LOG.info("Having to activate dependent components: [%s]" % (", ".join(component_diff)))
-            for new_component in component_diff:
-                components[new_component] = list()
-    #get the right component order (by priority)
-    component_order = utils.prioritize_components(components.keys())
-    #now do it!
-    LOG.info("Starting action [%s] on %s for distro [%s]" % (action, date.rcf8222date(), distro))
-    #add in any that will just be referenced but which will not actually do anything
-    ref_components = parse_components(args.pop("ref_components"))
-    for c in ref_components.keys():
-        if(c not in components):
-            components[c] = ref_components.get(c)
-    resultList = run_components(action, component_order, components, distro, rootdir, args)
-    LOG.info("Finished action [%s] on %s" % (action, date.rcf8222date()))
-    if(resultList and len(resultList)):
-        msg = "Check [%s] for traces of what happened." % (", ".join(resultList))
-        LOG.info(msg)
-    return True
-
-
 def main():
     if(not check_python()):
         return 1
@@ -342,15 +51,15 @@ def main():
     #now do it
     rc_ok = False
     if(only_list_deps):
-        rc_ok = run_list_deps(me, args)
+        rc_ok = deps.run(args)
     else:
-        rc_ok = run_actions(me, args)
+        rc_ok = actions.run(args)
     if(rc_ok):
         return 0
     else:
+        LOG.info("Perhaps you should try %s --help" % (me))
         return 1
 
 
 if __name__ == "__main__":
-    rc = main()
-    sys.exit(rc)
+    sys.exit(main())
