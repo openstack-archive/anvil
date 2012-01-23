@@ -28,6 +28,7 @@ from devstack.components import keystone
 from devstack.components import keystone_client
 from devstack.components import nova
 from devstack.components import nova_client
+from devstack.components import novnc 
 from devstack.components import openstack_x
 from devstack.components import quantum
 from devstack.components import rabbit
@@ -68,6 +69,7 @@ _ACTION_CLASSES = {
         settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientInstaller,
         settings.NOVA_CLIENT: nova_client.NovaClientInstaller,
         settings.OPENSTACK_X: openstack_x.OpenstackXInstaller,
+        settings.NOVNC: novnc.NoVNCInstaller,
     },
     settings.UNINSTALL: {
         settings.NOVA: nova.NovaUninstaller,
@@ -81,6 +83,7 @@ _ACTION_CLASSES = {
         settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientUninstaller,
         settings.NOVA_CLIENT: nova_client.NovaClientUninstaller,
         settings.OPENSTACK_X: openstack_x.OpenstackXUninstaller,
+        settings.NOVNC: novnc.NoVNCUninstaller,
     },
     settings.START: {
         settings.NOVA: nova.NovaRuntime,
@@ -94,6 +97,7 @@ _ACTION_CLASSES = {
         settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientRuntime,
         settings.NOVA_CLIENT: nova_client.NovaClientRuntime,
         settings.OPENSTACK_X: openstack_x.OpenstackXRuntime,
+        settings.NOVNC: novnc.NoVNCRuntime,
     },
     settings.STOP: {
         settings.NOVA: nova.NovaRuntime,
@@ -107,6 +111,7 @@ _ACTION_CLASSES = {
         settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientRuntime,
         settings.NOVA_CLIENT: nova_client.NovaClientRuntime,
         settings.OPENSTACK_X: openstack_x.OpenstackXRuntime,
+        settings.NOVNC: novnc.NoVNCRuntime,
     },
 }
 
