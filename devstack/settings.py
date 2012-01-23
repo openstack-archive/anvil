@@ -109,15 +109,6 @@ START = "start"
 STOP = "stop"
 ACTIONS = [INSTALL, UNINSTALL, START, STOP]
 
-# This is used to map an action to a useful string for
-# the welcome display
-WELCOME_MAP = {
-    INSTALL: "Installer",
-    UNINSTALL: "Uninstaller",
-    START: "Runner",
-    STOP: "Stopper",
-}
-
 # Where we should get the config file and where stacks config
 # directory is
 STACK_CONFIG_DIR = "conf"

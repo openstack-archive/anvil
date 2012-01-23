@@ -264,12 +264,11 @@ ____ ___  ____ _  _ ____ ___ ____ ____ _  _
     return random.choice(possibles)
 
 
-def welcome(action):
-    formatted_action = settings.WELCOME_MAP.get(action, "")
+def welcome(ident):
     ver_str = version.version_string()
     lower = "|"
-    if(formatted_action):
-        lower += formatted_action.upper()
+    if(ident):
+        lower += ident
         lower += " "
     lower += ver_str
     lower += "|"

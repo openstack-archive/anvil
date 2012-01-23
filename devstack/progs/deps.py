@@ -15,9 +15,10 @@
 
 from devstack import log as logging
 from devstack import settings
+from devstack import utils
 
 LOG = logging.getLogger("devstack.progs.deps")
-
+PROG_NAME = "DEPENDENCY LIST"
 
 def log_deps(components):
     shown = set()
@@ -48,6 +49,8 @@ def _run_list_deps(args):
     components = settings.parse_components(args.pop("components"), True).keys()
     components = sorted(components)
     components.reverse()
+    utils.welcome(PROG_NAME)
+    LOG.info("Showing dependencies of [%s]" % (", ".join(sorted(components))))
     return log_deps(components)
 
 

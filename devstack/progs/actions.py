@@ -45,6 +45,15 @@ _PKGR_MAP = {
     settings.RHEL6: yum.YumPackager,
 }
 
+# This is used to map an action to a useful string for
+# the welcome display
+_WELCOME_MAP = {
+    settings.INSTALL: "INSTALLER",
+    settings.UNINSTALL: "UNINSTALLER",
+    settings.START: "STARTER",
+    settings.STOP: "STOPPER",
+}
+
 # This determines what classes to use to install/uninstall/...
 _ACTION_CLASSES = {
     settings.INSTALL: {
@@ -321,7 +330,7 @@ def _run_action(args):
         LOG.error("Unsupported platform: %s" % (platform))
         return False
     #start it
-    utils.welcome(action)
+    utils.welcome(_WELCOME_MAP.get(action))
     #need to figure out dependencies for components (if any)
     ignore_deps = args.pop('ignore_deps', False)
     if(not ignore_deps):
@@ -343,7 +352,7 @@ def _run_action(args):
     results = _run_components(action, component_order, components, distro, rootdir, args)
     LOG.info("Finished action [%s] on %s" % (action, date.rcf8222date()))
     if(results):
-        LOG.info(Check [%s] for traces of what happened.' % ", ".join(results))
+        LOG.info('Check [%s] for traces of what happened.' % ", ".join(results))
     return True
 
 
