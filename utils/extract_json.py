@@ -19,6 +19,6 @@ if __name__ == "__main__":
                 cleaned_up.append(line)
         cleaned_lines = os.linesep.join(cleaned_up)
         data = json.loads(cleaned_lines)
-        output = json.dumps(data, indent=4, sort_keys=False)
+        output = json.dumps(data, indent=4, sort_keys=True)
         print(output)
     sys.exit(0)

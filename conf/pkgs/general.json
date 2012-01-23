@@ -76,6 +76,12 @@
         # No python code coverage (python-coverage) yet (definitely need a package for that)
         # especially if you want to run code coverage utilities!
         #
+        #"python-coverage": {
+        #    "allowed": ">=", 
+        #    "removable": true, 
+        #    "version": "???"
+        #}, 
+        #
         "python-pip": {
             # Requires EPEL repo
             "allowed": ">=", 
