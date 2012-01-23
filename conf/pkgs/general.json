@@ -59,6 +59,7 @@
             "removable": false, 
             "version": "2.7.2-7ubuntu2"
         }, 
+        
         "python-coverage": {
             "allowed": ">=", 
             "removable": true, 
@@ -79,6 +80,16 @@
             "removable": false, 
             "version": "1.6.4-0ubuntu1"
         }, 
+        "python-setuptools": {
+            "version": "0.6.16-1",
+            "allowed": ">=",
+            "removable": false
+        },
+        "python-dev": {
+            "version": "2.7.2-7ubuntu2",
+            "allowed": ">=",
+            "removable": false
+        },
         "screen": {
             "allowed": ">=", 
             "removable": false, 
@@ -107,6 +118,7 @@
         #
         # If a package requires EPEL repo please follow instructions
         # at http://fedoraproject.org/wiki/EPEL to ensure the repo is in /etc/yum.repos.d/
+        
         "curl": {
             "allowed": ">=", 
             "removable": false, 
@@ -171,7 +183,18 @@
             # Openstack should work with 2.6 (if not we have a problem)
             "version": "2.6.6-20.el6"
         },
-        #
+        "python-setuptools": {
+            "version": "0.6.10-3.el6",
+            "allowed": ">=",
+            "removable": false
+        },
+        # RHEL names this one differently
+        "python-devel": {
+            "version": "2.6.6-20.el6",
+            "allowed": ">=",
+            "removable": false
+        },
+        
         # No python code coverage (python-coverage) yet (definitely need a package for that)
         # especially if you want to run code coverage utilities!
         #
@@ -180,7 +203,7 @@
         #    "removable": true, 
         #    "version": "???"
         #}, 
-        #
+        
         "python-pip": {
             # Requires EPEL repo
             "allowed": ">=", 

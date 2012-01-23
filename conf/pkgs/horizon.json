@@ -121,14 +121,13 @@
         #
         # If a package requires EPEL repo please follow instructions
         # at http://fedoraproject.org/wiki/EPEL to ensure the repo is in /etc/yum.repos.d/
-        #
-        # RHEL names this one differently. Why?
+        
+        # This is apache for rhel
         "httpd": {
             "version": "2.2.15-9.el6",
             "allowed": ">=",
             "removable": true
         },
-        # RHEL names this one differently. Why?
         "mod_wsgi": {
             # This version is behind by 1 whole version
             # This might not be ok?
@@ -219,6 +218,7 @@
             "allowed": ">=",
             "removable": true
         },
+        
         # Does not seem to exist yet.
         #
         # EPEL has python-cherrypy2 but this probably won't work?
@@ -227,6 +227,7 @@
         #    "allowed": ">=",
         #    "removable": true
         #},
+        
         "Django": {
             # This version is behind by alot. We might need to repackage it.
             # Grid dynamics repo lists 1.3-2 (we might need to also)
@@ -234,6 +235,7 @@
             "allowed": ">=",
             "removable": true
         },
+        
         # This does not seem to exist.
         # Grid dynamics repo lists django-mailer-0.1.0-1.8
         #"python-django-mailer": {
@@ -249,7 +251,7 @@
         #    "allowed": ">=",
         #    "removable": true
         #},
-        #
+        
         # Requires EPEL repo
         "django-registration": {
             "version": "0.7-2.el6",
