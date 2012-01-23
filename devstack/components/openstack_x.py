@@ -14,13 +14,13 @@
 #    under the License.
 
 from devstack import component as comp
-from devstack import constants
 from devstack import log as logging
+from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 
 LOG = logging.getLogger("devstack.components.openstackx")
-TYPE = constants.OPENSTACK_X
+TYPE = settings.OPENSTACK_X
 
 
 class OpenstackXUninstaller(comp.PythonUninstallComponent):

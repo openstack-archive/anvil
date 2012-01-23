@@ -15,11 +15,11 @@
 
 
 from devstack import component as comp
-from devstack import constants
 from devstack import log as logging
+from devstack import settings
 from devstack import shell as sh
 
-TYPE = constants.HORIZON
+TYPE = settings.HORIZON
 
 ROOT_HORIZON = 'horizon'
 HORIZON_NAME = 'horizon'
@@ -100,7 +100,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         #Horizon currently imports quantum even if you aren't using it.
         #Instead of installing quantum we can create a simple module
         #that will pass the initial imports.
-        if(constants.QUANTUM in self.all_components):
+        if(settings.QUANTUM in self.all_components):
             return
         else:
             #Make the fake quantum
@@ -132,7 +132,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
             mp['HORIZON_DIR'] = self.appdir
         else:
             #Enable quantum in dashboard, if requested
-            mp['QUANTUM_ENABLED'] = "%s" % (constants.QUANTUM in self.all_components)
+            mp['QUANTUM_ENABLED'] = "%s" % (settings.QUANTUM in self.all_components)
             mp['OPENSTACK_HOST'] = self.cfg.get('host', 'ip')
         return mp
 

@@ -15,9 +15,9 @@
 
 import json
 
+from devstack import date
 from devstack import exceptions as excp
 from devstack import shell as sh
-from devstack import date
 
 #trace per line output and file extension formats
 TRACE_FMT = "%s - %s\n"

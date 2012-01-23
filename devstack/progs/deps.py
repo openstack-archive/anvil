@@ -13,8 +13,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from devstack import utils
 from devstack import log as logging
+from devstack import settings
 
 LOG = logging.getLogger("devstack.progs.deps")
 
@@ -24,7 +24,7 @@ def log_deps(components):
     left_show = list(components)
     while(len(left_show) != 0):
         c = left_show.pop()
-        deps = utils.get_dependencies(c)
+        deps = settings.get_dependencies(c)
         dep_str = ""
         dep_len = len(deps)
         if(dep_len >= 1):
@@ -45,7 +45,7 @@ def log_deps(components):
 
 
 def _run_list_deps(args):
-    components = utils.parse_components(args.pop("components"), True).keys()
+    components = settings.parse_components(args.pop("components"), True).keys()
     components = sorted(components)
     components.reverse()
     return log_deps(components)

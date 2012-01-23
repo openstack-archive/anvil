@@ -15,17 +15,18 @@
 
 import json
 import netifaces
-import operator
 import os
 import platform
+import random
 import re
-import sys
 
+#requires http://pypi.python.org/pypi/termcolor
+#but the colors make it worth it :-)
 from termcolor import colored
 
-from devstack import constants
 from devstack import exceptions as excp
 from devstack import log as logging
+from devstack import settings
 from devstack import shell as sh
 from devstack import version
 
@@ -34,52 +35,8 @@ PARAM_SUB_REGEX = re.compile(r"%([\w\d]+?)%")
 LOG = logging.getLogger("devstack.util")
 
 
-def get_pkg_manager(distro):
-    from devstack.packaging import apt
-    from devstack.packaging import yum
-    #this map controls which distro has
-    #which package management class
-    PKGR_MAP = {
-        constants.UBUNTU11: apt.AptPackager,
-        constants.RHEL6: yum.YumPackager,
-    }
-    cls = PKGR_MAP.get(distro)
-    return cls(distro)
-
-
-def get_config():
-    from devstack import cfg
-    cfg_fn = sh.canon_path(constants.STACK_CONFIG_LOCATION)
-    LOG.info("Loading config from [%s]" % (cfg_fn))
-    config_instance = cfg.EnvConfigParser()
-    config_instance.read(cfg_fn)
-    return config_instance
-
-
-def get_dependencies(component):
-    deps = constants.COMPONENT_DEPENDENCIES.get(component, list())
-    return sorted(deps)
-
-
-def resolve_dependencies(components):
-    active_components = list(components)
-    new_components = set()
-    while(len(active_components)):
-        curr_comp = active_components.pop()
-        component_deps = get_dependencies(curr_comp)
-        new_components.add(curr_comp)
-        for c in component_deps:
-            if(c in new_components or c in active_components):
-                pass
-            else:
-                active_components.append(c)
-    return new_components
-
-
 def execute_template(*cmds, **kargs):
-    if(not cmds or len(cmds) == 0):
-        return
-    params_replacements = kargs.pop('params')
+    params_replacements = kargs.pop('params', None)
     ignore_missing = kargs.pop('ignore_missing', False)
     cmd_results = list()
     for cmdinfo in cmds:
@@ -108,63 +65,11 @@ def execute_template(*cmds, **kargs):
     return cmd_results
 
 
-def parse_components(components, assume_all=False):
-    #none provided, init it
-    if(components == None):
-        components = list()
-    #this regex is used to extract a components options (if any) and its name
-    EXT_COMPONENT = re.compile(r"^\s*([\w-]+)(?:\((.*)\))?\s*$")
-    adjusted_components = dict()
-    for c in components:
-        mtch = EXT_COMPONENT.match(c)
-        if(mtch):
-            component_name = mtch.group(1).lower().strip()
-            if(component_name not in constants.COMPONENT_NAMES):
-                LOG.warn("Unknown component named %s" % (component_name))
-            else:
-                component_opts = mtch.group(2)
-                components_opts_cleaned = list()
-                if(component_opts == None or len(component_opts) == 0):
-                    pass
-                else:
-                    sp_component_opts = component_opts.split(",")
-                    for co in sp_component_opts:
-                        cleaned_opt = co.strip()
-                        if(len(cleaned_opt)):
-                            components_opts_cleaned.append(cleaned_opt)
-                adjusted_components[component_name] = components_opts_cleaned
-        else:
-            LOG.warn("Unparseable component %s" % (c))
-    #should we adjust them to be all the components?
-    if(len(adjusted_components) == 0 and assume_all):
-        all_components = dict()
-        for c in constants.COMPONENT_NAMES:
-            all_components[c] = list()
-        adjusted_components = all_components
-    return adjusted_components
-
-
-def prioritize_components(components):
-    #get the right component order (by priority)
-    mporder = dict()
-    priorities = constants.COMPONENT_NAMES_PRIORITY
-    for c in components:
-        priority = priorities.get(c)
-        if(priority == None):
-            priority = sys.maxint
-        mporder[c] = priority
-    #sort by priority value
-    priority_order = sorted(mporder.iteritems(), key=operator.itemgetter(1))
-    #extract the right order
-    component_order = [x[0] for x in priority_order]
-    return component_order
-
-
 def component_paths(root, component_name):
     component_root = sh.joinpths(root, component_name)
-    tracedir = sh.joinpths(component_root, constants.COMPONENT_TRACE_DIR)
-    appdir = sh.joinpths(component_root, constants.COMPONENT_APP_DIR)
-    cfgdir = sh.joinpths(component_root, constants.COMPONENT_CONFIG_DIR)
+    tracedir = sh.joinpths(component_root, settings.COMPONENT_TRACE_DIR)
+    appdir = sh.joinpths(component_root, settings.COMPONENT_APP_DIR)
+    cfgdir = sh.joinpths(component_root, settings.COMPONENT_CONFIG_DIR)
     return (component_root, tracedir, appdir, cfgdir)
 
 
@@ -183,9 +88,9 @@ def load_json(fn):
 def get_host_ip():
     ip = None
     interfaces = get_interfaces()
-    def_info = interfaces.get(constants.DEFAULT_NET_INTERFACE)
+    def_info = interfaces.get(settings.DEFAULT_NET_INTERFACE)
     if(def_info):
-        ipinfo = def_info.get(constants.DEFAULT_NET_INTERFACE_IP_VERSION)
+        ipinfo = def_info.get(settings.DEFAULT_NET_INTERFACE_IP_VERSION)
         if(ipinfo):
             ip = ipinfo.get('addr')
     if(ip == None):
@@ -202,11 +107,11 @@ def get_interfaces():
         ip6 = interface_addresses.get(netifaces.AF_INET6)
         if(ip6 and len(ip6)):
             #just take the first
-            interface_info[constants.IPV6] = ip6[0]
+            interface_info[settings.IPV6] = ip6[0]
         ip4 = interface_addresses.get(netifaces.AF_INET)
         if(ip4 and len(ip4)):
             #just take the first
-            interface_info[constants.IPV4] = ip4[0]
+            interface_info[settings.IPV4] = ip4[0]
         #there are others but this is good for now
         interfaces[intfc] = interface_info
     return interfaces
@@ -220,7 +125,7 @@ def determine_distro():
         return (None, plt)
     #attempt to match it to our platforms
     found_os = None
-    for (known_os, pattern) in constants.KNOWN_DISTROS.items():
+    for (known_os, pattern) in settings.KNOWN_DISTROS.items():
         if(pattern.search(plt)):
             found_os = known_os
             break
@@ -230,7 +135,7 @@ def determine_distro():
 def get_pip_list(distro, component):
     LOG.info("Getting pip packages for distro %s and component %s." % (distro, component))
     all_pkgs = dict()
-    fns = constants.PIP_MAP.get(component)
+    fns = settings.PIP_MAP.get(component)
     if(fns == None):
         return all_pkgs
     #load + merge them
@@ -249,7 +154,7 @@ def get_pip_list(distro, component):
 def get_pkg_list(distro, component):
     LOG.info("Getting packages for distro %s and component %s." % (distro, component))
     all_pkgs = dict()
-    fns = constants.PKG_MAP.get(component)
+    fns = settings.PKG_MAP.get(component)
     if(fns == None):
         return all_pkgs
     #load + merge them
@@ -265,7 +170,7 @@ def get_pkg_list(distro, component):
                     for (infokey, infovalue) in pkginfo.items():
                         #this is expected to be a list of cmd actions
                         #so merge that accordingly
-                        if(infokey == constants.PRE_INSTALL or infokey == constants.POST_INSTALL):
+                        if(infokey == settings.PRE_INSTALL or infokey == settings.POST_INSTALL):
                             oldinstalllist = oldpkginfo.get(infokey) or []
                             infovalue = oldinstalllist + infovalue
                         newpkginfo[infokey] = infovalue
@@ -309,8 +214,58 @@ def param_replace(text, replacements, ignore_missing=False):
     return PARAM_SUB_REGEX.sub(replacer, text)
 
 
+def _get_welcome_stack():
+    possibles = list()
+    #thank you figlet ;)
+    possibles.append(r'''
+  ___  ____  _____ _   _ ____ _____  _    ____ _  __
+ / _ \|  _ \| ____| \ | / ___|_   _|/ \  / ___| |/ /
+| | | | |_) |  _| |  \| \___ \ | | / _ \| |   | ' /
+| |_| |  __/| |___| |\  |___) || |/ ___ \ |___| . \
+ \___/|_|   |_____|_| \_|____/ |_/_/   \_\____|_|\_\
+
+''')
+    possibles.append(r'''
+  ___  ___ ___ _  _ ___ _____ _   ___ _  __
+ / _ \| _ \ __| \| / __|_   _/_\ / __| |/ /
+| (_) |  _/ _|| .` \__ \ | |/ _ \ (__| ' < 
+ \___/|_| |___|_|\_|___/ |_/_/ \_\___|_|\_\
+
+''')            
+    possibles.append(r'''
+____ ___  ____ _  _ ____ ___ ____ ____ _  _ 
+|  | |__] |___ |\ | [__   |  |__| |    |_/  
+|__| |    |___ | \| ___]  |  |  | |___ | \_ 
+
+''')
+    possibles.append(r'''
+  _  ___ ___  _  _  __  ___  _   __  _  _
+ / \| o \ __|| \| |/ _||_ _|/ \ / _|| |//
+( o )  _/ _| | \\ |\_ \ | || o ( (_ |  ( 
+ \_/|_| |___||_|\_||__/ |_||_n_|\__||_|\\
+
+''')
+    possibles.append(r'''
+   _   ___  ___  _  __  ___ _____  _    __  _   
+ ,' \ / o |/ _/ / |/ /,' _//_  _/.' \ ,'_/ / //7
+/ o |/ _,'/ _/ / || /_\ `.  / / / o // /_ /  ,' 
+|_,'/_/  /___//_/|_//___,' /_/ /_n_/ |__//_/\\  
+
+''')
+    possibles.append(r'''
+ _____  ___    ___    _   _  ___   _____  _____  ___    _   _ 
+(  _  )(  _`\ (  _`\ ( ) ( )(  _`\(_   _)(  _  )(  _`\ ( ) ( )
+| ( ) || |_) )| (_(_)| `\| || (_(_) | |  | (_) || ( (_)| |/'/'
+| | | || ,__/'|  _)_ | , ` |`\__ \  | |  |  _  || |  _ | , <  
+| (_) || |    | (_( )| |`\ |( )_) | | |  | | | || (_( )| |\`\ 
+(_____)(_)    (____/'(_) (_)`\____) (_)  (_) (_)(____/'(_) (_)
+
+''')
+    return random.choice(possibles)
+
+
 def welcome(action):
-    formatted_action = constants.WELCOME_MAP.get(action, "")
+    formatted_action = settings.WELCOME_MAP.get(action, "")
     ver_str = version.version_string()
     lower = "|"
     if(formatted_action):
@@ -318,19 +273,16 @@ def welcome(action):
         lower += " "
     lower += ver_str
     lower += "|"
-    welcome_ = r'''
-  ___  ____  _____ _   _ ____ _____  _    ____ _  __
- / _ \|  _ \| ____| \ | / ___|_   _|/ \  / ___| |/ /
-| | | | |_) |  _| |  \| \___ \ | | / _ \| |   | ' /
-| |_| |  __/| |___| |\  |___) || |/ ___ \ |___| . \
- \___/|_|   |_____|_| \_|____/ |_/_/   \_\____|_|\_\
-
-'''
+    welcome_ = _get_welcome_stack()
     welcome_ = welcome_.strip("\n\r")
-    max_len = len(max(welcome_.splitlines(), key=len))
-    lower_out = colored(constants.PROG_NICE_NAME, 'green') + \
+    max_line_len = len(max(welcome_.splitlines(), key=len))
+    lower_out = colored(settings.PROG_NICE_NAME, 'green') + \
                 ": " + colored(lower, 'blue')
-    uncolored_lower_len = (len(constants.PROG_NICE_NAME + ": " + lower))
-    center_len = max_len + (max_len - uncolored_lower_len)
-    lower_out = lower_out.center(center_len)
+    uncolored_lower = (settings.PROG_NICE_NAME + ": " + lower)
+    if(max_line_len - len(uncolored_lower) > 0):
+        #this format string wil center the uncolored text which
+        #we will then replace
+        #with the color text equivalent
+        centered_str = '{0:{fill}{align}{size}}'.format(uncolored_lower, fill=" ", align="^", size=max_line_len)
+        lower_out = centered_str.replace(uncolored_lower, lower_out)
     print((welcome_ + os.linesep + lower_out))

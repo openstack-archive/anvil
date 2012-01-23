@@ -19,9 +19,9 @@ import os.path
 import shutil
 import subprocess
 
-from devstack import log as logging
-from devstack import exceptions as excp
 from devstack import env
+from devstack import exceptions as excp
+from devstack import log as logging
 
 ROOT_HELPER = ["sudo"]
 MKPW_CMD = ["openssl", 'rand', '-hex']

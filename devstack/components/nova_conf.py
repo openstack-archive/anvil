@@ -13,13 +13,12 @@
 #    under the License.
 
 from devstack import component as comp
-from devstack import constants as co
 from devstack import log as logging
+from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 
 LOG = logging.getLogger("devstack.components.nova_conf")
-
 QUANTUM_MANAGER = 'nova.network.quantum.manager.QuantumManager'
 NET_MANAGER_TEMPLATE = 'nova.network.manager.%s'
 DEF_IMAGE_SERVICE = 'nova.image.glance.GlanceImageService'
@@ -79,7 +78,7 @@ class NovaConfigurator():
         #whats the network fixed range?
         nova_conf.add('fixed_range', self._getstr('fixed_range'))
 
-        if(co.QUANTUM in self.active_components):
+        if(settings.QUANTUM in self.active_components):
             #setup quantum config
             nova_conf.add('network_manager', QUANTUM_MANAGER)
             nova_conf.add('quantum_connection_host', self.cfg.get('quantum', 'q_host'))
@@ -120,7 +119,7 @@ class NovaConfigurator():
                                 self._getstr('instance_name_postfix'))
         nova_conf.add('instance_name_template', instance_template)
 
-        if(co.OPENSTACK_X in self.active_components):
+        if(settings.OPENSTACK_X in self.active_components):
             nova_conf.add('osapi_compute_extension', 'nova.api.openstack.compute.contrib.standard_extensions')
             nova_conf.add('osapi_compute_extension', 'extensions.admin.Admin')
 

@@ -16,9 +16,9 @@
 from tempfile import TemporaryFile
 import time
 
-from devstack import constants as co
 from devstack import log as logging
 from devstack import packager as pack
+from devstack import settings
 from devstack import shell as sh
 
 LOG = logging.getLogger("devstack.packaging.apt")
@@ -100,7 +100,7 @@ class AptPackager(pack.Packager):
             self._execute_apt(cmd)
 
     def _pkg_remove_special(self, name, pkginfo):
-        if(name == 'rabbitmq-server' and self.distro == co.UBUNTU11):
+        if(name == 'rabbitmq-server' and self.distro == settings.UBUNTU11):
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
             LOG.info("Handling special remove of %s." % (name))
@@ -116,7 +116,7 @@ class AptPackager(pack.Packager):
         return False
 
     def _pkg_install_special(self, name, pkginfo):
-        if(name == 'rabbitmq-server' and self.distro == co.UBUNTU11):
+        if(name == 'rabbitmq-server' and self.distro == settings.UBUNTU11):
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
             LOG.info("Handling special install of %s." % (name))

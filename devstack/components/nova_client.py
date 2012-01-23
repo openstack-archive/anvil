@@ -14,11 +14,11 @@
 #    under the License.
 
 from devstack import component as comp
-from devstack import constants
 from devstack import log as logging
+from devstack import settings
 
 LOG = logging.getLogger("devstack.components.nova_client")
-TYPE = constants.NOVA_CLIENT
+TYPE = settings.NOVA_CLIENT
 
 
 class NovaClientUninstaller(comp.PythonUninstallComponent):

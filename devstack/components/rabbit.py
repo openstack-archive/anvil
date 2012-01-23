@@ -17,14 +17,14 @@
 from tempfile import TemporaryFile
 
 from devstack import component as comp
-from devstack import constants
 from devstack import exceptions as excp
 from devstack import log as logging
+from devstack import settings
 from devstack import shell as sh
 from devstack import trace as tr
 
 LOG = logging.getLogger("devstack.components.rabbit")
-TYPE = constants.RABBIT
+TYPE = settings.RABBIT
 
 #hopefully these are distro independent..
 START_CMD = ['service', "rabbitmq-server", "start"]
@@ -79,7 +79,7 @@ class RabbitRuntime(comp.NullRuntime):
         return sysout.strip().lower()
 
     def _run_cmd(self, cmd):
-        if(self.distro == constants.UBUNTU11):
+        if(self.distro == settings.UBUNTU11):
             with TemporaryFile() as f:
                 sh.execute(*cmd, run_as_root=True,
                             stdout_fh=f, stderr_fh=f)

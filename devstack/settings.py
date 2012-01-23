@@ -13,8 +13,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import operator
 import os.path
 import re
+
+from devstack import log as logging
+
+LOG = logging.getLogger("devstack.settings")
 
 # These also have meaning outside python,
 # ie in the pkg/pip listings so update there also!
@@ -92,6 +97,9 @@ COMPONENT_DEPENDENCIES = {
 COMPONENT_TRACE_DIR = "traces"
 COMPONENT_APP_DIR = "app"
 COMPONENT_CONFIG_DIR = "config"
+
+# This regex is used to extract a components options (if any) and its name
+EXT_COMPONENT = re.compile(r"^\s*([\w-]+)(?:\((.*)\))?\s*$")
 
 # Program
 # actions
@@ -201,3 +209,71 @@ PKG_MAP = {
             os.path.join(STACK_PKG_DIR, 'openstackx.json'),
         ],
 }
+
+
+def get_dependencies(component):
+    return sorted(COMPONENT_DEPENDENCIES.get(component, list()))
+
+
+def resolve_dependencies(components):
+    active_components = list(components)
+    new_components = set()
+    while(len(active_components)):
+        curr_comp = active_components.pop()
+        component_deps = get_dependencies(curr_comp)
+        new_components.add(curr_comp)
+        for c in component_deps:
+            if(c in new_components or c in active_components):
+                pass
+            else:
+                active_components.append(c)
+    return new_components
+
+
+def prioritize_components(components):
+    #get the right component order (by priority)
+    mporder = dict()
+    for c in components:
+        priority = COMPONENT_NAMES_PRIORITY.get(c)
+        if(priority == None):
+            priority = sys.maxint
+        mporder[c] = priority
+    #sort by priority value
+    priority_order = sorted(mporder.iteritems(), key=operator.itemgetter(1))
+    #extract the final list ordering
+    component_order = [x[0] for x in priority_order]
+    return component_order
+
+
+def parse_components(components, assume_all=False):
+    #none provided, init it
+    if(not components):
+        components = list()
+    adjusted_components = dict()
+    for c in components:
+        mtch = EXT_COMPONENT.match(c)
+        if(mtch):
+            component_name = mtch.group(1).lower().strip()
+            if(component_name not in COMPONENT_NAMES):
+                LOG.warn("Unknown component named %s" % (component_name))
+            else:
+                component_opts = mtch.group(2)
+                components_opts_cleaned = list()
+                if(component_opts == None or len(component_opts) == 0):
+                    pass
+                else:
+                    sp_component_opts = component_opts.split(",")
+                    for co in sp_component_opts:
+                        cleaned_opt = co.strip()
+                        if(len(cleaned_opt)):
+                            components_opts_cleaned.append(cleaned_opt)
+                adjusted_components[component_name] = components_opts_cleaned
+        else:
+            LOG.warn("Unparseable component %s" % (c))
+    #should we adjust them to be all the components?
+    if(len(adjusted_components) == 0 and assume_all):
+        all_components = dict()
+        for c in COMPONENT_NAMES:
+            all_components[c] = list()
+        adjusted_components = all_components
+    return adjusted_components

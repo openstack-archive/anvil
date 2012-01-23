@@ -13,14 +13,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from optparse import OptionParser, OptionGroup
 from optparse import IndentedHelpFormatter
+from optparse import OptionParser, OptionGroup
 
-from devstack import constants
+from devstack import log as logging
+from devstack import settings
 from devstack import utils
 from devstack import version
 
 HELP_WIDTH = 80
+LOG = logging.getLogger("devstack.opts")
 
 
 def parse():
@@ -31,7 +33,7 @@ def parse():
     parser = OptionParser(version=version_str, formatter=help_formatter)
 
     base_group = OptionGroup(parser, "Install/uninstall/start/stop options")
-    known_actions = sorted(constants.ACTIONS)
+    known_actions = sorted(settings.ACTIONS)
     actions = "(" + ", ".join(known_actions) + ")"
     base_group.add_option("-a", "--action",
             action="store",
@@ -46,7 +48,7 @@ def parse():
         metavar="DIR",
         help="empty root DIR for install or "\
              "DIR with existing components for start/stop/uninstall")
-    known_components = sorted(constants.COMPONENT_NAMES)
+    known_components = sorted(settings.COMPONENT_NAMES)
     components = "(" + ", ".join(known_components) + ")"
     base_group.add_option("-c", "--component",
         action="append",

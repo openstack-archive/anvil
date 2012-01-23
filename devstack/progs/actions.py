@@ -13,12 +13,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from devstack import constants as c
-from devstack import utils
-from devstack import shell as sh
-from devstack import log as logging
-from devstack import exceptions as excp
+from devstack import cfg
 from devstack import date
+from devstack import exceptions as excp
+from devstack import log as logging
+from devstack import settings
+from devstack import shell as sh
+from devstack import utils
 
 from devstack.components import db
 from devstack.components import glance
@@ -32,61 +33,71 @@ from devstack.components import quantum
 from devstack.components import rabbit
 from devstack.components import swift
 
+from devstack.packaging import apt
+from devstack.packaging import yum
+
 LOG = logging.getLogger("devstack.progs.actions")
+
+#this map controls which distro has
+#which package management class
+_PKGR_MAP = {
+    settings.UBUNTU11: apt.AptPackager,
+    settings.RHEL6: yum.YumPackager,
+}
 
 # This determines what classes to use to install/uninstall/...
 _ACTION_CLASSES = {
-    c.INSTALL: {
-        c.NOVA: nova.NovaInstaller,
-        c.GLANCE: glance.GlanceInstaller,
-        c.QUANTUM: quantum.QuantumInstaller,
-        c.SWIFT: swift.SwiftInstaller,
-        c.HORIZON: horizon.HorizonInstaller,
-        c.KEYSTONE: keystone.KeystoneInstaller,
-        c.DB: db.DBInstaller,
-        c.RABBIT: rabbit.RabbitInstaller,
-        c.KEYSTONE_CLIENT: keystone_client.KeyStoneClientInstaller,
-        c.NOVA_CLIENT: nova_client.NovaClientInstaller,
-        c.OPENSTACK_X: openstack_x.OpenstackXInstaller,
+    settings.INSTALL: {
+        settings.NOVA: nova.NovaInstaller,
+        settings.GLANCE: glance.GlanceInstaller,
+        settings.QUANTUM: quantum.QuantumInstaller,
+        settings.SWIFT: swift.SwiftInstaller,
+        settings.HORIZON: horizon.HorizonInstaller,
+        settings.KEYSTONE: keystone.KeystoneInstaller,
+        settings.DB: db.DBInstaller,
+        settings.RABBIT: rabbit.RabbitInstaller,
+        settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientInstaller,
+        settings.NOVA_CLIENT: nova_client.NovaClientInstaller,
+        settings.OPENSTACK_X: openstack_x.OpenstackXInstaller,
     },
-    c.UNINSTALL: {
-        c.NOVA: nova.NovaUninstaller,
-        c.GLANCE: glance.GlanceUninstaller,
-        c.QUANTUM: quantum.QuantumUninstaller,
-        c.SWIFT: swift.SwiftUninstaller,
-        c.HORIZON: horizon.HorizonUninstaller,
-        c.KEYSTONE: keystone.KeystoneUninstaller,
-        c.DB: db.DBUninstaller,
-        c.RABBIT: rabbit.RabbitUninstaller,
-        c.KEYSTONE_CLIENT: keystone_client.KeyStoneClientUninstaller,
-        c.NOVA_CLIENT: nova_client.NovaClientUninstaller,
-        c.OPENSTACK_X: openstack_x.OpenstackXUninstaller,
+    settings.UNINSTALL: {
+        settings.NOVA: nova.NovaUninstaller,
+        settings.GLANCE: glance.GlanceUninstaller,
+        settings.QUANTUM: quantum.QuantumUninstaller,
+        settings.SWIFT: swift.SwiftUninstaller,
+        settings.HORIZON: horizon.HorizonUninstaller,
+        settings.KEYSTONE: keystone.KeystoneUninstaller,
+        settings.DB: db.DBUninstaller,
+        settings.RABBIT: rabbit.RabbitUninstaller,
+        settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientUninstaller,
+        settings.NOVA_CLIENT: nova_client.NovaClientUninstaller,
+        settings.OPENSTACK_X: openstack_x.OpenstackXUninstaller,
     },
-    c.START: {
-        c.NOVA: nova.NovaRuntime,
-        c.GLANCE: glance.GlanceRuntime,
-        c.QUANTUM: quantum.QuantumRuntime,
-        c.SWIFT: swift.SwiftRuntime,
-        c.HORIZON: horizon.HorizonRuntime,
-        c.KEYSTONE: keystone.KeystoneRuntime,
-        c.DB: db.DBRuntime,
-        c.RABBIT: rabbit.RabbitRuntime,
-        c.KEYSTONE_CLIENT: keystone_client.KeyStoneClientRuntime,
-        c.NOVA_CLIENT: nova_client.NovaClientRuntime,
-        c.OPENSTACK_X: openstack_x.OpenstackXRuntime,
+    settings.START: {
+        settings.NOVA: nova.NovaRuntime,
+        settings.GLANCE: glance.GlanceRuntime,
+        settings.QUANTUM: quantum.QuantumRuntime,
+        settings.SWIFT: swift.SwiftRuntime,
+        settings.HORIZON: horizon.HorizonRuntime,
+        settings.KEYSTONE: keystone.KeystoneRuntime,
+        settings.DB: db.DBRuntime,
+        settings.RABBIT: rabbit.RabbitRuntime,
+        settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientRuntime,
+        settings.NOVA_CLIENT: nova_client.NovaClientRuntime,
+        settings.OPENSTACK_X: openstack_x.OpenstackXRuntime,
     },
-    c.STOP: {
-        c.NOVA: nova.NovaRuntime,
-        c.GLANCE: glance.GlanceRuntime,
-        c.QUANTUM: quantum.QuantumRuntime,
-        c.SWIFT: swift.SwiftRuntime,
-        c.HORIZON: horizon.HorizonRuntime,
-        c.KEYSTONE: keystone.KeystoneRuntime,
-        c.DB: db.DBRuntime,
-        c.RABBIT: rabbit.RabbitRuntime,
-        c.KEYSTONE_CLIENT: keystone_client.KeyStoneClientRuntime,
-        c.NOVA_CLIENT: nova_client.NovaClientRuntime,
-        c.OPENSTACK_X: openstack_x.OpenstackXRuntime,
+    settings.STOP: {
+        settings.NOVA: nova.NovaRuntime,
+        settings.GLANCE: glance.GlanceRuntime,
+        settings.QUANTUM: quantum.QuantumRuntime,
+        settings.SWIFT: swift.SwiftRuntime,
+        settings.HORIZON: horizon.HorizonRuntime,
+        settings.KEYSTONE: keystone.KeystoneRuntime,
+        settings.DB: db.DBRuntime,
+        settings.RABBIT: rabbit.RabbitRuntime,
+        settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientRuntime,
+        settings.NOVA_CLIENT: nova_client.NovaClientRuntime,
+        settings.OPENSTACK_X: openstack_x.OpenstackXRuntime,
     },
 }
 
@@ -95,9 +106,14 @@ def _clean_action(action):
     if(action == None):
         return None
     action = action.strip().lower()
-    if(not (action in c.ACTIONS)):
+    if(not (action in settings.ACTIONS)):
         return None
     return action
+
+
+def _get_pkg_manager(distro):
+    cls = _PKGR_MAP.get(distro)
+    return cls(distro)
 
 
 def _get_action_cls(action_name, component_name):
@@ -110,23 +126,25 @@ def _get_action_cls(action_name, component_name):
 def _check_root(action, rootdir):
     if(rootdir == None or len(rootdir) == 0):
         return False
-    if(action == c.INSTALL):
-        if(sh.isdir(rootdir) and len(sh.listdir(rootdir)) != 0):
-            LOG.error("Root directory [%s] already exists (and it's not empty)! "\
-                      "Please remove it or uninstall components!" % (rootdir))
-            return False
+    if(action == settings.INSTALL):
+        if(sh.isdir(rootdir)):
+            dir_list = sh.listdir(rootdir)
+            if(len(dir_list) > 0):
+                LOG.error("Root directory [%s] already exists (and it's not empty)! "\
+                          "Please remove it or uninstall components!" % (rootdir))
+                return False
     return True
 
 
 def _pre_run(action_name, **kargs):
-    if(action_name == c.INSTALL):
+    if(action_name == settings.INSTALL):
         root_dir = kargs.get("root_dir")
         if(root_dir):
             sh.mkdir(root_dir)
 
 
 def _post_run(action_name, **kargs):
-    if(action_name == c.UNINSTALL):
+    if(action_name == settings.UNINSTALL):
         root_dir = kargs.get("root_dir")
         if(root_dir):
             sh.rmdir(root_dir)
@@ -230,10 +248,18 @@ def _uninstall(component_name, instance, skip_notrace):
             raise
 
 
+def _get_config():
+    cfg_fn = sh.canon_path(settings.STACK_CONFIG_LOCATION)
+    LOG.info("Loading config from [%s]" % (cfg_fn))
+    config_instance = cfg.EnvConfigParser()
+    config_instance.read(cfg_fn)
+    return config_instance
+
+
 def _run_components(action_name, component_order, components_info, distro, root_dir, program_args):
     LOG.info("Will %s [%s] (in that order) using root directory \"%s\"" % (action_name, ", ".join(component_order), root_dir))
-    pkg_manager = utils.get_pkg_manager(distro)
-    config = utils.get_config()
+    pkg_manager = _get_pkg_manager(distro)
+    config = _get_config()
     results = list()
     #this key list may be different than the order due to reference components
     active_components = components_info.keys()
@@ -247,24 +273,28 @@ def _run_components(action_name, component_order, components_info, distro, root_
                             cfg=config,
                             root=root_dir,
                             component_opts=components_info.get(component, list()))
-        if(action_name == c.INSTALL):
+        #activate the correct function for the given action
+        if(action_name == settings.INSTALL):
             install_result = _install(component, instance)
             if install_result:
                 if type(install_result) == list:
                     results += install_result
                 else:
                     results.append(str(install_result))
-        elif(action_name == c.STOP):
+        elif(action_name == settings.STOP):
             _stop(component, instance, program_args.get('force', False))
-        elif(action_name == c.START):
+        elif(action_name == settings.START):
             start_result = _start(component, instance)
             if start_result:
                 if type(start_result) == list:
                     results += start_result
                 else:
                     results.append(str(start_result))
-        elif(action_name == c.UNINSTALL):
+        elif(action_name == settings.UNINSTALL):
             _uninstall(component, instance, program_args.get('force', False))
+        else:
+            #TODO throw?
+            pass
     #display any configs touched...
     _print_cfgs(config, action_name)
     #any post run actions go now
@@ -273,7 +303,7 @@ def _run_components(action_name, component_order, components_info, distro, root_
 
 
 def _run_action(args):
-    components = utils.parse_components(args.pop("components"))
+    components = settings.parse_components(args.pop("components"))
     if(len(components) == 0):
         LOG.error("No components specified!")
         return False
@@ -295,18 +325,18 @@ def _run_action(args):
     #need to figure out dependencies for components (if any)
     ignore_deps = args.pop('ignore_deps', False)
     if(not ignore_deps):
-        new_components = utils.resolve_dependencies(components.keys())
+        new_components = settings.resolve_dependencies(components.keys())
         component_diff = new_components.difference(components.keys())
         if(len(component_diff)):
             LOG.info("Having to activate dependent components: [%s]" % (", ".join(component_diff)))
             for new_component in component_diff:
                 components[new_component] = list()
     #get the right component order (by priority)
-    component_order = utils.prioritize_components(components.keys())
+    component_order = settings.prioritize_components(components.keys())
     #now do it!
     LOG.info("Starting action [%s] on %s for distro [%s]" % (action, date.rcf8222date(), distro))
     #add in any that will just be referenced but which will not actually do anything
-    ref_components = utils.parse_components(args.pop("ref_components"))
+    ref_components = settings.parse_components(args.pop("ref_components"))
     for c in ref_components.keys():
         if(c not in components):
             components[c] = ref_components.get(c)

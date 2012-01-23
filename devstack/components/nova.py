@@ -14,8 +14,8 @@
 #    under the License.
 
 from devstack import component as comp
-from devstack import constants as co
 from devstack import log as logging
+from devstack import settings
 from devstack import shell as sh
 from devstack.components import nova_conf as nc
 
@@ -27,7 +27,7 @@ CONFIGS = [API_CONF]
 
 DB_NAME = "nova"
 BIN_DIR = 'bin'
-TYPE = co.NOVA
+TYPE = settings.NOVA
 
 
 class NovaUninstaller(comp.PythonUninstallComponent):

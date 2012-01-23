@@ -13,9 +13,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from devstack import log as logging
 from devstack import packager as pack
 from devstack import shell as sh
-from devstack import log as logging
 
 LOG = logging.getLogger("devstack.packaging.yum")
 YUM_CMD = ['yum']

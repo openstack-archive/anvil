@@ -13,17 +13,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import os
-
-from devstack import constants as c
 from devstack import downloader as down
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import pip
 from devstack import runner
+from devstack import settings
 from devstack import shell as sh
 from devstack import trace as tr
 from devstack import utils
+
 from devstack.runners import fork
 from devstack.runners import screen
 
@@ -175,7 +174,7 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
         return sh.joinpths(self.cfgdir, name)
 
     def _get_source_config_name(self, name):
-        return sh.joinpths(c.STACK_CONFIG_DIR, self.component_name, name)
+        return sh.joinpths(settings.STACK_CONFIG_DIR, self.component_name, name)
 
     def _configure_files(self):
         configs = self._get_config_files()
@@ -187,7 +186,7 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
                 sourcefn = self._get_source_config_name(fn)
                 tgtfn = self._get_target_config_name(fn)
                 #ensure directory is there (if not created previously)
-                self.tracewriter.make_dir(os.path.dirname(tgtfn))
+                self.tracewriter.make_dir(sh.dirname(tgtfn))
                 #now configure it
                 LOG.info("Configuring template file %s" % (sourcefn))
                 contents = sh.load_file(sourcefn)
@@ -234,11 +233,8 @@ class PythonInstallComponent(PkgInstallComponent):
             stdout = ''
         if(stderr == None):
             stderr = ''
-        combined_output = "===STDOUT===" + os.linesep
-        combined_output += stdout + os.linesep
-        combined_output += "===STDERR===" + os.linesep
-        combined_output += stderr + os.linesep
-        return combined_output
+        combined = ["===STDOUT===", str(stdout), "===STDERR===", str(stderr)]
+        return utils.joinlinesep(*combined)
 
     def _format_trace_name(self, name):
         return "%s-%s" % (tr.PY_TRACE, name)

@@ -17,15 +17,15 @@ import io
 
 from devstack import cfg
 from devstack import component as comp
-from devstack import constants
 from devstack import log as logging
+from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 from devstack.components import db
 
 LOG = logging.getLogger("devstack.components.keystone")
 
-TYPE = constants.KEYSTONE
+TYPE = settings.KEYSTONE
 ROOT_CONF = "keystone.conf"
 CONFIGS = [ROOT_CONF]
 BIN_DIR = "bin"
@@ -81,7 +81,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
     def _setup_data(self):
         #load the json file which has the keystone setup commands
-        cmds_pth = sh.joinpths(constants.STACK_CONFIG_DIR, TYPE, MANAGE_JSON_CONF)
+        cmds_pth = sh.joinpths(settings.STACK_CONFIG_DIR, TYPE, MANAGE_JSON_CONF)
         cmd_map = utils.load_json(cmds_pth)
 
         #order matters here
@@ -105,13 +105,13 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         endpoint_cmds = cmd_map.get('endpoints', list())
         base_cmds.extend(endpoint_cmds)
 
-        if(constants.GLANCE in self.all_components):
+        if(settings.GLANCE in self.all_components):
             glance_cmds = cmd_map.get('glance', list())
             base_cmds.extend(glance_cmds)
-        if(constants.NOVA in self.all_components):
+        if(settings.NOVA in self.all_components):
             nova_cmds = cmd_map.get('nova', list())
             base_cmds.extend(nova_cmds)
-        if(constants.SWIFT in self.all_components):
+        if(settings.SWIFT in self.all_components):
             swift_cmds = cmd_map.get('swift', list())
             base_cmds.extend(swift_cmds)
 

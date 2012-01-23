@@ -15,10 +15,10 @@
 
 
 from devstack import component as comp
-from devstack import constants
 from devstack import log as logging
+from devstack import settings
 
-TYPE = constants.KEYSTONE_CLIENT
+TYPE = settings.KEYSTONE_CLIENT
 LOG = logging.getLogger("devstack.components.keystone_client")
 
 

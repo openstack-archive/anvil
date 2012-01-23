@@ -23,7 +23,6 @@ logging.setup()
 
 #this handles our option parsing
 from devstack import opts
-from devstack import constants
 
 #these are the program runtimes that actually do the running
 from devstack.progs import actions

@@ -209,7 +209,7 @@ class ImageCreationService:
                 if(len(url)):
                     Image(url, self.token).install()
             except (IOError, tarfile.TarError):
-                #these are the known exceptions we will catch and all that 
+                #these are the known exceptions we will catch and all that
                 #should be emitted (except core python errors, catching all
                 #exceptions is not good...), since this service is not critical
                 #just log them and carry on.

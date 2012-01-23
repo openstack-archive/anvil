@@ -17,7 +17,7 @@ import io
 
 from devstack import cfg
 from devstack import component as comp
-from devstack import constants
+from devstack import settings
 from devstack import log as logging
 from devstack import shell as sh
 from devstack.components import db
@@ -26,7 +26,7 @@ from devstack.image import creator
 LOG = logging.getLogger("devstack.components.glance")
 
 #naming + config files
-TYPE = constants.GLANCE
+TYPE = settings.GLANCE
 API_CONF = "glance-api.conf"
 REG_CONF = "glance-registry.conf"
 CONFIGS = [API_CONF, REG_CONF]

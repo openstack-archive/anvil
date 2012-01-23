@@ -14,7 +14,7 @@
 #    under the License.
 
 from devstack import component as comp
-from devstack import constants
+from devstack import settings
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import shell as sh
@@ -23,7 +23,7 @@ from devstack import utils
 
 
 LOG = logging.getLogger("devstack.components.db")
-TYPE = constants.DB
+TYPE = settings.DB
 MYSQL = 'mysql'
 DB_ACTIONS = {
     MYSQL: {
