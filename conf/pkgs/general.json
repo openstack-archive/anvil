@@ -9,6 +9,7 @@
             "removable": false, 
             "version": "7.21.6-3ubuntu3"
         }, 
+        # Only for testing client
         "euca2ools": {
             "allowed": ">=", 
             "removable": false, 
@@ -24,11 +25,13 @@
             "removable": false, 
             "version": "3:20101006-1"
         }, 
+        # Useful when debugging
         "locate": {
             "allowed": ">=", 
             "removable": false, 
             "version": "4.4.2-1ubuntu3"
         }, 
+        # Useful when debugging
         "lsof": {
             "allowed": ">=", 
             "removable": false, 
@@ -124,6 +127,7 @@
             "removable": false, 
             "version": "7.19.7-26.el6_1.2"
         }, 
+        # Only for testing client
         "euca2ools": {
             # Requires EPEL repo
             "allowed": ">=", 
@@ -142,6 +146,7 @@
             "removable": false, 
             "version": "20071127-16.el6"
         }, 
+        # Useful when debugging
         "mlocate": {
             # RHEL mlocate seems to be the locate command
             "allowed": ">=", 

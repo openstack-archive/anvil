@@ -1,11 +1,24 @@
 # This is a extended json package definition file 
 # We allow simple comments (lines starting with a hash symbol)
 {
+    # This is currently our "master" repo set with versions
+    # that we are trying to align other distributions with.
     "ubuntu-oneiric": {
+        # This seems like an odd dependency.
+        # Novnc requires "scientific computing tools for python"? (weird)
         "python-numpy": {
             "version": "1:1.5.1-2ubuntu2",
-            "allowed": ">="
+            "allowed": ">=",
+            "removable": true
         }
     },
-    "rhel-6": {}
+    "rhel-6": {
+        # Does not exist yet. It seems like people
+        # have built this just it isn't in RHEL or EPEL.
+        # "python-numpy": {
+        #     "version": "??",
+        #     "allowed": ">=",
+        #     "removable": true
+        # }
+    }
 }

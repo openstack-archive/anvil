@@ -4,6 +4,7 @@
     # This is currently our "master" repo set with versions
     # that we are trying to align other distributions with.
     "ubuntu-oneiric": {
+        # Stuff for diablo volumes
         "lvm2": {
             "version": "2.02.66-4ubuntu3",
             "allowed": ">=",
