@@ -63,8 +63,9 @@
         #
         # If a package requires EPEL repo please follow instructions
         # at http://fedoraproject.org/wiki/EPEL to ensure the repo is in /etc/yum.repos.d/
+        #
+        # Requires EPEL repo
         "python-eventlet": {
-            # Requires EPEL repo
             "version": "0.9.16-3.el6",
             "allowed": ">=",
             "removable": true
@@ -122,6 +123,7 @@
         },
         # Requires EPEL repo
         "python-xattr": {
+            # This version is behind by alot. We might need to repackage it.
             "version": "0.5.0-1.el6",
             "allowed": ">=",
             "removable": true
