@@ -28,7 +28,7 @@ from devstack.components import keystone
 from devstack.components import keystone_client
 from devstack.components import nova
 from devstack.components import nova_client
-from devstack.components import novnc 
+from devstack.components import novnc
 from devstack.components import openstack_x
 from devstack.components import quantum
 from devstack.components import rabbit
