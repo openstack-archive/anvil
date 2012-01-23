@@ -23,6 +23,7 @@ import sys
 from termcolor import colored
 
 LOG_FN_ENV = 'LOG_FILE'
+LOG_FILE_DEF = os.path.join("conf", 'logging.ini')
 
 
 class TermFormatter(logging.Formatter):
@@ -67,7 +68,7 @@ class TermHandler(logging.Handler):
 def setup():
     logfn = os.getenv(LOG_FN_ENV)
     if(logfn == None):
-        logfn = 'conf/logging.ini'
+        logfn = LOG_FILE_DEF
     logging.config.fileConfig(logfn)
 
 
