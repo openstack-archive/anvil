@@ -52,6 +52,9 @@ DB = "db"
 RABBIT = "rabbit"
 OPENSTACK_X = 'openstack-x'
 NOVNC = 'novnc'
+# NCPU and NVOL are here as possible subcomponents of nova
+NCPU = "cpu"
+NVOL = "vol"
 COMPONENT_NAMES = [
     NOVA, NOVA_CLIENT,
     GLANCE,
@@ -207,6 +210,15 @@ PKG_MAP = {
         [
             os.path.join(STACK_PKG_DIR, 'n-vnc.json'),
         ],
+    NCPU:
+        [
+            os.path.join(STACK_PKG_DIR, 'n-cpu.json'),
+        ],
+    NVOL:
+        [
+            os.path.join(STACK_PKG_DIR, 'n-vol.json'),
+        ],
+
 }
 
 
