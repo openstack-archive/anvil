@@ -16,9 +16,18 @@
 from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
+from devstack import shell as sh
+from devstack.components import nova
 
 LOG = logging.getLogger("devstack.components.novnc")
 TYPE = settings.NOVNC
+
+UTIL_DIR = 'utils'
+
+# FIXME, need to get actual location of nova.API_CONF
+APP_OPTIONS = {
+    'nova-novncproxy': ['--flagfile-file', sh.joinpths('%ROOT%', "bin", nova.API_CONF), '--web'],
+}
 
 
 class NoVNCUninstaller(comp.PkgUninstallComponent):
@@ -41,6 +50,18 @@ class NoVNCInstaller(comp.PkgInstallComponent):
         return places
 
 
-class NoVNCRuntime(comp.NullRuntime):
+class NoVNCRuntime(comp.ProgramRuntime):
     def __init__(self, *args, **kargs):
-        comp.NullRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.ProgramRuntime.__init__(self, TYPE, *args, **kargs)
+
+    def _get_apps_to_start(self):
+        apps = list()
+        for app_name in APP_OPTIONS.keys():
+            apps.append({
+                'name': app_name,
+                'path': sh.joinpths(self.appdir, UTIL_DIR, app_name),
+            })
+        return apps
+
+    def _get_app_options(self, app):
+        return APP_OPTIONS.get(app)
