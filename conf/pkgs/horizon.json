@@ -69,6 +69,7 @@
             "allowed": ">=",
             "removable": true
         },
+        # Is this really needed?
         "python-mox": {
             "version": "0.5.3-1ubuntu4",
             "allowed": ">=",
@@ -89,6 +90,7 @@
             "allowed": ">=",
             "removable": true
         },
+        # Is this really needed?
         "python-django-nose": {
             "version": "0.1.2-2",
             "allowed": ">=",
