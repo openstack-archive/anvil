@@ -107,9 +107,9 @@ class NovaInstaller(comp.PythonInstallComponent):
         dirs['app'] = self.appdir
         dirs['cfg'] = self.cfgdir
         dirs['bin'] = self.bindir
-        conf_gen = nc.NovaConfigurator(self.cfg, self.all_components)
+        conf_gen = nc.NovaConfigurator(self.cfg, self.instances)
         nova_conf = conf_gen.configure(dirs)
-        tgtfn = self._get_target_config_name(API_CONF)
+        tgtfn = self.get_target_config_name(API_CONF)
         LOG.info("Created nova configuration:")
         LOG.info(nova_conf)
         LOG.debug("Placing it in %s" % (tgtfn))
