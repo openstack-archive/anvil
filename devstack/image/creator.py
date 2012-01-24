@@ -28,7 +28,7 @@ from devstack import utils
 LOG = log.getLogger("devstack.image.creator")
 
 
-class Image:
+class Image(object):
 
     KERNEL_FORMAT = ['glance', '-A', '%TOKEN%', 'add', \
         'name="%IMAGE_NAME%-kernel"', 'is_public=true', 'container_format=aki', \
@@ -197,6 +197,7 @@ class ImageCreationService:
     def install(self):
         urls = list()
         token = None
+
         #extract them
         try:
             token = self.cfg.get("passwords", "service_token")
@@ -208,6 +209,7 @@ class ImageCreationService:
                         urls.append(url)
         except(ConfigParser.Error):
             LOG.info("No image configuration keys found, skipping glance image install")
+
         #install them in glance
         am_installed = 0
         for url in urls:
