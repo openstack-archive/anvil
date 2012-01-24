@@ -22,8 +22,6 @@ import sys
 #this needs to happen immediately (or thats what it seems)
 LOG_FN_ENV = 'LOG_FILE'
 LOG_FILE_DEF = os.path.join("conf", 'logging.ini')
-
-
 def setupLogging():
     logfn = os.getenv(LOG_FN_ENV)
     if(logfn == None):

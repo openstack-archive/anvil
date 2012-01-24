@@ -43,7 +43,7 @@ TRACE_VERSION = "TRACE_VERSION"
 TRACE_VER = 0x1
 
 
-class Trace():
+class Trace(object):
     def __init__(self, tracefn):
         self.tracefn = tracefn
 
@@ -57,7 +57,7 @@ class Trace():
         sh.append_file(self.tracefn, line)
 
 
-class TraceWriter():
+class TraceWriter(object):
     def __init__(self, root, name):
         self.tracer = None
         self.root = root
@@ -140,7 +140,7 @@ class TraceWriter():
         self.tracer.trace(AP_STARTED, json.dumps(data))
 
 
-class TraceReader():
+class TraceReader(object):
     def __init__(self, root, name):
         self.root = root
         self.name = name

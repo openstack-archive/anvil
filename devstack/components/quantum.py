@@ -23,49 +23,37 @@ LOG = logging.getLogger("devstack.components.quantum")
 TYPE = settings.QUANTUM
 
 
-class QuantumUninstaller(comp.UninstallComponent):
+class QuantumUninstaller(object):
     def __init__(self, *args, **kargs):
-        comp.UninstallComponent.__init__(self)
+        pass
 
     def unconfigure(self):
-        pass
+        raise NotImplementedError()
 
     def uninstall(self):
-        pass
+        raise NotImplementedError()
 
 
-class QuantumInstaller(comp.InstallComponent):
+class QuantumInstaller(object):
     def __init__(self, *args, **kargs):
-        comp.InstallComponent.__init__(self)
+        pass
 
     def download(self):
-        pass
+        raise NotImplementedError()
 
     def configure(self):
-        pass
+        raise NotImplementedError()
 
     def pre_install(self):
-        pass
+        raise NotImplementedError()
 
     def install(self):
-        pass
+        raise NotImplementedError()
 
     def post_install(self):
-        pass
+        raise NotImplementedError()
 
 
-class QuantumRuntime(comp.RuntimeComponent):
+class QuantumRuntime(comp.NullRuntime):
     def __init__(self, *args, **kargs):
-        comp.RuntimeComponent.__init__(self)
-
-    def start(self):
-        pass
-
-    def stop(self):
-        pass
-
-    def status(self):
-        pass
-
-    def restart(self):
-        pass
+        comp.NullRuntime.__init__(self, TYPE, *args, **kargs)

@@ -65,14 +65,6 @@ def execute_template(*cmds, **kargs):
     return cmd_results
 
 
-def component_paths(root, component_name):
-    component_root = sh.joinpths(root, component_name)
-    tracedir = sh.joinpths(component_root, settings.COMPONENT_TRACE_DIR)
-    appdir = sh.joinpths(component_root, settings.COMPONENT_APP_DIR)
-    cfgdir = sh.joinpths(component_root, settings.COMPONENT_CONFIG_DIR)
-    return (component_root, tracedir, appdir, cfgdir)
-
-
 def load_json(fn):
     data = sh.load_file(fn)
     lines = data.splitlines()
@@ -272,16 +264,15 @@ def welcome(ident):
         lower += " "
     lower += ver_str
     lower += "|"
-    welcome_ = _get_welcome_stack()
-    welcome_ = welcome_.strip("\n\r")
-    max_line_len = len(max(welcome_.splitlines(), key=len))
-    lower_out = colored(settings.PROG_NICE_NAME, 'green') + \
+    welcome_header = _get_welcome_stack().strip("\n\r")
+    max_line_len = len(max(welcome_header.splitlines(), key=len))
+    footer = colored(settings.PROG_NICE_NAME, 'green') + \
                 ": " + colored(lower, 'blue')
-    uncolored_lower = (settings.PROG_NICE_NAME + ": " + lower)
-    if(max_line_len - len(uncolored_lower) > 0):
+    uncolored_footer = (settings.PROG_NICE_NAME + ": " + lower)
+    if(max_line_len - len(uncolored_footer) > 0):
         #this format string wil center the uncolored text which
         #we will then replace
         #with the color text equivalent
-        centered_str = '{0:{fill}{align}{size}}'.format(uncolored_lower, fill=" ", align="^", size=max_line_len)
-        lower_out = centered_str.replace(uncolored_lower, lower_out)
-    print((welcome_ + os.linesep + lower_out))
+        centered_str = '{0:{fill}{align}{size}}'.format(uncolored_footer, fill=" ", align="^", size=max_line_len)
+        footer = centered_str.replace(uncolored_footer, footer)
+    print((welcome_header + os.linesep + footer))

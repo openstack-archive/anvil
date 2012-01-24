@@ -24,49 +24,37 @@ LOG = logging.getLogger("devstack.components.swift")
 TYPE = settings.SWIFT
 
 
-class SwiftUninstaller(comp.UninstallComponent):
+class SwiftUninstaller(object):
     def __init__(self, *args, **kargs):
-        comp.UninstallComponent.__init__(self)
+        pass
 
     def unconfigure(self):
-        pass
+        raise NotImplementedError()
 
     def uninstall(self):
-        pass
+        raise NotImplementedError()
 
 
-class SwiftInstaller(comp.InstallComponent):
+class SwiftInstaller(object):
     def __init__(self, *args, **kargs):
-        comp.InstallComponent.__init__(self)
+        pass
 
     def download(self):
-        pass
+        raise NotImplementedError()
 
     def configure(self):
-        pass
+        raise NotImplementedError()
 
     def pre_install(self):
-        pass
+        raise NotImplementedError()
 
     def install(self):
-        pass
+        raise NotImplementedError()
 
     def post_install(self):
-        pass
+        raise NotImplementedError()
 
 
-class SwiftRuntime(comp.RuntimeComponent):
+class SwiftRuntime(comp.NullRuntime):
     def __init__(self, *args, **kargs):
-        comp.RuntimeComponent.__init__(self)
-
-    def start(self):
-        pass
-
-    def stop(self):
-        pass
-
-    def status(self):
-        pass
-
-    def restart(self):
-        pass
+        comp.NullRuntime.__init__(self, TYPE, *args, **kargs)

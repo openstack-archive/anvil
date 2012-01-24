@@ -32,84 +32,24 @@ PY_INSTALL = ['python', 'setup.py', 'develop']
 PY_UNINSTALL = ['python', 'setup.py', 'develop', '--uninstall']
 
 
-#
-#the following are just interfaces...
-#
-
-class InstallComponent():
-    def __init__(self):
-        pass
-
-    def download(self):
-        raise NotImplementedError()
-
-    def configure(self):
-        raise NotImplementedError()
-
-    def pre_install(self):
-        raise NotImplementedError()
-
-    def install(self):
-        raise NotImplementedError()
-
-    def post_install(self):
-        raise NotImplementedError()
-
-
-class UninstallComponent():
-    def __init__(self):
-        pass
-
-    def unconfigure(self):
-        raise NotImplementedError()
-
-    def uninstall(self):
-        raise NotImplementedError()
-
-
-class RuntimeComponent():
-    def __init__(self):
-        pass
-
-    def stop(self):
-        raise NotImplementedError()
-
-    def status(self):
-        raise NotImplementedError()
-
-    def restart(self):
-        raise NotImplementedError()
-
-    def pre_start(self):
-        pass
-
-    def start(self):
-        raise NotImplementedError()
-
-    def post_start(self):
-        pass
-
-
-# useful impls
-
-
-class ComponentBase():
+class ComponentBase(object):
     def __init__(self, component_name, **kargs):
         self.cfg = kargs.get("cfg")
         self.packager = kargs.get("pkg")
         self.distro = kargs.get("distro")
         self.root = kargs.get("root")
         self.all_components = set(kargs.get("components", []))
-        (self.componentroot, self.tracedir,
-            self.appdir, self.cfgdir) = utils.component_paths(self.root, component_name)
+        self.componentroot = sh.joinpths(self.root, component_name)
+        self.tracedir = sh.joinpths(self.componentroot, settings.COMPONENT_TRACE_DIR)
+        self.appdir = sh.joinpths(self.componentroot, settings.COMPONENT_APP_DIR)
+        self.cfgdir = sh.joinpths(self.componentroot, settings.COMPONENT_CONFIG_DIR)
         self.component_name = component_name
         self.component_opts = kargs.get('component_opts', [])
 
 
-class PkgInstallComponent(ComponentBase, InstallComponent):
+class PkgInstallComponent(ComponentBase):
     def __init__(self, component_name, *args, **kargs):
         ComponentBase.__init__(self, component_name, *args, **kargs)
-        InstallComponent.__init__(self)
         self.tracewriter = tr.TraceWriter(self.tracedir, tr.IN_TRACE)
 
     def _get_download_locations(self):
@@ -136,7 +76,7 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
             am_downloaded += 1
         return am_downloaded
 
-    def _get_param_map(self, _):
+    def _get_param_map(self, config_fn):
         return None
 
     # Note that there's no underscore on this method because it's two levels
@@ -175,14 +115,14 @@ class PkgInstallComponent(ComponentBase, InstallComponent):
     def _get_config_files(self):
         return list()
 
-    def _config_adjust(self, contents, _):
+    def _config_adjust(self, contents, config_fn):
         return contents
 
-    def _get_target_config_name(self, name):
-        return sh.joinpths(self.cfgdir, name)
+    def _get_target_config_name(self, config_fn):
+        return sh.joinpths(self.cfgdir, config_fn)
 
-    def _get_source_config_name(self, name):
-        return sh.joinpths(settings.STACK_CONFIG_DIR, self.component_name, name)
+    def _get_source_config_name(self, config_fn):
+        return sh.joinpths(settings.STACK_CONFIG_DIR, self.component_name, config_fn)
 
     def _configure_files(self):
         configs = self._get_config_files()
@@ -251,7 +191,11 @@ class PythonInstallComponent(PkgInstallComponent):
         #setup any python directories
         pydirs = self._get_python_directories()
         if(len(pydirs)):
-            LOG.info("Setting up %s python directories (%s)" % (len(pydirs), ", ".join(pydirs)))
+            actual_dirs = list()
+            for pydir_info in pydirs:
+                working_dir = pydir_info.get('work_dir', self.appdir)
+                actual_dirs.append(working_dir)
+            LOG.info("Setting up %s python directories (%s)" % (len(pydirs), ", ".join(actual_dirs)))
             self.tracewriter.make_dir(self.tracedir)
             for pydir_info in pydirs:
                 name = pydir_info.get("name")
@@ -275,10 +219,9 @@ class PythonInstallComponent(PkgInstallComponent):
         return parent_result
 
 
-class PkgUninstallComponent(ComponentBase, UninstallComponent):
+class PkgUninstallComponent(ComponentBase):
     def __init__(self, component_name, *args, **kargs):
         ComponentBase.__init__(self, component_name, *args, **kargs)
-        UninstallComponent.__init__(self)
         self.tracereader = tr.TraceReader(self.tracedir, tr.IN_TRACE)
 
     def unconfigure(self):
@@ -346,7 +289,7 @@ class PythonUninstallComponent(PkgUninstallComponent):
                 sh.execute(*PY_UNINSTALL, cwd=where, run_as_root=True)
 
 
-class ProgramRuntime(ComponentBase, RuntimeComponent):
+class ProgramRuntime(ComponentBase):
     #this here determines how we start and stop and
     #what classes handle different running/stopping types
     STARTER_CLS_MAPPING = {
@@ -360,7 +303,6 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
 
     def __init__(self, component_name, *args, **kargs):
         ComponentBase.__init__(self, component_name, *args, **kargs)
-        RuntimeComponent.__init__(self)
         self.run_type = kargs.get("run_type", fork.RUN_TYPE)
         self.tracereader = tr.TraceReader(self.tracedir, tr.IN_TRACE)
         self.tracewriter = tr.TraceWriter(self.tracedir, tr.START_TRACE)
@@ -387,10 +329,10 @@ class ProgramRuntime(ComponentBase, RuntimeComponent):
     def _get_apps_to_start(self):
         return list()
 
-    def _get_app_options(self, _):
+    def _get_app_options(self, app_name):
         return list()
 
-    def _get_param_map(self, _):
+    def _get_param_map(self, app_name):
         return {
             'ROOT': self.appdir,
         }
@@ -504,10 +446,9 @@ class PythonRuntime(ProgramRuntime):
             return True
 
 
-class NullRuntime(ComponentBase, RuntimeComponent):
+class NullRuntime(ComponentBase):
     def __init__(self, component_name, *args, **kargs):
         ComponentBase.__init__(self, component_name, *args, **kargs)
-        RuntimeComponent.__init__(self)
 
     def pre_start(self):
         pass

@@ -18,9 +18,16 @@ from devstack import packager as pack
 from devstack import shell as sh
 
 LOG = logging.getLogger("devstack.packaging.yum")
+
+#root yum command
 YUM_CMD = ['yum']
-YUM_INSTALL = ["install", "-y"]
-YUM_REMOVE = ['erase', '-y']
+
+#tolerant is enabled since we might already have it installed/erased
+YUM_INSTALL = ["install", "-y", "-t"]
+YUM_REMOVE = ['erase', '-y', "-t"]
+
+#yum separates its pkg names and versions with a dash
+VERSION_TEMPL = "%s-%s"
 
 
 class YumPackager(pack.Packager):
@@ -28,10 +35,10 @@ class YumPackager(pack.Packager):
         pack.Packager.__init__(self, distro)
 
     def _format_pkg_name(self, name, version):
-        cmd = name
         if(version != None and len(version)):
-            cmd = cmd + "-" + version
-        return cmd
+            return VERSION_TEMPL % (name, version)
+        else:
+            return name
 
     def _execute_yum(self, cmd, **kargs):
         return sh.execute(*cmd, run_as_root=True,

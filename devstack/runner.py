@@ -16,14 +16,14 @@
 
 """
 An abstraction that allows different methods
-of starting and stopping python applications
+of starting and stopping applications
 """
 
-#trace actions shared
+#this is shared
 RUN_TYPE = "RUN"
 
 
-class Runner():
+class Runner(object):
     def __init__(self):
         pass
 

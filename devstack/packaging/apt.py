@@ -36,7 +36,7 @@ APT_DO_REMOVE = APT_PURGE
 #make sure its non-interactive
 ENV_ADDITIONS = {'DEBIAN_FRONTEND': 'noninteractive'}
 
-#how versions are expressed by apt
+#apt separates its pkg names and versions with a equal sign
 VERSION_TEMPL = "%s=%s"
 
 

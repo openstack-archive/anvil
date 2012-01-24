@@ -20,7 +20,7 @@ from devstack import utils
 LOG = logging.getLogger("devstack.packager")
 
 
-class Packager():
+class Packager(object):
     def __init__(self, distro):
         self.distro = distro
 
