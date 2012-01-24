@@ -20,6 +20,7 @@ from devstack import utils
 LOG = logging.getLogger("devstack.progs.deps")
 PROG_NAME = "DEPENDENCY LIST"
 
+
 def log_deps(components):
     shown = set()
     left_show = list(components)

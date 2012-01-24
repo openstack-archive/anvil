@@ -14,16 +14,12 @@
 #    under the License.
 
 import logging
-import logging.config
 import os
 import sys
 
 #requires http://pypi.python.org/pypi/termcolor
 #but the colors make it worth it :-)
 from termcolor import colored
-
-LOG_FN_ENV = 'LOG_FILE'
-LOG_FILE_DEF = os.path.join("conf", 'logging.ini')
 
 
 class TermFormatter(logging.Formatter):
@@ -63,13 +59,6 @@ class TermHandler(logging.Handler):
             TermHandler.STREAM.write(msg + TermHandler.NL)
             if(TermHandler.DO_FLUSH):
                 TermHandler.STREAM.flush()
-
-
-def setup():
-    logfn = os.getenv(LOG_FN_ENV)
-    if(logfn == None):
-        logfn = LOG_FILE_DEF
-    logging.config.fileConfig(logfn)
 
 
 def getLogger(name):

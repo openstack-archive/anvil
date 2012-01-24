@@ -33,6 +33,7 @@ CONFIG_DIR = "config"
 DB_NAME = "keystone"
 CFG_SECTION = 'DEFAULT'
 MANAGE_JSON_CONF = 'keystone-manage-cmds.json'
+MANAGER_NAME = 'keystone-manage'
 
 #what to start
 APP_OPTIONS = {
@@ -40,7 +41,7 @@ APP_OPTIONS = {
 }
 
 #how we invoke the manage command
-KEYSTONE_MNG_CMD = ["%BIN_DIR%/keystone-manage", '--config-file=%CONFIG_FILE%']
+KEYSTONE_MNG_CMD = [sh.joinpths("%BIN_DIR%", MANAGER_NAME), '--config-file=%CONFIG_FILE%']
 
 
 class KeystoneUninstaller(comp.PythonUninstallComponent):
@@ -105,13 +106,13 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         endpoint_cmds = cmd_map.get('endpoints', list())
         base_cmds.extend(endpoint_cmds)
 
-        if(settings.GLANCE in self.all_components):
+        if(settings.GLANCE in self.instances):
             glance_cmds = cmd_map.get('glance', list())
             base_cmds.extend(glance_cmds)
-        if(settings.NOVA in self.all_components):
+        if(settings.NOVA in self.instances):
             nova_cmds = cmd_map.get('nova', list())
             base_cmds.extend(nova_cmds)
-        if(settings.SWIFT in self.all_components):
+        if(settings.SWIFT in self.instances):
             swift_cmds = cmd_map.get('swift', list())
             base_cmds.extend(swift_cmds)
 
@@ -119,10 +120,13 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         #now we fill in the actual application that will run it
         full_cmds = list()
         for cmd in base_cmds:
-            actual_cmd = KEYSTONE_MNG_CMD + cmd
-            full_cmds.append({
-                'cmd': actual_cmd,
-            })
+            if(cmd):
+                actual_cmd = KEYSTONE_MNG_CMD + cmd
+                full_cmds.append({
+                    'cmd': actual_cmd,
+                })
+
+        LOG.info("Running (%s) %s commands to setup keystone." % (len(full_cmds), MANAGER_NAME))
 
         if(len(full_cmds)):
             #execute as templates with replacements coming from the given map

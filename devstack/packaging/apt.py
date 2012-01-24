@@ -36,7 +36,7 @@ APT_DO_REMOVE = APT_PURGE
 #make sure its non-interactive
 ENV_ADDITIONS = {'DEBIAN_FRONTEND': 'noninteractive'}
 
-#how versions are expressed by apt
+#apt separates its pkg names and versions with a equal sign
 VERSION_TEMPL = "%s=%s"
 
 
@@ -55,7 +55,7 @@ class AptPackager(pack.Packager):
         return cmd
 
     def _execute_apt(self, cmd, **kargs):
-        sh.execute(*cmd, run_as_root=True,
+        return sh.execute(*cmd, run_as_root=True,
             check_exit_code=True,
             env_overrides=ENV_ADDITIONS,
             **kargs)
@@ -64,25 +64,26 @@ class AptPackager(pack.Packager):
         pkgnames = sorted(pkgs.keys())
         #form the needed commands
         cmds = []
-        am_removed = 0
+        which_removed = []
         for name in pkgnames:
             info = pkgs.get(name) or {}
             removable = info.get('removable', True)
             if(not removable):
                 continue
             if(self._pkg_remove_special(name, info)):
-                am_removed += 1
+                which_removed.append(name)
                 continue
             pkg_full = self._format_pkg(name, info.get("version"))
-            cmds.append(pkg_full)
-            am_removed += 1
+            if(pkg_full):
+                cmds.append(pkg_full)
+                which_removed.append(name)
         if(len(cmds)):
             cmd = APT_GET + APT_DO_REMOVE + cmds
             self._execute_apt(cmd)
         #clean them out
         cmd = APT_GET + APT_AUTOREMOVE
         self._execute_apt(cmd)
-        return am_removed
+        return which_removed
 
     def install_batch(self, pkgs):
         pkgnames = sorted(pkgs.keys())

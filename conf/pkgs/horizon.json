@@ -1,6 +1,8 @@
 # This is a extended json package definition file 
 # We allow simple comments (lines starting with a hash symbol)
 {
+    # This is currently our "master" repo set with versions
+    # that we are trying to align other distributions with.
     "ubuntu-oneiric": {
         "apache2": {
             "version": "2.2.20-1ubuntu1.1",
@@ -14,7 +16,8 @@
         },
         "python-dateutil": {
             "version": "1.4.1-4",
-            "allowed": ">="
+            "allowed": ">=",
+            "removable": true
         },
         "python-paste": {
             "version": "1.7.5.1-4ubuntu1",
@@ -23,11 +26,6 @@
         },
         "python-pastedeploy": {
             "version": "1.5.0-2",
-            "allowed": ">=",
-            "removable": true
-        },
-        "python-anyjson": {
-            "version": "0.3.1-1",
             "allowed": ">=",
             "removable": true
         },
@@ -61,18 +59,8 @@
             "allowed": ">=",
             "removable": true
         },
-        "python-nose": {
-            "version": "1.0.0-1ubuntu1",
-            "allowed": ">=",
-            "removable": true
-        },
         "python-sphinx": {
             "version": "1.0.7+dfsg-1",
-            "allowed": ">=",
-            "removable": true
-        },
-        "python-mox": {
-            "version": "0.5.3-1ubuntu4",
             "allowed": ">=",
             "removable": true
         },
@@ -91,6 +79,7 @@
             "allowed": ">=",
             "removable": true
         },
+        # Is this really needed?
         "python-django-nose": {
             "version": "0.1.2-2",
             "allowed": ">=",
@@ -101,6 +90,8 @@
             "allowed": ">=",
             "removable": true
         },
+        # Is this really needed?
+        # Why is a rackspace api package here?
         "python-cloudfiles": {
             "version": "1.7.9.2-0ubuntu1",
             "allowed": ">=",
@@ -112,5 +103,145 @@
             "removable": true
         }
     },
-    "rhel-6": {}
+    "rhel-6": {
+        # Unless otherwise noted the versions may be slightly
+        # different, but for common utilities this should not be a critical
+        # issue unless determined otherwise.
+        #
+        # If a package requires EPEL repo please follow instructions
+        # at http://fedoraproject.org/wiki/EPEL to ensure the repo is in /etc/yum.repos.d/
+        #
+        # This is apache for rhel
+        "httpd": {
+            "version": "2.2.15-9.el6",
+            "allowed": ">=",
+            "removable": true
+        },
+        "mod_wsgi": {
+            # This version is behind by 1 whole version
+            # This might not be ok?
+            "version": "3.2-1.el6",
+            "allowed": ">=",
+            "removable": true
+        },
+        "python-dateutil": {
+            "version": "1.4.1-6.el6",
+            "allowed": ">=",
+            # TBD hopefully this doesn't affect the base system
+            # Does yum use this?
+            "removable": false
+        },
+        "python-paste": {
+            # This version is slightly behind.
+            # This might not be ok?
+            "version": "1.7.4-1.el6",
+            "allowed": ">=",
+            "removable": true
+        },
+        "python-paste-deploy": {
+            # This version is behind by alot. We might need to repackage it.
+            "version": "1.3.3-2.1.el6",
+            "allowed": ">=",
+            "removable": true
+        },
+        "python-routes": {
+            # This version might not be ok?
+            # Grid dynamics repo lists 1.12.3-2.el6 (we might need to also)
+            "version": "1.10.3-2.el6",
+            "allowed": ">=",
+            "removable": true
+        },
+        # Requires EPEL repo
+        "python-xattr": {
+            # This version is behind by alot. We might need to repackage it.
+            "version": "0.5.0-1.el6",
+            "allowed": ">=",
+            "removable": true
+        },
+        "python-sqlalchemy": {
+            # This version is behind by alot. We might need to repackage it.
+            # Grid dynamics repo lists 0.6.4-2.el6 (we might need to also)
+            "version": "0.5.5-2.1.el6",
+            "allowed": ">=",
+            "removable": true
+        },
+        "python-webob": {
+            # This version is behind by alot. We might need to repackage it.
+            # Grid dynamics repo lists 1.0.8-1.el6 (we might need to also)
+            "version": "0.9.6.1-3.el6",
+            "allowed": ">=",
+            "removable": true
+        },
+        # Requires EPEL repo
+        "python-kombu": {
+            # This version is ahead of ubuntu.
+            # That might not be ok?
+            "version": "1.1.3-1.el6",
+            "allowed": ">=",
+            "removable": true
+        },
+        # Requires EPEL repo
+        "python-eventlet": {
+            "version": "0.9.16-3.el6",
+            "allowed": ">=",
+            "removable": true
+        },
+        # Requires EPEL repo
+        "python-sphinx": {
+            # This version is ahead of ubuntu.
+            "version": "1.0.8-1.el6",
+            "allowed": ">=",
+            "removable": true
+        },
+        # Does not seem to exist yet.
+        #
+        # EPEL has python-cherrypy2 but this probably won't work?
+        #"python-cherrypy3": {
+        #    "version": "3.1.2-1",
+        #    "allowed": ">=",
+        #    "removable": true
+        #},
+        "Django": {
+            # This version is behind by alot. We might need to repackage it.
+            # Grid dynamics repo lists 1.3-2 (we might need to also)
+            "version": "1.2.7-1.el6",
+            "allowed": ">=",
+            "removable": true
+        },
+        # This does not seem to exist.
+        # Grid dynamics repo lists django-mailer-0.1.0-1.8
+        #"python-django-mailer": {
+        #    "version": "???",
+        #    "allowed": ">=",
+        #    "removable": true
+        #},
+        #
+        # This does not seem to exist.
+        # Grid dynamics repo lists django-nose-0.1.2.
+        #"python-django-nose": {
+        #    "version": "???",
+        #    "allowed": ">=",
+        #    "removable": true
+        #},
+        # Requires EPEL repo
+        "django-registration": {
+            "version": "0.7-2.el6",
+            "allowed": ">=",
+            "removable": true
+        },
+        # Is this really needed?
+        # Requires EPEL repo
+        "python-cloudfiles": {
+            "version": "1.7.9.1-1.el6",
+            "allowed": ">=",
+            "removable": true
+        },
+        # Requires EPEL repo
+        "python-migrate": {
+            # This version is behind by alot. We might need to repackage it.
+            "version": "0.6-6.el6",
+            "allowed": ">=",
+            "removable": true
+        }
+    }
 }

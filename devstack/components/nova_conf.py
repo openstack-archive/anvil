@@ -12,7 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
@@ -37,9 +36,9 @@ QUANTUM_OPENSWITCH_OPS = [
 
 
 class NovaConfigurator():
-    def __init__(self, cfg, active_components):
+    def __init__(self, cfg, instances):
         self.cfg = cfg
-        self.active_components = active_components
+        self.instances = instances
 
     def _getbool(self, name):
         return self.cfg.getboolean('nova', name)
@@ -78,7 +77,7 @@ class NovaConfigurator():
         #whats the network fixed range?
         nova_conf.add('fixed_range', self._getstr('fixed_range'))
 
-        if(settings.QUANTUM in self.active_components):
+        if(settings.QUANTUM in self.instances):
             #setup quantum config
             nova_conf.add('network_manager', QUANTUM_MANAGER)
             nova_conf.add('quantum_connection_host', self.cfg.get('quantum', 'q_host'))
@@ -119,11 +118,11 @@ class NovaConfigurator():
                                 self._getstr('instance_name_postfix'))
         nova_conf.add('instance_name_template', instance_template)
 
-        if(settings.OPENSTACK_X in self.active_components):
+        if(settings.OPENSTACK_X in self.instances):
             nova_conf.add('osapi_compute_extension', 'nova.api.openstack.compute.contrib.standard_extensions')
             nova_conf.add('osapi_compute_extension', 'extensions.admin.Admin')
 
-        if(settings.NOVNC in self.active_components):
+        if(settings.NOVNC in self.instances):
             vncproxy_url = self._getstr('vncproxy_url')
             if (not vncproxy_url):
                 vncproxy_url = 'http://' + hostip + ':6080/vnc_auto.html'

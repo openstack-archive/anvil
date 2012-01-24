@@ -52,9 +52,12 @@ DB = "db"
 RABBIT = "rabbit"
 OPENSTACK_X = 'openstack-x'
 NOVNC = 'novnc'
+
 # NCPU and NVOL are here as possible subcomponents of nova
+# Thus they are not in the component name map or priority or dep list...
 NCPU = "cpu"
 NVOL = "vol"
+
 COMPONENT_NAMES = [
     NOVA, NOVA_CLIENT,
     GLANCE,
@@ -95,6 +98,7 @@ COMPONENT_DEPENDENCIES = {
     KEYSTONE: [DB],
     NOVA: [KEYSTONE, GLANCE, DB, RABBIT, NOVA_CLIENT],
     SWIFT: [],
+    NOVA_CLIENT: [],
     HORIZON: [KEYSTONE_CLIENT, GLANCE, NOVA_CLIENT, OPENSTACK_X],
     QUANTUM: [],
     NOVNC: [],

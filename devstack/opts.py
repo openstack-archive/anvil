@@ -18,7 +18,6 @@ from optparse import OptionParser, OptionGroup
 
 from devstack import log as logging
 from devstack import settings
-from devstack import utils
 from devstack import version
 
 HELP_WIDTH = 80

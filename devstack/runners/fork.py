@@ -22,7 +22,6 @@ import time
 
 from devstack import exceptions as excp
 from devstack import log as logging
-from devstack import runner
 from devstack import shell as sh
 from devstack import trace as tr
 
@@ -34,7 +33,7 @@ SLEEP_TIME = 1
 LOG = logging.getLogger("devstack.runners.fork")
 
 #trace constants
-RUN = runner.RUN_TYPE
+TYPE = "TYPE"
 RUN_TYPE = "FORK"
 PID_FN = "PID_FN"
 STDOUT_FN = "STDOUT_FN"
@@ -43,9 +42,9 @@ NAME = "NAME"
 FORK_TEMPL = "%s.fork"
 
 
-class ForkRunner(runner.Runner):
+class ForkRunner(object):
     def __init__(self):
-        runner.Runner.__init__(self)
+        pass
 
     def _stop_pid(self, pid):
         killed = False
@@ -159,7 +158,7 @@ class ForkRunner(runner.Runner):
         (pidfile, stderrfn, stdoutfn) = self._form_file_names(tracedir, fn_name)
         tracefn = tr.touch_trace(tracedir, fn_name)
         runtrace = tr.Trace(tracefn)
-        runtrace.trace(RUN, RUN_TYPE)
+        runtrace.trace(TYPE, RUN_TYPE)
         runtrace.trace(PID_FN, pidfile)
         runtrace.trace(STDERR_FN, stderrfn)
         runtrace.trace(STDOUT_FN, stdoutfn)

@@ -60,14 +60,14 @@ class HorizonInstaller(comp.PythonInstallComponent):
         })
         return places
 
-    def _get_target_config_name(self, config_name):
+    def get_target_config_name(self, config_name):
         if(config_name == HORIZON_PY_CONF):
             return sh.joinpths(self.dash_dir, *HORIZON_PY_CONF_TGT)
         elif(config_name == HORIZON_APACHE_CONF):
             #this may require sudo of the whole program to be able to write here.
             return sh.joinpths(*HORIZON_APACHE_TGT)
         else:
-            return comp.PythonInstallComponent._get_target_config_name(self, config_name)
+            return comp.PythonInstallComponent.get_target_config_name(self, config_name)
 
     def _get_python_directories(self):
         py_dirs = list()
@@ -100,7 +100,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         #Horizon currently imports quantum even if you aren't using it.
         #Instead of installing quantum we can create a simple module
         #that will pass the initial imports.
-        if(settings.QUANTUM in self.all_components):
+        if(settings.QUANTUM in self.instances):
             return
         else:
             #Make the fake quantum
@@ -132,7 +132,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
             mp['HORIZON_DIR'] = self.appdir
         else:
             #Enable quantum in dashboard, if requested
-            mp['QUANTUM_ENABLED'] = "%s" % (settings.QUANTUM in self.all_components)
+            mp['QUANTUM_ENABLED'] = "%s" % (settings.QUANTUM in self.instances)
             mp['OPENSTACK_HOST'] = self.cfg.get('host', 'ip')
         return mp
 

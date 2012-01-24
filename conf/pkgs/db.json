@@ -1,6 +1,8 @@
 # This is a extended json package definition file 
 # We allow simple comments (lines starting with a hash symbol)
 {
+    # This is currently our "master" repo set with versions
+    # that we are trying to align other distributions with.
     "ubuntu-oneiric": {
         "mysql-client-5.1": {
             "version": "5.1.58-1ubuntu1",
@@ -38,6 +40,16 @@
         }
     },
     "rhel-6": {
+        # Unless otherwise noted the versions may be slightly
+        # different, but for common utilities this should not be a critical
+        # issue unless determined otherwise.
+        #
+        # If a package requires EPEL repo please follow instructions
+        # at http://fedoraproject.org/wiki/EPEL to ensure the repo is in /etc/yum.repos.d/
+        #
+        # RHEL has a slightly different naming convention here
+        # and a different way of setting up the initial password.
+        # It also seems like ubuntu names the service mysql while RHEL names it mysqld (TODO fix this in code)
         "mysql": {
             "version": "5.1.52-1.el6_0.1",
             "allowed": ">=",
