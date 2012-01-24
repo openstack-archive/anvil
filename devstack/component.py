@@ -231,7 +231,7 @@ class PythonInstallComponent(PkgInstallComponent):
         #install any need pip items
         pips = utils.get_pip_list(self.distro, self.component_name)
         if(len(pips)):
-            LOG.info("Setting up %s pips" % (len(pips)))
+            LOG.info("Setting up %s pips (%s)" % (len(pips), ", ".join(pips.keys())))
             pip.install(pips)
             for name in pips.keys():
                 self.tracewriter.pip_install(name, pips.get(name))
@@ -251,7 +251,7 @@ class PythonInstallComponent(PkgInstallComponent):
         #setup any python directories
         pydirs = self._get_python_directories()
         if(len(pydirs)):
-            LOG.info("Setting up %s python directories" % (len(pydirs)))
+            LOG.info("Setting up %s python directories (%s)" % (len(pydirs), ", ".join(pydirs)))
             self.tracewriter.make_dir(self.tracedir)
             for pydir_info in pydirs:
                 name = pydir_info.get("name")
@@ -300,9 +300,9 @@ class PkgUninstallComponent(ComponentBase, UninstallComponent):
     def _uninstall_pkgs(self):
         pkgsfull = self.tracereader.packages_installed()
         if(len(pkgsfull)):
-            LOG.info("Potentially removing %s packages (%s)" % (len(pkgsfull), ", ".join(pkgsfull)))
-            am_removed = self.packager.remove_batch(pkgsfull)
-            LOG.info("Actually removed %s packages" % (am_removed))
+            LOG.info("Potentially removing %s packages (%s)" % (len(pkgsfull), ", ".join(sorted(pkgsfull.keys()))))
+            which_removed = self.packager.remove_batch(pkgsfull)
+            LOG.info("Actually removed %s packages (%s)" % (len(which_removed), ", ".join(sorted(which_removed))))
 
     def _uninstall_touched_files(self):
         filestouched = self.tracereader.files_touched()

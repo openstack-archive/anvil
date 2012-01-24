@@ -33,6 +33,7 @@ CONFIG_DIR = "config"
 DB_NAME = "keystone"
 CFG_SECTION = 'DEFAULT'
 MANAGE_JSON_CONF = 'keystone-manage-cmds.json'
+MANAGER_NAME = 'keystone-manage'
 
 #what to start
 APP_OPTIONS = {
@@ -40,7 +41,7 @@ APP_OPTIONS = {
 }
 
 #how we invoke the manage command
-KEYSTONE_MNG_CMD = ["%BIN_DIR%/keystone-manage", '--config-file=%CONFIG_FILE%']
+KEYSTONE_MNG_CMD = [sh.joinpths("%BIN_DIR%", MANAGER_NAME), '--config-file=%CONFIG_FILE%']
 
 
 class KeystoneUninstaller(comp.PythonUninstallComponent):
@@ -119,10 +120,13 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         #now we fill in the actual application that will run it
         full_cmds = list()
         for cmd in base_cmds:
-            actual_cmd = KEYSTONE_MNG_CMD + cmd
-            full_cmds.append({
-                'cmd': actual_cmd,
-            })
+            if(cmd):
+                actual_cmd = KEYSTONE_MNG_CMD + cmd
+                full_cmds.append({
+                    'cmd': actual_cmd,
+                })
+
+        LOG.info("Running (%s) %s commands to setup keystone." % (len(full_cmds), MANAGER_NAME))
 
         if(len(full_cmds)):
             #execute as templates with replacements coming from the given map
