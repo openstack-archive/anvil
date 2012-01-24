@@ -23,6 +23,9 @@ from devstack import utils
 LOG = logging.getLogger("install.screen")
 
 SCREEN_MAKE = ['screen', '-d', '-m', '-S', '%NAME%', '-t', '%NAME%']
+LIST_CMD = ['screen', '-list']
+KILL_CMD = ['screen', '-r', "%ENTRY%", '-X', 'kill']
+QUIT_CMD = ['screen', '-r', "%ENTRY%", '-X', 'kill']
 NAME_POSTFIX = ".devstack"
 RUN_TYPE = "SCREEN"
 TYPE = "TYPE"
@@ -34,8 +37,7 @@ class ScreenRunner(object):
 
     def stop(self, name, *args, **kargs):
         real_name = name + NAME_POSTFIX
-        list_cmd = ['screen', '-list']
-        (sysout, _) = sh.execute(*list_cmd)
+        (sysout, _) = sh.execute(*LIST_CMD)
         lines = sysout.splitlines()
         entries = list()
         lookfor = r"^(\d+\." + re.escape(real_name) + r")\s+(.*)$"
@@ -49,11 +51,13 @@ class ScreenRunner(object):
             kill_entry = mtch.group(1)
             entries.append(kill_entry)
         for entry in entries:
-            kill_cmd = ['screen', '-r', entry, '-X', 'kill']
-            sh.execute(*kill_cmd)
+            params = dict()
+            params['ENTRY'] = entry
+            kill_cmd = [{'cmd':KILL_CMD}]
+            utils.execute_template(*kill_cmd, params=params, **kargs)
             time.sleep(2)
-            quit_cmd = ['screen', '-r', entry, '-X', 'quit']
-            sh.execute(*quit_cmd)
+            quit_cmd = [{'cmd':QUIT_CMD}]
+            utils.execute_template(*kill_cmd, params=params, **kargs)
 
     def start(self, name, program, *args, **kargs):
         app_dir = kargs.get('app_dir')
