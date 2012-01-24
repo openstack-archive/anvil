@@ -55,7 +55,7 @@ class AptPackager(pack.Packager):
         return cmd
 
     def _execute_apt(self, cmd, **kargs):
-        sh.execute(*cmd, run_as_root=True,
+        return sh.execute(*cmd, run_as_root=True,
             check_exit_code=True,
             env_overrides=ENV_ADDITIONS,
             **kargs)
