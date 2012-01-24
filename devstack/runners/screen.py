@@ -17,19 +17,20 @@ import time
 import re
 
 from devstack import log as logging
-from devstack import runner
 from devstack import shell as sh
 from devstack import utils
 
 LOG = logging.getLogger("install.screen")
+
 SCREEN_MAKE = ['screen', '-d', '-m', '-S', '%NAME%', '-t', '%NAME%']
 NAME_POSTFIX = ".devstack"
 RUN_TYPE = "SCREEN"
+TYPE = "TYPE"
 
 
-class ScreenRunner(runner.Runner):
+class ScreenRunner(object):
     def __init__(self):
-        runner.Runner.__init__(self)
+        pass
 
     def stop(self, name, *args, **kargs):
         real_name = name + NAME_POSTFIX

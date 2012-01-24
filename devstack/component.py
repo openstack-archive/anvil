@@ -17,7 +17,6 @@ from devstack import downloader as down
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import pip
-from devstack import runner
 from devstack import settings
 from devstack import shell as sh
 from devstack import trace as tr
@@ -404,18 +403,23 @@ class ProgramRuntime(ComponentBase):
             #figure out which class will stop it
             contents = tr.parse_fn(fn)
             killcls = None
+            runtype = None
             for (cmd, action) in contents:
-                if(cmd == runner.RUN_TYPE):
-                    killcls = self._getstoppercls(action)
+                if(cmd == "TYPE"):
+                    runtype = action
+                    killcls = self._getstoppercls(runtype)
                     break
             #did we find a class that can do it?
             if(killcls):
                 #we can try to stop it
-                LOG.info("Stopping %s" % (name))
+                LOG.info("Stopping %s of run type %s" % (name, runtype))
                 #create an instance of the killer class and attempt to stop
                 killer = killcls()
                 killer.stop(name, trace_dir=self.tracedir)
                 killedam += 1
+            else:
+                #TODO raise error??
+                pass
         #if we got rid of them all get rid of the trace
         if(killedam == len(start_traces)):
             fn = self.starttracereader.trace_fn
