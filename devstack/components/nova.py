@@ -33,11 +33,11 @@ TYPE = settings.NOVA
 
 #what to start
 APP_OPTIONS = {
-    'nova-api': [],
-    settings.NCPU: [],
-    settings.NVOL: [],
-    'nova-network': [],
-    'nova-scheduler': []
+    'nova-api': ['--flagfile', '%CFGFILE%'],
+    settings.NCPU: ['--flagfile', '%CFGFILE%'],
+    settings.NVOL: ['--flagfile', '%CFGFILE%'],
+    'nova-network': ['--flagfile', '%CFGFILE%'],
+    'nova-scheduler': ['--flagfile', '%CFGFILE%']
 }
 
 POST_INSTALL_CMDS = [
@@ -151,6 +151,9 @@ class NovaInstaller(comp.PythonInstallComponent):
 class NovaRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
+        self.run_tokens = dict()
+        self.run_tokens['CFGFILE'] = self.cfgdir + os.sep + API_CONF
+        LOG.debug("Setting CFGFILE run_token to:%s" % (self.run_tokens['CFGFILE']))
 
     def _get_aps_to_start(self):
         # Check if component_opts was set to a subset of apps to be started
@@ -164,21 +167,31 @@ class NovaRuntime(comp.PythonRuntime):
                 LOG.error("sub items that we don't know about:%s" % delta)
             else:
                 apps = self.component_opts
+                LOG.debug("Using specified subcomponents:%s" % (apps))
         else:
             apps = APP_OPTIONS.keys()
+            LOG.debug("Using the keys from APP_OPTIONS:%s" % (apps))
 
         result = list()
         for app_name in apps:
             if app_name in APP_NAME_MAP:
                 app_name = APP_NAME_MAP.get(app_name)
+                LOG.debug("Renamed app_name to:" + app_name)
             list.append({
                 'name': app_name,
                 'path': sh.joinpths(self.appdir, BIN_DIR, app_name),
             })
+        LOG.debug("exiting _get_aps_to_start with:%s" % (result))
         return result
 
     def _get_app_options(self, app):
-        return APP_OPTIONS.get(app)
+        result = list()
+        for opt_str in APP_OPTIONS.get(app):
+            LOG.debug("Checking opt_str for tokens: %s" % (opt_str))
+            result.append(utils.param_replace(opt_str, self.run_tokens))
+
+        LOG.debug("_get_app_options returning with:%s" % (result))
+        return result
 
 
 # This class has the smarts to build the configuration file based on
