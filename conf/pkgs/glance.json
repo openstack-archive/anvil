@@ -63,7 +63,7 @@
         #
         # If a package requires EPEL repo please follow instructions
         # at http://fedoraproject.org/wiki/EPEL to ensure the repo is in /etc/yum.repos.d/
-        
+        #
         # Requires EPEL repo
         "python-eventlet": {
             "version": "0.9.16-3.el6",
@@ -103,7 +103,6 @@
             "allowed": ">=",
             "removable": true
         },
-        
         # This does not seem to exist yet.
         # It seemed to have been in RHEL5 though.
         # http://pkgs.org/centos-5-rhel-5/epel-i386/python-wsgiref-0.1.2-3.el5.noarch.rpm.html
@@ -114,7 +113,6 @@
         #     "allowed": ">=",
         #     "removable": false
         # },
-        
         # RHEL names this one differently. Why?
         "python-paste-deploy": {
             # This version is behind by alot. We might need to repackage it.

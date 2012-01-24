@@ -1,75 +1,156 @@
 # This is a extended json package definition file 
 # We allow simple comments (lines starting with a hash symbol)
 {
+    # This is currently our "master" repo set with versions
+    # that we are trying to align other distributions with.
     "ubuntu-oneiric": {
-        "curl": {
-            "version": "7.21.6-3ubuntu3",
-            "allowed": ">="
-        },
+        # Is this really needed?
         "gcc": {
             "version": "4:4.6.1-2ubuntu5",
-            "allowed": ">="
+            "allowed": ">=",
+            "removable": true
         },
+        # This may not always be needed (maybe have code not always install this) - or add a new key in that is used for this
         "memcached": {
             "version": "1.4.7-0.1ubuntu1",
-            "allowed": ">="
+            "allowed": ">=",
+            "removable": true
         },
         "python-configobj": {
             "version": "4.7.2+ds-3",
-            "allowed": ">="
-        },
-        "python-coverage": {
-            "version": "3.4-1",
-            "allowed": ">="
-        },
-        "python-dev": {
-            "version": "2.7.2-7ubuntu2",
-            "allowed": ">="
+            "allowed": ">=",
+            "removable": true
         },
         "python-eventlet": {
             "version": "0.9.15-0ubuntu4",
-            "allowed": ">="
+            "allowed": ">=",
+            "removable": true
         },
         "python-greenlet": {
             "version": "0.3.1-1ubuntu4",
-            "allowed": ">="
+            "allowed": ">=",
+            "removable": true
         },
         "python-netifaces": {
             "version": "0.5-2.1ubuntu2",
-            "allowed": ">="
-        },
-        "python-nose": {
-            "version": "1.0.0-1ubuntu1",
-            "allowed": ">="
+            "allowed": ">=",
+            "removable": true
         },
         "python-pastedeploy": {
             "version": "1.5.0-2",
-            "allowed": ">="
+            "allowed": ">=",
+            "removable": true
         },
-        "python-setuptools": {
-            "version": "0.6.16-1",
-            "allowed": ">="
-        },
-        "python-simplejson": {
-            "version": "2.1.6-1",
-            "allowed": ">="
-        },
+        # Not needed unless less than python 2.6 (not our case)
+        #"python-simplejson": {
+        #    "version": "2.1.6-1",
+        #    "allowed": ">=",
+        #    "removable": true
+        #},
         "python-webob": {
             "version": "1.0.8-1",
-            "allowed": ">="
+            "allowed": ">=",
+            "removable": true
         },
         "python-xattr": {
             "version": "0.6-1ubuntu2",
-            "allowed": ">="
+            "allowed": ">=",
+            "removable": true
         },
         "sqlite3": {
             "version": "3.7.7-2ubuntu2",
-            "allowed": ">="
+            "allowed": ">=",
+            "removable": true
         },
         "xfsprogs": {
             "version": "3.1.5ubuntu1",
-            "allowed": ">="
+            "allowed": ">=",
+            "removable": true
         }
     },
-    "rhel-6": {}
+    "rhel-6": {
+        # Unless otherwise noted the versions may be slightly
+        # different, but for common utilities this should not be a critical
+        # issue unless determined otherwise.
+        #
+        # If a package requires EPEL repo please follow instructions
+        # at http://fedoraproject.org/wiki/EPEL to ensure the repo is in /etc/yum.repos.d/
+        #
+        # Is this really needed?
+        "gcc": {
+            "version": "4.4.5-6.el6",
+            "allowed": ">=",
+            "removable": true
+        },
+        # This may not always be needed (maybe have code not always install this) - or add a new key in that is used for this
+        "memcached": {
+            "version": "1.4.4-3.el6",
+            "allowed": ">=",
+            "removable": true
+        },
+        "python-configobj": {
+            # This version is a little bit behind ubuntu
+            # That might be ok?
+            "version": "4.6.0-3.el6",
+            "allowed": ">=",
+            "removable": true
+        },
+        # Requires EPEL repo
+        "python-eventlet": {
+            "version": "0.9.16-3.el6",
+            "allowed": ">=",
+            "removable": true
+        },
+        # Requires EPEL repo
+        "python-greenlet": {
+            "version": "0.3.1-6.el6",
+            "allowed": ">=",
+            "removable": true
+        },
+        # Requires EPEL repo
+        "python-netifaces": {
+            "version": "0.5-1.el6",
+            "allowed": ">=",
+            "removable": true
+        },
+        "python-paste-deploy": {
+            # This version is behind by alot. We might need to repackage it.
+            "version": "1.3.3-2.1.el6",
+            "allowed": ">=",
+            "removable": true
+        },
+        # Not needed unless less than python 2.6 (not our case)
+        #"python-simplejson": {
+        #    "version": "2.1.6-1",
+        #    "allowed": ">=",
+        #    "removable": true
+        #},
+        "python-webob": {
+            # This version is behind by alot. We might need to repackage it.
+            # Grid dynamics repo lists 1.0.8-1.el6 (we might need to also)
+            "version": "0.9.6.1-3.el6",
+            "allowed": ">=",
+            "removable": true
+        },
+        # Requires EPEL repo
+        "python-xattr": {
+            # This version is behind by alot. We might need to repackage it.
+            "version": "0.5.0-1.el6",
+            "allowed": ">=",
+            "removable": true
+        },
+        "sqlite": {
+            # This version is a little bit behind
+            # That should be ok?
+            "version": "3.6.20-1.el6",
+            "allowed": ">=",
+            # Seems to attempt to remove yum, not good
+            "removable": false
+        },
+        "xfsprogs": {
+            "version": "3.1.1-4.el6",
+            "allowed": ">=",
+            "removable": true
+        }
+    }
 }

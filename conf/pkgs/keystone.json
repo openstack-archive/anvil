@@ -82,7 +82,7 @@
         #
         # If a package requires EPEL repo please follow instructions
         # at http://fedoraproject.org/wiki/EPEL to ensure the repo is in /etc/yum.repos.d/
-        
+        #
         # Requires EPEL repo
         "python-eventlet": {
             "version": "0.9.16-3.el6",

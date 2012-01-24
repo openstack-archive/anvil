@@ -59,19 +59,8 @@
             "allowed": ">=",
             "removable": true
         },
-        "python-nose": {
-            "version": "1.0.0-1ubuntu1",
-            "allowed": ">=",
-            "removable": true
-        },
         "python-sphinx": {
             "version": "1.0.7+dfsg-1",
-            "allowed": ">=",
-            "removable": true
-        },
-        # Is this really needed?
-        "python-mox": {
-            "version": "0.5.3-1ubuntu4",
             "allowed": ">=",
             "removable": true
         },
@@ -121,7 +110,7 @@
         #
         # If a package requires EPEL repo please follow instructions
         # at http://fedoraproject.org/wiki/EPEL to ensure the repo is in /etc/yum.repos.d/
-        
+        #
         # This is apache for rhel
         "httpd": {
             "version": "2.2.15-9.el6",
@@ -197,14 +186,6 @@
             "allowed": ">=",
             "removable": true
         },
-        "python-nose": {
-            # This version seems to be way off. Unsure what this means.
-            # Grid dynamics repo lists python-nose-1.0.0-2.noarch
-            # and also python-nose-0.11.3-5.el6.noarch. Not sure about this.
-            "version": "0.10.4-3.1.el6",
-            "allowed": ">=",
-            "removable": true
-        },
         # Requires EPEL repo
         "python-sphinx": {
             # This version is ahead of ubuntu.
@@ -212,13 +193,6 @@
             "allowed": ">=",
             "removable": true
         },
-        # Requires EPEL repo
-        "python-mox": {
-            "version": "0.5.3-2.el6",
-            "allowed": ">=",
-            "removable": true
-        },
-        
         # Does not seem to exist yet.
         #
         # EPEL has python-cherrypy2 but this probably won't work?
@@ -227,7 +201,6 @@
         #    "allowed": ">=",
         #    "removable": true
         #},
-        
         "Django": {
             # This version is behind by alot. We might need to repackage it.
             # Grid dynamics repo lists 1.3-2 (we might need to also)
@@ -235,7 +208,6 @@
             "allowed": ">=",
             "removable": true
         },
-        
         # This does not seem to exist.
         # Grid dynamics repo lists django-mailer-0.1.0-1.8
         #"python-django-mailer": {
@@ -251,7 +223,6 @@
         #    "allowed": ">=",
         #    "removable": true
         #},
-        
         # Requires EPEL repo
         "django-registration": {
             "version": "0.7-2.el6",

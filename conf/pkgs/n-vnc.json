@@ -13,8 +13,15 @@
         }
     },
     "rhel-6": {
+        # Unless otherwise noted the versions may be slightly
+        # different, but for common utilities this should not be a critical
+        # issue unless determined otherwise.
+        #
+        # If a package requires EPEL repo please follow instructions
+        # at http://fedoraproject.org/wiki/EPEL to ensure the repo is in /etc/yum.repos.d/
+        #
         # Does not exist yet. It seems like people
-        # have built this just it isn't in RHEL or EPEL.
+        # have built this just it isn't in RHEL or EPEL. We need this...
         # "python-numpy": {
         #     "version": "??",
         #     "allowed": ">=",
