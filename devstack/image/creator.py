@@ -18,6 +18,7 @@ import os
 import tarfile
 import tempfile
 import urllib
+import ConfigParser
 
 from devstack import log
 from devstack import shell
@@ -190,36 +191,29 @@ class ImageRegistry:
 
 
 class ImageCreationService:
-    def __init__(self, cfg=None, flat_urls=None, token=None):
-
-        if cfg:
-            token = cfg.get("passwords", "service_token")
-            flat_urls = cfg.get('img', 'image_urls')
-
-        if flat_urls:
-            self.urls = [x.strip() for x in flat_urls.split(',')]
-        else:
-            self.urls = []
-
-        self.token = token
+    def __init__(self, cfg):
+        self.cfg = cfg
 
     def install(self):
-        for url in self.urls:
+        urls = list()
+        token = None
+        #extract them
+        try:
+            token = self.cfg.get("passwords", "service_token")
+            flat_urls = self.cfg.get('img', 'image_urls')
+            if(flat_urls):
+                expanded_urls = [x.strip() for x in flat_urls.split(',')]
+                for url in expanded_urls:
+                    if(url):
+                        urls.append(url)
+        except(ConfigParser.Error):
+            LOG.info("No image configuration keys found, skipping glance image install")
+        #install them in glance
+        am_installed = 0
+        for url in urls:
             try:
-                if(len(url)):
-                    Image(url, self.token).install()
+                Image(url, token).install()
+                am_installed += 1
             except (IOError, tarfile.TarError):
-                #these are the known exceptions we will catch and all that
-                #should be emitted (except core python errors, catching all
-                #exceptions is not good...), since this service is not critical
-                #just log them and carry on.
                 LOG.exception('Installing "%s" failed', url)
-
-
-if __name__ == "__main__":
-    import sys
-    import logging
-    logging.basicConfig()
-    LOG = logging.getLogger('image.create')
-    LOG.setLevel(logging.DEBUG)
-    ImageCreationService(flat_urls=sys.argv[1], token=sys.argv[2]).install()
+        return am_installed

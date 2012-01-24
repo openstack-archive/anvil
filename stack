@@ -15,11 +15,19 @@
 
 import os
 import os.path
+import logging
+import logging.config
 import sys
 
-# This needs to happen immediately
-from devstack import log as logging
-logging.setup()
+#this needs to happen immediately (or thats what it seems)
+LOG_FN_ENV = 'LOG_FILE'
+LOG_FILE_DEF = os.path.join("conf", 'logging.ini')
+def setupLogging():
+    logfn = os.getenv(LOG_FN_ENV)
+    if(logfn == None):
+        logfn = LOG_FILE_DEF
+    logging.config.fileConfig(logfn)
+setupLogging()
 
 #this handles our option parsing
 from devstack import opts
