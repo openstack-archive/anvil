@@ -13,16 +13,17 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import errno
+import json
 import os
-import sys
 import resource
 import signal
-import errno
+import sys
 import time
 
 from devstack import exceptions as excp
 from devstack import log as logging
-from devstack import shell as sh
+from devstack import shell as sh           
 from devstack import trace as tr
 
 # Maximum for the number of available file descriptors (when not found)
@@ -38,6 +39,7 @@ RUN_TYPE = "FORK"
 PID_FN = "PID_FN"
 STDOUT_FN = "STDOUT_FN"
 STDERR_FN = "STDERR_FN"
+ARGS = "ARGS"
 NAME = "NAME"
 FORK_TEMPL = "%s.fork"
 
@@ -139,7 +141,8 @@ class ForkRunner(object):
                 #now exec...
                 #the arguments to the child process should
                 #start with the name of the command being run
-                actualargs = [program] + list(args)
+                prog_little = os.path.basename(program)
+                actualargs = [prog_little] + list(args)
                 os.execlp(program, *actualargs)
             else:
                 #write out the child pid
@@ -162,6 +165,7 @@ class ForkRunner(object):
         runtrace.trace(PID_FN, pidfile)
         runtrace.trace(STDERR_FN, stderrfn)
         runtrace.trace(STDOUT_FN, stdoutfn)
+        runtrace.trace(ARGS, json.dumps(args))
         LOG.info("Forking [%s] by running command [%s]" % (name, program))
         self._fork_start(program, appdir, pidfile, stdoutfn, stderrfn, *args)
         return tracefn

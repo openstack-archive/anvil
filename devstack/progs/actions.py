@@ -272,6 +272,9 @@ def _get_config():
 
 def _run_components(action_name, component_order, components, distro, root_dir, program_args):
     LOG.info("Will %s [%s] (in that order) using root directory \"%s\"" % (action_name, ", ".join(component_order), root_dir))
+    non_components = set(components.keys()).difference(set(component_order))
+    if(non_components):
+        LOG.info("Using reference components [%s]" % (", ".join(sorted(non_components))))
     pkg_manager = _get_pkg_manager(distro)
     config = _get_config()
     #form the active instances (this includes ones we won't use)

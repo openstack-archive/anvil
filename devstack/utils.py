@@ -37,6 +37,7 @@ LOG = logging.getLogger("devstack.util")
 
 def execute_template(*cmds, **kargs):
     params_replacements = kargs.pop('params', None)
+    tracewriter = kargs.pop('tracewriter', None)
     ignore_missing = kargs.pop('ignore_missing', False)
     cmd_results = list()
     for cmdinfo in cmds:
@@ -61,6 +62,8 @@ def execute_template(*cmds, **kargs):
             stdin = joinlinesep(*stdin_full)
         root_run = cmdinfo.get('run_as_root', False)
         exec_res = sh.execute(*cmd_to_run, run_as_root=root_run, process_input=stdin, **kargs)
+        if tracewriter:
+            tracewriter.exec_cmd(cmd_to_run, exec_res)
         cmd_results.append(exec_res)
     return cmd_results
 
@@ -220,36 +223,36 @@ def _get_welcome_stack():
     possibles.append(r'''
   ___  ___ ___ _  _ ___ _____ _   ___ _  __
  / _ \| _ \ __| \| / __|_   _/_\ / __| |/ /
-| (_) |  _/ _|| .` \__ \ | |/ _ \ (__| ' < 
+| (_) |  _/ _|| .` \__ \ | |/ _ \ (__| ' <
  \___/|_| |___|_|\_|___/ |_/_/ \_\___|_|\_\
 
-''')            
+''')
     possibles.append(r'''
-____ ___  ____ _  _ ____ ___ ____ ____ _  _ 
-|  | |__] |___ |\ | [__   |  |__| |    |_/  
-|__| |    |___ | \| ___]  |  |  | |___ | \_ 
+____ ___  ____ _  _ ____ ___ ____ ____ _  _
+|  | |__] |___ |\ | [__   |  |__| |    |_/
+|__| |    |___ | \| ___]  |  |  | |___ | \_
 
 ''')
     possibles.append(r'''
   _  ___ ___  _  _  __  ___  _   __  _  _
  / \| o \ __|| \| |/ _||_ _|/ \ / _|| |//
-( o )  _/ _| | \\ |\_ \ | || o ( (_ |  ( 
+( o )  _/ _| | \\ |\_ \ | || o ( (_ |  (
  \_/|_| |___||_|\_||__/ |_||_n_|\__||_|\\
 
 ''')
     possibles.append(r'''
-   _   ___  ___  _  __  ___ _____  _    __  _   
+   _   ___  ___  _  __  ___ _____  _    __  _
  ,' \ / o |/ _/ / |/ /,' _//_  _/.' \ ,'_/ / //7
-/ o |/ _,'/ _/ / || /_\ `.  / / / o // /_ /  ,' 
-|_,'/_/  /___//_/|_//___,' /_/ /_n_/ |__//_/\\  
+/ o |/ _,'/ _/ / || /_\ `.  / / / o // /_ /  ,'
+|_,'/_/  /___//_/|_//___,' /_/ /_n_/ |__//_/\\
 
 ''')
     possibles.append(r'''
- _____  ___    ___    _   _  ___   _____  _____  ___    _   _ 
+ _____  ___    ___    _   _  ___   _____  _____  ___    _   _
 (  _  )(  _`\ (  _`\ ( ) ( )(  _`\(_   _)(  _  )(  _`\ ( ) ( )
 | ( ) || |_) )| (_(_)| `\| || (_(_) | |  | (_) || ( (_)| |/'/'
-| | | || ,__/'|  _)_ | , ` |`\__ \  | |  |  _  || |  _ | , <  
-| (_) || |    | (_( )| |`\ |( )_) | | |  | | | || (_( )| |\`\ 
+| | | || ,__/'|  _)_ | , ` |`\__ \  | |  |  _  || |  _ | , <
+| (_) || |    | (_( )| |`\ |( )_) | | |  | | | || (_( )| |\`\
 (_____)(_)    (____/'(_) (_)`\____) (_)  (_) (_)(____/'(_) (_)
 
 ''')

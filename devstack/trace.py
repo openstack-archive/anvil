@@ -32,6 +32,7 @@ FILE_TOUCHED = "FILE_TOUCHED"
 DOWNLOADED = "DOWNLOADED"
 AP_STARTED = "AP_STARTED"
 PIP_INSTALL = 'PIP_INSTALL'
+EXEC_CMD = 'EXEC_CMD'
 
 #trace file types
 PY_TRACE = "python"
@@ -138,6 +139,13 @@ class TraceWriter(object):
         data['name'] = name
         data['trace_fn'] = info_fn
         self.tracer.trace(AP_STARTED, json.dumps(data))
+
+    def exec_cmd(self, cmd, result):
+        self._start()
+        data = dict()
+        data['cmd'] = cmd
+        data['result'] = result
+        self.tracer.trace(EXEC_CMD, json.dumps(data))
 
 
 class TraceReader(object):

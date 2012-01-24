@@ -57,7 +57,7 @@
         },
         # Only really needed if you plan on using kvm
         "kvm": {
-            "version": "1:84+dfsg-0ubuntu16+0.14.1+noroms+0ubuntu6.1",
+            "version": "1:84+dfsg-0ubuntu16+0.14.1+noroms+0ubuntu6.2",
             "allowed": ">=",
             "removable": true
         },

@@ -7,6 +7,8 @@
 # Options like %ADMIN_PASSWORD% will be filled in with an actual value.
 #
 # Command ordering may matter, so be careful!
+#
+# Based off of commit 30439a6dc4 of keystone_data.sh
 {
     # Users
     "users": [
@@ -123,7 +125,7 @@
             "add",
             "swift",
             "object-store",
-            "Swift Service"
+            "\"Swift Service\""
         ],
         # Endpoint template for swift
         [
@@ -145,7 +147,7 @@
             "add",
             "nova",
             "compute",
-            "Nova Compute Service"
+            "\"Nova Compute Service\""
         ],
         # EC2 service
         [
@@ -153,7 +155,7 @@
             "add",
             "ec2",
             "ec2",
-            "EC2 Compatability Layer"
+            "\"EC2 Compatability Layer\""
         ],
         # Endpoint template for nova
         [
@@ -220,7 +222,7 @@
             "add",
             "keystone",
             "identity",
-            "Keystone Identity Service"
+            "\"Keystone Identity Service\""
         ]
     ],
     "glance": [
@@ -230,7 +232,7 @@
             "add",
             "glance",
             "image",
-            "Glance Image Service"
+            "\"Glance Image Service\""
         ],
         # Endpoint template for glance
         [

@@ -17,10 +17,11 @@ import io
 
 from devstack import cfg
 from devstack import component as comp
-from devstack import settings
 from devstack import log as logging
+from devstack import settings
 from devstack import shell as sh
 from devstack.components import db
+from devstack.components import keystone
 from devstack.image import creator
 
 LOG = logging.getLogger("devstack.components.glance")
@@ -32,6 +33,9 @@ REG_CONF = "glance-registry.conf"
 CONFIGS = [API_CONF, REG_CONF]
 DB_NAME = "glance"
 CFG_SECTION = 'DEFAULT'
+
+#special subcomponents that is used in starting to know that images should be uploaded
+IMG_START = "upload-images"
 
 #what to start
 APP_OPTIONS = {
@@ -67,8 +71,9 @@ class GlanceRuntime(comp.PythonRuntime):
 
     def post_start(self):
         comp.PythonRuntime.post_start(self)
-        #install any images that need activating...
-        creator.ImageCreationService(self.cfg).install()
+        if(IMG_START in self.component_opts):
+            #install any images that need activating...
+            creator.ImageCreationService(self.cfg).install()
 
 
 class GlanceInstaller(comp.PythonInstallComponent):
@@ -152,8 +157,8 @@ class GlanceInstaller(comp.PythonInstallComponent):
         mp = dict()
         mp['DEST'] = self.appdir
         mp['SYSLOG'] = self.cfg.getboolean("default", "syslog")
-        mp['SERVICE_TOKEN'] = self.cfg.get("passwords", "service_token")
         mp['SQL_CONN'] = self.cfg.get_dbdsn(DB_NAME)
         mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
         mp['HOST_IP'] = self.cfg.get('host', 'ip')
+        mp.update(keystone.get_shared_params(self.cfg))
         return mp
