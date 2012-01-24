@@ -121,7 +121,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         mp['FLOATING_RANGE'] = self.cfg.get('nova', 'floating_range')
         mp['TEST_FLOATING_RANGE'] = self.cfg.get('nova', 'test_floating_range')
         mp['TEST_FLOATING_POOL'] = self.cfg.get('nova', 'test_floating_pool')
-        utils.execute_template(*POST_INSTALL_CMDS, params=mp)
+        utils.execute_template(*POST_INSTALL_CMDS, params=mp, tracewriter=self.tracewriter)
         return parent_result
 
     def _setup_db(self):
@@ -183,7 +183,7 @@ class NovaRuntime(comp.PythonRuntime):
 
 # This class has the smarts to build the configuration file based on
 # various runtime values
-class NovaConfigurator():
+class NovaConfigurator(object):
     def __init__(self, cfg, instances):
         self.cfg = cfg
         self.instances = instances
@@ -351,7 +351,7 @@ class NovaConfigurator():
 
 
 # This class represents the data in the nova config file
-class NovaConf():
+class NovaConf(object):
     def __init__(self):
         self.lines = list()
 
