@@ -51,6 +51,10 @@ KEYSTONE_CLIENT = 'keystone-client'
 DB = "db"
 RABBIT = "rabbit"
 OPENSTACK_X = 'openstack-x'
+NOVNC = 'novnc'
+# NCPU and NVOL are here as possible subcomponents of nova
+NCPU = "cpu"
+NVOL = "vol"
 COMPONENT_NAMES = [
     NOVA, NOVA_CLIENT,
     GLANCE,
@@ -61,6 +65,7 @@ COMPONENT_NAMES = [
     OPENSTACK_X,
     DB,
     RABBIT,
+    NOVNC,
 ]
 
 # Ordering of install (lower priority means earlier)
@@ -75,6 +80,7 @@ COMPONENT_NAMES_PRIORITY = {
     KEYSTONE_CLIENT: 6,
     NOVA_CLIENT: 6,
     OPENSTACK_X: 6,
+    NOVNC: 6,
     HORIZON: 10,
 }
 
@@ -91,6 +97,7 @@ COMPONENT_DEPENDENCIES = {
     SWIFT: [],
     HORIZON: [KEYSTONE_CLIENT, GLANCE, NOVA_CLIENT, OPENSTACK_X],
     QUANTUM: [],
+    NOVNC: [],
 }
 
 # Default subdirs of a components root directory
@@ -199,6 +206,19 @@ PKG_MAP = {
         [
             os.path.join(STACK_PKG_DIR, 'openstackx.json'),
         ],
+    NOVNC:
+        [
+            os.path.join(STACK_PKG_DIR, 'n-vnc.json'),
+        ],
+    NCPU:
+        [
+            os.path.join(STACK_PKG_DIR, 'n-cpu.json'),
+        ],
+    NVOL:
+        [
+            os.path.join(STACK_PKG_DIR, 'n-vol.json'),
+        ],
+
 }
 
 

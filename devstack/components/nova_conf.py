@@ -123,14 +123,11 @@ class NovaConfigurator():
             nova_conf.add('osapi_compute_extension', 'nova.api.openstack.compute.contrib.standard_extensions')
             nova_conf.add('osapi_compute_extension', 'extensions.admin.Admin')
 
-        # TODO
-        #      if ('n-vnc' in self.othercomponents):
-        #  vncproxy_url = self.cfg.get("nova", "vncproxy_url")
-        #  if (not vncproxy_url):
-        #      vncproxy_url = 'http://' + hostip + ':6080'
-        #  self._add('--vncproxy_url=' + vncproxy_url)
-        #  self._add('vncproxy_wwwroot=' + nova_dir + '/')
-        #
+        if(settings.NOVNC in self.active_components):
+            vncproxy_url = self._getstr('vncproxy_url')
+            if (not vncproxy_url):
+                vncproxy_url = 'http://' + hostip + ':6080/vnc_auto.html'
+            self.add('vncproxy_url', vncproxy_url)
 
         # TODO is this the right directory
         paste_conf_fn = sh.joinpths(dirs.get('bin'), nova.PASTE_CONF)
