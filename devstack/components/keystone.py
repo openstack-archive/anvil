@@ -106,13 +106,13 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         endpoint_cmds = cmd_map.get('endpoints', list())
         base_cmds.extend(endpoint_cmds)
 
-        if(settings.GLANCE in self.all_components):
+        if(settings.GLANCE in self.instances):
             glance_cmds = cmd_map.get('glance', list())
             base_cmds.extend(glance_cmds)
-        if(settings.NOVA in self.all_components):
+        if(settings.NOVA in self.instances):
             nova_cmds = cmd_map.get('nova', list())
             base_cmds.extend(nova_cmds)
-        if(settings.SWIFT in self.all_components):
+        if(settings.SWIFT in self.instances):
             swift_cmds = cmd_map.get('swift', list())
             base_cmds.extend(swift_cmds)
 

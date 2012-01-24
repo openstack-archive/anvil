@@ -164,11 +164,11 @@ def _post_run(action_name, **kargs):
             sh.rmdir(root_dir)
 
 
-def _print_cfgs(cfg, action):
+def _print_cfgs(config_obj, action):
 
     #this will make the items nice and pretty
-    def item_format(k, v):
-        return "\t%s=%s" % (str(k), str(v))
+    def item_format(key, value):
+        return "\t%s=%s" % (str(key), str(value))
 
     def map_print(mp):
         for key in sorted(mp.keys()):
@@ -176,9 +176,9 @@ def _print_cfgs(cfg, action):
             LOG.info(item_format(key, value))
 
     #now make it pretty
-    passwords_gotten = cfg.pws
-    full_cfgs = cfg.configs_fetched
-    db_dsns = cfg.db_dsns
+    passwords_gotten = config_obj.pws
+    full_cfgs = config_obj.configs_fetched
+    db_dsns = config_obj.db_dsns
     if(len(passwords_gotten) or len(full_cfgs) or len(db_dsns)):
         LOG.info("After action (%s) your settings are:" % (action))
         if(len(passwords_gotten)):
@@ -270,23 +270,27 @@ def _get_config():
     return config_instance
 
 
-def _run_components(action_name, component_order, components_info, distro, root_dir, program_args):
+def _run_components(action_name, component_order, components, distro, root_dir, program_args):
     LOG.info("Will %s [%s] (in that order) using root directory \"%s\"" % (action_name, ", ".join(component_order), root_dir))
     pkg_manager = _get_pkg_manager(distro)
     config = _get_config()
-    results = list()
-    #this key list may be different than the order due to reference components
-    active_components = components_info.keys()
+    #form the active instances (this includes ones we won't use)
+    all_instances = dict()
+    for component in components.keys():
+        action_cls = _get_action_cls(action_name, component)
+        instance = action_cls(instances=all_instances,
+                            distro=distro,
+                            packager=pkg_manager,
+                            config=config,
+                            root=root_dir,
+                            opts=components.get(component, list()))
+        all_instances[component] = instance
     #run anything before it gets going...
     _pre_run(action_name, root_dir=root_dir, pkg=pkg_manager, cfg=config)
+    results = list()
     for component in component_order:
-        action_cls = _get_action_cls(action_name, component)
-        instance = action_cls(components=set(active_components),
-                            distro=distro,
-                            pkg=pkg_manager,
-                            cfg=config,
-                            root=root_dir,
-                            component_opts=components_info.get(component, list()))
+        #this instance was just made
+        instance = all_instances.get(component)
         #activate the correct function for the given action
         if(action_name == settings.INSTALL):
             install_result = _install(component, instance)

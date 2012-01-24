@@ -17,7 +17,6 @@ from devstack import downloader as down
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import pip
-from devstack import runner
 from devstack import settings
 from devstack import shell as sh
 from devstack import trace as tr
@@ -34,17 +33,17 @@ PY_UNINSTALL = ['python', 'setup.py', 'develop', '--uninstall']
 
 class ComponentBase(object):
     def __init__(self, component_name, **kargs):
-        self.cfg = kargs.get("cfg")
-        self.packager = kargs.get("pkg")
+        self.cfg = kargs.get("config")
+        self.packager = kargs.get("packager")
         self.distro = kargs.get("distro")
         self.root = kargs.get("root")
-        self.all_components = set(kargs.get("components", []))
-        self.componentroot = sh.joinpths(self.root, component_name)
-        self.tracedir = sh.joinpths(self.componentroot, settings.COMPONENT_TRACE_DIR)
-        self.appdir = sh.joinpths(self.componentroot, settings.COMPONENT_APP_DIR)
-        self.cfgdir = sh.joinpths(self.componentroot, settings.COMPONENT_CONFIG_DIR)
+        self.instances = kargs.get("instances")
+        self.component_opts = kargs.get('opts')
+        self.component_root = sh.joinpths(self.root, component_name)
+        self.tracedir = sh.joinpths(self.component_root, settings.COMPONENT_TRACE_DIR)
+        self.appdir = sh.joinpths(self.component_root, settings.COMPONENT_APP_DIR)
+        self.cfgdir = sh.joinpths(self.component_root, settings.COMPONENT_CONFIG_DIR)
         self.component_name = component_name
-        self.component_opts = kargs.get('component_opts', [])
 
 
 class PkgInstallComponent(ComponentBase):
@@ -84,8 +83,7 @@ class PkgInstallComponent(ComponentBase):
     # method. E.g. componentInstall inherits from PythonInstallComponent
     # which then inherits from here.
     def get_pkglist(self):
-        pkgs = utils.get_pkg_list(self.distro, self.component_name)
-        return pkgs
+        return utils.get_pkg_list(self.distro, self.component_name)
 
     def install(self):
         pkgs = self.get_pkglist()
@@ -118,11 +116,17 @@ class PkgInstallComponent(ComponentBase):
     def _config_adjust(self, contents, config_fn):
         return contents
 
-    def _get_target_config_name(self, config_fn):
-        return sh.joinpths(self.cfgdir, config_fn)
+    def get_target_config_name(self, config_fn):
+        if(config_fn not in self._get_config_files()):
+            return None
+        else:
+            return sh.joinpths(self.cfgdir, config_fn)
 
     def _get_source_config_name(self, config_fn):
-        return sh.joinpths(settings.STACK_CONFIG_DIR, self.component_name, config_fn)
+        if(config_fn not in self._get_config_files()):
+            return None
+        else:
+            return sh.joinpths(settings.STACK_CONFIG_DIR, self.component_name, config_fn)
 
     def _configure_files(self):
         configs = self._get_config_files()
@@ -132,7 +136,7 @@ class PkgInstallComponent(ComponentBase):
                 #get the params and where it should come from and where it should go
                 parameters = self._get_param_map(fn)
                 sourcefn = self._get_source_config_name(fn)
-                tgtfn = self._get_target_config_name(fn)
+                tgtfn = self.get_target_config_name(fn)
                 #ensure directory is there (if not created previously)
                 self.tracewriter.make_dir(sh.dirname(tgtfn))
                 #now configure it
@@ -399,18 +403,23 @@ class ProgramRuntime(ComponentBase):
             #figure out which class will stop it
             contents = tr.parse_fn(fn)
             killcls = None
+            runtype = None
             for (cmd, action) in contents:
-                if(cmd == runner.RUN_TYPE):
-                    killcls = self._getstoppercls(action)
+                if(cmd == "TYPE"):
+                    runtype = action
+                    killcls = self._getstoppercls(runtype)
                     break
             #did we find a class that can do it?
             if(killcls):
                 #we can try to stop it
-                LOG.info("Stopping %s" % (name))
+                LOG.info("Stopping %s of run type %s" % (name, runtype))
                 #create an instance of the killer class and attempt to stop
                 killer = killcls()
                 killer.stop(name, trace_dir=self.tracedir)
                 killedam += 1
+            else:
+                #TODO raise error??
+                pass
         #if we got rid of them all get rid of the trace
         if(killedam == len(start_traces)):
             fn = self.starttracereader.trace_fn

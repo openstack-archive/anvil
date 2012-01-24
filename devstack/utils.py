@@ -256,6 +256,11 @@ ____ ___  ____ _  _ ____ ___ ____ ____ _  _
     return random.choice(possibles)
 
 
+def center_text(text, fill, max_len):
+    centered_str = '{0:{fill}{align}{size}}'.format(text, fill=fill, align="^", size=max_len)
+    return centered_str
+
+
 def welcome(ident):
     ver_str = version.version_string()
     lower = "|"
@@ -273,6 +278,6 @@ def welcome(ident):
         #this format string wil center the uncolored text which
         #we will then replace
         #with the color text equivalent
-        centered_str = '{0:{fill}{align}{size}}'.format(uncolored_footer, fill=" ", align="^", size=max_line_len)
+        centered_str = center_text(uncolored_footer, " ", max_line_len)
         footer = centered_str.replace(uncolored_footer, footer)
     print((welcome_header + os.linesep + footer))
