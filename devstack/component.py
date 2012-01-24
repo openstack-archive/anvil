@@ -287,7 +287,7 @@ class PkgUninstallComponent(ComponentBase, UninstallComponent):
     def _unconfigure_files(self):
         cfgfiles = self.tracereader.files_configured()
         if(len(cfgfiles)):
-            LOG.info("Removing %s configuration files" % (len(cfgfiles)))
+            LOG.info("Removing %s configuration files (%s)" % (len(cfgfiles), ", ".join(cfgfiles)))
             for fn in cfgfiles:
                 if(len(fn)):
                     sh.unlink(fn)
@@ -300,14 +300,14 @@ class PkgUninstallComponent(ComponentBase, UninstallComponent):
     def _uninstall_pkgs(self):
         pkgsfull = self.tracereader.packages_installed()
         if(len(pkgsfull)):
-            LOG.info("Potentially removing %s packages" % (len(pkgsfull)))
+            LOG.info("Potentially removing %s packages (%s)" % (len(pkgsfull), ", ".join(pkgsfull)))
             am_removed = self.packager.remove_batch(pkgsfull)
-            LOG.info("Removed %s packages" % (am_removed))
+            LOG.info("Actually removed %s packages" % (am_removed))
 
     def _uninstall_touched_files(self):
         filestouched = self.tracereader.files_touched()
         if(len(filestouched)):
-            LOG.info("Removing %s touched files" % (len(filestouched)))
+            LOG.info("Removing %s touched files (%s)" % (len(filestouched), ", ".join(filestouched)))
             for fn in filestouched:
                 if(len(fn)):
                     sh.unlink(fn)
@@ -315,7 +315,7 @@ class PkgUninstallComponent(ComponentBase, UninstallComponent):
     def _uninstall_dirs(self):
         dirsmade = self.tracereader.dirs_made()
         if(len(dirsmade)):
-            LOG.info("Removing %s created directories" % (len(dirsmade)))
+            LOG.info("Removing %s created directories (%s)" % (len(dirsmade), ", ".join(dirsmade)))
             for dirname in dirsmade:
                 sh.deldir(dirname)
 
