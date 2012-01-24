@@ -40,6 +40,18 @@ APP_OPTIONS = {
     'nova-scheduler': []
 }
 
+POST_INSTALL_CMDS = [
+    {'cmd' : ['%APPDIR%/bin/nova-manage', '--flagfile',
+              '%APPDIR%/config/nova.conf', 'db', 'sync']},
+    {'cmd' : ['%APPDIR%/bin/nova-manage', '--flagfile',
+              '%APPDIR%/config/nova.conf', 'floating', 'create',
+              '%FLOATING_RANGE%']},
+    {'cmd' : ['%APPDIR%/bin/nova-manage', '--flagfile',
+              '%APPDIR%/config/nova.conf', 'floating', 'create',
+              '--ip_range=%TEST_FLOATING_RANGE%',
+              '-pool=%TEST_FLOATING_POOL%']}
+]
+
 # In case we need to map names to the image to run
 APP_NAME_MAP = {
     settings.NCPU: 'nova-compute',
@@ -48,7 +60,7 @@ APP_NAME_MAP = {
 CONFIG_ACTUAL_DIR = 'etc'
 BIN_DIR = 'bin'
 # FIXME, need base bin dir
-DB_SYNC = ['/bin/nova-manage', 'db', 'sync']
+# Look at keystone to see how it do what it do
 
 
 class NovaUninstaller(comp.PythonUninstallComponent):
@@ -68,7 +80,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         pkgs = comp.PkgInstallComponent.get_pkglist(self)
         LOG.debug("pkg list from parent: %s" % (pkgs))
         # Walk through the subcomponents (like 'vol' and 'cpu') and add those
-        # those packages as well. (Let utils.get_pkg_list handle any missing
+        # those packages as well. (Let utils.get_pkglist handle any missing
         # entries
         LOG.debug("get_pkglist looking for extras: %s" % (self.component_opts))
         for cname in self.component_opts:
@@ -85,16 +97,20 @@ class NovaInstaller(comp.PythonInstallComponent):
 
     def post_install(self):
         parent_result = comp.PkgInstallComponent.post_install(self)
+        LOG.debug("Parent post_install results:%s" % (parent_result))
         #extra actions to do nova setup
-        LOG.debug("Setting up our database")
         self._setup_db()
-        # Need to do db sync
-        # Need to do nova-managber create private
-        # TBD, do we need to so nova-api start first?
-        # If using q-qvc, skip
-        #   $NOVA_DIR/bin/nova-manage floating create $FLOATING_RANGE
-        #   $NOVA_DIR/bin/nova-manage floating create --ip_range=$TEST_FLOATING_RANGE --pool=$TEST_FLOATING_POOL
-        return parent_result
+        # Need to do db sync and other post install commands
+        # set up replacement map for APPDIR, FLOATING_RANGE,
+        # TEST_FLOATING_RANGE, TEST_FLOATING_POOL
+        mp = dict()
+        mp['APPDIR'] = self.appdir
+        mp['FLOATING_RANGE'] = self.cfg.get('nova', 'floating_range')
+        mp['TEST_FLOATING_RANGE'] = self.cfg.get('nova', 'test_floating_range')
+        mp['TEST_FLOATING_POOL'] = self.cfg.get('nova', 'test_floating_pool')
+        results = utils.execute_template(*POST_INSTALL_CMDS, params=mp)
+        LOG.debug("Post install command results:%s" % (results))
+        return results
 
     def _setup_db(self):
         LOG.debug("setting up nova DB")
