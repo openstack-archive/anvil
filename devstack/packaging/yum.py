@@ -20,6 +20,7 @@ from devstack import shell as sh
 LOG = logging.getLogger("devstack.packaging.yum")
 YUM_CMD = ['yum']
 YUM_INSTALL = ["install", "-y"]
+YUM_REMOVE = ['erase', '-y']
 
 
 class YumPackager(pack.Packager):
@@ -32,16 +33,48 @@ class YumPackager(pack.Packager):
             cmd = cmd + "-" + version
         return cmd
 
-    def _do_cmd(self, base_cmd, pkgs):
-        pkgnames = sorted(pkgs.keys())
-        cmds = list()
-        for name in pkgnames:
-            pkg_info = pkgs.get(name)
-            torun = self._format_pkg_name(name, pkg_info.get("version"))
-            cmds.append(torun)
-        if(len(cmds)):
-            cmd = YUM_CMD + base_cmd + cmds
-            sh.execute(*cmd, run_as_root=True)
+    def _execute_yum(self, cmd, **kargs):
+        return sh.execute(*cmd, run_as_root=True,
+            check_exit_code=True,
+            **kargs)
+
+    def _remove_special(self, pkgname, pkginfo):
+        return False
+
+    def _install_special(self, pkgname, pkginfo):
+        return False
 
     def install_batch(self, pkgs):
-        self._do_cmd(YUM_INSTALL, pkgs)
+        pkg_names = sorted(pkgs.keys())
+        pkg_full_names = list()
+        for name in pkg_names:
+            info = pkgs.get(name) or {}
+            if(self._install_special(name, info)):
+                continue
+            full_pkg_name = self._format_pkg_name(name, info.get("version"))
+            if(full_pkg_name):
+                pkg_full_names.append(full_pkg_name)
+        if(len(pkg_full_names)):
+            cmd = YUM_CMD + YUM_INSTALL + pkg_full_names
+            self._execute_yum(cmd)
+
+    def remove_batch(self, pkgs):
+        pkg_names = sorted(pkgs.keys())
+        pkg_full_names = []
+        which_removed = []
+        for name in pkg_names:
+            info = pkgs.get(name) or {}
+            removable = info.get('removable', True)
+            if(not removable):
+                continue
+            if(self._remove_special(name, info)):
+                which_removed.append(name)
+                continue
+            full_pkg_name = self._format_pkg_name(name, info.get("version"))
+            if(full_pkg_name):
+                pkg_full_names.append(full_pkg_name)
+                which_removed.append(name)
+        if(len(pkg_full_names)):
+            cmd = YUM_CMD + YUM_REMOVE + pkg_full_names
+            self._execute_yum(cmd)
+        return which_removed
