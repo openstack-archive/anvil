@@ -13,48 +13,51 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
-class InstallException(Exception):
+class StackException(Exception):
     pass
 
 
-class BadRegexException(Exception):
+class InstallException(StackException):
     pass
 
 
-class BadParamException(Exception):
+class BadRegexException(StackException):
     pass
 
 
-class NoTraceException(Exception):
+class BadParamException(StackException):
     pass
 
 
-class NoReplacementException(Exception):
+class NoTraceException(StackException):
     pass
 
 
-class StartException(Exception):
+class NoReplacementException(StackException):
     pass
 
 
-class NoIpException(Exception):
+class StartException(StackException):
     pass
 
 
-class StopException(Exception):
+class NoIpException(StackException):
     pass
 
 
-class RestartException(Exception):
+class StopException(StackException):
     pass
 
 
-class StatusException(Exception):
+class RestartException(StackException):
     pass
 
 
-class FileException(Exception):
+class StatusException(StackException):
+    pass
+
+
+class FileException(StackException):
     pass
 
 
