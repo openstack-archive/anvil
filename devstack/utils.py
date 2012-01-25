@@ -33,7 +33,7 @@ from devstack import version
 
 PARAM_SUB_REGEX = re.compile(r"%([\w\d]+?)%")
 LOG = logging.getLogger("devstack.util")
-TEMPLATE_EXT = ".template"
+TEMPLATE_EXT = ".tpl"
 
 
 def load_template(component, fn):
