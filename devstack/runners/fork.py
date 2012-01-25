@@ -53,10 +53,10 @@ class ForkRunner(object):
         attempts = 0
         for _ in range(0, MAX_KILL_TRY):
             try:
-                LOG.info("Attempting to kill pid %s" % (pid))
+                LOG.debug("Attempting to kill pid %s" % (pid))
                 attempts += 1
                 os.kill(pid, signal.SIGKILL)
-                LOG.info("Sleeping for %s seconds before next attempt to "\
+                LOG.debug("Sleeping for %s seconds before next attempt to "\
                              "kill pid %s" % (SLEEP_TIME, pid))
                 time.sleep(SLEEP_TIME)
             except OSError, e:
