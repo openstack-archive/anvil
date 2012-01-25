@@ -35,6 +35,8 @@ HORIZON_APACHE_TGT = ['/', 'etc', 'apache2', 'sites-enabled', '000-default']
 CONFIGS = [HORIZON_PY_CONF, HORIZON_APACHE_CONF]
 DB_SYNC_CMD = ['python', 'manage.py', 'syncdb']
 BLACKHOLE_DIR = '.blackhole'
+
+#hopefully this will be distro independent ??
 APACHE_RESTART_CMD = ['service', 'apache2', 'restart']
 
 LOG = logging.getLogger("devstack.components.horizon")
@@ -111,11 +113,11 @@ class HorizonInstaller(comp.PythonInstallComponent):
             self.tracewriter.touch_file(sh.joinpths(quantum_dir, 'client.py'))
 
     def post_install(self):
-        parent_res = comp.PythonInstallComponent.post_install(self)
+        parent_result = comp.PythonInstallComponent.post_install(self)
         self._fake_quantum()
         self._sync_db()
         self._setup_blackhole()
-        return parent_res
+        return parent_result
 
     def _get_apache_user(self):
         #TODO will this be the right user?
@@ -138,6 +140,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
         return mp
 
 
-class HorizonRuntime(comp.NullRuntime):
+class HorizonRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
-        comp.NullRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.EmptyRuntime.__init__(self, TYPE, *args, **kargs)

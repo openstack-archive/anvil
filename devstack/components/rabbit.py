@@ -58,49 +58,57 @@ class RabbitInstaller(comp.PkgInstallComponent):
         return parent_result
 
 
-class RabbitRuntime(comp.NullRuntime):
+class RabbitRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
-        comp.NullRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.EmptyRuntime.__init__(self, TYPE, *args, **kargs)
         self.tracereader = tr.TraceReader(self.tracedir, tr.IN_TRACE)
 
     def start(self):
-        pkgsinstalled = self.tracereader.packages_installed()
-        if(len(pkgsinstalled) == 0):
-            msg = "Can not start %s since it was not installed" % (TYPE)
-            raise excp.StartException(msg)
-        if(self.status().find('start') == -1):
+        if(self.status() == comp.STATUS_STOPPED):
             self._run_cmd(START_CMD)
-        return None
+            return 1
+        else:
+            return 0
 
     def status(self):
         pkgsinstalled = self.tracereader.packages_installed()
         if(len(pkgsinstalled) == 0):
             msg = "Can not check the status of %s since it was not installed" % (TYPE)
             raise excp.StatusException(msg)
-        (sysout, _) = sh.execute(*STATUS_CMD, run_as_root=True)
-        return sysout.strip().lower()
+        #this has got to be the worst status output
+        #i have ever seen (its like a weird mix json)
+        (sysout, _) = sh.execute(*STATUS_CMD,
+                        run_as_root=True,
+                        check_exit_code=False)
+        if(sysout.find('nodedown') != -1 or sysout.find("unable to connect to node") != -1):
+            return comp.STATUS_STOPPED
+        elif(sysout.find('running_applications') != -1):
+            return comp.STATUS_STARTED
+        else:
+            return comp.STATUS_UNKNOWN
 
     def _run_cmd(self, cmd):
         if(self.distro == settings.UBUNTU11):
+            #this seems to fix one of the bugs with rabbit mq starting and stopping
+            #not cool, possibly connected to the following bugs:
+            #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
+            #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
             with TemporaryFile() as f:
                 sh.execute(*cmd, run_as_root=True,
                             stdout_fh=f, stderr_fh=f)
         else:
             sh.execute(*cmd, run_as_root=True)
+        
+        return sh.execute(*cmd, run_as_root=True)
+
 
     def restart(self):
-        pkgsinstalled = self.tracereader.packages_installed()
-        if(len(pkgsinstalled) == 0):
-            msg = "Can not check the status of %s since it was not installed" % (TYPE)
-            raise excp.RestartException(msg)
         self._run_cmd(RESTART_CMD)
-        return None
+        return 1
 
     def stop(self):
-        pkgsinstalled = self.tracereader.packages_installed()
-        if(len(pkgsinstalled) == 0):
-            msg = "Can not stop %s since it was not installed" % (TYPE)
-            raise excp.StopException(msg)
-        if(self.status().find('stop') == -1):
+        if(self.status() == comp.STATUS_STARTED):
             self._run_cmd(STOP_CMD)
-        return None
+            return 1
+        else:
+            return 0

@@ -145,6 +145,8 @@ class Image(object):
                     self._register()
             finally:
                 self._cleanup()
+        else:
+            LOG.warn("You already seem to have image named %s, skipping" % (possible_name))
 
 
 class ImageRegistry:
@@ -212,10 +214,12 @@ class ImageCreationService:
 
         #install them in glance
         am_installed = 0
-        for url in urls:
-            try:
-                Image(url, token).install()
-                am_installed += 1
-            except (IOError, tarfile.TarError):
-                LOG.exception('Installing "%s" failed', url)
+        if(urls):
+            LOG.info("Attempting to download & extract and upload (%s) images." % (", ".join(urls)))
+            for url in urls:
+                try:
+                    Image(url, token).install()
+                    am_installed += 1
+                except (IOError, tarfile.TarError):
+                    LOG.exception('Installing "%s" failed', url)
         return am_installed

@@ -51,6 +51,6 @@ class NovaClientInstaller(comp.PythonInstallComponent):
         return mp
 
 
-class NovaClientRuntime(comp.NullRuntime):
+class NovaClientRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
-        comp.NullRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.EmptyRuntime.__init__(self, TYPE, *args, **kargs)

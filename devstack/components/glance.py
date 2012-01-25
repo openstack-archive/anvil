@@ -49,21 +49,21 @@ APP_OPTIONS = {
     'glance-registry': ['--config-file', sh.joinpths('%ROOT%', "etc", REG_CONF)]
 }
 
-#subdirs of the checkout
-CONFIG_ACTUAL_DIR = 'etc'
+#subdirs of the downloaded
+CONFIG_DIR = 'etc'
 BIN_DIR = 'bin'
 
 
 class GlanceUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
-        self.cfgdir = sh.joinpths(self.appdir, CONFIG_ACTUAL_DIR)
+        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
 
 
 class GlanceRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
-        self.cfgdir = sh.joinpths(self.appdir, CONFIG_ACTUAL_DIR)
+        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
 
     def _get_apps_to_start(self):
         apps = list()
@@ -89,7 +89,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
         comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.git_loc = self.cfg.get("git", "glance_repo")
         self.git_branch = self.cfg.get("git", "glance_branch")
-        self.cfgdir = sh.joinpths(self.appdir, CONFIG_ACTUAL_DIR)
+        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
 
     def _get_download_locations(self):
         places = comp.PythonInstallComponent._get_download_locations(self)

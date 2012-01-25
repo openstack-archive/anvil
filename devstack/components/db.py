@@ -103,9 +103,9 @@ class DBInstaller(comp.PkgInstallComponent):
         return parent_result
 
 
-class DBRuntime(comp.NullRuntime):
+class DBRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
-        comp.NullRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.EmptyRuntime.__init__(self, TYPE, *args, **kargs)
         self.tracereader = tr.TraceReader(self.tracedir, tr.IN_TRACE)
 
     def _gettypeactions(self, act, exception_cls):
@@ -122,17 +122,20 @@ class DBRuntime(comp.NullRuntime):
         return typeactions.get(act)
 
     def start(self):
-        if(self.status().find('start') == -1):
+        if(self.status() == comp.STATUS_STOPPED):
             startcmd = self._gettypeactions('start', excp.StartException)
             sh.execute(*startcmd, run_as_root=True)
-        return None
+            return 1
+        else:
+            return 0
 
     def stop(self):
-        if(self.status().find('stop') == -1):
+        if(self.status() == comp.STATUS_STARTED):
             stopcmd = self._gettypeactions('stop', excp.StopException)
             sh.execute(*stopcmd, run_as_root=True)
             return 1
-        return 0
+        else:
+            return 0
 
     def restart(self):
         restartcmd = self._gettypeactions('restart', excp.RestartException)
@@ -141,8 +144,13 @@ class DBRuntime(comp.NullRuntime):
 
     def status(self):
         statuscmd = self._gettypeactions('status', excp.StatusException)
-        (sysout, _) = sh.execute(*statuscmd, run_as_root=True)
-        return sysout.strip()
+        (sysout, _) = sh.execute(*statuscmd)
+        if(sysout.find("start/running") != -1):
+            return comp.STATUS_STARTED
+        elif(sysout.find("stop/waiting") != -1):
+            return comp.STATUS_STOPPED
+        else:
+            return comp.STATUS_UNKNOWN
 
 
 def drop_db(cfg, dbname):

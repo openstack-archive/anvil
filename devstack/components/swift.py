@@ -57,6 +57,6 @@ class SwiftInstaller(object):
         raise NotImplementedError()
 
 
-class SwiftRuntime(comp.NullRuntime):
+class SwiftRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
-        comp.NullRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.EmptyRuntime.__init__(self, TYPE, *args, **kargs)

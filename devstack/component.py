@@ -27,8 +27,15 @@ from devstack.runners import screen
 
 
 LOG = logging.getLogger("devstack.component")
+
+#how we actually setup and unsetup python
 PY_INSTALL = ['python', 'setup.py', 'develop']
 PY_UNINSTALL = ['python', 'setup.py', 'develop', '--uninstall']
+
+#runtime status constants (return by runtime status)
+STATUS_UNKNOWN = "unknown"
+STATUS_STARTED = "started"
+STATUS_STOPPED = "stopped"
 
 
 class ComponentBase(object):
@@ -428,7 +435,7 @@ class ProgramRuntime(ComponentBase):
         return killedam
 
     def status(self):
-        return None
+        return STATUS_UNKNOWN
 
     def restart(self):
         return 0
@@ -439,7 +446,7 @@ class PythonRuntime(ProgramRuntime):
         ProgramRuntime.__init__(self, component_name, *args, **kargs)
 
     def status(self):
-        return None
+        return STATUS_UNKNOWN
 
     def restart(self):
         return 0
@@ -455,7 +462,7 @@ class PythonRuntime(ProgramRuntime):
             return True
 
 
-class NullRuntime(ComponentBase):
+class EmptyRuntime(ComponentBase):
     def __init__(self, component_name, *args, **kargs):
         ComponentBase.__init__(self, component_name, *args, **kargs)
 
@@ -472,7 +479,7 @@ class NullRuntime(ComponentBase):
         return 0
 
     def status(self):
-        return None
+        return STATUS_UNKNOWN
 
     def restart(self):
         return 0

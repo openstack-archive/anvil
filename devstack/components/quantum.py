@@ -56,6 +56,6 @@ class QuantumInstaller(object):
         raise NotImplementedError()
 
 
-class QuantumRuntime(comp.NullRuntime):
+class QuantumRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
-        comp.NullRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.EmptyRuntime.__init__(self, TYPE, *args, **kargs)
