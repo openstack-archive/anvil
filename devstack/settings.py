@@ -233,7 +233,7 @@ def get_dependencies(component):
 def resolve_dependencies(components):
     active_components = list(components)
     new_components = set()
-    while(len(active_components)):
+    while active_components:
         curr_comp = active_components.pop()
         component_deps = get_dependencies(curr_comp)
         new_components.add(curr_comp)

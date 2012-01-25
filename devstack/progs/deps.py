@@ -24,7 +24,7 @@ PROG_NAME = "DEPENDENCY LIST"
 def log_deps(components):
     shown = set()
     left_show = list(components)
-    while(len(left_show) != 0):
+    while left_show:
         c = left_show.pop()
         deps = settings.get_dependencies(c)
         dep_str = ""
