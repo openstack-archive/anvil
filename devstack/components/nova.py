@@ -54,6 +54,7 @@ POST_INSTALL_CMDS = [
 ]
 
 # In case we need to map names to the image to run
+# This map also controls which sub component's packages may need to add
 APP_NAME_MAP = {
     settings.NCPU: 'nova-compute',
     settings.NVOL: 'nova-volume',
@@ -98,7 +99,13 @@ class NovaInstaller(comp.PythonInstallComponent):
         # those packages as well. (Let utils.get_pkglist handle any missing
         # entries
         LOG.debug("get_pkglist looking for extras: %s" % (self.component_opts))
-        for cname in self.component_opts:
+        if self.component_opts:
+            sub_components = self.component_opts
+        else:
+            # No subcomponents where explicitly specified, so get all
+            sub_components = APP_NAME_MAP.keys()
+        # Add the extra dependencies
+        for cname in sub_components:
             pkgs.update(utils.get_pkg_list(self.distro, cname))
         return pkgs
 
