@@ -181,9 +181,9 @@ class PythonInstallComponent(PkgInstallComponent):
                 self.tracewriter.pip_install(name, pips.get(name))
 
     def _format_stderr_out(self, stderr, stdout):
-        if stdout == None:
+        if stdout is None:
             stdout = ''
-        if stderr == None:
+        if stderr is None:
             stderr = ''
         combined = ["===STDOUT===", str(stdout), "===STDERR===", str(stderr)]
         return utils.joinlinesep(*combined)
@@ -398,7 +398,7 @@ class ProgramRuntime(ComponentBase):
             fn = mp.get('trace_fn')
             name = mp.get('name')
             #missing some key info, skip it
-            if fn == None or name == None:
+            if fn is None or name is None:
                 continue
             #figure out which class will stop it
             contents = tr.parse_fn(fn)

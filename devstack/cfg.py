@@ -50,21 +50,21 @@ class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
 
     def getboolean(self, section, option):
         value = self.get(section, option)
-        if value == None:
+        if value is None:
             #not there so don't let the parent blowup
             return IgnoreMissingConfigParser.DEF_BOOLEAN
         return ConfigParser.RawConfigParser.getboolean(self, section, option)
 
     def getfloat(self, section, option):
         value = self.get(section, option)
-        if value == None:
+        if value is None:
             #not there so don't let the parent blowup
             return IgnoreMissingConfigParser.DEF_FLOAT
         return ConfigParser.RawConfigParser.getfloat(self, section, option)
 
     def getint(self, section, option):
         value = self.get(section, option)
-        if value == None:
+        if value is None:
             #not there so don't let the parent blowup
             return IgnoreMissingConfigParser.DEF_INT
         return ConfigParser.RawConfigParser.getint(self, section, option)
@@ -132,7 +132,7 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
     def _get_special(self, section, option):
         key = self._makekey(section, option)
         parent_val = ConfigParser.RawConfigParser.get(self, section, option)
-        if parent_val == None:
+        if parent_val is None:
             #parent didn't have anything, we are unable to do anything with it then
             return None
         extracted_val = None
@@ -143,7 +143,7 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
             if len(def_val) == 0 and len(env_key) == 0:
                 msg = "Invalid bash-like value \"%s\" for \"%s\"" % (parent_val, key)
                 raise excp.BadParamException(msg)
-            if len(env_key) == 0 or env.get_key(env_key) == None:
+            if len(env_key) == 0 or env.get_key(env_key) is None:
                 LOG.debug("Extracting default value from config provided default value \"%s\" for \"%s\"" % (def_val, key))
                 actual_def_val = self._extract_default(def_val)
                 LOG.debug("Using config provided default value \"%s\" for \"%s\" (no environment key)" % (actual_def_val, key))

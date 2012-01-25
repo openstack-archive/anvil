@@ -96,7 +96,7 @@ def get_host_ip():
         ipinfo = def_info.get(settings.DEFAULT_NET_INTERFACE_IP_VERSION)
         if ipinfo:
             ip = ipinfo.get('addr')
-    if ip == None:
+    if ip is None:
         msg = "Your host does not have an ip address!"
         raise excp.NoIpException(msg)
     return ip
@@ -139,7 +139,7 @@ def get_pip_list(distro, component):
     LOG.info("Getting pip packages for distro %s and component %s." % (distro, component))
     all_pkgs = dict()
     fns = settings.PIP_MAP.get(component)
-    if fns == None:
+    if fns is None:
         return all_pkgs
     #load + merge them
     for fn in fns:
@@ -158,7 +158,7 @@ def get_pkg_list(distro, component):
     LOG.info("Getting packages for distro %s and component %s." % (distro, component))
     all_pkgs = dict()
     fns = settings.PKG_MAP.get(component)
-    if fns == None:
+    if fns is None:
         return all_pkgs
     #load + merge them
     for fn in fns:
@@ -205,9 +205,9 @@ def param_replace(text, replacements, ignore_missing=False):
         org = match.group(0)
         name = match.group(1)
         v = replacements.get(name)
-        if v == None and ignore_missing:
+        if v is None and ignore_missing:
             v = org
-        elif v == None and not ignore_missing:
+        elif v is None and not ignore_missing:
             msg = "No replacement found for parameter %s" % (org)
             raise excp.NoReplacementException(msg)
         else:
