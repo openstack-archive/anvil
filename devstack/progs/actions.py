@@ -117,7 +117,7 @@ _ACTION_CLASSES = {
 
 
 def _clean_action(action):
-    if action == None:
+    if action is None:
         return None
     action = action.strip().lower()
     if not (action in settings.ACTIONS):
@@ -138,7 +138,7 @@ def _get_action_cls(action_name, component_name):
 
 
 def _check_root(action, rootdir):
-    if rootdir == None or len(rootdir) == 0:
+    if rootdir is None or len(rootdir) == 0:
         return False
     if action == settings.INSTALL:
         if sh.isdir(rootdir):
@@ -338,7 +338,7 @@ def _run_action(args):
         return False
     #ensure os/distro is known
     (distro, platform) = utils.determine_distro()
-    if distro == None:
+    if distro is None:
         LOG.error("Unsupported platform: %s" % (platform))
         return False
     #start it

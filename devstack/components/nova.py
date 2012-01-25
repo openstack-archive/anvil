@@ -401,7 +401,7 @@ class NovaConf(object):
             opts = line_entry.get('options')
             if not key or len(key) == 0:
                 continue
-            if opts == None:
+            if opts is None:
                 key_str = self._form_key(key, False)
                 full_line = key_str
             else:
