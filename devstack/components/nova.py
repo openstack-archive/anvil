@@ -13,7 +13,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import os
 from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
@@ -25,10 +24,8 @@ LOG = logging.getLogger('devstack.components.nova')
 
 #config files adjusted
 API_CONF = 'nova.conf'
-CONFIGS = [API_CONF]
-
-#config just referenced
 PASTE_CONF = 'nova-api-paste.ini'
+CONFIGS = [API_CONF, PASTE_CONF]
 
 #this db will be dropped then created
 DB_NAME = 'nova'
@@ -47,11 +44,11 @@ APP_OPTIONS = {
 
 #post install cmds that will happen after install
 POST_INSTALL_CMDS = [
-    {'cmd': ['%BINDIR%nova-manage', '--flagfile', '%CFGFILE%',
+    {'cmd': ['%BINDIR%/nova-manage', '--flagfile', '%CFGFILE%',
              'db', 'sync']},
-    {'cmd': ['%BINDIR%nova-manage', '--flagfile', '%CFGFILE%',
+    {'cmd': ['%BINDIR%/nova-manage', '--flagfile', '%CFGFILE%',
               'floating', 'create', '%FLOATING_RANGE%']},
-    {'cmd': ['%BINDIR%nova-manage', '--flagfile', '%CFGFILE%',
+    {'cmd': ['%BINDIR%/nova-manage', '--flagfile', '%CFGFILE%',
               'floating', 'create', '--ip_range=%TEST_FLOATING_RANGE%',
               '--pool=%TEST_FLOATING_POOL%']}
 ]
@@ -93,6 +90,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         self.git_repo = self.cfg.get("git", "nova_repo")
         self.git_branch = self.cfg.get("git", "nova_branch")
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
+        self.paste_conf_fn = self._get_target_config_name(PASTE_CONF)
 
     def get_pkglist(self):
         pkgs = comp.PkgInstallComponent.get_pkglist(self)
@@ -124,8 +122,8 @@ class NovaInstaller(comp.PythonInstallComponent):
         # set up replacement map for CFGFILE, BINDIR, FLOATING_RANGE,
         # TEST_FLOATING_RANGE, TEST_FLOATING_POOL
         mp = dict()
-        mp['BINDIR'] = self.bindir + os.sep
-        mp['CFGFILE'] = self.cfgdir + os.sep + API_CONF
+        mp['BINDIR'] = self.bindir
+        mp['CFGFILE'] = sh.joinpths(self.cfgdir, API_CONF)
         mp['FLOATING_RANGE'] = self.cfg.get('nova', 'floating_range')
         mp['TEST_FLOATING_RANGE'] = self.cfg.get('nova', 'test_floating_range')
         mp['TEST_FLOATING_POOL'] = self.cfg.get('nova', 'test_floating_pool')
@@ -143,28 +141,42 @@ class NovaInstaller(comp.PythonInstallComponent):
         dirs['app'] = self.appdir
         dirs['cfg'] = self.cfgdir
         dirs['bin'] = self.bindir
-        conf_gen = NovaConfigurator(self.cfg, self.instances)
+        conf_gen = NovaConfigurator(self)
         nova_conf = conf_gen.configure(dirs)
         tgtfn = self._get_target_config_name(API_CONF)
         LOG.info("Writing conf to %s" % (tgtfn))
         LOG.info(nova_conf)
         sh.write_file(tgtfn, nova_conf)
-        #we configured one file, return that we did that
-        return 1
+        self.tracewriter.cfg_write(tgtfn)
+
+    def _generate_paste_api_conf(self):
+        LOG.info("Setting up %s" % (PASTE_CONF))
+        mp = dict()
+        mp['SERVICE_TOKEN'] = self.cfg.get("passwords", "service_token")
+        (src_fn, contents) = self._get_source_config(PASTE_CONF)
+        LOG.info("Replacing parameters in file %s" % (src_fn))
+        LOG.debug("Replacements = %s" % (mp))
+        contents = utils.param_replace(contents, mp, True)
+        LOG.debug("Writing out to %s" % (self.paste_conf_fn))
+        sh.write_file(self.paste_conf_fn, contents)
+        self.tracewriter.cfg_write(self.paste_conf_fn)
 
     def _configure_files(self):
-        return self._generate_nova_conf()
+        self._generate_nova_conf()
+        self._generate_paste_api_conf()
+        return len(CONFIGS)
 
 
 class NovaRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
         self.run_tokens = dict()
-        self.run_tokens['CFGFILE'] = self.cfgdir + os.sep + API_CONF
+        self.run_tokens['CFGFILE'] = sh.joinpths(self.cfgdir, API_CONF)
         LOG.debug("Setting CFGFILE run_token to:%s" % (self.run_tokens['CFGFILE']))
 
-    def _get_aps_to_start(self):
+    def _get_apps_to_start(self):
         # Check if component_opts was set to a subset of apps to be started
+        LOG.debug("getting list of apps to start")
         apps = list()
         if not self.component_opts and len(self.component_opts) > 0:
             LOG.debug("Attempt to use subset of components:%s" % (self.component_opts))
@@ -183,16 +195,19 @@ class NovaRuntime(comp.PythonRuntime):
         result = list()
         for app_name in apps:
             if app_name in APP_NAME_MAP:
-                app_name = APP_NAME_MAP.get(app_name)
+                image_name = APP_NAME_MAP.get(app_name)
                 LOG.debug("Renamed app_name to:" + app_name)
-            list.append({
+            else:
+                image_name = app_name
+            result.append({
                 'name': app_name,
-                'path': sh.joinpths(self.appdir, BIN_DIR, app_name),
+                'path': sh.joinpths(self.appdir, BIN_DIR, image_name),
             })
         LOG.debug("exiting _get_aps_to_start with:%s" % (result))
         return result
 
     def _get_app_options(self, app):
+        LOG.debug("Getting options for %s" % (app))
         result = list()
         for opt_str in APP_OPTIONS.get(app):
             LOG.debug("Checking opt_str for tokens: %s" % (opt_str))
@@ -205,9 +220,12 @@ class NovaRuntime(comp.PythonRuntime):
 # This class has the smarts to build the configuration file based on
 # various runtime values
 class NovaConfigurator(object):
-    def __init__(self, cfg, instances):
-        self.cfg = cfg
-        self.instances = instances
+    def __init__(self, nc):
+        self.cfg = nc.cfg
+        self.instances = nc.instances
+        self.appdir = nc.appdir
+        self.tracewriter = nc.tracewriter
+        self.paste_conf_fn = nc.paste_conf_fn
 
     def _getbool(self, name):
         return self.cfg.getboolean('nova', name)
@@ -293,8 +311,7 @@ class NovaConfigurator(object):
                 vncproxy_url = 'http://' + hostip + ':6080/vnc_auto.html'
             nova_conf.add('vncproxy_url', vncproxy_url)
 
-        paste_conf_fn = sh.joinpths(dirs.get('bin'), PASTE_CONF)
-        nova_conf.add('api_paste_config', paste_conf_fn)
+        nova_conf.add('api_paste_config', self.paste_conf_fn)
 
         img_service = self._getstr('img_service')
         if not img_service:
@@ -319,8 +336,13 @@ class NovaConfigurator(object):
 
         #where instances will be stored
         instances_path = self._getstr('instances_path')
-        if instances_path:
-            nova_conf.add('instances_path', instances_path)
+        if not instances_path:
+            # If there's no instances path, specify a default
+            instances_path = sh.joinpths(self.appdir, '..', 'instances')
+        nova_conf.add('instances_path', instances_path)
+        LOG.debug("Attempting to create instance directory:%s" % (instances_path))
+        # Create the directory for instances
+        self.tracewriter.make_dir(instances_path)
 
         #is this a multihost setup?
         if self._getbool('multi_host'):
