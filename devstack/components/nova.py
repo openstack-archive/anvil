@@ -428,7 +428,7 @@ class NovaConf(object):
         for line_entry in self.lines:
             key = line_entry.get('key')
             opts = line_entry.get('options')
-            if not key or len(key) == 0:
+            if not key:
                 continue
             if opts is None:
                 key_str = self._form_key(key, False)

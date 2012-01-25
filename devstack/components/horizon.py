@@ -143,8 +143,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
         user = self.cfg.get('horizon', 'apache_user')
         if not user:
             user = sh.getuser()
-        if user in BAD_APACHE_USERS:
-            LOG.warn("You may want to adjust your configuration, user=%s will typically not work with apache", user)
         group = self.cfg.get('horizon', 'apache_group')
         if not group:
             group = sh.getgroupname()
@@ -155,10 +153,11 @@ class HorizonInstaller(comp.PythonInstallComponent):
         #params with actual values
         mp = dict()
         if config_fn == HORIZON_APACHE_CONF:
-            (user, group) = self._get_apache_user_group() 
+            (user, group) = self._get_apache_user_group()
+            if user in BAD_APACHE_USERS:
+                LOG.warn("You may want to adjust your configuration, user=%s,group=%s will typically not work with apache", user, group)
             mp['USER'] = user
             mp['GROUP'] = group
-            mp['USER'] = self._get_apache_user()
             mp['HORIZON_DIR'] = self.appdir
             mp['HORIZON_PORT'] = self.cfg.get('horizon', 'port')
         else:

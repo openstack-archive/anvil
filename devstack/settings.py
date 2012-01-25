@@ -233,7 +233,7 @@ def get_dependencies(component):
 def resolve_dependencies(components):
     active_components = list(components)
     new_components = set()
-    while(len(active_components)):
+    while active_components:
         curr_comp = active_components.pop()
         component_deps = get_dependencies(curr_comp)
         new_components.add(curr_comp)
@@ -274,19 +274,19 @@ def parse_components(components, assume_all=False):
             else:
                 component_opts = mtch.group(2)
                 components_opts_cleaned = list()
-                if component_opts is None or len(component_opts) == 0:
+                if not component_opts:
                     pass
                 else:
                     sp_component_opts = component_opts.split(",")
                     for co in sp_component_opts:
                         cleaned_opt = co.strip()
-                        if len(cleaned_opt):
+                        if cleaned_opt:
                             components_opts_cleaned.append(cleaned_opt)
                 adjusted_components[component_name] = components_opts_cleaned
         else:
             LOG.warn("Unparseable component %s" % (c))
     #should we adjust them to be all the components?
-    if len(adjusted_components) == 0 and assume_all:
+    if not adjusted_components and assume_all:
         all_components = dict()
         for c in COMPONENT_NAMES:
             all_components[c] = list()

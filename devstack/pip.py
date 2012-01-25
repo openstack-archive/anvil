@@ -25,7 +25,7 @@ UNINSTALL_CMD = ['pip', 'uninstall']
 
 
 def install(pips):
-    if not pips or len(pips) == 0:
+    if not pips:
         return
     actions = list()
     pipnames = sorted(pips.keys())
@@ -34,17 +34,17 @@ def install(pips):
         pipinfo = pips.get(name)
         if pipinfo and pipinfo.get('version'):
             version = str(pipinfo.get('version'))
-            if len(version):
+            if version:
                 pipfull = pipfull + "==" + version
         actions.append(pipfull)
-    if len(actions):
+    if actions:
         LOG.info("Installing python packages [%s]" % (", ".join(actions)))
         cmd = INSTALL_CMD + actions
         sh.execute(*cmd, run_as_root=True)
 
 
 def uninstall(pips):
-    if not pips or len(pips) == 0:
+    if not pips:
         return
     pipnames = sorted(pips.keys())
     LOG.info("Uninstalling python packages [%s]" % (", ".join(pipnames)))

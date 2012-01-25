@@ -77,7 +77,7 @@ class AptPackager(pack.Packager):
             if pkg_full:
                 cmds.append(pkg_full)
                 which_removed.append(name)
-        if len(cmds):
+        if cmds:
             cmd = APT_GET + APT_DO_REMOVE + cmds
             self._execute_apt(cmd)
         #clean them out
@@ -96,7 +96,7 @@ class AptPackager(pack.Packager):
             pkg_full = self._format_pkg(name, info.get("version"))
             cmds.append(pkg_full)
         #install them
-        if len(cmds):
+        if cmds:
             cmd = APT_GET + APT_INSTALL + cmds
             self._execute_apt(cmd)
 

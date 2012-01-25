@@ -138,7 +138,7 @@ def _get_action_cls(action_name, component_name):
 
 
 def _check_root(action, rootdir):
-    if rootdir is None or len(rootdir) == 0:
+    if not rootdir:
         return False
     if action == settings.INSTALL:
         if sh.isdir(rootdir):
@@ -179,12 +179,12 @@ def _print_cfgs(config_obj, action):
     passwords_gotten = config_obj.pws
     full_cfgs = config_obj.configs_fetched
     db_dsns = config_obj.db_dsns
-    if len(passwords_gotten) or len(full_cfgs) or len(db_dsns):
+    if passwords_gotten or full_cfgs or db_dsns:
         LOG.info("After action (%s) your settings are:" % (action))
-        if len(passwords_gotten):
+        if passwords_gotten:
             LOG.info("Passwords:")
             map_print(passwords_gotten)
-        if len(full_cfgs):
+        if full_cfgs:
             #TODO
             #better way to do this?? (ie a list difference?)
             filtered_mp = dict()
@@ -192,10 +192,10 @@ def _print_cfgs(config_obj, action):
                 if key in passwords_gotten:
                     continue
                 filtered_mp[key] = full_cfgs.get(key)
-            if len(filtered_mp):
+            if filtered_mp:
                 LOG.info("Configs:")
                 map_print(filtered_mp)
-        if len(db_dsns):
+        if db_dsns:
             LOG.info("Data source names:")
             map_print(db_dsns)
 
@@ -325,7 +325,7 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
 
 def _run_action(args):
     components = settings.parse_components(args.pop("components"))
-    if len(components) == 0:
+    if not components:
         LOG.error("No components specified!")
         return False
     action = _clean_action(args.pop("action"))
@@ -348,7 +348,7 @@ def _run_action(args):
     if not ignore_deps:
         new_components = settings.resolve_dependencies(components.keys())
         component_diff = new_components.difference(components.keys())
-        if len(component_diff):
+        if component_diff:
             LOG.info("Having to activate dependent components: [%s]" % (", ".join(component_diff)))
             for new_component in component_diff:
                 components[new_component] = list()

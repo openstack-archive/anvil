@@ -35,7 +35,7 @@ class YumPackager(pack.Packager):
         pack.Packager.__init__(self, distro)
 
     def _format_pkg_name(self, name, version):
-        if version != None and len(version):
+        if version is not None and len(version):
             return VERSION_TEMPL % (name, version)
         else:
             return name
@@ -61,7 +61,7 @@ class YumPackager(pack.Packager):
             full_pkg_name = self._format_pkg_name(name, info.get("version"))
             if full_pkg_name:
                 pkg_full_names.append(full_pkg_name)
-        if len(pkg_full_names):
+        if pkg_full_names:
             cmd = YUM_CMD + YUM_INSTALL + pkg_full_names
             self._execute_yum(cmd)
 
@@ -81,7 +81,7 @@ class YumPackager(pack.Packager):
             if full_pkg_name:
                 pkg_full_names.append(full_pkg_name)
                 which_removed.append(name)
-        if len(pkg_full_names):
+        if pkg_full_names:
             cmd = YUM_CMD + YUM_REMOVE + pkg_full_names
             self._execute_yum(cmd)
         return which_removed

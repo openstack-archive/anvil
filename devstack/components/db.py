@@ -112,7 +112,7 @@ class DBRuntime(comp.EmptyRuntime):
 
     def _gettypeactions(self, act, exception_cls):
         pkgsinstalled = self.tracereader.packages_installed()
-        if len(pkgsinstalled) == 0:
+        if not pkgsinstalled:
             msg = "Can not %s %s since it was not installed" % (act, TYPE)
             raise exception_cls(msg)
         #figure out how to do it
