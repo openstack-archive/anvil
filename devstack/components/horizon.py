@@ -158,7 +158,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
             (user, group) = self._get_apache_user_group() 
             mp['USER'] = user
             mp['GROUP'] = group
-            mp['USER'] = self._get_apache_user()
             mp['HORIZON_DIR'] = self.appdir
             mp['HORIZON_PORT'] = self.cfg.get('horizon', 'port')
         else:
