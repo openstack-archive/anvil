@@ -105,7 +105,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         sh.execute(*setup_cmd, env_overrides=env)
 
     def _config_adjust(self, contents, name):
-        if(name not in CONFIGS):
+        if name not in CONFIGS:
             return contents
         #use config parser and
         #then extract known configs that
@@ -114,10 +114,10 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             config = cfg.IgnoreMissingConfigParser()
             config.readfp(stream)
             log_filename = config.get('log_file', CFG_SECTION)
-            if(log_filename):
+            if log_filename:
                 LOG.info("Ensuring log file %s exists and is empty" % (log_filename))
                 log_dir = sh.dirname(log_filename)
-                if(log_dir):
+                if log_dir:
                     LOG.info("Ensuring log directory %s exists" % (log_dir))
                     self.tracewriter.make_dir(log_dir)
                 #destroy then recreate it (the log file)
@@ -132,13 +132,13 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         #these be used to fill in the configuration/cmds +
         #params with actual values
         mp = dict()
-        if(config_fn == ROOT_CONF):
+        if config_fn == ROOT_CONF:
             host_ip = self.cfg.get('host', 'ip')
             mp['DEST'] = self.appdir
             mp['SQL_CONN'] = self.cfg.get_dbdsn(DB_NAME)
             mp['SERVICE_HOST'] = host_ip
             mp['ADMIN_HOST'] = host_ip
-        elif(config_fn == MANAGE_DATA_CONF):
+        elif config_fn == MANAGE_DATA_CONF:
             host_ip = self.cfg.get('host', 'ip')
             mp['ADMIN_PASSWORD'] = self.cfg.get('passwords', 'horizon_keystone_admin')
             mp['SERVICE_HOST'] = host_ip
@@ -173,13 +173,13 @@ def get_shared_params(cfg):
     mp = dict()
     host_ip = cfg.get('host', 'ip')
     keystone_auth_host = cfg.get('keystone', 'keystone_auth_host')
-    if(not keystone_auth_host):
+    if not keystone_auth_host:
         keystone_auth_host = host_ip
     mp['KEYSTONE_AUTH_HOST'] = keystone_auth_host
     mp['KEYSTONE_AUTH_PORT'] = cfg.get('keystone', 'keystone_auth_port')
     mp['KEYSTONE_AUTH_PROTOCOL'] = cfg.get('keystone', 'keystone_auth_protocol')
     keystone_service_host = cfg.get('keystone', 'keystone_service_host')
-    if(not keystone_service_host):
+    if not keystone_service_host:
         keystone_service_host = host_ip
     mp['KEYSTONE_SERVICE_HOST'] = keystone_service_host
     mp['KEYSTONE_SERVICE_PORT'] = cfg.get('keystone', 'keystone_service_port')

@@ -52,17 +52,17 @@ def execute_template(*cmds, **kargs):
         cmd_to_run_templ = cmdinfo.get("cmd")
         cmd_to_run = list()
         for piece in cmd_to_run_templ:
-            if(params_replacements and len(params_replacements)):
+            if params_replacements and len(params_replacements):
                 cmd_to_run.append(param_replace(piece, params_replacements,
                     ignore_missing=ignore_missing))
             else:
                 cmd_to_run.append(piece)
         stdin_templ = cmdinfo.get('stdin')
         stdin = None
-        if(stdin_templ and len(stdin_templ)):
+        if stdin_templ and len(stdin_templ):
             stdin_full = list()
             for piece in stdin_templ:
-                if(params_replacements and len(params_replacements)):
+                if params_replacements and len(params_replacements):
                     stdin_full.append(param_replace(piece, params_replacements,
                         ignore_missing=ignore_missing))
                 else:
@@ -81,7 +81,7 @@ def load_json(fn):
     lines = data.splitlines()
     new_lines = list()
     for line in lines:
-        if(line.lstrip().startswith('#')):
+        if line.lstrip().startswith('#'):
             continue
         new_lines.append(line)
     data = joinlinesep(*new_lines)
@@ -92,11 +92,11 @@ def get_host_ip():
     ip = None
     interfaces = get_interfaces()
     def_info = interfaces.get(settings.DEFAULT_NET_INTERFACE)
-    if(def_info):
+    if def_info:
         ipinfo = def_info.get(settings.DEFAULT_NET_INTERFACE_IP_VERSION)
-        if(ipinfo):
+        if ipinfo:
             ip = ipinfo.get('addr')
-    if(ip == None):
+    if ip == None:
         msg = "Your host does not have an ip address!"
         raise excp.NoIpException(msg)
     return ip
@@ -108,11 +108,11 @@ def get_interfaces():
         interface_info = dict()
         interface_addresses = netifaces.ifaddresses(intfc)
         ip6 = interface_addresses.get(netifaces.AF_INET6)
-        if(ip6 and len(ip6)):
+        if ip6 and len(ip6):
             #just take the first
             interface_info[settings.IPV6] = ip6[0]
         ip4 = interface_addresses.get(netifaces.AF_INET)
-        if(ip4 and len(ip4)):
+        if ip4 and len(ip4):
             #just take the first
             interface_info[settings.IPV4] = ip4[0]
         #there are others but this is good for now
@@ -124,12 +124,12 @@ def determine_distro():
     plt = platform.platform()
     #ensure its a linux distro
     (distname, _, _) = platform.linux_distribution()
-    if(not distname):
+    if not distname:
         return (None, plt)
     #attempt to match it to our platforms
     found_os = None
     for (known_os, pattern) in settings.KNOWN_DISTROS.items():
-        if(pattern.search(plt)):
+        if pattern.search(plt):
             found_os = known_os
             break
     return (found_os, plt)
@@ -139,13 +139,13 @@ def get_pip_list(distro, component):
     LOG.info("Getting pip packages for distro %s and component %s." % (distro, component))
     all_pkgs = dict()
     fns = settings.PIP_MAP.get(component)
-    if(fns == None):
+    if fns == None:
         return all_pkgs
     #load + merge them
     for fn in fns:
         js = load_json(fn)
         distro_pkgs = js.get(distro)
-        if(distro_pkgs and len(distro_pkgs)):
+        if distro_pkgs and len(distro_pkgs):
             combined = dict(all_pkgs)
             for (pkgname, pkginfo) in distro_pkgs.items():
                 #we currently just overwrite
@@ -158,22 +158,22 @@ def get_pkg_list(distro, component):
     LOG.info("Getting packages for distro %s and component %s." % (distro, component))
     all_pkgs = dict()
     fns = settings.PKG_MAP.get(component)
-    if(fns == None):
+    if fns == None:
         return all_pkgs
     #load + merge them
     for fn in fns:
         js = load_json(fn)
         distro_pkgs = js.get(distro)
-        if(distro_pkgs and len(distro_pkgs)):
+        if distro_pkgs and len(distro_pkgs):
             combined = dict(all_pkgs)
             for (pkgname, pkginfo) in distro_pkgs.items():
-                if(pkgname in all_pkgs.keys()):
+                if pkgname in all_pkgs.keys():
                     oldpkginfo = all_pkgs.get(pkgname) or dict()
                     newpkginfo = dict(oldpkginfo)
                     for (infokey, infovalue) in pkginfo.items():
                         #this is expected to be a list of cmd actions
                         #so merge that accordingly
-                        if(infokey == settings.PRE_INSTALL or infokey == settings.POST_INSTALL):
+                        if infokey == settings.PRE_INSTALL or infokey == settings.POST_INSTALL:
                             oldinstalllist = oldpkginfo.get(infokey) or []
                             infovalue = oldinstalllist + infovalue
                         newpkginfo[infokey] = infovalue
@@ -190,13 +190,13 @@ def joinlinesep(*pieces):
 
 def param_replace(text, replacements, ignore_missing=False):
 
-    if(not replacements or len(replacements) == 0):
+    if not replacements or len(replacements) == 0:
         return text
 
-    if(len(text) == 0):
+    if len(text) == 0:
         return text
 
-    if(ignore_missing):
+    if ignore_missing:
         LOG.debug("Performing parameter replacements (ignoring missing) on %s" % (text))
     else:
         LOG.debug("Performing parameter replacements (not ignoring missing) on %s" % (text))
@@ -205,9 +205,9 @@ def param_replace(text, replacements, ignore_missing=False):
         org = match.group(0)
         name = match.group(1)
         v = replacements.get(name)
-        if(v == None and ignore_missing):
+        if v == None and ignore_missing:
             v = org
-        elif(v == None and not ignore_missing):
+        elif v == None and not ignore_missing:
             msg = "No replacement found for parameter %s" % (org)
             raise excp.NoReplacementException(msg)
         else:
@@ -275,7 +275,7 @@ def center_text(text, fill, max_len):
 def welcome(ident):
     ver_str = version.version_string()
     lower = "|"
-    if(ident):
+    if ident:
         lower += ident
         lower += " "
     lower += ver_str
@@ -285,7 +285,7 @@ def welcome(ident):
     footer = colored(settings.PROG_NICE_NAME, 'green') + \
                 ": " + colored(lower, 'blue')
     uncolored_footer = (settings.PROG_NICE_NAME + ": " + lower)
-    if(max_line_len - len(uncolored_footer) > 0):
+    if max_line_len - len(uncolored_footer) > 0:
         #this format string wil center the uncolored text which
         #we will then replace
         #with the color text equivalent

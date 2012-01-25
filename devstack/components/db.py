@@ -83,7 +83,7 @@ class DBInstaller(comp.PkgInstallComponent):
         #extra actions to ensure we are granted access
         dbtype = self.cfg.get("db", "type")
         dbactions = DB_ACTIONS.get(dbtype)
-        if(dbactions and dbactions.get('grant_all')):
+        if dbactions and dbactions.get('grant_all'):
             #update the DB to give user 'USER'@'%' full control of the all databases:
             grant_cmd = dbactions.get('grant_all')
             params = self._get_param_map(None)
@@ -96,9 +96,9 @@ class DBInstaller(comp.PkgInstallComponent):
             #since python escapes this to much...
             utils.execute_template(*cmds, params=params, shell=True)
         #special mysql actions
-        if(dbactions and dbtype == MYSQL):
+        if dbactions and dbtype == MYSQL:
             cmd = dbactions.get('host_adjust')
-            if(cmd):
+            if cmd:
                 sh.execute(*cmd, run_as_root=True, shell=True)
         #restart it to make sure all good
         self.runtime.restart()
@@ -112,19 +112,19 @@ class DBRuntime(comp.EmptyRuntime):
 
     def _gettypeactions(self, act, exception_cls):
         pkgsinstalled = self.tracereader.packages_installed()
-        if(len(pkgsinstalled) == 0):
+        if len(pkgsinstalled) == 0:
             msg = "Can not %s %s since it was not installed" % (act, TYPE)
             raise exception_cls(msg)
         #figure out how to do it
         dbtype = self.cfg.get("db", "type")
         typeactions = DB_ACTIONS.get(dbtype)
-        if(typeactions == None or not typeactions.get(act)):
+        if typeactions == None or not typeactions.get(act):
             msg = BASE_ERROR % (act, dbtype)
             raise NotImplementedError(msg)
         return typeactions.get(act)
 
     def start(self):
-        if(self.status() == comp.STATUS_STOPPED):
+        if self.status() == comp.STATUS_STOPPED:
             startcmd = self._gettypeactions('start', excp.StartException)
             sh.execute(*startcmd, run_as_root=True)
             return 1
@@ -132,7 +132,7 @@ class DBRuntime(comp.EmptyRuntime):
             return 0
 
     def stop(self):
-        if(self.status() == comp.STATUS_STARTED):
+        if self.status() == comp.STATUS_STARTED:
             stopcmd = self._gettypeactions('stop', excp.StopException)
             sh.execute(*stopcmd, run_as_root=True)
             return 1
@@ -147,9 +147,9 @@ class DBRuntime(comp.EmptyRuntime):
     def status(self):
         statuscmd = self._gettypeactions('status', excp.StatusException)
         (sysout, _) = sh.execute(*statuscmd)
-        if(sysout.find("start/running") != -1):
+        if sysout.find("start/running") != -1:
             return comp.STATUS_STARTED
-        elif(sysout.find("stop/waiting") != -1):
+        elif sysout.find("stop/waiting") != -1:
             return comp.STATUS_STOPPED
         else:
             return comp.STATUS_UNKNOWN
@@ -158,7 +158,7 @@ class DBRuntime(comp.EmptyRuntime):
 def drop_db(cfg, dbname):
     dbtype = cfg.get("db", "type")
     dbactions = DB_ACTIONS.get(dbtype)
-    if(dbactions and dbactions.get('drop_db')):
+    if dbactions and dbactions.get('drop_db'):
         dropcmd = dbactions.get('drop_db')
         params = dict()
         params['PASSWORD'] = cfg.get("passwords", "sql")
@@ -178,7 +178,7 @@ def drop_db(cfg, dbname):
 def create_db(cfg, dbname):
     dbtype = cfg.get("db", "type")
     dbactions = DB_ACTIONS.get(dbtype)
-    if(dbactions and dbactions.get('create_db')):
+    if dbactions and dbactions.get('create_db'):
         createcmd = dbactions.get('create_db')
         params = dict()
         params['PASSWORD'] = cfg.get("passwords", "sql")
