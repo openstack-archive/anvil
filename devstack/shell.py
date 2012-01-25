@@ -112,9 +112,7 @@ def execute(*cmd, **kwargs):
     rc = obj.returncode
     LOG.debug('Cmd result had exit code: %s' % rc)
 
-    if((not ignore_exit_code) and (rc not in check_exit_code)):
-        (stdout, stderr) = result
-    if (not ignore_exit_code) and (_returncode not in check_exit_code):
+    if (not ignore_exit_code) and (rc not in check_exit_code):
         (stdout, stderr) = result
         raise excp.ProcessExecutionError(
                 exit_code=rc,
@@ -123,7 +121,7 @@ def execute(*cmd, **kwargs):
                 cmd=str_cmd)
     else:
         #log it anyway
-        if(rc not in check_exit_code):
+        if rc not in check_exit_code:
             (stdout, stderr) = result
             LOG.debug("A failure may of just happened when running command \"%s\" [%s] (%s, %s)", str_cmd,
                 rc, stdout.strip(), stderr.strip())

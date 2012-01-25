@@ -123,7 +123,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         # ../openstack-dashboard/local needs to be writeable by the runtime user
         # since currently its storing the sql-lite databases there (TODO fix that)
         path = sh.joinpths(self.dash_dir, 'local')
-        if(sh.isdir(path)):
+        if sh.isdir(path):
             (user, group) = self._get_apache_user_group()
             LOG.info("Changing ownership (recursively) of %s so that it can be used by %s - %s", 
                 path, user, group)
@@ -143,10 +143,10 @@ class HorizonInstaller(comp.PythonInstallComponent):
         user = self.cfg.get('horizon', 'apache_user')
         if not user:
             user = sh.getuser()
-        if(user in BAD_APACHE_USERS):
+        if user in BAD_APACHE_USERS:
             LOG.warn("You may want to adjust your configuration, user=%s will typically not work with apache", user)
         group = self.cfg.get('horizon', 'apache_group')
-        if(not group):
+        if not group:
             group = sh.getgroupname()
         return (user, group)
 
@@ -174,7 +174,7 @@ class HorizonRuntime(comp.EmptyRuntime):
 
     def start(self):
         curr_status = self.status()
-        if(curr_status == comp.STATUS_STARTED):
+        if curr_status == comp.STATUS_STARTED:
             #restart it ?
             return self.restart()
         else:
@@ -184,7 +184,7 @@ class HorizonRuntime(comp.EmptyRuntime):
 
     def restart(self):
         curr_status = self.status()
-        if(curr_status == comp.STATUS_STARTED):
+        if curr_status == comp.STATUS_STARTED:
             sh.execute(*APACHE_RESTART_CMD, 
                 run_as_root=True)
             return 1
@@ -192,7 +192,7 @@ class HorizonRuntime(comp.EmptyRuntime):
 
     def stop(self):
         curr_status = self.status()
-        if(curr_status == comp.STATUS_STARTED):
+        if curr_status == comp.STATUS_STARTED:
             sh.execute(*APACHE_STOP_CMD, 
                 run_as_root=True)
             return 1
@@ -201,9 +201,9 @@ class HorizonRuntime(comp.EmptyRuntime):
     def status(self):
         (sysout, _) = sh.execute(*APACHE_STATUS_CMD, 
                             check_exit_code=False)
-        if(sysout.find("is running") != -1):
+        if sysout.find("is running") != -1:
             return comp.STATUS_STARTED
-        elif(sysout.find("NOT running") != -1):
+        elif sysout.find("NOT running") != -1:
             return comp.STATUS_STOPPED
         else:
             return comp.STATUS_UNKNOWN
