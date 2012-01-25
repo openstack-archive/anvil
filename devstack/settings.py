@@ -250,7 +250,7 @@ def prioritize_components(components):
     mporder = dict()
     for c in components:
         priority = COMPONENT_NAMES_PRIORITY.get(c)
-        if priority == None:
+        if priority is None:
             priority = sys.maxint
         mporder[c] = priority
     #sort by priority value
@@ -274,7 +274,7 @@ def parse_components(components, assume_all=False):
             else:
                 component_opts = mtch.group(2)
                 components_opts_cleaned = list()
-                if component_opts == None or len(component_opts) == 0:
+                if component_opts is None or len(component_opts) == 0:
                     pass
                 else:
                     sp_component_opts = component_opts.split(",")

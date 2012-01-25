@@ -52,7 +52,7 @@ class Trace(object):
         return self.tracefn
 
     def trace(self, cmd, action=None):
-        if action == None:
+        if action is None:
             action = date.rcf8222date()
         line = TRACE_FMT % (cmd, action)
         sh.append_file(self.tracefn, line)
@@ -280,7 +280,7 @@ def parse_fn(fn):
     accum = list()
     for line in lines:
         ep = split_line(line)
-        if ep == None:
+        if ep is None:
             continue
         accum.append(tuple(ep))
     return accum

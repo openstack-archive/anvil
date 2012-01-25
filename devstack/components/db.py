@@ -118,7 +118,7 @@ class DBRuntime(comp.EmptyRuntime):
         #figure out how to do it
         dbtype = self.cfg.get("db", "type")
         typeactions = DB_ACTIONS.get(dbtype)
-        if typeactions == None or not typeactions.get(act):
+        if typeactions is None or not typeactions.get(act):
             msg = BASE_ERROR % (act, dbtype)
             raise NotImplementedError(msg)
         return typeactions.get(act)
