@@ -29,19 +29,18 @@ TYPE = settings.KEYSTONE
 ROOT_CONF = "keystone.conf"
 CONFIGS = [ROOT_CONF]
 BIN_DIR = "bin"
-CONFIG_DIR = "config"
+CONFIG_DIR = "etc"
 DB_NAME = "keystone"
 CFG_SECTION = 'DEFAULT'
-MANAGE_JSON_CONF = 'keystone-manage-cmds.json'
-MANAGER_NAME = 'keystone-manage'
+MANAGE_DATA_CONF = 'keystone_data.sh'
+MANAGER_CMD = [sh.joinpths("/", "bin", 'bash')]
 
 #what to start
 APP_OPTIONS = {
-    'keystone': ['--config-file', sh.joinpths('%ROOT%', "config", ROOT_CONF), "--verbose"],
+    'keystone': ['-c', sh.joinpths('%ROOT%', CONFIG_DIR, ROOT_CONF),
+                "--verbose", '-d', 
+                '--log-config=' + sh.joinpths('%ROOT%', CONFIG_DIR, 'logging.cnf')]
 }
-
-#how we invoke the manage command
-KEYSTONE_MNG_CMD = [sh.joinpths("%BIN_DIR%", MANAGER_NAME), '--config-file=%CONFIG_FILE%']
 
 
 class KeystoneUninstaller(comp.PythonUninstallComponent):
@@ -81,57 +80,21 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         db.create_db(self.cfg, DB_NAME)
 
     def _setup_data(self):
-        #load the json file which has the keystone setup commands
-        cmds_pth = sh.joinpths(settings.STACK_CONFIG_DIR, TYPE, MANAGE_JSON_CONF)
-        cmd_map = utils.load_json(cmds_pth)
-
-        #order matters here
-        base_cmds = list()
-
-        tenant_cmds = cmd_map.get('tenants', list())
-        base_cmds.extend(tenant_cmds)
-
-        user_cmds = cmd_map.get('users', list())
-        base_cmds.extend(user_cmds)
-
-        role_cmds = cmd_map.get('roles', list())
-        base_cmds.extend(role_cmds)
-
-        token_cmds = cmd_map.get('tokens', list())
-        base_cmds.extend(token_cmds)
-
-        service_cmds = cmd_map.get('services', list())
-        base_cmds.extend(service_cmds)
-
-        endpoint_cmds = cmd_map.get('endpoints', list())
-        base_cmds.extend(endpoint_cmds)
-
-        if(settings.GLANCE in self.instances):
-            glance_cmds = cmd_map.get('glance', list())
-            base_cmds.extend(glance_cmds)
-        if(settings.NOVA in self.instances):
-            nova_cmds = cmd_map.get('nova', list())
-            base_cmds.extend(nova_cmds)
-        if(settings.SWIFT in self.instances):
-            swift_cmds = cmd_map.get('swift', list())
-            base_cmds.extend(swift_cmds)
-
-        #the above commands are only templates
-        #now we fill in the actual application that will run it
-        full_cmds = list()
-        for cmd in base_cmds:
-            if(cmd):
-                actual_cmd = KEYSTONE_MNG_CMD + cmd
-                full_cmds.append({
-                    'cmd': actual_cmd,
-                })
-
-        LOG.info("Running (%s) %s commands to setup keystone." % (len(full_cmds), MANAGER_NAME))
-
-        if(len(full_cmds)):
-            #execute as templates with replacements coming from the given map
-            params = self._get_param_map(MANAGE_JSON_CONF)
-            utils.execute_template(*full_cmds, params=params, ignore_missing=True)
+        # TODO clean this up once it works
+        src_fn = sh.joinpths(settings.STACK_CONFIG_DIR, TYPE, MANAGE_DATA_CONF)
+        contents = sh.load_file(src_fn)
+        params = self._get_param_map(MANAGE_DATA_CONF)
+        contents = utils.param_replace(contents, params, True)
+        tgt_fn = sh.joinpths(self.bindir, MANAGE_DATA_CONF)
+        sh.write_file(tgt_fn, contents)
+        # This environment additions are important 
+        # in that they eventually affect how keystone-manage runs so make sure its set.
+        env = dict()
+        env['ENABLED_SERVICES'] = ",".join(self.instances.keys())
+        env['BIN_DIR'] = self.bindir
+        setup_cmd = MANAGER_CMD + [tgt_fn]
+        LOG.info("Running (%s) command to setup keystone." % (" ".join(setup_cmd)))
+        sh.execute(*setup_cmd, env_overrides=env)
 
     def _config_adjust(self, contents, name):
         if(name not in CONFIGS):
@@ -167,12 +130,10 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             mp['SQL_CONN'] = self.cfg.get_dbdsn(DB_NAME)
             mp['SERVICE_HOST'] = host_ip
             mp['ADMIN_HOST'] = host_ip
-        elif(config_fn == MANAGE_JSON_CONF):
+        elif(config_fn == MANAGE_DATA_CONF):
             host_ip = self.cfg.get('host', 'ip')
             mp['ADMIN_PASSWORD'] = self.cfg.get('passwords', 'horizon_keystone_admin')
             mp['SERVICE_HOST'] = host_ip
-            mp['BIN_DIR'] = self.bindir
-            mp['CONFIG_FILE'] = sh.joinpths(self.cfgdir, ROOT_CONF)
             mp.update(get_shared_params(self.cfg))
         else:
             mp['DEST'] = self.appdir

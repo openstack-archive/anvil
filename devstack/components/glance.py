@@ -30,7 +30,9 @@ LOG = logging.getLogger("devstack.components.glance")
 TYPE = settings.GLANCE
 API_CONF = "glance-api.conf"
 REG_CONF = "glance-registry.conf"
-CONFIGS = [API_CONF, REG_CONF]
+API_PASTE_CONF = 'glance-api-paste.ini'
+REG_PASTE_CONF = 'glance-registry-paste.ini'
+CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF, REG_PASTE_CONF]
 DB_NAME = "glance"
 CFG_SECTION = 'DEFAULT'
 
