@@ -60,7 +60,7 @@ def execute(*cmd, **kwargs):
         execute_cmd = cmd
         LOG.debug('Running cmd: [%s]' % (' '.join(str_cmd)))
 
-    if process_input != None:
+    if process_input is not None:
         LOG.debug('With stdin: %s' % (process_input))
 
     if cwd:
@@ -101,7 +101,7 @@ def execute(*cmd, **kwargs):
             env=process_env)
 
     result = None
-    if process_input != None:
+    if process_input is not None:
         result = obj.communicate(str(process_input))
     else:
         result = obj.communicate()

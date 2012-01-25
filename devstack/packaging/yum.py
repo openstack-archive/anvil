@@ -35,7 +35,7 @@ class YumPackager(pack.Packager):
         pack.Packager.__init__(self, distro)
 
     def _format_pkg_name(self, name, version):
-        if version != None and len(version):
+        if version is not None and len(version):
             return VERSION_TEMPL % (name, version)
         else:
             return name
