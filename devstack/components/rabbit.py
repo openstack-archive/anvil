@@ -64,7 +64,7 @@ class RabbitRuntime(comp.EmptyRuntime):
         self.tracereader = tr.TraceReader(self.tracedir, tr.IN_TRACE)
 
     def start(self):
-        if(self.status() == comp.STATUS_STOPPED):
+        if self.status() == comp.STATUS_STOPPED:
             self._run_cmd(START_CMD)
             return 1
         else:
@@ -72,7 +72,7 @@ class RabbitRuntime(comp.EmptyRuntime):
 
     def status(self):
         pkgsinstalled = self.tracereader.packages_installed()
-        if(len(pkgsinstalled) == 0):
+        if len(pkgsinstalled) == 0:
             msg = "Can not check the status of %s since it was not installed" % (TYPE)
             raise excp.StatusException(msg)
         #this has got to be the worst status output
@@ -80,15 +80,15 @@ class RabbitRuntime(comp.EmptyRuntime):
         (sysout, _) = sh.execute(*STATUS_CMD,
                         run_as_root=True,
                         check_exit_code=False)
-        if(sysout.find('nodedown') != -1 or sysout.find("unable to connect to node") != -1):
+        if sysout.find('nodedown') != -1 or sysout.find("unable to connect to node") != -1:
             return comp.STATUS_STOPPED
-        elif(sysout.find('running_applications') != -1):
+        elif sysout.find('running_applications') != -1:
             return comp.STATUS_STARTED
         else:
             return comp.STATUS_UNKNOWN
 
     def _run_cmd(self, cmd):
-        if(self.distro == settings.UBUNTU11):
+        if self.distro == settings.UBUNTU11:
             #this seems to fix one of the bugs with rabbit mq starting and stopping
             #not cool, possibly connected to the following bugs:
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
@@ -104,7 +104,7 @@ class RabbitRuntime(comp.EmptyRuntime):
         return 1
 
     def stop(self):
-        if(self.status() == comp.STATUS_STARTED):
+        if self.status() == comp.STATUS_STARTED:
             self._run_cmd(STOP_CMD)
             return 1
         else:

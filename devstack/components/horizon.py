@@ -64,9 +64,9 @@ class HorizonInstaller(comp.PythonInstallComponent):
         return places
 
     def _get_target_config_name(self, config_name):
-        if(config_name == HORIZON_PY_CONF):
+        if config_name == HORIZON_PY_CONF:
             return sh.joinpths(self.dash_dir, *HORIZON_PY_CONF_TGT)
-        elif(config_name == HORIZON_APACHE_CONF):
+        elif config_name == HORIZON_APACHE_CONF:
             #this may require sudo of the whole program to be able to write here.
             return sh.joinpths(*HORIZON_APACHE_TGT)
         else:
@@ -103,7 +103,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         #Horizon currently imports quantum even if you aren't using it.
         #Instead of installing quantum we can create a simple module
         #that will pass the initial imports.
-        if(settings.QUANTUM in self.instances):
+        if settings.QUANTUM in self.instances:
             return
         else:
             #Make the fake quantum
@@ -122,7 +122,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
     def _get_apache_user(self):
         #TODO will this be the right user?
         user = self.cfg.get('horizon', 'apache_user')
-        if(not user):
+        if not user:
             user = sh.getuser()
         return user
 
@@ -130,7 +130,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         #this dict will be used to fill in the configuration
         #params with actual values
         mp = dict()
-        if(config_fn == HORIZON_APACHE_CONF):
+        if config_fn == HORIZON_APACHE_CONF:
             mp['USER'] = self._get_apache_user()
             mp['HORIZON_DIR'] = self.appdir
         else:

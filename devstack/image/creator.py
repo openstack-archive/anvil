@@ -204,17 +204,17 @@ class ImageCreationService:
         try:
             token = self.cfg.get("passwords", "service_token")
             flat_urls = self.cfg.get('img', 'image_urls')
-            if(flat_urls):
+            if flat_urls:
                 expanded_urls = [x.strip() for x in flat_urls.split(',')]
                 for url in expanded_urls:
-                    if(url):
+                    if url:
                         urls.append(url)
         except(ConfigParser.Error):
             LOG.info("No image configuration keys found, skipping glance image install")
 
         #install them in glance
         am_installed = 0
-        if(urls):
+        if urls:
             LOG.info("Attempting to download & extract and upload (%s) images." % (", ".join(urls)))
             for url in urls:
                 try:

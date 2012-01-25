@@ -52,7 +52,7 @@ class Trace(object):
         return self.tracefn
 
     def trace(self, cmd, action=None):
-        if(action == None):
+        if action == None:
             action = date.rcf8222date()
         line = TRACE_FMT % (cmd, action)
         sh.append_file(self.tracefn, line)
@@ -67,14 +67,14 @@ class TraceWriter(object):
         self.started = False
 
     def _start(self):
-        if(self.started):
+        if self.started:
             return
         else:
             dirs = sh.mkdirslist(self.root)
             self.filename = touch_trace(self.root, self.name)
             self.tracer = Trace(self.filename)
             self.tracer.trace(TRACE_VERSION, str(TRACE_VER))
-            if(len(dirs)):
+            if len(dirs):
                 for d in dirs:
                     self.tracer.trace(DIR_MADE, d)
             self.started = True
@@ -158,9 +158,9 @@ class TraceReader(object):
         lines = self._read()
         pyentries = list()
         for (cmd, action) in lines:
-            if(cmd == PYTHON_INSTALL and len(action)):
+            if cmd == PYTHON_INSTALL and len(action):
                 jentry = json.loads(action)
-                if(type(jentry) is dict):
+                if type(jentry) is dict:
                     pyentries.append(jentry)
         return pyentries
 
@@ -174,7 +174,7 @@ class TraceReader(object):
         lines = self._read()
         files = list()
         for (cmd, action) in lines:
-            if(cmd == FILE_TOUCHED and len(action)):
+            if cmd == FILE_TOUCHED and len(action):
                 files.append(action)
         files = list(set(files))
         files.sort()
@@ -184,7 +184,7 @@ class TraceReader(object):
         lines = self._read()
         dirs = list()
         for (cmd, action) in lines:
-            if(cmd == DIR_MADE and len(action)):
+            if cmd == DIR_MADE and len(action):
                 dirs.append(action)
         #ensure in ok order (ie /tmp is before /)
         dirs = list(set(dirs))
@@ -196,9 +196,9 @@ class TraceReader(object):
         lines = self._read()
         files = list()
         for (cmd, action) in lines:
-            if(cmd == AP_STARTED and len(action)):
+            if cmd == AP_STARTED and len(action):
                 jdec = json.loads(action)
-                if(type(jdec) is dict):
+                if type(jdec) is dict:
                     files.append(jdec)
         return files
 
@@ -206,7 +206,7 @@ class TraceReader(object):
         lines = self._read()
         files = list()
         for (cmd, action) in lines:
-            if(cmd == CFG_WRITING_FILE and len(action)):
+            if cmd == CFG_WRITING_FILE and len(action):
                 files.append(action)
         files = list(set(files))
         files.sort()
@@ -217,13 +217,13 @@ class TraceReader(object):
         pipsinstalled = dict()
         pip_list = list()
         for (cmd, action) in lines:
-            if(cmd == PIP_INSTALL and len(action)):
+            if cmd == PIP_INSTALL and len(action):
                 pip_list.append(action)
         for pdata in pip_list:
             pip_info_full = json.loads(pdata)
-            if(type(pip_info_full) is dict):
+            if type(pip_info_full) is dict:
                 name = pip_info_full.get('name')
-                if(name and len(name)):
+                if name and len(name):
                     pipsinstalled[name] = pip_info_full.get('pip_meta')
         return pipsinstalled
 
@@ -232,13 +232,13 @@ class TraceReader(object):
         pkgsinstalled = dict()
         pkg_list = list()
         for (cmd, action) in lines:
-            if(cmd == PKG_INSTALL and len(action)):
+            if cmd == PKG_INSTALL and len(action):
                 pkg_list.append(action)
         for pdata in pkg_list:
             pkg_info = json.loads(pdata)
-            if(type(pkg_info) is dict):
+            if type(pkg_info) is dict:
                 name = pkg_info.get('name')
-                if(name and len(name)):
+                if name and len(name):
                     pkgsinstalled[name] = pkg_info.get('pkg_meta')
         return pkgsinstalled
 
@@ -256,7 +256,7 @@ def touch_trace(rootdir, name):
 
 def split_line(line):
     pieces = line.split("-", 1)
-    if(len(pieces) == 2):
+    if len(pieces) == 2:
         cmd = pieces[0].rstrip()
         action = pieces[1].lstrip()
         return (cmd, action)
@@ -272,7 +272,7 @@ def read(rootdir, name):
 
 
 def parse_fn(fn):
-    if(not sh.isfile(fn)):
+    if not sh.isfile(fn):
         msg = "No trace found at filename %s" % (fn)
         raise excp.NoTraceException(msg)
     contents = sh.load_file(fn)
@@ -280,7 +280,7 @@ def parse_fn(fn):
     accum = list()
     for line in lines:
         ep = split_line(line)
-        if(ep == None):
+        if ep == None:
             continue
         accum.append(tuple(ep))
     return accum

@@ -48,7 +48,7 @@ class AptPackager(pack.Packager):
         return VERSION_TEMPL % (name, version)
 
     def _format_pkg(self, name, version):
-        if(version and len(version)):
+        if version and len(version):
             cmd = self._format_version(name, version)
         else:
             cmd = name
@@ -68,16 +68,16 @@ class AptPackager(pack.Packager):
         for name in pkgnames:
             info = pkgs.get(name) or {}
             removable = info.get('removable', True)
-            if(not removable):
+            if not removable:
                 continue
-            if(self._pkg_remove_special(name, info)):
+            if self._pkg_remove_special(name, info):
                 which_removed.append(name)
                 continue
             pkg_full = self._format_pkg(name, info.get("version"))
-            if(pkg_full):
+            if pkg_full:
                 cmds.append(pkg_full)
                 which_removed.append(name)
-        if(len(cmds)):
+        if len(cmds):
             cmd = APT_GET + APT_DO_REMOVE + cmds
             self._execute_apt(cmd)
         #clean them out
@@ -91,17 +91,17 @@ class AptPackager(pack.Packager):
         cmds = []
         for name in pkgnames:
             info = pkgs.get(name) or {}
-            if(self._pkg_install_special(name, info)):
+            if self._pkg_install_special(name, info):
                 continue
             pkg_full = self._format_pkg(name, info.get("version"))
             cmds.append(pkg_full)
         #install them
-        if(len(cmds)):
+        if len(cmds):
             cmd = APT_GET + APT_INSTALL + cmds
             self._execute_apt(cmd)
 
     def _pkg_remove_special(self, name, pkginfo):
-        if(name == 'rabbitmq-server' and self.distro == settings.UBUNTU11):
+        if name == 'rabbitmq-server' and self.distro == settings.UBUNTU11:
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
             LOG.info("Handling special remove of %s." % (name))
@@ -117,7 +117,7 @@ class AptPackager(pack.Packager):
         return False
 
     def _pkg_install_special(self, name, pkginfo):
-        if(name == 'rabbitmq-server' and self.distro == settings.UBUNTU11):
+        if name == 'rabbitmq-server' and self.distro == settings.UBUNTU11:
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
             LOG.info("Handling special install of %s." % (name))

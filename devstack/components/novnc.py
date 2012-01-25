@@ -70,7 +70,7 @@ class NoVNCRuntime(comp.ProgramRuntime):
 
     def _get_param_map(self, app_name):
         root_params = comp.ProgramRuntime._get_param_map(self, app_name)
-        if(app_name == VNC_PROXY_APP and settings.NOVA in self.instances):
+        if app_name == VNC_PROXY_APP and settings.NOVA in self.instances:
             nova_runtime = self.instances.get(settings.NOVA)
             root_params['NOVA_CONF'] = sh.joinpths(nova_runtime.cfgdir, nova.API_CONF)
         return root_params
