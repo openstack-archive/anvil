@@ -95,7 +95,7 @@ def parse():
     output['action'] = options.action
     output['list_deps'] = options.list_deps
     output['force'] = options.force
-    if(options.ensure_deps):
+    if options.ensure_deps:
         output['ignore_deps'] = False
     else:
         output['ignore_deps'] = True

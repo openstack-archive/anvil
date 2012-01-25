@@ -50,21 +50,21 @@ class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
 
     def getboolean(self, section, option):
         value = self.get(section, option)
-        if(value == None):
+        if value is None:
             #not there so don't let the parent blowup
             return IgnoreMissingConfigParser.DEF_BOOLEAN
         return ConfigParser.RawConfigParser.getboolean(self, section, option)
 
     def getfloat(self, section, option):
         value = self.get(section, option)
-        if(value == None):
+        if value is None:
             #not there so don't let the parent blowup
             return IgnoreMissingConfigParser.DEF_FLOAT
         return ConfigParser.RawConfigParser.getfloat(self, section, option)
 
     def getint(self, section, option):
         value = self.get(section, option)
-        if(value == None):
+        if value is None:
             #not there so don't let the parent blowup
             return IgnoreMissingConfigParser.DEF_INT
         return ConfigParser.RawConfigParser.getint(self, section, option)
@@ -81,18 +81,18 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         return "/".join([str(section), str(option)])
 
     def _resolve_special(self, section, option, value_gotten):
-        if(value_gotten and len(value_gotten)):
-            if(section == 'passwords'):
+        if value_gotten and len(value_gotten):
+            if section == 'passwords':
                 #ensure we store it as a password
                 key = self._makekey(section, option)
                 self.pws[key] = value_gotten
             return value_gotten
-        if(section == 'host' and option == 'ip'):
+        if section == 'host' and option == 'ip':
             LOG.debug("Host ip from configuration/environment was empty, programatically attempting to determine it.")
             host_ip = utils.get_host_ip()
             LOG.debug("Determined host ip to be: \"%s\"" % (host_ip))
             return host_ip
-        elif(section == 'passwords'):
+        elif section == 'passwords':
             key = self._makekey(section, option)
             LOG.debug("Being forced to ask for password for \"%s\" since the configuration/environment value is empty.", key)
             pw = sh.password(PW_TMPL % (key))
@@ -104,7 +104,7 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
     def get(self, section, option):
         key = self._makekey(section, option)
         value = None
-        if(key in self.configs_fetched):
+        if key in self.configs_fetched:
             value = self.configs_fetched.get(key)
             LOG.debug("Fetched cached value \"%s\" for param \"%s\"" % (value, key))
         else:
@@ -116,7 +116,7 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         return value
 
     def _extract_default(self, default_value):
-        if(not SUB_MATCH.search(default_value)):
+        if not SUB_MATCH.search(default_value):
             return default_value
 
         LOG.debug("Performing simple replacement on %s", default_value)
@@ -132,18 +132,18 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
     def _get_special(self, section, option):
         key = self._makekey(section, option)
         parent_val = ConfigParser.RawConfigParser.get(self, section, option)
-        if(parent_val == None):
+        if parent_val is None:
             #parent didn't have anything, we are unable to do anything with it then
             return None
         extracted_val = None
         mtch = ENV_PAT.match(parent_val)
-        if(mtch):
+        if mtch:
             env_key = mtch.group(1).strip()
             def_val = mtch.group(2)
-            if(len(def_val) == 0 and len(env_key) == 0):
+            if len(def_val) == 0 and len(env_key) == 0:
                 msg = "Invalid bash-like value \"%s\" for \"%s\"" % (parent_val, key)
                 raise excp.BadParamException(msg)
-            if(len(env_key) == 0 or env.get_key(env_key) == None):
+            if len(env_key) == 0 or env.get_key(env_key) is None:
                 LOG.debug("Extracting default value from config provided default value \"%s\" for \"%s\"" % (def_val, key))
                 actual_def_val = self._extract_default(def_val)
                 LOG.debug("Using config provided default value \"%s\" for \"%s\" (no environment key)" % (actual_def_val, key))
@@ -163,28 +163,28 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         port = self.get("db", "port")
         pw = self.get("passwords", "sql")
         #check the dsn cache
-        if(dbname in self.db_dsns):
+        if dbname in self.db_dsns:
             return self.db_dsns[dbname]
         #form the dsn (from components we have...)
         #dsn = "<driver>://<username>:<password>@<host>:<port>/<database>"
-        if(not host):
+        if not host:
             msg = "Unable to fetch a database dsn - no host found"
             raise excp.BadParamException(msg)
         driver = self.get("db", "type")
-        if(not driver):
+        if not driver:
             msg = "Unable to fetch a database dsn - no driver type found"
             raise excp.BadParamException(msg)
         dsn = driver + "://"
-        if(user):
+        if user:
             dsn += user
-        if(pw):
+        if pw:
             dsn += ":" + pw
-        if(user or pw):
+        if user or pw:
             dsn += "@"
         dsn += host
-        if(port):
+        if port:
             dsn += ":" + port
-        if(dbname):
+        if dbname:
             dsn += "/" + dbname
         else:
             dsn += "/"

@@ -29,15 +29,15 @@ class TermFormatter(logging.Formatter):
     def format(self, record):
         lvl = record.levelno
         lvlname = record.levelname
-        if(lvl == logging.DEBUG):
+        if lvl == logging.DEBUG:
             lvlname = colored(lvlname, 'blue')
-        elif(lvl == logging.INFO):
+        elif lvl == logging.INFO:
             lvlname = colored(lvlname, 'cyan')
-        elif(lvl == logging.WARNING):
+        elif lvl == logging.WARNING:
             lvlname = colored(lvlname, 'yellow')
-        elif(lvl == logging.ERROR):
+        elif lvl == logging.ERROR:
             lvlname = colored(lvlname, 'red')
-        elif(lvl == logging.CRITICAL):
+        elif lvl == logging.CRITICAL:
             lvlname = colored(lvlname, 'red')
             record.msg = colored(record.msg, attrs=['bold', 'blink'])
         record.levelname = lvlname
@@ -55,9 +55,9 @@ class TermHandler(logging.Handler):
     def emit(self, record):
         lvl = record.levelno
         msg = self.format(record)
-        if(len(msg)):
+        if len(msg):
             TermHandler.STREAM.write(msg + TermHandler.NL)
-            if(TermHandler.DO_FLUSH):
+            if TermHandler.DO_FLUSH:
                 TermHandler.STREAM.flush()
 
 

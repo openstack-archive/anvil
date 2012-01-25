@@ -2,6 +2,8 @@
 
 # From commit 30439a6dc4
 
+# Order actually matters in this file so be careful!
+
 # This was added (so that it dies on errors)
 set -o errexit
 

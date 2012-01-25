@@ -67,12 +67,12 @@ class PkgInstallComponent(ComponentBase):
         am_downloaded = 0
         for location_info in locations:
             uri = location_info.get("uri")
-            if(not uri):
+            if not uri:
                 continue
             branch = location_info.get("branch")
             subdir = location_info.get("subdir")
             target_loc = None
-            if(subdir and len(subdir)):
+            if subdir and len(subdir):
                 target_loc = sh.joinpths(base_dir, subdir)
             else:
                 target_loc = base_dir
@@ -94,7 +94,7 @@ class PkgInstallComponent(ComponentBase):
 
     def install(self):
         pkgs = self.get_pkglist()
-        if(len(pkgs)):
+        if len(pkgs):
             pkgnames = sorted(pkgs.keys())
             LOG.info("Installing packages (%s)." % (", ".join(pkgnames)))
             self.packager.install_batch(pkgs)
@@ -105,14 +105,14 @@ class PkgInstallComponent(ComponentBase):
 
     def pre_install(self):
         pkgs = utils.get_pkg_list(self.distro, self.component_name)
-        if(len(pkgs)):
+        if len(pkgs):
             mp = self._get_param_map(None)
             self.packager.pre_install(pkgs, mp)
         return self.tracedir
 
     def post_install(self):
         pkgs = utils.get_pkg_list(self.distro, self.component_name)
-        if(len(pkgs)):
+        if len(pkgs):
             mp = self._get_param_map(None)
             self.packager.post_install(pkgs, mp)
         return self.tracedir
@@ -131,7 +131,7 @@ class PkgInstallComponent(ComponentBase):
 
     def _configure_files(self):
         configs = self._get_config_files()
-        if(len(configs)):
+        if len(configs):
             LOG.info("Configuring %s files" % (len(configs)))
             for fn in configs:
                 #get the params and where it should come from and where it should go
@@ -174,16 +174,16 @@ class PythonInstallComponent(PkgInstallComponent):
     def _install_pips(self):
         #install any need pip items
         pips = utils.get_pip_list(self.distro, self.component_name)
-        if(len(pips)):
+        if len(pips):
             LOG.info("Setting up %s pips (%s)" % (len(pips), ", ".join(pips.keys())))
             pip.install(pips)
             for name in pips.keys():
                 self.tracewriter.pip_install(name, pips.get(name))
 
     def _format_stderr_out(self, stderr, stdout):
-        if(stdout == None):
+        if stdout is None:
             stdout = ''
-        if(stderr == None):
+        if stderr is None:
             stderr = ''
         combined = ["===STDOUT===", str(stdout), "===STDERR===", str(stderr)]
         return utils.joinlinesep(*combined)
@@ -194,7 +194,7 @@ class PythonInstallComponent(PkgInstallComponent):
     def _install_python_setups(self):
         #setup any python directories
         pydirs = self._get_python_directories()
-        if(len(pydirs)):
+        if len(pydirs):
             actual_dirs = list()
             for pydir_info in pydirs:
                 working_dir = pydir_info.get('work_dir', self.appdir)
@@ -203,7 +203,7 @@ class PythonInstallComponent(PkgInstallComponent):
             self.tracewriter.make_dir(self.tracedir)
             for pydir_info in pydirs:
                 name = pydir_info.get("name")
-                if(not name):
+                if not name:
                     #TODO should we raise an exception here?
                     continue
                 working_dir = pydir_info.get('work_dir', self.appdir)
@@ -233,10 +233,10 @@ class PkgUninstallComponent(ComponentBase):
 
     def _unconfigure_files(self):
         cfgfiles = self.tracereader.files_configured()
-        if(len(cfgfiles)):
+        if len(cfgfiles):
             LOG.info("Removing %s configuration files (%s)" % (len(cfgfiles), ", ".join(cfgfiles)))
             for fn in cfgfiles:
-                if(len(fn)):
+                if len(fn):
                     sh.unlink(fn)
 
     def uninstall(self):
@@ -246,22 +246,22 @@ class PkgUninstallComponent(ComponentBase):
 
     def _uninstall_pkgs(self):
         pkgsfull = self.tracereader.packages_installed()
-        if(len(pkgsfull)):
+        if len(pkgsfull):
             LOG.info("Potentially removing %s packages (%s)" % (len(pkgsfull), ", ".join(sorted(pkgsfull.keys()))))
             which_removed = self.packager.remove_batch(pkgsfull)
             LOG.info("Actually removed %s packages (%s)" % (len(which_removed), ", ".join(sorted(which_removed))))
 
     def _uninstall_touched_files(self):
         filestouched = self.tracereader.files_touched()
-        if(len(filestouched)):
+        if len(filestouched):
             LOG.info("Removing %s touched files (%s)" % (len(filestouched), ", ".join(filestouched)))
             for fn in filestouched:
-                if(len(fn)):
+                if len(fn):
                     sh.unlink(fn)
 
     def _uninstall_dirs(self):
         dirsmade = self.tracereader.dirs_made()
-        if(len(dirsmade)):
+        if len(dirsmade):
             LOG.info("Removing %s created directories (%s)" % (len(dirsmade), ", ".join(dirsmade)))
             for dirname in dirsmade:
                 sh.deldir(dirname)
@@ -280,13 +280,13 @@ class PythonUninstallComponent(PkgUninstallComponent):
 
     def _uninstall_pips(self):
         pips = self.tracereader.pips_installed()
-        if(len(pips)):
+        if len(pips):
             LOG.info("Uninstalling %s pips" % (len(pips)))
             pip.uninstall(pips)
 
     def _uninstall_python(self):
         pylisting = self.tracereader.py_listing()
-        if(len(pylisting)):
+        if len(pylisting):
             LOG.info("Uninstalling %s python setups" % (len(pylisting)))
             for entry in pylisting:
                 where = entry.get('where')
@@ -314,19 +314,19 @@ class ProgramRuntime(ComponentBase):
         self.check_installed_pkgs = kargs.get("check_installed_pkgs", True)
 
     def _getstartercls(self, start_mode):
-        if(start_mode not in ProgramRuntime.STARTER_CLS_MAPPING):
+        if start_mode not in ProgramRuntime.STARTER_CLS_MAPPING:
             raise NotImplementedError("Can not yet start %s mode" % (start_mode))
         return ProgramRuntime.STARTER_CLS_MAPPING.get(start_mode)
 
     def _getstoppercls(self, stop_mode):
-        if(stop_mode not in ProgramRuntime.STOPPER_CLS_MAPPING):
+        if stop_mode not in ProgramRuntime.STOPPER_CLS_MAPPING:
             raise NotImplementedError("Can not yet stop %s mode" % (stop_mode))
         return ProgramRuntime.STOPPER_CLS_MAPPING.get(stop_mode)
 
     def _was_installed(self):
-        if(not self.check_installed_pkgs):
+        if not self.check_installed_pkgs:
             return True
-        if(len(self.tracereader.packages_installed())):
+        if len(self.tracereader.packages_installed()):
             return True
         return False
 
@@ -349,7 +349,7 @@ class ProgramRuntime(ComponentBase):
 
     def start(self):
         #ensure it was installed
-        if(not self._was_installed()):
+        if not self._was_installed():
             msg = "Can not start %s since it was not installed" % (self.component_name)
             raise excp.StartException(msg)
         #select how we are going to start it
@@ -367,7 +367,7 @@ class ProgramRuntime(ComponentBase):
             #adjust the program options now that we have real locations
             params = self._get_param_map(app_name)
             program_opts = self._get_app_options(app_name)
-            if(params and program_opts):
+            if params and program_opts:
                 adjusted_opts = list()
                 for opt in program_opts:
                     adjusted_opts.append(utils.param_replace(opt, params))
@@ -376,7 +376,7 @@ class ProgramRuntime(ComponentBase):
             #start it with the given settings
             fn = starter.start(app_name, app_pth, *program_opts, app_dir=app_dir, \
                                trace_dir=self.tracedir)
-            if(fn):
+            if fn:
                 fns.append(fn)
                 LOG.info("Started %s, details are in %s" % (app_name, fn))
                 #this trace is used to locate details about what to stop
@@ -387,7 +387,7 @@ class ProgramRuntime(ComponentBase):
 
     def stop(self):
         #ensure it was installed
-        if(not self._was_installed()):
+        if not self._was_installed():
             msg = "Can not stop %s since it was not installed" % (self.component_name)
             raise excp.StopException(msg)
         #we can only stop what has a started trace
@@ -398,19 +398,19 @@ class ProgramRuntime(ComponentBase):
             fn = mp.get('trace_fn')
             name = mp.get('name')
             #missing some key info, skip it
-            if(fn == None or name == None):
+            if fn is None or name is None:
                 continue
             #figure out which class will stop it
             contents = tr.parse_fn(fn)
             killcls = None
             runtype = None
             for (cmd, action) in contents:
-                if(cmd == "TYPE"):
+                if cmd == "TYPE":
                     runtype = action
                     killcls = self._getstoppercls(runtype)
                     break
             #did we find a class that can do it?
-            if(killcls):
+            if killcls:
                 #we can try to stop it
                 LOG.info("Stopping %s of run type %s" % (name, runtype))
                 #create an instance of the killer class and attempt to stop
@@ -421,7 +421,7 @@ class ProgramRuntime(ComponentBase):
                 #TODO raise error??
                 pass
         #if we got rid of them all get rid of the trace
-        if(killedam == len(start_traces)):
+        if killedam == len(start_traces):
             fn = self.starttracereader.trace_fn
             LOG.info("Deleting trace file %s" % (fn))
             sh.unlink(fn)
@@ -446,10 +446,10 @@ class PythonRuntime(ProgramRuntime):
 
     def _was_installed(self):
         parent_result = ProgramRuntime._was_installed(self)
-        if(not parent_result):
+        if not parent_result:
             return False
         python_installed = self.tracereader.py_listing()
-        if(len(python_installed) == 0):
+        if len(python_installed) == 0:
             return False
         else:
             return True

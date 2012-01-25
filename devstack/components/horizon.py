@@ -13,6 +13,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import os
 
 from devstack import component as comp
 from devstack import log as logging
@@ -38,6 +39,12 @@ BLACKHOLE_DIR = '.blackhole'
 
 #hopefully this will be distro independent ??
 APACHE_RESTART_CMD = ['service', 'apache2', 'restart']
+APACHE_START_CMD = ['service', 'apache2', 'start']
+APACHE_STOP_CMD = ['service', 'apache2', 'stop']
+APACHE_STATUS_CMD = ['service', 'apache2', 'status']
+
+#users which apache may not like starting as
+BAD_APACHE_USERS = ['root']
 
 LOG = logging.getLogger("devstack.components.horizon")
 
@@ -64,9 +71,9 @@ class HorizonInstaller(comp.PythonInstallComponent):
         return places
 
     def _get_target_config_name(self, config_name):
-        if(config_name == HORIZON_PY_CONF):
+        if config_name == HORIZON_PY_CONF:
             return sh.joinpths(self.dash_dir, *HORIZON_PY_CONF_TGT)
-        elif(config_name == HORIZON_APACHE_CONF):
+        elif config_name == HORIZON_APACHE_CONF:
             #this may require sudo of the whole program to be able to write here.
             return sh.joinpths(*HORIZON_APACHE_TGT)
         else:
@@ -92,18 +99,18 @@ class HorizonInstaller(comp.PythonInstallComponent):
         #create an empty directory that apache uses as docroot
         black_dir = sh.joinpths(self.appdir, BLACKHOLE_DIR)
         self.tracewriter.make_dir(black_dir)
+        return black_dir
 
     def _sync_db(self):
         #Initialize the horizon database (it stores sessions and notices shown to users).
         #The user system is external (keystone).
-        cmd = DB_SYNC_CMD
-        sh.execute(*cmd, cwd=self.dash_dir)
+        sh.execute(*DB_SYNC_CMD, cwd=self.dash_dir)
 
     def _fake_quantum(self):
         #Horizon currently imports quantum even if you aren't using it.
         #Instead of installing quantum we can create a simple module
         #that will pass the initial imports.
-        if(settings.QUANTUM in self.instances):
+        if settings.QUANTUM in self.instances:
             return
         else:
             #Make the fake quantum
@@ -112,27 +119,48 @@ class HorizonInstaller(comp.PythonInstallComponent):
             self.tracewriter.touch_file(sh.joinpths(quantum_dir, '__init__.py'))
             self.tracewriter.touch_file(sh.joinpths(quantum_dir, 'client.py'))
 
+    def _ensure_db_access(self):
+        # ../openstack-dashboard/local needs to be writeable by the runtime user
+        # since currently its storing the sql-lite databases there (TODO fix that)
+        path = sh.joinpths(self.dash_dir, 'local')
+        if sh.isdir(path):
+            (user, group) = self._get_apache_user_group()
+            LOG.info("Changing ownership (recursively) of %s so that it can be used by %s - %s", 
+                path, user, group)
+            uid = sh.getuid(user)
+            gid = sh.getgid(group)
+            sh.chown_r(path, uid, gid)
+
     def post_install(self):
         parent_result = comp.PythonInstallComponent.post_install(self)
         self._fake_quantum()
         self._sync_db()
         self._setup_blackhole()
+        self._ensure_db_access()
         return parent_result
 
-    def _get_apache_user(self):
-        #TODO will this be the right user?
+    def _get_apache_user_group(self):
         user = self.cfg.get('horizon', 'apache_user')
-        if(not user):
+        if not user:
             user = sh.getuser()
-        return user
+        if user in BAD_APACHE_USERS:
+            LOG.warn("You may want to adjust your configuration, user=%s will typically not work with apache", user)
+        group = self.cfg.get('horizon', 'apache_group')
+        if not group:
+            group = sh.getgroupname()
+        return (user, group)
 
     def _get_param_map(self, config_fn):
         #this dict will be used to fill in the configuration
         #params with actual values
         mp = dict()
-        if(config_fn == HORIZON_APACHE_CONF):
+        if config_fn == HORIZON_APACHE_CONF:
+            (user, group) = self._get_apache_user_group() 
+            mp['USER'] = user
+            mp['GROUP'] = group
             mp['USER'] = self._get_apache_user()
             mp['HORIZON_DIR'] = self.appdir
+            mp['HORIZON_PORT'] = self.cfg.get('horizon', 'port')
         else:
             #Enable quantum in dashboard, if requested
             mp['QUANTUM_ENABLED'] = "%s" % (settings.QUANTUM in self.instances)
@@ -143,3 +171,39 @@ class HorizonInstaller(comp.PythonInstallComponent):
 class HorizonRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
         comp.EmptyRuntime.__init__(self, TYPE, *args, **kargs)
+
+    def start(self):
+        curr_status = self.status()
+        if curr_status == comp.STATUS_STARTED:
+            #restart it ?
+            return self.restart()
+        else:
+            sh.execute(*APACHE_START_CMD, 
+                run_as_root=True)
+            return 1
+
+    def restart(self):
+        curr_status = self.status()
+        if curr_status == comp.STATUS_STARTED:
+            sh.execute(*APACHE_RESTART_CMD, 
+                run_as_root=True)
+            return 1
+        return 0
+
+    def stop(self):
+        curr_status = self.status()
+        if curr_status == comp.STATUS_STARTED:
+            sh.execute(*APACHE_STOP_CMD, 
+                run_as_root=True)
+            return 1
+        return 0
+
+    def status(self):
+        (sysout, _) = sh.execute(*APACHE_STATUS_CMD, 
+                            check_exit_code=False)
+        if sysout.find("is running") != -1:
+            return comp.STATUS_STARTED
+        elif sysout.find("NOT running") != -1:
+            return comp.STATUS_STOPPED
+        else:
+            return comp.STATUS_UNKNOWN

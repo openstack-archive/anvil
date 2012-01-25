@@ -238,7 +238,7 @@ def resolve_dependencies(components):
         component_deps = get_dependencies(curr_comp)
         new_components.add(curr_comp)
         for c in component_deps:
-            if(c in new_components or c in active_components):
+            if c in new_components or c in active_components:
                 pass
             else:
                 active_components.append(c)
@@ -250,7 +250,7 @@ def prioritize_components(components):
     mporder = dict()
     for c in components:
         priority = COMPONENT_NAMES_PRIORITY.get(c)
-        if(priority == None):
+        if priority is None:
             priority = sys.maxint
         mporder[c] = priority
     #sort by priority value
@@ -262,31 +262,31 @@ def prioritize_components(components):
 
 def parse_components(components, assume_all=False):
     #none provided, init it
-    if(not components):
+    if not components:
         components = list()
     adjusted_components = dict()
     for c in components:
         mtch = EXT_COMPONENT.match(c)
-        if(mtch):
+        if mtch:
             component_name = mtch.group(1).lower().strip()
-            if(component_name not in COMPONENT_NAMES):
+            if component_name not in COMPONENT_NAMES:
                 LOG.warn("Unknown component named %s" % (component_name))
             else:
                 component_opts = mtch.group(2)
                 components_opts_cleaned = list()
-                if(component_opts == None or len(component_opts) == 0):
+                if component_opts is None or len(component_opts) == 0:
                     pass
                 else:
                     sp_component_opts = component_opts.split(",")
                     for co in sp_component_opts:
                         cleaned_opt = co.strip()
-                        if(len(cleaned_opt)):
+                        if len(cleaned_opt):
                             components_opts_cleaned.append(cleaned_opt)
                 adjusted_components[component_name] = components_opts_cleaned
         else:
             LOG.warn("Unparseable component %s" % (c))
     #should we adjust them to be all the components?
-    if(len(adjusted_components) == 0 and assume_all):
+    if len(adjusted_components) == 0 and assume_all:
         all_components = dict()
         for c in COMPONENT_NAMES:
             all_components[c] = list()
