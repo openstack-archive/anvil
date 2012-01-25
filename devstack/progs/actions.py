@@ -138,7 +138,7 @@ def _get_action_cls(action_name, component_name):
 
 
 def _check_root(action, rootdir):
-    if rootdir is None or len(rootdir) == 0:
+    if not rootdir:
         return False
     if action == settings.INSTALL:
         if sh.isdir(rootdir):
@@ -325,7 +325,7 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
 
 def _run_action(args):
     components = settings.parse_components(args.pop("components"))
-    if len(components) == 0:
+    if not components:
         LOG.error("No components specified!")
         return False
     action = _clean_action(args.pop("action"))

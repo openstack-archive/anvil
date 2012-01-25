@@ -176,7 +176,7 @@ def password(prompt_=None, pw_len=8):
     ask_for_pw = env.get_bool(PASS_ASK_ENV, True)
     if ask_for_pw:
         rd = _prompt_password(prompt_)
-    if len(rd) == 0:
+    if not rd:
         return _gen_password(pw_len)
     else:
         return rd

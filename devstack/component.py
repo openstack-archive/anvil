@@ -449,7 +449,7 @@ class PythonRuntime(ProgramRuntime):
         if not parent_result:
             return False
         python_installed = self.tracereader.py_listing()
-        if len(python_installed) == 0:
+        if not python_installed:
             return False
         else:
             return True
