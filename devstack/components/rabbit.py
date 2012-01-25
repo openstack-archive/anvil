@@ -98,9 +98,6 @@ class RabbitRuntime(comp.EmptyRuntime):
                             stdout_fh=f, stderr_fh=f)
         else:
             sh.execute(*cmd, run_as_root=True)
-        
-        return sh.execute(*cmd, run_as_root=True)
-
 
     def restart(self):
         self._run_cmd(RESTART_CMD)
