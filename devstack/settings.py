@@ -198,6 +198,10 @@ PKG_MAP = {
         [
             os.path.join(STACK_PKG_DIR, "keystone-client.json"),
         ],
+    QUANTUM:
+        [
+            os.path.join(STACK_PKG_DIR, "quantum.json"),
+        ],
     DB:
         [
             os.path.join(STACK_PKG_DIR, 'db.json'),
