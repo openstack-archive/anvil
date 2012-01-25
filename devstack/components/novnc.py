@@ -24,11 +24,13 @@ LOG = logging.getLogger("devstack.components.novnc")
 #id
 TYPE = settings.NOVNC
 
+#where the application is really
 UTIL_DIR = 'utils'
 
-# FIXME, need to get actual location of nova.API_CONF
 VNC_PROXY_APP = 'nova-novncproxy'
 APP_OPTIONS = {
+    #this reaches into the nova configuration file
+    #TODO can we stop that?
     VNC_PROXY_APP: ['--flagfile-file=%NOVA_CONF%', '--web'],
 }
 
