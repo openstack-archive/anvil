@@ -14,8 +14,10 @@
 #    under the License.
 
 import getpass
+import grp
 import os
 import os.path
+import pwd
 import shutil
 import subprocess
 
@@ -49,11 +51,14 @@ def execute(*cmd, **kwargs):
         cmd = ROOT_HELPER + list(cmd)
 
     cmd = [str(c) for c in cmd]
+    execute_cmd = None
+    str_cmd = " ".join(cmd)
     if(shell):
-        cmd = " ".join(cmd)
-        LOG.debug('Running shell cmd: [%s]' % (cmd))
+        execute_cmd = str_cmd.strip()
+        LOG.debug('Running shell cmd: [%s]' % (str_cmd))
     else:
-        LOG.debug('Running cmd: [%s]' % (' '.join(cmd)))
+        execute_cmd = cmd
+        LOG.debug('Running cmd: [%s]' % (' '.join(str_cmd)))
 
     if(process_input != None):
         LOG.debug('With stdin: %s' % (process_input))
@@ -86,7 +91,7 @@ def execute(*cmd, **kwargs):
         for (k, v) in env_overrides.items():
             process_env[k] = str(v)
 
-    obj = subprocess.Popen(cmd,
+    obj = subprocess.Popen(execute_cmd,
             stdin=stdin_fh,
             stdout=stdout_fh,
             stderr=stderr_fh,
@@ -103,20 +108,23 @@ def execute(*cmd, **kwargs):
 
     if 'stdin_fh' not in kwargs.keys():
         obj.stdin.close()
-    _returncode = obj.returncode
-    LOG.debug('Cmd result had exit code: %s' % _returncode)
 
-    if((not ignore_exit_code) and (_returncode not in check_exit_code)):
+    rc = obj.returncode
+    LOG.debug('Cmd result had exit code: %s' % rc)
+
+    if((not ignore_exit_code) and (rc not in check_exit_code)):
         (stdout, stderr) = result
-        ecmd = cmd
-        if(not shell):
-            ecmd = ' '.join(cmd)
         raise excp.ProcessExecutionError(
-                exit_code=_returncode,
+                exit_code=rc,
                 stdout=stdout,
                 stderr=stderr,
-                cmd=ecmd)
+                cmd=str_cmd)
     else:
+        #log it anyway
+        if(rc not in check_exit_code):
+            (stdout, stderr) = result
+            LOG.debug("A failure may of just happened when running command \"%s\" [%s] (%s, %s)", str_cmd,
+                rc, stdout.strip(), stderr.strip())
         return result
 
 
@@ -151,6 +159,16 @@ def _prompt_password(prompt_=None):
         return getpass.getpass(prompt_)
     else:
         return getpass.getpass()
+
+
+def chown_r(path, uid, gid):
+    if(isdir(path)):
+        for root, dirs, files in os.walk(path):
+            os.chown(root, uid, gid)
+            for d in dirs:
+                os.chown(joinpths(root, d), uid, gid)
+            for f in files:
+                os.chown(joinpths(root, f), uid, gid)
 
 
 def password(prompt_=None, pw_len=8):
@@ -269,6 +287,23 @@ def prompt(prompt_str):
 
 def getuser():
     return getpass.getuser()
+
+
+def getuid(username):
+    uinfo = pwd.getpwnam(username)
+    return uinfo.pw_gid
+
+
+def getgid(groupname):
+    grp_info = grp.getgrnam(groupname)
+    return grp_info.gr_gid
+
+
+def getgroupname(gid=None):
+    if(gid is None):
+        gid = os.getgid()
+    gid_info = grp.getgrgid(gid)
+    return gid_info.gr_name
 
 
 def unlink(path, ignore_errors=True):

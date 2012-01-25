@@ -1,8 +1,13 @@
-<VirtualHost *:80>
+<VirtualHost *:%HORIZON_PORT%>
+
+#From commit 30439a6dc4
+#With adjustments to make APACHE_RUN_GROUP a param
+#and to make HORIZON_PORT a param
+
     WSGIScriptAlias / %HORIZON_DIR%/openstack-dashboard/dashboard/wsgi/django.wsgi
-    WSGIDaemonProcess horizon user=%USER% group=%USER% processes=3 threads=10
+    WSGIDaemonProcess horizon user=%USER% group=%GROUP% processes=3 threads=10
     SetEnv APACHE_RUN_USER %USER%
-    SetEnv APACHE_RUN_GROUP %USER%
+    SetEnv APACHE_RUN_GROUP %GROUP%
     WSGIProcessGroup horizon
 
     DocumentRoot %HORIZON_DIR%/.blackhole/
@@ -24,5 +29,6 @@
     ErrorLog /var/log/apache2/error.log
     LogLevel warn
     CustomLog /var/log/apache2/access.log combined
+
 </VirtualHost>
 

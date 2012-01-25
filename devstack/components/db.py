@@ -53,6 +53,8 @@ DB_ACTIONS = {
 #used as a generic error message
 BASE_ERROR = 'Currently we do not know how to %s for database type [%s]'
 
+#used to make params for booting when started (not always take advantage of...)
+BOOLEAN_OUTPUT = {True: 'true', False: 'false'}
 
 class DBUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -69,7 +71,7 @@ class DBInstaller(comp.PkgInstallComponent):
         #in pre-install and post-install sections
         out = dict()
         out['PASSWORD'] = self.cfg.get("passwords", "sql")
-        out['BOOT_START'] = str(True).lower()
+        out['BOOT_START'] = "%s" % BOOLEAN_OUTPUT.get(True)
         out['USER'] = self.cfg.get("db", "sql_user")
         host_ip = self.cfg.get('host', 'ip')
         out['SERVICE_HOST'] = host_ip
