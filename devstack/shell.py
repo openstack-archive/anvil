@@ -60,7 +60,7 @@ def execute(*cmd, **kwargs):
         execute_cmd = cmd
         LOG.debug('Running cmd: [%s]' % (' '.join(str_cmd)))
 
-    if process_input != None:
+    if process_input is not None:
         LOG.debug('With stdin: %s' % (process_input))
 
     if cwd:
@@ -101,7 +101,7 @@ def execute(*cmd, **kwargs):
             env=process_env)
 
     result = None
-    if process_input != None:
+    if process_input is not None:
         result = obj.communicate(str(process_input))
     else:
         result = obj.communicate()
@@ -176,7 +176,7 @@ def password(prompt_=None, pw_len=8):
     ask_for_pw = env.get_bool(PASS_ASK_ENV, True)
     if ask_for_pw:
         rd = _prompt_password(prompt_)
-    if len(rd) == 0:
+    if not rd:
         return _gen_password(pw_len)
     else:
         return rd

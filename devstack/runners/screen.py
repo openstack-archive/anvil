@@ -43,7 +43,7 @@ class ScreenRunner(object):
         lookfor = r"^(\d+\." + re.escape(real_name) + r")\s+(.*)$"
         for line in lines:
             cleaned_line = line.strip()
-            if len(cleaned_line) == 0:
+            if not cleaned_line:
                 continue
             mtch = re.match(lookfor, cleaned_line)
             if not mtch:

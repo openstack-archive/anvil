@@ -25,7 +25,7 @@ UNINSTALL_CMD = ['pip', 'uninstall']
 
 
 def install(pips):
-    if not pips or len(pips) == 0:
+    if not pips:
         return
     actions = list()
     pipnames = sorted(pips.keys())
@@ -44,7 +44,7 @@ def install(pips):
 
 
 def uninstall(pips):
-    if not pips or len(pips) == 0:
+    if not pips:
         return
     pipnames = sorted(pips.keys())
     LOG.info("Uninstalling python packages [%s]" % (", ".join(pipnames)))
