@@ -34,10 +34,10 @@ def install(pips):
         pipinfo = pips.get(name)
         if pipinfo and pipinfo.get('version'):
             version = str(pipinfo.get('version'))
-            if len(version):
+            if version:
                 pipfull = pipfull + "==" + version
         actions.append(pipfull)
-    if len(actions):
+    if actions:
         LOG.info("Installing python packages [%s]" % (", ".join(actions)))
         cmd = INSTALL_CMD + actions
         sh.execute(*cmd, run_as_root=True)

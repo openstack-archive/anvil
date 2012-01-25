@@ -280,7 +280,7 @@ def parse_components(components, assume_all=False):
                     sp_component_opts = component_opts.split(",")
                     for co in sp_component_opts:
                         cleaned_opt = co.strip()
-                        if len(cleaned_opt):
+                        if cleaned_opt:
                             components_opts_cleaned.append(cleaned_opt)
                 adjusted_components[component_name] = components_opts_cleaned
         else:

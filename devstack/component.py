@@ -94,7 +94,7 @@ class PkgInstallComponent(ComponentBase):
 
     def install(self):
         pkgs = self.get_pkglist()
-        if len(pkgs):
+        if pkgs:
             pkgnames = sorted(pkgs.keys())
             LOG.info("Installing packages (%s)." % (", ".join(pkgnames)))
             self.packager.install_batch(pkgs)
@@ -105,14 +105,14 @@ class PkgInstallComponent(ComponentBase):
 
     def pre_install(self):
         pkgs = utils.get_pkg_list(self.distro, self.component_name)
-        if len(pkgs):
+        if pkgs:
             mp = self._get_param_map(None)
             self.packager.pre_install(pkgs, mp)
         return self.tracedir
 
     def post_install(self):
         pkgs = utils.get_pkg_list(self.distro, self.component_name)
-        if len(pkgs):
+        if pkgs:
             mp = self._get_param_map(None)
             self.packager.post_install(pkgs, mp)
         return self.tracedir
@@ -131,7 +131,7 @@ class PkgInstallComponent(ComponentBase):
 
     def _configure_files(self):
         configs = self._get_config_files()
-        if len(configs):
+        if configs:
             LOG.info("Configuring %s files" % (len(configs)))
             for fn in configs:
                 #get the params and where it should come from and where it should go
@@ -174,7 +174,7 @@ class PythonInstallComponent(PkgInstallComponent):
     def _install_pips(self):
         #install any need pip items
         pips = utils.get_pip_list(self.distro, self.component_name)
-        if len(pips):
+        if pips:
             LOG.info("Setting up %s pips (%s)" % (len(pips), ", ".join(pips.keys())))
             pip.install(pips)
             for name in pips.keys():
@@ -194,7 +194,7 @@ class PythonInstallComponent(PkgInstallComponent):
     def _install_python_setups(self):
         #setup any python directories
         pydirs = self._get_python_directories()
-        if len(pydirs):
+        if pydirs:
             actual_dirs = list()
             for pydir_info in pydirs:
                 working_dir = pydir_info.get('work_dir', self.appdir)
@@ -233,10 +233,10 @@ class PkgUninstallComponent(ComponentBase):
 
     def _unconfigure_files(self):
         cfgfiles = self.tracereader.files_configured()
-        if len(cfgfiles):
+        if cfgfiles:
             LOG.info("Removing %s configuration files (%s)" % (len(cfgfiles), ", ".join(cfgfiles)))
             for fn in cfgfiles:
-                if len(fn):
+                if fn:
                     sh.unlink(fn)
 
     def uninstall(self):
@@ -246,22 +246,22 @@ class PkgUninstallComponent(ComponentBase):
 
     def _uninstall_pkgs(self):
         pkgsfull = self.tracereader.packages_installed()
-        if len(pkgsfull):
+        if pkgsfull:
             LOG.info("Potentially removing %s packages (%s)" % (len(pkgsfull), ", ".join(sorted(pkgsfull.keys()))))
             which_removed = self.packager.remove_batch(pkgsfull)
             LOG.info("Actually removed %s packages (%s)" % (len(which_removed), ", ".join(sorted(which_removed))))
 
     def _uninstall_touched_files(self):
         filestouched = self.tracereader.files_touched()
-        if len(filestouched):
+        if filestouched:
             LOG.info("Removing %s touched files (%s)" % (len(filestouched), ", ".join(filestouched)))
             for fn in filestouched:
-                if len(fn):
+                if fn:
                     sh.unlink(fn)
 
     def _uninstall_dirs(self):
         dirsmade = self.tracereader.dirs_made()
-        if len(dirsmade):
+        if dirsmade:
             LOG.info("Removing %s created directories (%s)" % (len(dirsmade), ", ".join(dirsmade)))
             for dirname in dirsmade:
                 sh.deldir(dirname)
@@ -280,13 +280,13 @@ class PythonUninstallComponent(PkgUninstallComponent):
 
     def _uninstall_pips(self):
         pips = self.tracereader.pips_installed()
-        if len(pips):
+        if pips:
             LOG.info("Uninstalling %s pips" % (len(pips)))
             pip.uninstall(pips)
 
     def _uninstall_python(self):
         pylisting = self.tracereader.py_listing()
-        if len(pylisting):
+        if pylisting:
             LOG.info("Uninstalling %s python setups" % (len(pylisting)))
             for entry in pylisting:
                 where = entry.get('where')
@@ -326,7 +326,7 @@ class ProgramRuntime(ComponentBase):
     def _was_installed(self):
         if not self.check_installed_pkgs:
             return True
-        if len(self.tracereader.packages_installed()):
+        if self.tracereader.packages_installed():
             return True
         return False
 
