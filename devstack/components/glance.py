@@ -79,7 +79,7 @@ class GlanceRuntime(comp.PythonRuntime):
 
     def post_start(self):
         comp.PythonRuntime.post_start(self)
-        if(IMG_START in self.component_opts):
+        if IMG_START in self.component_opts:
             #install any images that need activating...
             creator.ImageCreationService(self.cfg).install()
 
@@ -113,7 +113,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
         db.create_db(self.cfg, DB_NAME)
 
     def _config_adjust(self, contents, name):
-        if(name not in CONFIGS):
+        if name not in CONFIGS:
             return contents
         #use config parser and
         #then extract known configs that
@@ -121,36 +121,36 @@ class GlanceInstaller(comp.PythonInstallComponent):
         with io.BytesIO(contents) as stream:
             config = cfg.IgnoreMissingConfigParser()
             config.readfp(stream)
-            if(config.getboolean('image_cache_enabled', CFG_SECTION)):
+            if config.getboolean('image_cache_enabled', CFG_SECTION):
                 cache_dir = config.get("image_cache_datadir", CFG_SECTION)
-                if(cache_dir):
+                if cache_dir:
                     LOG.info("Ensuring image cache data directory %s exists "\
                              "(and is empty)" % (cache_dir))
                     #destroy then recreate the image cache directory
                     sh.deldir(cache_dir)
                     self.tracewriter.make_dir(cache_dir)
-            if(config.get('default_store', CFG_SECTION) == 'file'):
+            if config.get('default_store', CFG_SECTION) == 'file':
                 file_dir = config.get('filesystem_store_datadir', CFG_SECTION)
-                if(file_dir):
+                if file_dir:
                     LOG.info("Ensuring file system store directory %s exists and is empty" % (file_dir))
                     #delete existing images
                     #and recreate the image directory
                     sh.deldir(file_dir)
                     self.tracewriter.make_dir(file_dir)
             log_filename = config.get('log_file', CFG_SECTION)
-            if(log_filename):
+            if log_filename:
                 LOG.info("Ensuring log file %s exists and is empty" % (log_filename))
                 log_dir = sh.dirname(log_filename)
-                if(log_dir):
+                if log_dir:
                     LOG.info("Ensuring log directory %s exists" % (log_dir))
                     self.tracewriter.make_dir(log_dir)
                 #destroy then recreate it (the log file)
                 sh.unlink(log_filename)
                 sh.touch_file(log_filename)
                 self.tracewriter.file_touched(log_filename)
-            if(config.getboolean('delayed_delete', CFG_SECTION)):
+            if config.getboolean('delayed_delete', CFG_SECTION):
                 data_dir = config.get('scrubber_datadir', CFG_SECTION)
-                if(data_dir):
+                if data_dir:
                     LOG.info("Ensuring scrubber data dir %s exists and is empty" % (data_dir))
                     #destroy then recreate the scrubber data directory
                     sh.deldir(data_dir)

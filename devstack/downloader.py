@@ -32,7 +32,7 @@ def _gitdownload(storewhere, uri, branch=None):
     LOG.info("Downloading from %s to %s" % (uri, storewhere))
     cmd = ["git", "clone"] + [uri, storewhere]
     sh.execute(*cmd)
-    if(branch and branch != GIT_MASTER_BRANCH):
+    if branch and branch != GIT_MASTER_BRANCH:
         LOG.info("Adjusting git branch to %s" % (branch))
         cmd = ['git', 'checkout'] + [branch]
         sh.execute(*cmd, cwd=storewhere)
@@ -42,8 +42,8 @@ def _gitdownload(storewhere, uri, branch=None):
 def download(storewhere, uri, branch=None):
     #figure out which type
     up = urlparse(uri)
-    if(up and up.scheme.lower() == "git" or
-        EXT_REG.match(up.path)):
+    if up and up.scheme.lower() == "git" or
+        EXT_REG.match(up.path):
         return _gitdownload(storewhere, uri, branch)
     else:
         msg = "Currently we do not know how to download %s" % (uri)

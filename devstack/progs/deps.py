@@ -29,19 +29,19 @@ def log_deps(components):
         deps = settings.get_dependencies(c)
         dep_str = ""
         dep_len = len(deps)
-        if(dep_len >= 1):
+        if dep_len >= 1:
             dep_str = "component"
-            if(dep_len > 1):
+            if dep_len > 1:
                 dep_str += "s"
             dep_str += ":"
-        elif(dep_len == 0):
+        elif dep_len == 0:
             dep_str = "no components."
         LOG.info("%s depends on %s" % (c, dep_str))
         for d in deps:
             LOG.info("\t%s" % (d))
         shown.add(c)
         for d in deps:
-            if(d not in shown and d not in left_show):
+            if d not in shown and d not in left_show:
                 left_show.append(d)
     return True
 

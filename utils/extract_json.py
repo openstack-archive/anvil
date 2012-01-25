@@ -4,7 +4,7 @@ import sys
     
 if __name__ == "__main__":
     me = os.path.basename(sys.argv[0])
-    if(len(sys.argv) == 1):
+    if len(sys.argv) == 1:
         print("%s filename filename filename..." % (me))
         sys.exit(0)
     fn = sys.argv[1]
@@ -13,7 +13,7 @@ if __name__ == "__main__":
         lines = contents.splitlines()
         cleaned_up = list()
         for line in lines:
-            if(line.lstrip().startswith('#')):
+            if line.lstrip().startswith('#'):
                 continue
             else:
                 cleaned_up.append(line)

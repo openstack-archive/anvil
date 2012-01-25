@@ -71,17 +71,17 @@ class ForkRunner(object):
 
     def stop(self, name, *args, **kargs):
         trace_dir = kargs.get("trace_dir")
-        if(not trace_dir or not sh.isdir(trace_dir)):
+        if not trace_dir or not sh.isdir(trace_dir):
             msg = "No trace directory found from which to stop %s" % (name)
             raise excp.StopException(msg)
         fn_name = FORK_TEMPL % (name)
         (pid_file, stderr_fn, stdout_fn) = self._form_file_names(trace_dir, fn_name)
         trace_fn = tr.trace_fn(trace_dir, fn_name)
-        if(sh.isfile(pid_file) and sh.isfile(trace_fn)):
+        if sh.isfile(pid_file) and sh.isfile(trace_fn):
             pid = int(sh.load_file(pid_file).strip())
             (killed, attempts) = self._stop_pid(pid)
             #trash the files
-            if(killed):
+            if killed:
                 LOG.info("Killed pid %s after %s attempts" % (pid, attempts))
                 LOG.info("Removing pid file %s" % (pid_file))
                 sh.unlink(pid_file)
@@ -107,7 +107,7 @@ class ForkRunner(object):
     def _fork_start(self, program, appdir, pid_fn, stdout_fn, stderr_fn, *args):
         #first child, not the real program
         pid = os.fork()
-        if(pid == 0):
+        if pid == 0:
             #upon return the calling process shall be the session
             #leader of this new session,
             #shall be the process group leader of a new process group,
@@ -116,14 +116,14 @@ class ForkRunner(object):
             pid = os.fork()
             #fork to get daemon out - this time under init control
             #and now fully detached (no shell possible)
-            if(pid == 0):
+            if pid == 0:
                 #move to where application should be
-                if(appdir):
+                if appdir:
                     os.chdir(appdir)
                 #close other fds
                 limits = resource.getrlimit(resource.RLIMIT_NOFILE)
                 mkfd = limits[1]
-                if(mkfd == resource.RLIM_INFINITY):
+                if mkfd == resource.RLIM_INFINITY:
                     mkfd = MAXFD
                 for fd in range(0, mkfd):
                     try:
@@ -132,10 +132,10 @@ class ForkRunner(object):
                         #not open, thats ok
                         pass
                 #now adjust stderr and stdout
-                if(stdout_fn):
+                if stdout_fn:
                     stdoh = open(stdout_fn, "w")
                     os.dup2(stdoh.fileno(), sys.stdout.fileno())
-                if(stderr_fn):
+                if stderr_fn:
                     stdeh = open(stderr_fn, "w")
                     os.dup2(stdeh.fileno(), sys.stderr.fileno())
                 #now exec...

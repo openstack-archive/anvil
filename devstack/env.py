@@ -22,7 +22,7 @@ LOG = logging.getLogger("devstack.environment")
 
 
 def _str2bool(value_str):
-    if(value_str.lower().strip() in TRUE_VALUES):
+    if value_str.lower().strip() in TRUE_VALUES:
         return True
     return False
 
@@ -34,7 +34,7 @@ def get():
 def get_key(key, default_value=None):
     LOG.debug("Looking up environment variable \"%s\"" % (key))
     value = get().get(key)
-    if(value == None):
+    if value == None:
         LOG.debug("Could not find anything in environment variable \"%s\"" % (key))
         value = default_value
     else:
@@ -44,6 +44,6 @@ def get_key(key, default_value=None):
 
 def get_bool(key, default_value=False):
     value = get_key(key, None)
-    if(value == None):
+    if value == None:
         return default_value
     return _str2bool(value)

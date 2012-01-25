@@ -35,7 +35,7 @@ class Packager(object):
         for name in pkgnames:
             packageinfo = pkgs.get(name)
             preinstallcmds = packageinfo.get(settings.PRE_INSTALL)
-            if(preinstallcmds and len(preinstallcmds)):
+            if preinstallcmds and len(preinstallcmds):
                 LOG.info("Running pre-install commands for package %s." % (name))
                 utils.execute_template(*preinstallcmds, params=installparams)
 
@@ -44,6 +44,6 @@ class Packager(object):
         for name in pkgnames:
             packageinfo = pkgs.get(name)
             postinstallcmds = packageinfo.get(settings.POST_INSTALL)
-            if(postinstallcmds and len(postinstallcmds)):
+            if postinstallcmds and len(postinstallcmds):
                 LOG.info("Running post-install commands for package %s." % (name))
                 utils.execute_template(*postinstallcmds, params=installparams)

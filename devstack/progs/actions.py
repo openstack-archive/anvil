@@ -117,10 +117,10 @@ _ACTION_CLASSES = {
 
 
 def _clean_action(action):
-    if(action == None):
+    if action == None:
         return None
     action = action.strip().lower()
-    if(not (action in settings.ACTIONS)):
+    if not (action in settings.ACTIONS):
         return None
     return action
 
@@ -132,18 +132,18 @@ def _get_pkg_manager(distro):
 
 def _get_action_cls(action_name, component_name):
     action_cls_map = _ACTION_CLASSES.get(action_name)
-    if(not action_cls_map):
+    if not action_cls_map:
         return None
     return action_cls_map.get(component_name)
 
 
 def _check_root(action, rootdir):
-    if(rootdir == None or len(rootdir) == 0):
+    if rootdir == None or len(rootdir) == 0:
         return False
-    if(action == settings.INSTALL):
-        if(sh.isdir(rootdir)):
+    if action == settings.INSTALL:
+        if sh.isdir(rootdir):
             dir_list = sh.listdir(rootdir)
-            if(len(dir_list) > 0):
+            if len(dir_list) > 0:
                 LOG.error("Root directory [%s] already exists (and it's not empty)! "\
                           "Please remove it or uninstall components!" % (rootdir))
                 return False
@@ -151,16 +151,16 @@ def _check_root(action, rootdir):
 
 
 def _pre_run(action_name, **kargs):
-    if(action_name == settings.INSTALL):
+    if action_name == settings.INSTALL:
         root_dir = kargs.get("root_dir")
-        if(root_dir):
+        if root_dir:
             sh.mkdir(root_dir)
 
 
 def _post_run(action_name, **kargs):
-    if(action_name == settings.UNINSTALL):
+    if action_name == settings.UNINSTALL:
         root_dir = kargs.get("root_dir")
-        if(root_dir):
+        if root_dir:
             sh.rmdir(root_dir)
 
 
@@ -179,23 +179,23 @@ def _print_cfgs(config_obj, action):
     passwords_gotten = config_obj.pws
     full_cfgs = config_obj.configs_fetched
     db_dsns = config_obj.db_dsns
-    if(len(passwords_gotten) or len(full_cfgs) or len(db_dsns)):
+    if len(passwords_gotten) or len(full_cfgs) or len(db_dsns):
         LOG.info("After action (%s) your settings are:" % (action))
-        if(len(passwords_gotten)):
+        if len(passwords_gotten):
             LOG.info("Passwords:")
             map_print(passwords_gotten)
-        if(len(full_cfgs)):
+        if len(full_cfgs):
             #TODO
             #better way to do this?? (ie a list difference?)
             filtered_mp = dict()
             for key in full_cfgs.keys():
-                if(key in passwords_gotten):
+                if key in passwords_gotten:
                     continue
                 filtered_mp[key] = full_cfgs.get(key)
-            if(len(filtered_mp)):
+            if len(filtered_mp):
                 LOG.info("Configs:")
                 map_print(filtered_mp)
-        if(len(db_dsns)):
+        if len(db_dsns):
             LOG.info("Data source names:")
             map_print(db_dsns)
 
@@ -213,7 +213,7 @@ def _install(component_name, instance):
     instance.install()
     LOG.info("Post-installing %s." % (component_name))
     trace = instance.post_install()
-    if(trace):
+    if trace:
         LOG.info("Finished install of %s - check %s for traces of what happened." % (component_name, trace))
     else:
         LOG.info("Finished install of %s" % (component_name))
@@ -227,7 +227,7 @@ def _stop(component_name, instance, skip_notrace):
         LOG.info("Stopped %s items." % (stop_amount))
         LOG.info("Finished stop of %s" % (component_name))
     except excp.NoTraceException, e:
-        if(skip_notrace):
+        if skip_notrace:
             LOG.info("Passing on stopping %s since no trace file was found." % (component_name))
         else:
             raise
@@ -240,9 +240,9 @@ def _start(component_name, instance):
     start_info = instance.start()
     LOG.info("Post-starting %s." % (component_name))
     instance.post_start()
-    if(type(start_info) == list):
+    if type(start_info) == list:
         LOG.info("Check [%s] for traces of what happened." % (", ".join(start_info)))
-    elif(type(start_info) == int):
+    elif type(start_info) == int:
         LOG.info("Started %s applications." % (start_info))
         start_info = None
     LOG.info("Finished start of %s." % (component_name))
@@ -256,7 +256,7 @@ def _uninstall(component_name, instance, skip_notrace):
         LOG.info("Uninstalling %s." % (component_name))
         instance.uninstall()
     except excp.NoTraceException, e:
-        if(skip_notrace):
+        if skip_notrace:
             LOG.info("Passing on uninstalling %s since no trace file was found." % (component_name))
         else:
             raise
@@ -273,7 +273,7 @@ def _get_config():
 def _run_components(action_name, component_order, components, distro, root_dir, program_args):
     LOG.info("Will %s [%s] (in that order) using root directory \"%s\"" % (action_name, ", ".join(component_order), root_dir))
     non_components = set(components.keys()).difference(set(component_order))
-    if(non_components):
+    if non_components:
         LOG.info("Using reference components [%s]" % (", ".join(sorted(non_components))))
     pkg_manager = _get_pkg_manager(distro)
     config = _get_config()
@@ -295,23 +295,23 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
         #this instance was just made
         instance = all_instances.get(component)
         #activate the correct function for the given action
-        if(action_name == settings.INSTALL):
+        if action_name == settings.INSTALL:
             install_result = _install(component, instance)
             if install_result:
                 if type(install_result) == list:
                     results += install_result
                 else:
                     results.append(str(install_result))
-        elif(action_name == settings.STOP):
+        elif action_name == settings.STOP:
             _stop(component, instance, program_args.get('force', False))
-        elif(action_name == settings.START):
+        elif action_name == settings.START:
             start_result = _start(component, instance)
             if start_result:
                 if type(start_result) == list:
                     results += start_result
                 else:
                     results.append(str(start_result))
-        elif(action_name == settings.UNINSTALL):
+        elif action_name == settings.UNINSTALL:
             _uninstall(component, instance, program_args.get('force', False))
         else:
             #TODO throw?
@@ -325,30 +325,30 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
 
 def _run_action(args):
     components = settings.parse_components(args.pop("components"))
-    if(len(components) == 0):
+    if len(components) == 0:
         LOG.error("No components specified!")
         return False
     action = _clean_action(args.pop("action"))
-    if(not action):
+    if not action:
         LOG.error("No valid action specified!")
         return False
     rootdir = args.pop("dir")
-    if(not _check_root(action, rootdir)):
+    if not _check_root(action, rootdir):
         LOG.error("No valid root directory specified!")
         return False
     #ensure os/distro is known
     (distro, platform) = utils.determine_distro()
-    if(distro == None):
+    if distro == None:
         LOG.error("Unsupported platform: %s" % (platform))
         return False
     #start it
     utils.welcome(_WELCOME_MAP.get(action))
     #need to figure out dependencies for components (if any)
     ignore_deps = args.pop('ignore_deps', False)
-    if(not ignore_deps):
+    if not ignore_deps:
         new_components = settings.resolve_dependencies(components.keys())
         component_diff = new_components.difference(components.keys())
-        if(len(component_diff)):
+        if len(component_diff):
             LOG.info("Having to activate dependent components: [%s]" % (", ".join(component_diff)))
             for new_component in component_diff:
                 components[new_component] = list()
@@ -357,13 +357,13 @@ def _run_action(args):
     #add in any that will just be referenced but which will not actually do anything (ie the action will not be applied to these)
     ref_components = settings.parse_components(args.pop("ref_components"))
     for c in ref_components.keys():
-        if(c not in components):
+        if c not in components:
             components[c] = ref_components.get(c)
     #now do it!
     LOG.info("Starting action [%s] on %s for distro [%s]" % (action, date.rcf8222date(), distro))
     results = _run_components(action, component_order, components, distro, rootdir, args)
     LOG.info("Finished action [%s] on %s" % (action, date.rcf8222date()))
-    if(results):
+    if results:
         LOG.info('Check [%s] for traces of what happened.' % ", ".join(results))
     return True
 
