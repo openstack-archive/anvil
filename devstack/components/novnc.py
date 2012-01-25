@@ -20,6 +20,8 @@ from devstack import shell as sh
 from devstack.components import nova
 
 LOG = logging.getLogger("devstack.components.novnc")
+
+#id
 TYPE = settings.NOVNC
 
 UTIL_DIR = 'utils'

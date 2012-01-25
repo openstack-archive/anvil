@@ -18,6 +18,8 @@ from devstack import log as logging
 from devstack import settings
 
 LOG = logging.getLogger("devstack.components.nova_client")
+
+#id
 TYPE = settings.NOVA_CLIENT
 
 

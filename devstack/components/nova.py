@@ -23,12 +23,17 @@ from devstack.components import db
 
 LOG = logging.getLogger('devstack.components.nova')
 
+#config files adjusted
 API_CONF = 'nova.conf'
-PASTE_CONF = 'nova-api-paste.ini'
 CONFIGS = [API_CONF]
 
+#config just referenced
+PASTE_CONF = 'nova-api-paste.ini'
+
+#this db will be dropped then created
 DB_NAME = 'nova'
-BIN_DIR = 'bin'
+
+#id
 TYPE = settings.NOVA
 
 #what to start
@@ -40,6 +45,7 @@ APP_OPTIONS = {
     'nova-scheduler': ['--flagfile', '%CFGFILE%']
 }
 
+#post install cmds that will happen after install
 POST_INSTALL_CMDS = [
     {'cmd': ['%BINDIR%nova-manage', '--flagfile', '%CFGFILE%',
              'db', 'sync']},
@@ -55,6 +61,8 @@ APP_NAME_MAP = {
     settings.NCPU: 'nova-compute',
     settings.NVOL: 'nova-volume',
 }
+
+#subdirs of the checkout/download
 BIN_DIR = 'bin'
 
 #These are used by NovaConf

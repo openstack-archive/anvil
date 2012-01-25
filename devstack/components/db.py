@@ -23,7 +23,11 @@ from devstack import utils
 
 
 LOG = logging.getLogger("devstack.components.db")
+
+#id
 TYPE = settings.DB
+
+#used for special setups
 MYSQL = 'mysql'
 DB_ACTIONS = {
     MYSQL: {
@@ -46,6 +50,7 @@ DB_ACTIONS = {
     },
 }
 
+#used as a generic error message
 BASE_ERROR = 'Currently we do not know how to %s for database type [%s]'
 
 

@@ -19,6 +19,7 @@ from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
 
+#id
 TYPE = settings.HORIZON
 
 ROOT_HORIZON = 'horizon'

@@ -26,15 +26,19 @@ from devstack.image import creator
 
 LOG = logging.getLogger("devstack.components.glance")
 
-#naming + config files
+#id
 TYPE = settings.GLANCE
+
+#config files/sections
 API_CONF = "glance-api.conf"
 REG_CONF = "glance-registry.conf"
 API_PASTE_CONF = 'glance-api-paste.ini'
 REG_PASTE_CONF = 'glance-registry-paste.ini'
 CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF, REG_PASTE_CONF]
-DB_NAME = "glance"
 CFG_SECTION = 'DEFAULT'
+
+#this db will be dropped and created
+DB_NAME = "glance"
 
 #special subcomponents that is used in starting to know that images should be uploaded
 IMG_START = "upload-images"
@@ -44,6 +48,8 @@ APP_OPTIONS = {
     'glance-api': ['--config-file', sh.joinpths('%ROOT%', "etc", API_CONF)],
     'glance-registry': ['--config-file', sh.joinpths('%ROOT%', "etc", REG_CONF)]
 }
+
+#subdirs of the checkout
 CONFIG_ACTUAL_DIR = 'etc'
 BIN_DIR = 'bin'
 

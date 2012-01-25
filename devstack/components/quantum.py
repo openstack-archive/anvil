@@ -20,6 +20,8 @@ from devstack import shell as sh
 from devstack import utils
 
 LOG = logging.getLogger("devstack.components.quantum")
+
+#id
 TYPE = settings.QUANTUM
 
 

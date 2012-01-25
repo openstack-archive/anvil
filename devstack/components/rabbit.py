@@ -24,6 +24,8 @@ from devstack import shell as sh
 from devstack import trace as tr
 
 LOG = logging.getLogger("devstack.components.rabbit")
+
+#id
 TYPE = settings.RABBIT
 
 #hopefully these are distro independent..

@@ -25,7 +25,10 @@ from devstack.components import db
 
 LOG = logging.getLogger("devstack.components.keystone")
 
+#id
 TYPE = settings.KEYSTONE
+
+#this db will be dropped then created
 DB_NAME = "keystone"
 
 #subdirs of the git checkout

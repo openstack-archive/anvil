@@ -21,6 +21,8 @@ from devstack import shell as sh
 from devstack import utils
 
 LOG = logging.getLogger("devstack.components.swift")
+
+#id
 TYPE = settings.SWIFT
 
 
