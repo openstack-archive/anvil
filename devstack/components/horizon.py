@@ -96,8 +96,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
     def _sync_db(self):
         #Initialize the horizon database (it stores sessions and notices shown to users).
         #The user system is external (keystone).
-        cmd = DB_SYNC_CMD
-        sh.execute(*cmd, cwd=self.dash_dir)
+        sh.execute(*DB_SYNC_CMD, cwd=self.dash_dir)
 
     def _fake_quantum(self):
         #Horizon currently imports quantum even if you aren't using it.
