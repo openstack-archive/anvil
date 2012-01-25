@@ -29,7 +29,7 @@ DASH_NAME = 'dashboard'
 
 HORIZON_PY_CONF = "horizon_settings.py"
 HORIZON_PY_CONF_TGT = ['local', 'local_settings.py']
-HORIZON_APACHE_CONF = '000-default.template'
+HORIZON_APACHE_CONF = '000-default'
 HORIZON_APACHE_TGT = ['/', 'etc', 'apache2', 'sites-enabled', '000-default']
 
 CONFIGS = [HORIZON_PY_CONF, HORIZON_APACHE_CONF]
@@ -63,14 +63,14 @@ class HorizonInstaller(comp.PythonInstallComponent):
         })
         return places
 
-    def get_target_config_name(self, config_name):
+    def _get_target_config_name(self, config_name):
         if(config_name == HORIZON_PY_CONF):
             return sh.joinpths(self.dash_dir, *HORIZON_PY_CONF_TGT)
         elif(config_name == HORIZON_APACHE_CONF):
             #this may require sudo of the whole program to be able to write here.
             return sh.joinpths(*HORIZON_APACHE_TGT)
         else:
-            return comp.PythonInstallComponent.get_target_config_name(self, config_name)
+            return comp.PythonInstallComponent._get_target_config_name(self, config_name)
 
     def _get_python_directories(self):
         py_dirs = list()

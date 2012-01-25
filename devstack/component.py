@@ -123,17 +123,11 @@ class PkgInstallComponent(ComponentBase):
     def _config_adjust(self, contents, config_fn):
         return contents
 
-    def get_target_config_name(self, config_fn):
-        if(config_fn not in self._get_config_files()):
-            return None
-        else:
-            return sh.joinpths(self.cfgdir, config_fn)
+    def _get_target_config_name(self, config_fn):
+        return sh.joinpths(self.cfgdir, config_fn)
 
-    def _get_source_config_name(self, config_fn):
-        if(config_fn not in self._get_config_files()):
-            return None
-        else:
-            return sh.joinpths(settings.STACK_CONFIG_DIR, self.component_name, config_fn)
+    def _get_source_config(self, config_fn):
+        return utils.load_template(self.component_name, config_fn)
 
     def _configure_files(self):
         configs = self._get_config_files()
@@ -142,13 +136,12 @@ class PkgInstallComponent(ComponentBase):
             for fn in configs:
                 #get the params and where it should come from and where it should go
                 parameters = self._get_param_map(fn)
-                sourcefn = self._get_source_config_name(fn)
-                tgtfn = self.get_target_config_name(fn)
+                tgtfn = self._get_target_config_name(fn)
                 #ensure directory is there (if not created previously)
                 self.tracewriter.make_dir(sh.dirname(tgtfn))
                 #now configure it
-                LOG.info("Configuring template file %s" % (sourcefn))
-                contents = sh.load_file(sourcefn)
+                LOG.info("Configuring template file %s" % (fn))
+                (sourcefn, contents) = self._get_source_config(fn)
                 LOG.info("Replacing parameters in file %s" % (sourcefn))
                 LOG.debug("Replacements = %s" % (parameters))
                 contents = utils.param_replace(contents, parameters)
