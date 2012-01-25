@@ -55,7 +55,7 @@ class TermHandler(logging.Handler):
     def emit(self, record):
         lvl = record.levelno
         msg = self.format(record)
-        if len(msg):
+        if msg:
             TermHandler.STREAM.write(msg + TermHandler.NL)
             if TermHandler.DO_FLUSH:
                 TermHandler.STREAM.flush()

@@ -187,7 +187,7 @@ def mkdirslist(path):
     dirs_possible = set()
     dirs_possible.add(path)
 
-    while(True):
+    while True:
         (base, _) = os.path.split(path)
         dirs_possible.add(base)
         path = base

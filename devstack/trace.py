@@ -74,7 +74,7 @@ class TraceWriter(object):
             self.filename = touch_trace(self.root, self.name)
             self.tracer = Trace(self.filename)
             self.tracer.trace(TRACE_VERSION, str(TRACE_VER))
-            if len(dirs):
+            if dirs:
                 for d in dirs:
                     self.tracer.trace(DIR_MADE, d)
             self.started = True
