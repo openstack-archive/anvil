@@ -145,7 +145,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         dirs['bin'] = self.bindir
         conf_gen = NovaConfigurator(self.cfg, self.instances)
         nova_conf = conf_gen.configure(dirs)
-        tgtfn = self.get_target_config_name(API_CONF)
+        tgtfn = self._get_target_config_name(API_CONF)
         LOG.info("Writing conf to %s" % (tgtfn))
         LOG.info(nova_conf)
         sh.write_file(tgtfn, nova_conf)

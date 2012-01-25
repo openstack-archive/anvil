@@ -33,6 +33,14 @@ from devstack import version
 
 PARAM_SUB_REGEX = re.compile(r"%([\w\d]+?)%")
 LOG = logging.getLogger("devstack.util")
+TEMPLATE_EXT = ".tpl"
+
+
+def load_template(component, fn):
+    actual_fn = fn + TEMPLATE_EXT
+    full_pth = os.path.join(settings.STACK_CONFIG_DIR, component, actual_fn)
+    contents = sh.load_file(full_pth)
+    return (full_pth, contents)
 
 
 def execute_template(*cmds, **kargs):

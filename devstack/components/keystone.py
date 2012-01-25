@@ -89,15 +89,14 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         db.create_db(self.cfg, DB_NAME)
 
     def _setup_data(self):
-        # TODO clean this up once it works
-        src_fn = sh.joinpths(settings.STACK_CONFIG_DIR, TYPE, MANAGE_DATA_CONF)
-        contents = sh.load_file(src_fn)
+        LOG.info("Configuring data setup template %s", MANAGE_DATA_CONF)
+        (src_fn, contents) = utils.load_template(self.component_name, MANAGE_DATA_CONF)
         params = self._get_param_map(MANAGE_DATA_CONF)
         contents = utils.param_replace(contents, params, True)
         tgt_fn = sh.joinpths(self.bindir, MANAGE_DATA_CONF)
         sh.write_file(tgt_fn, contents)
         # This environment additions are important
-        # in that they eventually affect how keystone-manage runs so make sure its set.
+        # in that they eventually affect how this script runs
         env = dict()
         env['ENABLED_SERVICES'] = ",".join(self.instances.keys())
         env['BIN_DIR'] = self.bindir

@@ -60,7 +60,7 @@ class ForkRunner(object):
                              "kill pid %s" % (SLEEP_TIME, pid))
                 time.sleep(SLEEP_TIME)
             except OSError, e:
-                ec, _ = e
+                ec = e.errno
                 if ec == errno.ESRCH:
                     killed = True
                     break

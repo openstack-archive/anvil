@@ -86,13 +86,21 @@ Check out *conf/stack.ini* for various configuration settings applied (branches,
 
 Check out *conf/* for various component specific settings and files. 
 
-Note that some of these files are templates (*TODO* rename the files so that people can see this). These files may have strings of the format *%NAME%* where *NAME* will most often be adjusted to a real value by the *stack* script.  
+Note that some of these files are templates (ones ending with *.tpl*).
+These files may have strings of the format *%NAME%* where *NAME* will most often be adjusted to a real value by the *stack* script.  
+
+An example where this is useful is say for the following line:
+
+       admin_token = %SERVICE_TOKEN% 
+
+Since the script will either prompt for this value (or generate it for you) we can not have this statically set in a configuration file. 
 
 ### conf/pkgs
 
 Check out *conf/pkgs* for package listings and *conf/pips* for python packages for various distributions. 
 
-Note that these files are in a modified json format which allows for simple comments (lines starting with #). These comments are useful for explanations of why a version was chosen or the like.
+Note that these files are in a modified json format which allows for simple comments (lines starting with #).
+These comments are useful for explanations of why a version was chosen or the like.
 
 # Starting
 
@@ -108,6 +116,7 @@ Note that these files are in a modified json format which allows for simple comm
 
 1. Run: *./stack -a install -d $HOME/openstack -c glance*
     * *Note:* This will also install glances dependencies (to show dependencies run *./stack -s*)
+        * If this is undesired try the *--ignore-deps* option
 1. When prompted for passwords either press enter (to have it generate one) or enter a password.
 1. Wait for it to finish...
     * On finish you should see all configurations/passwords/database dsn's that have been fetched (for future reference). 
@@ -145,6 +154,7 @@ An example of this end state is the following:
 
 1. Run *./stack -a start -d $HOME/openstack -c glance*
     * *Note:* This will also start glances dependencies (to show dependencies run *./stack -s*)
+        * If this is undesired try the *--ignore-deps* option
     * *Note:* Currently forking is done instead of running screen (*TODO* get screen working)
 1. On finish you should see a list of files which will have information about what is started
     * For forking mode this will be a file with information on where the PID is, where the STDERR/STDOUT files are.
@@ -162,6 +172,7 @@ An example of one of these files is the following:
 
 1. Run *./stack -a stop -d $HOME/openstack -c glance*
     * *Note:* This will also stop glances dependencies (to show dependencies run *./stack -s*)
+        * If this is undesired try the *--ignore-deps* option
 
 On finish you should see something like the following:
 
@@ -180,7 +191,7 @@ On finish you should see something like the following:
 
 1. Run *./stack -a uninstall -d $HOME/openstack -c glance*
     * *Note:* This will also uninstall glances dependencies (to show dependencies run *./stack -s*)
-        * If this is undesired try the *--ignoredeps* option
+        * If this is undesired try the *--ignore-deps* option
     * *Note:* This may also require *sudo* access to cleanup all the necessary directories that python sets up.
 
 On finish you should see something like the following:
