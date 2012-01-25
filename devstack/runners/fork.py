@@ -23,7 +23,7 @@ import time
 
 from devstack import exceptions as excp
 from devstack import log as logging
-from devstack import shell as sh           
+from devstack import shell as sh
 from devstack import trace as tr
 
 # Maximum for the number of available file descriptors (when not found)

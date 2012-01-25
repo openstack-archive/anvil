@@ -26,19 +26,25 @@ from devstack.components import db
 LOG = logging.getLogger("devstack.components.keystone")
 
 TYPE = settings.KEYSTONE
-ROOT_CONF = "keystone.conf"
-CONFIGS = [ROOT_CONF]
+DB_NAME = "keystone"
+
+#subdirs of the git checkout
 BIN_DIR = "bin"
 CONFIG_DIR = "etc"
-DB_NAME = "keystone"
+
+#simple confs
+ROOT_CONF = "keystone.conf"
+CONFIGS = [ROOT_CONF]
 CFG_SECTION = 'DEFAULT'
+
+#this is a special conf
 MANAGE_DATA_CONF = 'keystone_data.sh'
-MANAGER_CMD = [sh.joinpths("/", "bin", 'bash')]
+MANAGER_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
 
 #what to start
 APP_OPTIONS = {
     'keystone': ['-c', sh.joinpths('%ROOT%', CONFIG_DIR, ROOT_CONF),
-                "--verbose", '-d', 
+                "--verbose", '-d',
                 '--log-config=' + sh.joinpths('%ROOT%', CONFIG_DIR, 'logging.cnf')]
 }
 
@@ -87,12 +93,12 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         contents = utils.param_replace(contents, params, True)
         tgt_fn = sh.joinpths(self.bindir, MANAGE_DATA_CONF)
         sh.write_file(tgt_fn, contents)
-        # This environment additions are important 
+        # This environment additions are important
         # in that they eventually affect how keystone-manage runs so make sure its set.
         env = dict()
         env['ENABLED_SERVICES'] = ",".join(self.instances.keys())
         env['BIN_DIR'] = self.bindir
-        setup_cmd = MANAGER_CMD + [tgt_fn]
+        setup_cmd = MANAGER_CMD_ROOT + [tgt_fn]
         LOG.info("Running (%s) command to setup keystone." % (" ".join(setup_cmd)))
         sh.execute(*setup_cmd, env_overrides=env)
 
@@ -159,7 +165,8 @@ class KeystoneRuntime(comp.PythonRuntime):
 
     def _get_app_options(self, app):
         return APP_OPTIONS.get(app)
-        
+
+
 def get_shared_params(cfg):
     mp = dict()
     host_ip = cfg.get('host', 'ip')
