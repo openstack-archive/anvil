@@ -178,7 +178,7 @@ class ImageRegistry:
         params = {'TOKEN': self._token}
         cmd = {'cmd': ImageRegistry.CMD}
         res = utils.execute_template(cmd, params=params)
-        self._parse(res[0])
+        self._parse(res[0][0])
 
     def has_image(self, image):
         return image in self.get_image_names()
