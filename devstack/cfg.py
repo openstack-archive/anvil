@@ -140,10 +140,10 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         if mtch:
             env_key = mtch.group(1).strip()
             def_val = mtch.group(2)
-            if len(def_val) == 0 and len(env_key) == 0:
+            if not def_val and not env_key:
                 msg = "Invalid bash-like value \"%s\" for \"%s\"" % (parent_val, key)
                 raise excp.BadParamException(msg)
-            if len(env_key) == 0 or env.get_key(env_key) is None:
+            if not env_key or env.get_key(env_key) is None:
                 LOG.debug("Extracting default value from config provided default value \"%s\" for \"%s\"" % (def_val, key))
                 actual_def_val = self._extract_default(def_val)
                 LOG.debug("Using config provided default value \"%s\" for \"%s\" (no environment key)" % (actual_def_val, key))

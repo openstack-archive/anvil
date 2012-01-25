@@ -72,7 +72,7 @@ class RabbitRuntime(comp.EmptyRuntime):
 
     def status(self):
         pkgsinstalled = self.tracereader.packages_installed()
-        if len(pkgsinstalled) == 0:
+        if not pkgsinstalled:
             msg = "Can not check the status of %s since it was not installed" % (TYPE)
             raise excp.StatusException(msg)
         #this has got to be the worst status output

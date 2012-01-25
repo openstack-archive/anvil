@@ -190,10 +190,10 @@ def joinlinesep(*pieces):
 
 def param_replace(text, replacements, ignore_missing=False):
 
-    if not replacements or len(replacements) == 0:
+    if not replacements:
         return text
 
-    if len(text) == 0:
+    if not text:
         return text
 
     if ignore_missing:

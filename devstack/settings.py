@@ -274,7 +274,7 @@ def parse_components(components, assume_all=False):
             else:
                 component_opts = mtch.group(2)
                 components_opts_cleaned = list()
-                if component_opts is None or len(component_opts) == 0:
+                if not component_opts:
                     pass
                 else:
                     sp_component_opts = component_opts.split(",")
@@ -286,7 +286,7 @@ def parse_components(components, assume_all=False):
         else:
             LOG.warn("Unparseable component %s" % (c))
     #should we adjust them to be all the components?
-    if len(adjusted_components) == 0 and assume_all:
+    if not adjusted_components and assume_all:
         all_components = dict()
         for c in COMPONENT_NAMES:
             all_components[c] = list()
