@@ -27,8 +27,9 @@ TYPE = settings.NOVNC
 UTIL_DIR = 'utils'
 
 # FIXME, need to get actual location of nova.API_CONF
+VNC_PROXY_APP = 'nova-novncproxy'
 APP_OPTIONS = {
-    'nova-novncproxy': ['--flagfile-file', sh.joinpths('%ROOT%', "bin", nova.API_CONF), '--web'],
+    VNC_PROXY_APP: ['--flagfile-file=%NOVA_CONF%', '--web'],
 }
 
 
@@ -64,6 +65,13 @@ class NoVNCRuntime(comp.ProgramRuntime):
                 'path': sh.joinpths(self.appdir, UTIL_DIR, app_name),
             })
         return apps
+
+    def _get_param_map(self, app_name):
+        root_params = comp.ProgramRuntime._get_param_map(self, app_name)
+        if(app_name == VNC_PROXY_APP and settings.NOVA in self.instances):
+            nova_runtime = self.instances.get(settings.NOVA)
+            root_params['NOVA_CONF'] = sh.joinpths(nova_runtime.cfgdir, nova.API_CONF)
+        return root_params
 
     def _get_app_options(self, app):
         return APP_OPTIONS.get(app)
