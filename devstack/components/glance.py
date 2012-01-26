@@ -174,19 +174,16 @@ class GlanceInstaller(comp.PythonInstallComponent):
 
 
 def describe(opts=None):
-    description = """ Module: {module_name}
+    description = """
+ Module: {module_name}
   Description:
-   Handles actions for the glance component.
+   {description}
   Component options:
    {component_opts}
-  Provides:
-   {provides_what}
 """
     params = dict()
     params['component_opts'] = "TBD"
     params['module_name'] = __name__
-    provides = [GlanceRuntime.__name__,
-                GlanceInstaller.__name__,
-                GlanceUninstaller.__name__]
-    params['provides_what'] = ", ".join(sorted(provides))
-    return description.format(**params)
+    params['description'] = __doc__ or "Handles actions for the glance component."
+    out = description.format(**params)
+    return out.strip("\n")

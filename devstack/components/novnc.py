@@ -80,19 +80,16 @@ class NoVNCRuntime(comp.ProgramRuntime):
 
 
 def describe(opts=None):
-    description = """ Module: {module_name}
+    description = """
+ Module: {module_name}
   Description:
-   Handles actions for the nova no-vnc component.
+   {description}
   Component options:
    {component_opts}
-  Provides:
-   {provides_what}
 """
     params = dict()
     params['component_opts'] = "TBD"
     params['module_name'] = __name__
-    provides = [NoVNCRuntime.__name__,
-                NoVNCUninstaller.__name__,
-                NoVNCInstaller.__name__]
-    params['provides_what'] = ", ".join(sorted(provides))
-    return description.format(**params)
+    params['description'] = __doc__ or "Handles actions for the no-vnc component."
+    out = description.format(**params)
+    return out.strip("\n")

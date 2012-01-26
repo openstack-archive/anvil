@@ -63,19 +63,16 @@ class SwiftRuntime(comp.EmptyRuntime):
 
 
 def describe(opts=None):
-    description = """ Module: {module_name}
+    description = """
+ Module: {module_name}
   Description:
-   Handles actions for the swift component.
+   {description}
   Component options:
    {component_opts}
-  Provides:
-   {provides_what}
 """
     params = dict()
     params['component_opts'] = "TBD"
     params['module_name'] = __name__
-    provides = [SwiftRuntime.__name__,
-                SwiftInstaller.__name__,
-                SwiftUninstaller.__name__]
-    params['provides_what'] = ", ".join(sorted(provides))
-    return description.format(**params)
+    params['description'] = __doc__ or "Handles actions for the swift component."
+    out = description.format(**params)
+    return out.strip("\n")

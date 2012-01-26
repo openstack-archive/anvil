@@ -15,6 +15,10 @@
 
 import re
 
+#requires http://pypi.python.org/pypi/termcolor
+#but the colors make it worth it :-)
+from termcolor import colored, cprint
+
 from devstack import log as logging
 from devstack import settings
 from devstack import utils
@@ -57,18 +61,10 @@ def log_deps(components):
     while left_show:
         c = left_show.pop()
         deps = settings.get_dependencies(c)
-        dep_str = ""
-        dep_len = len(deps)
-        if dep_len >= 1:
-            dep_str = "component"
-            if dep_len > 1:
-                dep_str += "s"
-            dep_str += ":"
-        elif dep_len == 0:
-            dep_str = "no components."
-        LOG.info("%s depends on %s" % (c, dep_str))
+        dep_str = "depends on:"
+        print(colored(c, "green", attrs=['bold']) + " depends on " + dep_str)
         for d in deps:
-            LOG.info("\t%s" % (d))
+            print("  " + colored(d, "blue", attrs=['bold']))
         shown.add(c)
         for d in deps:
             if d not in shown and d not in left_show:
@@ -86,33 +82,17 @@ def _run_describe_comps(args):
     components = settings.parse_components(args.get("components"), True)
     c_keys = sorted(components.keys())
     for c in c_keys:
-        LOG.info("Component %s {", c)
+        print(colored(c, "green", attrs=['bold']) + " description:")
         describer = _DESCR_MAP.get(c)
-        info = describer(components.get(c))
-        if info:
-            lines = info.splitlines()
-            for line in lines:
-                if len(line) == 0:
-                    continue
-                #do some basic formatting
-                mtch = re.match(r"^(\s*)(.*)$", line)
-                new_line = line
-                if mtch:
-                    space_am = len(mtch.group(1)) * 2
-                    new_line = " " * space_am + mtch.group(2)
-                LOG.info(new_line)
-        LOG.info("}")
+        print(describer(components.get(c)))
 
 
 def run(args):
-    prog_name = PROG_NAME
-    if args.get('list_deps'):
-        prog_name += " [DEPS]"
-    if args.get('describe_comp'):
-        prog_name += " [DESCRIBE]"
-    utils.welcome(prog_name)
+    sep = utils.welcome(PROG_NAME)
     if args.get('list_deps'):
         _run_list_deps(args)
+        print(sep)
     if args.get('describe_comp'):
         _run_describe_comps(args)
+        print(sep)
     return True

@@ -190,19 +190,16 @@ def get_shared_params(cfg):
 
 
 def describe(opts=None):
-    description = """ Module: {module_name}
+    description = """
+ Module: {module_name}
   Description:
-   Handles actions for the keystone component.
+   {description}
   Component options:
    {component_opts}
-  Provides:
-   {provides_what}
 """
     params = dict()
     params['component_opts'] = "TBD"
     params['module_name'] = __name__
-    provides = [KeystoneRuntime.__name__,
-                KeystoneInstaller.__name__,
-                KeystoneUninstaller.__name__]
-    params['provides_what'] = ", ".join(sorted(provides))
-    return description.format(**params)
+    params['description'] = __doc__ or "Handles actions for the keystone component."
+    out = description.format(**params)
+    return out.strip("\n")

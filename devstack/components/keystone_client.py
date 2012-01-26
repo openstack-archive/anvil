@@ -50,19 +50,16 @@ class KeyStoneClientRuntime(comp.EmptyRuntime):
 
 
 def describe(opts=None):
-    description = """ Module: {module_name}
+    description = """
+ Module: {module_name}
   Description:
-   Handles actions for the keystone client component.
+   {description}
   Component options:
    {component_opts}
-  Provides:
-   {provides_what}
 """
     params = dict()
     params['component_opts'] = "TBD"
     params['module_name'] = __name__
-    provides = [KeyStoneClientRuntime.__name__,
-                KeyStoneClientInstaller.__name__,
-                KeyStoneClientUninstaller.__name__]
-    params['provides_what'] = ", ".join(sorted(provides))
-    return description.format(**params)
+    params['description'] = __doc__ or "Handles actions for the keystone client component."
+    out = description.format(**params)
+    return out.strip("\n")

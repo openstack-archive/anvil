@@ -291,8 +291,8 @@ def welcome(ident):
     lower += "|"
     welcome_header = _get_welcome_stack().strip("\n\r")
     max_line_len = len(max(welcome_header.splitlines(), key=len))
-    footer = colored(settings.PROG_NICE_NAME, 'green') + \
-                ": " + colored(lower, 'blue')
+    footer = colored(settings.PROG_NICE_NAME, 'green', attrs=['bold']) + \
+                ": " + colored(lower, 'blue', attrs=['bold'])
     uncolored_footer = (settings.PROG_NICE_NAME + ": " + lower)
     if max_line_len - len(uncolored_footer) > 0:
         #this format string wil center the uncolored text which
@@ -301,3 +301,6 @@ def welcome(ident):
         centered_str = center_text(uncolored_footer, " ", max_line_len)
         footer = centered_str.replace(uncolored_footer, footer)
     print((welcome_header + os.linesep + footer))
+    tail_end = "-" * max_line_len
+    print(tail_end)
+    return tail_end
