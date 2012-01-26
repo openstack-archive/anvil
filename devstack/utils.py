@@ -135,17 +135,12 @@ def determine_distro():
     return (found_os, plt)
 
 
-def get_pip_list(distro, component):
-    LOG.info("Getting pip packages for distro %s and component %s." % (distro, component))
+def extract_pip_list(fns, distro):
     all_pkgs = dict()
-    fns = settings.PIP_MAP.get(component)
-    if fns is None:
-        return all_pkgs
-    #load + merge them
     for fn in fns:
         js = load_json(fn)
         distro_pkgs = js.get(distro)
-        if distro_pkgs and len(distro_pkgs):
+        if distro_pkgs:
             combined = dict(all_pkgs)
             for (pkgname, pkginfo) in distro_pkgs.items():
                 #we currently just overwrite
@@ -154,17 +149,21 @@ def get_pip_list(distro, component):
     return all_pkgs
 
 
-def get_pkg_list(distro, component):
-    LOG.info("Getting packages for distro %s and component %s." % (distro, component))
-    all_pkgs = dict()
-    fns = settings.PKG_MAP.get(component)
+def get_pip_list(distro, component):
+    LOG.info("Getting pip packages for distro %s and component %s." % (distro, component))
+    fns = settings.PIP_MAP.get(component)
     if fns is None:
-        return all_pkgs
-    #load + merge them
+        return dict()
+    else:
+        return extract_pip_list(fns, distro)
+
+
+def extract_pkg_list(fns, distro):
+    all_pkgs = dict()
     for fn in fns:
         js = load_json(fn)
         distro_pkgs = js.get(distro)
-        if distro_pkgs and len(distro_pkgs):
+        if distro_pkgs:
             combined = dict(all_pkgs)
             for (pkgname, pkginfo) in distro_pkgs.items():
                 if pkgname in all_pkgs.keys():
@@ -173,7 +172,8 @@ def get_pkg_list(distro, component):
                     for (infokey, infovalue) in pkginfo.items():
                         #this is expected to be a list of cmd actions
                         #so merge that accordingly
-                        if infokey == settings.PRE_INSTALL or infokey == settings.POST_INSTALL:
+                        if(infokey == settings.PRE_INSTALL or
+                            infokey == settings.POST_INSTALL):
                             oldinstalllist = oldpkginfo.get(infokey) or []
                             infovalue = oldinstalllist + infovalue
                         newpkginfo[infokey] = infovalue
@@ -182,6 +182,15 @@ def get_pkg_list(distro, component):
                     combined[pkgname] = pkginfo
             all_pkgs = combined
     return all_pkgs
+
+
+def get_pkg_list(distro, component):
+    LOG.info("Getting packages for distro %s and component %s." % (distro, component))
+    fns = settings.PKG_MAP.get(component)
+    if fns is None:
+        return dict()
+    else:
+        return extract_pkg_list(fns, distro)
 
 
 def joinlinesep(*pieces):

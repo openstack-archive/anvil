@@ -140,7 +140,7 @@ class PkgInstallComponent(ComponentBase):
                 #ensure directory is there (if not created previously)
                 self.tracewriter.make_dir(sh.dirname(tgtfn))
                 #now configure it
-                LOG.info("Configuring template file %s" % (fn))
+                LOG.info("Configuring file %s" % (fn))
                 (sourcefn, contents) = self._get_source_config(fn)
                 LOG.info("Replacing parameters in file %s" % (sourcefn))
                 LOG.debug("Replacements = %s" % (parameters))

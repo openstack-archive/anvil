@@ -56,6 +56,7 @@ BASE_ERROR = 'Currently we do not know how to %s for database type [%s]'
 #used to make params for booting when started (not always take advantage of...)
 BOOLEAN_OUTPUT = {True: 'true', False: 'false'}
 
+
 class DBUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PkgUninstallComponent.__init__(self, TYPE, *args, **kargs)

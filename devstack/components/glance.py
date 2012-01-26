@@ -109,6 +109,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
         return parent_result
 
     def _setup_db(self):
+        LOG.info("Fixing up database named %s", DB_NAME)
         db.drop_db(self.cfg, DB_NAME)
         db.create_db(self.cfg, DB_NAME)
 

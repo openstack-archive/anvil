@@ -100,7 +100,9 @@ COMPONENT_DEPENDENCIES = {
     SWIFT: [],
     NOVA_CLIENT: [],
     HORIZON: [KEYSTONE_CLIENT, GLANCE, NOVA_CLIENT, OPENSTACK_X],
-    QUANTUM: [],
+    #the db isn't always a dependency (depending on the quantum component to be activated)
+    #for now assume it is (TODO make it better?)
+    QUANTUM: [DB],
     NOVNC: [],
 }
 
@@ -200,7 +202,8 @@ PKG_MAP = {
         ],
     QUANTUM:
         [
-            os.path.join(STACK_PKG_DIR, "quantum.json"),
+            #quantum figures out its own pkgs
+            #they will be listed in the quantum component
         ],
     DB:
         [

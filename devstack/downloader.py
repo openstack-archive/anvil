@@ -46,5 +46,5 @@ def download(storewhere, uri, branch=None):
         EXT_REG.match(up.path):
         return _gitdownload(storewhere, uri, branch)
     else:
-        msg = "Currently we do not know how to download %s" % (uri)
+        msg = "Currently we do not know how to download from uri [%s]" % (uri)
         raise NotImplementedError(msg)
