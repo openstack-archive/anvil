@@ -46,3 +46,22 @@ class OpenstackXInstaller(comp.PythonInstallComponent):
 class OpenstackXRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
         comp.EmptyRuntime.__init__(self, TYPE, *args, **kargs)
+
+
+def describe(opts=None):
+    description = """ Module: {module_name}
+  Description:
+   Handles actions for the openstack x component.
+  Component options:
+   {component_opts}
+  Provides:
+   {provides_what}
+"""
+    params = dict()
+    params['component_opts'] = "TBD"
+    params['module_name'] = __name__
+    provides = [OpenstackXRuntime.__name__,
+                OpenstackXInstaller.__name__,
+                OpenstackXUninstaller.__name__]
+    params['provides_what'] = ", ".join(sorted(provides))
+    return description.format(**params)

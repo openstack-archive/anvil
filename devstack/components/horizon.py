@@ -206,3 +206,22 @@ class HorizonRuntime(comp.EmptyRuntime):
             return comp.STATUS_STOPPED
         else:
             return comp.STATUS_UNKNOWN
+
+
+def describe(opts=None):
+    description = """ Module: {module_name}
+  Description:
+   Handles actions for the horizon component.
+  Component options:
+   {component_opts}
+  Provides:
+   {provides_what}
+"""
+    params = dict()
+    params['component_opts'] = "N/A"
+    params['module_name'] = __name__
+    provides = [HorizonRuntime.__name__,
+                HorizonInstaller.__name__,
+                HorizonUninstaller.__name__]
+    params['provides_what'] = ", ".join(sorted(provides))
+    return description.format(**params)

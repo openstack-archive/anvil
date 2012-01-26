@@ -194,3 +194,22 @@ def create_db(cfg, dbname):
     else:
         msg = BASE_ERROR % ('create', dbtype)
         raise NotImplementedError(msg)
+
+
+def describe(opts=None):
+    description = """ Module: {module_name}
+  Description:
+   Handles actions for the database component.
+  Component options:
+   {component_opts}
+  Provides:
+   {provides_what}
+"""
+    params = dict()
+    params['component_opts'] = "N/A"
+    params['module_name'] = __name__
+    provides = [DBRuntime.__name__,
+                DBInstaller.__name__,
+                DBUninstaller.__name__]
+    params['provides_what'] = ", ".join(sorted(provides))
+    return description.format(**params)

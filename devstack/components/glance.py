@@ -171,3 +171,22 @@ class GlanceInstaller(comp.PythonInstallComponent):
         mp['HOST_IP'] = self.cfg.get('host', 'ip')
         mp.update(keystone.get_shared_params(self.cfg))
         return mp
+
+
+def describe(opts=None):
+    description = """ Module: {module_name}
+  Description:
+   Handles actions for the glance component.
+  Component options:
+   {component_opts}
+  Provides:
+   {provides_what}
+"""
+    params = dict()
+    params['component_opts'] = "TBD"
+    params['module_name'] = __name__
+    provides = [GlanceRuntime.__name__,
+                GlanceInstaller.__name__,
+                GlanceUninstaller.__name__]
+    params['provides_what'] = ", ".join(sorted(provides))
+    return description.format(**params)

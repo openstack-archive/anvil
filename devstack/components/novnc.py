@@ -77,3 +77,22 @@ class NoVNCRuntime(comp.ProgramRuntime):
 
     def _get_app_options(self, app):
         return APP_OPTIONS.get(app)
+
+
+def describe(opts=None):
+    description = """ Module: {module_name}
+  Description:
+   Handles actions for the nova no-vnc component.
+  Component options:
+   {component_opts}
+  Provides:
+   {provides_what}
+"""
+    params = dict()
+    params['component_opts'] = "TBD"
+    params['module_name'] = __name__
+    provides = [NoVNCRuntime.__name__,
+                NoVNCUninstaller.__name__,
+                NoVNCInstaller.__name__]
+    params['provides_what'] = ", ".join(sorted(provides))
+    return description.format(**params)

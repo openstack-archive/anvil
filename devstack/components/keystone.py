@@ -187,3 +187,22 @@ def get_shared_params(cfg):
     mp['KEYSTONE_SERVICE_PROTOCOL'] = cfg.get('keystone', 'keystone_service_protocol')
     mp['SERVICE_TOKEN'] = cfg.get("passwords", "service_token")
     return mp
+
+
+def describe(opts=None):
+    description = """ Module: {module_name}
+  Description:
+   Handles actions for the keystone component.
+  Component options:
+   {component_opts}
+  Provides:
+   {provides_what}
+"""
+    params = dict()
+    params['component_opts'] = "TBD"
+    params['module_name'] = __name__
+    provides = [KeystoneRuntime.__name__,
+                KeystoneInstaller.__name__,
+                KeystoneUninstaller.__name__]
+    params['provides_what'] = ", ".join(sorted(provides))
+    return description.format(**params)
