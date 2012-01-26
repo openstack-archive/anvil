@@ -31,6 +31,13 @@ def parse():
     help_formatter = IndentedHelpFormatter(width=HELP_WIDTH)
     parser = OptionParser(version=version_str, formatter=help_formatter)
 
+    known_components = sorted(settings.COMPONENT_NAMES)
+    components = "(" + ", ".join(known_components) + ")"
+    parser.add_option("-c", "--component",
+        action="append",
+        dest="component",
+        help="openstack component, ie %s" % (components))
+
     base_group = OptionGroup(parser, "Install/uninstall/start/stop options")
     known_actions = sorted(settings.ACTIONS)
     actions = "(" + ", ".join(known_actions) + ")"
@@ -47,12 +54,6 @@ def parse():
         metavar="DIR",
         help="empty root DIR for install or "\
              "DIR with existing components for start/stop/uninstall")
-    known_components = sorted(settings.COMPONENT_NAMES)
-    components = "(" + ", ".join(known_components) + ")"
-    base_group.add_option("-c", "--component",
-        action="append",
-        dest="component",
-        help="openstack component, ie %s" % (components))
     base_group.add_option("-i", "--ignore-deps",
         action="store_false",
         dest="ensure_deps",
@@ -77,13 +78,18 @@ def parse():
         default=False)
     parser.add_option_group(stop_un_group)
 
-    dep_group = OptionGroup(parser, "Dependency options")
-    dep_group.add_option("-s", "--list-deps",
+    misc_group = OptionGroup(parser, "Miscellaneous options")
+    misc_group.add_option("--list-deps",
         action="store_true",
         dest="list_deps",
         help="show dependencies of COMPONENT (default: %default)",
         default=False)
-    parser.add_option_group(dep_group)
+    misc_group.add_option("--describe-components",
+        action="store_true",
+        dest="describe_comp",
+        help="describe COMPONENT (default: %default)",
+        default=False)
+    parser.add_option_group(misc_group)
 
     (options, args) = parser.parse_args()
 
@@ -94,6 +100,7 @@ def parse():
     output['ref_components'] = options.r_component
     output['action'] = options.action
     output['list_deps'] = options.list_deps
+    output['describe_comp'] = options.describe_comp
     output['force'] = options.force
     if options.ensure_deps:
         output['ignore_deps'] = False

@@ -1,0 +1,21 @@
+# This is a extended json package definition file 
+# We allow simple comments (lines starting with a hash symbol)
+{
+    # This is currently our "master" repo set with versions
+    # that we are trying to align other distributions with.
+    "ubuntu-oneiric": {
+        "openvswitch-switch": {
+            "version": "1.2.0-1ubuntu3",
+            "allowed": ">=",
+            "removable": true
+        },
+        "openvswitch-datapath-dkms": {
+            "version": "1.2.0-1ubuntu3",
+            "allowed": ">=",
+            "removable": true
+        }
+    },
+    "rhel-6": {
+        #TBD
+    }
+}

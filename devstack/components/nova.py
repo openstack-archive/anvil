@@ -115,8 +115,8 @@ class NovaInstaller(comp.PythonInstallComponent):
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
         self.paste_conf_fn = self._get_target_config_name(PASTE_CONF)
 
-    def get_pkglist(self):
-        pkgs = comp.PkgInstallComponent.get_pkglist(self)
+    def _get_pkglist(self):
+        pkgs = comp.PkgInstallComponent._get_pkglist(self)
         # Walk through the subcomponents (like 'vol' and 'cpu') and add those
         # those packages as well. Let utils.get_pkglist handle any missing
         # entries
@@ -503,3 +503,19 @@ class NovaConf(object):
                 full_line = key_str + ",".join(filled_opts)
             gen_lines.append(full_line)
         return gen_lines
+
+
+def describe(opts=None):
+    description = """
+ Module: {module_name}
+  Description:
+   {description}
+  Component options:
+   {component_opts}
+"""
+    params = dict()
+    params['component_opts'] = "TBD"
+    params['module_name'] = __name__
+    params['description'] = __doc__ or "Handles actions for the nova component."
+    out = description.format(**params)
+    return out.strip("\n")

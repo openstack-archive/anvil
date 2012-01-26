@@ -56,6 +56,7 @@ BASE_ERROR = 'Currently we do not know how to %s for database type [%s]'
 #used to make params for booting when started (not always take advantage of...)
 BOOLEAN_OUTPUT = {True: 'true', False: 'false'}
 
+
 class DBUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PkgUninstallComponent.__init__(self, TYPE, *args, **kargs)
@@ -193,3 +194,19 @@ def create_db(cfg, dbname):
     else:
         msg = BASE_ERROR % ('create', dbtype)
         raise NotImplementedError(msg)
+
+
+def describe(opts=None):
+    description = """
+ Module: {module_name}
+  Description:
+   {description}
+  Component options:
+   {component_opts}
+"""
+    params = dict()
+    params['component_opts'] = "TBD"
+    params['module_name'] = __name__
+    params['description'] = __doc__ or "Handles actions for the db component."
+    out = description.format(**params)
+    return out.strip("\n")

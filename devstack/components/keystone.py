@@ -85,6 +85,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         return list(CONFIGS)
 
     def _setup_db(self):
+        LOG.info("Fixing up database named %s", DB_NAME)
         db.drop_db(self.cfg, DB_NAME)
         db.create_db(self.cfg, DB_NAME)
 
@@ -186,3 +187,19 @@ def get_shared_params(cfg):
     mp['KEYSTONE_SERVICE_PROTOCOL'] = cfg.get('keystone', 'keystone_service_protocol')
     mp['SERVICE_TOKEN'] = cfg.get("passwords", "service_token")
     return mp
+
+
+def describe(opts=None):
+    description = """
+ Module: {module_name}
+  Description:
+   {description}
+  Component options:
+   {component_opts}
+"""
+    params = dict()
+    params['component_opts'] = "TBD"
+    params['module_name'] = __name__
+    params['description'] = __doc__ or "Handles actions for the keystone component."
+    out = description.format(**params)
+    return out.strip("\n")

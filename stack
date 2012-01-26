@@ -19,62 +19,40 @@ import logging
 import logging.config
 import sys
 
+#requires http://pypi.python.org/pypi/termcolor
+#but the colors make it worth it :-)
+from termcolor import colored, cprint
+
 #this needs to happen immediately (or thats what it seems)
-LOG_FN_ENV = 'LOG_FILE'
-LOG_FILE_DEF = os.path.join("conf", 'logging.ini')
-
-
-def setupLogging():
-    logfn = os.getenv(LOG_FN_ENV)
-    if(logfn == None):
-        logfn = LOG_FILE_DEF
-    logging.config.fileConfig(logfn)
-setupLogging()
+logfn = os.getenv('LOG_FILE')
+if(logfn == None):
+    logfn = os.path.join("conf", 'logging.ini')
+logging.config.fileConfig(logfn)
 
 #this handles our option parsing
 from devstack import opts
 
 #these are the program runtimes that actually do the running
 from devstack.progs import actions
-from devstack.progs import deps
-
-LOG = logging.getLogger("devstack")
-
-
-def check_python(prog):
-    py_version = sys.version_info
-    major = py_version[0]
-    minor = py_version[1]
-    if(major < 2 or (major == 2 and minor < 6)):
-        LOG.error("Your python version is to old, please upgrade to >= 2.6!")
-        return False
-    if(major >= 3):
-        LOG.warn("%s has not been tested in python %s, use at your own risk!" % (prog, major))
-    return True
+from devstack.progs import misc
 
 
 def main():
-    me = os.path.basename(sys.argv[0])
-
-    if(not check_python(me)):
-        return 1
-
     #parse and get it done!
     args = opts.parse()
-
+    run_ok = False
     #figure out what to do
-    only_list_deps = args.pop('list_deps', False)
-
-    #now do it
-    rc_ok = False
-    if(only_list_deps):
-        rc_ok = deps.run(args)
+    if args.get('list_deps') or args.get('describe_comp'):
+        run_ok = misc.run(args)
     else:
-        rc_ok = actions.run(args)
-    if(rc_ok):
+        run_ok = actions.run(args)
+    #now do it
+    if run_ok:
         return 0
     else:
-        LOG.info("Perhaps you should try %s --help" % (me))
+        me = colored((os.path.basename(sys.argv[0])), "red", attrs=['bold'])
+        me += " " + colored('--help', 'red')
+        print("Perhaps you should try %s" % (me))
         return 1
 
 

@@ -125,7 +125,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         path = sh.joinpths(self.dash_dir, 'local')
         if sh.isdir(path):
             (user, group) = self._get_apache_user_group()
-            LOG.info("Changing ownership (recursively) of %s so that it can be used by %s - %s", 
+            LOG.info("Changing ownership (recursively) of %s so that it can be used by %s - %s",
                 path, user, group)
             uid = sh.getuid(user)
             gid = sh.getgid(group)
@@ -177,14 +177,14 @@ class HorizonRuntime(comp.EmptyRuntime):
             #restart it ?
             return self.restart()
         else:
-            sh.execute(*APACHE_START_CMD, 
+            sh.execute(*APACHE_START_CMD,
                 run_as_root=True)
             return 1
 
     def restart(self):
         curr_status = self.status()
         if curr_status == comp.STATUS_STARTED:
-            sh.execute(*APACHE_RESTART_CMD, 
+            sh.execute(*APACHE_RESTART_CMD,
                 run_as_root=True)
             return 1
         return 0
@@ -192,13 +192,13 @@ class HorizonRuntime(comp.EmptyRuntime):
     def stop(self):
         curr_status = self.status()
         if curr_status == comp.STATUS_STARTED:
-            sh.execute(*APACHE_STOP_CMD, 
+            sh.execute(*APACHE_STOP_CMD,
                 run_as_root=True)
             return 1
         return 0
 
     def status(self):
-        (sysout, _) = sh.execute(*APACHE_STATUS_CMD, 
+        (sysout, _) = sh.execute(*APACHE_STATUS_CMD,
                             check_exit_code=False)
         if sysout.find("is running") != -1:
             return comp.STATUS_STARTED
@@ -206,3 +206,19 @@ class HorizonRuntime(comp.EmptyRuntime):
             return comp.STATUS_STOPPED
         else:
             return comp.STATUS_UNKNOWN
+
+
+def describe(opts=None):
+    description = """
+ Module: {module_name}
+  Description:
+   {description}
+  Component options:
+   {component_opts}
+"""
+    params = dict()
+    params['component_opts'] = "TBD"
+    params['module_name'] = __name__
+    params['description'] = __doc__ or "Handles actions for the horizon component."
+    out = description.format(**params)
+    return out.strip("\n")

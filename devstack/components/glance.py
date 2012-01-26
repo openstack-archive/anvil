@@ -109,6 +109,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
         return parent_result
 
     def _setup_db(self):
+        LOG.info("Fixing up database named %s", DB_NAME)
         db.drop_db(self.cfg, DB_NAME)
         db.create_db(self.cfg, DB_NAME)
 
@@ -170,3 +171,19 @@ class GlanceInstaller(comp.PythonInstallComponent):
         mp['HOST_IP'] = self.cfg.get('host', 'ip')
         mp.update(keystone.get_shared_params(self.cfg))
         return mp
+
+
+def describe(opts=None):
+    description = """
+ Module: {module_name}
+  Description:
+   {description}
+  Component options:
+   {component_opts}
+"""
+    params = dict()
+    params['component_opts'] = "TBD"
+    params['module_name'] = __name__
+    params['description'] = __doc__ or "Handles actions for the glance component."
+    out = description.format(**params)
+    return out.strip("\n")

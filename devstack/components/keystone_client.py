@@ -47,3 +47,19 @@ class KeyStoneClientInstaller(comp.PythonInstallComponent):
 class KeyStoneClientRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
         comp.EmptyRuntime.__init__(self, TYPE, *args, **kargs)
+
+
+def describe(opts=None):
+    description = """
+ Module: {module_name}
+  Description:
+   {description}
+  Component options:
+   {component_opts}
+"""
+    params = dict()
+    params['component_opts'] = "TBD"
+    params['module_name'] = __name__
+    params['description'] = __doc__ or "Handles actions for the keystone client component."
+    out = description.format(**params)
+    return out.strip("\n")
