@@ -85,15 +85,11 @@ class PkgInstallComponent(ComponentBase):
     def _get_param_map(self, config_fn):
         return None
 
-    # Note that there's no underscore on this method because it's two levels
-    # in so that the component installers can't access it as a 'protected'
-    # method. E.g. componentInstall inherits from PythonInstallComponent
-    # which then inherits from here.
-    def get_pkglist(self):
+    def _get_pkglist(self):
         return utils.get_pkg_list(self.distro, self.component_name)
 
     def install(self):
-        pkgs = self.get_pkglist()
+        pkgs = self._get_pkglist()
         if pkgs:
             pkgnames = sorted(pkgs.keys())
             LOG.info("Installing packages (%s)." % (", ".join(pkgnames)))
