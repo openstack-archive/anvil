@@ -220,12 +220,12 @@ def write_file(fn, text, flush=True, quiet=False):
             f.flush()
 
 
-def touch_file(fn, die_if_there=True, quiet=False):
+def touch_file(fn, die_if_there=True, quiet=False, file_size=0):
     if not isfile(fn):
         if not quiet:
             LOG.debug("Touching and truncating file %s", fn)
         with open(fn, "w") as f:
-            f.truncate(0)
+            f.truncate(file_size)
     else:
         if die_if_there:
             msg = "Can not touch file %s since it already exists" % (fn)

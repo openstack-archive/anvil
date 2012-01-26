@@ -53,10 +53,11 @@ RABBIT = "rabbit"
 OPENSTACK_X = 'openstack-x'
 NOVNC = 'novnc'
 
-# NCPU and NVOL are here as possible subcomponents of nova
+# NCPU, NVOL, NAPI are here as possible subcomponents of nova
 # Thus they are not in the component name map or priority or dep list...
 NCPU = "cpu"
 NVOL = "vol"
+NAPI = "api"
 
 COMPONENT_NAMES = [
     NOVA, NOVA_CLIENT,
@@ -214,6 +215,10 @@ PKG_MAP = {
         [
             os.path.join(STACK_PKG_DIR, 'n-vnc.json'),
         ],
+    NAPI:
+        [
+            os.path.join(STACK_PKG_DIR, 'n-api.json'),
+        ],
     NCPU:
         [
             os.path.join(STACK_PKG_DIR, 'n-cpu.json'),
@@ -222,7 +227,6 @@ PKG_MAP = {
         [
             os.path.join(STACK_PKG_DIR, 'n-vol.json'),
         ],
-
 }
 
 

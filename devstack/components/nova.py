@@ -17,6 +17,7 @@ from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
 from devstack import utils
+from devstack import exceptions
 from devstack import shell as sh
 from devstack.components import db
 
@@ -35,7 +36,7 @@ TYPE = settings.NOVA
 
 #what to start
 APP_OPTIONS = {
-    'nova-api': ['--flagfile', '%CFGFILE%'],
+    settings.NAPI: ['--flagfile', '%CFGFILE%'],
     settings.NCPU: ['--flagfile', '%CFGFILE%'],
     settings.NVOL: ['--flagfile', '%CFGFILE%'],
     'nova-network': ['--flagfile', '%CFGFILE%'],
@@ -54,12 +55,29 @@ POST_INSTALL_CMDS = [
 ]
 
 VG_CHECK_CMD = [
-    {'cmd': ['vgs', '%VOLUME_GROUP%']}
+    {'cmd': ['vgs', '%VOLUME_GROUP%'],
+     'run_as_root': True}
+]
+
+VG_DEV_CMD = [
+    {'cmd': ['losetup', '-f', '--show', '%VOLUME_BACKING_FILE%'],
+     'run_as_root': True}
+]
+
+VG_CREATE_CMD = [
+    {'cmd': ['vgcreate', '%VOLUME_GROUP%', '%DEV%'],
+     'run_as_root': True}
+]
+
+RESTART_TGT_CMD = [
+    {'cmd': ['stop', 'tgt'], 'run_as_root': True},
+    {'cmd': ['start', 'tgt'], 'run_as_root': True}
 ]
 
 # In case we need to map names to the image to run
 # This map also controls which subcomponent's packages may need to add
 APP_NAME_MAP = {
+    settings.NAPI: 'nova-api',
     settings.NCPU: 'nova-compute',
     settings.NVOL: 'nova-volume',
 }
@@ -100,7 +118,7 @@ class NovaInstaller(comp.PythonInstallComponent):
     def get_pkglist(self):
         pkgs = comp.PkgInstallComponent.get_pkglist(self)
         # Walk through the subcomponents (like 'vol' and 'cpu') and add those
-        # those packages as well. (Let utils.get_pkglist handle any missing
+        # those packages as well. Let utils.get_pkglist handle any missing
         # entries
         LOG.debug("get_pkglist looking for extras: %s" % (self.component_opts))
         if self.component_opts:
@@ -154,12 +172,39 @@ class NovaInstaller(comp.PythonInstallComponent):
     def _setup_vol_groups(self):
         LOG.debug("Attempt to setup vol groups")
         mp = dict()
+        backing_file = self.cfg.get('nova', 'volume_backing_file')
+        # check if we need to have a default backing file
+        if not backing_file:
+            backing_file = sh.joinpths(self.appdir, 'nova-volumes-backing-file')
+        backing_file_size = self.cfg.get('nova', 'volume_backing_file_size')
+        if backing_file_size[-1].upper() == 'M':
+            backing_file_size = int(backing_file_size[:-1]) * 1024 ** 2
+        elif backing_file_size[-1].upper() == 'K':
+            backing_file_size = int(backing_file_size[:-1]) * 1024
+        elif backing_file_size[-1].upper() == 'B':
+            backing_file_size = int(backing_file_size[:-1])
+        LOG.debug("backing_file_size:%s" % (backing_file_size))
+
         mp['VOLUME_GROUP'] = self.cfg.get('nova', 'volume_group')
-        mp['VOLUME_BACKING_FILE'] = self.cfg.get('nova', 'volume_backing_file')
-        mp['VOLUME_BACKING_FILE_SIZE'] = self.cfg.get('nova', 'volume_backing_file_size')
+        mp['VOLUME_BACKING_FILE'] = backing_file
+        mp['VOLUME_BACKING_FILE_SIZE'] = backing_file_size
         LOG.debug("params for setup vol group: %s" % (mp))
-        chk_result = utils.execute_template(*VG_CHECK_CMD, params=mp, run_as_root=True, tracewriter=self.tracewriter)
-        LOG.debug("Back from vg check:%s" % (chk_result))
+        try:
+            utils.execute_template(*VG_CHECK_CMD, params=mp)
+            LOG.debug("Vol group exists")
+        except exceptions.ProcessExecutionError as err:
+            LOG.debug("Caught expected exception:%s" % (err))
+            LOG.info("Need to create vol groups")
+            sh.touch_file(backing_file, die_if_there=False, file_size=backing_file_size)
+            vg_dev_result = utils.execute_template(*VG_DEV_CMD, params=mp)
+            LOG.debug("vg dev result:%s" % (vg_dev_result))
+            # String the newlines out of the stdout (which is in the first
+            # element of the first (and only) tuple in the response
+            mp['DEV'] = vg_dev_result[0][0].replace('\n', '')
+            utils.execute_template(*VG_CREATE_CMD, params=mp, tracewriter=self.tracewriter)
+        # TODO Now need to check the headings, etc...
+        # Finish off by restarting tgt
+        utils.execute_template(*RESTART_TGT_CMD, check_exit_code=False, tracewriter=self.tracewriter)
 
     def _generate_nova_conf(self):
         LOG.debug("Generating dynamic content for nova configuration")
