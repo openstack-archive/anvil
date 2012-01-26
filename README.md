@@ -53,7 +53,7 @@ This will typically produce:
 
 # Stack prerequisites
 
-* linux (tested on ubuntu 11 (aka oneiric) and rhel 6.1)
+* linux (tested on ubuntu 11 (aka oneiric) and rhel 6.2 (TBD))
 * python 2.6 or 2.7 (not tested with python 3.0)
 * git
     * In ubuntu oneiric *apt-get install git*
