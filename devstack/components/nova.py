@@ -53,8 +53,12 @@ POST_INSTALL_CMDS = [
               '--pool=%TEST_FLOATING_POOL%']}
 ]
 
+VG_CHECK_CMD = [
+    {'cmd': ['vgs', '%VOLUME_GROUP%']}
+]
+
 # In case we need to map names to the image to run
-# This map also controls which sub component's packages may need to add
+# This map also controls which subcomponent's packages may need to add
 APP_NAME_MAP = {
     settings.NCPU: 'nova-compute',
     settings.NVOL: 'nova-volume',
@@ -135,12 +139,27 @@ class NovaInstaller(comp.PythonInstallComponent):
         mp['TEST_FLOATING_RANGE'] = self.cfg.get('nova', 'test_floating_range')
         mp['TEST_FLOATING_POOL'] = self.cfg.get('nova', 'test_floating_pool')
         utils.execute_template(*POST_INSTALL_CMDS, params=mp, tracewriter=self.tracewriter)
+        # check if we need to do the vol subcomponent
+        if not self.component_opts or settings.NVOL in self.component_opts:
+            # yes, either no subcomponents were specifically requested or it's
+            # in the set that was requested
+            self._setup_vol_groups()
         return parent_result
 
     def _setup_db(self):
         LOG.debug("setting up nova DB")
         db.drop_db(self.cfg, DB_NAME)
         db.create_db(self.cfg, DB_NAME)
+
+    def _setup_vol_groups(self):
+        LOG.debug("Attempt to setup vol groups")
+        mp = dict()
+        mp['VOLUME_GROUP'] = self.cfg.get('nova', 'volume_group')
+        mp['VOLUME_BACKING_FILE'] = self.cfg.get('nova', 'volume_backing_file')
+        mp['VOLUME_BACKING_FILE_SIZE'] = self.cfg.get('nova', 'volume_backing_file_size')
+        LOG.debug("params for setup vol group: %s" % (mp))
+        chk_result = utils.execute_template(*VG_CHECK_CMD, params=mp, run_as_root=True, tracewriter=self.tracewriter)
+        LOG.debug("Back from vg check:%s" % (chk_result))
 
     def _generate_nova_conf(self):
         LOG.debug("Generating dynamic content for nova configuration")
@@ -233,6 +252,7 @@ class NovaConfigurator(object):
         self.appdir = nc.appdir
         self.tracewriter = nc.tracewriter
         self.paste_conf_fn = nc.paste_conf_fn
+        self.nvol = not nc.component_opts or settings.NVOL in nc.component_opts
 
     def _getbool(self, name):
         return self.cfg.getboolean('nova', name)
@@ -279,13 +299,11 @@ class NovaConfigurator(object):
         else:
             nova_conf.add('network_manager', NET_MANAGER_TEMPLATE % (self._getstr('network_manager')))
 
-        # TODO add n-vol support
-        #       if 'n-vol' in self.othercomponents:
-        #   self._resolve('--volume_group=', 'nova', 'volume_group')
-        #   self._resolve('--volume_name_template=',
-        #                 'nova', 'volume_name_prefix', '%08x')
-        #   self._add('--iscsi_helper=tgtadm')
-
+        if self.nvol:
+            nova_conf.add('volume_group', self._getstr('volume_group'))
+            volume_name_template = self._getstr('volume_name_prefix') + self._getstr('volume_name_postfix')
+            nova_conf.add('volume_name_template', volume_name_template)
+            nova_conf.add('iscsi_help', 'tgtadm')
         nova_conf.add('my_ip', hostip)
 
         # The value for vlan_interface may default to the the current value
@@ -304,8 +322,7 @@ class NovaConfigurator(object):
         self._configure_libvirt(self._getstr('libvirt_type'), nova_conf)
 
         #how instances will be presented
-        instance_template = (self._getstr('instance_name_prefix') +
-                                self._getstr('instance_name_postfix'))
+        instance_template = self._getstr('instance_name_prefix') + self._getstr('instance_name_postfix')
         nova_conf.add('instance_name_template', instance_template)
 
         if settings.OPENSTACK_X in self.instances:
