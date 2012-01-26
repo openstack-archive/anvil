@@ -301,6 +301,4 @@ def welcome(ident):
         centered_str = center_text(uncolored_footer, " ", max_line_len)
         footer = centered_str.replace(uncolored_footer, footer)
     print((welcome_header + os.linesep + footer))
-    tail_end = "-" * max_line_len
-    print(tail_end)
-    return tail_end
+    return ("-", max_line_len)

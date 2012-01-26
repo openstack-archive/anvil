@@ -276,9 +276,7 @@ def parse_components(components, assume_all=False):
         mtch = EXT_COMPONENT.match(c)
         if mtch:
             component_name = mtch.group(1).lower().strip()
-            if component_name not in COMPONENT_NAMES:
-                LOG.warn("Unknown component named %s" % (component_name))
-            else:
+            if component_name in COMPONENT_NAMES:
                 component_opts = mtch.group(2)
                 components_opts_cleaned = list()
                 if not component_opts:
@@ -290,8 +288,6 @@ def parse_components(components, assume_all=False):
                         if cleaned_opt:
                             components_opts_cleaned.append(cleaned_opt)
                 adjusted_components[component_name] = components_opts_cleaned
-        else:
-            LOG.warn("Unparseable component %s" % (c))
     #should we adjust them to be all the components?
     if not adjusted_components and assume_all:
         all_components = dict()

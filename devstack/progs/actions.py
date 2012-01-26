@@ -13,6 +13,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+#requires http://pypi.python.org/pypi/termcolor
+#but the colors make it worth it :-)
+from termcolor import colored, cprint
+
 from devstack import cfg
 from devstack import date
 from devstack import exceptions as excp
@@ -144,8 +148,8 @@ def _check_root(action, rootdir):
         if sh.isdir(rootdir):
             dir_list = sh.listdir(rootdir)
             if len(dir_list) > 0:
-                LOG.error("Root directory [%s] already exists (and it's not empty)! "\
-                          "Please remove it or uninstall components!" % (rootdir))
+                cprint("Root directory [%s] already exists (and it's not empty)! "\
+                          "Please remove it or uninstall components!" % (rootdir), "red")
                 return False
     return True
 
@@ -326,23 +330,25 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
 def _run_action(args):
     components = settings.parse_components(args.pop("components"))
     if not components:
-        LOG.error("No components specified!")
+        cprint("No components specified!", "red")
         return False
     action = _clean_action(args.pop("action"))
     if not action:
-        LOG.error("No valid action specified!")
+        cprint("No valid action specified!", "red")
         return False
     rootdir = args.pop("dir")
     if not _check_root(action, rootdir):
-        LOG.error("No valid root directory specified!")
+        cprint("No valid root directory specified!", "red")
         return False
     #ensure os/distro is known
     (distro, platform) = utils.determine_distro()
     if distro is None:
-        LOG.error("Unsupported platform: %s" % (platform))
+        print("Unsupported platform " + colored(platform, "red") + "!")
         return False
     #start it
-    utils.welcome(_WELCOME_MAP.get(action))
+    (rep, maxlen) = utils.welcome(_WELCOME_MAP.get(action))
+    header = utils.center_text("Action Runner", rep, maxlen)
+    print(header)
     #need to figure out dependencies for components (if any)
     ignore_deps = args.pop('ignore_deps', False)
     if not ignore_deps:

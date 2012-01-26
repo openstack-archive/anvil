@@ -19,7 +19,6 @@ import re
 #but the colors make it worth it :-)
 from termcolor import colored, cprint
 
-from devstack import log as logging
 from devstack import settings
 from devstack import utils
 
@@ -36,7 +35,6 @@ from devstack.components import quantum
 from devstack.components import rabbit
 from devstack.components import swift
 
-LOG = logging.getLogger("devstack.progs.misc")
 PROG_NAME = "MISC"
 
 _DESCR_MAP = {
@@ -82,17 +80,19 @@ def _run_describe_comps(args):
     components = settings.parse_components(args.get("components"), True)
     c_keys = sorted(components.keys())
     for c in c_keys:
-        print(colored(c, "green", attrs=['bold']) + " description:")
+        print("Name: " + colored(c, "green", attrs=['bold']) + "")
         describer = _DESCR_MAP.get(c)
         print(describer(components.get(c)))
 
 
 def run(args):
-    sep = utils.welcome(PROG_NAME)
+    (rep, maxlen) = utils.welcome(PROG_NAME)
     if args.get('list_deps'):
+        header = utils.center_text("Dependencies", rep, maxlen)
+        print(header)
         _run_list_deps(args)
-        print(sep)
     if args.get('describe_comp'):
+        header = utils.center_text("Descriptions", rep, maxlen)
+        print(header)
         _run_describe_comps(args)
-        print(sep)
     return True

@@ -19,13 +19,15 @@ import logging
 import logging.config
 import sys
 
+#requires http://pypi.python.org/pypi/termcolor
+#but the colors make it worth it :-)
+from termcolor import colored, cprint
+
 #this needs to happen immediately (or thats what it seems)
-def setupLogging():
-    logfn = os.getenv('LOG_FILE')
-    if(logfn == None):
-        logfn = os.path.join("conf", 'logging.ini')
-    logging.config.fileConfig(logfn)
-setupLogging()
+logfn = os.getenv('LOG_FILE')
+if(logfn == None):
+    logfn = os.path.join("conf", 'logging.ini')
+logging.config.fileConfig(logfn)
 
 #this handles our option parsing
 from devstack import opts
@@ -34,26 +36,23 @@ from devstack import opts
 from devstack.progs import actions
 from devstack.progs import misc
 
-LOG = logging.getLogger("devstack")
-
 
 def main():
-
     #parse and get it done!
     args = opts.parse()
     run_ok = False
-
     #figure out what to do
     if args.get('list_deps') or args.get('describe_comp'):
         run_ok = misc.run(args)
     else:
         run_ok = actions.run(args)
-
     #now do it
     if run_ok:
         return 0
     else:
-        LOG.info("Perhaps you should try %s --help" % (os.path.basename(sys.argv[0])))
+        me = colored((os.path.basename(sys.argv[0])), "red", attrs=['bold'])
+        me += " " + colored('--help', 'red')
+        print("Perhaps you should try %s" % (me))
         return 1
 
 
