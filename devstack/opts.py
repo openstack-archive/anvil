@@ -75,8 +75,8 @@ def parse():
     stop_un_group.add_option("-f", "--force",
         action="store_true",
         dest="force",
-        help="force ACTION even if no trace file found",
-        default=False)
+        help="force ACTION even if no trace file found (default: %default)",
+        default=True)
     parser.add_option_group(stop_un_group)
 
     misc_group = OptionGroup(parser, "Miscellaneous options")

@@ -59,7 +59,7 @@ def execute(*cmd, **kwargs):
         LOG.debug('Running shell cmd: [%s]' % (str_cmd))
     else:
         execute_cmd = cmd
-        LOG.debug('Running cmd: [%s]' % (' '.join(str_cmd)))
+        LOG.debug('Running cmd: [%s]' % ((str_cmd)))
 
     if process_input is not None:
         LOG.debug('With stdin: %s' % (process_input))
