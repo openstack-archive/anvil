@@ -1,5 +1,6 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
+#    Copyright (C) 2012 Yahoo! Inc. All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -37,6 +38,7 @@ from devstack.components import swift
 
 PROG_NAME = "MISC"
 
+#this determines how descriptions for components are found
 _DESCR_MAP = {
     settings.DB: db.describe,
     settings.GLANCE: glance.describe,
