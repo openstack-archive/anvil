@@ -70,6 +70,16 @@ VG_CREATE_CMD = [
      'run_as_root': True}
 ]
 
+VG_LVS_CMD = [
+    {'cmd': ['lvs', '--noheadings', '-o', 'lv_name', '%VOLUME_GROUP%'],
+     'run_as_root': True}
+]
+
+VG_LVREMOVE_CMD = [
+    {'cmd': ['lvremove', '-f', '%VOLUME_GROUP%/%LV%'],
+     'run_as_root': True}
+]
+
 RESTART_TGT_CMD = [
     {'cmd': ['stop', 'tgt'], 'run_as_root': True},
     {'cmd': ['start', 'tgt'], 'run_as_root': True}
@@ -194,7 +204,9 @@ class NovaInstaller(comp.PythonInstallComponent):
             utils.execute_template(*VG_CHECK_CMD, params=mp)
             LOG.debug("Vol group exists")
         except exceptions.ProcessExecutionError as err:
-            LOG.debug("Caught expected exception:%s" % (err))
+            # Check that the error from VG_CHECK is an expected error
+            if err.exit_code != 5:
+                raise
             LOG.info("Need to create vol groups")
             sh.touch_file(backing_file, die_if_there=False, file_size=backing_file_size)
             vg_dev_result = utils.execute_template(*VG_DEV_CMD, params=mp)
@@ -203,9 +215,31 @@ class NovaInstaller(comp.PythonInstallComponent):
             # element of the first (and only) tuple in the response
             mp['DEV'] = vg_dev_result[0][0].replace('\n', '')
             utils.execute_template(*VG_CREATE_CMD, params=mp, tracewriter=self.tracewriter)
-        # TODO Now need to check the headings, etc...
-        # Finish off by restarting tgt
+        # Now check the logical volumes
+        self._process_lvs(mp)
+        # Finish off by restarting tgt, and ignore any errors
         utils.execute_template(*RESTART_TGT_CMD, check_exit_code=False, tracewriter=self.tracewriter)
+
+    def _process_lvs(self, mp):
+        lvs_result = utils.execute_template(*VG_LVS_CMD, params=mp, tracewriter=self.tracewriter)
+        LOG.debug("lvs result:%s" % (lvs_result))
+        vol_name_prefix = self.cfg.get('nova', 'volume_name_prefix')
+        LOG.debug("Using volumne name prefix:%s" % (vol_name_prefix))
+        for stdout_line in lvs_result[0][0].split('\n'):
+            if stdout_line:
+                # Ignore blank lines
+                LOG.debug("lvs output line:%s" % (stdout_line))
+                if stdout_line.startswith(vol_name_prefix):
+                    # TODO still need to implement the following:
+                    # tid=`egrep "^tid.+$lv" /proc/net/iet/volume | cut -f1 -d' ' | tr ':' '='`
+                    # if [[ -n "$tid" ]]; then
+                    #   lun=`egrep "lun.+$lv" /proc/net/iet/volume | cut -f1 -d' ' | tr ':' '=' | tr -d '\t'`
+                    #   sudo ietadm --op delete --$tid --$lun
+                    # fi
+                    # sudo lvremove -f $VOLUME_GROUP/$lv
+                    raise exceptions.StackException("lvs magic not yet implemented")
+                mp['LV'] = stdout_line
+                utils.execute_template(*VG_LVREMOVE_CMD, params=mp, tracewriter=self.tracewriter)
 
     def _generate_nova_conf(self):
         LOG.debug("Generating dynamic content for nova configuration")
@@ -255,8 +289,8 @@ class NovaRuntime(comp.PythonRuntime):
             # check if the specified sub components exist
             delta = set(self.component_opts) - set(APP_OPTIONS.keys())
             if delta:
-                # FIXME, error, something was specified that we don't have
                 LOG.error("sub items that we don't know about:%s" % delta)
+                raise exceptions.BadParamException("Unknown subcomponent specified:%s" % delta)
             else:
                 apps = self.component_opts
                 LOG.debug("Using specified subcomponents:%s" % (apps))
