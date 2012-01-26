@@ -21,8 +21,10 @@ import ConfigParser
 from devstack import env
 from devstack import exceptions as excp
 from devstack import log as logging
+from devstack import settings
 from devstack import shell as sh
 from devstack import utils
+
 
 LOG = logging.getLogger("devstack.cfg")
 PW_TMPL = "Enter a password for %s: "
@@ -90,8 +92,10 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
             return value_gotten
         if section == 'host' and option == 'ip':
             LOG.debug("Host ip from configuration/environment was empty, programatically attempting to determine it.")
-            host_ip = utils.get_host_ip()
-            LOG.debug("Determined host ip to be: \"%s\"" % (host_ip))
+            netifc = self.get("default", "net_interface") or "eth0"
+            netifc = netifc.strip()
+            host_ip = utils.get_host_ip(netifc, settings.IPV4)
+            LOG.debug("Determined host ip to be: \"%s\" from network interface: %s" % (host_ip, netifc))
             return host_ip
         elif section == 'passwords':
             key = self._makekey(section, option)

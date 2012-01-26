@@ -37,8 +37,6 @@ POST_INSTALL = 'post-install'
 # Default interfaces for network ip detection
 IPV4 = 'IPv4'
 IPV6 = 'IPv6'
-DEFAULT_NET_INTERFACE = 'eth0'
-DEFAULT_NET_INTERFACE_IP_VERSION = IPV4
 
 # Component name mappings
 NOVA = "nova"

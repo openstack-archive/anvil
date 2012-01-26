@@ -41,7 +41,7 @@ CFG_SECTION = 'DEFAULT'
 #this db will be dropped and created
 DB_NAME = "glance"
 
-#special subcomponents that is used in starting to know that images should be uploaded
+#special subcomponents/options that are used in starting to know that images should be uploaded
 IMG_START = "upload-images"
 
 #what to start
@@ -182,8 +182,11 @@ def describe(opts=None):
   Component options:
    {component_opts}
 """
+    copts = """
+ {img_upload} - uploads test images to glance.
+"""
     params = dict()
-    params['component_opts'] = "TBD"
+    params['component_opts'] = copts.strip("\n").format(img_upload=IMG_START)
     params['module_name'] = __name__
     params['description'] = __doc__ or "Handles actions for the glance component."
     out = description.format(**params)
