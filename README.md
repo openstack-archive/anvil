@@ -216,45 +216,6 @@ To adjust logging edit the *conf/logging.ini* file which controls the logging le
 
 * You can also change which logging file name python will select ([format defined here](http://docs.python.org/dev/library/logging.config.html)) by setting the environment variable *LOG_FILE*.
 
-# Q/A
+# We want more
 
-## Why are we doing this?
-
-1. The current devstack v1 seems to be growing into something it was never meant to be and is becoming hard to understand.
-1. A python implementation will:
-    * Reign the above in and match closely how the other openstack components are developed, tested and code reviewed.
-    * Keep openstack on one language, thus reducing the language complexity aspect.
-1. Additional features/nice to haves were added:
-    * Ability to uninstall/start/stop the different components.
-    * Command line help and descriptions of components.
-    * An object oriented model that can be *easily* examined to figure out what a component requires for setup/config/install/starting/stopping.
-1. It can be a place where distributions will come to determine exactly what packages where used for a given openstack release (thus the reason why full versions are important).
-1. It can also be a place where you find out what openstack components have dependencies on other components:
-    * For example: glance depends on keystone, glance depends on a database, keystone depends on a database...
-
-## Why not just rely on package management dependency systems?
-
-1. Having the dependency's handled by the distribtion package management system makes it **hard** for others to know what **exactly** is installed and what should exactly be installed. 
-    * This is important just in general since not everyone is on ubuntu 11.10 (or later), especially for development.
-    * This is one of the *key* problems that we are trying to solve, since developers are on systems other than ubuntu and those individuals/companies want to contribute to openstack.
-        * How can these individuals/companies do that if they can't easily get a development system with dependencies installed up and running. This issue 
-          seems like it was starting to be addressed by devstack v1 with apt package lists but this does not seem complete enough as knowing the exact 
-          versions of packages is also very important for other distributions to know what version they should provide. 
-          Thus the reason for having dependencies + versions (not a complete dependency graph) listed.
-1. It allows developers to have reproducibility.
-    * For example when a bug is filed against diablo (or other release/milestone), the developer can easily figure out exactly what packages where installed for whichever distribution that bug was filed against
-      This allows that developer to recreate the bug (or have a chance at recreated it) and rule out dependency issues causing that bug.
-1. Those dependency management systems do not always work the same, so the intricacies of how they work can be isolated in the devstack code.
-
-## Why not just rely on dep or rpm files?
-
-1. Devstack was created for developers and these developers will most likely be using trunk code.
-1. Some of the intricacies with getting openstack running, the configs setup, ..., are not as simple as just over-writing some config files (some require actual logic to determine what to do).
-    * This is why its not as simple as just having a set of debian packages or rpm's that hand-code this logic in there packaging language.
-1. This also violates the *key* principle that openstack seems to be sticking to, that of of keeping openstack projects under python if at all possible.
-    
-**Past experience**
-
-Something yahoo has learned from doing this many different ways (more than you want to know) is that in the end when having a production level software that can be installed (repeatedly) requires at information on exactly what versions/packages/dependencies are needed. If a distribution automatically updates a package version without the openstack community knowing & approving that change and we didn't list the versions then it may crash openstack (or at least invalidate tests that the openstack community has tested with a given set of dependencies+versions).
-
-That is one of the major wins for versions and dependency lists. Since openstack will be developed and deployed on more than one distribution having a central place where people know exactly what packages + versions worked for a release (or for development) seems pretty important (especially as the project matures). This may be an *inversion* of currently how it works but it seems better to fix this now than later when it becomes even more of a problem.
+Please check out: <https://github.com/yahoo/Openstack-Devstack2/wiki>
