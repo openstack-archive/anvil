@@ -53,12 +53,6 @@ RABBIT = "rabbit"
 OPENSTACK_X = 'openstack-x'
 NOVNC = 'novnc'
 
-# NCPU, NVOL, NAPI are here as possible subcomponents of nova
-# Thus they are not in the component name map or priority or dep list...
-NCPU = "cpu"
-NVOL = "vol"
-NAPI = "api"
-
 COMPONENT_NAMES = [
     NOVA, NOVA_CLIENT,
     GLANCE,
@@ -135,8 +129,8 @@ STACK_CONFIG_LOCATION = os.path.join(STACK_CONFIG_DIR, "stack.ini")
 
 # These regex is how we match python platform output to a known constant
 KNOWN_DISTROS = {
-    UBUNTU11: re.compile('Ubuntu(.*)oneiric', re.IGNORECASE),
-    RHEL6: re.compile('redhat-6\.(\d+)', re.IGNORECASE),
+    UBUNTU11: re.compile(r'Ubuntu(.*)oneiric', re.IGNORECASE),
+    RHEL6: re.compile(r'redhat-6\.2', re.IGNORECASE),
 }
 
 
@@ -174,6 +168,7 @@ PKG_MAP = {
         [
             os.path.join(STACK_PKG_DIR, "general.json"),
             os.path.join(STACK_PKG_DIR, "nova.json"),
+            #nova may add others in if it finds that u are asking for a additional components
         ],
     NOVA_CLIENT:
         [
@@ -232,18 +227,6 @@ PKG_MAP = {
     NOVNC:
         [
             os.path.join(STACK_PKG_DIR, 'n-vnc.json'),
-        ],
-    NAPI:
-        [
-            os.path.join(STACK_PKG_DIR, 'n-api.json'),
-        ],
-    NCPU:
-        [
-            os.path.join(STACK_PKG_DIR, 'n-cpu.json'),
-        ],
-    NVOL:
-        [
-            os.path.join(STACK_PKG_DIR, 'n-vol.json'),
         ],
 }
 

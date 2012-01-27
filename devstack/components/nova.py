@@ -35,15 +35,6 @@ DB_NAME = 'nova'
 #id
 TYPE = settings.NOVA
 
-#what to start
-APP_OPTIONS = {
-    settings.NAPI: ['--flagfile', '%CFGFILE%'],
-    settings.NCPU: ['--flagfile', '%CFGFILE%'],
-    settings.NVOL: ['--flagfile', '%CFGFILE%'],
-    'nova-network': ['--flagfile', '%CFGFILE%'],
-    'nova-scheduler': ['--flagfile', '%CFGFILE%']
-}
-
 #post install cmds that will happen after install
 POST_INSTALL_CMDS = [
     {'cmd': ['%BINDIR%/nova-manage', '--flagfile', '%CFGFILE%',
@@ -85,12 +76,43 @@ RESTART_TGT_CMD = [
     {'cmd': ['start', 'tgt'], 'run_as_root': True}
 ]
 
+# NCPU, NVOL, NAPI are here as possible subcomponents of nova
+NCPU = "cpu"
+NVOL = "vol"
+NAPI = "api"
+SUBCOMPONENTS = [NCPU, NVOL, NAPI]
+
 # In case we need to map names to the image to run
 # This map also controls which subcomponent's packages may need to add
 APP_NAME_MAP = {
-    settings.NAPI: 'nova-api',
-    settings.NCPU: 'nova-compute',
-    settings.NVOL: 'nova-volume',
+    NAPI: 'nova-api',
+    NCPU: 'nova-compute',
+    NVOL: 'nova-volume',
+}
+
+# Additional packages for subcomponents
+ADD_PKGS = {
+    NAPI:
+        [
+            sh.joinpths(settings.STACK_PKG_DIR, 'n-api.json'),
+        ],
+    NCPU:
+        [
+            sh.joinpths(settings.STACK_PKG_DIR, 'n-cpu.json'),
+        ],
+    NVOL:
+        [
+            sh.joinpths(settings.STACK_PKG_DIR, 'n-vol.json'),
+        ],
+}
+
+# What to start
+APP_OPTIONS = {
+    NAPI: ['--flagfile', '%CFGFILE%'],
+    NCPU: ['--flagfile', '%CFGFILE%'],
+    NVOL: ['--flagfile', '%CFGFILE%'],
+    'nova-network': ['--flagfile', '%CFGFILE%'],
+    'nova-scheduler': ['--flagfile', '%CFGFILE%']
 }
 
 #subdirs of the checkout/download
@@ -130,15 +152,19 @@ class NovaInstaller(comp.PythonInstallComponent):
         # Walk through the subcomponents (like 'vol' and 'cpu') and add those
         # those packages as well. Let utils.get_pkglist handle any missing
         # entries
-        LOG.debug("get_pkglist explicit extras: %s" % (self.component_opts))
         if self.component_opts:
             sub_components = self.component_opts
         else:
             # No subcomponents where explicitly specified, so get all
-            sub_components = APP_NAME_MAP.keys()
+            sub_components = SUBCOMPONENTS
+        LOG.debug("Explicit extras: %s" % (sub_components))
         # Add the extra dependencies
         for cname in sub_components:
-            pkgs.update(utils.get_pkg_list(self.distro, cname))
+            subpkgsfns = ADD_PKGS.get(cname)
+            if subpkgsfns:
+                subpkgs = utils.extract_pkg_list(subpkgsfns, self.distro)
+                if subpkgs:
+                    pkgs.update(subpkgs)
         return pkgs
 
     def _get_download_locations(self):
@@ -167,7 +193,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         mp['TEST_FLOATING_POOL'] = self.cfg.get('nova', 'test_floating_pool')
         utils.execute_template(*POST_INSTALL_CMDS, params=mp, tracewriter=self.tracewriter)
         # check if we need to do the vol subcomponent
-        if not self.component_opts or settings.NVOL in self.component_opts:
+        if not self.component_opts or NVOL in self.component_opts:
             # yes, either no subcomponents were specifically requested or it's
             # in the set that was requested
             self._setup_vol_groups()
@@ -322,7 +348,7 @@ class NovaConfigurator(object):
         self.appdir = nc.appdir
         self.tracewriter = nc.tracewriter
         self.paste_conf_fn = nc.paste_conf_fn
-        self.nvol = not nc.component_opts or settings.NVOL in nc.component_opts
+        self.nvol = not nc.component_opts or NVOL in nc.component_opts
 
     def _getbool(self, name):
         return self.cfg.getboolean('nova', name)
