@@ -13,6 +13,17 @@
             "version": "1.2.0-1ubuntu3",
             "allowed": ">=",
             "removable": true
+        },
+        # Seems needed for ovs_quantum_agent.py
+        "python-sqlalchemy": {
+            "version": "0.6.8-1",
+            "allowed": ">=",
+            "removable": true
+        },
+        "python-mysqldb": {
+            "version": "1.2.3-0ubuntu1",
+            "allowed": ">=",
+            "removable": true
         }
     },
     "rhel-6": {

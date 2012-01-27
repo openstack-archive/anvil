@@ -2,6 +2,9 @@
 
 #    Copyright (C) 2012 Yahoo! Inc. All Rights Reserved.
 #
+#    Copyright 2011 OpenStack LLC.
+#    All Rights Reserved.
+#
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
 #    a copy of the License at
@@ -75,6 +78,23 @@ def execute_template(*cmds, **kargs):
             tracewriter.exec_cmd(cmd_to_run, exec_res)
         cmd_results.append(exec_res)
     return cmd_results
+
+
+def to_bytes(text):
+    byte_val = 0
+    if not text:
+        return byte_val
+    if text[-1].upper() == 'G':
+        byte_val = int(text[:-1]) * 1024 ** 3
+    elif text[-1].upper() == 'M':
+        byte_val = int(text[:-1]) * 1024 ** 2
+    elif text[-1].upper() == 'K':
+        byte_val = int(text[:-1]) * 1024
+    elif text[-1].upper() == 'B':
+        byte_val = int(text[:-1])
+    else:
+        byte_val = int(text)
+    return byte_val
 
 
 def load_json(fn):

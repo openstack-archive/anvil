@@ -31,11 +31,13 @@ VSWITCH_PLUGIN = 'openvswitch'
 PKG_VSWITCH = "quantum-openvswitch.json"
 V_PROVIDER = "quantum.plugins.openvswitch.ovs_quantum_plugin.OVSQuantumPlugin"
 
-#config files (some only modified if running as openvswitch
+#config files (some only modified if running as openvswitch)
 PLUGIN_CONF = "plugins.ini"
+QUANTUM_CONF = 'quantum.conf'
 PLUGIN_LOC = ['etc']
 AGENT_CONF = 'ovs_quantum_plugin.ini'
 AGENT_LOC = ["etc", "quantum", "plugins", "openvswitch"]
+AGENT_BIN_LOC = ["quantum", "plugins", "openvswitch", 'agent']
 CONFIG_FILES = [PLUGIN_CONF, AGENT_CONF]
 
 #this db will be dropped and created
@@ -52,6 +54,18 @@ TYPE = settings.QUANTUM
 #special component options
 QUANTUM_SERVICE = 'q-svc'
 QUANTUM_AGENT = 'q-agt'
+
+#subdirs of the downloaded
+CONFIG_DIR = 'etc'
+BIN_DIR = 'bin'
+
+#what to start (only if openvswitch enabled)
+APP_Q_SERVER = 'quantum-server'
+APP_Q_AGENT = 'ovs_quantum_agent.py'
+APP_OPTIONS = {
+    APP_Q_SERVER: ["%QUANTUM_CONFIG_FILE%"],
+    APP_Q_AGENT: ["%OVS_CONFIG_FILE%", "-v"],
+}
 
 
 class QuantumUninstaller(comp.PkgUninstallComponent):
@@ -88,11 +102,14 @@ class QuantumInstaller(comp.PkgInstallComponent):
         return places
 
     def _get_pkglist(self):
+        pkglist = comp.PkgInstallComponent._get_pkglist(self)
         if self.q_vswitch_service:
             listing_fn = sh.joinpths(settings.STACK_PKG_DIR, PKG_VSWITCH)
-            return utils.extract_pkg_list([listing_fn], self.distro)
-        else:
-            return comp.PkgInstallComponent._get_pkglist(self)
+            vswitchpkgs = utils.extract_pkg_list([listing_fn], self.distro)
+            if vswitchpkgs:
+                for (pkgname, pkginfo) in vswitchpkgs.items():
+                    pkglist[pkgname] = pkginfo
+        return pkglist
 
     def _get_config_files(self):
         parent_list = comp.PkgInstallComponent._get_config_files(self)
@@ -196,9 +213,50 @@ class QuantumInstaller(comp.PkgInstallComponent):
             return comp.PkgInstallComponent._get_source_config(self, config_fn)
 
 
-class QuantumRuntime(comp.EmptyRuntime):
+class QuantumRuntime(comp.ProgramRuntime):
     def __init__(self, *args, **kargs):
-        comp.EmptyRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.ProgramRuntime.__init__(self, TYPE, *args, **kargs)
+        self.q_vswitch_agent = False
+        self.q_vswitch_service = False
+        plugin = self.cfg.get("quantum", "q_plugin")
+        if plugin == VSWITCH_PLUGIN:
+            if len(self.component_opts) == 0:
+                #default to on if not specified
+                self.q_vswitch_agent = True
+                self.q_vswitch_service = True
+            else:
+                #only turn on if requested
+                if QUANTUM_SERVICE in self.component_opts:
+                    self.q_vswitch_service = True
+                if QUANTUM_AGENT in self.component_opts:
+                    self.q_vswitch_agent = True
+
+    def _get_apps_to_start(self):
+        app_list = comp.ProgramRuntime._get_apps_to_start(self)
+        if self.q_vswitch_service:
+            app_list.append({
+                    'name': APP_Q_SERVER,
+                    'path': sh.joinpths(self.appdir, BIN_DIR, APP_Q_SERVER),
+            })
+        if self.q_vswitch_agent:
+            full_pth = [self.appdir] + AGENT_BIN_LOC + [APP_Q_AGENT]
+            app_list.append({
+                    'name': APP_Q_AGENT,
+                    'path': sh.joinpths(*full_pth)
+            })
+        return app_list
+
+    def _get_app_options(self, app_name):
+        return APP_OPTIONS.get(app_name)
+
+    def _get_param_map(self, app_name):
+        param_dict = comp.ProgramRuntime._get_param_map(self, app_name)
+        if app_name == APP_Q_AGENT:
+            tgt_loc = [self.appdir] + AGENT_LOC + [AGENT_CONF]
+            param_dict['OVS_CONFIG_FILE'] = sh.joinpths(*tgt_loc)
+        elif app_name == APP_Q_SERVER:
+            param_dict['QUANTUM_CONFIG_FILE'] = sh.joinpths(self.appdir, CONFIG_DIR, QUANTUM_CONF)
+        return param_dict
 
 
 def describe(opts=None):

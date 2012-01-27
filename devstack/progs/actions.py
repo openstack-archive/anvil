@@ -36,6 +36,7 @@ from devstack.components import nova_client
 from devstack.components import novnc
 from devstack.components import openstack_x
 from devstack.components import quantum
+from devstack.components import quantum_client
 from devstack.components import rabbit
 from devstack.components import swift
 
@@ -75,6 +76,7 @@ _ACTION_CLASSES = {
         settings.NOVA_CLIENT: nova_client.NovaClientInstaller,
         settings.OPENSTACK_X: openstack_x.OpenstackXInstaller,
         settings.NOVNC: novnc.NoVNCInstaller,
+        settings.QUANTUM_CLIENT: quantum_client.QuantumClientInstaller,
     },
     settings.UNINSTALL: {
         settings.NOVA: nova.NovaUninstaller,
@@ -89,6 +91,7 @@ _ACTION_CLASSES = {
         settings.NOVA_CLIENT: nova_client.NovaClientUninstaller,
         settings.OPENSTACK_X: openstack_x.OpenstackXUninstaller,
         settings.NOVNC: novnc.NoVNCUninstaller,
+        settings.QUANTUM_CLIENT: quantum_client.QuantumClientUninstaller,
     },
     settings.START: {
         settings.NOVA: nova.NovaRuntime,
@@ -103,6 +106,7 @@ _ACTION_CLASSES = {
         settings.NOVA_CLIENT: nova_client.NovaClientRuntime,
         settings.OPENSTACK_X: openstack_x.OpenstackXRuntime,
         settings.NOVNC: novnc.NoVNCRuntime,
+        settings.QUANTUM_CLIENT: quantum_client.QuantumClientRuntime,
     },
     settings.STOP: {
         settings.NOVA: nova.NovaRuntime,
@@ -117,6 +121,7 @@ _ACTION_CLASSES = {
         settings.NOVA_CLIENT: nova_client.NovaClientRuntime,
         settings.OPENSTACK_X: openstack_x.OpenstackXRuntime,
         settings.NOVNC: novnc.NoVNCRuntime,
+        settings.QUANTUM_CLIENT: quantum_client.QuantumClientRuntime,
     },
 }
 

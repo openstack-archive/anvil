@@ -1,0 +1,16 @@
+# This is a extended json package definition file 
+# We allow simple comments (lines starting with a hash symbol)
+{
+    # This is currently our "master" repo set with versions
+    # that we are trying to align other distributions with.
+    "ubuntu-oneiric": {
+        "python-gflags": {
+            "version": "1.5.1-1",
+            "allowed": ">=",
+            "removable": true
+        }
+    },
+    "rhel-6": {
+        #TBD
+    }
+}

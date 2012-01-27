@@ -24,18 +24,23 @@ from devstack import shell as sh
 #id
 TYPE = settings.HORIZON
 
+#actual dir names
 ROOT_HORIZON = 'horizon'
 HORIZON_NAME = 'horizon'
 ROOT_DASH = 'openstack-dashboard'
 DASH_NAME = 'dashboard'
 
+#config files messed with
 HORIZON_PY_CONF = "horizon_settings.py"
 HORIZON_PY_CONF_TGT = ['local', 'local_settings.py']
 HORIZON_APACHE_CONF = '000-default'
 HORIZON_APACHE_TGT = ['/', 'etc', 'apache2', 'sites-enabled', '000-default']
-
 CONFIGS = [HORIZON_PY_CONF, HORIZON_APACHE_CONF]
+
+#db sync that needs to happen for horizon
 DB_SYNC_CMD = ['python', 'manage.py', 'syncdb']
+
+#special apache directory (TODO describe more about this)
 BLACKHOLE_DIR = '.blackhole'
 
 #hopefully this will be distro independent ??
