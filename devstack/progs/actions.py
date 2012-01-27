@@ -147,17 +147,18 @@ def _get_action_cls(action_name, component_name):
     return action_cls_map.get(component_name)
 
 
-def _check_root(action, rootdir):
-    if not rootdir:
-        return False
+def _check_roots(action, rootdir, components):
+    to_skip = list()
     if action == settings.INSTALL:
         if sh.isdir(rootdir):
-            dir_list = sh.listdir(rootdir)
-            if len(dir_list) > 0:
-                cprint("Root directory [%s] already exists (and it's not empty)! "\
-                          "Please remove it or uninstall components!" % (rootdir), "red")
-                return False
-    return True
+            to_skip = list()
+            for c in components:
+                check_pth = sh.joinpths(rootdir, c)
+                if sh.isdir(check_pth) and len(sh.listdir(check_pth)) != 0:
+                    LOG.warn("Component directory [%s] already exists and its not empty (skipping installing that component)!" % check_pth)
+                    LOG.warn("If this is undesired please remove it or uninstall %s!" % (c))
+                    to_skip.append(c)
+    return to_skip
 
 
 def _pre_run(action_name, **kargs):
@@ -334,7 +335,7 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
 
 
 def _run_action(args):
-    components = settings.parse_components(args.pop("components"))
+    components = settings.parse_components(args.pop("components"), True)
     if not components:
         cprint("No components specified!", "red")
         return False
@@ -343,8 +344,8 @@ def _run_action(args):
         cprint("No valid action specified!", "red")
         return False
     rootdir = args.pop("dir")
-    if not _check_root(action, rootdir):
-        cprint("No valid root directory specified!", "red")
+    if rootdir is None:
+        cprint("No root directory specified!", "red")
         return False
     #ensure os/distro is known
     (distro, platform) = utils.determine_distro()
@@ -364,6 +365,12 @@ def _run_action(args):
             LOG.info("Having to activate dependent components: [%s]" % (", ".join(component_diff)))
             for new_component in component_diff:
                 components[new_component] = list()
+    component_skips = _check_roots(action, rootdir, components.keys())
+    for c in component_skips:
+        components.pop(c)
+    if not components:
+        LOG.error("After checking the various components roots, no components ended up being specified!")
+        return False
     #get the right component order (by priority)
     component_order = settings.prioritize_components(components.keys())
     #add in any that will just be referenced but which will not actually do anything (ie the action will not be applied to these)
