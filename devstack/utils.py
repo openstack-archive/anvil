@@ -80,6 +80,23 @@ def execute_template(*cmds, **kargs):
     return cmd_results
 
 
+def to_bytes(text):
+    byte_val = 0
+    if not text:
+        return byte_val
+    if text[-1].upper() == 'G':
+        byte_val = int(text[:-1]) * 1024 ** 3
+    elif text[-1].upper() == 'M':
+        byte_val = int(text[:-1]) * 1024 ** 2
+    elif text[-1].upper() == 'K':
+        byte_val = int(text[:-1]) * 1024
+    elif text[-1].upper() == 'B':
+        byte_val = int(text[:-1])
+    else:
+        byte_val = int(text)
+    return byte_val
+
+
 def load_json(fn):
     data = sh.load_file(fn)
     lines = data.splitlines()

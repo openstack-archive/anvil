@@ -186,16 +186,8 @@ class NovaInstaller(comp.PythonInstallComponent):
         # check if we need to have a default backing file
         if not backing_file:
             backing_file = sh.joinpths(self.appdir, 'nova-volumes-backing-file')
-        backing_file_size = self.cfg.get('nova', 'volume_backing_file_size')
         vol_group = self.cfg.get('nova', 'volume_group')
-        if backing_file_size[-1].upper() == 'G':
-            backing_file_size = int(backing_file_size[:-1]) * 1024 ** 3
-        elif backing_file_size[-1].upper() == 'M':
-            backing_file_size = int(backing_file_size[:-1]) * 1024 ** 2
-        elif backing_file_size[-1].upper() == 'K':
-            backing_file_size = int(backing_file_size[:-1]) * 1024
-        elif backing_file_size[-1].upper() == 'B':
-            backing_file_size = int(backing_file_size[:-1])
+        backing_file_size = utils.to_bytes(self.cfg.get('nova', 'volume_backing_file_size'))
         mp['VOLUME_GROUP'] = vol_group
         mp['VOLUME_BACKING_FILE'] = backing_file
         mp['VOLUME_BACKING_FILE_SIZE'] = backing_file_size
