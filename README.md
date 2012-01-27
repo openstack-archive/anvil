@@ -10,8 +10,6 @@
 * To make it easier for developers to dive into OpenStack so that they can productively contribute without having to understand every part of the system at once.
 * To make it easy to prototype cross-project features.
 
-Read more at <http://devstack.org> (TBD) or <https://github.com/yahoo/Openstack-Devstack2/wiki>
-
 **IMPORTANT:** Be sure to carefully read *stack* and any other scripts you execute before you run them, as they install software and may alter your networking configuration.  We strongly recommend that you run stack in a clean and disposable vm when you are first getting started. (*TODO* dry-run mode would be great!).
 
 # Help
@@ -55,7 +53,7 @@ This will typically produce:
 
 # Stack prerequisites
 
-* linux (tested on ubuntu 11 (aka oneiric) and rhel 6.2 (TBD))
+* linux (tested on ubuntu 11.10 and rhel 6.2 (TBD))
 * python 2.6 or 2.7 (not tested with python 3.0)
 * git
     * In ubuntu oneiric *apt-get install git*
@@ -101,24 +99,27 @@ Since the script will either prompt for this value (or generate it for you) we c
 
 Check out *conf/pkgs* for package listings and *conf/pips* for python packages for various distributions. 
 
-Note that these files are in a modified json format which allows for simple comments (lines starting with #).
-These comments are useful for explanations of why a version was chosen or the like.
+Note that these files are in a modified json format which allows for simple comments (lines starting with *#*). These comments are useful for explanations of why a version was chosen or the like.
 
 # Starting
 
 **!Installing in a dedicated, disposable vm is safer than installing on your dev machine!**
 
-1. Get ubuntu 11 (oneiric) or redhat 6 (or equivalent) and create a new machine/vm with that distribution
-1. Install the above prerequisites
+1. Get and install the above prerequisites.
 1. *git clone git://github.com/yahoo/Openstack-Devstack2.git*
 
-## Glance
+## Glance (as an example)
 
 ### Installing
 
-1. Run: *./stack -a install -d $HOME/openstack -c glance*
-    * *Note:* This will also install glances dependencies (to show dependencies run *./stack -s*)
+**Always uninstall before you install (if you have installed previously)!**
+
+1. Run: *sudo ./stack -a install -d $HOME/openstack -c glance*
+    * *Note:* This will also install glances dependencies (to show dependencies run *./stack --list-deps*)
         * If this is undesired try the *--ignore-deps* option
+    * *Note:* *sudo* is typically required since packages will be installed (ie using yum) and configuration files may be written to places only root can write.
+        * Ie, running *python setup.py develop* will write files to */usr/local/lib/python2.X*
+        * Ie, the horizon component writes configuration to */etc/apache2/*
 1. When prompted for passwords either press enter (to have it generate one) or enter a password.
 1. Wait for it to finish...
     * On finish you should see all configurations/passwords/database dsn's that have been fetched (for future reference). 
@@ -154,10 +155,11 @@ An example of this end state is the following:
    
 ### Starting
 
-1. Run *./stack -a start -d $HOME/openstack -c glance*
-    * *Note:* This will also start glances dependencies (to show dependencies run *./stack -s*)
+1. Run *sudo ./stack -a start -d $HOME/openstack -c glance*
+    * *Note:* This will also start glances dependencies (to show dependencies run *./stack --list-deps*)
         * If this is undesired try the *--ignore-deps* option
     * *Note:* Currently forking is done instead of running screen (*TODO* get screen working)
+    * *Note:* *sudo* is typically required since dependent components may need to be started (ie if a db service is a dependent, *sudo service mysql start* can only be done by root).
 1. On finish you should see a list of files which will have information about what is started
     * For forking mode this will be a file with information on where the PID is, where the STDERR/STDOUT files are.
     
@@ -172,9 +174,10 @@ An example of one of these files is the following:
 
 ### Stopping
 
-1. Run *./stack -a stop -d $HOME/openstack -c glance*
-    * *Note:* This will also stop glances dependencies (to show dependencies run *./stack -s*)
+1. Run *sudo ./stack -a stop -d $HOME/openstack -c glance*
+    * *Note:* This will also stop glances dependencies (to show dependencies run *./stack --list-deps*)
         * If this is undesired try the *--ignore-deps* option
+    * *Note:* *sudo* is typically required since applications may be started as root.
 
 On finish you should see something like the following:
 
@@ -191,10 +194,12 @@ On finish you should see something like the following:
 
 ### Uninstalling
 
-1. Run *./stack -a uninstall -d $HOME/openstack -c glance*
-    * *Note:* This will also uninstall glances dependencies (to show dependencies run *./stack -s*)
+**Always stop before you uninstall (if you have started apps)!**
+
+1. Run *sudo ./stack -a uninstall -d $HOME/openstack -c glance*
+    * *Note:* This will also uninstall glances dependencies (to show dependencies run *./stack --list-deps*)
         * If this is undesired try the *--ignore-deps* option
-    * *Note:* This may also require *sudo* access to cleanup all the necessary directories that python sets up.
+    * *Note:* This usually requires *sudo* access to cleanup all the necessary directories that python sets up.
 
 On finish you should see something like the following:
 
@@ -216,6 +221,6 @@ To adjust logging edit the *conf/logging.ini* file which controls the logging le
 
 * You can also change which logging file name python will select ([format defined here](http://docs.python.org/dev/library/logging.config.html)) by setting the environment variable *LOG_FILE*.
 
-# We want more
+# We want more information!
 
 Please check out: <https://github.com/yahoo/Openstack-Devstack2/wiki>
