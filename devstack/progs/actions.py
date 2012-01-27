@@ -334,11 +334,33 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
     return results
 
 
+def _get_def_components():
+    #this seems to be the default list of what to install
+    #ENABLED_SERVICES=${ENABLED_SERVICES:-g-api,g-reg,key,n-api,
+    #n-crt,n-obj,n-cpu,n-net,n-sch,n-novnc,n-xvnc,n-cauth,horizon,mysql,rabbit}
+    def_components = dict()
+    #TODO glance subcomponents should be api/reg
+    def_components[settings.GLANCE] = []
+    def_components[settings.KEYSTONE] = []
+    #we seem to be missing the nova object store (n-obj)
+    #and nova network (n-net) and nova cert (n-crt)
+    #and nova scheduler (n-sch) and n-cauth (console auth)
+    #TODO talk to ken about these...
+    def_components[settings.NOVA] = [nova.NCPU, nova.NVOL, nova.NAPI]
+    def_components[settings.NOVNC] = []
+    #TODO n-xvnc?
+    def_components[settings.HORIZON] = []
+    def_components[settings.DB] = []
+    def_components[settings.RABBIT] = []
+    return def_components
+
+
 def _run_action(args):
-    components = settings.parse_components(args.pop("components"), True)
+    defaulted_components = False
+    components = settings.parse_components(args.pop("components"))
     if not components:
-        cprint("No components specified!", "red")
-        return False
+        defaulted_components = True
+        components = _get_def_components()
     action = _clean_action(args.pop("action"))
     if not action:
         cprint("No valid action specified!", "red")
@@ -358,11 +380,15 @@ def _run_action(args):
     print(header)
     #need to figure out dependencies for components (if any)
     ignore_deps = args.pop('ignore_deps', False)
+    if not defaulted_components:
+        LOG.info("Activating components [%s]" % (", ".join(sorted(components.keys()))))
+    else:
+        LOG.info("Activating default components [%s]" % (", ".join(sorted(components.keys()))))
     if not ignore_deps:
         new_components = settings.resolve_dependencies(components.keys())
         component_diff = new_components.difference(components.keys())
         if component_diff:
-            LOG.info("Having to activate dependent components: [%s]" % (", ".join(component_diff)))
+            LOG.info("Having to activate dependent components: [%s]" % (", ".join(sorted(component_diff))))
             for new_component in component_diff:
                 components[new_component] = list()
     component_skips = _check_roots(action, rootdir, components.keys())

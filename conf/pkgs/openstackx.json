@@ -3,34 +3,14 @@
 {
     # This is currently our "master" repo set with versions
     # that we are trying to align other distributions with.
+    # The versions should at least be major + minor!
     "ubuntu-oneiric": {
         "python-httplib2": {
-            "version": "0.7.1-1ubuntu1",
-            "allowed": ">=",
+            "version": "0.7*",
             "removable": true
         }
-        # Not needed unless less than python 2.6 (not our case)
-        #"python-simplejson": {
-        #    "version": "2.1.6-1",
-        #    "allowed": ">=",
-        #    "removable": true
-        #},
     },
     "rhel-6": {
-        # Unless otherwise noted the versions may be slightly
-        # different, but for common utilities this should not be a critical
-        # issue unless determined otherwise.
-        #
-        # If a package requires EPEL repo please follow instructions
-        # at http://fedoraproject.org/wiki/EPEL to ensure the repo is in /etc/yum.repos.d/
-        #
-        # Requires EPEL repo
-        "python-httplib2": {
-            # This version is behind by alot. We might need to repackage it.
-            # Grid dynamics repo lists 0.7.1-2.2 (we might need to also)
-            "version": "0.4.0-5.el6",
-            "allowed": ">=",
-            "removable": true
-        }
+        # TBD
     }
 }

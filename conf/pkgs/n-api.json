@@ -3,19 +3,14 @@
 {
     # This is currently our "master" repo set with versions
     # that we are trying to align other distributions with.
+    # The versions should at least be major + minor!
     "ubuntu-oneiric": {
         "python-dateutil": {
-            "version": "1.4.1-4",
-            "allowed": ">=",
+            "version": "1.4*",
             "removable": true
         }
     },
     "rhel-6": {
-        # Unless otherwise noted the versions may be slightly
-        # different, but for common utilities this should not be a critical
-        # issue unless determined otherwise.
-        #
-        # If a package requires EPEL repo please follow instructions
-        # at http://fedoraproject.org/wiki/EPEL to ensure the repo is in /etc/yum.repos.d/
+        # TBD
     }
 }

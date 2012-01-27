@@ -3,27 +3,14 @@
 {
     # This is currently our "master" repo set with versions
     # that we are trying to align other distributions with.
+    # The versions should at least be major + minor!
     "ubuntu-oneiric": {
         "rabbitmq-server": {
-            "version": "2.5.0-1ubuntu2",
-            "allowed": ">=",
+            "version": "2.5*",
             "removable": true
         }
     },
     "rhel-6": {
-        # Unless otherwise noted the versions may be slightly
-        # different, but for common utilities this should not be a critical
-        # issue unless determined otherwise.
-        #
-        # If a package requires EPEL repo please follow instructions
-        # at http://fedoraproject.org/wiki/EPEL to ensure the repo is in /etc/yum.repos.d/
-        #
-        # Requires EPEL repo
-        "rabbitmq-server": {
-            # This version is ahead of ubuntu.
-            "version": "2.6.1-1.el6",
-            "allowed": ">=",
-            "removable": true
-        }
+        # TBD
     }
 }

@@ -46,7 +46,7 @@ MANAGE_DATA_CONF = 'keystone_data.sh'
 MANAGER_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
 
 #sync db command
-SYNC_DB_CMD = ['keystone-manage', 'sync_database']
+SYNC_DB_CMD = [sh.joinpths('%BINDIR%', 'keystone-manage'), 'sync_database']
 
 #what to start
 APP_OPTIONS = {
@@ -88,7 +88,12 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
     def _sync_db(self):
         LOG.info("Syncing keystone to database named %s", DB_NAME)
-        sh.execute(*SYNC_DB_CMD, cwd=self.bindir)
+        params = dict()
+        #it seems like this command only works if fully specified
+        #probably a bug
+        params['BINDIR'] = self.bindir
+        cmds = [{'cmd': SYNC_DB_CMD}]
+        utils.execute_template(*cmds, cwd=self.bindir, params=params)
 
     def _get_config_files(self):
         return list(CONFIGS)

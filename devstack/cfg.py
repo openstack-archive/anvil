@@ -31,11 +31,12 @@ PW_TMPL = "Enter a password for %s: "
 ENV_PAT = re.compile(r"^\s*\$\{([\w\d]+):\-(.*)\}\s*$")
 SUB_MATCH = re.compile(r"(?:\$\(([\w\d]+):([\w\d]+))\)")
 CACHE_MSG = "(value will now be internally cached)"
+DEF_PW_MSG = "[or press enter to get a generated one]"
 PW_PROMPTS = {
-    'horizon_keystone_admin': "Enter a password to use for horizon and keystone (20 chars or less): ",
-    'service_token': 'Enter a token to use for the service admin token: ',
-    'sql': 'Enter a password to use for your sql database user: ',
-    'rabbit': 'Enter a password to use for your rabbit user: ',
+    'horizon_keystone_admin': "Enter a password to use for horizon and keystone (20 chars or less) %s: " % (DEF_PW_MSG),
+    'service_token': 'Enter a token to use for the service admin token %s: ' % (DEF_PW_MSG),
+    'sql': 'Enter a password to use for your sql database user %s: ' % (DEF_PW_MSG),
+    'rabbit': 'Enter a password to use for your rabbit user %s: ' % (DEF_PW_MSG),
 }
 
 

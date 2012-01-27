@@ -3,42 +3,24 @@
 {
     # This is currently our "master" repo set with versions
     # that we are trying to align other distributions with.
+    # The versions should at least be major + minor!
     "ubuntu-oneiric": {
         # Linux SCSI target framework
         "tgt": {
-            "version": "1:1.0.17-1ubuntu1",
-            "allowed": ">=",
+            "version": "1:1*",
             "removable": true
         },
         # Need for ietadm, which is run by stack script 
         "iscsitarget": {
-            "version": "1.4.20.2-5ubuntu1",
-            "allowed": ">=",
+            "version": "1.4*",
             "removable": true
         },
         "lvm2": {
-            "version": "2.02.66-4ubuntu3",
-            "allowed": ">=",
+            "version": "2.02*",
             "removable": true
         }
     },
     "rhel-6": {
-        # Unless otherwise noted the versions may be slightly
-        # different, but for common utilities this should not be a critical
-        # issue unless determined otherwise.
-        #
-        # If a package requires EPEL repo please follow instructions
-        # at http://fedoraproject.org/wiki/EPEL to ensure the repo is in /etc/yum.repos.d/
-        "lvm2": {
-            "version": "2.02.83-3.el6",
-            "allowed": ">=",
-            "removable": true
-        },
-        # This seems to be the tgt package from ubuntu?
-        "scsi-target-utils": {
-            "version": "1.0.14-2.el6",
-            "allowed": ">=",
-            "removable": true
-        }
+        # TBD
     }
 }

@@ -3,25 +3,22 @@
 {
     # This is currently our "master" repo set with versions
     # that we are trying to align other distributions with.
+    # The versions should at least be major + minor!
     "ubuntu-oneiric": {
         "mysql-client-5.1": {
-            "version": "5.1.58-1ubuntu1",
-            "allowed": ">=",
+            "version": "5.1*",
             "removable": true
         },
         "mysql-server-core-5.1": {
-            "version": "5.1.58-1ubuntu1",
-            "allowed": ">=",
+            "version": "5.1*",
             "removable": true
         },
         "mysql-common": {
-            "version": "5.1.58-1ubuntu1",
-            "allowed": ">=",
+            "version": "5.1*",
             "removable": true
         },
         "mysql-server-5.1": {
-            "version": "5.1.58-1ubuntu1",
-            "allowed": ">=",
+            "version": "5.1*",
             "removable": true,
             "pre-install": [
                 {
@@ -40,43 +37,6 @@
         }
     },
     "rhel-6": {
-        # Unless otherwise noted the versions may be slightly
-        # different, but for common utilities this should not be a critical
-        # issue unless determined otherwise.
-        #
-        # If a package requires EPEL repo please follow instructions
-        # at http://fedoraproject.org/wiki/EPEL to ensure the repo is in /etc/yum.repos.d/
-        #
-        # RHEL has a slightly different naming convention here
-        # and a different way of setting up the initial password.
-        # It also seems like ubuntu names the service mysql while RHEL names it mysqld (TODO fix this in code)
-        "mysql": {
-            "version": "5.1.52-1.el6_0.1",
-            "allowed": ">=",
-            "removable": true
-        },
-        "mysql-server": {
-            "version": "5.1.52-1.el6_0.1",
-            "allowed": ">=",
-            "removable": true,
-            "post-install": [
-                { 
-                    # Make sure it'll start on reboot
-                    "run_as_root": true,
-                    "cmd" : [ "chkconfig", "mysqld", "on"]
-                },
-                { 
-                    # Start the mysql service
-                    "run_as_root": true,
-                    "cmd" : [ "service", "mysqld", "start"]
-                },
-                {  
-                    # Set the root password
-                    "run_as_root": true,
-                    "cmd" : [ "mysqladmin", "-u", "root", 
-                               "password", "%PASSWORD%" ]
-                }
-            ]
-        }
+         #TBD
     }
 }

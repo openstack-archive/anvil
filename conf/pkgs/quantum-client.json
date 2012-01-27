@@ -3,10 +3,10 @@
 {
     # This is currently our "master" repo set with versions
     # that we are trying to align other distributions with.
+    # The versions should at least be major + minor!
     "ubuntu-oneiric": {
         "python-gflags": {
-            "version": "1.5.1-1",
-            "allowed": ">=",
+            "version": "1.5*",
             "removable": true
         }
     },

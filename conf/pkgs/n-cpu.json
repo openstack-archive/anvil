@@ -3,41 +3,23 @@
 {
     # This is currently our "master" repo set with versions
     # that we are trying to align other distributions with.
+    # The versions should at least be major + minor!
     "ubuntu-oneiric": {
         # Stuff for diablo volumes
         "lvm2": {
-            "version": "2.02.66-4ubuntu3",
-            "allowed": ">=",
+            "version": "2.02*",
             "removable": true
         },
         "open-iscsi": {
-            "version": "2.0.871-0ubuntu8",
-            "allowed": ">=",
+            "version": "2.0*",
             "removable": true
         },
         "open-iscsi-utils": {
-            "version": "2.0.871-0ubuntu8",
-            "allowed": ">=",
+            "version": "2.0*",
             "removable": true
         }
     },
     "rhel-6": {
-        # Unless otherwise noted the versions may be slightly
-        # different, but for common utilities this should not be a critical
-        # issue unless determined otherwise.
-        #
-        # If a package requires EPEL repo please follow instructions
-        # at http://fedoraproject.org/wiki/EPEL to ensure the repo is in /etc/yum.repos.d/
-        "lvm2": {
-            "version": "2.02.83-3.el6",
-            "allowed": ">=",
-            "removable": true
-        },
-        # This seems to be the equivalent to open-iscsi in RHEL
-        "iscsi-initiator-utils": {
-            "version": "6.2.0.872-21.el6",
-            "allowed": ">=",
-            "removable": true
-        }
+        # TBD
     }
 }
