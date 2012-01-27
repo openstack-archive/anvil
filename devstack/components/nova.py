@@ -70,6 +70,16 @@ VG_CREATE_CMD = [
      'run_as_root': True}
 ]
 
+VG_LVS_CMD = [
+    {'cmd': ['lvs', '--noheadings', '-o', 'lv_name', '%VOLUME_GROUP%'],
+     'run_as_root': True}
+]
+
+VG_LVREMOVE_CMD = [
+    {'cmd': ['lvremove', '-f', '%VOLUME_GROUP%/%LV%'],
+     'run_as_root': True}
+]
+
 RESTART_TGT_CMD = [
     {'cmd': ['stop', 'tgt'], 'run_as_root': True},
     {'cmd': ['start', 'tgt'], 'run_as_root': True}
@@ -121,7 +131,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         # Walk through the subcomponents (like 'vol' and 'cpu') and add those
         # those packages as well. Let utils.get_pkglist handle any missing
         # entries
-        LOG.debug("get_pkglist looking for extras: %s" % (self.component_opts))
+        LOG.debug("get_pkglist explicit extras: %s" % (self.component_opts))
         if self.component_opts:
             sub_components = self.component_opts
         else:
@@ -145,7 +155,6 @@ class NovaInstaller(comp.PythonInstallComponent):
 
     def post_install(self):
         parent_result = comp.PkgInstallComponent.post_install(self)
-        LOG.debug("Parent post_install results:%s" % (parent_result))
         #extra actions to do nova setup
         self._setup_db()
         # Need to do db sync and other post install commands
@@ -178,34 +187,59 @@ class NovaInstaller(comp.PythonInstallComponent):
         if not backing_file:
             backing_file = sh.joinpths(self.appdir, 'nova-volumes-backing-file')
         backing_file_size = self.cfg.get('nova', 'volume_backing_file_size')
-        if backing_file_size[-1].upper() == 'M':
+        vol_group = self.cfg.get('nova', 'volume_group')
+        if backing_file_size[-1].upper() == 'G':
+            backing_file_size = int(backing_file_size[:-1]) * 1024 ** 3
+        elif backing_file_size[-1].upper() == 'M':
             backing_file_size = int(backing_file_size[:-1]) * 1024 ** 2
         elif backing_file_size[-1].upper() == 'K':
             backing_file_size = int(backing_file_size[:-1]) * 1024
         elif backing_file_size[-1].upper() == 'B':
             backing_file_size = int(backing_file_size[:-1])
-        LOG.debug("backing_file_size:%s" % (backing_file_size))
-
-        mp['VOLUME_GROUP'] = self.cfg.get('nova', 'volume_group')
+        mp['VOLUME_GROUP'] = vol_group
         mp['VOLUME_BACKING_FILE'] = backing_file
         mp['VOLUME_BACKING_FILE_SIZE'] = backing_file_size
-        LOG.debug("params for setup vol group: %s" % (mp))
         try:
             utils.execute_template(*VG_CHECK_CMD, params=mp)
-            LOG.debug("Vol group exists")
+            LOG.info("Vol group already exists:%s" % (vol_group))
         except exceptions.ProcessExecutionError as err:
-            LOG.debug("Caught expected exception:%s" % (err))
-            LOG.info("Need to create vol groups")
+            # Check that the error from VG_CHECK is an expected error
+            if err.exit_code != 5:
+                raise
+            LOG.info("Need to create vol group:%s" % (vol_group))
             sh.touch_file(backing_file, die_if_there=False, file_size=backing_file_size)
             vg_dev_result = utils.execute_template(*VG_DEV_CMD, params=mp)
             LOG.debug("vg dev result:%s" % (vg_dev_result))
-            # String the newlines out of the stdout (which is in the first
+            # Strip the newlines out of the stdout (which is in the first
             # element of the first (and only) tuple in the response
             mp['DEV'] = vg_dev_result[0][0].replace('\n', '')
             utils.execute_template(*VG_CREATE_CMD, params=mp, tracewriter=self.tracewriter)
-        # TODO Now need to check the headings, etc...
-        # Finish off by restarting tgt
+        # One way or another, we should have the volume group, Now check the
+        # logical volumes
+        self._process_lvs(mp)
+        # Finish off by restarting tgt, and ignore any errors
         utils.execute_template(*RESTART_TGT_CMD, check_exit_code=False, tracewriter=self.tracewriter)
+
+    def _process_lvs(self, mp):
+        lvs_result = utils.execute_template(*VG_LVS_CMD, params=mp, tracewriter=self.tracewriter)
+        LOG.debug("lvs result:%s" % (lvs_result))
+        vol_name_prefix = self.cfg.get('nova', 'volume_name_prefix')
+        LOG.debug("Using volume name prefix:%s" % (vol_name_prefix))
+        for stdout_line in lvs_result[0][0].split('\n'):
+            if stdout_line:
+                # Ignore blank lines
+                LOG.debug("lvs output line:%s" % (stdout_line))
+                if stdout_line.startswith(vol_name_prefix):
+                    # TODO still need to implement the following:
+                    # tid=`egrep "^tid.+$lv" /proc/net/iet/volume | cut -f1 -d' ' | tr ':' '='`
+                    # if [[ -n "$tid" ]]; then
+                    #   lun=`egrep "lun.+$lv" /proc/net/iet/volume | cut -f1 -d' ' | tr ':' '=' | tr -d '\t'`
+                    #   sudo ietadm --op delete --$tid --$lun
+                    # fi
+                    # sudo lvremove -f $VOLUME_GROUP/$lv
+                    raise exceptions.StackException("lvs magic not yet implemented")
+                mp['LV'] = stdout_line
+                utils.execute_template(*VG_LVREMOVE_CMD, params=mp, tracewriter=self.tracewriter)
 
     def _generate_nova_conf(self):
         LOG.debug("Generating dynamic content for nova configuration")
@@ -227,9 +261,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         mp['SERVICE_TOKEN'] = self.cfg.get("passwords", "service_token")
         (src_fn, contents) = self._get_source_config(PASTE_CONF)
         LOG.info("Replacing parameters in file %s" % (src_fn))
-        LOG.debug("Replacements = %s" % (mp))
         contents = utils.param_replace(contents, mp, True)
-        LOG.debug("Writing out to %s" % (self.paste_conf_fn))
         sh.write_file(self.paste_conf_fn, contents)
         self.tracewriter.cfg_write(self.paste_conf_fn)
 
@@ -255,8 +287,8 @@ class NovaRuntime(comp.PythonRuntime):
             # check if the specified sub components exist
             delta = set(self.component_opts) - set(APP_OPTIONS.keys())
             if delta:
-                # FIXME, error, something was specified that we don't have
                 LOG.error("sub items that we don't know about:%s" % delta)
+                raise exceptions.BadParamException("Unknown subcomponent specified:%s" % delta)
             else:
                 apps = self.component_opts
                 LOG.debug("Using specified subcomponents:%s" % (apps))
@@ -295,6 +327,7 @@ class NovaConfigurator(object):
     def __init__(self, nc):
         self.cfg = nc.cfg
         self.instances = nc.instances
+        self.component_root = nc.component_root
         self.appdir = nc.appdir
         self.tracewriter = nc.tracewriter
         self.paste_conf_fn = nc.paste_conf_fn
@@ -408,7 +441,7 @@ class NovaConfigurator(object):
         instances_path = self._getstr('instances_path')
         if not instances_path:
             # If there's no instances path, specify a default
-            instances_path = sh.joinpths(self.appdir, '..', 'instances')
+            instances_path = sh.joinpths(self.component_root, 'instances')
         nova_conf.add('instances_path', instances_path)
         LOG.debug("Attempting to create instance directory:%s" % (instances_path))
         # Create the directory for instances
