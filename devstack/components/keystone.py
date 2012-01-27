@@ -47,7 +47,7 @@ MANAGER_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
 
 #what to start
 APP_OPTIONS = {
-    'keystone': ['-c', sh.joinpths('%ROOT%', CONFIG_DIR, ROOT_CONF),
+    'keystone': ['--config-file', sh.joinpths('%ROOT%', CONFIG_DIR, ROOT_CONF),
                 "--verbose", '-d',
                 '--log-config=' + sh.joinpths('%ROOT%', CONFIG_DIR, 'logging.cnf')]
 }
