@@ -273,7 +273,8 @@ class NovaInstaller(comp.PythonInstallComponent):
 
     def _get_source_config(self, config_fn):
         if config_fn == PASTE_CONF:
-            srcfn = sh.joinpths(self.appdir, "etc", "nova", PASTE_CONF)
+            #this is named differently than what it will be stored as...
+            srcfn = sh.joinpths(self.appdir, "etc", "nova", 'api-paste.ini')
             contents = sh.load_file(srcfn)
             return (srcfn, contents)
         else:
@@ -282,7 +283,7 @@ class NovaInstaller(comp.PythonInstallComponent):
     def _get_target_config_name(self, config_fn):
         if config_fn == PASTE_CONF:
             #TODO this should not be here... (in bin??)
-            return sh.joinpths(self.appdir, "bin", PASTE_CONF)
+            return sh.joinpths(self.appdir, "bin", 'nova-api-paste.ini')
         else:
             return comp.PythonInstallComponent._get_target_config_name(self, config_fn)
 
