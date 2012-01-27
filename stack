@@ -24,7 +24,7 @@ import sys
 
 #requires http://pypi.python.org/pypi/termcolor
 #but the colors make it worth it :-)
-from termcolor import colored, cprint
+from termcolor import colored
 
 #this needs to happen immediately (or thats what it seems)
 logfn = os.getenv('LOG_FILE')

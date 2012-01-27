@@ -103,14 +103,13 @@ DEF_IMAGE_SERVICE = 'nova.image.glance.GlanceImageService'
 DEF_SCHEDULER = 'nova.scheduler.simple.SimpleScheduler'
 DEF_GLANCE_PORT = 9292
 
-QUANTUM_OPENSWITCH_OPS = [
-    {
-      'libvirt_vif_type': ['ethernet'],
-      'libvirt_vif_driver': ['nova.virt.libvirt.vif.LibvirtOpenVswitchDriver'],
-      'linuxnet_interface_driver': ['nova.network.linux_net.LinuxOVSInterfaceDriver'],
-      'quantum_use_dhcp': [],
-    }
-]
+#only turned on if vswitch enabled
+QUANTUM_OPENSWITCH_OPS = {
+    'libvirt_vif_type': 'ethernet',
+    'libvirt_vif_driver': 'nova.virt.libvirt.vif.LibvirtOpenVswitchDriver',
+    'linuxnet_interface_driver': 'nova.network.linux_net.LinuxOVSInterfaceDriver',
+    'quantum_use_dhcp': None,
+}
 
 
 class NovaUninstaller(comp.PythonUninstallComponent):
@@ -175,7 +174,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         return parent_result
 
     def _setup_db(self):
-        LOG.debug("setting up nova DB")
+        LOG.info("Fixing up database named %s", DB_NAME)
         db.drop_db(self.cfg, DB_NAME)
         db.create_db(self.cfg, DB_NAME)
 
@@ -363,10 +362,12 @@ class NovaConfigurator(object):
             nova_conf.add('network_manager', QUANTUM_MANAGER)
             nova_conf.add('quantum_connection_host', self.cfg.get('quantum', 'q_host'))
             nova_conf.add('quantum_connection_port', self.cfg.get('quantum', 'q_port'))
-            # TODO add q-svc support
-            #if 'q-svc' in self.othercomponents and
-            #   self.cfg.get('quantum', 'q_plugin') == 'openvswitch':
-            #   self.lines.extend(QUANTUM_OPENSWITCH_OPS)
+            if self.cfg.get('quantum', 'q_plugin') == 'openvswitch':
+                for (key, value) in QUANTUM_OPENSWITCH_OPS.items():
+                    if value is None:
+                        nova_conf.add_simple(key)
+                    else:
+                        nova_conf.add(key, value)
         else:
             nova_conf.add('network_manager', NET_MANAGER_TEMPLATE % (self._getstr('network_manager')))
 

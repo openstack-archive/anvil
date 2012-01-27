@@ -34,7 +34,7 @@ PROG_NICE_NAME = "DEVSTACK"
 PRE_INSTALL = 'pre-install'
 POST_INSTALL = 'post-install'
 
-# Default interfaces for network ip detection
+# Ip version constants for network ip detection
 IPV4 = 'IPv4'
 IPV6 = 'IPv6'
 
