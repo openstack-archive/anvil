@@ -4,24 +4,23 @@
     # This is currently our "master" repo set with versions
     # that we are trying to align other distributions with.
     "ubuntu-oneiric": {
-        "openvswitch-switch": {
-            "version": "1.2.0-1ubuntu3",
+        "python-eventlet": {
+            "version": "0.9.15-0ubuntu4",
             "allowed": ">=",
             "removable": true
         },
-        "openvswitch-datapath-dkms": {
-            "version": "1.2.0-1ubuntu3",
+        "python-greenlet": {
+            "version": "0.3.1-1ubuntu4",
             "allowed": ">=",
             "removable": true
         },
-        # Seems needed for ovs_quantum_agent.py
-        "python-sqlalchemy": {
-            "version": "0.6.8-1",
+        "python-routes": {
+            "version": "1.12.3-1",
             "allowed": ">=",
             "removable": true
         },
-        "python-mysqldb": {
-            "version": "1.2.3-0ubuntu1",
+        "python-lxml": {
+            "version": "2.3-0.1build1",
             "allowed": ">=",
             "removable": true
         }

@@ -24,6 +24,11 @@
             "allowed": ">=",
             "removable": true
         },
+        "python-migrate": {
+            "version": "0.7.1-1",
+            "allowed": ">=",
+            "removable": true
+        },
         "python-pastedeploy": {
             "version": "1.5.0-2",
             "allowed": ">=",

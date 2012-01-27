@@ -102,11 +102,14 @@ class QuantumInstaller(comp.PkgInstallComponent):
         return places
 
     def _get_pkglist(self):
+        pkglist = comp.PkgInstallComponent._get_pkglist(self)
         if self.q_vswitch_service:
             listing_fn = sh.joinpths(settings.STACK_PKG_DIR, PKG_VSWITCH)
-            return utils.extract_pkg_list([listing_fn], self.distro)
-        else:
-            return comp.PkgInstallComponent._get_pkglist(self)
+            vswitchpkgs = utils.extract_pkg_list([listing_fn], self.distro)
+            if vswitchpkgs:
+                for (pkgname, pkginfo) in vswitchpkgs.items():
+                    pkglist[pkgname] = pkginfo
+        return pkglist
 
     def _get_config_files(self):
         parent_list = comp.PkgInstallComponent._get_config_files(self)

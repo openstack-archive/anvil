@@ -207,13 +207,14 @@ PKG_MAP = {
         ],
     QUANTUM:
         [
-            #quantum figures out its own pkgs
-            #they will be listed in the quantum component since its config dependent
+            os.path.join(STACK_PKG_DIR, "general.json"),
+            os.path.join(STACK_PKG_DIR, "quantum.json"),
+            #quantum may add others in if it finds that u are asking for a openvswitch
         ],
     QUANTUM_CLIENT:
         [
             os.path.join(STACK_PKG_DIR, "general.json"),
-            os.path.join(STACK_PKG_DIR, "quantum-client.json")
+            os.path.join(STACK_PKG_DIR, "quantum-client.json"),
         ],
     DB:
         [
