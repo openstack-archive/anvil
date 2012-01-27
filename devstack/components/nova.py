@@ -162,9 +162,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         for cname in sub_components:
             subpkgsfns = ADD_PKGS.get(cname)
             if subpkgsfns:
-                subpkgs = utils.extract_pkg_list(subpkgsfns, self.distro)
-                if subpkgs:
-                    pkgs.update(subpkgs)
+                pkgs = utils.extract_pkg_list(subpkgsfns, self.distro, pkgs)
         return pkgs
 
     def _get_download_locations(self):

@@ -179,8 +179,9 @@ def get_pip_list(distro, component):
         return extract_pip_list(fns, distro)
 
 
-def extract_pkg_list(fns, distro):
-    all_pkgs = dict()
+def extract_pkg_list(fns, distro, all_pkgs=None):
+    if not all_pkgs:
+        all_pkgs = dict()
     for fn in fns:
         js = load_json(fn)
         distro_pkgs = js.get(distro)
