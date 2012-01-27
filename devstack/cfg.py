@@ -31,6 +31,12 @@ PW_TMPL = "Enter a password for %s: "
 ENV_PAT = re.compile(r"^\s*\$\{([\w\d]+):\-(.*)\}\s*$")
 SUB_MATCH = re.compile(r"(?:\$\(([\w\d]+):([\w\d]+))\)")
 CACHE_MSG = "(value will now be internally cached)"
+PW_PROMPTS = {
+    'horizon_keystone_admin': "Enter a password to use for horizon and keystone (20 chars or less): ",
+    'service_token': 'Enter a token to use for the service admin token: ',
+    'sql': 'Enter a password to use for your sql database user: ',
+    'rabbit': 'Enter a password to use for your rabbit user: ',
+}
 
 
 class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
@@ -100,7 +106,10 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         elif section == 'passwords':
             key = self._makekey(section, option)
             LOG.debug("Being forced to ask for password for \"%s\" since the configuration/environment value is empty.", key)
-            pw = sh.password(PW_TMPL % (key))
+            prompt = PW_PROMPTS.get(option)
+            if not prompt:
+                prompt = PW_TMPL % (key)
+            pw = sh.password(prompt)
             self.pws[key] = pw
             return pw
         else:
@@ -163,13 +172,13 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         return extracted_val
 
     def get_dbdsn(self, dbname):
+        #check the dsn cache
+        if dbname in self.db_dsns:
+            return self.db_dsns[dbname]
         user = self.get("db", "sql_user")
         host = self.get("db", "sql_host")
         port = self.get("db", "port")
         pw = self.get("passwords", "sql")
-        #check the dsn cache
-        if dbname in self.db_dsns:
-            return self.db_dsns[dbname]
         #form the dsn (from components we have...)
         #dsn = "<driver>://<username>:<password>@<host>:<port>/<database>"
         if not host:

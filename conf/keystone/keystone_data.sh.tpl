@@ -25,6 +25,8 @@ $BIN_DIR/keystone-manage role add KeystoneAdmin
 $BIN_DIR/keystone-manage role add KeystoneServiceAdmin
 $BIN_DIR/keystone-manage role add sysadmin
 $BIN_DIR/keystone-manage role add netadmin
+
+# Grants
 $BIN_DIR/keystone-manage role grant admin admin admin
 $BIN_DIR/keystone-manage role grant Member demo demo
 $BIN_DIR/keystone-manage role grant sysadmin demo demo
@@ -44,7 +46,7 @@ if [[ "$ENABLED_SERVICES" =~ "swift" ]]; then
     $BIN_DIR/keystone-manage service add swift object-store "Swift Service"
 fi
 
-#endpointTemplates
+# endpointTemplates for those templates
 $BIN_DIR/keystone-manage $* endpointTemplates add RegionOne nova http://%SERVICE_HOST%:8774/v1.1/%tenant_id% http://%SERVICE_HOST%:8774/v1.1/%tenant_id%  http://%SERVICE_HOST%:8774/v1.1/%tenant_id% 1 1
 $BIN_DIR/keystone-manage $* endpointTemplates add RegionOne ec2 http://%SERVICE_HOST%:8773/services/Cloud http://%SERVICE_HOST%:8773/services/Admin http://%SERVICE_HOST%:8773/services/Cloud 1 1
 $BIN_DIR/keystone-manage $* endpointTemplates add RegionOne glance http://%SERVICE_HOST%:9292/v1 http://%SERVICE_HOST%:9292/v1 http://%SERVICE_HOST%:9292/v1 1 1

@@ -45,6 +45,9 @@ CFG_SECTION = 'DEFAULT'
 MANAGE_DATA_CONF = 'keystone_data.sh'
 MANAGER_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
 
+#sync db command
+SYNC_DB_CMD = ['keystone-manage', 'sync_database']
+
 #what to start
 APP_OPTIONS = {
     'keystone': ['--config-file', sh.joinpths('%ROOT%', CONFIG_DIR, ROOT_CONF),
@@ -79,8 +82,13 @@ class KeystoneInstaller(comp.PythonInstallComponent):
     def post_install(self):
         parent_result = comp.PythonInstallComponent.post_install(self)
         self._setup_db()
+        self._sync_db()
         self._setup_data()
         return parent_result
+
+    def _sync_db(self):
+        LOG.info("Syncing keystone to database named %s", DB_NAME)
+        sh.execute(*SYNC_CMD, cwd=self.bindir)
 
     def _get_config_files(self):
         return list(CONFIGS)

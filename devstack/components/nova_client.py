@@ -43,14 +43,6 @@ class NovaClientInstaller(comp.PythonInstallComponent):
         })
         return places
 
-    def _get_param_map(self, config_fn):
-        #this dict will be used to fill in the configuration
-        #params with actual values
-        mp = dict()
-        mp['DEST'] = self.appdir
-        mp['OPENSTACK_HOST'] = self.cfg.get('host', 'ip')
-        return mp
-
 
 class NovaClientRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):

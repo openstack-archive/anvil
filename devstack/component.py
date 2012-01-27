@@ -168,9 +168,12 @@ class PythonInstallComponent(PkgInstallComponent):
         })
         return py_dirs
 
+    def _get_pip_list(self):
+        return utils.get_pip_list(self.distro, self.component_name)
+
     def _install_pips(self):
         #install any need pip items
-        pips = utils.get_pip_list(self.distro, self.component_name)
+        pips = self._get_pip_list()
         if pips:
             LOG.info("Setting up %s pips (%s)" % (len(pips), ", ".join(pips.keys())))
             pip.install(pips)
@@ -434,12 +437,6 @@ class ProgramRuntime(ComponentBase):
 class PythonRuntime(ProgramRuntime):
     def __init__(self, component_name, *args, **kargs):
         ProgramRuntime.__init__(self, component_name, *args, **kargs)
-
-    def status(self):
-        return STATUS_UNKNOWN
-
-    def restart(self):
-        return 0
 
     def _was_installed(self):
         parent_result = ProgramRuntime._was_installed(self)
