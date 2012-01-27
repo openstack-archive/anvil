@@ -78,6 +78,11 @@
             "version": "2.1.24~rc1.dfsg1+cvs2011-05-23-4ubuntu2",
             "allowed": ">=",
             "removable": true
+        },
+        "python-migrate": {
+            "version": "0.7.1-1",
+            "allowed": ">=",
+            "removable": true
         }
     },
     "rhel-6": {
