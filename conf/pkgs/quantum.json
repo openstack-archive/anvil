@@ -23,6 +23,21 @@
             "version": "2.3-0.1build1",
             "allowed": ">=",
             "removable": true
+        },
+        "python-paste": {
+            "version": "1.7.5.1-4ubuntu1",
+            "allowed": ">=",
+            "removable": true
+        },
+        "python-gflags": {
+            "version": "1.5.1-1",
+            "allowed": ">=",
+            "removable": true
+        },
+        "python-pastedeploy": {
+            "version": "1.5.0-2",
+            "allowed": ">=",
+            "removable": true
         }
     },
     "rhel-6": {
