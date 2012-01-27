@@ -17,6 +17,7 @@
 import operator
 import os.path
 import re
+import sys
 
 from devstack import log as logging
 

@@ -274,7 +274,7 @@ class NovaInstaller(comp.PythonInstallComponent):
     def _get_source_config(self, config_fn):
         if config_fn == PASTE_CONF:
             srcfn = sh.joinpths(self.appdir, "etc", "nova", PASTE_CONF)
-            contents = utils.load_file(srcfn)
+            contents = sh.load_file(srcfn)
             return (srcfn, contents)
         else:
             return comp.PythonInstallComponent._get_source_config(self, config_fn)
