@@ -97,13 +97,30 @@ and pick up the password that was generated which should be displayed at key *pa
 
 If you see a login page and can access horizon then:
 
-*Congratulations. You did it!*
+**Congratulations. You did it!**
 
-Otherwise you may have to look at the output of what was started. To accomplish this you may have to log at the
+### It broke?
+
+*Otherwise* you may have to look at the output of what was started. To accomplish this you may have to log at the
 stderr and stout that is being generated from the running OpenStack process (by default they are forked as daemons).
 For this information check the output of the start command for a line like "Check * for traces of what happened".
 This is usually a good starting point, to check out those files contents and then lookup the files that contain
-the applications [PID](http://en.wikipedia.org/wiki/Process_identifier) and stderr and stdout.
+the applications [PID](http://en.wikipedia.org/wiki/Process_identifier) and stderr and stdout. 
+
+If the install section had warning messages or exceptions were thrown there, that may also be the problem. 
+Sometimes running the uninstall section below will clean this up, your mileage may vary though. 
+
+Another tip is to edit *conf/logging* and adjust:
+    
+    [logger_root]
+    level=INFO
+    
+To be:
+    
+    [logger_root]
+    level=DEBUG
+    
+Which may give you more insights by showing you what was executed/installed/configured (uninstall & start by installing again to get the additional logging output).
 
 # Stopping
 
@@ -127,4 +144,4 @@ Once you have stopped (if you have started it) OpenStack you can uninstall it by
     sudo ./stack -a uninstall -d $HOME/openstack
 
 You should see a set of packages, configuration and directories, being removed. On completion
-the directory specified at $HOME/openstack should no longer exist. 
+the directory specified at *$HOME*/openstack should no longer exist. 
