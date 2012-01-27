@@ -33,6 +33,7 @@ from devstack.components import nova_client
 from devstack.components import novnc
 from devstack.components import openstack_x
 from devstack.components import quantum
+from devstack.components import quantum_client
 from devstack.components import rabbit
 from devstack.components import swift
 
@@ -52,6 +53,7 @@ _DESCR_MAP = {
     settings.RABBIT: rabbit.describe,
     settings.SWIFT: swift.describe,
     settings.NOVNC: novnc.describe,
+    settings.QUANTUM_CLIENT: quantum_client.describe,
 }
 
 

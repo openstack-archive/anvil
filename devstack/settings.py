@@ -43,6 +43,7 @@ NOVA = "nova"
 NOVA_CLIENT = 'nova-client'
 GLANCE = "glance"
 QUANTUM = "quantum"
+QUANTUM_CLIENT = 'quantum-client'
 SWIFT = "swift"
 HORIZON = "horizon"
 KEYSTONE = "keystone"
@@ -61,7 +62,7 @@ NAPI = "api"
 COMPONENT_NAMES = [
     NOVA, NOVA_CLIENT,
     GLANCE,
-    QUANTUM,
+    QUANTUM, QUANTUM_CLIENT,
     SWIFT,
     HORIZON,
     KEYSTONE, KEYSTONE_CLIENT,
@@ -85,6 +86,7 @@ COMPONENT_NAMES_PRIORITY = {
     OPENSTACK_X: 6,
     NOVNC: 6,
     HORIZON: 10,
+    QUANTUM_CLIENT: 11,
 }
 
 # When a component is asked for it may
@@ -102,8 +104,10 @@ COMPONENT_DEPENDENCIES = {
     HORIZON: [KEYSTONE_CLIENT, GLANCE, NOVA_CLIENT, OPENSTACK_X],
     #the db isn't always a dependency (depending on the quantum component to be activated)
     #for now assume it is (TODO make it better?)
-    QUANTUM: [DB],
+    #the client isn't always needed either (TODO make it better?)
+    QUANTUM: [DB, QUANTUM_CLIENT],
     NOVNC: [],
+    QUANTUM_CLIENT: [],
 }
 
 # Default subdirs of a components root directory
@@ -160,6 +164,8 @@ PIP_MAP = {
         [],
     QUANTUM:
         [],
+    QUANTUM_CLIENT:
+        [],
 }
 
 # The pkg files that each component needs
@@ -169,8 +175,6 @@ PKG_MAP = {
             os.path.join(STACK_PKG_DIR, "general.json"),
             os.path.join(STACK_PKG_DIR, "nova.json"),
         ],
-    QUANTUM:
-        [],
     NOVA_CLIENT:
         [
             os.path.join(STACK_PKG_DIR, "general.json"),
@@ -198,12 +202,18 @@ PKG_MAP = {
         ],
     KEYSTONE_CLIENT:
         [
+            os.path.join(STACK_PKG_DIR, "general.json"),
             os.path.join(STACK_PKG_DIR, "keystone-client.json"),
         ],
     QUANTUM:
         [
             #quantum figures out its own pkgs
-            #they will be listed in the quantum component
+            #they will be listed in the quantum component since its config dependent
+        ],
+    QUANTUM_CLIENT:
+        [
+            os.path.join(STACK_PKG_DIR, "general.json"),
+            os.path.join(STACK_PKG_DIR, "quantum-client.json")
         ],
     DB:
         [
@@ -215,6 +225,7 @@ PKG_MAP = {
         ],
     OPENSTACK_X:
         [
+            os.path.join(STACK_PKG_DIR, "general.json"),
             os.path.join(STACK_PKG_DIR, 'openstackx.json'),
         ],
     NOVNC:
