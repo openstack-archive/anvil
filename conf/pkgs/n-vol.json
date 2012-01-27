@@ -10,6 +10,12 @@
             "allowed": ">=",
             "removable": true
         },
+        # Need for ietadm, which is run by stack script 
+        "iscsitarget": {
+            "version": "1.4.20.2-5ubuntu1",
+            "allowed": ">=",
+            "removable": true
+        },
         "lvm2": {
             "version": "2.02.66-4ubuntu3",
             "allowed": ">=",
