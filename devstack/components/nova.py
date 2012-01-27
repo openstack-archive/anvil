@@ -21,6 +21,7 @@ from devstack import utils
 from devstack import exceptions
 from devstack import shell as sh
 from devstack.components import db
+from devstack.components import keystone
 
 LOG = logging.getLogger('devstack.components.nova')
 
@@ -270,15 +271,30 @@ class NovaInstaller(comp.PythonInstallComponent):
         sh.write_file(tgtfn, nova_conf)
         self.tracewriter.cfg_write(tgtfn)
 
+    def _get_source_config(self, config_fn):
+        if config_fn == PASTE_CONF:
+            srcfn = sh.joinpths(self.appdir, "etc", "nova", PASTE_CONF)
+            contents = utils.load_file(srcfn)
+            return (srcfn, contents)
+        else:
+            return comp.PythonInstallComponent._get_source_config(self, config_fn)
+
+    def _get_target_config_name(self, config_fn):
+        if config_fn == PASTE_CONF:
+            #TODO this should not be here... (in bin??)
+            return sh.joinpths(self.appdir, "bin", PASTE_CONF)
+        else:
+            return comp.PythonInstallComponent._get_target_config_name(self, config_fn)
+
     def _generate_paste_api_conf(self):
         LOG.info("Setting up %s" % (PASTE_CONF))
-        mp = dict()
-        mp['SERVICE_TOKEN'] = self.cfg.get("passwords", "service_token")
+        mp = keystone.get_shared_params(self.cfg)
         (src_fn, contents) = self._get_source_config(PASTE_CONF)
         LOG.info("Replacing parameters in file %s" % (src_fn))
         contents = utils.param_replace(contents, mp, True)
-        sh.write_file(self.paste_conf_fn, contents)
-        self.tracewriter.cfg_write(self.paste_conf_fn)
+        tgt_fn = self._get_target_config_name(PASTE_CONF)
+        sh.write_file(tgt_fn, contents)
+        self.tracewriter.cfg_write(tgt_fn)
 
     def _configure_files(self):
         self._generate_nova_conf()
