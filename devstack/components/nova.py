@@ -287,12 +287,14 @@ class NovaInstaller(comp.PythonInstallComponent):
             return comp.PythonInstallComponent._get_target_config_name(self, config_fn)
 
     def _generate_paste_api_conf(self):
-        LOG.info("Setting up %s" % (PASTE_CONF))
+        name = PASTE_CONF
+        LOG.info("Setting up %s" % (name))
         mp = keystone.get_shared_params(self.cfg)
-        (src_fn, contents) = self._get_source_config(PASTE_CONF)
+        (src_fn, contents) = self._get_source_config(name)
         LOG.info("Replacing parameters in file %s" % (src_fn))
         contents = utils.param_replace(contents, mp, True)
-        tgt_fn = self._get_target_config_name(PASTE_CONF)
+        tgt_fn = self._get_target_config_name(name)
+        LOG.info("Writing to file %s" % (tgt_fn))
         sh.write_file(tgt_fn, contents)
         self.tracewriter.cfg_write(tgt_fn)
 
