@@ -88,7 +88,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
     def _sync_db(self):
         LOG.info("Syncing keystone to database named %s", DB_NAME)
-        sh.execute(*SYNC_CMD, cwd=self.bindir)
+        sh.execute(*SYNC_DB_CMD, cwd=self.bindir)
 
     def _get_config_files(self):
         return list(CONFIGS)
