@@ -86,7 +86,13 @@ RESTART_TGT_CMD = [
 NCPU = "cpu"
 NVOL = "vol"
 NAPI = "api"
-SUBCOMPONENTS = [NCPU, NVOL, NAPI]
+NOBJ = "obj"
+NNET = "net"
+NCERT = "cert"
+NSCHED = "sched"
+NCAUTH = "cauth"
+SUBCOMPONENTS = [NCPU, NVOL, NAPI,
+    NOBJ, NNET, NCERT, NSCHED, NCAUTH]
 
 # Additional packages for subcomponents
 ADD_PKGS = {
@@ -122,10 +128,22 @@ APP_OPTIONS = {
     'nova-scheduler': ['--flagfile', '%CFGFILE%'],
     'nova-cert': ['--flagfile', '%CFGFILE%'],
     'nova-objectstore': ['--flagfile', '%CFGFILE%'],
+    'nova-consoleauth' : [],
     #TODO FIX these
     #'nova-xvpvncproxy' : ['--flagfile', '%CFGFILE%'],
-    #'nova-consoleauth' : [],
     #TODO add in novnc
+}
+
+# Sub component names to actual app names (matching previous dict)
+SUB_COMPONENT_NAME_MAP = {
+    NCPU: 'nova-compute',
+    NVOL: 'nova-volume',
+    NAPI: 'nova-api',
+    NOBJ: 'nova-objectstore',
+    NNET: 'nova-network',
+    NCERT: 'nova-cert',
+    NSCHED: 'nova-scheduler',
+    NCAUTH: 'nova-consoleauth',
 }
 
 #subdirs of the checkout/download
@@ -338,14 +356,22 @@ class NovaRuntime(comp.PythonRuntime):
         comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
 
     def _get_apps_to_start(self):
-        # TODO: Check if component_opts was set to a subset of apps to be started
-        apps = sorted(APP_OPTIONS.keys())
         result = list()
-        for app_name in apps:
-            result.append({
-                'name': app_name,
-                'path': sh.joinpths(self.appdir, BIN_DIR, app_name),
-            })
+        if not self.component_opts:
+            apps = sorted(APP_OPTIONS.keys())
+            for app_name in apps:
+                result.append({
+                    'name': app_name,
+                    'path': sh.joinpths(self.appdir, BIN_DIR, app_name),
+                })
+        else:
+            for short_name in self.component_opts:
+                full_name = SUB_COMPONENT_NAME_MAP.get(short_name)
+                if full_name and full_name in APP_OPTIONS:
+                    result.append({
+                        'name': full_name,
+                        'path': sh.joinpths(self.appdir, BIN_DIR, full_name),
+                    })
         return result
 
     def _get_param_map(self, app_name):

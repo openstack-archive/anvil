@@ -338,20 +338,25 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
 
 
 def _get_def_components():
-    #this seems to be the default list of what to install
+    #this seems to be the default list of what to install by default
     #ENABLED_SERVICES=${ENABLED_SERVICES:-g-api,g-reg,key,n-api,
     #n-crt,n-obj,n-cpu,n-net,n-sch,n-novnc,n-xvnc,n-cauth,horizon,mysql,rabbit}
     def_components = dict()
     #TODO glance subcomponents should be api/reg
     def_components[settings.GLANCE] = []
     def_components[settings.KEYSTONE] = []
-    #we seem to be missing the nova object store (n-obj)
-    #and nova network (n-net) and nova cert (n-crt)
-    #and nova scheduler (n-sch) and n-cauth (console auth)
-    #TODO talk to ken about these...
-    def_components[settings.NOVA] = [nova.NCPU, nova.NVOL, nova.NAPI]
+    #TODO add in xvnc? nvnc?
+    def_components[settings.NOVA] = [
+                                     nova.NCPU,
+                                     nova.NVOL,
+                                     nova.NAPI,
+                                     nova.NOBJ,
+                                     nova.NNET,
+                                     nova.NCERT,
+                                     nova.NSCHED,
+                                     nova.NCAUTH,
+                                    ]
     def_components[settings.NOVNC] = []
-    #TODO n-xvnc?
     def_components[settings.HORIZON] = []
     def_components[settings.DB] = []
     def_components[settings.RABBIT] = []
