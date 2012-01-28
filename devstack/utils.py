@@ -23,6 +23,7 @@ import os
 import platform
 import random
 import re
+import traceback
 
 #requires http://pypi.python.org/pypi/termcolor
 #but the colors make it worth it :-)
@@ -301,6 +302,28 @@ ____ ___  ____ _  _ ____ ___ ____ ____ _  _
 def center_text(text, fill, max_len):
     centered_str = '{0:{fill}{align}{size}}'.format(text, fill=fill, align="^", size=max_len)
     return centered_str
+
+
+def goodbye(worked):
+    #thx cowsay
+    cow = r'''
+ _________
+< {message} >
+ ---------
+        \   ^__^
+         \  ({eye}{eye})\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+'''
+    cow = cow.strip("\n\r")
+    worked_msg = colored('Success!', 'blue')
+    eye_fmt = 'o'
+    if not worked:
+        worked_msg = colored('Failure!', 'red', attrs=['bold'])
+        eye_fmt = colored("o", 'red')
+    outmsg = cow.format(message=worked_msg, eye=eye_fmt)
+    print(outmsg)
 
 
 def welcome(ident):

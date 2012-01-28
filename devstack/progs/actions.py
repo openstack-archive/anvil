@@ -345,7 +345,7 @@ def _get_def_components():
     #TODO glance subcomponents should be api/reg
     def_components[settings.GLANCE] = []
     def_components[settings.KEYSTONE] = []
-    #TODO add in xvnc? nvnc?
+    #TODO add in xvnc?
     def_components[settings.NOVA] = [
                                      nova.NCPU,
                                      nova.NVOL,

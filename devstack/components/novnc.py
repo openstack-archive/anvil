@@ -32,7 +32,7 @@ VNC_PROXY_APP = 'nova-novncproxy'
 APP_OPTIONS = {
     #this reaches into the nova configuration file
     #TODO can we stop that?
-    VNC_PROXY_APP: ['--flagfile-file=%NOVA_CONF%', '--web'],
+    VNC_PROXY_APP: ['--flagfile-file', '%NOVA_CONF%', '--web'],
 }
 
 
@@ -73,6 +73,7 @@ class NoVNCRuntime(comp.ProgramRuntime):
         root_params = comp.ProgramRuntime._get_param_map(self, app_name)
         if app_name == VNC_PROXY_APP and settings.NOVA in self.instances:
             nova_runtime = self.instances.get(settings.NOVA)
+            #have to reach into the nova conf (puke)
             root_params['NOVA_CONF'] = sh.joinpths(nova_runtime.cfgdir, nova.API_CONF)
         return root_params
 
