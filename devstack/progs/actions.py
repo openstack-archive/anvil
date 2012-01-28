@@ -342,8 +342,10 @@ def _get_def_components():
     #ENABLED_SERVICES=${ENABLED_SERVICES:-g-api,g-reg,key,n-api,
     #n-crt,n-obj,n-cpu,n-net,n-sch,n-novnc,n-xvnc,n-cauth,horizon,mysql,rabbit}
     def_components = dict()
-    #TODO glance subcomponents should be api/reg
-    def_components[settings.GLANCE] = []
+    def_components[settings.GLANCE] = [
+                                         glance.GAPI,
+                                         glance.GREG,
+                                      ]
     def_components[settings.KEYSTONE] = []
     #TODO add in xvnc?
     def_components[settings.NOVA] = [

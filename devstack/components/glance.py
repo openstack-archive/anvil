@@ -38,6 +38,10 @@ REG_PASTE_CONF = 'glance-registry-paste.ini'
 CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF, REG_PASTE_CONF]
 CFG_SECTION = 'DEFAULT'
 
+# reg, api are here as possible subcomponents 
+GAPI = "api"
+GREG = "reg"
+
 #this db will be dropped and created
 DB_NAME = "glance"
 
@@ -48,6 +52,12 @@ NO_IMG_START = "no-image-upload"
 APP_OPTIONS = {
     'glance-api': ['--config-file', sh.joinpths('%ROOT%', "etc", API_CONF)],
     'glance-registry': ['--config-file', sh.joinpths('%ROOT%', "etc", REG_CONF)]
+}
+
+#how the subcompoent small name translates to an actual app
+SUB_TO_APP = {
+    GAPI: 'glance-api',
+    GREG: 'glance-registry'
 }
 
 #subdirs of the downloaded
@@ -68,11 +78,20 @@ class GlanceRuntime(comp.PythonRuntime):
 
     def _get_apps_to_start(self):
         apps = list()
-        for app_name in APP_OPTIONS.keys():
-            apps.append({
-                'name': app_name,
-                'path': sh.joinpths(self.appdir, BIN_DIR, app_name),
-            })
+        if not self.component_opts:
+            for app_name in APP_OPTIONS.keys():
+                apps.append({
+                    'name': app_name,
+                    'path': sh.joinpths(self.appdir, BIN_DIR, app_name),
+                })
+        else:
+            for short_name in self.component_opts:
+                full_name = SUB_TO_APP.get(short_name)
+                if full_name and full_name in APP_OPTIONS:
+                    result.append({
+                        'name': full_name,
+                        'path': sh.joinpths(self.appdir, BIN_DIR, full_name),
+                    })
         return apps
 
     def _get_app_options(self, app):

@@ -307,23 +307,38 @@ def center_text(text, fill, max_len):
 def goodbye(worked):
     #thx cowsay
     cow = r'''
- _________
+ {header}
+< {top} >
 < {message} >
- ---------
-        \   ^__^
+ {footer}
+        \   {ear}__{ear}
          \  ({eye}{eye})\_______
             (__)\       )\/\
                 ||----w |
                 ||     ||
 '''
     cow = cow.strip("\n\r")
-    worked_msg = colored('Success!', 'blue')
+    ear = '^'
     eye_fmt = 'o'
     if not worked:
-        worked_msg = colored('Failure!', 'red', attrs=['bold'])
+        top = "Nooooo!"
+        msg = 'Failure!'
         eye_fmt = colored("o", 'red')
-    outmsg = cow.format(message=worked_msg, eye=eye_fmt)
-    print(outmsg)
+        ear = colored(ear, 'red')
+        header = "_" * (len(top)+2)
+        footer = "-" * (len(msg)+2)
+        msg = colored(msg, 'red', attrs=['bold'])
+        top = colored(top, 'red', attrs=['bold'])
+    else:
+        top = "Yippe!"
+        msg = 'Success!'
+        header = "_" * (len(top)+2)
+        footer = "-" * (len(msg)+2)
+        msg = colored(msg, 'green', attrs=['bold'])
+        top = colored(top, 'green', attrs=['bold'])
+    msg = cow.format(message=msg, eye=eye_fmt, ear=ear,
+                    top=top, header=header, footer=footer)
+    print(msg)
 
 
 def welcome(ident):

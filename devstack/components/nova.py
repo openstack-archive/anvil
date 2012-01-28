@@ -262,12 +262,12 @@ class NovaInstaller(comp.PythonInstallComponent):
         mp['VOLUME_BACKING_FILE_SIZE'] = backing_file_size
         try:
             utils.execute_template(*VG_CHECK_CMD, params=mp)
-            LOG.warn("Volume group already exists:%s" % (vol_group))
+            LOG.warn("Volume group already exists: %s" % (vol_group))
         except exceptions.ProcessExecutionError as err:
             # Check that the error from VG_CHECK is an expected error
             if err.exit_code != 5:
                 raise
-            LOG.info("Need to create volume group:%s" % (vol_group))
+            LOG.info("Need to create volume group: %s" % (vol_group))
             sh.touch_file(backing_file, die_if_there=False, file_size=backing_file_size)
             vg_dev_result = utils.execute_template(*VG_DEV_CMD, params=mp)
             LOG.debug("vg dev result:%s" % (vg_dev_result))
@@ -284,9 +284,9 @@ class NovaInstaller(comp.PythonInstallComponent):
     def _process_lvs(self, mp):
         LOG.info("Attempting to setup logical volumes for nova volume management")
         lvs_result = utils.execute_template(*VG_LVS_CMD, params=mp, tracewriter=self.tracewriter)
-        LOG.debug("lvs result:%s" % (lvs_result))
+        LOG.debug("lvs result: %s" % (lvs_result))
         vol_name_prefix = self.cfg.get('nova', 'volume_name_prefix')
-        LOG.debug("Using volume name prefix:%s" % (vol_name_prefix))
+        LOG.debug("Using volume name prefix: %s" % (vol_name_prefix))
         for stdout_line in lvs_result[0][0].split('\n'):
             if stdout_line:
                 # Ignore blank lines
