@@ -24,7 +24,6 @@ from devstack import trace as tr
 from devstack import utils
 
 from devstack.runners import fork
-from devstack.runners import screen
 
 
 LOG = logging.getLogger("devstack.component")
@@ -298,11 +297,9 @@ class ProgramRuntime(ComponentBase):
     #what classes handle different running/stopping types
     STARTER_CLS_MAPPING = {
         fork.RUN_TYPE: fork.ForkRunner,
-        screen.RUN_TYPE: screen.ScreenRunner,
     }
     STOPPER_CLS_MAPPING = {
         fork.RUN_TYPE: fork.ForkRunner,
-        screen.RUN_TYPE: screen.ScreenRunner,
     }
 
     def __init__(self, component_name, *args, **kargs):

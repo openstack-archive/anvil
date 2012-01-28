@@ -327,9 +327,6 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
                     results.append(str(start_result))
         elif action_name == settings.UNINSTALL:
             _uninstall(component, instance, program_args.get('force', False))
-        else:
-            #TODO throw?
-            pass
     #display any configs touched...
     _print_cfgs(config, action_name)
     #any post run actions go now
@@ -349,14 +346,14 @@ def _get_def_components():
     def_components[settings.KEYSTONE] = []
     #TODO add in xvnc?
     def_components[settings.NOVA] = [
-                                     nova.NCPU,
-                                     nova.NVOL,
                                      nova.NAPI,
-                                     nova.NOBJ,
-                                     nova.NNET,
-                                     nova.NCERT,
-                                     nova.NSCHED,
                                      nova.NCAUTH,
+                                     nova.NCERT,
+                                     nova.NCPU,
+                                     nova.NNET,
+                                     nova.NOBJ,
+                                     nova.NSCHED,
+                                     nova.NVOL,
                                     ]
     def_components[settings.NOVNC] = []
     def_components[settings.HORIZON] = []
@@ -388,12 +385,12 @@ def _run_action(args):
     (rep, maxlen) = utils.welcome(_WELCOME_MAP.get(action))
     header = utils.center_text("Action Runner", rep, maxlen)
     print(header)
-    #need to figure out dependencies for components (if any)
-    ignore_deps = args.pop('ignore_deps', False)
     if not defaulted_components:
         LOG.info("Activating components [%s]" % (", ".join(sorted(components.keys()))))
     else:
         LOG.info("Activating default components [%s]" % (", ".join(sorted(components.keys()))))
+    #need to figure out dependencies for components (if any)
+    ignore_deps = args.pop('ignore_deps', False)
     if not ignore_deps:
         new_components = settings.resolve_dependencies(components.keys())
         component_diff = new_components.difference(components.keys())
@@ -401,6 +398,8 @@ def _run_action(args):
             LOG.info("Having to activate dependent components: [%s]" % (", ".join(sorted(component_diff))))
             for new_component in component_diff:
                 components[new_component] = list()
+    #see if we have previously already done the components
+    #TODO the check is really pretty basic so should not be depended on...
     component_skips = _check_roots(action, rootdir, components.keys())
     for c in component_skips:
         components.pop(c)
