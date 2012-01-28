@@ -14,21 +14,26 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import io
+
+from devstack import cfg
 from devstack import component as comp
+from devstack import exceptions
 from devstack import log as logging
 from devstack import settings
-from devstack import utils
-from devstack import exceptions
 from devstack import shell as sh
+from devstack import utils
 from devstack.components import db
 from devstack.components import keystone
 
 LOG = logging.getLogger('devstack.components.nova')
 
-#config files adjusted
+#special generatedconf
 API_CONF = 'nova.conf'
+
+#normal conf
 PASTE_CONF = 'nova-api-paste.ini'
-CONFIGS = [API_CONF, PASTE_CONF]
+CONFIGS = [PASTE_CONF]
 
 #this db will be dropped then created
 DB_NAME = 'nova'
@@ -83,14 +88,6 @@ NVOL = "vol"
 NAPI = "api"
 SUBCOMPONENTS = [NCPU, NVOL, NAPI]
 
-# In case we need to map names to the image to run
-# This map also controls which subcomponent's packages may need to add
-APP_NAME_MAP = {
-    NAPI: 'nova-api',
-    NCPU: 'nova-compute',
-    NVOL: 'nova-volume',
-}
-
 # Additional packages for subcomponents
 ADD_PKGS = {
     NAPI:
@@ -107,13 +104,28 @@ ADD_PKGS = {
         ],
 }
 
+# Adjustments to nova paste pipeline for keystone
+PASTE_PIPELINE_KEYSTONE_ADJUST = {
+    'ec2cloud': 'ec2faultwrap logrequest totoken authtoken keystonecontext cloudrequest authorizer validator ec2executor',
+    'ec2admin': "ec2faultwrap logrequest totoken authtoken keystonecontext adminrequest authorizer ec2executor",
+    'openstack_compute_api_v2': "faultwrap authtoken keystonecontext ratelimit osapi_compute_app_v2",
+    'openstack_volume_api_v1': "faultwrap authtoken keystonecontext ratelimit osapi_volume_app_v1",
+}
+
 # What to start
 APP_OPTIONS = {
-    NAPI: ['--flagfile', '%CFGFILE%'],
-    NCPU: ['--flagfile', '%CFGFILE%'],
-    NVOL: ['--flagfile', '%CFGFILE%'],
+    #these are currently the core components/applications
+    'nova-api': ['--flagfile', '%CFGFILE%'],
+    'nova-compute': ['--flagfile', '%CFGFILE%'],
+    'nova-volume': ['--flagfile', '%CFGFILE%'],
     'nova-network': ['--flagfile', '%CFGFILE%'],
-    'nova-scheduler': ['--flagfile', '%CFGFILE%']
+    'nova-scheduler': ['--flagfile', '%CFGFILE%'],
+    'nova-cert': ['--flagfile', '%CFGFILE%'],
+    'nova-objectstore': ['--flagfile', '%CFGFILE%'],
+    #TODO FIX these
+    #'nova-xvpvncproxy' : ['--flagfile', '%CFGFILE%'],
+    #'nova-consoleauth' : [],
+    #TODO add in novnc
 }
 
 #subdirs of the checkout/download
@@ -271,9 +283,33 @@ class NovaInstaller(comp.PythonInstallComponent):
         sh.write_file(tgtfn, nova_conf)
         self.tracewriter.cfg_write(tgtfn)
 
+    def _config_adjust(self, contents, config_fn):
+        if config_fn == PASTE_CONF and settings.KEYSTONE in self.instances:
+            #We change the pipelines in nova to use keystone
+            newcontents = contents
+            with io.BytesIO(contents) as stream:
+                config = cfg.IgnoreMissingConfigParser()
+                config.readfp(stream)
+                adjusted_pipelines = 0
+                for (name, value) in PASTE_PIPELINE_KEYSTONE_ADJUST.items():
+                    section_name = "pipeline:" + name
+                    if config.has_section(section_name):
+                        LOG.debug("Adjusting section named \"%s\" option \"pipeline\" to \"%s\"", section_name, value)
+                        config.set(section_name, "pipeline", value)
+                        adjusted_pipelines += 1
+                if adjusted_pipelines:
+                    #we changed it, guess we have to write it out
+                    with io.BytesIO() as outputstream:
+                        config.write(outputstream)
+                        outputstream.flush()
+                        #TODO can we write to contents here directly?
+                        newcontents = outputstream.getvalue()
+            contents = newcontents
+        return contents
+
     def _get_source_config(self, config_fn):
         if config_fn == PASTE_CONF:
-            #this is named differently than what it will be stored as...
+            #this is named differently than what it will be stored as... arg...
             srcfn = sh.joinpths(self.appdir, "etc", "nova", 'api-paste.ini')
             contents = sh.load_file(srcfn)
             return (srcfn, contents)
@@ -287,72 +323,38 @@ class NovaInstaller(comp.PythonInstallComponent):
         else:
             return comp.PythonInstallComponent._get_target_config_name(self, config_fn)
 
-    def _generate_paste_api_conf(self):
-        name = PASTE_CONF
-        LOG.info("Setting up %s" % (name))
-        mp = keystone.get_shared_params(self.cfg)
-        (src_fn, contents) = self._get_source_config(name)
-        LOG.info("Replacing parameters in file %s" % (src_fn))
-        contents = utils.param_replace(contents, mp, True)
-        tgt_fn = self._get_target_config_name(name)
-        LOG.info("Writing to file %s" % (tgt_fn))
-        sh.write_file(tgt_fn, contents)
-        self.tracewriter.cfg_write(tgt_fn)
+    def _get_param_map(self, config_fn):
+        return keystone.get_shared_params(self.cfg)
 
-    def _configure_files(self):
+    def configure(self):
+        am = comp.PythonInstallComponent.configure(self)
+        #this is a special conf so we handle it ourselves
         self._generate_nova_conf()
-        self._generate_paste_api_conf()
-        return len(CONFIGS)
+        return am + 1
 
 
 class NovaRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
-        self.run_tokens = dict()
-        self.run_tokens['CFGFILE'] = sh.joinpths(self.cfgdir, API_CONF)
-        LOG.debug("Setting CFGFILE run_token to:%s" % (self.run_tokens['CFGFILE']))
 
     def _get_apps_to_start(self):
-        # Check if component_opts was set to a subset of apps to be started
-        LOG.debug("getting list of apps to start")
-        apps = list()
-        if not self.component_opts and len(self.component_opts) > 0:
-            LOG.debug("Attempt to use subset of components:%s" % (self.component_opts))
-            # check if the specified sub components exist
-            delta = set(self.component_opts) - set(APP_OPTIONS.keys())
-            if delta:
-                LOG.error("sub items that we don't know about:%s" % delta)
-                raise exceptions.BadParamException("Unknown subcomponent specified:%s" % delta)
-            else:
-                apps = self.component_opts
-                LOG.debug("Using specified subcomponents:%s" % (apps))
-        else:
-            apps = APP_OPTIONS.keys()
-            LOG.debug("Using the keys from APP_OPTIONS:%s" % (apps))
-
+        # TODO: Check if component_opts was set to a subset of apps to be started
+        apps = sorted(APP_OPTIONS.keys())
         result = list()
         for app_name in apps:
-            if app_name in APP_NAME_MAP:
-                image_name = APP_NAME_MAP.get(app_name)
-                LOG.debug("Renamed app_name to:" + app_name)
-            else:
-                image_name = app_name
             result.append({
                 'name': app_name,
-                'path': sh.joinpths(self.appdir, BIN_DIR, image_name),
+                'path': sh.joinpths(self.appdir, BIN_DIR, app_name),
             })
-        LOG.debug("exiting _get_aps_to_start with:%s" % (result))
         return result
+
+    def _get_param_map(self, app_name):
+        params = comp.PythonRuntime._get_param_map(self, app_name)
+        params['CFGFILE'] = sh.joinpths(self.cfgdir, API_CONF)
+        return params
 
     def _get_app_options(self, app):
-        LOG.debug("Getting options for %s" % (app))
-        result = list()
-        for opt_str in APP_OPTIONS.get(app):
-            LOG.debug("Checking opt_str for tokens: %s" % (opt_str))
-            result.append(utils.param_replace(opt_str, self.run_tokens))
-
-        LOG.debug("_get_app_options returning with:%s" % (result))
-        return result
+        return APP_OPTIONS.get(app)
 
 
 # This class has the smarts to build the configuration file based on
