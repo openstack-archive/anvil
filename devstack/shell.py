@@ -164,12 +164,17 @@ def _prompt_password(prompt_=None):
 
 def chown_r(path, uid, gid):
     if(isdir(path)):
+        LOG.debug("Changing ownership of %s to %s:%s" % (path, uid, gid))
+        os.chown(path, uid, gid)
         for root, dirs, files in os.walk(path):
             os.chown(root, uid, gid)
+            LOG.debug("Changing ownership of %s to %s:%s" % (root, uid, gid))
             for d in dirs:
                 os.chown(joinpths(root, d), uid, gid)
+                LOG.debug("Changing ownership of %s to %s:%s" % (joinpths(root, d), uid, gid))
             for f in files:
                 os.chown(joinpths(root, f), uid, gid)
+                LOG.debug("Changing ownership of %s to %s:%s" % (joinpths(root, f), uid, gid))
 
 
 def password(prompt_=None, pw_len=8):
@@ -292,7 +297,7 @@ def getuser():
 
 def getuid(username):
     uinfo = pwd.getpwnam(username)
-    return uinfo.pw_gid
+    return uinfo.pw_uid
 
 
 def getgid(groupname):
