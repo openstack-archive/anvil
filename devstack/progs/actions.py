@@ -61,6 +61,9 @@ _WELCOME_MAP = {
     settings.STOP: "STOPPER",
 }
 
+# For actions in this list we will reverse the component order
+_REVERSE_ACTIONS = [settings.UNINSTALL, settings.STOP]
+
 # This determines what classes to use to install/uninstall/...
 _ACTION_CLASSES = {
     settings.INSTALL: {
@@ -399,6 +402,10 @@ def _run_action(args):
         return False
     #get the right component order (by priority)
     component_order = settings.prioritize_components(components.keys())
+    if action in _REVERSE_ACTIONS:
+        #reverse them so that we stop in the reverse order
+        #and that we uninstall in the reverse order which seems to make sense
+        component_order.reverse()
     #add in any that will just be referenced but which will not actually do anything (ie the action will not be applied to these)
     ref_components = settings.parse_components(args.pop("ref_components"))
     for c in ref_components.keys():
