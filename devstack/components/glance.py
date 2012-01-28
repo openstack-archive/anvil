@@ -42,7 +42,7 @@ CFG_SECTION = 'DEFAULT'
 DB_NAME = "glance"
 
 #special subcomponents/options that are used in starting to know that images should be uploaded
-IMG_START = "upload-images"
+NO_IMG_START = "no-image-upload"
 
 #what to start
 APP_OPTIONS = {
@@ -80,7 +80,7 @@ class GlanceRuntime(comp.PythonRuntime):
 
     def post_start(self):
         comp.PythonRuntime.post_start(self)
-        if IMG_START in self.component_opts:
+        if NO_IMG_START not in self.component_opts:
             #install any images that need activating...
             creator.ImageCreationService(self.cfg).install()
 
@@ -183,10 +183,10 @@ def describe(opts=None):
    {component_opts}
 """
     copts = """
- {img_upload} - uploads test images to glance.
+ {no_img_upload} - disables upload of test images to glance.
 """
     params = dict()
-    params['component_opts'] = copts.strip("\n").format(img_upload=IMG_START)
+    params['component_opts'] = copts.strip("\n").format(no_img_upload=NO_IMG_START)
     params['module_name'] = __name__
     params['description'] = __doc__ or "Handles actions for the glance component."
     out = description.format(**params)
