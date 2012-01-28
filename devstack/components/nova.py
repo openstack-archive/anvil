@@ -128,7 +128,7 @@ APP_OPTIONS = {
     'nova-scheduler': ['--flagfile', '%CFGFILE%'],
     'nova-cert': ['--flagfile', '%CFGFILE%'],
     'nova-objectstore': ['--flagfile', '%CFGFILE%'],
-    'nova-consoleauth' : [],
+    'nova-consoleauth': [],
     #TODO FIX these
     #'nova-xvpvncproxy' : ['--flagfile', '%CFGFILE%'],
     #TODO add in novnc
