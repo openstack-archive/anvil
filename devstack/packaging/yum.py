@@ -32,8 +32,8 @@ VERSION_TEMPL = "%s-%s"
 
 
 class YumPackager(pack.Packager):
-    def __init__(self, distro):
-        pack.Packager.__init__(self, distro)
+    def __init__(self, distro, keep_packages):
+        pack.Packager.__init__(self, distro, keep_packages)
 
     def _format_pkg_name(self, name, version):
         if version is not None and len(version):

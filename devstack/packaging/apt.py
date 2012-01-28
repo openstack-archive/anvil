@@ -42,8 +42,8 @@ VERSION_TEMPL = "%s=%s"
 
 
 class AptPackager(pack.Packager):
-    def __init__(self, distro):
-        pack.Packager.__init__(self, distro)
+    def __init__(self, distro, keep_packages):
+        pack.Packager.__init__(self, distro, keep_packages)
         self.auto_remove = True
 
     def _format_pkg(self, name, version):
@@ -59,7 +59,7 @@ class AptPackager(pack.Packager):
             env_overrides=ENV_ADDITIONS,
             **kargs)
 
-    def remove_batch(self, pkgs):
+    def _remove_batch(self, pkgs):
         pkgnames = sorted(pkgs.keys())
         #form the needed commands
         cmds = []

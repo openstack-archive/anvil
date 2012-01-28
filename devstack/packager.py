@@ -22,14 +22,17 @@ LOG = logging.getLogger("devstack.packager")
 
 
 class Packager(object):
-    def __init__(self, distro):
+    def __init__(self, distro, keep_packages):
         self.distro = distro
+        self.keep_packages = keep_packages
 
     def install_batch(self, pkgs):
         raise NotImplementedError()
 
     def remove_batch(self, pkgs):
-        raise NotImplementedError()
+        if not self.keep_packages:
+            return self._remove_batch(pkgs)
+        return []
 
     def pre_install(self, pkgs, installparams=None):
         pkgnames = sorted(pkgs.keys())
@@ -48,3 +51,6 @@ class Packager(object):
             if postinstallcmds and len(postinstallcmds):
                 LOG.info("Running post-install commands for package %s." % (name))
                 utils.execute_template(*postinstallcmds, params=installparams)
+
+    def _remove_batch(self, pkgs):
+        raise NotImplementedError()

@@ -135,9 +135,9 @@ def _clean_action(action):
     return action
 
 
-def _get_pkg_manager(distro):
+def _get_pkg_manager(distro, keep_packages):
     cls = _PKGR_MAP.get(distro)
-    return cls(distro)
+    return cls(distro, keep_packages)
 
 
 def _get_action_cls(action_name, component_name):
@@ -286,7 +286,7 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
     non_components = set(components.keys()).difference(set(component_order))
     if non_components:
         LOG.info("Using reference components [%s]" % (", ".join(sorted(non_components))))
-    pkg_manager = _get_pkg_manager(distro)
+    pkg_manager = _get_pkg_manager(distro, program_args.pop('keep_packages', True))
     config = _get_config()
     #form the active instances (this includes ones we won't use)
     all_instances = dict()
