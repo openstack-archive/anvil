@@ -88,7 +88,7 @@ class GlanceRuntime(comp.PythonRuntime):
             for short_name in self.component_opts:
                 full_name = SUB_TO_APP.get(short_name)
                 if full_name and full_name in APP_OPTIONS:
-                    result.append({
+                    apps.append({
                         'name': full_name,
                         'path': sh.joinpths(self.appdir, BIN_DIR, full_name),
                     })
