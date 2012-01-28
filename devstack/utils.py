@@ -307,10 +307,10 @@ def center_text(text, fill, max_len):
 def goodbye(worked):
     #thx cowsay
     cow = r'''
- {header}
-< {top} >
-< {message} >
- {footer}
+ __________
+/ {top}  \
+\ {message} /
+ ----------
         \   {ear}__{ear}
          \  ({eye}{eye})\_______
             (__)\       )\/\
@@ -330,7 +330,7 @@ def goodbye(worked):
         msg = colored(msg, 'red', attrs=['bold'])
         top = colored(top, 'red', attrs=['bold'])
     else:
-        top = "Yippe!"
+        top = "Yippie!"
         msg = 'Success!'
         header = "_" * (len(top) + 2)
         footer = "-" * (len(msg ) + 2)
