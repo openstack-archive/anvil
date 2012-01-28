@@ -325,15 +325,15 @@ def goodbye(worked):
         msg = 'Failure!'
         eye_fmt = colored("o", 'red')
         ear = colored(ear, 'red')
-        header = "_" * (len(top)+2)
-        footer = "-" * (len(msg)+2)
+        header = "_" * (len(top) + 2)
+        footer = "-" * (len(msg) + 2)
         msg = colored(msg, 'red', attrs=['bold'])
         top = colored(top, 'red', attrs=['bold'])
     else:
         top = "Yippe!"
         msg = 'Success!'
-        header = "_" * (len(top)+2)
-        footer = "-" * (len(msg)+2)
+        header = "_" * (len(top) + 2)
+        footer = "-" * (len(msg ) + 2)
         msg = colored(msg, 'green', attrs=['bold'])
         top = colored(top, 'green', attrs=['bold'])
     msg = cow.format(message=msg, eye=eye_fmt, ear=ear,

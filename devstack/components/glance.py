@@ -38,7 +38,7 @@ REG_PASTE_CONF = 'glance-registry-paste.ini'
 CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF, REG_PASTE_CONF]
 CFG_SECTION = 'DEFAULT'
 
-# reg, api are here as possible subcomponents 
+#reg, api are here as possible subcomponents
 GAPI = "api"
 GREG = "reg"
 

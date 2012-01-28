@@ -182,7 +182,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         self.paste_conf_fn = self._get_target_config_name(PASTE_CONF)
 
     def _get_pkglist(self):
-        pkgs = comp.PkgInstallComponent._get_pkglist(self)
+        pkgs = comp.PythonInstallComponent._get_pkglist(self)
         # Walk through the subcomponents (like 'vol' and 'cpu') and add those
         # those packages as well. Let utils.get_pkglist handle any missing
         # entries
