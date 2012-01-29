@@ -28,10 +28,10 @@ import traceback
 from termcolor import colored
 
 #this needs to happen immediately (or thats what it seems)
-logfn = os.getenv('LOG_FILE')
-if(logfn == None):
-    logfn = os.path.join("conf", 'logging.ini')
-logging.config.fileConfig(logfn)
+log_fn = os.getenv('LOG_FILE')
+if(log_fn == None):
+    log_fn = os.path.join("conf", 'logging.ini')
+logging.config.fileConfig(log_fn)
 
 #this handles our option parsing
 from devstack import opts
@@ -41,6 +41,7 @@ from devstack import utils
 from devstack.progs import actions
 from devstack.progs import describe
 from devstack.progs import deps
+
 
 def main():
     #parse and get it done!
@@ -63,7 +64,7 @@ def main():
         else:
             utils.goodbye(True)
             return 0
-    except:
+    except Exception:
         utils.goodbye(False)
         traceback.print_exc(file=sys.stdout)
         return 1

@@ -193,7 +193,7 @@ def get_components_order(components):
     #now we have to do a quick check to ensure no component is causing a cycle
     for (root, deps) in all_components.items():
         #DFS down through the "roots" deps and there deps and so on and
-        #ensure that nobody is referencing the "root" component name, 
+        #ensure that nobody is referencing the "root" component name,
         #that would mean there is a cycle if a dependency of the "root" is.
         active_deps = list(deps)
         checked_deps = dict()

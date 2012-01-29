@@ -52,6 +52,7 @@ _WELCOME_MAP = {
 # For actions in this list we will reverse the component order
 _REVERSE_ACTIONS = [settings.UNINSTALL, settings.STOP]
 
+
 def _clean_action(action):
     if action is None:
         return None

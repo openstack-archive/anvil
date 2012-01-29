@@ -112,6 +112,3 @@ KNOWN_DISTROS = {
     UBUNTU11: re.compile(r'Ubuntu(.*)oneiric', re.IGNORECASE),
     RHEL6: re.compile(r'redhat-6\.2', re.IGNORECASE),
 }
-
-
-

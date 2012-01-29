@@ -100,6 +100,7 @@ ACTION_CLASSES = {
 
 _FAKE_ROOT_DIR = tempfile.gettempdir()
 
+
 def get_default_components():
     #this seems to be the default list of what to install by default
     #ENABLED_SERVICES=${ENABLED_SERVICES:-g-api,g-reg,key,n-api,

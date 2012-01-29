@@ -58,6 +58,7 @@ class ComponentBase(object):
             return list()
         return list(deps)
 
+
 class PkgInstallComponent(ComponentBase):
     def __init__(self, component_name, *args, **kargs):
         ComponentBase.__init__(self, component_name, *args, **kargs)
