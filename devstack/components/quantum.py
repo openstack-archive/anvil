@@ -22,6 +22,7 @@ from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
 from devstack import utils
+
 from devstack.components import db
 
 LOG = logging.getLogger("devstack.components.quantum")
@@ -67,6 +68,9 @@ APP_OPTIONS = {
     APP_Q_AGENT: ["%OVS_CONFIG_FILE%", "-v"],
 }
 
+#the pkg json files quantum requires for installation
+REQ_PKGS = ['general.json', 'quantum.json']
+
 
 class QuantumUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -101,8 +105,11 @@ class QuantumInstaller(comp.PkgInstallComponent):
         })
         return places
 
-    def _get_pkglist(self):
-        pkglist = comp.PkgInstallComponent._get_pkglist(self)
+    def _get_pkgs(self):
+        pkglist = comp.PkgInstallComponent._get_pkgs(self)
+        for fn in REQ_PKGS:
+            full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
+            pkglist = utils.extract_pkg_list([full_name], self.distro, pkglist)
         if self.q_vswitch_service:
             listing_fn = sh.joinpths(settings.STACK_PKG_DIR, PKG_VSWITCH)
             pkglist = utils.extract_pkg_list([listing_fn], self.distro, pkglist)

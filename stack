@@ -39,16 +39,18 @@ from devstack import utils
 
 #these are the program runtimes that actually do the running
 from devstack.progs import actions
-from devstack.progs import misc
-
+from devstack.progs import describe
+from devstack.progs import deps
 
 def main():
     #parse and get it done!
     args = opts.parse()
     #figure out what to do
     module = None
-    if args.get('list_deps') or args.get('describe_comp'):
-        module = misc
+    if args.get('describe_comp'):
+        module = describe
+    elif args.get('list_deps'):
+        module = deps
     else:
         module = actions
     try:

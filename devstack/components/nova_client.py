@@ -17,11 +17,16 @@
 from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
+from devstack import shell as sh
+from devstack import utils
 
 LOG = logging.getLogger("devstack.components.nova_client")
 
 #id
 TYPE = settings.NOVA_CLIENT
+
+#the pkg json files nova client requires for installation
+REQ_PKGS = ['general.json', 'nova-client.json']
 
 
 class NovaClientUninstaller(comp.PythonUninstallComponent):
@@ -42,6 +47,13 @@ class NovaClientInstaller(comp.PythonInstallComponent):
             'branch': self.git_branch,
         })
         return places
+
+    def _get_pkgs(self):
+        pkgs = comp.PythonInstallComponent._get_pkgs(self)
+        for fn in REQ_PKGS:
+            full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
+            pkgs = utils.extract_pkg_list([full_name], self.distro, pkgs)
+        return pkgs
 
 
 class NovaClientRuntime(comp.EmptyRuntime):

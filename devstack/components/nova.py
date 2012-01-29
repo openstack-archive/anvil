@@ -23,6 +23,7 @@ from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
 from devstack import utils
+
 from devstack.components import db
 from devstack.components import keystone
 
@@ -98,19 +99,23 @@ NCAUTH = "cauth"
 SUBCOMPONENTS = [NCPU, NVOL, NAPI,
     NOBJ, NNET, NCERT, NSCHED, NCAUTH]
 
+
+#the pkg json files nova requires for installation
+REQ_PKGS = ['general.json', 'nova.json']
+
 # Additional packages for subcomponents
 ADD_PKGS = {
     NAPI:
         [
-            sh.joinpths(settings.STACK_PKG_DIR, 'n-api.json'),
+            'n-api.json',
         ],
     NCPU:
         [
-            sh.joinpths(settings.STACK_PKG_DIR, 'n-cpu.json'),
+            'n-cpu.json',
         ],
     NVOL:
         [
-            sh.joinpths(settings.STACK_PKG_DIR, 'n-vol.json'),
+            'n-vol.json',
         ],
 }
 
@@ -181,22 +186,26 @@ class NovaInstaller(comp.PythonInstallComponent):
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
         self.paste_conf_fn = self._get_target_config_name(PASTE_CONF)
 
-    def _get_pkglist(self):
-        pkgs = comp.PythonInstallComponent._get_pkglist(self)
+    def _get_pkgs(self):
+        pkgs = comp.PythonInstallComponent._get_pkgs(self)
+        # Get the core pkgs
+        for fn in REQ_PKGS:
+            full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
+            pkgs = utils.extract_pkg_list([full_name], self.distro, pkgs)
         # Walk through the subcomponents (like 'vol' and 'cpu') and add those
-        # those packages as well. Let utils.get_pkglist handle any missing
-        # entries
+        # those packages as well.
+        sub_components = []
         if self.component_opts:
             sub_components = self.component_opts
         else:
-            # No subcomponents where explicitly specified, so get all
             sub_components = SUBCOMPONENTS
-        LOG.debug("Explicit extras: %s" % (sub_components))
         # Add the extra dependencies
-        for cname in sub_components:
-            subpkgsfns = ADD_PKGS.get(cname)
-            if subpkgsfns:
-                pkgs = utils.extract_pkg_list(subpkgsfns, self.distro, pkgs)
+        for c in sub_components:
+            fns = ADD_PKGS.get(c)
+            if fns:
+                for fn in fns:
+                    full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
+                    pkgs = utils.extract_pkg_list([full_name], self.distro, pkgs)
         return pkgs
 
     def _get_download_locations(self):

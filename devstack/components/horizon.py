@@ -20,6 +20,7 @@ from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
+from devstack import utils
 
 #id
 TYPE = settings.HORIZON
@@ -54,6 +55,12 @@ BAD_APACHE_USERS = ['root']
 
 LOG = logging.getLogger("devstack.components.horizon")
 
+#the pkg json files horizon requires for installation
+REQ_PKGS = ['general.json', 'horizon.json']
+
+#pip files that horizon requires
+REQ_PIPS = ['horizon.json']
+
 
 class HorizonUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -75,6 +82,20 @@ class HorizonInstaller(comp.PythonInstallComponent):
             'branch': self.git_branch,
         })
         return places
+
+    def _get_pkgs(self):
+        pkgs = comp.PythonInstallComponent._get_pkgs(self)
+        for fn in REQ_PKGS:
+            full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
+            pkgs = utils.extract_pkg_list([full_name], self.distro, pkgs)
+        return pkgs
+
+    def _get_pips(self):
+        pips = comp.PythonInstallComponent._get_pips(self)
+        for fn in REQ_PIPS:
+            full_name = sh.joinpths(settings.STACK_PIP_DIR, fn)
+            pips = utils.extract_pip_list([full_name], self.distro, pips)
+        return pips
 
     def _get_target_config_name(self, config_name):
         if config_name == HORIZON_PY_CONF:

@@ -43,15 +43,20 @@ class ComponentBase(object):
         self.cfg = kargs.get("config")
         self.packager = kargs.get("packager")
         self.distro = kargs.get("distro")
+        self.component_name = component_name
+        self.instances = kargs.get("instances", set())
+        self.component_opts = kargs.get('opts', list())
         self.root = kargs.get("root")
-        self.instances = kargs.get("instances")
-        self.component_opts = kargs.get('opts')
         self.component_root = sh.joinpths(self.root, component_name)
         self.tracedir = sh.joinpths(self.component_root, settings.COMPONENT_TRACE_DIR)
         self.appdir = sh.joinpths(self.component_root, settings.COMPONENT_APP_DIR)
         self.cfgdir = sh.joinpths(self.component_root, settings.COMPONENT_CONFIG_DIR)
-        self.component_name = component_name
 
+    def get_dependencies(self):
+        deps = settings.COMPONENT_DEPENDENCIES.get(self.component_name)
+        if not deps:
+            return list()
+        return list(deps)
 
 class PkgInstallComponent(ComponentBase):
     def __init__(self, component_name, *args, **kargs):
@@ -85,11 +90,11 @@ class PkgInstallComponent(ComponentBase):
     def _get_param_map(self, config_fn):
         return None
 
-    def _get_pkglist(self):
-        return utils.get_pkg_list(self.distro, self.component_name)
+    def _get_pkgs(self):
+        return dict()
 
     def install(self):
-        pkgs = self._get_pkglist()
+        pkgs = self._get_pkgs()
         if pkgs:
             pkgnames = sorted(pkgs.keys())
             LOG.info("Installing packages (%s)." % (", ".join(pkgnames)))
@@ -100,14 +105,14 @@ class PkgInstallComponent(ComponentBase):
         return self.tracedir
 
     def pre_install(self):
-        pkgs = utils.get_pkg_list(self.distro, self.component_name)
+        pkgs = self._get_pkgs()
         if pkgs:
             mp = self._get_param_map(None)
             self.packager.pre_install(pkgs, mp)
         return self.tracedir
 
     def post_install(self):
-        pkgs = utils.get_pkg_list(self.distro, self.component_name)
+        pkgs = self._get_pkgs()
         if pkgs:
             mp = self._get_param_map(None)
             self.packager.post_install(pkgs, mp)
@@ -167,12 +172,12 @@ class PythonInstallComponent(PkgInstallComponent):
         })
         return py_dirs
 
-    def _get_pip_list(self):
-        return utils.get_pip_list(self.distro, self.component_name)
+    def _get_pips(self):
+        return dict()
 
     def _install_pips(self):
         #install any need pip items
-        pips = self._get_pip_list()
+        pips = self._get_pips()
         if pips:
             LOG.info("Setting up %s pips (%s)" % (len(pips), ", ".join(pips.keys())))
             pip.install(pips)

@@ -37,6 +37,7 @@ from devstack import version
 
 
 PARAM_SUB_REGEX = re.compile(r"%([\w\d]+?)%")
+EXT_COMPONENT = re.compile(r"^\s*([\w-]+)(?:\((.*)\))?\s*$")
 LOG = logging.getLogger("devstack.util")
 TEMPLATE_EXT = ".tpl"
 
@@ -157,27 +158,85 @@ def determine_distro():
     return (found_os, plt)
 
 
-def extract_pip_list(fns, distro):
-    all_pkgs = dict()
+def extract_pip_list(fns, distro, all_pips=None):
+    if not all_pips:
+        all_pips = dict()
     for fn in fns:
         js = load_json(fn)
-        distro_pkgs = js.get(distro)
-        if distro_pkgs:
-            combined = dict(all_pkgs)
-            for (pkgname, pkginfo) in distro_pkgs.items():
-                #we currently just overwrite
-                combined[pkgname] = pkginfo
-            all_pkgs = combined
-    return all_pkgs
+        distro_pips = js.get(distro)
+        if distro_pips:
+            all_pips.update(distro_pips)
+    return all_pips
 
 
-def get_pip_list(distro, component):
-    LOG.info("Getting pip packages for distro %s and component %s." % (distro, component))
-    fns = settings.PIP_MAP.get(component)
-    if fns is None:
-        return dict()
-    else:
-        return extract_pip_list(fns, distro)
+def get_components_order(components):
+    #deep copy so components isn't messed with
+    all_components = dict()
+    for (name, deps) in components.items():
+        all_components[name] = set(deps)
+    #figure out which ones have no one depending on them
+    no_deps_components = set()
+    for (name, deps) in all_components.items():
+        referenced = False
+        for (_name, _deps) in all_components.items():
+            if _name == name:
+                continue
+            else:
+                if name in _deps:
+                    referenced = True
+                    break
+        if not referenced:
+            no_deps_components.add(name)
+    if not no_deps_components:
+        msg = "Components specifed have no root components, there is most likely a dependency cycle!"
+        raise excp.DependencyException(msg)
+    #now we have to do a quick check to ensure no component is causing a cycle
+    for (root, deps) in all_components.items():
+        #DFS down through the "roots" deps and there deps and so on and
+        #ensure that nobody is referencing the "root" component name, 
+        #that would mean there is a cycle if a dependency of the "root" is.
+        active_deps = list(deps)
+        checked_deps = dict()
+        while len(active_deps):
+            dep = active_deps.pop()
+            itsdeps = all_components.get(dep)
+            checked_deps[dep] = True
+            if root in itsdeps:
+                msg = "Circular dependency between component %s and component %s!" % (root, dep)
+                raise excp.DependencyException(msg)
+            else:
+                for d in itsdeps:
+                    if d not in checked_deps and d not in active_deps:
+                        active_deps.append(d)
+    #now form the order
+    #basically a topological sorting
+    #https://en.wikipedia.org/wiki/Topological_sorting
+    ordering = list()
+    no_edges = set(no_deps_components)
+    while len(no_edges):
+        node = no_edges.pop()
+        ordering.append(node)
+        its_deps = all_components.get(node)
+        while len(its_deps):
+            name = its_deps.pop()
+            referenced = False
+            for (_name, _deps) in all_components.items():
+                if _name == name:
+                    continue
+                else:
+                    if name in _deps:
+                        referenced = True
+                        break
+            if not referenced:
+                no_edges.add(name)
+    #should now be no edges else something bad happended
+    for (_, deps) in all_components.items():
+        if len(deps):
+            msg = "Your specified components have at least one cycle!"
+            raise excp.DependencyException(msg)
+    #reverse so its in the right order for us
+    ordering.reverse()
+    return ordering
 
 
 def extract_pkg_list(fns, distro, all_pkgs=None):
@@ -187,33 +246,8 @@ def extract_pkg_list(fns, distro, all_pkgs=None):
         js = load_json(fn)
         distro_pkgs = js.get(distro)
         if distro_pkgs:
-            combined = dict(all_pkgs)
-            for (pkgname, pkginfo) in distro_pkgs.items():
-                if pkgname in all_pkgs.keys():
-                    oldpkginfo = all_pkgs.get(pkgname) or dict()
-                    newpkginfo = dict(oldpkginfo)
-                    for (infokey, infovalue) in pkginfo.items():
-                        #this is expected to be a list of cmd actions
-                        #so merge that accordingly
-                        if(infokey == settings.PRE_INSTALL or
-                            infokey == settings.POST_INSTALL):
-                            oldinstalllist = oldpkginfo.get(infokey) or []
-                            infovalue = oldinstalllist + infovalue
-                        newpkginfo[infokey] = infovalue
-                    combined[pkgname] = newpkginfo
-                else:
-                    combined[pkgname] = pkginfo
-            all_pkgs = combined
+            all_pkgs.update(distro_pkgs)
     return all_pkgs
-
-
-def get_pkg_list(distro, component):
-    LOG.info("Getting packages for distro %s and component %s." % (distro, component))
-    fns = settings.PKG_MAP.get(component)
-    if fns is None:
-        return dict()
-    else:
-        return extract_pkg_list(fns, distro)
 
 
 def joinlinesep(*pieces):
@@ -339,6 +373,30 @@ def goodbye(worked):
     msg = cow.format(message=msg, eye=eye_fmt, ear=ear,
                     top=top, header=header, footer=footer)
     print(msg)
+
+
+def parse_components(components):
+    #none provided, init it
+    if not components:
+        components = list()
+    adjusted_components = dict()
+    for c in components:
+        mtch = EXT_COMPONENT.match(c)
+        if mtch:
+            component_name = mtch.group(1).lower().strip()
+            if component_name in settings.COMPONENT_NAMES:
+                component_opts = mtch.group(2)
+                components_opts_cleaned = list()
+                if not component_opts:
+                    pass
+                else:
+                    sp_component_opts = component_opts.split(",")
+                    for co in sp_component_opts:
+                        cleaned_opt = co.strip()
+                        if cleaned_opt:
+                            components_opts_cleaned.append(cleaned_opt)
+                adjusted_components[component_name] = components_opts_cleaned
+    return adjusted_components
 
 
 def welcome(ident):

@@ -22,6 +22,7 @@ from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
 from devstack import trace as tr
+from devstack import utils
 
 LOG = logging.getLogger("devstack.components.rabbit")
 
@@ -34,6 +35,9 @@ STOP_CMD = ['service', "rabbitmq-server", "stop"]
 STATUS_CMD = ['service', "rabbitmq-server", "status"]
 RESTART_CMD = ['service', "rabbitmq-server", "restart"]
 PWD_CMD = ['rabbitmqctl', 'change_password', 'guest']
+
+#the pkg json files rabbit mq server requires for installation
+REQ_PKGS = ['rabbitmq.json']
 
 
 class RabbitUninstaller(comp.PkgUninstallComponent):
@@ -56,6 +60,13 @@ class RabbitInstaller(comp.PkgInstallComponent):
         self._setup_pw()
         self.runtime.restart()
         return parent_result
+
+    def _get_pkgs(self):
+        pkgs = comp.PkgInstallComponent._get_pkgs(self)
+        for fn in REQ_PKGS:
+            full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
+            pkgs = utils.extract_pkg_list([full_name], self.distro, pkgs)
+        return pkgs
 
 
 class RabbitRuntime(comp.EmptyRuntime):
