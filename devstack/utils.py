@@ -170,6 +170,8 @@ def extract_pip_list(fns, distro, all_pips=None):
 
 
 def get_components_order(components):
+    if not components:
+        return dict()
     #deep copy so components isn't messed with
     all_components = dict()
     for (name, deps) in components.items():
@@ -234,7 +236,10 @@ def get_components_order(components):
         if len(deps):
             msg = "Your specified components have at least one cycle!"
             raise excp.DependencyException(msg)
-    #reverse so its in the right order for us
+    #reverse so its in the right order for us since we just determined
+    #the pkgs that have no one depending on them (which should be installed
+    #last and those that have incoming edges that packages are depending on need
+    #to go first, but those were inserted last), so this reverse fixes that
     ordering.reverse()
     return ordering
 
