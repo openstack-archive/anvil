@@ -58,6 +58,8 @@ DB_ACTIONS = {
     },
 }
 
+SQL_RESET_PW_LINKS = ['https://help.ubuntu.com/community/MysqlPasswordReset', 'http://crashmag.net/resetting-the-root-password-for-mysql-running-on-rhel-or-centos']
+
 #used as a generic error message
 BASE_ERROR = 'Currently we do not know how to %s for database type [%s]'
 
@@ -80,11 +82,13 @@ class DBUninstaller(comp.PkgUninstallComponent):
         try:
             self.runtime.start()
         except IOError:
-            LOG.debug("Could not start mysql")
+            LOG.warn("Could not start your database.")
 
         # set pwd
         try:
             if dbactions and dbtype == MYSQL:
+                LOG.info(("Attempting to reset your mysql password so"
+                          " that we can set it the next time you install."))
                 pwd_cmd = dbactions.get('setpwd')
                 if pwd_cmd:
                     params = {
@@ -98,13 +102,14 @@ class DBUninstaller(comp.PkgUninstallComponent):
                             }]
                     utils.execute_template(*cmds, params=params)
         except IOError:
-            LOG.info(("could not reset password. might have to manually "
-                      "reset mysql before next install"))
+            LOG.warn(("Could not reset mysql password. You might have to manually "
+                      "reset mysql before the next install"))
+            LOG.info("To aid in this check out: %s", " or ".join(SQL_RESET_PW_LINKS))
 
         try:
             self.runtime.stop()
         except IOError:
-            LOG.debug("Could not stop mysql")
+            LOG.warn("Could not stop your database.")
 
 
 class DBInstaller(comp.PkgInstallComponent):
@@ -138,12 +143,13 @@ class DBInstaller(comp.PkgInstallComponent):
         #extra actions to ensure we are granted access
         dbtype = self.cfg.get("db", "type")
         dbactions = DB_ACTIONS.get(dbtype)
-
         self.runtime.start()
 
         # set pwd
         try:
             if dbactions and dbtype == MYSQL:
+                LOG.info(("Attempting to set your mysql password "
+                          " just incase it wasn't set previously"))
                 pwd_cmd = dbactions.get('setpwd')
                 if pwd_cmd:
                     params = {
@@ -157,8 +163,8 @@ class DBInstaller(comp.PkgInstallComponent):
                             }]
                     utils.execute_template(*cmds, params=params)
         except IOError:
-            LOG.debug(("Couldn't set password. Might have already been "
-                       "set by previous process."))
+            LOG.warn(("Couldn't set your password. It might have already been "
+                       "set by a previous process."))
 
         if dbactions and dbactions.get('grant_all'):
             #update the DB to give user 'USER'@'%' full control of the all databases:
@@ -172,11 +178,13 @@ class DBInstaller(comp.PkgInstallComponent):
             #shell seems to be needed here
             #since python escapes this to much...
             utils.execute_template(*cmds, params=params, shell=True)
+
         #special mysql actions
         if dbactions and dbtype == MYSQL:
             cmd = dbactions.get('host_adjust')
             if cmd:
                 sh.execute(*cmd, run_as_root=True, shell=True)
+
         #restart it to make sure all good
         self.runtime.restart()
         return parent_result
