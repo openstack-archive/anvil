@@ -31,12 +31,21 @@ TYPE = settings.DB
 MYSQL = 'mysql'
 DB_ACTIONS = {
     MYSQL: {
-        # hopefully these are distro independent, these should be since
-        # they are invoking system init scripts
-        'start': ["service", "mysql", 'start'],
-        'stop': ["service", 'mysql', "stop"],
-        'status': ["service", 'mysql', "status"],
-        'restart': ["service", 'mysql', "status"],
+        # Of course these aren't distro independent...
+        'runtime': {
+            settings.UBUNTU11: {
+                'start': ["service", "mysql", 'start'],
+                'stop': ["service", 'mysql', "stop"],
+                'status': ["service", 'mysql', "status"],
+                'restart': ["service", 'mysql', "status"],
+            },
+            settings.RHEL6: {
+                'start': ["service", "mysqld", 'start'],
+                'stop': ["service", 'mysqld', "stop"],
+                'status': ["service", 'mysqld', "status"],
+                'restart': ["service", 'mysqld', "status"],
+            },
+        },
         #
         'setpwd': ['mysqladmin', '--user=%USER%', 'password', '%NEW_PASSWORD%',
                    '--password=%PASSWORD%'],
@@ -57,6 +66,7 @@ DB_ACTIONS = {
                         '/etc/mysql/my.cnf'],
     },
 }
+
 
 SQL_RESET_PW_LINKS = ['https://help.ubuntu.com/community/MysqlPasswordReset', 'http://crashmag.net/resetting-the-root-password-for-mysql-running-on-rhel-or-centos']
 
@@ -195,22 +205,25 @@ class DBRuntime(comp.EmptyRuntime):
         comp.EmptyRuntime.__init__(self, TYPE, *args, **kargs)
         self.tracereader = tr.TraceReader(self.tracedir, tr.IN_TRACE)
 
-    def _gettypeactions(self, act, exception_cls):
+    def _get_run_actions(self, act, exception_cls):
         pkgsinstalled = self.tracereader.packages_installed()
         if not pkgsinstalled:
             msg = "Can not %s %s since it was not installed" % (act, TYPE)
             raise exception_cls(msg)
-        #figure out how to do it
         dbtype = self.cfg.get("db", "type")
-        typeactions = DB_ACTIONS.get(dbtype)
-        if typeactions is None or not typeactions.get(act):
+        type_actions = DB_ACTIONS.get(dbtype)
+        if type_actions is None:
             msg = BASE_ERROR % (act, dbtype)
             raise NotImplementedError(msg)
-        return typeactions.get(act)
+        distro_options = typeactions.get('runtime').get(self.distro)
+        if distro_options is None:
+            msg = BASE_ERROR % (act, dbtype)
+            raise NotImplementedError(msg)
+        return distro_options.get(act)
 
     def start(self):
         if self.status() == comp.STATUS_STOPPED:
-            startcmd = self._gettypeactions('start', excp.StartException)
+            startcmd = self._get_run_actions('start', excp.StartException)
             sh.execute(*startcmd, run_as_root=True)
             return 1
         else:
@@ -218,19 +231,19 @@ class DBRuntime(comp.EmptyRuntime):
 
     def stop(self):
         if self.status() == comp.STATUS_STARTED:
-            stopcmd = self._gettypeactions('stop', excp.StopException)
+            stopcmd = self._get_run_actions('stop', excp.StopException)
             sh.execute(*stopcmd, run_as_root=True)
             return 1
         else:
             return 0
 
     def restart(self):
-        restartcmd = self._gettypeactions('restart', excp.RestartException)
+        restartcmd = self._get_run_actions('restart', excp.RestartException)
         sh.execute(*restartcmd, run_as_root=True)
         return 1
 
     def status(self):
-        statuscmd = self._gettypeactions('status', excp.StatusException)
+        statuscmd = self._get_run_actions('status', excp.StatusException)
         (sysout, _) = sh.execute(*statuscmd)
         if sysout.find("start/running") != -1:
             return comp.STATUS_STARTED
