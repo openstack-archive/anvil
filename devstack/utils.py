@@ -395,12 +395,12 @@ def _goodbye_header(worked):
     color = 'green'
     if not worked:
         color = 'red'
-    nmsg = ""
-    for char in message:
+    colored_msg = ""
+    for char in msg:
         if char.isalpha() or char.isdigit():
-            nmsg += colored(color, char)
+            colored_msg += colored(color, char)
         else:
-            nmsg += char
+            colored_msg += char
     return nmsg
 
 
