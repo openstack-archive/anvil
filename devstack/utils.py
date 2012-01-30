@@ -387,7 +387,7 @@ def _goodbye_header(worked):
 def goodbye(worked):
     #thx cowsay
     cow = r'''
-${header}
+{header}
         \   {ear}__{ear}
          \  ({eye}{eye})\_______
             (__)\       )\/\
