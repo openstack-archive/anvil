@@ -15,6 +15,7 @@
 #    under the License.
 
 import io
+import time
 
 from devstack import cfg
 from devstack import component as comp
@@ -203,6 +204,8 @@ class GlanceRuntime(comp.PythonRuntime):
         comp.PythonRuntime.post_start(self)
         if NO_IMG_START not in self.component_opts:
             #install any images that need activating...
+            # TODO: make this less cheesy - need to wait till glance goes online
+            time.sleep(1)
             creator.ImageCreationService(self.cfg).install()
 
 

@@ -206,7 +206,8 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
     pkg_manager = _get_pkg_manager(distro, program_args.pop('keep_packages', True))
     config = common.get_config()
     #form the active instances (this includes ones we won't use)
-    all_instances = dict()
+    all_instances = {}
+    stop_instances = {}
     for component in components.keys():
         action_cls = common.get_action_cls(action_name, component)
         instance = action_cls(instances=all_instances,
@@ -240,6 +241,16 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
                 else:
                     results.append(str(start_result))
         elif action_name == settings.UNINSTALL:
+            # always stop first. doesn't hurt if already stopped - but makes
+            # sure that there are no lingering processes if not
+            stop_cls = common.get_action_cls(settings.STOP, component)
+            stop_instance = stop_cls(instances=stop_instances,
+                                       distro=distro,
+                                       packager=pkg_manager,
+                                       config=config,
+                                       root=root_dir,
+                                       opts=components.get(component, list()))
+            _stop(component, stop_instance, program_args.get('force', False))
             _uninstall(component, instance, program_args.get('force', False))
     #display any configs touched...
     _print_cfgs(config, action_name)
