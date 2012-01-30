@@ -361,7 +361,16 @@ def _goodbye_header(worked):
 < I'm a lumberjack and I'm OK. >
  ------------------------------
 ''')
+    potential_oks.append(r'''
+ ___________
+<  Success! >
+ -----------''')
     potentials_fails = list()
+    potential_fails.append(r'''
+ _________
+< Failure >
+ ---------
+''')
     potentials_fails.append(r'''
  _____________________
 / We were in the nick \
@@ -379,9 +388,20 @@ def _goodbye_header(worked):
  -------------------
 ''')
     if worked:
-        return random.choice(potentials_oks).strip("\n\r")
+        msg = random.choice(potentials_oks).strip("\n\r")
     else:
-        return random.choice(potentials_fails).strip("\n\r")
+        msg = random.choice(potentials_fails).strip("\n\r")
+    #color it accordingly
+    color = 'green'
+    if not worked:
+        color = 'red'
+    nmsg = ""
+    for char in message:
+        if char.isalpha() or char.isdigit():
+            nmsg += colored(color, char)
+        else:
+            nmsg += char
+    return nmsg
 
 
 def goodbye(worked):
