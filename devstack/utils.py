@@ -361,15 +361,15 @@ def _goodbye_header(worked):
 < I'm a lumberjack and I'm OK. >
  ------------------------------
 ''')
-    potential_oks.append(r'''
- ___________
-<  Success! >
- -----------''')
+    potentials_oks.append(r'''
+ __________
+< Success! >
+ ----------''')
     potentials_fails = list()
-    potential_fails.append(r'''
- _________
-< Failure >
- ---------
+    potentials_fails.append(r'''
+ __________
+< Failure! >
+ ----------
 ''')
     potentials_fails.append(r'''
  _____________________
