@@ -17,11 +17,16 @@
 from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
+from devstack import shell as sh
+from devstack import utils
 
 LOG = logging.getLogger("devstack.components.quantum_client")
 
 #id
 TYPE = settings.QUANTUM_CLIENT
+
+#the pkg json files quantum client requires for installation
+REQ_PKGS = ['general.json', 'quantum-client.json']
 
 
 class QuantumClientUninstaller(comp.PythonUninstallComponent):
@@ -42,6 +47,13 @@ class QuantumClientInstaller(comp.PythonInstallComponent):
             'branch': self.git_branch,
         })
         return places
+
+    def _get_pkgs(self):
+        pkgs = comp.PythonInstallComponent._get_pkgs(self)
+        for fn in REQ_PKGS:
+            full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
+            pkgs = utils.extract_pkg_list([full_name], self.distro, pkgs)
+        return pkgs
 
 
 class QuantumClientRuntime(comp.EmptyRuntime):

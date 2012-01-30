@@ -26,22 +26,10 @@ from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 
-from devstack.components import db
-from devstack.components import glance
-from devstack.components import horizon
-from devstack.components import keystone
-from devstack.components import keystone_client
-from devstack.components import nova
-from devstack.components import nova_client
-from devstack.components import novnc
-from devstack.components import openstack_x
-from devstack.components import quantum
-from devstack.components import quantum_client
-from devstack.components import rabbit
-from devstack.components import swift
-
 from devstack.packaging import apt
 from devstack.packaging import yum
+
+from devstack.progs import common
 
 LOG = logging.getLogger("devstack.progs.actions")
 
@@ -64,70 +52,6 @@ _WELCOME_MAP = {
 # For actions in this list we will reverse the component order
 _REVERSE_ACTIONS = [settings.UNINSTALL, settings.STOP]
 
-# This determines what classes to use to install/uninstall/...
-_ACTION_CLASSES = {
-    settings.INSTALL: {
-        settings.NOVA: nova.NovaInstaller,
-        settings.GLANCE: glance.GlanceInstaller,
-        settings.QUANTUM: quantum.QuantumInstaller,
-        settings.SWIFT: swift.SwiftInstaller,
-        settings.HORIZON: horizon.HorizonInstaller,
-        settings.KEYSTONE: keystone.KeystoneInstaller,
-        settings.DB: db.DBInstaller,
-        settings.RABBIT: rabbit.RabbitInstaller,
-        settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientInstaller,
-        settings.NOVA_CLIENT: nova_client.NovaClientInstaller,
-        settings.OPENSTACK_X: openstack_x.OpenstackXInstaller,
-        settings.NOVNC: novnc.NoVNCInstaller,
-        settings.QUANTUM_CLIENT: quantum_client.QuantumClientInstaller,
-    },
-    settings.UNINSTALL: {
-        settings.NOVA: nova.NovaUninstaller,
-        settings.GLANCE: glance.GlanceUninstaller,
-        settings.QUANTUM: quantum.QuantumUninstaller,
-        settings.SWIFT: swift.SwiftUninstaller,
-        settings.HORIZON: horizon.HorizonUninstaller,
-        settings.KEYSTONE: keystone.KeystoneUninstaller,
-        settings.DB: db.DBUninstaller,
-        settings.RABBIT: rabbit.RabbitUninstaller,
-        settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientUninstaller,
-        settings.NOVA_CLIENT: nova_client.NovaClientUninstaller,
-        settings.OPENSTACK_X: openstack_x.OpenstackXUninstaller,
-        settings.NOVNC: novnc.NoVNCUninstaller,
-        settings.QUANTUM_CLIENT: quantum_client.QuantumClientUninstaller,
-    },
-    settings.START: {
-        settings.NOVA: nova.NovaRuntime,
-        settings.GLANCE: glance.GlanceRuntime,
-        settings.QUANTUM: quantum.QuantumRuntime,
-        settings.SWIFT: swift.SwiftRuntime,
-        settings.HORIZON: horizon.HorizonRuntime,
-        settings.KEYSTONE: keystone.KeystoneRuntime,
-        settings.DB: db.DBRuntime,
-        settings.RABBIT: rabbit.RabbitRuntime,
-        settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientRuntime,
-        settings.NOVA_CLIENT: nova_client.NovaClientRuntime,
-        settings.OPENSTACK_X: openstack_x.OpenstackXRuntime,
-        settings.NOVNC: novnc.NoVNCRuntime,
-        settings.QUANTUM_CLIENT: quantum_client.QuantumClientRuntime,
-    },
-    settings.STOP: {
-        settings.NOVA: nova.NovaRuntime,
-        settings.GLANCE: glance.GlanceRuntime,
-        settings.QUANTUM: quantum.QuantumRuntime,
-        settings.SWIFT: swift.SwiftRuntime,
-        settings.HORIZON: horizon.HorizonRuntime,
-        settings.KEYSTONE: keystone.KeystoneRuntime,
-        settings.DB: db.DBRuntime,
-        settings.RABBIT: rabbit.RabbitRuntime,
-        settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientRuntime,
-        settings.NOVA_CLIENT: nova_client.NovaClientRuntime,
-        settings.OPENSTACK_X: openstack_x.OpenstackXRuntime,
-        settings.NOVNC: novnc.NoVNCRuntime,
-        settings.QUANTUM_CLIENT: quantum_client.QuantumClientRuntime,
-    },
-}
-
 
 def _clean_action(action):
     if action is None:
@@ -143,14 +67,8 @@ def _get_pkg_manager(distro, keep_packages):
     return cls(distro, keep_packages)
 
 
-def _get_action_cls(action_name, component_name):
-    action_cls_map = _ACTION_CLASSES.get(action_name)
-    if not action_cls_map:
-        return None
-    return action_cls_map.get(component_name)
-
-
 def _check_roots(action, rootdir, components):
+    #TODO the check is really pretty basic so should not be depended on...
     to_skip = list()
     if action == settings.INSTALL:
         if sh.isdir(rootdir):
@@ -276,14 +194,6 @@ def _uninstall(component_name, instance, skip_notrace):
             raise
 
 
-def _get_config():
-    cfg_fn = sh.canon_path(settings.STACK_CONFIG_LOCATION)
-    LOG.info("Loading config from [%s]" % (cfg_fn))
-    config_instance = cfg.EnvConfigParser()
-    config_instance.read(cfg_fn)
-    return config_instance
-
-
 def _run_components(action_name, component_order, components, distro, root_dir, program_args):
     LOG.info("Will %s [%s] (in that order) using root directory \"%s\"" % (action_name, ", ".join(component_order), root_dir))
     non_components = set(components.keys()).difference(set(component_order))
@@ -294,7 +204,7 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
     #form the active instances (this includes ones we won't use)
     all_instances = dict()
     for component in components.keys():
-        action_cls = _get_action_cls(action_name, component)
+        action_cls = common.get_action_cls(action_name, component)
         instance = action_cls(instances=all_instances,
                             distro=distro,
                             packager=pkg_manager,
@@ -327,9 +237,6 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
                     results.append(str(start_result))
         elif action_name == settings.UNINSTALL:
             _uninstall(component, instance, program_args.get('force', False))
-        else:
-            #TODO throw?
-            pass
     #display any configs touched...
     _print_cfgs(config, action_name)
     #any post run actions go now
@@ -337,38 +244,12 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
     return results
 
 
-def _get_def_components():
-    #this seems to be the default list of what to install by default
-    #ENABLED_SERVICES=${ENABLED_SERVICES:-g-api,g-reg,key,n-api,
-    #n-crt,n-obj,n-cpu,n-net,n-sch,n-novnc,n-xvnc,n-cauth,horizon,mysql,rabbit}
-    def_components = dict()
-    #TODO glance subcomponents should be api/reg
-    def_components[settings.GLANCE] = []
-    def_components[settings.KEYSTONE] = []
-    #TODO add in xvnc? nvnc?
-    def_components[settings.NOVA] = [
-                                     nova.NCPU,
-                                     nova.NVOL,
-                                     nova.NAPI,
-                                     nova.NOBJ,
-                                     nova.NNET,
-                                     nova.NCERT,
-                                     nova.NSCHED,
-                                     nova.NCAUTH,
-                                    ]
-    def_components[settings.NOVNC] = []
-    def_components[settings.HORIZON] = []
-    def_components[settings.DB] = []
-    def_components[settings.RABBIT] = []
-    return def_components
-
-
 def _run_action(args):
     defaulted_components = False
-    components = settings.parse_components(args.pop("components"))
+    components = utils.parse_components(args.pop("components"))
     if not components:
         defaulted_components = True
-        components = _get_def_components()
+        components = common.get_default_components()
     action = _clean_action(args.pop("action"))
     if not action:
         cprint("No valid action specified!", "red")
@@ -386,33 +267,34 @@ def _run_action(args):
     (rep, maxlen) = utils.welcome(_WELCOME_MAP.get(action))
     header = utils.center_text("Action Runner", rep, maxlen)
     print(header)
-    #need to figure out dependencies for components (if any)
-    ignore_deps = args.pop('ignore_deps', False)
     if not defaulted_components:
         LOG.info("Activating components [%s]" % (", ".join(sorted(components.keys()))))
     else:
         LOG.info("Activating default components [%s]" % (", ".join(sorted(components.keys()))))
+    #need to figure out dependencies for components (if any)
+    ignore_deps = args.pop('ignore_deps', False)
+    component_order = None
     if not ignore_deps:
-        new_components = settings.resolve_dependencies(components.keys())
-        component_diff = new_components.difference(components.keys())
+        all_components_deps = common.get_components_deps(action, components)
+        component_diff = set(all_components_deps.keys()).difference(components.keys())
         if component_diff:
             LOG.info("Having to activate dependent components: [%s]" % (", ".join(sorted(component_diff))))
             for new_component in component_diff:
                 components[new_component] = list()
-    component_skips = _check_roots(action, rootdir, components.keys())
+        component_order = utils.get_components_order(all_components_deps)
+    else:
+        component_order = components.keys()
+    #see if we have previously already done the components
+    component_skips = _check_roots(action, rootdir, component_order)
     for c in component_skips:
         components.pop(c)
-    if not components:
-        LOG.error("After checking the various components roots, no components ended up being specified!")
-        return False
-    #get the right component order (by priority)
-    component_order = settings.prioritize_components(components.keys())
+        component_order.remove(c)
+    #reverse them so that we stop in the reverse order
+    #and that we uninstall in the reverse order which seems to make sense
     if action in _REVERSE_ACTIONS:
-        #reverse them so that we stop in the reverse order
-        #and that we uninstall in the reverse order which seems to make sense
         component_order.reverse()
     #add in any that will just be referenced but which will not actually do anything (ie the action will not be applied to these)
-    ref_components = settings.parse_components(args.pop("ref_components"))
+    ref_components = utils.parse_components(args.pop("ref_components"))
     for c in ref_components.keys():
         if c not in components:
             components[c] = ref_components.get(c)

@@ -21,8 +21,11 @@ from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
+from devstack import utils
+
 from devstack.components import db
 from devstack.components import keystone
+
 from devstack.image import creator
 
 LOG = logging.getLogger("devstack.components.glance")
@@ -38,6 +41,10 @@ REG_PASTE_CONF = 'glance-registry-paste.ini'
 CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF, REG_PASTE_CONF]
 CFG_SECTION = 'DEFAULT'
 
+#reg, api are here as possible subcomponents
+GAPI = "api"
+GREG = "reg"
+
 #this db will be dropped and created
 DB_NAME = "glance"
 
@@ -50,39 +57,24 @@ APP_OPTIONS = {
     'glance-registry': ['--config-file', sh.joinpths('%ROOT%', "etc", REG_CONF)]
 }
 
+#how the subcompoent small name translates to an actual app
+SUB_TO_APP = {
+    GAPI: 'glance-api',
+    GREG: 'glance-registry'
+}
+
 #subdirs of the downloaded
 CONFIG_DIR = 'etc'
 BIN_DIR = 'bin'
+
+#the pkg json files glance requires for installation
+REQ_PKGS = ['general.json', 'glance.json']
 
 
 class GlanceUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
-
-
-class GlanceRuntime(comp.PythonRuntime):
-    def __init__(self, *args, **kargs):
-        comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
-        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
-
-    def _get_apps_to_start(self):
-        apps = list()
-        for app_name in APP_OPTIONS.keys():
-            apps.append({
-                'name': app_name,
-                'path': sh.joinpths(self.appdir, BIN_DIR, app_name),
-            })
-        return apps
-
-    def _get_app_options(self, app):
-        return APP_OPTIONS.get(app)
-
-    def post_start(self):
-        comp.PythonRuntime.post_start(self)
-        if NO_IMG_START not in self.component_opts:
-            #install any images that need activating...
-            creator.ImageCreationService(self.cfg).install()
 
 
 class GlanceInstaller(comp.PythonInstallComponent):
@@ -103,6 +95,13 @@ class GlanceInstaller(comp.PythonInstallComponent):
     def _get_config_files(self):
         #these are the config files we will be adjusting
         return list(CONFIGS)
+
+    def _get_pkgs(self):
+        pkgs = comp.PythonInstallComponent._get_pkgs(self)
+        for fn in REQ_PKGS:
+            full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
+            pkgs = utils.extract_pkg_list([full_name], self.distro, pkgs)
+        return pkgs
 
     def post_install(self):
         parent_result = comp.PythonInstallComponent.post_install(self)
@@ -174,6 +173,39 @@ class GlanceInstaller(comp.PythonInstallComponent):
         return mp
 
 
+class GlanceRuntime(comp.PythonRuntime):
+    def __init__(self, *args, **kargs):
+        comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
+        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
+
+    def _get_apps_to_start(self):
+        apps = list()
+        if not self.component_opts:
+            for app_name in APP_OPTIONS.keys():
+                apps.append({
+                    'name': app_name,
+                    'path': sh.joinpths(self.appdir, BIN_DIR, app_name),
+                })
+        else:
+            for short_name in self.component_opts:
+                full_name = SUB_TO_APP.get(short_name)
+                if full_name and full_name in APP_OPTIONS:
+                    apps.append({
+                        'name': full_name,
+                        'path': sh.joinpths(self.appdir, BIN_DIR, full_name),
+                    })
+        return apps
+
+    def _get_app_options(self, app):
+        return APP_OPTIONS.get(app)
+
+    def post_start(self):
+        comp.PythonRuntime.post_start(self)
+        if NO_IMG_START not in self.component_opts:
+            #install any images that need activating...
+            creator.ImageCreationService(self.cfg).install()
+
+
 def describe(opts=None):
     description = """
  Module: {module_name}
@@ -184,9 +216,12 @@ def describe(opts=None):
 """
     copts = """
  {no_img_upload} - disables upload of test images to glance.
+    {glance_api} - only enable the glance api subcomponent.
+    {glance_reg} - only enable the glance registry subcomponent.
 """
     params = dict()
-    params['component_opts'] = copts.strip("\n").format(no_img_upload=NO_IMG_START)
+    params['component_opts'] = copts.strip("\n").format(no_img_upload=NO_IMG_START,
+                                                        glance_api=GAPI, glance_reg=GREG)
     params['module_name'] = __name__
     params['description'] = __doc__ or "Handles actions for the glance component."
     out = description.format(**params)

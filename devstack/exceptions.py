@@ -27,6 +27,10 @@ class BadRegexException(StackException):
     pass
 
 
+class DependencyException(StackException):
+    pass
+
+
 class BadParamException(StackException):
     pass
 

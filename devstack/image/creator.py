@@ -199,10 +199,10 @@ class ImageCreationService:
     def install(self):
         urls = list()
         token = None
+        LOG.info("Setting up any specified images in glance.")
 
-        #extract them
+        #extract them from the config
         try:
-            token = self.cfg.get("passwords", "service_token")
             flat_urls = self.cfg.get('img', 'image_urls')
             if flat_urls:
                 expanded_urls = [x.strip() for x in flat_urls.split(',')]
@@ -216,6 +216,7 @@ class ImageCreationService:
         am_installed = 0
         if urls:
             LOG.info("Attempting to download & extract and upload (%s) images." % (", ".join(urls)))
+            token = self.cfg.get("passwords", "service_token")
             for url in urls:
                 try:
                     Image(url, token).install()

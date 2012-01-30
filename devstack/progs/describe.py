@@ -37,7 +37,7 @@ from devstack.components import quantum_client
 from devstack.components import rabbit
 from devstack.components import swift
 
-PROG_NAME = "MISC"
+PROG_NAME = "Describer"
 
 #this determines how descriptions for components are found
 _DESCR_MAP = {
@@ -57,46 +57,24 @@ _DESCR_MAP = {
 }
 
 
-def log_deps(components):
-    shown = set()
-    left_show = list(components)
-    while left_show:
-        c = left_show.pop()
-        deps = settings.get_dependencies(c)
-        dep_str = "depends on:"
-        print(colored(c, "green", attrs=['bold']) + " depends on " + dep_str)
-        for d in deps:
-            print("  " + colored(d, "blue", attrs=['bold']))
-        shown.add(c)
-        for d in deps:
-            if d not in shown and d not in left_show:
-                left_show.append(d)
-
-
-def _run_list_deps(args):
-    components = settings.parse_components(args.get("components"), True).keys()
-    components = sorted(components)
-    components.reverse()
-    return log_deps(components)
-
-
-def _run_describe_comps(args):
-    components = settings.parse_components(args.get("components"), True)
+def _run_describe_comps(args, rep, maxlen):
+    components = utils.parse_components(args.get("components"))
+    if not components:
+        components = dict()
+        for c in settings.COMPONENT_NAMES:
+            components[c] = list()
+        header = utils.center_text("Descriptions (defaulted)", rep, maxlen)
+    else:
+        header = utils.center_text("Descriptions", rep, maxlen)
+    print(header)
     c_keys = sorted(components.keys())
     for c in c_keys:
-        print("Name: " + colored(c, "green", attrs=['bold']) + "")
+        print("Name: " + colored(c, "blue", attrs=['bold']))
         describer = _DESCR_MAP.get(c)
         print(describer(components.get(c)))
 
 
 def run(args):
     (rep, maxlen) = utils.welcome(PROG_NAME)
-    if args.get('list_deps'):
-        header = utils.center_text("Dependencies", rep, maxlen)
-        print(header)
-        _run_list_deps(args)
-    if args.get('describe_comp'):
-        header = utils.center_text("Descriptions", rep, maxlen)
-        print(header)
-        _run_describe_comps(args)
+    _run_describe_comps(args, rep, maxlen)
     return True

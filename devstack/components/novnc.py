@@ -18,6 +18,8 @@ from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
+from devstack import utils
+
 from devstack.components import nova
 
 LOG = logging.getLogger("devstack.components.novnc")
@@ -32,8 +34,11 @@ VNC_PROXY_APP = 'nova-novncproxy'
 APP_OPTIONS = {
     #this reaches into the nova configuration file
     #TODO can we stop that?
-    VNC_PROXY_APP: ['--flagfile-file=%NOVA_CONF%', '--web'],
+    VNC_PROXY_APP: ['--flagfile-file', '%NOVA_CONF%', '--web'],
 }
+
+#the pkg json files novnc requires for installation
+REQ_PKGS = ['n-vnc.json']
 
 
 class NoVNCUninstaller(comp.PkgUninstallComponent):
@@ -55,6 +60,13 @@ class NoVNCInstaller(comp.PkgInstallComponent):
         })
         return places
 
+    def _get_pkgs(self):
+        pkgs = comp.PkgInstallComponent._get_pkgs(self)
+        for fn in REQ_PKGS:
+            full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
+            pkgs = utils.extract_pkg_list([full_name], self.distro, pkgs)
+        return pkgs
+
 
 class NoVNCRuntime(comp.ProgramRuntime):
     def __init__(self, *args, **kargs):
@@ -73,6 +85,7 @@ class NoVNCRuntime(comp.ProgramRuntime):
         root_params = comp.ProgramRuntime._get_param_map(self, app_name)
         if app_name == VNC_PROXY_APP and settings.NOVA in self.instances:
             nova_runtime = self.instances.get(settings.NOVA)
+            #have to reach into the nova conf (puke)
             root_params['NOVA_CONF'] = sh.joinpths(nova_runtime.cfgdir, nova.API_CONF)
         return root_params
 

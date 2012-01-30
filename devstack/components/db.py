@@ -15,13 +15,12 @@
 #    under the License.
 
 from devstack import component as comp
-from devstack import settings
 from devstack import exceptions as excp
 from devstack import log as logging
+from devstack import settings
 from devstack import shell as sh
 from devstack import trace as tr
 from devstack import utils
-
 
 LOG = logging.getLogger("devstack.components.db")
 
@@ -58,6 +57,9 @@ BASE_ERROR = 'Currently we do not know how to %s for database type [%s]'
 #used to make params for booting when started (not always take advantage of...)
 BOOLEAN_OUTPUT = {True: 'true', False: 'false'}
 
+#the pkg json files db requires for installation
+REQ_PKGS = ['db.json']
+
 
 class DBUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -80,6 +82,13 @@ class DBInstaller(comp.PkgInstallComponent):
         out['SERVICE_HOST'] = host_ip
         out['HOST_IP'] = host_ip
         return out
+
+    def _get_pkgs(self):
+        pkgs = comp.PkgInstallComponent._get_pkgs(self)
+        for fn in REQ_PKGS:
+            full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
+            pkgs = utils.extract_pkg_list([full_name], self.distro, pkgs)
+        return pkgs
 
     def post_install(self):
         parent_result = comp.PkgInstallComponent.post_install(self)

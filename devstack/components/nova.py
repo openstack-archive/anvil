@@ -23,6 +23,7 @@ from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
 from devstack import utils
+
 from devstack.components import db
 from devstack.components import keystone
 
@@ -41,10 +42,14 @@ DB_NAME = 'nova'
 #id
 TYPE = settings.NOVA
 
-#post install cmds that will happen after install
-POST_INSTALL_CMDS = [
+DB_SYNC_CMD = [
     {'cmd': ['%BINDIR%/nova-manage', '--flagfile', '%CFGFILE%',
              'db', 'sync']},
+]
+
+NETWORK_SETUP_CMDS = [
+    {'cmd': ['%BINDIR%/nova-manage', '--flagfile', '%CFGFILE%',
+              'network', 'create', 'private', '%FIXED_RANGE%', '1', '%FIXED_NETWORK_SIZE%']},
     {'cmd': ['%BINDIR%/nova-manage', '--flagfile', '%CFGFILE%',
               'floating', 'create', '%FLOATING_RANGE%']},
     {'cmd': ['%BINDIR%/nova-manage', '--flagfile', '%CFGFILE%',
@@ -82,7 +87,7 @@ RESTART_TGT_CMD = [
     {'cmd': ['start', 'tgt'], 'run_as_root': True}
 ]
 
-# NCPU, NVOL, NAPI are here as possible subcomponents of nova
+# NCPU, NVOL, NAPI ... are here as possible subcomponents of nova
 NCPU = "cpu"
 NVOL = "vol"
 NAPI = "api"
@@ -94,19 +99,23 @@ NCAUTH = "cauth"
 SUBCOMPONENTS = [NCPU, NVOL, NAPI,
     NOBJ, NNET, NCERT, NSCHED, NCAUTH]
 
+
+#the pkg json files nova requires for installation
+REQ_PKGS = ['general.json', 'nova.json']
+
 # Additional packages for subcomponents
 ADD_PKGS = {
     NAPI:
         [
-            sh.joinpths(settings.STACK_PKG_DIR, 'n-api.json'),
+            'n-api.json',
         ],
     NCPU:
         [
-            sh.joinpths(settings.STACK_PKG_DIR, 'n-cpu.json'),
+            'n-cpu.json',
         ],
     NVOL:
         [
-            sh.joinpths(settings.STACK_PKG_DIR, 'n-vol.json'),
+            'n-vol.json',
         ],
 }
 
@@ -131,7 +140,6 @@ APP_OPTIONS = {
     'nova-consoleauth': [],
     #TODO FIX these
     #'nova-xvpvncproxy' : ['--flagfile', '%CFGFILE%'],
-    #TODO add in novnc
 }
 
 # Sub component names to actual app names (matching previous dict)
@@ -178,22 +186,26 @@ class NovaInstaller(comp.PythonInstallComponent):
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
         self.paste_conf_fn = self._get_target_config_name(PASTE_CONF)
 
-    def _get_pkglist(self):
-        pkgs = comp.PkgInstallComponent._get_pkglist(self)
+    def _get_pkgs(self):
+        pkgs = comp.PythonInstallComponent._get_pkgs(self)
+        # Get the core pkgs
+        for fn in REQ_PKGS:
+            full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
+            pkgs = utils.extract_pkg_list([full_name], self.distro, pkgs)
         # Walk through the subcomponents (like 'vol' and 'cpu') and add those
-        # those packages as well. Let utils.get_pkglist handle any missing
-        # entries
+        # those packages as well.
+        sub_components = []
         if self.component_opts:
             sub_components = self.component_opts
         else:
-            # No subcomponents where explicitly specified, so get all
             sub_components = SUBCOMPONENTS
-        LOG.debug("Explicit extras: %s" % (sub_components))
         # Add the extra dependencies
-        for cname in sub_components:
-            subpkgsfns = ADD_PKGS.get(cname)
-            if subpkgsfns:
-                pkgs = utils.extract_pkg_list(subpkgsfns, self.distro, pkgs)
+        for c in sub_components:
+            fns = ADD_PKGS.get(c)
+            if fns:
+                for fn in fns:
+                    full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
+                    pkgs = utils.extract_pkg_list([full_name], self.distro, pkgs)
         return pkgs
 
     def _get_download_locations(self):
@@ -207,20 +219,32 @@ class NovaInstaller(comp.PythonInstallComponent):
     def _get_config_files(self):
         return list(CONFIGS)
 
-    def post_install(self):
-        parent_result = comp.PkgInstallComponent.post_install(self)
-        #extra actions to do nova setup
-        self._setup_db()
-        # Need to do db sync and other post install commands
-        # set up replacement map for CFGFILE, BINDIR, FLOATING_RANGE,
-        # TEST_FLOATING_RANGE, TEST_FLOATING_POOL
+    def _setup_network(self):
+        LOG.info("Creating your nova network to be used with instances.")
         mp = dict()
         mp['BINDIR'] = self.bindir
         mp['CFGFILE'] = sh.joinpths(self.cfgdir, API_CONF)
         mp['FLOATING_RANGE'] = self.cfg.get('nova', 'floating_range')
         mp['TEST_FLOATING_RANGE'] = self.cfg.get('nova', 'test_floating_range')
         mp['TEST_FLOATING_POOL'] = self.cfg.get('nova', 'test_floating_pool')
-        utils.execute_template(*POST_INSTALL_CMDS, params=mp, tracewriter=self.tracewriter)
+        mp['FIXED_NETWORK_SIZE'] = self.cfg.get('nova', 'fixed_network_size')
+        mp['FIXED_RANGE'] = self.cfg.get('nova', 'fixed_range')
+        #TODO this needs to be fixed for quantum!
+        utils.execute_template(*NETWORK_SETUP_CMDS, params=mp, tracewriter=self.tracewriter)
+
+    def _sync_db(self):
+        LOG.info("Syncing the database with nova.")
+        mp = dict()
+        mp['BINDIR'] = self.bindir
+        mp['CFGFILE'] = sh.joinpths(self.cfgdir, API_CONF)
+        utils.execute_template(*DB_SYNC_CMD, params=mp, tracewriter=self.tracewriter)
+
+    def post_install(self):
+        parent_result = comp.PkgInstallComponent.post_install(self)
+        #extra actions to do nova setup
+        self._setup_db()
+        self._sync_db()
+        self._setup_network()
         # check if we need to do the vol subcomponent
         if not self.component_opts or NVOL in self.component_opts:
             # yes, either no subcomponents were specifically requested or it's
@@ -234,7 +258,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         db.create_db(self.cfg, DB_NAME)
 
     def _setup_vol_groups(self):
-        LOG.debug("Attempt to setup vol groups")
+        LOG.info("Attempting to setup volume groups for nova volume management")
         mp = dict()
         backing_file = self.cfg.get('nova', 'volume_backing_file')
         # check if we need to have a default backing file
@@ -247,12 +271,12 @@ class NovaInstaller(comp.PythonInstallComponent):
         mp['VOLUME_BACKING_FILE_SIZE'] = backing_file_size
         try:
             utils.execute_template(*VG_CHECK_CMD, params=mp)
-            LOG.info("Vol group already exists:%s" % (vol_group))
+            LOG.warn("Volume group already exists: %s" % (vol_group))
         except exceptions.ProcessExecutionError as err:
             # Check that the error from VG_CHECK is an expected error
             if err.exit_code != 5:
                 raise
-            LOG.info("Need to create vol group:%s" % (vol_group))
+            LOG.info("Need to create volume group: %s" % (vol_group))
             sh.touch_file(backing_file, die_if_there=False, file_size=backing_file_size)
             vg_dev_result = utils.execute_template(*VG_DEV_CMD, params=mp)
             LOG.debug("vg dev result:%s" % (vg_dev_result))
@@ -267,10 +291,11 @@ class NovaInstaller(comp.PythonInstallComponent):
         utils.execute_template(*RESTART_TGT_CMD, check_exit_code=False, tracewriter=self.tracewriter)
 
     def _process_lvs(self, mp):
+        LOG.info("Attempting to setup logical volumes for nova volume management")
         lvs_result = utils.execute_template(*VG_LVS_CMD, params=mp, tracewriter=self.tracewriter)
-        LOG.debug("lvs result:%s" % (lvs_result))
+        LOG.debug("lvs result: %s" % (lvs_result))
         vol_name_prefix = self.cfg.get('nova', 'volume_name_prefix')
-        LOG.debug("Using volume name prefix:%s" % (vol_name_prefix))
+        LOG.debug("Using volume name prefix: %s" % (vol_name_prefix))
         for stdout_line in lvs_result[0][0].split('\n'):
             if stdout_line:
                 # Ignore blank lines
@@ -288,7 +313,7 @@ class NovaInstaller(comp.PythonInstallComponent):
                 utils.execute_template(*VG_LVREMOVE_CMD, params=mp, tracewriter=self.tracewriter)
 
     def _generate_nova_conf(self):
-        LOG.debug("Generating dynamic content for nova configuration")
+        LOG.info("Generating dynamic content for nova configuration (%s)." % (API_CONF))
         dirs = dict()
         dirs['app'] = self.appdir
         dirs['cfg'] = self.cfgdir
@@ -557,7 +582,9 @@ class NovaConfigurator(object):
         else:
             nova_conf.add('connection_type', self._getstr('connection_type'))
             nova_conf.add('flat_network_bridge', self._getstr('flat_network_bridge'))
-            nova_conf.add('flat_interface', self._getstr('flat_interface'))
+            flat_interface = self._getstr('flat_interface')
+            if flat_interface:
+                nova_conf.add('flat_interface', flat_interface)
 
 
 # This class represents the data in the nova config file

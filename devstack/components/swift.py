@@ -26,9 +26,9 @@ LOG = logging.getLogger("devstack.components.swift")
 TYPE = settings.SWIFT
 
 
-class SwiftUninstaller(object):
+class SwiftUninstaller(comp.ComponentBase):
     def __init__(self, *args, **kargs):
-        pass
+        comp.ComponentBase.__init__(self, TYPE, *args, **kargs)
 
     def unconfigure(self):
         raise NotImplementedError()
@@ -37,9 +37,9 @@ class SwiftUninstaller(object):
         raise NotImplementedError()
 
 
-class SwiftInstaller(object):
+class SwiftInstaller(comp.ComponentBase):
     def __init__(self, *args, **kargs):
-        pass
+        comp.ComponentBase.__init__(self, TYPE, *args, **kargs)
 
     def download(self):
         raise NotImplementedError()

@@ -21,41 +21,52 @@ import os.path
 import logging
 import logging.config
 import sys
+import traceback
 
 #requires http://pypi.python.org/pypi/termcolor
 #but the colors make it worth it :-)
 from termcolor import colored
 
 #this needs to happen immediately (or thats what it seems)
-logfn = os.getenv('LOG_FILE')
-if(logfn == None):
-    logfn = os.path.join("conf", 'logging.ini')
-logging.config.fileConfig(logfn)
+log_fn = os.getenv('LOG_FILE')
+if(log_fn == None):
+    log_fn = os.path.join("conf", 'logging.ini')
+logging.config.fileConfig(log_fn)
 
 #this handles our option parsing
 from devstack import opts
+from devstack import utils
 
 #these are the program runtimes that actually do the running
 from devstack.progs import actions
-from devstack.progs import misc
+from devstack.progs import describe
+from devstack.progs import deps
 
 
 def main():
     #parse and get it done!
     args = opts.parse()
-    run_ok = False
     #figure out what to do
-    if args.get('list_deps') or args.get('describe_comp'):
-        run_ok = misc.run(args)
+    module = None
+    if args.get('describe_comp'):
+        module = describe
+    elif args.get('list_deps'):
+        module = deps
     else:
-        run_ok = actions.run(args)
-    #now do it
-    if run_ok:
-        return 0
-    else:
-        me = colored((os.path.basename(sys.argv[0])), "red", attrs=['bold'])
-        me += " " + colored('--help', 'red')
-        print("Perhaps you should try %s" % (me))
+        module = actions
+    try:
+        ran_ok = module.run(args)
+        if not ran_ok:
+            me = colored((os.path.basename(sys.argv[0])), "red", attrs=['bold'])
+            me += " " + colored('--help', 'red')
+            print("Perhaps you should try %s" % (me))
+            return 1
+        else:
+            utils.goodbye(True)
+            return 0
+    except Exception:
+        utils.goodbye(False)
+        traceback.print_exc(file=sys.stdout)
         return 1
 
 

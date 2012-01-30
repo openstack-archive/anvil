@@ -22,6 +22,7 @@ from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
 from devstack import utils
+
 from devstack.components import db
 
 LOG = logging.getLogger("devstack.components.keystone")
@@ -55,6 +56,12 @@ APP_OPTIONS = {
                 '--log-config=' + sh.joinpths('%ROOT%', CONFIG_DIR, 'logging.cnf')]
 }
 
+#the pkg json files keystone requires for installation
+REQ_PKGS = ['general.json', 'keystone.json']
+
+#pip files that horizon requires
+REQ_PIPS = ['keystone.json']
+
 
 class KeystoneUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -78,6 +85,20 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             'branch': self.git_branch,
         })
         return places
+
+    def _get_pips(self):
+        pips = comp.PythonInstallComponent._get_pips(self)
+        for fn in REQ_PIPS:
+            full_name = sh.joinpths(settings.STACK_PIP_DIR, fn)
+            pips = utils.extract_pip_list([full_name], self.distro, pips)
+        return pips
+
+    def _get_pkgs(self):
+        pkgs = comp.PythonInstallComponent._get_pkgs(self)
+        for fn in REQ_PKGS:
+            full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
+            pkgs = utils.extract_pkg_list([full_name], self.distro, pkgs)
+        return pkgs
 
     def post_install(self):
         parent_result = comp.PythonInstallComponent.post_install(self)
@@ -184,22 +205,22 @@ class KeystoneRuntime(comp.PythonRuntime):
         return APP_OPTIONS.get(app)
 
 
-def get_shared_params(cfg):
+def get_shared_params(config):
     mp = dict()
-    host_ip = cfg.get('host', 'ip')
-    keystone_auth_host = cfg.get('keystone', 'keystone_auth_host')
+    host_ip = config.get('host', 'ip')
+    keystone_auth_host = config.get('keystone', 'keystone_auth_host')
     if not keystone_auth_host:
         keystone_auth_host = host_ip
     mp['KEYSTONE_AUTH_HOST'] = keystone_auth_host
-    mp['KEYSTONE_AUTH_PORT'] = cfg.get('keystone', 'keystone_auth_port')
-    mp['KEYSTONE_AUTH_PROTOCOL'] = cfg.get('keystone', 'keystone_auth_protocol')
-    keystone_service_host = cfg.get('keystone', 'keystone_service_host')
+    mp['KEYSTONE_AUTH_PORT'] = config.get('keystone', 'keystone_auth_port')
+    mp['KEYSTONE_AUTH_PROTOCOL'] = config.get('keystone', 'keystone_auth_protocol')
+    keystone_service_host = config.get('keystone', 'keystone_service_host')
     if not keystone_service_host:
         keystone_service_host = host_ip
     mp['KEYSTONE_SERVICE_HOST'] = keystone_service_host
-    mp['KEYSTONE_SERVICE_PORT'] = cfg.get('keystone', 'keystone_service_port')
-    mp['KEYSTONE_SERVICE_PROTOCOL'] = cfg.get('keystone', 'keystone_service_protocol')
-    mp['SERVICE_TOKEN'] = cfg.get("passwords", "service_token")
+    mp['KEYSTONE_SERVICE_PORT'] = config.get('keystone', 'keystone_service_port')
+    mp['KEYSTONE_SERVICE_PROTOCOL'] = config.get('keystone', 'keystone_service_protocol')
+    mp['SERVICE_TOKEN'] = config.get("passwords", "service_token")
     return mp
 
 
