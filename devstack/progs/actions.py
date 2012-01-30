@@ -62,9 +62,9 @@ def _clean_action(action):
     return action
 
 
-def _get_pkg_manager(distro):
+def _get_pkg_manager(distro, keep_packages):
     cls = _PKGR_MAP.get(distro)
-    return cls(distro)
+    return cls(distro, keep_packages)
 
 
 def _check_roots(action, rootdir, components):
@@ -185,8 +185,12 @@ def _uninstall(component_name, instance, skip_notrace):
     try:
         LOG.info("Unconfiguring %s." % (component_name))
         instance.unconfigure()
+        LOG.info("Pre-uninstall %s." % (component_name))
+        instance.pre_uninstall()
         LOG.info("Uninstalling %s." % (component_name))
         instance.uninstall()
+        LOG.info("Post-uninstall %s." % (component_name))
+        instance.post_uninstall()
     except excp.NoTraceException, e:
         if skip_notrace:
             LOG.info("Passing on uninstalling %s since no trace file was found." % (component_name))
@@ -199,7 +203,7 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
     non_components = set(components.keys()).difference(set(component_order))
     if non_components:
         LOG.info("Using reference components [%s]" % (", ".join(sorted(non_components))))
-    pkg_manager = _get_pkg_manager(distro)
+    pkg_manager = _get_pkg_manager(distro, program_args.pop('keep_packages', True))
     config = common.get_config()
     #form the active instances (this includes ones we won't use)
     all_instances = dict()

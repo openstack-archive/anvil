@@ -31,22 +31,30 @@ TYPE = settings.DB
 MYSQL = 'mysql'
 DB_ACTIONS = {
     MYSQL: {
-        #hopefully these are distro independent, these should be since they are invoking system init scripts
+        # hopefully these are distro independent, these should be since
+        # they are invoking system init scripts
         'start': ["service", "mysql", 'start'],
         'stop': ["service", 'mysql', "stop"],
         'status': ["service", 'mysql', "status"],
         'restart': ["service", 'mysql', "status"],
         #
-        'create_db': ['mysql', '--user=%USER%', '--password=%PASSWORD%', '-e', 'CREATE DATABASE %DB%;'],
-        'drop_db': ['mysql', '--user=%USER%', '--password=%PASSWORD%', '-e', 'DROP DATABASE IF EXISTS %DB%;'],
+        'setpwd': ['mysqladmin', '--user=%USER%', 'password', '%NEW_PASSWORD%',
+                   '--password=%PASSWORD%'],
+        'create_db': ['mysql', '--user=%USER%', '--password=%PASSWORD%',
+                      '-e', 'CREATE DATABASE %DB%;'],
+        'drop_db': ['mysql', '--user=%USER%', '--password=%PASSWORD%',
+                    '-e', 'DROP DATABASE IF EXISTS %DB%;'],
         'grant_all': [
             "mysql",
             "--user=%USER%",
             "--password=%PASSWORD%",
-            "-e \"GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' identified by '%PASSWORD%';\"",
+            ("-e \"GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' "
+             "identified by '%PASSWORD%';\""),
         ],
-        #we could do this in python directly, but executing allows us to not have to sudo the whole program
-        'host_adjust': ['perl', '-p', '-i', '-e'] + ["'s/127.0.0.1/0.0.0.0/g'", '/etc/mysql/my.cnf'],
+        # we could do this in python directly, but executing allows us to
+        # not have to sudo the whole program
+        'host_adjust': ['perl', '-p', '-i', '-e', "'s/127.0.0.1/0.0.0.0/g'",
+                        '/etc/mysql/my.cnf'],
     },
 }
 
@@ -63,6 +71,40 @@ REQ_PKGS = ['db.json']
 class DBUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PkgUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        self.runtime = DBRuntime(*args, **kargs)
+
+    def pre_uninstall(self):
+        dbtype = self.cfg.get("db", "type")
+        dbactions = DB_ACTIONS.get(dbtype)
+
+        try:
+            self.runtime.start()
+        except IOError:
+            LOG.debug("Could not start mysql")
+
+        # set pwd
+        try:
+            if dbactions and dbtype == MYSQL:
+                pwd_cmd = dbactions.get('setpwd')
+                if pwd_cmd:
+                    params = {
+                        'PASSWORD': self.cfg.get("passwords", "sql"),
+                        'USER': self.cfg.get("db", "sql_user"),
+                        'NEW_PASSWORD': ''
+                        }
+                    cmds = [{
+                            'cmd': pwd_cmd,
+                            'run_as_root': True,
+                            }]
+                    utils.execute_template(*cmds, params=params)
+        except IOError:
+            LOG.info(("could not reset password. might have to manually "
+                      "reset mysql before next install"))
+
+        try:
+            self.runtime.stop()
+        except IOError:
+            LOG.debug("Could not stop mysql")
 
 
 class DBInstaller(comp.PkgInstallComponent):
@@ -73,13 +115,14 @@ class DBInstaller(comp.PkgInstallComponent):
     def _get_param_map(self, config_fn):
         #this dictionary will be used for parameter replacement
         #in pre-install and post-install sections
-        out = dict()
-        out['PASSWORD'] = self.cfg.get("passwords", "sql")
-        out['BOOT_START'] = "%s" % BOOLEAN_OUTPUT.get(True)
-        out['USER'] = self.cfg.get("db", "sql_user")
         host_ip = self.cfg.get('host', 'ip')
-        out['SERVICE_HOST'] = host_ip
-        out['HOST_IP'] = host_ip
+        out = {
+            'PASSWORD': self.cfg.get("passwords", "sql"),
+            'BOOT_START': "%s" % BOOLEAN_OUTPUT.get(True),
+            'USER': self.cfg.get("db", "sql_user"),
+            'SERVICE_HOST': host_ip,
+            'HOST_IP': host_ip
+        }
         return out
 
     def _get_pkgs(self):
@@ -91,9 +134,32 @@ class DBInstaller(comp.PkgInstallComponent):
 
     def post_install(self):
         parent_result = comp.PkgInstallComponent.post_install(self)
+
         #extra actions to ensure we are granted access
         dbtype = self.cfg.get("db", "type")
         dbactions = DB_ACTIONS.get(dbtype)
+
+        self.runtime.start()
+
+        # set pwd
+        try:
+            if dbactions and dbtype == MYSQL:
+                pwd_cmd = dbactions.get('setpwd')
+                if pwd_cmd:
+                    params = {
+                        'NEW_PASSWORD': self.cfg.get("passwords", "sql"),
+                        'PASSWORD': '',
+                        'USER': self.cfg.get("db", "sql_user")
+                        }
+                    cmds = [{
+                            'cmd': pwd_cmd,
+                            'run_as_root': True,
+                            }]
+                    utils.execute_template(*cmds, params=params)
+        except IOError:
+            LOG.debug(("Couldn't set password. Might have already been "
+                       "set by previous process."))
+
         if dbactions and dbactions.get('grant_all'):
             #update the DB to give user 'USER'@'%' full control of the all databases:
             grant_cmd = dbactions.get('grant_all')

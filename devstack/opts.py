@@ -69,6 +69,10 @@ def parse():
         dest="r_component",
         metavar="COMPONENT",
         help="component which will not have ACTION applied but will be referenced as if it was (ACTION dependent)")
+    base_group.add_option("-k", "--keep-packages",
+        action="store_true",
+        dest="keep_packages",
+        help="uninstall will keep any installed packages on the system")
     parser.add_option_group(base_group)
 
     stop_un_group = OptionGroup(parser, "Uninstall/stop options")
@@ -107,5 +111,6 @@ def parse():
         output['ignore_deps'] = False
     else:
         output['ignore_deps'] = True
+    output['keep_packages'] = options.keep_packages
     output['extras'] = args
     return output
