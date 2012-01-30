@@ -215,7 +215,7 @@ class DBRuntime(comp.EmptyRuntime):
         if type_actions is None:
             msg = BASE_ERROR % (act, dbtype)
             raise NotImplementedError(msg)
-        distro_options = typeactions.get('runtime').get(self.distro)
+        distro_options = type_actions.get('runtime').get(self.distro)
         if distro_options is None:
             msg = BASE_ERROR % (act, dbtype)
             raise NotImplementedError(msg)
