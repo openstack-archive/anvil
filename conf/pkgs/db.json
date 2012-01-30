@@ -37,6 +37,14 @@
         }
     },
     "rhel-6": {
-         #TBD
+        "mysql-server": {
+            "version": "5.1*",
+            "removable": true
+        },
+        #client pkgs are here
+        "mysql": {
+            "version": "5.1*",
+            "removable": true
+        }
     }
 }
