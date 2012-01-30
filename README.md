@@ -59,7 +59,7 @@ This will typically produce:
 For ubuntu:
 
     $ sudo apt-get install git python-pip python-dev gcc -y
-    $ sudo easy_install netifaces termcolor
+    $ sudo easy_install netifaces termcolor pep8 pylint
     $ git clone git://github.com/yahoo/Openstack-DevstackPy.git DevstackPy
     $ cd DevstackPy
  
