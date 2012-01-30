@@ -343,6 +343,24 @@ def center_text(text, fill, max_len):
     return centered_str
 
 
+def _welcome_slang():
+    potentials = list()
+    potentials.append(r'''
+And now for something completely different.''')
+    msg = random.choice(potentials).strip("\n\r")
+    return msg
+
+def _color_blob(text, text_color):
+    special_chars = ['!', '.', ',', "'"]
+    colored_msg = ""
+    for ch in text:
+        if ch.isalpha() or ch.isdigit() or ch in special_chars:
+            colored_msg += colored(ch, text_color)
+        else:
+            colored_msg += ch
+    return colored_msg
+
+
 def _goodbye_header(worked):
     potentials_oks = list()
     potentials_oks.append(r'''
@@ -387,20 +405,12 @@ def _goodbye_header(worked):
 \ right now.        /
  -------------------
 ''')
-    if worked:
-        msg = random.choice(potentials_oks).strip("\n\r")
-    else:
-        msg = random.choice(potentials_fails).strip("\n\r")
-    #color it accordingly
-    text_color = 'green'
     if not worked:
-        text_color = 'red'
-    colored_msg = ""
-    for char in msg:
-        if char.isalpha() or char.isdigit():
-            colored_msg += colored(char, text_color)
-        else:
-            colored_msg += char
+        msg = random.choice(potentials_fails).strip("\n\r")
+        colored_msg = _color_blob(msg, 'red')      
+    else:
+        msg = random.choice(potentials_oks).strip("\n\r")
+        colored_msg = _color_blob(msg, 'green')
     return colored_msg
 
 
@@ -460,8 +470,9 @@ def welcome(ident):
     lower += "|"
     welcome_header = _get_welcome_stack().strip("\n\r")
     max_line_len = len(max(welcome_header.splitlines(), key=len))
-    footer = colored(settings.PROG_NICE_NAME, 'green', attrs=['bold']) + \
-                ": " + colored(lower, 'blue', attrs=['bold'])
+    footer = _color_blob(settings.PROG_NICE_NAME, 'green')
+    footer += ": "
+    footer += _color_blob(lower, 'blue')
     uncolored_footer = (settings.PROG_NICE_NAME + ": " + lower)
     if max_line_len - len(uncolored_footer) > 0:
         #this format string wil center the uncolored text which
@@ -470,4 +481,6 @@ def welcome(ident):
         centered_str = center_text(uncolored_footer, " ", max_line_len)
         footer = centered_str.replace(uncolored_footer, footer)
     print((welcome_header + os.linesep + footer))
+    msg =  center_text(_welcome_slang(), '-', max_line_len)
+    print(msg)
     return ("-", max_line_len)

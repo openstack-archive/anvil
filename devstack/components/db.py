@@ -244,7 +244,7 @@ class DBRuntime(comp.EmptyRuntime):
 
     def status(self):
         statuscmd = self._get_run_actions('status', excp.StatusException)
-        (sysout, _) = sh.execute(*statuscmd)
+        (sysout, _) = sh.execute(*statuscmd, check_exit_code=False)
         if sysout.find("start/running") != -1:
             return comp.STATUS_STARTED
         elif sysout.find("stop/waiting") != -1:
