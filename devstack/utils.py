@@ -391,6 +391,18 @@ def _goodbye_header(worked):
  ----------
 ''')
     potentials_fails.append(r'''
+ ______________________
+/ NOBODY expects the   \
+\ Spanish Inquisition! /
+ ----------------------
+''')
+    potentials_fails.append(r'''
+ ______________________
+/ Spam spam spam spam  \
+\ baked beans and spam /
+ ----------------------
+''')
+    potentials_fails.append(r'''
  _____________________
 / We were in the nick \
 | of time. You were   |

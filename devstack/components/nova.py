@@ -138,8 +138,6 @@ APP_OPTIONS = {
     'nova-cert': ['--flagfile', '%CFGFILE%'],
     'nova-objectstore': ['--flagfile', '%CFGFILE%'],
     'nova-consoleauth': [],
-    #TODO FIX these
-    #'nova-xvpvncproxy' : ['--flagfile', '%CFGFILE%'],
 }
 
 # Sub component names to actual app names (matching previous dict)
@@ -499,10 +497,20 @@ class NovaConfigurator(object):
 
         if settings.NOVNC in self.instances:
             vncproxy_url = self._getstr('vncproxy_url')
-            if not vncproxy_url:
-                vncproxy_url = 'http://' + hostip + ':6080/vnc_auto.html'
-            nova_conf.add('vncproxy_url', vncproxy_url)
+            nova_conf.add('novncproxy_base_url', vncproxy_url)
 
+        nova_conf.add('vncserver_listen', self._getstr('vncserver_listen'))
+        vncserver_proxyclient_address = self._getstr('vncserver_proxyclient_addres')
+        # If no vnc proxy address was specified, pick a default based on which
+        # driver we're using
+        virt_driver = self._getstr('virt_driver')
+        if not vncserver_proxyclient_address:
+            if virt_driver == 'xenserver':
+                vncserver_proxyclient_address = '169.254.0.1'
+            else:
+                vncserver_proxyclient_address = '127.0.0.1'
+
+        nova_conf.add('vncserver_proxyclient_address', vncserver_proxyclient_address)
         nova_conf.add('api_paste_config', self.paste_conf_fn)
 
         img_service = self._getstr('img_service')
@@ -546,7 +554,6 @@ class NovaConfigurator(object):
             nova_conf.add_simple('use_syslog')
 
         #handle any virt driver specifics
-        virt_driver = self._getstr('virt_driver')
         self._configure_virt_driver(virt_driver, nova_conf)
 
         #now make it

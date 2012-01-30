@@ -83,7 +83,7 @@ COMPONENT_DEPENDENCIES = {
     #for now assume it is (TODO make it better?)
     #the client isn't always needed either (TODO make it better?)
     QUANTUM: [DB, QUANTUM_CLIENT],
-    NOVNC: [],
+    NOVNC: [NOVA],
     QUANTUM_CLIENT: [],
 }
 
