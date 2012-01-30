@@ -350,6 +350,7 @@ And now for something completely different.''')
     msg = random.choice(potentials).strip("\n\r")
     return msg
 
+
 def _color_blob(text, text_color):
     special_chars = ['!', '.', ',', "'"]
     colored_msg = ""
@@ -407,7 +408,7 @@ def _goodbye_header(worked):
 ''')
     if not worked:
         msg = random.choice(potentials_fails).strip("\n\r")
-        colored_msg = _color_blob(msg, 'red')      
+        colored_msg = _color_blob(msg, 'red')
     else:
         msg = random.choice(potentials_oks).strip("\n\r")
         colored_msg = _color_blob(msg, 'green')
@@ -481,6 +482,6 @@ def welcome(ident):
         centered_str = center_text(uncolored_footer, " ", max_line_len)
         footer = centered_str.replace(uncolored_footer, footer)
     print((welcome_header + os.linesep + footer))
-    msg =  center_text(_welcome_slang(), '-', max_line_len)
-    print(msg)
+    slang = center_text(_welcome_slang(), '-', max_line_len)
+    print(slang)
     return ("-", max_line_len)
