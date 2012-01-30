@@ -115,6 +115,122 @@
         }
     },
     "rhel-6": {
-        # TBD
+        "curl": {
+            "removable": false, 
+            "version": "7.19.7*"
+        }, 
+        # Only for testing client
+        # Requires EPEL
+        "euca2ools": {
+            "removable": false, 
+            # This version is most likely way to old!
+            "version": "1.3.1*"
+        }, 
+        "git": {
+            "removable": false, 
+            "version": "1.7*"
+        }, 
+        "gawk": {
+            "version": "3.1*",
+            "removable": false
+        },
+        "iputils": {
+            "removable": false, 
+            "version": "20071127*"
+        }, 
+        # Useful when debugging
+        "mlocate": {
+            "removable": false, 
+            "version": "0.22*"
+        }, 
+        # Useful when debugging
+        "lsof": {
+            "removable": false, 
+            "version": "4.82*"
+        }, 
+        "openssh-server": {
+            "removable": false, 
+            "version": "5.3*"
+        }, 
+        # Requires EPEL
+        "pep8": {
+            "removable": false, 
+            "version": "0.6*"
+        }, 
+        "psmisc": {
+            "removable": false, 
+            "version": "22.6*"
+        }, 
+        # Requires EPEL
+        "pylint": {
+            "removable": false, 
+            "version": "0.21*"
+        }, 
+        "python": {
+            "removable": false, 
+            "version": "2.6*"
+        }, 
+        # For testing (does not exist yet)
+        # "python-coverage": {
+        #     "removable": true, 
+        #     "version": "3.4*"
+        # }, 
+        # Requires EPEL
+        "python-pip": {
+            "removable": false, 
+            "version": "0.8*"
+        }, 
+        # For testing
+        # Requires EPEL
+        "python-unittest2": {
+            "removable": false, 
+            "version": "0.5.1*"
+        }, 
+        # For testing
+        # Requires EPEL
+        "python-virtualenv": {
+            "removable": false, 
+            "version": "1.7*"
+        }, 
+        "python-setuptools": {
+            "version": "0.6.10*",
+            "removable": false
+        },
+        "python-dev": {
+            "version": "2.6*",
+            "removable": false
+        },
+        # For testing
+        "python-nose": {
+            # This version seems way old
+            "version": "0.10*",
+            "removable": true
+        },
+        # For testing
+        # Requires EPEL
+        "python-mox": {
+            "version": "0.5.3*",
+            "removable": true
+        },
+        "screen": {
+            "removable": false, 
+            "version": "4.0.3*"
+        }, 
+        "sudo": {
+            "removable": false,
+            "version" : "1.7.4*"
+        },
+        "tcpdump": {
+            "removable": false, 
+            "version": "4.0*"
+        }, 
+        "unzip": {
+            "removable": false, 
+            "version": "6.0*"
+        }, 
+        "wget": {
+            "removable": false, 
+            "version": "1.12*"
+        }
     }
 }
