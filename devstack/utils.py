@@ -343,13 +343,51 @@ def center_text(text, fill, max_len):
     return centered_str
 
 
+def _goodbye_header(worked):
+    potentials_oks = list()
+    potentials_oks.append(r'''
+ ___________
+/ You shine \
+| out like  |
+| a shaft   |
+| of gold   |
+| when all  |
+| around is |
+\ dark.     /
+ -----------
+''')
+    potentials_oks.append(r'''
+ ______________________________
+< I'm a lumberjack and I'm OK. >
+ ------------------------------
+''')
+    potentials_fails = list()
+    potentials_fails.append(r'''
+ _____________________
+/ We were in the nick \
+| of time. You were   |
+\ in great peril.     /
+ ---------------------
+''')
+    potentials_fails.append(r'''
+ ___________________
+/ I know a dead     \
+| parrot when I see |
+| one, and I'm      |
+| looking at one    |
+\ right now.        /
+ -------------------
+''')
+    if worked:
+        return random.choice(potentials_oks).strip("\n\r")
+    else:
+        return random.choice(potentials_fails).strip("\n\r")
+
+
 def goodbye(worked):
     #thx cowsay
     cow = r'''
- __________
-/ {top}  \
-\ {message} /
- ----------
+${header}
         \   {ear}__{ear}
          \  ({eye}{eye})\_______
             (__)\       )\/\
