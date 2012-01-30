@@ -398,23 +398,11 @@ ${header}
     ear = '^'
     eye_fmt = 'o'
     if not worked:
-        top = "Nooooo!"
-        msg = 'Failure!'
         eye_fmt = colored("o", 'red')
         ear = colored(ear, 'red')
-        header = "_" * (len(top) + 2)
-        footer = "-" * (len(msg) + 2)
-        msg = colored(msg, 'red', attrs=['bold'])
-        top = colored(top, 'red', attrs=['bold'])
-    else:
-        top = "Yippie!"
-        msg = 'Success!'
-        header = "_" * (len(top) + 2)
-        footer = "-" * (len(msg ) + 2)
-        msg = colored(msg, 'green', attrs=['bold'])
-        top = colored(top, 'green', attrs=['bold'])
-    msg = cow.format(message=msg, eye=eye_fmt, ear=ear,
-                    top=top, header=header, footer=footer)
+    header = _goodbye_header(worked)
+    msg = cow.format(eye=eye_fmt, ear=ear,
+                     header=header)
     print(msg)
 
 
