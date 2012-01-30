@@ -392,16 +392,16 @@ def _goodbye_header(worked):
     else:
         msg = random.choice(potentials_fails).strip("\n\r")
     #color it accordingly
-    color = 'green'
+    text_color = 'green'
     if not worked:
-        color = 'red'
+        text_color = 'red'
     colored_msg = ""
     for char in msg:
         if char.isalpha() or char.isdigit():
-            colored_msg += colored(color, char)
+            colored_msg += colored(char, text_color)
         else:
             colored_msg += char
-    return nmsg
+    return colored_msg
 
 
 def goodbye(worked):
