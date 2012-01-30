@@ -38,6 +38,7 @@ DB_ACTIONS = {
         'status': ["service", 'mysql', "status"],
         'restart': ["service", 'mysql', "status"],
         #
+        'setpwd': ['mysqladmin', '--user=%USER%', 'password', '%PASSWORD%'],
         'create_db': ['mysql', '--user=%USER%', '--password=%PASSWORD%', '-e', 'CREATE DATABASE %DB%;'],
         'drop_db': ['mysql', '--user=%USER%', '--password=%PASSWORD%', '-e', 'DROP DATABASE IF EXISTS %DB%;'],
         'grant_all': [
@@ -82,9 +83,25 @@ class DBInstaller(comp.PkgInstallComponent):
 
     def post_install(self):
         parent_result = comp.PkgInstallComponent.post_install(self)
+
         #extra actions to ensure we are granted access
         dbtype = self.cfg.get("db", "type")
         dbactions = DB_ACTIONS.get(dbtype)
+
+        # set pwd
+        if dbactions and dbtype == MYSQL:
+            pwd_cmd = dbactions.get('setpwd')
+            if pwd_cmd:
+                params = {
+                    'PASSWORD': self.cfg.get("passwords", "sql"),
+                    'USER': self.cfg.get("db", "sql_user")
+                }
+                cmds = [{
+                     'cmd': pwd_cmd,
+                     'run_as_root': True,
+                }]
+                utils.execute_template(*cmds, params=params)
+                
         if dbactions and dbactions.get('grant_all'):
             #update the DB to give user 'USER'@'%' full control of the all databases:
             grant_cmd = dbactions.get('grant_all')
