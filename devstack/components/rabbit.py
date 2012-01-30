@@ -44,6 +44,14 @@ class RabbitUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PkgUninstallComponent.__init__(self, TYPE, *args, **kargs)
 
+    def pre_uninstall(self):
+        try:
+            passwd = ''
+            cmd = PWD_CMD + [passwd]
+            sh.execute(*cmd, run_as_root=True)
+        except IOError:
+            LOG.debug("Couldn't reset rabbit pwd.")
+
 
 class RabbitInstaller(comp.PkgInstallComponent):
     def __init__(self, *args, **kargs):
@@ -57,6 +65,7 @@ class RabbitInstaller(comp.PkgInstallComponent):
 
     def post_install(self):
         parent_result = comp.PkgInstallComponent.post_install(self)
+        self.runtime.restart()
         self._setup_pw()
         self.runtime.restart()
         return parent_result

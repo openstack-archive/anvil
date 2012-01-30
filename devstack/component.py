@@ -249,6 +249,12 @@ class PkgUninstallComponent(ComponentBase):
         self._uninstall_touched_files()
         self._uninstall_dirs()
 
+    def post_uninstall(self):
+        pass
+
+    def pre_uninstall(self):
+        pass
+
     def _uninstall_pkgs(self):
         pkgsfull = self.tracereader.packages_installed()
         if pkgsfull:
