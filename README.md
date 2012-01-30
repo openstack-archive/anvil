@@ -1,4 +1,4 @@
-*Devstack v2* is a set of python scripts and utilities to quickly deploy an OpenStack cloud.
+*DevstackPy* is a set of **python** scripts and utilities to quickly deploy an OpenStack cloud.
 
 # Goals
 
@@ -60,8 +60,8 @@ For ubuntu:
 
     $ sudo apt-get install git python-pip python-dev gcc -y
     $ sudo easy_install netifaces termcolor
-    $ git clone git://github.com/yahoo/Openstack-Devstack2.git Devstack2
-    $ cd Devstack2
+    $ git clone git://github.com/yahoo/Openstack-DevstackPy.git DevstackPy
+    $ cd DevstackPy
  
 # Actions
 
@@ -107,11 +107,11 @@ Note that these files are in a modified json format which allows for simple comm
 **!Installing in a dedicated, disposable vm is safer than installing on your dev machine!**
 
 1. Get and install the above prerequisites.
-1. *git clone git://github.com/yahoo/Openstack-Devstack2.git*
+1. *git clone git://github.com/yahoo/Openstack-DevstackPy.git*
 
 ## Simple setup
 
-https://github.com/yahoo/Openstack-Devstack2/wiki/Simple-Setup
+https://github.com/yahoo/Openstack-DevstackPy/wiki/Simple-Setup
 
 # Customizing
 
@@ -125,4 +125,4 @@ To adjust logging edit the *conf/logging.ini* file which controls the logging le
 
 # We want more information!
 
-Please check out: <https://github.com/yahoo/Openstack-Devstack2/wiki>
+Please check out: <https://github.com/yahoo/Openstack-DevstackPy/wiki>
