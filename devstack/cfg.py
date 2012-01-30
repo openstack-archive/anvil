@@ -46,7 +46,7 @@ class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
     DEF_BOOLEAN = False
 
     def __init__(self):
-        ConfigParser.RawConfigParser.__init__(self, allow_no_value=True)
+        ConfigParser.RawConfigParser.__init__(self)
 
     def get(self, section, option):
         value = None
@@ -82,7 +82,7 @@ class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
 
 class EnvConfigParser(ConfigParser.RawConfigParser):
     def __init__(self):
-        ConfigParser.RawConfigParser.__init__(self, allow_no_value=True)
+        ConfigParser.RawConfigParser.__init__(self)
         self.pws = dict()
         self.configs_fetched = dict()
         self.db_dsns = dict()
