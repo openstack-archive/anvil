@@ -16,10 +16,6 @@
 
 import re
 
-#requires http://pypi.python.org/pypi/termcolor
-#but the colors make it worth it :-)
-from termcolor import colored, cprint
-
 from devstack import settings
 from devstack import utils
 
@@ -69,7 +65,7 @@ def _run_describe_comps(args, rep, maxlen):
     print(header)
     c_keys = sorted(components.keys())
     for c in c_keys:
-        print("Name: " + colored(c, "blue", attrs=['bold']))
+        print("Name: " + utils.color_text(c, "blue", True))
         describer = _DESCR_MAP.get(c)
         print(describer(components.get(c)))
 
