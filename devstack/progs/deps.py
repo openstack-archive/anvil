@@ -14,10 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-#requires http://pypi.python.org/pypi/termcolor
-#but the colors make it worth it :-)
-from termcolor import colored
-
 from devstack import settings
 from devstack import utils
 
@@ -28,7 +24,7 @@ DEF_ACTION = settings.INSTALL
 
 
 def _print_deps(component, deps):
-    print(" + " + colored(component, "blue", attrs=['bold']))
+    print(" + " + utils.color_text(component, "blue", True))
     if deps:
         for d in sorted(deps):
             print("    |")

@@ -23,18 +23,14 @@ import os
 import platform
 import random
 import re
+import termcolor
 import traceback
-
-#requires http://pypi.python.org/pypi/termcolor
-#but the colors make it worth it :-)
-from termcolor import colored
 
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
 from devstack import version
-
 
 PARAM_SUB_REGEX = re.compile(r"%([\w\d]+?)%")
 EXT_COMPONENT = re.compile(r"^\s*([\w-]+)(?:\((.*)\))?\s*$")
@@ -43,8 +39,7 @@ TEMPLATE_EXT = ".tpl"
 
 
 def load_template(component, fn):
-    actual_fn = fn + TEMPLATE_EXT
-    full_pth = os.path.join(settings.STACK_CONFIG_DIR, component, actual_fn)
+    full_pth = sh.joinpths(settings.STACK_CONFIG_DIR, component, fn + TEMPLATE_EXT)
     contents = sh.load_file(full_pth)
     return (full_pth, contents)
 
@@ -56,29 +51,34 @@ def execute_template(*cmds, **kargs):
     cmd_results = list()
     for cmdinfo in cmds:
         cmd_to_run_templ = cmdinfo.get("cmd")
+        if not cmd_to_run_templ:
+            continue
         cmd_to_run = list()
-        for piece in cmd_to_run_templ:
-            if params_replacements and len(params_replacements):
-                cmd_to_run.append(param_replace(piece, params_replacements,
-                    ignore_missing=ignore_missing))
-            else:
-                cmd_to_run.append(piece)
+        if not params_replacements:
+            cmd_to_run = cmd_to_run_templ
+        else:
+            for piece in cmd_to_run_templ:
+                cmd_to_run.append(param_replace(str(piece),
+                                  params_replacements,
+                                  ignore_missing=ignore_missing))
         stdin_templ = cmdinfo.get('stdin')
         stdin = None
-        if stdin_templ and len(stdin_templ):
+        if stdin_templ:
             stdin_full = list()
-            for piece in stdin_templ:
-                if params_replacements and len(params_replacements):
-                    stdin_full.append(param_replace(piece, params_replacements,
-                        ignore_missing=ignore_missing))
-                else:
-                    stdin_full.append(piece)
+            if not params_replacements:
+                stdin_full = stdin_templ
+            else:
+                for piece in stdin_templ:
+                    stdin_full.append(param_replace(str(piece),
+                                      params_replacements,
+                                      ignore_missing=ignore_missing))
             stdin = joinlinesep(*stdin_full)
-        root_run = cmdinfo.get('run_as_root', False)
-        exec_res = sh.execute(*cmd_to_run, run_as_root=root_run, process_input=stdin, **kargs)
+        exec_result = sh.execute(*cmd_to_run,
+                                 run_as_root=cmdinfo.get('run_as_root', False),
+                                 process_input=stdin, **kargs)
         if tracewriter:
-            tracewriter.exec_cmd(cmd_to_run, exec_res)
-        cmd_results.append(exec_res)
+            tracewriter.exec_cmd(cmd_to_run, exec_result)
+        cmd_results.append(exec_result)
     return cmd_results
 
 
@@ -169,6 +169,17 @@ def extract_pip_list(fns, distro, all_pips=None):
     return all_pips
 
 
+def extract_pkg_list(fns, distro, all_pkgs=None):
+    if not all_pkgs:
+        all_pkgs = dict()
+    for fn in fns:
+        js = load_json(fn)
+        distro_pkgs = js.get(distro)
+        if distro_pkgs:
+            all_pkgs.update(distro_pkgs)
+    return all_pkgs
+
+
 def get_components_order(components):
     if not components:
         return dict()
@@ -242,17 +253,6 @@ def get_components_order(components):
     #to go first, but those were inserted last), so this reverse fixes that
     ordering.reverse()
     return ordering
-
-
-def extract_pkg_list(fns, distro, all_pkgs=None):
-    if not all_pkgs:
-        all_pkgs = dict()
-    for fn in fns:
-        js = load_json(fn)
-        distro_pkgs = js.get(distro)
-        if distro_pkgs:
-            all_pkgs.update(distro_pkgs)
-    return all_pkgs
 
 
 def joinlinesep(*pieces):
@@ -335,7 +335,7 @@ ____ ___  ____ _  _ ____ ___ ____ ____ _  _
 (_____)(_)    (____/'(_) (_)`\____) (_)  (_) (_)(____/'(_) (_)
 
 ''')
-    return random.choice(possibles)
+    return random.choice(possibles).strip("\n\r")
 
 
 def center_text(text, fill, max_len):
@@ -345,10 +345,16 @@ def center_text(text, fill, max_len):
 
 def _welcome_slang():
     potentials = list()
-    potentials.append(r'''
-And now for something completely different.''')
+    potentials.append("And now for something completely different.")
     msg = random.choice(potentials).strip("\n\r")
     return msg
+
+
+def color_text(text, color, bold=False):
+    if bold:
+        return termcolor.colored(text, color, attrs=['bold'])
+    else:
+        return termcolor.colored(text, color)
 
 
 def _color_blob(text, text_color):
@@ -356,7 +362,7 @@ def _color_blob(text, text_color):
     colored_msg = ""
     for ch in text:
         if ch.isalpha() or ch.isdigit() or ch in special_chars:
-            colored_msg += colored(ch, text_color)
+            colored_msg += color_text(ch, text_color)
         else:
             colored_msg += ch
     return colored_msg
@@ -389,6 +395,31 @@ def _goodbye_header(worked):
  __________
 < Failure! >
  ----------
+''')
+    potentials_fails.append(r'''
+ ___________
+< Run away! >
+ -----------
+''')
+    potentials_fails.append(r'''
+ ______________________
+/ NOBODY expects the   \
+\ Spanish Inquisition! /
+ ----------------------
+''')
+    potentials_fails.append(r'''
+ ______________________
+/ Spam spam spam spam  \
+\ baked beans and spam /
+ ----------------------
+''')
+    potentials_fails.append(r'''
+ ____________________
+/ It's time for the  \
+| penguin on top of  |
+| your television to |
+\ explode.           /
+ --------------------
 ''')
     potentials_fails.append(r'''
  _____________________
@@ -429,8 +460,8 @@ def goodbye(worked):
     ear = '^'
     eye_fmt = 'o'
     if not worked:
-        eye_fmt = colored("o", 'red')
-        ear = colored(ear, 'red')
+        eye_fmt = color_text("o", 'red')
+        ear = color_text(ear, 'red')
     header = _goodbye_header(worked)
     msg = cow.format(eye=eye_fmt, ear=ear,
                      header=header)
@@ -469,19 +500,18 @@ def welcome(ident):
         lower += " "
     lower += ver_str
     lower += "|"
-    welcome_header = _get_welcome_stack().strip("\n\r")
+    welcome_header = _get_welcome_stack()
     max_line_len = len(max(welcome_header.splitlines(), key=len))
-    footer = _color_blob(settings.PROG_NICE_NAME, 'green')
+    footer = color_text(settings.PROG_NICE_NAME, 'green')
     footer += ": "
-    footer += _color_blob(lower, 'blue')
+    footer += color_text(lower, 'blue', True)
     uncolored_footer = (settings.PROG_NICE_NAME + ": " + lower)
     if max_line_len - len(uncolored_footer) > 0:
-        #this format string wil center the uncolored text which
-        #we will then replace
-        #with the color text equivalent
+        #this format string will center the uncolored text which
+        #we will then replace with the color text equivalent
         centered_str = center_text(uncolored_footer, " ", max_line_len)
         footer = centered_str.replace(uncolored_footer, footer)
-    print((welcome_header + os.linesep + footer))
-    slang = center_text(_welcome_slang(), '-', max_line_len)
-    print(slang)
+    print(welcome_header)
+    print(footer)
+    print(center_text(_welcome_slang(), '-', max_line_len))
     return ("-", max_line_len)

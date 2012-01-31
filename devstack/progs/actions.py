@@ -14,10 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License..
 
-#requires http://pypi.python.org/pypi/termcolor
-#but the colors make it worth it :-)
-from termcolor import colored, cprint
-
 from devstack import cfg
 from devstack import date
 from devstack import exceptions as excp
@@ -267,16 +263,16 @@ def _run_action(args):
         components = common.get_default_components()
     action = _clean_action(args.pop("action"))
     if not action:
-        cprint("No valid action specified!", "red")
+        print(utils.color_text("No valid action specified!", "red"))
         return False
     rootdir = args.pop("dir")
     if rootdir is None:
-        cprint("No root directory specified!", "red")
+        print(utils.color_text("No root directory specified!", "red"))
         return False
     #ensure os/distro is known
     (distro, platform) = utils.determine_distro()
     if distro is None:
-        print("Unsupported platform " + colored(platform, "red") + "!")
+        print("Unsupported platform " + utils.color_text(platform, "red") + "!")
         return False
     #start it
     (rep, maxlen) = utils.welcome(_WELCOME_MAP.get(action))

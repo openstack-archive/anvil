@@ -29,7 +29,7 @@ UBUNTU11 = "ubuntu-oneiric"
 RHEL6 = "rhel-6"
 
 # What this program is called
-PROG_NICE_NAME = "DEVSTACK"
+PROG_NICE_NAME = "DEVSTACKpy"
 
 # These 2 identify the json post and pre install sections
 PRE_INSTALL = 'pre-install'
@@ -83,7 +83,7 @@ COMPONENT_DEPENDENCIES = {
     #for now assume it is (TODO make it better?)
     #the client isn't always needed either (TODO make it better?)
     QUANTUM: [DB, QUANTUM_CLIENT],
-    NOVNC: [],
+    NOVNC: [NOVA],
     QUANTUM_CLIENT: [],
 }
 
