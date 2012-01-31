@@ -349,11 +349,13 @@ def _welcome_slang():
     msg = random.choice(potentials).strip("\n\r")
     return msg
 
+
 def color_text(text, color, bold=False):
     if bold:
         return termcolor.colored(text, color, attrs=['bold'])
     else:
         return termcolor.colored(text, color)
+
 
 def _color_blob(text, text_color):
     special_chars = ['!', '.', ',', "'"]
@@ -395,6 +397,11 @@ def _goodbye_header(worked):
  ----------
 ''')
     potentials_fails.append(r'''
+ ___________
+< Run away! >
+ -----------
+''')
+    potentials_fails.append(r'''
  ______________________
 / NOBODY expects the   \
 \ Spanish Inquisition! /
@@ -405,6 +412,14 @@ def _goodbye_header(worked):
 / Spam spam spam spam  \
 \ baked beans and spam /
  ----------------------
+''')
+    potentials_fails.append(r'''
+ ____________________
+/ It's time for the  \
+| penguin on top of  |
+| your television to |
+\ explode.           /
+ --------------------
 ''')
     potentials_fails.append(r'''
  _____________________

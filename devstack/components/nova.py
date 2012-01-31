@@ -445,7 +445,7 @@ class NovaConfigurator(object):
             scheduler = DEF_SCHEDULER
         nova_conf.add('scheduler_driver', scheduler)
 
-        flag_conf_fn = sh.joinpths(dirs.get('bin'), API_CONF)
+        flag_conf_fn = sh.joinpths(dirs.get('cfg'), API_CONF)
         nova_conf.add('dhcpbridge_flagfile', flag_conf_fn)
 
         #whats the network fixed range?
