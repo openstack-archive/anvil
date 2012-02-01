@@ -34,6 +34,7 @@ from devstack import version
 
 PARAM_SUB_REGEX = re.compile(r"%([\w\d]+?)%")
 EXT_COMPONENT = re.compile(r"^\s*([\w-]+)(?:\((.*)\))?\s*$")
+MONTY_PYTHON_TEXT_RE = re.compile("([a-z0-9A-Z!.,'\"]+)")
 LOG = logging.getLogger("devstack.util")
 TEMPLATE_EXT = ".tpl"
 
@@ -358,14 +359,12 @@ def color_text(text, color, bold=False):
 
 
 def _color_blob(text, text_color):
-    special_chars = ['!', '.', ',', "'"]
-    colored_msg = ""
-    for ch in text:
-        if ch.isalpha() or ch.isdigit() or ch in special_chars:
-            colored_msg += color_text(ch, text_color)
-        else:
-            colored_msg += ch
-    return colored_msg
+
+    def replacer(match):
+        contents = match.group(1)
+        return color_text(contents, text_color)
+
+    return MONTY_PYTHON_TEXT_RE.sub(replacer, text)
 
 
 def _goodbye_header(worked):

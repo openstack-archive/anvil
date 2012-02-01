@@ -21,6 +21,10 @@
             "version": "1.1*",
             "removable": true
         },
+        "python-prettytable": {
+            "version": "0.5*",
+            "removable": true
+        },
         "python-mysqldb": {
             "version": "1.2*",
             "removable": true
@@ -37,12 +41,64 @@
             "version": "0.6*",
             "removable": true
         },
+        "python-dateutil": {
+            "version": "1.4*",
+            "removable": true
+        },
         "python-httplib2": {
             "version": "0.7.1*",
             "removable": true
         }
     },
     "rhel-6": {
-        # TBD
+        # Requires EPEL
+        "python-eventlet": {
+            "version": "0.9*",
+            "removable": true
+        },
+        "python-routes": {
+            "version": "1.10*",
+            "removable": true
+        },
+        # Requires EPEL
+        "python-greenlet": {
+            "version": "0.3.1*",
+            "removable": true
+        },
+        # Requires EPEL
+        "python-argparse": {
+            "version": "1.2*",
+            "removable": true
+        },
+        "MySQL-python": {
+            "version": "1.2*",
+            "removable": true
+        },
+        "python-dateutil": {
+            "version": "1.4*",
+            "removable": true
+        },
+        "python-pastedeploy": {
+            # This might be way to old :(
+            "version": "1.3.3*",
+            "removable": true
+        },
+        # Requires EPEL
+        "python-prettytable": {
+            "version": "0.5*",
+            "removable": true
+        },
+        # Requires EPEL
+        "python-xattr": {
+            # This might be way to old :(
+            "version": "0.5*",
+            "removable": true
+        },
+        # Requires EPEL
+        "python-httplib2": {
+            # This might be way to old :(
+            "version": "0.4*",
+            "removable": true
+        }
     }
 }

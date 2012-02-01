@@ -55,12 +55,14 @@
         },
         "python-greenlet": {
             "version": "0.3*",
-            "allowed": ">=",
+            "removable": true
+        },
+        "python-argparse": {
+            "version": "1.1*",
             "removable": true
         },
         "python-routes": {
             "version": "1.12*",
-            "allowed": ">=",
             "removable": true
         },
         "libldap2-dev": {
@@ -71,13 +73,89 @@
         "libsasl2-dev": {
             "version": "2.1*",
             "removable": true
-        },
-        "python-migrate": {
-            "version": "0.7*",
-            "removable": true
         }
     },
     "rhel-6": {
-        # TBD
+        # Requires EPEL
+        "python-eventlet": {
+            "version": "0.9*",
+            "removable": true
+        },
+        "python-lxml": {
+            # Trashes IPA client, which is probably bad
+            "version": "2.2*",
+            "removable": true
+        },
+        "python-pastescript": {
+            "version": "1.7*",
+            "removable": true
+        },
+        # Requires EPEL
+        "python-prettytable": {
+            "version": "0.5*",
+            "removable": true
+        },
+        "MySQL-python": {
+            "version": "1.2*",
+            "removable": true
+        },
+        "python-paste-deploy": {
+            # This might be way to old :(
+            "version": "1.3.3*",
+            "removable": true
+        },
+        "python-paste": {
+            "version": "1.7.4*",
+            "removable": true
+        },
+        "sqlite": {
+            "version": "3.6*",
+            # Trashes alot of the base os (so we don't allow it to be removed)
+            "removable": false
+        },
+        # Requires EPEL
+        "python-sqlite2": {
+            # This might be way to old :(
+            "version": "2.3*",
+            "removable": true
+        },
+        # Requires EPEL
+        "python-webob1.0": {
+            "version": "1.0*",
+            "removable": true
+        },
+        # Requires EPEL
+        "python-argparse": {
+            "version": "1.2*",
+            "removable": true
+        },
+        # Requires EPEL
+        "python-greenlet": {
+            "version": "0.3.1*",
+            "removable": true
+        },
+        "python-routes": {
+            "version": "1.10*",
+            "removable": true
+        },
+        # Requires EPEL
+        "python-passlib": {
+            "version": "1.5*",
+            "removable": true
+        },
+        # Is this right??
+        # This is for libldap2
+        "openldap": {
+            # Trashes alot of the base os (so we don't allow it to be removed)
+            "removable": false,
+            "version": "2.4*"
+        },
+        # Is this right??
+        # This is for libsasl2
+        "cyrus-sasl-lib": {
+            # Trashes alot of the base os (so we don't allow it to be removed)
+            "version": "2.1*",
+            "removable": false
+        }
     }
 }

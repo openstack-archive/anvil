@@ -3,15 +3,16 @@
 {
     "ubuntu-oneiric": {
         "django-nose-selenium": {
-            "version": "0.7.3",
-            #this seems broke on uninstall so skip errors on uinstall
-            "skip_uninstall_errors": true
+            "version": "0.7.3"
         },
         "pycrypto": {
-            "version": "2.3",
-            #this seems broke on uninstall so skip errors on uinstall
-            "skip_uninstall_errors": true
+            "version": "2.3"
         }
     },
-    "rhel-6": {}
+    "rhel-6": {
+        #the base is 2.0, need to upgrade
+        "pycrypto": {
+            "version": "2.3"
+        }
+    }
 }
