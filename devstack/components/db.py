@@ -227,7 +227,7 @@ class DBRuntime(comp.EmptyRuntime):
         if self.status() == comp.STATUS_STOPPED:
             startcmd = self._get_run_actions('start', excp.StartException)
             sh.execute(*startcmd, run_as_root=True)
-            LOG.info("Please wait %s seconds while it comes up" % START_WAIT_TIME)
+            LOG.info("Please wait %s seconds while it starts up." % START_WAIT_TIME)
             time.sleep(START_WAIT_TIME)
             return 1
         else:
@@ -245,7 +245,7 @@ class DBRuntime(comp.EmptyRuntime):
         restartcmd = self._get_run_actions('restart', excp.RestartException)
         sh.execute(*restartcmd, run_as_root=True)
         #this seems needed?
-        LOG.info("Please wait %s seconds while it comes up" % START_WAIT_TIME)
+        LOG.info("Please wait %s seconds while it restarts." % START_WAIT_TIME)
         time.sleep(START_WAIT_TIME)
         return 1
 

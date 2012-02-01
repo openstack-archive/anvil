@@ -74,6 +74,8 @@ class RabbitInstaller(comp.PkgInstallComponent):
         passwd = self.cfg.get("passwords", "rabbit")
         cmd = PWD_CMD + [passwd]
         sh.execute(*cmd, run_as_root=True)
+        LOG.info("Restarting so that your rabbit-mq guest password is reflected.")
+        self.runtime.restart()
 
     def post_install(self):
         parent_result = comp.PkgInstallComponent.post_install(self)
@@ -106,7 +108,7 @@ class RabbitRuntime(comp.EmptyRuntime):
             msg = "Can not check the status of %s since it was not installed" % (TYPE)
             raise excp.StatusException(msg)
         #this has got to be the worst status output
-        #i have ever seen (its like a weird mix json)
+        #i have ever seen (its like a weird mix json+crap)
         (sysout, _) = sh.execute(*STATUS_CMD,
                         run_as_root=True,
                         check_exit_code=False)
