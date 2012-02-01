@@ -21,6 +21,7 @@ import os.path
 import pwd
 import shutil
 import subprocess
+import tempfile
 
 from devstack import env
 from devstack import exceptions as excp
@@ -159,6 +160,16 @@ def _gen_password(pw_len):
     cmd = MKPW_CMD + [pw_len]
     (stdout, _) = execute(*cmd)
     return stdout.strip()
+
+
+def write_file_su(fn, text, flush=True):
+    with tempfile.NamedTemporaryFile() as fh:
+        tmp_fn = fh.name
+        fh.write(text)
+        if flush:
+            fh.flush()
+        cmd = ['cp', tmp_fn, fn]
+        execute(*cmd, run_as_root=True)
 
 
 def prompt_password(pw_prompt=None):

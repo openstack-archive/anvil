@@ -80,8 +80,6 @@ class QuantumUninstaller(comp.PkgUninstallComponent):
 class QuantumInstaller(comp.PkgInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PkgInstallComponent.__init__(self, TYPE, *args, **kargs)
-        self.git_loc = self.cfg.get("git", "quantum_repo")
-        self.git_branch = self.cfg.get("git", "quantum_branch")
         self.q_vswitch_agent = False
         self.q_vswitch_service = False
         plugin = self.cfg.get("quantum", "q_plugin")
@@ -98,27 +96,21 @@ class QuantumInstaller(comp.PkgInstallComponent):
                     self.q_vswitch_agent = True
 
     def _get_download_locations(self):
-        places = comp.PkgInstallComponent._get_download_locations(self)
+        places = list()
         places.append({
-            'uri': self.git_loc,
-            'branch': self.git_branch,
+            'uri': ("git", "quantum_repo"),
+            'branch': ("git", "quantum_branch"),
         })
         return places
 
     def _get_pkgs(self):
-        pkglist = comp.PkgInstallComponent._get_pkgs(self)
-        for fn in REQ_PKGS:
-            full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
-            pkglist = utils.extract_pkg_list([full_name], self.distro, pkglist)
+        pkglist = list(REQ_PKGS)
         if self.q_vswitch_service:
-            listing_fn = sh.joinpths(settings.STACK_PKG_DIR, PKG_VSWITCH)
-            pkglist = utils.extract_pkg_list([listing_fn], self.distro, pkglist)
+            pkglist.append(PKG_VSWITCH)
         return pkglist
 
     def _get_config_files(self):
-        parent_list = comp.PkgInstallComponent._get_config_files(self)
-        parent_list.extend(CONFIG_FILES)
-        return parent_list
+        return list(CONFIG_FILES)
 
     def _get_target_config_name(self, config_fn):
         if config_fn == PLUGIN_CONF:
@@ -198,7 +190,7 @@ class QuantumInstaller(comp.PkgInstallComponent):
         return parent_result
 
     def _setup_db(self):
-        LOG.info("Fixing up database named %s", DB_NAME)
+        LOG.info("Fixing up database named %s.", DB_NAME)
         db.drop_db(self.cfg, DB_NAME)
         db.create_db(self.cfg, DB_NAME)
 

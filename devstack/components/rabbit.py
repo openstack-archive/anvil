@@ -55,7 +55,7 @@ class RabbitUninstaller(comp.PkgUninstallComponent):
     def pre_uninstall(self):
         try:
             self.runtime.restart()
-            LOG.info("Resetting the guest password to \"%s\"", RESET_BASE_PW)
+            LOG.info("Resetting the rabbit-mq guest password to \"%s\"", RESET_BASE_PW)
             cmd = PWD_CMD + [RESET_BASE_PW]
             sh.execute(*cmd, run_as_root=True)
         except IOError:
@@ -83,11 +83,7 @@ class RabbitInstaller(comp.PkgInstallComponent):
         return parent_result
 
     def _get_pkgs(self):
-        pkgs = comp.PkgInstallComponent._get_pkgs(self)
-        for fn in REQ_PKGS:
-            full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
-            pkgs = utils.extract_pkg_list([full_name], self.distro, pkgs)
-        return pkgs
+        return list(REQ_PKGS)
 
 
 class RabbitRuntime(comp.EmptyRuntime):

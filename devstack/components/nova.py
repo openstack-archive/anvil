@@ -184,45 +184,25 @@ class NovaUninstaller(comp.PythonUninstallComponent):
 class NovaInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
-        self.git_repo = self.cfg.get("git", "nova_repo")
-        self.git_branch = self.cfg.get("git", "nova_branch")
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
         self.paste_conf_fn = self._get_target_config_name(PASTE_CONF)
 
     def _get_pkgs(self):
-        pkgs = comp.PythonInstallComponent._get_pkgs(self)
-        # Get the core pkgs
-        for fn in REQ_PKGS:
-            full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
-            pkgs = utils.extract_pkg_list([full_name], self.distro, pkgs)
-        # Walk through the subcomponents (like 'vol' and 'cpu') and add those
-        # those packages as well.
-        sub_components = []
-        if self.component_opts:
-            sub_components = self.component_opts
-        else:
-            sub_components = SUBCOMPONENTS
-        # Add the extra dependencies
+        pkgs = list(REQ_PKGS)
+        sub_components = self.component_opts or SUBCOMPONENTS
         for c in sub_components:
-            fns = ADD_PKGS.get(c)
-            if fns:
-                for fn in fns:
-                    full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
-                    pkgs = utils.extract_pkg_list([full_name], self.distro, pkgs)
+            fns = ADD_PKGS.get(c) or []
+            pkgs.extend(fns)
         return pkgs
 
     def _get_pips(self):
-        pips = comp.PythonInstallComponent._get_pips(self)
-        for fn in REQ_PIPS:
-            full_name = sh.joinpths(settings.STACK_PIP_DIR, fn)
-            pips = utils.extract_pip_list([full_name], self.distro, pips)
-        return pips
+        return list(REQ_PIPS)
 
     def _get_download_locations(self):
-        places = comp.PythonInstallComponent._get_download_locations(self)
+        places = list()
         places.append({
-            'uri': self.git_repo,
-            'branch': self.git_branch,
+            'uri': ("git", "nova_repo"),
+            'branch': ("git", "nova_branch"),
         })
         return places
 
@@ -263,12 +243,12 @@ class NovaInstaller(comp.PythonInstallComponent):
         return parent_result
 
     def _setup_db(self):
-        LOG.info("Fixing up database named %s", DB_NAME)
+        LOG.info("Fixing up database named %s.", DB_NAME)
         db.drop_db(self.cfg, DB_NAME)
         db.create_db(self.cfg, DB_NAME)
 
     def _setup_vol_groups(self):
-        LOG.info("Attempting to setup volume groups for nova volume management")
+        LOG.info("Attempting to setup volume groups for nova volume management.")
         mp = dict()
         backing_file = self.cfg.get('nova', 'volume_backing_file')
         # check if we need to have a default backing file
@@ -301,7 +281,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         utils.execute_template(*RESTART_TGT_CMD, check_exit_code=False, tracewriter=self.tracewriter)
 
     def _process_lvs(self, mp):
-        LOG.info("Attempting to setup logical volumes for nova volume management")
+        LOG.info("Attempting to setup logical volumes for nova volume management.")
         lvs_result = utils.execute_template(*VG_LVS_CMD, params=mp, tracewriter=self.tracewriter)
         LOG.debug("lvs result: %s" % (lvs_result))
         vol_name_prefix = self.cfg.get('nova', 'volume_name_prefix')
