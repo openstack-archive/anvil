@@ -253,7 +253,7 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
                                                opts=components.get(component, list()))
                     _stop(component, stop_instance, program_args.get('force', False))
                 except excp.StopException:
-                    LOG.info("Failed at stopping %s before uninstalling, skipping stop.", component)
+                    LOG.warn("Failed at stopping %s before uninstalling, skipping stop.", component)
             _uninstall(component, instance, program_args.get('force', False))
     #display any configs touched...
     _print_cfgs(config, action_name)
