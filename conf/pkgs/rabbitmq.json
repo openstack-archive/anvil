@@ -11,6 +11,10 @@
         }
     },
     "rhel-6": {
-        # TBD
+        # Requires EPEL
+        "rabbitmq-server": {
+            "version": "2.6*",
+            "removable": true
+        }
     }
 }

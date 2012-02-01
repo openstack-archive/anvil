@@ -15,6 +15,7 @@
 #    under the License.
 
 from tempfile import TemporaryFile
+import time
 
 from devstack import component as comp
 from devstack import exceptions as excp
@@ -39,6 +40,12 @@ PWD_CMD = ['rabbitmqctl', 'change_password', 'guest']
 #the pkg json files rabbit mq server requires for installation
 REQ_PKGS = ['rabbitmq.json']
 
+#default password
+RESET_BASE_PW = ''
+
+#how long we wait for rabbitmq to start up before doing commands on it
+WAIT_ON_TIME = 5
+
 
 class RabbitUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -46,11 +53,13 @@ class RabbitUninstaller(comp.PkgUninstallComponent):
 
     def pre_uninstall(self):
         try:
-            passwd = ''
-            cmd = PWD_CMD + [passwd]
+            self.runtime.restart()
+            LOG.info("Resetting the guest password to %s", RESET_BASE_PW)
+            cmd = PWD_CMD + [RESET_BASE_PW]
             sh.execute(*cmd, run_as_root=True)
         except IOError:
-            LOG.debug("Couldn't reset rabbit pwd.")
+            LOG.warn(("Could not reset the rabbit-mq password. You might have to manually "
+                      "reset the password to \"%s\" before the next install") % (RESET_BASE_PW), exc_info=True)
 
 
 class RabbitInstaller(comp.PkgInstallComponent):
@@ -59,15 +68,15 @@ class RabbitInstaller(comp.PkgInstallComponent):
         self.runtime = RabbitRuntime(*args, **kargs)
 
     def _setup_pw(self):
+        LOG.info("Setting up your rabbit-mq guest password")
+        self.runtime.restart()
         passwd = self.cfg.get("passwords", "rabbit")
         cmd = PWD_CMD + [passwd]
         sh.execute(*cmd, run_as_root=True)
 
     def post_install(self):
         parent_result = comp.PkgInstallComponent.post_install(self)
-        self.runtime.restart()
         self._setup_pw()
-        self.runtime.restart()
         return parent_result
 
     def _get_pkgs(self):
@@ -120,7 +129,10 @@ class RabbitRuntime(comp.EmptyRuntime):
             sh.execute(*cmd, run_as_root=True)
 
     def restart(self):
+        LOG.info("Restarting rabbitmq")
         self._run_cmd(RESTART_CMD)
+        LOG.info("Please wait %s seconds while it starts up" % (WAIT_ON_TIME))
+        time.sleep(WAIT_ON_TIME)
         return 1
 
     def stop(self):
