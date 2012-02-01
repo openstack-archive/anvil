@@ -98,7 +98,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         return parent_result
 
     def _sync_db(self):
-        LOG.info("Syncing keystone to database named %s", DB_NAME)
+        LOG.info("Syncing keystone to database named %s.", DB_NAME)
         params = dict()
         #it seems like this command only works if fully specified
         #probably a bug
@@ -115,7 +115,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         db.create_db(self.cfg, DB_NAME)
 
     def _setup_data(self):
-        LOG.info("Configuring data setup template %s", MANAGE_DATA_CONF)
+        LOG.info("Configuring data setup template %s.", MANAGE_DATA_CONF)
         (src_fn, contents) = utils.load_template(self.component_name, MANAGE_DATA_CONF)
         params = self._get_param_map(MANAGE_DATA_CONF)
         contents = utils.param_replace(contents, params, True)
@@ -141,10 +141,10 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             config.readfp(stream)
             log_filename = config.get('log_file', CFG_SECTION)
             if log_filename:
-                LOG.info("Ensuring log file %s exists and is empty" % (log_filename))
+                LOG.info("Ensuring log file %s exists and is empty." % (log_filename))
                 log_dir = sh.dirname(log_filename)
                 if log_dir:
-                    LOG.info("Ensuring log directory %s exists" % (log_dir))
+                    LOG.info("Ensuring log directory %s exists." % (log_dir))
                     self.tracewriter.make_dir(log_dir)
                 #destroy then recreate it (the log file)
                 sh.unlink(log_filename)

@@ -25,7 +25,6 @@ from devstack import utils
 
 from devstack.runners import fork
 
-
 LOG = logging.getLogger("devstack.component")
 
 #how we actually setup and unsetup python
@@ -166,8 +165,7 @@ class PkgInstallComponent(ComponentBase):
 
     def configure(self):
         self.tracewriter.make_dir(self.cfgdir)
-        files_configured = self._configure_files()
-        return files_configured
+        return self._configure_files()
 
 
 class PythonInstallComponent(PkgInstallComponent):
@@ -298,13 +296,13 @@ class PythonUninstallComponent(PkgUninstallComponent):
     def _uninstall_pips(self):
         pips = self.tracereader.pips_installed()
         if pips:
-            LOG.info("Uninstalling %s pips" % (len(pips)))
+            LOG.info("Uninstalling %s pips." % (len(pips)))
             pip.uninstall(pips, self.distro)
 
     def _uninstall_python(self):
         pylisting = self.tracereader.py_listing()
         if pylisting:
-            LOG.info("Uninstalling %s python setups" % (len(pylisting)))
+            LOG.info("Uninstalling %s python setups." % (len(pylisting)))
             for entry in pylisting:
                 where = entry.get('where')
                 sh.execute(*PY_UNINSTALL, cwd=where, run_as_root=True)
@@ -338,13 +336,6 @@ class ProgramRuntime(ComponentBase):
             raise NotImplementedError("Can not yet stop %s mode" % (stop_mode))
         return ProgramRuntime.STOPPER_CLS_MAPPING.get(stop_mode)
 
-    def _was_installed(self):
-        if not self.check_installed_pkgs:
-            return True
-        if self.tracereader.packages_installed():
-            return True
-        return False
-
     def _get_apps_to_start(self):
         return list()
 
@@ -363,10 +354,6 @@ class ProgramRuntime(ComponentBase):
         pass
 
     def start(self):
-        #ensure it was installed
-        if not self._was_installed():
-            msg = "Can not start %s since it was not installed" % (self.component_name)
-            raise excp.StartException(msg)
         #select how we are going to start it
         startercls = self._getstartercls(self.run_type)
         starter = startercls()
@@ -387,8 +374,8 @@ class ProgramRuntime(ComponentBase):
                 for opt in program_opts:
                     adjusted_opts.append(utils.param_replace(opt, params))
                 program_opts = adjusted_opts
-            LOG.info("Starting [%s] with options [%s]" % (app_name, ", ".join(program_opts)))
             #start it with the given settings
+            LOG.info("Starting [%s] with options [%s]" % (app_name, ", ".join(program_opts)))
             fn = starter.start(app_name, app_pth, *program_opts, app_dir=app_dir, \
                                trace_dir=self.tracedir)
             if fn:
@@ -401,10 +388,6 @@ class ProgramRuntime(ComponentBase):
         return fns
 
     def stop(self):
-        #ensure it was installed
-        if not self._was_installed():
-            msg = "Can not stop %s since it was not installed" % (self.component_name)
-            raise excp.StopException(msg)
         #we can only stop what has a started trace
         start_traces = self.starttracereader.apps_started()
         killedam = 0
@@ -452,16 +435,6 @@ class ProgramRuntime(ComponentBase):
 class PythonRuntime(ProgramRuntime):
     def __init__(self, component_name, *args, **kargs):
         ProgramRuntime.__init__(self, component_name, *args, **kargs)
-
-    def _was_installed(self):
-        parent_result = ProgramRuntime._was_installed(self)
-        if not parent_result:
-            return False
-        python_installed = self.tracereader.py_listing()
-        if not python_installed:
-            return False
-        else:
-            return True
 
 
 class EmptyRuntime(ComponentBase):

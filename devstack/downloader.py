@@ -23,8 +23,6 @@ from devstack import shell as sh
 
 LOG = logging.getLogger("devstack.downloader")
 EXT_REG = re.compile(r"^(.*?)\.git\s*$", re.IGNORECASE)
-
-# What the git master string is
 GIT_MASTER_BRANCH = "master"
 
 

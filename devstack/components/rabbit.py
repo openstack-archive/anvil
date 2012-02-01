@@ -99,10 +99,6 @@ class RabbitRuntime(comp.EmptyRuntime):
             return 0
 
     def status(self):
-        pkgsinstalled = self.tracereader.packages_installed()
-        if not pkgsinstalled:
-            msg = "Can not check the status of %s since it was not installed" % (TYPE)
-            raise excp.StatusException(msg)
         #this has got to be the worst status output
         #i have ever seen (its like a weird mix json+crap)
         (sysout, _) = sh.execute(*STATUS_CMD,
@@ -127,7 +123,7 @@ class RabbitRuntime(comp.EmptyRuntime):
                         stdout_fh=f, stderr_fh=f)
 
     def restart(self):
-        LOG.info("Restarting rabbitmq")
+        LOG.info("Restarting rabbit-mq.")
         self._run_cmd(RESTART_CMD)
         LOG.info("Please wait %s seconds while it starts up." % (WAIT_ON_TIME))
         time.sleep(WAIT_ON_TIME)

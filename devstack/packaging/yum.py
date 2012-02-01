@@ -74,13 +74,13 @@ class YumPackager(pack.Packager):
         tgt = RHEL_WEBOB_LINK.get("tgt")
         src = RHEL_WEBOB_LINK.get("src")
         if not sh.islink(tgt):
-            #This is actually a feature, EPEL must not conflict with RHEL, so python-webob1.0 installs newer version in parallel.
+            # This is actually a feature, EPEL must not conflict with RHEL, so python-webob1.0 installs newer version in parallel.
             #
-            #This of course doesn't work when running from git like devstack does....
+            # This of course doesn't work when running from git like devstack does....
             #
-            #$ cat /usr/share/doc/python-webob1.0-1.0.8/README.Fedora
+            # $ cat /usr/share/doc/python-webob1.0-1.0.8/README.Fedora
             #
-            # To use version 1.0.8 of python WebOB it is nescesary
+            # To use version 1.0.8 of python WebOB it is necessary
             # to explicitly load it so as not to get the system version
             # of WebOb.
             #
@@ -101,19 +101,18 @@ class YumPackager(pack.Packager):
 
     def install_batch(self, pkgs):
         pkg_names = sorted(pkgs.keys())
-        pkg_full_names = list()
+        pkg_full_names = []
         for name in pkg_names:
             info = pkgs.get(name) or {}
             if self._install_special(name, info):
                 continue
             full_pkg_name = self._format_pkg_name(name, info.get("version"))
-            if full_pkg_name:
-                pkg_full_names.append(full_pkg_name)
+            pkg_full_names.append(full_pkg_name)
         if pkg_full_names:
             cmd = YUM_CMD + YUM_INSTALL + pkg_full_names
             self._execute_yum(cmd)
 
-    def remove_batch(self, pkgs):
+    def _remove_batch(self, pkgs):
         pkg_names = sorted(pkgs.keys())
         pkg_full_names = []
         which_removed = []
@@ -126,9 +125,8 @@ class YumPackager(pack.Packager):
                 which_removed.append(name)
                 continue
             full_pkg_name = self._format_pkg_name(name, info.get("version"))
-            if full_pkg_name:
-                pkg_full_names.append(full_pkg_name)
-                which_removed.append(name)
+            pkg_full_names.append(full_pkg_name)
+            which_removed.append(name)
         if pkg_full_names:
             cmd = YUM_CMD + YUM_REMOVE + pkg_full_names
             self._execute_yum(cmd)
