@@ -172,6 +172,9 @@ QUANTUM_OPENSWITCH_OPS = {
     'quantum_use_dhcp': None,
 }
 
+#pip files that nova requires
+REQ_PIPS = ['nova.json']
+
 
 class NovaUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -207,6 +210,13 @@ class NovaInstaller(comp.PythonInstallComponent):
                     full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
                     pkgs = utils.extract_pkg_list([full_name], self.distro, pkgs)
         return pkgs
+
+    def _get_pips(self):
+        pips = comp.PythonInstallComponent._get_pips(self)
+        for fn in REQ_PIPS:
+            full_name = sh.joinpths(settings.STACK_PIP_DIR, fn)
+            pips = utils.extract_pip_list([full_name], self.distro, pips)
+        return pips
 
     def _get_download_locations(self):
         places = comp.PythonInstallComponent._get_download_locations(self)
