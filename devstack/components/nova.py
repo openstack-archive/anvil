@@ -15,6 +15,8 @@
 #    under the License.
 
 import io
+import os
+import stat
 
 from devstack import cfg
 from devstack import component as comp
@@ -540,6 +542,7 @@ class NovaConfigurator(object):
             # If there's no instances path, specify a default
             instances_path = sh.joinpths(self.component_root, 'instances')
         nova_conf.add('instances_path', instances_path)
+        os.chmod(instances_path, stat.S_IRWXO | stat.S_IRWXG | stat.S_IRWXU)
         LOG.debug("Attempting to create instance directory:%s" % (instances_path))
         # Create the directory for instances
         self.tracewriter.make_dir(instances_path)
