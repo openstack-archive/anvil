@@ -21,6 +21,14 @@
         }
     },
     "rhel-6": {
-        # TBD
+        "lvm2": {
+            "version": "2.02*",
+            "removable": true
+        },
+        # Is this correct?
+        "iscsi-initiator-utils": {
+            "version": "6.2*",
+            "removable": true
+        }
     }
 }
