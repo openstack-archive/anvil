@@ -50,6 +50,7 @@ WAIT_ON_TIME = 5
 class RabbitUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PkgUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        self.runtime = RabbitRuntime(*args, **kargs)
 
     def pre_uninstall(self):
         try:
