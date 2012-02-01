@@ -18,16 +18,24 @@
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import shell as sh
+from devstack import settings
 
 LOG = logging.getLogger("devstack.pip")
 
-INSTALL_CMD = ['pip', 'install']
-UNINSTALL_CMD = ['pip', 'uninstall']
+
+PIP_UNINSTALL_CMD_OPTS = ['-y', '-q']
+PIP_INSTALL_CMD_OPTS = ['-q']
 
 
-def install(pips):
-    if not pips:
-        return
+def _cmd_name(distro):
+    #of course u know they have to change the name...
+    if distro == settings.RHEL6:
+        return 'pip-python'
+    else:
+        return 'pip'
+
+
+def install(pips, distro):
     actions = list()
     pipnames = sorted(pips.keys())
     for name in pipnames:
@@ -40,20 +48,20 @@ def install(pips):
         actions.append(pipfull)
     if actions:
         LOG.info("Installing python packages [%s]" % (", ".join(actions)))
-        cmd = INSTALL_CMD + actions
+        root_cmd = _cmd_name(distro)
+        cmd = [root_cmd, 'install'] + PIP_INSTALL_CMD_OPTS + actions
         sh.execute(*cmd, run_as_root=True)
 
 
-def uninstall(pips):
-    if not pips:
-        return
+def uninstall(pips, distro):
     pipnames = sorted(pips.keys())
     LOG.info("Uninstalling python packages [%s]" % (", ".join(pipnames)))
     for name in pipnames:
         pipinfo = pips.get(name, dict())
-        skip_errors = pipinfo.get('skip_uninstall_errors', False)
+        skip_errors = pipinfo.get('skip_uninstall_errors', True)
         try:
-            cmd = UNINSTALL_CMD + [name]
+            root_cmd = _cmd_name(distro)
+            cmd = [root_cmd, 'uninstall'] + PIP_UNINSTALL_CMD_OPTS + [name]
             sh.execute(*cmd, run_as_root=True)
         except excp.ProcessExecutionError:
             if skip_errors:

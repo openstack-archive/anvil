@@ -196,14 +196,19 @@
             "version": "0.6.10*",
             "removable": false
         },
+        # Requires EPEL
+        "python-distutils-extra": {
+            "version": "2.29*",
+            "removable": false
+        },
         "python-dev": {
             "version": "2.6*",
             "removable": false
         },
         # For testing
-        "python-nose": {
-            # This version seems way old
-            "version": "0.10*",
+        # Requires EPEL
+        "python-nose1.1": {
+            "version": "1.1*",
             "removable": true
         },
         # For testing

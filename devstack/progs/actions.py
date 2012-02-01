@@ -48,6 +48,9 @@ _WELCOME_MAP = {
 # For actions in this list we will reverse the component order
 _REVERSE_ACTIONS = [settings.UNINSTALL, settings.STOP]
 
+# These will not automatically stop when uninstalled since it seems to break there password reset.
+_NO_AUTO_STOP = [settings.DB, settings.RABBIT]
+
 
 def _clean_action(action):
     if action is None:
@@ -237,16 +240,17 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
                 else:
                     results.append(str(start_result))
         elif action_name == settings.UNINSTALL:
-            # always stop first. doesn't hurt if already stopped - but makes
-            # sure that there are no lingering processes if not
-            stop_cls = common.get_action_cls(settings.STOP, component)
-            stop_instance = stop_cls(instances=stop_instances,
-                                       distro=distro,
-                                       packager=pkg_manager,
-                                       config=config,
-                                       root=root_dir,
-                                       opts=components.get(component, list()))
-            _stop(component, stop_instance, program_args.get('force', False))
+            if component not in _NO_AUTO_STOP:
+                # always stop first. doesn't hurt if already stopped - but makes
+                # sure that there are no lingering processes if not
+                stop_cls = common.get_action_cls(settings.STOP, component)
+                stop_instance = stop_cls(instances=stop_instances,
+                                           distro=distro,
+                                           packager=pkg_manager,
+                                           config=config,
+                                           root=root_dir,
+                                           opts=components.get(component, list()))
+                _stop(component, stop_instance, program_args.get('force', False))
             _uninstall(component, instance, program_args.get('force', False))
     #display any configs touched...
     _print_cfgs(config, action_name)

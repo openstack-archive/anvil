@@ -22,7 +22,7 @@
             "removable": true,
             "pre-install": [
                 {
-                    # This apparently is a action needed for ubuntu/debian to not prompt for passwords...
+                    # This apparently is a action needed for ubuntu/debian to set the password to something known....
                     "run_as_root": true,
                     "cmd": [
                         "debconf-set-selections"

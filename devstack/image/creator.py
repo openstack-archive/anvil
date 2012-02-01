@@ -108,7 +108,9 @@ class Image(object):
             params = {'TOKEN': self.token, 'IMAGE_NAME': self.image_name}
             cmd = {'cmd': Image.KERNEL_FORMAT}
             with open(self.kernel) as file_:
-                res = utils.execute_template(cmd, params=params, stdin_fh=file_)
+                res = utils.execute_template(cmd,
+                    params=params, stdin_fh=file_,
+                    close_stdin=True)
             self.kernel_id = res[0][0].split(':')[1].strip()
 
         if self.initrd:
@@ -116,7 +118,8 @@ class Image(object):
             params = {'TOKEN': self.token, 'IMAGE_NAME': self.image_name}
             cmd = {'cmd': Image.INITRD_FORMAT}
             with open(self.initrd) as file_:
-                res = utils.execute_template(cmd, params=params, stdin_fh=file_)
+                res = utils.execute_template(cmd, params=params,
+                    stdin_fh=file_, close_stdin=True)
             self.initrd_id = res[0][0].split(':')[1].strip()
 
         LOG.info('Adding image %s to glance', self.image_name)
@@ -124,7 +127,8 @@ class Image(object):
                   'KERNEL_ID': self.kernel_id, 'INITRD_ID': self.initrd_id}
         cmd = {'cmd': Image.IMAGE_FORMAT}
         with open(self.image) as file_:
-            utils.execute_template(cmd, params=params, stdin_fh=file_)
+            utils.execute_template(cmd, params=params,
+                stdin_fh=file_, close_stdin=True)
 
     def _cleanup(self):
         if self.tmp_folder:

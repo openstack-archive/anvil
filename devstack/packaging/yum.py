@@ -16,6 +16,7 @@
 
 from devstack import log as logging
 from devstack import packager as pack
+from devstack import settings
 from devstack import shell as sh
 
 LOG = logging.getLogger("devstack.packaging.yum")
@@ -47,9 +48,32 @@ class YumPackager(pack.Packager):
             **kargs)
 
     def _remove_special(self, pkgname, pkginfo):
+        if pkgname == 'python-webob1.0' and self.distro == settings.RHEL6:
+            self._remove_webob_rhel()
         return False
 
+    def _remove_webob_rhel(self):
+        if sh.isdir('/usr/lib/python2.6/site-packages/webob'):
+            #remove the link we made
+            rm_cmd = ['rm', '/usr/lib/python2.6/site-packages/webob']
+            sh.execute(*rm_cmd, run_as_root=True)
+
+    def _install_webob_rhel(self, pkgname, pkginfo):
+        full_pkg_name = self._format_pkg_name(pkgname, pkginfo.get("version"))
+        install_cmd = YUM_CMD + YUM_INSTALL + [full_pkg_name]
+        self._execute_yum(install_cmd)
+        #need to fix its link...
+        if not sh.isdir('/usr/lib/python2.6/site-packages/webob'):
+            #TODO: this needs to be a bug against that epel pkg
+            link_cmd = ['ln', '-s',
+                    '/usr/lib/python2.6/site-packages/WebOb-1.0.8-py2.6.egg/webob/',
+                    '/usr/lib/python2.6/site-packages/webob']
+            sh.execute(*link_cmd, run_as_root=True)
+        return True
+
     def _install_special(self, pkgname, pkginfo):
+        if pkgname == 'python-webob1.0' and self.distro == settings.RHEL6:
+            return self._install_webob_rhel(pkgname, pkginfo)
         return False
 
     def install_batch(self, pkgs):

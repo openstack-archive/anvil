@@ -51,6 +51,7 @@ DB_NAME = "glance"
 
 #special subcomponents/options that are used in starting to know that images should be uploaded
 NO_IMG_START = "no-image-upload"
+WAIT_ONLINE_TO = 5
 
 #what to start
 APP_OPTIONS = {
@@ -70,6 +71,9 @@ BIN_DIR = 'bin'
 
 #the pkg json files glance requires for installation
 REQ_PKGS = ['general.json', 'glance.json']
+
+#pip files that glance requires
+REQ_PIPS = ['glance.json']
 
 
 class GlanceUninstaller(comp.PythonUninstallComponent):
@@ -96,6 +100,13 @@ class GlanceInstaller(comp.PythonInstallComponent):
     def _get_config_files(self):
         #these are the config files we will be adjusting
         return list(CONFIGS)
+
+    def _get_pips(self):
+        pips = comp.PythonInstallComponent._get_pips(self)
+        for fn in REQ_PIPS:
+            full_name = sh.joinpths(settings.STACK_PIP_DIR, fn)
+            pips = utils.extract_pip_list([full_name], self.distro, pips)
+        return pips
 
     def _get_pkgs(self):
         pkgs = comp.PythonInstallComponent._get_pkgs(self)
@@ -205,7 +216,7 @@ class GlanceRuntime(comp.PythonRuntime):
         if NO_IMG_START not in self.component_opts:
             #install any images that need activating...
             # TODO: make this less cheesy - need to wait till glance goes online
-            time.sleep(1)
+            time.sleep(WAIT_ONLINE_TO)
             creator.ImageCreationService(self.cfg).install()
 
 

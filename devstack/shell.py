@@ -38,6 +38,7 @@ def execute(*cmd, **kwargs):
     check_exit_code = kwargs.pop('check_exit_code', [0])
     cwd = kwargs.pop('cwd', None)
     env_overrides = kwargs.pop('env_overrides', None)
+    close_stdin = kwargs.pop('close_stdin', False)
     ignore_exit_code = False
 
     if isinstance(check_exit_code, bool):
@@ -48,18 +49,22 @@ def execute(*cmd, **kwargs):
 
     run_as_root = kwargs.pop('run_as_root', False)
     shell = kwargs.pop('shell', False)
-    if run_as_root:
-        cmd = ROOT_HELPER + list(cmd)
 
-    cmd = [str(c) for c in cmd]
-    execute_cmd = None
-    str_cmd = " ".join(cmd)
+    execute_cmd = list()
+    if run_as_root:
+        execute_cmd.extend(ROOT_HELPER)
+
+    for c in cmd:
+        execute_cmd.append(str(c))
+
+    str_cmd = " ".join(execute_cmd)
     if shell:
         execute_cmd = str_cmd.strip()
-        LOG.debug('Running shell cmd: [%s]' % (str_cmd))
+
+    if not shell:
+        LOG.debug('Running cmd: %s' % (execute_cmd))
     else:
-        execute_cmd = cmd
-        LOG.debug('Running cmd: [%s]' % (str_cmd))
+        LOG.debug('Running shell cmd: %s' % (execute_cmd))
 
     if process_input is not None:
         LOG.debug('With stdin: %s' % (process_input))
@@ -85,9 +90,9 @@ def execute(*cmd, **kwargs):
         stderr_fh = kwargs.get('stderr_fh')
         LOG.debug("Redirecting stderr to file handle: %s" % (stderr_fh))
 
-    process_env = env.get()
-    LOG.debug("With environment: %s" % (process_env))
+    process_env = None
     if env_overrides and len(env_overrides):
+        process_env = env.get()
         LOG.debug("With additional environment overrides: %s" % (env_overrides))
         for (k, v) in env_overrides.items():
             process_env[k] = str(v)
@@ -107,7 +112,8 @@ def execute(*cmd, **kwargs):
     else:
         result = obj.communicate()
 
-    if 'stdin_fh' not in kwargs.keys():
+    if (stdin_fh != subprocess.PIPE
+            and obj.stdin and close_stdin):
         obj.stdin.close()
 
     rc = obj.returncode
@@ -155,11 +161,12 @@ def _gen_password(pw_len):
     return stdout.strip()
 
 
-def _prompt_password(prompt_=None):
-    if prompt_:
-        return getpass.getpass(prompt_)
+def prompt_password(pw_prompt=None):
+    if pw_prompt:
+        rc = getpass.getpass(pw_prompt)
     else:
-        return getpass.getpass()
+        rc = getpass.getpass()
+    return rc.strip()
 
 
 def chown_r(path, uid, gid):
@@ -181,7 +188,7 @@ def password(prompt_=None, pw_len=8):
     rd = ""
     ask_for_pw = env.get_bool(PASS_ASK_ENV, True)
     if ask_for_pw:
-        rd = _prompt_password(prompt_)
+        rd = prompt_password(prompt_)
     if not rd:
         return _gen_password(pw_len)
     else:

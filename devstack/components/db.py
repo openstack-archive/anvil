@@ -22,6 +22,8 @@ from devstack import shell as sh
 from devstack import trace as tr
 from devstack import utils
 
+import time
+
 LOG = logging.getLogger("devstack.components.db")
 
 #id
@@ -29,6 +31,7 @@ TYPE = settings.DB
 
 #used for special setups
 MYSQL = 'mysql'
+START_WAIT_TIME = 10
 DB_ACTIONS = {
     MYSQL: {
         # Of course these aren't distro independent...
@@ -37,37 +40,37 @@ DB_ACTIONS = {
                 'start': ["service", "mysql", 'start'],
                 'stop': ["service", 'mysql', "stop"],
                 'status': ["service", 'mysql', "status"],
-                'restart': ["service", 'mysql', "status"],
+                'restart': ["service", 'mysql', "restart"],
             },
             settings.RHEL6: {
                 'start': ["service", "mysqld", 'start'],
                 'stop': ["service", 'mysqld', "stop"],
                 'status': ["service", 'mysqld', "status"],
-                'restart': ["service", 'mysqld', "status"],
+                'restart': ["service", 'mysqld', "restart"],
             },
         },
-        #
-        'setpwd': ['mysqladmin', '--user=%USER%', 'password', '%NEW_PASSWORD%',
-                   '--password=%PASSWORD%'],
+        #modification commands
+        'set_pwd': ['mysql', '-u', '%USER%', '--password=%OLD_PASSWORD%', '-e', ("\"USE mysql; UPDATE user SET "
+                    " password=PASSWORD('%NEW_PASSWORD%') WHERE User='%USER%'; FLUSH privileges;\"")],
         'create_db': ['mysql', '--user=%USER%', '--password=%PASSWORD%',
                       '-e', 'CREATE DATABASE %DB%;'],
         'drop_db': ['mysql', '--user=%USER%', '--password=%PASSWORD%',
                     '-e', 'DROP DATABASE IF EXISTS %DB%;'],
-        'grant_all': [
-            "mysql",
-            "--user=%USER%",
-            "--password=%PASSWORD%",
-            ("-e \"GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' "
-             "identified by '%PASSWORD%';\""),
-        ],
-        # we could do this in python directly, but executing allows us to
-        # not have to sudo the whole program
-        'host_adjust': ['perl', '-p', '-i', '-e', "'s/127.0.0.1/0.0.0.0/g'",
-                        '/etc/mysql/my.cnf'],
+        'grant_all': ["mysql", "--user=%USER%", "--password=%PASSWORD%",
+                    ("-e \"GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' "
+                    "identified by '%PASSWORD%'; flush privileges;\"")],
     },
 }
 
+#annoying adjustments
+RHEL_FIX_GRANTS = ['perl', '-p', '-i', '-e', "'s/^skip-grant-tables/#skip-grant-tables/g'", '/etc/my.cnf']
+UBUNTU_HOST_ADJUST = ['perl', '-p', '-i', '-e', "'s/127.0.0.1/0.0.0.0/g'", '/etc/mysql/my.cnf']
 
+#need to reset pw (this is the prompt)
+RESET_PW = "Please enter your current mysql password for user \"%s\" so we can reset it for next time (blank allowed): "
+RESET_BASE_PW = ''
+
+#links about how to reset if it fails
 SQL_RESET_PW_LINKS = ['https://help.ubuntu.com/community/MysqlPasswordReset', 'http://crashmag.net/resetting-the-root-password-for-mysql-running-on-rhel-or-centos']
 
 #used as a generic error message
@@ -88,38 +91,28 @@ class DBUninstaller(comp.PkgUninstallComponent):
     def pre_uninstall(self):
         dbtype = self.cfg.get("db", "type")
         dbactions = DB_ACTIONS.get(dbtype)
-
-        try:
-            self.runtime.start()
-        except IOError:
-            LOG.warn("Could not start your database.")
-
-        # set pwd
         try:
             if dbactions and dbtype == MYSQL:
                 LOG.info(("Attempting to reset your mysql password so"
                           " that we can set it the next time you install."))
-                pwd_cmd = dbactions.get('setpwd')
+                pwd_cmd = dbactions.get('set_pwd')
                 if pwd_cmd:
+                    LOG.info("Ensuring your database is started before we operate on it.")
+                    self.runtime.restart()
+                    user = self.cfg.get("db", "sql_user")
+                    pw_prompt = RESET_PW % (user)
+                    old_pw = sh.prompt_password(pw_prompt)
                     params = {
-                        'PASSWORD': self.cfg.get("passwords", "sql"),
-                        'USER': self.cfg.get("db", "sql_user"),
-                        'NEW_PASSWORD': ''
+                        'OLD_PASSWORD': old_pw,
+                        'NEW_PASSWORD': RESET_BASE_PW,
+                        'USER': user,
                         }
-                    cmds = [{
-                            'cmd': pwd_cmd,
-                            'run_as_root': True,
-                            }]
-                    utils.execute_template(*cmds, params=params)
+                    cmds = [{'cmd': pwd_cmd}]
+                    utils.execute_template(*cmds, params=params, shell=True)
         except IOError:
-            LOG.warn(("Could not reset mysql password. You might have to manually "
-                      "reset mysql before the next install"))
-            LOG.info("To aid in this check out: %s", " or ".join(SQL_RESET_PW_LINKS))
-
-        try:
-            self.runtime.stop()
-        except IOError:
-            LOG.warn("Could not stop your database.")
+            LOG.warn(("Could not reset the database password. You might have to manually "
+                      "reset the password to \"%s\" before the next install") % (RESET_BASE_PW), exc_info=True)
+            LOG.info("To aid in this check out: [%s]", " or ".join(SQL_RESET_PW_LINKS))
 
 
 class DBInstaller(comp.PkgInstallComponent):
@@ -140,6 +133,15 @@ class DBInstaller(comp.PkgInstallComponent):
         }
         return out
 
+    def _configure_db_confs(self):
+        dbtype = self.cfg.get("db", "type")
+        if self.distro == settings.RHEL6 and dbtype == MYSQL:
+            LOG.info("Fixing up rhel 6 mysql configs")
+            sh.execute(*RHEL_FIX_GRANTS, run_as_root=True)
+        elif self.distro == settings.UBUNTU11 and dbtype == MYSQL:
+            LOG.info("Fixing up ubuntu 11 mysql configs")
+            sh.execute(*UBUNTU_HOST_ADJUST, run_as_root=True)
+
     def _get_pkgs(self):
         pkgs = comp.PkgInstallComponent._get_pkgs(self)
         for fn in REQ_PKGS:
@@ -150,53 +152,53 @@ class DBInstaller(comp.PkgInstallComponent):
     def post_install(self):
         parent_result = comp.PkgInstallComponent.post_install(self)
 
+        #fix up the db configs
+        self._configure_db_confs()
+
         #extra actions to ensure we are granted access
         dbtype = self.cfg.get("db", "type")
         dbactions = DB_ACTIONS.get(dbtype)
-        self.runtime.start()
 
-        # set pwd
+        #set your password
         try:
             if dbactions and dbtype == MYSQL:
-                LOG.info(("Attempting to set your mysql password "
-                          " just incase it wasn't set previously"))
-                pwd_cmd = dbactions.get('setpwd')
+                LOG.info(("Attempting to set your mysql password"
+                          " just incase it wasn't set previously."))
+                pwd_cmd = dbactions.get('set_pwd')
                 if pwd_cmd:
+                    LOG.info("Ensuring mysql is started.")
+                    self.runtime.restart()
                     params = {
                         'NEW_PASSWORD': self.cfg.get("passwords", "sql"),
-                        'PASSWORD': '',
-                        'USER': self.cfg.get("db", "sql_user")
+                        'USER': self.cfg.get("db", "sql_user"),
+                        'OLD_PASSWORD': RESET_BASE_PW,
                         }
-                    cmds = [{
-                            'cmd': pwd_cmd,
-                            'run_as_root': True,
-                            }]
-                    utils.execute_template(*cmds, params=params)
+                    cmds = [{'cmd': pwd_cmd}]
+                    utils.execute_template(*cmds, params=params, shell=True)
         except IOError:
             LOG.warn(("Couldn't set your password. It might have already been "
-                       "set by a previous process."))
+                       "set by a previous process."), exc_info=True)
 
-        if dbactions and dbactions.get('grant_all'):
-            #update the DB to give user 'USER'@'%' full control of the all databases:
+        #ensure access granted
+        if dbactions:
             grant_cmd = dbactions.get('grant_all')
-            params = self._get_param_map(None)
-            cmds = list()
-            cmds.append({
-                'cmd': grant_cmd,
-                'run_as_root': False,
-            })
-            #shell seems to be needed here
-            #since python escapes this to much...
-            utils.execute_template(*cmds, params=params, shell=True)
+            if grant_cmd:
+                user = self.cfg.get("db", "sql_user")
+                LOG.info("Updating the DB to give user '%s' full control of all databases." % (user))
+                LOG.info("Ensuring your database is started.")
+                self.runtime.restart()
+                params = {
+                    'PASSWORD': self.cfg.get("passwords", "sql"),
+                    'USER': user,
+                }
+                cmds = list()
+                cmds.append({
+                    'cmd': grant_cmd,
+                })
+                #shell seems to be needed here
+                #since python escapes this to much...
+                utils.execute_template(*cmds, params=params, shell=True)
 
-        #special mysql actions
-        if dbactions and dbtype == MYSQL:
-            cmd = dbactions.get('host_adjust')
-            if cmd:
-                sh.execute(*cmd, run_as_root=True, shell=True)
-
-        #restart it to make sure all good
-        self.runtime.restart()
         return parent_result
 
 
@@ -225,6 +227,8 @@ class DBRuntime(comp.EmptyRuntime):
         if self.status() == comp.STATUS_STOPPED:
             startcmd = self._get_run_actions('start', excp.StartException)
             sh.execute(*startcmd, run_as_root=True)
+            LOG.info("Please wait %s seconds while it comes up" % START_WAIT_TIME)
+            time.sleep(START_WAIT_TIME)
             return 1
         else:
             return 0
@@ -240,14 +244,17 @@ class DBRuntime(comp.EmptyRuntime):
     def restart(self):
         restartcmd = self._get_run_actions('restart', excp.RestartException)
         sh.execute(*restartcmd, run_as_root=True)
+        #this seems needed?
+        LOG.info("Please wait %s seconds while it comes up" % START_WAIT_TIME)
+        time.sleep(START_WAIT_TIME)
         return 1
 
     def status(self):
         statuscmd = self._get_run_actions('status', excp.StatusException)
         (sysout, _) = sh.execute(*statuscmd, check_exit_code=False)
-        if sysout.find("start/running") != -1:
+        if sysout.find("running") != -1:
             return comp.STATUS_STARTED
-        elif sysout.find("stop/waiting") != -1:
+        elif sysout.find("stop") != -1:
             return comp.STATUS_STOPPED
         else:
             return comp.STATUS_UNKNOWN

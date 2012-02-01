@@ -14,14 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import operator
-import os.path
+import os
 import re
-import sys
-
-from devstack import log as logging
-
-LOG = logging.getLogger("devstack.settings")
 
 # These also have meaning outside python,
 # ie in the pkg/pip listings so update there also!

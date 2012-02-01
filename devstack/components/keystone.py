@@ -59,7 +59,7 @@ APP_OPTIONS = {
 #the pkg json files keystone requires for installation
 REQ_PKGS = ['general.json', 'keystone.json']
 
-#pip files that horizon requires
+#pip files that keystone requires
 REQ_PIPS = ['keystone.json']
 
 
