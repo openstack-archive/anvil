@@ -55,7 +55,7 @@ class RabbitUninstaller(comp.PkgUninstallComponent):
     def pre_uninstall(self):
         try:
             self.runtime.restart()
-            LOG.info("Resetting the guest password to %s", RESET_BASE_PW)
+            LOG.info("Resetting the guest password to \"%s\"", RESET_BASE_PW)
             cmd = PWD_CMD + [RESET_BASE_PW]
             sh.execute(*cmd, run_as_root=True)
         except IOError:
@@ -69,7 +69,7 @@ class RabbitInstaller(comp.PkgInstallComponent):
         self.runtime = RabbitRuntime(*args, **kargs)
 
     def _setup_pw(self):
-        LOG.info("Setting up your rabbit-mq guest password")
+        LOG.info("Setting up your rabbit-mq guest password.")
         self.runtime.restart()
         passwd = self.cfg.get("passwords", "rabbit")
         cmd = PWD_CMD + [passwd]
@@ -131,7 +131,7 @@ class RabbitRuntime(comp.EmptyRuntime):
     def restart(self):
         LOG.info("Restarting rabbitmq")
         self._run_cmd(RESTART_CMD)
-        LOG.info("Please wait %s seconds while it starts up" % (WAIT_ON_TIME))
+        LOG.info("Please wait %s seconds while it starts up." % (WAIT_ON_TIME))
         time.sleep(WAIT_ON_TIME)
         return 1
 
