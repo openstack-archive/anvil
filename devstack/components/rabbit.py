@@ -118,16 +118,15 @@ class RabbitRuntime(comp.EmptyRuntime):
             return comp.STATUS_UNKNOWN
 
     def _run_cmd(self, cmd):
-        if self.distro == settings.UBUNTU11:
-            #this seems to fix one of the bugs with rabbit mq starting and stopping
-            #not cool, possibly connected to the following bugs:
-            #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
-            #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
-            with TemporaryFile() as f:
-                sh.execute(*cmd, run_as_root=True,
-                            stdout_fh=f, stderr_fh=f)
-        else:
-            sh.execute(*cmd, run_as_root=True)
+        #this seems to fix one of the bugs with rabbit mq starting and stopping
+        #not cool, possibly connected to the following bugs:
+        #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
+        #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
+        #
+        #rhel seems to have this bug also...
+        with TemporaryFile() as f:
+            sh.execute(*cmd, run_as_root=True,
+                        stdout_fh=f, stderr_fh=f)
 
     def restart(self):
         LOG.info("Restarting rabbitmq")
