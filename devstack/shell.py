@@ -148,6 +148,10 @@ def isdir(path):
     return os.path.isdir(path)
 
 
+def islink(path):
+    return os.path.islink(path)
+
+
 def joinpths(*paths):
     return os.path.join(*paths)
 

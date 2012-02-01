@@ -208,7 +208,7 @@
         },
         "ebtables": {
             "version": "2.0*",
-            "removable": true
+            "removable": false
         },
         "sqlite": {
             "version": "3.6*",

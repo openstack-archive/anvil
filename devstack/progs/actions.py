@@ -206,7 +206,6 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
     config = common.get_config()
     #form the active instances (this includes ones we won't use)
     all_instances = {}
-    stop_instances = {}
     for component in components.keys():
         action_cls = common.get_action_cls(action_name, component)
         instance = action_cls(instances=all_instances,
@@ -219,6 +218,7 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
     #run anything before it gets going...
     _pre_run(action_name, root_dir=root_dir, pkg=pkg_manager, cfg=config)
     results = list()
+    force = program_args.get('force', False)
     for component in component_order:
         #this instance was just made
         instance = all_instances.get(component)
@@ -226,15 +226,17 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
         if action_name == settings.INSTALL:
             install_result = _install(component, instance)
             if install_result:
+                #TODO clean this up.
                 if type(install_result) == list:
                     results += install_result
                 else:
                     results.append(str(install_result))
         elif action_name == settings.STOP:
-            _stop(component, instance, program_args.get('force', False))
+            _stop(component, instance, force)
         elif action_name == settings.START:
             start_result = _start(component, instance)
             if start_result:
+                #TODO clean this up.
                 if type(start_result) == list:
                     results += start_result
                 else:
@@ -245,16 +247,16 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
                 # sure that there are no lingering processes if not
                 try:
                     stop_cls = common.get_action_cls(settings.STOP, component)
-                    stop_instance = stop_cls(instances=stop_instances,
+                    stop_instance = stop_cls(instances=dict(),
                                                distro=distro,
                                                packager=pkg_manager,
                                                config=config,
                                                root=root_dir,
                                                opts=components.get(component, list()))
-                    _stop(component, stop_instance, program_args.get('force', False))
+                    _stop(component, stop_instance, force)
                 except excp.StopException:
                     LOG.warn("Failed at stopping %s before uninstalling, skipping stop.", component)
-            _uninstall(component, instance, program_args.get('force', False))
+            _uninstall(component, instance, force)
     #display any configs touched...
     _print_cfgs(config, action_name)
     #any post run actions go now

@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import packager as pack
 from devstack import settings
@@ -30,6 +31,12 @@ YUM_REMOVE = ['erase', '-y', "-t"]
 
 #yum separates its pkg names and versions with a dash
 VERSION_TEMPL = "%s-%s"
+
+#need to relink for rhel (not a bug!)
+RHEL_WEBOB_LINK = {
+    "src": '/usr/lib/python2.6/site-packages/WebOb-1.0.8-py2.6.egg/webob/',
+    'tgt': '/usr/lib/python2.6/site-packages/webob',
+}
 
 
 class YumPackager(pack.Packager):
@@ -50,24 +57,40 @@ class YumPackager(pack.Packager):
     def _remove_special(self, pkgname, pkginfo):
         if pkgname == 'python-webob1.0' and self.distro == settings.RHEL6:
             self._remove_webob_rhel()
+            #we don't return true here so that
+            #the normal package cleanup happens
         return False
 
     def _remove_webob_rhel(self):
-        if sh.isdir('/usr/lib/python2.6/site-packages/webob'):
-            #remove the link we made
-            rm_cmd = ['rm', '/usr/lib/python2.6/site-packages/webob']
+        tgt = RHEL_WEBOB_LINK.get("tgt")
+        if sh.islink(tgt):
+            rm_cmd = ['rm', tgt]
             sh.execute(*rm_cmd, run_as_root=True)
 
     def _install_webob_rhel(self, pkgname, pkginfo):
         full_pkg_name = self._format_pkg_name(pkgname, pkginfo.get("version"))
         install_cmd = YUM_CMD + YUM_INSTALL + [full_pkg_name]
         self._execute_yum(install_cmd)
-        #need to fix its link...
-        if not sh.isdir('/usr/lib/python2.6/site-packages/webob'):
-            #TODO: this needs to be a bug against that epel pkg
-            link_cmd = ['ln', '-s',
-                    '/usr/lib/python2.6/site-packages/WebOb-1.0.8-py2.6.egg/webob/',
-                    '/usr/lib/python2.6/site-packages/webob']
+        tgt = RHEL_WEBOB_LINK.get("tgt")
+        src = RHEL_WEBOB_LINK.get("src")
+        if not sh.islink(tgt):
+            #This is actually a feature, EPEL must not conflict with RHEL, so python-webob1.0 installs newer version in parallel.
+            #
+            #This of course doesn't work when running from git like devstack does....
+            #
+            #$ cat /usr/share/doc/python-webob1.0-1.0.8/README.Fedora
+            #
+            # To use version 1.0.8 of python WebOB it is nescesary
+            # to explicitly load it so as not to get the system version
+            # of WebOb.
+            #
+            # Manually modifying sys.path is an easy and reliable way
+            # to use this module.
+            #
+            # >>> import sys
+            # >>> sys.path.insert(0, '/usr/lib/python2.6/site-packages/WebOb-1.0.8-py2.6.egg')
+            # >>> import webob
+            link_cmd = ['ln', '-s', src, tgt]
             sh.execute(*link_cmd, run_as_root=True)
         return True
 
