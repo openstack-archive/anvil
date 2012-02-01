@@ -552,10 +552,12 @@ class NovaConfigurator(object):
             # If there's no instances path, specify a default
             instances_path = sh.joinpths(self.component_root, 'instances')
         nova_conf.add('instances_path', instances_path)
-        os.chmod(instances_path, stat.S_IRWXO | stat.S_IRWXG | stat.S_IRWXU)
-        LOG.debug("Attempting to create instance directory:%s" % (instances_path))
+
         # Create the directory for instances
+        LOG.debug("Attempting to create instance directory: %s" % (instances_path))
         self.tracewriter.make_dir(instances_path)
+        LOG.debug("Adjusting permissions of instance directory: %s" % (instances_path))
+        os.chmod(instances_path, stat.S_IRWXO | stat.S_IRWXG | stat.S_IRWXU)
 
         #is this a multihost setup?
         if self._getbool('multi_host'):
