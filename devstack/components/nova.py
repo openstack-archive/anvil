@@ -447,6 +447,7 @@ class NovaConfigurator(object):
 
         #whats the network fixed range?
         nova_conf.add('fixed_range', self._getstr('fixed_range'))
+        nova_conf.add('s3_host', hostip)
 
         if settings.QUANTUM in self.instances:
             #setup quantum config
