@@ -33,8 +33,8 @@ from devstack.progs import common
 
 LOG = logging.getLogger("devstack.progs.actions")
 
-#this map controls which distro has
-#which package management class
+# This map controls which distro has
+# which package management class
 _PKGR_MAP = {
     settings.UBUNTU11: apt.AptPackager,
     settings.RHEL6: yum.YumPackager,
@@ -67,22 +67,10 @@ def _clean_action(action):
 
 def _get_pkg_manager(distro, keep_packages):
     cls = _PKGR_MAP.get(distro)
+    if not cls:
+        msg = "No package manager found for distro %s!" % (distro)
+        raise excp.StackException(msg)
     return cls(distro, keep_packages)
-
-
-def _check_roots(action, rootdir, components):
-    #TODO the check is really pretty basic so should not be depended on...
-    to_skip = list()
-    if action == settings.INSTALL:
-        if sh.isdir(rootdir):
-            to_skip = list()
-            for c in components:
-                check_pth = sh.joinpths(rootdir, c)
-                if sh.isdir(check_pth) and len(sh.listdir(check_pth)) != 0:
-                    LOG.warn("Component directory [%s] already exists and its not empty (skipping installing that component)!" % check_pth)
-                    LOG.warn("If this is undesired please remove it or uninstall %s!" % (c))
-                    to_skip.append(c)
-    return to_skip
 
 
 def _pre_run(action_name, **kargs):
@@ -95,26 +83,28 @@ def _pre_run(action_name, **kargs):
 def _post_run(action_name, **kargs):
     secs_taken = kargs.get("time_taken")
     if secs_taken != None:
-        print("It took %s seconds to complete action %s." % (action_name, secs_taken))
+        LOG.info("It took %.03f seconds to complete action %s." % (secs_taken, action_name))
+    #try to remove the root - ok if this fails
     if action_name == settings.UNINSTALL:
         root_dir = kargs.get("root_dir")
         if root_dir:
             sh.rmdir(root_dir)
+    #mirror the output the old devstack was also giving
     cfg = kargs.get("config")
     actives = kargs.get("actives")
     if action_name == settings.START and cfg and actives:
         host_ip = cfg.get('host', 'ip')
         if settings.HORIZON in actives:
             port = cfg.get('horizon', 'port')
-            print("Horizon should now be available at http://%s:%s/" % (host_ip, port))
+            LOG.info("Horizon should now be available at http://%s:%s/" % (host_ip, port))
         if settings.KEYSTONE in actives:
             shared_params = keystone.get_shared_params(cfg)
             msg = "Keystone is serving at {KEYSTONE_SERVICE_PROTOCOL}://{KEYSTONE_SERVICE_HOST}:{KEYSTONE_SERVICE_PORT}/v2.0/"
-            print(msg.format(**shared_params))
-            print("The default users are: admin and demo.")
+            LOG.info(msg.format(**shared_params))
+            LOG.info("The default users are: admin and demo.")
             admin_pw = cfg.get('passwords', 'horizon_keystone_admin')
-            print("The admin password is: %s" % (admin_pw))
-        print("This is your host ip: %s" % (host_ip))
+            LOG.info("The admin password is: %s" % (admin_pw))
+        LOG.info("This is your host ip: %s" % (host_ip))
 
 
 def _print_cfgs(config_obj, action):
@@ -193,6 +183,7 @@ def _start(component_name, instance):
     start_info = instance.start()
     LOG.info("Post-starting %s." % (component_name))
     instance.post_start()
+    #TODO clean this up.
     if type(start_info) == list:
         LOG.info("Check [%s] for traces of what happened." % (", ".join(start_info)))
     elif type(start_info) == int:
@@ -285,7 +276,7 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
     _print_cfgs(config, action_name)
     #any post run actions go now
     _post_run(action_name, root_dir=root_dir, pkg=pkg_manager,
-        cfg=config, actives=components.keys(), time_taken=int(end_time - start_time))
+        cfg=config, actives=components.keys(), time_taken=(end_time - start_time))
     return results
 
 
@@ -329,11 +320,6 @@ def _run_action(args):
         component_order = utils.get_components_order(all_components_deps)
     else:
         component_order = components.keys()
-    #see if we have previously already done the components
-    component_skips = _check_roots(action, rootdir, component_order)
-    for c in component_skips:
-        components.pop(c)
-        component_order.remove(c)
     #reverse them so that we stop in the reverse order
     #and that we uninstall in the reverse order which seems to make sense
     if action in _REVERSE_ACTIONS:

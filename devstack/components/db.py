@@ -71,7 +71,8 @@ RESET_PW = "Please enter your current mysql password for user \"%s\" so we can r
 RESET_BASE_PW = ''
 
 #links about how to reset if it fails
-SQL_RESET_PW_LINKS = ['https://help.ubuntu.com/community/MysqlPasswordReset', 'http://crashmag.net/resetting-the-root-password-for-mysql-running-on-rhel-or-centos']
+SQL_RESET_PW_LINKS = ['https://help.ubuntu.com/community/MysqlPasswordReset',
+            'http://crashmag.net/resetting-the-root-password-for-mysql-running-on-rhel-or-centos']
 
 #used as a generic error message
 BASE_ERROR = 'Currently we do not know how to %s for database type [%s]'
@@ -158,10 +159,10 @@ class DBInstaller(comp.PkgInstallComponent):
         #set your password
         try:
             if dbactions and dbtype == MYSQL:
-                LOG.info(("Attempting to set your mysql password"
-                          " just incase it wasn't set previously."))
                 pwd_cmd = dbactions.get('set_pwd')
                 if pwd_cmd:
+                    LOG.info(("Attempting to set your mysql password"
+                          " just incase it wasn't set previously."))
                     LOG.info("Ensuring mysql is started.")
                     self.runtime.restart()
                     params = {
