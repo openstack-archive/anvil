@@ -5,7 +5,6 @@
     # that we are trying to align other distributions with.
     # The versions should at least be major + minor!
     "ubuntu-oneiric": {
-        # Stuff for diablo volumes
         "lvm2": {
             "version": "2.02*",
             "removable": true
@@ -20,6 +19,13 @@
         }
     },
     "rhel-6": {
-        # TBD
+        "lvm2": {
+            "version": "2.02*",
+            "removable": true
+        },
+        "iscsi-initiator-utils": {
+            "version": "6.2*",
+            "removable": true
+        }
     }
 }

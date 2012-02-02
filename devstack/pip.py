@@ -21,8 +21,6 @@ from devstack import shell as sh
 from devstack import settings
 
 LOG = logging.getLogger("devstack.pip")
-
-
 PIP_UNINSTALL_CMD_OPTS = ['-y', '-q']
 PIP_INSTALL_CMD_OPTS = ['-q']
 

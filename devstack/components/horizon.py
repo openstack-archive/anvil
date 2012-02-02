@@ -109,12 +109,11 @@ class HorizonInstaller(comp.PythonInstallComponent):
         #create an empty directory that apache uses as docroot
         black_dir = sh.joinpths(self.appdir, BLACKHOLE_DIR)
         self.tracewriter.make_dir(black_dir)
-        return black_dir
 
     def _sync_db(self):
         #Initialize the horizon database (it stores sessions and notices shown to users).
         #The user system is external (keystone).
-        LOG.info("Initializing the horizon database")
+        LOG.info("Initializing the horizon database.")
         sh.execute(*DB_SYNC_CMD, cwd=self.dash_dir)
 
     def _fake_quantum(self):
@@ -166,7 +165,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         if config_fn == HORIZON_APACHE_CONF:
             (user, group) = self._get_apache_user_group()
             if user in BAD_APACHE_USERS:
-                LOG.warn("You may want to adjust your configuration, user=%s,group=%s will typically not work with apache", user, group)
+                LOG.warn("You may want to adjust your configuration, (user=%s, group=%s) will typically not work with apache!", user, group)
             mp['USER'] = user
             mp['GROUP'] = group
             mp['HORIZON_DIR'] = self.appdir

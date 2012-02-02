@@ -346,9 +346,8 @@ def center_text(text, fill, max_len):
 
 def _welcome_slang():
     potentials = list()
-    potentials.append("And now for something completely different.")
-    msg = random.choice(potentials).strip("\n\r")
-    return msg
+    potentials.append("And now for something completely different")
+    return random.choice(potentials).strip("\n\r")
 
 
 def color_text(text, color, bold=False):
@@ -368,6 +367,7 @@ def _color_blob(text, text_color):
 
 
 def _goodbye_header(worked):
+    #cowsay headers
     potentials_oks = list()
     potentials_oks.append(r'''
  ___________
@@ -492,13 +492,7 @@ def parse_components(components):
 
 
 def welcome(ident):
-    ver_str = version.version_string()
-    lower = "|"
-    if ident:
-        lower += ident
-        lower += " "
-    lower += ver_str
-    lower += "|"
+    lower = "| %s %s |" % (ident, version.version_string())
     welcome_header = _get_welcome_stack()
     max_line_len = len(max(welcome_header.splitlines(), key=len))
     footer = color_text(settings.PROG_NICE_NAME, 'green')

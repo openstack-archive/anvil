@@ -23,6 +23,10 @@ class InstallException(StackException):
     pass
 
 
+class PackageException(StackException):
+    pass
+
+
 class BadRegexException(StackException):
     pass
 

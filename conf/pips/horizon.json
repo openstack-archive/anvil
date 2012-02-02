@@ -12,7 +12,7 @@
     "rhel-6": {
         #the base is 2.0, need to upgrade
         "pycrypto": {
-            "version": "2.3"
+            "version": "2.4"
         }
     }
 }

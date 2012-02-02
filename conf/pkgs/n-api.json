@@ -11,6 +11,9 @@
         }
     },
     "rhel-6": {
-        # TBD
+        "python-dateutil": {
+            "version": "1.4*",
+            "removable": false
+        }
     }
 }

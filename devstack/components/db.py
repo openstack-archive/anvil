@@ -136,10 +136,10 @@ class DBInstaller(comp.PkgInstallComponent):
     def _configure_db_confs(self):
         dbtype = self.cfg.get("db", "type")
         if self.distro == settings.RHEL6 and dbtype == MYSQL:
-            LOG.info("Fixing up rhel 6 mysql configs")
+            LOG.info("Fixing up %s mysql configs." % (settings.RHEL6))
             sh.execute(*RHEL_FIX_GRANTS, run_as_root=True)
         elif self.distro == settings.UBUNTU11 and dbtype == MYSQL:
-            LOG.info("Fixing up ubuntu 11 mysql configs")
+            LOG.info("Fixing up %s mysql configs." % (settings.UBUNTU11))
             sh.execute(*UBUNTU_HOST_ADJUST, run_as_root=True)
 
     def _get_pkgs(self):
@@ -204,10 +204,6 @@ class DBRuntime(comp.EmptyRuntime):
         self.tracereader = tr.TraceReader(self.tracedir, tr.IN_TRACE)
 
     def _get_run_actions(self, act, exception_cls):
-        pkgsinstalled = self.tracereader.packages_installed()
-        if not pkgsinstalled:
-            msg = "Can not %s %s since it was not installed" % (act, TYPE)
-            raise exception_cls(msg)
         dbtype = self.cfg.get("db", "type")
         type_actions = DB_ACTIONS.get(dbtype)
         if type_actions is None:
@@ -238,9 +234,9 @@ class DBRuntime(comp.EmptyRuntime):
             return 0
 
     def restart(self):
+        LOG.info("Restarting your database.")
         restartcmd = self._get_run_actions('restart', excp.RestartException)
         sh.execute(*restartcmd, run_as_root=True)
-        #this seems needed?
         LOG.info("Please wait %s seconds while it restarts." % START_WAIT_TIME)
         time.sleep(START_WAIT_TIME)
         return 1

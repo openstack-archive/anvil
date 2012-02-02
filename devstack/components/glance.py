@@ -110,7 +110,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
         return parent_result
 
     def _setup_db(self):
-        LOG.info("Fixing up database named %s", DB_NAME)
+        LOG.info("Fixing up database named %s.", DB_NAME)
         db.drop_db(self.cfg, DB_NAME)
         db.create_db(self.cfg, DB_NAME)
 
@@ -134,17 +134,17 @@ class GlanceInstaller(comp.PythonInstallComponent):
             if config.get('default_store', CFG_SECTION) == 'file':
                 file_dir = config.get('filesystem_store_datadir', CFG_SECTION)
                 if file_dir:
-                    LOG.info("Ensuring file system store directory %s exists and is empty" % (file_dir))
+                    LOG.info("Ensuring file system store directory %s exists and is empty." % (file_dir))
                     #delete existing images
                     #and recreate the image directory
                     sh.deldir(file_dir)
                     self.tracewriter.make_dir(file_dir)
             log_filename = config.get('log_file', CFG_SECTION)
             if log_filename:
-                LOG.info("Ensuring log file %s exists and is empty" % (log_filename))
+                LOG.info("Ensuring log file %s exists and is empty." % (log_filename))
                 log_dir = sh.dirname(log_filename)
                 if log_dir:
-                    LOG.info("Ensuring log directory %s exists" % (log_dir))
+                    LOG.info("Ensuring log directory %s exists." % (log_dir))
                     self.tracewriter.make_dir(log_dir)
                 #destroy then recreate it (the log file)
                 sh.unlink(log_filename)
@@ -153,7 +153,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
             if config.getboolean('delayed_delete', CFG_SECTION):
                 data_dir = config.get('scrubber_datadir', CFG_SECTION)
                 if data_dir:
-                    LOG.info("Ensuring scrubber data dir %s exists and is empty" % (data_dir))
+                    LOG.info("Ensuring scrubber data dir %s exists and is empty." % (data_dir))
                     #destroy then recreate the scrubber data directory
                     sh.deldir(data_dir)
                     self.tracewriter.make_dir(data_dir)
@@ -205,6 +205,7 @@ class GlanceRuntime(comp.PythonRuntime):
         if NO_IMG_START not in self.component_opts:
             #install any images that need activating...
             # TODO: make this less cheesy - need to wait till glance goes online
+            LOG.info("Waiting %s seconds so that glance can start up before image install." % (WAIT_ONLINE_TO))
             time.sleep(WAIT_ONLINE_TO)
             creator.ImageCreationService(self.cfg).install()
 

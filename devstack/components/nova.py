@@ -50,8 +50,10 @@ DB_SYNC_CMD = [
 ]
 
 NETWORK_SETUP_CMDS = [
+    #this always happens (even in quantum mode)
     {'cmd': ['%BINDIR%/nova-manage', '--flagfile', '%CFGFILE%',
-              'network', 'create', 'private', '%FIXED_RANGE%', '1', '%FIXED_NETWORK_SIZE%']},
+              'network', 'create', 'private', '%FIXED_RANGE%', 1, '%FIXED_NETWORK_SIZE%']},
+    #these only happen if not in quantum mode
     {'cmd': ['%BINDIR%/nova-manage', '--flagfile', '%CFGFILE%',
               'floating', 'create', '%FLOATING_RANGE%']},
     {'cmd': ['%BINDIR%/nova-manage', '--flagfile', '%CFGFILE%',
@@ -219,8 +221,11 @@ class NovaInstaller(comp.PythonInstallComponent):
         mp['TEST_FLOATING_POOL'] = self.cfg.get('nova', 'test_floating_pool')
         mp['FIXED_NETWORK_SIZE'] = self.cfg.get('nova', 'fixed_network_size')
         mp['FIXED_RANGE'] = self.cfg.get('nova', 'fixed_range')
-        #TODO this needs to be fixed for quantum!
-        utils.execute_template(*NETWORK_SETUP_CMDS, params=mp, tracewriter=self.tracewriter)
+        if settings.QUANTUM in self.instances:
+            cmds = NETWORK_SETUP_CMDS[0:1]
+        else:
+            cmds = NETWORK_SETUP_CMDS
+        utils.execute_template(*cmds, params=mp, tracewriter=self.tracewriter)
 
     def _sync_db(self):
         LOG.info("Syncing the database with nova.")
