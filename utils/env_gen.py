@@ -53,6 +53,10 @@ def write_line(text, fh):
     fh.write(os.linesep)
 
 
+def format_env(name, value):
+    return "%s=%s" % (name, value)
+
+
 def main():
     opts = optparse.OptionParser()
     opts.add_option("-o", "--output", dest="filename",
@@ -68,7 +72,7 @@ def main():
             section = cfg_data[0]
             key = cfg_data[1]
             value = cfg.get(section, key)
-            write_line("%s=%s" % (out_name, value), fh)
+            write_line(format_env(out_name, value), fh)
     print("Check file \"%s\" for your environment configuration." % (os.path.normpath(fn)))
     return 0
 

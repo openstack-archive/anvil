@@ -301,6 +301,10 @@ def rmdir(path, quiet=True):
             pass
 
 
+def exists(path):
+    return os.path.exists(path)
+
+
 def dirname(path):
     return os.path.dirname(path)
 

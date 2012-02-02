@@ -573,6 +573,12 @@ class NovaConfigurator(object):
     def _configure_libvirt(self, virt_type, nova_conf):
         if not virt_type:
             return
+        if virt_type == 'kvm' and not sh.exists("/dev/kvm"):
+            LOG.warn("No kvm found at /dev/kvm, switching to qemu mode.")
+            virt_type = "qemu"
+        if virt_type == 'lxc':
+            #todo
+            pass
         nova_conf.add('libvirt_type', virt_type)
 
     #configures any virt driver settings
