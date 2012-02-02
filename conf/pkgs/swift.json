@@ -5,12 +5,7 @@
     # that we are trying to align other distributions with.
     # The versions should at least be major + minor!
     "ubuntu-oneiric": {
-        # Is this really needed?
-        "gcc": {
-            "version": "4:4.6*",
-            "removable": true
-        },
-        # This may not always be needed (maybe have code not always install this) - or add a new key in that is used for this
+        # installed for swift-keystone
         "memcached": {
             "version": "1.4*",
             "removable": true
@@ -45,10 +40,6 @@
         },
         "sqlite3": {
             "version": "3.7*",
-            "removable": true
-        },
-        "xfsprogs": {
-            "version": "3.1*",
             "removable": true
         }
     },

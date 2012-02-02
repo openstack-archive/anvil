@@ -27,11 +27,11 @@ from devstack.components import keystone_client
 from devstack.components import nova
 from devstack.components import nova_client
 from devstack.components import novnc
-from devstack.components import openstack_x
 from devstack.components import quantum
 from devstack.components import quantum_client
 from devstack.components import rabbit
 from devstack.components import swift
+from devstack.components import swift_keystone
 
 PROG_NAME = "Describer"
 
@@ -44,10 +44,10 @@ _DESCR_MAP = {
     settings.KEYSTONE_CLIENT: keystone_client.describe,
     settings.NOVA: nova.describe,
     settings.NOVA_CLIENT: nova_client.describe,
-    settings.OPENSTACK_X: openstack_x.describe,
     settings.QUANTUM: quantum.describe,
     settings.RABBIT: rabbit.describe,
     settings.SWIFT: swift.describe,
+    settings.SWIFT_KEYSTONE: swift_keystone.describe,
     settings.NOVNC: novnc.describe,
     settings.QUANTUM_CLIENT: quantum_client.describe,
 }

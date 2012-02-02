@@ -14,6 +14,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import os
+import os.path
+
 from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
@@ -22,44 +25,68 @@ from devstack import utils
 
 LOG = logging.getLogger("devstack.components.swift")
 
-#id
+# id
 TYPE = settings.SWIFT
 
+SWIFT_CONF = 'swift.conf'
+PROXY_SERVER_CONF = 'proxy-server.conf'
+ACCOUNT_SERVER_CONF = 'account-server.conf'
+CONTAINER_SERVER_CONF = 'container-server.conf'
+OBJECT_SERVER_CONF = 'object-server.conf'
+RSYNC_CONF = 'rsyncd.conf'
+SYSLOG_CONF = 'rsyslog.conf'
+SWIFT_MAKERINGS = 'swift-remakerings'
+SWIFT_STARTMAIN = 'swift-startmain'
+CONFIGS = [SWIFT_CONF, PROXY_SERVER_CONF, ACCOUNT_SERVER_CONF,
+           CONTAINER_SERVER_CONF, OBJECT_SERVER_CONF, RSYNC_CONF,
+           SYSLOG_CONF, SWIFT_MAKERINGS, SWIFT_STARTMAIN]
 
-class SwiftUninstaller(comp.ComponentBase):
+SWIFT_NAME = 'swift'
+
+# subdirs of the git checkout
+BIN_DIR = 'bin'
+CONFIG_DIR = 'etc'
+
+# what to start
+APP_OPTIONS = {
+}
+
+#the pkg json files swift requires for installation
+REQ_PKGS = ['general.json', 'swift.json']
+
+
+class SwiftUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.ComponentBase.__init__(self, TYPE, *args, **kargs)
-
-    def unconfigure(self):
-        raise NotImplementedError()
-
-    def uninstall(self):
-        raise NotImplementedError()
+        comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
 
 
-class SwiftInstaller(comp.ComponentBase):
+class SwiftInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.ComponentBase.__init__(self, TYPE, *args, **kargs)
+        comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
+        self.bindir = sh.joinpths(self.appdir, BIN_DIR)
+        self.datadir = sh.joinpths(self.appdir, self.cfg.get('swift', 'data_location'))
 
-    def download(self):
-        raise NotImplementedError()
+    def _get_download_locations(self):
+        return comp.PythonInstallComponent._get_download_locations(self) + [
+            {
+                'uri': ('git', 'swift_repo'),
+                'branch': ('git', 'swift_branch')
+            }]
 
-    def configure(self):
-        raise NotImplementedError()
+    def _get_config_files(self):
+        return CONFIGS
 
-    def pre_install(self):
-        raise NotImplementedError()
+    def _get_pkgs(self):
+        return REQ_PKGS
 
-    def install(self):
-        raise NotImplementedError()
-
-    def post_install(self):
-        raise NotImplementedError()
+    def _post_install(self):
+        pass
 
 
-class SwiftRuntime(comp.EmptyRuntime):
+class SwiftRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
-        comp.EmptyRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
 
 
 def describe(opts=None):

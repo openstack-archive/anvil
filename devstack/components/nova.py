@@ -483,9 +483,7 @@ class NovaConfigurator(object):
         instance_template = self._getstr('instance_name_prefix') + self._getstr('instance_name_postfix')
         nova_conf.add('instance_name_template', instance_template)
 
-        if settings.OPENSTACK_X in self.instances:
-            nova_conf.add('osapi_compute_extension', 'nova.api.openstack.compute.contrib.standard_extensions')
-            nova_conf.add('osapi_compute_extension', 'extensions.admin.Admin')
+        nova_conf.add('osapi_compute_extension', 'nova.api.openstack.compute.contrib.standard_extensions')
 
         if settings.NOVNC in self.instances:
             vncproxy_url = self._getstr('vncproxy_url')
