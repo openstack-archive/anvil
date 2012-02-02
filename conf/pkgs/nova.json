@@ -252,9 +252,11 @@
             "version": "0.9.4*",
             "removable": true
         },
+        # This seems to kill RHN/yum if its removed ??
+        # TODO verify
         "libxml2-python": {
             "version": "2.7*",
-            "removable": true
+            "removable": false
         },
         "python-routes": {
             "version": "1.10*",
@@ -287,9 +289,11 @@
             "version": "0.8*",
             "removable": true
         },
+        # This seems to kill RHN/yum if its removed ??
+        # TODO verify
         "m2crypto": {
             "version": "0.20*",
-            "removable": true
+            "removable": false
         },
         # Requires EPEL
         "python-boto": {
