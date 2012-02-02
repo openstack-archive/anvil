@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License..
 
+import time
+
 from devstack import cfg
 from devstack import date
 from devstack import exceptions as excp
@@ -24,6 +26,8 @@ from devstack import utils
 
 from devstack.packaging import apt
 from devstack.packaging import yum
+
+from devstack.components import keystone
 
 from devstack.progs import common
 
@@ -89,11 +93,26 @@ def _pre_run(action_name, **kargs):
 
 
 def _post_run(action_name, **kargs):
+    secs_taken = kargs.get("time_taken")
     if action_name == settings.UNINSTALL:
         root_dir = kargs.get("root_dir")
         if root_dir:
             sh.rmdir(root_dir)
-
+    cfg = kargs.get("config")
+    actives = kargs.get("actives")
+    if action_name == settings.START and cfg and actives:
+        host_ip = cfg.get('host', 'ip')
+        if settings.HORIZON in actives:
+            port = cfg.get('horizon', 'port')
+            print("Horizon should now be available at http://%s:%s/" % (host_ip, port))
+        if settings.KEYSTONE in actives:
+            shared_params = keystone.get_shared_params(cfg) 
+            msg = "Keystone is serving at {KEYSTONE_SERVICE_PROTOCOL}://{KEYSTONE_SERVICE_HOST}:{KEYSTONE_SERVICE_PORT}/v2.0/"
+            print(msg.format(**shared_params))
+            print("The default users are: admin and demo.")
+            admin_pw = cfg.get('passwords', 'horizon_keystone_admin')
+            print("The admin password is: %s" %(admin_pw))
+        print("This is your host ip: %s" % (host_ip))
 
 def _print_cfgs(config_obj, action):
 
@@ -205,6 +224,7 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
     pkg_manager = _get_pkg_manager(distro, program_args.pop('keep_packages', True))
     config = common.get_config()
     #form the active instances (this includes ones we won't use)
+    start_time = time.time()
     all_instances = {}
     for component in components.keys():
         action_cls = common.get_action_cls(action_name, component)
@@ -257,10 +277,12 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
                 except excp.StopException:
                     LOG.warn("Failed at stopping %s before uninstalling, skipping stop.", component)
             _uninstall(component, instance, force)
+    end_time = time.time()
     #display any configs touched...
     _print_cfgs(config, action_name)
     #any post run actions go now
-    _post_run(action_name, root_dir=root_dir, pkg=pkg_manager, cfg=config)
+    _post_run(action_name, root_dir=root_dir, pkg=pkg_manager, 
+        cfg=config, actives=components.keys(), time_taken=int(end_time-start_time))
     return results
 
 
