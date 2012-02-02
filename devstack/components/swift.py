@@ -66,6 +66,8 @@ class SwiftInstaller(comp.PythonInstallComponent):
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
         self.datadir = sh.joinpths(self.appdir, self.cfg.get('swift', 'data_location'))
+        self.logdir = sh.joinpths(self.datadir, 'logs')
+        self.auth_server = 'keystone'
 
     def _get_download_locations(self):
         return comp.PythonInstallComponent._get_download_locations(self) + [
@@ -75,10 +77,26 @@ class SwiftInstaller(comp.PythonInstallComponent):
             }]
 
     def _get_config_files(self):
-        return CONFIGS
+        return list(CONFIGS)
 
     def _get_pkgs(self):
-        return REQ_PKGS
+        return list(REQ_PKGS)
+
+    def _get_param_map(self, config_fn):
+        return {
+            'USER': self.cfg.get('swift', 'swift_user'),
+            'GROUP': self.cfg.get('swift', 'swift_group'),
+            'SWIFT_DATA_LOCATION': self.cfg.get('swift', 'data_location'),
+            'SWIFT_CONFIG_LOCATION': self.cfgdir,
+            'SERVICE_TOKEN': self.cfg.get('passwords', 'service_token'),
+            'AUTH_SERVER': self.auth_server,
+            'SWIFT_HASH': self.cfg.get('passwords', 'swift_hash'),
+            'NODE_PATH': '',
+            'BIND_PORT': '',
+            'LOG_FACILITY': '',
+            'SWIFT_LOGDIR': self.logdir,
+            'SWIFT_PARTITION_POWER_SIZE': self.cfg.get('swift', 'partition_power_size')
+            }
 
     def _post_install(self):
         pass
