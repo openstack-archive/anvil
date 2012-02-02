@@ -70,32 +70,22 @@ class HorizonUninstaller(comp.PythonUninstallComponent):
 class HorizonInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
-        self.git_loc = self.cfg.get("git", "horizon_repo")
-        self.git_branch = self.cfg.get("git", "horizon_branch")
         self.horizon_dir = sh.joinpths(self.appdir, ROOT_HORIZON)
         self.dash_dir = sh.joinpths(self.appdir, ROOT_DASH)
 
     def _get_download_locations(self):
-        places = comp.PythonInstallComponent._get_download_locations(self)
+        places = list()
         places.append({
-            'uri': self.git_loc,
-            'branch': self.git_branch,
+            'uri': ("git", "horizon_repo"),
+            'branch': ("git", "horizon_branch"),
         })
         return places
 
     def _get_pkgs(self):
-        pkgs = comp.PythonInstallComponent._get_pkgs(self)
-        for fn in REQ_PKGS:
-            full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
-            pkgs = utils.extract_pkg_list([full_name], self.distro, pkgs)
-        return pkgs
+        return list(REQ_PKGS)
 
     def _get_pips(self):
-        pips = comp.PythonInstallComponent._get_pips(self)
-        for fn in REQ_PIPS:
-            full_name = sh.joinpths(settings.STACK_PIP_DIR, fn)
-            pips = utils.extract_pip_list([full_name], self.distro, pips)
-        return pips
+        return list(REQ_PIPS)
 
     def _get_target_config_name(self, config_name):
         if config_name == HORIZON_PY_CONF:
@@ -107,19 +97,12 @@ class HorizonInstaller(comp.PythonInstallComponent):
             return comp.PythonInstallComponent._get_target_config_name(self, config_name)
 
     def _get_python_directories(self):
-        py_dirs = list()
-        py_dirs.append({
-            'name': HORIZON_NAME,
-            'work_dir': self.horizon_dir,
-        })
-        py_dirs.append({
-            'name': DASH_NAME,
-            'work_dir': self.dash_dir,
-        })
+        py_dirs = dict()
+        py_dirs[HORIZON_NAME] = self.horizon_dir
+        py_dirs[DASH_NAME] = self.dash_dir
         return py_dirs
 
     def _get_config_files(self):
-        #these are the config files we will be adjusting
         return list(CONFIGS)
 
     def _setup_blackhole(self):
@@ -131,6 +114,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
     def _sync_db(self):
         #Initialize the horizon database (it stores sessions and notices shown to users).
         #The user system is external (keystone).
+        LOG.info("Initializing the horizon database")
         sh.execute(*DB_SYNC_CMD, cwd=self.dash_dir)
 
     def _fake_quantum(self):

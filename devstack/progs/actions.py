@@ -243,14 +243,17 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
             if component not in _NO_AUTO_STOP:
                 # always stop first. doesn't hurt if already stopped - but makes
                 # sure that there are no lingering processes if not
-                stop_cls = common.get_action_cls(settings.STOP, component)
-                stop_instance = stop_cls(instances=stop_instances,
-                                           distro=distro,
-                                           packager=pkg_manager,
-                                           config=config,
-                                           root=root_dir,
-                                           opts=components.get(component, list()))
-                _stop(component, stop_instance, program_args.get('force', False))
+                try:
+                    stop_cls = common.get_action_cls(settings.STOP, component)
+                    stop_instance = stop_cls(instances=stop_instances,
+                                               distro=distro,
+                                               packager=pkg_manager,
+                                               config=config,
+                                               root=root_dir,
+                                               opts=components.get(component, list()))
+                    _stop(component, stop_instance, program_args.get('force', False))
+                except excp.StopException:
+                    LOG.warn("Failed at stopping %s before uninstalling, skipping stop.", component)
             _uninstall(component, instance, program_args.get('force', False))
     #display any configs touched...
     _print_cfgs(config, action_name)

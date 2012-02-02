@@ -73,32 +73,22 @@ class KeystoneUninstaller(comp.PythonUninstallComponent):
 class KeystoneInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
-        self.git_loc = self.cfg.get("git", "keystone_repo")
-        self.git_branch = self.cfg.get("git", "keystone_branch")
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
 
     def _get_download_locations(self):
-        places = comp.PythonInstallComponent._get_download_locations(self)
+        places = list()
         places.append({
-            'uri': self.git_loc,
-            'branch': self.git_branch,
+            'uri': ("git", "keystone_repo"),
+            'branch': ("git", "keystone_branch"),
         })
         return places
 
     def _get_pips(self):
-        pips = comp.PythonInstallComponent._get_pips(self)
-        for fn in REQ_PIPS:
-            full_name = sh.joinpths(settings.STACK_PIP_DIR, fn)
-            pips = utils.extract_pip_list([full_name], self.distro, pips)
-        return pips
+        return list(REQ_PIPS)
 
     def _get_pkgs(self):
-        pkgs = comp.PythonInstallComponent._get_pkgs(self)
-        for fn in REQ_PKGS:
-            full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
-            pkgs = utils.extract_pkg_list([full_name], self.distro, pkgs)
-        return pkgs
+        return list(REQ_PKGS)
 
     def post_install(self):
         parent_result = comp.PythonInstallComponent.post_install(self)
@@ -120,7 +110,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         return list(CONFIGS)
 
     def _setup_db(self):
-        LOG.info("Fixing up database named %s", DB_NAME)
+        LOG.info("Fixing up database named %s.", DB_NAME)
         db.drop_db(self.cfg, DB_NAME)
         db.create_db(self.cfg, DB_NAME)
 

@@ -70,32 +70,41 @@ class PkgInstallComponent(ComponentBase):
     def download(self):
         locations = self._get_download_locations()
         base_dir = self.appdir
-        am_downloaded = 0
         for location_info in locations:
-            uri = location_info.get("uri")
-            if not uri:
-                continue
-            branch = location_info.get("branch")
+            uri_tuple = location_info.get("uri")
+            branch_tuple = location_info.get("branch")
             subdir = location_info.get("subdir")
             target_loc = None
             if subdir and len(subdir):
                 target_loc = sh.joinpths(base_dir, subdir)
             else:
                 target_loc = base_dir
-            dirsmade = down.download(target_loc, uri, branch)
+            branch = None
+            if branch_tuple:
+                branch = self.cfg.get(branch_tuple[0], branch_tuple[1])
+            uri = self.cfg.get(uri_tuple[0], uri_tuple[1])
+            self.tracewriter.dir_made(*down.download(target_loc, uri, branch))
             self.tracewriter.downloaded(target_loc, uri)
-            self.tracewriter.dir_made(*dirsmade)
-            am_downloaded += 1
-        return am_downloaded
+        return len(locations)
 
     def _get_param_map(self, config_fn):
-        return None
-
-    def _get_pkgs(self):
         return dict()
 
+    def _get_pkgs(self):
+        return list()
+
+    def _get_pkgs_expanded(self):
+        short = self._get_pkgs()
+        if not short:
+            return dict()
+        pkgs = dict()
+        for fn in short:
+            full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
+            pkgs = utils.extract_pkg_list([full_name], self.distro, pkgs)
+        return pkgs
+
     def install(self):
-        pkgs = self._get_pkgs()
+        pkgs = self._get_pkgs_expanded()
         if pkgs:
             pkgnames = sorted(pkgs.keys())
             LOG.info("Installing packages (%s)." % (", ".join(pkgnames)))
@@ -106,14 +115,14 @@ class PkgInstallComponent(ComponentBase):
         return self.tracedir
 
     def pre_install(self):
-        pkgs = self._get_pkgs()
+        pkgs = self._get_pkgs_expanded()
         if pkgs:
             mp = self._get_param_map(None)
             self.packager.pre_install(pkgs, mp)
         return self.tracedir
 
     def post_install(self):
-        pkgs = self._get_pkgs()
+        pkgs = self._get_pkgs_expanded()
         if pkgs:
             mp = self._get_param_map(None)
             self.packager.post_install(pkgs, mp)
@@ -166,19 +175,25 @@ class PythonInstallComponent(PkgInstallComponent):
         PkgInstallComponent.__init__(self, component_name, *args, **kargs)
 
     def _get_python_directories(self):
-        py_dirs = list()
-        py_dirs.append({
-            'name': self.component_name,
-            'work_dir': self.appdir,
-        })
+        py_dirs = dict()
+        py_dirs[self.component_name] = self.appdir
         return py_dirs
 
     def _get_pips(self):
-        return dict()
+        return list()
+
+    def _get_pips_expanded(self):
+        shorts = self._get_pips()
+        if not shorts:
+            return dict()
+        pips = dict()
+        for fn in shorts:
+            full_name = sh.joinpths(settings.STACK_PIP_DIR, fn)
+            pips = utils.extract_pip_list([full_name], self.distro, pips)
+        return pips
 
     def _install_pips(self):
-        #install any need pip items
-        pips = self._get_pips()
+        pips = self._get_pips_expanded()
         if pips:
             LOG.info("Setting up %s pips (%s)" % (len(pips), ", ".join(pips.keys())))
             pip.install(pips, self.distro)
@@ -197,21 +212,12 @@ class PythonInstallComponent(PkgInstallComponent):
         return "%s-%s" % (tr.PY_TRACE, name)
 
     def _install_python_setups(self):
-        #setup any python directories
         pydirs = self._get_python_directories()
         if pydirs:
-            actual_dirs = list()
-            for pydir_info in pydirs:
-                working_dir = pydir_info.get('work_dir', self.appdir)
-                actual_dirs.append(working_dir)
-            LOG.info("Setting up %s python directories (%s)" % (len(pydirs), ", ".join(actual_dirs)))
-            self.tracewriter.make_dir(self.tracedir)
-            for pydir_info in pydirs:
-                name = pydir_info.get("name")
-                if not name:
-                    #TODO should we raise an exception here?
-                    continue
-                working_dir = pydir_info.get('work_dir', self.appdir)
+            LOG.info("Setting up %s python directories (%s)" % (len(pydirs), pydirs))
+            for (name, wkdir) in pydirs.items():
+                working_dir = wkdir or self.appdir
+                self.tracewriter.make_dir(working_dir)
                 record_fn = tr.touch_trace(self.tracedir, self._format_trace_name(name))
                 self.tracewriter.file_touched(record_fn)
                 (stdout, stderr) = sh.execute(*PY_INSTALL, cwd=working_dir, run_as_root=True)

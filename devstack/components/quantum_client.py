@@ -37,23 +37,17 @@ class QuantumClientUninstaller(comp.PythonUninstallComponent):
 class QuantumClientInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
-        self.git_loc = self.cfg.get("git", "quantum_client_repo")
-        self.git_branch = self.cfg.get("git", "quantum_client_branch")
 
     def _get_download_locations(self):
-        places = comp.PythonInstallComponent._get_download_locations(self)
+        places = list()
         places.append({
-            'uri': self.git_loc,
-            'branch': self.git_branch,
+            'uri': ("git", "quantum_client_repo"),
+            'branch': ("git", "quantum_client_branch"),
         })
         return places
 
     def _get_pkgs(self):
-        pkgs = comp.PythonInstallComponent._get_pkgs(self)
-        for fn in REQ_PKGS:
-            full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
-            pkgs = utils.extract_pkg_list([full_name], self.distro, pkgs)
-        return pkgs
+        return list(REQ_PKGS)
 
 
 class QuantumClientRuntime(comp.EmptyRuntime):

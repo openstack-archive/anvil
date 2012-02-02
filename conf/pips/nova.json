@@ -1,0 +1,18 @@
+# This is a extended json package definition file 
+# We allow simple comments (lines starting with a hash symbol)
+{
+    "ubuntu-oneiric": {
+    },
+    "rhel-6": {
+        "SQLAlchemy": {
+            "version": "0.7.5"
+        },
+        #the base is 0.4, need to upgrade (?)
+        "Tempita": {
+            "version": "0.5dev"
+        },
+        "sqlalchemy-migrate": {
+            "version": "0.7.2"
+        }
+    }
+}

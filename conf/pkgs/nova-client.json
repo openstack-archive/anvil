@@ -15,6 +15,15 @@
         }
     },
     "rhel-6": {
-        # TBD
+        # Requires EPEL
+        "python-argparse": {
+            "version": "1.2*",
+            "removable": true
+        },
+        # Requires EPEL
+        "python-prettytable": {
+            "version": "0.5*",
+            "removable": true
+        }
     }
 }

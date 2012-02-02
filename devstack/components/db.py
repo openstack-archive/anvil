@@ -143,11 +143,7 @@ class DBInstaller(comp.PkgInstallComponent):
             sh.execute(*UBUNTU_HOST_ADJUST, run_as_root=True)
 
     def _get_pkgs(self):
-        pkgs = comp.PkgInstallComponent._get_pkgs(self)
-        for fn in REQ_PKGS:
-            full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
-            pkgs = utils.extract_pkg_list([full_name], self.distro, pkgs)
-        return pkgs
+        return list(REQ_PKGS)
 
     def post_install(self):
         parent_result = comp.PkgInstallComponent.post_install(self)
@@ -227,7 +223,7 @@ class DBRuntime(comp.EmptyRuntime):
         if self.status() == comp.STATUS_STOPPED:
             startcmd = self._get_run_actions('start', excp.StartException)
             sh.execute(*startcmd, run_as_root=True)
-            LOG.info("Please wait %s seconds while it comes up" % START_WAIT_TIME)
+            LOG.info("Please wait %s seconds while it starts up." % START_WAIT_TIME)
             time.sleep(START_WAIT_TIME)
             return 1
         else:
@@ -245,7 +241,7 @@ class DBRuntime(comp.EmptyRuntime):
         restartcmd = self._get_run_actions('restart', excp.RestartException)
         sh.execute(*restartcmd, run_as_root=True)
         #this seems needed?
-        LOG.info("Please wait %s seconds while it comes up" % START_WAIT_TIME)
+        LOG.info("Please wait %s seconds while it restarts." % START_WAIT_TIME)
         time.sleep(START_WAIT_TIME)
         return 1
 

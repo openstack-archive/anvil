@@ -49,23 +49,17 @@ class NoVNCUninstaller(comp.PkgUninstallComponent):
 class NoVNCInstaller(comp.PkgInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PkgInstallComponent.__init__(self, TYPE, *args, **kargs)
-        self.git_loc = self.cfg.get("git", "novnc_repo")
-        self.git_branch = self.cfg.get("git", "novnc_branch")
 
     def _get_download_locations(self):
-        places = comp.PkgInstallComponent._get_download_locations(self)
+        places = list()
         places.append({
-            'uri': self.git_loc,
-            'branch': self.git_branch,
+            'uri': ("git", "novnc_repo"),
+            'branch': ("git", "novnc_branch"),
         })
         return places
 
     def _get_pkgs(self):
-        pkgs = comp.PkgInstallComponent._get_pkgs(self)
-        for fn in REQ_PKGS:
-            full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
-            pkgs = utils.extract_pkg_list([full_name], self.distro, pkgs)
-        return pkgs
+        return list(REQ_PKGS)
 
 
 class NoVNCRuntime(comp.ProgramRuntime):

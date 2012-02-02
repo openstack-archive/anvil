@@ -15,6 +15,7 @@
 #    under the License.
 
 from tempfile import TemporaryFile
+import time
 
 from devstack import component as comp
 from devstack import exceptions as excp
@@ -39,18 +40,27 @@ PWD_CMD = ['rabbitmqctl', 'change_password', 'guest']
 #the pkg json files rabbit mq server requires for installation
 REQ_PKGS = ['rabbitmq.json']
 
+#default password
+RESET_BASE_PW = ''
+
+#how long we wait for rabbitmq to start up before doing commands on it
+WAIT_ON_TIME = 5
+
 
 class RabbitUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PkgUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        self.runtime = RabbitRuntime(*args, **kargs)
 
     def pre_uninstall(self):
         try:
-            passwd = ''
-            cmd = PWD_CMD + [passwd]
+            self.runtime.restart()
+            LOG.info("Resetting the rabbit-mq guest password to \"%s\"", RESET_BASE_PW)
+            cmd = PWD_CMD + [RESET_BASE_PW]
             sh.execute(*cmd, run_as_root=True)
         except IOError:
-            LOG.debug("Couldn't reset rabbit pwd.")
+            LOG.warn(("Could not reset the rabbit-mq password. You might have to manually "
+                      "reset the password to \"%s\" before the next install") % (RESET_BASE_PW), exc_info=True)
 
 
 class RabbitInstaller(comp.PkgInstallComponent):
@@ -59,23 +69,21 @@ class RabbitInstaller(comp.PkgInstallComponent):
         self.runtime = RabbitRuntime(*args, **kargs)
 
     def _setup_pw(self):
+        LOG.info("Setting up your rabbit-mq guest password.")
+        self.runtime.restart()
         passwd = self.cfg.get("passwords", "rabbit")
         cmd = PWD_CMD + [passwd]
         sh.execute(*cmd, run_as_root=True)
+        LOG.info("Restarting so that your rabbit-mq guest password is reflected.")
+        self.runtime.restart()
 
     def post_install(self):
         parent_result = comp.PkgInstallComponent.post_install(self)
-        self.runtime.restart()
         self._setup_pw()
-        self.runtime.restart()
         return parent_result
 
     def _get_pkgs(self):
-        pkgs = comp.PkgInstallComponent._get_pkgs(self)
-        for fn in REQ_PKGS:
-            full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
-            pkgs = utils.extract_pkg_list([full_name], self.distro, pkgs)
-        return pkgs
+        return list(REQ_PKGS)
 
 
 class RabbitRuntime(comp.EmptyRuntime):
@@ -96,7 +104,7 @@ class RabbitRuntime(comp.EmptyRuntime):
             msg = "Can not check the status of %s since it was not installed" % (TYPE)
             raise excp.StatusException(msg)
         #this has got to be the worst status output
-        #i have ever seen (its like a weird mix json)
+        #i have ever seen (its like a weird mix json+crap)
         (sysout, _) = sh.execute(*STATUS_CMD,
                         run_as_root=True,
                         check_exit_code=False)
@@ -108,19 +116,21 @@ class RabbitRuntime(comp.EmptyRuntime):
             return comp.STATUS_UNKNOWN
 
     def _run_cmd(self, cmd):
-        if self.distro == settings.UBUNTU11:
-            #this seems to fix one of the bugs with rabbit mq starting and stopping
-            #not cool, possibly connected to the following bugs:
-            #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
-            #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
-            with TemporaryFile() as f:
-                sh.execute(*cmd, run_as_root=True,
-                            stdout_fh=f, stderr_fh=f)
-        else:
-            sh.execute(*cmd, run_as_root=True)
+        #this seems to fix one of the bugs with rabbit mq starting and stopping
+        #not cool, possibly connected to the following bugs:
+        #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
+        #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
+        #
+        #rhel seems to have this bug also...
+        with TemporaryFile() as f:
+            sh.execute(*cmd, run_as_root=True,
+                        stdout_fh=f, stderr_fh=f)
 
     def restart(self):
+        LOG.info("Restarting rabbitmq")
         self._run_cmd(RESTART_CMD)
+        LOG.info("Please wait %s seconds while it starts up." % (WAIT_ON_TIME))
+        time.sleep(WAIT_ON_TIME)
         return 1
 
     def stop(self):
