@@ -56,13 +56,23 @@ This will typically produce:
 * linux (tested on ubuntu 11.10 and rhel 6.2 (TBD))
 * python 2.6 or 2.7 (not tested with python 3.0)
 
-For ubuntu:
+For ubuntu 11.10:
 
     $ sudo apt-get install git python-pip python-dev gcc -y
     $ sudo easy_install netifaces termcolor pep8 pylint
     $ git clone git://github.com/yahoo/Openstack-DevstackPy.git DevstackPy
     $ cd DevstackPy
- 
+
+For rhel 6.2:
+
+    $ wget http://download.fedoraproject.org/pub/epel/6/i386/epel-release-6-5.noarch.rpm
+    $ sudo yum install -y epel-release-6-5.noarch.rpm
+    $ sudo yum install -y python-pip gcc python-netifaces git
+    $ sudo pip-python install termcolor
+    $ git clone git://github.com/yahoo/Openstack-DevstackPy.git DevstackPy
+    $ cd DevstackPy
+
+
 # Actions
 
 *Stack* can do the following:
