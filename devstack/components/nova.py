@@ -447,6 +447,7 @@ class NovaConfigurator(object):
 
         #whats the network fixed range?
         nova_conf.add('fixed_range', self._getstr('fixed_range'))
+        nova_conf.add('s3_host', hostip)
 
         if settings.QUANTUM in self.instances:
             #setup quantum config
@@ -593,11 +594,11 @@ class NovaConfigurator(object):
             nova_conf.add('xenapi_connection_password', self.cfg.get("passwords", "xenapi_connection"))
             nova_conf.add_simple('noflat_injected')
             nova_conf.add('flat_interface', 'eth1')
-            nova_conf.add('firewall_driver', self.cfg.getstr('xen_firewall_driver'))
+            nova_conf.add('firewall_driver', self._getstr('xen_firewall_driver'))
             nova_conf.add('flat_network_bridge', 'xapi1')
         else:
             nova_conf.add('connection_type', 'libvirt')
-            nova_conf.add('firewall_driver', self.cfg.getstr('libvirt_firewall_driver'))
+            nova_conf.add('firewall_driver', self._getstr('libvirt_firewall_driver'))
             nova_conf.add('flat_network_bridge', self._getstr('flat_network_bridge'))
             flat_interface = self._getstr('flat_interface')
             if flat_interface:
