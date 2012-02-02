@@ -23,15 +23,15 @@
     "rhel-6": {
         "lvm2": {
             "version": "2.02*",
-            "removable": false
+            "removable": true
         },
         "scsi-target-utils": {
             "version": "1.0*",
-            "removable": false
+            "removable": true
         },
         "iscsi-initiator-utils": {
             "version": "6.2*",
-            "removable": false
+            "removable": true
         }
     }
 }

@@ -94,6 +94,8 @@ def _pre_run(action_name, **kargs):
 
 def _post_run(action_name, **kargs):
     secs_taken = kargs.get("time_taken")
+    if secs_taken not is None:
+        print("It took %s seconds to complete action %s." % (action_name, secs_taken))
     if action_name == settings.UNINSTALL:
         root_dir = kargs.get("root_dir")
         if root_dir:
@@ -106,13 +108,14 @@ def _post_run(action_name, **kargs):
             port = cfg.get('horizon', 'port')
             print("Horizon should now be available at http://%s:%s/" % (host_ip, port))
         if settings.KEYSTONE in actives:
-            shared_params = keystone.get_shared_params(cfg) 
+            shared_params = keystone.get_shared_params(cfg)
             msg = "Keystone is serving at {KEYSTONE_SERVICE_PROTOCOL}://{KEYSTONE_SERVICE_HOST}:{KEYSTONE_SERVICE_PORT}/v2.0/"
             print(msg.format(**shared_params))
             print("The default users are: admin and demo.")
             admin_pw = cfg.get('passwords', 'horizon_keystone_admin')
-            print("The admin password is: %s" %(admin_pw))
+            print("The admin password is: %s" % (admin_pw))
         print("This is your host ip: %s" % (host_ip))
+
 
 def _print_cfgs(config_obj, action):
 
@@ -281,8 +284,8 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
     #display any configs touched...
     _print_cfgs(config, action_name)
     #any post run actions go now
-    _post_run(action_name, root_dir=root_dir, pkg=pkg_manager, 
-        cfg=config, actives=components.keys(), time_taken=int(end_time-start_time))
+    _post_run(action_name, root_dir=root_dir, pkg=pkg_manager,
+        cfg=config, actives=components.keys(), time_taken=int(end_time - start_time))
     return results
 
 

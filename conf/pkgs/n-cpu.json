@@ -21,11 +21,11 @@
     "rhel-6": {
         "lvm2": {
             "version": "2.02*",
-            "removable": false
+            "removable": true
         },
         "iscsi-initiator-utils": {
             "version": "6.2*",
-            "removable": false
+            "removable": true
         }
     }
 }
