@@ -356,7 +356,7 @@ class NovaInstaller(comp.PythonInstallComponent):
 
     def _get_target_config_name(self, config_fn):
         if config_fn == PASTE_CONF:
-            #TODO this should not be here... (in bin??)
+            #TODO Don't put nova-api-paste.ini in bin?
             return sh.joinpths(self.appdir, "bin", 'nova-api-paste.ini')
         else:
             return comp.PythonInstallComponent._get_target_config_name(self, config_fn)
@@ -494,6 +494,10 @@ class NovaConfigurator(object):
             vncproxy_url = self._getstr('vncproxy_url')
             nova_conf.add('novncproxy_base_url', vncproxy_url)
 
+        if settings.XVNC in self.instances:
+            xvncproxy_url = self._getstr('xvpvncproxy_url')
+            nova_conf.add('xvpvncproxy_base_url', xvncproxy_url)
+
         nova_conf.add('vncserver_listen', self._getstr('vncserver_listen'))
         vncserver_proxyclient_address = self._getstr('vncserver_proxyclient_addres')
         # If no vnc proxy address was specified, pick a default based on which
@@ -583,9 +587,11 @@ class NovaConfigurator(object):
             nova_conf.add('xenapi_connection_password', self.cfg.get("passwords", "xenapi_connection"))
             nova_conf.add_simple('noflat_injected')
             nova_conf.add('flat_interface', 'eth1')
+            nova_conf.add('firewall_driver', self.cfg.getstr('xen_firewall_driver'))
             nova_conf.add('flat_network_bridge', 'xapi1')
         else:
-            nova_conf.add('connection_type', self._getstr('connection_type'))
+            nova_conf.add('connection_type', 'libvirt')
+            nova_conf.add('firewall_driver', self.cfg.getstr('libvirt_firewall_driver'))
             nova_conf.add('flat_network_bridge', self._getstr('flat_network_bridge'))
             flat_interface = self._getstr('flat_interface')
             if flat_interface:
