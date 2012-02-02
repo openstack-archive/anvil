@@ -26,7 +26,7 @@ import traceback
 #this needs to happen immediately (or thats what it seems)
 log_fn = os.getenv('LOG_FILE')
 if(log_fn == None):
-    log_fn = os.path.join("conf", 'logging.ini')
+    log_fn = os.path.normpath(os.path.join("conf", 'logging.ini'))
 logging.config.fileConfig(log_fn)
 
 #this handles our option parsing
@@ -35,23 +35,12 @@ from devstack import utils
 
 #these are the program runtimes that actually do the running
 from devstack.progs import actions
-from devstack.progs import describe
-from devstack.progs import deps
 
 
 def main():
-    #parse and get it done!
     args = opts.parse()
-    #figure out what to do
-    module = None
-    if args.get('describe_comp'):
-        module = describe
-    elif args.get('list_deps'):
-        module = deps
-    else:
-        module = actions
     try:
-        ran_ok = module.run(args)
+        ran_ok = actions.run(args)
         if not ran_ok:
             me = utils.color_text((os.path.basename(sys.argv[0])), "red", True)
             me += " " + utils.color_text('--help', 'red')

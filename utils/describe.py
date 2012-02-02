@@ -14,7 +14,23 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import logging
+import logging.config
+import optparse
+import os
 import re
+import sys
+
+POSSIBLE_TOPDIR = os.path.normpath(os.path.join(os.path.abspath(sys.argv[0]),
+                                   os.pardir,
+                                   os.pardir))
+sys.path.insert(0, POSSIBLE_TOPDIR)
+
+log_fn = os.getenv('LOG_FILE')
+if(log_fn == None):
+    log_fn = os.path.normpath(os.path.join("conf", 'logging.ini'))
+logging.config.fileConfig(log_fn)
+
 
 from devstack import settings
 from devstack import utils
@@ -74,3 +90,24 @@ def run(args):
     (rep, maxlen) = utils.welcome(PROG_NAME)
     _run_describe_comps(args, rep, maxlen)
     return True
+
+
+def main():
+    parser = optparse.OptionParser()
+    known_components = sorted(settings.COMPONENT_NAMES)
+    components = "(" + ", ".join(known_components) + ")"
+    parser.add_option("-c", "--component",
+        action="append",
+        dest="component",
+        help="openstack component, ie %s" % (components))
+    (options, args) = parser.parse_args()
+    opts = dict()
+    opts['components'] = options.component
+    result = run(opts)
+    if not result:
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

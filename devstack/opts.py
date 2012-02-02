@@ -83,29 +83,13 @@ def parse():
         default=True)
     parser.add_option_group(stop_un_group)
 
-    misc_group = OptionGroup(parser, "Miscellaneous options")
-    misc_group.add_option("--list-deps",
-        action="store_true",
-        dest="list_deps",
-        help="show dependencies of COMPONENT (default: %default)",
-        default=False)
-    misc_group.add_option("--describe-components",
-        action="store_true",
-        dest="describe_comp",
-        help="describe COMPONENT (default: %default)",
-        default=False)
-    parser.add_option_group(misc_group)
-
-    (options, args) = parser.parse_args()
-
     #extract only what we care about
+    (options, args) = parser.parse_args()
     output = dict()
     output['components'] = options.component
     output['dir'] = options.dir
     output['ref_components'] = options.r_component
     output['action'] = options.action
-    output['list_deps'] = options.list_deps
-    output['describe_comp'] = options.describe_comp
     output['force'] = options.force
     if options.ensure_deps:
         output['ignore_deps'] = False
