@@ -111,7 +111,7 @@ class DBUninstaller(comp.PkgUninstallComponent):
                     utils.execute_template(*cmds, params=params, shell=True)
         except IOError:
             LOG.warn(("Could not reset the database password. You might have to manually "
-                      "reset the password to \"%s\" before the next install.") % (RESET_BASE_PW), exc_info=True)
+                      "reset the password to \"%s\" before the next install") % (RESET_BASE_PW))
             LOG.info("To aid in this check out: [%s]", " or ".join(SQL_RESET_PW_LINKS))
 
 

@@ -28,11 +28,11 @@ from devstack.components import keystone_client
 from devstack.components import nova
 from devstack.components import nova_client
 from devstack.components import novnc
-from devstack.components import openstack_x
 from devstack.components import quantum
 from devstack.components import quantum_client
 from devstack.components import rabbit
 from devstack.components import swift
+from devstack.components import swift_keystone
 
 # This determines what classes to use to install/uninstall/...
 ACTION_CLASSES = {
@@ -41,13 +41,13 @@ ACTION_CLASSES = {
         settings.GLANCE: glance.GlanceInstaller,
         settings.QUANTUM: quantum.QuantumInstaller,
         settings.SWIFT: swift.SwiftInstaller,
+        settings.SWIFT: swift_keystone.SwiftKeystoneInstaller,
         settings.HORIZON: horizon.HorizonInstaller,
         settings.KEYSTONE: keystone.KeystoneInstaller,
         settings.DB: db.DBInstaller,
         settings.RABBIT: rabbit.RabbitInstaller,
         settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientInstaller,
         settings.NOVA_CLIENT: nova_client.NovaClientInstaller,
-        settings.OPENSTACK_X: openstack_x.OpenstackXInstaller,
         settings.NOVNC: novnc.NoVNCInstaller,
         settings.QUANTUM_CLIENT: quantum_client.QuantumClientInstaller,
     },
@@ -56,13 +56,13 @@ ACTION_CLASSES = {
         settings.GLANCE: glance.GlanceUninstaller,
         settings.QUANTUM: quantum.QuantumUninstaller,
         settings.SWIFT: swift.SwiftUninstaller,
+        settings.SWIFT: swift_keystone.SwiftKeystoneUninstaller,
         settings.HORIZON: horizon.HorizonUninstaller,
         settings.KEYSTONE: keystone.KeystoneUninstaller,
         settings.DB: db.DBUninstaller,
         settings.RABBIT: rabbit.RabbitUninstaller,
         settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientUninstaller,
         settings.NOVA_CLIENT: nova_client.NovaClientUninstaller,
-        settings.OPENSTACK_X: openstack_x.OpenstackXUninstaller,
         settings.NOVNC: novnc.NoVNCUninstaller,
         settings.QUANTUM_CLIENT: quantum_client.QuantumClientUninstaller,
     },
@@ -71,13 +71,13 @@ ACTION_CLASSES = {
         settings.GLANCE: glance.GlanceRuntime,
         settings.QUANTUM: quantum.QuantumRuntime,
         settings.SWIFT: swift.SwiftRuntime,
+        settings.SWIFT: swift_keystone.SwiftKeystoneRuntime,
         settings.HORIZON: horizon.HorizonRuntime,
         settings.KEYSTONE: keystone.KeystoneRuntime,
         settings.DB: db.DBRuntime,
         settings.RABBIT: rabbit.RabbitRuntime,
         settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientRuntime,
         settings.NOVA_CLIENT: nova_client.NovaClientRuntime,
-        settings.OPENSTACK_X: openstack_x.OpenstackXRuntime,
         settings.NOVNC: novnc.NoVNCRuntime,
         settings.QUANTUM_CLIENT: quantum_client.QuantumClientRuntime,
     },
@@ -86,13 +86,13 @@ ACTION_CLASSES = {
         settings.GLANCE: glance.GlanceRuntime,
         settings.QUANTUM: quantum.QuantumRuntime,
         settings.SWIFT: swift.SwiftRuntime,
+        settings.SWIFT: swift_keystone.SwiftKeystoneRuntime,
         settings.HORIZON: horizon.HorizonRuntime,
         settings.KEYSTONE: keystone.KeystoneRuntime,
         settings.DB: db.DBRuntime,
         settings.RABBIT: rabbit.RabbitRuntime,
         settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientRuntime,
         settings.NOVA_CLIENT: nova_client.NovaClientRuntime,
-        settings.OPENSTACK_X: openstack_x.OpenstackXRuntime,
         settings.NOVNC: novnc.NoVNCRuntime,
         settings.QUANTUM_CLIENT: quantum_client.QuantumClientRuntime,
     },

@@ -40,21 +40,21 @@ GLANCE = "glance"
 QUANTUM = "quantum"
 QUANTUM_CLIENT = 'quantum-client'
 SWIFT = "swift"
+SWIFT_KEYSTONE = "swift_keystone"
 HORIZON = "horizon"
 KEYSTONE = "keystone"
 KEYSTONE_CLIENT = 'keystone-client'
 DB = "db"
 RABBIT = "rabbit"
-OPENSTACK_X = 'openstack-x'
 NOVNC = 'novnc'
 COMPONENT_NAMES = [
     NOVA, NOVA_CLIENT,
     GLANCE,
     QUANTUM, QUANTUM_CLIENT,
     SWIFT,
+    SWIFT_KEYSTONE,
     HORIZON,
     KEYSTONE, KEYSTONE_CLIENT,
-    OPENSTACK_X,
     DB,
     RABBIT,
     NOVNC,
@@ -71,8 +71,9 @@ COMPONENT_DEPENDENCIES = {
     KEYSTONE: [DB],
     NOVA: [KEYSTONE, GLANCE, DB, RABBIT, NOVA_CLIENT],
     SWIFT: [],
+    SWIFT_KEYSTONE: [SWIFT],
     NOVA_CLIENT: [],
-    HORIZON: [KEYSTONE_CLIENT, GLANCE, NOVA_CLIENT, OPENSTACK_X],
+    HORIZON: [KEYSTONE_CLIENT, GLANCE, NOVA_CLIENT],
     #the db isn't always a dependency (depending on the quantum component to be activated)
     #for now assume it is (TODO make it better?)
     #the client isn't always needed either (TODO make it better?)

@@ -1,8 +1,11 @@
 [DEFAULT]
 bind_port = 8080
 user = %USER%
-log_facility = LOG_LOCAL1
 swift_dir = %SWIFT_CONFIG_LOCATION%
+workers = 1
+log_name = swift
+log_facility = LOG_LOCAL1
+log_level = DEBUG
 
 [pipeline:main]
 pipeline = healthcheck cache %AUTH_SERVER% proxy-server
@@ -16,7 +19,7 @@ account_autocreate = true
 use = egg:swiftkeystone2#keystone2
 keystone_admin_token = %SERVICE_TOKEN%
 keystone_url = http://localhost:35357/v2.0
-keystone_swift_operator_roles = Member
+keystone_swift_operator_roles = Member,Admin
 
 [filter:tempauth]
 use = egg:swift#tempauth
