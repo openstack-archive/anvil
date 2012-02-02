@@ -13,6 +13,10 @@
         }
     },
     "rhel-6": {
-        # TBD
+        # Missing!
+        # "python-numpy": {
+        #     "version": "1:1.5*",
+        #     "removable": true
+        # }
     }
 }

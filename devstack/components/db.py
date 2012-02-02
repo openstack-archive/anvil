@@ -136,10 +136,10 @@ class DBInstaller(comp.PkgInstallComponent):
     def _configure_db_confs(self):
         dbtype = self.cfg.get("db", "type")
         if self.distro == settings.RHEL6 and dbtype == MYSQL:
-            LOG.info("Fixing up rhel 6 mysql configs")
+            LOG.info("Fixing up %s mysql configs." % (settings.RHEL6))
             sh.execute(*RHEL_FIX_GRANTS, run_as_root=True)
         elif self.distro == settings.UBUNTU11 and dbtype == MYSQL:
-            LOG.info("Fixing up ubuntu 11 mysql configs")
+            LOG.info("Fixing up %s mysql configs." % (settings.UBUNTU11))
             sh.execute(*UBUNTU_HOST_ADJUST, run_as_root=True)
 
     def _get_pkgs(self):
