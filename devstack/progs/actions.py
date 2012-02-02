@@ -83,7 +83,7 @@ def _pre_run(action_name, **kargs):
 def _post_run(action_name, **kargs):
     secs_taken = kargs.get("time_taken")
     if secs_taken != None:
-        LOG.info("It took %.03f seconds to complete action %s." % (secs_taken, action_name))
+        LOG.info("It took %.03f seconds to complete action [%s]" % (secs_taken, action_name))
     #try to remove the root - ok if this fails
     if action_name == settings.UNINSTALL:
         root_dir = kargs.get("root_dir")
@@ -171,7 +171,7 @@ def _stop(component_name, instance, skip_notrace):
         LOG.info("Finished stop of %s" % (component_name))
     except excp.NoTraceException, e:
         if skip_notrace:
-            LOG.info("Passing on stopping %s since no trace file was found." % (component_name))
+            pass
         else:
             raise
 
@@ -205,16 +205,17 @@ def _uninstall(component_name, instance, skip_notrace):
         instance.post_uninstall()
     except excp.NoTraceException, e:
         if skip_notrace:
-            LOG.info("Passing on uninstalling %s since no trace file was found." % (component_name))
+            pass
         else:
             raise
 
 
 def _run_components(action_name, component_order, components, distro, root_dir, program_args):
-    LOG.info("Will %s [%s] (in that order) using root directory \"%s\"" % (action_name, ", ".join(component_order), root_dir))
+    LOG.info("Will run action [%s] using root directory \"%s\"" % (action_name, root_dir))
+    LOG.info("In the following order: %s" % ("->".join(component_order)))
     non_components = set(components.keys()).difference(set(component_order))
     if non_components:
-        LOG.info("Using reference components [%s]" % (", ".join(sorted(non_components))))
+        LOG.info("Using reference components (%s)" % (", ".join(sorted(non_components))))
     pkg_manager = _get_pkg_manager(distro, program_args.pop('keep_packages', True))
     config = common.get_config()
     #form the active instances (this includes ones we won't use)
