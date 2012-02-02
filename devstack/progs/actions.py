@@ -94,7 +94,7 @@ def _pre_run(action_name, **kargs):
 
 def _post_run(action_name, **kargs):
     secs_taken = kargs.get("time_taken")
-    if secs_taken not is None:
+    if secs_taken != None:
         print("It took %s seconds to complete action %s." % (action_name, secs_taken))
     if action_name == settings.UNINSTALL:
         root_dir = kargs.get("root_dir")
