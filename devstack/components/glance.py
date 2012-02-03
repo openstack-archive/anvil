@@ -121,9 +121,6 @@ class GlanceInstaller(comp.PythonInstallComponent):
         #then extract known configs that
         #will need locations/directories/files made (or touched)...
         with io.BytesIO(contents) as stream:
-            #for paste files we might not be doing this 100% right
-            #since it seems like the paste config format is not the same as
-            #the python config parser format....
             config = cfg.IgnoreMissingConfigParser()
             config.readfp(stream)
             if config.getboolean('image_cache_enabled', CFG_SECTION):

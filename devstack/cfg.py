@@ -40,47 +40,7 @@ PW_PROMPTS = {
 }
 
 
-class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
-    DEF_INT = 0
-    DEF_FLOAT = 0.0
-    DEF_BOOLEAN = False
-
-    def __init__(self):
-        ConfigParser.RawConfigParser.__init__(self)
-
-    def get(self, section, option):
-        value = None
-        try:
-            value = ConfigParser.RawConfigParser.get(self, section, option)
-        except ConfigParser.NoSectionError, e:
-            pass
-        except ConfigParser.NoOptionError, e:
-            pass
-        return value
-
-    def getboolean(self, section, option):
-        value = self.get(section, option)
-        if value is None:
-            #not there so don't let the parent blowup
-            return IgnoreMissingConfigParser.DEF_BOOLEAN
-        return ConfigParser.RawConfigParser.getboolean(self, section, option)
-
-    def getfloat(self, section, option):
-        value = self.get(section, option)
-        if value is None:
-            #not there so don't let the parent blowup
-            return IgnoreMissingConfigParser.DEF_FLOAT
-        return ConfigParser.RawConfigParser.getfloat(self, section, option)
-
-    def getint(self, section, option):
-        value = self.get(section, option)
-        if value is None:
-            #not there so don't let the parent blowup
-            return IgnoreMissingConfigParser.DEF_INT
-        return ConfigParser.RawConfigParser.getint(self, section, option)
-
-
-class EnvConfigParser(ConfigParser.RawConfigParser):
+class StackConfigParser(ConfigParser.RawConfigParser):
     def __init__(self):
         ConfigParser.RawConfigParser.__init__(self)
         self.pws = dict()
@@ -207,3 +167,45 @@ class EnvConfigParser(ConfigParser.RawConfigParser):
         #store for later...
         self.db_dsns[dbname] = dsn
         return dsn
+
+
+class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
+    DEF_INT = 0
+    DEF_FLOAT = 0.0
+    DEF_BOOLEAN = False
+
+    def __init__(self):
+        ConfigParser.RawConfigParser.__init__(self)
+        #make option names case sensitive
+        self.optionxform = str
+
+    def get(self, section, option):
+        value = None
+        try:
+            value = ConfigParser.RawConfigParser.get(self, section, option)
+        except ConfigParser.NoSectionError, e:
+            pass
+        except ConfigParser.NoOptionError, e:
+            pass
+        return value
+
+    def getboolean(self, section, option):
+        value = self.get(section, option)
+        if value is None:
+            #not there so don't let the parent blowup
+            return IgnoreMissingConfigParser.DEF_BOOLEAN
+        return ConfigParser.RawConfigParser.getboolean(self, section, option)
+
+    def getfloat(self, section, option):
+        value = self.get(section, option)
+        if value is None:
+            #not there so don't let the parent blowup
+            return IgnoreMissingConfigParser.DEF_FLOAT
+        return ConfigParser.RawConfigParser.getfloat(self, section, option)
+
+    def getint(self, section, option):
+        value = self.get(section, option)
+        if value is None:
+            #not there so don't let the parent blowup
+            return IgnoreMissingConfigParser.DEF_INT
+        return ConfigParser.RawConfigParser.getint(self, section, option)
