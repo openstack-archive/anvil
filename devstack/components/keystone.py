@@ -157,7 +157,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         #nothing modified so just return the original
         return contents
 
-    def _get_passwords(self):
+    def get_passwords(self):
         return ['horizon_keystone_admin', 'service_token']
 
     def _get_param_map(self, config_fn):

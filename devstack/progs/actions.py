@@ -173,7 +173,7 @@ def _stop(component_name, instance, skip_notrace):
         stop_amount = instance.stop()
         LOG.info("Stopped %s items." % (stop_amount))
         LOG.info("Finished stop of %s" % (component_name))
-    except excp.NoTraceException, e:
+    except excp.NoTraceException:
         if skip_notrace:
             pass
         else:
@@ -207,11 +207,52 @@ def _uninstall(component_name, instance, skip_notrace):
         instance.uninstall()
         LOG.info("Post-uninstall %s." % (component_name))
         instance.post_uninstall()
-    except excp.NoTraceException, e:
+    except excp.NoTraceException:
         if skip_notrace:
             pass
         else:
             raise
+
+
+def _instanciate_components(action_name, components, distro, pkg_manager, config, root_dir):
+    all_instances = {}
+    prereq_instances = {}
+
+    for component in components.keys():
+        action_cls = common.get_action_cls(action_name, component)
+        instance = action_cls(instances=all_instances,
+                              distro=distro,
+                              packager=pkg_manager,
+                              config=config,
+                              root=root_dir,
+                              opts=components.get(component, list()))
+        all_instances[component] = instance
+
+        if action_name == settings.START:
+            if not instance.is_installed():
+                install_cls = common.get_action_cls(settings.INSTALL, component)
+                install_instance = install_cls(instances=dict(),
+                                               distro=distro,
+                                               packager=pkg_manager,
+                                               config=config,
+                                               root=root_dir,
+                                               opts=components.get(component, list()))
+                prereq_instances[component] = install_instance
+
+        elif action_name == settings.UNINSTALL:
+            if component not in _NO_AUTO_STOP:
+                # stop the component if started
+                if instance.is_started():
+                    stop_cls = common.get_action_cls(settings.STOP, component)
+                    stop_instance = stop_cls(instances=dict(),
+                                             distro=distro,
+                                             packager=pkg_manager,
+                                             config=config,
+                                             root=root_dir,
+                                             opts=components.get(component, list()))
+                    prereq_instances[component] = stop_instance
+
+    return (all_instances, prereq_instances)
 
 
 def _run_components(action_name, component_order, components, distro, root_dir, program_args):
@@ -224,33 +265,35 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
     config = common.get_config()
     #form the active instances (this includes ones we won't use)
     start_time = time.time()
-    all_instances = {}
-    for component in components.keys():
-        action_cls = common.get_action_cls(action_name, component)
-        instance = action_cls(instances=all_instances,
-                            distro=distro,
-                            packager=pkg_manager,
-                            config=config,
-                            root=root_dir,
-                            opts=components.get(component, list()))
-        all_instances[component] = instance
-        # ask for passwords on top of execution
-        for pwd in instance._get_passwords():
+
+    all_instances, prereq_instances = _instanciate_components(action_name,
+                                                              components,
+                                                              distro,
+                                                              pkg_manager,
+                                                              config,
+                                                              root_dir)
+
+    # ask for passwords at the top of execution
+    for instance in all_instances.values() + prereq_instances.values():
+        for pwd in instance.get_passwords():
             config.get('passwords', pwd)
 
     #run anything before it gets going...
     _pre_run(action_name, root_dir=root_dir, pkg=pkg_manager, cfg=config)
     results = list()
     force = program_args.get('force', False)
+
     for component in component_order:
         #this instance was just made
-        instance = all_instances.get(component)
+        instance = all_instances[component]
         #prefetch configs
         instance.pre_fetch_configs()
+
     for component in component_order:
         #this instance was just made
         instance = all_instances.get(component)
         #activate the correct function for the given action
+
         if action_name == settings.INSTALL:
             install_result = _install(component, instance)
             if install_result:
@@ -259,47 +302,43 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
                     results += install_result
                 else:
                     results.append(str(install_result))
+
         elif action_name == settings.STOP:
             _stop(component, instance, force)
+
         elif action_name == settings.START:
-            if not instance.is_installed():
-                install_cls = common.get_action_cls(settings.INSTALL, component)
-                install_instance = install_cls(instances=dict(),
-                                               distro=distro,
-                                               packager=pkg_manager,
-                                               config=config,
-                                               root=root_dir,
-                                               opts=components.get(component, list()))
+            if component in prereq_instances:
+                install_instance = prereq_instances[component]
                 _install(component, install_instance)
+
             start_result = _start(component, instance)
+
             if start_result:
                 #TODO clean this up.
                 if type(start_result) == list:
                     results += start_result
                 else:
                     results.append(str(start_result))
-        elif action_name == settings.UNINSTALL:
-            if component not in _NO_AUTO_STOP:
-                # stop the component if started
-                if instance.is_started():
-                    stop_cls = common.get_action_cls(settings.STOP, component)
-                    stop_instance = stop_cls(instances=dict(),
-                                             distro=distro,
-                                             packager=pkg_manager,
-                                             config=config,
-                                             root=root_dir,
-                                             opts=components.get(component, list()))
-                    _stop(component, stop_instance, force)
 
+        elif action_name == settings.UNINSTALL:
+            if component in prereq_instances:
+                stop_instance = prereq_instances[component]
+                _stop(component, stop_instance, force)
             _uninstall(component, instance, force)
+
     if not sh.exists(_RC_FILE):
         generate_local_rc(_RC_FILE, config)
+
     end_time = time.time()
+
     #display any configs touched...
     _print_cfgs(config, action_name)
+
     #any post run actions go now
     _post_run(action_name, root_dir=root_dir, pkg=pkg_manager,
-        cfg=config, actives=components.keys(), time_taken=(end_time - start_time))
+              cfg=config, actives=components.keys(),
+              time_taken=(end_time - start_time))
+
     return results
 
 
