@@ -87,14 +87,14 @@ def generate_os_env(fh, cfg):
     write_env('OS_PASSWORD', cfg.get('passwords', 'horizon_keystone_admin'), fh)
     write_env('OS_TENANT_NAME', 'demo', fh)
     write_env('OS_USERNAME', 'demo', fh)
-    write_env('OS_AUTH_URL', 'http://%s:5000/v2.0', fh)
+    write_env('OS_AUTH_URL', 'http://%s:5000/v2.0' % ip, fh)
 
 
-def generate_local_rc(fn=None):
+def generate_local_rc(fn=None, cfg=None):
     if not fn:
         fn = DEF_FN
-    utils.welcome(PROG_NAME)
-    cfg = common.get_config()
+    if not cfg:
+        cfg = common.get_config()
     with open(fn, "w") as fh:
         for (out_name, cfg_data) in CFG_MAKE.items():
             section = cfg_data[0]
@@ -111,6 +111,7 @@ def main():
     opts.add_option("-o", "--output", dest="filename",
          help="write output to FILE", metavar="FILE")
     (options, args) = opts.parse_args()
+    utils.welcome(PROG_NAME)
     generate_local_rc(options.filename)
     print("Check file \"%s\" for your environment configuration." \
               % (os.path.normpath(options.filename)))

@@ -93,7 +93,6 @@ class KeystoneInstaller(comp.PythonInstallComponent):
     def _get_symlinks(self):
         return {sh.joinpths(self.cfgdir, ROOT_CONF): '/etc/keystone/keystone.conf'}
 
-
     def post_install(self):
         parent_result = comp.PythonInstallComponent.post_install(self)
         self._setup_db()
@@ -157,6 +156,9 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             #we might need to handle more in the future...
         #nothing modified so just return the original
         return contents
+
+    def _get_passwords(self):
+        return ['horizon_keystone_admin', 'service_token']
 
     def _get_param_map(self, config_fn):
         #these be used to fill in the configuration/cmds +
