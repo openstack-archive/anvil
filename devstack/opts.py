@@ -43,18 +43,20 @@ def parse():
     known_actions = sorted(settings.ACTIONS)
     actions = "(" + ", ".join(known_actions) + ")"
     base_group.add_option("-a", "--action",
-            action="store",
-            type="string",
-            dest="action",
-            metavar="ACTION",
-            help="action to perform, ie %s" % (actions))
+        action="store",
+        type="string",
+        dest="action",
+        metavar="ACTION",
+        help="action to perform, ie %s" % (actions),
+        default='start')
     base_group.add_option("-d", "--directory",
         action="store",
         type="string",
         dest="dir",
         metavar="DIR",
-        help="empty root DIR for install or "\
-             "DIR with existing components for start/stop/uninstall")
+        help=("empty root DIR for install or "
+              "DIR with existing components for start/stop/uninstall"),
+        default='/opt/stack')
     base_group.add_option("-i", "--ignore-deps",
         action="store_false",
         dest="ensure_deps",
