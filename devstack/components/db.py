@@ -92,6 +92,7 @@ class DBUninstaller(comp.PkgUninstallComponent):
         pws = ['old_sql']
         for pw_key in pws:
             self.cfg.get("passwords", pw_key)
+        self.cfg.get('host', 'ip')
 
     def pre_uninstall(self):
         dbtype = self.cfg.get("db", "type")
