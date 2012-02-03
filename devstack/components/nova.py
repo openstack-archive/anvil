@@ -324,10 +324,25 @@ class NovaInstaller(comp.PythonInstallComponent):
 
     def _config_adjust(self, contents, config_fn):
         if config_fn == PASTE_CONF and settings.KEYSTONE in self.instances:
-            #it seems like paste actually uses it own custom config parser
-            #which looks like the python config parser files format but actually isn't
-            #great (not)
-            contents = utils.adjust_paste_config(contents, PASTE_PIPELINE_KEYSTONE_ADJUST)
+            newcontents = contents
+            with io.BytesIO(contents) as stream:
+                config = cfg.IgnoreMissingConfigParser()
+                config.readfp(stream)
+                mods = 0
+                for section in PASTE_PIPELINE_KEYSTONE_ADJUST.keys():
+                    if config.has_section(section):
+                        section_vals = PASTE_PIPELINE_KEYSTONE_ADJUST.get(section)
+                        for (k, v) in section_vals.items():
+                            config.set(section, k, v)
+                            mods += 1
+                if mods > 0:
+                    with io.BytesIO() as outputstream:
+                        config.write(outputstream)
+                        outputstream.flush()
+                        #TODO can we write to contents here directly?
+                        new_data = ['# Adjusted %s' % (config_fn), outputstream.getvalue()]
+                        newcontents = utils.joinlinesep(*new_data)
+            contents = newcontents
         return contents
 
     def _get_source_config(self, config_fn):

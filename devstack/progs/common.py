@@ -136,7 +136,7 @@ def get_action_cls(action_name, component_name):
 
 def get_config():
     cfg_fn = sh.canon_path(settings.STACK_CONFIG_LOCATION)
-    config_instance = cfg.EnvConfigParser()
+    config_instance = cfg.StackConfigParser()
     config_instance.read(cfg_fn)
     return config_instance
 

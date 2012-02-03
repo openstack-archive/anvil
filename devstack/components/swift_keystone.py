@@ -61,10 +61,10 @@ class SwiftKeystoneInstaller(comp.PythonInstallComponent):
             }]
 
     def _get_config_files(self):
-        return CONFIGS
+        return list(CONFIGS)
 
     def _get_pkgs(self):
-        return REQ_PKGS
+        return list(REQ_PKGS)
 
     def _post_install(self):
         pass

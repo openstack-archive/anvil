@@ -45,38 +45,6 @@ def load_template(component, fn):
     return (full_pth, contents)
 
 
-def adjust_paste_config(contents, section_rep):
-    lines = contents.splitlines()
-    for section in section_rep.keys():
-        section_str = "[" + section.strip() + "]"
-        section_replacements = section_rep.get(section)
-        if not section_replacements:
-            continue
-        LOG.debug("Looking for section %s" % (section))
-        matching = False
-        for i in range(len(lines)):
-            line = lines[i]
-            if matching and line.startswith("["):
-                #new section
-                LOG.debug("Finished section named %s ending at line %s" % (section, (i + 1)))
-                break
-            elif matching:
-                for (key, rep) in section_replacements.items():
-                    #does not handle multi-lines values (fix that?)
-                    pieces = line.split("=", 1)
-                    if len(pieces) == 2:
-                        pot_key = pieces[0].strip()
-                        if pot_key == key:
-                            new_line = "%s = %s" % (key, rep)
-                            LOG.debug("Replacing paste line %s with %s for line %s" % (line, new_line, (i + 1)))
-                            lines[i] = new_line
-            elif not matching and section_str == line.strip():
-                #found the section
-                matching = True
-                LOG.debug("Found section named %s starting at line %s" % (section, (i + 1)))
-    return joinlinesep(*lines)
-
-
 def execute_template(*cmds, **kargs):
     params_replacements = kargs.pop('params', None)
     tracewriter = kargs.pop('tracewriter', None)
