@@ -90,6 +90,10 @@ class KeystoneInstaller(comp.PythonInstallComponent):
     def _get_pkgs(self):
         return list(REQ_PKGS)
 
+    def _get_symlinks(self):
+        return {sh.joinpths(self.cfgdir, ROOT_CONF): '/etc/keystone/keystone.conf'}
+
+
     def post_install(self):
         parent_result = comp.PythonInstallComponent.post_install(self)
         self._setup_db()

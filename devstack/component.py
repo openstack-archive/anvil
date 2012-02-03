@@ -148,6 +148,9 @@ class PkgInstallComponent(ComponentBase):
     def _get_source_config(self, config_fn):
         return utils.load_template(self.component_name, config_fn)
 
+    def _get_symlinks(self):
+        return {}
+
     def _configure_files(self):
         configs = self._get_config_files()
         if configs:
@@ -174,7 +177,14 @@ class PkgInstallComponent(ComponentBase):
 
     def configure(self):
         self.tracewriter.make_dir(self.cfgdir)
-        return self._configure_files()
+        l = self._configure_files()
+        links = self._get_symlinks()
+        for (source, link) in links.items():
+            try:
+                sh.symlink(source, link)
+            except OSError:
+                LOG.info("symlink %s => %s already exists." % (source, link))
+        return l
 
 
 class PythonInstallComponent(PkgInstallComponent):
