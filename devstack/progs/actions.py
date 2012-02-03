@@ -234,6 +234,10 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
                             root=root_dir,
                             opts=components.get(component, list()))
         all_instances[component] = instance
+        # ask for passwords on top of execution
+        for pwd in instance._get_passwords():
+            config.get('passwords', pwd)
+
     #run anything before it gets going...
     _pre_run(action_name, root_dir=root_dir, pkg=pkg_manager, cfg=config)
     results = list()
@@ -289,7 +293,7 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
 
             _uninstall(component, instance, force)
     if not sh.exists(_RC_FILE):
-        generate_local_rc(_RC_FILE)
+        generate_local_rc(_RC_FILE, config)
     end_time = time.time()
     #display any configs touched...
     _print_cfgs(config, action_name)

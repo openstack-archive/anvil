@@ -212,6 +212,9 @@ class NovaInstaller(comp.PythonInstallComponent):
         })
         return places
 
+    def _get_passwords(self):
+        return ['rabbit']
+
     def _get_config_files(self):
         return list(CONFIGS)
 

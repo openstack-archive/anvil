@@ -66,6 +66,9 @@ class ComponentBase(object):
     def is_installed(self):
         return tr.TraceReader(self.tracedir, tr.IN_TRACE).exists()
 
+    def _get_passwords(self):
+        return []
+
 
 class PkgInstallComponent(ComponentBase):
     def __init__(self, component_name, *args, **kargs):

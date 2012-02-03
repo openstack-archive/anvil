@@ -82,6 +82,9 @@ class SwiftInstaller(comp.PythonInstallComponent):
     def _get_pkgs(self):
         return list(REQ_PKGS)
 
+    def _get_passwords(self):
+        return ['service_token', 'swift_hash']
+
     def _get_param_map(self, config_fn):
         return {
             'USER': self.cfg.get('swift', 'swift_user'),

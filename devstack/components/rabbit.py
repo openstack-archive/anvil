@@ -68,6 +68,9 @@ class RabbitInstaller(comp.PkgInstallComponent):
         comp.PkgInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.runtime = RabbitRuntime(*args, **kargs)
 
+    def _get_passwords(self):
+        return ['rabbit']
+
     def _setup_pw(self):
         LOG.info("Setting up your rabbit-mq guest password.")
         self.runtime.restart()

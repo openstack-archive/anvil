@@ -134,6 +134,9 @@ class DBInstaller(comp.PkgInstallComponent):
         }
         return out
 
+    def _get_passwords(self):
+        return ['sql']
+
     def _configure_db_confs(self):
         dbtype = self.cfg.get("db", "type")
         if self.distro == settings.RHEL6 and dbtype == MYSQL:
