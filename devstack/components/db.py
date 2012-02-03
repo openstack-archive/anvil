@@ -134,7 +134,7 @@ class DBInstaller(comp.PkgInstallComponent):
         }
         return out
 
-    def _get_passwords(self):
+    def get_passwords(self):
         return ['sql']
 
     def _configure_db_confs(self):
