@@ -27,11 +27,6 @@ POSSIBLE_TOPDIR = os.path.normpath(os.path.join(os.path.abspath(sys.argv[0]),
                                    os.pardir))
 sys.path.insert(0, POSSIBLE_TOPDIR)
 
-log_fn = os.getenv('LOG_FILE')
-if(log_fn == None):
-    log_fn = os.path.normpath(os.path.join("conf", 'logging.ini'))
-logging.config.fileConfig(log_fn)
-
 from devstack import cfg
 from devstack import utils
 from devstack.progs import common

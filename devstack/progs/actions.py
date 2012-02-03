@@ -216,7 +216,7 @@ def _uninstall(component_name, instance, skip_notrace):
 
 def _instanciate_components(action_name, components, distro, pkg_manager, config, root_dir):
     all_instances = {}
-    prereq_instances = {}
+    prerequisite_instances = {}
 
     for component in components.keys():
         action_cls = common.get_action_cls(action_name, component)
@@ -237,7 +237,7 @@ def _instanciate_components(action_name, components, distro, pkg_manager, config
                                                config=config,
                                                root=root_dir,
                                                opts=components.get(component, list()))
-                prereq_instances[component] = install_instance
+                prerequisite_instances[component] = install_instance
 
         elif action_name == settings.UNINSTALL:
             if component not in _NO_AUTO_STOP:
@@ -250,9 +250,9 @@ def _instanciate_components(action_name, components, distro, pkg_manager, config
                                              config=config,
                                              root=root_dir,
                                              opts=components.get(component, list()))
-                    prereq_instances[component] = stop_instance
+                    prerequisite_instances[component] = stop_instance
 
-    return (all_instances, prereq_instances)
+    return (all_instances, prerequisite_instances)
 
 
 def _run_components(action_name, component_order, components, distro, root_dir, program_args):
@@ -269,7 +269,7 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
     #form the active instances (this includes ones we won't use)
     start_time = time.time()
 
-    (all_instances, prereq_instances) = _instanciate_components(action_name,
+    (all_instances, prerequisite_instances) = _instanciate_components(action_name,
                                                               components,
                                                               distro,
                                                               pkg_manager,
@@ -284,12 +284,12 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
         base_inst = all_instances.get(component)
         if base_inst:
             base_inst.warm_configs()
-        pre_inst = prereq_instances.get(component)
+        pre_inst = prerequisite_instances.get(component)
         if pre_inst:
             pre_inst.warm_configs()
     LOG.info("Your instance configurations should now be nice and warm!")
 
-    LOG.info("Activating instances required to complete %s" % (action_name))
+    LOG.info("Activating instances required to complete action %s." % (action_name))
 
     results = list()
     force = program_args.get('force', False)
@@ -312,8 +312,8 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
         elif action_name == settings.START:
 
             #do we need to activate an install prerequisite first???
-            if component in prereq_instances:
-                install_instance = prereq_instances[component]
+            if component in prerequisite_instances:
+                install_instance = prerequisite_instances[component]
                 _install(component, install_instance)
 
             #now start it
@@ -328,8 +328,8 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
         elif action_name == settings.UNINSTALL:
 
             #do we need to activate an uninstall prerequisite first???
-            if component in prereq_instances:
-                stop_instance = prereq_instances[component]
+            if component in prerequisite_instances:
+                stop_instance = prerequisite_instances[component]
                 _stop(component, stop_instance, force)
 
             _uninstall(component, instance, force)
