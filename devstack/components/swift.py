@@ -82,8 +82,10 @@ class SwiftInstaller(comp.PythonInstallComponent):
     def _get_pkgs(self):
         return list(REQ_PKGS)
 
-    def get_passwords(self):
-        return ['service_token', 'swift_hash']
+    def warm_configs(self):
+        pws = ['service_token', 'swift_hash']
+        for pw_key in pws:
+            self.cfg.get("passwords", pw_key)
 
     def _get_param_map(self, config_fn):
         return {

@@ -258,42 +258,45 @@ def _instanciate_components(action_name, components, distro, pkg_manager, config
 def _run_components(action_name, component_order, components, distro, root_dir, program_args):
     LOG.info("Will run action [%s] using root directory \"%s\"" % (action_name, root_dir))
     LOG.info("In the following order: %s" % ("->".join(component_order)))
+
     non_components = set(components.keys()).difference(set(component_order))
     if non_components:
         LOG.info("Using reference components (%s)" % (", ".join(sorted(non_components))))
+
     pkg_manager = _get_pkg_manager(distro, program_args.pop('keep_packages', True))
     config = common.get_config()
+
     #form the active instances (this includes ones we won't use)
     start_time = time.time()
 
-    all_instances, prereq_instances = _instanciate_components(action_name,
+    (all_instances, prereq_instances) = _instanciate_components(action_name,
                                                               components,
                                                               distro,
                                                               pkg_manager,
                                                               config,
                                                               root_dir)
 
-    # ask for passwords at the top of execution
-    for instance in all_instances.values() + prereq_instances.values():
-        for pwd in instance.get_passwords():
-            config.get('passwords', pwd)
-
     #run anything before it gets going...
     _pre_run(action_name, root_dir=root_dir, pkg=pkg_manager, cfg=config)
+
+    LOG.info("Warming up your instance configurations.")
+    for component in component_order:
+        base_inst = all_instances.get(component)
+        if base_inst:
+            base_inst.warm_configs()
+        pre_inst = prereq_instances.get(component)
+        if pre_inst:
+            pre_inst.warm_configs()
+    LOG.info("Your instance configurations should now be nice and warm!")
+
+    LOG.info("Activating instances required to complete %s" % (action_name))
+
     results = list()
     force = program_args.get('force', False)
-
     for component in component_order:
-        #this instance was just made
         instance = all_instances[component]
-        #prefetch configs
-        instance.pre_fetch_configs()
 
-    for component in component_order:
-        #this instance was just made
-        instance = all_instances.get(component)
         #activate the correct function for the given action
-
         if action_name == settings.INSTALL:
             install_result = _install(component, instance)
             if install_result:
@@ -307,12 +310,14 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
             _stop(component, instance, force)
 
         elif action_name == settings.START:
+
+            #do we need to activate an install prerequisite first???
             if component in prereq_instances:
                 install_instance = prereq_instances[component]
                 _install(component, install_instance)
 
+            #now start it
             start_result = _start(component, instance)
-
             if start_result:
                 #TODO clean this up.
                 if type(start_result) == list:
@@ -321,11 +326,15 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
                     results.append(str(start_result))
 
         elif action_name == settings.UNINSTALL:
+
+            #do we need to activate an uninstall prerequisite first???
             if component in prereq_instances:
                 stop_instance = prereq_instances[component]
                 _stop(component, stop_instance, force)
+
             _uninstall(component, instance, force)
 
+    #make a nice rc file for u
     if not sh.exists(_RC_FILE):
         generate_local_rc(_RC_FILE, config)
 

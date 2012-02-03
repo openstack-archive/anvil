@@ -212,8 +212,10 @@ class NovaInstaller(comp.PythonInstallComponent):
         })
         return places
 
-    def get_passwords(self):
-        return ['rabbit']
+    def warm_configs(self):
+        pws = ['rabbit']
+        for pw_key in pws:
+            self.cfg.get("passwords", pw_key)
 
     def _get_config_files(self):
         return list(CONFIGS)

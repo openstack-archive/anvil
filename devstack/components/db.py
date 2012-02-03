@@ -134,8 +134,10 @@ class DBInstaller(comp.PkgInstallComponent):
         }
         return out
 
-    def get_passwords(self):
-        return ['sql']
+    def warm_configs(self):
+        pws = ['sql']
+        for pw_key in pws:
+            self.cfg.get("passwords", pw_key)
 
     def _configure_db_confs(self):
         dbtype = self.cfg.get("db", "type")
