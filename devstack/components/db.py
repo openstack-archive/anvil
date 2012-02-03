@@ -66,7 +66,7 @@ DB_ACTIONS = {
 RHEL_FIX_GRANTS = ['perl', '-p', '-i', '-e', "'s/^skip-grant-tables/#skip-grant-tables/g'", '/etc/my.cnf']
 UBUNTU_HOST_ADJUST = ['perl', '-p', '-i', '-e', "'s/127.0.0.1/0.0.0.0/g'", '/etc/mysql/my.cnf']
 
-#need to reset pw to blank since this distributions don't seem to always reset it when u uninstall the 
+#need to reset pw to blank since this distributions don't seem to always reset it when u uninstall the db
 RESET_BASE_PW = ''
 
 #links about how to reset if it fails

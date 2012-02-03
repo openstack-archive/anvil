@@ -25,30 +25,29 @@ HELP_WIDTH = 80
 LOG = logging.getLogger("devstack.opts")
 
 
+def _format_list(in_list):
+    sorted_list = sorted(in_list)
+    return  "[" + ", ".join(sorted_list) + "]"
+
+
 def parse():
 
     #version
     version_str = "%prog v" + version.version_string()
     help_formatter = IndentedHelpFormatter(width=HELP_WIDTH)
     parser = OptionParser(version=version_str, formatter=help_formatter)
-
-    known_components = sorted(settings.COMPONENT_NAMES)
-    components = "(" + ", ".join(known_components) + ")"
     parser.add_option("-c", "--component",
         action="append",
         dest="component",
-        help="openstack component, ie %s" % (components))
+        help="openstack component: %s" % (_format_list(settings.COMPONENT_NAMES)))
 
     base_group = OptionGroup(parser, "Install/uninstall/start/stop options")
-    known_actions = sorted(settings.ACTIONS)
-    actions = "(" + ", ".join(known_actions) + ")"
     base_group.add_option("-a", "--action",
         action="store",
         type="string",
         dest="action",
         metavar="ACTION",
-        help="action to perform, ie %s" % (actions),
-        default='start')
+        help="required action to perform: %s" % (_format_list(settings.ACTIONS)))
     base_group.add_option("-d", "--directory",
         action="store",
         type="string",

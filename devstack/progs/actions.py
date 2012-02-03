@@ -31,7 +31,7 @@ from devstack.components import keystone
 
 from devstack.progs import common
 
-from utils.env_gen import generate_local_rc
+from utils import env_gen
 
 LOG = logging.getLogger("devstack.progs.actions")
 
@@ -336,7 +336,8 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
 
     #make a nice rc file for u
     if not sh.exists(_RC_FILE):
-        generate_local_rc(_RC_FILE, config)
+        LOG.info("Generating a file at [%s] that will contain your environment settings." % (_RC_FILE))
+        env_gen.generate_local_rc(_RC_FILE, config)
 
     end_time = time.time()
 
