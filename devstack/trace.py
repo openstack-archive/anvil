@@ -168,6 +168,9 @@ class TraceReader(object):
     def _read(self):
         return parse_name(self.root, self.name)
 
+    def exists(self):
+        return sh.exists(self.trace_fn)
+
     def py_listing(self):
         return self._readpy()
 

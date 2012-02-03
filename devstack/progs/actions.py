@@ -31,6 +31,8 @@ from devstack.components import keystone
 
 from devstack.progs import common
 
+from utils.env_gen import generate_local_rc
+
 LOG = logging.getLogger("devstack.progs.actions")
 
 # This map controls which distro has
@@ -54,6 +56,8 @@ _REVERSE_ACTIONS = [settings.UNINSTALL, settings.STOP]
 
 # These will not automatically stop when uninstalled since it seems to break there password reset.
 _NO_AUTO_STOP = [settings.DB, settings.RABBIT]
+
+_RC_FILE = 'localrc'
 
 
 def _clean_action(action):
@@ -254,6 +258,15 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
         elif action_name == settings.STOP:
             _stop(component, instance, force)
         elif action_name == settings.START:
+            if not instance.is_installed():
+                install_cls = common.get_action_cls(settings.INSTALL, component)
+                install_instance = install_cls(instances=dict(),
+                                               distro=distro,
+                                               packager=pkg_manager,
+                                               config=config,
+                                               root=root_dir,
+                                               opts=components.get(component, list()))
+                _install(component, install_instance)
             start_result = _start(component, instance)
             if start_result:
                 #TODO clean this up.
@@ -263,20 +276,20 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
                     results.append(str(start_result))
         elif action_name == settings.UNINSTALL:
             if component not in _NO_AUTO_STOP:
-                # always stop first. doesn't hurt if already stopped - but makes
-                # sure that there are no lingering processes if not
-                try:
+                # stop the component if started
+                if instance.is_started():
                     stop_cls = common.get_action_cls(settings.STOP, component)
                     stop_instance = stop_cls(instances=dict(),
-                                               distro=distro,
-                                               packager=pkg_manager,
-                                               config=config,
-                                               root=root_dir,
-                                               opts=components.get(component, list()))
+                                             distro=distro,
+                                             packager=pkg_manager,
+                                             config=config,
+                                             root=root_dir,
+                                             opts=components.get(component, list()))
                     _stop(component, stop_instance, force)
-                except excp.StopException:
-                    LOG.warn("Failed at stopping %s before uninstalling, skipping stop.", component)
+
             _uninstall(component, instance, force)
+    if not sh.exists(_RC_FILE):
+        generate_local_rc(_RC_FILE)
     end_time = time.time()
     #display any configs touched...
     _print_cfgs(config, action_name)
