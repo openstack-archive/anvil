@@ -61,8 +61,13 @@ class StackConfigParser(ConfigParser.RawConfigParser):
         if section == 'host' and option == 'ip':
             LOG.debug("Host ip from configuration/environment was empty, programatically attempting to determine it.")
             netifc = self.get("default", "net_interface") or "eth0"
-            netifcs = [netifc.strip(), 'br100']
-            host_ip, netifc = utils.get_host_ip(netifcs, settings.IPV4)
+            netifcs = netifc.split(",")
+            usefulnetifcs = list()
+            for ifc in netifcs:
+                ifc = ifc.strip()
+                if ifc:
+                    usefulnetifcs.append(ifc)
+            (host_ip, netifc) = utils.get_host_ip(usefulnetifcs, settings.IPV4)
             LOG.debug("Determined host ip to be: \"%s\" from network interface: %s" % (host_ip, netifc))
             return host_ip
         elif section == 'passwords':
