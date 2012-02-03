@@ -301,8 +301,19 @@ def rmdir(path, quiet=True):
             pass
 
 
+def symlink(source, link):
+    path = dirname(link)
+    file_ = basename(link)
+    mkdirslist(path)
+    os.symlink(source, link)
+
+
 def exists(path):
     return os.path.exists(path)
+
+
+def basename(path):
+    return os.path.basename(path)
 
 
 def dirname(path):

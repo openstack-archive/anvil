@@ -198,6 +198,9 @@ class NovaInstaller(comp.PythonInstallComponent):
             pkgs.extend(fns)
         return pkgs
 
+    def _get_symlinks(self):
+        return {sh.joinpths(self.cfgdir, API_CONF): '/etc/nova/nova.conf'}
+
     def _get_pips(self):
         return list(REQ_PIPS)
 
