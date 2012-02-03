@@ -16,6 +16,27 @@
         "open-iscsi-utils": {
             "version": "2.0*",
             "removable": true
+        },
+        # Only really needed if you plan on using kvm
+        "kvm": {
+            "version": "1:84*",
+            "removable": true
+        },
+        "qemu-kvm": {
+            "version": "0.14.*",
+            "removable": true
+        },
+        "python-libvirt": {
+            "version": "0.9.2*",
+            "removable": true
+        },
+        "libvirt-bin": {
+            "version": "0.9*",
+            "removable": true
+        },
+        "libvirt0": {
+            "version": "0.9*",
+            "removable": true
         }
     },
     "rhel-6": {
@@ -25,6 +46,31 @@
         },
         "iscsi-initiator-utils": {
             "version": "6.2*",
+            "removable": true
+        },
+        # Only really needed if you plan on using kvm
+        "kvm": {
+            "version": "0.12*",
+            "removable": true
+        },
+        "qemu-kvm":  {
+            "version": "2*",
+            "removable": true
+        },
+        "qemu-img":  {
+            "version": "0.12*",
+            "removable": true
+        },
+        "libvirt-python": {
+            "version": "0.9.4*",
+            "removable": true
+        },
+        "libvirt-client": {
+            "version": "0.9.4*",
+            "removable": true
+        },
+        "libvirt": {
+            "version": "0.9.4*",
             "removable": true
         }
     }

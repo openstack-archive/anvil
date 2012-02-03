@@ -48,11 +48,6 @@
             "version": "2.3*",
             "removable": true
         },
-        # Only really needed if you plan on using kvm
-        "kvm": {
-            "version": "1:84*",
-            "removable": true
-        },
         "iptables": {
             "version": "1.4*",
             "removable": false
@@ -63,14 +58,6 @@
         },
         "sqlite3": {
             "version": "3.7*",
-            "removable": true
-        },
-        "libvirt-bin": {
-            "version": "0.9*",
-            "removable": true
-        },
-        "libvirt0": {
-            "version": "0.9*",
             "removable": true
         },
         "vlan": {
@@ -96,10 +83,6 @@
         },
         "python-greenlet": {
             "version": "0.3*",
-            "removable": true
-        },
-        "python-libvirt": {
-            "version": "0.9.2*",
             "removable": true
         },
         "python-libxml2": {
@@ -147,8 +130,8 @@
             "version": "1:0*",
             "removable": true
         },
-        "python-m2crypto": {
-            "version": "0.20*",
+        "python-crypto": {
+            "version": "2.3*",
             "removable": true
         },
         "python-boto": {
@@ -197,11 +180,6 @@
             "version": "2.2*",
             "removable": true
         },
-        # Only really needed if you plan on using kvm
-        "kvm": {
-            "version": "0.12*",
-            "removable": true
-        },
         "iptables": {
             "version": "1.4*",
             "removable": false
@@ -214,14 +192,6 @@
             "version": "3.6*",
             # Trashes alot of the base os (so we don't allow it to be removed)
             "removable": false
-        },
-        "libvirt-client": {
-            "version": "0.9.4*",
-            "removable": true
-        },
-        "libvirt": {
-            "version": "0.9.4*",
-            "removable": true
         },
         # ???
         # "vlan": {
@@ -246,10 +216,6 @@
         # Requires EPEL
         "python-greenlet": {
             "version": "0.3.1*",
-            "removable": true
-        },
-        "libvirt-python": {
-            "version": "0.9.4*",
             "removable": true
         },
         # This seems to kill RHN/yum if its removed ??
@@ -289,10 +255,8 @@
             "version": "0.8*",
             "removable": true
         },
-        # This seems to kill RHN/yum if its removed ??
-        # TODO verify
-        "m2crypto": {
-            "version": "0.20*",
+        "python-crypto": {
+            "version": "2.0*",
             "removable": false
         },
         # Requires EPEL
