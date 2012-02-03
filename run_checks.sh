@@ -36,7 +36,7 @@ done
 
 function run_pep8 {
   echo "Running pep8 ..."
-  srcfiles=`find devstack -type f | grep "py\$"`
+  srcfiles=`find devstack utils -type f | grep "py\$"`
   srcfiles+=" stack"
   pep_ignores="E202,E501"
   tee_fn="pep8.log"
@@ -53,7 +53,7 @@ function run_pep8 {
 
 function run_pylint {
   echo "Running pylint ..."
-  srcfiles=`find devstack -type f | grep "py\$"`
+  srcfiles=`find devstack utils -type f | grep "py\$"`
   srcfiles+=" stack"
   tee_fn="pylint.log"
   pylint_opts="--rcfile=$pylintrc_fn"

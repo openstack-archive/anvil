@@ -356,7 +356,7 @@ class NovaInstaller(comp.PythonInstallComponent):
 
     def _get_target_config_name(self, config_fn):
         if config_fn == PASTE_CONF:
-            #TODO this should not be here... (in bin??)
+            #TODO Don't put nova-api-paste.ini in bin?
             return sh.joinpths(self.appdir, "bin", 'nova-api-paste.ini')
         else:
             return comp.PythonInstallComponent._get_target_config_name(self, config_fn)
@@ -447,6 +447,7 @@ class NovaConfigurator(object):
 
         #whats the network fixed range?
         nova_conf.add('fixed_range', self._getstr('fixed_range'))
+        nova_conf.add('s3_host', hostip)
 
         if settings.QUANTUM in self.instances:
             #setup quantum config
@@ -493,6 +494,10 @@ class NovaConfigurator(object):
         if settings.NOVNC in self.instances:
             vncproxy_url = self._getstr('vncproxy_url')
             nova_conf.add('novncproxy_base_url', vncproxy_url)
+
+        if settings.XVNC in self.instances:
+            xvncproxy_url = self._getstr('xvpvncproxy_url')
+            nova_conf.add('xvpvncproxy_base_url', xvncproxy_url)
 
         nova_conf.add('vncserver_listen', self._getstr('vncserver_listen'))
         vncserver_proxyclient_address = self._getstr('vncserver_proxyclient_addres')
@@ -569,6 +574,12 @@ class NovaConfigurator(object):
     def _configure_libvirt(self, virt_type, nova_conf):
         if not virt_type:
             return
+        if virt_type == 'kvm' and not sh.exists("/dev/kvm"):
+            LOG.warn("No kvm found at /dev/kvm, switching to qemu mode.")
+            virt_type = "qemu"
+        if virt_type == 'lxc':
+            #todo
+            pass
         nova_conf.add('libvirt_type', virt_type)
 
     #configures any virt driver settings
@@ -583,9 +594,11 @@ class NovaConfigurator(object):
             nova_conf.add('xenapi_connection_password', self.cfg.get("passwords", "xenapi_connection"))
             nova_conf.add_simple('noflat_injected')
             nova_conf.add('flat_interface', 'eth1')
+            nova_conf.add('firewall_driver', self._getstr('xen_firewall_driver'))
             nova_conf.add('flat_network_bridge', 'xapi1')
         else:
-            nova_conf.add('connection_type', self._getstr('connection_type'))
+            nova_conf.add('connection_type', 'libvirt')
+            nova_conf.add('firewall_driver', self._getstr('libvirt_firewall_driver'))
             nova_conf.add('flat_network_bridge', self._getstr('flat_network_bridge'))
             flat_interface = self._getstr('flat_interface')
             if flat_interface:

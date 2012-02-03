@@ -346,15 +346,19 @@ def center_text(text, fill, max_len):
 
 def _welcome_slang():
     potentials = list()
-    potentials.append("And now for something completely different")
+    potentials.append("And now for something completely different!")
     return random.choice(potentials).strip("\n\r")
 
 
-def color_text(text, color, bold=False):
+def color_text(text, color, bold=False, underline=False, blink=False):
+    text_attrs = list()
     if bold:
-        return termcolor.colored(text, color, attrs=['bold'])
-    else:
-        return termcolor.colored(text, color)
+        text_attrs.append('bold')
+    if underline:
+        text_attrs.append('underline')
+    if blink:
+        text_attrs.append('blink')
+    return termcolor.colored(text, color, attrs=text_attrs)
 
 
 def _color_blob(text, text_color):
@@ -506,5 +510,5 @@ def welcome(ident):
         footer = centered_str.replace(uncolored_footer, footer)
     print(welcome_header)
     print(footer)
-    print(center_text(_welcome_slang(), '-', max_line_len))
+    print(color_text(center_text(_welcome_slang(), ' ', max_line_len), 'magenta', bold=True))
     return ("-", max_line_len)

@@ -47,6 +47,7 @@ KEYSTONE_CLIENT = 'keystone-client'
 DB = "db"
 RABBIT = "rabbit"
 NOVNC = 'novnc'
+XVNC = 'xvnc'
 COMPONENT_NAMES = [
     NOVA, NOVA_CLIENT,
     GLANCE,
