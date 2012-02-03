@@ -31,6 +31,8 @@ from devstack.components import keystone
 
 from devstack.progs import common
 
+from utils.env_gen import generate_local_rc
+
 LOG = logging.getLogger("devstack.progs.actions")
 
 # This map controls which distro has
@@ -54,6 +56,8 @@ _REVERSE_ACTIONS = [settings.UNINSTALL, settings.STOP]
 
 # These will not automatically stop when uninstalled since it seems to break there password reset.
 _NO_AUTO_STOP = [settings.DB, settings.RABBIT]
+
+_RC_FILE = 'localrc'
 
 
 def _clean_action(action):
@@ -284,6 +288,8 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
                     _stop(component, stop_instance, force)
 
             _uninstall(component, instance, force)
+    if not sh.exists(_RC_FILE):
+        generate_local_rc(_RC_FILE)
     end_time = time.time()
     #display any configs touched...
     _print_cfgs(config, action_name)

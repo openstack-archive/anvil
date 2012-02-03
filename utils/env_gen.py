@@ -89,13 +89,7 @@ def generate_os_env(fh, cfg):
     write_env('OS_USERNAME', 'demo', fh)
     write_env('OS_AUTH_URL', 'http://%s:5000/v2.0', fh)
 
-
-def main():
-    opts = optparse.OptionParser()
-    opts.add_option("-o", "--output", dest="filename",
-         help="write output to FILE", metavar="FILE")
-    (options, args) = opts.parse_args()
-    fn = options.filename
+def generate_local_rc(fn=None):
     if not fn:
         fn = DEF_FN
     utils.welcome(PROG_NAME)
@@ -109,6 +103,13 @@ def main():
         generate_ec2_env(fh, cfg)
         generate_nova_env(fh, cfg)
         generate_os_env(fh, cfg)
+
+def main():
+    opts = optparse.OptionParser()
+    opts.add_option("-o", "--output", dest="filename",
+         help="write output to FILE", metavar="FILE")
+    (options, args) = opts.parse_args()
+    generate_local_rc(options.filename)
     print("Check file \"%s\" for your environment configuration." % (os.path.normpath(fn)))
     return 0
 
