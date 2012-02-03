@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 #    Copyright (C) 2012 Yahoo! Inc. All Rights Reserved.
@@ -43,18 +45,46 @@ CFG_MAKE = {
     'RABBIT_PASSWORD': ('passwords', 'rabbit'),
     'SERVICE_TOKEN': ('passwords', 'service_token'),
     'FLAT_INTERFACE': ('nova', 'flat_interface'),
+    'HOST_IP': ('host', 'ip'),
 }
 
 DEF_FN = 'localrc'
 
 
-def write_line(text, fh):
-    fh.write(text)
+def write_env(name, value, fh):
+    fh.write("%s=%s" % (name, value))
     fh.write(os.linesep)
 
+def generate_ec2_env(fh, cfg):
+    fh.write(os.linesep)
+    fh.write('# ec2 stuff')
+    ip = cfg.get('host', 'ip')
+    write_env('EC2_URL', 'http://%s:8773/services/Cloud' % ip, fh)
+    write_env('S3_URL', 'http://%s:3333/services/Cloud' % ip, fh)
+    write_env('EC2_ACCESS_KEY', 'demo', fh)
+    write_env('EC2_SECRET_KEY', cfg.get('passwords', 'horizon_keystone_admin'), fh)
+    write_env('EC2_USER_ID', 42, fh)
+    write_env('EC2_CERT', '~/cert.pem', fh)
 
-def format_env(name, value):
-    return "%s=%s" % (name, value)
+def generate_nova_env(fh, cfg):
+    fh.write(os.linesep)
+    fh.write('# nova stuff')
+    ip = cfg.get('host', 'ip')
+    write_env('NOVA_PASSWORD', cfg.get('passwords', 'horizon_keystone_admin'), fh)
+    write_env('NOVA_URL', 'http://%s:5000/v2.0' % ip, fh)
+    write_env('NOVA_PROJECT_ID', 'demo', fh)
+    write_env('NOVA_REGION_NAME', 'RegionOne', fh)
+    write_env('NOVA_VERSION', '1.1', fh)
+    write_env('NOVA_CERT', '~/cacert.pem', fh)
+
+def generate_os_env(fh, cfg):
+    fh.write(os.linesep)
+    fh.write('# os stuff')
+    ip = cfg.get('host', 'ip')
+    write_env('OS_PASSWORD', cfg.get('passwords', 'horizon_keystone_admin'), fh)
+    write_env('OS_TENANT_NAME', 'demo', fh)
+    write_env('OS_USERNAME', 'demo', fh)
+    write_env('OS_AUTH_URL', 'http://%s:5000/v2.0', fh)
 
 
 def main():
@@ -72,7 +102,10 @@ def main():
             section = cfg_data[0]
             key = cfg_data[1]
             value = cfg.get(section, key)
-            write_line(format_env(out_name, value), fh)
+            write_env(out_name, value, fh)
+        generate_ec2_env(fh, cfg)
+        generate_nova_env(fh, cfg)
+        generate_os_env(fh, cfg)
     print("Check file \"%s\" for your environment configuration." % (os.path.normpath(fn)))
     return 0
 
