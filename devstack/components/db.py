@@ -66,8 +66,7 @@ DB_ACTIONS = {
 RHEL_FIX_GRANTS = ['perl', '-p', '-i', '-e', "'s/^skip-grant-tables/#skip-grant-tables/g'", '/etc/my.cnf']
 UBUNTU_HOST_ADJUST = ['perl', '-p', '-i', '-e', "'s/127.0.0.1/0.0.0.0/g'", '/etc/mysql/my.cnf']
 
-#need to reset pw (this is the prompt)
-RESET_PW = "Please enter your current mysql password for user \"%s\" so we can reset it for next time (blank allowed): "
+#need to reset pw to blank since this distributions don't seem to always reset it when u uninstall the 
 RESET_BASE_PW = ''
 
 #links about how to reset if it fails
@@ -89,6 +88,11 @@ class DBUninstaller(comp.PkgUninstallComponent):
         comp.PkgUninstallComponent.__init__(self, TYPE, *args, **kargs)
         self.runtime = DBRuntime(*args, **kargs)
 
+    def warm_configs(self):
+        pws = ['old_sql']
+        for pw_key in pws:
+            self.cfg.get("passwords", pw_key)
+
     def pre_uninstall(self):
         dbtype = self.cfg.get("db", "type")
         dbactions = DB_ACTIONS.get(dbtype)
@@ -101,8 +105,7 @@ class DBUninstaller(comp.PkgUninstallComponent):
                     LOG.info("Ensuring your database is started before we operate on it.")
                     self.runtime.restart()
                     user = self.cfg.get("db", "sql_user")
-                    pw_prompt = RESET_PW % (user)
-                    old_pw = sh.prompt_password(pw_prompt)
+                    old_pw = self.cfg.get("passwords", 'old_sql')
                     params = {
                         'OLD_PASSWORD': old_pw,
                         'NEW_PASSWORD': RESET_BASE_PW,
