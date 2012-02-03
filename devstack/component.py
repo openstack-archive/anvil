@@ -57,6 +57,9 @@ class ComponentBase(object):
             return list()
         return list(deps)
 
+    def pre_fetch_configs(self):
+        pass
+
 
 class PkgInstallComponent(ComponentBase):
     def __init__(self, component_name, *args, **kargs):

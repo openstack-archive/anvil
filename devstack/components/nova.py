@@ -125,10 +125,11 @@ ADD_PKGS = {
 
 # Adjustments to nova paste pipeline for keystone
 PASTE_PIPELINE_KEYSTONE_ADJUST = {
-    'ec2cloud': 'ec2faultwrap logrequest totoken authtoken keystonecontext cloudrequest authorizer validator ec2executor',
-    'ec2admin': "ec2faultwrap logrequest totoken authtoken keystonecontext adminrequest authorizer ec2executor",
-    'openstack_compute_api_v2': "faultwrap authtoken keystonecontext ratelimit osapi_compute_app_v2",
-    'openstack_volume_api_v1': "faultwrap authtoken keystonecontext ratelimit osapi_volume_app_v1",
+    'pipeline:ec2cloud': {'pipeline': 'ec2faultwrap logrequest totoken authtoken keystonecontext cloudrequest authorizer ec2executor'},
+    'pipeline:ec2admin': {'pipeline': "ec2faultwrap logrequest totoken authtoken keystonecontext adminrequest authorizer ec2executor"},
+    'pipeline:openstack_compute_api_v2': {'pipeline': "faultwrap authtoken keystonecontext ratelimit osapi_compute_app_v2"},
+    'pipeline:openstack_volume_api_v1': {'pipeline': "faultwrap authtoken keystonecontext ratelimit osapi_volume_app_v1"},
+    'pipeline:openstack_api_v2': {'pipeline': 'faultwrap authtoken keystonecontext ratelimit osapi_app_v2'},
 }
 
 # What to start
@@ -323,26 +324,10 @@ class NovaInstaller(comp.PythonInstallComponent):
 
     def _config_adjust(self, contents, config_fn):
         if config_fn == PASTE_CONF and settings.KEYSTONE in self.instances:
-            #We change the pipelines in nova to use keystone
-            newcontents = contents
-            with io.BytesIO(contents) as stream:
-                config = cfg.IgnoreMissingConfigParser()
-                config.readfp(stream)
-                adjusted_pipelines = 0
-                for (name, value) in PASTE_PIPELINE_KEYSTONE_ADJUST.items():
-                    section_name = "pipeline:" + name
-                    if config.has_section(section_name):
-                        LOG.debug("Adjusting section named \"%s\" option \"pipeline\" to \"%s\"", section_name, value)
-                        config.set(section_name, "pipeline", value)
-                        adjusted_pipelines += 1
-                if adjusted_pipelines:
-                    #we changed it, guess we have to write it out
-                    with io.BytesIO() as outputstream:
-                        config.write(outputstream)
-                        outputstream.flush()
-                        #TODO can we write to contents here directly?
-                        newcontents = outputstream.getvalue()
-            contents = newcontents
+            #it seems like paste actually uses it own custom config parser
+            #which looks like the python config parser files format but actually isn't
+            #great (not)
+            contents = utils.adjust_paste_config(contents, PASTE_PIPELINE_KEYSTONE_ADJUST)
         return contents
 
     def _get_source_config(self, config_fn):

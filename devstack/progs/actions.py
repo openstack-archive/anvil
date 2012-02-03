@@ -237,6 +237,11 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
     for component in component_order:
         #this instance was just made
         instance = all_instances.get(component)
+        #prefetch configs
+        instance.pre_fetch_configs()
+    for component in component_order:
+        #this instance was just made
+        instance = all_instances.get(component)
         #activate the correct function for the given action
         if action_name == settings.INSTALL:
             install_result = _install(component, instance)
