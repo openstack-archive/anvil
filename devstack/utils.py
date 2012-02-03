@@ -144,18 +144,25 @@ def load_json(fn):
     return json.loads(data)
 
 
-def get_host_ip(def_net_ifc, def_ip_version):
+def get_host_ip(def_net_ifcs, def_ip_version):
     ip = None
+    ifc = None
+
     interfaces = get_interfaces()
-    def_info = interfaces.get(def_net_ifc)
-    if def_info:
-        ipinfo = def_info.get(def_ip_version)
-        if ipinfo:
-            ip = ipinfo.get('addr')
+
+    for net_ifc in def_net_ifcs:
+        def_info = interfaces.get(net_ifc)
+        if def_info:
+            ipinfo = def_info.get(def_ip_version)
+            if ipinfo:
+                ip = ipinfo.get('addr')
+                ifc = net_ifc
+                if ip:
+                    break
     if ip is None:
-        msg = "Your host does not have an ip address on interface: %s using ip version: %s!" % (def_net_ifc, def_ip_version)
+        msg = "Your host does not have an ip address on interfaces: %s using ip version: %s!" % (def_net_ifcs.join(','), def_ip_version)
         raise excp.NoIpException(msg)
-    return ip
+    return (ip, ifc)
 
 
 def get_interfaces():

@@ -254,6 +254,15 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
         elif action_name == settings.STOP:
             _stop(component, instance, force)
         elif action_name == settings.START:
+            if not instance.is_installed():
+                install_cls = common.get_action_cls(settings.INSTALL, component)
+                install_instance = install_cls(instances=dict(),
+                                               distro=distro,
+                                               packager=pkg_manager,
+                                               config=config,
+                                               root=root_dir,
+                                               opts=components.get(component, list()))
+                _install(component, install_instance)
             start_result = _start(component, instance)
             if start_result:
                 #TODO clean this up.
@@ -263,19 +272,17 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
                     results.append(str(start_result))
         elif action_name == settings.UNINSTALL:
             if component not in _NO_AUTO_STOP:
-                # always stop first. doesn't hurt if already stopped - but makes
-                # sure that there are no lingering processes if not
-                try:
+                # stop the component if started
+                if instance.is_started():
                     stop_cls = common.get_action_cls(settings.STOP, component)
                     stop_instance = stop_cls(instances=dict(),
-                                               distro=distro,
-                                               packager=pkg_manager,
-                                               config=config,
-                                               root=root_dir,
-                                               opts=components.get(component, list()))
+                                             distro=distro,
+                                             packager=pkg_manager,
+                                             config=config,
+                                             root=root_dir,
+                                             opts=components.get(component, list()))
                     _stop(component, stop_instance, force)
-                except excp.StopException:
-                    LOG.warn("Failed at stopping %s before uninstalling, skipping stop.", component)
+
             _uninstall(component, instance, force)
     end_time = time.time()
     #display any configs touched...

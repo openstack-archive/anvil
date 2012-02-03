@@ -60,6 +60,12 @@ class ComponentBase(object):
     def pre_fetch_configs(self):
         pass
 
+    def is_started(self):
+        return tr.TraceReader(self.tracedir, tr.START_TRACE).exists()
+
+    def is_installed(self):
+        return tr.TraceReader(self.tracedir, tr.IN_TRACE).exists()
+
 
 class PkgInstallComponent(ComponentBase):
     def __init__(self, component_name, *args, **kargs):
