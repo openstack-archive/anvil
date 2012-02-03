@@ -57,6 +57,8 @@ _REVERSE_ACTIONS = [settings.UNINSTALL, settings.STOP]
 # These will not automatically stop when uninstalled since it seems to break there password reset.
 _NO_AUTO_STOP = [settings.DB, settings.RABBIT]
 
+# For these actions we will attempt to make an rc file if it does not exist
+_RC_FILE_MAKE_ACTIONS = [settings.INSTALL, settings.START]
 _RC_FILE = 'localrc'
 
 
@@ -335,7 +337,7 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
             _uninstall(component, instance, force)
 
     #make a nice rc file for u
-    if not sh.exists(_RC_FILE):
+    if not sh.exists(_RC_FILE) and action_name in _RC_FILE_MAKE_ACTIONS:
         LOG.info("Generating a file at [%s] that will contain your environment settings." % (_RC_FILE))
         env_gen.generate_local_rc(_RC_FILE, config)
 
