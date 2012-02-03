@@ -55,6 +55,7 @@ def write_env(name, value, fh):
     fh.write("%s=%s" % (name, value))
     fh.write(os.linesep)
 
+
 def generate_ec2_env(fh, cfg):
     fh.write(os.linesep)
     fh.write('# ec2 stuff')
@@ -66,6 +67,7 @@ def generate_ec2_env(fh, cfg):
     write_env('EC2_USER_ID', 42, fh)
     write_env('EC2_CERT', '~/cert.pem', fh)
 
+
 def generate_nova_env(fh, cfg):
     fh.write(os.linesep)
     fh.write('# nova stuff')
@@ -76,6 +78,7 @@ def generate_nova_env(fh, cfg):
     write_env('NOVA_REGION_NAME', 'RegionOne', fh)
     write_env('NOVA_VERSION', '1.1', fh)
     write_env('NOVA_CERT', '~/cacert.pem', fh)
+
 
 def generate_os_env(fh, cfg):
     fh.write(os.linesep)
