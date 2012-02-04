@@ -65,8 +65,12 @@ OS_AUTH_PORT = 5000
 
 
 def write_env(name, value, fh):
-    escaped_val = subprocess.list2cmdline([str(value)])
-    fh.write("%s=%s" % (name, escaped_val))
+    str_value = str(value)
+    escaped_val = subprocess.list2cmdline([str_value])
+    if str_value != escaped_val:
+        fh.write("%s=\"%s\"" % (name, escaped_val))
+    else:
+        fh.write("%s=%s" % (name, str_value))
     fh.write(os.linesep)
 
 
