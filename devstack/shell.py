@@ -349,6 +349,34 @@ def getgroupname(gid=None):
     return gid_info.gr_name
 
 
+def create_loopback_file(fname, size, bsize=1014, fs_type='ext3', run_as_root=False):
+    dd_cmd = ['dd', 'if=/dev/zero', 'of=%s' % fname, 'bs=%d' % bsize,
+          'count=0', 'seek=%d %size']
+    mkfs_cmd = ['mkfs.%s' % fs_type, '-f', '-i', 'size=%d' % size, fname]
+
+    # make sure folder exists
+    files = mkdirslist(dirname(fname))
+
+    # create file
+    touch_file(fname)
+
+    # fill with zeroes
+    execute(dd_cmd, run_as_root)
+
+    # create fs on the file
+    execute(mkfs_cmd, run_as_root)
+
+    return files
+
+
+def mount_loopback_file(fname, device_name, fs_type='ext3', run_as_root=True):
+    mount_cmd = ['mount', '-t', fs_type, '-o',
+                 'loop,noatime,nodiratime,nobarries,logbuf=8', fname,
+                 device_name]
+
+    execute(mount_cmd, run_as_root)
+
+
 def unlink(path, ignore_errors=True):
     try:
         LOG.debug("Unlinking (removing) %s" % (path))
