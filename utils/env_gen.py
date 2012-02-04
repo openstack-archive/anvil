@@ -16,10 +16,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import logging
-import logging.config
 import optparse
 import os
+import subprocess
 import sys
 
 POSSIBLE_TOPDIR = os.path.normpath(os.path.join(os.path.abspath(sys.argv[0]),
@@ -45,9 +44,29 @@ CFG_MAKE = {
 
 DEF_FN = 'localrc'
 
+#various settings we will output
+EC2_PORT = 8773
+S3_PORT = 3333
+
+#these are pretty useless
+EC2_USER_ID = 42
+EC2_ACCESS_KEY = 'demo'
+
+#change if you adjust keystone
+NOVA_PORT = 5000
+NOVA_VERSION = '1.1'
+NOVA_PROJECT = 'demo'
+NOVA_REGION = 'RegionOne'
+
+#change if you adjust keystone
+OS_TENANT_NAME = 'demo'
+OS_USERNAME = 'demo'
+OS_AUTH_PORT = 5000
+
 
 def write_env(name, value, fh):
-    fh.write("%s=%s" % (name, value))
+    escaped_val = subprocess.list2cmdline([str(value)])
+    fh.write("%s=%s" % (name, escaped_val))
     fh.write(os.linesep)
 
 
@@ -56,11 +75,11 @@ def generate_ec2_env(fh, cfg):
     fh.write('# EC2 and/or S3 stuff')
     fh.write(os.linesep)
     ip = cfg.get('host', 'ip')
-    write_env('EC2_URL', 'http://%s:8773/services/Cloud' % ip, fh)
-    write_env('S3_URL', 'http://%s:3333/services/Cloud' % ip, fh)
-    write_env('EC2_ACCESS_KEY', 'demo', fh)
+    write_env('EC2_URL', 'http://%s:%s/services/Cloud' % (ip, EC2_PORT), fh)
+    write_env('S3_URL', 'http://%s:%s/services/Cloud' % (ip, S3_PORT), fh)
+    write_env('EC2_ACCESS_KEY', EC2_ACCESS_KEY, fh)
     write_env('EC2_SECRET_KEY', cfg.get('passwords', 'horizon_keystone_admin'), fh)
-    write_env('EC2_USER_ID', 42, fh)
+    write_env('EC2_USER_ID', EC2_USER_ID, fh)
     write_env('EC2_CERT', '~/cert.pem', fh)
 
 
@@ -70,10 +89,10 @@ def generate_nova_env(fh, cfg):
     fh.write(os.linesep)
     ip = cfg.get('host', 'ip')
     write_env('NOVA_PASSWORD', cfg.get('passwords', 'horizon_keystone_admin'), fh)
-    write_env('NOVA_URL', 'http://%s:5000/v2.0' % ip, fh)
-    write_env('NOVA_PROJECT_ID', 'demo', fh)
-    write_env('NOVA_REGION_NAME', 'RegionOne', fh)
-    write_env('NOVA_VERSION', '1.1', fh)
+    write_env('NOVA_URL', 'http://%s:%s/v2.0' % (ip, NOVA_PORT), fh)
+    write_env('NOVA_PROJECT_ID', NOVA_PROJECT, fh)
+    write_env('NOVA_REGION_NAME', NOVA_REGION, fh)
+    write_env('NOVA_VERSION', NOVA_VERSION, fh)
     write_env('NOVA_CERT', '~/cacert.pem', fh)
 
 
@@ -83,9 +102,9 @@ def generate_os_env(fh, cfg):
     fh.write(os.linesep)
     ip = cfg.get('host', 'ip')
     write_env('OS_PASSWORD', cfg.get('passwords', 'horizon_keystone_admin'), fh)
-    write_env('OS_TENANT_NAME', 'demo', fh)
-    write_env('OS_USERNAME', 'demo', fh)
-    write_env('OS_AUTH_URL', 'http://%s:5000/v2.0' % ip, fh)
+    write_env('OS_TENANT_NAME', OS_TENANT_NAME, fh)
+    write_env('OS_USERNAME', OS_USERNAME, fh)
+    write_env('OS_AUTH_URL', 'http://%s:%s/v2.0' % (ip, OS_AUTH_PORT), fh)
 
 
 def generate_local_rc(fn=None, cfg=None):
@@ -114,7 +133,7 @@ def main():
     utils.welcome(PROG_NAME)
     fn = options.filename
     if not fn:
-        fn = "localrc"
+        fn = DEF_FN
     generate_local_rc(fn)
     print("Check file \"%s\" for your environment configuration." \
               % (os.path.normpath(fn)))
