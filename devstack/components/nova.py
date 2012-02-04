@@ -330,7 +330,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         tgtfn = self._get_target_config_name(API_CONF)
         LOG.info("Writing conf to %s" % (tgtfn))
         LOG.info(nova_conf)
-        self.tracewriter.make_dir(sh.basename(tgtfn))
+        self.tracewriter.make_dir(sh.dirname(tgtfn))
         sh.write_file(tgtfn, nova_conf)
         self.tracewriter.cfg_write(tgtfn)
 
