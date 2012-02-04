@@ -37,6 +37,7 @@ PW_PROMPTS = {
     'service_token': 'Enter a token to use for the service admin token %s: ' % (DEF_PW_MSG),
     'sql': 'Enter a password to use for your sql database user %s: ' % (DEF_PW_MSG),
     'rabbit': 'Enter a password to use for your rabbit user %s: ' % (DEF_PW_MSG),
+    'old_sql': "Please enter your current mysql password so we can reset it for next time %s: " % (DEF_PW_MSG),
 }
 
 
@@ -60,8 +61,13 @@ class StackConfigParser(ConfigParser.RawConfigParser):
         if section == 'host' and option == 'ip':
             LOG.debug("Host ip from configuration/environment was empty, programatically attempting to determine it.")
             netifc = self.get("default", "net_interface") or "eth0"
-            netifcs = [netifc.strip(), 'br100']
-            host_ip, netifc = utils.get_host_ip(netifcs, settings.IPV4)
+            netifcs = netifc.split(",")
+            usefulnetifcs = list()
+            for ifc in netifcs:
+                ifc = ifc.strip()
+                if ifc:
+                    usefulnetifcs.append(ifc)
+            (host_ip, netifc) = utils.get_host_ip(usefulnetifcs, settings.IPV4)
             LOG.debug("Determined host ip to be: \"%s\" from network interface: %s" % (host_ip, netifc))
             return host_ip
         elif section == 'passwords':
@@ -106,9 +112,12 @@ class StackConfigParser(ConfigParser.RawConfigParser):
 
     def _get_special(self, section, option):
         key = self._makekey(section, option)
-        parent_val = ConfigParser.RawConfigParser.get(self, section, option)
+        parent_val = None
+        try:
+            parent_val = ConfigParser.RawConfigParser.get(self, section, option)
+        except ConfigParser.NoOptionError:
+            pass
         if parent_val is None:
-            #parent didn't have anything, we are unable to do anything with it then
             return None
         extracted_val = None
         mtch = ENV_PAT.match(parent_val)

@@ -175,6 +175,9 @@ QUANTUM_OPENSWITCH_OPS = {
     'quantum_use_dhcp': None,
 }
 
+#ensure libvirt restarted (seems to only be on rhel)
+LIBVIRTD_RESTART = ['service', 'libvirtd', 'restart']
+
 #pip files that nova requires
 REQ_PIPS = ['nova.json']
 
@@ -212,8 +215,10 @@ class NovaInstaller(comp.PythonInstallComponent):
         })
         return places
 
-    def get_passwords(self):
-        return ['rabbit']
+    def warm_configs(self):
+        pws = ['rabbit']
+        for pw_key in pws:
+            self.cfg.get("passwords", pw_key)
 
     def _get_config_files(self):
         return list(CONFIGS)
@@ -399,6 +404,11 @@ class NovaRuntime(comp.PythonRuntime):
                         'path': sh.joinpths(self.appdir, BIN_DIR, full_name),
                     })
         return result
+
+    def pre_start(self):
+        #ensure libvirt started
+        if self.distro == settings.RHEL6:
+            sh.execute(*LIBVIRTD_RESTART, run_as_root=True)
 
     def _get_param_map(self, app_name):
         params = comp.PythonRuntime._get_param_map(self, app_name)

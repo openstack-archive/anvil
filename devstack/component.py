@@ -57,7 +57,7 @@ class ComponentBase(object):
             return list()
         return list(deps)
 
-    def pre_fetch_configs(self):
+    def warm_configs(self):
         pass
 
     def is_started(self):
@@ -65,9 +65,6 @@ class ComponentBase(object):
 
     def is_installed(self):
         return tr.TraceReader(self.tracedir, tr.IN_TRACE).exists()
-
-    def get_passwords(self):
-        return []
 
 
 class PkgInstallComponent(ComponentBase):

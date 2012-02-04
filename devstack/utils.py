@@ -128,8 +128,10 @@ def get_host_ip(def_net_ifcs, def_ip_version):
                 if ip:
                     break
     if ip is None:
-        msg = "Your host does not have an ip address on interfaces: %s using ip version: %s!" % (def_net_ifcs.join(','), def_ip_version)
+        ifcs = ", ".join(def_net_ifcs)
+        msg = "Your host does not have an ip address on interfaces [%s] using ip version: %s!" % (ifcs, def_ip_version)
         raise excp.NoIpException(msg)
+
     return (ip, ifc)
 
 

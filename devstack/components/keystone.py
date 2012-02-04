@@ -157,8 +157,10 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         #nothing modified so just return the original
         return contents
 
-    def get_passwords(self):
-        return ['horizon_keystone_admin', 'service_token']
+    def warm_configs(self):
+        pws = ['horizon_keystone_admin', 'service_token']
+        for pw_key in pws:
+            self.cfg.get("passwords", pw_key)
 
     def _get_param_map(self, config_fn):
         #these be used to fill in the configuration/cmds +

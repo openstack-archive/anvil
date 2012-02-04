@@ -31,7 +31,7 @@ from devstack.components import keystone
 
 from devstack.progs import common
 
-from utils.env_gen import generate_local_rc
+from utils import env_gen
 
 LOG = logging.getLogger("devstack.progs.actions")
 
@@ -57,6 +57,8 @@ _REVERSE_ACTIONS = [settings.UNINSTALL, settings.STOP]
 # These will not automatically stop when uninstalled since it seems to break there password reset.
 _NO_AUTO_STOP = [settings.DB, settings.RABBIT]
 
+# For these actions we will attempt to make an rc file if it does not exist
+_RC_FILE_MAKE_ACTIONS = [settings.INSTALL, settings.START]
 _RC_FILE = 'localrc'
 
 
@@ -216,7 +218,7 @@ def _uninstall(component_name, instance, skip_notrace):
 
 def _instanciate_components(action_name, components, distro, pkg_manager, config, root_dir):
     all_instances = {}
-    prereq_instances = {}
+    prerequisite_instances = {}
 
     for component in components.keys():
         action_cls = common.get_action_cls(action_name, component)
@@ -237,7 +239,7 @@ def _instanciate_components(action_name, components, distro, pkg_manager, config
                                                config=config,
                                                root=root_dir,
                                                opts=components.get(component, list()))
-                prereq_instances[component] = install_instance
+                prerequisite_instances[component] = install_instance
 
         elif action_name == settings.UNINSTALL:
             if component not in _NO_AUTO_STOP:
@@ -250,50 +252,53 @@ def _instanciate_components(action_name, components, distro, pkg_manager, config
                                              config=config,
                                              root=root_dir,
                                              opts=components.get(component, list()))
-                    prereq_instances[component] = stop_instance
+                    prerequisite_instances[component] = stop_instance
 
-    return (all_instances, prereq_instances)
+    return (all_instances, prerequisite_instances)
 
 
 def _run_components(action_name, component_order, components, distro, root_dir, program_args):
     LOG.info("Will run action [%s] using root directory \"%s\"" % (action_name, root_dir))
     LOG.info("In the following order: %s" % ("->".join(component_order)))
+
     non_components = set(components.keys()).difference(set(component_order))
     if non_components:
         LOG.info("Using reference components (%s)" % (", ".join(sorted(non_components))))
+
     pkg_manager = _get_pkg_manager(distro, program_args.pop('keep_packages', True))
     config = common.get_config()
+
     #form the active instances (this includes ones we won't use)
     start_time = time.time()
 
-    all_instances, prereq_instances = _instanciate_components(action_name,
+    (all_instances, prerequisite_instances) = _instanciate_components(action_name,
                                                               components,
                                                               distro,
                                                               pkg_manager,
                                                               config,
                                                               root_dir)
 
-    # ask for passwords at the top of execution
-    for instance in all_instances.values() + prereq_instances.values():
-        for pwd in instance.get_passwords():
-            config.get('passwords', pwd)
-
     #run anything before it gets going...
     _pre_run(action_name, root_dir=root_dir, pkg=pkg_manager, cfg=config)
+
+    LOG.info("Warming up your instance configurations.")
+    for component in component_order:
+        base_inst = all_instances.get(component)
+        if base_inst:
+            base_inst.warm_configs()
+        pre_inst = prerequisite_instances.get(component)
+        if pre_inst:
+            pre_inst.warm_configs()
+    LOG.info("Your instance configurations should now be nice and warm!")
+
+    LOG.info("Activating instances required to complete action %s." % (action_name))
+
     results = list()
     force = program_args.get('force', False)
-
     for component in component_order:
-        #this instance was just made
         instance = all_instances[component]
-        #prefetch configs
-        instance.pre_fetch_configs()
 
-    for component in component_order:
-        #this instance was just made
-        instance = all_instances.get(component)
         #activate the correct function for the given action
-
         if action_name == settings.INSTALL:
             install_result = _install(component, instance)
             if install_result:
@@ -307,12 +312,14 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
             _stop(component, instance, force)
 
         elif action_name == settings.START:
-            if component in prereq_instances:
-                install_instance = prereq_instances[component]
+
+            #do we need to activate an install prerequisite first???
+            if component in prerequisite_instances:
+                install_instance = prerequisite_instances[component]
                 _install(component, install_instance)
 
+            #now start it
             start_result = _start(component, instance)
-
             if start_result:
                 #TODO clean this up.
                 if type(start_result) == list:
@@ -321,13 +328,18 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
                     results.append(str(start_result))
 
         elif action_name == settings.UNINSTALL:
-            if component in prereq_instances:
-                stop_instance = prereq_instances[component]
+
+            #do we need to activate an uninstall prerequisite first???
+            if component in prerequisite_instances:
+                stop_instance = prerequisite_instances[component]
                 _stop(component, stop_instance, force)
+
             _uninstall(component, instance, force)
 
-    if not sh.exists(_RC_FILE):
-        generate_local_rc(_RC_FILE, config)
+    #make a nice rc file for u
+    if not sh.exists(_RC_FILE) and action_name in _RC_FILE_MAKE_ACTIONS:
+        LOG.info("Generating a file at [%s] that will contain your environment settings." % (_RC_FILE))
+        env_gen.generate_local_rc(_RC_FILE, config)
 
     end_time = time.time()
 

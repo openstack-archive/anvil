@@ -120,7 +120,6 @@ def get_default_components():
                                      nova.NNET,
                                      nova.NOBJ,
                                      nova.NSCHED,
-                                     nova.NVOL,
                                     ]
     def_components[settings.NOVNC] = []
     def_components[settings.HORIZON] = []
