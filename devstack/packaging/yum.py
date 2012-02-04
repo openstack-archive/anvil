@@ -39,7 +39,7 @@ RHEL_RELINKS = {
         'tgt': '/usr/lib/python2.6/site-packages/webob',
     },
     'python-nose1.1': {
-        "src": '/usr/lib/python2.6/site-packages/nose-1.1.2-py2.6.egg/',
+        "src": '/usr/lib/python2.6/site-packages/nose-1.1.2-py2.6.egg/nose/',
         'tgt': '/usr/lib/python2.6/site-packages/nose',
     },
 }
