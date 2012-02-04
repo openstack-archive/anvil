@@ -473,7 +473,9 @@ class NovaConfigurator(object):
         nova_conf.add('sql_connection', self.cfg.get_dbdsn('nova'))
 
         #configure anything libvirt releated?
-        self._configure_libvirt(self._getstr('libvirt_type'), nova_conf)
+        libvirt_type = self._getstr('libvirt_type')
+        if libvirt_type:
+            self._configure_libvirt(libvirt_type, nova_conf)
 
         #how instances will be presented
         instance_template = self._getstr('instance_name_prefix') + self._getstr('instance_name_postfix')
@@ -630,13 +632,11 @@ class NovaConfigurator(object):
         os.chmod(instances_path, stat.S_IRWXO | stat.S_IRWXG | stat.S_IRWXU)
 
     def _configure_libvirt(self, virt_type, nova_conf):
-        if not virt_type:
-            return
         if virt_type == 'kvm' and not sh.exists("/dev/kvm"):
             LOG.warn("No kvm found at /dev/kvm, switching to qemu mode.")
             virt_type = "qemu"
         if virt_type == 'lxc':
-            #todo
+            #TODO
             pass
         nova_conf.add('libvirt_type', virt_type)
 
