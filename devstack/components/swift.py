@@ -97,7 +97,10 @@ class SwiftInstaller(comp.PythonInstallComponent):
             'SWIFT_HASH': self.cfg.get('passwords', 'swift_hash'),
             'SWIFT_LOGDIR': self.logdir,
             'SWIFT_PARTITION_POWER_SIZE': self.cfg.get('swift',
-                                                       'partition_power_size')
+                                                       'partition_power_size'),
+            'NODE_PATH': '%NODE_PATH%',
+            'BIND_PORT':'%BIND_PORT%',
+            'LOG_FACILITY': '%LOG_FACILITY%'
             }
 
     def __create_data_location(self):
