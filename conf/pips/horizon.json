@@ -35,6 +35,9 @@
         "django-mailer" : {
             "version": "0.1.0"
         },
+        "django-staticfiles" : {
+            "version": "1.1.2"
+        },
         "sqlalchemy-migrate": {
             "version": "0.7.2"
         },
