@@ -54,6 +54,10 @@ REQ_PKGS = ['general.json', 'swift.json']
 class SwiftUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        self.datadir = sh.joinpths(self.appdir, self.cfg.get('swift', 'data_location'))
+
+    def pre_uninstall(self):
+        sh.umount(sh.joinpths(self.datadir, 'drives/sdb1'))
 
 
 class SwiftInstaller(comp.PythonInstallComponent):
@@ -104,12 +108,12 @@ class SwiftInstaller(comp.PythonInstallComponent):
             }
 
     def __create_data_location(self):
-        self.fs_image = sh.joinpths(self.datadir, '/drives/images/swift.img')
+        self.fs_image = sh.joinpths(self.datadir, 'drives/images/swift.img')
         sh.create_loopback_file(fname=self.fs_image,
-                                size=self.cfg.get('swift',
-                                                  'partition_power_size'),
+                                size=int(self.cfg.get('swift',
+                                                  'loopback_disk_size')),
                                 fs_type='xfs')
-        self.fs_dev = sh.joinpths(self.datadir, '/drives/sdb1')
+        self.fs_dev = sh.joinpths(self.datadir, 'drives/sdb1/')
         sh.mount_loopback_file(self.fs_image, self.fs_dev, 'xfs',
                                run_as_root=False)
 
@@ -126,14 +130,14 @@ class SwiftInstaller(comp.PythonInstallComponent):
 
     def __create_nodes(self):
         for i in range(1, 5):
-            sh.mkdirslist(sh.joinpths(self.fs_dev), '%d/node' % i)
+            sh.mkdirslist(sh.joinpths(self.fs_dev, '%d/node' % i))
             sh.symlink(sh.joinpths(self.fs_dev, str(i)),
                        sh.joinpths(self.datadir, str(i)))
             self.__create_node_config(i, 6010 + (i - 1) * 5)
 
     def __turn_on_rsync(self):
         sh.symlink(sh.joinpths(self.cfgdir, RSYNC_CONF),
-                   sh.joinpths('/etc/rsyncd.conf'))
+                   '/etc/rsyncd.conf')
         sh.replace_in_file('/etc/default/rsync',
                            'RSYNC_ENABLE=false',
                            'RSYNC_ENABLE=true')

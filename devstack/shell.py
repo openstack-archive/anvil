@@ -300,10 +300,12 @@ def rmdir(path, quiet=True):
             pass
 
 
-def symlink(source, link):
+def symlink(source, link, force=True):
     path = dirname(link)
     mkdirslist(path)
     LOG.debug("Creating symlink from %s => %s" % (link, source))
+    if force and exists(link):
+       unlink(link, True) 
     os.symlink(source, link)
 
 
@@ -348,10 +350,10 @@ def getgroupname(gid=None):
     return gid_info.gr_name
 
 
-def create_loopback_file(fname, size, bsize=1014, fs_type='ext3', run_as_root=False):
+def create_loopback_file(fname, size, bsize=1024, fs_type='ext3', run_as_root=False):
     dd_cmd = ['dd', 'if=/dev/zero', 'of=%s' % fname, 'bs=%d' % bsize,
-          'count=0', 'seek=%d %size']
-    mkfs_cmd = ['mkfs.%s' % fs_type, '-f', '-i', 'size=%d' % size, fname]
+              'count=0', 'seek=%d' % size]
+    mkfs_cmd = ['mkfs.%s' % fs_type, '-f', '-i', 'size=%d' % bsize, fname]
 
     # make sure folder exists
     files = mkdirslist(dirname(fname))
@@ -360,20 +362,28 @@ def create_loopback_file(fname, size, bsize=1014, fs_type='ext3', run_as_root=Fa
     touch_file(fname)
 
     # fill with zeroes
-    execute(dd_cmd, run_as_root)
+    execute(*dd_cmd, run_as_root=run_as_root)
 
     # create fs on the file
-    execute(mkfs_cmd, run_as_root)
+    execute(*mkfs_cmd, run_as_root=run_as_root)
 
     return files
 
 
 def mount_loopback_file(fname, device_name, fs_type='ext3', run_as_root=True):
     mount_cmd = ['mount', '-t', fs_type, '-o',
-                 'loop,noatime,nodiratime,nobarries,logbuf=8', fname,
+                 'loop,noatime,nodiratime,nobarrier,logbufs=8', fname,
                  device_name]
 
-    execute(mount_cmd, run_as_root)
+    files = mkdirslist(dirname(device_name))
+
+    execute(*mount_cmd, run_as_root=run_as_root)
+
+    return files
+
+
+def umount(dev_name, run_as_root=True):
+    execute('umount', dev_name, run_as_root=run_as_root)
 
 
 def unlink(path, ignore_errors=True):
@@ -396,7 +406,7 @@ def chmod(fname, mode):
 
 def replace_in_file(fname, search, replace):
     # fileinput with inplace=1 moves file to tmp and redirects stdio to file
-    for line in fileinput.input(file, inplace=1):
+    for line in fileinput.input(fname, inplace=1):
         if search in line:
             line = line.replace(search, replace)
         print line,
@@ -405,8 +415,8 @@ def replace_in_file(fname, search, replace):
 def copy_replace_file(fsrc, fdst, map_):
     files = mkdirslist(dirname(fdst))
     with open(fdst, 'w') as fh:
-        for line in fileinput(fsrc):
-            for (k, v) in map_:
+        for line in fileinput.input(fsrc):
+            for (k, v) in map_.items():
                 line = line.replace(k, v)
             fh.write(line)
     return files
