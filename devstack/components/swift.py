@@ -157,7 +157,7 @@ class SwiftInstaller(comp.PythonInstallComponent):
     def __make_rings(self):
         sh.execute(self.makerings_file)
 
-    def _post_install(self):
+    def post_install(self):
         self.__create_data_location()
         self.__create_nodes()
         self.__turn_on_rsync()
