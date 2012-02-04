@@ -305,7 +305,7 @@ def symlink(source, link, force=True):
     mkdirslist(path)
     LOG.debug("Creating symlink from %s => %s" % (link, source))
     if force and exists(link):
-       unlink(link, True) 
+        unlink(link, True)
     os.symlink(source, link)
 
 
@@ -403,6 +403,7 @@ def move(src, dst):
 
 def chmod(fname, mode):
     os.chmod(fname, mode)
+
 
 def replace_in_file(fname, search, replace):
     # fileinput with inplace=1 moves file to tmp and redirects stdio to file
