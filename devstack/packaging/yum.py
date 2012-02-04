@@ -33,9 +33,15 @@ YUM_REMOVE = ['erase', '-y', "-t"]
 VERSION_TEMPL = "%s-%s"
 
 #need to relink for rhel (not a bug!)
-RHEL_WEBOB_LINK = {
-    "src": '/usr/lib/python2.6/site-packages/WebOb-1.0.8-py2.6.egg/webob/',
-    'tgt': '/usr/lib/python2.6/site-packages/webob',
+RHEL_RELINKS = {
+    'python-webob1.0': {
+        "src": '/usr/lib/python2.6/site-packages/WebOb-1.0.8-py2.6.egg/webob/',
+        'tgt': '/usr/lib/python2.6/site-packages/webob',
+    },
+    'python-nose1.1': {
+        "src": '/usr/lib/python2.6/site-packages/nose-1.1.2-py2.6.egg/',
+        'tgt': '/usr/lib/python2.6/site-packages/nose',
+    },
 }
 
 
@@ -55,48 +61,28 @@ class YumPackager(pack.Packager):
             **kargs)
 
     def _remove_special(self, pkgname, pkginfo):
-        if pkgname == 'python-webob1.0' and self.distro == settings.RHEL6:
-            self._remove_webob_rhel()
+        if self.distro == settings.RHEL6 and pkgname in RHEL_RELINKS:
             #we don't return true here so that
             #the normal package cleanup happens
+            sh.unlink(RHEL_RELINKS.get(pkgname).get("tgt"))
         return False
 
-    def _remove_webob_rhel(self):
-        tgt = RHEL_WEBOB_LINK.get("tgt")
-        if sh.islink(tgt):
-            rm_cmd = ['rm', tgt]
-            sh.execute(*rm_cmd, run_as_root=True)
-
-    def _install_webob_rhel(self, pkgname, pkginfo):
+    def _install_rhel_relinks(self, pkgname, pkginfo):
         full_pkg_name = self._format_pkg_name(pkgname, pkginfo.get("version"))
         install_cmd = YUM_CMD + YUM_INSTALL + [full_pkg_name]
         self._execute_yum(install_cmd)
-        tgt = RHEL_WEBOB_LINK.get("tgt")
-        src = RHEL_WEBOB_LINK.get("src")
+        tgt = RHEL_RELINKS.get(pkgname).get("tgt")
+        src = RHEL_RELINKS.get(pkgname).get("src")
         if not sh.islink(tgt):
-            # This is actually a feature, EPEL must not conflict with RHEL, so python-webob1.0 installs newer version in parallel.
+            # This is actually a feature, EPEL must not conflict with RHEL, so X pkg installs newer version in parallel.
             #
             # This of course doesn't work when running from git like devstack does....
-            #
-            # $ cat /usr/share/doc/python-webob1.0-1.0.8/README.Fedora
-            #
-            # To use version 1.0.8 of python WebOB it is necessary
-            # to explicitly load it so as not to get the system version
-            # of WebOb.
-            #
-            # Manually modifying sys.path is an easy and reliable way
-            # to use this module.
-            #
-            # >>> import sys
-            # >>> sys.path.insert(0, '/usr/lib/python2.6/site-packages/WebOb-1.0.8-py2.6.egg')
-            # >>> import webob
-            link_cmd = ['ln', '-s', src, tgt]
-            sh.execute(*link_cmd, run_as_root=True)
+            sh.symlink(src, tgt)
         return True
 
     def _install_special(self, pkgname, pkginfo):
-        if pkgname == 'python-webob1.0' and self.distro == settings.RHEL6:
-            return self._install_webob_rhel(pkgname, pkginfo)
+        if self.distro == settings.RHEL6 and pkgname in RHEL_RELINKS:
+            return self._install_rhel_relinks(pkgname, pkginfo)
         return False
 
     def install_batch(self, pkgs):
