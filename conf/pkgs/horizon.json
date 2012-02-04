@@ -49,10 +49,6 @@
             "version": "0.9*",
             "removable": true
         },
-        "python-sphinx": {
-            "version": "1.0.7*",
-            "removable": true
-        },
         "python-cherrypy3": {
             "version": "3.1*",
             "removable": true
@@ -125,11 +121,6 @@
         # Requires EPEL
         "python-eventlet": {
             "version": "0.9*",
-            "removable": true
-        },
-        # Requires EPEL
-        "python-sphinx": {
-            "version": "1.0.8*",
             "removable": true
         },
         "Django": {
