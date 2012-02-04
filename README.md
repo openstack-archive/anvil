@@ -20,36 +20,35 @@ In order to determine what *stack* can do for you run the following.
  
 This will typically produce:
     
-     Usage: stack [options]
-     
-     Options:
-       --version             show program's version number and exit
-       -h, --help            show this help message and exit
-       -c COMPONENT, --component=COMPONENT
-                             openstack component, ie (db, glance, horizon, keystone,
-                             keystone-client, nova, nova-client, novnc, openstack-x,
-                             quantum, rabbit, swift)
-     
-       Install/uninstall/start/stop options:
-         -a ACTION, --action=ACTION
-                             action to perform, ie (install, start, stop, uninstall)
-         -d DIR, --directory=DIR
-                             empty root DIR for install or DIR with existing
-                             components for start/stop/uninstall
-         -i, --ignore-deps   ignore dependencies when performing ACTION
-         -e, --ensure-deps   ensure dependencies when performing ACTION (default:
-                             True)
-         -r COMPONENT, --ref-component=COMPONENT
-                             component which will not have ACTION applied but will be
-                             referenced as if it was (ACTION dependent)
-     
-       Uninstall/stop options:
-         -f, --force         force ACTION even if no trace file found
-     
-       Miscellaneous options:
-         --list-deps         show dependencies of COMPONENT (default: False)
-         --describe-components
-                             describe COMPONENT (default: False)
+    Usage: stack [options]
+    
+    Options:
+      --version             show program's version number and exit
+      -h, --help            show this help message and exit
+      -c COMPONENT, --component=COMPONENT
+                            openstack component: [db, glance, horizon, keystone,
+                            keystone-client, nova, nova-client, novnc, quantum,
+                            quantum-client, rabbit, swift, swift_keystone]
+    
+      Install/uninstall/start/stop options:
+        -a ACTION, --action=ACTION
+                            required action to perform: [install, start, stop,
+                            uninstall]
+        -d DIR, --directory=DIR
+                            empty root DIR for install or DIR with existing
+                            components for start/stop/uninstall
+        -i, --ignore-deps   ignore dependencies when performing ACTION
+        -e, --ensure-deps   ensure dependencies when performing ACTION (default:
+                            True)
+        -r COMPONENT, --ref-component=COMPONENT
+                            component which will not have ACTION applied but will be
+                            referenced as if it was (ACTION dependent)
+        -k, --keep-packages
+                            uninstall will keep any installed packages on the system
+    
+      Uninstall/stop options:
+        -f, --force         force ACTION even if no trace file found (default: True)
+    
 
 # Stack prerequisites
 

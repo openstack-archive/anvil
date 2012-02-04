@@ -59,7 +59,7 @@ LOG = logging.getLogger("devstack.components.horizon")
 REQ_PKGS = ['general.json', 'horizon.json']
 
 #pip files that horizon requires
-REQ_PIPS = ['horizon.json']
+REQ_PIPS = ['general.json', 'horizon.json']
 
 
 class HorizonUninstaller(comp.PythonUninstallComponent):

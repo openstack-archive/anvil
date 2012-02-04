@@ -305,6 +305,7 @@ def symlink(source, link):
     path = dirname(link)
     file_ = basename(link)
     mkdirslist(path)
+    LOG.debug("Creating symlink from %s => %s" % (link, source))
     os.symlink(source, link)
 
 

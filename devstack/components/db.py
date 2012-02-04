@@ -183,7 +183,7 @@ class DBInstaller(comp.PkgInstallComponent):
                     utils.execute_template(*cmds, params=params, shell=True)
         except IOError:
             LOG.warn(("Couldn't set your password. It might have already been "
-                       "set by a previous process."), exc_info=True)
+                       "set by a previous process."))
 
         #ensure access granted
         if dbactions:

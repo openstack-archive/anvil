@@ -179,7 +179,7 @@ QUANTUM_OPENSWITCH_OPS = {
 LIBVIRTD_RESTART = ['service', 'libvirtd', 'restart']
 
 #pip files that nova requires
-REQ_PIPS = ['nova.json']
+REQ_PIPS = ['general.json', 'nova.json']
 
 
 class NovaUninstaller(comp.PythonUninstallComponent):
@@ -321,15 +321,16 @@ class NovaInstaller(comp.PythonInstallComponent):
 
     def _generate_nova_conf(self):
         LOG.info("Generating dynamic content for nova configuration (%s)." % (API_CONF))
-        dirs = dict()
-        dirs['app'] = self.appdir
-        dirs['cfg'] = self.cfgdir
-        dirs['bin'] = self.bindir
+        component_dirs = dict()
+        component_dirs['app'] = self.appdir
+        component_dirs['cfg'] = self.cfgdir
+        component_dirs['bin'] = self.bindir
         conf_gen = NovaConfigurator(self)
-        nova_conf = conf_gen.configure(dirs)
+        nova_conf = conf_gen.configure(component_dirs)
         tgtfn = self._get_target_config_name(API_CONF)
         LOG.info("Writing conf to %s" % (tgtfn))
         LOG.info(nova_conf)
+        self.tracewriter.make_dir(sh.dirname(tgtfn))
         sh.write_file(tgtfn, nova_conf)
         self.tracewriter.cfg_write(tgtfn)
 
@@ -420,7 +421,8 @@ class NovaRuntime(comp.PythonRuntime):
 
 
 # This class has the smarts to build the configuration file based on
-# various runtime values
+# various runtime values. A useful reference for figuring out this
+# is at http://docs.openstack.org/diablo/openstack-compute/admin/content/ch_configuring-openstack-compute.html
 class NovaConfigurator(object):
     def __init__(self, nc):
         self.cfg = nc.cfg
@@ -429,7 +431,10 @@ class NovaConfigurator(object):
         self.appdir = nc.appdir
         self.tracewriter = nc.tracewriter
         self.paste_conf_fn = nc.paste_conf_fn
-        self.nvol = not nc.component_opts or NVOL in nc.component_opts
+        self.distro = nc.distro
+        self.volumes_enabled = False
+        if not nc.component_opts or NVOL in nc.component_opts:
+            self.volumes_enabled = True
 
     def _getbool(self, name):
         return self.cfg.getboolean('nova', name)
@@ -437,11 +442,10 @@ class NovaConfigurator(object):
     def _getstr(self, name):
         return self.cfg.get('nova', name)
 
-    def configure(self, dirs):
-
-        #TODO split up into sections??
-
+    def configure(self, component_dirs):
         nova_conf = NovaConf()
+
+        #use more than once
         hostip = self.cfg.get('host', 'ip')
 
         #verbose on?
@@ -458,13 +462,120 @@ class NovaConfigurator(object):
             scheduler = DEF_SCHEDULER
         nova_conf.add('scheduler_driver', scheduler)
 
-        flag_conf_fn = sh.joinpths(dirs.get('cfg'), API_CONF)
-        nova_conf.add('dhcpbridge_flagfile', flag_conf_fn)
+        #setup network settings
+        self._configure_network_settings(nova_conf, component_dirs)
 
-        #whats the network fixed range?
-        nova_conf.add('fixed_range', self._getstr('fixed_range'))
+        #setup nova volume settings
+        if self.volumes_enabled:
+            self._configure_vols(nova_conf)
+
+        #where we are running
+        nova_conf.add('my_ip', hostip)
+
+        #setup your sql connection
+        nova_conf.add('sql_connection', self.cfg.get_dbdsn('nova'))
+
+        #configure anything libvirt releated?
+        libvirt_type = self._getstr('libvirt_type')
+        if libvirt_type:
+            self._configure_libvirt(libvirt_type, nova_conf)
+
+        #how instances will be presented
+        instance_template = self._getstr('instance_name_prefix') + self._getstr('instance_name_postfix')
+        nova_conf.add('instance_name_template', instance_template)
+
+        #???
+        nova_conf.add('osapi_compute_extension', 'nova.api.openstack.compute.contrib.standard_extensions')
+
+        #vnc settings
+        self._configure_vnc(nova_conf)
+
+        #where our paste config is
+        nova_conf.add('api_paste_config', self.paste_conf_fn)
+
+        #what our imaging service will be
+        self._configure_image_service(nova_conf)
+
+        #ec2 / s3 stuff
+        ec2_dmz_host = self._getstr('ec2_dmz_host')
+        if not ec2_dmz_host:
+            ec2_dmz_host = hostip
+        nova_conf.add('ec2_dmz_host', ec2_dmz_host)
         nova_conf.add('s3_host', hostip)
 
+        #how is your rabbit setup?
+        nova_conf.add('rabbit_host', self.cfg.get('default', 'rabbit_host'))
+        nova_conf.add('rabbit_password', self.cfg.get("passwords", "rabbit"))
+
+        #where instances will be stored
+        instances_path = self._getstr('instances_path')
+        if not instances_path:
+            instances_path = sh.joinpths(self.component_root, 'instances')
+        self._configure_instances_path(instances_path, nova_conf)
+
+        #is this a multihost setup?
+        self._configure_multihost(nova_conf)
+
+        #enable syslog??
+        self._configure_syslog(nova_conf)
+
+        #handle any virt driver specifics
+        self._configure_virt_driver(nova_conf)
+
+        #now make it
+        conf_lines = sorted(nova_conf.generate())
+        complete_file = utils.joinlinesep(*conf_lines)
+
+        #add any extra flags in?
+        extra_flags = self._getstr('extra_flags')
+        if extra_flags:
+            full_file = [complete_file, extra_flags]
+            complete_file = utils.joinlinesep(*full_file)
+
+        return complete_file
+
+    def _configure_image_service(self, nova_conf):
+        #what image service we will use
+        img_service = self._getstr('img_service')
+        if not img_service:
+            img_service = DEF_IMAGE_SERVICE
+        nova_conf.add('image_service', img_service)
+
+        #where is glance located?
+        if img_service.lower().find("glance") != -1:
+            glance_api_server = self._getstr('glance_server')
+            if not glance_api_server:
+                glance_api_server = "%s:%d" % (hostip, DEF_GLANCE_PORT)
+            nova_conf.add('glance_api_servers', glance_api_server)
+
+    def _configure_vnc(self, nova_conf):
+        if settings.NOVNC in self.instances:
+            vncproxy_url = self._getstr('vncproxy_url')
+            nova_conf.add('novncproxy_base_url', vncproxy_url)
+        if settings.XVNC in self.instances:
+            xvncproxy_url = self._getstr('xvpvncproxy_url')
+            nova_conf.add('xvpvncproxy_base_url', xvncproxy_url)
+        nova_conf.add('vncserver_listen', self._getstr('vncserver_listen'))
+        vncserver_proxyclient_address = self._getstr('vncserver_proxyclient_addres')
+
+        # If no vnc proxy address was specified, pick a default based on which
+        # driver we're using
+        virt_driver = self._getstr('virt_driver')
+        if not vncserver_proxyclient_address:
+            if virt_driver == 'xenserver':
+                vncserver_proxyclient_address = '169.254.0.1'
+            else:
+                vncserver_proxyclient_address = '127.0.0.1'
+
+        nova_conf.add('vncserver_proxyclient_address', vncserver_proxyclient_address)
+
+    def _configure_vols(self, nova_conf):
+        nova_conf.add('volume_group', self._getstr('volume_group'))
+        volume_name_template = self._getstr('volume_name_prefix') + self._getstr('volume_name_postfix')
+        nova_conf.add('volume_name_template', volume_name_template)
+        nova_conf.add('iscsi_help', 'tgtadm')
+
+    def _configure_network_settings(self, nova_conf, component_dirs):
         if settings.QUANTUM in self.instances:
             #setup quantum config
             nova_conf.add('network_manager', QUANTUM_MANAGER)
@@ -479,12 +590,12 @@ class NovaConfigurator(object):
         else:
             nova_conf.add('network_manager', NET_MANAGER_TEMPLATE % (self._getstr('network_manager')))
 
-        if self.nvol:
-            nova_conf.add('volume_group', self._getstr('volume_group'))
-            volume_name_template = self._getstr('volume_name_prefix') + self._getstr('volume_name_postfix')
-            nova_conf.add('volume_name_template', volume_name_template)
-            nova_conf.add('iscsi_help', 'tgtadm')
-        nova_conf.add('my_ip', hostip)
+        #dhcp bridge stuff???
+        flag_conf_fn = sh.joinpths(component_dirs.get('cfg'), API_CONF)
+        nova_conf.add('dhcpbridge_flagfile', flag_conf_fn)
+
+        #Network prefix for the IP network that all the projects for future VM guests reside on. Example: 192.168.0.0/12
+        nova_conf.add('fixed_range', self._getstr('fixed_range'))
 
         # The value for vlan_interface may default to the the current value
         # of public_interface. We'll grab the value and keep it handy.
@@ -492,116 +603,49 @@ class NovaConfigurator(object):
         vlan_interface = self._getstr('vlan_interface')
         if not vlan_interface:
             vlan_interface = public_interface
+
+        #do a little check to make sure actually have that interface set...
+        known_interfaces = utils.get_interfaces()
+        if not public_interface in known_interfaces:
+            msg = "Public interface %s is not a known interface" % (public_interface)
+            raise exceptions.ConfigException(msg)
+        if not vlan_interface in known_interfaces:
+            msg = "VLAN interface %s is not a known interface" % (vlan_interface)
+            raise exceptions.ConfigException(msg)
         nova_conf.add('public_interface', public_interface)
         nova_conf.add('vlan_interface', vlan_interface)
 
-        #setup your sql connection and what type of virt u will be doing
-        nova_conf.add('sql_connection', self.cfg.get_dbdsn('nova'))
-
-        #configure anything libvirt releated?
-        self._configure_libvirt(self._getstr('libvirt_type'), nova_conf)
-
-        #how instances will be presented
-        instance_template = self._getstr('instance_name_prefix') + self._getstr('instance_name_postfix')
-        nova_conf.add('instance_name_template', instance_template)
-
-        nova_conf.add('osapi_compute_extension', 'nova.api.openstack.compute.contrib.standard_extensions')
-
-        if settings.NOVNC in self.instances:
-            vncproxy_url = self._getstr('vncproxy_url')
-            nova_conf.add('novncproxy_base_url', vncproxy_url)
-
-        if settings.XVNC in self.instances:
-            xvncproxy_url = self._getstr('xvpvncproxy_url')
-            nova_conf.add('xvpvncproxy_base_url', xvncproxy_url)
-
-        nova_conf.add('vncserver_listen', self._getstr('vncserver_listen'))
-        vncserver_proxyclient_address = self._getstr('vncserver_proxyclient_addres')
-        # If no vnc proxy address was specified, pick a default based on which
-        # driver we're using
-        virt_driver = self._getstr('virt_driver')
-        if not vncserver_proxyclient_address:
-            if virt_driver == 'xenserver':
-                vncserver_proxyclient_address = '169.254.0.1'
-            else:
-                vncserver_proxyclient_address = '127.0.0.1'
-
-        nova_conf.add('vncserver_proxyclient_address', vncserver_proxyclient_address)
-        nova_conf.add('api_paste_config', self.paste_conf_fn)
-
-        img_service = self._getstr('img_service')
-        if not img_service:
-            img_service = DEF_IMAGE_SERVICE
-        nova_conf.add('image_service', img_service)
-
-        ec2_dmz_host = self._getstr('ec2_dmz_host')
-        if not ec2_dmz_host:
-            ec2_dmz_host = hostip
-        nova_conf.add('ec2_dmz_host', ec2_dmz_host)
-
-        #how is your rabbit setup?
-        nova_conf.add('rabbit_host', self.cfg.get('default', 'rabbit_host'))
-        nova_conf.add('rabbit_password', self.cfg.get("passwords", "rabbit"))
-
-        #where is glance located?
-        glance_api_server = self._getstr('glance_server')
-        if not glance_api_server:
-            glance_api_server = "%s:%d" % (hostip, DEF_GLANCE_PORT)
-        nova_conf.add('glance_api_servers', glance_api_server)
+        #This forces dnsmasq to update its leases table when an instance is terminated.
         nova_conf.add_simple('force_dhcp_release')
 
-        #where instances will be stored
-        instances_path = self._getstr('instances_path')
-        if not instances_path:
-            # If there's no instances path, specify a default
-            instances_path = sh.joinpths(self.component_root, 'instances')
-        nova_conf.add('instances_path', instances_path)
+    def _configure_syslog(self, nova_conf):
+        if self.cfg.getboolean('default', 'syslog'):
+            nova_conf.add_simple('use_syslog')
 
-        # Create the directory for instances
+    def _configure_multihost(self, nova_conf):
+        if self._getbool('multi_host'):
+            nova_conf.add_simple('multi_host')
+            nova_conf.add_simple('send_arp_for_ha')
+
+    def _configure_instances_path(self, instances_path, nova_conf):
+        nova_conf.add('instances_path', instances_path)
         LOG.debug("Attempting to create instance directory: %s" % (instances_path))
         self.tracewriter.make_dir(instances_path)
         LOG.debug("Adjusting permissions of instance directory: %s" % (instances_path))
         os.chmod(instances_path, stat.S_IRWXO | stat.S_IRWXG | stat.S_IRWXU)
 
-        #is this a multihost setup?
-        if self._getbool('multi_host'):
-            nova_conf.add_simple('multi_host')
-            nova_conf.add_simple('send_arp_for_ha')
-
-        #enable syslog??
-        if self.cfg.getboolean('default', 'syslog'):
-            nova_conf.add_simple('use_syslog')
-
-        #handle any virt driver specifics
-        self._configure_virt_driver(virt_driver, nova_conf)
-
-        #now make it
-        conf_lines = sorted(nova_conf.generate())
-        complete_file = utils.joinlinesep(*conf_lines)
-
-        #add any extra flags in?
-        extra_flags = self._getstr('extra_flags')
-        if extra_flags and len(extra_flags):
-            full_file = [complete_file, extra_flags]
-            complete_file = utils.joinlinesep(*full_file)
-
-        return complete_file
-
     def _configure_libvirt(self, virt_type, nova_conf):
-        if not virt_type:
-            return
         if virt_type == 'kvm' and not sh.exists("/dev/kvm"):
             LOG.warn("No kvm found at /dev/kvm, switching to qemu mode.")
             virt_type = "qemu"
         if virt_type == 'lxc':
-            #todo
+            #TODO
             pass
         nova_conf.add('libvirt_type', virt_type)
 
     #configures any virt driver settings
-    def _configure_virt_driver(self, driver, nova_conf):
-        if not driver:
-            return
+    def _configure_virt_driver(self, nova_conf):
+        driver = self._getstr('virt_driver')
         drive_canon = driver.lower().strip()
         if drive_canon == 'xenserver':
             nova_conf.add('connection_type', 'xenapi')

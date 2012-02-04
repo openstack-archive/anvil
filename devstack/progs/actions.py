@@ -96,19 +96,19 @@ def _post_run(action_name, **kargs):
         if root_dir:
             sh.rmdir(root_dir)
     #mirror the output the old devstack was also giving
-    cfg = kargs.get("config")
+    config = kargs.get("config")
     actives = kargs.get("actives")
-    if action_name == settings.START and cfg and actives:
-        host_ip = cfg.get('host', 'ip')
+    if action_name == settings.START and config and actives:
+        host_ip = config.get('host', 'ip')
         if settings.HORIZON in actives:
-            port = cfg.get('horizon', 'port')
+            port = config.get('horizon', 'port')
             LOG.info("Horizon should now be available at http://%s:%s/" % (host_ip, port))
         if settings.KEYSTONE in actives:
-            shared_params = keystone.get_shared_params(cfg)
+            shared_params = keystone.get_shared_params(config)
             msg = "Keystone is serving at {KEYSTONE_SERVICE_PROTOCOL}://{KEYSTONE_SERVICE_HOST}:{KEYSTONE_SERVICE_PORT}/v2.0/"
             LOG.info(msg.format(**shared_params))
             LOG.info("The default users are: admin and demo.")
-            admin_pw = cfg.get('passwords', 'horizon_keystone_admin')
+            admin_pw = config.get('passwords', 'horizon_keystone_admin')
             LOG.info("The admin password is: %s" % (admin_pw))
         LOG.info("This is your host ip: %s" % (host_ip))
 
@@ -281,7 +281,7 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
     #run anything before it gets going...
     _pre_run(action_name, root_dir=root_dir, pkg=pkg_manager, cfg=config)
 
-    LOG.info("Warming up your instance configurations.")
+    LOG.info("Warming up your instance configurations (ie so you won't be prompted later)")
     for component in component_order:
         base_inst = all_instances.get(component)
         if base_inst:

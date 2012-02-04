@@ -14,8 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import logging
-import logging.config
 import optparse
 import os
 import sys
@@ -95,7 +93,6 @@ def main():
     opts = dict()
     opts['components'] = options.component
     opts['action'] = options.action
-    utils.welcome(PROG_NAME)
     result = run(opts)
     if not result:
         return 1

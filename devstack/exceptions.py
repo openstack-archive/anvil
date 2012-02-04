@@ -71,6 +71,10 @@ class FileException(StackException):
     pass
 
 
+class ConfigException(StackException):
+    pass
+
+
 class ProcessExecutionError(IOError):
     def __init__(self, stdout=None, stderr=None, exit_code=None, cmd=None,
                  description=None):

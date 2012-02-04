@@ -60,7 +60,7 @@ APP_OPTIONS = {
 REQ_PKGS = ['general.json', 'keystone.json']
 
 #pip files that keystone requires
-REQ_PIPS = ['keystone.json']
+REQ_PIPS = ['general.json', 'keystone.json']
 
 
 class KeystoneUninstaller(comp.PythonUninstallComponent):

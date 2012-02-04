@@ -175,16 +175,17 @@ class PkgInstallComponent(ComponentBase):
                 self.tracewriter.cfg_write(tgtfn)
         return len(configs)
 
-    def configure(self):
-        self.tracewriter.make_dir(self.cfgdir)
-        l = self._configure_files()
+    def _configure_symlinks(self):
         links = self._get_symlinks()
         for (source, link) in links.items():
             try:
-                sh.symlink(source, link)
+                self.tracewriter.symlink(source, link)
             except OSError:
-                LOG.info("symlink %s => %s already exists." % (source, link))
-        return l
+                LOG.warn("Symlink %s => %s already exists." % (link, source))
+        return len(links)
+
+    def configure(self):
+        return (self._configure_files() + self._configure_symlinks())
 
 
 class PythonInstallComponent(PkgInstallComponent):
@@ -258,6 +259,15 @@ class PkgUninstallComponent(ComponentBase):
 
     def unconfigure(self):
         self._unconfigure_files()
+        self._unconfigure_links()
+
+    def _unconfigure_links(self):
+        symfiles = self.tracereader.symlinks_made()
+        if symfiles:
+            LOG.info("Removing %s symlinks files (%s)" % (len(symfiles), ", ".join(symfiles)))
+            for fn in symfiles:
+                if fn:
+                    sh.unlink(fn)
 
     def _unconfigure_files(self):
         cfgfiles = self.tracereader.files_configured()

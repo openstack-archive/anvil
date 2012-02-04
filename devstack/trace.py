@@ -26,6 +26,7 @@ TRACE_EXT = ".trace"
 
 #common trace actions
 CFG_WRITING_FILE = "CFG_WRITING_FILE"
+SYMLINK_MAKE = "SYMLINK_MAKE"
 PKG_INSTALL = "PKG_INSTALL"
 PYTHON_INSTALL = "PYTHON_INSTALL"
 DIR_MADE = "DIR_MADE"
@@ -91,6 +92,11 @@ class TraceWriter(object):
     def cfg_write(self, cfgfile):
         self._start()
         self.tracer.trace(CFG_WRITING_FILE, cfgfile)
+
+    def symlink(self, source, link):
+        self._start()
+        sh.symlink(source, link)
+        self.tracer.trace(SYMLINK_MAKE, link)
 
     def downloaded(self, tgt, fromwhere):
         self._start()
@@ -204,6 +210,17 @@ class TraceReader(object):
                 jdec = json.loads(action)
                 if type(jdec) is dict:
                     files.append(jdec)
+        return files
+
+    def symlinks_made(self):
+        lines = self._read()
+        files = list()
+        for (cmd, action) in lines:
+            if cmd == SYMLINK_MAKE and len(action):
+                files.append(action)
+        #ensure in ok order (ie /tmp is before /)
+        files.sort()
+        files.reverse()
         return files
 
     def files_configured(self):

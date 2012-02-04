@@ -29,10 +29,6 @@
             "version": "1.12*",
             "removable": true
         },
-        "python-xattr": {
-            "version": "0.6*",
-            "removable": true
-        },
         "python-sqlalchemy": {
             "version": "0.6*",
             "removable": true
@@ -47,10 +43,6 @@
         },
         "python-eventlet": {
             "version": "0.9*",
-            "removable": true
-        },
-        "python-sphinx": {
-            "version": "1.0.7*",
             "removable": true
         },
         "python-cherrypy3": {
@@ -86,6 +78,40 @@
         }
     },
     "rhel-6": {
-         #TBD
+        "httpd": {
+            "version": "2.2*",
+            "removable": true
+        },
+        "mod_wsgi": {
+            "version": "3.2*",
+            "removable": true
+        },
+        "python-dateutil": {
+            "version": "1.4*",
+            "removable": true
+        },
+        "python-paste": {
+            "version": "1.7.4*",
+            "removable": true
+        },
+        "python-routes": {
+            "version": "1.10*",
+            "removable": true
+        },
+        # Requires EPEL
+        "python-webob1.0": {
+            "version": "1.0*",
+            "removable": true
+        },
+        # Requires EPEL
+        "python-kombu": {
+            "version": "1.1*",
+            "removable": true
+        },
+        # Requires EPEL
+        "python-eventlet": {
+            "version": "0.9*",
+            "removable": true
+        }
     }
 }
