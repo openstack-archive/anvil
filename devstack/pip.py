@@ -23,14 +23,11 @@ from devstack import settings
 LOG = logging.getLogger("devstack.pip")
 PIP_UNINSTALL_CMD_OPTS = ['-y', '-q']
 PIP_INSTALL_CMD_OPTS = ['-q']
-
-
-def _cmd_name(distro):
-    #of course u know they have to change the name...
-    if distro == settings.RHEL6:
-        return 'pip-python'
-    else:
-        return 'pip'
+#the pip command is named different :-(
+PIP_CMD_NAMES = {
+    settings.RHEL6: 'pip-python',
+    settings.UBUNTU11: 'pip',
+}
 
 
 def install(pips, distro):
@@ -46,19 +43,18 @@ def install(pips, distro):
         actions.append(pipfull)
     if actions:
         LOG.info("Installing python packages [%s]" % (", ".join(actions)))
-        root_cmd = _cmd_name(distro)
+        root_cmd = PIP_CMD_NAMES.get(distro, 'pip')
         cmd = [root_cmd, 'install'] + PIP_INSTALL_CMD_OPTS + actions
         sh.execute(*cmd, run_as_root=True)
 
 
-def uninstall(pips, distro):
+def uninstall(pips, distro, skip_errors=True):
     pipnames = sorted(pips.keys())
     LOG.info("Uninstalling python packages [%s]" % (", ".join(pipnames)))
     for name in pipnames:
         pipinfo = pips.get(name, dict())
-        skip_errors = pipinfo.get('skip_uninstall_errors', True)
         try:
-            root_cmd = _cmd_name(distro)
+            root_cmd = PIP_CMD_NAMES.get(distro, 'pip')
             cmd = [root_cmd, 'uninstall'] + PIP_UNINSTALL_CMD_OPTS + [name]
             sh.execute(*cmd, run_as_root=True)
         except excp.ProcessExecutionError:

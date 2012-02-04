@@ -181,7 +181,7 @@ class PkgInstallComponent(ComponentBase):
             try:
                 self.tracewriter.symlink(source, link)
             except OSError:
-                LOG.warn("Symlink %s => %s already exists." % (source, link))
+                LOG.warn("Symlink %s => %s already exists." % (link, source))
         return len(links)
 
     def configure(self):
