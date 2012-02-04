@@ -60,7 +60,7 @@ class RabbitUninstaller(comp.PkgUninstallComponent):
             sh.execute(*cmd, run_as_root=True)
         except IOError:
             LOG.warn(("Could not reset the rabbit-mq password. You might have to manually "
-                      "reset the password to \"%s\" before the next install") % (RESET_BASE_PW), exc_info=True)
+                      "reset the password to \"%s\" before the next install") % (RESET_BASE_PW))
 
 
 class RabbitInstaller(comp.PkgInstallComponent):
