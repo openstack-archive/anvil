@@ -237,13 +237,13 @@
             "removable": false, 
             "version": "1.12*"
         },
-	"libxml2-dev": {
-	    "removable": false,
+        "libxml2-dev": {
+            "removable": false,
             "version": "2.7*"
-	},
-	"libxslt1-dev": {
-	    "removable": false,
-	    "version": "1.1.26*"
-	}
+        },
+        "libxslt1-dev": {
+            "removable": false,
+            "version": "1.1.26*"
+        }
     }
 }
