@@ -112,10 +112,6 @@
         "python-eventlet": {
             "version": "0.9*",
             "removable": true
-        },
-        "Django": {
-            "version": "1.2*",
-            "removable": true
         }
     }
 }
