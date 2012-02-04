@@ -11,6 +11,10 @@
         }
     },
     "rhel-6": {
-        #TBD
+        # Requires EPEL
+        "python-gflags": {
+            "version": "1.4*",
+            "removable": true
+        }
     }
 }
