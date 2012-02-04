@@ -431,7 +431,10 @@ class NovaConfigurator(object):
         self.appdir = nc.appdir
         self.tracewriter = nc.tracewriter
         self.paste_conf_fn = nc.paste_conf_fn
-        self.nvol = not nc.component_opts or NVOL in nc.component_opts
+        self.distro = nc.distro
+        self.volumes_enabled = False
+        if not nc.component_opts or NVOL in nc.component_opts:
+            self.volumes_enabled = True
 
     def _getbool(self, name):
         return self.cfg.getboolean('nova', name)
@@ -463,7 +466,7 @@ class NovaConfigurator(object):
         self._configure_network_settings(nova_conf, component_dirs)
 
         #setup nova volume settings
-        if self.nvol:
+        if self.volumes_enabled:
             self._configure_vols(nova_conf)
 
         #where we are running
