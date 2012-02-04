@@ -16,12 +16,12 @@
 
 import getpass
 import grp
-import os
 import os.path
 import pwd
 import shutil
 import subprocess
 import tempfile
+import fileinput
 
 from devstack import env
 from devstack import exceptions as excp
@@ -263,7 +263,6 @@ def touch_file(fn, die_if_there=True, quiet=False, file_size=0):
 def load_file(fn, quiet=False):
     if not quiet:
         LOG.debug("Loading data from file %s", fn)
-    data = ""
     with open(fn, "r") as f:
         data = f.read()
     if not quiet:
@@ -301,11 +300,12 @@ def rmdir(path, quiet=True):
             pass
 
 
-def symlink(source, link):
+def symlink(source, link, force=True):
     path = dirname(link)
-    file_ = basename(link)
     mkdirslist(path)
     LOG.debug("Creating symlink from %s => %s" % (link, source))
+    if force and exists(link):
+        unlink(link, True)
     os.symlink(source, link)
 
 
@@ -350,6 +350,42 @@ def getgroupname(gid=None):
     return gid_info.gr_name
 
 
+def create_loopback_file(fname, size, bsize=1024, fs_type='ext3', run_as_root=False):
+    dd_cmd = ['dd', 'if=/dev/zero', 'of=%s' % fname, 'bs=%d' % bsize,
+              'count=0', 'seek=%d' % size]
+    mkfs_cmd = ['mkfs.%s' % fs_type, '-f', '-i', 'size=%d' % bsize, fname]
+
+    # make sure folder exists
+    files = mkdirslist(dirname(fname))
+
+    # create file
+    touch_file(fname)
+
+    # fill with zeroes
+    execute(*dd_cmd, run_as_root=run_as_root)
+
+    # create fs on the file
+    execute(*mkfs_cmd, run_as_root=run_as_root)
+
+    return files
+
+
+def mount_loopback_file(fname, device_name, fs_type='ext3', run_as_root=True):
+    mount_cmd = ['mount', '-t', fs_type, '-o',
+                 'loop,noatime,nodiratime,nobarrier,logbufs=8', fname,
+                 device_name]
+
+    files = mkdirslist(dirname(device_name))
+
+    execute(*mount_cmd, run_as_root=run_as_root)
+
+    return files
+
+
+def umount(dev_name, run_as_root=True):
+    execute('umount', dev_name, run_as_root=run_as_root)
+
+
 def unlink(path, ignore_errors=True):
     try:
         LOG.debug("Unlinking (removing) %s" % (path))
@@ -359,3 +395,29 @@ def unlink(path, ignore_errors=True):
             raise
         else:
             pass
+
+
+def move(src, dst):
+    shutil.move(src, dst)
+
+
+def chmod(fname, mode):
+    os.chmod(fname, mode)
+
+
+def replace_in_file(fname, search, replace):
+    # fileinput with inplace=1 moves file to tmp and redirects stdio to file
+    for line in fileinput.input(fname, inplace=1):
+        if search in line:
+            line = line.replace(search, replace)
+        print line,
+
+
+def copy_replace_file(fsrc, fdst, map_):
+    files = mkdirslist(dirname(fdst))
+    with open(fdst, 'w') as fh:
+        for line in fileinput.input(fsrc):
+            for (k, v) in map_.items():
+                line = line.replace(k, v)
+            fh.write(line)
+    return files
