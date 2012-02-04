@@ -53,7 +53,8 @@ def write_env(name, value, fh):
 
 def generate_ec2_env(fh, cfg):
     fh.write(os.linesep)
-    fh.write('# ec2 stuff')
+    fh.write('# EC2 and/or S3 stuff')
+    fh.write(os.linesep)
     ip = cfg.get('host', 'ip')
     write_env('EC2_URL', 'http://%s:8773/services/Cloud' % ip, fh)
     write_env('S3_URL', 'http://%s:3333/services/Cloud' % ip, fh)
@@ -65,7 +66,8 @@ def generate_ec2_env(fh, cfg):
 
 def generate_nova_env(fh, cfg):
     fh.write(os.linesep)
-    fh.write('# nova stuff')
+    fh.write('# Nova stuff')
+    fh.write(os.linesep)
     ip = cfg.get('host', 'ip')
     write_env('NOVA_PASSWORD', cfg.get('passwords', 'horizon_keystone_admin'), fh)
     write_env('NOVA_URL', 'http://%s:5000/v2.0' % ip, fh)
@@ -77,7 +79,8 @@ def generate_nova_env(fh, cfg):
 
 def generate_os_env(fh, cfg):
     fh.write(os.linesep)
-    fh.write('# os stuff')
+    fh.write('# Openstack stuff')
+    fh.write(os.linesep)
     ip = cfg.get('host', 'ip')
     write_env('OS_PASSWORD', cfg.get('passwords', 'horizon_keystone_admin'), fh)
     write_env('OS_TENANT_NAME', 'demo', fh)
@@ -91,6 +94,8 @@ def generate_local_rc(fn=None, cfg=None):
     if not cfg:
         cfg = common.get_config()
     with open(fn, "w") as fh:
+        fh.write('# General stuff')
+        fh.write(os.linesep)
         for (out_name, cfg_data) in CFG_MAKE.items():
             section = cfg_data[0]
             key = cfg_data[1]
@@ -107,9 +112,12 @@ def main():
          help="write output to FILE", metavar="FILE")
     (options, args) = opts.parse_args()
     utils.welcome(PROG_NAME)
-    generate_local_rc(options.filename)
+    fn = options.filename
+    if not fn:
+        fn = "localrc"
+    generate_local_rc(fn)
     print("Check file \"%s\" for your environment configuration." \
-              % (os.path.normpath(options.filename)))
+              % (os.path.normpath(fn)))
     return 0
 
 
