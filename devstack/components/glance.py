@@ -73,7 +73,7 @@ BIN_DIR = 'bin'
 REQ_PKGS = ['general.json', 'glance.json']
 
 #pip files that glance requires
-REQ_PIPS = ['glance.json']
+REQ_PIPS = ['general.json', 'glance.json']
 
 
 class GlanceUninstaller(comp.PythonUninstallComponent):

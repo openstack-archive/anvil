@@ -29,10 +29,6 @@
             "version": "1.12*",
             "removable": true
         },
-        "python-xattr": {
-            "version": "0.6*",
-            "removable": true
-        },
         "python-sqlalchemy": {
             "version": "0.6*",
             "removable": true
@@ -100,12 +96,6 @@
         },
         "python-routes": {
             "version": "1.10*",
-            "removable": true
-        },
-        # Requires EPEL
-        "python-xattr": {
-            # This might be way to old :(
-            "version": "0.5*",
             "removable": true
         },
         # Requires EPEL

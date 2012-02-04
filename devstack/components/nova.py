@@ -179,7 +179,7 @@ QUANTUM_OPENSWITCH_OPS = {
 LIBVIRTD_RESTART = ['service', 'libvirtd', 'restart']
 
 #pip files that nova requires
-REQ_PIPS = ['nova.json']
+REQ_PIPS = ['general.json', 'nova.json']
 
 
 class NovaUninstaller(comp.PythonUninstallComponent):

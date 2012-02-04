@@ -174,7 +174,7 @@ class PkgInstallComponent(ComponentBase):
                 sh.write_file(tgtfn, contents)
                 self.tracewriter.cfg_write(tgtfn)
         return len(configs)
-        
+
     def _configure_symlinks(self):
         links = self._get_symlinks()
         for (source, link) in links.items():
