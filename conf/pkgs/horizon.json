@@ -86,6 +86,55 @@
         }
     },
     "rhel-6": {
-         #TBD
+        "httpd": {
+            "version": "2.2*",
+            "removable": true
+        },
+        "mod_wsgi": {
+            "version": "3.2*",
+            "removable": true
+        },
+        "python-dateutil": {
+            "version": "1.4*",
+            "removable": true
+        },
+        "python-paste": {
+            "version": "1.7.4*",
+            "removable": true
+        },
+        "python-routes": {
+            "version": "1.10*",
+            "removable": true
+        },
+        # Requires EPEL
+        "python-xattr": {
+            # This might be way to old :(
+            "version": "0.5*",
+            "removable": true
+        },
+        # Requires EPEL
+        "python-webob1.0": {
+            "version": "1.0*",
+            "removable": true
+        },
+        # Requires EPEL
+        "python-kombu": {
+            "version": "1.1*",
+            "removable": true
+        },
+        # Requires EPEL
+        "python-eventlet": {
+            "version": "0.9*",
+            "removable": true
+        },
+        # Requires EPEL
+        "python-sphinx": {
+            "version": "1.0.8*",
+            "removable": true
+        },
+        "Django": {
+            "version": "1.2*",
+            "removable": true
+        }
     }
 }
