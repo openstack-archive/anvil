@@ -40,6 +40,7 @@ LOG = logging.getLogger("devstack.progs.actions")
 _PKGR_MAP = {
     settings.UBUNTU11: apt.AptPackager,
     settings.RHEL6: yum.YumPackager,
+    settings.FEDORA16: yum.YumPackager,
 }
 
 # This is used to map an action to a useful string for

@@ -33,5 +33,19 @@
             "version": "6.2*",
             "removable": true
         }
+    },
+    "fedora-16": {
+        "lvm2": {
+            "version": "2.02*",
+            "removable": true
+        },
+        "scsi-target-utils": {
+            "version": "1.0*",
+            "removable": true
+        },
+        "iscsi-initiator-utils": {
+            "version": "6.2*",
+            "removable": true
+        }
     }
 }

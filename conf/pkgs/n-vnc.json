@@ -18,5 +18,11 @@
         #     "version": "1:1.5*",
         #     "removable": true
         # }
+    },
+    "fedora-16": {
+        "numpy": {
+            "version": "1.6*",
+            "removable": true
+        }
     }
 }
