@@ -16,12 +16,12 @@
 
 import getpass
 import grp
-import os
 import os.path
 import pwd
 import shutil
 import subprocess
 import tempfile
+import fileinput
 
 from devstack import env
 from devstack import exceptions as excp
@@ -263,7 +263,6 @@ def touch_file(fn, die_if_there=True, quiet=False, file_size=0):
 def load_file(fn, quiet=False):
     if not quiet:
         LOG.debug("Loading data from file %s", fn)
-    data = ""
     with open(fn, "r") as f:
         data = f.read()
     if not quiet:
@@ -303,7 +302,6 @@ def rmdir(path, quiet=True):
 
 def symlink(source, link):
     path = dirname(link)
-    file_ = basename(link)
     mkdirslist(path)
     LOG.debug("Creating symlink from %s => %s" % (link, source))
     os.symlink(source, link)
@@ -387,3 +385,28 @@ def unlink(path, ignore_errors=True):
             raise
         else:
             pass
+
+
+def move(src, dst):
+    shutil.move(src, dst)
+
+
+def chmod(fname, mode):
+    os.chmod(fname, mode)
+
+def replace_in_file(fname, search, replace):
+    # fileinput with inplace=1 moves file to tmp and redirects stdio to file
+    for line in fileinput.input(file, inplace=1):
+        if search in line:
+            line = line.replace(search, replace)
+        print line,
+
+
+def copy_replace_file(fsrc, fdst, map_):
+    files = mkdirslist(dirname(fdst))
+    with open(fdst, 'w') as fh:
+        for line in fileinput(fsrc):
+            for (k, v) in map_:
+                line = line.replace(k, v)
+            fh.write(line)
+    return files

@@ -545,7 +545,8 @@ class NovaConfigurator(object):
         if img_service.lower().find("glance") != -1:
             glance_api_server = self._getstr('glance_server')
             if not glance_api_server:
-                glance_api_server = "%s:%d" % (hostip, DEF_GLANCE_PORT)
+                glance_api_server = "%s:%d" % (self.cfg.get('host', 'ip'),
+                                               DEF_GLANCE_PORT)
             nova_conf.add('glance_api_servers', glance_api_server)
 
     def _configure_vnc(self, nova_conf):

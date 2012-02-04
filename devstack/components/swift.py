@@ -14,14 +14,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import os
-import os.path
-
 from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
-from devstack import utils
 
 LOG = logging.getLogger("devstack.components.swift")
 
@@ -82,6 +78,9 @@ class SwiftInstaller(comp.PythonInstallComponent):
     def _get_pkgs(self):
         return list(REQ_PKGS)
 
+    def _get_symlinks(self):
+        return {self.cfgdir: '/etc/swift'}
+
     def warm_configs(self):
         pws = ['service_token', 'swift_hash']
         for pw_key in pws:
@@ -91,25 +90,90 @@ class SwiftInstaller(comp.PythonInstallComponent):
         return {
             'USER': self.cfg.get('swift', 'swift_user'),
             'GROUP': self.cfg.get('swift', 'swift_group'),
-            'SWIFT_DATA_LOCATION': self.cfg.get('swift', 'data_location'),
+            'SWIFT_DATA_LOCATION': self.datadir,
             'SWIFT_CONFIG_LOCATION': self.cfgdir,
             'SERVICE_TOKEN': self.cfg.get('passwords', 'service_token'),
             'AUTH_SERVER': self.auth_server,
             'SWIFT_HASH': self.cfg.get('passwords', 'swift_hash'),
-            'NODE_PATH': '',
-            'BIND_PORT': '',
-            'LOG_FACILITY': '',
             'SWIFT_LOGDIR': self.logdir,
-            'SWIFT_PARTITION_POWER_SIZE': self.cfg.get('swift', 'partition_power_size')
+            'SWIFT_PARTITION_POWER_SIZE': self.cfg.get('swift',
+                                                       'partition_power_size')
             }
 
+    def __create_data_location(self):
+        self.fs_image = sh.joinpths(self.datadir, '/drives/images/swift.img')
+        sh.create_loopback_file(fname=self.fs_image,
+                                size=self.cfg.get('swift',
+                                                  'partition_power_size'),
+                                fs_type='xfs')
+        self.fs_dev = sh.joinpths(self.datadir, '/drives/sdb1')
+        sh.mount_loopback_file(self.fs_image, self.fs_dev, 'xfs',
+                               run_as_root=False)
+
+    def __create_node_config(self, node_number, port):
+        for type_ in ['object', 'container', 'account']:
+            sh.copy_replace_file(sh.joinpths(self.cfgdir, '%s-server.conf' % type_),
+                                 sh.joinpths(self.cfgdir, '%s-server/%d' % (type_, node_number)),
+                                 {
+                                  '%NODE_PATH%': sh.joinpths(self.datadir, str(node_number)),
+                                  '%BIND_PORT%': str(port),
+                                  '%LOG_FACILITY%': str(2 + node_number)
+                                 })
+            port += 1
+
+    def __create_nodes(self):
+        for i in range(1, 5):
+            sh.mkdirslist(sh.joinpths(self.fs_dev), '%d/node' % i)
+            sh.symlink(sh.joinpths(self.fs_dev, str(i)),
+                       sh.joinpths(self.datadir, str(i)))
+            self.__create_node_config(i, 6010 + (i - 1) * 5)
+
+    def __turn_on_rsync(self):
+        sh.symlink(sh.joinpths(self.cfgdir, RSYNC_CONF),
+                   sh.joinpths('/etc/rsyncd.conf'))
+        sh.replace_in_file('/etc/default/rsync',
+                           'RSYNC_ENABLE=false',
+                           'RSYNC_ENABLE=true')
+
+    def __create_log_dirs(self):
+        sh.mkdirslist(sh.joinpths(self.logdir, 'hourly'))
+        sh.symlink(sh.joinpths(self.cfgdir, SYSLOG_CONF),
+                   '/etc/rsyslog.d/10-swift.conf')
+
+    def __setup_binaries(self):
+        self.makerings_file = sh.joinpths(self.bindir, SWIFT_MAKERINGS)
+        sh.move(sh.joinpths(self.cfgdir, SWIFT_MAKERINGS),
+                self.makerings_file)
+        sh.chmod(self.makerings_file, 777)
+
+        self.startmain_file = sh.joinpths(self.bindir, SWIFT_STARTMAIN)
+        sh.move(sh.joinpths(self.cfgdir, SWIFT_STARTMAIN),
+                self.startmain_file)
+        sh.chmod(self.startmain_file, 777)
+
+    def __make_rings(self):
+        sh.execute(self.makerings_file)
+
     def _post_install(self):
-        pass
+        self.__create_data_location()
+        self.__create_nodes()
+        self.__turn_on_rsync()
+        self.__create_log_dirs()
+        self.__setup_binaries()
+        self.__make_rings()
 
 
 class SwiftRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
+        self.bindir = sh.joinpths(self.appdir, BIN_DIR)
+
+    def pre_start(self):
+        sh.execute('restart', 'rsyslog')
+        sh.execute('/etc/init.d/rsync', 'restart')
+
+    def post_start(self):
+        sh.execute(sh.joinpths(self.bindir, SWIFT_STARTMAIN))
 
 
 def describe(opts=None):
