@@ -281,7 +281,7 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
     #run anything before it gets going...
     _pre_run(action_name, root_dir=root_dir, pkg=pkg_manager, cfg=config)
 
-    LOG.info("Warming up your instance configurations.")
+    LOG.info("Warming up your instance configurations (ie so you won't be prompted later)")
     for component in component_order:
         base_inst = all_instances.get(component)
         if base_inst:
