@@ -330,6 +330,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         tgtfn = self._get_target_config_name(API_CONF)
         LOG.info("Writing conf to %s" % (tgtfn))
         LOG.info(nova_conf)
+        self.tracewriter.make_dir(sh.basename(tgtfn))
         sh.write_file(tgtfn, nova_conf)
         self.tracewriter.cfg_write(tgtfn)
 
@@ -487,18 +488,8 @@ class NovaConfigurator(object):
         #where our paste config is
         nova_conf.add('api_paste_config', self.paste_conf_fn)
 
-        #what image service we will use
-        img_service = self._getstr('img_service')
-        if not img_service:
-            img_service = DEF_IMAGE_SERVICE
-        nova_conf.add('image_service', img_service)
-
-        #TODO should these only happen if the img_service is actually glance...
-        #where is glance located?
-        glance_api_server = self._getstr('glance_server')
-        if not glance_api_server:
-            glance_api_server = "%s:%d" % (hostip, DEF_GLANCE_PORT)
-        nova_conf.add('glance_api_servers', glance_api_server)
+        #what our imaging service will be
+        self._configure_image_service(nova_conf)
 
         #ec2 / s3 stuff
         ec2_dmz_host = self._getstr('ec2_dmz_host')
@@ -512,7 +503,7 @@ class NovaConfigurator(object):
         nova_conf.add('rabbit_password', self.cfg.get("passwords", "rabbit"))
 
         #where instances will be stored
-        instances_path = self._getstr('instances_path') 
+        instances_path = self._getstr('instances_path')
         if not instances_path:
             instances_path = sh.joinpths(self.component_root, 'instances')
         self._configure_instances_path(instances_path, nova_conf)
@@ -532,11 +523,25 @@ class NovaConfigurator(object):
 
         #add any extra flags in?
         extra_flags = self._getstr('extra_flags')
-        if extra_flags and len(extra_flags):
+        if extra_flags:
             full_file = [complete_file, extra_flags]
             complete_file = utils.joinlinesep(*full_file)
 
         return complete_file
+
+    def _configure_image_service(self, nova_conf):
+        #what image service we will use
+        img_service = self._getstr('img_service')
+        if not img_service:
+            img_service = DEF_IMAGE_SERVICE
+        nova_conf.add('image_service', img_service)
+
+        #where is glance located?
+        if img_service.lower().find("glance") != -1:
+            glance_api_server = self._getstr('glance_server')
+            if not glance_api_server:
+                glance_api_server = "%s:%d" % (hostip, DEF_GLANCE_PORT)
+            nova_conf.add('glance_api_servers', glance_api_server)
 
     def _configure_vnc(self, nova_conf):
         if settings.NOVNC in self.instances:
@@ -580,11 +585,11 @@ class NovaConfigurator(object):
         else:
             nova_conf.add('network_manager', NET_MANAGER_TEMPLATE % (self._getstr('network_manager')))
 
-        #dhcp bridge stuff
+        #dhcp bridge stuff???
         flag_conf_fn = sh.joinpths(component_dirs.get('cfg'), API_CONF)
         nova_conf.add('dhcpbridge_flagfile', flag_conf_fn)
 
-        #whats the network fixed range?
+        #Network prefix for the IP network that all the projects for future VM guests reside on. Example: 192.168.0.0/12
         nova_conf.add('fixed_range', self._getstr('fixed_range'))
 
         # The value for vlan_interface may default to the the current value
@@ -593,10 +598,19 @@ class NovaConfigurator(object):
         vlan_interface = self._getstr('vlan_interface')
         if not vlan_interface:
             vlan_interface = public_interface
+
+        #do a little check to make sure actually have that interface set...
+        known_interfaces = utils.get_interfaces()
+        if not public_interface in known_interfaces:
+            msg = "Public interface %s is not a known interface" % (public_interface)
+            raise exceptions.ConfigException(msg)
+        if not vlan_interface in known_interfaces:
+            msg = "VLAN interface %s is not a known interface" % (vlan_interface)
+            raise exceptions.ConfigException(msg)
         nova_conf.add('public_interface', public_interface)
         nova_conf.add('vlan_interface', vlan_interface)
 
-        #??
+        #This forces dnsmasq to update its leases table when an instance is terminated.
         nova_conf.add_simple('force_dhcp_release')
 
     def _configure_syslog(self, nova_conf):
