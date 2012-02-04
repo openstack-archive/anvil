@@ -95,7 +95,6 @@ def main():
     opts = dict()
     opts['components'] = options.component
     opts['action'] = options.action
-    utils.welcome(PROG_NAME)
     result = run(opts)
     if not result:
         return 1
