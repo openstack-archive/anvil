@@ -119,7 +119,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
     def _setup_data(self):
         LOG.info("Configuring data setup template %s.", MANAGE_DATA_CONF)
-        (src_fn, contents) = utils.load_template(self.component_name, MANAGE_DATA_CONF)
+        (_, contents) = utils.load_template(self.component_name, MANAGE_DATA_CONF)
         params = self._get_param_map(MANAGE_DATA_CONF)
         contents = utils.param_replace(contents, params, True)
         tgt_fn = sh.joinpths(self.bindir, MANAGE_DATA_CONF)
