@@ -25,6 +25,8 @@ from devstack.components import glance
 from devstack.components import horizon
 from devstack.components import keystone
 from devstack.components import keystone_client
+from devstack.components import melange
+from devstack.components import melange_client
 from devstack.components import nova
 from devstack.components import nova_client
 from devstack.components import novnc
@@ -37,66 +39,59 @@ from devstack.components import swift_keystone
 # This determines what classes to use to install/uninstall/...
 ACTION_CLASSES = {
     settings.INSTALL: {
-        settings.NOVA: nova.NovaInstaller,
+        settings.DB: db.DBInstaller,
         settings.GLANCE: glance.GlanceInstaller,
-        settings.QUANTUM: quantum.QuantumInstaller,
-        settings.SWIFT: swift.SwiftInstaller,
-        settings.SWIFT_KEYSTONE: swift_keystone.SwiftKeystoneInstaller,
         settings.HORIZON: horizon.HorizonInstaller,
         settings.KEYSTONE: keystone.KeystoneInstaller,
-        settings.DB: db.DBInstaller,
-        settings.RABBIT: rabbit.RabbitInstaller,
         settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientInstaller,
+        settings.MELANGE: melange.MelangeInstaller,
+        settings.MELANGE_CLIENT: melange_client.MelangeClientInstaller,
+        settings.NOVA: nova.NovaInstaller,
         settings.NOVA_CLIENT: nova_client.NovaClientInstaller,
         settings.NOVNC: novnc.NoVNCInstaller,
+        settings.QUANTUM: quantum.QuantumInstaller,
         settings.QUANTUM_CLIENT: quantum_client.QuantumClientInstaller,
+        settings.RABBIT: rabbit.RabbitInstaller,
+        settings.SWIFT: swift.SwiftInstaller,
+        settings.SWIFT_KEYSTONE: swift_keystone.SwiftKeystoneInstaller,
     },
     settings.UNINSTALL: {
-        settings.NOVA: nova.NovaUninstaller,
+        settings.DB: db.DBUninstaller,
         settings.GLANCE: glance.GlanceUninstaller,
-        settings.QUANTUM: quantum.QuantumUninstaller,
-        settings.SWIFT: swift.SwiftUninstaller,
-        settings.SWIFT_KEYSTONE: swift_keystone.SwiftKeystoneUninstaller,
         settings.HORIZON: horizon.HorizonUninstaller,
         settings.KEYSTONE: keystone.KeystoneUninstaller,
-        settings.DB: db.DBUninstaller,
-        settings.RABBIT: rabbit.RabbitUninstaller,
         settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientUninstaller,
+        settings.MELANGE: melange.MelangeUninstaller,
+        settings.MELANGE_CLIENT: melange_client.MelangeClientUninstaller,
+        settings.NOVA: nova.NovaUninstaller,
         settings.NOVA_CLIENT: nova_client.NovaClientUninstaller,
         settings.NOVNC: novnc.NoVNCUninstaller,
+        settings.QUANTUM: quantum.QuantumUninstaller,
         settings.QUANTUM_CLIENT: quantum_client.QuantumClientUninstaller,
+        settings.RABBIT: rabbit.RabbitUninstaller,
+        settings.SWIFT: swift.SwiftUninstaller,
+        settings.SWIFT_KEYSTONE: swift_keystone.SwiftKeystoneUninstaller,
     },
     settings.START: {
-        settings.NOVA: nova.NovaRuntime,
+        settings.DB: db.DBRuntime,
         settings.GLANCE: glance.GlanceRuntime,
-        settings.QUANTUM: quantum.QuantumRuntime,
-        settings.SWIFT: swift.SwiftRuntime,
-        settings.SWIFT_KEYSTONE: swift_keystone.SwiftKeystoneRuntime,
         settings.HORIZON: horizon.HorizonRuntime,
         settings.KEYSTONE: keystone.KeystoneRuntime,
-        settings.DB: db.DBRuntime,
-        settings.RABBIT: rabbit.RabbitRuntime,
         settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientRuntime,
+        settings.MELANGE: melange.MelangeRuntime,
+        settings.MELANGE_CLIENT: melange_client.MelangeClientRuntime,
+        settings.NOVA: nova.NovaRuntime,
         settings.NOVA_CLIENT: nova_client.NovaClientRuntime,
         settings.NOVNC: novnc.NoVNCRuntime,
-        settings.QUANTUM_CLIENT: quantum_client.QuantumClientRuntime,
-    },
-    settings.STOP: {
-        settings.NOVA: nova.NovaRuntime,
-        settings.GLANCE: glance.GlanceRuntime,
         settings.QUANTUM: quantum.QuantumRuntime,
+        settings.QUANTUM_CLIENT: quantum_client.QuantumClientRuntime,
+        settings.RABBIT: rabbit.RabbitRuntime,
         settings.SWIFT: swift.SwiftRuntime,
         settings.SWIFT_KEYSTONE: swift_keystone.SwiftKeystoneRuntime,
-        settings.HORIZON: horizon.HorizonRuntime,
-        settings.KEYSTONE: keystone.KeystoneRuntime,
-        settings.DB: db.DBRuntime,
-        settings.RABBIT: rabbit.RabbitRuntime,
-        settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientRuntime,
-        settings.NOVA_CLIENT: nova_client.NovaClientRuntime,
-        settings.NOVNC: novnc.NoVNCRuntime,
-        settings.QUANTUM_CLIENT: quantum_client.QuantumClientRuntime,
     },
 }
+
+ACTION_CLASSES[settings.STOP] = ACTION_CLASSES[settings.START]
 
 _FAKE_ROOT_DIR = tempfile.gettempdir()
 

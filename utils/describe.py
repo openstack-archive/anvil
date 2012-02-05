@@ -32,6 +32,8 @@ from devstack.components import glance
 from devstack.components import horizon
 from devstack.components import keystone
 from devstack.components import keystone_client
+from devstack.components import melange
+from devstack.components import melange_client
 from devstack.components import nova
 from devstack.components import nova_client
 from devstack.components import novnc
@@ -58,6 +60,8 @@ _DESCR_MAP = {
     settings.SWIFT_KEYSTONE: swift_keystone.describe,
     settings.NOVNC: novnc.describe,
     settings.QUANTUM_CLIENT: quantum_client.describe,
+    settings.MELANGE: melange.describe,
+    settings.MELANGE_CLIENT: melange_client.describe,
 }
 
 

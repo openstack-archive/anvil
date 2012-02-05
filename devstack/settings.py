@@ -48,6 +48,8 @@ DB = "db"
 RABBIT = "rabbit"
 NOVNC = 'novnc'
 XVNC = 'xvnc'
+MELANGE = 'melange'
+MELANGE_CLIENT = 'melange-client'
 COMPONENT_NAMES = [
     NOVA, NOVA_CLIENT,
     GLANCE,
@@ -58,6 +60,7 @@ COMPONENT_NAMES = [
     DB,
     RABBIT,
     NOVNC,
+    MELANGE, MELANGE_CLIENT,
 ]
 
 # When a component is asked for it may
@@ -80,6 +83,8 @@ COMPONENT_DEPENDENCIES = {
     QUANTUM: [DB, QUANTUM_CLIENT],
     NOVNC: [NOVA],
     QUANTUM_CLIENT: [],
+    MELANGE: [],
+    MELANGE_CLIENT: [],
 }
 
 # Default subdirs of a components root directory

@@ -70,11 +70,12 @@ class SwiftInstaller(comp.PythonInstallComponent):
         self.auth_server = 'keystone'
 
     def _get_download_locations(self):
-        return comp.PythonInstallComponent._get_download_locations(self) + [
-            {
+        places = list()
+        places.append({
                 'uri': ('git', 'swift_repo'),
                 'branch': ('git', 'swift_branch')
-            }]
+            })
+        return places
 
     def _get_config_files(self):
         return list(CONFIGS)
