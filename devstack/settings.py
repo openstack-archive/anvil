@@ -70,8 +70,8 @@ COMPONENT_DEPENDENCIES = {
     GLANCE: [KEYSTONE, DB],
     KEYSTONE: [DB],
     NOVA: [KEYSTONE, GLANCE, DB, RABBIT, NOVA_CLIENT],
-    SWIFT: [],
-    SWIFT_KEYSTONE: [SWIFT],
+    SWIFT_KEYSTONE: [KEYSTONE_CLIENT],
+    SWIFT: [SWIFT_KEYSTONE],
     NOVA_CLIENT: [],
     HORIZON: [KEYSTONE_CLIENT, GLANCE, NOVA_CLIENT],
     #the db isn't always a dependency (depending on the quantum component to be activated)
