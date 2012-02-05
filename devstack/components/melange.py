@@ -14,6 +14,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import io
+
+from devstack import cfg
 from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
@@ -28,6 +31,24 @@ TYPE = settings.MELANGE
 #the pkg json files melange requires for installation
 REQ_PKGS = ['general.json']
 
+#this db will be dropped then created
+DB_NAME = 'melange'
+
+#subdirs of the checkout/download
+BIN_DIR = 'bin'
+
+#configs
+ROOT_CONF = 'melange.conf.sample'
+ROOT_CONF_REAL_NAME = 'melange.conf'
+CONFIGS = [ROOT_CONF]
+CFG_LOC = ['etc', 'melange']
+
+#how we sync melange with the db
+DB_SYNC_CMD = [
+    {'cmd': ['%BINDIR%/melange-manage', '--config-file', '%CFGFILE%',
+             'db_sync']},
+]
+
 
 class MelangeUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -37,6 +58,7 @@ class MelangeUninstaller(comp.PythonUninstallComponent):
 class MelangeInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+        self.bindir = sh.joinpths(self.appdir, BIN_DIR)
 
     def _get_download_locations(self):
         places = list()
@@ -46,8 +68,62 @@ class MelangeInstaller(comp.PythonInstallComponent):
         })
         return places
 
+    def _setup_db(self):
+        LOG.info("Fixing up database named %s.", DB_NAME)
+        db.drop_db(self.cfg, DB_NAME)
+        db.create_db(self.cfg, DB_NAME)
+
     def _get_pkgs(self):
         return list(REQ_PKGS)
+
+    def post_install(self):
+        comp.PythonInstallComponent.post_install(self)
+        self._setup_db()
+        self._sync_db()
+
+    def _sync_db(self):
+        LOG.info("Syncing the database with melange.")
+        mp = dict()
+        mp['BINDIR'] = self.bindir
+        cfg_loc = [self.appdir] + CFG_LOC + [ROOT_CONF_REAL_NAME]
+        mp['CFGFILE'] = sh.joinpths(*cfg_loc)
+        utils.execute_template(*DB_SYNC_CMD, params=mp)
+
+    def _get_config_files(self):
+        return list(CONFIGS)
+
+    def _config_adjust(self, contents, config_fn):
+        if config_fn == ROOT_CONF:
+            newcontents = contents
+            with io.BytesIO(contents) as stream:
+                config = cfg.IgnoreMissingConfigParser()
+                config.readfp(stream)
+                db_dsn = self.cfg.get_dbdsn(DB_NAME)
+                config.set('DEFAULT', 'sql_connection', db_dsn)
+                with io.BytesIO() as outputstream:
+                        config.write(outputstream)
+                        outputstream.flush()
+                        new_data = ['# Adjusted %s' % (config_fn), outputstream.getvalue()]
+                        #TODO can we write to contents here directly?
+                        newcontents = utils.joinlinesep(*new_data)
+            contents = newcontents
+        return contents
+
+    def _get_source_config(self, config_fn):
+        if config_fn == ROOT_CONF:
+            src_loc = [self.appdir] + CFG_LOC + [config_fn]
+            srcfn = sh.joinpths(*src_loc)
+            contents = sh.load_file(srcfn)
+            return (srcfn, contents)
+        else:
+            return comp.PkgInstallComponent._get_source_config(self, config_fn)
+
+    def _get_target_config_name(self, config_fn):
+        if config_fn == ROOT_CONF:
+            tgt_loc = [self.appdir] + CFG_LOC + [ROOT_CONF_REAL_NAME]
+            return sh.joinpths(*tgt_loc)
+        else:
+            return comp.PkgInstallComponent._get_target_config_name(self, config_fn)
 
 
 class MelangeRuntime(comp.EmptyRuntime):

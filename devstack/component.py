@@ -117,7 +117,6 @@ class PkgInstallComponent(ComponentBase):
             pkgnames = sorted(pkgs.keys())
             LOG.info("Installing packages (%s)." % (", ".join(pkgnames)))
             self.packager.install_batch(pkgs)
-            #add trace used to remove the pkgs
             for name in pkgnames:
                 self.tracewriter.package_install(name, pkgs.get(name))
         return self.tracedir
@@ -127,14 +126,12 @@ class PkgInstallComponent(ComponentBase):
         if pkgs:
             mp = self._get_param_map(None)
             self.packager.pre_install(pkgs, mp)
-        return self.tracedir
 
     def post_install(self):
         pkgs = self._get_pkgs_expanded()
         if pkgs:
             mp = self._get_param_map(None)
             self.packager.post_install(pkgs, mp)
-        return self.tracedir
 
     def _get_config_files(self):
         return list()

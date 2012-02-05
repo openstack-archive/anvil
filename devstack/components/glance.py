@@ -105,9 +105,8 @@ class GlanceInstaller(comp.PythonInstallComponent):
         return list(REQ_PKGS)
 
     def post_install(self):
-        parent_result = comp.PythonInstallComponent.post_install(self)
+        comp.PythonInstallComponent.post_install(self)
         self._setup_db()
-        return parent_result
 
     def _setup_db(self):
         LOG.info("Fixing up database named %s.", DB_NAME)

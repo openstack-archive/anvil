@@ -83,9 +83,8 @@ class RabbitInstaller(comp.PkgInstallComponent):
         self.runtime.restart()
 
     def post_install(self):
-        parent_result = comp.PkgInstallComponent.post_install(self)
+        comp.PkgInstallComponent.post_install(self)
         self._setup_pw()
-        return parent_result
 
     def _get_pkgs(self):
         return list(REQ_PKGS)

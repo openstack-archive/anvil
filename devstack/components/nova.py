@@ -247,7 +247,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         utils.execute_template(*DB_SYNC_CMD, params=mp, tracewriter=self.tracewriter)
 
     def post_install(self):
-        parent_result = comp.PkgInstallComponent.post_install(self)
+        comp.PkgInstallComponent.post_install(self)
         #extra actions to do nova setup
         self._setup_db()
         self._sync_db()
@@ -257,7 +257,6 @@ class NovaInstaller(comp.PythonInstallComponent):
             # yes, either no subcomponents were specifically requested or it's
             # in the set that was requested
             self._setup_vol_groups()
-        return parent_result
 
     def _setup_db(self):
         LOG.info("Fixing up database named %s.", DB_NAME)

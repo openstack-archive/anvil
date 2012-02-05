@@ -182,12 +182,11 @@ class QuantumInstaller(comp.PkgInstallComponent):
             #TODO maybe have a trace that says we did this so that we can remove it on uninstall?
 
     def post_install(self):
-        parent_result = comp.PkgInstallComponent.post_install(self)
+        comp.PkgInstallComponent.post_install(self)
         if self.q_vswitch_service and settings.DB in self.instances:
             self._setup_db()
         if self.q_vswitch_agent:
             self._setup_bridge()
-        return parent_result
 
     def _setup_db(self):
         LOG.info("Fixing up database named %s.", DB_NAME)

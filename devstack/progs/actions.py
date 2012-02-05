@@ -159,9 +159,9 @@ def _install(component_name, instance):
     LOG.info("Pre-installing %s." % (component_name))
     instance.pre_install()
     LOG.info("Installing %s." % (component_name))
-    instance.install()
+    trace = instance.install()
     LOG.info("Post-installing %s." % (component_name))
-    trace = instance.post_install()
+    instance.post_install()
     if trace:
         LOG.info("Finished install of %s - check %s for traces of what happened." % (component_name, trace))
     else:

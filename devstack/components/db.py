@@ -156,7 +156,7 @@ class DBInstaller(comp.PkgInstallComponent):
         return list(REQ_PKGS)
 
     def post_install(self):
-        parent_result = comp.PkgInstallComponent.post_install(self)
+        comp.PkgInstallComponent.post_install(self)
 
         #fix up the db configs
         self._configure_db_confs()
@@ -204,8 +204,6 @@ class DBInstaller(comp.PkgInstallComponent):
                 #shell seems to be needed here
                 #since python escapes this to much...
                 utils.execute_template(*cmds, params=params, shell=True)
-
-        return parent_result
 
 
 class DBRuntime(comp.EmptyRuntime):

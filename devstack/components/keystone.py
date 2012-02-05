@@ -94,11 +94,10 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         return {sh.joinpths(self.cfgdir, ROOT_CONF): '/etc/keystone/keystone.conf'}
 
     def post_install(self):
-        parent_result = comp.PythonInstallComponent.post_install(self)
+        comp.PythonInstallComponent.post_install(self)
         self._setup_db()
         self._sync_db()
         self._setup_data()
-        return parent_result
 
     def _sync_db(self):
         LOG.info("Syncing keystone to database named %s.", DB_NAME)

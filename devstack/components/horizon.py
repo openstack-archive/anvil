@@ -142,12 +142,11 @@ class HorizonInstaller(comp.PythonInstallComponent):
             sh.chown_r(path, uid, gid)
 
     def post_install(self):
-        parent_result = comp.PythonInstallComponent.post_install(self)
+        comp.PythonInstallComponent.post_install(self)
         self._fake_quantum()
         self._sync_db()
         self._setup_blackhole()
         self._ensure_db_access()
-        return parent_result
 
     def _get_apache_user_group(self):
         user = self.cfg.get('horizon', 'apache_user')
