@@ -33,6 +33,7 @@ RSYNC_CONF = 'rsyncd.conf'
 SYSLOG_CONF = 'rsyslog.conf'
 SWIFT_MAKERINGS = 'swift-remakerings'
 SWIFT_STARTMAIN = 'swift-startmain'
+SWIFT_INIT = 'swift-init'
 CONFIGS = [SWIFT_CONF, PROXY_SERVER_CONF, ACCOUNT_SERVER_CONF,
            CONTAINER_SERVER_CONF, OBJECT_SERVER_CONF, RSYNC_CONF,
            SYSLOG_CONF, SWIFT_MAKERINGS, SWIFT_STARTMAIN]
@@ -181,12 +182,16 @@ class SwiftRuntime(comp.PythonRuntime):
         comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
 
-    def pre_start(self):
+    def start(self):
         sh.execute('restart', 'rsyslog')
         sh.execute('/etc/init.d/rsync', 'restart')
+        sh.execute(sh.joinpths(self.bindir, SWIFT_INIT), 'all', 'start')
 
-    def post_start(self):
-        sh.execute(sh.joinpths(self.bindir, SWIFT_STARTMAIN))
+    def stop(self):
+        sh.execute(sh.joinpths(self.bindir, SWIFT_INIT), 'all', 'stop')
+
+    def restart(self):
+        sh.execute(sh.joinpths(self.bindir, SWIFT_INIT), 'all', 'restart')
 
 
 def describe(opts=None):
