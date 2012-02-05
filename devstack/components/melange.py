@@ -32,7 +32,7 @@ LOG = logging.getLogger("devstack.components.melange")
 TYPE = settings.MELANGE
 
 #the pkg json files melange requires for installation
-REQ_PKGS = ['general.json']
+REQ_PKGS = ['general.json', 'melange.json']
 
 #this db will be dropped then created
 DB_NAME = 'melange'
