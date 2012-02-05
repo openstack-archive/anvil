@@ -15,6 +15,7 @@
 #    under the License.
 
 import io
+import time
 
 from devstack import cfg
 from devstack import component as comp
@@ -22,6 +23,8 @@ from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
 from devstack import utils
+
+from devstack.components import db
 
 LOG = logging.getLogger("devstack.components.melange")
 
@@ -45,9 +48,23 @@ CFG_LOC = ['etc', 'melange']
 
 #how we sync melange with the db
 DB_SYNC_CMD = [
-    {'cmd': ['%BINDIR%/melange-manage', '--config-file', '%CFGFILE%',
+    {'cmd': ['%BINDIR%/melange-manage', '--config-file', '%CFG_FILE%',
              'db_sync']},
 ]
+
+#???
+CIDR_CREATE_CMD = [
+    {'cmd': ['melange', 'mac_address_range', 'create', 'cidr', '%CIDR_RANGE%']},
+]
+
+#what to start
+APP_OPTIONS = {
+    'melange-server': ['--config-file', '%CFG_FILE%'],
+}
+
+#subcomponent that specifies we should make the network cidr using melange
+CREATE_CIDR = "create-cidr"
+WAIT_ONLINE_TO = 5
 
 
 class MelangeUninstaller(comp.PythonUninstallComponent):
@@ -59,6 +76,7 @@ class MelangeInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
+        self.cfgdir = sh.joinpths(self.appdir, *CFG_LOC)
 
     def _get_download_locations(self):
         places = list()
@@ -85,8 +103,7 @@ class MelangeInstaller(comp.PythonInstallComponent):
         LOG.info("Syncing the database with melange.")
         mp = dict()
         mp['BINDIR'] = self.bindir
-        cfg_loc = [self.appdir] + CFG_LOC + [ROOT_CONF_REAL_NAME]
-        mp['CFGFILE'] = sh.joinpths(*cfg_loc)
+        mp['CFG_FILE'] = sh.joinpths(self.cfgdir, ROOT_CONF_REAL_NAME)
         utils.execute_template(*DB_SYNC_CMD, params=mp)
 
     def _get_config_files(self):
@@ -101,34 +118,60 @@ class MelangeInstaller(comp.PythonInstallComponent):
                 db_dsn = self.cfg.get_dbdsn(DB_NAME)
                 config.set('DEFAULT', 'sql_connection', db_dsn)
                 with io.BytesIO() as outputstream:
-                        config.write(outputstream)
-                        outputstream.flush()
-                        new_data = ['# Adjusted %s' % (config_fn), outputstream.getvalue()]
-                        #TODO can we write to contents here directly?
-                        newcontents = utils.joinlinesep(*new_data)
+                    config.write(outputstream)
+                    outputstream.flush()
+                    new_data = ['# Adjusted %s' % (config_fn), outputstream.getvalue()]
+                    #TODO can we write to contents here directly?
+                    newcontents = utils.joinlinesep(*new_data)
             contents = newcontents
         return contents
 
     def _get_source_config(self, config_fn):
         if config_fn == ROOT_CONF:
-            src_loc = [self.appdir] + CFG_LOC + [config_fn]
-            srcfn = sh.joinpths(*src_loc)
+            srcfn = sh.joinpths(self.cfgdir, config_fn)
             contents = sh.load_file(srcfn)
             return (srcfn, contents)
         else:
-            return comp.PkgInstallComponent._get_source_config(self, config_fn)
+            return comp.PythonInstallComponent._get_source_config(self, config_fn)
 
     def _get_target_config_name(self, config_fn):
         if config_fn == ROOT_CONF:
-            tgt_loc = [self.appdir] + CFG_LOC + [ROOT_CONF_REAL_NAME]
-            return sh.joinpths(*tgt_loc)
+            return sh.joinpths(self.cfgdir, ROOT_CONF_REAL_NAME)
         else:
-            return comp.PkgInstallComponent._get_target_config_name(self, config_fn)
+            return comp.PythonInstallComponent._get_target_config_name(self, config_fn)
 
 
-class MelangeRuntime(comp.EmptyRuntime):
+class MelangeRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
-        comp.EmptyRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
+        self.bindir = sh.joinpths(self.appdir, BIN_DIR)
+        self.cfgdir = sh.joinpths(self.appdir, *CFG_LOC)
+
+    def _get_apps_to_start(self):
+        apps = list()
+        for app_name in APP_OPTIONS.keys():
+            apps.append({
+                'name': app_name,
+                'path': sh.joinpths(self.bindir, app_name),
+            })
+        return apps
+
+    def _get_app_options(self, app):
+        return APP_OPTIONS.get(app)
+
+    def _get_param_map(self, app_name):
+        pmap = comp.PythonRuntime._get_param_map(self, app_name)
+        pmap['CFG_FILE'] = sh.joinpths(self.cfgdir, ROOT_CONF_REAL_NAME)
+        return pmap
+
+    def post_start(self):
+        comp.PythonRuntime.post_start(self)
+        if CREATE_CIDR in self.component_opts or not self.component_opts:
+            LOG.info("Waiting %s seconds so that the melange server can start up before cidr range creation." % (WAIT_ONLINE_TO))
+            time.sleep(WAIT_ONLINE_TO)
+            mp = dict()
+            mp['CIDR_RANGE'] = self.cfg.get('melange', 'm_mac_range')
+            utils.execute_template(*CIDR_CREATE_CMD, params=mp)
 
 
 def describe(opts=None):

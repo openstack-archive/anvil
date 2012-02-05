@@ -577,7 +577,6 @@ class NovaConfigurator(object):
 
     def _configure_network_settings(self, nova_conf, component_dirs):
         if settings.QUANTUM in self.instances:
-            #setup quantum config
             nova_conf.add('network_manager', QUANTUM_MANAGER)
             nova_conf.add('quantum_connection_host', self.cfg.get('quantum', 'q_host'))
             nova_conf.add('quantum_connection_port', self.cfg.get('quantum', 'q_port'))
@@ -587,6 +586,11 @@ class NovaConfigurator(object):
                         nova_conf.add_simple(key)
                     else:
                         nova_conf.add(key, value)
+            if settings.MELANGE_CLIENT in self.instances:
+                nova_conf.add('quantum_ipam_lib', 'nova.network.quantum.melange_ipam_lib')
+                nova_conf.add_simple('use_melange_mac_generation')
+                nova_conf.add('melange_host', self.cfg.get('melange', 'm_host'))
+                nova_conf.add('melange_port', self.cfg.get('melange', 'm_port'))
         else:
             nova_conf.add('network_manager', NET_MANAGER_TEMPLATE % (self._getstr('network_manager')))
 
