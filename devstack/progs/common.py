@@ -126,7 +126,7 @@ def get_default_components():
 
 def format_secs_taken(secs):
     output = "%.03f seconds" % (secs)
-    output += " or %.02f minutes" % (secs/60.0)
+    output += " or %.02f minutes" % (secs / 60.0)
     return output
 
 
@@ -138,6 +138,7 @@ def get_action_cls(action_name, component_name):
     if not cls:
         raise excp.StackException("Action %s has no class entry for component %s" % (action_name, component_name))
     return cls
+
 
 def get_config():
     cfg_fn = sh.canon_path(settings.STACK_CONFIG_LOCATION)
