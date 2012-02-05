@@ -48,8 +48,7 @@ CFG_LOC = ['etc', 'melange']
 
 #how we sync melange with the db
 DB_SYNC_CMD = [
-    {'cmd': ['%BINDIR%/melange-manage', '--config-file', '%CFG_FILE%',
-             'db_sync']},
+    {'cmd': ['%BINDIR%/melange-manage', '--config-file=%CFG_FILE%', 'db_sync']},
 ]
 
 #???
@@ -116,13 +115,15 @@ class MelangeInstaller(comp.PythonInstallComponent):
                 config = cfg.IgnoreMissingConfigParser()
                 config.readfp(stream)
                 db_dsn = self.cfg.get_dbdsn(DB_NAME)
-                config.set('DEFAULT', 'sql_connection', db_dsn)
-                with io.BytesIO() as outputstream:
-                    config.write(outputstream)
-                    outputstream.flush()
-                    new_data = ['# Adjusted %s' % (config_fn), outputstream.getvalue()]
-                    #TODO can we write to contents here directly?
-                    newcontents = utils.joinlinesep(*new_data)
+                old_dbsn = config.get('DEFAULT', 'sql_connection')
+                if db_dsn != old_dbsn:
+                    config.set('DEFAULT', 'sql_connection', db_dsn)
+                    with io.BytesIO() as outputstream:
+                        config.write(outputstream)
+                        outputstream.flush()
+                        new_data = ['# Adjusted %s' % (config_fn), outputstream.getvalue()]
+                        #TODO can we write to contents here directly?
+                        newcontents = utils.joinlinesep(*new_data)
             contents = newcontents
         return contents
 
