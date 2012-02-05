@@ -120,7 +120,8 @@ class SwiftInstaller(comp.PythonInstallComponent):
     def __create_node_config(self, node_number, port):
         for type_ in ['object', 'container', 'account']:
             sh.copy_replace_file(sh.joinpths(self.cfgdir, '%s-server.conf' % type_),
-                                 sh.joinpths(self.cfgdir, '%s-server/%d' % (type_, node_number)),
+                                 sh.joinpths(self.cfgdir, '%s-server/%d.conf' \
+                                                 % (type_, node_number)),
                                  {
                                   '%NODE_PATH%': sh.joinpths(self.datadir, str(node_number)),
                                   '%BIND_PORT%': str(port),
@@ -128,12 +129,17 @@ class SwiftInstaller(comp.PythonInstallComponent):
                                  })
             port += 1
 
+    def __delete_templates(self):
+        for type_ in ['object', 'container', 'account']:
+            sh.unlink(sh.joinpths(self.cfgdir, '%s-server.conf' % type_))
+
     def __create_nodes(self):
         for i in range(1, 5):
             sh.mkdirslist(sh.joinpths(self.fs_dev, '%d/node' % i))
             sh.symlink(sh.joinpths(self.fs_dev, str(i)),
                        sh.joinpths(self.datadir, str(i)))
             self.__create_node_config(i, 6010 + (i - 1) * 5)
+        self.__delete_templates()
 
     def __turn_on_rsync(self):
         sh.symlink(sh.joinpths(self.cfgdir, RSYNC_CONF),

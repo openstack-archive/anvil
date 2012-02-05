@@ -388,7 +388,8 @@ def _run_action(args):
         all_components_deps = common.get_components_deps(action, components)
         component_diff = set(all_components_deps.keys()).difference(components.keys())
         if component_diff:
-            LOG.info("Having to activate dependent components: [%s]" % (", ".join(sorted(component_diff))))
+            LOG.info("Having to activate dependent components: [%s]" \
+                         % (", ".join(sorted(component_diff))))
             for new_component in component_diff:
                 components[new_component] = list()
         component_order = utils.get_components_order(all_components_deps)
