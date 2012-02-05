@@ -81,7 +81,6 @@ def _get_pkg_manager(distro, keep_packages):
 
 def _pre_run(action_name, root_dir, pkg_manager, config, components):
     if action_name == settings.INSTALL:
-        root_dir = kargs.get("root_dir")
         if root_dir:
             sh.mkdir(root_dir)
 
