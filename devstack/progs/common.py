@@ -17,6 +17,7 @@
 import tempfile
 
 from devstack import cfg
+from devstack import exceptions as excp
 from devstack import settings
 from devstack import shell as sh
 
@@ -123,10 +124,20 @@ def get_default_components():
     return def_components
 
 
+def format_secs_taken(secs):
+    output = "%.03f seconds" % (secs)
+    output += " or %.02f minutes" % (secs/60.0)
+    return output
+
+
 def get_action_cls(action_name, component_name):
     action_cls_map = ACTION_CLASSES.get(action_name)
-    return action_cls_map.get(component_name)
-
+    if not action_cls_map:
+        raise excp.StackException("Action %s has no component to class mapping" % (action_name))
+    cls = action_cls_map.get(component_name)
+    if not cls:
+        raise excp.StackException("Action %s has no class entry for component %s" % (action_name, component_name))
+    return cls
 
 def get_config():
     cfg_fn = sh.canon_path(settings.STACK_CONFIG_LOCATION)
@@ -135,14 +146,16 @@ def get_config():
     return config_instance
 
 
-def get_components_deps(action_name, base_components):
+def get_components_deps(action_name, base_components, root_dir=None):
     all_components = dict()
     active_names = list(base_components)
+    if root_dir is None:
+        root_dir = _FAKE_ROOT_DIR
     while len(active_names):
         component = active_names.pop()
         component_opts = base_components.get(component) or list()
         cls = get_action_cls(action_name, component)
-        instance = cls(root=_FAKE_ROOT_DIR, opts=component_opts,
+        instance = cls(root=root_dir, opts=component_opts,
                         config=get_config())
         deps = instance.get_dependencies()
         if deps is None:

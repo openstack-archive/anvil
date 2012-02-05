@@ -244,9 +244,9 @@ class PythonInstallComponent(PkgInstallComponent):
         self._install_python_setups()
 
     def install(self):
-        parent_result = PkgInstallComponent.install(self)
+        trace_dir = PkgInstallComponent.install(self)
         self._python_install()
-        return parent_result
+        return trace_dir
 
 
 class PkgUninstallComponent(ComponentBase):
@@ -313,11 +313,9 @@ class PythonUninstallComponent(PkgUninstallComponent):
         PkgUninstallComponent.__init__(self, component_name, *args, **kargs)
 
     def uninstall(self):
-        self._uninstall_pkgs()
-        self._uninstall_pips()
-        self._uninstall_touched_files()
         self._uninstall_python()
-        self._uninstall_dirs()
+        self._uninstall_pips()
+        PkgUninstallComponent.uninstall(self)
 
     def _uninstall_pips(self):
         pips = self.tracereader.pips_installed()

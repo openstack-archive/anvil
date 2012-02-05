@@ -79,31 +79,30 @@ def _get_pkg_manager(distro, keep_packages):
     return cls(distro, keep_packages)
 
 
-def _pre_run(action_name, **kargs):
+def _pre_run(action_name, root_dir, pkg_manager, config, components):
     if action_name == settings.INSTALL:
         root_dir = kargs.get("root_dir")
         if root_dir:
             sh.mkdir(root_dir)
 
 
-def _post_run(action_name, **kargs):
-    secs_taken = kargs.get("time_taken")
-    if secs_taken != None:
-        LOG.info("It took %.03f seconds to complete action [%s]" % (secs_taken, action_name))
+def _post_run(action_name, root_dir, pkg_manager, config, components, time_taken, results):
+    LOG.info("It took (%s) to complete action [%s]" % (common.format_secs_taken(time_taken), action_name))
+    if results:
+        LOG.info('Check [%s] for traces of what happened.' % ", ".join(results))
+    #show any configs read/touched/used...
+    _print_cfgs(config, action_name)
     #try to remove the root - ok if this fails
     if action_name == settings.UNINSTALL:
-        root_dir = kargs.get("root_dir")
         if root_dir:
             sh.rmdir(root_dir)
     #mirror the output the old devstack was also giving
-    config = kargs.get("config")
-    actives = kargs.get("actives")
-    if action_name == settings.START and config and actives:
+    if action_name == settings.START:
         host_ip = config.get('host', 'ip')
-        if settings.HORIZON in actives:
+        if settings.HORIZON in components:
             port = config.get('horizon', 'port')
             LOG.info("Horizon should now be available at http://%s:%s/" % (host_ip, port))
-        if settings.KEYSTONE in actives:
+        if settings.KEYSTONE in components:
             shared_params = keystone.get_shared_params(config)
             msg = "Keystone is serving at {KEYSTONE_SERVICE_PROTOCOL}://{KEYSTONE_SERVICE_HOST}:{KEYSTONE_SERVICE_PORT}/v2.0/"
             LOG.info(msg.format(**shared_params))
@@ -129,7 +128,7 @@ def _print_cfgs(config_obj, action):
     full_cfgs = config_obj.configs_fetched
     db_dsns = config_obj.db_dsns
     if passwords_gotten or full_cfgs or db_dsns:
-        LOG.info("After action (%s) your settings are:" % (action))
+        LOG.info("After action [%s] your settings which were created or read are:" % (action))
         if passwords_gotten:
             LOG.info("Passwords:")
             map_print(passwords_gotten)
@@ -260,17 +259,13 @@ def _instanciate_components(action_name, components, distro, pkg_manager, config
 def _run_components(action_name, component_order, components, distro, root_dir, program_args):
     LOG.info("Will run action [%s] using root directory \"%s\"" % (action_name, root_dir))
     LOG.info("In the following order: %s" % ("->".join(component_order)))
-
     non_components = set(components.keys()).difference(set(component_order))
     if non_components:
         LOG.info("Using reference components (%s)" % (", ".join(sorted(non_components))))
-
-    pkg_manager = _get_pkg_manager(distro, program_args.pop('keep_packages', True))
+    #get the package manager + config
+    pkg_manager = _get_pkg_manager(distro, program_args.get('keep_packages', True))
     config = common.get_config()
-
     #form the active instances (this includes ones we won't use)
-    start_time = time.time()
-
     (all_instances, prerequisite_instances) = _instanciate_components(action_name,
                                                               components,
                                                               distro,
@@ -279,8 +274,8 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
                                                               root_dir)
 
     #run anything before it gets going...
-    _pre_run(action_name, root_dir=root_dir, pkg=pkg_manager, cfg=config)
-
+    _pre_run(action_name, root_dir=root_dir, pkg_manager=pkg_manager,
+              config=config, components=components.keys())
     LOG.info("Warming up your component configurations (ie so you won't be prompted later)")
     for component in component_order:
         base_inst = all_instances.get(component)
@@ -290,18 +285,12 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
         if pre_inst:
             pre_inst.warm_configs()
     LOG.info("Your component configurations should now be nice and warm!")
-
-    c_str = 'components'
-    if len(component_order) == 1:
-        c_str = 'component'
-
-    LOG.info("Activating %s required to complete action %s." % (c_str, action_name))
-
+    LOG.info("Activating components required to complete action %s." % (action_name))
+    start_time = time.time()
     results = list()
     force = program_args.get('force', False)
     for component in component_order:
         instance = all_instances[component]
-
         #activate the correct function for the given action
         if action_name == settings.INSTALL:
             install_result = _install(component, instance)
@@ -311,17 +300,13 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
                     results += install_result
                 else:
                     results.append(str(install_result))
-
         elif action_name == settings.STOP:
             _stop(component, instance, force)
-
         elif action_name == settings.START:
-
             #do we need to activate an install prerequisite first???
             if component in prerequisite_instances:
                 install_instance = prerequisite_instances[component]
                 _install(component, install_instance)
-
             #now start it
             start_result = _start(component, instance)
             if start_result:
@@ -330,32 +315,21 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
                     results += start_result
                 else:
                     results.append(str(start_result))
-
         elif action_name == settings.UNINSTALL:
-
             #do we need to activate an uninstall prerequisite first???
             if component in prerequisite_instances:
                 stop_instance = prerequisite_instances[component]
                 _stop(component, stop_instance, force)
-
             _uninstall(component, instance, force)
-
     #make a nice rc file for u
     if not sh.exists(_RC_FILE) and action_name in _RC_FILE_MAKE_ACTIONS:
         LOG.info("Generating a file at [%s] that will contain your environment settings." % (_RC_FILE))
         env_gen.generate_local_rc(_RC_FILE, config)
-
     end_time = time.time()
-
-    #display any configs touched...
-    _print_cfgs(config, action_name)
-
     #any post run actions go now
-    _post_run(action_name, root_dir=root_dir, pkg=pkg_manager,
-              cfg=config, actives=components.keys(),
-              time_taken=(end_time - start_time))
-
-    return results
+    _post_run(action_name, root_dir=root_dir, pkg_manager=pkg_manager,
+              config=config, components=components.keys(),
+              time_taken=(end_time - start_time), results=results)
 
 
 def _run_action(args):
@@ -410,10 +384,8 @@ def _run_action(args):
             components[c] = ref_components.get(c)
     #now do it!
     LOG.info("Starting action [%s] on %s for distro [%s]" % (action, date.rcf8222date(), distro))
-    results = _run_components(action, component_order, components, distro, rootdir, args)
+    _run_components(action, component_order, components, distro, rootdir, args)
     LOG.info("Finished action [%s] on %s" % (action, date.rcf8222date()))
-    if results:
-        LOG.info('Check [%s] for traces of what happened.' % ", ".join(results))
     return True
 
 
