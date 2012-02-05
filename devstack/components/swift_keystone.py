@@ -28,18 +28,8 @@ LOG = logging.getLogger("devstack.components.swift_keystone")
 # id
 TYPE = settings.SWIFT_KEYSTONE
 
-# subdirs of the git checkout
-BIN_DIR = 'bin'
-CONFIG_DIR = 'etc'
-
-CONFIGS = []
-
-# what to start
-APP_OPTIONS = {
-}
-
 #the pkg json files swift_keystone requires for installation
-REQ_PKGS = ['general.json', 'swift.json']
+REQ_PKGS = ['general.json']
 
 
 class SwiftKeystoneUninstaller(comp.PythonUninstallComponent):
@@ -50,24 +40,17 @@ class SwiftKeystoneUninstaller(comp.PythonUninstallComponent):
 class SwiftKeystoneInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
-        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
-        self.bindir = sh.joinpths(self.appdir, BIN_DIR)
 
     def _get_download_locations(self):
-        return comp.PythonInstallComponent._get_download_locations(self) + [
-            {
+        places = list()
+        places.append({
                 'uri': ('git', 'swift_keystone_repo'),
-                'branch': ('git', 'swift_keystone_branch')
-            }]
-
-    def _get_config_files(self):
-        return list(CONFIGS)
+                'branch': ('git', 'swift_keystone_branch'),
+            })
+        return places
 
     def _get_pkgs(self):
         return list(REQ_PKGS)
-
-    def _post_install(self):
-        pass
 
 
 class SwiftKeystoneRuntime(comp.PythonRuntime):
