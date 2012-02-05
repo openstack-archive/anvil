@@ -59,6 +59,13 @@ class SwiftUninstaller(comp.PythonUninstallComponent):
 
     def pre_uninstall(self):
         sh.umount(sh.joinpths(self.datadir, 'drives/sdb1'))
+        sh.replace_in_file('/etc/default/rsync',
+                           'RSYNC_ENABLE=true',
+                           'RSYNC_ENABLE=false')
+
+    def post_uninstall(self):
+        sh.execute('restart', 'rsyslog')
+        sh.execute('/etc/init.d/rsync', 'restart')
 
 
 class SwiftInstaller(comp.PythonInstallComponent):
@@ -115,6 +122,7 @@ class SwiftInstaller(comp.PythonInstallComponent):
                                 size=int(self.cfg.get('swift',
                                                   'loopback_disk_size')),
                                 fs_type='xfs')
+        self.tracewriter.file_touched(self.fs_image)
         self.fs_dev = sh.joinpths(self.datadir, 'drives/sdb1/')
         sh.mount_loopback_file(self.fs_image, self.fs_dev, 'xfs',
                                run_as_root=False)
@@ -137,34 +145,37 @@ class SwiftInstaller(comp.PythonInstallComponent):
 
     def __create_nodes(self):
         for i in range(1, 5):
-            sh.mkdirslist(sh.joinpths(self.fs_dev, '%d/node' % i))
-            sh.symlink(sh.joinpths(self.fs_dev, str(i)),
-                       sh.joinpths(self.datadir, str(i)))
+            self.tracewriter.make_dir(sh.joinpths(self.fs_dev,
+                                                    '%d/node' % i))
+            self.tracewriter.symlink(sh.joinpths(self.fs_dev, str(i)),
+                                     sh.joinpths(self.datadir, str(i)))
             self.__create_node_config(i, 6010 + (i - 1) * 5)
         self.__delete_templates()
 
     def __turn_on_rsync(self):
-        sh.symlink(sh.joinpths(self.cfgdir, RSYNC_CONF),
-                   '/etc/rsyncd.conf')
+        self.tracewriter.symlink(sh.joinpths(self.cfgdir, RSYNC_CONF),
+                                 '/etc/rsyncd.conf')
         sh.replace_in_file('/etc/default/rsync',
                            'RSYNC_ENABLE=false',
                            'RSYNC_ENABLE=true')
 
     def __create_log_dirs(self):
-        sh.mkdirslist(sh.joinpths(self.logdir, 'hourly'))
-        sh.symlink(sh.joinpths(self.cfgdir, SYSLOG_CONF),
-                   '/etc/rsyslog.d/10-swift.conf')
+        self.tracewriter.make_dir(sh.joinpths(self.logdir, 'hourly'))
+        self.tracewriter.symlink(sh.joinpths(self.cfgdir, SYSLOG_CONF),
+                                 '/etc/rsyslog.d/10-swift.conf')
 
     def __setup_binaries(self):
         self.makerings_file = sh.joinpths(self.bindir, SWIFT_MAKERINGS)
         sh.move(sh.joinpths(self.cfgdir, SWIFT_MAKERINGS),
                 self.makerings_file)
         sh.chmod(self.makerings_file, 777)
+        self.tracewriter.file_touched(self.makerings_file)
 
         self.startmain_file = sh.joinpths(self.bindir, SWIFT_STARTMAIN)
         sh.move(sh.joinpths(self.cfgdir, SWIFT_STARTMAIN),
                 self.startmain_file)
         sh.chmod(self.startmain_file, 777)
+        self.tracewriter.file_touched(self.startmain_file)
 
     def __make_rings(self):
         sh.execute(self.makerings_file)

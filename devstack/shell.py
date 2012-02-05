@@ -382,8 +382,14 @@ def mount_loopback_file(fname, device_name, fs_type='ext3', run_as_root=True):
     return files
 
 
-def umount(dev_name, run_as_root=True):
-    execute('umount', dev_name, run_as_root=run_as_root)
+def umount(dev_name, run_as_root=True, ignore_errors=True):
+    try:
+        execute('umount', dev_name, run_as_root=run_as_root)
+    except excp.ProcessExecutionError:
+        if not ignore_errors:
+            raise
+        else:
+            pass
 
 
 def unlink(path, ignore_errors=True):
