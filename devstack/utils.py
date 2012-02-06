@@ -278,9 +278,9 @@ def param_replace(text, replacements, ignore_missing=False):
         return text
 
     if ignore_missing:
-        LOG.debug("Performing parameter replacements (ignoring missing) on %s" % (text))
+        LOG.debug("Performing parameter replacements (ignoring missing) on text [%s]" % (text))
     else:
-        LOG.debug("Performing parameter replacements (not ignoring missing) on %s" % (text))
+        LOG.debug("Performing parameter replacements (not ignoring missing) on text [%s]" % (text))
 
     def replacer(match):
         org = match.group(0)

@@ -36,7 +36,12 @@ DASH_NAME = 'dashboard'
 HORIZON_PY_CONF = "horizon_settings.py"
 HORIZON_PY_CONF_TGT = ['local', 'local_settings.py']
 HORIZON_APACHE_CONF = '000-default'
-HORIZON_APACHE_TGT = ['/', 'etc', 'apache2', 'sites-enabled', '000-default']
+
+#http://wiki.apache.org/httpd/DistrosDefaultLayout
+APACHE_CONF_TARGETS = {
+    settings.UBUNTU11: ['/', 'etc', 'apache2', 'sites-enabled', '000-default'],
+    settings.RHEL6: ['/', 'etc', 'httpd', 'conf.d', '__horizon-default.conf'],
+}
 CONFIGS = [HORIZON_PY_CONF, HORIZON_APACHE_CONF]
 
 #db sync that needs to happen for horizon
@@ -90,9 +95,9 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def _get_symlinks(self):
         src = self._get_target_config_name(HORIZON_APACHE_CONF)
-        tgt = sh.joinpths(*HORIZON_APACHE_TGT)
+        tgt = APACHE_CONF_TARGETS[self.distro]
         links = dict()
-        links[src] = tgt
+        links[src] = sh.joinpths(*tgt)
         return links
 
     def _check_ug(self):
@@ -206,7 +211,7 @@ class HorizonRuntime(comp.EmptyRuntime):
             return self.restart()
         else:
             mp = dict()
-            mp['SERVICE'] = APACHE_SVC_NAME.get(self.distro)
+            mp['SERVICE'] = APACHE_SVC_NAME[self.distro]
             cmds = list()
             cmds.append({
                 'cmd': APACHE_START_CMD,
@@ -219,7 +224,7 @@ class HorizonRuntime(comp.EmptyRuntime):
         curr_status = self.status()
         if curr_status == comp.STATUS_STARTED:
             mp = dict()
-            mp['SERVICE'] = APACHE_SVC_NAME.get(self.distro)
+            mp['SERVICE'] = APACHE_SVC_NAME[self.distro]
             cmds = list()
             cmds.append({
                 'cmd': APACHE_RESTART_CMD,
@@ -233,7 +238,7 @@ class HorizonRuntime(comp.EmptyRuntime):
         curr_status = self.status()
         if curr_status == comp.STATUS_STARTED:
             mp = dict()
-            mp['SERVICE'] = APACHE_SVC_NAME.get(self.distro)
+            mp['SERVICE'] = APACHE_SVC_NAME[self.distro]
             cmds = list()
             cmds.append({
                 'cmd': APACHE_STOP_CMD,
@@ -245,7 +250,7 @@ class HorizonRuntime(comp.EmptyRuntime):
 
     def status(self):
         mp = dict()
-        mp['SERVICE'] = APACHE_SVC_NAME.get(self.distro)
+        mp['SERVICE'] = APACHE_SVC_NAME[self.distro]
         cmds = list()
         cmds.append({
             'cmd': APACHE_STATUS_CMD,
@@ -254,7 +259,7 @@ class HorizonRuntime(comp.EmptyRuntime):
         (sysout, _) = run_result[0]
         if sysout.find("is running") != -1:
             return comp.STATUS_STARTED
-        elif sysout.find("NOT running") != -1:
+        elif sysout.find("NOT running") != -1 or sysout.find("stopped") != -1:
             return comp.STATUS_STOPPED
         else:
             return comp.STATUS_UNKNOWN
