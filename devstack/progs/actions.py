@@ -59,7 +59,7 @@ _NO_AUTO_STOP = [settings.DB, settings.RABBIT]
 
 # For these actions we will attempt to make an rc file if it does not exist
 _RC_FILE_MAKE_ACTIONS = [settings.INSTALL, settings.START]
-_RC_FILE = 'localrc'
+_RC_FILE = 'openstackrc'
 
 
 def _clean_action(action):
