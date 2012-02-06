@@ -18,6 +18,7 @@ import os
 import re
 import ConfigParser
 
+from devstack import date
 from devstack import env
 from devstack import exceptions as excp
 from devstack import log as logging
@@ -218,3 +219,15 @@ class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
             #not there so don't let the parent blowup
             return IgnoreMissingConfigParser.DEF_INT
         return ConfigParser.RawConfigParser.getint(self, section, option)
+
+
+def add_header(fn, contents):
+    lines = list()
+    lines.append('# Adjusted source file %s' % (fn.strip()))
+    lines.append("# On %s" % (date.rcf8222date()))
+    lines.append("# By user %s, group %s" % (sh.getuser(), sh.getgroupname()))
+    lines.append("# Comments may have been removed (TODO: darn python config writer)")
+    lines.append("")
+    if contents:
+        lines.append(contents)
+    return utils.joinlinesep(*lines)

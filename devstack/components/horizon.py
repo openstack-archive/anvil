@@ -17,6 +17,7 @@
 import os
 
 from devstack import component as comp
+from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
@@ -80,6 +81,16 @@ class HorizonInstaller(comp.PythonInstallComponent):
             'branch': ("git", "horizon_branch"),
         })
         return places
+
+    def pre_install(self):
+        (user, group) = self._get_apache_user_group()
+        if not sh.user_exists(user):
+            msg = "No user named %s exists on this system!" % (user)
+            raise excp.InstallException(msg)
+        if not sh.group_exists(group):
+            msg = "No group named %s exists on this system!" % (group)
+            raise excp.InstallException(msg)
+        comp.PythonInstallComponent.pre_install(self)
 
     def _get_pkgs(self):
         return list(REQ_PKGS)

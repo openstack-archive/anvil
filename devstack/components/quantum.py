@@ -130,13 +130,12 @@ class QuantumInstaller(comp.PkgInstallComponent):
                 config = cfg.IgnoreMissingConfigParser()
                 config.readfp(stream)
                 provider = config.get("PLUGIN", "provider")
-                if provider and provider != V_PROVIDER:
+                if provider != V_PROVIDER:
                     config.set("PLUGIN", "provider", V_PROVIDER)
                     with io.BytesIO() as outputstream:
                         config.write(outputstream)
                         outputstream.flush()
-                        #TODO can we write to contents here directly?
-                        newcontents = outputstream.getvalue()
+                        newcontents = cfg.add_header(confin_fn, outputstream.getvalue())
             return newcontents
         elif config_fn == AGENT_CONF and self.q_vswitch_agent:
             #Need to adjust the sql connection
@@ -152,8 +151,7 @@ class QuantumInstaller(comp.PkgInstallComponent):
                         with io.BytesIO() as outputstream:
                             config.write(outputstream)
                             outputstream.flush()
-                            #TODO can we write to contents here directly?
-                            newcontents = outputstream.getvalue()
+                            newcontents = cfg.add_header(confin_fn, outputstream.getvalue())
             return newcontents
         else:
             return comp.PkgInstallComponent._config_adjust(self, contents, config_fn)
