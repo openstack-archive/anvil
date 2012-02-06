@@ -73,6 +73,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.horizon_dir = sh.joinpths(self.appdir, ROOT_HORIZON)
         self.dash_dir = sh.joinpths(self.appdir, ROOT_DASH)
+        self._check_ug()
 
     def _get_download_locations(self):
         places = list()
@@ -82,15 +83,14 @@ class HorizonInstaller(comp.PythonInstallComponent):
         })
         return places
 
-    def pre_install(self):
+    def _check_ug(self):
         (user, group) = self._get_apache_user_group()
         if not sh.user_exists(user):
             msg = "No user named %s exists on this system!" % (user)
-            raise excp.InstallException(msg)
+            raise excp.ConfigException(msg)
         if not sh.group_exists(group):
             msg = "No group named %s exists on this system!" % (group)
-            raise excp.InstallException(msg)
-        comp.PythonInstallComponent.pre_install(self)
+            raise excp.ConfigException(msg)
 
     def _get_pkgs(self):
         return list(REQ_PKGS)
