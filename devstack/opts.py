@@ -24,16 +24,11 @@ from devstack import version
 
 HELP_WIDTH = 80
 LOG = logging.getLogger("devstack.opts")
-DEF_DIR_NAME = 'stack'
 
 
 def _format_list(in_list):
     sorted_list = sorted(in_list)
     return  "[" + ", ".join(sorted_list) + "]"
-
-
-def _get_def_dir():
-    return sh.joinpths(sh.gethomedir(), DEF_DIR_NAME)
 
 
 def parse():
@@ -59,8 +54,7 @@ def parse():
         dest="dir",
         metavar="DIR",
         help=("empty root DIR for install or "
-              "DIR with existing components for start/stop/uninstall (default: %default)"),
-        default=_get_def_dir())
+              "DIR with existing components for start/stop/uninstall"))
     base_group.add_option("-i", "--ignore-deps",
         action="store_false",
         dest="ensure_deps",

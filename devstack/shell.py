@@ -465,7 +465,7 @@ def replace_in_file(fname, search, replace, run_as_root=False):
         for line in fileinput.input(fname, inplace=1):
             if search in line:
                 line = line.replace(search, replace)
-                print line,
+                print line
     finally:
         if run_as_root:
             user_mode()
@@ -487,21 +487,25 @@ def got_root():
 
 def root_mode():
     try:
-        os.setreuid(0, 0)
-        os.setregid(0, 0)
+        #root uid/gid
+        uid_gid = (0, 0)
+        LOG.debug("Escalating permissions to (user=%s, group=%s)" % (uid_gid[0], uid_gid[1]))
+        os.setreuid(0, uid_gid[0])
+        os.setregid(0, uid_gid[1])
     except:
-        LOG.warn("Cannot turn on sudo mode")
+        LOG.warn("Cannot escalate permissions to (user=%s, group=%s)" % (uid_gid[0], uid_gid[1]))
 
 
 def user_mode():
-    sudo_uid = os.environ['SUDO_UID']
-    sudo_gid = os.environ['SUDO_GID']
-    if sudo_uid and sudo_gid:
+    sudo_uid = os.environ.get('SUDO_UID')
+    sudo_gid = os.environ.get('SUDO_GID')
+    if sudo_uid != None and sudo_gid != None:
         try:
+            LOG.debug("Dropping permissions to (user=%s, group=%s)" % (sudo_uid, sudo_gid))
             os.setregid(0, int(sudo_gid))
-            os.setreuid(0, int(sudo_gid))
+            os.setreuid(0, int(sudo_uid))
         except OSError:
-            LOG.warn("Cannot drop permissions to user")
+            LOG.warn("Cannot drop permissions to (user=%s, group=%s)" % (sudo_uid, sudo_gid))
 
 
 def geteuid():
