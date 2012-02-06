@@ -305,7 +305,7 @@ class PkgUninstallComponent(ComponentBase):
         if dirsmade:
             LOG.info("Removing %s created directories (%s)" % (len(dirsmade), ", ".join(dirsmade)))
             for dirname in dirsmade:
-                sh.deldir(dirname)
+                sh.deldir(dirname, run_as_root=True)
 
 
 class PythonUninstallComponent(PkgUninstallComponent):

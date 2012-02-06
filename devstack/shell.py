@@ -27,7 +27,6 @@ from devstack import env
 from devstack import exceptions as excp
 from devstack import log as logging
 
-ROOT_HELPER = ["sudo"]
 MKPW_CMD = ["openssl", 'rand', '-hex']
 PASS_ASK_ENV = 'PASS_ASK'
 LOG = logging.getLogger("devstack.shell")
@@ -52,8 +51,6 @@ def execute(*cmd, **kwargs):
     shell = kwargs.pop('shell', False)
 
     execute_cmd = list()
-    if run_as_root:
-        execute_cmd.extend(ROOT_HELPER)
 
     for c in cmd:
         execute_cmd.append(str(c))
@@ -98,27 +95,34 @@ def execute(*cmd, **kwargs):
         for (k, v) in env_overrides.items():
             process_env[k] = str(v)
 
-    obj = subprocess.Popen(execute_cmd,
-            stdin=stdin_fh,
-            stdout=stdout_fh,
-            stderr=stderr_fh,
-            close_fds=close_file_descriptors,
-            cwd=cwd,
-            shell=shell,
-            env=process_env)
+    try:
+        if run_as_root:
+            root_mode()
 
-    result = None
-    if process_input is not None:
-        result = obj.communicate(str(process_input))
-    else:
-        result = obj.communicate()
+        obj = subprocess.Popen(execute_cmd,
+                               stdin=stdin_fh,
+                               stdout=stdout_fh,
+                               stderr=stderr_fh,
+                               close_fds=close_file_descriptors,
+                               cwd=cwd,
+                               shell=shell,
+                               env=process_env)
 
-    if (stdin_fh != subprocess.PIPE
+        result = None
+        if process_input is not None:
+            result = obj.communicate(str(process_input))
+        else:
+            result = obj.communicate()
+
+        if (stdin_fh != subprocess.PIPE
             and obj.stdin and close_stdin):
-        obj.stdin.close()
+            obj.stdin.close()
 
-    rc = obj.returncode
-    LOG.debug('Cmd result had exit code: %s' % rc)
+        rc = obj.returncode
+        LOG.debug('Cmd result had exit code: %s' % rc)
+
+    finally:
+        user_mode()
 
     if (not ignore_exit_code) and (rc not in check_exit_code):
         (stdout, stderr) = result
@@ -185,18 +189,23 @@ def prompt_password(pw_prompt=None):
 
 
 def chown_r(path, uid, gid):
-    if(isdir(path)):
-        LOG.debug("Changing ownership of %s to %s:%s" % (path, uid, gid))
-        os.chown(path, uid, gid)
-        for root, dirs, files in os.walk(path):
-            os.chown(root, uid, gid)
-            LOG.debug("Changing ownership of %s to %s:%s" % (root, uid, gid))
-            for d in dirs:
-                os.chown(joinpths(root, d), uid, gid)
-                LOG.debug("Changing ownership of %s to %s:%s" % (joinpths(root, d), uid, gid))
-            for f in files:
-                os.chown(joinpths(root, f), uid, gid)
-                LOG.debug("Changing ownership of %s to %s:%s" % (joinpths(root, f), uid, gid))
+    try:
+        root_mode()
+
+        if(isdir(path)):
+            LOG.debug("Changing ownership of %s to %s:%s" % (path, uid, gid))
+            os.chown(path, uid, gid)
+            for root, dirs, files in os.walk(path):
+                os.chown(root, uid, gid)
+                LOG.debug("Changing ownership of %s to %s:%s" % (root, uid, gid))
+                for d in dirs:
+                    os.chown(joinpths(root, d), uid, gid)
+                    LOG.debug("Changing ownership of %s to %s:%s" % (joinpths(root, d), uid, gid))
+                for f in files:
+                    os.chown(joinpths(root, f), uid, gid)
+                    LOG.debug("Changing ownership of %s to %s:%s" % (joinpths(root, f), uid, gid))
+    finally:
+        user_mode()
 
 
 def password(prompt_=None, pw_len=8):
@@ -280,16 +289,25 @@ def mkdir(path, recurse=True):
             os.mkdir(path)
 
 
-def deldir(path):
-    if isdir(path):
-        LOG.debug("Recursively deleting directory tree starting at \"%s\"" % (path))
-        shutil.rmtree(path)
+def deldir(path, run_as_root=False):
+    try:
+        if run_as_root:
+            root_mode()
+
+        if isdir(path):
+            LOG.debug("Recursively deleting directory tree starting at \"%s\"" % (path))
+            shutil.rmtree(path)
+    finally:
+        user_mode()
 
 
-def rmdir(path, quiet=True):
+def rmdir(path, quiet=True, run_as_root=False):
     if not isdir(path):
         return
     try:
+        if run_as_root:
+            root_mode()
+
         LOG.debug("Deleting directory \"%s\" with the cavet that we will fail if it's not empty." % (path))
         os.rmdir(path)
         LOG.debug("Deleted directory \"%s\"" % (path))
@@ -298,15 +316,25 @@ def rmdir(path, quiet=True):
             raise
         else:
             pass
+    finally:
+        user_mode()
 
 
-def symlink(source, link, force=True):
-    path = dirname(link)
-    mkdirslist(path)
-    LOG.debug("Creating symlink from %s => %s" % (link, source))
-    if force and exists(link):
-        unlink(link, True)
-    os.symlink(source, link)
+def symlink(source, link, force=True, run_as_root=True):
+    try:
+        if run_as_root:
+            root_mode()
+
+        path = dirname(link)
+        mkdirslist(path)
+
+        LOG.debug("Creating symlink from %s => %s" % (link, source))
+        if force and exists(link):
+            unlink(link, True)
+        os.symlink(source, link)
+
+    finally:
+        user_mode()
 
 
 def exists(path):
@@ -354,6 +382,10 @@ def getuid(username):
     return uinfo.pw_uid
 
 
+def gethomedir():
+    return pwd.getpwuid(geteuid())[5]
+
+
 def getgid(groupname):
     grp_info = grp.getgrnam(groupname)
     return grp_info.gr_gid
@@ -386,21 +418,21 @@ def create_loopback_file(fname, size, bsize=1024, fs_type='ext3', run_as_root=Fa
     return files
 
 
-def mount_loopback_file(fname, device_name, fs_type='ext3', run_as_root=True):
+def mount_loopback_file(fname, device_name, fs_type='ext3'):
     mount_cmd = ['mount', '-t', fs_type, '-o',
                  'loop,noatime,nodiratime,nobarrier,logbufs=8', fname,
                  device_name]
 
     files = mkdirslist(dirname(device_name))
 
-    execute(*mount_cmd, run_as_root=run_as_root)
+    execute(*mount_cmd, run_as_root=True)
 
     return files
 
 
-def umount(dev_name, run_as_root=True, ignore_errors=True):
+def umount(dev_name, ignore_errors=True):
     try:
-        execute('umount', dev_name, run_as_root=run_as_root)
+        execute('umount', dev_name, run_as_root=True)
     except excp.ProcessExecutionError:
         if not ignore_errors:
             raise
@@ -427,12 +459,17 @@ def chmod(fname, mode):
     os.chmod(fname, mode)
 
 
-def replace_in_file(fname, search, replace):
-    # fileinput with inplace=1 moves file to tmp and redirects stdio to file
-    for line in fileinput.input(fname, inplace=1):
-        if search in line:
-            line = line.replace(search, replace)
-        print line,
+def replace_in_file(fname, search, replace, run_as_root=False):
+    try:
+        if run_as_root:
+            root_mode()
+        # fileinput with inplace=1 moves file to tmp and redirects stdio to file
+        for line in fileinput.input(fname, inplace=1):
+            if search in line:
+                line = line.replace(search, replace)
+                print line,
+    finally:
+        user_mode()
 
 
 def copy_replace_file(fsrc, fdst, map_):
@@ -443,3 +480,34 @@ def copy_replace_file(fsrc, fdst, map_):
                 line = line.replace(k, v)
             fh.write(line)
     return files
+
+
+def got_root():
+    return os.geteuid() == 0
+
+
+def root_mode():
+    try:
+        os.setreuid(0, 0)
+        os.setregid(0, 0)
+    except:
+        LOG.warn("Cannot turn on sudo mode")
+
+
+def user_mode():
+    sudo_uid = os.environ['SUDO_UID']
+    sudo_gid = os.environ['SUDO_GID']
+    if sudo_uid and sudo_gid:
+        try:
+            os.setregid(0, int(sudo_gid))
+            os.setreuid(0, int(sudo_gid))
+        except OSError:
+            LOG.warn("Cannot drop permissions to user")
+
+
+def geteuid():
+    return os.geteuid()
+
+
+def getegid():
+    return os.getegid()

@@ -94,7 +94,7 @@ def _post_run(action_name, root_dir, pkg_manager, config, components, time_taken
     #try to remove the root - ok if this fails
     if action_name == settings.UNINSTALL:
         if root_dir:
-            sh.rmdir(root_dir)
+            sh.rmdir(root_dir, run_as_root=True)
     #mirror the output the old devstack was also giving
     if action_name == settings.START:
         host_ip = config.get('host', 'ip')
