@@ -84,10 +84,11 @@ class HorizonInstaller(comp.PythonInstallComponent):
         return places
 
     def _get_symlinks(self):
-        return {
-            comp.PythonInstallComponent._get_target_config_name(self, HORIZON_APACHE_CONF):\
-                sh.joinpths(*HORIZON_APACHE_TGT)
-            }
+        src = self._get_target_config_name(HORIZON_APACHE_CONF)
+        tgt = sh.joinpths(*HORIZON_APACHE_TGT)
+        links = dict()
+        links[src] = tgt
+        return links
 
     def _check_ug(self):
         (user, group) = self._get_apache_user_group()

@@ -95,10 +95,11 @@ def execute(*cmd, **kwargs):
         for (k, v) in env_overrides.items():
             process_env[k] = str(v)
 
+    rc = None
+    result = None
     try:
         if run_as_root:
             root_mode()
-
         obj = subprocess.Popen(execute_cmd,
                                stdin=stdin_fh,
                                stdout=stdout_fh,
@@ -107,22 +108,19 @@ def execute(*cmd, **kwargs):
                                cwd=cwd,
                                shell=shell,
                                env=process_env)
-
         result = None
         if process_input is not None:
             result = obj.communicate(str(process_input))
         else:
             result = obj.communicate()
-
         if (stdin_fh != subprocess.PIPE
             and obj.stdin and close_stdin):
             obj.stdin.close()
-
         rc = obj.returncode
         LOG.debug('Cmd result had exit code: %s' % rc)
-
     finally:
-        user_mode()
+        if run_as_root:
+            user_mode()
 
     if (not ignore_exit_code) and (rc not in check_exit_code):
         (stdout, stderr) = result
@@ -188,10 +186,10 @@ def prompt_password(pw_prompt=None):
     return rc.strip()
 
 
-def chown_r(path, uid, gid):
+def chown_r(path, uid, gid, run_as_root=True):
     try:
-        root_mode()
-
+        if run_as_root:
+            root_mode()
         if(isdir(path)):
             LOG.debug("Changing ownership of %s to %s:%s" % (path, uid, gid))
             os.chown(path, uid, gid)
@@ -205,7 +203,8 @@ def chown_r(path, uid, gid):
                     os.chown(joinpths(root, f), uid, gid)
                     LOG.debug("Changing ownership of %s to %s:%s" % (joinpths(root, f), uid, gid))
     finally:
-        user_mode()
+        if run_as_root:
+            user_mode()
 
 
 def password(prompt_=None, pw_len=8):
@@ -293,12 +292,12 @@ def deldir(path, run_as_root=False):
     try:
         if run_as_root:
             root_mode()
-
         if isdir(path):
             LOG.debug("Recursively deleting directory tree starting at \"%s\"" % (path))
             shutil.rmtree(path)
     finally:
-        user_mode()
+        if run_as_root:
+            user_mode()
 
 
 def rmdir(path, quiet=True, run_as_root=False):
@@ -307,7 +306,6 @@ def rmdir(path, quiet=True, run_as_root=False):
     try:
         if run_as_root:
             root_mode()
-
         LOG.debug("Deleting directory \"%s\" with the cavet that we will fail if it's not empty." % (path))
         os.rmdir(path)
         LOG.debug("Deleted directory \"%s\"" % (path))
@@ -317,24 +315,23 @@ def rmdir(path, quiet=True, run_as_root=False):
         else:
             pass
     finally:
-        user_mode()
+        if run_as_root:
+            user_mode()
 
 
 def symlink(source, link, force=True, run_as_root=True):
     try:
         if run_as_root:
             root_mode()
-
         path = dirname(link)
         mkdirslist(path)
-
         LOG.debug("Creating symlink from %s => %s" % (link, source))
         if force and exists(link):
             unlink(link, True)
         os.symlink(source, link)
-
     finally:
-        user_mode()
+        if run_as_root:
+            user_mode()
 
 
 def exists(path):
@@ -383,7 +380,8 @@ def getuid(username):
 
 
 def gethomedir():
-    return pwd.getpwuid(geteuid())[5]
+    #TODO will just using os.path.expanduser("~") work??
+    return pwd.getpwuid(geteuid()).pw_dir
 
 
 def getgid(groupname):
@@ -469,7 +467,8 @@ def replace_in_file(fname, search, replace, run_as_root=False):
                 line = line.replace(search, replace)
                 print line,
     finally:
-        user_mode()
+        if run_as_root:
+            user_mode()
 
 
 def copy_replace_file(fsrc, fdst, map_):

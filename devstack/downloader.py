@@ -20,15 +20,29 @@ import re
 
 from devstack import log as logging
 from devstack import shell as sh
+from devstack import env
 
 LOG = logging.getLogger("devstack.downloader")
 EXT_REG = re.compile(r"^(.*?)\.git\s*$", re.IGNORECASE)
 GIT_MASTER_BRANCH = "master"
+GIT_CACHE_DIR_ENV = "GIT_CACHE_DIR"
+
+
+def _git_cache_download(storewhere, uri, branch=None):
+    cdir = env.get_key(GIT_CACHE_DIR_ENV)
+    if cdir and sh.isdir(cdir):
+        #TODO
+        pass
+    return False
 
 
 def _gitdownload(storewhere, uri, branch=None):
     dirsmade = sh.mkdirslist(storewhere)
     LOG.info("Downloading from %s to %s" % (uri, storewhere))
+    #check if already done
+    if _git_cache_download(storewhere, uri, branch):
+        return dirsmade
+    #have to do it...
     cmd = ["git", "clone"] + [uri, storewhere]
     sh.execute(*cmd)
     if branch and branch != GIT_MASTER_BRANCH:

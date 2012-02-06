@@ -24,6 +24,7 @@ from devstack import version
 
 HELP_WIDTH = 80
 LOG = logging.getLogger("devstack.opts")
+DEF_DIR_NAME = 'stack'
 
 
 def _format_list(in_list):
@@ -31,9 +32,12 @@ def _format_list(in_list):
     return  "[" + ", ".join(sorted_list) + "]"
 
 
+def _get_def_dir():
+    return sh.joinpths(sh.gethomedir(), DEF_DIR_NAME)
+
+
 def parse():
 
-    #version
     version_str = "%prog v" + version.version_string()
     help_formatter = IndentedHelpFormatter(width=HELP_WIDTH)
     parser = OptionParser(version=version_str, formatter=help_formatter)
@@ -55,8 +59,8 @@ def parse():
         dest="dir",
         metavar="DIR",
         help=("empty root DIR for install or "
-              "DIR with existing components for start/stop/uninstall"),
-        default='/opt/stack' if sh.geteuid() == 0 else sh.joinpths(sh.gethomedir(), 'stack'))
+              "DIR with existing components for start/stop/uninstall (default: %default)"),
+        default=_get_def_dir())
     base_group.add_option("-i", "--ignore-deps",
         action="store_false",
         dest="ensure_deps",
@@ -93,10 +97,7 @@ def parse():
     output['ref_components'] = options.r_component
     output['action'] = options.action
     output['force'] = options.force
-    if options.ensure_deps:
-        output['ignore_deps'] = False
-    else:
-        output['ignore_deps'] = True
+    output['ignore_deps'] = not options.ensure_deps
     output['keep_packages'] = options.keep_packages
     output['extras'] = args
     return output
