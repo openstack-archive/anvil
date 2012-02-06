@@ -91,6 +91,7 @@ class PkgInstallComponent(ComponentBase):
             if branch_tuple:
                 branch = self.cfg.get(branch_tuple[0], branch_tuple[1])
             uri = self.cfg.get(uri_tuple[0], uri_tuple[1])
+            self.tracewriter.downloaded(target_loc, uri)
             self.tracewriter.dir_made(*down.download(target_loc, uri, branch))
             self.tracewriter.downloaded(target_loc, uri)
         return len(locations)

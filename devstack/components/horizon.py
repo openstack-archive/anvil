@@ -46,10 +46,15 @@ DB_SYNC_CMD = ['python', 'manage.py', 'syncdb']
 BLACKHOLE_DIR = '.blackhole'
 
 #hopefully this will be distro independent ??
-APACHE_RESTART_CMD = ['service', 'apache2', 'restart']
-APACHE_START_CMD = ['service', 'apache2', 'start']
-APACHE_STOP_CMD = ['service', 'apache2', 'stop']
-APACHE_STATUS_CMD = ['service', 'apache2', 'status']
+#of course they aren't!
+APACHE_SVC_NAME = {
+    settings.RHEL6: 'httpd',
+    settings.UBUNTU11: 'apache2',
+}
+APACHE_RESTART_CMD = ['service', '%SERVICE%', 'restart']
+APACHE_START_CMD = ['service', '%SERVICE%', 'start']
+APACHE_STOP_CMD = ['service', '%SERVICE%', 'stop']
+APACHE_STATUS_CMD = ['service', '%SERVICE%', 'status']
 
 #users which apache may not like starting as
 BAD_APACHE_USERS = ['root']
@@ -198,32 +203,55 @@ class HorizonRuntime(comp.EmptyRuntime):
     def start(self):
         curr_status = self.status()
         if curr_status == comp.STATUS_STARTED:
-            #restart it ?
             return self.restart()
         else:
-            sh.execute(*APACHE_START_CMD,
-                run_as_root=True)
+            mp = dict()
+            mp['SERVICE'] = APACHE_SVC_NAME.get(self.distro)
+            cmds = list()
+            cmds.append({
+                'cmd': APACHE_START_CMD,
+                'run_as_root': True,
+            })
+            utils.execute_template(*cmds, params=mp)
             return 1
 
     def restart(self):
         curr_status = self.status()
         if curr_status == comp.STATUS_STARTED:
-            sh.execute(*APACHE_RESTART_CMD,
-                run_as_root=True)
+            mp = dict()
+            mp['SERVICE'] = APACHE_SVC_NAME.get(self.distro)
+            cmds = list()
+            cmds.append({
+                'cmd': APACHE_RESTART_CMD,
+                'run_as_root': True,
+            })
+            utils.execute_template(*cmds, params=mp)
             return 1
         return 0
 
     def stop(self):
         curr_status = self.status()
         if curr_status == comp.STATUS_STARTED:
-            sh.execute(*APACHE_STOP_CMD,
-                run_as_root=True)
+            mp = dict()
+            mp['SERVICE'] = APACHE_SVC_NAME.get(self.distro)
+            cmds = list()
+            cmds.append({
+                'cmd': APACHE_STOP_CMD,
+                'run_as_root': True,
+            })
+            utils.execute_template(*cmds, params=mp)
             return 1
         return 0
 
     def status(self):
-        (sysout, _) = sh.execute(*APACHE_STATUS_CMD,
-                            check_exit_code=False)
+        mp = dict()
+        mp['SERVICE'] = APACHE_SVC_NAME.get(self.distro)
+        cmds = list()
+        cmds.append({
+            'cmd': APACHE_STATUS_CMD,
+        })
+        run_result = utils.execute_template(*cmds, params=mp, check_exit_code=False)
+        (sysout, _) = run_result[0]
         if sysout.find("is running") != -1:
             return comp.STATUS_STARTED
         elif sysout.find("NOT running") != -1:
