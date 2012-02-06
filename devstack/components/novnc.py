@@ -34,7 +34,7 @@ VNC_PROXY_APP = 'nova-novncproxy'
 APP_OPTIONS = {
     #this reaches into the nova configuration file
     #TODO can we stop that?
-    VNC_PROXY_APP: ['--flagfile-file', '%NOVA_CONF%', '--web'],
+    VNC_PROXY_APP: ['--flagfile', '%NOVA_CONF%', '--web', '.'],
 }
 
 #the pkg json files novnc requires for installation
