@@ -31,7 +31,7 @@ TYPE = settings.DB
 
 #used for special setups
 MYSQL = 'mysql'
-START_WAIT_TIME = 10
+START_WAIT_TIME = 5
 DB_ACTIONS = {
     MYSQL: {
         # Of course these aren't distro independent...

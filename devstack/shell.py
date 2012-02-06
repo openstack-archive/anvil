@@ -30,6 +30,7 @@ from devstack import log as logging
 MKPW_CMD = ["openssl", 'rand', '-hex']
 PASS_ASK_ENV = 'PASS_ASK'
 LOG = logging.getLogger("devstack.shell")
+ROOT_USER = "root"
 
 
 def execute(*cmd, **kwargs):
@@ -486,9 +487,8 @@ def got_root():
 
 
 def root_mode():
+    uid_gid = (getuid(ROOT_USER), getgid(ROOT_USER))
     try:
-        #root uid/gid
-        uid_gid = (0, 0)
         LOG.debug("Escalating permissions to (user=%s, group=%s)" % (uid_gid[0], uid_gid[1]))
         os.setreuid(0, uid_gid[0])
         os.setregid(0, uid_gid[1])
