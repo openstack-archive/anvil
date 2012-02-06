@@ -121,9 +121,7 @@ class MelangeInstaller(comp.PythonInstallComponent):
                     with io.BytesIO() as outputstream:
                         config.write(outputstream)
                         outputstream.flush()
-                        new_data = ['# Adjusted %s' % (config_fn), outputstream.getvalue()]
-                        #TODO can we write to contents here directly?
-                        newcontents = utils.joinlinesep(*new_data)
+                        newcontents = cfg.add_header(config_fn, outputstream.getvalue())
             contents = newcontents
         return contents
 

@@ -327,8 +327,8 @@ class NovaInstaller(comp.PythonInstallComponent):
         conf_gen = NovaConfigurator(self)
         nova_conf = conf_gen.configure(component_dirs)
         tgtfn = self._get_target_config_name(API_CONF)
-        LOG.info("Writing conf to %s" % (tgtfn))
-        LOG.info(nova_conf)
+        LOG.info("Writing nova configuration to %s" % (tgtfn))
+        LOG.debug(nova_conf)
         self.tracewriter.make_dir(sh.dirname(tgtfn))
         sh.write_file(tgtfn, nova_conf)
         self.tracewriter.cfg_write(tgtfn)
@@ -350,9 +350,7 @@ class NovaInstaller(comp.PythonInstallComponent):
                     with io.BytesIO() as outputstream:
                         config.write(outputstream)
                         outputstream.flush()
-                        #TODO can we write to contents here directly?
-                        new_data = ['# Adjusted %s' % (config_fn), outputstream.getvalue()]
-                        newcontents = utils.joinlinesep(*new_data)
+                        newcontents = cfg.add_header(config_fn, outputstream.getvalue())
             contents = newcontents
         return contents
 

@@ -17,6 +17,7 @@
 import os
 
 from devstack import component as comp
+from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
@@ -72,6 +73,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.horizon_dir = sh.joinpths(self.appdir, ROOT_HORIZON)
         self.dash_dir = sh.joinpths(self.appdir, ROOT_DASH)
+        self._check_ug()
 
     def _get_download_locations(self):
         places = list()
@@ -86,6 +88,15 @@ class HorizonInstaller(comp.PythonInstallComponent):
             comp.PythonInstallComponent._get_target_config_name(self, HORIZON_APACHE_CONF):\
                 sh.joinpths(*HORIZON_APACHE_TGT)
             }
+
+    def _check_ug(self):
+        (user, group) = self._get_apache_user_group()
+        if not sh.user_exists(user):
+            msg = "No user named %s exists on this system!" % (user)
+            raise excp.ConfigException(msg)
+        if not sh.group_exists(group):
+            msg = "No group named %s exists on this system!" % (group)
+            raise excp.ConfigException(msg)
 
     def _get_pkgs(self):
         return list(REQ_PKGS)

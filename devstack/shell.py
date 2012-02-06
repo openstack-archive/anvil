@@ -357,6 +357,22 @@ def prompt(prompt_str):
     return raw_input(prompt_str)
 
 
+def user_exists(username):
+    all_users = pwd.getpwall()
+    for info in all_users:
+        if info.pw_name == username:
+            return True
+    return False
+
+
+def group_exists(grpname):
+    all_grps = grp.getgrall()
+    for info in all_grps:
+        if info.gr_name == grpname:
+            return True
+    return False
+
+
 def getuser():
     return getpass.getuser()
 
