@@ -26,9 +26,9 @@
         allow from all
     </Directory>
 
-    ErrorLog /var/log/apache2/error.log
+    ErrorLog %ERROR_LOG%
     LogLevel warn
-    CustomLog /var/log/apache2/access.log combined
+    CustomLog %ACCESS_LOG% combined
 
 </VirtualHost>
 

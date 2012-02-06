@@ -39,8 +39,8 @@ HORIZON_APACHE_CONF = '000-default'
 
 #http://wiki.apache.org/httpd/DistrosDefaultLayout
 APACHE_CONF_TARGETS = {
-    settings.UBUNTU11: ['/', 'etc', 'apache2', 'sites-enabled', '000-default'],
-    settings.RHEL6: ['/', 'etc', 'httpd', 'conf.d', '__horizon-default.conf'],
+    settings.UBUNTU11: '/etc/apache2/sites-enabled/000-default',
+    settings.RHEL6: '/etc/httpd/conf.d/__horizon-000-default.conf',
 }
 CONFIGS = [HORIZON_PY_CONF, HORIZON_APACHE_CONF]
 
@@ -60,6 +60,16 @@ APACHE_RESTART_CMD = ['service', '%SERVICE%', 'restart']
 APACHE_START_CMD = ['service', '%SERVICE%', 'start']
 APACHE_STOP_CMD = ['service', '%SERVICE%', 'stop']
 APACHE_STATUS_CMD = ['service', '%SERVICE%', 'status']
+APACHE_LOG_LOCATIONS = {
+    settings.RHEL6: {
+        'ERROR_LOG': '/var/log/httpd/error_log',
+        'ACCESS_LOG': '/var/log/httpd/access_log',
+    },
+    settings.UBUNTU11: {
+        'ERROR_LOG': '/var/log/apache2/error.log',
+        'ACCESS_LOG': '/var/log/apache2/access.log',
+    }
+}
 
 #users which apache may not like starting as
 BAD_APACHE_USERS = ['root']
@@ -95,9 +105,8 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def _get_symlinks(self):
         src = self._get_target_config_name(HORIZON_APACHE_CONF)
-        tgt = APACHE_CONF_TARGETS[self.distro]
         links = dict()
-        links[src] = sh.joinpths(*tgt)
+        links[src] = APACHE_CONF_TARGETS[self.distro]
         return links
 
     def _check_ug(self):
@@ -194,6 +203,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
             mp['GROUP'] = group
             mp['HORIZON_DIR'] = self.appdir
             mp['HORIZON_PORT'] = self.cfg.get('horizon', 'port')
+            mp.update(APACHE_LOG_LOCATIONS[self.distro])
         else:
             #Enable quantum in dashboard, if requested
             mp['QUANTUM_ENABLED'] = "%s" % (settings.QUANTUM in self.instances)
