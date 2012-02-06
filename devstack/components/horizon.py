@@ -81,6 +81,12 @@ class HorizonInstaller(comp.PythonInstallComponent):
         })
         return places
 
+    def _get_symlinks(self):
+        return {
+            comp.PythonInstallComponent._get_target_config_name(self, HORIZON_APACHE_CONF):\
+                sh.joinpths(*HORIZON_APACHE_TGT)
+            }
+
     def _get_pkgs(self):
         return list(REQ_PKGS)
 
@@ -90,9 +96,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
     def _get_target_config_name(self, config_name):
         if config_name == HORIZON_PY_CONF:
             return sh.joinpths(self.dash_dir, *HORIZON_PY_CONF_TGT)
-        elif config_name == HORIZON_APACHE_CONF:
-            #this may require sudo of the whole program to be able to write here.
-            return sh.joinpths(*HORIZON_APACHE_TGT)
         else:
             return comp.PythonInstallComponent._get_target_config_name(self, config_name)
 

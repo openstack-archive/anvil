@@ -17,6 +17,7 @@
 from optparse import IndentedHelpFormatter
 from optparse import OptionParser, OptionGroup
 
+from devstack import shell as sh
 from devstack import log as logging
 from devstack import settings
 from devstack import version
@@ -55,7 +56,7 @@ def parse():
         metavar="DIR",
         help=("empty root DIR for install or "
               "DIR with existing components for start/stop/uninstall"),
-        default='/opt/stack')
+        default='/opt/stack' if sh.geteuid() == 0 else sh.joinpths(sh.gethomedir(), 'stack'))
     base_group.add_option("-i", "--ignore-deps",
         action="store_false",
         dest="ensure_deps",

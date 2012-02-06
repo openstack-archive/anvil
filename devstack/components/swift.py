@@ -61,11 +61,12 @@ class SwiftUninstaller(comp.PythonUninstallComponent):
         sh.umount(sh.joinpths(self.datadir, 'drives/sdb1'))
         sh.replace_in_file('/etc/default/rsync',
                            'RSYNC_ENABLE=true',
-                           'RSYNC_ENABLE=false')
+                           'RSYNC_ENABLE=false',
+                           run_as_root=True)
 
     def post_uninstall(self):
-        sh.execute('restart', 'rsyslog')
-        sh.execute('/etc/init.d/rsync', 'restart')
+        sh.execute('restart', 'rsyslog', run_as_root=True)
+        sh.execute('/etc/init.d/rsync', 'restart', run_as_root=True)
 
 
 class SwiftInstaller(comp.PythonInstallComponent):
@@ -124,8 +125,8 @@ class SwiftInstaller(comp.PythonInstallComponent):
                                 fs_type='xfs')
         self.tracewriter.file_touched(self.fs_image)
         self.fs_dev = sh.joinpths(self.datadir, 'drives/sdb1/')
-        sh.mount_loopback_file(self.fs_image, self.fs_dev, 'xfs',
-                               run_as_root=False)
+        sh.mount_loopback_file(self.fs_image, self.fs_dev, 'xfs')
+        sh.chown_r(self.fs_dev, sh.geteuid(), sh.getegid())
 
     def __create_node_config(self, node_number, port):
         for type_ in ['object', 'container', 'account']:
@@ -157,7 +158,8 @@ class SwiftInstaller(comp.PythonInstallComponent):
                                  '/etc/rsyncd.conf')
         sh.replace_in_file('/etc/default/rsync',
                            'RSYNC_ENABLE=false',
-                           'RSYNC_ENABLE=true')
+                           'RSYNC_ENABLE=true',
+                           run_as_root=True)
 
     def __create_log_dirs(self):
         self.tracewriter.make_dir(sh.joinpths(self.logdir, 'hourly'))
@@ -178,7 +180,7 @@ class SwiftInstaller(comp.PythonInstallComponent):
         self.tracewriter.file_touched(self.startmain_file)
 
     def __make_rings(self):
-        sh.execute(self.makerings_file)
+        sh.execute(self.makerings_file, run_as_root=True)
 
     def post_install(self):
         self.__create_data_location()
@@ -195,15 +197,18 @@ class SwiftRuntime(comp.PythonRuntime):
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
 
     def start(self):
-        sh.execute('restart', 'rsyslog')
-        sh.execute('/etc/init.d/rsync', 'restart')
-        sh.execute(sh.joinpths(self.bindir, SWIFT_INIT), 'all', 'start')
+        sh.execute('restart', 'rsyslog', run_as_root=True)
+        sh.execute('/etc/init.d/rsync', 'restart', run_as_root=True)
+        sh.execute(sh.joinpths(self.bindir, SWIFT_INIT), 'all', 'start',
+                   run_as_root=True)
 
     def stop(self):
-        sh.execute(sh.joinpths(self.bindir, SWIFT_INIT), 'all', 'stop')
+        sh.execute(sh.joinpths(self.bindir, SWIFT_INIT), 'all', 'stop',
+                   run_as_root=True)
 
     def restart(self):
-        sh.execute(sh.joinpths(self.bindir, SWIFT_INIT), 'all', 'restart')
+        sh.execute(sh.joinpths(self.bindir, SWIFT_INIT), 'all', 'restart',
+                   run_as_root=True)
 
 
 def describe(opts=None):

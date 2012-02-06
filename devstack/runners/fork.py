@@ -71,33 +71,37 @@ class ForkRunner(object):
         return (killed, attempts)
 
     def stop(self, name, *args, **kargs):
-        trace_dir = kargs.get("trace_dir")
-        if not trace_dir or not sh.isdir(trace_dir):
-            msg = "No trace directory found from which to stop %s" % (name)
-            raise excp.StopException(msg)
-        fn_name = FORK_TEMPL % (name)
-        (pid_file, stderr_fn, stdout_fn) = self._form_file_names(trace_dir, fn_name)
-        trace_fn = tr.trace_fn(trace_dir, fn_name)
-        if sh.isfile(pid_file) and sh.isfile(trace_fn):
-            pid = int(sh.load_file(pid_file).strip())
-            (killed, attempts) = self._stop_pid(pid)
-            #trash the files
-            if killed:
-                LOG.info("Killed pid %s after %s attempts" % (pid, attempts))
-                LOG.info("Removing pid file %s" % (pid_file))
-                sh.unlink(pid_file)
-                LOG.info("Removing stderr file %s" % (stderr_fn))
-                sh.unlink(stderr_fn)
-                LOG.info("Removing stdout file %s" % (stdout_fn))
-                sh.unlink(stdout_fn)
-                LOG.info("Removing %s trace file %s" % (name, trace_fn))
-                sh.unlink(trace_fn)
-            else:
-                msg = "Could not stop %s after %s attempts" % (name, attempts)
+        try:
+            sh.root_mode()
+            trace_dir = kargs.get("trace_dir")
+            if not trace_dir or not sh.isdir(trace_dir):
+                msg = "No trace directory found from which to stop %s" % (name)
                 raise excp.StopException(msg)
-        else:
-            msg = "No pid or trace file could be found to stop %s in directory %s" % (name, trace_dir)
-            raise excp.StopException(msg)
+            fn_name = FORK_TEMPL % (name)
+            (pid_file, stderr_fn, stdout_fn) = self._form_file_names(trace_dir, fn_name)
+            trace_fn = tr.trace_fn(trace_dir, fn_name)
+            if sh.isfile(pid_file) and sh.isfile(trace_fn):
+                pid = int(sh.load_file(pid_file).strip())
+                (killed, attempts) = self._stop_pid(pid)
+                #trash the files
+                if killed:
+                    LOG.info("Killed pid %s after %s attempts" % (pid, attempts))
+                    LOG.info("Removing pid file %s" % (pid_file))
+                    sh.unlink(pid_file)
+                    LOG.info("Removing stderr file %s" % (stderr_fn))
+                    sh.unlink(stderr_fn)
+                    LOG.info("Removing stdout file %s" % (stdout_fn))
+                    sh.unlink(stdout_fn)
+                    LOG.info("Removing %s trace file %s" % (name, trace_fn))
+                    sh.unlink(trace_fn)
+                else:
+                    msg = "Could not stop %s after %s attempts" % (name, attempts)
+                    raise excp.StopException(msg)
+            else:
+                msg = "No pid or trace file could be found to stop %s in directory %s" % (name, trace_dir)
+                raise excp.StopException(msg)
+        finally:
+            sh.user_mode()
 
     def _form_file_names(self, tracedir, file_name):
         pidfile = sh.joinpths(tracedir, file_name + ".pid")
@@ -168,5 +172,9 @@ class ForkRunner(object):
         runtrace.trace(STDOUT_FN, stdoutfn)
         runtrace.trace(ARGS, json.dumps(args))
         LOG.info("Forking [%s] by running command [%s]" % (name, program))
-        self._fork_start(program, appdir, pidfile, stdoutfn, stderrfn, *args)
+        try:
+            sh.root_mode()
+            self._fork_start(program, appdir, pidfile, stdoutfn, stderrfn, *args)
+        finally:
+            sh.user_mode()
         return tracefn

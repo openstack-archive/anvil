@@ -32,14 +32,24 @@ logging.config.fileConfig(log_fn)
 #this handles our option parsing
 from devstack import opts
 from devstack import utils
+from devstack import shell as sh
 
 #these are the program runtimes that actually do the running
 from devstack.progs import actions
 
 
 def main():
+    # will need root to setup openstack
+    if not sh.got_root():
+        print("%s needs to run as root" % os.path.basename(sys.argv[0]))
+        return 1
+
+    # drop to usermode
+    sh.user_mode()
+
     args = opts.parse()
     try:
+        # now let's go
         started_ok = actions.run(args)
         if not started_ok:
             me = utils.color_text((os.path.basename(sys.argv[0])), "red", True)
