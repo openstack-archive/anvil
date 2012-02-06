@@ -157,7 +157,7 @@ SUB_COMPONENT_NAME_MAP = {
     NCERT: 'nova-cert',
     NSCHED: 'nova-scheduler',
     NCAUTH: 'nova-consoleauth',
-    NCAUTH: 'nova-xvpvncproxy',
+    NXVNC: 'nova-xvpvncproxy',
 }
 
 #subdirs of the checkout/download
