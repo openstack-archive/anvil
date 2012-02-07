@@ -42,19 +42,17 @@ ROOT_USER = 'root'
 
 
 def main():
-    #names!
-    prog_name = os.path.basename(sys.argv[0])
-    pretty_name = settings.PROG_NICE_NAME
 
     #do this first so people can see the help message...
     args = opts.parse()
+    prog_name = (sys.argv[0])
 
     #will need root to setup openstack
     if not sh.got_root():
-        msg = "%s needs to be ran as %s!" % (pretty_name, ROOT_USER)
-        print(utils.color_text(msg, 'red', True))
-        msg = "Perhaps you should try %s" % \
-                (utils.color_text("sudo %s" % (prog_name), "red", True))
+        rest_args = sys.argv[1:len(sys.argv)]
+        print("This program requires a user with sudo access.")
+        msg = "Perhaps you should try %s %s" % \
+                (utils.color_text("sudo %s" % (prog_name), "red", True), " ".join(rest_args))
         print(msg)
         return 1
 
