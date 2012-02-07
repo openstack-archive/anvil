@@ -158,6 +158,10 @@ def islink(path):
 def joinpths(*paths):
     return os.path.join(*paths)
 
+def _get_suids():
+    uid = os.environ.get('SUDO_UID')
+    gid = os.environ.get('SUDO_GID')
+    return (uid, gid)
 
 def _gen_password(pw_len):
     if pw_len <= 0:
@@ -372,12 +376,14 @@ def group_exists(grpname):
 
 
 def getuser():
-    return getpass.getuser()
+    (uid, _) = _get_suids()
+    if uid is None:
+        return getpass.getuser()
+    return pwd.getpwuid(int(uid)).pw_name
 
 
 def getuid(username):
-    uinfo = pwd.getpwnam(username)
-    return uinfo.pw_uid
+    return pwd.getpwnam(username).pw_uid
 
 
 def gethomedir():
@@ -386,15 +392,15 @@ def gethomedir():
 
 
 def getgid(groupname):
-    grp_info = grp.getgrnam(groupname)
-    return grp_info.gr_gid
+    return grp.getgrnam(groupname).gr_gid
 
 
-def getgroupname(gid=None):
+def getgroupname():
+    (_, gid) = _get_suids()
     if(gid is None):
-        gid = os.getgid()
-    gid_info = grp.getgrgid(gid)
-    return gid_info.gr_name
+        return os.getgid()
+    else:
+        return grp.getgrgid(int(gid)).gr_name
 
 
 def create_loopback_file(fname, size, bsize=1024, fs_type='ext3', run_as_root=False):
@@ -497,8 +503,7 @@ def root_mode():
 
 
 def user_mode():
-    sudo_uid = os.environ.get('SUDO_UID')
-    sudo_gid = os.environ.get('SUDO_GID')
+    (sudo_uid, sudo_gid) = _get_suids()
     if sudo_uid != None and sudo_gid != None:
         try:
             LOG.debug("Dropping permissions to (user=%s, group=%s)" % (sudo_uid, sudo_gid))

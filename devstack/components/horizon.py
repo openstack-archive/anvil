@@ -211,7 +211,8 @@ Group {group}
         self._sync_db()
         self._setup_blackhole()
         self._ensure_db_access()
-        if self.distro == settings.RHEL:
+        if self.distro == settings.RHEL6:
+            LOG.info("Performing rhel 6 horizon fixups.")
             self._rhel_fixups()
 
     def _get_apache_user_group(self):
