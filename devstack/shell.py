@@ -158,10 +158,12 @@ def islink(path):
 def joinpths(*paths):
     return os.path.join(*paths)
 
+
 def _get_suids():
     uid = os.environ.get('SUDO_UID')
     gid = os.environ.get('SUDO_GID')
     return (uid, gid)
+
 
 def _gen_password(pw_len):
     if pw_len <= 0:
