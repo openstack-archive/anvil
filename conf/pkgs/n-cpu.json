@@ -73,5 +73,35 @@
             "version": "0.9.4*",
             "removable": true
         }
+    },
+    "fedora-16": {
+        "lvm2": {
+            "version": "2.02*",
+            "removable": true
+        },
+        "iscsi-initiator-utils": {
+            "version": "6.2*",
+            "removable": true
+        },
+        "qemu-system-x86": {
+            "version": "0.15*",
+            "removable": true
+        },
+        "qemu-img":  {
+            "version": "0.15*",
+            "removable": true
+        },
+        "libvirt-python": {
+            "version": "0.9.6*",
+            "removable": true
+        },
+        "libvirt-client": {
+            "version": "0.9.6*",
+            "removable": true
+        },
+        "libvirt": {
+            "version": "0.9.6*",
+            "removable": true
+        }
     }
 }

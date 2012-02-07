@@ -152,5 +152,88 @@
             "version": "2.1*",
             "removable": false
         }
+    },
+    "fedora-16": {
+        "python-eventlet": {
+            "version": "0.9*",
+            "removable": true
+        },
+        "python-lxml": {
+            # Trashes IPA client, which is probably bad
+            "version": "2.3*",
+            "removable": true
+        },
+        "python-paste-script": {
+            "version": "1.7*",
+            "removable": true
+        },
+        "python-prettytable": {
+            "version": "0.5*",
+            "removable": true
+        },
+        "MySQL-python": {
+            "version": "1.2*",
+            "removable": true
+        },
+        "python-migrate": {
+            "version": "0.7*",
+            "removable": true
+        },
+        "python-paste-deploy": {
+            "version": "1.5*",
+            "removable": true
+        },
+        "python-paste": {
+            "version": "1.7.5*",
+            "removable": true
+        },
+        "sqlite": {
+            "version": "3.7*",
+            # Trashes alot of the base os (so we don't allow it to be removed)
+            "removable": false
+        },
+        "python-sqlite2": {
+            # This might be way to old :(
+            "version": "2.3*",
+            "removable": true
+        },
+        "python-sqlalchemy": {
+            "version": "0.7*",
+            "removable": true
+        },
+        "python-webob": {
+            "version": "1.0*",
+            "removable": true
+        },
+        "python-argparse": {
+            "version": "1.1*",
+            "removable": true
+        },
+        "python-greenlet": {
+            "version": "0.3.1*",
+            "removable": true
+        },
+        "python-routes": {
+            "version": "1.12*",
+            "removable": true
+        },
+        "python-passlib": {
+            "version": "1.5*",
+            "removable": true
+        },
+        # Is this right??
+        # This is for libldap2
+        "openldap": {
+            # Trashes alot of the base os (so we don't allow it to be removed)
+            "removable": false,
+            "version": "2.4*"
+        },
+        # Is this right??
+        # This is for libsasl2
+        "cyrus-sasl-lib": {
+            # Trashes alot of the base os (so we don't allow it to be removed)
+            "version": "2.1*",
+            "removable": false
+        }
     }
 }

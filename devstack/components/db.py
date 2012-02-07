@@ -48,6 +48,12 @@ DB_ACTIONS = {
                 'status': ["service", 'mysqld', "status"],
                 'restart': ["service", 'mysqld', "restart"],
             },
+            settings.FEDORA16: {
+                'start': ["service", "mysqld", 'start'],
+                'stop': ["service", 'mysqld', "stop"],
+                'status': ["service", 'mysqld', "status"],
+                'restart': ["service", 'mysqld', "restart"],
+            },
         },
         #modification commands
         'set_pwd': ['mysql', '-u', '%USER%', '--password=%OLD_PASSWORD%', '-e', ("\"USE mysql; UPDATE user SET "

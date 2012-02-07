@@ -27,6 +27,7 @@ PIP_INSTALL_CMD_OPTS = ['-q']
 #the pip command is named different :-(
 PIP_CMD_NAMES = {
     settings.RHEL6: 'pip-python',
+    settings.FEDORA16: 'pip-python',
     settings.UBUNTU11: 'pip',
 }
 

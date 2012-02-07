@@ -46,5 +46,16 @@
             "version": "5.1*",
             "removable": true
         }
+    },
+    "fedora-16": {
+        "mysql-server": {
+            "version": "5.5*",
+            "removable": true
+        },
+        #client pkgs are here
+        "mysql": {
+            "version": "5.5*",
+            "removable": true
+        }
     }
 }

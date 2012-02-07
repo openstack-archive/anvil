@@ -237,13 +237,136 @@
             "removable": false, 
             "version": "1.12*"
         },
-	"libxml2-dev": {
-	    "removable": false,
+        "libxml2-dev": {
+            "removable": false,
             "version": "2.7*"
-	},
-	"libxslt1-dev": {
-	    "removable": false,
-	    "version": "1.1.26*"
-	}
+        },
+        "libxslt1-dev": {
+            "removable": false,
+            "version": "1.1.26*"
+        }
+    },
+    "fedora-16": {
+        "curl": {
+            "removable": false, 
+            "version": "7.21.7*"
+        }, 
+        # Only for testing client
+        "euca2ools": {
+            "removable": false, 
+            # This version is most likely way to old!
+            "version": "1.3.1*"
+        }, 
+        "git": {
+            "removable": false, 
+            "version": "1.7*"
+        }, 
+        "gawk": {
+            "version": "4.0*",
+            "removable": false
+        },
+        "iputils": {
+            "removable": false, 
+            "version": "20101006*"
+        }, 
+        # Useful when debugging
+        "mlocate": {
+            "removable": false, 
+            "version": "0.24*"
+        }, 
+        # Useful when debugging
+        "lsof": {
+            "removable": false, 
+            "version": "4.84*"
+        }, 
+        "openssh-server": {
+            "removable": false, 
+            "version": "5.8*"
+        }, 
+        "python-pep8": {
+            "removable": false, 
+            "version": "0.6*"
+        }, 
+        "psmisc": {
+            "removable": false, 
+            "version": "22.13*"
+        }, 
+        "pylint": {
+            "removable": false, 
+            "version": "0.24*"
+        }, 
+        "python": {
+            "removable": false, 
+            "version": "2.7*"
+        }, 
+        # For testing
+        "python-coverage": {
+            "removable": true, 
+            "version": "3.5*"
+        }, 
+        "python-pip": {
+            "removable": false, 
+            "version": "0.8*"
+        }, 
+        # For testing
+        "python-unittest2": {
+            "removable": false, 
+            "version": "0.5.1*"
+        }, 
+        # For testing
+        "python-virtualenv": {
+            "removable": false, 
+            "version": "1.7*"
+        }, 
+        "python-setuptools": {
+            "version": "0.6.24*",
+            "removable": false
+        },
+        "python-distutils-extra": {
+            "version": "2.29*",
+            "removable": false
+        },
+        "python-devel": {
+            "version": "2.7*",
+            "removable": false
+        },
+        # For testing
+        "python-nose": {
+            "version": "1.1*",
+            "removable": true
+        },
+        # For testing
+        "python-mox": {
+            "version": "0.5.3*",
+            "removable": true
+        },
+        "screen": {
+            "removable": false, 
+            "version": "4.1.0*"
+        }, 
+        "sudo": {
+            "removable": false,
+            "version" : "1.8.3*"
+        },
+        "tcpdump": {
+            "removable": false, 
+            "version": "4.1*"
+        }, 
+        "unzip": {
+            "removable": false, 
+            "version": "6.0*"
+        }, 
+        "wget": {
+            "removable": false, 
+            "version": "1.12*"
+        },
+        "libxml2-devel": {
+            "removable": false,
+            "version": "2.7*"
+        },
+        "libxslt-devel": {
+            "removable": false,
+            "version": "1.1.26*"
+        }
     }
 }

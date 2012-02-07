@@ -15,5 +15,11 @@
             "version": "1.4*",
             "removable": false
         }
+    },
+    "fedora-16": {
+        "python-dateutil": {
+            "version": "1.5*",
+            "removable": false
+        }
     }
 }

@@ -42,6 +42,7 @@ APACHE_CONF_TARGETS = {
     settings.UBUNTU11: '/etc/apache2/sites-enabled/000-default',
     #ensure runs after wsgi.conf
     settings.RHEL6: '/etc/httpd/conf.d/wsgi-horizon-000-default.conf',
+    settings.FEDORA16: '/etc/httpd/conf.d/wsgi-horizon-000-default.conf',
 }
 CONFIGS = [HORIZON_PY_CONF, HORIZON_APACHE_CONF]
 

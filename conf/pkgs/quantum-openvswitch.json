@@ -26,4 +26,20 @@
     "rhel-6": {
         #TBD
     }
+    "fedora-16": {
+        # Not available yet
+#        "openvswitch": {
+#            "version": "1.4*",
+#            "removable": true
+#        },
+        # Seems needed for ovs_quantum_agent.py
+        "python-sqlalchemy": {
+            "version": "0.7*",
+            "removable": true
+        },
+        "MySQL-python": {
+            "version": "1.2*",
+            "removable": true
+        }
+    }
 }

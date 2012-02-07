@@ -49,5 +49,44 @@
     },
     "rhel-6": {
         # TBD
+    },
+    "fedora-16": {
+        # installed for swift-keystone
+        "memcached": {
+            "version": "1.4*",
+            "removable": true
+        },
+        "python-configobj": {
+            "version": "4.7*",
+            "removable": true
+        },
+        "python-eventlet": {
+            "version": "0.9*",
+            "removable": true
+        },
+        "python-greenlet": {
+            "version": "0.3*",
+            "removable": true
+        },
+        "python-netifaces": {
+            "version": "0.5*",
+            "removable": true
+        },
+        "python-paste-deploy": {
+            "version": "1.5*",
+            "removable": true
+        },
+        "python-webob": {
+            "version": "1.0*",
+            "removable": true
+        },
+        "pyxattr": {
+            "version": "0.5*",
+            "removable": true
+        },
+        "sqlite": {
+            "version": "3.7*",
+            "removable": true
+        }
     }
 }

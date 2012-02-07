@@ -21,6 +21,7 @@ import re
 # ie in the pkg/pip listings so update there also!
 UBUNTU11 = "ubuntu-oneiric"
 RHEL6 = "rhel-6"
+FEDORA16 = "fedora-16"
 
 # What this program is called
 PROG_NICE_NAME = "DEVSTACKpy"
@@ -111,4 +112,5 @@ STACK_CONFIG_LOCATION = os.path.join(STACK_CONFIG_DIR, "stack.ini")
 KNOWN_DISTROS = {
     UBUNTU11: re.compile(r'Ubuntu(.*)oneiric', re.IGNORECASE),
     RHEL6: re.compile(r'redhat-6\.2', re.IGNORECASE),
+    FEDORA16: re.compile(r'fedora-16', re.IGNORECASE),
 }
