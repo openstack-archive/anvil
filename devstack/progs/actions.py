@@ -210,11 +210,11 @@ def _uninstall(component_name, instance, skip_notrace):
     try:
         LOG.info("Unconfiguring %s." % (component_name))
         instance.unconfigure()
-        LOG.info("Pre-uninstall %s." % (component_name))
+        LOG.info("Pre-uninstalling %s." % (component_name))
         instance.pre_uninstall()
         LOG.info("Uninstalling %s." % (component_name))
         instance.uninstall()
-        LOG.info("Post-uninstall %s." % (component_name))
+        LOG.info("Post-uninstalling %s." % (component_name))
         instance.post_uninstall()
     except excp.NoTraceException:
         if skip_notrace:

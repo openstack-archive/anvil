@@ -32,6 +32,13 @@ def get():
     return dict(os.environ)
 
 
+def set(k, v):
+    #this is really screwy, python is really odd in this area
+    #from http://docs.python.org/library/os.html
+    if k is not None:
+        os.environ[str(k)] = str(v)
+
+
 def get_key(key, default_value=None):
     LOG.debug("Looking up environment variable \"%s\"" % (key))
     value = get().get(key)
