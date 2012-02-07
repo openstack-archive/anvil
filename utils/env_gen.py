@@ -144,17 +144,18 @@ def load_local_rc(fn=None, cfg=None):
         fn = DEF_FN
     if not cfg:
         cfg = common.get_config()
-
-    pattern = re.compile("^export (.*?)=(.*?)$")
+    pattern = re.compile("^export (.*?)=(.*?)$", re.IGNORECASE)
+    am_set = 0
     with open(fn, "r") as fh:
         for line in fh:
             m = pattern.search(line)
             if m:
                 var = m.group(1).strip()
                 value = m.group(2).strip()
-                if not var in os.environ:
+                if not var in os.environ and var and value:
                     os.environ[var] = value
-
+                    am_set += 1
+    return am_set
 
 def main():
     opts = optparse.OptionParser()

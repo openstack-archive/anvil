@@ -33,6 +33,7 @@ MYSQL = 'mysql'
 START_WAIT_TIME = 5
 
 #TODO maybe we should handle this differently in the future, blah
+#ie in a special set of classes (make this class abstract)...
 DB_ACTIONS = {
     MYSQL: {
         # Of course these aren't distro independent...
