@@ -40,7 +40,8 @@ HORIZON_APACHE_CONF = '000-default'
 #http://wiki.apache.org/httpd/DistrosDefaultLayout
 APACHE_CONF_TARGETS = {
     settings.UBUNTU11: '/etc/apache2/sites-enabled/000-default',
-    settings.RHEL6: '/etc/httpd/conf.d/__horizon-000-default.conf',
+    #ensure runs after wsgi.conf
+    settings.RHEL6: '/etc/httpd/conf.d/wsgi-horizon-000-default.conf',
 }
 CONFIGS = [HORIZON_PY_CONF, HORIZON_APACHE_CONF]
 
@@ -175,12 +176,43 @@ class HorizonInstaller(comp.PythonInstallComponent):
             gid = sh.getgid(group)
             sh.chown_r(path, uid, gid)
 
+    def _rhel_fixups(self):
+        #it seems like to get this to work
+        #we need to do some conf.d work which sort of sucks
+        #we need to make a file with the following
+        #WSGISocketPrefix /var/run/wsgi
+        #since it seems like we can not run without this
+        #then we need to adjust the apache user and group
+        #since the other components we just created
+        #aren't actually useable by anyone but this user (since we didn't run python setup.py install)
+        (user, group) = self._get_apache_user_group()
+        try:
+            sh.root_mode()
+            socket_conf = "/etc/httpd/conf.d/wsgi_socket_prefix.conf"
+            wsgi_socket_loc = "/var/run/wsgi"
+            self.tracewriter.make_dir(wsgi_socket_loc)
+            fc = "WSGISocketPrefix %s" % (wsgi_socket_loc)
+            sh.write_file(socket_conf, fc)
+            self.tracewriter.cfg_write(socket_conf)
+            #now write a file that changes the apache user and group ran with
+            user_conf = "/etc/httpd/conf.d/httpd_run_user.conf"
+            fc = '''
+            User {user}
+            Group {group}
+'''
+            sh.write_file(user_conf, fc.format(user=user, group=group))
+            self.tracewriter.cfg_write(user_conf)
+        finally:
+            sh.user_mode()
+
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
         self._fake_quantum()
         self._sync_db()
         self._setup_blackhole()
         self._ensure_db_access()
+        if self.distro == settings.RHEL:
+            self._rhel_fixups()
 
     def _get_apache_user_group(self):
         user = self.cfg.get('horizon', 'apache_user')
