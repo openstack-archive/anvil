@@ -20,10 +20,9 @@ from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 
-LOG = logging.getLogger("devstack.components.keystone_client")
-
 #id
 TYPE = settings.KEYSTONE_CLIENT
+LOG = logging.getLogger("devstack.components.keystone_client")
 
 #the pkg json files keystone client requires for installation
 REQ_PKGS = ['general.json', 'keystone-client.json']

@@ -25,6 +25,8 @@ from devstack import utils
 
 from devstack.components import db
 
+#id
+TYPE = settings.QUANTUM
 LOG = logging.getLogger("devstack.components.quantum")
 
 #vswitch pkgs
@@ -48,9 +50,6 @@ DB_NAME = 'ovs_quantum'
 OVS_BRIDGE_DEL = ['ovs-vsctl', '--no-wait', '--', '--if-exists', 'del-br', '%OVS_BRIDGE%']
 OVS_BRIDGE_ADD = ['ovs-vsctl', '--no-wait', 'add-br', '%OVS_BRIDGE%']
 OVS_BRIDGE_EXTERN_ID = ['ovs-vsctl', '--no-wait', 'br-set-external-id', '%OVS_BRIDGE%', 'bridge-id', '%OVS_EXTERNAL_ID%']
-
-#id
-TYPE = settings.QUANTUM
 
 #special component options
 QUANTUM_SERVICE = 'q-svc'

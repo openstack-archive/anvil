@@ -20,10 +20,9 @@ from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 
-LOG = logging.getLogger("devstack.components.nova_client")
-
 #id
 TYPE = settings.NOVA_CLIENT
+LOG = logging.getLogger("devstack.components.nova_client")
 
 #the pkg json files nova client requires for installation
 REQ_PKGS = ['general.json', 'nova-client.json']

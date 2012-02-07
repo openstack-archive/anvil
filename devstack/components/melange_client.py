@@ -20,10 +20,9 @@ from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 
-LOG = logging.getLogger("devstack.components.melange_client")
-
 #id
 TYPE = settings.MELANGE_CLIENT
+LOG = logging.getLogger("devstack.components.melange_client")
 
 #the pkg json files melange client requires for installation
 REQ_PKGS = ['general.json']

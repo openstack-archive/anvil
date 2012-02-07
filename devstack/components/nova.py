@@ -29,6 +29,9 @@ from devstack import utils
 from devstack.components import db
 from devstack.components import keystone
 
+
+#id
+TYPE = settings.NOVA
 LOG = logging.getLogger('devstack.components.nova')
 
 #special generatedconf
@@ -41,14 +44,13 @@ CONFIGS = [PASTE_CONF]
 #this db will be dropped then created
 DB_NAME = 'nova'
 
-#id
-TYPE = settings.NOVA
-
+#this makes the database be in sync with nova
 DB_SYNC_CMD = [
     {'cmd': ['%BINDIR%/nova-manage', '--flagfile', '%CFGFILE%',
              'db', 'sync']},
 ]
 
+#these setup your dev network
 NETWORK_SETUP_CMDS = [
     #this always happens (even in quantum mode)
     {'cmd': ['%BINDIR%/nova-manage', '--flagfile', '%CFGFILE%',
@@ -61,31 +63,27 @@ NETWORK_SETUP_CMDS = [
               '--pool=%TEST_FLOATING_POOL%']}
 ]
 
+#these are used for nova volumens
 VG_CHECK_CMD = [
     {'cmd': ['vgs', '%VOLUME_GROUP%'],
      'run_as_root': True}
 ]
-
 VG_DEV_CMD = [
     {'cmd': ['losetup', '-f', '--show', '%VOLUME_BACKING_FILE%'],
      'run_as_root': True}
 ]
-
 VG_CREATE_CMD = [
     {'cmd': ['vgcreate', '%VOLUME_GROUP%', '%DEV%'],
      'run_as_root': True}
 ]
-
 VG_LVS_CMD = [
     {'cmd': ['lvs', '--noheadings', '-o', 'lv_name', '%VOLUME_GROUP%'],
      'run_as_root': True}
 ]
-
 VG_LVREMOVE_CMD = [
     {'cmd': ['lvremove', '-f', '%VOLUME_GROUP%/%LV%'],
      'run_as_root': True}
 ]
-
 RESTART_TGT_CMD = [
     {'cmd': ['stop', 'tgt'], 'run_as_root': True},
     {'cmd': ['start', 'tgt'], 'run_as_root': True}
@@ -103,7 +101,6 @@ NCAUTH = "cauth"
 NXVNC = "xvnc"
 SUBCOMPONENTS = [NCPU, NVOL, NAPI,
     NOBJ, NNET, NCERT, NSCHED, NCAUTH, NXVNC]
-
 
 #the pkg json files nova requires for installation
 REQ_PKGS = ['general.json', 'nova.json']
@@ -179,7 +176,9 @@ QUANTUM_OPENSWITCH_OPS = {
 }
 
 #ensure libvirt restarted (seems to only be on rhel)
-LIBVIRTD_RESTART = ['service', 'libvirtd', 'restart']
+LIBVIRT_RESTART_CMD = {
+    settings.RHEL6: ['service', 'libvirtd', 'restart'],
+}
 
 #pip files that nova requires
 REQ_PIPS = ['general.json', 'nova.json']
@@ -408,8 +407,9 @@ class NovaRuntime(comp.PythonRuntime):
 
     def pre_start(self):
         #ensure libvirt started
-        if self.distro == settings.RHEL6:
-            sh.execute(*LIBVIRTD_RESTART, run_as_root=True)
+        cmd = LIBVIRT_RESTART_CMD.get(self.distro)
+        if cmd:
+            sh.execute(*cmd, run_as_root=True)
 
     def _get_param_map(self, app_name):
         params = comp.PythonRuntime._get_param_map(self, app_name)

@@ -26,10 +26,9 @@ from devstack import utils
 
 from devstack.components import db
 
-LOG = logging.getLogger("devstack.components.melange")
-
 #id
 TYPE = settings.MELANGE
+LOG = logging.getLogger("devstack.components.melange")
 
 #the pkg json files melange requires for installation
 REQ_PKGS = ['general.json', 'melange.json']

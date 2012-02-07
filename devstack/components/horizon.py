@@ -25,6 +25,7 @@ from devstack import utils
 
 #id
 TYPE = settings.HORIZON
+LOG = logging.getLogger("devstack.components.horizon")
 
 #actual dir names
 ROOT_HORIZON = 'horizon'
@@ -80,8 +81,6 @@ RHEL_HTTPD_CONF = '/etc/httpd/conf/httpd.conf'
 
 #users which apache may not like starting as
 BAD_APACHE_USERS = ['root']
-
-LOG = logging.getLogger("devstack.components.horizon")
 
 #apache logs will go here
 LOGS_DIR = "logs"

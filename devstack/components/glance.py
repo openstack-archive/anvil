@@ -29,10 +29,9 @@ from devstack.components import keystone
 
 from devstack.image import creator
 
-LOG = logging.getLogger("devstack.components.glance")
-
 #id
 TYPE = settings.GLANCE
+LOG = logging.getLogger("devstack.components.glance")
 
 #config files/sections
 API_CONF = "glance-api.conf"

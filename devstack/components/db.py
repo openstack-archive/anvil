@@ -24,10 +24,9 @@ from devstack import utils
 
 import time
 
-LOG = logging.getLogger("devstack.components.db")
-
 #id
 TYPE = settings.DB
+LOG = logging.getLogger("devstack.components.db")
 
 #used for special setups
 MYSQL = 'mysql'

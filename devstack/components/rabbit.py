@@ -25,10 +25,9 @@ from devstack import shell as sh
 from devstack import trace as tr
 from devstack import utils
 
-LOG = logging.getLogger("devstack.components.rabbit")
-
 #id
 TYPE = settings.RABBIT
+LOG = logging.getLogger("devstack.components.rabbit")
 
 #hopefully these are distro independent..
 START_CMD = ['service', "rabbitmq-server", "start"]

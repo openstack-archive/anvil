@@ -20,10 +20,9 @@ from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 
-LOG = logging.getLogger("devstack.components.quantum_client")
-
 #id
 TYPE = settings.QUANTUM_CLIENT
+LOG = logging.getLogger("devstack.components.quantum_client")
 
 #the pkg json files quantum client requires for installation
 REQ_PKGS = ['general.json', 'quantum-client.json']

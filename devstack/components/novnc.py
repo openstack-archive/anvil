@@ -22,10 +22,9 @@ from devstack import utils
 
 from devstack.components import nova
 
-LOG = logging.getLogger("devstack.components.novnc")
-
 #id
 TYPE = settings.NOVNC
+LOG = logging.getLogger("devstack.components.novnc")
 
 #where the application is really
 UTIL_DIR = 'utils'

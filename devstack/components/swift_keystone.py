@@ -23,10 +23,9 @@ from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 
-LOG = logging.getLogger("devstack.components.swift_keystone")
-
 # id
 TYPE = settings.SWIFT_KEYSTONE
+LOG = logging.getLogger("devstack.components.swift_keystone")
 
 #the pkg json files swift_keystone requires for installation
 REQ_PKGS = ['general.json']

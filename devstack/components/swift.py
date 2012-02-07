@@ -19,11 +19,11 @@ from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
 
-LOG = logging.getLogger("devstack.components.swift")
-
 # id
 TYPE = settings.SWIFT
+LOG = logging.getLogger("devstack.components.swift")
 
+#swift has alot of config files!
 SWIFT_CONF = 'swift.conf'
 PROXY_SERVER_CONF = 'proxy-server.conf'
 ACCOUNT_SERVER_CONF = 'account-server.conf'
@@ -37,8 +37,6 @@ SWIFT_INIT = 'swift-init'
 CONFIGS = [SWIFT_CONF, PROXY_SERVER_CONF, ACCOUNT_SERVER_CONF,
            CONTAINER_SERVER_CONF, OBJECT_SERVER_CONF, RSYNC_CONF,
            SYSLOG_CONF, SWIFT_MAKERINGS, SWIFT_STARTMAIN]
-
-SWIFT_NAME = 'swift'
 
 # subdirs of the git checkout
 BIN_DIR = 'bin'
