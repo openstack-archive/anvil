@@ -83,7 +83,7 @@ def _get_pkg_manager(distro, keep_packages):
 def _pre_run(action_name, root_dir, pkg_manager, config, components):
     try:
         env_gen.load_local_rc(_RC_FILE, config)
-    except OSError:
+    except IOError:
         LOG.info('No rc file found.')
 
     if action_name == settings.INSTALL:
