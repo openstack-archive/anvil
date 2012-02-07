@@ -18,6 +18,7 @@
 
 import optparse
 import os
+import re
 import subprocess
 import sys
 
@@ -127,6 +128,23 @@ def generate_local_rc(fn=None, cfg=None):
         generate_ec2_env(fh, cfg)
         generate_nova_env(fh, cfg)
         generate_os_env(fh, cfg)
+
+
+def load_local_rc(fn=None, cfg=None):
+    if not fn:
+        fn = DEF_FN
+    if not cfg:
+        cfg = common.get_config()
+
+    pattern = re.compile("^export (.*?)=(.*?)$")
+    with open(fn, "r") as fh:
+        for line in fh:
+            m = pattern.search(line)
+            if m:
+                var = m.group(1).strip()
+                value = m.group(2).strip()
+                if not var in os.environ:
+                    os.environ[var] = value
 
 
 def main():

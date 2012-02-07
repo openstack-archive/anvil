@@ -89,7 +89,7 @@ class DBUninstaller(comp.PkgUninstallComponent):
         self.runtime = DBRuntime(*args, **kargs)
 
     def warm_configs(self):
-        pws = ['old_sql']
+        pws = ['sql']
         for pw_key in pws:
             self.cfg.get("passwords", pw_key)
 
@@ -105,7 +105,7 @@ class DBUninstaller(comp.PkgUninstallComponent):
                     LOG.info("Ensuring your database is started before we operate on it.")
                     self.runtime.restart()
                     user = self.cfg.get("db", "sql_user")
-                    old_pw = self.cfg.get("passwords", 'old_sql')
+                    old_pw = self.cfg.get("passwords", 'sql')
                     params = {
                         'OLD_PASSWORD': old_pw,
                         'NEW_PASSWORD': RESET_BASE_PW,
