@@ -197,8 +197,8 @@ class HorizonInstaller(comp.PythonInstallComponent):
             #now write a file that changes the apache user and group ran with
             user_conf = "/etc/httpd/conf.d/httpd_run_user.conf"
             fc = '''
-            User {user}
-            Group {group}
+User {user}
+Group {group}
 '''
             sh.write_file(user_conf, fc.format(user=user, group=group))
             self.tracewriter.cfg_write(user_conf)
