@@ -147,7 +147,7 @@ class PkgInstallComponent(ComponentBase):
         return utils.load_template(self.component_name, config_fn)
 
     def _get_symlinks(self):
-        return {}
+        return dict()
 
     def _configure_files(self):
         configs = self._get_config_files()
@@ -162,7 +162,7 @@ class PkgInstallComponent(ComponentBase):
                 #now configure it
                 LOG.info("Configuring file %s" % (fn))
                 (sourcefn, contents) = self._get_source_config(fn)
-                LOG.info("Replacing parameters in file %s" % (sourcefn))
+                LOG.debug("Replacing parameters in file %s" % (sourcefn))
                 LOG.debug("Replacements = %s" % (parameters))
                 contents = utils.param_replace(contents, parameters)
                 LOG.debug("Applying side-effects of param replacement for template %s" % (sourcefn))
@@ -175,7 +175,10 @@ class PkgInstallComponent(ComponentBase):
 
     def _configure_symlinks(self):
         links = self._get_symlinks()
-        for (source, link) in links.items():
+        link_srcs = sorted(links.keys())
+        link_srcs.reverse()
+        for source in link_srcs:
+            link = links.get(source)
             try:
                 self.tracewriter.symlink(source, link)
             except OSError:
@@ -262,18 +265,16 @@ class PkgUninstallComponent(ComponentBase):
     def _unconfigure_links(self):
         symfiles = self.tracereader.symlinks_made()
         if symfiles:
-            LOG.info("Removing %s symlinks files (%s)" % (len(symfiles), ", ".join(symfiles)))
+            LOG.info("Removing %s symlink files (%s)" % (len(symfiles), ", ".join(symfiles)))
             for fn in symfiles:
-                if fn:
-                    sh.unlink(fn)
+                sh.unlink(fn, run_as_root=True)
 
     def _unconfigure_files(self):
         cfgfiles = self.tracereader.files_configured()
         if cfgfiles:
             LOG.info("Removing %s configuration files (%s)" % (len(cfgfiles), ", ".join(cfgfiles)))
             for fn in cfgfiles:
-                if fn:
-                    sh.unlink(fn)
+                sh.unlink(fn, run_as_root=True)
 
     def uninstall(self):
         self._uninstall_pkgs()
@@ -396,7 +397,7 @@ class ProgramRuntime(ComponentBase):
             if params and program_opts:
                 adjusted_opts = list()
                 for opt in program_opts:
-                    adjusted_opts.append(utils.param_replace(opt, params))
+                    adjusted_opts.append(utils.param_replace(str(opt), params))
                 program_opts = adjusted_opts
             #start it with the given settings
             LOG.info("Starting [%s] with options [%s]" % (app_name, ", ".join(program_opts)))

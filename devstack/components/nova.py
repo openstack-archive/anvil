@@ -175,9 +175,10 @@ QUANTUM_OPENSWITCH_OPS = {
     'quantum_use_dhcp': None,
 }
 
-#ensure libvirt restarted (seems to only be on rhel)
+#ensure libvirt restarted
 LIBVIRT_RESTART_CMD = {
     settings.RHEL6: ['service', 'libvirtd', 'restart'],
+    settings.UBUNTU11: ['/etc/init.d/libvirt-bin', 'restart'],
 }
 
 #pip files that nova requires

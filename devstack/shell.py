@@ -316,9 +316,9 @@ def rmdir(path, quiet=True, run_as_root=False):
 
 def symlink(source, link, force=True, run_as_root=True):
     with Rooted(run_as_root):
+        LOG.debug("Creating symlink from %s => %s" % (link, source))
         path = dirname(link)
         mkdirslist(path)
-        LOG.debug("Creating symlink from %s => %s" % (link, source))
         if force and exists(link):
             unlink(link, True)
         os.symlink(source, link)

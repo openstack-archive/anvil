@@ -31,6 +31,8 @@ LOG = logging.getLogger("devstack.components.db")
 #used for special setups
 MYSQL = 'mysql'
 START_WAIT_TIME = 5
+
+#TODO maybe we should handle this differently in the future, blah
 DB_ACTIONS = {
     MYSQL: {
         # Of course these aren't distro independent...
@@ -76,9 +78,6 @@ SQL_RESET_PW_LINKS = ['https://help.ubuntu.com/community/MysqlPasswordReset',
 
 #used as a generic error message
 BASE_ERROR = 'Currently we do not know how to %s for database type [%s]'
-
-#used to make params for booting when started (not always take advantage of...)
-BOOLEAN_OUTPUT = {True: 'true', False: 'false'}
 
 #the pkg json files db requires for installation
 REQ_PKGS = ['db.json']
@@ -131,7 +130,7 @@ class DBInstaller(comp.PkgInstallComponent):
         host_ip = self.cfg.get('host', 'ip')
         out = {
             'PASSWORD': self.cfg.get("passwords", "sql"),
-            'BOOT_START': "%s" % BOOLEAN_OUTPUT.get(True),
+            'BOOT_START': ("%s" % (True)).lower(),
             'USER': self.cfg.get("db", "sql_user"),
             'SERVICE_HOST': host_ip,
             'HOST_IP': host_ip

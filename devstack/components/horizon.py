@@ -63,21 +63,12 @@ APACHE_RESTART_CMD = ['service', '%SERVICE%', 'restart']
 APACHE_START_CMD = ['service', '%SERVICE%', 'start']
 APACHE_STOP_CMD = ['service', '%SERVICE%', 'stop']
 APACHE_STATUS_CMD = ['service', '%SERVICE%', 'status']
-APACHE_LOG_LOCATIONS = {
-    settings.RHEL6: {
-        'ERROR_LOG': '/var/log/horizon/error.log',
-        'ACCESS_LOG': '/var/log/horizon/access.log',
-        'SOCKET_DIR': '/var/log/horizon/wsgi',
-    },
-    settings.UBUNTU11: {
-        'ERROR_LOG': '/var/log/apache2/error.log',
-        'ACCESS_LOG': '/var/log/apache2/access.log',
-    }
-}
 
 #rhel fixups
-RHEL_SOCKET_CONF = "/etc/httpd/conf.d/wsgi_socket_prefix.conf"
-RHEL_HTTPD_CONF = '/etc/httpd/conf/httpd.conf'
+RHEL_FIXUPS = {
+    'SOCKET_CONF': "/etc/httpd/conf.d/wsgi_socket_prefix.conf",
+    'HTTPD_CONF': '/etc/httpd/conf/httpd.conf',
+}
 
 #users which apache may not like starting as
 BAD_APACHE_USERS = ['root']
@@ -117,6 +108,12 @@ class HorizonInstaller(comp.PythonInstallComponent):
         src = self._get_target_config_name(HORIZON_APACHE_CONF)
         links = dict()
         links[src] = APACHE_CONF_TARGETS[self.distro]
+        if settings.QUANTUM_CLIENT in self.instances:
+            #TODO remove this junk, blah, puke that we have to do this
+            qc = self.instances[settings.QUANTUM_CLIENT]
+            src_pth = sh.joinpths(qc.appdir, 'quantum')
+            if sh.isdir(src_pth):
+                links[src_pth] = sh.joinpths(self.dash_dir, 'quantum')
         return links
 
     def _check_ug(self):
@@ -154,8 +151,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def _setup_blackhole(self):
         #create an empty directory that apache uses as docroot
-        black_dir = sh.joinpths(self.appdir, BLACKHOLE_DIR)
-        self.tracewriter.make_dir(black_dir)
+        self.tracewriter.make_dir(sh.joinpths(self.appdir, BLACKHOLE_DIR))
 
     def _sync_db(self):
         #Initialize the horizon database (it stores sessions and notices shown to users).
@@ -167,7 +163,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         #Horizon currently imports quantum even if you aren't using it.
         #Instead of installing quantum we can create a simple module
         #that will pass the initial imports.
-        if settings.QUANTUM in self.instances:
+        if settings.QUANTUM_CLIENT in self.instances:
             return
         else:
             #Make the fake quantum
@@ -192,16 +188,20 @@ class HorizonInstaller(comp.PythonInstallComponent):
         comp.PythonInstallComponent.pre_install(self)
         self.tracewriter.make_dir(self.log_dir)
 
-    def _rhel_fixups(self):
+    def _config_fixups(self):
+        #currently just handling rhel fixups
+        #TODO: maybe this should be a subclass
+        if self.distro != settings.RHEL6:
+            return
         #it seems like to get this to work
         #we need to do some conf.d/conf work which sort of sucks
         (user, group) = self._get_apache_user_group()
         with sh.Rooted(True):
             #fix the socket prefix to someplace we can use
             fc = "WSGISocketPrefix %s" % (sh.joinpths(self.log_dir, "wsgi-socket"))
-            sh.write_file(RHEL_SOCKET_CONF, fc)
+            sh.write_file(RHEL_FIXUPS.get("SOCKET_CONF"), fc)
             #now adjust the run user and group
-            fc = sh.load_file(RHEL_HTTPD_CONF)
+            fc = sh.load_file(RHEL_FIXUPS.get("HTTPD_CONF"))
             lines = fc.splitlines()
             new_lines = list()
             for line in lines:
@@ -211,7 +211,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
                     line = "Group %s" % (group)
                 new_lines.append(line)
             fc = utils.joinlinesep(*new_lines)
-            sh.write_file(RHEL_HTTPD_CONF, fc)
+            sh.write_file(RHEL_FIXUPS.get("HTTPD_CONF"), fc)
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
@@ -219,9 +219,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         self._sync_db()
         self._setup_blackhole()
         self._ensure_db_access()
-        if self.distro == settings.RHEL6:
-            LOG.info("Performing rhel 6 horizon fixups.")
-            self._rhel_fixups()
+        self._config_fixups()
 
     def _get_apache_user_group(self):
         user = self.cfg.get('horizon', 'apache_user')
@@ -246,7 +244,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
             mp['ERROR_LOG'] = sh.joinpths(self.log_dir, "error.log")
         else:
             #Enable quantum in dashboard, if requested
-            mp['QUANTUM_ENABLED'] = "%s" % (settings.QUANTUM in self.instances)
+            mp['QUANTUM_ENABLED'] = "%s" % (settings.QUANTUM_CLIENT in self.instances)
             mp['OPENSTACK_HOST'] = self.cfg.get('host', 'ip')
         return mp
 
