@@ -496,12 +496,15 @@ def got_root():
 
 def root_mode():
     uid_gid = (getuid(ROOT_USER), getgid(ROOT_USER))
-    try:
-        LOG.debug("Escalating permissions to (user=%s, group=%s)" % (uid_gid[0], uid_gid[1]))
-        os.setreuid(0, uid_gid[0])
-        os.setregid(0, uid_gid[1])
-    except:
-        LOG.warn("Cannot escalate permissions to (user=%s, group=%s)" % (uid_gid[0], uid_gid[1]))
+    if uid_gid[0] is None or uid_gid[1] is None:
+        LOG.warn("Cannot escalate permissions to (user=%s) - does that user exist??" % (ROOT_USER))
+    else:
+        try:
+            LOG.debug("Escalating permissions to (user=%s, group=%s)" % (uid_gid[0], uid_gid[1]))
+            os.setreuid(0, uid_gid[0])
+            os.setregid(0, uid_gid[1])
+        except:
+            LOG.warn("Cannot escalate permissions to (user=%s, group=%s)" % (uid_gid[0], uid_gid[1]))
 
 
 def user_mode():
@@ -513,6 +516,8 @@ def user_mode():
             os.setreuid(0, int(sudo_uid))
         except OSError:
             LOG.warn("Cannot drop permissions to (user=%s, group=%s)" % (sudo_uid, sudo_gid))
+    else:
+        LOG.warn("Can not switch to user mode, no suid user id or group id")
 
 
 def geteuid():

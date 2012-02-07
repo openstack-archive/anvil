@@ -191,16 +191,14 @@ class HorizonInstaller(comp.PythonInstallComponent):
             sh.root_mode()
             #fix the socket prefix to someplace we can use
             socket_conf = "/etc/httpd/conf.d/wsgi_socket_prefix.conf"
-            wsgi_socket_loc = self.log_dir
+            wsgi_socket_loc = sh.joinpths(self.log_dir, "wsgi-socket")
             fc = "WSGISocketPrefix %s" % (wsgi_socket_loc)
             sh.write_file(socket_conf, fc)
-            #now write a file that changes the apache user and group ran with
-            user_conf = "/etc/httpd/conf.d/httpd_run_user.conf"
-            fc = '''
-User {user}
-Group {group}
-'''
-            sh.write_file(user_conf, fc.format(user=user, group=group))
+            #now adjust the run user and group
+            cmd = ['perl', '-p', '-i', '-e', "'s/^User.*/User " + user + "/g'", '/etc/httpd/conf/httpd.conf']
+            sh.execute(*cmd, run_as_root=True)
+            cmd = ['perl', '-p', '-i', '-e', "'s/^Group.*/Group " + group + "/g'", '/etc/httpd/conf/httpd.conf']
+            sh.execute(*cmd, run_as_root=True)
         finally:
             sh.user_mode()
 
