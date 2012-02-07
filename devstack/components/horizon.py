@@ -195,10 +195,17 @@ class HorizonInstaller(comp.PythonInstallComponent):
             fc = "WSGISocketPrefix %s" % (wsgi_socket_loc)
             sh.write_file(socket_conf, fc)
             #now adjust the run user and group
-            cmd = ['perl', '-p', '-i', '-e', "'s/^User.*/User " + user + "/g'", '/etc/httpd/conf/httpd.conf']
-            sh.execute(*cmd, run_as_root=True)
-            cmd = ['perl', '-p', '-i', '-e', "'s/^Group.*/Group " + group + "/g'", '/etc/httpd/conf/httpd.conf']
-            sh.execute(*cmd, run_as_root=True)
+            fc = sh.load_file('/etc/httpd/conf/httpd.conf')
+            lines = fc.splitlines()
+            new_lines = list()
+            for line in lines:
+                if line.startswith("User "):
+                    line = "User %s" % (user)
+                if line.startswith("Group "):
+                    line = "Group %s" % (group)
+                new_lines.append(line)
+            contents = utils.joinlinesep(*new_lines)
+            sh.write_file('/etc/httpd/conf/httpd.conf', contents)
         finally:
             sh.user_mode()
 
