@@ -33,6 +33,21 @@ LOG = logging.getLogger("devstack.shell")
 ROOT_USER = "root"
 
 
+#root context guard
+class Rooted(object):
+    def __init__(self, run_as_root):
+        self.root_mode = run_as_root
+
+    def __enter__(self):
+        if self.root_mode:
+            root_mode()
+        return self.root_mode
+
+    def __exit__(self, type, value, traceback):
+        if self.root_mode:
+            user_mode()
+
+
 def execute(*cmd, **kwargs):
 
     process_input = kwargs.pop('process_input', None)
@@ -98,9 +113,7 @@ def execute(*cmd, **kwargs):
 
     rc = None
     result = None
-    try:
-        if run_as_root:
-            root_mode()
+    with Rooted(run_as_root):
         obj = subprocess.Popen(execute_cmd,
                                stdin=stdin_fh,
                                stdout=stdout_fh,
@@ -109,7 +122,6 @@ def execute(*cmd, **kwargs):
                                cwd=cwd,
                                shell=shell,
                                env=process_env)
-        result = None
         if process_input is not None:
             result = obj.communicate(str(process_input))
         else:
@@ -119,9 +131,6 @@ def execute(*cmd, **kwargs):
             obj.stdin.close()
         rc = obj.returncode
         LOG.debug('Cmd result had exit code: %s' % rc)
-    finally:
-        if run_as_root:
-            user_mode()
 
     if (not ignore_exit_code) and (rc not in check_exit_code):
         (stdout, stderr) = result
@@ -194,12 +203,9 @@ def prompt_password(pw_prompt=None):
 
 
 def chown_r(path, uid, gid, run_as_root=True):
-    try:
-        if run_as_root:
-            root_mode()
-        if(isdir(path)):
+    with Rooted(run_as_root):
+        if isdir(path):
             LOG.debug("Changing ownership of %s to %s:%s" % (path, uid, gid))
-            os.chown(path, uid, gid)
             for root, dirs, files in os.walk(path):
                 os.chown(root, uid, gid)
                 LOG.debug("Changing ownership of %s to %s:%s" % (root, uid, gid))
@@ -209,9 +215,6 @@ def chown_r(path, uid, gid, run_as_root=True):
                 for f in files:
                     os.chown(joinpths(root, f), uid, gid)
                     LOG.debug("Changing ownership of %s to %s:%s" % (joinpths(root, f), uid, gid))
-    finally:
-        if run_as_root:
-            user_mode()
 
 
 def password(prompt_=None, pw_len=8):
@@ -296,49 +299,35 @@ def mkdir(path, recurse=True):
 
 
 def deldir(path, run_as_root=False):
-    try:
-        if run_as_root:
-            root_mode()
+    with Rooted(run_as_root):
         if isdir(path):
             LOG.debug("Recursively deleting directory tree starting at \"%s\"" % (path))
             shutil.rmtree(path)
-    finally:
-        if run_as_root:
-            user_mode()
 
 
 def rmdir(path, quiet=True, run_as_root=False):
     if not isdir(path):
         return
     try:
-        if run_as_root:
-            root_mode()
-        LOG.debug("Deleting directory \"%s\" with the cavet that we will fail if it's not empty." % (path))
-        os.rmdir(path)
-        LOG.debug("Deleted directory \"%s\"" % (path))
+        with Rooted(run_as_root):
+            LOG.debug("Deleting directory \"%s\" with the cavet that we will fail if it's not empty." % (path))
+            os.rmdir(path)
+            LOG.debug("Deleted directory \"%s\"" % (path))
     except OSError:
         if not quiet:
             raise
         else:
             pass
-    finally:
-        if run_as_root:
-            user_mode()
 
 
 def symlink(source, link, force=True, run_as_root=True):
-    try:
-        if run_as_root:
-            root_mode()
+    with Rooted(run_as_root):
         path = dirname(link)
         mkdirslist(path)
         LOG.debug("Creating symlink from %s => %s" % (link, source))
         if force and exists(link):
             unlink(link, True)
         os.symlink(source, link)
-    finally:
-        if run_as_root:
-            user_mode()
 
 
 def exists(path):
@@ -467,17 +456,12 @@ def chmod(fname, mode):
 
 
 def replace_in_file(fname, search, replace, run_as_root=False):
-    try:
-        if run_as_root:
-            root_mode()
+    with Rooted(run_as_root):
         # fileinput with inplace=1 moves file to tmp and redirects stdio to file
         for line in fileinput.input(fname, inplace=1):
             if search in line:
                 line = line.replace(search, replace)
                 print line
-    finally:
-        if run_as_root:
-            user_mode()
 
 
 def copy_replace_file(fsrc, fdst, map_):
