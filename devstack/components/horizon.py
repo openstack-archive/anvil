@@ -63,8 +63,9 @@ APACHE_STOP_CMD = ['service', '%SERVICE%', 'stop']
 APACHE_STATUS_CMD = ['service', '%SERVICE%', 'status']
 APACHE_LOG_LOCATIONS = {
     settings.RHEL6: {
-        'ERROR_LOG': '/var/log/httpd/error_log',
-        'ACCESS_LOG': '/var/log/httpd/access_log',
+        'ERROR_LOG': '/var/log/horizon/error.log',
+        'ACCESS_LOG': '/var/log/horizon/access.log',
+        'SOCKET_DIR': '/var/log/horizon/wsgi',
     },
     settings.UBUNTU11: {
         'ERROR_LOG': '/var/log/apache2/error.log',
@@ -94,6 +95,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.horizon_dir = sh.joinpths(self.appdir, ROOT_HORIZON)
         self.dash_dir = sh.joinpths(self.appdir, ROOT_DASH)
+        self.log_dir = sh.joinpths(self.component_root, "logs")
         self._check_ug()
 
     def _get_download_locations(self):
@@ -176,24 +178,22 @@ class HorizonInstaller(comp.PythonInstallComponent):
             gid = sh.getgid(group)
             sh.chown_r(path, uid, gid)
 
+    def pre_install(self):
+        comp.PythonInstallComponent.pre_install(self)
+        self.tracewriter.make_dir(self.log_dir)
+
     def _rhel_fixups(self):
         #it seems like to get this to work
         #we need to do some conf.d work which sort of sucks
         #we need to make a file with the following
-        #WSGISocketPrefix /var/run/wsgi
-        #since it seems like we can not run without this
-        #then we need to adjust the apache user and group
-        #since the other components we just created
-        #aren't actually useable by anyone but this user (since we didn't run python setup.py install)
         (user, group) = self._get_apache_user_group()
         try:
             sh.root_mode()
+            #fix the socket prefix to someplace we can use
             socket_conf = "/etc/httpd/conf.d/wsgi_socket_prefix.conf"
-            wsgi_socket_loc = "/var/run/wsgi"
-            self.tracewriter.make_dir(wsgi_socket_loc)
+            wsgi_socket_loc = self.log_dir
             fc = "WSGISocketPrefix %s" % (wsgi_socket_loc)
             sh.write_file(socket_conf, fc)
-            self.tracewriter.cfg_write(socket_conf)
             #now write a file that changes the apache user and group ran with
             user_conf = "/etc/httpd/conf.d/httpd_run_user.conf"
             fc = '''
@@ -201,7 +201,6 @@ User {user}
 Group {group}
 '''
             sh.write_file(user_conf, fc.format(user=user, group=group))
-            self.tracewriter.cfg_write(user_conf)
         finally:
             sh.user_mode()
 
@@ -236,7 +235,8 @@ Group {group}
             mp['GROUP'] = group
             mp['HORIZON_DIR'] = self.appdir
             mp['HORIZON_PORT'] = self.cfg.get('horizon', 'port')
-            mp.update(APACHE_LOG_LOCATIONS[self.distro])
+            mp['ACCESS_LOG'] = sh.joinpths(self.log_dir, "access.log")
+            mp['ERROR_LOG'] = sh.joinpths(self.log_dir, "error.log")
         else:
             #Enable quantum in dashboard, if requested
             mp['QUANTUM_ENABLED'] = "%s" % (settings.QUANTUM in self.instances)
