@@ -27,8 +27,9 @@ This will typically produce:
       -h, --help            show this help message and exit
       -c COMPONENT, --component=COMPONENT
                             openstack component: [db, glance, horizon, keystone,
-                            keystone-client, nova, nova-client, novnc, quantum,
-                            quantum-client, rabbit, swift, swift_keystone]
+                            keystone-client, melange, melange-client, nova, nova-
+                            client, novnc, quantum, quantum-client, rabbit, swift,
+                            swift-keystone]
     
       Install/uninstall/start/stop options:
         -a ACTION, --action=ACTION
@@ -48,11 +49,10 @@ This will typically produce:
     
       Uninstall/stop options:
         -f, --force         force ACTION even if no trace file found (default: True)
-    
 
 # Stack prerequisites
 
-* linux (tested on ubuntu 11.10 and rhel 6.2 (TBD))
+* linux (tested on ubuntu 11.10 and rhel 6.2)
 * python 2.6 or 2.7 (not tested with python 3.0)
 
 For ubuntu 11.10:
@@ -71,7 +71,6 @@ For rhel 6.2:
     $ git clone git://github.com/yahoo/Openstack-DevstackPy.git DevstackPy
     $ cd DevstackPy
 
-
 # Actions
 
 *Stack* can do the following:
@@ -83,6 +82,10 @@ For rhel 6.2:
 
 Typically the interaction would be that you install a set of components and then start them. 
 
+# Simple setup
+
+https://github.com/yahoo/Openstack-DevstackPy/wiki/Simple-Setup
+
 # Config
 
 For those of you that are brave enough to change *stack* here are some starting points.
@@ -90,7 +93,6 @@ For those of you that are brave enough to change *stack* here are some starting 
 ###  conf/stack.ini
 
 Check out *conf/stack.ini* for various configuration settings applied (branches, git repositories...).  Check out the header of that file for how the customized configuration values are parsed and what they may result in.
-
 
 ### conf/
 
@@ -117,10 +119,6 @@ Note that these files are in a modified json format which allows for simple comm
 
 1. Get and install the above prerequisites.
 1. *git clone git://github.com/yahoo/Openstack-DevstackPy.git*
-
-## Simple setup
-
-https://github.com/yahoo/Openstack-DevstackPy/wiki/Simple-Setup
 
 # Customizing
 
