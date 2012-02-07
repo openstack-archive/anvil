@@ -33,35 +33,33 @@ PIP_CMD_NAMES = {
 
 
 def install(pips, distro):
-    actions = list()
     pipnames = sorted(pips.keys())
+    root_cmd = PIP_CMD_NAMES[distro]
+    LOG.info("Installing python packages (%s) using command (%s)" % (", ".join(pipnames), root_cmd))
     for name in pipnames:
         pipfull = name
         pipinfo = pips.get(name)
         if pipinfo and pipinfo.get('version'):
-            # Move str after the test since str(None) is 'None'
             version = pipinfo.get('version')
-            if version:
+            if version is not None:
                 pipfull = pipfull + "==" + str(version)
-        actions.append(pipfull)
-        # Move str after the test since str(None) is 'None'
+        LOG.info("Installing python package (%s)" % (pipfull))
+        real_cmd = [root_cmd, 'install']
+        real_cmd += PIP_INSTALL_CMD_OPTS
         options = pipinfo.get('options')
-        if options:
-            LOG.info("Using pip options:%s" % (options))
-            actions.append(str(options))
-    if actions:
-        LOG.info("Installing python packages [%s]" % (", ".join(actions)))
-        root_cmd = PIP_CMD_NAMES.get(distro, 'pip')
-        cmd = [root_cmd, 'install'] + PIP_INSTALL_CMD_OPTS + actions
-        sh.execute(*cmd, run_as_root=True)
+        if options is not None:
+            LOG.info("Using pip options: %s" % (str(options)))
+            real_cmd += [str(options)]
+        real_cmd += [pipfull]
+        sh.execute(*real_cmd, run_as_root=True)
 
 
 def uninstall(pips, distro, skip_errors=True):
     pipnames = sorted(pips.keys())
-    LOG.info("Uninstalling python packages [%s]" % (", ".join(pipnames)))
+    root_cmd = PIP_CMD_NAMES[distro]
+    LOG.info("Uninstalling python packages (%s) using command (%s)" % (", ".join(pipnames), root_cmd))
     for name in pipnames:
         try:
-            root_cmd = PIP_CMD_NAMES.get(distro, 'pip')
             cmd = [root_cmd, 'uninstall'] + PIP_UNINSTALL_CMD_OPTS + [name]
             sh.execute(*cmd, run_as_root=True)
         except excp.ProcessExecutionError:
