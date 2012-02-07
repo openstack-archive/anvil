@@ -107,7 +107,6 @@ def get_default_components():
                                          glance.GREG,
                                       ]
     def_components[settings.KEYSTONE] = []
-    #TODO add in xvnc?
     def_components[settings.NOVA] = [
                                      nova.NAPI,
                                      nova.NCAUTH,
@@ -116,6 +115,7 @@ def get_default_components():
                                      nova.NNET,
                                      nova.NOBJ,
                                      nova.NSCHED,
+                                     nova.NXVNC,
                                     ]
     def_components[settings.NOVNC] = []
     def_components[settings.HORIZON] = []

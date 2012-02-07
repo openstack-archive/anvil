@@ -100,8 +100,9 @@ NNET = "net"
 NCERT = "cert"
 NSCHED = "sched"
 NCAUTH = "cauth"
+NXVNC = "xvnc"
 SUBCOMPONENTS = [NCPU, NVOL, NAPI,
-    NOBJ, NNET, NCERT, NSCHED, NCAUTH]
+    NOBJ, NNET, NCERT, NSCHED, NCAUTH, NXVNC]
 
 
 #the pkg json files nova requires for installation
@@ -143,6 +144,7 @@ APP_OPTIONS = {
     'nova-cert': ['--flagfile', '%CFGFILE%'],
     'nova-objectstore': ['--flagfile', '%CFGFILE%'],
     'nova-consoleauth': [],
+    'nova-xvpvncproxy': ['--flagfile', '%CFGFILE%'],
 }
 
 # Sub component names to actual app names (matching previous dict)
@@ -155,6 +157,7 @@ SUB_COMPONENT_NAME_MAP = {
     NCERT: 'nova-cert',
     NSCHED: 'nova-scheduler',
     NCAUTH: 'nova-consoleauth',
+    NXVNC: 'nova-xvpvncproxy',
 }
 
 #subdirs of the checkout/download
@@ -430,8 +433,12 @@ class NovaConfigurator(object):
         self.paste_conf_fn = nc.paste_conf_fn
         self.distro = nc.distro
         self.volumes_enabled = False
+        self.xvnc_enabled = False
         if not nc.component_opts or NVOL in nc.component_opts:
             self.volumes_enabled = True
+        # TBD, xvnc is a subcomponent of Nova and not of novnc?
+        if not nc.component_opts or NXVNC in nc.component_opts:
+            self.xvnc_enabled = True
 
     def _getbool(self, name):
         return self.cfg.getboolean('nova', name)
@@ -550,9 +557,9 @@ class NovaConfigurator(object):
         if settings.NOVNC in self.instances:
             vncproxy_url = self._getstr('vncproxy_url')
             nova_conf.add('novncproxy_base_url', vncproxy_url)
-        if settings.XVNC in self.instances:
-            xvncproxy_url = self._getstr('xvpvncproxy_url')
-            nova_conf.add('xvpvncproxy_base_url', xvncproxy_url)
+
+        if self.xvnc_enabled:
+            nova_conf.add('xvpvncproxy_base_url', self._getstr('xvpvncproxy_url'))
         nova_conf.add('vncserver_listen', self._getstr('vncserver_listen'))
         vncserver_proxyclient_address = self._getstr('vncserver_proxyclient_addres')
 
