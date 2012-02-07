@@ -52,7 +52,7 @@ class StackConfigParser(ConfigParser.RawConfigParser):
     def _makekey(self, section, option):
         return "/".join([str(section), str(option)])
 
-    def _resolve_special(self, section, option, value_gotten):
+    def _resolve_special(self, section, option, value_gotten, auto_pw):
         if value_gotten and len(value_gotten):
             if section == 'passwords':
                 #ensure we store it as a password
@@ -72,18 +72,21 @@ class StackConfigParser(ConfigParser.RawConfigParser):
             LOG.debug("Determined host ip to be: \"%s\" from network interface: %s" % (host_ip, netifc))
             return host_ip
         elif section == 'passwords':
-            key = self._makekey(section, option)
-            LOG.debug("Being forced to ask for password for \"%s\" since the configuration/environment value is empty.", key)
-            prompt = PW_PROMPTS.get(option)
-            if not prompt:
-                prompt = PW_TMPL % (key)
-            pw = sh.password(prompt)
-            self.pws[key] = pw
-            return pw
+            if auto_pw:
+                key = self._makekey(section, option)
+                LOG.debug("Being forced to ask for password for \"%s\" since the configuration value is empty.", key)
+                prompt = PW_PROMPTS.get(option)
+                if not prompt:
+                    prompt = PW_TMPL % (key)
+                pw = sh.password(prompt)
+                self.pws[key] = pw
+                return pw
+            else:
+                return value_gotten
         else:
             return value_gotten
 
-    def get(self, section, option):
+    def get(self, section, option, auto_pw=True):
         key = self._makekey(section, option)
         value = None
         if key in self.configs_fetched:
@@ -92,9 +95,10 @@ class StackConfigParser(ConfigParser.RawConfigParser):
         else:
             LOG.debug("Fetching value for param \"%s\"" % (key))
             gotten_value = self._get_special(section, option)
-            value = self._resolve_special(section, option, gotten_value)
+            value = self._resolve_special(section, option, gotten_value, auto_pw)
             LOG.debug("Fetched \"%s\" for \"%s\"" % (value, key))
-            self.configs_fetched[key] = value
+            if value is not None:
+                self.configs_fetched[key] = value
         return value
 
     def _extract_default(self, default_value):

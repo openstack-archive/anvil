@@ -148,6 +148,10 @@ def execute(*cmd, **kwargs):
         return result
 
 
+def abspth(path):
+    return os.path.abspath(path)
+
+
 def listdir(path):
     return os.listdir(path)
 

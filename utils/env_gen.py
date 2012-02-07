@@ -27,7 +27,9 @@ POSSIBLE_TOPDIR = os.path.normpath(os.path.join(os.path.abspath(sys.argv[0]),
 sys.path.insert(0, POSSIBLE_TOPDIR)
 
 from devstack import cfg
+from devstack import shell as sh
 from devstack import utils
+
 from devstack.progs import common
 
 
@@ -82,7 +84,9 @@ def generate_ec2_env(fh, cfg):
     write_env('EC2_URL', 'http://%s:%s/services/Cloud' % (ip, EC2_PORT), fh)
     write_env('S3_URL', 'http://%s:%s/services/Cloud' % (ip, S3_PORT), fh)
     write_env('EC2_ACCESS_KEY', EC2_ACCESS_KEY, fh)
-    write_env('EC2_SECRET_KEY', cfg.get('passwords', 'horizon_keystone_admin'), fh)
+    hkpw = cfg.get('passwords', 'horizon_keystone_admin', auto_pw=False)
+    if hkpw:
+        write_env('EC2_SECRET_KEY', hkpw, fh)
     write_env('EC2_USER_ID', EC2_USER_ID, fh)
     write_env('EC2_CERT', '~/cert.pem', fh)
 
@@ -92,7 +96,9 @@ def generate_nova_env(fh, cfg):
     fh.write('# Nova stuff')
     fh.write(os.linesep)
     ip = cfg.get('host', 'ip')
-    write_env('NOVA_PASSWORD', cfg.get('passwords', 'horizon_keystone_admin'), fh)
+    hkpw = cfg.get('passwords', 'horizon_keystone_admin', auto_pw=False)
+    if hkpw:
+        write_env('NOVA_PASSWORD', hkpw, fh)
     write_env('NOVA_URL', 'http://%s:%s/v2.0' % (ip, NOVA_PORT), fh)
     write_env('NOVA_PROJECT_ID', NOVA_PROJECT, fh)
     write_env('NOVA_REGION_NAME', NOVA_REGION, fh)
@@ -105,7 +111,9 @@ def generate_os_env(fh, cfg):
     fh.write('# Openstack stuff')
     fh.write(os.linesep)
     ip = cfg.get('host', 'ip')
-    write_env('OS_PASSWORD', cfg.get('passwords', 'horizon_keystone_admin'), fh)
+    hkpw = cfg.get('passwords', 'horizon_keystone_admin', auto_pw=False)
+    if hkpw:
+        write_env('OS_PASSWORD', hkpw, fh)
     write_env('OS_TENANT_NAME', OS_TENANT_NAME, fh)
     write_env('OS_USERNAME', OS_USERNAME, fh)
     write_env('OS_AUTH_URL', 'http://%s:%s/v2.0' % (ip, OS_AUTH_PORT), fh)
@@ -122,8 +130,9 @@ def generate_local_rc(fn=None, cfg=None):
         for (out_name, cfg_data) in CFG_MAKE.items():
             section = cfg_data[0]
             key = cfg_data[1]
-            value = cfg.get(section, key)
-            write_env(out_name, value, fh)
+            value = cfg.get(section, key, auto_pw=False)
+            if value:
+                write_env(out_name, value, fh)
         generate_ec2_env(fh, cfg)
         generate_nova_env(fh, cfg)
         generate_os_env(fh, cfg)
@@ -140,7 +149,7 @@ def main():
         fn = DEF_FN
     generate_local_rc(fn)
     print("Check file \"%s\" for your environment configuration." \
-              % (os.path.normpath(fn)))
+              % (sh.abspth(fn)))
     return 0
 
 
