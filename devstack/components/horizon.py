@@ -73,6 +73,10 @@ APACHE_LOG_LOCATIONS = {
     }
 }
 
+#rhel fixups
+RHEL_SOCKET_CONF = "/etc/httpd/conf.d/wsgi_socket_prefix.conf"
+RHEL_HTTPD_CONF = '/etc/httpd/conf/httpd.conf'
+
 #users which apache may not like starting as
 BAD_APACHE_USERS = ['root']
 
@@ -190,12 +194,10 @@ class HorizonInstaller(comp.PythonInstallComponent):
         try:
             sh.root_mode()
             #fix the socket prefix to someplace we can use
-            socket_conf = "/etc/httpd/conf.d/wsgi_socket_prefix.conf"
-            wsgi_socket_loc = sh.joinpths(self.log_dir, "wsgi-socket")
-            fc = "WSGISocketPrefix %s" % (wsgi_socket_loc)
-            sh.write_file(socket_conf, fc)
+            fc = "WSGISocketPrefix %s" % (sh.joinpths(self.log_dir, "wsgi-socket"))
+            sh.write_file(RHEL_SOCKET_CONF, fc)
             #now adjust the run user and group
-            fc = sh.load_file('/etc/httpd/conf/httpd.conf')
+            fc = sh.load_file(RHEL_HTTPD_CONF)
             lines = fc.splitlines()
             new_lines = list()
             for line in lines:
@@ -204,8 +206,8 @@ class HorizonInstaller(comp.PythonInstallComponent):
                 if line.startswith("Group "):
                     line = "Group %s" % (group)
                 new_lines.append(line)
-            contents = utils.joinlinesep(*new_lines)
-            sh.write_file('/etc/httpd/conf/httpd.conf', contents)
+            fc = utils.joinlinesep(*new_lines)
+            sh.write_file(RHEL_HTTPD_CONF, fc)
         finally:
             sh.user_mode()
 
