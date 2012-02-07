@@ -81,6 +81,11 @@ def _get_pkg_manager(distro, keep_packages):
 
 
 def _pre_run(action_name, root_dir, pkg_manager, config, components):
+    try:
+        env_gen.load_local_rc(_RC_FILE, config)
+    except OSError:
+        LOG.info('No rc file found.')
+
     if action_name == settings.INSTALL:
         if root_dir:
             sh.mkdir(root_dir)
@@ -267,11 +272,11 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
     config = common.get_config()
     #form the active instances (this includes ones we won't use)
     (all_instances, prerequisite_instances) = _instanciate_components(action_name,
-                                                              components,
-                                                              distro,
-                                                              pkg_manager,
-                                                              config,
-                                                              root_dir)
+                                                                      components,
+                                                                      distro,
+                                                                      pkg_manager,
+                                                                      config,
+                                                                      root_dir)
 
     #run anything before it gets going...
     _pre_run(action_name, root_dir=root_dir, pkg_manager=pkg_manager,
@@ -286,6 +291,10 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
             pre_inst.warm_configs()
     LOG.info("Your component configurations should now be nice and warm!")
     LOG.info("Activating components required to complete action %s." % (action_name))
+    #make a nice rc file for u
+    if action_name in _RC_FILE_MAKE_ACTIONS:
+        LOG.info("Generating a file at [%s] that will contain your environment settings." % (_RC_FILE))
+        env_gen.generate_local_rc(_RC_FILE, config)
     start_time = time.time()
     results = list()
     force = program_args.get('force', False)
@@ -321,10 +330,6 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
                 stop_instance = prerequisite_instances[component]
                 _stop(component, stop_instance, force)
             _uninstall(component, instance, force)
-    #make a nice rc file for u
-    if not sh.exists(_RC_FILE) and action_name in _RC_FILE_MAKE_ACTIONS:
-        LOG.info("Generating a file at [%s] that will contain your environment settings." % (_RC_FILE))
-        env_gen.generate_local_rc(_RC_FILE, config)
     end_time = time.time()
     #any post run actions go now
     _post_run(action_name, root_dir=root_dir, pkg_manager=pkg_manager,
