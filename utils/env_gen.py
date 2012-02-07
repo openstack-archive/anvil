@@ -157,6 +157,7 @@ def load_local_rc(fn=None, cfg=None):
                     am_set += 1
     return am_set
 
+
 def main():
     opts = optparse.OptionParser()
     opts.add_option("-o", "--output", dest="filename",
