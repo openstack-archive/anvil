@@ -82,6 +82,9 @@ BAD_APACHE_USERS = ['root']
 
 LOG = logging.getLogger("devstack.components.horizon")
 
+#apache logs will go here
+LOGS_DIR = "logs"
+
 #the pkg json files horizon requires for installation
 REQ_PKGS = ['general.json', 'horizon.json']
 
@@ -99,7 +102,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.horizon_dir = sh.joinpths(self.appdir, ROOT_HORIZON)
         self.dash_dir = sh.joinpths(self.appdir, ROOT_DASH)
-        self.log_dir = sh.joinpths(self.component_root, "logs")
+        self.log_dir = sh.joinpths(self.component_root, LOGS_DIR)
         self._check_ug()
 
     def _get_download_locations(self):
@@ -123,6 +126,9 @@ class HorizonInstaller(comp.PythonInstallComponent):
             raise excp.ConfigException(msg)
         if not sh.group_exists(group):
             msg = "No group named %s exists on this system!" % (group)
+            raise excp.ConfigException(msg)
+        if user in BAD_APACHE_USERS:
+            msg = "You may want to adjust your configuration, (user=%s, group=%s) will not work with apache!" % (user, group)
             raise excp.ConfigException(msg)
 
     def _get_pkgs(self):
@@ -188,11 +194,9 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def _rhel_fixups(self):
         #it seems like to get this to work
-        #we need to do some conf.d work which sort of sucks
-        #we need to make a file with the following
+        #we need to do some conf.d/conf work which sort of sucks
         (user, group) = self._get_apache_user_group()
-        try:
-            sh.root_mode()
+        with sh.Rooted(True):
             #fix the socket prefix to someplace we can use
             fc = "WSGISocketPrefix %s" % (sh.joinpths(self.log_dir, "wsgi-socket"))
             sh.write_file(RHEL_SOCKET_CONF, fc)
@@ -208,8 +212,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
                 new_lines.append(line)
             fc = utils.joinlinesep(*new_lines)
             sh.write_file(RHEL_HTTPD_CONF, fc)
-        finally:
-            sh.user_mode()
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
@@ -236,8 +238,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
         mp = dict()
         if config_fn == HORIZON_APACHE_CONF:
             (user, group) = self._get_apache_user_group()
-            if user in BAD_APACHE_USERS:
-                LOG.warn("You may want to adjust your configuration, (user=%s, group=%s) will typically not work with apache!", user, group)
             mp['USER'] = user
             mp['GROUP'] = group
             mp['HORIZON_DIR'] = self.appdir

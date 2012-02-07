@@ -62,10 +62,6 @@ DB_ACTIONS = {
     },
 }
 
-#annoying adjustments
-RHEL_FIX_GRANTS = ['perl', '-p', '-i', '-e', "'s/^skip-grant-tables/#skip-grant-tables/g'", '/etc/my.cnf']
-UBUNTU_HOST_ADJUST = ['perl', '-p', '-i', '-e', "'s/127.0.0.1/0.0.0.0/g'", '/etc/mysql/my.cnf']
-
 #need to reset pw to blank since this distributions don't seem to always reset it when u uninstall the db
 RESET_BASE_PW = ''
 
@@ -147,10 +143,28 @@ class DBInstaller(comp.PkgInstallComponent):
         dbtype = self.cfg.get("db", "type")
         if self.distro == settings.RHEL6 and dbtype == MYSQL:
             LOG.info("Fixing up %s mysql configs." % (settings.RHEL6))
-            sh.execute(*RHEL_FIX_GRANTS, run_as_root=True)
+            fc = sh.load_file('/etc/my.cnf')
+            lines = fc.splitlines()
+            new_lines = list()
+            for line in lines:
+                if line.startswith('skip-grant-tables'):
+                    line = '#' + line
+                new_lines.append(line)
+            fc = utils.joinlinesep(*new_lines)
+            with sh.Rooted(True):
+                sh.write_file('/etc/my.cnf', fc)
         elif self.distro == settings.UBUNTU11 and dbtype == MYSQL:
             LOG.info("Fixing up %s mysql configs." % (settings.UBUNTU11))
-            sh.execute(*UBUNTU_HOST_ADJUST, run_as_root=True)
+            fc = sh.load_file('/etc/mysql/my.cnf')
+            lines = fc.splitlines()
+            new_lines = list()
+            for line in lines:
+                if line.startswith('bind-address'):
+                    line = 'bind-address = %s' % ('0.0.0.0')
+                new_lines.append(line)
+            fc = utils.joinlinesep(*new_lines)
+            with sh.Rooted(True):
+                sh.write_file('/etc/mysql/my.cnf', fc)
 
     def _get_pkgs(self):
         return list(REQ_PKGS)

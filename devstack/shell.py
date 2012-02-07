@@ -184,16 +184,6 @@ def _gen_password(pw_len):
     return stdout.strip()
 
 
-def write_file_su(fn, text, flush=True):
-    with tempfile.NamedTemporaryFile() as fh:
-        tmp_fn = fh.name
-        fh.write(text)
-        if flush:
-            fh.flush()
-        cmd = ['cp', tmp_fn, fn]
-        execute(*cmd, run_as_root=True)
-
-
 def prompt_password(pw_prompt=None):
     if pw_prompt:
         rc = getpass.getpass(pw_prompt)
@@ -479,16 +469,17 @@ def got_root():
 
 
 def root_mode():
-    uid_gid = (getuid(ROOT_USER), getgid(ROOT_USER))
-    if uid_gid[0] is None or uid_gid[1] is None:
+    root_uid = getuid(ROOT_USER)
+    root_gid = getgid(ROOT_USER)
+    if root_uid is None or root_gid is None:
         LOG.warn("Cannot escalate permissions to (user=%s) - does that user exist??" % (ROOT_USER))
     else:
         try:
-            LOG.debug("Escalating permissions to (user=%s, group=%s)" % (uid_gid[0], uid_gid[1]))
-            os.setreuid(0, uid_gid[0])
-            os.setregid(0, uid_gid[1])
+            LOG.debug("Escalating permissions to (user=%s, group=%s)" % (root_uid, root_gid))
+            os.setreuid(0, root_uid)
+            os.setregid(0, root_gid)
         except:
-            LOG.warn("Cannot escalate permissions to (user=%s, group=%s)" % (uid_gid[0], uid_gid[1]))
+            LOG.warn("Cannot escalate permissions to (user=%s, group=%s)" % (root_uid, root_gid))
 
 
 def user_mode():

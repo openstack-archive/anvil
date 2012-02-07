@@ -115,9 +115,7 @@ def load_json(fn):
 def get_host_ip(def_net_ifcs, def_ip_version):
     ip = None
     ifc = None
-
     interfaces = get_interfaces()
-
     for net_ifc in def_net_ifcs:
         def_info = interfaces.get(net_ifc)
         if def_info:
