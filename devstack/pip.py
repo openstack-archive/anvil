@@ -39,10 +39,16 @@ def install(pips, distro):
         pipfull = name
         pipinfo = pips.get(name)
         if pipinfo and pipinfo.get('version'):
-            version = str(pipinfo.get('version'))
+            # Move str after the test since str(None) is 'None'
+            version = pipinfo.get('version')
             if version:
-                pipfull = pipfull + "==" + version
+                pipfull = pipfull + "==" + str(version)
         actions.append(pipfull)
+        # Move str after the test since str(None) is 'None'
+        options = pipinfo.get('options')
+        if options:
+            LOG.info("Using pip options:%s" % (options))
+            actions.append(str(options))
     if actions:
         LOG.info("Installing python packages [%s]" % (", ".join(actions)))
         root_cmd = PIP_CMD_NAMES.get(distro, 'pip')
