@@ -170,7 +170,11 @@ def joinpths(*paths):
 
 def _get_suids():
     uid = os.environ.get('SUDO_UID')
+    if uid is not None:
+        uid = int(uid)
     gid = os.environ.get('SUDO_GID')
+    if gid is not None:
+        gid = int(gid)
     return (uid, gid)
 
 
@@ -360,7 +364,7 @@ def getuser():
     (uid, _) = _get_suids()
     if uid is None:
         return getpass.getuser()
-    return pwd.getpwuid(int(uid)).pw_name
+    return pwd.getpwuid(uid).pw_name
 
 
 def getuid(username):
@@ -378,10 +382,10 @@ def getgid(groupname):
 
 def getgroupname():
     (_, gid) = _get_suids()
-    if(gid is None):
+    if gid is None:
         return os.getgid()
     else:
-        return grp.getgrgid(int(gid)).gr_name
+        return grp.getgrgid(gid).gr_name
 
 
 def create_loopback_file(fname, size, bsize=1024, fs_type='ext3', run_as_root=False):
@@ -485,11 +489,11 @@ def root_mode():
 
 def user_mode():
     (sudo_uid, sudo_gid) = _get_suids()
-    if sudo_uid != None and sudo_gid != None:
+    if sudo_uid is not None and sudo_gid is not None:
         try:
             LOG.debug("Dropping permissions to (user=%s, group=%s)" % (sudo_uid, sudo_gid))
-            os.setregid(0, int(sudo_gid))
-            os.setreuid(0, int(sudo_uid))
+            os.setregid(0, sudo_gid)
+            os.setreuid(0, sudo_uid)
         except OSError:
             LOG.warn("Cannot drop permissions to (user=%s, group=%s)" % (sudo_uid, sudo_gid))
     else:
