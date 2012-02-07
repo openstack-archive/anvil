@@ -54,7 +54,6 @@ def uninstall(pips, distro, skip_errors=True):
     pipnames = sorted(pips.keys())
     LOG.info("Uninstalling python packages [%s]" % (", ".join(pipnames)))
     for name in pipnames:
-        pipinfo = pips.get(name, dict())
         try:
             root_cmd = PIP_CMD_NAMES.get(distro, 'pip')
             cmd = [root_cmd, 'uninstall'] + PIP_UNINSTALL_CMD_OPTS + [name]

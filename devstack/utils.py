@@ -24,7 +24,6 @@ import platform
 import random
 import re
 import termcolor
-import traceback
 
 from devstack import exceptions as excp
 from devstack import log as logging
