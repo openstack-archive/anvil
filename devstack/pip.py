@@ -23,6 +23,7 @@ from devstack import settings
 LOG = logging.getLogger("devstack.pip")
 PIP_UNINSTALL_CMD_OPTS = ['-y', '-q']
 PIP_INSTALL_CMD_OPTS = ['-q']
+
 #the pip command is named different :-(
 PIP_CMD_NAMES = {
     settings.RHEL6: 'pip-python',

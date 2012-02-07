@@ -426,10 +426,11 @@ def umount(dev_name, ignore_errors=True):
             pass
 
 
-def unlink(path, ignore_errors=True):
+def unlink(path, ignore_errors=True, run_as_root=False):
     try:
         LOG.debug("Unlinking (removing) %s" % (path))
-        os.unlink(path)
+        with Rooted(run_as_root):
+            os.unlink(path)
     except OSError:
         if not ignore_errors:
             raise

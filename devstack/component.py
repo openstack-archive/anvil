@@ -298,8 +298,7 @@ class PkgUninstallComponent(ComponentBase):
         if filestouched:
             LOG.info("Removing %s touched files (%s)" % (len(filestouched), ", ".join(filestouched)))
             for fn in filestouched:
-                if fn:
-                    sh.unlink(fn)
+                sh.unlink(fn, run_as_root=True)
 
     def _uninstall_dirs(self):
         dirsmade = self.tracereader.dirs_made()
