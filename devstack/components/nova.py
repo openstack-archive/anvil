@@ -209,10 +209,11 @@ class NovaUninstaller(comp.PythonUninstallComponent):
     def _clear_domains(self):
         libvirt_type = self.cfg.get('nova', 'libvirt_type')
         inst_prefix = self.cfg.get('nova', 'instance_name_prefix')
-        virt_protocol = LIBVIRT_PROTOCOL_MAP.get(libvirt_type)
-        if virt_protocol and inst_prefix:
+        vir_driver = self.cfg.get('nova', 'virt_driver')
+        if vir_driver == 'libvirt' and inst_prefix and libvirt_type:
             #attempt to clear out dead domains
             #late import so this is not always required
+            virt_protocol = LIBVIRT_PROTOCOL_MAP[libvirt_type]
             try:
                 import libvirt
                 with sh.Rooted(True):
