@@ -377,8 +377,7 @@ def getuid(username):
 
 
 def gethomedir():
-    #TODO will just using os.path.expanduser("~") work??
-    return pwd.getpwuid(geteuid()).pw_dir
+    return os.path.expanduser("~")
 
 
 def getgid(groupname):

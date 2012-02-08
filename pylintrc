@@ -13,7 +13,7 @@
 # W0511: TODOs in code comments are fine.
 # W0613: Unused argument '??' should be ok (they are useful sometimes to know intention of variable)
 # W0622: Redefining id is fine.
-disable=C0111,W0142,W0622,C0301,R0902,R0201,R0914,W0613,R0912
+disable=C0111,W0142,W0622,C0301,R0902,R0201,R0914,W0613,R0912,R0801
 
 [Basic]
 

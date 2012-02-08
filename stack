@@ -24,13 +24,12 @@ import sys
 import traceback
 
 #this needs to happen immediately (or thats what it seems)
-log_fn = os.getenv('LOG_FILE')
-if(log_fn == None):
-    log_fn = os.path.normpath(os.path.join("conf", 'logging.ini'))
-logging.config.fileConfig(log_fn)
+LOG_FN = os.getenv('LOG_FILE')
+if(LOG_FN == None):
+    LOG_FN = os.path.normpath(os.path.join("conf", 'logging.ini'))
+logging.config.fileConfig(LOG_FN)
 
 from devstack import opts
-from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 

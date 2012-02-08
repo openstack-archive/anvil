@@ -114,7 +114,7 @@ def _pre_run(action_name, root_dir, pkg_manager, config, component_order, instan
         _gen_localrc(config, rc_fn)
 
 
-def _post_run(action_name, root_dir, pkg_manager, config, components, time_taken, results):
+def _post_run(action_name, root_dir, config, components, time_taken, results):
     LOG.info("It took (%s) to complete action [%s]" % (common.format_secs_taken(time_taken), action_name))
     if results:
         LOG.info('Check [%s] for traces of what happened.' % ", ".join(results))
@@ -161,16 +161,10 @@ def _print_cfgs(config_obj, action):
             LOG.info("Passwords:")
             map_print(passwords_gotten)
         if full_cfgs:
-            #TODO
-            #better way to do this?? (ie a list difference?)
-            filtered_mp = dict()
-            for key in full_cfgs.keys():
-                if key in passwords_gotten:
-                    continue
-                filtered_mp[key] = full_cfgs.get(key)
-            if filtered_mp:
+            filtered = {k: v for k, v in full_cfgs.items() if k not in passwords_gotten}
+            if filtered:
                 LOG.info("Configs:")
-                map_print(filtered_mp)
+                map_print(filtered)
         if db_dsns:
             LOG.info("Data source names:")
             map_print(db_dsns)
@@ -347,7 +341,7 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
             _uninstall(component, instance, force)
     end_time = time.time()
     #any post run actions go now
-    _post_run(action_name, root_dir=root_dir, pkg_manager=pkg_manager,
+    _post_run(action_name, root_dir=root_dir,
               config=config, components=components.keys(),
               time_taken=(end_time - start_time), results=results)
 
