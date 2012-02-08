@@ -98,6 +98,7 @@ class DBUninstaller(comp.PkgUninstallComponent):
         dbtype = self.cfg.get("db", "type")
         dbactions = DB_ACTIONS.get(dbtype)
         try:
+            #TODO: maybe this should be a subclass that handles these differences
             if dbactions and dbtype == MYSQL:
                 LOG.info(("Attempting to reset your mysql password so"
                           " that we can set it the next time you install."))
@@ -146,6 +147,7 @@ class DBInstaller(comp.PkgInstallComponent):
 
     def _configure_db_confs(self):
         dbtype = self.cfg.get("db", "type")
+        #TODO: maybe this should be a subclass that handles these differences
         if self.distro == settings.RHEL6 and dbtype == MYSQL:
             LOG.info("Fixing up %s mysql configs." % (settings.RHEL6))
             fc = sh.load_file('/etc/my.cnf')
@@ -186,6 +188,7 @@ class DBInstaller(comp.PkgInstallComponent):
 
         #set your password
         try:
+            #TODO: maybe this should be a subclass that handles these differences
             if dbactions and dbtype == MYSQL:
                 pwd_cmd = dbactions.get('set_pwd')
                 if pwd_cmd:
