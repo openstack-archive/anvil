@@ -14,7 +14,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from devstack import exceptions as excp
 from devstack import log as logging
+from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 
@@ -28,12 +30,42 @@ LIBVIRT_PROTOCOL_MAP = {
 }
 VIRT_TYPE = 'libvirt'
 VIRT_LIB = VIRT_TYPE
+DEFAULT_VIRT = 'qemu'
+
+#how libvirt is restarted
+LIBVIRT_RESTART_CMD = {
+    settings.RHEL6: ['service', 'libvirtd', 'restart'],
+    settings.FEDORA16: ['service', 'libvirtd', 'restart'],
+    #whyyyy??
+    settings.UBUNTU11: ['service', 'libvirt-bin', 'restart'],
+}
+
+#how we check its status
+LIBVIRT_STATUS_CMD = {
+    settings.RHEL6: ['service', 'libvirtd', 'status'],
+    settings.FEDORA16: ['service', 'libvirtd', 'status'],
+    #whyyyy??
+    settings.UBUNTU11: ['service', 'libvirt-bin', 'status'],
+}
+
+#status is either dead or alive!
+_DEAD = 'DEAD'
+_ALIVE = 'ALIVE'
 
 
 def _get_virt_lib():
     #late import so that we don't always need this library to be active
     #ie if u aren't using libvirt in the first place
     return utils.import_module(VIRT_LIB)
+
+
+def _status(distro):
+    cmd = LIBVIRT_STATUS_CMD[distro]
+    (sysout, _) = sh.execute(*cmd, run_as_root=False, check_exit_code=False)
+    if sysout.find("running") != -1:
+        return _ALIVE
+    else:
+        return _DEAD
 
 
 def _destroy_domain(conn, dom_name):
@@ -47,6 +79,34 @@ def _destroy_domain(conn, dom_name):
         dom.undefine()
     except libvirt.libvirtError, e:
         LOG.warn("Could not clear out libvirt domain (%s) due to [%s]" % (dom_name, e.message))
+
+
+def restart(distro):
+    if _status(distro) != _ALIVE:
+        cmd = LIBVIRT_RESTART_CMD[distro]
+        sh.execute(*cmd, run_as_root=True)
+
+
+def default(virt_type):
+    if not virt_type or not LIBVIRT_PROTOCOL_MAP.get(virt_type):
+        return DEFAULT_VIRT
+    else:
+        return virt_type
+
+
+def virt_ok(virt_type, distro):
+    virt_protocol = LIBVIRT_PROTOCOL_MAP.get(virt_type)
+    if not virt_protocol:
+        return False
+    #ensure we can do this
+    restart(distro)
+    #this is our sanity check to ensure that we can actually use that virt technology
+    cmd = ['virsh', '-c', virt_protocol, 'uri']
+    try:
+        sh.execute(*cmd, run_as_root=True)
+        return True
+    except excp.ProcessExecutionError:
+        return False
 
 
 def clear_libvirt_domains(virt_type, inst_prefix):

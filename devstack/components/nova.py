@@ -176,13 +176,6 @@ QUANTUM_OPENSWITCH_OPS = {
     'quantum_use_dhcp': None,
 }
 
-#ensure libvirt restarted
-#TODO: maybe this should be a subclass that handles these differences
-LIBVIRT_RESTART_CMD = {
-    settings.RHEL6: ['service', 'libvirtd', 'restart'],
-    settings.UBUNTU11: ['/etc/init.d/libvirt-bin', 'restart'],
-}
-
 #this is a special conf
 CLEANER_DATA_CONF = 'clean_iptables.sh'
 CLEANER_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
@@ -206,10 +199,10 @@ class NovaUninstaller(comp.PythonUninstallComponent):
         sh.execute(*cmd, run_as_root=True)
 
     def _clear_libvirt_domains(self):
-        libvirt_type = self.cfg.get('nova', 'libvirt_type')
         inst_prefix = self.cfg.get('nova', 'instance_name_prefix')
         virt_driver = self.cfg.get('nova', 'virt_driver')
         if virt_driver == virsh.VIRT_TYPE:
+            libvirt_type = virsh.default(self.cfg.get('nova', 'libvirt_type'))
             virsh.clear_libvirt_domains(libvirt_type, inst_prefix)
 
 
@@ -439,10 +432,14 @@ class NovaRuntime(comp.PythonRuntime):
         return result
 
     def pre_start(self):
-        #ensure libvirt started
-        cmd = LIBVIRT_RESTART_CMD.get(self.distro)
-        if cmd:
-            sh.execute(*cmd, run_as_root=True)
+        virt_driver = self.cfg.get('nova', 'virt_driver')
+        if virt_driver == virsh.VIRT_TYPE:
+            virt_type = virsh.default(self.cfg.get('nova', 'libvirt_type'))
+            if not virsh.virt_ok(virt_type, self.distro):
+                msg = ("Libvirt type %s for distro %s does not seem to be active or configured correctly, "
+                       "perhaps you should be using %s instead." % (virt_type, self.distro, virsh.DEFAULT_VIRT))
+                raise exceptions.StartException(msg)
+            virsh.restart(self.distro)
 
     def _get_param_map(self, app_name):
         params = comp.PythonRuntime._get_param_map(self, app_name)
@@ -513,8 +510,9 @@ class NovaConfigurator(object):
         nova_conf.add('sql_connection', self.cfg.get_dbdsn('nova'))
 
         #configure anything libvirt releated?
-        libvirt_type = self._getstr('libvirt_type')
-        if libvirt_type:
+        virt_driver = self._getstr('virt_driver')
+        if virt_driver == virsh.VIRT_TYPE:
+            libvirt_type = virsh.default(self._getstr('libvirt_type'))
             self._configure_libvirt(libvirt_type, nova_conf)
 
         #how instances will be presented
@@ -677,11 +675,8 @@ class NovaConfigurator(object):
         os.chmod(instances_path, stat.S_IRWXO | stat.S_IRWXG | stat.S_IRWXU)
 
     def _configure_libvirt(self, virt_type, nova_conf):
-        if virt_type == 'kvm' and not sh.exists("/dev/kvm"):
-            LOG.warn("No kvm found at /dev/kvm, switching to qemu mode.")
-            virt_type = "qemu"
         if virt_type == 'lxc':
-            #TODO
+            #TODO need to add some goodies here
             pass
         nova_conf.add('libvirt_type', virt_type)
 
