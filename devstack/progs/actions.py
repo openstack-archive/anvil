@@ -355,6 +355,7 @@ def _run_action(args):
     (rep, maxlen) = utils.welcome(_WELCOME_MAP.get(action))
     header = utils.center_text("Action Runner", rep, maxlen)
     print(header)
+    #here on out should be using the logger
     if not defaulted_components:
         LOG.info("Activating components [%s]" % (", ".join(sorted(components.keys()))))
     else:
