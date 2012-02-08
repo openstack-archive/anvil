@@ -18,6 +18,7 @@ import time
 
 from devstack import cfg
 from devstack import date
+from devstack import env_rc
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import settings
@@ -30,8 +31,6 @@ from devstack.packaging import yum
 from devstack.components import keystone
 
 from devstack.progs import common
-
-from utils import env_gen
 
 LOG = logging.getLogger("devstack.progs.actions")
 
@@ -86,7 +85,7 @@ def _pre_run(action_name, root_dir, pkg_manager, config, component_order, instan
     try:
         if sh.isfile(rc_fn):
             LOG.info("Attempting to load rc file at [%s] which has your environment settings." % (rc_fn))
-            am_loaded = env_gen.load_local_rc(rc_fn, config)
+            am_loaded = env_rc.load_local_rc(rc_fn, config)
             loaded_env = True
             LOG.info("Loaded [%s] settings from rc file [%s]" % (am_loaded, rc_fn))
     except IOError:
@@ -281,7 +280,7 @@ def _instanciate_components(action_name, components, distro, pkg_manager, config
 
 def _gen_localrc(config, fn):
     LOG.info("Generating a file at [%s] that will contain your environment settings." % (fn))
-    env_gen.generate_local_rc(fn, config)
+    env_rc.generate_local_rc(fn, config)
 
 
 def _run_components(action_name, component_order, components, distro, root_dir, program_args):
