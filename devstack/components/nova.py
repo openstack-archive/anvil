@@ -177,6 +177,7 @@ QUANTUM_OPENSWITCH_OPS = {
 }
 
 #ensure libvirt restarted
+#TODO: maybe this should be a subclass that handles these differences
 LIBVIRT_RESTART_CMD = {
     settings.RHEL6: ['service', 'libvirtd', 'restart'],
     settings.UBUNTU11: ['/etc/init.d/libvirt-bin', 'restart'],
