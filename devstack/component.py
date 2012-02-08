@@ -56,6 +56,9 @@ class ComponentBase(object):
             return list()
         return list(deps)
 
+    def verify(self):
+        pass
+
     def warm_configs(self):
         pass
 

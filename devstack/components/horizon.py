@@ -14,8 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import os
-
 from devstack import component as comp
 from devstack import exceptions as excp
 from devstack import log as logging
@@ -39,6 +37,7 @@ HORIZON_PY_CONF_TGT = ['local', 'local_settings.py']
 HORIZON_APACHE_CONF = '000-default'
 
 #http://wiki.apache.org/httpd/DistrosDefaultLayout
+#TODO: maybe this should be a subclass that handles these differences
 APACHE_CONF_TARGETS = {
     settings.UBUNTU11: '/etc/apache2/sites-enabled/000-default',
     #ensure runs after wsgi.conf
@@ -55,6 +54,7 @@ BLACKHOLE_DIR = '.blackhole'
 
 #hopefully this will be distro independent ??
 #of course they aren't!
+#TODO: maybe this should be a subclass that handles these differences
 APACHE_SVC_NAME = {
     settings.RHEL6: 'httpd',
     settings.UBUNTU11: 'apache2',
@@ -65,6 +65,7 @@ APACHE_STOP_CMD = ['service', '%SERVICE%', 'stop']
 APACHE_STATUS_CMD = ['service', '%SERVICE%', 'status']
 
 #rhel fixups
+#TODO: maybe this should be a subclass that handles these differences
 RHEL_FIXUPS = {
     'SOCKET_CONF': "/etc/httpd/conf.d/wsgi-socket-prefix.conf",
     'HTTPD_CONF': '/etc/httpd/conf/httpd.conf',
@@ -94,7 +95,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
         self.horizon_dir = sh.joinpths(self.appdir, ROOT_HORIZON)
         self.dash_dir = sh.joinpths(self.appdir, ROOT_DASH)
         self.log_dir = sh.joinpths(self.component_root, LOGS_DIR)
-        self._check_ug()
 
     def _get_download_locations(self):
         places = list()
@@ -103,6 +103,9 @@ class HorizonInstaller(comp.PythonInstallComponent):
             'branch': ("git", "horizon_branch"),
         })
         return places
+
+    def verify(self):
+        self._check_ug()
 
     def _get_symlinks(self):
         src = self._get_target_config_name(HORIZON_APACHE_CONF)
@@ -190,7 +193,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def _config_fixups(self):
         #currently just handling rhel fixups
-        #TODO: maybe this should be a subclass
+        #TODO: maybe this should be a subclass that handles these differences
         if self.distro != settings.RHEL6:
             return
         #it seems like to get this to work

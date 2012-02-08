@@ -16,7 +16,6 @@
 
 import time
 
-from devstack import cfg
 from devstack import date
 from devstack import env_rc
 from devstack import exceptions as excp
@@ -85,7 +84,7 @@ def _pre_run(action_name, root_dir, pkg_manager, config, component_order, instan
     try:
         if sh.isfile(rc_fn):
             LOG.info("Attempting to load rc file at [%s] which has your environment settings." % (rc_fn))
-            am_loaded = env_rc.load_local_rc(rc_fn, config)
+            am_loaded = env_rc.load_local_rc(rc_fn)
             loaded_env = True
             LOG.info("Loaded [%s] settings from rc file [%s]" % (am_loaded, rc_fn))
     except IOError:
@@ -93,9 +92,17 @@ def _pre_run(action_name, root_dir, pkg_manager, config, component_order, instan
     if action_name == settings.INSTALL:
         if root_dir:
             sh.mkdir(root_dir)
-    LOG.info("Warming up your component configurations (ie so you won't be prompted later)")
+    LOG.info("Verifying that the components are ready to rock-n-roll.")
     all_instances = instances[0]
     prerequisite_instances = instances[1]
+    for component in component_order:
+        base_inst = all_instances.get(component)
+        if base_inst:
+            base_inst.verify()
+        pre_inst = prerequisite_instances.get(component)
+        if pre_inst:
+            pre_inst.verify()
+    LOG.info("Warming up your component configurations (ie so you won't be prompted later)")
     for component in component_order:
         base_inst = all_instances.get(component)
         if base_inst:
@@ -103,12 +110,11 @@ def _pre_run(action_name, root_dir, pkg_manager, config, component_order, instan
         pre_inst = prerequisite_instances.get(component)
         if pre_inst:
             pre_inst.warm_configs()
-    LOG.info("Your component configurations should now be nice and warm!")
     if action_name in _RC_FILE_MAKE_ACTIONS and not loaded_env:
         _gen_localrc(config, rc_fn)
 
 
-def _post_run(action_name, root_dir, pkg_manager, config, components, time_taken, results):
+def _post_run(action_name, root_dir, config, components, time_taken, results):
     LOG.info("It took (%s) to complete action [%s]" % (common.format_secs_taken(time_taken), action_name))
     if results:
         LOG.info('Check [%s] for traces of what happened.' % ", ".join(results))
@@ -117,21 +123,7 @@ def _post_run(action_name, root_dir, pkg_manager, config, components, time_taken
     #try to remove the root - ok if this fails
     if action_name == settings.UNINSTALL:
         if root_dir:
-            sh.rmdir(root_dir, run_as_root=True)
-    #mirror the output the old devstack was also giving
-    if action_name == settings.START:
-        host_ip = config.get('host', 'ip')
-        if settings.HORIZON in components:
-            port = config.get('horizon', 'port')
-            LOG.info("Horizon should now be available at http://%s:%s/" % (host_ip, port))
-        if settings.KEYSTONE in components:
-            shared_params = keystone.get_shared_params(config)
-            msg = "Keystone is serving at {KEYSTONE_SERVICE_PROTOCOL}://{KEYSTONE_SERVICE_HOST}:{KEYSTONE_SERVICE_PORT}/v2.0/"
-            LOG.info(msg.format(**shared_params))
-            LOG.info("The default users are: admin and demo.")
-            admin_pw = config.get('passwords', 'horizon_keystone_admin')
-            LOG.info("The admin password is: %s" % (admin_pw))
-        LOG.info("This is your host ip: %s" % (host_ip))
+            sh.rmdir(root_dir)
 
 
 def _print_cfgs(config_obj, action):
@@ -155,16 +147,10 @@ def _print_cfgs(config_obj, action):
             LOG.info("Passwords:")
             map_print(passwords_gotten)
         if full_cfgs:
-            #TODO
-            #better way to do this?? (ie a list difference?)
-            filtered_mp = dict()
-            for key in full_cfgs.keys():
-                if key in passwords_gotten:
-                    continue
-                filtered_mp[key] = full_cfgs.get(key)
-            if filtered_mp:
+            filtered = dict((k, v) for (k, v) in full_cfgs.items() if k not in passwords_gotten)
+            if filtered:
                 LOG.info("Configs:")
-                map_print(filtered_mp)
+                map_print(filtered)
         if db_dsns:
             LOG.info("Data source names:")
             map_print(db_dsns)
@@ -341,7 +327,7 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
             _uninstall(component, instance, force)
     end_time = time.time()
     #any post run actions go now
-    _post_run(action_name, root_dir=root_dir, pkg_manager=pkg_manager,
+    _post_run(action_name, root_dir=root_dir,
               config=config, components=components.keys(),
               time_taken=(end_time - start_time), results=results)
 
@@ -369,6 +355,7 @@ def _run_action(args):
     (rep, maxlen) = utils.welcome(_WELCOME_MAP.get(action))
     header = utils.center_text("Action Runner", rep, maxlen)
     print(header)
+    #here on out should be using the logger
     if not defaulted_components:
         LOG.info("Activating components [%s]" % (", ".join(sorted(components.keys()))))
     else:

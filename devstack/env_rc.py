@@ -17,14 +17,8 @@
 import os
 import re
 import subprocess
-import sys
 
-from devstack import cfg
-from devstack import shell as sh
-from devstack import utils
-
-from devstack.progs import common
-
+#general extraction cfg keys
 CFG_MAKE = {
     'ADMIN_PASSWORD': ('passwords', 'horizon_keystone_admin'),
     'MYSQL_PASSWORD': ('passwords', 'sql'),
@@ -110,9 +104,7 @@ def _generate_os_env(fh, cfg):
     _write_line("", fh)
 
 
-def generate_local_rc(fn, cfg=None):
-    if not cfg:
-        cfg = common.get_config()
+def generate_local_rc(fn, cfg):
     with open(fn, "w") as fh:
         _write_line('# General stuff', fh)
         for (out_name, cfg_data) in CFG_MAKE.items():
@@ -127,9 +119,7 @@ def generate_local_rc(fn, cfg=None):
         _generate_os_env(fh, cfg)
 
 
-def load_local_rc(fn, cfg=None):
-    if not cfg:
-        cfg = common.get_config()
+def load_local_rc(fn):
     am_set = 0
     with open(fn, "r") as fh:
         for line in fh:

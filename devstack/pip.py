@@ -43,12 +43,12 @@ def install(pips, distro):
             version = pipinfo.get('version')
             if version is not None:
                 pipfull = pipfull + "==" + str(version)
-        LOG.info("Installing python package (%s)" % (pipfull))
+        LOG.debug("Installing python package (%s)" % (pipfull))
         real_cmd = [root_cmd, 'install']
         real_cmd += PIP_INSTALL_CMD_OPTS
         options = pipinfo.get('options')
         if options is not None:
-            LOG.info("Using pip options: %s" % (str(options)))
+            LOG.debug("Using pip options: %s" % (str(options)))
             real_cmd += [str(options)]
         real_cmd += [pipfull]
         sh.execute(*real_cmd, run_as_root=True)
@@ -60,7 +60,8 @@ def uninstall(pips, distro, skip_errors=True):
     LOG.info("Uninstalling python packages (%s) using command (%s)" % (", ".join(pipnames), root_cmd))
     for name in pipnames:
         try:
-            cmd = [root_cmd, 'uninstall'] + PIP_UNINSTALL_CMD_OPTS + [name]
+            LOG.debug("Uninstall python package (%s)" % (name))
+            cmd = [root_cmd, 'uninstall'] + PIP_UNINSTALL_CMD_OPTS + [str(name)]
             sh.execute(*cmd, run_as_root=True)
         except excp.ProcessExecutionError:
             if skip_errors:

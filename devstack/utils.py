@@ -23,6 +23,7 @@ import os
 import platform
 import random
 import re
+import sys
 import termcolor
 
 from devstack import exceptions as excp
@@ -97,6 +98,14 @@ def to_bytes(text):
     else:
         byte_val = int(text)
     return byte_val
+
+
+def import_module(module_name):
+    try:
+        __import__(module_name)
+        return sys.modules.get(module_name, None)
+    except ImportError:
+        return None
 
 
 def load_json(fn):
@@ -485,6 +494,13 @@ def _goodbye_header(worked):
 \ right now.        /
  -------------------
 ''')
+    potentials_fails.append(r'''
+ _________________
+/ Welcome to the  \
+| National Cheese |
+\ Emporium        /
+ -----------------
+''')
     if not worked:
         msg = random.choice(potentials_fails).strip("\n\r")
         colored_msg = _color_blob(msg, 'red')
@@ -528,9 +544,7 @@ def parse_components(components):
             if component_name in settings.COMPONENT_NAMES:
                 component_opts = mtch.group(2)
                 components_opts_cleaned = list()
-                if not component_opts:
-                    pass
-                else:
+                if component_opts:
                     sp_component_opts = component_opts.split(",")
                     for co in sp_component_opts:
                         cleaned_opt = co.strip()

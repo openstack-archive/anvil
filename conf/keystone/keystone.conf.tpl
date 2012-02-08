@@ -1,11 +1,12 @@
-# From commit 30439a6dc4
+# From commit fcd135252b
 
 [DEFAULT]
+
 # Show more verbose log output (sets INFO log level output)
-verbose = True
+verbose = False
 
 # Show debugging output in logs (sets DEBUG log level output)
-debug = True
+debug = False
 
 # Which backend store should Keystone use by default.
 # Default: 'sqlite'
@@ -22,7 +23,7 @@ backends = keystone.backends.sqlalchemy
 
 # Dictionary Maps every service to a header.Missing services would get header
 # X_(SERVICE_NAME) Key => Service Name, Value => Header Name
-service-header-mappings = {
+service_header_mappings = {
 	'nova' : 'X-Server-Management-Url',
 	'swift' : 'X-Storage-Url',
 	'cdn' : 'X-CDN-Management-Url'}
@@ -66,13 +67,13 @@ ca_certs = /etc/keystone/ssl/certs/ca.pem
 cert_required = True
 
 #Role that allows to perform admin operations.
-keystone-admin-role = admin
+keystone_admin_role = admin
 
 #Role that allows to perform service admin operations.
-keystone-service-admin-role = KeystoneServiceAdmin
+keystone_service_admin_role = KeystoneServiceAdmin
 
 #Tells whether password user need to be hashed in the backend
-hash-password = True
+hash_password = True
 
 [keystone.backends.sqlalchemy]
 # SQLAlchemy connection string for the reference implementation registry
@@ -112,3 +113,4 @@ paste.filter_factory = keystone.frontends.legacy_token_auth:filter_factory
 
 [filter:debug]
 paste.filter_factory = keystone.common.wsgi:debug_filter_factory
+

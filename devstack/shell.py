@@ -20,7 +20,6 @@ import os.path
 import pwd
 import shutil
 import subprocess
-import tempfile
 import fileinput
 
 from devstack import env
@@ -37,15 +36,18 @@ ROOT_USER = "root"
 class Rooted(object):
     def __init__(self, run_as_root):
         self.root_mode = run_as_root
+        self.engaged = False
 
     def __enter__(self):
-        if self.root_mode:
+        if self.root_mode and not got_root():
             root_mode()
-        return self.root_mode
+            self.engaged = True
+        return self.engaged
 
     def __exit__(self, type, value, traceback):
-        if self.root_mode:
+        if self.root_mode and self.engaged:
             user_mode()
+            self.engaged = False
 
 
 def execute(*cmd, **kwargs):
@@ -67,7 +69,6 @@ def execute(*cmd, **kwargs):
     shell = kwargs.pop('shell', False)
 
     execute_cmd = list()
-
     for c in cmd:
         execute_cmd.append(str(c))
 
@@ -376,8 +377,7 @@ def getuid(username):
 
 
 def gethomedir():
-    #TODO will just using os.path.expanduser("~") work??
-    return pwd.getpwuid(geteuid()).pw_dir
+    return os.path.expanduser("~")
 
 
 def getgid(groupname):
@@ -417,7 +417,7 @@ def mount_loopback_file(fname, device_name, fs_type='ext3'):
                  'loop,noatime,nodiratime,nobarrier,logbufs=8', fname,
                  device_name]
 
-    files = mkdirslist(dirname(device_name))
+    files = mkdirslist(device_name)
 
     execute(*mount_cmd, run_as_root=True)
 
