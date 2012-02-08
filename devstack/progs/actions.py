@@ -123,21 +123,7 @@ def _post_run(action_name, root_dir, config, components, time_taken, results):
     #try to remove the root - ok if this fails
     if action_name == settings.UNINSTALL:
         if root_dir:
-            sh.rmdir(root_dir, run_as_root=True)
-    #mirror the output the old devstack was also giving
-    if action_name == settings.START:
-        host_ip = config.get('host', 'ip')
-        if settings.HORIZON in components:
-            port = config.get('horizon', 'port')
-            LOG.info("Horizon should now be available at http://%s:%s/" % (host_ip, port))
-        if settings.KEYSTONE in components:
-            shared_params = keystone.get_shared_params(config)
-            msg = "Keystone is serving at {KEYSTONE_SERVICE_PROTOCOL}://{KEYSTONE_SERVICE_HOST}:{KEYSTONE_SERVICE_PORT}/v2.0/"
-            LOG.info(msg.format(**shared_params))
-            LOG.info("The default users are: admin and demo.")
-            admin_pw = config.get('passwords', 'horizon_keystone_admin')
-            LOG.info("The admin password is: %s" % (admin_pw))
-        LOG.info("This is your host ip: %s" % (host_ip))
+            sh.rmdir(root_dir)
 
 
 def _print_cfgs(config_obj, action):
