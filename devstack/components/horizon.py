@@ -66,7 +66,7 @@ APACHE_STATUS_CMD = ['service', '%SERVICE%', 'status']
 
 #rhel fixups
 RHEL_FIXUPS = {
-    'SOCKET_CONF': "/etc/httpd/conf.d/wsgi_socket_prefix.conf",
+    'SOCKET_CONF': "/etc/httpd/conf.d/wsgi-socket-prefix.conf",
     'HTTPD_CONF': '/etc/httpd/conf/httpd.conf',
 }
 
