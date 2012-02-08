@@ -36,15 +36,18 @@ ROOT_USER = "root"
 class Rooted(object):
     def __init__(self, run_as_root):
         self.root_mode = run_as_root
+        self.engaged = False
 
     def __enter__(self):
-        if self.root_mode:
+        if self.root_mode and not got_root():
             root_mode()
-        return self.root_mode
+            self.engaged = True
+        return self.engaged
 
     def __exit__(self, type, value, traceback):
-        if self.root_mode:
+        if self.root_mode and self.engaged:
             user_mode()
+            self.engaged = False
 
 
 def execute(*cmd, **kwargs):
