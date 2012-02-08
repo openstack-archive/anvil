@@ -199,13 +199,13 @@ class NovaUninstaller(comp.PythonUninstallComponent):
         comp.PythonUninstallComponent.pre_uninstall(self)
         self._clear_iptables()
         self._clear_domains()
-    
+
     def _clear_iptables(self):
         LOG.info("Cleaning up iptables.")
         pth = sh.joinpths('utils', 'clean_iptables.sh')
         cmd = [pth]
         sh.execute(*cmd, run_as_root=True)
-        
+
     def _clear_domains(self):
         libvirt_type = self.cfg.get('nova', 'libvirt_type')
         inst_prefix = self.cfg.get('nova', 'instance_name_prefix')
@@ -216,7 +216,7 @@ class NovaUninstaller(comp.PythonUninstallComponent):
             try:
                 import libvirt
                 with sh.Rooted(True):
-                    LOG.info("Attempting to clear out leftover libvirt nova domains using protocol %s." %(virt_protocol))
+                    LOG.info("Attempting to clear out leftover libvirt nova domains using protocol %s." % (virt_protocol))
                     conn = None
                     try:
                         conn = libvirt.open(virt_protocol)
