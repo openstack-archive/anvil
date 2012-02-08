@@ -180,10 +180,6 @@
             "version": "2.2*",
             "removable": true
         },
-        "qemu-kvm": {
-            "version": "2:0.12*",
-            "removable": false
-        },
         "iptables": {
             "version": "1.4*",
             "removable": false

@@ -119,9 +119,11 @@ class PkgInstallComponent(ComponentBase):
         if pkgs:
             pkgnames = sorted(pkgs.keys())
             LOG.info("Installing packages (%s)." % (", ".join(pkgnames)))
-            self.packager.install_batch(pkgs)
+            #do this before install just incase it craps out half way through
             for name in pkgnames:
                 self.tracewriter.package_install(name, pkgs.get(name))
+            #now actually install
+            self.packager.install_batch(pkgs)
         return self.tracedir
 
     def pre_install(self):
@@ -171,8 +173,9 @@ class PkgInstallComponent(ComponentBase):
                 contents = self._config_adjust(contents, fn)
                 LOG.info("Writing configuration file %s" % (tgtfn))
                 #this trace is used to remove the files configured
-                sh.write_file(tgtfn, contents)
+                #do this before write just incase it craps out half way through
                 self.tracewriter.cfg_write(tgtfn)
+                sh.write_file(tgtfn, contents)
         return len(configs)
 
     def _configure_symlinks(self):
@@ -217,9 +220,11 @@ class PythonInstallComponent(PkgInstallComponent):
         pips = self._get_pips_expanded()
         if pips:
             LOG.info("Setting up %s pips (%s)" % (len(pips), ", ".join(pips.keys())))
-            pip.install(pips, self.distro)
+            #do this before install just incase it craps out half way through
             for name in pips.keys():
                 self.tracewriter.pip_install(name, pips.get(name))
+            #now install
+            pip.install(pips, self.distro)
 
     def _format_stderr_out(self, stderr, stdout):
         if stdout is None:
@@ -240,10 +245,12 @@ class PythonInstallComponent(PkgInstallComponent):
                 working_dir = wkdir or self.appdir
                 self.tracewriter.make_dir(working_dir)
                 record_fn = tr.touch_trace(self.tracedir, self._format_trace_name(name))
+                #do this before write just incase it craps out half way through
                 self.tracewriter.file_touched(record_fn)
+                self.tracewriter.py_install(name, record_fn, working_dir)
+                #now actually do it
                 (stdout, stderr) = sh.execute(*PY_INSTALL, cwd=working_dir, run_as_root=True)
                 sh.write_file(record_fn, self._format_stderr_out(stderr, stdout))
-                self.tracewriter.py_install(name, record_fn, working_dir)
 
     def _python_install(self):
         self._install_pips()

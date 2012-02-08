@@ -435,6 +435,7 @@ class NovaRuntime(comp.PythonRuntime):
         virt_driver = self.cfg.get('nova', 'virt_driver')
         if virt_driver == virsh.VIRT_TYPE:
             virt_type = virsh.default(self.cfg.get('nova', 'libvirt_type'))
+            LOG.info("Checking that your selected libvirt virtualization type [%s] is working and running." % (virt_type))
             if not virsh.virt_ok(virt_type, self.distro):
                 msg = ("Libvirt type %s for distro %s does not seem to be active or configured correctly, "
                        "perhaps you should be using %s instead." % (virt_type, self.distro, virsh.DEFAULT_VIRT))
