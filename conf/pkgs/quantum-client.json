@@ -15,6 +15,7 @@
         "python-gflags": {
             "version": "1.4*",
             "removable": true
+        }
     },
     "fedora-16": {
         "python-gflags": {

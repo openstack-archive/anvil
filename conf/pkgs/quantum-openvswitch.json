@@ -25,7 +25,7 @@
     },
     "rhel-6": {
         #TBD
-    }
+    },
     "fedora-16": {
         # Not available yet
 #        "openvswitch": {
