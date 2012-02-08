@@ -14,7 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import os
 import re
 import ConfigParser
 
@@ -197,9 +196,9 @@ class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
         value = None
         try:
             value = ConfigParser.RawConfigParser.get(self, section, option)
-        except ConfigParser.NoSectionError, e:
+        except ConfigParser.NoSectionError:
             pass
-        except ConfigParser.NoOptionError, e:
+        except ConfigParser.NoOptionError:
             pass
         return value
 

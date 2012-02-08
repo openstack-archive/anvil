@@ -54,9 +54,8 @@ class TermHandler(logging.Handler):
         logging.Handler.__init__(self)
 
     def emit(self, record):
-        lvl = record.levelno
         msg = self.format(record)
-        if msg:
+        if msg is not None:
             TermHandler.STREAM.write(msg + TermHandler.NL)
             if TermHandler.DO_FLUSH:
                 TermHandler.STREAM.flush()

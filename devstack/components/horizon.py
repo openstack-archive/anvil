@@ -14,8 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import os
-
 from devstack import component as comp
 from devstack import exceptions as excp
 from devstack import log as logging
@@ -94,7 +92,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
         self.horizon_dir = sh.joinpths(self.appdir, ROOT_HORIZON)
         self.dash_dir = sh.joinpths(self.appdir, ROOT_DASH)
         self.log_dir = sh.joinpths(self.component_root, LOGS_DIR)
-        self._check_ug()
 
     def _get_download_locations(self):
         places = list()
@@ -103,6 +100,9 @@ class HorizonInstaller(comp.PythonInstallComponent):
             'branch': ("git", "horizon_branch"),
         })
         return places
+
+    def verify(self):
+        self._check_ug()
 
     def _get_symlinks(self):
         src = self._get_target_config_name(HORIZON_APACHE_CONF)

@@ -16,7 +16,6 @@
 
 import time
 
-from devstack import cfg
 from devstack import date
 from devstack import env_rc
 from devstack import exceptions as excp
@@ -85,7 +84,7 @@ def _pre_run(action_name, root_dir, pkg_manager, config, component_order, instan
     try:
         if sh.isfile(rc_fn):
             LOG.info("Attempting to load rc file at [%s] which has your environment settings." % (rc_fn))
-            am_loaded = env_rc.load_local_rc(rc_fn, config)
+            am_loaded = env_rc.load_local_rc(rc_fn)
             loaded_env = True
             LOG.info("Loaded [%s] settings from rc file [%s]" % (am_loaded, rc_fn))
     except IOError:
@@ -93,9 +92,17 @@ def _pre_run(action_name, root_dir, pkg_manager, config, component_order, instan
     if action_name == settings.INSTALL:
         if root_dir:
             sh.mkdir(root_dir)
-    LOG.info("Warming up your component configurations (ie so you won't be prompted later)")
+    LOG.info("Verifying that the components are ready to rock-n-roll.")
     all_instances = instances[0]
     prerequisite_instances = instances[1]
+    for component in component_order:
+        base_inst = all_instances.get(component)
+        if base_inst:
+            base_inst.verify()
+        pre_inst = prerequisite_instances.get(component)
+        if pre_inst:
+            pre_inst.verify()
+    LOG.info("Warming up your component configurations (ie so you won't be prompted later)")
     for component in component_order:
         base_inst = all_instances.get(component)
         if base_inst:
@@ -103,7 +110,6 @@ def _pre_run(action_name, root_dir, pkg_manager, config, component_order, instan
         pre_inst = prerequisite_instances.get(component)
         if pre_inst:
             pre_inst.warm_configs()
-    LOG.info("Your component configurations should now be nice and warm!")
     if action_name in _RC_FILE_MAKE_ACTIONS and not loaded_env:
         _gen_localrc(config, rc_fn)
 

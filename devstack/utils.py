@@ -23,6 +23,7 @@ import os
 import platform
 import random
 import re
+import sys
 import termcolor
 
 from devstack import exceptions as excp
@@ -97,6 +98,14 @@ def to_bytes(text):
     else:
         byte_val = int(text)
     return byte_val
+
+
+def import_module(module_name):
+    try:
+        __import__(module_name)
+        return sys.modules.get(module_name, None)
+    except ImportError:
+        return None
 
 
 def load_json(fn):

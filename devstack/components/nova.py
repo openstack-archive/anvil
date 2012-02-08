@@ -21,6 +21,7 @@ import stat
 from devstack import cfg
 from devstack import component as comp
 from devstack import exceptions
+from devstack import libvirt as virsh
 from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
@@ -181,62 +182,34 @@ LIBVIRT_RESTART_CMD = {
     settings.UBUNTU11: ['/etc/init.d/libvirt-bin', 'restart'],
 }
 
+#this is a special conf
+CLEANER_DATA_CONF = 'clean_iptables.sh'
+CLEANER_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
+
 #pip files that nova requires
 REQ_PIPS = ['general.json', 'nova.json']
-
-#used to clear out old domains that may be stuck around
-LIBVIRT_PROTOCOL_MAP = {
-    'qemu': "qemu:///system",
-    'kvm': "qemu:///system",
-}
 
 
 class NovaUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        self.bindir = sh.joinpths(self.appdir, BIN_DIR)
 
     def pre_uninstall(self):
-        comp.PythonUninstallComponent.pre_uninstall(self)
         self._clear_iptables()
-        self._clear_domains()
+        self._clear_libvirt_domains()
 
     def _clear_iptables(self):
         LOG.info("Cleaning up iptables.")
-        pth = sh.joinpths('utils', 'clean_iptables.sh')
-        cmd = [pth]
+        cmd = CLEANER_CMD_ROOT + [sh.joinpths(self.bindir, CLEANER_DATA_CONF)]
         sh.execute(*cmd, run_as_root=True)
 
-    def _clear_domains(self):
+    def _clear_libvirt_domains(self):
         libvirt_type = self.cfg.get('nova', 'libvirt_type')
         inst_prefix = self.cfg.get('nova', 'instance_name_prefix')
-        vir_driver = self.cfg.get('nova', 'virt_driver')
-        if vir_driver == 'libvirt' and inst_prefix and libvirt_type:
-            #attempt to clear out dead domains
-            #late import so this is not always required
-            virt_protocol = LIBVIRT_PROTOCOL_MAP[libvirt_type]
-            try:
-                import libvirt
-                with sh.Rooted(True):
-                    LOG.info("Attempting to clear out leftover libvirt nova domains using protocol %s." % (virt_protocol))
-                    conn = None
-                    try:
-                        conn = libvirt.open(virt_protocol)
-                    except libvirt.libvirtError:
-                        LOG.warn("Could not connect to libvirt using protocol [%s]" % (virt_protocol))
-                    if conn:
-                        try:
-                            definedDomains = conn.listDefinedDomains()
-                            for domain in definedDomains:
-                                if domain.startswith(inst_prefix):
-                                    LOG.info("Found old nova domain %s" % (domain))
-                                    dom = conn.lookupByName(domain)
-                                    LOG.info("Clearing domain id %d running %s" % (dom.ID(), dom.OSType()))
-                                    dom.undefine()
-                        except libvirt.libvirtError, e:
-                            LOG.warn("Could not clear out libvirt domains due to [%s]" % (e.message))
-            except ImportError:
-                #LOG it?
-                pass
+        virt_driver = self.cfg.get('nova', 'virt_driver')
+        if virt_driver == virsh.VIRT_TYPE:
+            virsh.clear_libvirt_domains(libvirt_type, inst_prefix)
 
 
 class NovaInstaller(comp.PythonInstallComponent):
@@ -244,13 +217,17 @@ class NovaInstaller(comp.PythonInstallComponent):
         comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
         self.paste_conf_fn = self._get_target_config_name(PASTE_CONF)
+        self.volumes_enabled = False
+        if not self.component_opts or NVOL in self.component_opts:
+            self.volumes_enabled = True
 
     def _get_pkgs(self):
         pkgs = list(REQ_PKGS)
         sub_components = self.component_opts or SUBCOMPONENTS
         for c in sub_components:
-            fns = ADD_PKGS.get(c) or []
-            pkgs.extend(fns)
+            fns = ADD_PKGS.get(c)
+            if fns:
+                pkgs.extend(fns)
         return pkgs
 
     def _get_symlinks(self):
@@ -304,11 +281,16 @@ class NovaInstaller(comp.PythonInstallComponent):
         self._setup_db()
         self._sync_db()
         self._setup_network()
+        self._setup_cleaner()
         # check if we need to do the vol subcomponent
-        if not self.component_opts or NVOL in self.component_opts:
-            # yes, either no subcomponents were specifically requested or it's
-            # in the set that was requested
+        if self.volumes_enabled:
             self._setup_vol_groups()
+
+    def _setup_cleaner(self):
+        LOG.info("Configuring cleaner template %s.", CLEANER_DATA_CONF)
+        (_, contents) = utils.load_template(self.component_name, CLEANER_DATA_CONF)
+        tgt_fn = sh.joinpths(self.bindir, CLEANER_DATA_CONF)
+        sh.write_file(tgt_fn, contents)
 
     def _setup_db(self):
         LOG.info("Fixing up database named %s.", DB_NAME)

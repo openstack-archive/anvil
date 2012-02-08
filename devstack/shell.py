@@ -20,7 +20,6 @@ import os.path
 import pwd
 import shutil
 import subprocess
-import tempfile
 import fileinput
 
 from devstack import env
@@ -67,7 +66,6 @@ def execute(*cmd, **kwargs):
     shell = kwargs.pop('shell', False)
 
     execute_cmd = list()
-
     for c in cmd:
         execute_cmd.append(str(c))
 
