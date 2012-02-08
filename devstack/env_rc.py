@@ -18,6 +18,8 @@ import os
 import re
 import subprocess
 
+from devstack import env
+
 #general extraction cfg keys
 CFG_MAKE = {
     'ADMIN_PASSWORD': ('passwords', 'horizon_keystone_admin'),
@@ -125,9 +127,9 @@ def load_local_rc(fn):
         for line in fh:
             m = EXP_PAT.search(line)
             if m:
-                var = m.group(1).strip()
+                key = m.group(1).strip()
                 value = m.group(2).strip()
-                if not var in os.environ and var and value:
-                    os.environ[var] = value
+                if len(key):
+                    env.set(key, value)
                     am_set += 1
     return am_set
