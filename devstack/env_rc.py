@@ -110,9 +110,7 @@ def _generate_os_env(fh, cfg):
     _write_line("", fh)
 
 
-def generate_local_rc(fn=None, cfg=None):
-    if not fn:
-        fn = DEF_FN
+def generate_local_rc(fn, cfg=None):
     if not cfg:
         cfg = common.get_config()
     with open(fn, "w") as fh:
@@ -129,9 +127,7 @@ def generate_local_rc(fn=None, cfg=None):
         _generate_os_env(fh, cfg)
 
 
-def load_local_rc(fn=None, cfg=None):
-    if not fn:
-        fn = DEF_FN
+def load_local_rc(fn, cfg=None):
     if not cfg:
         cfg = common.get_config()
     am_set = 0
@@ -145,4 +141,3 @@ def load_local_rc(fn=None, cfg=None):
                     os.environ[var] = value
                     am_set += 1
     return am_set
-

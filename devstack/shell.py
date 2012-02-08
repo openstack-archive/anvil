@@ -487,7 +487,7 @@ def root_mode():
             LOG.debug("Escalating permissions to (user=%s, group=%s)" % (root_uid, root_gid))
             os.setreuid(0, root_uid)
             os.setregid(0, root_gid)
-        except:
+        except OSError:
             LOG.warn("Cannot escalate permissions to (user=%s, group=%s)" % (root_uid, root_gid))
 
 
