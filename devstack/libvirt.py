@@ -31,6 +31,8 @@ VIRT_LIB = VIRT_TYPE
 
 
 def _get_virt_lib():
+    #late import so that we don't always need this library to be active
+    #ie if u aren't using libvirt in the first place
     return utils.import_module(VIRT_LIB)
 
 
@@ -48,8 +50,6 @@ def _destroy_domain(conn, dom_name):
 
 
 def clear_libvirt_domains(virt_type, inst_prefix):
-    #late import so that we don't always need this library to be active
-    #ie if u aren't using libvirt in the first place
     libvirt = _get_virt_lib()
     virt_protocol = LIBVIRT_PROTOCOL_MAP.get(virt_type)
     if not libvirt or not virt_protocol or not inst_prefix:
