@@ -417,7 +417,7 @@ def mount_loopback_file(fname, device_name, fs_type='ext3'):
                  'loop,noatime,nodiratime,nobarrier,logbufs=8', fname,
                  device_name]
 
-    files = mkdirslist(dirname(device_name))
+    files = mkdirslist(device_name)
 
     execute(*mount_cmd, run_as_root=True)
 
