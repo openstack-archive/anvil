@@ -37,6 +37,7 @@ HORIZON_PY_CONF_TGT = ['local', 'local_settings.py']
 HORIZON_APACHE_CONF = '000-default'
 
 #http://wiki.apache.org/httpd/DistrosDefaultLayout
+#TODO: maybe this should be a subclass that handles these differences
 APACHE_CONF_TARGETS = {
     settings.UBUNTU11: '/etc/apache2/sites-enabled/000-default',
     #ensure runs after wsgi.conf
@@ -53,6 +54,7 @@ BLACKHOLE_DIR = '.blackhole'
 
 #hopefully this will be distro independent ??
 #of course they aren't!
+#TODO: maybe this should be a subclass that handles these differences
 APACHE_SVC_NAME = {
     settings.RHEL6: 'httpd',
     settings.UBUNTU11: 'apache2',
@@ -63,6 +65,7 @@ APACHE_STOP_CMD = ['service', '%SERVICE%', 'stop']
 APACHE_STATUS_CMD = ['service', '%SERVICE%', 'status']
 
 #rhel fixups
+#TODO: maybe this should be a subclass that handles these differences
 RHEL_FIXUPS = {
     'SOCKET_CONF': "/etc/httpd/conf.d/wsgi_socket_prefix.conf",
     'HTTPD_CONF': '/etc/httpd/conf/httpd.conf',
