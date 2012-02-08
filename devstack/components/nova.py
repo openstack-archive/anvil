@@ -189,6 +189,11 @@ class NovaUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
 
+    def pre_uninstall(self):
+        LOG.info("Cleaning up iptables")
+        cmd = ["utils/clean_iptables.sh"]
+        sh.execute(*cmd, run_as_root=True)
+
 
 class NovaInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
