@@ -14,14 +14,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import os
-import os.path
-
 from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
-from devstack import shell as sh
-from devstack import utils
 
 # id
 TYPE = settings.SWIFT_KEYSTONE

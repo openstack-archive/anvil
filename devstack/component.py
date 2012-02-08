@@ -15,7 +15,6 @@
 #    under the License.
 
 from devstack import downloader as down
-from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import pip
 from devstack import settings

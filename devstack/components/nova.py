@@ -184,10 +184,59 @@ LIBVIRT_RESTART_CMD = {
 #pip files that nova requires
 REQ_PIPS = ['general.json', 'nova.json']
 
+#used to clear out old domains that may be stuck around
+LIBVIRT_PROTOCOL_MAP = {
+    'qemu': "qemu:///system",
+    'kvm': "qemu:///system",
+}
+
 
 class NovaUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
+
+    def pre_uninstall(self):
+        comp.PythonUninstallComponent.pre_uninstall(self)
+        self._clear_iptables()
+        self._clear_domains()
+
+    def _clear_iptables(self):
+        LOG.info("Cleaning up iptables.")
+        pth = sh.joinpths('utils', 'clean_iptables.sh')
+        cmd = [pth]
+        sh.execute(*cmd, run_as_root=True)
+
+    def _clear_domains(self):
+        libvirt_type = self.cfg.get('nova', 'libvirt_type')
+        inst_prefix = self.cfg.get('nova', 'instance_name_prefix')
+        vir_driver = self.cfg.get('nova', 'virt_driver')
+        if vir_driver == 'libvirt' and inst_prefix and libvirt_type:
+            #attempt to clear out dead domains
+            #late import so this is not always required
+            virt_protocol = LIBVIRT_PROTOCOL_MAP[libvirt_type]
+            try:
+                import libvirt
+                with sh.Rooted(True):
+                    LOG.info("Attempting to clear out leftover libvirt nova domains using protocol %s." % (virt_protocol))
+                    conn = None
+                    try:
+                        conn = libvirt.open(virt_protocol)
+                    except libvirt.libvirtError:
+                        LOG.warn("Could not connect to libvirt using protocol [%s]" % (virt_protocol))
+                    if conn:
+                        try:
+                            definedDomains = conn.listDefinedDomains()
+                            for domain in definedDomains:
+                                if domain.startswith(inst_prefix):
+                                    LOG.info("Found old nova domain %s" % (domain))
+                                    dom = conn.lookupByName(domain)
+                                    LOG.info("Clearing domain id %d running %s" % (dom.ID(), dom.OSType()))
+                                    dom.undefine()
+                        except libvirt.libvirtError, e:
+                            LOG.warn("Could not clear out libvirt domains due to [%s]" % (e.message))
+            except ImportError:
+                #LOG it?
+                pass
 
 
 class NovaInstaller(comp.PythonInstallComponent):

@@ -14,7 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import packager as pack
 from devstack import settings

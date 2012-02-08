@@ -17,7 +17,6 @@
 from optparse import IndentedHelpFormatter
 from optparse import OptionParser, OptionGroup
 
-from devstack import shell as sh
 from devstack import log as logging
 from devstack import settings
 from devstack import version

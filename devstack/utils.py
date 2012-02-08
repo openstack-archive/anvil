@@ -24,7 +24,6 @@ import platform
 import random
 import re
 import termcolor
-import traceback
 
 from devstack import exceptions as excp
 from devstack import log as logging
@@ -397,6 +396,21 @@ def _goodbye_header(worked):
  ------------------------------
 ''')
     potentials_oks.append(r'''
+ ____________________
+/ Australia!         \
+| Australia!         |
+| Australia!         |
+\ We love you, amen. /
+ --------------------
+''')
+    potentials_oks.append(r'''
+ ______________
+/ Say no more, \
+| Nudge nudge  |
+\ wink wink.   /
+ --------------
+''')
+    potentials_oks.append(r'''
  __________
 < Success! >
  ----------''')
@@ -422,6 +436,30 @@ def _goodbye_header(worked):
 / Spam spam spam spam  \
 \ baked beans and spam /
  ----------------------
+''')
+    potentials_fails.append(r'''
+ ____________________
+/ Brave Sir Robin    \
+\ ran away.          /
+ --------------------
+''')
+    potentials_fails.append(r'''
+ _______________________
+< Message for you, sir. >
+ -----------------------
+''')
+    potentials_fails.append(r'''
+ ____________________
+/ We are the knights \
+\ who say.... NI!    /
+ --------------------
+''')
+    potentials_fails.append(r'''
+ ____________________
+/ Now go away or I   \
+| shall taunt you a  |
+\ second time.       /
+ --------------------
 ''')
     potentials_fails.append(r'''
  ____________________

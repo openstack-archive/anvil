@@ -66,7 +66,7 @@ class ForkRunner(object):
                     killed = True
                     break
                 else:
-                    LOG.info("Sleeping for %s seconds before next attempt to kill pid %s" % (SLEEP_TIME, pid))
+                    LOG.debug("Sleeping for %s seconds before next attempt to kill pid %s" % (SLEEP_TIME, pid))
                     time.sleep(SLEEP_TIME)
         return (killed, attempts)
 
@@ -84,14 +84,14 @@ class ForkRunner(object):
                 (killed, attempts) = self._stop_pid(pid)
                 #trash the files
                 if killed:
-                    LOG.info("Killed pid %s after %s attempts" % (pid, attempts))
-                    LOG.info("Removing pid file %s" % (pid_file))
+                    LOG.debug("Killed pid %s after %s attempts" % (pid, attempts))
+                    LOG.debug("Removing pid file %s" % (pid_file))
                     sh.unlink(pid_file)
-                    LOG.info("Removing stderr file %s" % (stderr_fn))
+                    LOG.debug("Removing stderr file %s" % (stderr_fn))
                     sh.unlink(stderr_fn)
-                    LOG.info("Removing stdout file %s" % (stdout_fn))
+                    LOG.debug("Removing stdout file %s" % (stdout_fn))
                     sh.unlink(stdout_fn)
-                    LOG.info("Removing %s trace file %s" % (name, trace_fn))
+                    LOG.debug("Removing %s trace file %s" % (name, trace_fn))
                     sh.unlink(trace_fn)
                 else:
                     msg = "Could not stop %s after %s attempts" % (name, attempts)

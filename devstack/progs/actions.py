@@ -18,6 +18,7 @@ import time
 
 from devstack import cfg
 from devstack import date
+from devstack import env_rc
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import settings
@@ -30,8 +31,6 @@ from devstack.packaging import yum
 from devstack.components import keystone
 
 from devstack.progs import common
-
-from utils import env_gen
 
 LOG = logging.getLogger("devstack.progs.actions")
 
@@ -80,10 +79,33 @@ def _get_pkg_manager(distro, keep_packages):
     return cls(distro, keep_packages)
 
 
-def _pre_run(action_name, root_dir, pkg_manager, config, components):
+def _pre_run(action_name, root_dir, pkg_manager, config, component_order, instances):
+    loaded_env = False
+    rc_fn = _RC_FILE
+    try:
+        if sh.isfile(rc_fn):
+            LOG.info("Attempting to load rc file at [%s] which has your environment settings." % (rc_fn))
+            am_loaded = env_rc.load_local_rc(rc_fn, config)
+            loaded_env = True
+            LOG.info("Loaded [%s] settings from rc file [%s]" % (am_loaded, rc_fn))
+    except IOError:
+        LOG.warn('Error reading rc file located at [%s]. Skipping loading it.' % (rc_fn))
     if action_name == settings.INSTALL:
         if root_dir:
             sh.mkdir(root_dir)
+    LOG.info("Warming up your component configurations (ie so you won't be prompted later)")
+    all_instances = instances[0]
+    prerequisite_instances = instances[1]
+    for component in component_order:
+        base_inst = all_instances.get(component)
+        if base_inst:
+            base_inst.warm_configs()
+        pre_inst = prerequisite_instances.get(component)
+        if pre_inst:
+            pre_inst.warm_configs()
+    LOG.info("Your component configurations should now be nice and warm!")
+    if action_name in _RC_FILE_MAKE_ACTIONS and not loaded_env:
+        _gen_localrc(config, rc_fn)
 
 
 def _post_run(action_name, root_dir, pkg_manager, config, components, time_taken, results):
@@ -256,6 +278,11 @@ def _instanciate_components(action_name, components, distro, pkg_manager, config
     return (all_instances, prerequisite_instances)
 
 
+def _gen_localrc(config, fn):
+    LOG.info("Generating a file at [%s] that will contain your environment settings." % (fn))
+    env_rc.generate_local_rc(fn, config)
+
+
 def _run_components(action_name, component_order, components, distro, root_dir, program_args):
     LOG.info("Will run action [%s] using root directory \"%s\"" % (action_name, root_dir))
     LOG.info("In the following order: %s" % ("->".join(component_order)))
@@ -267,24 +294,15 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
     config = common.get_config()
     #form the active instances (this includes ones we won't use)
     (all_instances, prerequisite_instances) = _instanciate_components(action_name,
-                                                              components,
-                                                              distro,
-                                                              pkg_manager,
-                                                              config,
-                                                              root_dir)
-
+                                                                      components,
+                                                                      distro,
+                                                                      pkg_manager,
+                                                                      config,
+                                                                      root_dir)
     #run anything before it gets going...
     _pre_run(action_name, root_dir=root_dir, pkg_manager=pkg_manager,
-              config=config, components=components.keys())
-    LOG.info("Warming up your component configurations (ie so you won't be prompted later)")
-    for component in component_order:
-        base_inst = all_instances.get(component)
-        if base_inst:
-            base_inst.warm_configs()
-        pre_inst = prerequisite_instances.get(component)
-        if pre_inst:
-            pre_inst.warm_configs()
-    LOG.info("Your component configurations should now be nice and warm!")
+              config=config, component_order=component_order,
+              instances=(all_instances, prerequisite_instances))
     LOG.info("Activating components required to complete action %s." % (action_name))
     start_time = time.time()
     results = list()
@@ -321,10 +339,6 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
                 stop_instance = prerequisite_instances[component]
                 _stop(component, stop_instance, force)
             _uninstall(component, instance, force)
-    #make a nice rc file for u
-    if not sh.exists(_RC_FILE) and action_name in _RC_FILE_MAKE_ACTIONS:
-        LOG.info("Generating a file at [%s] that will contain your environment settings." % (_RC_FILE))
-        env_gen.generate_local_rc(_RC_FILE, config)
     end_time = time.time()
     #any post run actions go now
     _post_run(action_name, root_dir=root_dir, pkg_manager=pkg_manager,

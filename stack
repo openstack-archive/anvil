@@ -37,9 +37,6 @@ from devstack import utils
 #these are the program runtimes that actually do the running
 from devstack.progs import actions
 
-#the user who's user id should be 0
-ROOT_USER = 'root'
-
 
 def main():
 

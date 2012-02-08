@@ -323,7 +323,7 @@ def symlink(source, link, force=True, run_as_root=True):
         LOG.debug("Creating symlink from %s => %s" % (link, source))
         path = dirname(link)
         mkdirslist(path)
-        if force and exists(link):
+        if force and (exists(link) or islink(link)):
             unlink(link, True)
         os.symlink(source, link)
 
@@ -487,7 +487,7 @@ def root_mode():
             LOG.debug("Escalating permissions to (user=%s, group=%s)" % (root_uid, root_gid))
             os.setreuid(0, root_uid)
             os.setregid(0, root_gid)
-        except:
+        except OSError:
             LOG.warn("Cannot escalate permissions to (user=%s, group=%s)" % (root_uid, root_gid))
 
 
