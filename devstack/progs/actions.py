@@ -161,7 +161,7 @@ def _print_cfgs(config_obj, action):
             LOG.info("Passwords:")
             map_print(passwords_gotten)
         if full_cfgs:
-            filtered = {k: v for k, v in full_cfgs.items() if k not in passwords_gotten}
+            filtered = dict((k, v) for (k, v) in full_cfgs.items() if k not in passwords_gotten)
             if filtered:
                 LOG.info("Configs:")
                 map_print(filtered)

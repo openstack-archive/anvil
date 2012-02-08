@@ -494,6 +494,13 @@ def _goodbye_header(worked):
 \ right now.        /
  -------------------
 ''')
+    potentials_fails.append(r'''
+ _________________
+/ Welcome to the  \
+| National Cheese |
+\ Emporium        /
+ -----------------
+''')
     if not worked:
         msg = random.choice(potentials_fails).strip("\n\r")
         colored_msg = _color_blob(msg, 'red')
