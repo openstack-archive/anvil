@@ -171,7 +171,7 @@
         },
         # Needed for glance which is needed for nova --- this shouldn't be here
         # Requires EPEL
-        "python-xattr": {
+        "pyxattr": {
             "version": "0.5*",
             "removable": true
         },
@@ -179,6 +179,10 @@
         "python-lxml": {
             "version": "2.2*",
             "removable": true
+        },
+        "qemu-kvm": {
+            "version": "2:0.12*",
+            "removable": false
         },
         "iptables": {
             "version": "1.4*",
