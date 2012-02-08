@@ -35,7 +35,6 @@ def get():
 def set(k, v):
     #this is really screwy, python is really odd in this area
     #from http://docs.python.org/library/os.html
-    #Note Calling putenv() directly does not change os.environ, so it’s better to modify os.environ.
     if k is not None:
         os.environ[str(k)] = str(v)
 

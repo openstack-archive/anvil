@@ -49,6 +49,7 @@ OS_TENANT_NAME = 'demo'
 OS_USERNAME = 'demo'
 OS_AUTH_PORT = 5000
 
+#how we know if a line is an export or if it isn't
 EXP_PAT = re.compile("^export (.*?)=(.*?)$", re.IGNORECASE)
 
 
