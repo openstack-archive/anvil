@@ -3,13 +3,8 @@ import os
 import sys
 
 
-if __name__ == "__main__":
-    me = os.path.basename(sys.argv[0])
-    if len(sys.argv) == 1:
-        print("%s filename filename filename..." % (me))
-        sys.exit(0)
-    fn = sys.argv[1]
-    with open(fn, "r") as f:
+def clean_file(name):
+    with open(name, "r") as f:
         contents = f.read()
         lines = contents.splitlines()
         cleaned_up = list()
@@ -22,4 +17,12 @@ if __name__ == "__main__":
         data = json.loads(cleaned_lines)
         output = json.dumps(data, indent=4, sort_keys=True)
         print(output)
+
+
+if __name__ == "__main__":
+    ME = os.path.basename(sys.argv[0])
+    if len(sys.argv) == 1:
+        print("%s filename filename filename..." % (ME))
+        sys.exit(0)
+    clean_file(sys.argv[1])
     sys.exit(0)

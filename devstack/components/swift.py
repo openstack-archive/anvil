@@ -34,6 +34,8 @@ SYSLOG_CONF = 'rsyslog.conf'
 SWIFT_MAKERINGS = 'swift-remakerings'
 SWIFT_STARTMAIN = 'swift-startmain'
 SWIFT_INIT = 'swift-init'
+SWIFT_IMG = 'drives/images/swift.img'
+DEVICE_PATH = 'drives/sdb1'
 CONFIGS = [SWIFT_CONF, PROXY_SERVER_CONF, ACCOUNT_SERVER_CONF,
            CONTAINER_SERVER_CONF, OBJECT_SERVER_CONF, RSYNC_CONF,
            SYSLOG_CONF, SWIFT_MAKERINGS, SWIFT_STARTMAIN]
@@ -56,7 +58,7 @@ class SwiftUninstaller(comp.PythonUninstallComponent):
         self.datadir = sh.joinpths(self.appdir, self.cfg.get('swift', 'data_location'))
 
     def pre_uninstall(self):
-        sh.umount(sh.joinpths(self.datadir, 'drives/sdb1'))
+        sh.umount(sh.joinpths(self.datadir, DEVICE_PATH))
         sh.replace_in_file('/etc/default/rsync',
                            'RSYNC_ENABLE=true',
                            'RSYNC_ENABLE=false',
@@ -74,6 +76,10 @@ class SwiftInstaller(comp.PythonInstallComponent):
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
         self.datadir = sh.joinpths(self.appdir, self.cfg.get('swift', 'data_location'))
         self.logdir = sh.joinpths(self.datadir, 'logs')
+        self.startmain_file = sh.joinpths(self.bindir, SWIFT_STARTMAIN)
+        self.makerings_file = sh.joinpths(self.bindir, SWIFT_MAKERINGS)
+        self.fs_dev = sh.joinpths(self.datadir, DEVICE_PATH)
+        self.fs_image = sh.joinpths(self.datadir, SWIFT_IMG)
         self.auth_server = 'keystone'
 
     def _get_download_locations(self):
@@ -116,13 +122,11 @@ class SwiftInstaller(comp.PythonInstallComponent):
             }
 
     def __create_data_location(self):
-        self.fs_image = sh.joinpths(self.datadir, 'drives/images/swift.img')
         sh.create_loopback_file(fname=self.fs_image,
                                 size=int(self.cfg.get('swift',
                                                   'loopback_disk_size')),
                                 fs_type='xfs')
         self.tracewriter.file_touched(self.fs_image)
-        self.fs_dev = sh.joinpths(self.datadir, 'drives/sdb1/')
         sh.mount_loopback_file(self.fs_image, self.fs_dev, 'xfs')
         sh.chown_r(self.fs_dev, sh.geteuid(), sh.getegid())
 
@@ -165,13 +169,11 @@ class SwiftInstaller(comp.PythonInstallComponent):
                                  '/etc/rsyslog.d/10-swift.conf')
 
     def __setup_binaries(self):
-        self.makerings_file = sh.joinpths(self.bindir, SWIFT_MAKERINGS)
         sh.move(sh.joinpths(self.cfgdir, SWIFT_MAKERINGS),
                 self.makerings_file)
         sh.chmod(self.makerings_file, 777)
         self.tracewriter.file_touched(self.makerings_file)
 
-        self.startmain_file = sh.joinpths(self.bindir, SWIFT_STARTMAIN)
         sh.move(sh.joinpths(self.cfgdir, SWIFT_STARTMAIN),
                 self.startmain_file)
         sh.chmod(self.startmain_file, 777)

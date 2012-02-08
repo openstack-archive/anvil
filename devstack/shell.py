@@ -377,8 +377,7 @@ def getuid(username):
 
 
 def gethomedir():
-    #TODO will just using os.path.expanduser("~") work??
-    return pwd.getpwuid(geteuid()).pw_dir
+    return os.path.expanduser("~")
 
 
 def getgid(groupname):
@@ -418,7 +417,7 @@ def mount_loopback_file(fname, device_name, fs_type='ext3'):
                  'loop,noatime,nodiratime,nobarrier,logbufs=8', fname,
                  device_name]
 
-    files = mkdirslist(dirname(device_name))
+    files = mkdirslist(device_name)
 
     execute(*mount_cmd, run_as_root=True)
 
