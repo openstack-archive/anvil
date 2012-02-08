@@ -490,9 +490,7 @@ def parse_components(components):
             if component_name in settings.COMPONENT_NAMES:
                 component_opts = mtch.group(2)
                 components_opts_cleaned = list()
-                if not component_opts:
-                    pass
-                else:
+                if component_opts:
                     sp_component_opts = component_opts.split(",")
                     for co in sp_component_opts:
                         cleaned_opt = co.strip()
