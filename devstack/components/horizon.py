@@ -193,7 +193,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def _config_fixups(self):
         #currently just handling rhel fixups
-        #TODO: maybe this should be a subclass
+        #TODO: maybe this should be a subclass that handles these differences
         if self.distro != settings.RHEL6:
             return
         #it seems like to get this to work
