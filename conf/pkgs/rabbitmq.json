@@ -24,6 +24,15 @@
                         "qpidd",
                         "stop"
                     ]
+                },
+                {
+                    # Qpidd runs on the same port
+                    "run_as_root": true,
+                    "cmd": [
+                        "chkconfig",
+                        "qpidd",
+                        "off"
+                    ]
                 }
             ]
         }
@@ -40,6 +49,15 @@
                         "service",
                         "qpidd",
                         "stop"
+                    ]
+                },
+                {
+                    # Qpidd runs on the same port
+                    "run_as_root": true,
+                    "cmd": [
+                        "chkconfig",
+                        "qpidd",
+                        "off"
                     ]
                 }
             ]
