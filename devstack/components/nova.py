@@ -196,9 +196,46 @@ class NovaUninstaller(comp.PythonUninstallComponent):
         comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
 
     def pre_uninstall(self):
-        LOG.info("Cleaning up iptables")
-        cmd = ["utils/clean_iptables.sh"]
+        comp.PythonUninstallComponent.pre_uninstall(self)
+        self._clear_iptables()
+        self._clear_domains()
+    
+    def _clear_iptables(self):
+        LOG.info("Cleaning up iptables.")
+        pth = sh.joinpths('utils', 'clean_iptables.sh')
+        cmd = [pth]
         sh.execute(*cmd, run_as_root=True)
+        
+    def _clear_domains(self):
+        libvirt_type = self.cfg.get('nova', 'libvirt_type')
+        inst_prefix = self.cfg.get('nova', 'instance_name_prefix')
+        virt_protocol = LIBVIRT_PROTOCOL_MAP.get(libvirt_type)
+        if virt_protocol and inst_prefix:
+            #attempt to clear out dead domains
+            #late import so this is not always required
+            try:
+                import libvirt
+                with sh.Rooted(True):
+                    LOG.info("Attempting to clear out leftover libvirt nova domains using protocol %s." %(virt_protocol))
+                    conn = None
+                    try:
+                        conn = libvirt.open(virt_protocol)
+                    except libvirt.libvirtError:
+                        LOG.warn("Could not connect to libvirt using protocol [%s]" % (virt_protocol))
+                    if conn:
+                        try:
+                            definedDomains = conn.listDefinedDomains()
+                            for domain in definedDomains:
+                                if domain.startswith(inst_prefix):
+                                    LOG.info("Found old nova domain %s" % (domain))
+                                    dom = conn.lookupByName(domain)
+                                    LOG.info("Clearing domain id %d running %s" % (dom.ID(), dom.OSType()))
+                                    dom.undefine()
+                        except libvirt.libvirtError, e:
+                            LOG.warn("Could not clear out libvirt domains due to [%s]" % (e.message))
+            except ImportError:
+                #LOG it?
+                pass
 
 
 class NovaInstaller(comp.PythonInstallComponent):
@@ -431,36 +468,6 @@ class NovaRuntime(comp.PythonRuntime):
     def _get_app_options(self, app):
         return APP_OPTIONS.get(app)
 
-    def _clear_domains(self):
-        libvirt_type = self.cfg.get('nova', 'libvirt_type')
-        inst_prefix = self.cfg.get('nova', 'instance_name_prefix')
-        virt_protocol = LIBVIRT_PROTOCOL_MAP.get(libvirt_type)
-        if virt_protocol and inst_prefix:
-            #attempt to clear out dead domains
-            #late import so this is not always required
-            try:
-                import libvirt
-                with sh.Rooted(True):
-                    conn = None
-                    try:
-                        conn = libvirt.open(virt_protocol)
-                    except libvirt.libvirtError:
-                        LOG.warn("Could not connect to libvirt using protocol [%s]" % (virt_protocol))
-                    if conn:
-                        try:
-                            definedDomains = conn.listDefinedDomains()
-                            for domain in definedDomains:
-                                if domain.startswith(inst_prefix):
-                                    LOG.info("Found old domain %s" % (domain))
-                                    dom = conn.lookupByName(domain)
-                                    LOG.info("Clearing domain id %d running %s" % (dom.ID(), dom.OSType()))
-                                    dom.undefine()
-                        except libvirt.libvirtError, e:
-                            LOG.warn("Could not clear out libvirt domains due to [%s]" % (e.message))
-            except ImportError:
-                #LOG it?
-                pass
-                
 
 # This class has the smarts to build the configuration file based on
 # various runtime values. A useful reference for figuring out this
