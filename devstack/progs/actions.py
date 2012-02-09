@@ -27,8 +27,6 @@ from devstack import utils
 from devstack.packaging import apt
 from devstack.packaging import yum
 
-from devstack.components import keystone
-
 from devstack.progs import common
 
 LOG = logging.getLogger("devstack.progs.actions")

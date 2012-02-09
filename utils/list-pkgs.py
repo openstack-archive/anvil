@@ -5,6 +5,7 @@ import sys
 #useful for running like the following
 #find conf/ | grep ".json\$" | xargs python utils/list-pkgs.py "rhel-6"
 
+
 def clean_file(name):
     with open(name, "r") as f:
         contents = f.read()
@@ -101,4 +102,3 @@ if __name__ == "__main__":
         else:
             version = str(version)
         print("[%s] with version [%s]" % (name, version))
-

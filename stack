@@ -53,7 +53,7 @@ def main():
         return 1
 
     #drop to usermode
-    sh.user_mode()
+    sh.user_mode(False)
     try:
         # now let's go
         started_ok = actions.run(args)

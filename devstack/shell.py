@@ -30,6 +30,9 @@ MKPW_CMD = ["openssl", 'rand', '-hex']
 PASS_ASK_ENV = 'PASS_ASK'
 LOG = logging.getLogger("devstack.shell")
 ROOT_USER = "root"
+ROOT_USER_UID = 0
+SUDO_UID = 'SUDO_UID'
+SUDO_GID = 'SUDO_GID'
 
 
 #root context guard
@@ -174,10 +177,10 @@ def joinpths(*paths):
 
 
 def _get_suids():
-    uid = os.environ.get('SUDO_UID')
+    uid = env.get_key(SUDO_UID)
     if uid is not None:
         uid = int(uid)
-    gid = os.environ.get('SUDO_GID')
+    gid = env.get_key(SUDO_GID)
     if gid is not None:
         gid = int(gid)
     return (uid, gid)
@@ -216,15 +219,17 @@ def chown_r(path, uid, gid, run_as_root=True):
                     LOG.debug("Changing ownership of %s to %s:%s" % (joinpths(root, f), uid, gid))
 
 
-def password(prompt_=None, pw_len=8):
-    rd = ""
-    ask_for_pw = env.get_bool(PASS_ASK_ENV, True)
-    if ask_for_pw:
-        rd = prompt_password(prompt_)
-    if not rd:
+def password(pw_prompt=None, pw_len=8):
+    pw = ""
+    ask_for_pw = env.get_key(PASS_ASK_ENV)
+    if ask_for_pw is not None:
+        ask_for_pw = ask_for_pw.lower().strip()
+    if ask_for_pw not in ['f', 'false', '0', 'off']:
+        pw = prompt_password(pw_prompt)
+    if not pw:
         return _gen_password(pw_len)
     else:
-        return rd
+        return pw
 
 
 def mkdirslist(path):
@@ -474,24 +479,31 @@ def copy_replace_file(fsrc, fdst, map_):
 
 
 def got_root():
-    return os.geteuid() == 0
+    return os.geteuid() == ROOT_USER_UID
 
 
-def root_mode():
+def root_mode(quiet=True):
     root_uid = getuid(ROOT_USER)
     root_gid = getgid(ROOT_USER)
     if root_uid is None or root_gid is None:
-        LOG.warn("Cannot escalate permissions to (user=%s) - does that user exist??" % (ROOT_USER))
+        msg = "Cannot escalate permissions to (user=%s) - does that user exist??" % (ROOT_USER)
+        if quiet:
+            LOG.warn(msg)
+        else:
+            raise excp.StackException(msg)
     else:
         try:
             LOG.debug("Escalating permissions to (user=%s, group=%s)" % (root_uid, root_gid))
             os.setreuid(0, root_uid)
             os.setregid(0, root_gid)
         except OSError:
-            LOG.warn("Cannot escalate permissions to (user=%s, group=%s)" % (root_uid, root_gid))
+            if quiet:
+                LOG.warn("Cannot escalate permissions to (user=%s, group=%s)" % (root_uid, root_gid))
+            else:
+                raise
 
 
-def user_mode():
+def user_mode(quiet=True):
     (sudo_uid, sudo_gid) = _get_suids()
     if sudo_uid is not None and sudo_gid is not None:
         try:
@@ -499,9 +511,16 @@ def user_mode():
             os.setregid(0, sudo_gid)
             os.setreuid(0, sudo_uid)
         except OSError:
-            LOG.warn("Cannot drop permissions to (user=%s, group=%s)" % (sudo_uid, sudo_gid))
+            if quiet:
+                LOG.warn("Cannot drop permissions to (user=%s, group=%s)" % (sudo_uid, sudo_gid))
+            else:
+                raise
     else:
-        LOG.warn("Can not switch to user mode, no suid user id or group id")
+        msg = "Can not switch to user mode, no suid user id or group id"
+        if quiet:
+            LOG.warn(msg)
+        else:
+            raise excp.StackException(msg)
 
 
 def geteuid():

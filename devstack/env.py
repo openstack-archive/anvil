@@ -18,14 +18,7 @@ import os
 
 from devstack import log as logging
 
-TRUE_VALUES = ['yes', 'true', 't', '1', 'on']
 LOG = logging.getLogger("devstack.environment")
-
-
-def _str2bool(value_str):
-    if value_str.lower().strip() in TRUE_VALUES:
-        return True
-    return False
 
 
 def get():
@@ -36,6 +29,7 @@ def set(k, v):
     #this is really screwy, python is really odd in this area
     #from http://docs.python.org/library/os.html
     if k is not None:
+        LOG.debug("Setting environment key [%s] to value [%s]" % (k, v))
         os.environ[str(k)] = str(v)
 
 
@@ -49,9 +43,3 @@ def get_key(key, default_value=None):
         LOG.debug("Found \"%s\" in environment variable \"%s\"" % (value, key))
     return value
 
-
-def get_bool(key, default_value=False):
-    value = get_key(key, None)
-    if value is None:
-        return default_value
-    return _str2bool(value)

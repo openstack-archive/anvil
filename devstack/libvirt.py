@@ -32,21 +32,18 @@ VIRT_TYPE = 'libvirt'
 VIRT_LIB = VIRT_TYPE
 DEFAULT_VIRT = 'qemu'
 
-#how libvirt is restarted
-LIBVIRT_RESTART_CMD = {
-    settings.RHEL6: ['service', 'libvirtd', 'restart'],
-    settings.FEDORA16: ['service', 'libvirtd', 'restart'],
-    #whyyyy??
-    settings.UBUNTU11: ['service', 'libvirt-bin', 'restart'],
+#distros name the libvirt service differently :-(
+SV_NAME_MAP = {
+    settings.RHEL6: 'libvirtd',
+    settings.FEDORA16: 'libvirtd',
+    settings.UBUNTU11: 'libvirt-bin',
 }
 
+#how libvirt is restarted
+LIBVIRT_RESTART_CMD = ['service', '%SERVICE%', 'restart']
+
 #how we check its status
-LIBVIRT_STATUS_CMD = {
-    settings.RHEL6: ['service', 'libvirtd', 'status'],
-    settings.FEDORA16: ['service', 'libvirtd', 'status'],
-    #whyyyy??
-    settings.UBUNTU11: ['service', 'libvirt-bin', 'status'],
-}
+LIBVIRT_STATUS_CMD = ['service', '%SERVICE%', 'status']
 
 #status is either dead or alive!
 _DEAD = 'DEAD'
@@ -60,8 +57,16 @@ def _get_virt_lib():
 
 
 def _status(distro):
-    cmd = LIBVIRT_STATUS_CMD[distro]
-    (sysout, _) = sh.execute(*cmd, run_as_root=False, check_exit_code=False)
+    cmds = list()
+    cmds.append({
+        'cmd': LIBVIRT_STATUS_CMD,
+    })
+    mp = dict()
+    mp['SERVICE'] = SV_NAME_MAP[distro]
+    result = utils.execute_template(*cmds,
+                                check_exit_code=False,
+                                params=mp)
+    sysout = result[0][0]
     if sysout.find("running") != -1:
         return _ALIVE
     else:
@@ -83,8 +88,15 @@ def _destroy_domain(conn, dom_name):
 
 def restart(distro):
     if _status(distro) != _ALIVE:
-        cmd = LIBVIRT_RESTART_CMD[distro]
-        sh.execute(*cmd, run_as_root=True)
+        cmds = list()
+        cmds.append({
+            'cmd': LIBVIRT_RESTART_CMD,
+            'run_as_root': True,
+        })
+        mp = dict()
+        mp['SERVICE'] = SV_NAME_MAP[distro]
+        utils.execute_template(*cmds,
+                                params=mp)
 
 
 def default(virt_type):
@@ -111,10 +123,10 @@ def virt_ok(virt_type, distro):
 
 def clear_libvirt_domains(virt_type, inst_prefix):
     libvirt = _get_virt_lib()
-    virt_protocol = LIBVIRT_PROTOCOL_MAP.get(virt_type)
     if not libvirt:
-        LOG.warn("Could not clear out libvirt domains, libvirt not installed for python.")
+        LOG.warn("Could not clear out libvirt domains, libvirt not available for python.")
         return
+    virt_protocol = LIBVIRT_PROTOCOL_MAP.get(virt_type)
     if not virt_protocol:
         LOG.warn("Could not clear out libvirt domains, no valid protocol for virt type %s." % (virt_type))
         return
