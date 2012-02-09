@@ -25,12 +25,13 @@ def get():
     return dict(os.environ)
 
 
-def set(k, v):
+def set(key, value):
     #this is really screwy, python is really odd in this area
     #from http://docs.python.org/library/os.html
-    if k is not None:
-        LOG.debug("Setting environment key [%s] to value [%s]" % (k, v))
-        os.environ[str(k)] = str(v)
+    #Calling putenv() directly does not change os.environ, so it's better to modify os.environ.
+    if key is not None:
+        LOG.debug("Setting environment key [%s] to value [%s]" % (key, value))
+        os.environ[str(key)] = str(value)
 
 
 def get_key(key, default_value=None):
