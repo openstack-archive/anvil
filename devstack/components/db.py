@@ -100,8 +100,8 @@ class DBUninstaller(comp.PkgUninstallComponent):
         try:
             #TODO: maybe this should be a subclass that handles these differences
             if dbactions and dbtype == MYSQL:
-                LOG.info(("Attempting to reset your mysql password so"
-                          " that we can set it the next time you install."))
+                LOG.info(("Attempting to reset your mysql password to \"%s\" so"
+                          " that we can set it the next time you install.") % (RESET_BASE_PW))
                 pwd_cmd = dbactions.get('set_pwd')
                 if pwd_cmd:
                     LOG.info("Ensuring your database is started before we operate on it.")
