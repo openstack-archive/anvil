@@ -29,6 +29,8 @@ LIBVIRT_PROTOCOL_MAP = {
     'qemu': "qemu:///system",
     'kvm': "qemu:///system",
     'xen': 'xen:///',
+    'uml': 'uml:///system',
+    'lxc': 'lxc:///',
 }
 VIRT_TYPE = 'libvirt'
 VIRT_LIB = VIRT_TYPE
@@ -108,7 +110,10 @@ def restart(distro):
 
 
 def default(virt_type):
-    if not virt_type or not LIBVIRT_PROTOCOL_MAP.get(virt_type):
+    if not virt_type:
+        return DEFAULT_VIRT
+    virt_type = virt_type.lower().strip()
+    if not virt_type in LIBVIRT_PROTOCOL_MAP:
         return DEFAULT_VIRT
     else:
         return virt_type
