@@ -24,7 +24,11 @@ def versionize_str(ver, maxlen=5):
     real_digits = list()
     for i in range(maxlen):
         if i < len(ver):
-            real_digits.append(ver[i])
+            digit = ver[i].strip()
+            if not len(digit):
+                real_digits.append("0")
+            else:
+                real_digits.append(digit)
         else:
             real_digits.append("0")
     ver_str = "".join(real_digits)
