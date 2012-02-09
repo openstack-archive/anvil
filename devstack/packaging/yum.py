@@ -32,6 +32,7 @@ YUM_REMOVE = ['erase', '-y', "-t"]
 VERSION_TEMPL = "%s-%s"
 
 #need to relink for rhel (not a bug!)
+#TODO: maybe this should be a subclass that handles these differences
 RHEL_RELINKS = {
     'python-webob1.0': {
         "src": '/usr/lib/python2.6/site-packages/WebOb-1.0.8-py2.6.egg/webob/',
@@ -60,12 +61,14 @@ class YumPackager(pack.Packager):
             **kargs)
 
     def _remove_special(self, pkgname, pkginfo):
+        #TODO: maybe this should be a subclass that handles these differences
         if self.distro == settings.RHEL6 and pkgname in RHEL_RELINKS:
             #we don't return true here so that
             #the normal package cleanup happens
             sh.unlink(RHEL_RELINKS.get(pkgname).get("tgt"))
         return False
 
+    #TODO: maybe this should be a subclass that handles these differences
     def _install_rhel_relinks(self, pkgname, pkginfo):
         full_pkg_name = self._format_pkg_name(pkgname, pkginfo.get("version"))
         install_cmd = YUM_CMD + YUM_INSTALL + [full_pkg_name]
@@ -79,6 +82,7 @@ class YumPackager(pack.Packager):
             sh.symlink(src, tgt)
         return True
 
+    #TODO: maybe this should be a subclass that handles these differences
     def _install_special(self, pkgname, pkginfo):
         if self.distro == settings.RHEL6 and pkgname in RHEL_RELINKS:
             return self._install_rhel_relinks(pkgname, pkginfo)
