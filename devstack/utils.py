@@ -501,7 +501,7 @@ def _goodbye_header(worked):
 \ Emporium        /
  -----------------
 ''')
-    potential_fails.append(r'''
+    potentials_fails.append(r'''
  _______________________
 < You have been borked. >
  -----------------------
