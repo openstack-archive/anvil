@@ -20,11 +20,11 @@ def clean_file(name):
         return data
 
 
-def versionize_str(ver, maxlen=5):
+def versionize(ver, maxlen=5):
     real_digits = list()
     for i in range(maxlen):
         if i < len(ver):
-            digit = ver[i].strip()
+            digit = ver[i].strip().strip("*")
             if not len(digit):
                 real_digits.append("0")
             else:
@@ -35,14 +35,14 @@ def versionize_str(ver, maxlen=5):
     return int(ver_str)
 
 
-def update_version(distro, old_ver, new_ver):
+def pick_version(old_ver, new_ver):
     if new_ver is None:
         return old_ver
     if old_ver is None:
         return new_ver
     try:
-        old_v = versionize_str(old_ver.strip("*").split("."))
-        new_v = versionize_str(new_ver.strip("*").split("."))
+        old_v = versionize(old_ver.strip("*").split("."))
+        new_v = versionize(new_ver.strip("*").split("."))
         if old_v < new_v:
             return new_ver
         else:
@@ -72,14 +72,14 @@ if __name__ == "__main__":
                     if name in pips:
                         my_ver = info.get("version")
                         old_ver = pips[name]
-                        pips[name] = update_version(distro, old_ver, my_ver)
+                        pips[name] = pick_version(old_ver, my_ver)
                     else:
                         pips[name] = info.get("version")
                 else:
                     if name in pkgs:
                         my_ver = info.get("version")
                         old_ver = pkgs[name]
-                        pkgs[name] = update_version(distro, old_ver, my_ver)
+                        pkgs[name] = pick_version(old_ver, my_ver)
                     else:
                         pkgs[name] = info.get("version")
 
