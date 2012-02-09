@@ -185,6 +185,7 @@ class PkgInstallComponent(ComponentBase):
         for source in link_srcs:
             link = links.get(source)
             try:
+                LOG.info("Symlinking %s => %s" % (link, source))
                 self.tracewriter.symlink(source, link)
             except OSError:
                 LOG.warn("Symlink %s => %s already exists." % (link, source))
