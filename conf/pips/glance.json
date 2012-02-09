@@ -7,6 +7,10 @@
         "SQLAlchemy": {
             "version": "0.7.5"
         },
+        "python-routes": {
+            "version": "1.12*",
+            "removable": true
+        },
         #the base is 2.0, need to upgrade
         "pycrypto": {
             "version": "2.5",

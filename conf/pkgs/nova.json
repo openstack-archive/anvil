@@ -224,10 +224,6 @@
             "version": "2.7*",
             "removable": false
         },
-        "python-routes": {
-            "version": "1.12*",
-            "removable": true
-        },
         "python-netaddr": {
             "version": "0.7*",
             "removable": true

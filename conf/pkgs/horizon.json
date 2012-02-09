@@ -94,10 +94,6 @@
             "version": "1.7.4*",
             "removable": true
         },
-        "python-routes": {
-            "version": "1.12*",
-            "removable": true
-        },
         # Requires EPEL
         "python-webob1.0": {
             "version": "1.0*",

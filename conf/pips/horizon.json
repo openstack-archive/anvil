@@ -54,6 +54,9 @@
         "django-staticfiles" : {
             "version": "1.1.2"
         }
+        "python-routes": {
+            "version": "1.12*",
+        },
     },
     "fedora-16": {
         # rpm 1.7.9.1 does not have exceptions.Error

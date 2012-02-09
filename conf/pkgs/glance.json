@@ -56,10 +56,6 @@
             "version": "0.9*",
             "removable": true
         },
-        "python-routes": {
-            "version": "1.12*",
-            "removable": true
-        },
         # Requires EPEL
         "python-greenlet": {
             "version": "0.3.1*",
