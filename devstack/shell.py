@@ -328,10 +328,11 @@ def symlink(source, link, force=True, run_as_root=True):
     with Rooted(run_as_root):
         LOG.debug("Creating symlink from %s => %s" % (link, source))
         path = dirname(link)
-        mkdirslist(path)
+        needed_pths = mkdirslist(path)
         if force and (exists(link) or islink(link)):
             unlink(link, True)
         os.symlink(source, link)
+        return needed_pths
 
 
 def exists(path):

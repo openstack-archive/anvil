@@ -95,7 +95,8 @@ class TraceWriter(object):
 
     def symlink(self, source, link):
         self._start()
-        sh.symlink(source, link)
+        dirs = sh.symlink(source, link)
+        self.dir_made(*dirs)
         self.tracer.trace(SYMLINK_MAKE, link)
 
     def downloaded(self, tgt, fromwhere):
