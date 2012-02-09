@@ -18,8 +18,8 @@
             "version": "2.5",
             "options": "--upgrade"
         },
-        "python-routes": {
-            "version": "1.12*",
+        "Routes": {
+            "version": "1.12.3"
         },
         #the newest we can get is 1.3.3 from epel/rhel
         #this causes issues like the following
