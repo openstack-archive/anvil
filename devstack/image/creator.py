@@ -180,7 +180,7 @@ class ImageRegistry:
                 current[l[0].strip().lower()] = l[1].strip().replace('"', '')
 
     def _load(self):
-        LOG.info('Loading glance image information')
+        LOG.info('Loading current glance image information.')
         params = {'TOKEN': self._token}
         cmd = {'cmd': ImageRegistry.CMD}
         res = utils.execute_template(cmd, params=params)
