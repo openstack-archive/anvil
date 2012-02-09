@@ -71,6 +71,14 @@
         "libguestfs": {
             "version": "1.2.7*",
             "removable": true
+        },
+        "libguestfs-mount": {
+            "version": "1.7.17*",
+            "removable": true
+        },
+        "libguestfs-tools": {
+            "version": "1.7.17*",
+            "removable": true
         }
     },
     "fedora-16": {
