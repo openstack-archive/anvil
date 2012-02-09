@@ -444,7 +444,7 @@ class ProgramRuntime(ComponentBase):
             #did we find a class that can do it?
             if killcls:
                 #we can try to stop it
-                LOG.info("Stopping %s of run type %s" % (name, runtype))
+                LOG.debug("Stopping %s of run type %s" % (name, runtype))
                 #create an instance of the killer class and attempt to stop
                 killer = killcls()
                 killer.stop(name, trace_dir=self.tracedir)
@@ -455,7 +455,7 @@ class ProgramRuntime(ComponentBase):
         #if we got rid of them all get rid of the trace
         if killedam == len(start_traces):
             fn = self.starttracereader.trace_fn
-            LOG.info("Deleting trace file %s" % (fn))
+            LOG.debug("Deleting trace file %s" % (fn))
             sh.unlink(fn)
         return killedam
 
