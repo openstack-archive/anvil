@@ -28,6 +28,8 @@ def update_version(distro, old_ver, new_ver):
     try:
         cleaned_old = old_ver.strip("*")
         cleaned_new = new_ver.strip("*")
+        #TODO this may not always work, oh well
+        #ie 1.7 is not less than 1.6.3 :-P
         cleaned_old = "".join(cleaned_old.split("."))
         cleaned_new = "".join(cleaned_new.split("."))
         old_v = float(cleaned_old)
@@ -62,7 +64,6 @@ if __name__ == "__main__":
                         my_ver = info.get("version")
                         old_ver = pips[name]
                         pips[name] = update_version(distro, old_ver, my_ver)
-                        pass
                     else:
                         pips[name] = info.get("version")
                 else:
@@ -73,7 +74,7 @@ if __name__ == "__main__":
                     else:
                         pkgs[name] = info.get("version")
 
-    print("+Pips for distro: %s" % (distro))
+    print("+Pips (%s) for distro: %s" % (len(pips), distro))
     for name in sorted(pips.keys()):
         version = pips.get(name)
         if version is None:
@@ -83,7 +84,7 @@ if __name__ == "__main__":
         print("[%s] with version [%s]" % (name, version))
 
     print("")
-    print("+Packages for distro: %s" % (distro))
+    print("+Packages (%s) for distro: %s" % (len(pkgs), distro))
     for name in sorted(pkgs.keys()):
         version = pkgs.get(name)
         if version is None:
