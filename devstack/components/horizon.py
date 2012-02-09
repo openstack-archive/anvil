@@ -199,12 +199,16 @@ class HorizonInstaller(comp.PythonInstallComponent):
         #it seems like to get this to work
         #we need to do some conf.d/conf work which sort of sucks
         (user, group) = self._get_apache_user_group()
+        socket_fn = RHEL_FIXUPS.get("SOCKET_CONF")
+        self.tracewriter.file_touched(socket_fn)
+        #not recorded since we aren't really creating this
+        httpd_fn = RHEL_FIXUPS.get("HTTPD_CONF")
         with sh.Rooted(True):
             #fix the socket prefix to someplace we can use
             fc = "WSGISocketPrefix %s" % (sh.joinpths(self.log_dir, "wsgi-socket"))
-            sh.write_file(RHEL_FIXUPS.get("SOCKET_CONF"), fc)
+            sh.write_file(socket_fn, fc)
             #now adjust the run user and group
-            fc = sh.load_file(RHEL_FIXUPS.get("HTTPD_CONF"))
+            fc = sh.load_file(httpd_fn)
             lines = fc.splitlines()
             new_lines = list()
             for line in lines:
@@ -214,7 +218,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
                     line = "Group %s" % (group)
                 new_lines.append(line)
             fc = utils.joinlinesep(*new_lines)
-            sh.write_file(RHEL_FIXUPS.get("HTTPD_CONF"), fc)
+            sh.write_file(httpd_fn, fc)
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
