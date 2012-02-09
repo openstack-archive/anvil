@@ -100,7 +100,7 @@ def restart(distro):
             'cmd': LIBVIRT_RESTART_CMD,
             'run_as_root': True,
         })
-        LOG.info("Restarting libvirt, please wait %s seconds until its started." % (WAIT_ALIVE_TIME))
+        LOG.info("Restarting the libvirt service, please wait %s seconds until its started." % (WAIT_ALIVE_TIME))
         mp = dict()
         mp['SERVICE'] = SV_NAME_MAP[distro]
         utils.execute_template(*cmds, params=mp)
