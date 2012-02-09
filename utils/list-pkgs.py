@@ -20,20 +20,25 @@ def clean_file(name):
         return data
 
 
+def versionize_str(ver, maxlen=5):
+    real_digits = list()
+    for i in range(maxlen):
+        if i < len(ver):
+            real_digits.append(ver[i])
+        else:
+            real_digits.append("0")
+    ver_str = "".join(real_digits)
+    return int(ver_str)
+
+
 def update_version(distro, old_ver, new_ver):
     if new_ver is None:
         return old_ver
     if old_ver is None:
         return new_ver
     try:
-        cleaned_old = old_ver.strip("*")
-        cleaned_new = new_ver.strip("*")
-        #TODO this may not always work, oh well
-        #ie 1.7 is not less than 1.6.3 :-P
-        cleaned_old = "".join(cleaned_old.split("."))
-        cleaned_new = "".join(cleaned_new.split("."))
-        old_v = float(cleaned_old)
-        new_v = float(cleaned_new)
+        old_v = versionize_str(old_ver.strip("*").split("."))
+        new_v = versionize_str(new_ver.strip("*").split("."))
         if old_v < new_v:
             return new_ver
         else:
