@@ -17,8 +17,6 @@
 #    under the License.
 
 import os
-import os.path
-import logging
 import logging.config
 import sys
 import traceback
