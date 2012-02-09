@@ -42,4 +42,3 @@ def get_key(key, default_value=None):
     else:
         LOG.debug("Found \"%s\" in environment variable \"%s\"" % (value, key))
     return value
-
