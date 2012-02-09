@@ -8,6 +8,8 @@ import subprocess
 #find conf/ | grep ".json\$" | xargs python utils/check-avail.py "rhel-6"
 #on a rhel6 system
 
+BASE_CMD = ['yum', 'provides']
+
 
 def clean_file(name):
     with open(name, "r") as f:
@@ -54,17 +56,23 @@ def pick_version(old_ver, new_ver):
     except ValueError:
         return old_ver
 
+
 def version_check(stdout, name, version):
     lines = stdout.splitlines()
     founds = list()
-    tmp = re.compile(r"^([\d]*):(.*)$", re.IGNORECASE)
+    #this seems to happen
+    #where we have a pkg named 111:blah.4.33
+    #now sure what those are
+    cleaner = re.compile(r"^([\d]*):(.*)$", re.IGNORECASE)
+    #just check that it is the right line
     for line in lines:
         line = line.strip()
-        g = tmp.match(line)
-        if g:
-            line = g.group(2)
+        mtch = cleaner.match(line)
+        if mtch:
+            line = mtch.group(2).strip()
         if line.startswith(name):
             founds.append(line)
+    #now clean off the garbage
     possibles = list()
     for found in founds:
         pieces = found.split(":", 1)
@@ -72,25 +80,30 @@ def version_check(stdout, name, version):
             poss = pieces[0].strip()
             if poss:
                 possibles.append(poss)
+    #now isolate the versions
     myver = versionize(version.strip("*").split("."))
     versions_found = dict()
-    prog = re.compile(r"^([\d\.]*)(.*el6.*)$", re.IGNORECASE)
+    prog_ver = re.compile(r"^([\d\.]*)(.*el6.*)$", re.IGNORECASE)
     for p in possibles:
         if p.startswith(name):
             verinfo = p[len(name):len(p)]
             verinfo = verinfo.strip("-")
-            g = prog.match(verinfo)
-            if g:
-                v = g.group(1)
+            vermatcher = prog_ver.match(verinfo)
+            if vermatcher:
+                v = vermatcher.group(1)
                 aver = versionize(v.strip("*").split("."))
-                if aver is not None and aver not in versions_found:
+                if aver is not None:
                     versions_found[p] = aver
+    #now see if good enough
     if not versions_found:
+        #nothing found at all
         return (False, None, None)
     else:
+        #see if completly satisfied
         for (name, version) in versions_found.items():
             if version >= myver:
                 return (True, name, version)
+        #find the closest match
         min_dist = None
         closest_name = None
         closest_version = None
@@ -102,12 +115,13 @@ def version_check(stdout, name, version):
                 closest_version = version
         return (False, closest_name, closest_version)
 
+
 def find_closest(pkgname, version):
     try:
         stdin_fh = subprocess.PIPE
         stdout_fh = subprocess.PIPE
         stderr_fh = subprocess.PIPE
-        cmd = ['yum', 'provides', pkgname]
+        cmd = BASE_CMD + [pkgname]
         obj = subprocess.Popen(cmd,
                        stdin=stdin_fh,
                        stdout=stdout_fh,
@@ -122,9 +136,12 @@ def find_closest(pkgname, version):
             (stdout, stderr) = result
             return version_check(stdout, pkgname, version)
         else:
+            #guess not
             return (False, None, None)
     except OSError:
+        #guess not
         return (False, None, None)
+
 
 if __name__ == "__main__":
     ME = os.path.basename(sys.argv[0])
@@ -184,8 +201,8 @@ if __name__ == "__main__":
         else:
             if fname is None:
                 print("\tDid not find any package named [%s]" % (name))
-                am_bad+=1
+                am_bad += 1
             else:
                 print("\tOnly found [%s] at version [%s]" % (fname, fver))
-                am_bad+=1
+                am_bad += 1
     print("Found %s missing or not good enough packages/pips" % (am_bad))
