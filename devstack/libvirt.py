@@ -140,10 +140,10 @@ def clear_libvirt_domains(virt_type, inst_prefix):
         return
     virt_protocol = LIBVIRT_PROTOCOL_MAP.get(virt_type)
     if not virt_protocol:
-        LOG.warn("Could not clear out libvirt domains, no valid protocol for virt type %s." % (virt_type))
+        LOG.warn("Could not clear out libvirt domains, no known protocol for virt type %s" % (virt_type))
         return
     with sh.Rooted(True):
-        LOG.info("Attempting to clear out leftover libvirt domains using protocol %s." % (virt_protocol))
+        LOG.info("Attempting to clear out leftover libvirt domains using protocol %s" % (virt_protocol))
         conn = None
         try:
             conn = libvirt.open(virt_protocol)
