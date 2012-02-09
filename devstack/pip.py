@@ -60,11 +60,12 @@ def uninstall(pips, distro, skip_errors=True):
     LOG.info("Uninstalling python packages (%s) using command (%s)" % (", ".join(pipnames), root_cmd))
     for name in pipnames:
         try:
-            LOG.debug("Uninstall python package (%s)" % (name))
+            LOG.debug("Uninstalling python package (%s)" % (name))
             cmd = [root_cmd, 'uninstall'] + PIP_UNINSTALL_CMD_OPTS + [str(name)]
             sh.execute(*cmd, run_as_root=True)
         except excp.ProcessExecutionError:
             if skip_errors:
-                LOG.warn("Ignoring execution error that occured when uninstalling pip %s!" % (name))
+                LOG.warn(("Ignoring execution error that occured when uninstalling pip %s!"
+                    " (this may be ok if it was uninstalled by a previous component)") % (name))
             else:
                 raise

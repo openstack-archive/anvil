@@ -501,6 +501,11 @@ def _goodbye_header(worked):
 \ Emporium        /
  -----------------
 ''')
+    potential_fails.append(r'''
+ _______________________
+< You have been borked. >
+ -----------------------
+''')
     if not worked:
         msg = random.choice(potentials_fails).strip("\n\r")
         colored_msg = _color_blob(msg, 'red')
