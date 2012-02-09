@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import time
+
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import settings
@@ -45,9 +47,17 @@ LIBVIRT_RESTART_CMD = ['service', '%SERVICE%', 'restart']
 #how we check its status
 LIBVIRT_STATUS_CMD = ['service', '%SERVICE%', 'status']
 
+#this is just used to check that libvirt will work with
+#a given protocol, may not be ideal but does seem to crap
+#out if it won't work, so thats good
+VIRSH_SANITY_CMD = ['virsh', '-c', '%VIRT_PROTOCOL%', 'uri']
+
 #status is either dead or alive!
 _DEAD = 'DEAD'
 _ALIVE = 'ALIVE'
+
+#alive wait time, just a sleep we put into so that the service can start up
+WAIT_ALIVE_TIME = 5
 
 
 def _get_virt_lib():
@@ -73,10 +83,7 @@ def _status(distro):
         return _DEAD
 
 
-def _destroy_domain(conn, dom_name):
-    libvirt = _get_virt_lib()
-    if not libvirt or not dom_name:
-        return
+def _destroy_domain(libvirt, conn, dom_name):
     try:
         dom = conn.lookupByName(dom_name)
         LOG.debug("Destroying domain (%s) (id=%s) running %s" % (dom_name, dom.ID(), dom.OSType()))
@@ -93,10 +100,11 @@ def restart(distro):
             'cmd': LIBVIRT_RESTART_CMD,
             'run_as_root': True,
         })
+        LOG.info("Restarting libvirt, please wait %s seconds until its started." % (WAIT_ALIVE_TIME))
         mp = dict()
         mp['SERVICE'] = SV_NAME_MAP[distro]
-        utils.execute_template(*cmds,
-                                params=mp)
+        utils.execute_template(*cmds, params=mp)
+        time.sleep(WAIT_ALIVE_TIME)
 
 
 def default(virt_type):
@@ -110,12 +118,16 @@ def virt_ok(virt_type, distro):
     virt_protocol = LIBVIRT_PROTOCOL_MAP.get(virt_type)
     if not virt_protocol:
         return False
-    #ensure we can do this
     restart(distro)
-    #this is our sanity check to ensure that we can actually use that virt technology
-    cmd = ['virsh', '-c', virt_protocol, 'uri']
+    cmds = list()
+    cmds.append({
+        'cmd': VIRSH_SANITY_CMD,
+        'run_as_root': True,
+    })
+    mp = dict()
+    mp['VIRT_PROTOCOL'] = virt_protocol
     try:
-        sh.execute(*cmd, run_as_root=True)
+        utils.execute_template(*cmds, params=mp)
         return True
     except excp.ProcessExecutionError:
         return False
@@ -145,8 +157,8 @@ def clear_libvirt_domains(virt_type, inst_prefix):
                     if domain.startswith(inst_prefix):
                         kill_domains.append(domain)
                 if kill_domains:
-                    LOG.info("Found %s old domains to destroy (%s)" % (len(kill_domains), ", ".join(kill_domains)))
-                    for domain in kill_domains:
-                        _destroy_domain(conn, domain)
+                    LOG.info("Found %s old domains to destroy (%s)" % (len(kill_domains), ", ".join(sorted(kill_domains))))
+                    for domain in sorted(kill_domains):
+                        _destroy_domain(libvirt, conn, domain)
             except libvirt.libvirtError, e:
                 LOG.warn("Could not clear out libvirt domains due to [%s]" % (e.message))
