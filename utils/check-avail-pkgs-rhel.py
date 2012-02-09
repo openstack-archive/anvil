@@ -9,7 +9,8 @@ import subprocess
 #on a rhel6 system
 
 BASE_CMD = ['yum', 'provides']
-
+VER_LEN = 10
+MAX_SUB_SEGMENTS = 2
 
 def clean_file(name):
     with open(name, "r") as f:
@@ -26,17 +27,21 @@ def clean_file(name):
         return data
 
 
-def versionize(ver, maxlen=5):
+def versionize(ver):
     real_digits = list()
-    for i in range(maxlen):
+    for i in range(VER_LEN):
         if i < len(ver):
             digit = ver[i].strip().strip("*")
             if not len(digit):
-                real_digits.append("0")
+                real_digits.append("0" * MAX_SUB_SEGMENTS)
             else:
-                real_digits.append(digit)
+                for j in range(MAX_SUB_SEGMENTS):
+                    if j < len(digit):
+                        real_digits.append(digit[j])
+                    else:
+                        real_digits.append("0")
         else:
-            real_digits.append("0")
+            real_digits.append("0" * MAX_SUB_SEGMENTS)
     ver_str = "".join(real_digits)
     return int(ver_str)
 
@@ -55,7 +60,6 @@ def pick_version(old_ver, new_ver):
             return old_ver
     except ValueError:
         return old_ver
-
 
 def version_check(stdout, name, version):
     lines = stdout.splitlines()
@@ -115,7 +119,6 @@ def version_check(stdout, name, version):
                 closest_version = version
         return (False, closest_name, closest_version)
 
-
 def find_closest(pkgname, version):
     try:
         stdin_fh = subprocess.PIPE
@@ -141,7 +144,6 @@ def find_closest(pkgname, version):
     except OSError:
         #guess not
         return (False, None, None)
-
 
 if __name__ == "__main__":
     ME = os.path.basename(sys.argv[0])
@@ -201,8 +203,8 @@ if __name__ == "__main__":
         else:
             if fname is None:
                 print("\tDid not find any package named [%s]" % (name))
-                am_bad += 1
+                am_bad+=1
             else:
                 print("\tOnly found [%s] at version [%s]" % (fname, fver))
-                am_bad += 1
+                am_bad+=1
     print("Found %s missing or not good enough packages/pips" % (am_bad))

@@ -5,6 +5,8 @@ import sys
 #useful for running like the following
 #find conf/ | grep ".json\$" | xargs python utils/list-pkgs.py "rhel-6"
 
+VER_LEN = 10
+MAX_SUB_SEGMENTS = 2
 
 def clean_file(name):
     with open(name, "r") as f:
@@ -21,17 +23,21 @@ def clean_file(name):
         return data
 
 
-def versionize(ver, maxlen=5):
+def versionize(ver):
     real_digits = list()
-    for i in range(maxlen):
+    for i in range(VER_LEN):
         if i < len(ver):
             digit = ver[i].strip().strip("*")
             if not len(digit):
-                real_digits.append("0")
+                real_digits.append("0" * MAX_SUB_SEGMENTS)
             else:
-                real_digits.append(digit)
+                for j in range(MAX_SUB_SEGMENTS):
+                    if j < len(digit):
+                        real_digits.append(digit[j])
+                    else:
+                        real_digits.append("0")
         else:
-            real_digits.append("0")
+            real_digits.append("0" * MAX_SUB_SEGMENTS)
     ver_str = "".join(real_digits)
     return int(ver_str)
 
