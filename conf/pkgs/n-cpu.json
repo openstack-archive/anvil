@@ -67,6 +67,10 @@
         "libvirt": {
             "version": "0.9.4*",
             "removable": true
+        },
+        "libguestfs": {
+            "version": "1.2.7*",
+            "removable": true
         }
     },
     "fedora-16": {

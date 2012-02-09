@@ -273,7 +273,7 @@ def _gen_localrc(config, fn):
 
 
 def _run_components(action_name, component_order, components, distro, root_dir, program_args):
-    LOG.info("Will run action [%s] using root directory \"%s\"" % (action_name, root_dir))
+    LOG.info("Will run action [%s] using root directory [%s]" % (action_name, root_dir))
     LOG.info("In the following order: %s" % ("->".join(component_order)))
     non_components = set(components.keys()).difference(set(component_order))
     if non_components:

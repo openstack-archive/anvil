@@ -409,16 +409,16 @@ class ProgramRuntime(ComponentBase):
                     adjusted_opts.append(utils.param_replace(str(opt), params))
                 program_opts = adjusted_opts
             #start it with the given settings
-            LOG.info("Starting [%s] with options [%s]" % (app_name, ", ".join(program_opts)))
+            LOG.debug("Starting [%s] with options [%s]" % (app_name, ", ".join(program_opts)))
             fn = starter.start(app_name, app_pth, *program_opts, app_dir=app_dir, \
                                trace_dir=self.tracedir)
             if fn:
                 fns.append(fn)
-                LOG.info("Started %s, details are in %s" % (app_name, fn))
+                LOG.debug("Started %s, details are in %s" % (app_name, fn))
                 #this trace is used to locate details about what to stop
                 self.tracewriter.started_info(app_name, fn)
             else:
-                LOG.info("Started %s" % (app_name))
+                LOG.debug("Started %s" % (app_name))
         return fns
 
     def stop(self):

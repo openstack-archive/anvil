@@ -168,7 +168,7 @@ class ForkRunner(object):
         runtrace.trace(STDERR_FN, stderrfn)
         runtrace.trace(STDOUT_FN, stdoutfn)
         runtrace.trace(ARGS, json.dumps(args))
-        LOG.info("Forking [%s] by running command [%s]" % (name, program))
+        LOG.debug("Forking [%s] by running command [%s]" % (name, program))
         with sh.Rooted(kargs.get("run_as_root", True)):
             self._fork_start(program, appdir, pidfile, stdoutfn, stderrfn, *args)
         return tracefn
