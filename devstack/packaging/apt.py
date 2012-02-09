@@ -101,6 +101,7 @@ class AptPackager(pack.Packager):
             self._execute_apt(cmd)
 
     def _pkg_remove_special(self, name, pkginfo):
+        #TODO: maybe this should be a subclass that handles these differences
         if name == 'rabbitmq-server' and self.distro == settings.UBUNTU11:
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
@@ -117,6 +118,7 @@ class AptPackager(pack.Packager):
         return False
 
     def _pkg_install_special(self, name, pkginfo):
+        #TODO: maybe this should be a subclass that handles these differences
         if name == 'rabbitmq-server' and self.distro == settings.UBUNTU11:
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
