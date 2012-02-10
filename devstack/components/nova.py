@@ -216,6 +216,9 @@ class NovaInstaller(comp.PythonInstallComponent):
         self.volumes_enabled = False
         if not self.component_opts or NVOL in self.component_opts:
             self.volumes_enabled = True
+        self.xvnc_enabled = False
+        if not self.component_opts or NXVNC in self.component_opts:
+            self.xvnc_enabled = True
 
     def _get_pkgs(self):
         pkgs = list(REQ_PKGS)
@@ -286,7 +289,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         self._setup_cleaner()
         # check if we need to do the vol subcomponent
         if self.volumes_enabled:
-            vol_maker = NovaVolumeConfigurator(self.cfg, self.appdir)
+            vol_maker = NovaVolumeConfigurator(self)
             vol_maker.setup_volumes()
 
     def _setup_cleaner(self):
@@ -306,7 +309,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         component_dirs['app'] = self.appdir
         component_dirs['cfg'] = self.cfgdir
         component_dirs['bin'] = self.bindir
-        conf_gen = NovaConfigurator(self)
+        conf_gen = NovaConfConfigurator(self)
         nova_conf = conf_gen.configure(component_dirs)
         tgtfn = self._get_target_config_name(API_CONF)
         LOG.info("Writing nova configuration to %s" % (tgtfn))
@@ -401,9 +404,9 @@ class NovaRuntime(comp.PythonRuntime):
 #this will configure nova volumes which in a developer box
 #is a volume group (lvm) that are backed by a loopback file
 class NovaVolumeConfigurator(object):
-    def __init__(self, config, appdir):
-        self.cfg = config
-        self.appdir = appdir
+    def __init__(self, ni):
+        self.cfg = ni.cfg
+        self.appdir = ni.appdir
 
     def setup_volumes(self):
         self._setup_vol_groups()
@@ -472,22 +475,17 @@ class NovaVolumeConfigurator(object):
 # This class has the smarts to build the configuration file based on
 # various runtime values. A useful reference for figuring out this
 # is at http://docs.openstack.org/diablo/openstack-compute/admin/content/ch_configuring-openstack-compute.html
-class NovaConfigurator(object):
-    def __init__(self, nc):
-        self.cfg = nc.cfg
-        self.instances = nc.instances
-        self.component_root = nc.component_root
-        self.appdir = nc.appdir
-        self.tracewriter = nc.tracewriter
-        self.paste_conf_fn = nc.paste_conf_fn
-        self.distro = nc.distro
-        self.volumes_enabled = False
-        self.xvnc_enabled = False
-        if not nc.component_opts or NVOL in nc.component_opts:
-            self.volumes_enabled = True
-        # TBD, xvnc is a subcomponent of Nova and not of novnc?
-        if not nc.component_opts or NXVNC in nc.component_opts:
-            self.xvnc_enabled = True
+class NovaConfConfigurator(object):
+    def __init__(self, ni):
+        self.cfg = ni.cfg
+        self.instances = ni.instances
+        self.component_root = ni.component_root
+        self.appdir = ni.appdir
+        self.tracewriter = ni.tracewriter
+        self.paste_conf_fn = ni.paste_conf_fn
+        self.distro = ni.distro
+        self.xvnc_enabled = ni.xvnc_enabled
+        self.volumes_enabled = ni.volumes_enabled
 
     def _getbool(self, name):
         return self.cfg.getboolean('nova', name)
