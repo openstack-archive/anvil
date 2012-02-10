@@ -13,10 +13,10 @@
         }
     },
     "rhel-6": {
-        "numpy": {
-            "version": "1.3*",
-            "removable": true
-        }
+        #"numpy": {
+        #    "version": "1.3*",
+        #    "removable": true
+        #}
     },
     "fedora-16": {
         "numpy": {
