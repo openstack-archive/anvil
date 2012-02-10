@@ -47,7 +47,6 @@ def load_template(component, fn):
 
 def execute_template(*cmds, **kargs):
     params_replacements = kargs.pop('params', None)
-    tracewriter = kargs.pop('tracewriter', None)
     ignore_missing = kargs.pop('ignore_missing', False)
     cmd_results = list()
     for cmdinfo in cmds:
@@ -77,8 +76,6 @@ def execute_template(*cmds, **kargs):
         exec_result = sh.execute(*cmd_to_run,
                                  run_as_root=cmdinfo.get('run_as_root', False),
                                  process_input=stdin, **kargs)
-        if tracewriter:
-            tracewriter.exec_cmd(cmd_to_run, exec_result)
         cmd_results.append(exec_result)
     return cmd_results
 
