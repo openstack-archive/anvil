@@ -7,6 +7,8 @@
 # This was added (so that it dies on errors)
 set -o errexit
 
+killall dnsmasq
+
 # Delete rules
 iptables -S -v | sed "s/-c [0-9]* [0-9]* //g" | grep "nova" | grep "\-A" |  sed "s/-A/-D/g" | awk '{print "sudo iptables",$0}' | bash
 
