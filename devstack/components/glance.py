@@ -49,7 +49,7 @@ DB_NAME = "glance"
 
 #special subcomponents/options that are used in starting to know that images should be uploaded
 NO_IMG_START = "no-image-upload"
-WAIT_ONLINE_TO = 5
+WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
 
 #what to start
 APP_OPTIONS = {

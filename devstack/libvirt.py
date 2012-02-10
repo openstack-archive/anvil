@@ -59,7 +59,7 @@ _DEAD = 'DEAD'
 _ALIVE = 'ALIVE'
 
 #alive wait time, just a sleep we put into so that the service can start up
-WAIT_ALIVE_TIME = 5
+WAIT_ALIVE_TIME = settings.WAIT_ALIVE_SECS
 
 
 def _get_virt_lib():
@@ -78,7 +78,9 @@ def _status(distro):
     result = utils.execute_template(*cmds,
                                 check_exit_code=False,
                                 params=mp)
-    sysout = result[0][0]
+    (sysout, stderr) = result[0]
+    combined = str(sysout) + str(stderr)
+    combined = combined.lower()
     if sysout.find("running") != -1 or sysout.find('start') != -1:
         return _ALIVE
     else:
@@ -100,12 +102,11 @@ def restart(distro):
         cmds = list()
         cmds.append({
             'cmd': LIBVIRT_RESTART_CMD,
-            'run_as_root': True,
         })
-        LOG.info("Restarting the libvirt service, please wait %s seconds until its started." % (WAIT_ALIVE_TIME))
         mp = dict()
         mp['SERVICE'] = SV_NAME_MAP[distro]
-        utils.execute_template(*cmds, params=mp)
+        utils.execute_template(*cmds, params=mp, run_as_root=True)
+        LOG.info("Restarting the libvirt service, please wait %s seconds until its started." % (WAIT_ALIVE_TIME))
         time.sleep(WAIT_ALIVE_TIME)
 
 

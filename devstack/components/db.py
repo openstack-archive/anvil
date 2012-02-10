@@ -30,7 +30,7 @@ LOG = logging.getLogger("devstack.components.db")
 
 #used for special setups
 MYSQL = 'mysql'
-START_WAIT_TIME = 5
+START_WAIT_TIME = settings.WAIT_ALIVE_SECS
 
 #TODO maybe we should handle this differently in the future, blah
 #ie in a special set of classes (make this class abstract)...
@@ -246,9 +246,9 @@ class DBRuntime(comp.EmptyRuntime):
         return distro_options.get(act)
 
     def start(self):
-        if self.status() == comp.STATUS_STOPPED:
+        if self.status() != comp.STATUS_STARTED:
             startcmd = self._get_run_actions('start', excp.StartException)
-            sh.execute(*startcmd, run_as_root=True)
+            sh.execute(*startcmd, run_as_root=True, check_exit_code=False)
             LOG.info("Please wait %s seconds while it starts up." % START_WAIT_TIME)
             time.sleep(START_WAIT_TIME)
             return 1
@@ -256,9 +256,9 @@ class DBRuntime(comp.EmptyRuntime):
             return 0
 
     def stop(self):
-        if self.status() == comp.STATUS_STARTED:
+        if self.status() != comp.STATUS_STOPPED:
             stopcmd = self._get_run_actions('stop', excp.StopException)
-            sh.execute(*stopcmd, run_as_root=True)
+            sh.execute(*stopcmd, run_as_root=True, check_exit_code=False)
             return 1
         else:
             return 0
@@ -266,17 +266,19 @@ class DBRuntime(comp.EmptyRuntime):
     def restart(self):
         LOG.info("Restarting your database.")
         restartcmd = self._get_run_actions('restart', excp.RestartException)
-        sh.execute(*restartcmd, run_as_root=True)
+        sh.execute(*restartcmd, run_as_root=True, check_exit_code=False)
         LOG.info("Please wait %s seconds while it restarts." % START_WAIT_TIME)
         time.sleep(START_WAIT_TIME)
         return 1
 
     def status(self):
         statuscmd = self._get_run_actions('status', excp.StatusException)
-        (sysout, _) = sh.execute(*statuscmd, check_exit_code=False)
-        if sysout.find("running") != -1:
+        (sysout, stderr) = sh.execute(*statuscmd, check_exit_code=False)
+        combined = str(sysout) + str(stderr)
+        combined = combined.lower()
+        if combined.find("running") != -1:
             return comp.STATUS_STARTED
-        elif sysout.find("stop") != -1:
+        elif combined.find("stop") != -1:
             return comp.STATUS_STOPPED
         else:
             return comp.STATUS_UNKNOWN

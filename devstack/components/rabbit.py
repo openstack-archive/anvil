@@ -41,7 +41,7 @@ REQ_PKGS = ['rabbitmq.json']
 RESET_BASE_PW = ''
 
 #how long we wait for rabbitmq to start up before doing commands on it
-WAIT_ON_TIME = 5
+WAIT_ON_TIME = settings.WAIT_ALIVE_SECS
 
 
 class RabbitUninstaller(comp.PkgUninstallComponent):
@@ -93,7 +93,7 @@ class RabbitRuntime(comp.EmptyRuntime):
         self.tracereader = tr.TraceReader(self.tracedir, tr.IN_TRACE)
 
     def start(self):
-        if self.status() == comp.STATUS_STOPPED:
+        if self.status() != comp.STATUS_STARTED:
             self._run_cmd(START_CMD)
             return 1
         else:
@@ -102,12 +102,13 @@ class RabbitRuntime(comp.EmptyRuntime):
     def status(self):
         #this has got to be the worst status output
         #i have ever seen (its like a weird mix json+crap)
-        (sysout, _) = sh.execute(*STATUS_CMD,
-                        run_as_root=True,
+        (sysout, stderr) = sh.execute(*STATUS_CMD,
                         check_exit_code=False)
-        if sysout.find('nodedown') != -1 or sysout.find("unable to connect to node") != -1:
+        combined = str(sysout) + str(stderr)
+        combined = combined.lower()
+        if combined.find('nodedown') != -1 or combined.find("unable to connect to node") != -1:
             return comp.STATUS_STOPPED
-        elif sysout.find('running_applications') != -1:
+        elif combined.find('running_applications') != -1:
             return comp.STATUS_STARTED
         else:
             return comp.STATUS_UNKNOWN
@@ -120,8 +121,9 @@ class RabbitRuntime(comp.EmptyRuntime):
         #
         #rhel seems to have this bug also...
         with TemporaryFile() as f:
-            sh.execute(*cmd, run_as_root=True,
-                        stdout_fh=f, stderr_fh=f)
+            return sh.execute(*cmd, run_as_root=True,
+                        stdout_fh=f, stderr_fh=f, 
+                        check_exit_code=False)
 
     def restart(self):
         LOG.info("Restarting rabbit-mq.")
@@ -131,7 +133,7 @@ class RabbitRuntime(comp.EmptyRuntime):
         return 1
 
     def stop(self):
-        if self.status() == comp.STATUS_STARTED:
+        if self.status() != comp.STATUS_STOPPED:
             self._run_cmd(STOP_CMD)
             return 1
         else:

@@ -34,6 +34,9 @@ POST_INSTALL = 'post-install'
 IPV4 = 'IPv4'
 IPV6 = 'IPv6'
 
+#how long to wait for a service to startup
+WAIT_ALIVE_SECS = 5
+
 # Component name mappings
 NOVA = "nova"
 NOVA_CLIENT = 'nova-client'
