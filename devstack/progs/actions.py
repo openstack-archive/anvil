@@ -179,15 +179,15 @@ def _install(component_name, instance):
     return trace
 
 
-def _stop(component_name, instance, skip_notrace):
+def _stop(component_name, instance, force):
     try:
         LOG.info("Stopping %s." % (component_name))
         stop_amount = instance.stop()
         LOG.info("Stopped %s items." % (stop_amount))
         LOG.info("Finished stop of %s" % (component_name))
-    except excp.NoTraceException:
-        if skip_notrace:
-            pass
+    except (excp.NoTraceException, excp.ProcessExecutionError) as e:
+        if force:
+            LOG.debug("Skipping exception [%s]" % (e))
         else:
             raise
 
@@ -209,7 +209,7 @@ def _start(component_name, instance):
     return start_info
 
 
-def _uninstall(component_name, instance, skip_notrace):
+def _uninstall(component_name, instance, force):
     try:
         LOG.info("Unconfiguring %s." % (component_name))
         instance.unconfigure()
@@ -219,9 +219,9 @@ def _uninstall(component_name, instance, skip_notrace):
         instance.uninstall()
         LOG.info("Post-uninstalling %s." % (component_name))
         instance.post_uninstall()
-    except excp.NoTraceException:
-        if skip_notrace:
-            pass
+    except (excp.NoTraceException) as e:
+        if force:
+            LOG.debug("Skipping exception [%s]" % (e))
         else:
             raise
 
