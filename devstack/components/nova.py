@@ -286,7 +286,8 @@ class NovaInstaller(comp.PythonInstallComponent):
         self._setup_cleaner()
         # check if we need to do the vol subcomponent
         if self.volumes_enabled:
-            self._setup_vol_groups()
+            vol_maker = NovaVolumeConfigurator(self.cfg, self.appdir)
+            vol_maker.setup_volumes()
 
     def _setup_cleaner(self):
         LOG.info("Configuring cleaner template %s.", CLEANER_DATA_CONF)
@@ -298,61 +299,6 @@ class NovaInstaller(comp.PythonInstallComponent):
         LOG.info("Fixing up database named %s.", DB_NAME)
         db.drop_db(self.cfg, DB_NAME)
         db.create_db(self.cfg, DB_NAME)
-
-    def _setup_vol_groups(self):
-        LOG.info("Attempting to setup volume groups for nova volume management.")
-        mp = dict()
-        backing_file = self.cfg.get('nova', 'volume_backing_file')
-        # check if we need to have a default backing file
-        if not backing_file:
-            backing_file = sh.joinpths(self.appdir, 'nova-volumes-backing-file')
-        vol_group = self.cfg.get('nova', 'volume_group')
-        backing_file_size = utils.to_bytes(self.cfg.get('nova', 'volume_backing_file_size'))
-        mp['VOLUME_GROUP'] = vol_group
-        mp['VOLUME_BACKING_FILE'] = backing_file
-        mp['VOLUME_BACKING_FILE_SIZE'] = backing_file_size
-        try:
-            utils.execute_template(*VG_CHECK_CMD, params=mp)
-            LOG.warn("Volume group already exists: %s" % (vol_group))
-        except exceptions.ProcessExecutionError as err:
-            # Check that the error from VG_CHECK is an expected error
-            if err.exit_code != 5:
-                raise
-            LOG.info("Need to create volume group: %s" % (vol_group))
-            sh.touch_file(backing_file, die_if_there=False, file_size=backing_file_size)
-            vg_dev_result = utils.execute_template(*VG_DEV_CMD, params=mp)
-            LOG.debug("vg dev result:%s" % (vg_dev_result))
-            # Strip the newlines out of the stdout (which is in the first
-            # element of the first (and only) tuple in the response
-            mp['DEV'] = vg_dev_result[0][0].replace('\n', '')
-            utils.execute_template(*VG_CREATE_CMD, params=mp)
-        # One way or another, we should have the volume group, Now check the
-        # logical volumes
-        self._process_lvs(mp)
-        # Finish off by restarting tgt, and ignore any errors
-        utils.execute_template(*RESTART_TGT_CMD, check_exit_code=False)
-
-    def _process_lvs(self, mp):
-        LOG.info("Attempting to setup logical volumes for nova volume management.")
-        lvs_result = utils.execute_template(*VG_LVS_CMD, params=mp)
-        LOG.debug("lvs result: %s" % (lvs_result))
-        vol_name_prefix = self.cfg.get('nova', 'volume_name_prefix')
-        LOG.debug("Using volume name prefix: %s" % (vol_name_prefix))
-        for stdout_line in lvs_result[0][0].split('\n'):
-            if stdout_line:
-                # Ignore blank lines
-                LOG.debug("lvs output line:%s" % (stdout_line))
-                if stdout_line.startswith(vol_name_prefix):
-                    # TODO still need to implement the following:
-                    # tid=`egrep "^tid.+$lv" /proc/net/iet/volume | cut -f1 -d' ' | tr ':' '='`
-                    # if [[ -n "$tid" ]]; then
-                    #   lun=`egrep "lun.+$lv" /proc/net/iet/volume | cut -f1 -d' ' | tr ':' '=' | tr -d '\t'`
-                    #   sudo ietadm --op delete --$tid --$lun
-                    # fi
-                    # sudo lvremove -f $VOLUME_GROUP/$lv
-                    raise exceptions.StackException("lvs magic not yet implemented")
-                mp['LV'] = stdout_line
-                utils.execute_template(*VG_LVREMOVE_CMD, params=mp)
 
     def _generate_nova_conf(self):
         LOG.info("Generating dynamic content for nova configuration (%s)." % (API_CONF))
@@ -450,6 +396,77 @@ class NovaRuntime(comp.PythonRuntime):
 
     def _get_app_options(self, app):
         return APP_OPTIONS.get(app)
+
+
+#this will configure nova volumes which in a developer box
+#is a volume group (lvm) that are backed by a loopback file
+class NovaVolumeConfigurator(object):
+    def __init__(self, config, appdir):
+        self.cfg = config
+        self.appdir = appdir
+
+    def setup_volumes(self):
+        self._setup_vol_groups()
+
+    def _setup_vol_groups(self):
+        LOG.info("Attempting to setup volume groups for nova volume management.")
+        mp = dict()
+        backing_file = self.cfg.get('nova', 'volume_backing_file')
+        # check if we need to have a default backing file
+        if not backing_file:
+            backing_file = sh.joinpths(self.appdir, 'nova-volumes-backing-file')
+        vol_group = self.cfg.get('nova', 'volume_group')
+        backing_file_size = utils.to_bytes(self.cfg.get('nova', 'volume_backing_file_size'))
+        mp['VOLUME_GROUP'] = vol_group
+        mp['VOLUME_BACKING_FILE'] = backing_file
+        mp['VOLUME_BACKING_FILE_SIZE'] = backing_file_size
+        try:
+            utils.execute_template(*VG_CHECK_CMD, params=mp)
+            LOG.warn("Volume group already exists: %s" % (vol_group))
+        except exceptions.ProcessExecutionError as err:
+            # Check that the error from VG_CHECK is an expected error
+            if err.exit_code != 5:
+                raise
+            LOG.info("Need to create volume group: %s" % (vol_group))
+            sh.touch_file(backing_file, die_if_there=False, file_size=backing_file_size)
+            vg_dev_result = utils.execute_template(*VG_DEV_CMD, params=mp)
+            if vg_dev_result and vg_dev_result[0]:
+                LOG.debug("VG dev result: %s" % (vg_dev_result))
+                # Strip the newlines out of the stdout (which is in the first
+                # element of the first (and only) tuple in the response
+                (sysout, _) = vg_dev_result[0]
+                mp['DEV'] = sysout.replace('\n', '')
+                utils.execute_template(*VG_CREATE_CMD, params=mp)
+        # One way or another, we should have the volume group, Now check the
+        # logical volumes
+        self._process_lvs(mp)
+        # Finish off by restarting tgt, and ignore any errors
+        utils.execute_template(*RESTART_TGT_CMD, check_exit_code=False)
+
+    def _process_lvs(self, mp):
+        LOG.info("Attempting to setup logical volumes for nova volume management.")
+        lvs_result = utils.execute_template(*VG_LVS_CMD, params=mp)
+        if lvs_result and lvs_result[0]:
+            LOG.debug("LVS result: %s" % (lvs_result))
+            vol_name_prefix = self.cfg.get('nova', 'volume_name_prefix')
+            LOG.debug("Using volume name prefix: %s" % (vol_name_prefix))
+            (sysout, _) = lvs_result[0]
+            for stdout_line in sysout.split('\n'):
+                stdout_line = stdout_line.strip()
+                if stdout_line:
+                    # Ignore blank lines
+                    LOG.debug("Processing LVS output line: %s" % (stdout_line))
+                    if stdout_line.startswith(vol_name_prefix):
+                        # TODO still need to implement the following:
+                        # tid=`egrep "^tid.+$lv" /proc/net/iet/volume | cut -f1 -d' ' | tr ':' '='`
+                        # if [[ -n "$tid" ]]; then
+                        #   lun=`egrep "lun.+$lv" /proc/net/iet/volume | cut -f1 -d' ' | tr ':' '=' | tr -d '\t'`
+                        #   sudo ietadm --op delete --$tid --$lun
+                        # fi
+                        # sudo lvremove -f $VOLUME_GROUP/$lv
+                        raise NotImplementedError("LVS magic not yet implemented!")
+                    mp['LV'] = stdout_line
+                    utils.execute_template(*VG_LVREMOVE_CMD, params=mp)
 
 
 # This class has the smarts to build the configuration file based on
