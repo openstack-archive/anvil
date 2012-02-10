@@ -75,11 +75,11 @@ def parse():
     parser.add_option_group(base_group)
 
     stop_un_group = OptionGroup(parser, "Uninstall/stop options")
-    stop_un_group.add_option("-f", "--force",
+    stop_un_group.add_option("-n", "--no-force",
         action="store_true",
         dest="force",
-        help="force ACTION even if no trace file found (default: %default)",
-        default=True)
+        help="stop the continuation of ACTION if basic errors occur (default: %default)",
+        default=False)
     parser.add_option_group(stop_un_group)
 
     #extract only what we care about
@@ -89,8 +89,9 @@ def parse():
     output['dir'] = options.dir
     output['ref_components'] = options.r_component
     output['action'] = options.action
-    output['force'] = options.force
+    output['force'] = not options.force
     output['ignore_deps'] = not options.ensure_deps
     output['keep_packages'] = options.keep_packages
     output['extras'] = args
+
     return output
