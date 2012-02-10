@@ -499,6 +499,45 @@ def _goodbye_header(worked):
  -----------------
 ''')
     potentials_fails.append(r'''
+ ______________________
+/ What is the airspeed \
+| velocity of an       |
+\ unladen swallow?     /
+ ----------------------
+''')
+    potentials_fails.append(r'''
+ ______________________
+/ Now stand aside,     \
+\ worthy adversary.    /
+ ----------------------
+''')
+    potentials_fails.append(r'''
+ ___________________
+/ Okay, we'll call  \
+\ it a draw.        /
+ -------------------
+''')
+    potentials_fails.append(r'''
+ _______________
+/ She turned me \
+\ into a newt!  /
+ ---------------
+''')
+    potentials_fails.append(r'''
+ ___________________
+< Fetchez la vache! >
+ -------------------
+''')
+    potentials_fails.append(r'''
+ ______________________
+/ This is supposed to  \
+| be a happy occasion. |
+| Let's not bicker and |
+| argue about who      |
+\ killed who.          /
+ ----------------------
+''')
+    potentials_fails.append(r'''
  _______________________
 < You have been borked. >
  -----------------------
