@@ -268,14 +268,14 @@ class NovaInstaller(comp.PythonInstallComponent):
             cmds = NETWORK_SETUP_CMDS[0:1]
         else:
             cmds = NETWORK_SETUP_CMDS
-        utils.execute_template(*cmds, params=mp, tracewriter=self.tracewriter)
+        utils.execute_template(*cmds, params=mp)
 
     def _sync_db(self):
         LOG.info("Syncing the database with nova.")
         mp = dict()
         mp['BINDIR'] = self.bindir
         mp['CFGFILE'] = sh.joinpths(self.cfgdir, API_CONF)
-        utils.execute_template(*DB_SYNC_CMD, params=mp, tracewriter=self.tracewriter)
+        utils.execute_template(*DB_SYNC_CMD, params=mp)
 
     def post_install(self):
         comp.PkgInstallComponent.post_install(self)
@@ -325,16 +325,16 @@ class NovaInstaller(comp.PythonInstallComponent):
             # Strip the newlines out of the stdout (which is in the first
             # element of the first (and only) tuple in the response
             mp['DEV'] = vg_dev_result[0][0].replace('\n', '')
-            utils.execute_template(*VG_CREATE_CMD, params=mp, tracewriter=self.tracewriter)
+            utils.execute_template(*VG_CREATE_CMD, params=mp)
         # One way or another, we should have the volume group, Now check the
         # logical volumes
         self._process_lvs(mp)
         # Finish off by restarting tgt, and ignore any errors
-        utils.execute_template(*RESTART_TGT_CMD, check_exit_code=False, tracewriter=self.tracewriter)
+        utils.execute_template(*RESTART_TGT_CMD, check_exit_code=False)
 
     def _process_lvs(self, mp):
         LOG.info("Attempting to setup logical volumes for nova volume management.")
-        lvs_result = utils.execute_template(*VG_LVS_CMD, params=mp, tracewriter=self.tracewriter)
+        lvs_result = utils.execute_template(*VG_LVS_CMD, params=mp)
         LOG.debug("lvs result: %s" % (lvs_result))
         vol_name_prefix = self.cfg.get('nova', 'volume_name_prefix')
         LOG.debug("Using volume name prefix: %s" % (vol_name_prefix))
@@ -352,7 +352,7 @@ class NovaInstaller(comp.PythonInstallComponent):
                     # sudo lvremove -f $VOLUME_GROUP/$lv
                     raise exceptions.StackException("lvs magic not yet implemented")
                 mp['LV'] = stdout_line
-                utils.execute_template(*VG_LVREMOVE_CMD, params=mp, tracewriter=self.tracewriter)
+                utils.execute_template(*VG_LVREMOVE_CMD, params=mp)
 
     def _generate_nova_conf(self):
         LOG.info("Generating dynamic content for nova configuration (%s)." % (API_CONF))
