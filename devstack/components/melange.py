@@ -177,19 +177,3 @@ class MelangeRuntime(comp.PythonRuntime):
             mp = dict()
             mp['CIDR_RANGE'] = self.cfg.get('melange', 'm_mac_range')
             utils.execute_template(*CIDR_CREATE_CMD, params=mp)
-
-
-def describe(opts=None):
-    description = """
- Module: {module_name}
-  Description:
-   {description}
-  Component options:
-   {component_opts}
-"""
-    params = dict()
-    params['component_opts'] = "TBD"
-    params['module_name'] = __name__
-    params['description'] = __doc__ or "Handles actions for the melange component."
-    out = description.format(**params)
-    return out.strip("\n")

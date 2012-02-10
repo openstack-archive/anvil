@@ -327,23 +327,7 @@ class HorizonRuntime(comp.EmptyRuntime):
         combined = combined.lower()
         if sysout.find("is running") != -1:
             return comp.STATUS_STARTED
-        elif sysout.find("NOT running") != -1 or sysout.find("stopped") != -1:
+        elif sysout.find("not running") != -1 or sysout.find("stopped") != -1:
             return comp.STATUS_STOPPED
         else:
             return comp.STATUS_UNKNOWN
-
-
-def describe(opts=None):
-    description = """
- Module: {module_name}
-  Description:
-   {description}
-  Component options:
-   {component_opts}
-"""
-    params = dict()
-    params['component_opts'] = "TBD"
-    params['module_name'] = __name__
-    params['description'] = __doc__ or "Handles actions for the horizon component."
-    out = description.format(**params)
-    return out.strip("\n")

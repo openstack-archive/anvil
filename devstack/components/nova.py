@@ -762,19 +762,3 @@ class NovaConf(object):
                 full_line = key_str + ",".join(filled_opts)
             gen_lines.append(full_line)
         return gen_lines
-
-
-def describe(opts=None):
-    description = """
- Module: {module_name}
-  Description:
-   {description}
-  Component options:
-   {component_opts}
-"""
-    params = dict()
-    params['component_opts'] = "TBD"
-    params['module_name'] = __name__
-    params['description'] = __doc__ or "Handles actions for the nova component."
-    out = description.format(**params)
-    return out.strip("\n")

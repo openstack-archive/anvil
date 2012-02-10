@@ -213,19 +213,3 @@ class SwiftRuntime(comp.PythonRuntime):
     def restart(self):
         sh.execute(sh.joinpths(self.bindir, SWIFT_INIT), 'all', 'restart',
                    run_as_root=True)
-
-
-def describe(opts=None):
-    description = """
- Module: {module_name}
-  Description:
-   {description}
-  Component options:
-   {component_opts}
-"""
-    params = dict()
-    params['component_opts'] = "TBD"
-    params['module_name'] = __name__
-    params['description'] = __doc__ or "Handles actions for the swift component."
-    out = description.format(**params)
-    return out.strip("\n")

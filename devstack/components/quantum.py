@@ -256,19 +256,3 @@ class QuantumRuntime(comp.ProgramRuntime):
         elif app_name == APP_Q_SERVER:
             param_dict['QUANTUM_CONFIG_FILE'] = sh.joinpths(self.appdir, CONFIG_DIR, QUANTUM_CONF)
         return param_dict
-
-
-def describe(opts=None):
-    description = """
- Module: {module_name}
-  Description:
-   {description}
-  Component options:
-   {component_opts}
-"""
-    params = dict()
-    params['component_opts'] = "TBD"
-    params['module_name'] = __name__
-    params['description'] = __doc__ or "Handles actions for the quantum component."
-    out = description.format(**params)
-    return out.strip("\n")

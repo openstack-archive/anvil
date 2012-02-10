@@ -212,25 +212,3 @@ class GlanceRuntime(comp.PythonRuntime):
             LOG.info("Waiting %s seconds so that glance can start up before image install." % (WAIT_ONLINE_TO))
             time.sleep(WAIT_ONLINE_TO)
             creator.ImageCreationService(self.cfg).install()
-
-
-def describe(opts=None):
-    description = """
- Module: {module_name}
-  Description:
-   {description}
-  Component options:
-   {component_opts}
-"""
-    copts = """
- {no_img_upload} - disables upload of test images to glance.
-    {glance_api} - only enable the glance api subcomponent.
-    {glance_reg} - only enable the glance registry subcomponent.
-"""
-    params = dict()
-    params['component_opts'] = copts.strip("\n").format(no_img_upload=NO_IMG_START,
-                                                        glance_api=GAPI, glance_reg=GREG)
-    params['module_name'] = __name__
-    params['description'] = __doc__ or "Handles actions for the glance component."
-    out = description.format(**params)
-    return out.strip("\n")

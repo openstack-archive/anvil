@@ -222,19 +222,3 @@ def get_shared_params(config):
     mp['KEYSTONE_SERVICE_PROTOCOL'] = config.get('keystone', 'keystone_service_protocol')
     mp['SERVICE_TOKEN'] = config.get("passwords", "service_token")
     return mp
-
-
-def describe(opts=None):
-    description = """
- Module: {module_name}
-  Description:
-   {description}
-  Component options:
-   {component_opts}
-"""
-    params = dict()
-    params['component_opts'] = "TBD"
-    params['module_name'] = __name__
-    params['description'] = __doc__ or "Handles actions for the keystone component."
-    out = description.format(**params)
-    return out.strip("\n")

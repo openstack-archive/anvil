@@ -65,7 +65,7 @@ def parse():
         default=True)
     base_group.add_option("-r", "--ref-component",
         action="append",
-        dest="r_component",
+        dest="ref_components",
         metavar="COMPONENT",
         help="component which will not have ACTION applied but will be referenced as if it was (ACTION dependent)")
     base_group.add_option("-k", "--keep-packages",
@@ -87,7 +87,7 @@ def parse():
     output = dict()
     output['components'] = options.component
     output['dir'] = options.dir
-    output['ref_components'] = options.r_component
+    output['ref_components'] = options.ref_components
     output['action'] = options.action
     output['force'] = not options.force
     output['ignore_deps'] = not options.ensure_deps
