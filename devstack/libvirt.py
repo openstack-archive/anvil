@@ -79,6 +79,8 @@ def _status(distro):
     result = utils.execute_template(*cmds,
                                 check_exit_code=False,
                                 params=mp)
+    if not result or not result[0]:
+        return _DEAD
     (sysout, stderr) = result[0]
     combined = str(sysout) + str(stderr)
     combined = combined.lower()

@@ -102,9 +102,12 @@ class RabbitRuntime(comp.EmptyRuntime):
     def status(self):
         #this has got to be the worst status output
         #i have ever seen (its like a weird mix json+crap)
-        (sysout, stderr) = sh.execute(*STATUS_CMD,
+        run_result = sh.execute(*STATUS_CMD,
                         check_exit_code=False,
                         run_as_root=True)
+        if not run_result:
+            return comp.STATUS_UNKNOWN
+        (sysout, stderr) = run_result
         combined = str(sysout) + str(stderr)
         combined = combined.lower()
         if combined.find('nodedown') != -1 or combined.find("unable to connect to node") != -1:

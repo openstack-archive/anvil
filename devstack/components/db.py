@@ -279,9 +279,12 @@ class DBRuntime(comp.EmptyRuntime):
 
     def status(self):
         statuscmd = self._get_run_actions('status', excp.StatusException)
-        (sysout, stderr) = sh.execute(*statuscmd,
+        run_result = sh.execute(*statuscmd,
                             check_exit_code=False,
                             run_as_root=True)
+        if not run_result:
+            return comp.STATUS_UNKNOWN
+        (sysout, stderr) = run_result
         combined = str(sysout) + str(stderr)
         combined = combined.lower()
         if combined.find("running") != -1:

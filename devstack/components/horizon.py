@@ -311,6 +311,8 @@ class HorizonRuntime(comp.EmptyRuntime):
             'cmd': APACHE_STATUS_CMD,
         })
         run_result = utils.execute_template(*cmds, params=mp, check_exit_code=False)
+        if not run_result or not run_result[0]:
+            return comp.STATUS_UNKNOWN
         (sysout, stderr) = run_result[0]
         combined = str(sysout) + str(stderr)
         combined = combined.lower()
