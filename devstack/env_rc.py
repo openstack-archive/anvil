@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from urlparse import urlunparse
 import os
 import re
 import subprocess
@@ -37,8 +38,11 @@ S3_PORT = 3333
 NOVA_PORT = 5000
 OS_AUTH_PORT = 5000
 
-#how we know if a line is an export or if it isn't
-EXP_PAT = re.compile("^export (.*?)=(.*?)$", re.IGNORECASE)
+#how we know if a line is an export or if it isn't (simpe edition)
+EXP_PAT = re.compile("^\s*export\s+(.*?)=(.*?)$", re.IGNORECASE)
+
+#how we unquote a string (simple edition)
+QUOTED_PAT = re.compile(r"^\s*[\"](.*)[\"]\s*$")
 
 
 def _write_line(text, fh):
@@ -60,11 +64,11 @@ def _generate_ec2_env(fh, cfg):
     ip = cfg.get('host', 'ip')
     ec2_url = cfg.get('extern', 'ec2_url')
     if not ec2_url:
-        ec2_url = 'http://%s:%s/services/Cloud' % (ip, EC2_PORT)
+        ec2_url = urlunparse(('http', "%s:%s" % (ip, EC2_PORT), "services/Cloud", '', '', ''))
     _write_env('EC2_URL', ec2_url, fh)
     s3_url = cfg.get('extern', 's3_url')
     if not s3_url:
-        s3_url = 'http://%s:%s/services/Cloud' % (ip, S3_PORT)
+        s3_url = urlunparse(('http', "%s:%s" % (ip, S3_PORT), "services/Cloud", '', '', ''))
     _write_env('S3_URL', s3_url, fh)
     ec2_acc_key = cfg.get('extern', 'ec2_access_key')
     if ec2_acc_key:
@@ -89,7 +93,7 @@ def _generate_nova_env(fh, cfg):
         _write_env('NOVA_PASSWORD', hkpw, fh)
     nv_url = cfg.get('extern', 'nova_url')
     if not nv_url:
-        nv_url = 'http://%s:%s/v2.0' % (ip, NOVA_PORT)
+        nv_url = urlunparse(('http', "%s:%s" % (ip, NOVA_PORT), "v2.0", '', '', ''))
     _write_env('NOVA_URL', nv_url, fh)
     nv_prj = cfg.get('extern', 'nova_project_id')
     if nv_prj:
@@ -120,7 +124,7 @@ def _generate_os_env(fh, cfg):
         _write_env('OS_USERNAME', os_uname, fh)
     os_auth_uri = cfg.get('extern', 'os_auth_url')
     if not os_auth_uri:
-        os_auth_uri = 'http://%s:%s/v2.0' % (ip, OS_AUTH_PORT)
+        os_auth_uri = urlunparse(('http', "%s:%s" % (ip, OS_AUTH_PORT), "v2.0", '', '', ''))
     _write_env('OS_AUTH_URL', os_auth_uri, fh)
     _write_line("", fh)
 
@@ -159,9 +163,9 @@ def load_local_rc(fn):
                 key = m.group(1).strip()
                 value = m.group(2).strip()
                 if len(key):
-                    mtch = re.match("^\s*[\"](.*)[\"]\s*$", value)
-                    if mtch:
-                        value = mtch.group(1).decode('string_escape').strip()
+                    qmtch = QUOTED_PAT.match(value)
+                    if qmtch:
+                        value = qmtch.group(1).decode('string_escape').strip()
                     env.set(key, value)
                     am_set += 1
     return am_set
