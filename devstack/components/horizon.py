@@ -275,7 +275,9 @@ class HorizonRuntime(comp.EmptyRuntime):
                 'cmd': APACHE_START_CMD,
                 'run_as_root': True,
             })
-            utils.execute_template(*cmds, params=mp)
+            utils.execute_template(*cmds,
+                    check_exit_code=True,
+                    params=mp)
             return 1
 
     def restart(self):
@@ -286,7 +288,9 @@ class HorizonRuntime(comp.EmptyRuntime):
             'cmd': APACHE_RESTART_CMD,
             'run_as_root': True,
         })
-        utils.execute_template(*cmds, params=mp)
+        utils.execute_template(*cmds,
+                            check_exit_code=True,
+                            params=mp)
         return 1
 
     def stop(self):
@@ -299,7 +303,9 @@ class HorizonRuntime(comp.EmptyRuntime):
                 'cmd': APACHE_STOP_CMD,
                 'run_as_root': True,
             })
-            utils.execute_template(*cmds, params=mp)
+            utils.execute_template(*cmds,
+                                check_exit_code=True,
+                                params=mp)
             return 1
         return 0
 
@@ -309,8 +315,11 @@ class HorizonRuntime(comp.EmptyRuntime):
         cmds = list()
         cmds.append({
             'cmd': APACHE_STATUS_CMD,
+            'run_as_root': True,
         })
-        run_result = utils.execute_template(*cmds, params=mp, check_exit_code=False)
+        run_result = utils.execute_template(*cmds,
+                            check_exit_code=False,
+                            params=mp)
         if not run_result or not run_result[0]:
             return comp.STATUS_UNKNOWN
         (sysout, stderr) = run_result[0]

@@ -250,7 +250,7 @@ class DBRuntime(comp.EmptyRuntime):
             startcmd = self._get_run_actions('start', excp.StartException)
             sh.execute(*startcmd,
                 run_as_root=True,
-                check_exit_code=False)
+                check_exit_code=True)
             LOG.info("Please wait %s seconds while it starts up." % START_WAIT_TIME)
             time.sleep(START_WAIT_TIME)
             return 1
@@ -262,7 +262,7 @@ class DBRuntime(comp.EmptyRuntime):
             stopcmd = self._get_run_actions('stop', excp.StopException)
             sh.execute(*stopcmd,
                 run_as_root=True,
-                check_exit_code=False)
+                check_exit_code=True)
             return 1
         else:
             return 0
@@ -272,7 +272,7 @@ class DBRuntime(comp.EmptyRuntime):
         restartcmd = self._get_run_actions('restart', excp.RestartException)
         sh.execute(*restartcmd,
                         run_as_root=True,
-                        check_exit_code=False)
+                        check_exit_code=True)
         LOG.info("Please wait %s seconds while it restarts." % START_WAIT_TIME)
         time.sleep(START_WAIT_TIME)
         return 1
@@ -280,8 +280,8 @@ class DBRuntime(comp.EmptyRuntime):
     def status(self):
         statuscmd = self._get_run_actions('status', excp.StatusException)
         run_result = sh.execute(*statuscmd,
-                            check_exit_code=False,
-                            run_as_root=True)
+                            run_as_root=True,
+                            check_exit_code=False)
         if not run_result:
             return comp.STATUS_UNKNOWN
         (sysout, stderr) = run_result
