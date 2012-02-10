@@ -189,6 +189,7 @@ class NovaUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
+        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
 
     def pre_uninstall(self):
         self._clear_iptables()
@@ -361,6 +362,8 @@ class NovaInstaller(comp.PythonInstallComponent):
 class NovaRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
+        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
+        self.bindir = sh.joinpths(self.appdir, BIN_DIR)
 
     def _get_apps_to_start(self):
         result = list()
@@ -369,7 +372,7 @@ class NovaRuntime(comp.PythonRuntime):
             for app_name in apps:
                 result.append({
                     'name': app_name,
-                    'path': sh.joinpths(self.appdir, BIN_DIR, app_name),
+                    'path': sh.joinpths(self.bindir, app_name),
                 })
         else:
             for short_name in self.component_opts:
@@ -377,7 +380,7 @@ class NovaRuntime(comp.PythonRuntime):
                 if full_name and full_name in APP_OPTIONS:
                     result.append({
                         'name': full_name,
-                        'path': sh.joinpths(self.appdir, BIN_DIR, full_name),
+                        'path': sh.joinpths(self.bindir, full_name),
                     })
         return result
 

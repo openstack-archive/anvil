@@ -69,7 +69,8 @@ COMPONENT_NAMES = [
 
 # When a component is asked for it may
 # need another component, that dependency
-# mapping is listed here
+# mapping is listed here. A topological sort
+# will be applied to determine the exact order.
 COMPONENT_DEPENDENCIES = {
     DB: [],
     KEYSTONE_CLIENT: [],
