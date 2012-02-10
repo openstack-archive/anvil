@@ -48,7 +48,8 @@ This will typically produce:
                             uninstall will keep any installed packages on the system
     
       Uninstall/stop options:
-        -f, --force         force ACTION even if no trace file found (default: True)
+        -n, --no-force      stop the continuation of ACTION if basic errors occur
+                            (default: False)
 
 # Stack prerequisites
 
