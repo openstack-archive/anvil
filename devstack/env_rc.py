@@ -31,23 +31,10 @@ CFG_MAKE = {
     'HOST_IP': ('host', 'ip'),
 }
 
-#various settings we will output
+#default ports
 EC2_PORT = 8773
 S3_PORT = 3333
-
-#these are pretty useless
-EC2_USER_ID = 42
-EC2_ACCESS_KEY = 'demo'
-
-#change if you adjust keystone
 NOVA_PORT = 5000
-NOVA_VERSION = '1.1'
-NOVA_PROJECT = 'demo'
-NOVA_REGION = 'RegionOne'
-
-#change if you adjust keystone
-OS_TENANT_NAME = 'demo'
-OS_USERNAME = 'demo'
 OS_AUTH_PORT = 5000
 
 #how we know if a line is an export or if it isn't
@@ -71,14 +58,26 @@ def _write_env(name, value, fh):
 def _generate_ec2_env(fh, cfg):
     _write_line('# EC2 and/or S3 stuff', fh)
     ip = cfg.get('host', 'ip')
-    _write_env('EC2_URL', 'http://%s:%s/services/Cloud' % (ip, EC2_PORT), fh)
-    _write_env('S3_URL', 'http://%s:%s/services/Cloud' % (ip, S3_PORT), fh)
-    _write_env('EC2_ACCESS_KEY', EC2_ACCESS_KEY, fh)
+    ec2_url = cfg.get('extern', 'ec2_url')
+    if not ec2_url:
+        ec2_url = 'http://%s:%s/services/Cloud' % (ip, EC2_PORT)
+    _write_env('EC2_URL', ec2_url, fh)
+    s3_url = cfg.get('extern', 's3_url')
+    if not s3_url:
+        s3_url = 'http://%s:%s/services/Cloud' % (ip, S3_PORT)
+    _write_env('S3_URL', s3_url, fh)
+    ec2_acc_key = cfg.get('extern', 'ec2_access_key')
+    if ec2_acc_key:
+        _write_env('EC2_ACCESS_KEY', ec2_acc_key, fh)
     hkpw = cfg.get('passwords', 'horizon_keystone_admin', auto_pw=False)
     if hkpw:
         _write_env('EC2_SECRET_KEY', hkpw, fh)
-    _write_env('EC2_USER_ID', EC2_USER_ID, fh)
-    _write_env('EC2_CERT', '~/cert.pem', fh)
+    ec2_uid = cfg.get('extern', 'ec2_user_id')
+    if ec2_uid:
+        _write_env('EC2_USER_ID', ec2_uid, fh)
+    ec2_cert = cfg.get('extern', 'ec2_cert_fn')
+    if ec2_cert:
+        _write_env('EC2_CERT', ec2_cert, fh)
     _write_line("", fh)
 
 
@@ -88,11 +87,22 @@ def _generate_nova_env(fh, cfg):
     hkpw = cfg.get('passwords', 'horizon_keystone_admin', auto_pw=False)
     if hkpw:
         _write_env('NOVA_PASSWORD', hkpw, fh)
-    _write_env('NOVA_URL', 'http://%s:%s/v2.0' % (ip, NOVA_PORT), fh)
-    _write_env('NOVA_PROJECT_ID', NOVA_PROJECT, fh)
-    _write_env('NOVA_REGION_NAME', NOVA_REGION, fh)
-    _write_env('NOVA_VERSION', NOVA_VERSION, fh)
-    _write_env('NOVA_CERT', '~/cacert.pem', fh)
+    nv_url = cfg.get('extern', 'nova_url')
+    if not nv_url:
+        nv_url = 'http://%s:%s/v2.0' % (ip, NOVA_PORT)
+    _write_env('NOVA_URL', nv_url, fh)
+    nv_prj = cfg.get('extern', 'nova_project_id')
+    if nv_prj:
+        _write_env('NOVA_PROJECT_ID', nv_prj, fh)
+    nv_reg = cfg.get('extern', 'nova_region_name')
+    if nv_reg:
+        _write_env('NOVA_REGION_NAME', nv_reg, fh)
+    nv_ver = cfg.get('extern', 'nova_version')
+    if nv_ver:
+        _write_env('NOVA_VERSION', nv_ver, fh)
+    nv_cert = cfg.get("extern", 'nova_cert_fn')
+    if nv_cert:
+        _write_env('NOVA_CERT', nv_cert, fh)
     _write_line("", fh)
 
 
@@ -102,9 +112,16 @@ def _generate_os_env(fh, cfg):
     hkpw = cfg.get('passwords', 'horizon_keystone_admin', auto_pw=False)
     if hkpw:
         _write_env('OS_PASSWORD', hkpw, fh)
-    _write_env('OS_TENANT_NAME', OS_TENANT_NAME, fh)
-    _write_env('OS_USERNAME', OS_USERNAME, fh)
-    _write_env('OS_AUTH_URL', 'http://%s:%s/v2.0' % (ip, OS_AUTH_PORT), fh)
+    os_ten = cfg.get('extern', 'os_tenant_name')
+    if os_ten:
+        _write_env('OS_TENANT_NAME', os_ten, fh)
+    os_uname = cfg.get('extern', 'os_username')
+    if os_uname:
+        _write_env('OS_USERNAME', os_uname, fh)
+    os_auth_uri = cfg.get('extern', 'os_auth_url')
+    if not os_auth_uri:
+        os_auth_uri = 'http://%s:%s/v2.0' % (ip, OS_AUTH_PORT)
+    _write_env('OS_AUTH_URL', os_auth_uri, fh)
     _write_line("", fh)
 
 
