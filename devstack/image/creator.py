@@ -59,10 +59,20 @@ class Image(object):
         self.registry = ImageRegistry(token)
         self.last_report = 0
 
+    def _format_progress(self, curr_size, total_size):
+        if curr_size > total_size:
+            curr_size = total_size
+        progress = ("%d" % (curr_size)) + "b"
+        progress += "/"
+        progress += ("%d" % (total_size)) + "b"
+        perc_done = "%.02f" % (((curr_size) / (float(total_size)) * 100.0)) + "%"
+        return "[%s](%s)" % (progress, perc_done)
+
     def _report(self, blocks, block_size, size):
         downloaded = blocks * block_size
-        if downloaded - self.last_report > Image.REPORTSIZE:
-            LOG.info('Downloading: %d/%d ', blocks * block_size, size)
+        if (downloaded - self.last_report) > Image.REPORTSIZE:
+            progress = self._format_progress((blocks * block_size), size)
+            LOG.info('Download progress: %s', progress)
             self.last_report = downloaded
 
     def _download(self):
@@ -104,7 +114,7 @@ class Image(object):
 
     def _register(self):
         if self.kernel:
-            LOG.info('Adding kernel %s to glance', self.kernel)
+            LOG.info('Adding kernel %s to glance.', self.kernel)
             params = {'TOKEN': self.token, 'IMAGE_NAME': self.image_name}
             cmd = {'cmd': Image.KERNEL_FORMAT}
             with open(self.kernel) as file_:
@@ -114,7 +124,7 @@ class Image(object):
             self.kernel_id = res[0][0].split(':')[1].strip()
 
         if self.initrd:
-            LOG.info('Adding ramdisk %s to glance', self.initrd)
+            LOG.info('Adding ramdisk %s to glance.', self.initrd)
             params = {'TOKEN': self.token, 'IMAGE_NAME': self.image_name}
             cmd = {'cmd': Image.INITRD_FORMAT}
             with open(self.initrd) as file_:
@@ -122,7 +132,7 @@ class Image(object):
                     stdin_fh=file_, close_stdin=True)
             self.initrd_id = res[0][0].split(':')[1].strip()
 
-        LOG.info('Adding image %s to glance', self.image_name)
+        LOG.info('Adding image %s to glance.', self.image_name)
         params = {'TOKEN': self.token, 'IMAGE_NAME': self.image_name, \
                   'KERNEL_ID': self.kernel_id, 'INITRD_ID': self.initrd_id}
         cmd = {'cmd': Image.IMAGE_FORMAT}
@@ -214,7 +224,7 @@ class ImageCreationService:
                     if url:
                         urls.append(url)
         except(ConfigParser.Error):
-            LOG.info("No image configuration keys found, skipping glance image install")
+            LOG.warn("No image configuration keys found, skipping glance image install!")
 
         #install them in glance
         am_installed = 0
