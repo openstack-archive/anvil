@@ -38,6 +38,9 @@ APP_OPTIONS = {
 #the pkg json files novnc requires for installation
 REQ_PKGS = ['n-vnc.json']
 
+#pip files that nova requires
+REQ_PIPS = ['general.json', 'n-vnc.json']
+
 
 class NoVNCUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -59,6 +62,8 @@ class NoVNCInstaller(comp.PkgInstallComponent):
     def _get_pkgs(self):
         return list(REQ_PKGS)
 
+    def _get_pips(self):
+        return list(REQ_PIPS)
 
 class NoVNCRuntime(comp.ProgramRuntime):
     def __init__(self, *args, **kargs):
