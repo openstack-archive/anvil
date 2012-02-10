@@ -6,7 +6,7 @@
 verbose = True
 
 # Show debugging output in logs (sets DEBUG log level output)
-debug = True
+debug = False
 
 # Address to bind the registry server
 bind_host = 0.0.0.0

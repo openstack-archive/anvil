@@ -79,7 +79,7 @@ def _status(distro):
                                 check_exit_code=False,
                                 params=mp)
     sysout = result[0][0]
-    if sysout.find("running") != -1:
+    if sysout.find("running") != -1 or sysout.find('start') != -1:
         return _ALIVE
     else:
         return _DEAD

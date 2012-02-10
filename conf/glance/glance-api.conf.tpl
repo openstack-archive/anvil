@@ -6,7 +6,7 @@
 verbose = True
 
 # Show debugging output in logs (sets DEBUG log level output)
-debug = True
+debug = False
 
 # Which backend store should Glance use by default is not specified
 # in a request to add a new image to Glance? Default: 'file'
