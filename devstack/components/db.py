@@ -248,7 +248,9 @@ class DBRuntime(comp.EmptyRuntime):
     def start(self):
         if self.status() != comp.STATUS_STARTED:
             startcmd = self._get_run_actions('start', excp.StartException)
-            sh.execute(*startcmd, run_as_root=True, check_exit_code=False)
+            sh.execute(*startcmd,
+                run_as_root=True,
+                check_exit_code=False)
             LOG.info("Please wait %s seconds while it starts up." % START_WAIT_TIME)
             time.sleep(START_WAIT_TIME)
             return 1
@@ -258,7 +260,9 @@ class DBRuntime(comp.EmptyRuntime):
     def stop(self):
         if self.status() != comp.STATUS_STOPPED:
             stopcmd = self._get_run_actions('stop', excp.StopException)
-            sh.execute(*stopcmd, run_as_root=True, check_exit_code=False)
+            sh.execute(*stopcmd,
+                run_as_root=True,
+                check_exit_code=False)
             return 1
         else:
             return 0
@@ -266,14 +270,18 @@ class DBRuntime(comp.EmptyRuntime):
     def restart(self):
         LOG.info("Restarting your database.")
         restartcmd = self._get_run_actions('restart', excp.RestartException)
-        sh.execute(*restartcmd, run_as_root=True, check_exit_code=False)
+        sh.execute(*restartcmd,
+                        run_as_root=True,
+                        check_exit_code=False)
         LOG.info("Please wait %s seconds while it restarts." % START_WAIT_TIME)
         time.sleep(START_WAIT_TIME)
         return 1
 
     def status(self):
         statuscmd = self._get_run_actions('status', excp.StatusException)
-        (sysout, stderr) = sh.execute(*statuscmd, check_exit_code=False)
+        (sysout, stderr) = sh.execute(*statuscmd,
+                            check_exit_code=False,
+                            run_as_root=True)
         combined = str(sysout) + str(stderr)
         combined = combined.lower()
         if combined.find("running") != -1:

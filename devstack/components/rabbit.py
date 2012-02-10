@@ -103,7 +103,8 @@ class RabbitRuntime(comp.EmptyRuntime):
         #this has got to be the worst status output
         #i have ever seen (its like a weird mix json+crap)
         (sysout, stderr) = sh.execute(*STATUS_CMD,
-                        check_exit_code=False)
+                        check_exit_code=False,
+                        run_as_root=True)
         combined = str(sysout) + str(stderr)
         combined = combined.lower()
         if combined.find('nodedown') != -1 or combined.find("unable to connect to node") != -1:
@@ -122,7 +123,7 @@ class RabbitRuntime(comp.EmptyRuntime):
         #rhel seems to have this bug also...
         with TemporaryFile() as f:
             return sh.execute(*cmd, run_as_root=True,
-                        stdout_fh=f, stderr_fh=f, 
+                        stdout_fh=f, stderr_fh=f,
                         check_exit_code=False)
 
     def restart(self):
