@@ -417,6 +417,12 @@ def _goodbye_header(worked):
  --------------
 ''')
     potentials_oks.append(r'''
+ ________________
+/ And there was  \
+\ much rejoicing /
+ ----------------
+''')
+    potentials_oks.append(r'''
  __________
 < Success! >
  ----------''')
@@ -527,6 +533,13 @@ def _goodbye_header(worked):
  ___________________
 < Fetchez la vache! >
  -------------------
+''')
+    potentials_fails.append(r'''
+ __________________________
+/ We'd better not risk     \
+| another frontal assault, |
+\ that rabbit's dynamite.  /
+ --------------------------
 ''')
     potentials_fails.append(r'''
  ______________________
