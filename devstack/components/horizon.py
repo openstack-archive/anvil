@@ -279,22 +279,19 @@ class HorizonRuntime(comp.EmptyRuntime):
             return 1
 
     def restart(self):
-        curr_status = self.status()
-        if curr_status == comp.STATUS_STARTED:
-            mp = dict()
-            mp['SERVICE'] = APACHE_SVC_NAME[self.distro]
-            cmds = list()
-            cmds.append({
-                'cmd': APACHE_RESTART_CMD,
-                'run_as_root': True,
-            })
-            utils.execute_template(*cmds, params=mp)
-            return 1
-        return 0
+        mp = dict()
+        mp['SERVICE'] = APACHE_SVC_NAME[self.distro]
+        cmds = list()
+        cmds.append({
+            'cmd': APACHE_RESTART_CMD,
+            'run_as_root': True,
+        })
+        utils.execute_template(*cmds, params=mp)
+        return 1
 
     def stop(self):
         curr_status = self.status()
-        if curr_status == comp.STATUS_STARTED:
+        if curr_status != comp.STATUS_STOPPED:
             mp = dict()
             mp['SERVICE'] = APACHE_SVC_NAME[self.distro]
             cmds = list()
@@ -314,7 +311,9 @@ class HorizonRuntime(comp.EmptyRuntime):
             'cmd': APACHE_STATUS_CMD,
         })
         run_result = utils.execute_template(*cmds, params=mp, check_exit_code=False)
-        (sysout, _) = run_result[0]
+        (sysout, stderr) = run_result[0]
+        combined = str(sysout) + str(stderr)
+        combined = combined.lower()
         if sysout.find("is running") != -1:
             return comp.STATUS_STARTED
         elif sysout.find("NOT running") != -1 or sysout.find("stopped") != -1:

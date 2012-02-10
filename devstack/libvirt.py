@@ -72,6 +72,7 @@ def _status(distro):
     cmds = list()
     cmds.append({
         'cmd': LIBVIRT_STATUS_CMD,
+        'run_as_root': True,
     })
     mp = dict()
     mp['SERVICE'] = SV_NAME_MAP[distro]
@@ -81,7 +82,7 @@ def _status(distro):
     (sysout, stderr) = result[0]
     combined = str(sysout) + str(stderr)
     combined = combined.lower()
-    if sysout.find("running") != -1 or sysout.find('start') != -1:
+    if combined.find("running") != -1 or combined.find('start') != -1:
         return _ALIVE
     else:
         return _DEAD
@@ -102,10 +103,11 @@ def restart(distro):
         cmds = list()
         cmds.append({
             'cmd': LIBVIRT_RESTART_CMD,
+            'run_as_root': True,
         })
         mp = dict()
         mp['SERVICE'] = SV_NAME_MAP[distro]
-        utils.execute_template(*cmds, params=mp, run_as_root=True)
+        utils.execute_template(*cmds, params=mp)
         LOG.info("Restarting the libvirt service, please wait %s seconds until its started." % (WAIT_ALIVE_TIME))
         time.sleep(WAIT_ALIVE_TIME)
 
