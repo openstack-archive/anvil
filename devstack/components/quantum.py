@@ -102,6 +102,13 @@ class QuantumInstaller(comp.PkgInstallComponent):
         })
         return places
 
+    def _get_symlinks(self):
+        links = dict()
+        for fn in self._get_config_files():
+            source_fn = self._get_target_config_name(fn)
+            links[source_fn] = sh.joinpths("/", "etc", "quantum", fn)
+        return links
+
     def _get_pkgs(self):
         pkglist = list(REQ_PKGS)
         if self.q_vswitch_service:
