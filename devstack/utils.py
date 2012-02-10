@@ -34,7 +34,7 @@ from devstack import version
 
 PARAM_SUB_REGEX = re.compile(r"%([\w\d]+?)%")
 EXT_COMPONENT = re.compile(r"^\s*([\w-]+)(?:\((.*)\))?\s*$")
-MONTY_PYTHON_TEXT_RE = re.compile("([a-z0-9A-Z!.,'\"]+)")
+MONTY_PYTHON_TEXT_RE = re.compile("([a-z0-9A-Z\?!.,'\"]+)")
 LOG = logging.getLogger("devstack.util")
 TEMPLATE_EXT = ".tpl"
 
