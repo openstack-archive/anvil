@@ -143,7 +143,7 @@ def virt_ok(virt_type, distro):
         return False
 
 
-def clear_libvirt_domains(virt_type, inst_prefix):
+def clear_libvirt_domains(distro, virt_type, inst_prefix):
     libvirt = _get_virt_lib()
     if not libvirt:
         LOG.warn("Could not clear out libvirt domains, libvirt not available for python.")
@@ -154,6 +154,7 @@ def clear_libvirt_domains(virt_type, inst_prefix):
         return
     with sh.Rooted(True):
         LOG.info("Attempting to clear out leftover libvirt domains using protocol %s" % (virt_protocol))
+        restart(distro)
         conn = None
         try:
             conn = libvirt.open(virt_protocol)

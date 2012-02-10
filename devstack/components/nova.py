@@ -204,7 +204,7 @@ class NovaUninstaller(comp.PythonUninstallComponent):
         if virt_driver == virsh.VIRT_TYPE:
             inst_prefix = self.cfg.get('nova', 'instance_name_prefix')
             libvirt_type = virsh.default(self.cfg.get('nova', 'libvirt_type'))
-            virsh.clear_libvirt_domains(libvirt_type, inst_prefix)
+            virsh.clear_libvirt_domains(self.distro, libvirt_type, inst_prefix)
 
 
 class NovaInstaller(comp.PythonInstallComponent):
