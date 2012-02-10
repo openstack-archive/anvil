@@ -90,7 +90,11 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         return list(REQ_PKGS)
 
     def _get_symlinks(self):
-        return {sh.joinpths(self.cfgdir, ROOT_CONF): '/etc/keystone/keystone.conf'}
+        links = dict()
+        for fn in self._get_config_files():
+            source_fn = self._get_target_config_name(fn)
+            links[source_fn] = sh.joinpths("/", "etc", "keystone", fn)
+        return links
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)

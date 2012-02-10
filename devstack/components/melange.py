@@ -89,6 +89,13 @@ class MelangeInstaller(comp.PythonInstallComponent):
         db.drop_db(self.cfg, DB_NAME)
         db.create_db(self.cfg, DB_NAME)
 
+    def _get_symlinks(self):
+        links = dict()
+        for fn in self._get_config_files():
+            source_fn = self._get_target_config_name(fn)
+            links[source_fn] = sh.joinpths("/", "etc", "melange", fn)
+        return links
+
     def _get_pkgs(self):
         return list(REQ_PKGS)
 

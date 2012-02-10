@@ -102,6 +102,13 @@ class GlanceInstaller(comp.PythonInstallComponent):
     def _get_pkgs(self):
         return list(REQ_PKGS)
 
+    def _get_symlinks(self):
+        links = dict()
+        for fn in self._get_config_files():
+            source_fn = self._get_target_config_name(fn)
+            links[source_fn] = sh.joinpths("/", "etc", "glance", fn)
+        return links
+
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
         self._setup_db()

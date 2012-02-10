@@ -97,7 +97,11 @@ class SwiftInstaller(comp.PythonInstallComponent):
         return list(REQ_PKGS)
 
     def _get_symlinks(self):
-        return {self.cfgdir: '/etc/swift'}
+        links = dict()
+        for fn in self._get_config_files():
+            source_fn = self._get_target_config_name(fn)
+            links[source_fn] = sh.joinpths("/", "etc", "swift", fn)
+        return links
 
     def warm_configs(self):
         pws = ['service_token', 'swift_hash']

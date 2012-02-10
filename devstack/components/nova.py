@@ -160,6 +160,7 @@ SUB_COMPONENT_NAME_MAP = {
 
 #subdirs of the checkout/download
 BIN_DIR = 'bin'
+CONFIG_DIR = "etc"
 
 #These are used by NovaConf
 QUANTUM_MANAGER = 'nova.network.quantum.manager.QuantumManager'
@@ -210,6 +211,7 @@ class NovaInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
+        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
         self.paste_conf_fn = self._get_target_config_name(PASTE_CONF)
         self.volumes_enabled = False
         if not self.component_opts or NVOL in self.component_opts:
@@ -225,7 +227,13 @@ class NovaInstaller(comp.PythonInstallComponent):
         return pkgs
 
     def _get_symlinks(self):
-        return {sh.joinpths(self.cfgdir, API_CONF): '/etc/nova/nova.conf'}
+        links = dict()
+        for fn in self._get_config_files():
+            source_fn = self._get_target_config_name(fn)
+            links[source_fn] = sh.joinpths("/", "etc", "nova", fn)
+        source_fn = sh.joinpths(self.cfgdir, API_CONF)
+        links[source_fn] = sh.joinpths("/", "etc", "nova", API_CONF)
+        return links
 
     def _get_pips(self):
         return list(REQ_PIPS)
@@ -390,13 +398,6 @@ class NovaInstaller(comp.PythonInstallComponent):
             return (srcfn, contents)
         else:
             return comp.PythonInstallComponent._get_source_config(self, config_fn)
-
-    def _get_target_config_name(self, config_fn):
-        if config_fn == PASTE_CONF:
-            #TODO Don't put nova-api-paste.ini in bin?
-            return sh.joinpths(self.appdir, "bin", 'nova-api-paste.ini')
-        else:
-            return comp.PythonInstallComponent._get_target_config_name(self, config_fn)
 
     def _get_param_map(self, config_fn):
         return keystone.get_shared_params(self.cfg)

@@ -117,10 +117,10 @@ def _generate_header(fh, cfg):
 def _generate_general(fh, cfg):
     _write_line('# General stuff', fh)
     for (out_name, cfg_data) in CFG_MAKE.items():
-            (section, key) = cfg_data
-            value = cfg.get(section, key, auto_pw=False)
-            if value:
-                _write_env(out_name, value, fh)
+        (section, key) = cfg_data
+        value = cfg.get(section, key, auto_pw=False)
+        if value:
+            _write_env(out_name, value, fh)
     _write_line("", fh)
 
 
