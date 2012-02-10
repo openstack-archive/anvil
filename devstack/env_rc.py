@@ -18,6 +18,7 @@ import os
 import re
 import subprocess
 
+from devstack import date
 from devstack import env
 
 #general extraction cfg keys
@@ -107,16 +108,26 @@ def _generate_os_env(fh, cfg):
     _write_line("", fh)
 
 
-def generate_local_rc(fn, cfg):
-    with open(fn, "w") as fh:
-        _write_line('# General stuff', fh)
-        for (out_name, cfg_data) in CFG_MAKE.items():
-            section = cfg_data[0]
-            key = cfg_data[1]
+def _generate_header(fh, cfg):
+    header = '# Generated on %s' % (date.rcf8222date())
+    _write_line(header, fh)
+    _write_line("", fh)
+
+
+def _generate_general(fh, cfg):
+    _write_line('# General stuff', fh)
+    for (out_name, cfg_data) in CFG_MAKE.items():
+            (section, key) = cfg_data
             value = cfg.get(section, key, auto_pw=False)
             if value:
                 _write_env(out_name, value, fh)
-        _write_line("", fh)
+    _write_line("", fh)
+
+
+def generate_local_rc(fn, cfg):
+    with open(fn, "w") as fh:
+        _generate_header(fh, cfg)
+        _generate_general(fh, cfg)
         _generate_ec2_env(fh, cfg)
         _generate_nova_env(fh, cfg)
         _generate_os_env(fh, cfg)
@@ -131,6 +142,9 @@ def load_local_rc(fn):
                 key = m.group(1).strip()
                 value = m.group(2).strip()
                 if len(key):
+                    mtch = re.match("^\s*[\"](.*)[\"]\s*$", value)
+                    if mtch:
+                        value = mtch.group(1).decode('string_escape').strip()
                     env.set(key, value)
                     am_set += 1
     return am_set
