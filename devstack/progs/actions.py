@@ -184,7 +184,7 @@ def _stop(component_name, instance, force):
         LOG.info("Stopping %s." % (component_name))
         stop_amount = instance.stop()
         LOG.info("Stopped %s items." % (stop_amount))
-        LOG.info("Finished stop of %s" % (component_name))
+        LOG.info("Finished stop of %s." % (component_name))
     except (excp.NoTraceException, excp.ProcessExecutionError) as e:
         if force:
             LOG.debug("Skipping exception [%s]" % (e))
