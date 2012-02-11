@@ -1,15 +1,15 @@
 #!/bin/bash
 
-# This script cleans up the iptables as part of a nova uninstall
+# This script cleans up the network as part of a nova uninstall
 
 # Eventually it should be moved to python code...
 
 # Ignore any errors from shutting down dnsmasq
+# TODO shouldn't this be a service shutdown??
 killall dnsmasq
 
 # This was added (so that it dies on errors)
 set -o errexit
-
 
 # Delete rules
 iptables -S -v | sed "s/-c [0-9]* [0-9]* //g" | grep "nova" | grep "\-A" |  sed "s/-A/-D/g" | awk '{print "sudo iptables",$0}' | bash

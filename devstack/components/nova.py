@@ -178,7 +178,7 @@ QUANTUM_OPENSWITCH_OPS = {
 }
 
 #this is a special conf
-CLEANER_DATA_CONF = 'clean_iptables.sh'
+CLEANER_DATA_CONF = 'nova-clean-network.sh'
 CLEANER_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
 
 #pip files that nova requires
@@ -298,6 +298,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         (_, contents) = utils.load_template(self.component_name, CLEANER_DATA_CONF)
         tgt_fn = sh.joinpths(self.bindir, CLEANER_DATA_CONF)
         sh.write_file(tgt_fn, contents)
+        self.tracewriter.file_touched(tgt_fn)
 
     def _setup_db(self):
         LOG.info("Fixing up database named %s.", DB_NAME)

@@ -105,9 +105,9 @@ START = "start"
 STOP = "stop"
 ACTIONS = [INSTALL, UNINSTALL, START, STOP]
 
-# Where we should get the config file and where stacks config
-# directory is
+# Where the configs and templates should be at.
 STACK_CONFIG_DIR = "conf"
+STACK_TEMPLATE_DIR = "templates"
 STACK_PKG_DIR = os.path.join(STACK_CONFIG_DIR, "pkgs")
 STACK_PIP_DIR = os.path.join(STACK_CONFIG_DIR, "pips")
 STACK_CONFIG_LOCATION = os.path.join(STACK_CONFIG_DIR, "stack.ini")

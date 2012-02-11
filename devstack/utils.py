@@ -39,8 +39,9 @@ LOG = logging.getLogger("devstack.util")
 TEMPLATE_EXT = ".tpl"
 
 
-def load_template(component, fn):
-    full_pth = sh.joinpths(settings.STACK_CONFIG_DIR, component, fn + TEMPLATE_EXT)
+def load_template(component, template_name):
+    fn = template_name + TEMPLATE_EXT
+    full_pth = sh.joinpths(settings.STACK_TEMPLATE_DIR, component, fn)
     contents = sh.load_file(full_pth)
     return (full_pth, contents)
 
