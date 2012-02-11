@@ -1,4 +1,4 @@
-# FROM commit 30439a6dc4
+# From commit 30439a6dc4
 
 [pipeline:glance-registry]
 #pipeline = context registryapp
@@ -29,3 +29,6 @@ admin_token = %SERVICE_TOKEN%
 context_class = glance.registry.context.RequestContext
 paste.filter_factory = glance.common.wsgi:filter_factory
 glance.filter_factory = keystone.middleware.glance_auth_token:KeystoneContextMiddleware
+
+
+

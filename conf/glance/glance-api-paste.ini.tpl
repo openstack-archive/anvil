@@ -1,4 +1,4 @@
-# FROM commit 30439a6dc4
+# From devstack commit 30439a6dc4
 
 [pipeline:glance-api]
 #pipeline = versionnegotiation context apiv1app
@@ -44,3 +44,5 @@ admin_token = %SERVICE_TOKEN%
 [filter:auth-context]
 paste.filter_factory = glance.common.wsgi:filter_factory
 glance.filter_factory = keystone.middleware.glance_auth_token:KeystoneContextMiddleware
+
+

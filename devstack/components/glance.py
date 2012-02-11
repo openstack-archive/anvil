@@ -22,6 +22,7 @@ from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
+from devstack import utils
 
 from devstack.components import db
 from devstack.components import keystone
@@ -33,6 +34,8 @@ TYPE = settings.GLANCE
 LOG = logging.getLogger("devstack.components.glance")
 
 #config files/sections
+#during the transition for glance to the split config files
+#we cat them together to handle both pre- and post-merge
 API_CONF = "glance-api.conf"
 REG_CONF = "glance-registry.conf"
 API_PASTE_CONF = 'glance-api-paste.ini'
@@ -117,6 +120,19 @@ class GlanceInstaller(comp.PythonInstallComponent):
         LOG.info("Fixing up database named %s.", DB_NAME)
         db.drop_db(self.cfg, DB_NAME)
         db.create_db(self.cfg, DB_NAME)
+
+    def _get_source_config(self, config_fn):
+        if config_fn == API_CONF:
+            (fn, top) = utils.load_template(self.component_name, API_CONF)
+            (_, bottom) = self._get_source_config(API_PASTE_CONF)
+            combined = [top, bottom]
+            return (fn, utils.joinlinesep(*combined))
+        if config_fn == REG_CONF:
+            (fn, top) = utils.load_template(self.component_name, REG_CONF)
+            (_, bottom) = self._get_source_config(REG_PASTE_CONF)
+            combined = [top, bottom]
+            return (fn, utils.joinlinesep(*combined))
+        return comp.PythonInstallComponent._get_source_config(self, config_fn)
 
     def _config_adjust(self, contents, name):
         if name not in CONFIGS:
