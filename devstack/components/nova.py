@@ -612,7 +612,7 @@ class NovaConfConfigurator(object):
         if self.xvnc_enabled:
             nova_conf.add('xvpvncproxy_base_url', self._getstr('xvpvncproxy_url'))
         nova_conf.add('vncserver_listen', self._getstr('vncserver_listen'))
-        vncserver_proxyclient_address = self._getstr('vncserver_proxyclient_addres')
+        vncserver_proxyclient_address = self._getstr('vncserver_proxyclient_address')
 
         # If no vnc proxy address was specified, pick a default based on which
         # driver we're using
