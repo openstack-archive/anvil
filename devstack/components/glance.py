@@ -126,12 +126,12 @@ class GlanceInstaller(comp.PythonInstallComponent):
         if config_fn == API_CONF:
             (fn, top) = utils.load_template(self.component_name, API_CONF)
             (_, bottom) = self._get_source_config(API_PASTE_CONF)
-            combined = [top, "### Joined here on %s" % (date.rcf8222date()), bottom]
+            combined = [top, "### Joined here on %s with file %s" % (date.rcf8222date(), API_PASTE_CONF), bottom]
             return (fn, utils.joinlinesep(*combined))
         if config_fn == REG_CONF:
             (fn, top) = utils.load_template(self.component_name, REG_CONF)
             (_, bottom) = self._get_source_config(REG_PASTE_CONF)
-            combined = [top, "### Joined here on %s" % (date.rcf8222date()), bottom]
+            combined = [top, "### Joined here on %s with file %s" % (date.rcf8222date(), REG_PASTE_CONF), bottom]
             return (fn, utils.joinlinesep(*combined))
         return comp.PythonInstallComponent._get_source_config(self, config_fn)
 
