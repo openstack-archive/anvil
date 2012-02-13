@@ -14,13 +14,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import fileinput
 import getpass
 import grp
 import os.path
 import pwd
 import shutil
 import subprocess
-import fileinput
 
 from devstack import env
 from devstack import exceptions as excp

@@ -21,10 +21,12 @@ import logging.config
 import sys
 import traceback
 
+from devstack import settings
+
 #this needs to happen immediately (or thats what it seems)
-LOG_FN = os.getenv('LOG_FILE')
-if(LOG_FN == None):
-    LOG_FN = os.path.normpath(os.path.join("conf", 'logging.ini'))
+LOG_FN = os.getenv(settings.STACK_LOG_ENV_LOCATION)
+if not LOG_FN or not os.path.isfile(LOG_FN):
+    LOG_FN = settings.STACK_LOG_CFG_LOCATION
 logging.config.fileConfig(LOG_FN)
 
 from devstack import opts
