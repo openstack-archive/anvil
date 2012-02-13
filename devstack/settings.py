@@ -82,10 +82,7 @@ COMPONENT_DEPENDENCIES = {
     SWIFT: [SWIFT_KEYSTONE],
     NOVA_CLIENT: [],
     HORIZON: [KEYSTONE_CLIENT, GLANCE, NOVA_CLIENT],
-    #the db isn't always a dependency (depending on the quantum component to be activated)
-    #for now assume it is (TODO make it better?)
-    #the client isn't always needed either (TODO make it better?)
-    QUANTUM: [DB, QUANTUM_CLIENT],
+    QUANTUM: [],  # More of quantums deps come from its module function get_dependencies
     NOVNC: [NOVA],
     QUANTUM_CLIENT: [],
     MELANGE: [DB],

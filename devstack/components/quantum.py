@@ -102,6 +102,17 @@ class QuantumInstaller(comp.PkgInstallComponent):
         })
         return places
 
+    def get_dependencies(self):
+        common_deps = PkgInstallComponent.get_dependencies(self)
+        add_deps = list()
+        if self.q_vswitch_agent:
+            #just need the client
+            add_deps.append(settings.QUANTUM_CLIENT)
+        if self.q_vswitch_service:
+            #in this case we need the db
+            add_deps.append(settings.DB)
+        return common_deps + add_deps
+
     def _get_symlinks(self):
         links = dict()
         for fn in self._get_config_files():
