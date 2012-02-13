@@ -41,6 +41,7 @@ TEMPLATE_EXT = ".tpl"
 DEF_IP = "127.0.0.1"
 IP_LOOKER = '8.8.8.8'
 DEF_IP_VERSION = settings.IPV4
+PRIVATE_OCTS = ['192', '172', '10']
 
 
 def load_template(component, template_name):
@@ -146,13 +147,9 @@ def get_host_ip():
         for (_, net_info) in interfaces.items():
             ip_info = net_info.get(DEF_IP_VERSION)
             if ip_info:
-                a_ip = ip_info.get('addr')
-                if (not a_ip or a_ip.startswith("10.") or
-                    a_ip.startswith('192.') or
-                    a_ip.startswith('172.')):
-                    #skip private addrs
-                    pass
-                else:
+                a_ip = ip_info.get('addr') or ""
+                first_oct = a_ip.split(".")[0]
+                if first_oct and first_oct not in PRIVATE_OCTS:
                     ip = a_ip
                     break
     #just return a localhost version then
