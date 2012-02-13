@@ -134,7 +134,7 @@ function run_pep8 {
   SRC_FILES+=" stack run_tests.py"
   PEP_IGNORES="E202,E501"
   TEE_FN="pep8.log"
-  PEP8_OPTS="--ignore=$pep_ignores --repeat"
+  PEP8_OPTS="--ignore=$PEP_IGNORES --repeat"
   echo "$(${wrapper} pep8 ${PEP8_OPTS} ${SRC_FILES} 2>&1 | tee $TEE_FN)"
   if [ "$?" -ne "0" ]; then
     echo "Sorry, cannot run pep8 ..."
