@@ -170,11 +170,6 @@
             "removable": false, 
             "version": "2.6*"
         }, 
-        # For testing (does not exist yet)
-        # "python-coverage": {
-        #     "removable": true, 
-        #     "version": "3.4*"
-        # }, 
         # Requires EPEL
         "python-pip": {
             "removable": false, 
@@ -201,6 +196,7 @@
             "version": "2.29*",
             "removable": false
         },
+        # For venv
         "python-devel": {
             "version": "2.6*",
             "removable": false
@@ -326,6 +322,7 @@
             "version": "2.29*",
             "removable": false
         },
+        # For venv
         "python-devel": {
             "version": "2.7*",
             "removable": false

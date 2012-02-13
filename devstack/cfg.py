@@ -61,7 +61,7 @@ class StackConfigParser(ConfigParser.RawConfigParser):
         if section == 'host' and option == 'ip':
             LOG.debug("Host ip from configuration/environment was empty, programatically attempting to determine it.")
             host_ip = utils.get_host_ip()
-            LOG.debug("Determined host ip to be: \"%s\"" % (host_ip))
+            LOG.debug("Determined your host ip to be: \"%s\"" % (host_ip))
             return host_ip
         elif section == 'passwords':
             if auto_pw:
