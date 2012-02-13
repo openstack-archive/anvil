@@ -130,12 +130,12 @@ function run_tests {
 
 function run_pep8 {
   echo "Running pep8 ..."
-  srcfiles=`find devstack -type f | grep "py\$"`
-  srcfiles+=" stack run_tests.py"
-  pep_ignores="E202,E501"
-  tee_fn="pep8.log"
-  pep8_opts="--ignore=$pep_ignores --repeat"
-  echo "$(${wrapper} pep8 ${pep8_opts} ${srcfiles} 2>&1 | tee $tee_fn)"
+  SRC_FILES=`find devstack -type f | grep "py\$"`
+  SRC_FILES+=" stack run_tests.py"
+  PEP_IGNORES="E202,E501"
+  TEE_FN="pep8.log"
+  PEP8_OPTS="--ignore=$pep_ignores --repeat"
+  echo "$(${wrapper} pep8 ${PEP8_OPTS} ${SRC_FILES} 2>&1 | tee $TEE_FN)"
   if [ "$?" -ne "0" ]; then
     echo "Sorry, cannot run pep8 ..."
     exit 1
@@ -147,12 +147,16 @@ function run_pep8 {
 function run_pylint {
   echo "Running pylint ..."
   PYLINT_OPTIONS="--rcfile=$pylintrc_fn --output-format=parseable"
-  PYLINT_INCLUDE="stack"
-  srcfiles=`find devstack -type f | grep "py\$"`
-  srcfiles+=" stack run_tests.py"
-  echo "Pylint messages count: "
-  pylint $PYLINT_OPTIONS $srcfiles | grep 'devstack/' | wc -l
-  echo "Run 'pylint $PYLINT_OPTIONS $PYLINT_INCLUDE' for a full report."
+  PYLINT_INCLUDE=`find devstack -type f | grep "py\$"`
+  PYLINT_INCLUDE+=" stack run_tests.py"
+  TEE_FN="pylint.log"
+  echo "$(${wrapper} pylint ${PYLINT_OPTIONS} ${PYLINT_INCLUDE} 2>&1 | tee $TEE_FN)"
+  if [ "$?" -ne "0" ]; then
+   echo "Sorry, cannot run pylint ..."
+   exit 1
+  else
+   echo "Successfully ran pylint ..."
+  fi
 }
 
 function validate_json {
