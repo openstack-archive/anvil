@@ -6,7 +6,6 @@ counterparts.
 """
 
 import argparse
-import collections
 import errno
 import json
 import logging
@@ -16,6 +15,9 @@ import re
 
 # Configure logging
 logging.basicConfig(format='%(levelname)s: %(message)s')
+ROOT_LOGGER = logging.getLogger("")
+ROOT_LOGGER.setLevel(logging.WARNING)
+LOGGER = logging.getLogger(__name__)
 
 # Configure commandlineability
 parser = argparse.ArgumentParser(description=__doc__)
@@ -29,11 +31,9 @@ args = parser.parse_args()
 
 def main():
     files = find_matching_files(args.path, args.regexp)
-
     results = True
     for path in files:
         results &= validate_json(path)
-
     # Invert our test results to produce a status code
     exit(not results)
 
@@ -41,13 +41,13 @@ def main():
 def validate_json(path):
     """Open a file and validate it's contents as JSON"""
     try:
+        LOGGER.info("Validating %s" % (path))
         contents = read_file(path)
-
         if contents is False:
             logging.warning('Insufficient permissions to open: %s' % path)
             return False
     except:
-        logging.warning('Unable to open: %s' % path)
+        LOGGER.warning('Unable to open: %s' % path)
         return False
 
     #knock off comments
@@ -61,10 +61,9 @@ def validate_json(path):
 
     contents = os.linesep.join(ncontents)
     try:
-        ordered_dict = json.loads(contents,
-            object_pairs_hook=collections.OrderedDict)
+        ordered_dict = json.loads(contents)
     except:
-        logging.error('Unable to parse: %s' % path)
+        LOGGER.error('Unable to parse: %s' % path)
         return False
 
     return True
@@ -74,7 +73,6 @@ def find_matching_files(path, pattern):
     """Search the given path for files matching the given pattern"""
 
     regex = re.compile(pattern)
-
     json_files = []
     for root, dirs, files in os.walk(path):
         for name in files:
@@ -109,7 +107,7 @@ def replace_file(path, new_contents):
         f.write(new_contents)
         f.close()
     except:
-        logging.error('Unable to write: %s' % f)
+        LOGGER.error('Unable to write: %s' % f)
         return False
     return True
 
