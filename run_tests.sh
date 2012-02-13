@@ -69,6 +69,7 @@ skip_pep8=0
 just_pylint=0
 just_json=0
 coverage=0
+pylintrc_fn="pylintrc"
 
 for arg in "$@"; do
   process_option $arg
@@ -129,24 +130,28 @@ function run_tests {
 
 function run_pep8 {
   echo "Running pep8 ..."
-  # Opt-out files from pep8
-  ignore_scripts="*.sh"
-  ignore_files="*pip-requires,*.log"
-  ignore_dirs="*tools*"
-  GLOBIGNORE="$ignore_scripts,$ignore_files,$ignore_dirs"
-  srcfiles=`find . -type f -not -name "*.log" -not -name "*.db" -not -name "*.pyc"`
+  srcfiles=`find devstack -type f | grep "py\$"`
   srcfiles+=" stack run_tests.py"
-  # Just run PEP8 in current environment
-  ${wrapper} pep8 --repeat --show-pep8 --show-source \
-    --exclude=$GLOBIGNORE ${srcfiles}
+  pep_ignores="E202,E501"
+  tee_fn="pep8.log"
+  pep8_opts="--ignore=$pep_ignores --repeat"
+  echo "$(${wrapper} pep8 ${pep8_opts} ${srcfiles} 2>&1 | tee $tee_fn)"
+  if [ "$?" -ne "0" ]; then
+    echo "Sorry, cannot run pep8 ..."
+    exit 1
+  else
+    echo "Successfully ran pep8 ..."
+  fi
 }
 
 function run_pylint {
   echo "Running pylint ..."
-  PYLINT_OPTIONS="--rcfile=pylintrc --output-format=parseable"
+  PYLINT_OPTIONS="--rcfile=$pylintrc_fn --output-format=parseable"
   PYLINT_INCLUDE="stack"
+  srcfiles=`find devstack -type f | grep "py\$"`
+  srcfiles+=" stack run_tests.py"
   echo "Pylint messages count: "
-  pylint $PYLINT_OPTIONS $PYLINT_INCLUDE | grep 'devstack/' | wc -l
+  pylint $PYLINT_OPTIONS $srcfiles | grep 'devstack/' | wc -l
   echo "Run 'pylint $PYLINT_OPTIONS $PYLINT_INCLUDE' for a full report."
 }
 
