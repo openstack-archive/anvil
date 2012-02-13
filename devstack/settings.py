@@ -82,7 +82,8 @@ COMPONENT_DEPENDENCIES = {
     SWIFT: [SWIFT_KEYSTONE],
     NOVA_CLIENT: [],
     HORIZON: [KEYSTONE_CLIENT, GLANCE, NOVA_CLIENT],
-    QUANTUM: [],  # More of quantums deps come from its module function get_dependencies
+    # More of quantums deps come from its module function get_dependencies
+    QUANTUM: [],
     NOVNC: [NOVA],
     QUANTUM_CLIENT: [],
     MELANGE: [DB],

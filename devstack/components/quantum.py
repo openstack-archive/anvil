@@ -103,7 +103,7 @@ class QuantumInstaller(comp.PkgInstallComponent):
         return places
 
     def get_dependencies(self):
-        common_deps = PkgInstallComponent.get_dependencies(self)
+        common_deps = comp.PkgInstallComponent.get_dependencies(self)
         add_deps = list()
         if self.q_vswitch_agent:
             #just need the client

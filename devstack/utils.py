@@ -23,6 +23,7 @@ import os
 import platform
 import random
 import re
+import socket
 import sys
 import termcolor
 
@@ -37,6 +38,9 @@ EXT_COMPONENT = re.compile(r"^\s*([\w-]+)(?:\((.*)\))?\s*$")
 MONTY_PYTHON_TEXT_RE = re.compile("([a-z0-9A-Z\?!.,'\"]+)")
 LOG = logging.getLogger("devstack.util")
 TEMPLATE_EXT = ".tpl"
+DEF_IP = "127.0.0.1"
+IP_LOOKER = '8.8.8.8'
+DEF_IP_VERSION = settings.IPV4
 
 
 def load_template(component, template_name):
@@ -118,25 +122,43 @@ def load_json(fn):
     return json.loads(data)
 
 
-def get_host_ip(def_net_ifcs, def_ip_version):
-    ip = None
-    ifc = None
-    interfaces = get_interfaces()
-    for net_ifc in def_net_ifcs:
-        def_info = interfaces.get(net_ifc)
-        if def_info:
-            ipinfo = def_info.get(def_ip_version)
-            if ipinfo:
-                ip = ipinfo.get('addr')
-                ifc = net_ifc
-                if ip:
-                    break
-    if ip is None:
-        ifcs = ", ".join(def_net_ifcs)
-        msg = "Your host does not have an ip address on interfaces [%s] using ip version: %s!" % (ifcs, def_ip_version)
-        raise excp.NoIpException(msg)
+def get_host_ip():
+    """
+    Returns the actual ip of the local machine.
 
-    return (ip, ifc)
+    This code figures out what source address would be used if some traffic
+    were to be sent out to some well known address on the Internet. In this
+    case, a private address is used, but the specific address does not
+    matter much.  No traffic is actually sent.
+    """
+    ip = None
+    try:
+        csock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        csock.connect((IP_LOOKER, 80))
+        (addr, _) = csock.getsockname()
+        csock.close()
+        ip = addr
+    except socket.error:
+        pass
+    #attempt to find it
+    if not ip:
+        interfaces = get_interfaces()
+        for (_, net_info) in interfaces.items():
+            ip_info = net_info.get(DEF_IP_VERSION)
+            if ip_info:
+                a_ip = ip_info.get('addr')
+                if (not a_ip or a_ip.startswith("10.") or
+                    a_ip.startswith('192.') or
+                    a_ip.startswith('172.')):
+                    #skip private addrs
+                    pass
+                else:
+                    ip = a_ip
+                    break
+    #just return a localhost version then
+    if not ip:
+        ip = DEF_IP
+    return ip
 
 
 def get_interfaces():
