@@ -51,6 +51,8 @@ def _write_line(text, fh):
 
 
 def _write_env(name, value, fh):
+    if value is None:
+        return
     str_value = str(value)
     escaped_val = subprocess.list2cmdline([str_value])
     if str_value != escaped_val:
@@ -62,70 +64,77 @@ def _write_env(name, value, fh):
 def _generate_ec2_env(fh, cfg):
     _write_line('# EC2 and/or S3 stuff', fh)
     ip = cfg.get('host', 'ip')
+
     ec2_url = cfg.get('extern', 'ec2_url')
     if not ec2_url:
         ec2_url = urlunparse(('http', "%s:%s" % (ip, EC2_PORT), "services/Cloud", '', '', ''))
     _write_env('EC2_URL', ec2_url, fh)
+
     s3_url = cfg.get('extern', 's3_url')
     if not s3_url:
         s3_url = urlunparse(('http', "%s:%s" % (ip, S3_PORT), "services/Cloud", '', '', ''))
     _write_env('S3_URL', s3_url, fh)
+
     ec2_acc_key = cfg.get('extern', 'ec2_access_key')
-    if ec2_acc_key:
-        _write_env('EC2_ACCESS_KEY', ec2_acc_key, fh)
+    _write_env('EC2_ACCESS_KEY', ec2_acc_key, fh)
+
     hkpw = cfg.get('passwords', 'horizon_keystone_admin', auto_pw=False)
-    if hkpw:
-        _write_env('EC2_SECRET_KEY', hkpw, fh)
+    _write_env('EC2_SECRET_KEY', hkpw, fh)
+
     ec2_uid = cfg.get('extern', 'ec2_user_id')
-    if ec2_uid:
-        _write_env('EC2_USER_ID', ec2_uid, fh)
+    _write_env('EC2_USER_ID', ec2_uid, fh)
+
     ec2_cert = cfg.get('extern', 'ec2_cert_fn')
-    if ec2_cert:
-        _write_env('EC2_CERT', ec2_cert, fh)
+    _write_env('EC2_CERT', ec2_cert, fh)
+
     _write_line("", fh)
 
 
 def _generate_nova_env(fh, cfg):
     _write_line('# Nova stuff', fh)
     ip = cfg.get('host', 'ip')
+
     hkpw = cfg.get('passwords', 'horizon_keystone_admin', auto_pw=False)
-    if hkpw:
-        _write_env('NOVA_PASSWORD', hkpw, fh)
+    _write_env('NOVA_PASSWORD', hkpw, fh)
+
     nv_url = cfg.get('extern', 'nova_url')
     if not nv_url:
         nv_url = urlunparse(('http', "%s:%s" % (ip, NOVA_PORT), "v2.0", '', '', ''))
     _write_env('NOVA_URL', nv_url, fh)
+
     nv_prj = cfg.get('extern', 'nova_project_id')
-    if nv_prj:
-        _write_env('NOVA_PROJECT_ID', nv_prj, fh)
+    _write_env('NOVA_PROJECT_ID', nv_prj, fh)
+
     nv_reg = cfg.get('extern', 'nova_region_name')
-    if nv_reg:
-        _write_env('NOVA_REGION_NAME', nv_reg, fh)
+    _write_env('NOVA_REGION_NAME', nv_reg, fh)
+
     nv_ver = cfg.get('extern', 'nova_version')
-    if nv_ver:
-        _write_env('NOVA_VERSION', nv_ver, fh)
+    _write_env('NOVA_VERSION', nv_ver, fh)
+
     nv_cert = cfg.get("extern", 'nova_cert_fn')
-    if nv_cert:
-        _write_env('NOVA_CERT', nv_cert, fh)
+    _write_env('NOVA_CERT', nv_cert, fh)
+
     _write_line("", fh)
 
 
 def _generate_os_env(fh, cfg):
     _write_line('# Openstack stuff', fh)
     ip = cfg.get('host', 'ip')
+
     hkpw = cfg.get('passwords', 'horizon_keystone_admin', auto_pw=False)
-    if hkpw:
-        _write_env('OS_PASSWORD', hkpw, fh)
+    _write_env('OS_PASSWORD', hkpw, fh)
+
     os_ten = cfg.get('extern', 'os_tenant_name')
-    if os_ten:
-        _write_env('OS_TENANT_NAME', os_ten, fh)
+    _write_env('OS_TENANT_NAME', os_ten, fh)
+
     os_uname = cfg.get('extern', 'os_username')
-    if os_uname:
-        _write_env('OS_USERNAME', os_uname, fh)
+    _write_env('OS_USERNAME', os_uname, fh)
+
     os_auth_uri = cfg.get('extern', 'os_auth_url')
     if not os_auth_uri:
         os_auth_uri = urlunparse(('http', "%s:%s" % (ip, OS_AUTH_PORT), "v2.0", '', '', ''))
     _write_env('OS_AUTH_URL', os_auth_uri, fh)
+
     _write_line("", fh)
 
 
@@ -140,8 +149,7 @@ def _generate_general(fh, cfg):
     for (out_name, cfg_data) in CFG_MAKE.items():
         (section, key) = cfg_data
         value = cfg.get(section, key, auto_pw=False)
-        if value:
-            _write_env(out_name, value, fh)
+        _write_env(out_name, value, fh)
     _write_line("", fh)
 
 
