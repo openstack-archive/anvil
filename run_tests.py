@@ -19,8 +19,7 @@ import subprocess
 
 logger = logging.getLogger(__name__)
 
-TESTS = [
-]
+TESTS = []
 
 
 def parse_suite_filter():

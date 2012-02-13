@@ -134,8 +134,8 @@ function run_pep8 {
   ignore_files="*pip-requires,*.log"
   ignore_dirs="*tools*"
   GLOBIGNORE="$ignore_scripts,$ignore_files,$ignore_dirs"
-  srcfiles=`find bin -type f -not -name "*.log" -not -name "*.db"`
-  srcfiles+=" devstack run_tests.py"
+  srcfiles=`find . -type f -not -name "*.log" -not -name "*.db" -not -name "*.pyc"`
+  srcfiles+=" stack run_tests.py"
   # Just run PEP8 in current environment
   ${wrapper} pep8 --repeat --show-pep8 --show-source \
     --exclude=$GLOBIGNORE ${srcfiles}
@@ -144,9 +144,9 @@ function run_pep8 {
 function run_pylint {
   echo "Running pylint ..."
   PYLINT_OPTIONS="--rcfile=pylintrc --output-format=parseable"
-  PYLINT_INCLUDE="devstack"
+  PYLINT_INCLUDE="stack"
   echo "Pylint messages count: "
-  pylint $PYLINT_OPTIONS $PYLINT_INCLUDE | grep 'keystone/' | wc -l
+  pylint $PYLINT_OPTIONS $PYLINT_INCLUDE | grep 'devstack/' | wc -l
   echo "Run 'pylint $PYLINT_OPTIONS $PYLINT_INCLUDE' for a full report."
 }
 
