@@ -45,7 +45,7 @@ def parse_suite_filter():
 if __name__ == '__main__':
     SUITE_FILTER = parse_suite_filter()
     if SUITE_FILTER:
-        TESTS = [t for t in TESTS if filter in str(t)]
+        TESTS = [t for t in TESTS if SUITE_FILTER in str(t)]
         if not TESTS:
             print 'No test configuration by the name %s found' % SUITE_FILTER
             sys.exit(2)
