@@ -21,7 +21,7 @@ LOGGER = logging.getLogger(__name__)
 
 # Configure commandlineability
 parser = optparse.OptionParser()
-parser.add_option('-p', type="string", default='.',
+parser.add_option('-p', type="string", default=os.getcwd(),
     help='the path to search for JSON files', dest='path')
 parser.add_option('-r', type="string", default='.json$',
     help='the regular expression to match filenames against ' \
@@ -32,11 +32,19 @@ parser.add_option('-r', type="string", default='.json$',
 def main():
     files = find_matching_files(args.path, args.regexp)
     results = True
-    print("Validating %s json files (found using regex %s in path %s)" % (len(files), args.regexp, args.path))
+    print("Validating %s json files (found using regex [%s] in path [%s])" % (len(files), args.regexp, args.path))
     for path in files:
-        results &= validate_json(path)
+        pres = validate_json(path)
+        if not pres:
+            print("Failed at validating [%s]" % (path))
+            results = False
+        else:
+            print("Validated [%s]" % (path))
     # Invert our test results to produce a status code
-    exit(not results)
+    if results:
+        exit(0)
+    else:
+        exit(1)
 
 
 def validate_json(path):
