@@ -113,16 +113,18 @@ then
 fi
 
 function run_tests {
+  OFN="run_tests.log"
   # Just run the test suites in current environment
-  ${wrapper} $RUNTESTS 2> run_tests.log
+  ${wrapper} $RUNTESTS 2>$OFN | tee $OFN
   # If we get some short import error right away, print the error log directly
   RESULT=$?
+  echo "Check '$OFN' for a full report."
   if [ "$RESULT" -ne "0" ];
   then
-    ERRSIZE=`wc -l run_tests.log | awk '{print \$1}'`
+    ERRSIZE=`wc -l $OFN | awk '{print \$1}'`
     if [ "$ERRSIZE" -lt "40" ];
     then
-        cat run_tests.log
+        cat $OFN
     fi
   fi
   return $RESULT
@@ -135,12 +137,13 @@ function run_pep8 {
   PEP_IGNORES="E202,E501"
   TEE_FN="pep8.log"
   PEP8_OPTS="--ignore=$PEP_IGNORES --repeat"
-  echo "$(${wrapper} pep8 ${PEP8_OPTS} ${SRC_FILES} 2>&1 | tee $TEE_FN)"
+  pep8 ${PEP8_OPTS} ${SRC_FILES} 2>&1 | tee $TEE_FN
   if [ "$?" -ne "0" ]; then
-    echo "Sorry, cannot run pep8 ..."
-    exit 1
+      echo "Sorry, cannot run pep8 ..."
+      exit 1
   else
-    echo "Successfully ran pep8 ..."
+      echo "Successfully ran pep8 ..."
+      echo "Check '$TEE_FN' for a full report."
   fi
 }
 
@@ -150,12 +153,14 @@ function run_pylint {
   PYLINT_INCLUDE=`find devstack -type f | grep "py\$"`
   PYLINT_INCLUDE+=" stack run_tests.py"
   TEE_FN="pylint.log"
-  echo "$(${wrapper} pylint ${PYLINT_OPTIONS} ${PYLINT_INCLUDE} 2>&1 | tee $TEE_FN)"
+  echo "Pylint messages count: "
+  pylint ${PYLINT_OPTIONS} ${PYLINT_INCLUDE} 2>&1 | tee $TEE_FN | grep 'devstack' | wc -l
   if [ "$?" -ne "0" ]; then
-   echo "Sorry, cannot run pylint ..."
-   exit 1
+      echo "Sorry, cannot run pylint ..."
+      exit 1
   else
-   echo "Successfully ran pylint ..."
+      echo "Successfully ran pylint ..."
+      echo "Check '$TEE_FN' for a full report."
   fi
 }
 
@@ -186,7 +191,9 @@ if [ $just_json -eq 1 ]; then
 fi
 
 
+echo "Running tests..."
 run_tests
+
 if [ $skip_pep8 -eq 0 ]; then
     # Run the pep8 check
     run_pep8
