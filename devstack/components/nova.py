@@ -736,6 +736,7 @@ class NovaConfConfigurator(object):
             if flat_interface:
                 if not utils.is_interface(flat_interface):
                     msg = "Libvirt flat interface %s is not a known interface" % (flat_interface)
+                    raise exceptions.ConfigException(msg)
                 nova_conf.add('flat_interface', flat_interface)
 
 
