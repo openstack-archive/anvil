@@ -178,7 +178,7 @@ QUANTUM_OPENSWITCH_OPS = {
 }
 
 #this is a special conf
-CLEANER_DATA_CONF = 'nova-clean-network.sh'
+CLEANER_DATA_CONF = 'nova-clean.sh'
 CLEANER_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
 
 #pip files that nova requires
@@ -192,13 +192,20 @@ class NovaUninstaller(comp.PythonUninstallComponent):
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
 
     def pre_uninstall(self):
-        self._clear_iptables()
         self._clear_libvirt_domains()
+        self._clean_it()
 
-    def _clear_iptables(self):
-        LOG.info("Cleaning up iptables.")
+    def _clean_it(self):
+        LOG.info("Cleaning up your system.")
+        #these environment additions are important
+        #in that they eventually affect how this script runs
+        sub_components = self.component_opts or SUBCOMPONENTS
+        env = dict()
+        env['ENABLED_SERVICES'] = ",".join(sub_components)
+        env['BIN_DIR'] = self.bindir
+        env['VOLUME_NAME_PREFIX'] = self.cfg.get('nova', 'volume_name_prefix')
         cmd = CLEANER_CMD_ROOT + [sh.joinpths(self.bindir, CLEANER_DATA_CONF)]
-        sh.execute(*cmd, run_as_root=True)
+        sh.execute(*cmd, run_as_root=True, env_overrides=env)
 
     def _clear_libvirt_domains(self):
         virt_driver = self.cfg.get('nova', 'virt_driver')
