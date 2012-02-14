@@ -61,7 +61,10 @@ def validate_json(path):
 
     contents = os.linesep.join(ncontents)
     try:
-        ordered_dict = json.loads(contents)
+        jdict = json.loads(contents)
+        if not isdict(jdict):
+            LOGGER.error('Root element in %s is not a dictionary!' % path)
+            return False
     except:
         LOGGER.error('Unable to parse: %s' % path)
         return False
