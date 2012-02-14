@@ -305,7 +305,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         (_, contents) = utils.load_template(self.component_name, CLEANER_DATA_CONF)
         tgt_fn = sh.joinpths(self.bindir, CLEANER_DATA_CONF)
         sh.write_file(tgt_fn, contents)
-        sh.chmod(tgt_fn, 755)
+        sh.chmod(tgt_fn, 0755)
         self.tracewriter.file_touched(tgt_fn)
 
     def _setup_db(self):
@@ -315,12 +315,8 @@ class NovaInstaller(comp.PythonInstallComponent):
 
     def _generate_nova_conf(self):
         LOG.info("Generating dynamic content for nova configuration (%s)." % (API_CONF))
-        component_dirs = dict()
-        component_dirs['app'] = self.appdir
-        component_dirs['cfg'] = self.cfgdir
-        component_dirs['bin'] = self.bindir
         conf_gen = NovaConfConfigurator(self)
-        nova_conf = conf_gen.configure(component_dirs)
+        nova_conf = conf_gen.configure()
         tgtfn = self._get_target_config_name(API_CONF)
         LOG.info("Writing nova configuration to %s" % (tgtfn))
         LOG.debug(nova_conf)
@@ -496,6 +492,7 @@ class NovaConfConfigurator(object):
         self.tracewriter = ni.tracewriter
         self.paste_conf_fn = ni.paste_conf_fn
         self.distro = ni.distro
+        self.cfgdir = ni.cfgdir
         self.xvnc_enabled = ni.xvnc_enabled
         self.volumes_enabled = ni.volumes_enabled
 
@@ -505,7 +502,7 @@ class NovaConfConfigurator(object):
     def _getstr(self, name):
         return self.cfg.get('nova', name)
 
-    def configure(self, component_dirs):
+    def configure(self):
         nova_conf = NovaConf()
 
         #use more than once
@@ -526,7 +523,7 @@ class NovaConfConfigurator(object):
         nova_conf.add('scheduler_driver', scheduler)
 
         #setup network settings
-        self._configure_network_settings(nova_conf, component_dirs)
+        self._configure_network_settings(nova_conf)
 
         #setup nova volume settings
         if self.volumes_enabled:
@@ -587,8 +584,7 @@ class NovaConfConfigurator(object):
         self._configure_virt_driver(nova_conf)
 
         #now make it
-        conf_lines = sorted(nova_conf.generate())
-        complete_file = utils.joinlinesep(*conf_lines)
+        complete_file = nova_conf.generate()
 
         #add any extra flags in?
         extra_flags = self._getstr('extra_flags')
@@ -640,7 +636,7 @@ class NovaConfConfigurator(object):
         nova_conf.add('volume_name_template', volume_name_template)
         nova_conf.add('iscsi_help', 'tgtadm')
 
-    def _configure_network_settings(self, nova_conf, component_dirs):
+    def _configure_network_settings(self, nova_conf):
         if settings.QUANTUM in self.instances:
             nova_conf.add('network_manager', QUANTUM_MANAGER)
             nova_conf.add('quantum_connection_host', self.cfg.get('quantum', 'q_host'))
@@ -660,7 +656,7 @@ class NovaConfConfigurator(object):
             nova_conf.add('network_manager', NET_MANAGER_TEMPLATE % (self._getstr('network_manager')))
 
         #dhcp bridge stuff???
-        flag_conf_fn = sh.joinpths(component_dirs.get('cfg'), API_CONF)
+        flag_conf_fn = sh.joinpths(self.cfgdir, API_CONF)
         nova_conf.add('dhcpbridge_flagfile', flag_conf_fn)
 
         #Network prefix for the IP network that all the projects for future VM guests reside on. Example: 192.168.0.0/12
@@ -701,7 +697,7 @@ class NovaConfConfigurator(object):
         LOG.debug("Attempting to create instance directory: %s" % (instances_path))
         self.tracewriter.make_dir(instances_path)
         LOG.debug("Adjusting permissions of instance directory: %s" % (instances_path))
-        os.chmod(instances_path, stat.S_IRWXO | stat.S_IRWXG | stat.S_IRWXU)
+        os.chmod(instances_path, 0777)
 
     def _configure_libvirt(self, virt_type, nova_conf):
         if virt_type == 'lxc':
@@ -755,6 +751,10 @@ class NovaConf(object):
         return key_str
 
     def generate(self, param_dict=None):
+        conf_lines = sorted(self.generate_lines(param_dict))
+        return utils.joinlinesep(*conf_lines)
+
+    def generate_lines(self, param_dict=None):
         gen_lines = list()
         for line_entry in self.lines:
             key = line_entry.get('key')

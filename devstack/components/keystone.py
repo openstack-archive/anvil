@@ -127,7 +127,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         contents = utils.param_replace(contents, params, True)
         tgt_fn = sh.joinpths(self.bindir, MANAGE_DATA_CONF)
         sh.write_file(tgt_fn, contents)
-        sh.chmod(tgt_fn, 755)
+        sh.chmod(tgt_fn, 0755)
         #now run it
         #these environment additions are important
         #in that they eventually affect how this script runs

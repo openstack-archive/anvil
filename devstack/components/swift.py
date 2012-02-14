@@ -171,12 +171,12 @@ class SwiftInstaller(comp.PythonInstallComponent):
     def __setup_binaries(self):
         sh.move(sh.joinpths(self.cfgdir, SWIFT_MAKERINGS),
                 self.makerings_file)
-        sh.chmod(self.makerings_file, 777)
+        sh.chmod(self.makerings_file, 0777)
         self.tracewriter.file_touched(self.makerings_file)
 
         sh.move(sh.joinpths(self.cfgdir, SWIFT_STARTMAIN),
                 self.startmain_file)
-        sh.chmod(self.startmain_file, 777)
+        sh.chmod(self.startmain_file, 0777)
         self.tracewriter.file_touched(self.startmain_file)
 
     def __make_rings(self):
