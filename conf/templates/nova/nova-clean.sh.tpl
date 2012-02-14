@@ -2,35 +2,42 @@
 
 # This script cleans up the system as part of a nova uninstall
 
-# Eventually it should be moved to python code...
+if [[ $EUID -ne 0 ]]; then
+   echo "This script must be run as root!" 1>&2
+   exit 1
+fi
 
-# This was added (so that it dies on errors)
-set -o errexit
+set -o xtrace
 
+# Set up some good defaults
+ENABLED_SERVICES=${ENABLED_SERVICES:-net,vol}
+VOLUME_NAME_PREFIX=${VOLUME_NAME_PREFIX:-volume-}
+
+# Clean off networking
 if [[ "$ENABLED_SERVICES" =~ "net" ]]; then
 
     # Ignore any errors from shutting down dnsmasq
-    # TODO shouldn't this be a service shutdown??
-    killall dnsmasq || true
+    service dnsmasq stop || true
     
     # Delete rules
-    iptables -S -v | sed "s/-c [0-9]* [0-9]* //g" | grep "nova" | grep "\-A" |  sed "s/-A/-D/g" | awk '{print "sudo iptables",$0}' | bash
+    iptables -S -v | sed "s/-c [0-9]* [0-9]* //g" | grep "nova" | grep "\-A" |  sed "s/-A/-D/g" | awk '{print "iptables",$0}' | bash
     
     # Delete nat rules
-    iptables -S -v -t nat | sed "s/-c [0-9]* [0-9]* //g" | grep "nova" |  grep "\-A" | sed "s/-A/-D/g" | awk '{print "sudo iptables -t nat",$0}' | bash
+    iptables -S -v -t nat | sed "s/-c [0-9]* [0-9]* //g" | grep "nova" |  grep "\-A" | sed "s/-A/-D/g" | awk '{print "iptables -t nat",$0}' | bash
     
     # Delete chains
-    iptables -S -v | sed "s/-c [0-9]* [0-9]* //g" | grep "nova" | grep "\-N" |  sed "s/-N/-X/g" | awk '{print "sudo iptables",$0}' | bash
+    iptables -S -v | sed "s/-c [0-9]* [0-9]* //g" | grep "nova" | grep "\-N" |  sed "s/-N/-X/g" | awk '{print "iptables",$0}' | bash
     
     # Delete nat chains
-    iptables -S -v -t nat | sed "s/-c [0-9]* [0-9]* //g" | grep "nova" |  grep "\-N" | sed "s/-N/-X/g" | awk '{print "sudo iptables -t nat",$0}' | bash
+    iptables -S -v -t nat | sed "s/-c [0-9]* [0-9]* //g" | grep "nova" |  grep "\-N" | sed "s/-N/-X/g" | awk '{print "iptables -t nat",$0}' | bash
 
 fi
 
+# Clean off volumes
 if [[ "$ENABLED_SERVICES" =~ "vol" ]]; then
 
     # Logout and delete iscsi sessions
-    iscsiadm --mode node | grep $VOLUME_NAME_PREFIX | cut -d " " -f2 | xargs sudo iscsiadm --mode node --logout || true
-    iscsiadm --mode node | grep $VOLUME_NAME_PREFIX | cut -d " " -f2 | sudo iscsiadm --mode node --op delete || true
+    iscsiadm --mode node | grep $VOLUME_NAME_PREFIX | cut -d " " -f2 | xargs iscsiadm --mode node --logout || true
+    iscsiadm --mode node | grep $VOLUME_NAME_PREFIX | cut -d " " -f2 | iscsiadm --mode node --op delete || true
 
 fi
