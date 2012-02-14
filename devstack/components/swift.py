@@ -47,8 +47,8 @@ RSYNCD_CONF_LOC = '/etc/rsyncd.conf'
 RSYNC_SERVICE_RESTART = ['service', 'rsync', 'restart']
 RSYSLOG_SERVICE_RESTART = ['service', 'rsyslog', 'restart']
 RSYNC_ON_OFF_RE = re.compile(r'^\s*RSYNC_ENABLE\s*=\s*(.*)$', re.I)
-
 AUTH_SERVICE = 'keystone'
+FS_TYPE = "xfs"
 
 # subdirs of the git checkout
 BIN_DIR = 'bin'
@@ -133,10 +133,10 @@ class SwiftInstaller(comp.PythonInstallComponent):
 
     def __create_data_location(self):
         sh.create_loopback_file(fname=self.fs_image,
-                                size=int(self.cfg.get('swift', 'loopback_disk_size')),
-                                fs_type='xfs')
+                                size=self.cfg.getint('swift', 'loopback_disk_size'),
+                                fs_type=FS_TYPE)
         self.tracewriter.file_touched(self.fs_image)
-        sh.mount_loopback_file(self.fs_image, self.fs_dev, 'xfs')
+        sh.mount_loopback_file(self.fs_image, self.fs_dev, FS_TYPE)
         sh.chown_r(self.fs_dev, sh.geteuid(), sh.getegid())
 
     def __create_node_config(self, node_number, port):
