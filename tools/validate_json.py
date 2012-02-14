@@ -5,12 +5,12 @@ Optionally, replaces valid JSON files with their pretty-printed
 counterparts.
 """
 
-import argparse
+import optparse
 import errno
 import json
 import logging
 import os
-import re
+import re 
 
 
 # Configure logging
@@ -20,13 +20,13 @@ ROOT_LOGGER.setLevel(logging.WARNING)
 LOGGER = logging.getLogger(__name__)
 
 # Configure commandlineability
-parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument('-p', type=str, required=False, default='.',
+parser = optparse.OptionParser()
+parser.add_option('-p', type="string", default='.',
     help='the path to search for JSON files', dest='path')
-parser.add_argument('-r', type=str, required=False, default='.json$',
+parser.add_option('-r', type="string", default='.json$',
     help='the regular expression to match filenames against ' \
         '(not absolute paths)', dest='regexp')
-args = parser.parse_args()
+(args, _) = parser.parse_args()
 
 
 def main():
@@ -62,11 +62,11 @@ def validate_json(path):
     contents = os.linesep.join(ncontents)
     try:
         jdict = json.loads(contents)
-        if not isdict(jdict):
+        if not type(jdict) is dict:
             LOGGER.error('Root element in %s is not a dictionary!' % path)
             return False
-    except:
-        LOGGER.error('Unable to parse: %s' % path)
+    except Exception:
+        LOGGER.exception('Unable to parse: %s' % path)
         return False
 
     return True
