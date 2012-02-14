@@ -30,16 +30,16 @@ def parse_suite_filter():
     """ Parses out -O or --only argument and returns the value after it as the
     filter. Removes it from sys.argv in the process. """
 
-    suite_filter = None
+    our_suite_filter = None
     if '-O' in sys.argv or '--only' in sys.argv:
         for i in range(len(sys.argv)):
             if sys.argv[i] in ['-O', '--only']:
                 if len(sys.argv) > i + 1:
                     # Remove -O/--only settings from sys.argv
                     sys.argv.pop(i)
-                    suite_filter = sys.argv.pop(i)
+                    our_suite_filter = sys.argv.pop(i)
                     break
-    return suite_filter
+    return our_suite_filter
 
 
 if __name__ == '__main__':
@@ -56,12 +56,12 @@ if __name__ == '__main__':
             try:
                 result = test_cls().run()
                 if result:
-                    logger.error("Run returned %s for test %s. Exiting" %
+                    LOGGER.error("Run returned %s for test %s. Exiting" %
                                  (result, test_cls.__name__))
                     sys.exit(result)
             except Exception, e:
                 print "Error:", e
-                logger.exception(e)
+                LOGGER.exception(e)
                 sys.exit(1)
             # Collect coverage from each run. They'll be combined later in .sh
             if '--with-coverage' in sys.argv:
@@ -69,14 +69,14 @@ if __name__ == '__main__':
                 target_file = "%s.%s" % (coverage_file, test_cls.__name__)
                 try:
                     if os.path.exists(target_file):
-                        logger.info("deleting %s" % target_file)
+                        LOGGER.info("deleting %s" % target_file)
                         os.unlink(target_file)
                     if os.path.exists(coverage_file):
-                        logger.info("Saving %s to %s" % (coverage_file,
+                        LOGGER.info("Saving %s to %s" % (coverage_file,
                                                          target_file))
                         os.rename(coverage_file, target_file)
                 except Exception, e:
-                    logger.exception(e)
+                    LOGGER.exception(e)
                     print ("Failed to move coverage file while running test"
                            ": %s. Error reported was: %s" %
                            (test_cls.__name__, e))
@@ -86,10 +86,10 @@ if __name__ == '__main__':
             try:
                 result = test_cls().run()
                 if result:
-                    logger.error("Run returned %s for test %s. Exiting" %
+                    LOGGER.error("Run returned %s for test %s. Exiting" %
                                  (result, test_cls.__name__))
                     sys.exit(result)
             except Exception, e:
                 print "Error:", e
-                logger.exception(e)
+                LOGGER.exception(e)
                 sys.exit(1)
