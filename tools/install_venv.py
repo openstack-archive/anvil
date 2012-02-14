@@ -112,12 +112,12 @@ def install_dependencies(venv=VENV):
 
 def print_help():
     help = """
- Keystone development environment setup is complete.
+ Devstack development environment setup is complete.
 
- Keystone development uses virtualenv to track and manage Python dependencies
+ Devstack development uses virtualenv to track and manage Python dependencies
  while in development and testing.
 
- To activate the Keystone virtualenv for the extent of your current shell
+ To activate the Devstack virtualenv for the extent of your current shell
  session you can run:
 
  $ source .venv/bin/activate
