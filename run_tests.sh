@@ -154,7 +154,7 @@ function run_pylint {
   PYLINT_INCLUDE+=" stack run_tests.py"
   TEE_FN="pylint.log"
   echo "Pylint messages count: "
-  pylint ${PYLINT_OPTIONS} ${PYLINT_INCLUDE} 2>&1 | tee $TEE_FN | grep 'devstack' | wc -l
+  pylint ${PYLINT_OPTIONS} ${PYLINT_INCLUDE} 2>&1 | tee $TEE_FN | grep 'devstack/' | wc -l
   if [ "$?" -ne "0" ]; then
       echo "Sorry, cannot run pylint ..."
       exit 1
