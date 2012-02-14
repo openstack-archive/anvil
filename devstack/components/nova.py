@@ -185,6 +185,7 @@ CLEANER_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
 XS_DEF_INTERFACE = 'eth1'
 XA_CONNECTION_ADDR = '169.254.0.1'
 XA_CONNECTION_PORT = 80
+XA_DEF_USER = 'root'
 
 #pip files that nova requires
 REQ_PIPS = ['general.json', 'nova.json']
@@ -717,17 +718,20 @@ class NovaConfConfigurator(object):
         drive_canon = driver.lower().strip()
         if drive_canon == 'xenserver':
             nova_conf.add('connection_type', 'xenapi')
-            xa_url = urlunparse(('http', "%s:%s" % (XA_CONNECTION_ADDR, XA_CONNECTION_PORT), "", '', '', ''))
+            xa_url = self._getstr('xa_connection_url') or \
+                    urlunparse(('http', "%s:%s" % (XA_CONNECTION_ADDR, XA_CONNECTION_PORT), "", '', '', ''))
             nova_conf.add('xenapi_connection_url', xa_url)
-            nova_conf.add('xenapi_connection_username', 'root')
+            xs_user = self._getstr('xa_connection_username') or XA_DEF_USER
+            nova_conf.add('xenapi_connection_username', xs_user)
             nova_conf.add('xenapi_connection_password', self.cfg.get("passwords", "xenapi_connection"))
             nova_conf.add_simple('noflat_injected')
-            if not utils.is_interface(XS_DEF_INTERFACE):
-                msg = "Xenserver flat interface %s is not a known interface" % (XS_DEF_INTERFACE)
+            xs_flat_ifc = self._getstr('xs_flat_interface') or XS_DEF_INTERFACE
+            if not utils.is_interface(xs_flat_ifc):
+                msg = "Xenserver flat interface %s is not a known interface" % (xs_flat_ifc)
                 raise exceptions.ConfigException(msg)
-            nova_conf.add('flat_interface', XS_DEF_INTERFACE)
-            nova_conf.add('firewall_driver', self._getstr('xen_firewall_driver'))
-            nova_conf.add('flat_network_bridge', 'xapi1')
+            nova_conf.add('flat_interface', xs_flat_ifc)
+            nova_conf.add('firewall_driver', self._getstr('xs_firewall_driver'))
+            nova_conf.add('flat_network_bridge', self._getstr('xs_flat_network_bridge'))
         elif drive_canon == 'libvirt':
             nova_conf.add('connection_type', 'libvirt')
             nova_conf.add('firewall_driver', self._getstr('libvirt_firewall_driver'))
