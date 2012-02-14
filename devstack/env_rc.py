@@ -170,6 +170,8 @@ def load_local_rc(fn):
             if m:
                 key = m.group(1).strip()
                 value = m.group(2).strip()
+                #remove inline comment if any
+                value = value.split("#")[0].strip()
                 if len(key):
                     qmtch = QUOTED_PAT.match(value)
                     if qmtch:
