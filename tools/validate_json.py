@@ -10,7 +10,7 @@ import json
 import logging
 import optparse
 import os
-import re 
+import re
 
 
 # Configure logging

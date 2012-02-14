@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import time
+
 from devstack import component as comp
 from devstack import exceptions as excp
 from devstack import log as logging
@@ -21,8 +23,6 @@ from devstack import settings
 from devstack import shell as sh
 from devstack import trace as tr
 from devstack import utils
-
-import time
 
 #id
 TYPE = settings.DB

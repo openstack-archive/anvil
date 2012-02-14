@@ -44,10 +44,6 @@ CONFIGS = [SWIFT_CONF, PROXY_SERVER_CONF, ACCOUNT_SERVER_CONF,
 BIN_DIR = 'bin'
 CONFIG_DIR = 'etc'
 
-# what to start
-APP_OPTIONS = {
-}
-
 #the pkg json files swift requires for installation
 REQ_PKGS = ['general.json', 'swift.json']
 

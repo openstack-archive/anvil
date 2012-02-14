@@ -27,24 +27,26 @@ LOG = logging.getLogger("devstack.components.horizon")
 
 #actual dir names
 ROOT_HORIZON = 'horizon'
-HORIZON_NAME = 'horizon'
 ROOT_DASH = 'openstack-dashboard'
+
+#name used for python install trace
+HORIZON_NAME = ROOT_HORIZON
 DASH_NAME = 'dashboard'
 
 #config files messed with
 HORIZON_PY_CONF = "horizon_settings.py"
 HORIZON_PY_CONF_TGT = ['local', 'local_settings.py']
 HORIZON_APACHE_CONF = '000-default'
+CONFIGS = [HORIZON_PY_CONF, HORIZON_APACHE_CONF]
 
 #http://wiki.apache.org/httpd/DistrosDefaultLayout
 #TODO: maybe this should be a subclass that handles these differences
 APACHE_CONF_TARGETS = {
     settings.UBUNTU11: '/etc/apache2/sites-enabled/000-default',
-    #ensure runs after wsgi.conf
+    #ensure runs after wsgi.conf (naming wise)
     settings.RHEL6: '/etc/httpd/conf.d/wsgi-horizon-000-default.conf',
     settings.FEDORA16: '/etc/httpd/conf.d/wsgi-horizon-000-default.conf',
 }
-CONFIGS = [HORIZON_PY_CONF, HORIZON_APACHE_CONF]
 
 #db sync that needs to happen for horizon
 DB_SYNC_CMD = ['python', 'manage.py', 'syncdb']

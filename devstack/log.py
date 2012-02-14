@@ -22,6 +22,9 @@ import sys
 #but the colors make it worth it :-)
 from termcolor import colored
 
+# methods
+getLogger = logging.getLogger
+
 
 class TermFormatter(logging.Formatter):
     def __init__(self, reg_fmt, date_format):
@@ -59,7 +62,3 @@ class TermHandler(logging.Handler):
             TermHandler.STREAM.write(msg + TermHandler.NL)
             if TermHandler.DO_FLUSH:
                 TermHandler.STREAM.flush()
-
-
-def getLogger(name):
-    return logging.getLogger(name)

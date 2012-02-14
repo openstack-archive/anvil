@@ -121,13 +121,16 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
     def _setup_data(self):
         LOG.info("Configuring data setup template %s.", MANAGE_DATA_CONF)
+        #first write it
         (_, contents) = utils.load_template(self.component_name, MANAGE_DATA_CONF)
         params = self._get_param_map(MANAGE_DATA_CONF)
         contents = utils.param_replace(contents, params, True)
         tgt_fn = sh.joinpths(self.bindir, MANAGE_DATA_CONF)
         sh.write_file(tgt_fn, contents)
-        # This environment additions are important
-        # in that they eventually affect how this script runs
+        sh.chmod(tgt_fn, 755)
+        #now run it
+        #these environment additions are important
+        #in that they eventually affect how this script runs
         env = dict()
         env['ENABLED_SERVICES'] = ",".join(self.instances.keys())
         env['BIN_DIR'] = self.bindir

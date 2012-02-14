@@ -298,6 +298,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         (_, contents) = utils.load_template(self.component_name, CLEANER_DATA_CONF)
         tgt_fn = sh.joinpths(self.bindir, CLEANER_DATA_CONF)
         sh.write_file(tgt_fn, contents)
+        sh.chmod(tgt_fn, 755)
         self.tracewriter.file_touched(tgt_fn)
 
     def _setup_db(self):
