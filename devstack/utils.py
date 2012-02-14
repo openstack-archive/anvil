@@ -158,6 +158,12 @@ def get_host_ip():
     return ip
 
 
+def is_interface(intfc):
+    if intfc in get_interfaces():
+        return True
+    return False
+
+
 def get_interfaces():
     interfaces = dict()
     for intfc in netifaces.interfaces():

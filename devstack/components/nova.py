@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from urlparse import urlunparse
 import io
 import os
 
@@ -179,6 +180,10 @@ QUANTUM_OPENSWITCH_OPS = {
 #this is a special conf
 CLEANER_DATA_CONF = 'nova-clean.sh'
 CLEANER_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
+
+#xenserver specific
+XS_DEF_INTERFACE = 'eth1'
+XA_CONNECTION_PORT = 80
 
 #pip files that nova requires
 REQ_PIPS = ['general.json', 'nova.json']
@@ -671,11 +676,10 @@ class NovaConfConfigurator(object):
             vlan_interface = public_interface
 
         #do a little check to make sure actually have that interface set...
-        known_interfaces = utils.get_interfaces()
-        if not public_interface in known_interfaces:
+        if not utils.is_interface(public_interface):
             msg = "Public interface %s is not a known interface" % (public_interface)
             raise exceptions.ConfigException(msg)
-        if not vlan_interface in known_interfaces:
+        if not utils.is_interface(vlan_interface):
             msg = "VLAN interface %s is not a known interface" % (vlan_interface)
             raise exceptions.ConfigException(msg)
         nova_conf.add('public_interface', public_interface)
@@ -712,19 +716,25 @@ class NovaConfConfigurator(object):
         drive_canon = driver.lower().strip()
         if drive_canon == 'xenserver':
             nova_conf.add('connection_type', 'xenapi')
-            nova_conf.add('xenapi_connection_url', 'http://169.254.0.1')
+            xa_url = urlunparse(('http', "%s:%s" % ('169.254.0.1', XA_CONNECTION_PORT), "", '', '', ''))
+            nova_conf.add('xenapi_connection_url', xa_url)
             nova_conf.add('xenapi_connection_username', 'root')
             nova_conf.add('xenapi_connection_password', self.cfg.get("passwords", "xenapi_connection"))
             nova_conf.add_simple('noflat_injected')
-            nova_conf.add('flat_interface', 'eth1')
+            if not utils.is_interface(XS_DEF_INTERFACE):
+                msg = "Xenserver flat interface %s is not a known interface" % (XS_DEF_INTERFACE)
+                raise exceptions.ConfigException(msg)
+            nova_conf.add('flat_interface', XS_DEF_INTERFACE)
             nova_conf.add('firewall_driver', self._getstr('xen_firewall_driver'))
             nova_conf.add('flat_network_bridge', 'xapi1')
-        else:
+        elif drive_canon == 'libvirt':
             nova_conf.add('connection_type', 'libvirt')
             nova_conf.add('firewall_driver', self._getstr('libvirt_firewall_driver'))
             nova_conf.add('flat_network_bridge', self._getstr('flat_network_bridge'))
             flat_interface = self._getstr('flat_interface')
             if flat_interface:
+                if not utils.is_interface(flat_interface):
+                    msg = "Libvirt flat interface %s is not a known interface" % (flat_interface)
                 nova_conf.add('flat_interface', flat_interface)
 
 
