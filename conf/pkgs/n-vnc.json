@@ -13,12 +13,6 @@
         }
     },
     "rhel-6": {
-        # This doesn't work yet, since it conflicts with the 
-        # Symlink we are making for python-nose1.1 from EPEL
-        #"numpy": {
-        #    "version": "1.3*",
-        #    "removable": true
-        #}
     },
     "fedora-16": {
         "numpy": {

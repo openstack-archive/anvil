@@ -51,20 +51,26 @@
         }
     },
     "rhel-6": {
-        # Requires EPEL
         "python-eventlet": {
             "version": "0.9*",
-            "removable": true
+            "removable": true,
+            "meta": {
+                "epel" : true
+            }
         },
-        # Requires EPEL
         "python-greenlet": {
             "version": "0.3.1*",
-            "removable": true
+            "removable": true,
+            "meta": {
+                "epel" : true
+            }
         },
-        # Requires EPEL
         "python-argparse": {
             "version": "1.2*",
-            "removable": true
+            "removable": true,
+            "meta": {
+                "epel" : true
+            }
         },
         "MySQL-python": {
             "version": "1.2*",
@@ -74,22 +80,26 @@
             "version": "1.4*",
             "removable": true
         },
-        # Requires EPEL
         "python-prettytable": {
             "version": "0.5*",
-            "removable": true
+            "removable": true,
+            "meta": {
+                "epel" : true
+            }
         },
-        # Requires EPEL
         "python-xattr": {
-            # This might be way to old :(
             "version": "0.5*",
-            "removable": true
+            "removable": true,
+            "meta": {
+                "epel" : true
+            }
         },
-        # Requires EPEL
         "python-httplib2": {
-            # This might be way to old :(
             "version": "0.4*",
-            "removable": true
+            "removable": true,
+            "meta": {
+                "epel" : true
+            }
         }
     },
     "fedora-16": {

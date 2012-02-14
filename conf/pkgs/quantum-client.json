@@ -11,10 +11,12 @@
         }
     },
     "rhel-6": {
-        # Requires EPEL
         "python-gflags": {
             "version": "1.4*",
-            "removable": true
+            "removable": true,
+            "meta": {
+                "epel" : true
+            }
         }
     },
     "fedora-16": {

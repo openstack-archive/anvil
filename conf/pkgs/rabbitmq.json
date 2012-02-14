@@ -11,10 +11,12 @@
         }
     },
     "rhel-6": {
-        # Requires EPEL
         "rabbitmq-server": {
             "version": "2.6*",
             "removable": true,
+            "meta": {
+                "epel" : true
+            },
             "pre-install": [
                 {
                     # Qpidd runs on the same port

@@ -42,9 +42,9 @@
             "version": "3.7*",
             "removable": true
         },
-	"xfsprogs": {
+        "xfsprogs": {
             "version": "3.1*",
-	    "removable": true
+            "removable": true
         }
     },
     "rhel-6": {

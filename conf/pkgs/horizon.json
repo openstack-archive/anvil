@@ -94,20 +94,26 @@
             "version": "1.7.4*",
             "removable": true
         },
-        # Requires EPEL
         "python-webob1.0": {
             "version": "1.0*",
-            "removable": true
+            "removable": true,
+            "meta": {
+                "epel" : true
+            }
         },
-        # Requires EPEL
         "python-kombu": {
             "version": "1.1*",
-            "removable": true
+            "removable": true,
+            "meta": {
+                "epel" : true
+            }
         },
-        # Requires EPEL
         "python-eventlet": {
             "version": "0.9*",
-            "removable": true
+            "removable": true,
+            "meta": {
+                "epel" : true
+            }
         }
     },
     # initially stolen from ubuntu-oneric
