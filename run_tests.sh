@@ -118,7 +118,7 @@ function run_tests {
   ${wrapper} $RUNTESTS 2>$OFN | tee $OFN
   # If we get some short import error right away, print the error log directly
   RESULT=$?
-  echo "Check '$OFN' for a full report."
+  echo "Check '$OFN' for a full error report."
   if [ "$RESULT" -ne "0" ];
   then
     ERRSIZE=`wc -l $OFN | awk '{print \$1}'`
@@ -204,6 +204,6 @@ if [ $coverage -eq 1 ]; then
     echo "Generating coverage report in covhtml/"
     ${wrapper} coverage combine
     ${wrapper} coverage html -d covhtml -i
-    ${wrapper} coverage report --omit='/usr*,keystone/test*,.,setup.py,*egg*,/Library*,*.xml,*.tpl'
+    ${wrapper} coverage report --omit='/usr*,devstack/test*,.,setup.py,*egg*,/Library*,*.xml,*.tpl'
 fi
 
