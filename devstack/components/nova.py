@@ -203,8 +203,10 @@ class NovaUninstaller(comp.PythonUninstallComponent):
         env['ENABLED_SERVICES'] = ",".join(sub_components)
         env['BIN_DIR'] = self.bindir
         env['VOLUME_NAME_PREFIX'] = self.cfg.get('nova', 'volume_name_prefix')
-        cmd = CLEANER_CMD_ROOT + [sh.joinpths(self.bindir, CLEANER_DATA_CONF)]
-        sh.execute(*cmd, run_as_root=True, env_overrides=env)
+        cleaner_fn = sh.joinpths(self.bindir, CLEANER_DATA_CONF)
+        if sh.isfile(cleaner_fn):
+            cmd = CLEANER_CMD_ROOT + [cleaner_fn]
+            sh.execute(*cmd, run_as_root=True, env_overrides=env)
 
     def _clear_libvirt_domains(self):
         virt_driver = self.cfg.get('nova', 'virt_driver')
