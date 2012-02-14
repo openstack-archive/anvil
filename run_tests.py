@@ -30,16 +30,16 @@ def parse_suite_filter():
     """ Parses out -O or --only argument and returns the value after it as the
     filter. Removes it from sys.argv in the process. """
 
-    our_suite_filter = None
+    oursuitefilter = None
     if '-O' in sys.argv or '--only' in sys.argv:
         for i in range(len(sys.argv)):
             if sys.argv[i] in ['-O', '--only']:
                 if len(sys.argv) > i + 1:
                     # Remove -O/--only settings from sys.argv
                     sys.argv.pop(i)
-                    our_suite_filter = sys.argv.pop(i)
+                    oursuitefilter = sys.argv.pop(i)
                     break
-    return our_suite_filter
+    return oursuitefilter
 
 
 if __name__ == '__main__':
@@ -51,7 +51,7 @@ if __name__ == '__main__':
             sys.exit(2)
     #Run test suites
     if len(TESTS) > 1:
-        cwd_directory = os.getcwd()
+        cwddirectory = os.getcwd()
         for test_num, test_cls in enumerate(TESTS):
             try:
                 result = test_cls().run()
@@ -65,7 +65,7 @@ if __name__ == '__main__':
                 sys.exit(1)
             # Collect coverage from each run. They'll be combined later in .sh
             if '--with-coverage' in sys.argv:
-                coverage_file = os.path.join(cwd_directory, ".coverage")
+                coverage_file = os.path.join(cwddirectory, ".coverage")
                 target_file = "%s.%s" % (coverage_file, test_cls.__name__)
                 try:
                     if os.path.exists(target_file):
