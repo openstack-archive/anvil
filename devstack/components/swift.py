@@ -20,8 +20,9 @@ from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
+from devstack import utils
 
-# id
+#id
 TYPE = settings.SWIFT
 LOG = logging.getLogger("devstack.components.swift")
 
@@ -42,15 +43,23 @@ CONFIGS = [SWIFT_CONF, PROXY_SERVER_CONF, ACCOUNT_SERVER_CONF,
            CONTAINER_SERVER_CONF, OBJECT_SERVER_CONF, RSYNC_CONF,
            SYSLOG_CONF, SWIFT_MAKERINGS, SWIFT_STARTMAIN]
 SWIFT_RSYNC_LOC = '/etc/rsyslog.d/10-swift.conf'
+DEF_LOOP_SIZE = 1000000
+
+#adjustments to rsync/rsyslog
 RSYNC_CONF_LOC = '/etc/default/rsync'
 RSYNCD_CONF_LOC = '/etc/rsyncd.conf'
 RSYNC_SERVICE_RESTART = ['service', 'rsync', 'restart']
 RSYSLOG_SERVICE_RESTART = ['service', 'rsyslog', 'restart']
 RSYNC_ON_OFF_RE = re.compile(r'^\s*RSYNC_ENABLE\s*=\s*(.*)$', re.I)
+
+#defines our auth service type
 AUTH_SERVICE = 'keystone'
+
+#defines what type of loopback filesystem we will make
+#xfs is preferred due to its extended attributes
 FS_TYPE = "xfs"
 
-# subdirs of the git checkout
+#subdirs of the git checkout
 BIN_DIR = 'bin'
 CONFIG_DIR = 'etc'
 LOG_DIR = 'logs'
@@ -126,51 +135,59 @@ class SwiftInstaller(comp.PythonInstallComponent):
             'SWIFT_HASH': self.cfg.get('passwords', 'swift_hash'),
             'SWIFT_LOGDIR': self.logdir,
             'SWIFT_PARTITION_POWER_SIZE': self.cfg.get('swift', 'partition_power_size'),
+            #leave these alone, will be adjusted later
             'NODE_PATH': '%NODE_PATH%',
             'BIND_PORT': '%BIND_PORT%',
-            'LOG_FACILITY': '%LOG_FACILITY%'
-            }
+            'LOG_FACILITY': '%LOG_FACILITY%',
+        }
 
-    def __create_data_location(self):
+    def _create_data_location(self):
+        loop_size = self.cfg.get('swift', 'loopback_disk_size')
+        if not loop_size:
+            loop_size = DEF_LOOP_SIZE
+        else:
+            loop_size = utils.to_bytes(loop_size)
         sh.create_loopback_file(fname=self.fs_image,
-                                size=self.cfg.getint('swift', 'loopback_disk_size'),
+                                size=loop_size,
                                 fs_type=FS_TYPE)
         self.tracewriter.file_touched(self.fs_image)
         sh.mount_loopback_file(self.fs_image, self.fs_dev, FS_TYPE)
         sh.chown_r(self.fs_dev, sh.geteuid(), sh.getegid())
 
-    def __create_node_config(self, node_number, port):
+    def _create_node_config(self, node_number, port):
         for t in ['object', 'container', 'account']:
-            sh.copy_replace_file(sh.joinpths(self.cfgdir, '%s-server.conf' % t),
-                                 sh.joinpths(self.cfgdir, '%s-server/%d.conf' % (t, node_number)),
-                                 {
-                                  '%NODE_PATH%': sh.joinpths(self.datadir, str(node_number)),
-                                  '%BIND_PORT%': str(port),
-                                  '%LOG_FACILITY%': str(2 + node_number)
-                                 })
+            src_fn = sh.joinpths(self.cfgdir, '%s-server.conf' % t)
+            tgt_fn = sh.joinpths(self.cfgdir, '%s-server/%d.conf' % (t, node_number))
+            adjustments = {
+                           '%NODE_PATH%': sh.joinpths(self.datadir, str(node_number)),
+                           '%BIND_PORT%': str(port),
+                           '%LOG_FACILITY%': str(2 + node_number),
+                          }
+            sh.copy_replace_file(src_fn, tgt_fn, adjustments)
             port += 1
 
-    def __delete_templates(self):
+    def _delete_templates(self):
         for t in ['object', 'container', 'account']:
             sh.unlink(sh.joinpths(self.cfgdir, '%s-server.conf' % t))
 
-    def __create_nodes(self):
+    def _create_nodes(self):
         for i in range(1, 5):
             self.tracewriter.make_dir(sh.joinpths(self.fs_dev, '%d/node' % i))
             self.tracewriter.symlink(sh.joinpths(self.fs_dev, str(i)),
                                      sh.joinpths(self.datadir, str(i)))
-            self.__create_node_config(i, 6010 + (i - 1) * 5)
-        self.__delete_templates()
+            start_port = (6010 + (i - 1) * 5)
+            self._create_node_config(i, start_port)
+        self._delete_templates()
 
-    def __turn_on_rsync(self):
+    def _turn_on_rsync(self):
         self.tracewriter.symlink(sh.joinpths(self.cfgdir, RSYNC_CONF), RSYNCD_CONF_LOC)
         sh.replace_in(RSYNC_CONF_LOC, RSYNC_ON_OFF_RE, 'RSYNC_ENABLE=true', True)
 
-    def __create_log_dirs(self):
+    def _create_log_dirs(self):
         self.tracewriter.make_dir(sh.joinpths(self.logdir, 'hourly'))
         self.tracewriter.symlink(sh.joinpths(self.cfgdir, SYSLOG_CONF), SWIFT_RSYNC_LOC)
 
-    def __setup_binaries(self):
+    def _setup_binaries(self):
         sh.move(sh.joinpths(self.cfgdir, SWIFT_MAKERINGS), self.makerings_file)
         sh.chmod(self.makerings_file, 0777)
         self.tracewriter.file_touched(self.makerings_file)
@@ -178,16 +195,16 @@ class SwiftInstaller(comp.PythonInstallComponent):
         sh.chmod(self.startmain_file, 0777)
         self.tracewriter.file_touched(self.startmain_file)
 
-    def __make_rings(self):
+    def _make_rings(self):
         sh.execute(self.makerings_file, run_as_root=True)
 
     def post_install(self):
-        self.__create_data_location()
-        self.__create_nodes()
-        self.__turn_on_rsync()
-        self.__create_log_dirs()
-        self.__setup_binaries()
-        self.__make_rings()
+        self._create_data_location()
+        self._create_nodes()
+        self._turn_on_rsync()
+        self._create_log_dirs()
+        self._setup_binaries()
+        self._make_rings()
 
 
 class SwiftRuntime(comp.PythonRuntime):
