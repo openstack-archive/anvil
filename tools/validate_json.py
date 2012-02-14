@@ -32,6 +32,7 @@ parser.add_option('-r', type="string", default='.json$',
 def main():
     files = find_matching_files(args.path, args.regexp)
     results = True
+    print("Validating %s json files (found using regex %s in path %s)" % (len(files), args.regexp, args.path))
     for path in files:
         results &= validate_json(path)
     # Invert our test results to produce a status code
