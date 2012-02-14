@@ -127,7 +127,6 @@ def print_help():
 
  $ tools/with_venv.sh <your command>
 
- Also, make test will automatically use the virtualenv.
     """
     print help
 
