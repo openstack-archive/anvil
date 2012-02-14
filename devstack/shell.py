@@ -17,7 +17,7 @@
 import fileinput
 import getpass
 import grp
-import os.path
+import os
 import pwd
 import shutil
 import subprocess
@@ -460,20 +460,23 @@ def chmod(fname, mode):
     os.chmod(fname, mode)
 
 
-def replace_in_file(fname, search, replace, run_as_root=False):
+def replace_in(fn, search, replace, run_as_root=False):
     with Rooted(run_as_root):
-        # fileinput with inplace=1 moves file to tmp and redirects stdio to file
-        for line in fileinput.input(fname, inplace=1):
-            if search in line:
-                line = line.replace(search, replace)
-                print line
+        contents = load_file(fn)
+
+        def replacer(match):
+            return replace
+
+        (contents, num_changed) = search.subn(replacer, contents)
+        if num_changed:
+            write_file(fn, contents)
 
 
-def copy_replace_file(fsrc, fdst, map_):
+def copy_replace_file(fsrc, fdst, linemap):
     files = mkdirslist(dirname(fdst))
     with open(fdst, 'w') as fh:
         for line in fileinput.input(fsrc):
-            for (k, v) in map_.items():
+            for (k, v) in linemap.items():
                 line = line.replace(k, v)
             fh.write(line)
     return files

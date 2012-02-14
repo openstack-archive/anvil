@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import re
+
 from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
@@ -39,10 +41,19 @@ DEVICE_PATH = 'drives/sdb1'
 CONFIGS = [SWIFT_CONF, PROXY_SERVER_CONF, ACCOUNT_SERVER_CONF,
            CONTAINER_SERVER_CONF, OBJECT_SERVER_CONF, RSYNC_CONF,
            SYSLOG_CONF, SWIFT_MAKERINGS, SWIFT_STARTMAIN]
+SWIFT_RSYNC_LOC = '/etc/rsyslog.d/10-swift.conf'
+RSYNC_CONF_LOC = '/etc/default/rsync'
+RSYNCD_CONF_LOC = '/etc/rsyncd.conf'
+RSYNC_SERVICE_RESTART = ['service', 'rsync', 'restart']
+RSYSLOG_SERVICE_RESTART = ['service', 'rsyslog', 'restart']
+RSYNC_ON_OFF_RE = re.compile(r'^\s*RSYNC_ENABLE\s*=\s*(.*)$', re.I)
+
+AUTH_SERVICE = 'keystone'
 
 # subdirs of the git checkout
 BIN_DIR = 'bin'
 CONFIG_DIR = 'etc'
+LOG_DIR = 'logs'
 
 #the pkg json files swift requires for installation
 REQ_PKGS = ['general.json', 'swift.json']
@@ -52,17 +63,17 @@ class SwiftUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
         self.datadir = sh.joinpths(self.appdir, self.cfg.get('swift', 'data_location'))
+        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
+        self.bindir = sh.joinpths(self.appdir, BIN_DIR)
+        self.logdir = sh.joinpths(self.datadir, LOG_DIR)
 
     def pre_uninstall(self):
         sh.umount(sh.joinpths(self.datadir, DEVICE_PATH))
-        sh.replace_in_file('/etc/default/rsync',
-                           'RSYNC_ENABLE=true',
-                           'RSYNC_ENABLE=false',
-                           run_as_root=True)
+        sh.replace_in(RSYNC_CONF_LOC, RSYNC_ON_OFF_RE, 'RSYNC_ENABLE=false', True)
 
     def post_uninstall(self):
-        sh.execute('restart', 'rsyslog', run_as_root=True)
-        sh.execute('/etc/init.d/rsync', 'restart', run_as_root=True)
+        sh.execute(*RSYSLOG_SERVICE_RESTART, run_as_root=True)
+        sh.execute(*RSYNC_SERVICE_RESTART, run_as_root=True)
 
 
 class SwiftInstaller(comp.PythonInstallComponent):
@@ -71,12 +82,12 @@ class SwiftInstaller(comp.PythonInstallComponent):
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
         self.datadir = sh.joinpths(self.appdir, self.cfg.get('swift', 'data_location'))
-        self.logdir = sh.joinpths(self.datadir, 'logs')
+        self.logdir = sh.joinpths(self.datadir, LOG_DIR)
         self.startmain_file = sh.joinpths(self.bindir, SWIFT_STARTMAIN)
         self.makerings_file = sh.joinpths(self.bindir, SWIFT_MAKERINGS)
         self.fs_dev = sh.joinpths(self.datadir, DEVICE_PATH)
         self.fs_image = sh.joinpths(self.datadir, SWIFT_IMG)
-        self.auth_server = 'keystone'
+        self.auth_server = AUTH_SERVICE
 
     def _get_download_locations(self):
         places = list()
@@ -114,8 +125,7 @@ class SwiftInstaller(comp.PythonInstallComponent):
             'AUTH_SERVER': self.auth_server,
             'SWIFT_HASH': self.cfg.get('passwords', 'swift_hash'),
             'SWIFT_LOGDIR': self.logdir,
-            'SWIFT_PARTITION_POWER_SIZE': self.cfg.get('swift',
-                                                       'partition_power_size'),
+            'SWIFT_PARTITION_POWER_SIZE': self.cfg.get('swift', 'partition_power_size'),
             'NODE_PATH': '%NODE_PATH%',
             'BIND_PORT': '%BIND_PORT%',
             'LOG_FACILITY': '%LOG_FACILITY%'
@@ -123,18 +133,16 @@ class SwiftInstaller(comp.PythonInstallComponent):
 
     def __create_data_location(self):
         sh.create_loopback_file(fname=self.fs_image,
-                                size=int(self.cfg.get('swift',
-                                                  'loopback_disk_size')),
+                                size=int(self.cfg.get('swift', 'loopback_disk_size')),
                                 fs_type='xfs')
         self.tracewriter.file_touched(self.fs_image)
         sh.mount_loopback_file(self.fs_image, self.fs_dev, 'xfs')
         sh.chown_r(self.fs_dev, sh.geteuid(), sh.getegid())
 
     def __create_node_config(self, node_number, port):
-        for type_ in ['object', 'container', 'account']:
-            sh.copy_replace_file(sh.joinpths(self.cfgdir, '%s-server.conf' % type_),
-                                 sh.joinpths(self.cfgdir, '%s-server/%d.conf' \
-                                                 % (type_, node_number)),
+        for t in ['object', 'container', 'account']:
+            sh.copy_replace_file(sh.joinpths(self.cfgdir, '%s-server.conf' % t),
+                                 sh.joinpths(self.cfgdir, '%s-server/%d.conf' % (t, node_number)),
                                  {
                                   '%NODE_PATH%': sh.joinpths(self.datadir, str(node_number)),
                                   '%BIND_PORT%': str(port),
@@ -143,39 +151,30 @@ class SwiftInstaller(comp.PythonInstallComponent):
             port += 1
 
     def __delete_templates(self):
-        for type_ in ['object', 'container', 'account']:
-            sh.unlink(sh.joinpths(self.cfgdir, '%s-server.conf' % type_))
+        for t in ['object', 'container', 'account']:
+            sh.unlink(sh.joinpths(self.cfgdir, '%s-server.conf' % t))
 
     def __create_nodes(self):
         for i in range(1, 5):
-            self.tracewriter.make_dir(sh.joinpths(self.fs_dev,
-                                                    '%d/node' % i))
+            self.tracewriter.make_dir(sh.joinpths(self.fs_dev, '%d/node' % i))
             self.tracewriter.symlink(sh.joinpths(self.fs_dev, str(i)),
                                      sh.joinpths(self.datadir, str(i)))
             self.__create_node_config(i, 6010 + (i - 1) * 5)
         self.__delete_templates()
 
     def __turn_on_rsync(self):
-        self.tracewriter.symlink(sh.joinpths(self.cfgdir, RSYNC_CONF),
-                                 '/etc/rsyncd.conf')
-        sh.replace_in_file('/etc/default/rsync',
-                           'RSYNC_ENABLE=false',
-                           'RSYNC_ENABLE=true',
-                           run_as_root=True)
+        self.tracewriter.symlink(sh.joinpths(self.cfgdir, RSYNC_CONF), RSYNCD_CONF_LOC)
+        sh.replace_in(RSYNC_CONF_LOC, RSYNC_ON_OFF_RE, 'RSYNC_ENABLE=true', True)
 
     def __create_log_dirs(self):
         self.tracewriter.make_dir(sh.joinpths(self.logdir, 'hourly'))
-        self.tracewriter.symlink(sh.joinpths(self.cfgdir, SYSLOG_CONF),
-                                 '/etc/rsyslog.d/10-swift.conf')
+        self.tracewriter.symlink(sh.joinpths(self.cfgdir, SYSLOG_CONF), SWIFT_RSYNC_LOC)
 
     def __setup_binaries(self):
-        sh.move(sh.joinpths(self.cfgdir, SWIFT_MAKERINGS),
-                self.makerings_file)
+        sh.move(sh.joinpths(self.cfgdir, SWIFT_MAKERINGS), self.makerings_file)
         sh.chmod(self.makerings_file, 0777)
         self.tracewriter.file_touched(self.makerings_file)
-
-        sh.move(sh.joinpths(self.cfgdir, SWIFT_STARTMAIN),
-                self.startmain_file)
+        sh.move(sh.joinpths(self.cfgdir, SWIFT_STARTMAIN), self.startmain_file)
         sh.chmod(self.startmain_file, 0777)
         self.tracewriter.file_touched(self.startmain_file)
 
@@ -194,18 +193,21 @@ class SwiftInstaller(comp.PythonInstallComponent):
 class SwiftRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
+        self.datadir = sh.joinpths(self.appdir, self.cfg.get('swift', 'data_location'))
+        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
+        self.logdir = sh.joinpths(self.datadir, LOG_DIR)
 
     def start(self):
-        sh.execute('restart', 'rsyslog', run_as_root=True)
-        sh.execute('/etc/init.d/rsync', 'restart', run_as_root=True)
-        sh.execute(sh.joinpths(self.bindir, SWIFT_INIT), 'all', 'start',
-                   run_as_root=True)
+        sh.execute(*RSYSLOG_SERVICE_RESTART, run_as_root=True)
+        sh.execute(*RSYNC_SERVICE_RESTART, run_as_root=True)
+        swift_start_cmd = [sh.joinpths(self.bindir, SWIFT_INIT)] + ['all', 'start']
+        sh.execute(*swift_start_cmd, run_as_root=True)
 
     def stop(self):
-        sh.execute(sh.joinpths(self.bindir, SWIFT_INIT), 'all', 'stop',
-                   run_as_root=True)
+        swift_stop_cmd = [sh.joinpths(self.bindir, SWIFT_INIT)] + ['all', 'stop']
+        sh.execute(*swift_stop_cmd, run_as_root=True)
 
     def restart(self):
-        sh.execute(sh.joinpths(self.bindir, SWIFT_INIT), 'all', 'restart',
-                   run_as_root=True)
+        swift_restart_cmd = [sh.joinpths(self.bindir, SWIFT_INIT)] + ['all', 'restart']
+        sh.execute(*swift_restart_cmd, run_as_root=True)

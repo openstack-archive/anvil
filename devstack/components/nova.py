@@ -16,7 +16,6 @@
 
 import io
 import os
-import stat
 
 from devstack import cfg
 from devstack import component as comp
