@@ -5,10 +5,10 @@ Optionally, replaces valid JSON files with their pretty-printed
 counterparts.
 """
 
-import optparse
 import errno
 import json
 import logging
+import optparse
 import os
 import re 
 
