@@ -183,6 +183,7 @@ CLEANER_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
 
 #xenserver specific
 XS_DEF_INTERFACE = 'eth1'
+XA_CONNECTION_ADDR = '169.254.0.1'
 XA_CONNECTION_PORT = 80
 
 #pip files that nova requires
@@ -716,7 +717,7 @@ class NovaConfConfigurator(object):
         drive_canon = driver.lower().strip()
         if drive_canon == 'xenserver':
             nova_conf.add('connection_type', 'xenapi')
-            xa_url = urlunparse(('http', "%s:%s" % ('169.254.0.1', XA_CONNECTION_PORT), "", '', '', ''))
+            xa_url = urlunparse(('http', "%s:%s" % (XA_CONNECTION_ADDR, XA_CONNECTION_PORT), "", '', '', ''))
             nova_conf.add('xenapi_connection_url', xa_url)
             nova_conf.add('xenapi_connection_username', 'root')
             nova_conf.add('xenapi_connection_password', self.cfg.get("passwords", "xenapi_connection"))
