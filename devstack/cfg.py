@@ -40,46 +40,76 @@ PW_PROMPTS = {
 }
 
 
-class StackConfigParser(ConfigParser.RawConfigParser):
+class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
+    DEF_INT = 0
+    DEF_FLOAT = 0.0
+    DEF_BOOLEAN = False
+    DEF_STRING = ''
+
     def __init__(self):
         ConfigParser.RawConfigParser.__init__(self)
+        #make option names case sensitive
+        self.optionxform = str
+
+    def get(self, section, option):
+        value = IgnoreMissingConfigParser.DEF_STRING
+        try:
+            value = ConfigParser.RawConfigParser.get(self, section, option)
+        except ConfigParser.NoSectionError:
+            pass
+        except ConfigParser.NoOptionError:
+            pass
+        return value
+
+    def getboolean(self, section, option):
+        if not self.has_option(section, option):
+            return IgnoreMissingConfigParser.DEF_BOOLEAN
+        return ConfigParser.RawConfigParser.getboolean(self, section, option)
+
+    def getfloat(self, section, option):
+        if not self.has_option(section, option):
+            return IgnoreMissingConfigParser.DEF_FLOAT
+        return ConfigParser.RawConfigParser.getfloat(self, section, option)
+
+    def getint(self, section, option):
+        if not self.has_option(section, option):
+            return IgnoreMissingConfigParser.DEF_INT
+        return ConfigParser.RawConfigParser.getint(self, section, option)
+
+
+class StackConfigParser(IgnoreMissingConfigParser):
+    def __init__(self):
+        IgnoreMissingConfigParser.__init__(self)
         self.pws = dict()
         self.configs_fetched = dict()
         self.db_dsns = dict()
 
     def _makekey(self, section, option):
-        return "/".join([str(section), str(option)])
+        joinwhat = []
+        if section is not None:
+            joinwhat.append(str(section))
+        if option is not None:
+            joinwhat.append(str(option))
+        return "/".join(joinwhat)
 
     def _resolve_special(self, section, option, value_gotten, auto_pw):
+        key = self._makekey(section, option)
         if value_gotten and len(value_gotten):
             if section == 'passwords':
-                #ensure we store it as a password
-                key = self._makekey(section, option)
                 self.pws[key] = value_gotten
-            return value_gotten
-        if section == 'host' and option == 'ip':
+        elif section == 'host' and option == 'ip':
             LOG.debug("Host ip from configuration/environment was empty, programatically attempting to determine it.")
-            host_ip = utils.get_host_ip()
-            LOG.debug("Determined your host ip to be: \"%s\"" % (host_ip))
-            return host_ip
-        elif section == 'passwords':
-            if auto_pw:
-                key = self._makekey(section, option)
-                LOG.debug("Being forced to ask for password for \"%s\" since the configuration value is empty.", key)
-                prompt = PW_PROMPTS.get(option)
-                if not prompt:
-                    prompt = PW_TMPL % (key)
-                pw = sh.password(prompt)
-                self.pws[key] = pw
-                return pw
-            else:
-                return value_gotten
-        else:
-            return value_gotten
+            value_gotten = utils.get_host_ip()
+            LOG.debug("Determined your host ip to be: \"%s\"" % (value_gotten))
+        elif section == 'passwords' and auto_pw:
+            LOG.debug("Being forced to ask for password for \"%s\" since the configuration value is empty.", key)
+            prompt = PW_PROMPTS.get(option, PW_TMPL % (key))
+            value_gotten = sh.password(prompt)
+            self.pws[key] = value_gotten
+        return value_gotten
 
     def get(self, section, option, auto_pw=True):
         key = self._makekey(section, option)
-        value = None
         if key in self.configs_fetched:
             value = self.configs_fetched.get(key)
             LOG.debug("Fetched cached value \"%s\" for param \"%s\"" % (value, key))
@@ -88,8 +118,7 @@ class StackConfigParser(ConfigParser.RawConfigParser):
             gotten_value = self._get_special(section, option)
             value = self._resolve_special(section, option, gotten_value, auto_pw)
             LOG.debug("Fetched \"%s\" for \"%s\"" % (value, key))
-            if value is not None:
-                self.configs_fetched[key] = value
+            self.configs_fetched[key] = value
         return value
 
     def _extract_default(self, default_value):
@@ -108,20 +137,14 @@ class StackConfigParser(ConfigParser.RawConfigParser):
 
     def _get_special(self, section, option):
         key = self._makekey(section, option)
-        parent_val = None
-        try:
-            parent_val = ConfigParser.RawConfigParser.get(self, section, option)
-        except ConfigParser.NoOptionError:
-            pass
-        if parent_val is None:
-            return None
-        extracted_val = None
-        mtch = ENV_PAT.match(parent_val)
+        value = IgnoreMissingConfigParser.get(self, section, option)
+        extracted_val = ''
+        mtch = ENV_PAT.match(value)
         if mtch:
             env_key = mtch.group(1).strip()
             def_val = mtch.group(2)
             if not def_val and not env_key:
-                msg = "Invalid bash-like value \"%s\" for \"%s\"" % (parent_val, key)
+                msg = "Invalid bash-like value \"%s\" for \"%s\"" % (value, key)
                 raise excp.BadParamException(msg)
             if not env_key or env.get_key(env_key) is None:
                 LOG.debug("Extracting default value from config provided default value \"%s\" for \"%s\"" % (def_val, key))
@@ -133,8 +156,8 @@ class StackConfigParser(ConfigParser.RawConfigParser):
                 LOG.debug("Using enviroment provided value \"%s\" for \"%s\"" % (env_val, key))
                 extracted_val = env_val
         else:
-            LOG.debug("Using raw config provided value \"%s\" for \"%s\"" % (parent_val, key))
-            extracted_val = parent_val
+            LOG.debug("Using raw config provided value \"%s\" for \"%s\"" % (value, key))
+            extracted_val = value
         return extracted_val
 
     def get_dbdsn(self, dbname):
@@ -172,48 +195,6 @@ class StackConfigParser(ConfigParser.RawConfigParser):
         #store for later...
         self.db_dsns[dbname] = dsn
         return dsn
-
-
-class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
-    DEF_INT = 0
-    DEF_FLOAT = 0.0
-    DEF_BOOLEAN = False
-
-    def __init__(self):
-        ConfigParser.RawConfigParser.__init__(self)
-        #make option names case sensitive
-        self.optionxform = str
-
-    def get(self, section, option):
-        value = None
-        try:
-            value = ConfigParser.RawConfigParser.get(self, section, option)
-        except ConfigParser.NoSectionError:
-            pass
-        except ConfigParser.NoOptionError:
-            pass
-        return value
-
-    def getboolean(self, section, option):
-        value = self.get(section, option)
-        if value is None:
-            #not there so don't let the parent blowup
-            return IgnoreMissingConfigParser.DEF_BOOLEAN
-        return ConfigParser.RawConfigParser.getboolean(self, section, option)
-
-    def getfloat(self, section, option):
-        value = self.get(section, option)
-        if value is None:
-            #not there so don't let the parent blowup
-            return IgnoreMissingConfigParser.DEF_FLOAT
-        return ConfigParser.RawConfigParser.getfloat(self, section, option)
-
-    def getint(self, section, option):
-        value = self.get(section, option)
-        if value is None:
-            #not there so don't let the parent blowup
-            return IgnoreMissingConfigParser.DEF_INT
-        return ConfigParser.RawConfigParser.getint(self, section, option)
 
 
 def add_header(fn, contents):

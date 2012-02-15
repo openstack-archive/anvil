@@ -15,11 +15,6 @@
 #    under the License.
 
 import logging
-import os
-import sys
-
-#requires http://pypi.python.org/pypi/termcolor
-#but the colors make it worth it :-)
 from termcolor import colored
 
 COLOR_MAP = {
@@ -48,19 +43,3 @@ class TermFormatter(logging.Formatter):
         if attrs:
             record.msg = colored(record.msg, attrs=attrs)
         return logging.Formatter.format(self, record)
-
-
-class TermHandler(logging.Handler):
-    STREAM = sys.stdout
-    DO_FLUSH = True
-    NL = os.linesep
-
-    def __init__(self):
-        logging.Handler.__init__(self)
-
-    def emit(self, record):
-        msg = self.format(record)
-        if msg is not None:
-            TermHandler.STREAM.write(msg + TermHandler.NL)
-            if TermHandler.DO_FLUSH:
-                TermHandler.STREAM.flush()

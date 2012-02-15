@@ -52,9 +52,10 @@ def main():
         print(msg)
         return 1
 
-    #drop to usermode
-    sh.user_mode(False)
+
     try:
+        #drop to usermode
+        sh.user_mode(False)
         # now let's go
         started_ok = actions.run(args)
         if not started_ok:

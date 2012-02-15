@@ -511,8 +511,11 @@ class NovaConfConfigurator(object):
     def _getbool(self, name):
         return self.cfg.getboolean('nova', name)
 
-    def _getstr(self, name):
-        return self.cfg.get('nova', name)
+    def _getstr(self, name, default=''):
+        val = self.cfg.get('nova', name)
+        if val is None:
+            return default
+        return val
 
     def configure(self):
         nova_conf = NovaConf()
