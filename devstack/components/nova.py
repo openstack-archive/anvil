@@ -202,7 +202,6 @@ class NovaUninstaller(comp.PythonUninstallComponent):
         self._clean_it()
 
     def _clean_it(self):
-        LOG.info("Cleaning up your system.")
         #these environment additions are important
         #in that they eventually affect how this script runs
         sub_components = self.component_opts or SUBCOMPONENTS
@@ -212,6 +211,7 @@ class NovaUninstaller(comp.PythonUninstallComponent):
         env['VOLUME_NAME_PREFIX'] = self.cfg.get('nova', 'volume_name_prefix')
         cleaner_fn = sh.joinpths(self.bindir, CLEANER_DATA_CONF)
         if sh.isfile(cleaner_fn):
+            LOG.info("Cleaning up your system by running nova cleaner script [%s]." % (cleaner_fn))
             cmd = CLEANER_CMD_ROOT + [cleaner_fn]
             sh.execute(*cmd, run_as_root=True, env_overrides=env)
 
