@@ -184,8 +184,12 @@ CLEANER_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
 #xenserver specific
 XS_DEF_INTERFACE = 'eth1'
 XA_CONNECTION_ADDR = '169.254.0.1'
+XS_VNC_ADDR = XA_CONNECTION_ADDR
 XA_CONNECTION_PORT = 80
 XA_DEF_USER = 'root'
+
+#vnc specific
+VNC_DEF_ADDR = '127.0.0.1'
 
 #pip files that nova requires
 REQ_PIPS = ['general.json', 'nova.json']
@@ -624,19 +628,26 @@ class NovaConfConfigurator(object):
 
         if self.xvnc_enabled:
             nova_conf.add('xvpvncproxy_base_url', self._getstr('xvpvncproxy_url'))
-        nova_conf.add('vncserver_listen', self._getstr('vncserver_listen'))
+
+        vncserverlisten = self._getstr('vncserver_listen')
+        if vncserverlisten:
+            nova_conf.add('vncserver_listen', vncserverlisten)
+
         vncserver_proxyclient_address = self._getstr('vncserver_proxyclient_address')
 
-        # If no vnc proxy address was specified, pick a default based on which
-        # driver we're using
-        virt_driver = self._getstr('virt_driver')
+        # If no vnc proxy address was specified, 
+        # pick a default based on which
+        # driver we're using.
         if not vncserver_proxyclient_address:
-            if virt_driver == 'xenserver':
-                vncserver_proxyclient_address = '169.254.0.1'
+            virt_driver = self._getstr('virt_driver') or ""
+            drive_canon = virt_driver.lower().strip()
+            if drive_canon == 'xenserver':
+                vncserver_proxyclient_address = XS_VNC_ADDR
             else:
-                vncserver_proxyclient_address = '127.0.0.1'
+                vncserver_proxyclient_address = VNC_DEF_ADDR
 
-        nova_conf.add('vncserver_proxyclient_address', vncserver_proxyclient_address)
+        if vncserver_proxyclient_address:
+            nova_conf.add('vncserver_proxyclient_address', vncserver_proxyclient_address)
 
     def _configure_vols(self, nova_conf):
         nova_conf.add('volume_group', self._getstr('volume_group'))
@@ -785,7 +796,8 @@ class NovaConf(object):
                 key_str = self._form_key(key, True)
                 filled_opts = list()
                 for opt in opts:
-                    filled_opts.append(utils.param_replace(str(opt), param_dict))
+                    if opt is not None:
+                        filled_opts.append(utils.param_replace(str(opt), param_dict))
                 full_line = key_str + ",".join(filled_opts)
             gen_lines.append(full_line)
         return gen_lines
