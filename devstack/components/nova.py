@@ -198,7 +198,7 @@ DEF_VIRT_DRIVER = virsh.VIRT_TYPE
 REQ_PIPS = ['general.json', 'nova.json']
 
 
-def _canon_virt_driver(driver):
+def _canon_virt_driver(virt_driver):
     if not virt_driver:
         return DEF_VIRT_DRIVER
     return virt_driver.strip().lower()
@@ -525,7 +525,7 @@ class NovaConfConfigurator(object):
         if not val:
             return default
         return val
-        
+
     def _get_canon_virt_driver(self):
         virt_driver = self._getstr('virt_driver')
         return _canon_virt_driver(virt_driver)
@@ -643,7 +643,7 @@ class NovaConfConfigurator(object):
         if vncserverlisten:
             nova_conf.add('vncserver_listen', vncserverlisten)
 
-        # If no vnc proxy address was specified, 
+        # If no vnc proxy address was specified,
         # pick a default based on which
         # driver we're using.
         vncserver_proxyclient_address = self._getstr('vncserver_proxyclient_address')

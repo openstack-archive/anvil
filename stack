@@ -52,7 +52,6 @@ def main():
         print(msg)
         return 1
 
-
     try:
         #drop to usermode
         sh.user_mode(False)
