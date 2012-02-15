@@ -610,15 +610,22 @@ class NovaConfConfigurator(object):
         self._configure_virt_driver(nova_conf)
 
         #now make it
-        complete_file = nova_conf.generate()
+        generated_content = nova_conf.generate()
 
-        #add any extra flags in?
+        #add any extra flags/lines in?
         extra_flags = self._getstr('extra_flags')
         if extra_flags:
-            full_file = [complete_file, extra_flags]
-            complete_file = utils.joinlinesep(*full_file)
+            new_contents = list()
+            new_contents.append(generated_content)
+            new_contents.append("")
+            extra_lines = extra_flags.splitlines()
+            for line in extra_lines:
+                cleaned_line = line.strip()
+                if len(cleaned_line):
+                    new_contents.append(cleaned_line)
+            generated_content = utils.joinlinesep(*new_contents)
 
-        return complete_file
+        return generated_content
 
     def _configure_image_service(self, nova_conf):
         #what image service we will use
