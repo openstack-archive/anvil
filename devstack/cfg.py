@@ -110,7 +110,6 @@ class StackConfigParser(IgnoreMissingConfigParser):
 
     def get(self, section, option, auto_pw=True):
         key = self._makekey(section, option)
-        value = None
         if key in self.configs_fetched:
             value = self.configs_fetched.get(key)
             LOG.debug("Fetched cached value \"%s\" for param \"%s\"" % (value, key))
