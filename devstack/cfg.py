@@ -44,6 +44,7 @@ class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
     DEF_INT = 0
     DEF_FLOAT = 0.0
     DEF_BOOLEAN = False
+    DEF_STRING = ''
 
     def __init__(self):
         ConfigParser.RawConfigParser.__init__(self)
@@ -51,7 +52,7 @@ class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
         self.optionxform = str
 
     def get(self, section, option):
-        value = None
+        value = IgnoreMissingConfigParser.DEF_STRING
         try:
             value = ConfigParser.RawConfigParser.get(self, section, option)
         except ConfigParser.NoSectionError:
@@ -87,31 +88,22 @@ class StackConfigParser(IgnoreMissingConfigParser):
         return "/".join([str(section), str(option)])
 
     def _resolve_special(self, section, option, value_gotten, auto_pw):
+        key = self._makekey(section, option)
         if value_gotten and len(value_gotten):
             if section == 'passwords':
-                #ensure we store it as a password
-                key = self._makekey(section, option)
                 self.pws[key] = value_gotten
-            return value_gotten
-        if section == 'host' and option == 'ip':
+        elif section == 'host' and option == 'ip':
             LOG.debug("Host ip from configuration/environment was empty, programatically attempting to determine it.")
-            host_ip = utils.get_host_ip()
-            LOG.debug("Determined your host ip to be: \"%s\"" % (host_ip))
-            return host_ip
-        elif section == 'passwords':
-            if auto_pw:
-                key = self._makekey(section, option)
-                LOG.debug("Being forced to ask for password for \"%s\" since the configuration value is empty.", key)
-                prompt = PW_PROMPTS.get(option)
-                if not prompt:
-                    prompt = PW_TMPL % (key)
-                pw = sh.password(prompt)
-                self.pws[key] = pw
-                return pw
-            else:
-                return value_gotten
-        else:
-            return value_gotten
+            value_gotten = utils.get_host_ip()
+            LOG.debug("Determined your host ip to be: \"%s\"" % (value_gotten))
+        elif section == 'passwords' and auto_pw:
+            LOG.debug("Being forced to ask for password for \"%s\" since the configuration value is empty.", key)
+            prompt = PW_PROMPTS.get(option)
+            if not prompt:
+                prompt = PW_TMPL % (key)
+            value_gotten = sh.password(prompt)
+            self.pws[key] = value_gotten
+        return value_gotten
 
     def get(self, section, option, auto_pw=True):
         key = self._makekey(section, option)
@@ -124,8 +116,7 @@ class StackConfigParser(IgnoreMissingConfigParser):
             gotten_value = self._get_special(section, option)
             value = self._resolve_special(section, option, gotten_value, auto_pw)
             LOG.debug("Fetched \"%s\" for \"%s\"" % (value, key))
-            if value is not None:
-                self.configs_fetched[key] = value
+            self.configs_fetched[key] = value
         return value
 
     def _extract_default(self, default_value):
@@ -145,8 +136,6 @@ class StackConfigParser(IgnoreMissingConfigParser):
     def _get_special(self, section, option):
         key = self._makekey(section, option)
         value = IgnoreMissingConfigParser.get(self, section, option)
-        if value is None:
-            return None
         extracted_val = None
         mtch = ENV_PAT.match(value)
         if mtch:
