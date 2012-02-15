@@ -57,7 +57,6 @@
             "version": "0.2*",
             "removable": true
         },
-        # Is this really needed?
         "python-django-nose": {
             "version": "0.1*",
             "removable": true
@@ -66,8 +65,6 @@
             "version": "0.7*",
             "removable": true
         },
-        # Is this really needed?
-        # Why is a rackspace api package here?
         "python-cloudfiles": {
             "version": "1.7.9*",
             "removable": true
@@ -189,8 +186,6 @@
             "version": "0.7*",
             "removable": true
         },
-        # Is this really needed?
-        # Why is a rackspace api package here?
         "python-cloudfiles": {
             "version": "1.7.9*",
             "removable": true

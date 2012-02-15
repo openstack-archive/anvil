@@ -41,7 +41,6 @@
             "version": "5.1*",
             "removable": true
         },
-        #client pkgs are here
         "mysql": {
             "version": "5.1*",
             "removable": true
@@ -52,7 +51,6 @@
             "version": "5.5*",
             "removable": true
         },
-        #client pkgs are here
         "mysql": {
             "version": "5.5*",
             "removable": true

@@ -48,6 +48,7 @@
             "version": "6.2*",
             "removable": true
         },
+        # Only really needed if you plan on using kvm
         "qemu-kvm":  {
             "version": "2*",
             "removable": true

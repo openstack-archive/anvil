@@ -152,7 +152,6 @@
             "removable": false,
             "version": "2.4*"
         },
-        # Seems needed to run venv
         "openldap-devel": {
             # Trashes alot of the base os (so we don't allow it to be removed)
             "removable": true,
@@ -204,7 +203,6 @@
             "removable": false
         },
         "python-sqlite2": {
-            # This might be way to old :(
             "version": "2.3*",
             "removable": true
         },
@@ -232,15 +230,11 @@
             "version": "1.5*",
             "removable": true
         },
-        # Is this right??
-        # This is for libldap2
         "openldap": {
             # Trashes alot of the base os (so we don't allow it to be removed)
             "removable": false,
             "version": "2.4*"
         },
-        # Is this right??
-        # This is for libsasl2
         "cyrus-sasl-lib": {
             # Trashes alot of the base os (so we don't allow it to be removed)
             "version": "2.1*",

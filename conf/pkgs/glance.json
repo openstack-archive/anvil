@@ -132,12 +132,10 @@
             "removable": true
         },
         "pyxattr": {
-            # This might be way to old :(
             "version": "0.5*",
             "removable": true
         },
         "python-httplib2": {
-            # This might be way to old :(
             "version": "0.6*",
             "removable": true
         }
