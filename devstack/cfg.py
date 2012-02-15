@@ -40,9 +40,45 @@ PW_PROMPTS = {
 }
 
 
-class StackConfigParser(ConfigParser.RawConfigParser):
+class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
+    DEF_INT = 0
+    DEF_FLOAT = 0.0
+    DEF_BOOLEAN = False
+
     def __init__(self):
         ConfigParser.RawConfigParser.__init__(self)
+        #make option names case sensitive
+        self.optionxform = str
+
+    def get(self, section, option):
+        value = None
+        try:
+            value = ConfigParser.RawConfigParser.get(self, section, option)
+        except ConfigParser.NoSectionError:
+            pass
+        except ConfigParser.NoOptionError:
+            pass
+        return value
+
+    def getboolean(self, section, option):
+        if not self.has_option(section, option):
+            return IgnoreMissingConfigParser.DEF_BOOLEAN
+        return ConfigParser.RawConfigParser.getboolean(self, section, option)
+
+    def getfloat(self, section, option):
+        if not self.has_option(section, option):
+            return IgnoreMissingConfigParser.DEF_FLOAT
+        return ConfigParser.RawConfigParser.getfloat(self, section, option)
+
+    def getint(self, section, option):
+        if not self.has_option(section, option):
+            return IgnoreMissingConfigParser.DEF_INT
+        return ConfigParser.RawConfigParser.getint(self, section, option)
+
+
+class StackConfigParser(IgnoreMissingConfigParser):
+    def __init__(self):
+        IgnoreMissingConfigParser.__init__(self)
         self.pws = dict()
         self.configs_fetched = dict()
         self.db_dsns = dict()
@@ -108,20 +144,16 @@ class StackConfigParser(ConfigParser.RawConfigParser):
 
     def _get_special(self, section, option):
         key = self._makekey(section, option)
-        parent_val = None
-        try:
-            parent_val = ConfigParser.RawConfigParser.get(self, section, option)
-        except ConfigParser.NoOptionError:
-            pass
-        if parent_val is None:
+        value = IgnoreMissingConfigParser.get(self, section, option)
+        if value is None:
             return None
         extracted_val = None
-        mtch = ENV_PAT.match(parent_val)
+        mtch = ENV_PAT.match(value)
         if mtch:
             env_key = mtch.group(1).strip()
             def_val = mtch.group(2)
             if not def_val and not env_key:
-                msg = "Invalid bash-like value \"%s\" for \"%s\"" % (parent_val, key)
+                msg = "Invalid bash-like value \"%s\" for \"%s\"" % (value, key)
                 raise excp.BadParamException(msg)
             if not env_key or env.get_key(env_key) is None:
                 LOG.debug("Extracting default value from config provided default value \"%s\" for \"%s\"" % (def_val, key))
@@ -133,8 +165,8 @@ class StackConfigParser(ConfigParser.RawConfigParser):
                 LOG.debug("Using enviroment provided value \"%s\" for \"%s\"" % (env_val, key))
                 extracted_val = env_val
         else:
-            LOG.debug("Using raw config provided value \"%s\" for \"%s\"" % (parent_val, key))
-            extracted_val = parent_val
+            LOG.debug("Using raw config provided value \"%s\" for \"%s\"" % (value, key))
+            extracted_val = value
         return extracted_val
 
     def get_dbdsn(self, dbname):
@@ -172,48 +204,6 @@ class StackConfigParser(ConfigParser.RawConfigParser):
         #store for later...
         self.db_dsns[dbname] = dsn
         return dsn
-
-
-class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
-    DEF_INT = 0
-    DEF_FLOAT = 0.0
-    DEF_BOOLEAN = False
-
-    def __init__(self):
-        ConfigParser.RawConfigParser.__init__(self)
-        #make option names case sensitive
-        self.optionxform = str
-
-    def get(self, section, option):
-        value = None
-        try:
-            value = ConfigParser.RawConfigParser.get(self, section, option)
-        except ConfigParser.NoSectionError:
-            pass
-        except ConfigParser.NoOptionError:
-            pass
-        return value
-
-    def getboolean(self, section, option):
-        value = self.get(section, option)
-        if value is None:
-            #not there so don't let the parent blowup
-            return IgnoreMissingConfigParser.DEF_BOOLEAN
-        return ConfigParser.RawConfigParser.getboolean(self, section, option)
-
-    def getfloat(self, section, option):
-        value = self.get(section, option)
-        if value is None:
-            #not there so don't let the parent blowup
-            return IgnoreMissingConfigParser.DEF_FLOAT
-        return ConfigParser.RawConfigParser.getfloat(self, section, option)
-
-    def getint(self, section, option):
-        value = self.get(section, option)
-        if value is None:
-            #not there so don't let the parent blowup
-            return IgnoreMissingConfigParser.DEF_INT
-        return ConfigParser.RawConfigParser.getint(self, section, option)
 
 
 def add_header(fn, contents):
