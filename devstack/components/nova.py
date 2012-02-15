@@ -191,8 +191,17 @@ XA_DEF_USER = 'root'
 #vnc specific
 VNC_DEF_ADDR = '127.0.0.1'
 
+#def virt driver
+DEF_VIRT_DRIVER = virsh.VIRT_TYPE
+
 #pip files that nova requires
 REQ_PIPS = ['general.json', 'nova.json']
+
+
+def _canon_virt_driver(driver):
+    if not virt_driver:
+        return DEF_VIRT_DRIVER
+    return virt_driver.strip().lower()
 
 
 class NovaUninstaller(comp.PythonUninstallComponent):
@@ -220,7 +229,7 @@ class NovaUninstaller(comp.PythonUninstallComponent):
             sh.execute(*cmd, run_as_root=True, env_overrides=env)
 
     def _clear_libvirt_domains(self):
-        virt_driver = self.cfg.get('nova', 'virt_driver')
+        virt_driver = _canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
         if virt_driver == virsh.VIRT_TYPE:
             inst_prefix = self.cfg.get('nova', 'instance_name_prefix')
             libvirt_type = virsh.default(self.cfg.get('nova', 'libvirt_type'))
@@ -402,7 +411,7 @@ class NovaRuntime(comp.PythonRuntime):
         return result
 
     def pre_start(self):
-        virt_driver = self.cfg.get('nova', 'virt_driver')
+        virt_driver = _canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
         if virt_driver == virsh.VIRT_TYPE:
             virt_type = virsh.default(self.cfg.get('nova', 'libvirt_type'))
             LOG.info("Checking that your selected libvirt virtualization type [%s] is working and running." % (virt_type))
@@ -513,9 +522,13 @@ class NovaConfConfigurator(object):
 
     def _getstr(self, name, default=''):
         val = self.cfg.get('nova', name)
-        if val is None:
+        if not val:
             return default
         return val
+        
+    def _get_canon_virt_driver(self):
+        virt_driver = self._getstr('virt_driver')
+        return _canon_virt_driver(virt_driver)
 
     def configure(self):
         nova_conf = NovaConf()
@@ -551,7 +564,7 @@ class NovaConfConfigurator(object):
         nova_conf.add('sql_connection', self.cfg.get_dbdsn('nova'))
 
         #configure anything libvirt releated?
-        virt_driver = self._getstr('virt_driver')
+        virt_driver = self._get_canon_virt_driver()
         if virt_driver == virsh.VIRT_TYPE:
             libvirt_type = virsh.default(self._getstr('libvirt_type'))
             self._configure_libvirt(libvirt_type, nova_conf)
@@ -584,9 +597,7 @@ class NovaConfConfigurator(object):
         nova_conf.add('rabbit_password', self.cfg.get("passwords", "rabbit"))
 
         #where instances will be stored
-        instances_path = self._getstr('instances_path')
-        if not instances_path:
-            instances_path = sh.joinpths(self.component_root, 'instances')
+        instances_path = self._getstr('instances_path', sh.joinpths(self.component_root, 'instances'))
         self._configure_instances_path(instances_path, nova_conf)
 
         #is this a multihost setup?
@@ -611,17 +622,13 @@ class NovaConfConfigurator(object):
 
     def _configure_image_service(self, nova_conf):
         #what image service we will use
-        img_service = self._getstr('img_service')
-        if not img_service:
-            img_service = DEF_IMAGE_SERVICE
+        img_service = self._getstr('img_service', DEF_IMAGE_SERVICE)
         nova_conf.add('image_service', img_service)
 
         #where is glance located?
         if img_service.lower().find("glance") != -1:
-            glance_api_server = self._getstr('glance_server')
-            if not glance_api_server:
-                glance_api_server = "%s:%d" % (self.cfg.get('host', 'ip'),
-                                               DEF_GLANCE_PORT)
+            glance_api_server = self._getstr('glance_server',
+                                               ("%s:%d" % (self.cfg.get('host', 'ip'), DEF_GLANCE_PORT)))
             nova_conf.add('glance_api_servers', glance_api_server)
 
     def _configure_vnc(self, nova_conf):
@@ -636,21 +643,18 @@ class NovaConfConfigurator(object):
         if vncserverlisten:
             nova_conf.add('vncserver_listen', vncserverlisten)
 
-        vncserver_proxyclient_address = self._getstr('vncserver_proxyclient_address')
-
         # If no vnc proxy address was specified, 
         # pick a default based on which
         # driver we're using.
+        vncserver_proxyclient_address = self._getstr('vncserver_proxyclient_address')
         if not vncserver_proxyclient_address:
-            virt_driver = self._getstr('virt_driver') or ""
-            drive_canon = virt_driver.lower().strip()
+            drive_canon = self._get_canon_virt_driver()
             if drive_canon == 'xenserver':
                 vncserver_proxyclient_address = XS_VNC_ADDR
             else:
                 vncserver_proxyclient_address = VNC_DEF_ADDR
 
-        if vncserver_proxyclient_address:
-            nova_conf.add('vncserver_proxyclient_address', vncserver_proxyclient_address)
+        nova_conf.add('vncserver_proxyclient_address', vncserver_proxyclient_address)
 
     def _configure_vols(self, nova_conf):
         nova_conf.add('volume_group', self._getstr('volume_group'))
@@ -687,9 +691,7 @@ class NovaConfConfigurator(object):
         # The value for vlan_interface may default to the the current value
         # of public_interface. We'll grab the value and keep it handy.
         public_interface = self._getstr('public_interface')
-        vlan_interface = self._getstr('vlan_interface')
-        if not vlan_interface:
-            vlan_interface = public_interface
+        vlan_interface = self._getstr('vlan_interface', public_interface)
 
         #do a little check to make sure actually have that interface set...
         if not utils.is_interface(public_interface):
@@ -728,18 +730,17 @@ class NovaConfConfigurator(object):
 
     #configures any virt driver settings
     def _configure_virt_driver(self, nova_conf):
-        driver = self._getstr('virt_driver')
-        drive_canon = driver.lower().strip()
+        drive_canon = self._get_canon_virt_driver()
         if drive_canon == 'xenserver':
             nova_conf.add('connection_type', 'xenapi')
-            xa_url = self._getstr('xa_connection_url') or \
-                    urlunparse(('http', "%s:%s" % (XA_CONNECTION_ADDR, XA_CONNECTION_PORT), "", '', '', ''))
+            xa_url = self._getstr('xa_connection_url',
+                          urlunparse(('http', "%s:%s" % (XA_CONNECTION_ADDR, XA_CONNECTION_PORT), "", '', '', '')))
             nova_conf.add('xenapi_connection_url', xa_url)
-            xs_user = self._getstr('xa_connection_username') or XA_DEF_USER
+            xs_user = self._getstr('xa_connection_username', XA_DEF_USER)
             nova_conf.add('xenapi_connection_username', xs_user)
             nova_conf.add('xenapi_connection_password', self.cfg.get("passwords", "xenapi_connection"))
             nova_conf.add_simple('noflat_injected')
-            xs_flat_ifc = self._getstr('xs_flat_interface') or XS_DEF_INTERFACE
+            xs_flat_ifc = self._getstr('xs_flat_interface', XS_DEF_INTERFACE)
             if not utils.is_interface(xs_flat_ifc):
                 msg = "Xenserver flat interface %s is not a known interface" % (xs_flat_ifc)
                 raise exceptions.ConfigException(msg)
