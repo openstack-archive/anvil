@@ -2,11 +2,17 @@
 # We allow simple comments (lines starting with a hash symbol)
 {
     "ubuntu-oneiric": {
+        "mock": {
+            "version": "0.8.0"
+        }
     },
     "rhel-6": {
         # For testing
         "coverage": {
             "version": "3.5.1"
+        },
+        "nose": {
+            "version": "1.0.0"
         },
         "mock": {
             "version": "0.8.0"

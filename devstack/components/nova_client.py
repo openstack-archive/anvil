@@ -24,6 +24,7 @@ LOG = logging.getLogger("devstack.components.nova_client")
 
 #the pkg json files nova client requires for installation
 REQ_PKGS = ['general.json', 'nova-client.json']
+REQ_PIPS = ['general.json']
 
 
 class NovaClientUninstaller(comp.PythonUninstallComponent):
@@ -45,6 +46,9 @@ class NovaClientInstaller(comp.PythonInstallComponent):
 
     def _get_pkgs(self):
         return list(REQ_PKGS)
+
+    def _get_pips(self):
+        return list(REQ_PIPS)
 
 
 class NovaClientRuntime(comp.EmptyRuntime):

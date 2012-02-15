@@ -210,13 +210,6 @@
             "version": "2.6*",
             "removable": false
         },
-        "python-nose1.1": {
-            "version": "1.1*",
-            "removable": true,
-            "meta": {
-                "epel" : true
-            }
-        },
         "python-mox": {
             "version": "0.5.3*",
             "removable": true,
