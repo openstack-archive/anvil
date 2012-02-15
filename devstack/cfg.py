@@ -85,7 +85,12 @@ class StackConfigParser(IgnoreMissingConfigParser):
         self.db_dsns = dict()
 
     def _makekey(self, section, option):
-        return "/".join([str(section), str(option)])
+        joinwhat = []
+        if section is not None:
+            joinwhat.append(str(section))
+        if option is not None:
+            joinwhat.append(str(option))
+        return "/".join(joinwhat)
 
     def _resolve_special(self, section, option, value_gotten, auto_pw):
         key = self._makekey(section, option)
@@ -98,9 +103,7 @@ class StackConfigParser(IgnoreMissingConfigParser):
             LOG.debug("Determined your host ip to be: \"%s\"" % (value_gotten))
         elif section == 'passwords' and auto_pw:
             LOG.debug("Being forced to ask for password for \"%s\" since the configuration value is empty.", key)
-            prompt = PW_PROMPTS.get(option)
-            if not prompt:
-                prompt = PW_TMPL % (key)
+            prompt = PW_PROMPTS.get(option, PW_TMPL % (key))
             value_gotten = sh.password(prompt)
             self.pws[key] = value_gotten
         return value_gotten
@@ -136,7 +139,7 @@ class StackConfigParser(IgnoreMissingConfigParser):
     def _get_special(self, section, option):
         key = self._makekey(section, option)
         value = IgnoreMissingConfigParser.get(self, section, option)
-        extracted_val = None
+        extracted_val = ''
         mtch = ENV_PAT.match(value)
         if mtch:
             env_key = mtch.group(1).strip()
