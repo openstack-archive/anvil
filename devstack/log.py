@@ -15,50 +15,12 @@
 #    under the License.
 
 import logging
-import os
-import sys
 
-#requires http://pypi.python.org/pypi/termcolor
-#but the colors make it worth it :-)
-from termcolor import colored
+#
+#TODO remove this whole file (??)
+#
 
 # methods
 getLogger = logging.getLogger
 
 
-class TermFormatter(logging.Formatter):
-    def __init__(self, reg_fmt, date_format):
-        logging.Formatter.__init__(self, reg_fmt, date_format)
-
-    def format(self, record):
-        lvl = record.levelno
-        lvlname = record.levelname
-        if lvl == logging.DEBUG:
-            lvlname = colored(lvlname, 'blue')
-        elif lvl == logging.INFO:
-            lvlname = colored(lvlname, 'cyan')
-        elif lvl == logging.WARNING:
-            lvlname = colored(lvlname, 'yellow')
-        elif lvl == logging.ERROR:
-            lvlname = colored(lvlname, 'red')
-        elif lvl == logging.CRITICAL:
-            lvlname = colored(lvlname, 'red')
-            record.msg = colored(record.msg, attrs=['bold', 'blink'])
-        record.levelname = lvlname
-        return logging.Formatter.format(self, record)
-
-
-class TermHandler(logging.Handler):
-    STREAM = sys.stdout
-    DO_FLUSH = True
-    NL = os.linesep
-
-    def __init__(self):
-        logging.Handler.__init__(self)
-
-    def emit(self, record):
-        msg = self.format(record)
-        if msg is not None:
-            TermHandler.STREAM.write(msg + TermHandler.NL)
-            if TermHandler.DO_FLUSH:
-                TermHandler.STREAM.flush()
