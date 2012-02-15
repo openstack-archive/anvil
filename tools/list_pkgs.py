@@ -3,7 +3,7 @@ import os
 import sys
 
 #useful for running like the following
-#find conf/ | grep ".json\$" | xargs python utils/list-pkgs.py "rhel-6"
+#find conf/ | grep ".json\$" | xargs python tools/list_pkgs.py "rhel-6"
 
 VER_LEN = 10
 MAX_SUB_SEGMENTS = 2

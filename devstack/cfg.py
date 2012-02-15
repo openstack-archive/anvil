@@ -171,11 +171,11 @@ class StackConfigParser(IgnoreMissingConfigParser):
         #form the dsn (from components we have...)
         #dsn = "<driver>://<username>:<password>@<host>:<port>/<database>"
         if not host:
-            msg = "Unable to fetch a database dsn - no host found"
+            msg = "Unable to fetch a database dsn - no sql host found"
             raise excp.BadParamException(msg)
         driver = self.get("db", "type")
         if not driver:
-            msg = "Unable to fetch a database dsn - no driver type found"
+            msg = "Unable to fetch a database dsn - no db driver type found"
             raise excp.BadParamException(msg)
         dsn = driver + "://"
         if user:
@@ -203,6 +203,7 @@ def add_header(fn, contents):
     lines.append("# On %s" % (date.rcf8222date()))
     lines.append("# By user %s, group %s" % (sh.getuser(), sh.getgroupname()))
     lines.append("# Comments may have been removed (TODO: darn python config writer)")
+    # TODO Maybe use https://code.google.com/p/iniparse/ which seems to preserve comments!
     lines.append("")
     if contents:
         lines.append(contents)

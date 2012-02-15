@@ -754,7 +754,7 @@ class NovaConfConfigurator(object):
             nova_conf.add('flat_interface', xs_flat_ifc)
             nova_conf.add('firewall_driver', self._getstr('xs_firewall_driver'))
             nova_conf.add('flat_network_bridge', self._getstr('xs_flat_network_bridge'))
-        elif drive_canon == 'libvirt':
+        elif drive_canon == virsh.VIRT_TYPE:
             nova_conf.add('connection_type', 'libvirt')
             nova_conf.add('firewall_driver', self._getstr('libvirt_firewall_driver'))
             nova_conf.add('flat_network_bridge', self._getstr('flat_network_bridge'))
