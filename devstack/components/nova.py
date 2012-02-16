@@ -187,6 +187,7 @@ XA_CONNECTION_ADDR = '169.254.0.1'
 XS_VNC_ADDR = XA_CONNECTION_ADDR
 XA_CONNECTION_PORT = 80
 XA_DEF_USER = 'root'
+XA_DEF_CONNECTION_URL = urlunparse(('http', "%s:%s" % (XA_CONNECTION_ADDR, XA_CONNECTION_PORT), "", '', '', ''))
 
 #vnc specific
 VNC_DEF_ADDR = '127.0.0.1'
@@ -199,6 +200,9 @@ DEF_FIREWALL_DRIVER = 'nova.virt.firewall.IptablesFirewallDriver'
 
 #default instance template
 DEF_INSTANCE_TEMPL = 'instance-%08x'
+
+#std compute extensions
+STD_COMPUTE_EXTS = 'nova.api.openstack.compute.contrib.standard_extensions'
 
 #pip files that nova requires
 REQ_PIPS = ['general.json', 'nova.json']
@@ -540,7 +544,7 @@ class NovaConfConfigurator(object):
     def configure(self):
         nova_conf = NovaConf()
 
-        #use more than once
+        #used more than once
         hostip = self.cfg.get('host', 'ip')
 
         #verbose on?
@@ -552,8 +556,7 @@ class NovaConfConfigurator(object):
             nova_conf.add_simple('allow_admin_api')
 
         #which scheduler do u want?
-        scheduler = self._getstr('scheduler', DEF_SCHEDULER)
-        nova_conf.add('scheduler_driver', scheduler)
+        nova_conf.add('scheduler_driver', self._getstr('scheduler', DEF_SCHEDULER))
 
         #setup network settings
         self._configure_network_settings(nova_conf)
@@ -581,7 +584,7 @@ class NovaConfConfigurator(object):
         nova_conf.add('instance_name_template', instance_template)
 
         #enable the standard extensions
-        nova_conf.add('osapi_compute_extension', 'nova.api.openstack.compute.contrib.standard_extensions')
+        nova_conf.add('osapi_compute_extension', STD_COMPUTE_EXTS)
 
         #vnc settings
         self._configure_vnc(nova_conf)
@@ -593,8 +596,7 @@ class NovaConfConfigurator(object):
         self._configure_image_service(nova_conf, hostip)
 
         #ec2 / s3 stuff
-        ec2_dmz_host = self._getstr('ec2_dmz_host', hostip)
-        nova_conf.add('ec2_dmz_host', ec2_dmz_host)
+        nova_conf.add('ec2_dmz_host', self._getstr('ec2_dmz_host', hostip))
         nova_conf.add('s3_host', hostip)
 
         #how is your rabbit setup?
@@ -622,16 +624,21 @@ class NovaConfConfigurator(object):
         if extra_flags:
             new_contents = list()
             new_contents.append(generated_content)
-            #Lines that start with a # are ignored as comments. Leading whitespace is also ignored in flagfiles, as are blank lines.
+            #Lines that start with a # are ignored as comments.
+            #Leading whitespace is also ignored in flagfiles, as are blank lines.
             new_contents.append("")
             new_contents.append("# Extra FLAGS")
             new_contents.append("")
+            cleaned_lines = list()
             extra_lines = extra_flags.splitlines()
             for line in extra_lines:
                 cleaned_line = line.strip()
                 if len(cleaned_line):
-                    new_contents.append(cleaned_line)
-            generated_content = utils.joinlinesep(*new_contents)
+                    cleaned_lines.append(cleaned_line)
+            #anything actually found?
+            if cleaned_lines:
+                new_contents.extend(cleaned_lines)
+                generated_content = utils.joinlinesep(*new_contents)
 
         return generated_content
 
@@ -693,8 +700,7 @@ class NovaConfConfigurator(object):
             nova_conf.add('network_manager', NET_MANAGER_TEMPLATE % (self._getstr('network_manager')))
 
         #dhcp bridge stuff???
-        flag_conf_fn = sh.joinpths(self.cfgdir, API_CONF)
-        nova_conf.add('dhcpbridge_flagfile', flag_conf_fn)
+        nova_conf.add('dhcpbridge_flagfile', sh.joinpths(self.cfgdir, API_CONF))
 
         #Network prefix for the IP network that all the projects for future VM guests reside on. Example: 192.168.0.0/12
         nova_conf.add('fixed_range', self._getstr('fixed_range'))
@@ -708,9 +714,11 @@ class NovaConfConfigurator(object):
         if not utils.is_interface(public_interface):
             msg = "Public interface %s is not a known interface" % (public_interface)
             raise exceptions.ConfigException(msg)
+
         if not utils.is_interface(vlan_interface):
             msg = "VLAN interface %s is not a known interface" % (vlan_interface)
             raise exceptions.ConfigException(msg)
+
         nova_conf.add('public_interface', public_interface)
         nova_conf.add('vlan_interface', vlan_interface)
 
@@ -744,11 +752,8 @@ class NovaConfConfigurator(object):
         drive_canon = self._get_canon_virt_driver()
         if drive_canon == 'xenserver':
             nova_conf.add('connection_type', 'xenapi')
-            xa_url = self._getstr('xa_connection_url',
-                          urlunparse(('http', "%s:%s" % (XA_CONNECTION_ADDR, XA_CONNECTION_PORT), "", '', '', '')))
-            nova_conf.add('xenapi_connection_url', xa_url)
-            xs_user = self._getstr('xa_connection_username', XA_DEF_USER)
-            nova_conf.add('xenapi_connection_username', xs_user)
+            nova_conf.add('xenapi_connection_url', self._getstr('xa_connection_url', XA_DEF_CONNECTION_URL))
+            nova_conf.add('xenapi_connection_username', self._getstr('xa_connection_username', XA_DEF_USER))
             nova_conf.add('xenapi_connection_password', self.cfg.get("passwords", "xenapi_connection"))
             nova_conf.add_simple('noflat_injected')
             xs_flat_ifc = self._getstr('xs_flat_interface', XS_DEF_INTERFACE)
