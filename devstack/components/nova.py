@@ -194,6 +194,12 @@ VNC_DEF_ADDR = '127.0.0.1'
 #def virt driver
 DEF_VIRT_DRIVER = virsh.VIRT_TYPE
 
+#def firewall driver
+DEF_FIREWALL_DRIVER = 'nova.virt.firewall.IptablesFirewallDriver'
+
+#default instance template
+DEF_INSTANCE_TEMPL = 'instance-%08x'
+
 #pip files that nova requires
 REQ_PIPS = ['general.json', 'nova.json']
 
@@ -516,6 +522,7 @@ class NovaConfConfigurator(object):
         self.cfgdir = ni.cfgdir
         self.xvnc_enabled = ni.xvnc_enabled
         self.volumes_enabled = ni.volumes_enabled
+        self.novnc_enabled = settings.NOVNC in self.instances
 
     def _getbool(self, name):
         return self.cfg.getboolean('nova', name)
@@ -545,9 +552,7 @@ class NovaConfConfigurator(object):
             nova_conf.add_simple('allow_admin_api')
 
         #which scheduler do u want?
-        scheduler = self._getstr('scheduler')
-        if not scheduler:
-            scheduler = DEF_SCHEDULER
+        scheduler = self._getstr('scheduler', DEF_SCHEDULER)
         nova_conf.add('scheduler_driver', scheduler)
 
         #setup network settings
@@ -571,9 +576,11 @@ class NovaConfConfigurator(object):
 
         #how instances will be presented
         instance_template = self._getstr('instance_name_prefix') + self._getstr('instance_name_postfix')
+        if not instance_template:
+            instance_template = DEF_INSTANCE_TEMPL
         nova_conf.add('instance_name_template', instance_template)
 
-        #???
+        #enable the standard extensions
         nova_conf.add('osapi_compute_extension', 'nova.api.openstack.compute.contrib.standard_extensions')
 
         #vnc settings
@@ -583,12 +590,10 @@ class NovaConfConfigurator(object):
         nova_conf.add('api_paste_config', self.paste_conf_fn)
 
         #what our imaging service will be
-        self._configure_image_service(nova_conf)
+        self._configure_image_service(nova_conf, hostip)
 
         #ec2 / s3 stuff
-        ec2_dmz_host = self._getstr('ec2_dmz_host')
-        if not ec2_dmz_host:
-            ec2_dmz_host = hostip
+        ec2_dmz_host = self._getstr('ec2_dmz_host', hostip)
         nova_conf.add('ec2_dmz_host', ec2_dmz_host)
         nova_conf.add('s3_host', hostip)
 
@@ -617,6 +622,9 @@ class NovaConfConfigurator(object):
         if extra_flags:
             new_contents = list()
             new_contents.append(generated_content)
+            #Lines that start with a # are ignored as comments. Leading whitespace is also ignored in flagfiles, as are blank lines.
+            new_contents.append("")
+            new_contents.append("# Extra FLAGS")
             new_contents.append("")
             extra_lines = extra_flags.splitlines()
             for line in extra_lines:
@@ -627,7 +635,7 @@ class NovaConfConfigurator(object):
 
         return generated_content
 
-    def _configure_image_service(self, nova_conf):
+    def _configure_image_service(self, nova_conf, hostip):
         #what image service we will use
         img_service = self._getstr('img_service', DEF_IMAGE_SERVICE)
         nova_conf.add('image_service', img_service)
@@ -635,20 +643,17 @@ class NovaConfConfigurator(object):
         #where is glance located?
         if img_service.lower().find("glance") != -1:
             glance_api_server = self._getstr('glance_server',
-                                               ("%s:%d" % (self.cfg.get('host', 'ip'), DEF_GLANCE_PORT)))
+                                               ("%s:%d" % (hostip, DEF_GLANCE_PORT)))
             nova_conf.add('glance_api_servers', glance_api_server)
 
     def _configure_vnc(self, nova_conf):
-        if settings.NOVNC in self.instances:
-            vncproxy_url = self._getstr('vncproxy_url')
-            nova_conf.add('novncproxy_base_url', vncproxy_url)
+        if self.novnc_enabled:
+            nova_conf.add('novncproxy_base_url', self._getstr('vncproxy_url'))
 
         if self.xvnc_enabled:
             nova_conf.add('xvpvncproxy_base_url', self._getstr('xvpvncproxy_url'))
 
-        vncserverlisten = self._getstr('vncserver_listen')
-        if vncserverlisten:
-            nova_conf.add('vncserver_listen', vncserverlisten)
+        nova_conf.add('vncserver_listen', self._getstr('vncserver_listen', VNC_DEF_ADDR))
 
         # If no vnc proxy address was specified,
         # pick a default based on which
@@ -665,8 +670,7 @@ class NovaConfConfigurator(object):
 
     def _configure_vols(self, nova_conf):
         nova_conf.add('volume_group', self._getstr('volume_group'))
-        volume_name_template = self._getstr('volume_name_prefix') + self._getstr('volume_name_postfix')
-        nova_conf.add('volume_name_template', volume_name_template)
+        nova_conf.add('volume_name_template', self._getstr('volume_name_prefix') + self._getstr('volume_name_postfix'))
         nova_conf.add('iscsi_help', 'tgtadm')
 
     def _configure_network_settings(self, nova_conf):
@@ -752,11 +756,11 @@ class NovaConfConfigurator(object):
                 msg = "Xenserver flat interface %s is not a known interface" % (xs_flat_ifc)
                 raise exceptions.ConfigException(msg)
             nova_conf.add('flat_interface', xs_flat_ifc)
-            nova_conf.add('firewall_driver', self._getstr('xs_firewall_driver'))
+            nova_conf.add('firewall_driver', self._getstr('xs_firewall_driver', DEF_FIREWALL_DRIVER))
             nova_conf.add('flat_network_bridge', self._getstr('xs_flat_network_bridge'))
         elif drive_canon == virsh.VIRT_TYPE:
             nova_conf.add('connection_type', 'libvirt')
-            nova_conf.add('firewall_driver', self._getstr('libvirt_firewall_driver'))
+            nova_conf.add('firewall_driver', self._getstr('libvirt_firewall_driver', DEF_FIREWALL_DRIVER))
             nova_conf.add('flat_network_bridge', self._getstr('flat_network_bridge'))
             flat_interface = self._getstr('flat_interface')
             if flat_interface:
