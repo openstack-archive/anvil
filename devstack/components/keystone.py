@@ -15,6 +15,8 @@
 #    under the License.
 
 import io
+import time
+
 from urlparse import urlunparse
 
 from devstack import cfg
@@ -45,10 +47,12 @@ CFG_SECTION = 'DEFAULT'
 
 #this is a special conf
 MANAGE_DATA_CONF = 'keystone_data.sh'
-MANAGER_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
+MANAGE_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
+MANAGE_ADMIN_USER = 'admin'
+MANAGE_DEMO_USER = 'demo'
 
 #sync db command
-SYNC_DB_CMD = [sh.joinpths('%BINDIR%', 'keystone-manage'), 'sync_database']
+SYNC_DB_CMD = [sh.joinpths('%BINDIR%', 'keystone-manage'), 'db_sync']
 
 #what to start
 APP_NAME = 'keystone-all'
@@ -63,6 +67,9 @@ REQ_PKGS = ['general.json', 'keystone.json']
 
 #pip files that keystone requires
 REQ_PIPS = ['general.json', 'keystone.json']
+
+#used to wait until started before we can run the data setup script
+WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
 
 
 class KeystoneUninstaller(comp.PythonUninstallComponent):
@@ -131,15 +138,6 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         tgt_fn = sh.joinpths(self.bindir, MANAGE_DATA_CONF)
         sh.write_file(tgt_fn, contents)
         sh.chmod(tgt_fn, 0755)
-        #now run it
-        #these environment additions are important
-        #in that they eventually affect how this script runs
-        env = dict()
-        env['ENABLED_SERVICES'] = ",".join(self.instances.keys())
-        env['BIN_DIR'] = self.bindir
-        setup_cmd = MANAGER_CMD_ROOT + [tgt_fn]
-        LOG.info("Running (%s) command to setup keystone." % (" ".join(setup_cmd)))
-        sh.execute(*setup_cmd, env_overrides=env)
 
     def _config_adjust(self, contents, name):
         if name == ROOT_CONF:
@@ -173,6 +171,10 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         #these be used to fill in the configuration/cmds +
         #params with actual values
         mp = dict()
+        mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
+        mp['DEST'] = self.appdir
+        mp['BIN_DIR'] = self.bindir
+        mp['CONFIG_FILE'] = sh.joinpths(self.cfgdir, ROOT_CONF)
         if config_fn == ROOT_CONF:
             mp['DEST'] = self.appdir
             mp['SQL_CONN'] = self.cfg.get_dbdsn(DB_NAME)
@@ -180,14 +182,9 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             mp.update(get_shared_params(self.cfg))
         elif config_fn == MANAGE_DATA_CONF:
             mp['ADMIN_PASSWORD'] = self.cfg.get('passwords', 'horizon_keystone_admin')
-            mp['ADMIN_USERNAME'] = 'admin'
-            mp['DEMO_USER_NAME'] = 'demo'
+            mp['ADMIN_USERNAME'] = MANAGE_ADMIN_USER
+            mp['DEMO_USER_NAME'] = MANAGE_DEMO_USER
             mp.update(get_shared_params(self.cfg))
-        else:
-            mp['DEST'] = self.appdir
-            mp['BIN_DIR'] = self.bindir
-            mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
-            mp['CONFIG_FILE'] = sh.joinpths(self.cfgdir, ROOT_CONF)
         return mp
 
 
@@ -196,6 +193,22 @@ class KeystoneRuntime(comp.PythonRuntime):
         comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
+
+    def post_start(self):
+        tgt_fn = sh.joinpths(self.bindir, MANAGE_DATA_CONF)
+        if sh.isfile(tgt_fn):
+            #still there, run it
+            #these environment additions are important
+            #in that they eventually affect how this script runs
+            LOG.info("Waiting %s seconds so that keystone can start up before user/tenant/role install." % (WAIT_ONLINE_TO))
+            time.sleep(WAIT_ONLINE_TO)
+            env = dict()
+            env['ENABLED_SERVICES'] = ",".join(self.instances.keys())
+            env['BIN_DIR'] = self.bindir
+            setup_cmd = MANAGE_CMD_ROOT + [tgt_fn]
+            LOG.info("Running (%s) command to setup keystone." % (" ".join(setup_cmd)))
+            sh.execute(*setup_cmd, env_overrides=env)
+            sh.unlink(tgt_fn)
 
     def _get_apps_to_start(self):
         apps = list()
