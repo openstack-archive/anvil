@@ -175,12 +175,12 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             host_ip = self.cfg.get('host', 'ip')
             mp['DEST'] = self.appdir
             mp['SQL_CONN'] = self.cfg.get_dbdsn(DB_NAME)
-            mp['SERVICE_HOST'] = host_ip
-            mp['ADMIN_HOST'] = host_ip
+            mp['KEYSTONE_DIR'] = self.appdir
         elif config_fn == MANAGE_DATA_CONF:
             host_ip = self.cfg.get('host', 'ip')
             mp['ADMIN_PASSWORD'] = self.cfg.get('passwords', 'horizon_keystone_admin')
-            mp['SERVICE_HOST'] = host_ip
+            mp['ADMIN_USERNAME'] = 'admin'
+            mp['DEMO_USER_NAME'] = 'demo'
             mp.update(get_shared_params(self.cfg))
         else:
             mp['DEST'] = self.appdir
