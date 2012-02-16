@@ -26,7 +26,6 @@ ADMIN_TENANT=`get_id keystone tenant-create --name=$ADMIN_USERNAME`
 DEMO_TENANT=`get_id keystone tenant-create --name=$DEMO_USER_NAME`
 INVIS_TENANT=`get_id keystone tenant-create --name=$INVIS_USER_NAME`
 
-
 # Users
 ADMIN_USER=`get_id keystone user-create \
                                  --name=$ADMIN_USERNAME \

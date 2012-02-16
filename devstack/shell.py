@@ -140,12 +140,14 @@ def execute(*cmd, **kwargs):
         result = ("", "")
 
     (stdout, stderr) = result
+    if stdout is None:
+        stdout = ''
+    if stderr is None:
+        stderr = ''
+
     if (not ignore_exit_code) and (rc not in check_exit_code):
-        raise excp.ProcessExecutionError(
-                exit_code=rc,
-                stdout=stdout,
-                stderr=stderr,
-                cmd=str_cmd)
+        raise excp.ProcessExecutionError(exit_code=rc, stdout=stdout,\
+                                         stderr=stderr, cmd=str_cmd)
     else:
         #log it anyway
         if rc not in check_exit_code:
@@ -154,7 +156,7 @@ def execute(*cmd, **kwargs):
         #log for debugging figuring stuff out
         LOG.debug("Received stdout: %s" % (stdout.strip()))
         LOG.debug("Received stderr: %s" % (stderr.strip()))
-        return result
+        return (stdout, stderr)
 
 
 def abspth(path):
