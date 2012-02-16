@@ -6,7 +6,9 @@ set +e
 
 # These are used by keystone commands below (?)
 export SERVICE_TOKEN=%SERVICE_TOKEN%
-export SERVICE_ENDPOINT=$SERVICE_ENDPOINT
+
+# This is really the auth endpoint, not the service endpoint
+export SERVICE_ENDPOINT=%AUTH_ENDPOINT%
 
 function get_id () {
     echo `$@ | grep id | awk '{print $4}'`

@@ -15,6 +15,7 @@
 #    under the License.
 
 import io
+from urlparse import urlunparse
 
 from devstack import cfg
 from devstack import component as comp
@@ -50,9 +51,10 @@ MANAGER_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
 SYNC_DB_CMD = [sh.joinpths('%BINDIR%', 'keystone-manage'), 'sync_database']
 
 #what to start
+APP_NAME = 'keystone-all'
 APP_OPTIONS = {
-    'keystone': ['--config-file', sh.joinpths('%ROOT%', CONFIG_DIR, ROOT_CONF),
-                "--verbose", '-d',
+    APP_NAME: ['--config-file', sh.joinpths('%ROOT%', CONFIG_DIR, ROOT_CONF),
+                "--debug", '-d',
                 '--log-config=' + sh.joinpths('%ROOT%', CONFIG_DIR, 'logging.cnf')]
 }
 
@@ -140,27 +142,26 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         sh.execute(*setup_cmd, env_overrides=env)
 
     def _config_adjust(self, contents, name):
-        if name not in CONFIGS:
-            return contents
-        #use config parser and
-        #then extract known configs that
-        #will need locations/directories/files made (or touched)...
-        with io.BytesIO(contents) as stream:
-            config = cfg.IgnoreMissingConfigParser()
-            config.readfp(stream)
-            log_filename = config.get('log_file', CFG_SECTION)
-            if log_filename:
-                LOG.info("Ensuring log file %s exists and is empty." % (log_filename))
-                log_dir = sh.dirname(log_filename)
-                if log_dir:
-                    LOG.info("Ensuring log directory %s exists." % (log_dir))
-                    self.tracewriter.make_dir(log_dir)
-                #destroy then recreate it (the log file)
-                sh.unlink(log_filename)
-                sh.touch_file(log_filename)
-                self.tracewriter.file_touched(log_filename)
-            #we might need to handle more in the future...
-        #nothing modified so just return the original
+        if name == ROOT_CONF:
+            #use config parser and
+            #then extract known configs that
+            #will need locations/directories/files made (or touched)...
+            with io.BytesIO(contents) as stream:
+                config = cfg.IgnoreMissingConfigParser()
+                config.readfp(stream)
+                log_filename = config.get('log_file', CFG_SECTION)
+                if log_filename:
+                    LOG.info("Ensuring log file %s exists and is empty." % (log_filename))
+                    log_dir = sh.dirname(log_filename)
+                    if log_dir:
+                        LOG.info("Ensuring log directory %s exists." % (log_dir))
+                        self.tracewriter.make_dir(log_dir)
+                    #destroy then recreate it (the log file)
+                    sh.unlink(log_filename)
+                    sh.touch_file(log_filename)
+                    self.tracewriter.file_touched(log_filename)
+                #we might need to handle more in the future...
+            #nothing modified so just return the original
         return contents
 
     def warm_configs(self):
@@ -216,13 +217,23 @@ def get_shared_params(config):
     if not keystone_auth_host:
         keystone_auth_host = host_ip
     mp['KEYSTONE_AUTH_HOST'] = keystone_auth_host
-    mp['KEYSTONE_AUTH_PORT'] = config.get('keystone', 'keystone_auth_port')
-    mp['KEYSTONE_AUTH_PROTOCOL'] = config.get('keystone', 'keystone_auth_protocol')
+    keystone_auth_port = config.get('keystone', 'keystone_auth_port')
+    mp['KEYSTONE_AUTH_PORT'] = keystone_auth_port
+    keystone_auth_proto = config.get('keystone', 'keystone_auth_protocol')
+    mp['KEYSTONE_AUTH_PROTOCOL'] = keystone_auth_proto
     keystone_service_host = config.get('keystone', 'keystone_service_host')
     if not keystone_service_host:
         keystone_service_host = host_ip
     mp['KEYSTONE_SERVICE_HOST'] = keystone_service_host
-    mp['KEYSTONE_SERVICE_PORT'] = config.get('keystone', 'keystone_service_port')
-    mp['KEYSTONE_SERVICE_PROTOCOL'] = config.get('keystone', 'keystone_service_protocol')
+    keystone_service_port = config.get('keystone', 'keystone_service_port')
+    mp['KEYSTONE_SERVICE_PORT'] = keystone_service_port
+    keystone_service_proto = config.get('keystone', 'keystone_service_protocol')
+    mp['KEYSTONE_SERVICE_PROTOCOL'] = keystone_service_proto
+    mp['AUTH_ENDPOINT'] = urlunparse((keystone_auth_proto, 
+                                         "%s:%s" % (keystone_auth_host, keystone_auth_port), 
+                                         "v2.0", "", "", "")
+    mp['SERVICE_ENDPOINT'] = urlunparse((keystone_service_proto, 
+                                         "%s:%s" % (keystone_service_host, keystone_service_port), 
+                                         "v2.0", "", "", "")
     mp['SERVICE_TOKEN'] = config.get("passwords", "service_token")
     return mp
