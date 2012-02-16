@@ -229,11 +229,13 @@ def get_shared_params(config):
     mp['KEYSTONE_SERVICE_PORT'] = keystone_service_port
     keystone_service_proto = config.get('keystone', 'keystone_service_protocol')
     mp['KEYSTONE_SERVICE_PROTOCOL'] = keystone_service_proto
-    mp['AUTH_ENDPOINT'] = urlunparse((keystone_auth_proto, 
-                                         "%s:%s" % (keystone_auth_host, keystone_auth_port), 
-                                         "v2.0", "", "", "")
-    mp['SERVICE_ENDPOINT'] = urlunparse((keystone_service_proto, 
-                                         "%s:%s" % (keystone_service_host, keystone_service_port), 
-                                         "v2.0", "", "", "")
+    #TODO is this right???
+    mp['AUTH_ENDPOINT'] = urlunparse((keystone_auth_proto,
+                                         "%s:%s" % (keystone_auth_host, keystone_auth_port),
+                                         "v2.0", "", "", ""))
+    #TODO is this right???
+    mp['SERVICE_ENDPOINT'] = urlunparse((keystone_service_proto,
+                                         "%s:%s" % (keystone_service_host, keystone_service_port),
+                                         "v2.0", "", "", ""))
     mp['SERVICE_TOKEN'] = config.get("passwords", "service_token")
     return mp
