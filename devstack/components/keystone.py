@@ -38,7 +38,8 @@ CONFIG_DIR = "etc"
 
 #simple confs
 ROOT_CONF = "keystone.conf"
-CONFIGS = [ROOT_CONF]
+CATALOG_CONF = 'default_catalog.templates'
+CONFIGS = [ROOT_CONF, CATALOG_CONF]
 CFG_SECTION = 'DEFAULT'
 
 #this is a special conf
@@ -172,12 +173,10 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         #params with actual values
         mp = dict()
         if config_fn == ROOT_CONF:
-            host_ip = self.cfg.get('host', 'ip')
             mp['DEST'] = self.appdir
             mp['SQL_CONN'] = self.cfg.get_dbdsn(DB_NAME)
             mp['KEYSTONE_DIR'] = self.appdir
         elif config_fn == MANAGE_DATA_CONF:
-            host_ip = self.cfg.get('host', 'ip')
             mp['ADMIN_PASSWORD'] = self.cfg.get('passwords', 'horizon_keystone_admin')
             mp['ADMIN_USERNAME'] = 'admin'
             mp['DEMO_USER_NAME'] = 'demo'
@@ -185,6 +184,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         else:
             mp['DEST'] = self.appdir
             mp['BIN_DIR'] = self.bindir
+            mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
             mp['CONFIG_FILE'] = sh.joinpths(self.cfgdir, ROOT_CONF)
         return mp
 
