@@ -310,6 +310,7 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
         instance = all_instances[component]
         if component in prerequisite_instances:
             (preq_action, preq_instance) = prerequisite_instances[component]
+            LOG.info("Having to activate prerequisite for component %s of action type %s" % (component, preq_action))
             preq_func = action_functor_map[preq_action]
             preq_result = preq_func(component, preq_instance, force)
             if preq_result is None:
