@@ -116,16 +116,16 @@ def _pre_run(action_name, root_dir, pkg_manager, config, component_order, instan
         base_inst = all_instances.get(component)
         if base_inst:
             base_inst.verify()
-        pre_inst = prerequisite_instances.get(component)
-        if pre_inst:
+        if component in prerequisite_instances:
+            (_, pre_inst) = prerequisite_instances[component]
             pre_inst.verify()
     LOG.info("Warming up your component configurations (ie so you won't be prompted later)")
     for component in component_order:
         base_inst = all_instances.get(component)
         if base_inst:
             base_inst.warm_configs()
-        pre_inst = prerequisite_instances.get(component)
-        if pre_inst:
+        if component in prerequisite_instances:
+            (_, pre_inst) = prerequisite_instances[component]
             pre_inst.warm_configs()
     if action_name in _RC_FILE_MAKE_ACTIONS and not loaded_env:
         _gen_localrc(config, rc_fn)
@@ -173,7 +173,7 @@ def _print_cfgs(config_obj, action):
             map_print(db_dsns)
 
 
-def _install(component_name, instance):
+def _install(component_name, instance, force):
     LOG.info("Downloading %s." % (component_name))
     am_downloaded = instance.download()
     LOG.info("Performed %s downloads." % (am_downloaded))
@@ -206,7 +206,7 @@ def _stop(component_name, instance, force):
             raise
 
 
-def _start(component_name, instance):
+def _start(component_name, instance, force):
     LOG.info("Pre-starting %s." % (component_name))
     instance.pre_start()
     LOG.info("Starting %s." % (component_name))
@@ -266,7 +266,7 @@ def _instanciate_components(action_name, components, distro, pkg_manager, config
                               config=config,
                               root=root_dir,
                               opts=components.get(component, list()))
-                prerequisite_instances[component] = preq_instance
+                prerequisite_instances[component] = (preq_action_name, preq_instance)
 
     return (all_instances, prerequisite_instances)
 
@@ -297,41 +297,35 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
               config=config, component_order=component_order,
               instances=(all_instances, prerequisite_instances))
     LOG.info("Activating components required to complete action %s." % (action_name))
+    action_functor_map = {
+        settings.START: _start,
+        settings.INSTALL: _install,
+        settings.UNINSTALL: _uninstall,
+        settings.STOP: _stop,
+    }
     start_time = time.time()
     results = list()
     force = program_args.get('force', False)
     for component in component_order:
         instance = all_instances[component]
-        #activate the correct function for the given action
-        if action_name == settings.INSTALL:
-            install_result = _install(component, instance)
-            if install_result:
-                #TODO clean this up.
-                if type(install_result) == list:
-                    results += install_result
-                else:
-                    results.append(str(install_result))
-        elif action_name == settings.STOP:
-            _stop(component, instance, force)
-        elif action_name == settings.START:
-            #do we need to activate an install prerequisite first???
-            if component in prerequisite_instances:
-                install_instance = prerequisite_instances[component]
-                _install(component, install_instance)
-            #now start it
-            start_result = _start(component, instance)
-            if start_result:
-                #TODO clean this up.
-                if type(start_result) == list:
-                    results += start_result
-                else:
-                    results.append(str(start_result))
-        elif action_name == settings.UNINSTALL:
-            #do we need to activate an uninstall prerequisite first???
-            if component in prerequisite_instances:
-                stop_instance = prerequisite_instances[component]
-                _stop(component, stop_instance, force)
-            _uninstall(component, instance, force)
+        if component in prerequisite_instances:
+            (preq_action, preq_instance) = prerequisite_instances[component]
+            preq_func = action_functor_map[preq_action]
+            preq_result = preq_func(component, preq_instance, force)
+            if preq_result is None:
+                pass
+            elif type(preq_result) == list:
+                results.extend(preq_result)
+            else:
+                results.append(str(preq_result))
+        main_functor = action_functor_map[action_name]
+        main_result = main_functor(component, instance, force)
+        if main_result is None:
+            pass
+        elif type(main_result) == list:
+            results.extend(main_result)
+        else:
+            results.append(str(main_result))
     end_time = time.time()
     #any post run actions go now
     _post_run(action_name, root_dir=root_dir,
