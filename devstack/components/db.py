@@ -58,15 +58,17 @@ DB_ACTIONS = {
             },
         },
         #modification commands
-        'set_pwd': ['mysql', '-u', '%USER%', '--password=%OLD_PASSWORD%', '-e', ("\"USE mysql; UPDATE user SET "
-                    " password=PASSWORD('%NEW_PASSWORD%') WHERE User='%USER%'; FLUSH privileges;\"")],
+        #NOTE: we aren't stopping any sql injection...
+        'set_pwd': ['mysql', '--user=%USER%', '--password=%OLD_PASSWORD%', '-e', 
+                    ("\"USE mysql; UPDATE user SET "
+                    " password=PASSWORD('%NEW_PASSWORD%') WHERE User='%USER%'; FLUSH PRIVILEGES;\"")],
         'create_db': ['mysql', '--user=%USER%', '--password=%PASSWORD%',
                       '-e', 'CREATE DATABASE %DB%;'],
         'drop_db': ['mysql', '--user=%USER%', '--password=%PASSWORD%',
                     '-e', 'DROP DATABASE IF EXISTS %DB%;'],
-        'grant_all': ["mysql", "--user=%USER%", "--password=%PASSWORD%",
-                    ("-e \"GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' "
-                    "identified by '%PASSWORD%'; flush privileges;\"")],
+        'grant_all': ["mysql", "--user=%USER%", "--password=%PASSWORD%", '-e',
+                    ("\"GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' "
+                    " IDENTIFIED BY '%PASSWORD%'; FLUSH PRIVILEGES;\"")],
     },
 }
 
@@ -75,7 +77,7 @@ RESET_BASE_PW = ''
 
 #links about how to reset if it fails
 SQL_RESET_PW_LINKS = ['https://help.ubuntu.com/community/MysqlPasswordReset',
-            'http://crashmag.net/resetting-the-root-password-for-mysql-running-on-rhel-or-centos']
+                      'http://dev.mysql.com/doc/refman/5.0/en/resetting-permissions.html']
 
 #used as a generic error message
 BASE_ERROR = 'Currently we do not know how to %s for database type [%s]'
