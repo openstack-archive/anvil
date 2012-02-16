@@ -54,7 +54,7 @@
             "version": "2.7.2*"
         }, 
         "python-coverage": {
-            "removable": true, 
+            "removable": false, 
             "version": "3.4*"
         }, 
         "python-pip": {
@@ -79,11 +79,11 @@
         },
         "python-nose": {
             "version": "1.0.0*",
-            "removable": true
+            "removable": false
         },
         "python-mox": {
             "version": "0.5.3*",
-            "removable": true
+            "removable": false
         },
         "screen": {
             "removable": false, 
@@ -202,7 +202,7 @@
         },
         "python-mox": {
             "version": "0.5.3*",
-            "removable": true,
+            "removable": false,
             "meta": {
                 "epel" : true
             }
@@ -290,7 +290,7 @@
             "version": "2.7*"
         }, 
         "python-coverage": {
-            "removable": true, 
+            "removable": false, 
             "version": "3.5*"
         }, 
         "python-pip": {
@@ -319,11 +319,11 @@
         },
         "python-nose": {
             "version": "1.1*",
-            "removable": true
+            "removable": false
         },
         "python-mox": {
             "version": "0.5.3*",
-            "removable": true
+            "removable": false
         },
         "screen": {
             "removable": false, 
