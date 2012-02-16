@@ -100,9 +100,8 @@ class DBUninstaller(comp.PkgUninstallComponent):
         dbtype = self.cfg.get("db", "type")
         dbactions = DB_ACTIONS.get(dbtype)
         try:
-            #TODO: maybe this should be a subclass that handles these differences
-            if dbactions and dbtype == MYSQL:
-                LOG.info(("Attempting to reset your mysql password to \"%s\" so"
+            if dbactions:
+                LOG.info(("Attempting to reset your db password to \"%s\" so"
                           " that we can set it the next time you install.") % (RESET_BASE_PW))
                 pwd_cmd = dbactions.get('set_pwd')
                 if pwd_cmd:
@@ -190,13 +189,12 @@ class DBInstaller(comp.PkgInstallComponent):
 
         #set your password
         try:
-            #TODO: maybe this should be a subclass that handles these differences
-            if dbactions and dbtype == MYSQL:
+            if dbactions:
                 pwd_cmd = dbactions.get('set_pwd')
                 if pwd_cmd:
-                    LOG.info(("Attempting to set your mysql password"
+                    LOG.info(("Attempting to set your db password"
                           " just incase it wasn't set previously."))
-                    LOG.info("Ensuring mysql is started.")
+                    LOG.info("Ensuring your database is started before we operate on it.")
                     self.runtime.restart()
                     params = {
                         'NEW_PASSWORD': self.cfg.get("passwords", "sql"),
@@ -206,7 +204,7 @@ class DBInstaller(comp.PkgInstallComponent):
                     cmds = [{'cmd': pwd_cmd}]
                     utils.execute_template(*cmds, params=params, shell=True)
         except IOError:
-            LOG.warn(("Couldn't set your password. It might have already been "
+            LOG.warn(("Couldn't set your db password. It might have already been "
                        "set by a previous process."))
 
         #ensure access granted
@@ -215,7 +213,7 @@ class DBInstaller(comp.PkgInstallComponent):
             if grant_cmd:
                 user = self.cfg.get("db", "sql_user")
                 LOG.info("Updating the DB to give user '%s' full control of all databases." % (user))
-                LOG.info("Ensuring your database is started.")
+                LOG.info("Ensuring your database is started before we operate on it.")
                 self.runtime.restart()
                 params = {
                     'PASSWORD': self.cfg.get("passwords", "sql"),
