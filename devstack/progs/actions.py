@@ -340,23 +340,26 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
 
 
 def _run_action(args):
-    defaulted_components = False
-    components = utils.parse_components(args.pop("components"))
-    if not components:
-        defaulted_components = True
-        components = common.get_default_components()
-    action = _clean_action(args.pop("action"))
-    if not action:
-        print(utils.color_text("No valid action specified!", "red"))
-        return False
-    rootdir = args.pop("dir")
-    if rootdir is None:
-        print(utils.color_text("No root directory specified!", "red"))
-        return False
     #ensure os/distro is known
     (distro, platform) = utils.determine_distro()
     if distro is None:
         print("Unsupported platform " + utils.color_text(platform, "red") + "!")
+        return False
+    #extract which components to run
+    defaulted_components = False
+    components = utils.parse_components(args.pop("components"))
+    if not components:
+        defaulted_components = True
+        components = common.get_default_components(distro)
+    #ensure the action is valid
+    action = _clean_action(args.pop("action"))
+    if not action:
+        print(utils.color_text("No valid action specified!", "red"))
+        return False
+    #ensure we have a root directory
+    rootdir = args.pop("dir")
+    if rootdir is None:
+        print(utils.color_text("No root directory specified!", "red"))
         return False
     #start it
     (rep, maxlen) = utils.welcome(_WELCOME_MAP.get(action))
@@ -371,7 +374,7 @@ def _run_action(args):
     ignore_deps = args.pop('ignore_deps', False)
     component_order = None
     if not ignore_deps:
-        all_components_deps = common.get_components_deps(action, components)
+        all_components_deps = common.get_components_deps(action, components, distro, rootdir)
         component_diff = set(all_components_deps.keys()).difference(components.keys())
         if component_diff:
             LOG.info("Having to activate dependent components: [%s]" \
