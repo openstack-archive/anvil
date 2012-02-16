@@ -2,6 +2,8 @@
 
 # From devstack commit bd13b708f2 with some modifications
 
+set +e
+
 # These are used by keystone commands below (?)
 export SERVICE_TOKEN=%SERVICE_TOKEN%
 export SERVICE_ENDPOINT=$SERVICE_ENDPOINT
@@ -20,6 +22,7 @@ KEYSTONE_ADMIN_ROLE_NAME=KeystoneAdmin
 KEYSTONE_SERVICE_ADMIN_ROLE_NAME=KeystoneServiceAdmin
 SYSADMIN_ROLE_NAME=sysadmin
 NETADMIN_ROLE_NAME=netadmin
+DUMMY_EMAIL=admin@example.com
 
 # Tenants
 ADMIN_TENANT=`get_id keystone tenant-create --name=$ADMIN_USERNAME`
@@ -30,12 +33,12 @@ INVIS_TENANT=`get_id keystone tenant-create --name=$INVIS_USER_NAME`
 ADMIN_USER=`get_id keystone user-create \
                                  --name=$ADMIN_USERNAME \
                                  --pass="$ADMIN_PASSWORD" \
-                                 --email=admin@example.com`
+                                 --email=$DUMMY_EMAIL`
 
 DEMO_USER=`get_id keystone user-create \
                                  --name=$DEMO_USER_NAME \
                                  --pass="$ADMIN_PASSWORD" \
-                                 --email=admin@example.com`
+                                 --email=$DUMMY_EMAIL`
 
 # Roles
 ADMIN_ROLE=`get_id keystone role-create --name=$ADMIN_USERNAME`
