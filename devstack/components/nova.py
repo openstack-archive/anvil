@@ -162,12 +162,21 @@ SUB_COMPONENT_NAME_MAP = {
 BIN_DIR = 'bin'
 CONFIG_DIR = "etc"
 
-#These are used by NovaConf
+#network class/driver/manager templs
 QUANTUM_MANAGER = 'nova.network.quantum.manager.QuantumManager'
+QUANTUM_IPAM_LIB = 'nova.network.quantum.melange_ipam_lib'
 NET_MANAGER_TEMPLATE = 'nova.network.manager.%s'
+
+#sensible defaults
 DEF_IMAGE_SERVICE = 'nova.image.glance.GlanceImageService'
 DEF_SCHEDULER = 'nova.scheduler.simple.SimpleScheduler'
 DEF_GLANCE_PORT = 9292
+DEF_GLANCE_SERVER = "%s" + ":%s" % (DEF_GLANCE_PORT)
+DEF_INSTANCE_TEMPL = 'instance-' + '%08x'
+DEF_FIREWALL_DRIVER = 'nova.virt.firewall.IptablesFirewallDriver'
+DEF_VIRT_DRIVER = virsh.VIRT_TYPE
+DEF_FLAT_VIRT_BRIDGE = 'br100'
+DEF_NET_MANAGER = 'FlatDHCPManager'
 
 #only turned on if vswitch enabled
 QUANTUM_OPENSWITCH_OPS = {
@@ -181,25 +190,17 @@ QUANTUM_OPENSWITCH_OPS = {
 CLEANER_DATA_CONF = 'nova-clean.sh'
 CLEANER_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
 
-#xenserver specific
+#xenserver specific defaults
 XS_DEF_INTERFACE = 'eth1'
 XA_CONNECTION_ADDR = '169.254.0.1'
 XS_VNC_ADDR = XA_CONNECTION_ADDR
+XS_DEF_BRIDGE = 'xapi1'
 XA_CONNECTION_PORT = 80
 XA_DEF_USER = 'root'
 XA_DEF_CONNECTION_URL = urlunparse(('http', "%s:%s" % (XA_CONNECTION_ADDR, XA_CONNECTION_PORT), "", '', '', ''))
 
-#vnc specific
+#vnc specific defaults
 VNC_DEF_ADDR = '127.0.0.1'
-
-#def virt driver
-DEF_VIRT_DRIVER = virsh.VIRT_TYPE
-
-#def firewall driver
-DEF_FIREWALL_DRIVER = 'nova.virt.firewall.IptablesFirewallDriver'
-
-#default instance template
-DEF_INSTANCE_TEMPL = 'instance-%08x'
 
 #std compute extensions
 STD_COMPUTE_EXTS = 'nova.api.openstack.compute.contrib.standard_extensions'
@@ -263,9 +264,8 @@ class NovaInstaller(comp.PythonInstallComponent):
         pkgs = list(REQ_PKGS)
         sub_components = self.component_opts or SUBCOMPONENTS
         for c in sub_components:
-            fns = ADD_PKGS.get(c)
-            if fns:
-                pkgs.extend(fns)
+            fns = ADD_PKGS.get(c, [])
+            pkgs.extend(fns)
         return pkgs
 
     def _get_symlinks(self):
@@ -326,7 +326,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         self._sync_db()
         self._setup_network()
         self._setup_cleaner()
-        # check if we need to do the vol subcomponent
+        #check if we need to do the vol subcomponent
         if self.volumes_enabled:
             vol_maker = NovaVolumeConfigurator(self)
             vol_maker.setup_volumes()
@@ -542,6 +542,7 @@ class NovaConfConfigurator(object):
         return _canon_virt_driver(virt_driver)
 
     def configure(self):
+        #everything built goes in here
         nova_conf = NovaConf()
 
         #used more than once
@@ -586,7 +587,7 @@ class NovaConfConfigurator(object):
         #enable the standard extensions
         nova_conf.add('osapi_compute_extension', STD_COMPUTE_EXTS)
 
-        #vnc settings
+        #vnc settings setup
         self._configure_vnc(nova_conf)
 
         #where our paste config is
@@ -616,10 +617,11 @@ class NovaConfConfigurator(object):
         #handle any virt driver specifics
         self._configure_virt_driver(nova_conf)
 
-        #now make it
-        generated_content = nova_conf.generate()
+        #and extract to finish
+        return self._get_content(nova_conf)
 
-        #add any extra flags/lines in?
+    def _get_content(self, nova_conf):
+        generated_content = nova_conf.generate()
         extra_flags = self._getstr('extra_flags')
         if extra_flags:
             new_contents = list()
@@ -639,7 +641,6 @@ class NovaConfConfigurator(object):
             if cleaned_lines:
                 new_contents.extend(cleaned_lines)
                 generated_content = utils.joinlinesep(*new_contents)
-
         return generated_content
 
     def _configure_image_service(self, nova_conf, hostip):
@@ -649,8 +650,7 @@ class NovaConfConfigurator(object):
 
         #where is glance located?
         if img_service.lower().find("glance") != -1:
-            glance_api_server = self._getstr('glance_server',
-                                               ("%s:%d" % (hostip, DEF_GLANCE_PORT)))
+            glance_api_server = self._getstr('glance_server', (DEF_GLANCE_SERVER % (hostip)))
             nova_conf.add('glance_api_servers', glance_api_server)
 
     def _configure_vnc(self, nova_conf):
@@ -692,12 +692,12 @@ class NovaConfConfigurator(object):
                     else:
                         nova_conf.add(key, value)
             if settings.MELANGE_CLIENT in self.instances:
-                nova_conf.add('quantum_ipam_lib', 'nova.network.quantum.melange_ipam_lib')
+                nova_conf.add('quantum_ipam_lib', QUANTUM_IPAM_LIB)
                 nova_conf.add_simple('use_melange_mac_generation')
                 nova_conf.add('melange_host', self.cfg.get('melange', 'm_host'))
                 nova_conf.add('melange_port', self.cfg.get('melange', 'm_port'))
         else:
-            nova_conf.add('network_manager', NET_MANAGER_TEMPLATE % (self._getstr('network_manager')))
+            nova_conf.add('network_manager', NET_MANAGER_TEMPLATE % (self._getstr('network_manager', DEF_NET_MANAGER)))
 
         #dhcp bridge stuff???
         nova_conf.add('dhcpbridge_flagfile', sh.joinpths(self.cfgdir, API_CONF))
@@ -762,11 +762,11 @@ class NovaConfConfigurator(object):
                 raise exceptions.ConfigException(msg)
             nova_conf.add('flat_interface', xs_flat_ifc)
             nova_conf.add('firewall_driver', self._getstr('xs_firewall_driver', DEF_FIREWALL_DRIVER))
-            nova_conf.add('flat_network_bridge', self._getstr('xs_flat_network_bridge'))
+            nova_conf.add('flat_network_bridge', self._getstr('xs_flat_network_bridge', XS_DEF_BRIDGE))
         elif drive_canon == virsh.VIRT_TYPE:
             nova_conf.add('connection_type', 'libvirt')
             nova_conf.add('firewall_driver', self._getstr('libvirt_firewall_driver', DEF_FIREWALL_DRIVER))
-            nova_conf.add('flat_network_bridge', self._getstr('flat_network_bridge'))
+            nova_conf.add('flat_network_bridge', self._getstr('flat_network_bridge', DEF_FLAT_VIRT_BRIDGE))
             flat_interface = self._getstr('flat_interface')
             if flat_interface:
                 if not utils.is_interface(flat_interface):
