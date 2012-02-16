@@ -20,6 +20,7 @@ import os
 
 from devstack import cfg
 from devstack import component as comp
+from devstack import date
 from devstack import exceptions
 from devstack import libvirt as virsh
 from devstack import log as logging
@@ -35,7 +36,7 @@ from devstack.components import keystone
 TYPE = settings.NOVA
 LOG = logging.getLogger('devstack.components.nova')
 
-#special generatedconf
+#special generated conf
 API_CONF = 'nova.conf'
 
 #normal conf
@@ -799,10 +800,13 @@ class NovaConf(object):
         return key_str
 
     def generate(self, param_dict=None):
-        conf_lines = sorted(self.generate_lines(param_dict))
-        return utils.joinlinesep(*conf_lines)
+        conf_lines = sorted(self._generate_lines(param_dict))
+        full_lines = list()
+        full_lines.append("# Generated on %s" % (date.rcf8222date()))
+        full_lines.extend(conf_lines)
+        return utils.joinlinesep(*full_lines)
 
-    def generate_lines(self, param_dict=None):
+    def _generate_lines(self, param_dict=None):
         gen_lines = list()
         for line_entry in self.lines:
             key = line_entry.get('key')
