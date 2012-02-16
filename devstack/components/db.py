@@ -59,7 +59,7 @@ DB_ACTIONS = {
         },
         #modification commands
         #NOTE: we aren't stopping any sql injection...
-        'set_pwd': ['mysql', '--user=%USER%', '--password=%OLD_PASSWORD%', '-e', 
+        'set_pwd': ['mysql', '--user=%USER%', '--password=%OLD_PASSWORD%', '-e',
                     ("\"USE mysql; UPDATE user SET "
                     " password=PASSWORD('%NEW_PASSWORD%') WHERE User='%USER%'; FLUSH PRIVILEGES;\"")],
         'create_db': ['mysql', '--user=%USER%', '--password=%PASSWORD%',
