@@ -36,7 +36,7 @@ APP_OPTIONS = {
 }
 
 #the pkg json files no-vnc requires for installation
-REQ_PKGS = ['n-vnc.json']
+REQ_PKGS = ['general.json', 'n-vnc.json']
 
 #pip files that no-vnc requires
 REQ_PIPS = ['general.json', 'n-vnc.json']
