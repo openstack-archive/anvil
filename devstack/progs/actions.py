@@ -306,11 +306,11 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
     start_time = time.time()
     results = list()
     force = program_args.get('force', False)
+    #activate all preqs first
     for component in component_order:
-        instance = all_instances[component]
         if component in prerequisite_instances:
             (preq_action, preq_instance) = prerequisite_instances[component]
-            LOG.warn("Having to activate prerequisite for component %s of action type %s." % (component, preq_action))
+            LOG.info("Having to activate prerequisite for component %s of action type %s." % (component, preq_action))
             preq_func = action_functor_map[preq_action]
             preq_result = preq_func(component, preq_instance, force)
             if preq_result is None:
@@ -319,6 +319,9 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
                 results.extend(preq_result)
             else:
                 results.append(str(preq_result))
+    #now do main actions
+    for component in component_order:
+        instance = all_instances[component]
         main_functor = action_functor_map[action_name]
         main_result = main_functor(component, instance, force)
         if main_result is None:
