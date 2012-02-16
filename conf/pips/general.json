@@ -7,7 +7,6 @@
         }
     },
     "rhel-6": {
-        # For testing
         "coverage": {
             "version": "3.5.1"
         },

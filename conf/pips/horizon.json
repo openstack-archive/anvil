@@ -27,7 +27,6 @@
         "sqlalchemy-migrate": {
             "version": "0.7.2"
         },
-        #this one is sort of odd...
         "python-cloudfiles": {
             "version": "1.7.9.3"
         },
