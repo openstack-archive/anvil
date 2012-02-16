@@ -114,19 +114,19 @@ def _pre_run(action_name, root_dir, pkg_manager, config, component_order, instan
     prerequisite_instances = instances[1]
     for component in component_order:
         base_inst = all_instances.get(component)
-        if base_inst:
-            base_inst.verify()
         if component in prerequisite_instances:
             (_, pre_inst) = prerequisite_instances[component]
             pre_inst.verify()
+        if base_inst:
+            base_inst.verify()
     LOG.info("Warming up your component configurations (ie so you won't be prompted later)")
     for component in component_order:
         base_inst = all_instances.get(component)
-        if base_inst:
-            base_inst.warm_configs()
         if component in prerequisite_instances:
             (_, pre_inst) = prerequisite_instances[component]
             pre_inst.warm_configs()
+        if base_inst:
+            base_inst.warm_configs()
     if action_name in _RC_FILE_MAKE_ACTIONS and not loaded_env:
         _gen_localrc(config, rc_fn)
 
