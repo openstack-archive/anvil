@@ -97,7 +97,7 @@ ACTION_CLASSES[settings.STOP] = ACTION_CLASSES[settings.START]
 _FAKE_ROOT_DIR = tempfile.gettempdir()
 
 
-def get_default_components():
+def get_default_components(distro):
     #this seems to be the default list of what to install by default
     #ENABLED_SERVICES=${ENABLED_SERVICES:-g-api,g-reg,key,n-api,
     #n-crt,n-obj,n-cpu,n-net,n-sch,n-novnc,n-xvnc,n-cauth,horizon,mysql,rabbit}
@@ -130,7 +130,7 @@ def format_secs_taken(secs):
     return output
 
 
-def get_action_cls(action_name, component_name):
+def get_action_cls(action_name, component_name, distro):
     action_cls_map = ACTION_CLASSES.get(action_name)
     if not action_cls_map:
         raise excp.StackException("Action %s has no component to class mapping" % (action_name))

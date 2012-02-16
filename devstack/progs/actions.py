@@ -58,6 +58,20 @@ _NO_AUTO_STOP = [settings.DB, settings.RABBIT]
 _RC_FILE_MAKE_ACTIONS = [settings.INSTALL, settings.START]
 _RC_FILE = 'openstackrc'
 
+# For these actions we will ensure the preq occurs first
+_DEP_ACTIONS = {
+    settings.START: {
+        'check_func': (lambda instance, component_name:
+                        (not instance.is_installed())),
+        'dependent_action': settings.INSTALL,
+    },
+    settings.UNINSTALL: {
+        'check_func': (lambda instance, component_name:
+                        (instance.is_started() and component_name not in _NO_AUTO_STOP)),
+        'dependent_action': settings.STOP,
+    },
+}
+
 
 def _clean_action(action):
     if action is None:
@@ -227,42 +241,32 @@ def _uninstall(component_name, instance, force):
 
 
 def _instanciate_components(action_name, components, distro, pkg_manager, config, root_dir):
-    all_instances = {}
-    prerequisite_instances = {}
+    all_instances = dict()
+    prerequisite_instances = dict()
 
     for component in components.keys():
-        action_cls = common.get_action_cls(action_name, component)
-        instance = action_cls(instances=all_instances,
+        base_cls = common.get_action_cls(action_name, component, distro)
+        base_instance = base_cls(instances=all_instances,
                               distro=distro,
                               packager=pkg_manager,
                               config=config,
                               root=root_dir,
                               opts=components.get(component, list()))
-        all_instances[component] = instance
+        all_instances[component] = base_instance
 
-        if action_name == settings.START:
-            if not instance.is_installed():
-                install_cls = common.get_action_cls(settings.INSTALL, component)
-                install_instance = install_cls(instances=dict(),
-                                               distro=distro,
-                                               packager=pkg_manager,
-                                               config=config,
-                                               root=root_dir,
-                                               opts=components.get(component, list()))
-                prerequisite_instances[component] = install_instance
-
-        elif action_name == settings.UNINSTALL:
-            if component not in _NO_AUTO_STOP:
-                # stop the component if started
-                if instance.is_started():
-                    stop_cls = common.get_action_cls(settings.STOP, component)
-                    stop_instance = stop_cls(instances=dict(),
-                                             distro=distro,
-                                             packager=pkg_manager,
-                                             config=config,
-                                             root=root_dir,
-                                             opts=components.get(component, list()))
-                    prerequisite_instances[component] = stop_instance
+        preq_info = _DEP_ACTIONS.get(action_name)
+        if preq_info:
+            checker = preq_info['check_func']
+            if checker(base_instance, component):
+                preq_action_name = preq_info['dependent_action']
+                preq_action_cls = common.get_action_cls(preq_action_name, component, distro)
+                preq_instance = preq_action_cls(instances=all_instances,
+                              distro=distro,
+                              packager=pkg_manager,
+                              config=config,
+                              root=root_dir,
+                              opts=components.get(component, list()))
+                prerequisite_instances[component] = preq_instance
 
     return (all_instances, prerequisite_instances)
 
