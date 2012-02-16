@@ -42,14 +42,17 @@ REQ_PKGS = ['n-vnc.json']
 REQ_PIPS = ['general.json', 'n-vnc.json']
 
 
-class NoVNCUninstaller(comp.PkgUninstallComponent):
+class NoVNCUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PkgUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
 
 
-class NoVNCInstaller(comp.PkgInstallComponent):
+class NoVNCInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PkgInstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+
+    def _get_python_directories(self):
+        return dict()
 
     def _get_download_locations(self):
         places = list()
