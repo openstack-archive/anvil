@@ -176,6 +176,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             mp['DEST'] = self.appdir
             mp['SQL_CONN'] = self.cfg.get_dbdsn(DB_NAME)
             mp['KEYSTONE_DIR'] = self.appdir
+            mp.update(get_shared_params(self.cfg))
         elif config_fn == MANAGE_DATA_CONF:
             mp['ADMIN_PASSWORD'] = self.cfg.get('passwords', 'horizon_keystone_admin')
             mp['ADMIN_USERNAME'] = 'admin'
