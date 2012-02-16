@@ -1,10 +1,9 @@
 #!/bin/bash
 
 # From devstack commit bd13b708f2 with some modifications
-
 set +e
 
-# These are used by keystone commands below (?)
+# These are used by keystone commands below
 export SERVICE_TOKEN=%SERVICE_TOKEN%
 
 # This is really the auth endpoint, not the service endpoint

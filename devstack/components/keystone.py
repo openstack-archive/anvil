@@ -46,7 +46,7 @@ CONFIGS = [ROOT_CONF, CATALOG_CONF]
 CFG_SECTION = 'DEFAULT'
 
 #this is a special conf
-MANAGE_DATA_CONF = 'keystone_data.sh'
+MANAGE_DATA_CONF = 'keystone_init.sh'
 MANAGE_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
 MANAGE_ADMIN_USER = 'admin'
 MANAGE_DEMO_USER = 'demo'
@@ -130,8 +130,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         db.create_db(self.cfg, DB_NAME)
 
     def _setup_data(self):
-        LOG.info("Configuring data setup template %s.", MANAGE_DATA_CONF)
-        #first write it
+        LOG.info("Configuring init/setup template %s.", MANAGE_DATA_CONF)
         (_, contents) = utils.load_template(self.component_name, MANAGE_DATA_CONF)
         params = self._get_param_map(MANAGE_DATA_CONF)
         contents = utils.param_replace(contents, params, True)
@@ -200,7 +199,7 @@ class KeystoneRuntime(comp.PythonRuntime):
             #still there, run it
             #these environment additions are important
             #in that they eventually affect how this script runs
-            LOG.info("Waiting %s seconds so that keystone can start up before user/tenant/role install." % (WAIT_ONLINE_TO))
+            LOG.info("Waiting %s seconds so that keystone can start up before user/tenant/role setup." % (WAIT_ONLINE_TO))
             time.sleep(WAIT_ONLINE_TO)
             env = dict()
             env['ENABLED_SERVICES'] = ",".join(self.instances.keys())
