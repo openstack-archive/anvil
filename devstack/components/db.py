@@ -80,7 +80,7 @@ SQL_RESET_PW_LINKS = ['https://help.ubuntu.com/community/MysqlPasswordReset',
                       'http://dev.mysql.com/doc/refman/5.0/en/resetting-permissions.html']
 
 #used as a generic error message
-BASE_ERROR = 'Currently we do not know how to %s for database type [%s]'
+BASE_ERROR = 'Currently we do not know how to [%s] for database type [%s]'
 
 #the pkg json files db requires for installation
 REQ_PKGS = ['db.json']
