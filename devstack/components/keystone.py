@@ -130,7 +130,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         db.create_db(self.cfg, DB_NAME)
 
     def _setup_data(self):
-        LOG.info("Configuring init/setup template %s.", MANAGE_DATA_CONF)
+        LOG.info("Configuring keystone initializer template %s.", MANAGE_DATA_CONF)
         (_, contents) = utils.load_template(self.component_name, MANAGE_DATA_CONF)
         params = self._get_param_map(MANAGE_DATA_CONF)
         contents = utils.param_replace(contents, params, True)
@@ -199,14 +199,15 @@ class KeystoneRuntime(comp.PythonRuntime):
             #still there, run it
             #these environment additions are important
             #in that they eventually affect how this script runs
-            LOG.info("Waiting %s seconds so that keystone can start up before user/tenant/role setup." % (WAIT_ONLINE_TO))
+            LOG.info("Waiting %s seconds so that keystone can start up before running first time init." % (WAIT_ONLINE_TO))
             time.sleep(WAIT_ONLINE_TO)
             env = dict()
             env['ENABLED_SERVICES'] = ",".join(self.instances.keys())
             env['BIN_DIR'] = self.bindir
             setup_cmd = MANAGE_CMD_ROOT + [tgt_fn]
-            LOG.info("Running (%s) command to setup keystone." % (" ".join(setup_cmd)))
+            LOG.info("Running (%s) command to initialize keystone." % (" ".join(setup_cmd)))
             sh.execute(*setup_cmd, env_overrides=env)
+            LOG.debug("Removing (%s) file since we successfully initialized keystone." % (tgt_fn))
             sh.unlink(tgt_fn)
 
     def _get_apps_to_start(self):

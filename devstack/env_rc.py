@@ -22,6 +22,8 @@ import subprocess
 from devstack import date
 from devstack import env
 
+from devstack.components import keystone
+
 #general extraction cfg keys
 CFG_MAKE = {
     'ADMIN_PASSWORD': ('passwords', 'horizon_keystone_admin'),
@@ -75,17 +77,27 @@ def _generate_ec2_env(fh, cfg):
         s3_url = urlunparse(('http', "%s:%s" % (ip, S3_PORT), "services/Cloud", '', '', ''))
     _write_env('S3_URL', s3_url, fh)
 
-    ec2_acc_key = cfg.get('extern', 'ec2_access_key')
-    _write_env('EC2_ACCESS_KEY', ec2_acc_key, fh)
-
-    hkpw = cfg.get('passwords', 'horizon_keystone_admin', auto_pw=False)
-    _write_env('EC2_SECRET_KEY', hkpw, fh)
+    ec2_cert = cfg.get('extern', 'ec2_cert_fn')
+    _write_env('EC2_CERT', ec2_cert, fh)
 
     ec2_uid = cfg.get('extern', 'ec2_user_id')
     _write_env('EC2_USER_ID', ec2_uid, fh)
 
-    ec2_cert = cfg.get('extern', 'ec2_cert_fn')
-    _write_env('EC2_CERT', ec2_cert, fh)
+    extern_inc = """
+
+# use stored ec2 env variables
+if [ -f ./ec2rc ]; then
+    source ./ec2rc
+fi
+
+# allow local overrides of env variables
+if [ -f ./localrc ]; then
+    source ./localrc
+fi
+
+"""
+
+    fh.write(extern_inc.strip())
 
     _write_line("", fh)
 

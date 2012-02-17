@@ -99,11 +99,15 @@ RESULT=`keystone ec2-create-credentials --tenant_id=$DEMO_TENANT --user_id=$DEMO
 DEMO_ACCESS=`echo "$RESULT" | grep access | awk '{print $4}'`
 DEMO_SECRET=`echo "$RESULT" | grep secret | awk '{print $4}'`
 
-# write the secret and access to ec2rc to stderr for 
-# pickup by devstack py! (CHANGED!)
-cat 1>&2 <<EOF
-ADMIN_ACCESS=$ADMIN_ACCESS
-ADMIN_SECRET=$ADMIN_SECRET
-DEMO_ACCESS=$DEMO_ACCESS
-DEMO_SECRET=$DEMO_SECRET
+EC2RC_FILE=ec2rc
+if [ -n "$EC2RC_FILE" ]; then
+
+    cat > $EC2RC_FILE <<EOF
+
+#???
+export EC2_ACCESS_KEY=$DEMO_ACCESS
+export EC2_SECRET_KEY=$DEMO_SECRET
+
 EOF
+
+fi

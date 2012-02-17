@@ -228,10 +228,6 @@ class PythonInstallComponent(PkgInstallComponent):
             pip.install(pips, self.distro)
 
     def _format_stderr_out(self, stderr, stdout):
-        if stdout is None:
-            stdout = ''
-        if stderr is None:
-            stderr = ''
         combined = ["===STDOUT===", str(stdout), "===STDERR===", str(stderr)]
         return utils.joinlinesep(*combined)
 
