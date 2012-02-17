@@ -61,6 +61,24 @@ def _write_env(name, value, fh):
         _write_line("export %s=%s" % (name, str_value), fh)
 
 
+def _generate_extern_inc(fh):
+    extern_inc = """
+
+# use stored ec2 env variables
+if [ -f ./ec2rc ]; then
+    source ./ec2rc
+fi
+
+# allow local overrides of env variables
+if [ -f ./localrc ]; then
+    source ./localrc
+fi
+
+"""
+    fh.write(extern_inc.strip())
+    _write_line("", fh)
+
+
 def _generate_ec2_env(fh, cfg):
     _write_line('# EC2 and/or S3 stuff', fh)
     ip = cfg.get('host', 'ip')
@@ -80,24 +98,6 @@ def _generate_ec2_env(fh, cfg):
 
     ec2_uid = cfg.get('extern', 'ec2_user_id')
     _write_env('EC2_USER_ID', ec2_uid, fh)
-
-    _write_line("", fh)
-    extern_inc = """
-
-# use stored ec2 env variables
-if [ -f ./ec2rc ]; then
-    source ./ec2rc
-fi
-
-# allow local overrides of env variables
-if [ -f ./localrc ]; then
-    source ./localrc
-fi
-
-"""
-
-    fh.write(extern_inc.strip())
-    _write_line("", fh)
     _write_line("", fh)
 
 
@@ -171,6 +171,7 @@ def generate_local_rc(fn, cfg):
         _generate_ec2_env(fh, cfg)
         _generate_nova_env(fh, cfg)
         _generate_os_env(fh, cfg)
+        _generate_extern_inc(fh)
 
 
 def load_local_rc(fn):
