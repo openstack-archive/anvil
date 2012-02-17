@@ -109,6 +109,10 @@ if [ -n "$EC2RC_FILE" ]; then
 export EC2_ACCESS_KEY=$DEMO_ACCESS
 export EC2_SECRET_KEY=$DEMO_SECRET
 
+#Not really EC2 but useful for knowing...
+export ADMIN_SECRET=$ADMIN_SECRET
+export ADMIN_ACCESS=$ADMIN_ACCESS
+
 EOF
 
 fi
