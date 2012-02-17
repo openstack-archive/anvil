@@ -41,7 +41,8 @@ API_CONF = "glance-api.conf"
 REG_CONF = "glance-registry.conf"
 API_PASTE_CONF = 'glance-api-paste.ini'
 REG_PASTE_CONF = 'glance-registry-paste.ini'
-CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF, REG_PASTE_CONF]
+POLICY_JSON = 'policy.json'
+CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF, REG_PASTE_CONF, POLICY_JSON]
 CFG_SECTION = 'DEFAULT'
 
 #reg, api are here as possible subcomponents
