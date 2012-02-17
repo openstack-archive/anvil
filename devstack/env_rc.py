@@ -22,8 +22,6 @@ import subprocess
 from devstack import date
 from devstack import env
 
-from devstack.components import keystone
-
 #general extraction cfg keys
 CFG_MAKE = {
     'ADMIN_PASSWORD': ('passwords', 'horizon_keystone_admin'),

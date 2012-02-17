@@ -146,12 +146,12 @@ def execute(*cmd, **kwargs):
         stderr = ''
 
     if (not ignore_exit_code) and (rc not in check_exit_code):
-        raise excp.ProcessExecutionError(exit_code=rc, stdout=stdout,\
+        raise excp.ProcessExecutionError(exit_code=rc, stdout=stdout, \
                                          stderr=stderr, cmd=str_cmd)
     else:
         #log it anyway
         if rc not in check_exit_code:
-            LOG.debug("A failure may of just happened when running command \"%s\" [%s] (%s, %s)",\
+            LOG.debug("A failure may of just happened when running command \"%s\" [%s] (%s, %s)", \
                 str_cmd, rc, stdout.strip(), stderr.strip())
         #log for debugging figuring stuff out
         LOG.debug("Received stdout: %s" % (stdout.strip()))
