@@ -16,7 +16,6 @@
 
 from urlparse import urlunparse
 import re
-import subprocess
 
 from devstack import date
 from devstack import env
@@ -58,7 +57,7 @@ class RcGenerator(object):
         return lines
 
     def _make_export(self, export_name, value):
-        escaped_val = subprocess.list2cmdline([str(value)])
+        escaped_val = sh.shellquote(value)
         full_line = "export %s=%s" % (export_name, escaped_val)
         return [full_line]
 

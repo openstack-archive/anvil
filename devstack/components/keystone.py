@@ -43,7 +43,7 @@ CONFIG_DIR = "etc"
 ROOT_CONF = "keystone.conf"
 CATALOG_CONF = 'default_catalog.templates'
 LOGGING_CONF = "logging.conf"
-LOGGING_SOURCE_FN = 'logging.cnf.sample'
+LOGGING_SOURCE_FN = 'logging.conf.sample'
 CONFIGS = [ROOT_CONF, CATALOG_CONF, LOGGING_CONF]
 
 #this is a special conf
