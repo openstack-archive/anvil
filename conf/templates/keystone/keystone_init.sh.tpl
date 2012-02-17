@@ -111,3 +111,4 @@ export EC2_SECRET_KEY=$DEMO_SECRET
 EOF
 
 fi
+

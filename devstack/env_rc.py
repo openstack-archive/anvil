@@ -98,7 +98,7 @@ fi
 """
 
     fh.write(extern_inc.strip())
-
+    _write_line("", fh)
     _write_line("", fh)
 
 

@@ -134,6 +134,10 @@ class GlanceInstaller(comp.PythonInstallComponent):
             (_, bottom) = self._get_source_config(REG_PASTE_CONF)
             combined = [top, "### Joined here on %s with file %s" % (date.rcf8222date(), REG_PASTE_CONF), bottom]
             return (fn, utils.joinlinesep(*combined))
+        if config_fn == POLICY_JSON:
+            fn = sh.joinpths(self.cfgdir, POLICY_JSON)
+            contents = sh.load_file(fn)
+            return (fn, contents)
         return comp.PythonInstallComponent._get_source_config(self, config_fn)
 
     def _config_adjust(self, contents, name):
