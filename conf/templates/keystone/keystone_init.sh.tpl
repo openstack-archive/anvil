@@ -99,12 +99,13 @@ RESULT=`keystone ec2-create-credentials --tenant_id=$DEMO_TENANT --user_id=$DEMO
 DEMO_ACCESS=`echo "$RESULT" | grep access | awk '{print $4}'`
 DEMO_SECRET=`echo "$RESULT" | grep secret | awk '{print $4}'`
 
-EC2RC_FILE=ec2rc
+# Added! (NOT IN ORIGINAL)
+EC2RC_FILE=`pwd`/ec2rc
 if [ -n "$EC2RC_FILE" ]; then
 
     cat > $EC2RC_FILE <<EOF
 
-#???
+#EC2 access variables (ie for euca tools...)
 export EC2_ACCESS_KEY=$DEMO_ACCESS
 export EC2_SECRET_KEY=$DEMO_SECRET
 
