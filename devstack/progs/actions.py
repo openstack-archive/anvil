@@ -56,7 +56,7 @@ _NO_AUTO_STOP = [settings.DB, settings.RABBIT]
 
 # For these actions we will attempt to make an rc file if it does not exist
 _RC_FILE_MAKE_ACTIONS = [settings.INSTALL, settings.START]
-_RC_FILE = 'openstackrc'
+_RC_FILE = sh.abspth(settings.OSRC_FN)
 
 # For these actions we will ensure the preq occurs first
 _DEP_ACTIONS = {
@@ -90,14 +90,9 @@ def _get_pkg_manager(distro, keep_packages):
     return cls(distro, keep_packages)
 
 
-def _get_rc_fn():
-    rc_fn = _RC_FILE
-    return sh.abspth(rc_fn)
-
-
 def _pre_run(action_name, root_dir, pkg_manager, config, component_order, instances):
     loaded_env = False
-    rc_fn = _get_rc_fn()
+    rc_fn = _RC_FILE
     try:
         if sh.isfile(rc_fn):
             LOG.info("Attempting to load rc file at [%s] which has your environment settings." % (rc_fn))

@@ -213,8 +213,7 @@ class KeystoneRuntime(comp.PythonRuntime):
             LOG.info("Running (%s) command to initialize keystone." % (" ".join(setup_cmd)))
             (sysout, stderr) = sh.execute(*setup_cmd, env_overrides=env, run_as_root=False)
             if sysout:
-                ec2rcfn = self.cfg.getdefaulted("keystone", "ec2_rc_fn", EC2RC_FN)
-                sh.write_file(ec2rcfn, sysout)
+                sh.write_file(settings.EC2RC_FN, sysout)
             LOG.debug("Removing (%s) file since we successfully initialized keystone." % (tgt_fn))
             sh.unlink(tgt_fn)
 

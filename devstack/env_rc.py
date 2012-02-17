@@ -21,6 +21,8 @@ import subprocess
 
 from devstack import date
 from devstack import env
+from devstack import settings
+from devstack import shell as sh
 
 #general extraction cfg keys
 CFG_MAKE = {
@@ -64,19 +66,22 @@ def _write_env(name, value, fh):
 def _generate_extern_inc(fh):
     _write_line('# External includes stuff', fh)
 
-    extern_inc = """
+    extern_tpl = """
 
 # Use stored ec2 env variables
-if [ -f ./ec2rc ]; then
-    source ./ec2rc
+if [ -f "{ec2rc_fn}" ]; then
+    source "{ec2rc_fn}"
 fi
 
 # Allow local overrides of env variables
-if [ -f ./localrc ]; then
-    source ./localrc
+if [ -f "{localrc_fn}" ]; then
+    source "{localrc_fn}"
 fi
 
 """
+
+    extern_inc = extern_tpl.format(ec2rc_fn=sh.abspth(settings.EC2RC_FN),
+                                   localrc_fn=sh.abspth(settings.LOCALRC_FN))
     fh.write(extern_inc.strip())
     _write_line("", fh)
 
