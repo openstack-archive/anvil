@@ -17,6 +17,7 @@
 from urlparse import urlunparse
 import io
 import os
+import stat 
 
 from devstack import cfg
 from devstack import component as comp
@@ -597,9 +598,19 @@ class NovaConfConfigurator(object):
         # don't want to lose the logs when we uninstall
         logdir = self._getstr('logdir', '/var/log/nova')
         if logdir:
-            LOG.info("Making sure that logdir exists:%s" % logdir)
             nova_conf.add('logdir', logdir)
+            LOG.info("Making sure that logdir exists:%s" % logdir)
+            # Will need to be root to create it since it may be in /var/log
+            root_mode = sh.got_root()
+            if not root_mode:
+                # Not root mode, switch to it
+                sh.root_mode()
             sh.mkdir(logdir, True)
+            sh.chmod(logdir, stat.S_IRWXO | stat.S_IRWXG | stat.S_IRWXU)
+
+            if not root_mode:
+                # Wasn't root mode, switch back
+                sh.user_mode()
 
         #allow the admin api?
         if self._getbool('allow_admin_api'):
