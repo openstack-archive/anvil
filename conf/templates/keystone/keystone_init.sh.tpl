@@ -103,13 +103,13 @@ DEMO_SECRET=`echo "$RESULT" | grep secret | awk '{print $4}'`
 EC2RC_FILE=`pwd`/ec2rc
 if [ -n "$EC2RC_FILE" ]; then
 
-    cat > $EC2RC_FILE <<EOF
+cat > $EC2RC_FILE <<EOF
 
-#EC2 access variables (ie for euca tools...)
+# EC2 access variables (ie for euca tools...)
 export EC2_ACCESS_KEY=$DEMO_ACCESS
 export EC2_SECRET_KEY=$DEMO_SECRET
 
-#Not really EC2 but useful for knowing...
+# Not really EC2 but useful for knowing...
 export ADMIN_SECRET=$ADMIN_SECRET
 export ADMIN_ACCESS=$ADMIN_ACCESS
 export DEMO_ACCESS=$DEMO_ACCESS

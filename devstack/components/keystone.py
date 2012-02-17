@@ -73,6 +73,9 @@ REQ_PIPS = ['general.json', 'keystone.json']
 #used to wait until started before we can run the data setup script
 WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
 
+#config keys we warm up so u won't be prompted later
+WARMUP_PWS = ['horizon_keystone_admin', 'service_token']
+
 
 class KeystoneUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -112,13 +115,11 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         comp.PythonInstallComponent.post_install(self)
         self._setup_db()
         self._sync_db()
-        self._setup_data()
+        self._setup_initer()
 
     def _sync_db(self):
         LOG.info("Syncing keystone to database named %s.", DB_NAME)
         params = dict()
-        #it seems like this command only works if fully specified
-        #probably a bug
         params['BINDIR'] = self.bindir
         cmds = [{'cmd': SYNC_DB_CMD}]
         utils.execute_template(*cmds, cwd=self.bindir, params=params)
@@ -131,7 +132,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         db.drop_db(self.cfg, DB_NAME)
         db.create_db(self.cfg, DB_NAME)
 
-    def _setup_data(self):
+    def _setup_initer(self):
         LOG.info("Configuring keystone initializer template %s.", MANAGE_DATA_CONF)
         (_, contents) = utils.load_template(self.component_name, MANAGE_DATA_CONF)
         params = self._get_param_map(MANAGE_DATA_CONF)
@@ -164,8 +165,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         return contents
 
     def warm_configs(self):
-        pws = ['horizon_keystone_admin', 'service_token']
-        for pw_key in pws:
+        for pw_key in WARMUP_PWS:
             self.cfg.get("passwords", pw_key)
 
     def _get_param_map(self, config_fn):
@@ -177,15 +177,14 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         mp['BIN_DIR'] = self.bindir
         mp['CONFIG_FILE'] = sh.joinpths(self.cfgdir, ROOT_CONF)
         if config_fn == ROOT_CONF:
-            mp['DEST'] = self.appdir
             mp['SQL_CONN'] = self.cfg.get_dbdsn(DB_NAME)
             mp['KEYSTONE_DIR'] = self.appdir
             mp.update(get_shared_params(self.cfg))
         elif config_fn == MANAGE_DATA_CONF:
             mp['ADMIN_PASSWORD'] = self.cfg.get('passwords', 'horizon_keystone_admin')
-            mp['ADMIN_USER_NAME'] = MANAGE_ADMIN_USER
-            mp['DEMO_USER_NAME'] = MANAGE_DEMO_USER
-            mp['INVIS_USER_NAME'] = MANAGE_INVIS_USER
+            mp['ADMIN_USER_NAME'] = self.cfg.getdefaulted("keystone", "admin_user", MANAGE_ADMIN_USER)
+            mp['DEMO_USER_NAME'] = self.cfg.getdefaulted("keystone", "demo_user", MANAGE_DEMO_USER)
+            mp['INVIS_USER_NAME'] = self.cfg.getdefaulted("keystone", "invisible_user", MANAGE_INVIS_USER)
             mp.update(get_shared_params(self.cfg))
         return mp
 
@@ -229,22 +228,21 @@ class KeystoneRuntime(comp.PythonRuntime):
 def get_shared_params(config):
     mp = dict()
     host_ip = config.get('host', 'ip')
-    keystone_auth_host = config.get('keystone', 'keystone_auth_host')
-    if not keystone_auth_host:
-        keystone_auth_host = host_ip
+
+    keystone_auth_host = config.getdefaulted('keystone', 'keystone_auth_host', host_ip)
     mp['KEYSTONE_AUTH_HOST'] = keystone_auth_host
     keystone_auth_port = config.get('keystone', 'keystone_auth_port')
     mp['KEYSTONE_AUTH_PORT'] = keystone_auth_port
     keystone_auth_proto = config.get('keystone', 'keystone_auth_protocol')
     mp['KEYSTONE_AUTH_PROTOCOL'] = keystone_auth_proto
-    keystone_service_host = config.get('keystone', 'keystone_service_host')
-    if not keystone_service_host:
-        keystone_service_host = host_ip
+
+    keystone_service_host = config.getdefaulted('keystone', 'keystone_service_host', host_ip)
     mp['KEYSTONE_SERVICE_HOST'] = keystone_service_host
     keystone_service_port = config.get('keystone', 'keystone_service_port')
     mp['KEYSTONE_SERVICE_PORT'] = keystone_service_port
     keystone_service_proto = config.get('keystone', 'keystone_service_protocol')
     mp['KEYSTONE_SERVICE_PROTOCOL'] = keystone_service_proto
+
     #TODO is this right???
     mp['AUTH_ENDPOINT'] = urlunparse((keystone_auth_proto,
                                          "%s:%s" % (keystone_auth_host, keystone_auth_port),

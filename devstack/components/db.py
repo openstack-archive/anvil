@@ -85,6 +85,9 @@ BASE_ERROR = 'Currently we do not know how to [%s] for database type [%s]'
 #the pkg json files db requires for installation
 REQ_PKGS = ['db.json']
 
+#config keys we warm up so u won't be prompted later
+WARMUP_PWS = ['sql']
+
 
 class DBUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -92,8 +95,7 @@ class DBUninstaller(comp.PkgUninstallComponent):
         self.runtime = DBRuntime(*args, **kargs)
 
     def warm_configs(self):
-        pws = ['sql']
-        for pw_key in pws:
+        for pw_key in WARMUP_PWS:
             self.cfg.get("passwords", pw_key)
 
     def pre_uninstall(self):
@@ -141,10 +143,8 @@ class DBInstaller(comp.PkgInstallComponent):
         return out
 
     def warm_configs(self):
-        pws = ['sql']
-        for pw_key in pws:
+        for pw_key in WARMUP_PWS:
             self.cfg.get("passwords", pw_key)
-        self.cfg.get('host', 'ip')
 
     def _configure_db_confs(self):
         dbtype = self.cfg.get("db", "type")

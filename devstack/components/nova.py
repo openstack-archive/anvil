@@ -209,8 +209,11 @@ STD_COMPUTE_EXTS = 'nova.api.openstack.compute.contrib.standard_extensions'
 #pip files that nova requires
 REQ_PIPS = ['general.json', 'nova.json']
 
+#config keys we warm up so u won't be prompted later
+WARMUP_PWS = ['rabbit']
 
-def _canon_virt_driver(virt_driver):
+
+def canon_virt_driver(virt_driver):
     if not virt_driver:
         return DEF_VIRT_DRIVER
     return virt_driver.strip().lower()
@@ -241,7 +244,7 @@ class NovaUninstaller(comp.PythonUninstallComponent):
             sh.execute(*cmd, run_as_root=True, env_overrides=env)
 
     def _clear_libvirt_domains(self):
-        virt_driver = _canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
+        virt_driver = canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
         if virt_driver == virsh.VIRT_TYPE:
             inst_prefix = self.cfg.get('nova', 'instance_name_prefix')
             libvirt_type = virsh.default(self.cfg.get('nova', 'libvirt_type'))
@@ -290,8 +293,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         return places
 
     def warm_configs(self):
-        pws = ['rabbit']
-        for pw_key in pws:
+        for pw_key in WARMUP_PWS:
             self.cfg.get("passwords", pw_key)
 
     def _get_config_files(self):
@@ -422,7 +424,7 @@ class NovaRuntime(comp.PythonRuntime):
         return result
 
     def pre_start(self):
-        virt_driver = _canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
+        virt_driver = canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
         if virt_driver == virsh.VIRT_TYPE:
             virt_type = virsh.default(self.cfg.get('nova', 'libvirt_type'))
             LOG.info("Checking that your selected libvirt virtualization type [%s] is working and running." % (virt_type))
@@ -533,14 +535,7 @@ class NovaConfConfigurator(object):
         return self.cfg.getboolean('nova', name)
 
     def _getstr(self, name, default=''):
-        val = self.cfg.get('nova', name)
-        if not val:
-            return default
-        return val
-
-    def _get_canon_virt_driver(self):
-        virt_driver = self._getstr('virt_driver')
-        return _canon_virt_driver(virt_driver)
+        return self.cfg.getdefaulted('nova', name, default)
 
     def configure(self):
         #everything built goes in here
@@ -574,7 +569,7 @@ class NovaConfConfigurator(object):
         nova_conf.add('sql_connection', self.cfg.get_dbdsn('nova'))
 
         #configure anything libvirt releated?
-        virt_driver = self._get_canon_virt_driver()
+        virt_driver = canon_virt_driver(self._getstr('virt_driver'))
         if virt_driver == virsh.VIRT_TYPE:
             libvirt_type = virsh.default(self._getstr('libvirt_type'))
             self._configure_libvirt(libvirt_type, nova_conf)
@@ -668,7 +663,7 @@ class NovaConfConfigurator(object):
         # driver we're using.
         vncserver_proxyclient_address = self._getstr('vncserver_proxyclient_address')
         if not vncserver_proxyclient_address:
-            drive_canon = self._get_canon_virt_driver()
+            drive_canon = canon_virt_driver(self._getstr('virt_driver'))
             if drive_canon == 'xenserver':
                 vncserver_proxyclient_address = XS_VNC_ADDR
             else:
@@ -750,7 +745,7 @@ class NovaConfConfigurator(object):
 
     #configures any virt driver settings
     def _configure_virt_driver(self, nova_conf):
-        drive_canon = self._get_canon_virt_driver()
+        drive_canon = canon_virt_driver(self._getstr('virt_driver'))
         if drive_canon == 'xenserver':
             nova_conf.add('connection_type', 'xenapi')
             nova_conf.add('xenapi_connection_url', self._getstr('xa_connection_url', XA_DEF_CONNECTION_URL))

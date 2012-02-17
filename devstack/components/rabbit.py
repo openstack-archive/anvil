@@ -43,6 +43,9 @@ RESET_BASE_PW = ''
 #how long we wait for rabbitmq to start up before doing commands on it
 WAIT_ON_TIME = settings.WAIT_ALIVE_SECS
 
+#config keys we warm up so u won't be prompted later
+WARMUP_PWS = ['rabbit']
+
 
 class RabbitUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -66,8 +69,7 @@ class RabbitInstaller(comp.PkgInstallComponent):
         self.runtime = RabbitRuntime(*args, **kargs)
 
     def warm_configs(self):
-        pws = ['rabbit']
-        for pw_key in pws:
+        for pw_key in WARMUP_PWS:
             self.cfg.get("passwords", pw_key)
 
     def _setup_pw(self):

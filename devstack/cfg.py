@@ -108,6 +108,12 @@ class StackConfigParser(IgnoreMissingConfigParser):
             self.pws[key] = value_gotten
         return value_gotten
 
+    def getdefaulted(self, section, option, default_val):
+        val = self.get(section, option)
+        if not val:
+            return default_val
+        return val
+
     def get(self, section, option, auto_pw=True):
         key = self._makekey(section, option)
         if key in self.configs_fetched:
