@@ -21,6 +21,9 @@
             "version": "2.5",
             "options": "--upgrade"
         },
+        "py-bcrypt": {
+            "version": "0.2"
+        },
         "Routes": {
             "version": "1.12.3"
         },

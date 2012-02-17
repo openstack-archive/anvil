@@ -73,6 +73,10 @@
         "libsasl2-dev": {
             "version": "2.1*",
             "removable": true
+        },
+        "python-bcrypt": {
+            "version": "0.1*",
+            "removable": true
         }
     },
     "rhel-6": {
