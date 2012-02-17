@@ -112,6 +112,8 @@ export EC2_SECRET_KEY=$DEMO_SECRET
 #Not really EC2 but useful for knowing...
 export ADMIN_SECRET=$ADMIN_SECRET
 export ADMIN_ACCESS=$ADMIN_ACCESS
+export DEMO_ACCESS=$DEMO_ACCESS
+export DEMO_SECRET=$DEMO_SECRET
 
 EOF
 
