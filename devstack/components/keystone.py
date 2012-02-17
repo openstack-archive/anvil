@@ -42,8 +42,9 @@ CONFIG_DIR = "etc"
 #simple confs
 ROOT_CONF = "keystone.conf"
 CATALOG_CONF = 'default_catalog.templates'
-CONFIGS = [ROOT_CONF, CATALOG_CONF]
-CFG_SECTION = 'DEFAULT'
+LOGGING_CONF = "logging.conf"
+LOGGING_SOURCE_FN = 'logging.cnf.sample'
+CONFIGS = [ROOT_CONF, CATALOG_CONF, LOGGING_CONF]
 
 #this is a special conf
 MANAGE_DATA_CONF = 'keystone_init.sh'
@@ -149,7 +150,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             with io.BytesIO(contents) as stream:
                 config = cfg.IgnoreMissingConfigParser()
                 config.readfp(stream)
-                log_filename = config.get('log_file', CFG_SECTION)
+                log_filename = config.get('default', 'log_file')
                 if log_filename:
                     LOG.info("Ensuring log file %s exists and is empty." % (log_filename))
                     log_dir = sh.dirname(log_filename)
@@ -163,6 +164,13 @@ class KeystoneInstaller(comp.PythonInstallComponent):
                 #we might need to handle more in the future...
             #nothing modified so just return the original
         return contents
+
+    def _get_source_config(self, config_fn):
+        if config_fn == LOGGING_CONF:
+            fn = sh.joinpths(self.cfgdir, LOGGING_SOURCE_FN)
+            contents = sh.load_file(fn)
+            return (fn, contents)
+        return comp.PythonInstallComponent._get_source_config(self, config_fn)
 
     def warm_configs(self):
         for pw_key in WARMUP_PWS:

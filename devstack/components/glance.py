@@ -41,10 +41,12 @@ API_CONF = "glance-api.conf"
 REG_CONF = "glance-registry.conf"
 API_PASTE_CONF = 'glance-api-paste.ini'
 REG_PASTE_CONF = 'glance-registry-paste.ini'
+LOGGING_CONF = "logging.conf"
+LOGGING_SOURCE_FN = 'logging.cnf.sample'
 POLICY_JSON = 'policy.json'
-CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF, REG_PASTE_CONF, POLICY_JSON]
-ADJUST_CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF, REG_PASTE_CONF]
-CFG_SECTION = 'DEFAULT'
+CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF,
+            REG_PASTE_CONF, POLICY_JSON, LOGGING_CONF]
+READ_CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF, REG_PASTE_CONF]
 
 #reg, api are here as possible subcomponents
 GAPI = "api"
@@ -130,19 +132,24 @@ class GlanceInstaller(comp.PythonInstallComponent):
             (_, bottom) = self._get_source_config(API_PASTE_CONF)
             combined = [top, "### Joined here on %s with file %s" % (date.rcf8222date(), API_PASTE_CONF), bottom]
             return (fn, utils.joinlinesep(*combined))
-        if config_fn == REG_CONF:
+        elif config_fn == REG_CONF:
             (fn, top) = utils.load_template(self.component_name, REG_CONF)
             (_, bottom) = self._get_source_config(REG_PASTE_CONF)
             combined = [top, "### Joined here on %s with file %s" % (date.rcf8222date(), REG_PASTE_CONF), bottom]
             return (fn, utils.joinlinesep(*combined))
-        if config_fn == POLICY_JSON:
+        elif config_fn == POLICY_JSON:
             fn = sh.joinpths(self.cfgdir, POLICY_JSON)
+            contents = sh.load_file(fn)
+            return (fn, contents)
+        elif config_fn == LOGGING_CONF:
+            fn = sh.joinpths(self.cfgdir, LOGGING_SOURCE_FN)
             contents = sh.load_file(fn)
             return (fn, contents)
         return comp.PythonInstallComponent._get_source_config(self, config_fn)
 
     def _config_adjust(self, contents, name):
-        if name not in ADJUST_CONFIGS:
+        #even bother opening??
+        if name not in READ_CONFIGS:
             return contents
         #use config parser and
         #then extract known configs that
@@ -150,23 +157,23 @@ class GlanceInstaller(comp.PythonInstallComponent):
         with io.BytesIO(contents) as stream:
             config = cfg.IgnoreMissingConfigParser()
             config.readfp(stream)
-            if config.getboolean('image_cache_enabled', CFG_SECTION):
-                cache_dir = config.get("image_cache_datadir", CFG_SECTION)
+            if config.getboolean('default', 'image_cache_enabled'):
+                cache_dir = config.get('default', "image_cache_datadir")
                 if cache_dir:
                     LOG.info("Ensuring image cache data directory %s exists "\
                              "(and is empty)" % (cache_dir))
                     #destroy then recreate the image cache directory
                     sh.deldir(cache_dir)
                     self.tracewriter.make_dir(cache_dir)
-            if config.get('default_store', CFG_SECTION) == 'file':
-                file_dir = config.get('filesystem_store_datadir', CFG_SECTION)
+            if config.get('default', 'default_store') == 'file':
+                file_dir = config.get('default', 'filesystem_store_datadir')
                 if file_dir:
                     LOG.info("Ensuring file system store directory %s exists and is empty." % (file_dir))
                     #delete existing images
                     #and recreate the image directory
                     sh.deldir(file_dir)
                     self.tracewriter.make_dir(file_dir)
-            log_filename = config.get('log_file', CFG_SECTION)
+            log_filename = config.get('default', 'log_file')
             if log_filename:
                 LOG.info("Ensuring log file %s exists and is empty." % (log_filename))
                 log_dir = sh.dirname(log_filename)
@@ -177,8 +184,8 @@ class GlanceInstaller(comp.PythonInstallComponent):
                 sh.unlink(log_filename)
                 sh.touch_file(log_filename)
                 self.tracewriter.file_touched(log_filename)
-            if config.getboolean('delayed_delete', CFG_SECTION):
-                data_dir = config.get('scrubber_datadir', CFG_SECTION)
+            if config.getboolean('default', 'delayed_delete'):
+                data_dir = config.get('default', 'scrubber_datadir')
                 if data_dir:
                     LOG.info("Ensuring scrubber data dir %s exists and is empty." % (data_dir))
                     #destroy then recreate the scrubber data directory
