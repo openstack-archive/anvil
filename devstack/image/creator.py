@@ -246,7 +246,7 @@ class ImageCreationService:
         request.add_header('Content-Type', 'application/json')
 
         # make the request
-        LOG.info("Getting your token from %s, please wait." % (keystone_token_url))
+        LOG.info("Getting your token from url [%s], please wait..." % (keystone_token_url))
         response = urllib2.urlopen(request)
 
         token = json.loads(response.read())
@@ -254,7 +254,7 @@ class ImageCreationService:
             not token.get('access') or not type(token.get('access')) is dict or
             not token.get('access').get('token') or not type(token.get('access').get('token')) is dict or
             not token.get('access').get('token').get('id')):
-            msg = "Response from %s did not match expected json format."
+            msg = "Response from url [%s] did not match expected json format." % (keystone_token_url)
             raise IOError(msg)
 
         return token['access']['token']['id']
