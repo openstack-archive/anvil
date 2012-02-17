@@ -62,14 +62,16 @@ def _write_env(name, value, fh):
 
 
 def _generate_extern_inc(fh):
+    _write_line('# External includes stuff', fh)
+
     extern_inc = """
 
-# use stored ec2 env variables
+# Use stored ec2 env variables
 if [ -f ./ec2rc ]; then
     source ./ec2rc
 fi
 
-# allow local overrides of env variables
+# Allow local overrides of env variables
 if [ -f ./localrc ]; then
     source ./localrc
 fi
