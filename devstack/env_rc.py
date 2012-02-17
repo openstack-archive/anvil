@@ -58,13 +58,8 @@ class RcGenerator(object):
         return lines
 
     def _make_export(self, export_name, value):
-        str_value = str(value)
-        escaped_val = subprocess.list2cmdline([str_value])
-        full_line = ''
-        if str_value != escaped_val:
-            full_line = "export %s=\"%s\"" % (export_name, escaped_val)
-        else:
-            full_line = "export %s=%s" % (export_name, str_value)
+        escaped_val = subprocess.list2cmdline([str(value)])
+        full_line = "export %s=%s" % (export_name, escaped_val)
         return [full_line]
 
     def _make_export_cfg(self, export_name, cfg_section_key, default_val=''):
@@ -156,7 +151,7 @@ alias ec2-upload-bundle="ec2-upload-bundle -a ${EC2_ACCESS_KEY} -s ${EC2_SECRET_
         lines.extend(self._make_export('NOVA_PROJECT_ID', key_users['DEMO_TENANT_NAME']))
         lines.extend(self._make_export('NOVA_USERNAME', key_users['DEMO_USER_NAME']))
         lines.extend(self._make_export_cfg('NOVA_VERSION',
-                                ('extern', 'nova_version')))
+                                ('nova', 'nova_version')))
         lines.extend(self._make_export_cfg('NOVA_CERT',
                                 ('extern', 'nova_cert_fn')))
         lines.append("")
