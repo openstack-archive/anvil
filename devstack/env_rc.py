@@ -104,7 +104,9 @@ class RcGenerator(object):
         lines.extend(self._generate_ec2_env())
         lines.extend(self._generate_nova_env())
         lines.extend(self._generate_os_env())
+        lines.extend(self._generate_euca_env())
         lines.extend(self._generate_extern_inc())
+        lines.extend(self._generate_aliases())
         return lines
 
     def generate(self):
@@ -118,9 +120,28 @@ class RcGenerator(object):
                                 ('passwords', 'horizon_keystone_admin')))
         key_users = keystone.get_shared_users(self.cfg)
         key_ends = keystone.get_shared_params(self.cfg)
-        lines.extend(self._make_export('OS_TENANT_NAME', key_ends['DEMO_TENANT_NAME']))
+        lines.extend(self._make_export('OS_TENANT_NAME', key_users['DEMO_TENANT_NAME']))
         lines.extend(self._make_export('OS_USERNAME', key_users['DEMO_USER_NAME']))
         lines.extend(self._make_export('OS_AUTH_URL', key_ends['SERVICE_ENDPOINT']))
+        lines.append("")
+        return lines
+
+    def _generate_aliases(self):
+        lines = list()
+        lines.append('# Alias stuff')
+        export_inc = """
+alias ec2-bundle-image="ec2-bundle-image --cert ${EC2_CERT} --privatekey ${EC2_PRIVATE_KEY} --user ${EC2_USER_ID} --ec2cert ${NOVA_CERT}"
+alias ec2-upload-bundle="ec2-upload-bundle -a ${EC2_ACCESS_KEY} -s ${EC2_SECRET_KEY} --url ${S3_URL} --ec2cert ${NOVA_CERT}"
+"""
+        lines.append(export_inc.strip())
+        lines.append("")
+        return lines
+
+    def _generate_euca_env(self):
+        lines = list()
+        lines.append('# Eucalyptus stuff')
+        lines.extend(self._make_export_cfg('EUCALYPTUS_CERT',
+                                ('extern', 'nova_cert_fn')))
         lines.append("")
         return lines
 
