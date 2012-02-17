@@ -43,6 +43,7 @@ API_PASTE_CONF = 'glance-api-paste.ini'
 REG_PASTE_CONF = 'glance-registry-paste.ini'
 POLICY_JSON = 'policy.json'
 CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF, REG_PASTE_CONF, POLICY_JSON]
+ADJUST_CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF, REG_PASTE_CONF]
 CFG_SECTION = 'DEFAULT'
 
 #reg, api are here as possible subcomponents
@@ -141,7 +142,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
         return comp.PythonInstallComponent._get_source_config(self, config_fn)
 
     def _config_adjust(self, contents, name):
-        if name not in CONFIGS:
+        if name not in ADJUST_CONFIGS:
             return contents
         #use config parser and
         #then extract known configs that

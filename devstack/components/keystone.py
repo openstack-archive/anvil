@@ -50,6 +50,7 @@ MANAGE_DATA_CONF = 'keystone_init.sh'
 MANAGE_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
 MANAGE_ADMIN_USER = 'admin'
 MANAGE_DEMO_USER = 'demo'
+MANAGER_INVIS_USER = 'invisible_to_admin'
 
 #sync db command
 SYNC_DB_CMD = [sh.joinpths('%BINDIR%', 'keystone-manage'), 'db_sync']
@@ -181,8 +182,9 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             mp.update(get_shared_params(self.cfg))
         elif config_fn == MANAGE_DATA_CONF:
             mp['ADMIN_PASSWORD'] = self.cfg.get('passwords', 'horizon_keystone_admin')
-            mp['ADMIN_USERNAME'] = MANAGE_ADMIN_USER
+            mp['ADMIN_USER_NAME'] = MANAGE_ADMIN_USER
             mp['DEMO_USER_NAME'] = MANAGE_DEMO_USER
+            mp['INVIS_USER_NAME'] = MANAGER_INVIS_USER
             mp.update(get_shared_params(self.cfg))
         return mp
 
