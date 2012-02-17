@@ -14,15 +14,18 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import json
 import os
 import tarfile
 import tempfile
 import urllib
+import urllib2
 import ConfigParser
 
 from devstack import log
 from devstack import shell
 from devstack import utils
+from devstack.components import keystone
 
 
 LOG = log.getLogger("devstack.image.creator")
@@ -210,6 +213,52 @@ class ImageCreationService:
     def __init__(self, cfg):
         self.cfg = cfg
 
+    def _get_token(self):
+        LOG.info("Fetching your keystone admin token so that we can perform image uploads.")
+
+        pwd = self.cfg.get("passwords", "horizon_keystone_admin")
+        key_users = keystone.get_shared_users(self.cfg)
+        key_params = keystone.get_shared_params(self.cfg)
+        keystone_service_url = key_params['SERVICE_ENDPOINT']
+        keystone_token_url = "%s/tokens" % (keystone_service_url)
+
+        #form the post json data
+        data = json.dumps(
+            {
+                "auth":
+                {
+                    "passwordCredentials":
+                    {
+                        "username": key_users['ADMIN_USER_NAME'],
+                        "password": pwd,
+                    },
+                    "tenantName": key_users['ADMIN_TENANT_NAME'],
+                }
+             })
+
+        # prepare the request
+        request = urllib2.Request(keystone_token_url)
+
+        # post body
+        request.add_data(data)
+
+        # content type
+        request.add_header('Content-Type', 'application/json')
+
+        # make the request
+        LOG.info("Getting your token from url [%s], please wait..." % (keystone_token_url))
+        response = urllib2.urlopen(request)
+
+        token = json.loads(response.read())
+        if (not token or not type(token) is dict or
+            not token.get('access') or not type(token.get('access')) is dict or
+            not token.get('access').get('token') or not type(token.get('access').get('token')) is dict or
+            not token.get('access').get('token').get('id')):
+            msg = "Response from url [%s] did not match expected json format." % (keystone_token_url)
+            raise IOError(msg)
+
+        return token['access']['token']['id']
+
     def install(self):
         urls = list()
         token = None
@@ -230,7 +279,7 @@ class ImageCreationService:
         am_installed = 0
         if urls:
             LOG.info("Attempting to download & extract and upload (%s) images." % (", ".join(urls)))
-            token = self.cfg.get("passwords", "service_token")
+            token = self._get_token()
             for url in urls:
                 try:
                     Image(url, token).install()
