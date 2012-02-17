@@ -1,4 +1,4 @@
-# From devstack commit bd13b708f2
+# From devstack commit bd13b708f2 with no modifications
 
 [DEFAULT]
 public_port = 5000

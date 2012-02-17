@@ -1,3 +1,5 @@
+# From devstack commit 6a3f607272 with no modifications
+
 # config for TemplatedCatalog, using camelCase because I don't want to do
 # translations for legacy compat
 catalog.RegionOne.identity.publicURL = http://%SERVICE_HOST%:$(public_port)s/v2.0
