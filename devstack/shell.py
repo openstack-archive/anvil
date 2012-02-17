@@ -40,7 +40,7 @@ SHELL_QUOTE_REPLACERS = {
     "(": "\\(",
     ")": "\\)",
 }
-FALSE_VALS = ['f', 'false', '0', 'off', False, 0, None]
+FALSE_VALS = ['f', 'false', '0', 'off']
 
 
 #root context guard
