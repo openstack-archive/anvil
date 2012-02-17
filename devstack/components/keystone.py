@@ -76,6 +76,9 @@ WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
 #config keys we warm up so u won't be prompted later
 WARMUP_PWS = ['horizon_keystone_admin', 'service_token']
 
+#ec2 rc filename
+EC2RC_FN = 'ec2rc'
+
 
 class KeystoneUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -208,7 +211,10 @@ class KeystoneRuntime(comp.PythonRuntime):
             env['BIN_DIR'] = self.bindir
             setup_cmd = MANAGE_CMD_ROOT + [tgt_fn]
             LOG.info("Running (%s) command to initialize keystone." % (" ".join(setup_cmd)))
-            sh.execute(*setup_cmd, env_overrides=env)
+            (sysout, stderr) = sh.execute(*setup_cmd, env_overrides=env, run_as_root=False)
+            if sysout:
+                ec2rcfn = self.cfg.getdefaulted("keystone", "ec2_rc_fn", EC2RC_FN)
+                sh.write_file(ec2rcfn, sysout)
             LOG.debug("Removing (%s) file since we successfully initialized keystone." % (tgt_fn))
             sh.unlink(tgt_fn)
 
