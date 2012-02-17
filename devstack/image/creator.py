@@ -14,15 +14,18 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import json
 import os
 import tarfile
 import tempfile
 import urllib
+import urllib2
 import ConfigParser
 
 from devstack import log
 from devstack import shell
 from devstack import utils
+from devstack.components import keystone
 
 
 LOG = log.getLogger("devstack.image.creator")
@@ -210,6 +213,46 @@ class ImageCreationService:
     def __init__(self, cfg):
         self.cfg = cfg
 
+    def _get_token(self):
+        pwd = self.cfg.get("passwords", "horizon_keystone_admin")
+        keystone_url = self.cfg.get('extern', 'os_auth_url')
+        ip = self.cfg.get('host', 'ip')
+        port = 5000
+
+        if not keystone_url:
+            keystone_url = 'http://%s:%s/v2.0/tokens' % (ip, port)
+        else:
+            keystone_url += 'tokens'
+
+        data = json.dumps(
+            {
+                "auth":
+                {
+                    "passwordCredentials":
+                    {
+                        "username": keystone.MANAGE_ADMIN_USER,
+                        "password": pwd
+                    },
+                    "tenantName": keystone.MANAGE_ADMIN_USER
+                }
+             }, separators=(',', ':'))
+
+        # prepare the request
+        request = urllib2.Request(keystone_url)
+
+        # post body
+        request.add_data(data)
+
+        # content type
+        request.add_header('Content-type', 'application/json')
+
+        # make the request
+        response = urllib2.urlopen(request)
+
+        token = json.loads(response.read())
+
+        return token['access']['token']['id']
+
     def install(self):
         urls = list()
         token = None
@@ -230,7 +273,7 @@ class ImageCreationService:
         am_installed = 0
         if urls:
             LOG.info("Attempting to download & extract and upload (%s) images." % (", ".join(urls)))
-            token = self.cfg.get("passwords", "service_token")
+            token = self._get_token()
             for url in urls:
                 try:
                     Image(url, token).install()
