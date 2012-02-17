@@ -185,9 +185,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             mp.update(get_shared_params(self.cfg))
         elif config_fn == MANAGE_DATA_CONF:
             mp['ADMIN_PASSWORD'] = self.cfg.get('passwords', 'horizon_keystone_admin')
-            mp['ADMIN_USER_NAME'] = self.cfg.getdefaulted("keystone", "admin_user", MANAGE_ADMIN_USER)
-            mp['DEMO_USER_NAME'] = self.cfg.getdefaulted("keystone", "demo_user", MANAGE_DEMO_USER)
-            mp['INVIS_USER_NAME'] = self.cfg.getdefaulted("keystone", "invisible_user", MANAGE_INVIS_USER)
+            mp.update(get_shared_users(self.cfg))
             mp.update(get_shared_params(self.cfg))
         return mp
 
@@ -211,10 +209,10 @@ class KeystoneRuntime(comp.PythonRuntime):
             env['BIN_DIR'] = self.bindir
             setup_cmd = MANAGE_CMD_ROOT + [tgt_fn]
             LOG.info("Running (%s) command to initialize keystone." % (" ".join(setup_cmd)))
-            (sysout, stderr) = sh.execute(*setup_cmd, env_overrides=env, run_as_root=False)
+            (sysout, _) = sh.execute(*setup_cmd, env_overrides=env, run_as_root=False)
             if sysout:
                 ec2rcfn = self.cfg.getdefaulted("keystone", "ec2_rc_fn", EC2RC_FN)
-                sh.write_file(ec2rcfn, sysout)
+                sh.write_file(ec2rcfn, sysout.strip())
             LOG.debug("Removing (%s) file since we successfully initialized keystone." % (tgt_fn))
             sh.unlink(tgt_fn)
 
@@ -229,6 +227,17 @@ class KeystoneRuntime(comp.PythonRuntime):
 
     def _get_app_options(self, app):
         return APP_OPTIONS.get(app)
+
+
+def get_shared_users(config):
+    mp = dict()
+    mp['ADMIN_USER_NAME'] = config.getdefaulted("keystone", "admin_user", MANAGE_ADMIN_USER)
+    mp['ADMIN_TENANT_NAME'] = mp['ADMIN_USER_NAME']
+    mp['DEMO_USER_NAME'] = config.getdefaulted("keystone", "demo_user", MANAGE_DEMO_USER)
+    mp['DEMO_TENANT_NAME'] = mp['DEMO_USER_NAME']
+    mp['INVIS_USER_NAME'] = config.getdefaulted("keystone", "invisible_user", MANAGE_INVIS_USER)
+    mp['INVIS_TENANT_NAME'] = mp['INVIS_USER_NAME']
+    return mp
 
 
 def get_shared_params(config):
@@ -257,5 +266,6 @@ def get_shared_params(config):
     mp['SERVICE_ENDPOINT'] = urlunparse((keystone_service_proto,
                                          "%s:%s" % (keystone_service_host, keystone_service_port),
                                          "v2.0", "", "", ""))
+
     mp['SERVICE_TOKEN'] = config.get("passwords", "service_token")
     return mp

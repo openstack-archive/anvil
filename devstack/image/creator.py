@@ -214,42 +214,48 @@ class ImageCreationService:
         self.cfg = cfg
 
     def _get_token(self):
+        LOG.info("Fetching your keystone admin token so that we can perform image uploads.")
+
         pwd = self.cfg.get("passwords", "horizon_keystone_admin")
-        keystone_url = self.cfg.get('extern', 'os_auth_url')
-        ip = self.cfg.get('host', 'ip')
-        port = 5000
+        key_users = keystone.get_shared_users(self.cfg)
+        key_params = keystone.get_shared_params(self.cfg)
+        keystone_service_url = key_params['SERVICE_ENDPOINT']
+        keystone_token_url = "%s/tokens" % (keystone_service_url)
 
-        if not keystone_url:
-            keystone_url = 'http://%s:%s/v2.0/tokens' % (ip, port)
-        else:
-            keystone_url += 'tokens'
-
+        #form the post json data
         data = json.dumps(
             {
                 "auth":
                 {
                     "passwordCredentials":
                     {
-                        "username": keystone.MANAGE_ADMIN_USER,
-                        "password": pwd
+                        "username": key_users['ADMIN_USER_NAME'],
+                        "password": pwd,
                     },
-                    "tenantName": keystone.MANAGE_ADMIN_USER
+                    "tenantName": key_users['ADMIN_TENANT_NAME'],
                 }
-             }, separators=(',', ':'))
+             })
 
         # prepare the request
-        request = urllib2.Request(keystone_url)
+        request = urllib2.Request(keystone_token_url)
 
         # post body
         request.add_data(data)
 
         # content type
-        request.add_header('Content-type', 'application/json')
+        request.add_header('Content-Type', 'application/json')
 
         # make the request
+        LOG.info("Getting your token from %s, please wait." % (keystone_token_url))
         response = urllib2.urlopen(request)
 
         token = json.loads(response.read())
+        if (not token or not type(token) is dict or
+            not token.get('access') or not type(token.get('access')) is dict or
+            not token.get('access').get('token') or not type(token.get('access').get('token')) is dict or
+            not token.get('access').get('token').get('id')):
+            msg = "Response from %s did not match expected json format."
+            raise IOError(msg)
 
         return token['access']['token']['id']
 
