@@ -95,6 +95,11 @@ COMPONENT_TRACE_DIR = "traces"
 COMPONENT_APP_DIR = "app"
 COMPONENT_CONFIG_DIR = "config"
 
+# RC files generated / used
+EC2RC_FN = 'ec2rc'
+LOCALRC_FN = 'localrc'
+OSRC_FN = 'openstackrc'
+
 # Program
 # actions
 INSTALL = "install"

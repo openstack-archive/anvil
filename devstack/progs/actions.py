@@ -56,7 +56,7 @@ _NO_AUTO_STOP = [settings.DB, settings.RABBIT]
 
 # For these actions we will attempt to make an rc file if it does not exist
 _RC_FILE_MAKE_ACTIONS = [settings.INSTALL, settings.START]
-_RC_FILE = 'openstackrc'
+_RC_FILE = sh.abspth(settings.OSRC_FN)
 
 # For these actions we will ensure the preq occurs first
 _DEP_ACTIONS = {
@@ -90,18 +90,13 @@ def _get_pkg_manager(distro, keep_packages):
     return cls(distro, keep_packages)
 
 
-def _get_rc_fn():
-    rc_fn = _RC_FILE
-    return sh.abspth(rc_fn)
-
-
 def _pre_run(action_name, root_dir, pkg_manager, config, component_order, instances):
     loaded_env = False
-    rc_fn = _get_rc_fn()
+    rc_fn = _RC_FILE
     try:
         if sh.isfile(rc_fn):
             LOG.info("Attempting to load rc file at [%s] which has your environment settings." % (rc_fn))
-            am_loaded = env_rc.load_local_rc(rc_fn)
+            am_loaded = env_rc.RcLoader().load(rc_fn)
             loaded_env = True
             LOG.info("Loaded [%s] settings from rc file [%s]" % (am_loaded, rc_fn))
     except IOError:
@@ -273,7 +268,9 @@ def _instanciate_components(action_name, components, distro, pkg_manager, config
 
 def _gen_localrc(config, fn):
     LOG.info("Generating a file at [%s] that will contain your environment settings." % (fn))
-    env_rc.generate_local_rc(fn, config)
+    contents = env_rc.RcGenerator(config).generate()
+    with open(fn, "w") as fh:
+        fh.write(contents)
 
 
 def _run_components(action_name, component_order, components, distro, root_dir, program_args):

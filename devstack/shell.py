@@ -33,6 +33,14 @@ ROOT_USER = "root"
 ROOT_USER_UID = 0
 SUDO_UID = 'SUDO_UID'
 SUDO_GID = 'SUDO_GID'
+SHELL_QUOTE_REPLACERS = {
+    "'": "\\'",
+    "\"": "\\\"",
+    " ": "\\ ",
+    "(": "\\(",
+    ")": "\\)",
+}
+FALSE_VALS = ['f', 'false', '0', 'off']
 
 
 #root context guard
@@ -163,6 +171,20 @@ def abspth(path):
     return os.path.abspath(path)
 
 
+def shellquote(text):
+    #TODO since there doesn't seem to be a standard lib that actually works use this way...
+    do_adjust = False
+    for srch in SHELL_QUOTE_REPLACERS.keys():
+        if text.find(srch) != -1:
+            do_adjust = True
+            break
+    if not do_adjust:
+        return text
+    for (srch, replace) in SHELL_QUOTE_REPLACERS.items():
+        text = text.replace(srch, replace)
+    return "\"" + text + "\""
+
+
 def listdir(path):
     return os.listdir(path)
 
@@ -231,7 +253,7 @@ def password(pw_prompt=None, pw_len=8):
     ask_for_pw = env.get_key(PASS_ASK_ENV)
     if ask_for_pw is not None:
         ask_for_pw = ask_for_pw.lower().strip()
-    if ask_for_pw not in ['f', 'false', '0', 'off']:
+    if ask_for_pw not in FALSE_VALS:
         pw = prompt_password(pw_prompt)
     if not pw:
         return _gen_password(pw_len)

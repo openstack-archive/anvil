@@ -15,12 +15,15 @@
 #    under the License.
 
 from urlparse import urlunparse
-import os
 import re
-import subprocess
 
 from devstack import date
 from devstack import env
+from devstack import settings
+from devstack import shell as sh
+from devstack import utils
+
+from devstack.components import keystone
 
 #general extraction cfg keys
 CFG_MAKE = {
@@ -35,8 +38,6 @@ CFG_MAKE = {
 #default ports
 EC2_PORT = 8773
 S3_PORT = 3333
-NOVA_PORT = 5000
-OS_AUTH_PORT = 5000
 
 #how we know if a line is an export or if it isn't (simpe edition)
 EXP_PAT = re.compile("^\s*export\s+(.*?)=(.*?)$", re.IGNORECASE)
@@ -45,151 +46,157 @@ EXP_PAT = re.compile("^\s*export\s+(.*?)=(.*?)$", re.IGNORECASE)
 QUOTED_PAT = re.compile(r"^\s*[\"](.*)[\"]\s*$")
 
 
-def _write_line(text, fh):
-    fh.write(text)
-    fh.write(os.linesep)
+class RcGenerator(object):
+    def __init__(self, cfg):
+        self.cfg = cfg
 
+    def _generate_header(self):
+        lines = list()
+        lines.append('# Generated on %s' % (date.rcf8222date()))
+        lines.append("")
+        return lines
 
-def _write_env(name, value, fh):
-    if value is None:
-        return
-    str_value = str(value)
-    escaped_val = subprocess.list2cmdline([str_value])
-    if str_value != escaped_val:
-        _write_line("export %s=\"%s\"" % (name, escaped_val), fh)
-    else:
-        _write_line("export %s=%s" % (name, str_value), fh)
+    def _make_export(self, export_name, value):
+        escaped_val = sh.shellquote(value)
+        full_line = "export %s=%s" % (export_name, escaped_val)
+        return [full_line]
 
+    def _make_export_cfg(self, export_name, cfg_section_key, default_val=''):
+        (section, key) = cfg_section_key
+        value = self.cfg.getdefaulted(section, key, default_val, auto_pw=False)
+        return self._make_export(export_name, value)
 
-def _generate_extern_inc(fh):
-    _write_line('# External includes stuff', fh)
+    def _generate_ec2_env(self):
+        lines = list()
+        lines.append('# EC2 and/or S3 stuff')
+        ip = self.cfg.get('host', 'ip')
+        lines.extend(self._make_export_cfg('EC2_URL',
+                                ('extern', 'ec2_url'),
+                                urlunparse(('http', "%s:%s" % (ip, EC2_PORT), "services/Cloud", '', '', ''))))
+        lines.extend(self._make_export_cfg('S3_URL',
+                                ('extern', 's3_url'),
+                                urlunparse(('http', "%s:%s" % (ip, S3_PORT), "services/Cloud", '', '', ''))))
+        lines.extend(self._make_export_cfg('EC2_CERT',
+                                ('extern', 'ec2_cert_fn')))
+        lines.extend(self._make_export_cfg('EC2_USER_ID',
+                                ('extern', 'ec2_user_id')))
+        lines.append("")
+        return lines
 
-    extern_inc = """
+    def _generate_general(self):
+        lines = list()
+        lines.append('# General stuff')
+        for (out_name, cfg_data) in CFG_MAKE.items():
+            lines.extend(self._make_export_cfg(out_name, cfg_data))
+        lines.append("")
+        return lines
+
+    def _generate_lines(self):
+        lines = list()
+        lines.extend(self._generate_header())
+        lines.extend(self._generate_general())
+        lines.extend(self._generate_ec2_env())
+        lines.extend(self._generate_nova_env())
+        lines.extend(self._generate_os_env())
+        lines.extend(self._generate_euca_env())
+        lines.extend(self._generate_extern_inc())
+        lines.extend(self._generate_aliases())
+        return lines
+
+    def generate(self):
+        lines = self._generate_lines()
+        return utils.joinlinesep(*lines)
+
+    def _generate_os_env(self):
+        lines = list()
+        lines.append('# Openstack stuff')
+        lines.extend(self._make_export_cfg('OS_PASSWORD',
+                                ('passwords', 'horizon_keystone_admin')))
+        key_users = keystone.get_shared_users(self.cfg)
+        key_ends = keystone.get_shared_params(self.cfg)
+        lines.extend(self._make_export('OS_TENANT_NAME', key_users['DEMO_TENANT_NAME']))
+        lines.extend(self._make_export('OS_USERNAME', key_users['DEMO_USER_NAME']))
+        lines.extend(self._make_export('OS_AUTH_URL', key_ends['SERVICE_ENDPOINT']))
+        lines.append("")
+        return lines
+
+    def _generate_aliases(self):
+        lines = list()
+        lines.append('# Alias stuff')
+        export_inc = """
+alias ec2-bundle-image="ec2-bundle-image --cert ${EC2_CERT} --privatekey ${EC2_PRIVATE_KEY} --user ${EC2_USER_ID} --ec2cert ${NOVA_CERT}"
+alias ec2-upload-bundle="ec2-upload-bundle -a ${EC2_ACCESS_KEY} -s ${EC2_SECRET_KEY} --url ${S3_URL} --ec2cert ${NOVA_CERT}"
+"""
+        lines.append(export_inc.strip())
+        lines.append("")
+        return lines
+
+    def _generate_euca_env(self):
+        lines = list()
+        lines.append('# Eucalyptus stuff')
+        lines.extend(self._make_export_cfg('EUCALYPTUS_CERT',
+                                ('extern', 'nova_cert_fn')))
+        lines.append("")
+        return lines
+
+    def _generate_nova_env(self):
+        lines = list()
+        lines.append('# Nova stuff')
+        lines.extend(self._make_export_cfg('NOVA_PASSWORD',
+                                ('passwords', 'horizon_keystone_admin')))
+        key_users = keystone.get_shared_users(self.cfg)
+        key_ends = keystone.get_shared_params(self.cfg)
+        lines.extend(self._make_export('NOVA_URL', key_ends['SERVICE_ENDPOINT']))
+        lines.extend(self._make_export('NOVA_PROJECT_ID', key_users['DEMO_TENANT_NAME']))
+        lines.extend(self._make_export('NOVA_USERNAME', key_users['DEMO_USER_NAME']))
+        lines.extend(self._make_export_cfg('NOVA_VERSION',
+                                ('nova', 'nova_version')))
+        lines.extend(self._make_export_cfg('NOVA_CERT',
+                                ('extern', 'nova_cert_fn')))
+        lines.append("")
+        return lines
+
+    def _generate_extern_inc(self):
+        lines = list()
+        lines.append('# External includes stuff')
+        extern_tpl = """
 
 # Use stored ec2 env variables
-if [ -f ./ec2rc ]; then
-    source ./ec2rc
+if [ -f "{ec2rc_fn}" ]; then
+    source "{ec2rc_fn}"
 fi
 
 # Allow local overrides of env variables
-if [ -f ./localrc ]; then
-    source ./localrc
+if [ -f "{localrc_fn}" ]; then
+    source "{localrc_fn}"
 fi
 
 """
-    fh.write(extern_inc.strip())
-    _write_line("", fh)
+        extern_inc = extern_tpl.format(ec2rc_fn=sh.abspth(settings.EC2RC_FN),
+                                   localrc_fn=sh.abspth(settings.LOCALRC_FN))
+        lines.append(extern_inc.strip())
+        lines.append("")
+        return lines
 
 
-def _generate_ec2_env(fh, cfg):
-    _write_line('# EC2 and/or S3 stuff', fh)
-    ip = cfg.get('host', 'ip')
+class RcLoader(object):
+    def __init__(self):
+        pass
 
-    ec2_url = cfg.get('extern', 'ec2_url')
-    if not ec2_url:
-        ec2_url = urlunparse(('http', "%s:%s" % (ip, EC2_PORT), "services/Cloud", '', '', ''))
-    _write_env('EC2_URL', ec2_url, fh)
-
-    s3_url = cfg.get('extern', 's3_url')
-    if not s3_url:
-        s3_url = urlunparse(('http', "%s:%s" % (ip, S3_PORT), "services/Cloud", '', '', ''))
-    _write_env('S3_URL', s3_url, fh)
-
-    ec2_cert = cfg.get('extern', 'ec2_cert_fn')
-    _write_env('EC2_CERT', ec2_cert, fh)
-
-    ec2_uid = cfg.get('extern', 'ec2_user_id')
-    _write_env('EC2_USER_ID', ec2_uid, fh)
-    _write_line("", fh)
-
-
-def _generate_nova_env(fh, cfg):
-    _write_line('# Nova stuff', fh)
-    ip = cfg.get('host', 'ip')
-
-    hkpw = cfg.get('passwords', 'horizon_keystone_admin', auto_pw=False)
-    _write_env('NOVA_PASSWORD', hkpw, fh)
-
-    nv_url = cfg.get('extern', 'nova_url')
-    if not nv_url:
-        nv_url = urlunparse(('http', "%s:%s" % (ip, NOVA_PORT), "v2.0", '', '', ''))
-    _write_env('NOVA_URL', nv_url, fh)
-
-    nv_prj = cfg.get('extern', 'nova_project_id')
-    _write_env('NOVA_PROJECT_ID', nv_prj, fh)
-
-    nv_reg = cfg.get('extern', 'nova_region_name')
-    _write_env('NOVA_REGION_NAME', nv_reg, fh)
-
-    nv_ver = cfg.get('extern', 'nova_version')
-    _write_env('NOVA_VERSION', nv_ver, fh)
-
-    nv_cert = cfg.get("extern", 'nova_cert_fn')
-    _write_env('NOVA_CERT', nv_cert, fh)
-
-    _write_line("", fh)
-
-
-def _generate_os_env(fh, cfg):
-    _write_line('# Openstack stuff', fh)
-    ip = cfg.get('host', 'ip')
-
-    hkpw = cfg.get('passwords', 'horizon_keystone_admin', auto_pw=False)
-    _write_env('OS_PASSWORD', hkpw, fh)
-
-    os_ten = cfg.get('extern', 'os_tenant_name')
-    _write_env('OS_TENANT_NAME', os_ten, fh)
-
-    os_uname = cfg.get('extern', 'os_username')
-    _write_env('OS_USERNAME', os_uname, fh)
-
-    os_auth_uri = cfg.get('extern', 'os_auth_url')
-    if not os_auth_uri:
-        os_auth_uri = urlunparse(('http', "%s:%s" % (ip, OS_AUTH_PORT), "v2.0", '', '', ''))
-    _write_env('OS_AUTH_URL', os_auth_uri, fh)
-
-    _write_line("", fh)
-
-
-def _generate_header(fh, cfg):
-    header = '# Generated on %s' % (date.rcf8222date())
-    _write_line(header, fh)
-    _write_line("", fh)
-
-
-def _generate_general(fh, cfg):
-    _write_line('# General stuff', fh)
-    for (out_name, cfg_data) in CFG_MAKE.items():
-        (section, key) = cfg_data
-        value = cfg.get(section, key, auto_pw=False)
-        _write_env(out_name, value, fh)
-    _write_line("", fh)
-
-
-def generate_local_rc(fn, cfg):
-    with open(fn, "w") as fh:
-        _generate_header(fh, cfg)
-        _generate_general(fh, cfg)
-        _generate_ec2_env(fh, cfg)
-        _generate_nova_env(fh, cfg)
-        _generate_os_env(fh, cfg)
-        _generate_extern_inc(fh)
-
-
-def load_local_rc(fn):
-    am_set = 0
-    with open(fn, "r") as fh:
-        for line in fh:
-            m = EXP_PAT.search(line)
-            if m:
-                key = m.group(1).strip()
-                value = m.group(2).strip()
-                #remove inline comment if any
-                value = value.split("#")[0].strip()
-                if len(key):
-                    qmtch = QUOTED_PAT.match(value)
-                    if qmtch:
-                        value = qmtch.group(1).decode('string_escape').strip()
-                    env.set(key, value)
-                    am_set += 1
-    return am_set
+    def load(self, fn):
+        am_set = 0
+        with open(fn, "r") as fh:
+            for line in fh:
+                m = EXP_PAT.search(line)
+                if m:
+                    key = m.group(1).strip()
+                    value = m.group(2).strip()
+                    #remove inline comment if any
+                    value = value.split("#")[0].strip()
+                    if len(key):
+                        qmtch = QUOTED_PAT.match(value)
+                        if qmtch:
+                            value = qmtch.group(1).decode('string_escape').strip()
+                        env.set(key, value)
+                        am_set += 1
+        return am_set

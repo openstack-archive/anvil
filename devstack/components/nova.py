@@ -17,7 +17,7 @@
 from urlparse import urlunparse
 import io
 import os
-import stat 
+import stat
 
 from devstack import cfg
 from devstack import component as comp
@@ -43,8 +43,12 @@ API_CONF = 'nova.conf'
 UPSTART_CONF_TMPL = 'upstart.conf'
 #normal conf
 PASTE_CONF = 'nova-api-paste.ini'
-
-CONFIGS = [PASTE_CONF]
+PASTE_SOURCE_FN = 'api-paste.ini'
+POLICY_CONF = 'policy.json'
+LOGGING_SOURCE_FN = 'logging_sample.conf'
+LOGGING_CONF = "logging.conf"
+CONFIGS = [PASTE_CONF, POLICY_CONF, LOGGING_CONF]
+ADJUST_CONFIGS = [PASTE_CONF]
 
 #this db will be dropped then created
 DB_NAME = 'nova'
@@ -371,6 +375,8 @@ class NovaInstaller(comp.PythonInstallComponent):
         self.tracewriter.cfg_write(tgtfn)
 
     def _config_adjust(self, contents, config_fn):
+        if config_fn not in ADJUST_CONFIGS:
+            return contents
         if config_fn == PASTE_CONF and settings.KEYSTONE in self.instances:
             newcontents = contents
             with io.BytesIO(contents) as stream:
@@ -392,20 +398,21 @@ class NovaInstaller(comp.PythonInstallComponent):
         return contents
 
     def _get_source_config(self, config_fn):
+        name = config_fn
         if config_fn == PASTE_CONF:
-            #this is named differently than what it will be stored as... arg...
-            srcfn = sh.joinpths(self.appdir, "etc", "nova", 'api-paste.ini')
-            contents = sh.load_file(srcfn)
-            return (srcfn, contents)
+            name = PASTE_SOURCE_FN
+        elif config_fn == LOGGING_CONF:
+            name = LOGGING_SOURCE_FN
         elif config_fn in APP_OPTIONS:
             # This is one of the upstart configs, use our general template
             # for the source
             LOG.info("Loading upstart template to be used by:%s" % (config_fn))
             (_, contents) = utils.load_template('general', UPSTART_CONF_TMPL)
             return (config_fn, contents)
-        else:
-            # It's not an upstart config, just do what we used to do
-            return comp.PythonInstallComponent._get_source_config(self, config_fn)
+        # It's not an upstart, go get it from the nova conf dir
+        srcfn = sh.joinpths(self.cfgdir, "nova", name)
+        contents = sh.load_file(srcfn)
+        return (srcfn, contents)
 
     def _get_target_config_name(self, config_fn):
         if config_fn in APP_OPTIONS:
@@ -438,10 +445,9 @@ class NovaInstaller(comp.PythonInstallComponent):
             return keystone.get_shared_params(self.cfg)
 
     def configure(self):
-        am = comp.PythonInstallComponent.configure(self)
-        #this is a special conf so we handle it ourselves
+        configs_made = comp.PythonInstallComponent.configure(self)
         self._generate_nova_conf()
-        return am + 1
+        return configs_made + 1
 
 
 class NovaRuntime(comp.PythonRuntime):

@@ -247,6 +247,7 @@ class ImageCreationService:
 
         # make the request
         LOG.info("Getting your token from url [%s], please wait..." % (keystone_token_url))
+        LOG.debug("With post json data %s" % (data))
         response = urllib2.urlopen(request)
 
         token = json.loads(response.read())
@@ -257,7 +258,10 @@ class ImageCreationService:
             msg = "Response from url [%s] did not match expected json format." % (keystone_token_url)
             raise IOError(msg)
 
-        return token['access']['token']['id']
+        #basic checks passed, extract it!
+        tok = token['access']['token']['id']
+        LOG.debug("Got token %s" % (tok))
+        return tok
 
     def install(self):
         urls = list()
