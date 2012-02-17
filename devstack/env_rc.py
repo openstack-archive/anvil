@@ -81,6 +81,7 @@ def _generate_ec2_env(fh, cfg):
     ec2_uid = cfg.get('extern', 'ec2_user_id')
     _write_env('EC2_USER_ID', ec2_uid, fh)
 
+    _write_line("", fh)
     extern_inc = """
 
 # use stored ec2 env variables
