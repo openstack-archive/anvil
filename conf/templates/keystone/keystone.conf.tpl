@@ -1,4 +1,4 @@
-# From devstack commit bd13b708f2 with no modifications
+# From devstack commit 18ee4eaf58 with no modifications
 
 [DEFAULT]
 public_port = 5000
@@ -7,7 +7,6 @@ admin_token = %SERVICE_TOKEN%
 compute_port = 3000
 verbose = True
 debug = True
-
 # commented out so devstack logs to stdout
 # log_file = %DEST%/keystone/keystone.log
 
@@ -92,4 +91,4 @@ use = egg:Paste#urlmap
 [composite:admin]
 use = egg:Paste#urlmap
 /v2.0 = admin_api
-/ = admin_version_service
+/ = admin_version_api
