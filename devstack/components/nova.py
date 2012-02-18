@@ -437,7 +437,7 @@ class NovaInstaller(comp.PythonInstallComponent):
             params['CFGFILE'] = sh.joinpths(self.cfgdir, API_CONF)
             params['BINDIR'] = self.bindir
             params['IMAGE'] = config_fn
-            if self.cfg.get('upstart', 'respawn'):
+            if self.cfg.getboolean('upstart', 'respawn'):
                 params['RESPAWN'] = "respawn"
             else:
                 params['RESPAWN'] = ""
