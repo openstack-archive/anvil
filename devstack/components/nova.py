@@ -610,11 +610,12 @@ class NovaConfConfigurator(object):
         if logdir:
             full_logdir = sh.abspth(logdir)
             nova_conf.add('logdir', full_logdir)
-            LOG.debug("Making sure that nova logdir exists at: %s" % full_logdir)
             # Will need to be root to create it since it may be in /var/log
-            with sh.Rooted(True):
-                sh.mkdir(full_logdir)
-                sh.chmod(full_logdir, 0777)
+            if not sh.isdir(full_logdir):
+                LOG.debug("Making sure that nova logdir exists at: %s" % full_logdir)
+                with sh.Rooted(True):
+                    sh.mkdir(full_logdir)
+                    sh.chmod(full_logdir, 0777)
 
         #allow the admin api?
         if self._getbool('allow_admin_api'):
