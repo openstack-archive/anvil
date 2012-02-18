@@ -19,7 +19,7 @@
 #    under the License.
 
 """
-Installation script for Keystone's development virtualenv
+Installation script for DevstackPY's development virtualenv
 """
 
 import os
