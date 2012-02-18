@@ -17,6 +17,7 @@
 from urlparse import urlunparse
 import io
 import os
+import stat
 
 from devstack import cfg
 from devstack import component as comp
@@ -39,6 +40,7 @@ LOG = logging.getLogger('devstack.components.nova')
 #special generated conf
 API_CONF = 'nova.conf'
 
+UPSTART_CONF_TMPL = 'upstart.conf'
 #normal conf
 PASTE_CONF = 'nova-api-paste.ini'
 PASTE_SOURCE_FN = 'api-paste.ini'
@@ -147,7 +149,7 @@ APP_OPTIONS = {
     'nova-scheduler': ['--flagfile', '%CFGFILE%'],
     'nova-cert': ['--flagfile', '%CFGFILE%'],
     'nova-objectstore': ['--flagfile', '%CFGFILE%'],
-    'nova-consoleauth': [],
+    'nova-consoleauth': ['--flagfile', '%CFGFILE%'],
     'nova-xvpvncproxy': ['--flagfile', '%CFGFILE%'],
 }
 
@@ -280,8 +282,16 @@ class NovaInstaller(comp.PythonInstallComponent):
     def _get_symlinks(self):
         links = dict()
         for fn in self._get_config_files():
+            LOG.info("getting symlink for fn:%s" % (fn))
             source_fn = self._get_target_config_name(fn)
-            links[source_fn] = sh.joinpths("/", "etc", "nova", fn)
+            LOG.info("symlink for source_fn:%s" % (source_fn))
+            # Anything in APP_OPTIONS is actually an upstart config
+            # and will go into /etc/init
+            # FIXME symlinks won't work. Need to copy the files there
+            if fn in APP_OPTIONS:
+                links[source_fn] = sh.joinpths("/", "etc", "init", fn + ".conf")
+            else:
+                links[source_fn] = sh.joinpths("/", "etc", "nova", fn)
         source_fn = sh.joinpths(self.cfgdir, API_CONF)
         links[source_fn] = sh.joinpths("/", "etc", "nova", API_CONF)
         return links
@@ -302,7 +312,9 @@ class NovaInstaller(comp.PythonInstallComponent):
             self.cfg.get("passwords", pw_key)
 
     def _get_config_files(self):
-        return list(CONFIGS)
+        # We'll include the keys from APP_OPTIONS since we want to create
+        # upstart config files for those.
+        return CONFIGS + APP_OPTIONS.keys()
 
     def _setup_network(self):
         LOG.info("Creating your nova network to be used with instances.")
@@ -392,12 +404,46 @@ class NovaInstaller(comp.PythonInstallComponent):
             name = PASTE_SOURCE_FN
         elif config_fn == LOGGING_CONF:
             name = LOGGING_SOURCE_FN
+        elif config_fn in APP_OPTIONS:
+            # This is one of the upstart configs, use our general template
+            # for the source
+            LOG.info("Loading upstart template to be used by:%s" % (config_fn))
+            (_, contents) = utils.load_template('general', UPSTART_CONF_TMPL)
+            return (config_fn, contents)
+        # It's not an upstart, go get it from the nova conf dir
         srcfn = sh.joinpths(self.cfgdir, "nova", name)
         contents = sh.load_file(srcfn)
         return (srcfn, contents)
 
+    def _get_target_config_name(self, config_fn):
+        if config_fn in APP_OPTIONS:
+            # This is one of the upstart configs. It'll eventually get
+            # symlinked to /etc/init.  Use the APP_OPTIONS key as the base filename
+            result = sh.joinpths(self.cfgdir, config_fn + ".conf")
+            LOG.info("Generated upstart config name:%s" % (result))
+            return result
+        else:
+            # It's not an upstart config, just do what we used to do
+            return comp.PkgInstallComponent._get_target_config_name(self, config_fn)
+
     def _get_param_map(self, config_fn):
-        return keystone.get_shared_params(self.cfg)
+        if config_fn in APP_OPTIONS:
+            # We're processing an upstart config file. We'll need to set
+            # specific values from the general upstart config template
+            LOG.info("Returning parms for update config:%s" % (config_fn))
+            params = dict()
+            params['CFGFILE'] = sh.joinpths(self.cfgdir, API_CONF)
+            params['BINDIR'] = self.bindir
+            params['IMAGE'] = config_fn
+            if self.cfg.get('upstart', 'respawn'):
+                params['RESPAWN'] = "respawn"
+            else:
+                params['RESPAWN'] = ""
+            params['START_EVENT'] = self.cfg.get('upstart', 'start_event')
+            params['STOP_EVENT'] = self.cfg.get('upstart', 'stop_event')
+            return params
+        else:
+            return keystone.get_shared_params(self.cfg)
 
     def configure(self):
         configs_made = comp.PythonInstallComponent.configure(self)
@@ -554,6 +600,17 @@ class NovaConfConfigurator(object):
         #verbose on?
         if self._getbool('verbose'):
             nova_conf.add_simple('verbose')
+        # Check if we have a logdir specified. If we do, we'll make
+        # sure that it exists. We will *not* use tracewrite because we
+        # don't want to lose the logs when we uninstall
+        logdir = self._getstr('logdir', '/var/log/nova')
+        if logdir:
+            nova_conf.add('logdir', logdir)
+            LOG.info("Making sure that logdir exists:%s" % logdir)
+            # Will need to be root to create it since it may be in /var/log
+            with sh.Rooted(True):
+                sh.mkdir(logdir, True)
+                sh.chmod(logdir, stat.S_IRWXO | stat.S_IRWXG | stat.S_IRWXU)
 
         #allow the admin api?
         if self._getbool('allow_admin_api'):
