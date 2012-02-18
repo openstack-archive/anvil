@@ -19,7 +19,7 @@
 #    under the License.
 
 """
-Installation script for DevstackPY's development virtualenv
+Installation script for DevstackPy's development virtualenv
 """
 
 import os
@@ -70,7 +70,7 @@ def check_dependencies():
             print 'Installing virtualenv via easy_install...',
             if not run_command(['which', 'easy_install']):
                 die('ERROR: virtualenv not found.\n\n'
-                    'Keystone development requires virtualenv, please install'
+                    'DevstackPy development requires virtualenv, please install'
                     ' it using your favorite package management tool')
             print 'done.'
     print 'done.'
