@@ -163,7 +163,7 @@ class Image(object):
             finally:
                 self._cleanup()
         else:
-            LOG.warn("You already seem to have image named %s, skipping" % (possible_name))
+            LOG.warn("You already seem to have image named [%s], skipping that install..." % (possible_name))
 
 
 class ImageRegistry:
