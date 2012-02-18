@@ -41,7 +41,7 @@ TEMPLATE_EXT = ".tpl"
 DEF_IP = "127.0.0.1"
 IP_LOOKER = '8.8.8.8'
 DEF_IP_VERSION = settings.IPV4
-PRIVATE_OCTS = ['192', '172', '10']
+PRIVATE_OCTS = []
 
 
 def load_template(component, template_name):

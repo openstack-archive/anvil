@@ -15,6 +15,7 @@
 #    under the License.
 
 from devstack import downloader as down
+from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import pip
 from devstack import settings
@@ -343,15 +344,18 @@ class ProgramRuntime(ComponentBase):
     #this here determines how we start and stop and
     #what classes handle different running/stopping types
     STARTER_CLS_MAPPING = {
-        fork.RUN_TYPE: fork.ForkRunner,
+        settings.RUN_TYPE_FORK: fork.ForkRunner,
     }
     STOPPER_CLS_MAPPING = {
-        fork.RUN_TYPE: fork.ForkRunner,
+        settings.RUN_TYPE_FORK: fork.ForkRunner,
     }
 
     def __init__(self, component_name, *args, **kargs):
         ComponentBase.__init__(self, component_name, *args, **kargs)
-        self.run_type = kargs.get("run_type", fork.RUN_TYPE)
+        self.run_type = self.cfg.getdefaulted("default", "run_type", settings.RUN_TYPE_DEF)
+        if self.run_type not in settings.RUN_TYPES_KNOWN:
+            msg = "Unknown run type %s found in config default/run_type" % (self.run_type)
+            raise excp.ConfigException(msg)
         self.tracereader = tr.TraceReader(self.tracedir, tr.IN_TRACE)
         self.tracewriter = tr.TraceWriter(self.tracedir, tr.START_TRACE)
         self.starttracereader = tr.TraceReader(self.tracedir, tr.START_TRACE)

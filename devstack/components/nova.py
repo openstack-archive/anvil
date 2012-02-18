@@ -17,7 +17,6 @@
 from urlparse import urlunparse
 import io
 import os
-import stat
 
 from devstack import cfg
 from devstack import component as comp
@@ -40,7 +39,6 @@ LOG = logging.getLogger('devstack.components.nova')
 #special generated conf
 API_CONF = 'nova.conf'
 
-UPSTART_CONF_TMPL = 'upstart.conf'
 #normal conf
 PASTE_CONF = 'nova-api-paste.ini'
 PASTE_SOURCE_FN = 'api-paste.ini'
@@ -270,6 +268,10 @@ class NovaInstaller(comp.PythonInstallComponent):
         self.xvnc_enabled = False
         if not self.component_opts or NXVNC in self.component_opts:
             self.xvnc_enabled = True
+        self.run_type = self.cfg.getdefaulted("default", "run_type", settings.RUN_TYPE_DEF)
+        self.upstart_on = False
+        if self.run_type == settings.RUN_TYPE_UPSTART:
+            self.upstart_on = True
 
     def _get_pkgs(self):
         pkgs = list(REQ_PKGS)
@@ -285,12 +287,13 @@ class NovaInstaller(comp.PythonInstallComponent):
             LOG.info("getting symlink for fn:%s" % (fn))
             source_fn = self._get_target_config_name(fn)
             LOG.info("symlink for source_fn:%s" % (source_fn))
-            # Anything in APP_OPTIONS is actually an upstart config
-            # and will go into /etc/init
-            # FIXME symlinks won't work. Need to copy the files there
-            if fn in APP_OPTIONS:
-                links[source_fn] = sh.joinpths("/", "etc", "init", fn + ".conf")
-            else:
+            # Anything in APP_OPTIONS is actually an upstart config and will go into /etc/init
+            # TODO FIXME symlinks won't work. Need to copy the files there.
+            # https://bugs.launchpad.net/upstart/+bug/665022
+            if fn in APP_OPTIONS and self.upstart_on:
+                #links[source_fn] = sh.joinpths("/", "etc", "init", fn + ".conf")
+                pass
+            elif fn in CONFIGS:
                 links[source_fn] = sh.joinpths("/", "etc", "nova", fn)
         source_fn = sh.joinpths(self.cfgdir, API_CONF)
         links[source_fn] = sh.joinpths("/", "etc", "nova", API_CONF)
@@ -312,9 +315,11 @@ class NovaInstaller(comp.PythonInstallComponent):
             self.cfg.get("passwords", pw_key)
 
     def _get_config_files(self):
-        # We'll include the keys from APP_OPTIONS since we want to create
-        # upstart config files for those.
-        return CONFIGS + APP_OPTIONS.keys()
+        cfg_files = list(CONFIGS)
+        if self.upstart_on:
+            # We'll include the keys from APP_OPTIONS since we want to create upstart config files for those.
+            cfg_files.extend(APP_OPTIONS.keys())
+        return cfg_files
 
     def _setup_network(self):
         LOG.info("Creating your nova network to be used with instances.")
@@ -340,7 +345,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         utils.execute_template(*DB_SYNC_CMD, params=mp)
 
     def post_install(self):
-        comp.PkgInstallComponent.post_install(self)
+        comp.PythonInstallComponent.post_install(self)
         #extra actions to do nova setup
         self._setup_db()
         self._sync_db()
@@ -404,11 +409,10 @@ class NovaInstaller(comp.PythonInstallComponent):
             name = PASTE_SOURCE_FN
         elif config_fn == LOGGING_CONF:
             name = LOGGING_SOURCE_FN
-        elif config_fn in APP_OPTIONS:
-            # This is one of the upstart configs, use our general template
-            # for the source
-            LOG.info("Loading upstart template to be used by:%s" % (config_fn))
-            (_, contents) = utils.load_template('general', UPSTART_CONF_TMPL)
+        elif config_fn in APP_OPTIONS and self.upstart_on:
+            # This is one of the upstart configs, use our general template for the source
+            LOG.debug("Loading upstart template to be used by: %s" % (config_fn))
+            (_, contents) = utils.load_template('general', settings.UPSTART_CONF_TMPL)
             return (config_fn, contents)
         # It's not an upstart, go get it from the nova conf dir
         srcfn = sh.joinpths(self.cfgdir, "nova", name)
@@ -416,21 +420,19 @@ class NovaInstaller(comp.PythonInstallComponent):
         return (srcfn, contents)
 
     def _get_target_config_name(self, config_fn):
-        if config_fn in APP_OPTIONS:
+        if config_fn in APP_OPTIONS and self.upstart_on:
             # This is one of the upstart configs. It'll eventually get
-            # symlinked to /etc/init.  Use the APP_OPTIONS key as the base filename
-            result = sh.joinpths(self.cfgdir, config_fn + ".conf")
-            LOG.info("Generated upstart config name:%s" % (result))
-            return result
+            # symlinked to /etc/init. Use the APP_OPTIONS key as the base filename
+            return sh.joinpths(self.cfgdir, config_fn + ".conf")
         else:
             # It's not an upstart config, just do what we used to do
-            return comp.PkgInstallComponent._get_target_config_name(self, config_fn)
+            return comp.PythonInstallComponent._get_target_config_name(self, config_fn)
 
     def _get_param_map(self, config_fn):
-        if config_fn in APP_OPTIONS:
+        if config_fn in APP_OPTIONS and self.upstart_on:
             # We're processing an upstart config file. We'll need to set
             # specific values from the general upstart config template
-            LOG.info("Returning parms for update config:%s" % (config_fn))
+            LOG.debug("Returning parms for update config: %s" % (config_fn))
             params = dict()
             params['CFGFILE'] = sh.joinpths(self.cfgdir, API_CONF)
             params['BINDIR'] = self.bindir
@@ -600,17 +602,19 @@ class NovaConfConfigurator(object):
         #verbose on?
         if self._getbool('verbose'):
             nova_conf.add_simple('verbose')
+
         # Check if we have a logdir specified. If we do, we'll make
         # sure that it exists. We will *not* use tracewrite because we
         # don't want to lose the logs when we uninstall
-        logdir = self._getstr('logdir', '/var/log/nova')
+        logdir = self._getstr('logdir')
         if logdir:
-            nova_conf.add('logdir', logdir)
-            LOG.info("Making sure that logdir exists:%s" % logdir)
+            full_logdir = sh.abspth(logdir)
+            nova_conf.add('logdir', full_logdir)
+            LOG.debug("Making sure that nova logdir exists at: %s" % full_logdir)
             # Will need to be root to create it since it may be in /var/log
             with sh.Rooted(True):
-                sh.mkdir(logdir, True)
-                sh.chmod(logdir, stat.S_IRWXO | stat.S_IRWXG | stat.S_IRWXU)
+                sh.mkdir(full_logdir)
+                sh.chmod(full_logdir, 0777)
 
         #allow the admin api?
         if self._getbool('allow_admin_api'):

@@ -25,7 +25,7 @@ SYSADMIN_ROLE_NAME=sysadmin
 NETADMIN_ROLE_NAME=netadmin
 DUMMY_EMAIL=admin@example.com
 
-# Tenants
+# Tenants (names are same as user names)
 ADMIN_TENANT=`get_id keystone tenant-create --name=$ADMIN_USERNAME`
 DEMO_TENANT=`get_id keystone tenant-create --name=$DEMO_USER_NAME`
 INVIS_TENANT=`get_id keystone tenant-create --name=$INVIS_USER_NAME`

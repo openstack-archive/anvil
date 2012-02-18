@@ -24,19 +24,24 @@ import time
 
 from devstack import exceptions as excp
 from devstack import log as logging
+from devstack import settings
 from devstack import shell as sh
 from devstack import trace as tr
 
-# Maximum for the number of available file descriptors (when not found)
+LOG = logging.getLogger("devstack.runners.fork")
+
+#maximum for the number of available file descriptors (when not found)
 MAXFD = 2048
+
+#how many times we try to kill and how much sleep (seconds) between each try
 MAX_KILL_TRY = 5
 SLEEP_TIME = 1
 
-LOG = logging.getLogger("devstack.runners.fork")
+#my type
+RUN_TYPE = settings.RUN_TYPE_FORK
 
 #trace constants
 TYPE = "TYPE"
-RUN_TYPE = "FORK"
 PID_FN = "PID_FN"
 STDOUT_FN = "STDOUT_FN"
 STDERR_FN = "STDERR_FN"

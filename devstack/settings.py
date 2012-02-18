@@ -90,6 +90,15 @@ COMPONENT_DEPENDENCIES = {
     MELANGE_CLIENT: [],
 }
 
+# Different run types supported
+RUN_TYPE_FORK = "fork"
+RUN_TYPE_UPSTART = "upstart"
+RUN_TYPE_DEF = RUN_TYPE_FORK
+RUN_TYPES_KNOWN = [RUN_TYPE_UPSTART, RUN_TYPE_FORK, RUN_TYPE_DEF]
+
+# Shared template
+UPSTART_CONF_TMPL = 'upstart.conf'
+
 # Default subdirs of a components root directory
 COMPONENT_TRACE_DIR = "traces"
 COMPONENT_APP_DIR = "app"
