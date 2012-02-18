@@ -31,7 +31,7 @@ GIT_CACHE_DIR_ENV = "GIT_CACHE_DIR"
 def _git_cache_download(storewhere, uri, branch=None):
     cdir = env.get_key(GIT_CACHE_DIR_ENV)
     if cdir and sh.isdir(cdir):
-        #TODO
+        #TODO actually do the cache...
         pass
     return False
 

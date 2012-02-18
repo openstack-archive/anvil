@@ -178,11 +178,14 @@ DEF_IMAGE_SERVICE = 'nova.image.glance.GlanceImageService'
 DEF_SCHEDULER = 'nova.scheduler.simple.SimpleScheduler'
 DEF_GLANCE_PORT = 9292
 DEF_GLANCE_SERVER = "%s" + ":%s" % (DEF_GLANCE_PORT)
-DEF_INSTANCE_TEMPL = 'instance-' + '%08x'
+DEF_INSTANCE_PREFIX = 'instance-'
+DEF_INSTANCE_TEMPL = DEF_INSTANCE_PREFIX + '%08x'
 DEF_FIREWALL_DRIVER = 'nova.virt.firewall.IptablesFirewallDriver'
 DEF_VIRT_DRIVER = virsh.VIRT_TYPE
 DEF_FLAT_VIRT_BRIDGE = 'br100'
 DEF_NET_MANAGER = 'FlatDHCPManager'
+DEF_VOL_PREFIX = 'volume-'
+DEF_VOL_TEMPL = DEF_VOL_PREFIX + '%08x'
 
 #only turned on if vswitch enabled
 QUANTUM_OPENSWITCH_OPS = {
@@ -241,7 +244,7 @@ class NovaUninstaller(comp.PythonUninstallComponent):
         env = dict()
         env['ENABLED_SERVICES'] = ",".join(sub_components)
         env['BIN_DIR'] = self.bindir
-        env['VOLUME_NAME_PREFIX'] = self.cfg.get('nova', 'volume_name_prefix')
+        env['VOLUME_NAME_PREFIX'] = self.cfg.getdefaulted('nova', 'volume_name_prefix', DEF_VOL_PREFIX)
         cleaner_fn = sh.joinpths(self.bindir, CLEANER_DATA_CONF)
         if sh.isfile(cleaner_fn):
             LOG.info("Cleaning up your system by running nova cleaner script [%s]." % (cleaner_fn))
@@ -251,7 +254,7 @@ class NovaUninstaller(comp.PythonUninstallComponent):
     def _clear_libvirt_domains(self):
         virt_driver = canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
         if virt_driver == virsh.VIRT_TYPE:
-            inst_prefix = self.cfg.get('nova', 'instance_name_prefix')
+            inst_prefix = self.cfg.getdefaulted('nova', 'instance_name_prefix', DEF_INSTANCE_PREFIX)
             libvirt_type = virsh.default(self.cfg.get('nova', 'libvirt_type'))
             virsh.clear_libvirt_domains(self.distro, libvirt_type, inst_prefix)
 
@@ -548,7 +551,7 @@ class NovaVolumeConfigurator(object):
         lvs_result = utils.execute_template(*VG_LVS_CMD, params=mp)
         if lvs_result and lvs_result[0]:
             LOG.debug("LVS result: %s" % (lvs_result))
-            vol_name_prefix = self.cfg.get('nova', 'volume_name_prefix')
+            vol_name_prefix = self.cfg.getdefaulted('nova', 'volume_name_prefix', DEF_VOL_PREFIX)
             LOG.debug("Using volume name prefix: %s" % (vol_name_prefix))
             (sysout, _) = lvs_result[0]
             for stdout_line in sysout.split('\n'):
@@ -742,7 +745,10 @@ class NovaConfConfigurator(object):
 
     def _configure_vols(self, nova_conf):
         nova_conf.add('volume_group', self._getstr('volume_group'))
-        nova_conf.add('volume_name_template', self._getstr('volume_name_prefix') + self._getstr('volume_name_postfix'))
+        vol_name_tpl = self._getstr('volume_name_prefix') + self._getstr('volume_name_postfix')
+        if not vol_name_tpl:
+            vol_name_tpl = DEF_VOL_TEMPL
+        nova_conf.add('volume_name_template', vol_name_tpl)
         nova_conf.add('iscsi_help', 'tgtadm')
 
     def _configure_network_settings(self, nova_conf):
