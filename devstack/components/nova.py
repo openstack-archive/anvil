@@ -287,6 +287,7 @@ class NovaInstaller(comp.PythonInstallComponent):
             LOG.info("symlink for source_fn:%s" % (source_fn))
             # Anything in APP_OPTIONS is actually an upstart config
             # and will go into /etc/init
+            # FIXME symlinks won't work. Need to copy the files there
             if fn in APP_OPTIONS:
                 links[source_fn] = sh.joinpths("/", "etc", "init", fn + ".conf")
             else:
