@@ -352,7 +352,7 @@ class ProgramRuntime(ComponentBase):
 
     def __init__(self, component_name, *args, **kargs):
         ComponentBase.__init__(self, component_name, *args, **kargs)
-        self.run_type = self.cfg.getdefaulted("default", "run_type", settings.RUN_TYPE_DEF)
+        self.run_type = utils.fetch_run_type(self.cfg)
         if self.run_type not in settings.RUN_TYPES_KNOWN:
             msg = "Unknown run type %s found in config default/run_type" % (self.run_type)
             raise excp.ConfigException(msg)

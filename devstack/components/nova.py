@@ -268,7 +268,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         self.xvnc_enabled = False
         if not self.component_opts or NXVNC in self.component_opts:
             self.xvnc_enabled = True
-        self.run_type = self.cfg.getdefaulted("default", "run_type", settings.RUN_TYPE_DEF)
+        self.run_type = utils.fetch_run_type(self.cfg)
         self.upstart_on = False
         if self.run_type == settings.RUN_TYPE_UPSTART:
             self.upstart_on = True

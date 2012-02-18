@@ -158,6 +158,12 @@ def get_host_ip():
     return ip
 
 
+def fetch_run_type(config):
+    run_type = config.getdefaulted("default", "run_type", settings.RUN_TYPE_DEF)
+    run_type = run_type.upper()
+    return run_type
+
+
 def is_interface(intfc):
     if intfc in get_interfaces():
         return True
