@@ -1,6 +1,7 @@
-# This is a primative starting point for 
+# This is a primitive starting point for 
 # generic upstart configuration files
 # for various openstack components.
+
 author "%AUTHOR%"
 description "This is the upstart file for %SHORT_NAME% made on %MADE_DATE%"
 
