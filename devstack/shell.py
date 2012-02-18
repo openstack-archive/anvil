@@ -183,7 +183,9 @@ def shellquote(text):
         for (srch, replace) in SHELL_QUOTE_REPLACERS.items():
             text = text.replace(srch, replace)
     if do_adjust or \
-        text.startswith((" ", "\t")) or text.endswith((" ", "\t")):
+        text.startswith((" ", "\t")) or \
+        text.endswith((" ", "\t")) or \
+        text.find("'") != -1:
         text = SHELL_WRAPPER % (text)
     return text
 
