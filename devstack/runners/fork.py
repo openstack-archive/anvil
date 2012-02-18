@@ -51,8 +51,8 @@ FORK_TEMPL = "%s.fork"
 
 
 class ForkRunner(object):
-    def __init__(self):
-        pass
+    def __init__(self, cfg):
+        self.cfg = cfg
 
     def _stop_pid(self, pid):
         killed = False
@@ -161,7 +161,7 @@ class ForkRunner(object):
                 #be bad right now
                 os._exit(0)
 
-    def start(self, name, program, *args, **kargs):
+    def start(self, name, program, *program_args, **kargs):
         tracedir = kargs.get("trace_dir")
         appdir = kargs.get("app_dir")
         fn_name = FORK_TEMPL % (name)
@@ -172,8 +172,8 @@ class ForkRunner(object):
         runtrace.trace(PID_FN, pidfile)
         runtrace.trace(STDERR_FN, stderrfn)
         runtrace.trace(STDOUT_FN, stdoutfn)
-        runtrace.trace(ARGS, json.dumps(args))
+        runtrace.trace(ARGS, json.dumps(program_args))
         LOG.debug("Forking [%s] by running command [%s]" % (name, program))
         with sh.Rooted(kargs.get("run_as_root", True)):
-            self._fork_start(program, appdir, pidfile, stdoutfn, stderrfn, *args)
+            self._fork_start(program, appdir, pidfile, stdoutfn, stderrfn, *program_args)
         return tracefn

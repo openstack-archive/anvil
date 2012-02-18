@@ -268,10 +268,6 @@ class NovaInstaller(comp.PythonInstallComponent):
         self.xvnc_enabled = False
         if not self.component_opts or NXVNC in self.component_opts:
             self.xvnc_enabled = True
-        self.run_type = utils.fetch_run_type(self.cfg)
-        self.upstart_on = False
-        if self.run_type == settings.RUN_TYPE_UPSTART:
-            self.upstart_on = True
 
     def _get_pkgs(self):
         pkgs = list(REQ_PKGS)
@@ -284,17 +280,8 @@ class NovaInstaller(comp.PythonInstallComponent):
     def _get_symlinks(self):
         links = dict()
         for fn in self._get_config_files():
-            LOG.info("getting symlink for fn:%s" % (fn))
             source_fn = self._get_target_config_name(fn)
-            LOG.info("symlink for source_fn:%s" % (source_fn))
-            # Anything in APP_OPTIONS is actually an upstart config and will go into /etc/init
-            # TODO FIXME symlinks won't work. Need to copy the files there.
-            # https://bugs.launchpad.net/upstart/+bug/665022
-            if fn in APP_OPTIONS and self.upstart_on:
-                #links[source_fn] = sh.joinpths("/", "etc", "init", fn + ".conf")
-                pass
-            elif fn in CONFIGS:
-                links[source_fn] = sh.joinpths("/", "etc", "nova", fn)
+            links[source_fn] = sh.joinpths("/", "etc", "nova", fn)
         source_fn = sh.joinpths(self.cfgdir, API_CONF)
         links[source_fn] = sh.joinpths("/", "etc", "nova", API_CONF)
         return links
@@ -316,9 +303,6 @@ class NovaInstaller(comp.PythonInstallComponent):
 
     def _get_config_files(self):
         cfg_files = list(CONFIGS)
-        if self.upstart_on:
-            # We'll include the keys from APP_OPTIONS since we want to create upstart config files for those.
-            cfg_files.extend(APP_OPTIONS.keys())
         return cfg_files
 
     def _setup_network(self):
@@ -409,43 +393,12 @@ class NovaInstaller(comp.PythonInstallComponent):
             name = PASTE_SOURCE_FN
         elif config_fn == LOGGING_CONF:
             name = LOGGING_SOURCE_FN
-        elif config_fn in APP_OPTIONS and self.upstart_on:
-            # This is one of the upstart configs, use our general template for the source
-            LOG.debug("Loading upstart template to be used by: %s" % (config_fn))
-            (_, contents) = utils.load_template('general', settings.UPSTART_CONF_TMPL)
-            return (config_fn, contents)
-        # It's not an upstart, go get it from the nova conf dir
         srcfn = sh.joinpths(self.cfgdir, "nova", name)
         contents = sh.load_file(srcfn)
         return (srcfn, contents)
 
-    def _get_target_config_name(self, config_fn):
-        if config_fn in APP_OPTIONS and self.upstart_on:
-            # This is one of the upstart configs. It'll eventually get
-            # symlinked to /etc/init. Use the APP_OPTIONS key as the base filename
-            return sh.joinpths(self.cfgdir, config_fn + ".conf")
-        else:
-            # It's not an upstart config, just do what we used to do
-            return comp.PythonInstallComponent._get_target_config_name(self, config_fn)
-
     def _get_param_map(self, config_fn):
-        if config_fn in APP_OPTIONS and self.upstart_on:
-            # We're processing an upstart config file. We'll need to set
-            # specific values from the general upstart config template
-            LOG.debug("Returning parms for update config: %s" % (config_fn))
-            params = dict()
-            params['CFGFILE'] = sh.joinpths(self.cfgdir, API_CONF)
-            params['BINDIR'] = self.bindir
-            params['IMAGE'] = config_fn
-            if self.cfg.getboolean('upstart', 'respawn'):
-                params['RESPAWN'] = "respawn"
-            else:
-                params['RESPAWN'] = ""
-            params['START_EVENT'] = self.cfg.get('upstart', 'start_event')
-            params['STOP_EVENT'] = self.cfg.get('upstart', 'stop_event')
-            return params
-        else:
-            return keystone.get_shared_params(self.cfg)
+        return keystone.get_shared_params(self.cfg)
 
     def configure(self):
         configs_made = comp.PythonInstallComponent.configure(self)
