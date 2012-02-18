@@ -1,12 +1,14 @@
-# From devstack commit 18ee4eaf58 with no modifications
+# From devstack commit 18ee4eaf58 with modifications to parametrize
+# certain variables (ports mainly).
 
 [DEFAULT]
-public_port = 5000
-admin_port = 35357
+public_port = %KEYSTONE_SERVICE_PORT%
+admin_port = %KEYSTONE_AUTH_PORT%
 admin_token = %SERVICE_TOKEN%
 compute_port = 3000
 verbose = True
 debug = True
+
 # commented out so devstack logs to stdout
 # log_file = %DEST%/keystone/keystone.log
 

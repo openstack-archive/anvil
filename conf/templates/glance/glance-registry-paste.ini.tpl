@@ -1,4 +1,4 @@
-# From commit 30439a6dc4
+# From devstack commit 30439a6dc4
 
 [pipeline:glance-registry]
 #pipeline = context registryapp

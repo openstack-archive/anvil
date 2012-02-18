@@ -1,4 +1,4 @@
-## From devstack glance-api.conf commit 30439a6dc4
+## From devstack commit 30439a6dc4
 
 [DEFAULT]
 # Show more verbose log output (sets INFO log level output)
