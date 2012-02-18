@@ -608,7 +608,7 @@ class NovaConfConfigurator(object):
             nova_conf.add('logdir', logdir)
             LOG.info("Making sure that logdir exists:%s" % logdir)
             # Will need to be root to create it since it may be in /var/log
-            with sh.Rotted(True):
+            with sh.Rooted(True):
                 sh.mkdir(logdir, True)
                 sh.chmod(logdir, stat.S_IRWXO | stat.S_IRWXG | stat.S_IRWXU)
 
