@@ -39,9 +39,9 @@ SLEEP_TIME = 1
 
 #my type
 RUN_TYPE = settings.RUN_TYPE_FORK
+TYPE = settings.RUN_TYPE_TYPE
 
 #trace constants
-TYPE = "TYPE"
 PID_FN = "PID_FN"
 STDOUT_FN = "STDOUT_FN"
 STDERR_FN = "STDERR_FN"

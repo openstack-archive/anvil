@@ -352,14 +352,9 @@ class ProgramRuntime(ComponentBase):
 
     def __init__(self, component_name, *args, **kargs):
         ComponentBase.__init__(self, component_name, *args, **kargs)
-        self.run_type = utils.fetch_run_type(self.cfg)
-        if self.run_type not in settings.RUN_TYPES_KNOWN:
-            msg = "Unknown run type %s found in config default/run_type" % (self.run_type)
-            raise excp.ConfigException(msg)
         self.tracereader = tr.TraceReader(self.tracedir, tr.IN_TRACE)
         self.tracewriter = tr.TraceWriter(self.tracedir, tr.START_TRACE)
         self.starttracereader = tr.TraceReader(self.tracedir, tr.START_TRACE)
-        self.check_installed_pkgs = kargs.get("check_installed_pkgs", True)
 
     def _getstartercls(self, start_mode):
         if start_mode not in ProgramRuntime.STARTER_CLS_MAPPING:
@@ -390,7 +385,11 @@ class ProgramRuntime(ComponentBase):
 
     def start(self):
         #select how we are going to start it
-        startercls = self._getstartercls(self.run_type)
+        run_type = utils.fetch_run_type(self.cfg)
+        if run_type not in settings.RUN_TYPES_KNOWN:
+            msg = "Unknown run type %s found in configuration" % (run_type)
+            raise excp.ConfigException(msg)
+        startercls = self._getstartercls(run_type)
         starter = startercls()
         #start all apps
         #this fns list will have info about what was started
@@ -410,7 +409,7 @@ class ProgramRuntime(ComponentBase):
                     adjusted_opts.append(utils.param_replace(str(opt), params))
                 program_opts = adjusted_opts
             #start it with the given settings
-            LOG.debug("Starting [%s] with options [%s]" % (app_name, ", ".join(program_opts)))
+            LOG.debug("Starting [%s] with options [%s] with runner type [%s]" % (app_name, ", ".join(program_opts), run_type))
             fn = starter.start(app_name, app_pth, *program_opts, app_dir=app_dir, \
                                trace_dir=self.tracedir)
             if fn:
@@ -438,7 +437,7 @@ class ProgramRuntime(ComponentBase):
             killcls = None
             runtype = None
             for (cmd, action) in contents:
-                if cmd == "TYPE":
+                if cmd == settings.RUN_TYPE_TYPE:
                     runtype = action
                     killcls = self._getstoppercls(runtype)
                     break
