@@ -18,6 +18,7 @@ from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
+from devstack import utils
 
 from devstack.components import nova
 
@@ -84,9 +85,9 @@ class NoVNCRuntime(comp.ProgramRuntime):
 
     def _get_param_map(self, app_name):
         root_params = comp.ProgramRuntime._get_param_map(self, app_name)
-        if app_name == VNC_PROXY_APP and settings.NOVA in self.instances:
-            nova_runtime = self.instances.get(settings.NOVA)
+        if app_name == VNC_PROXY_APP and utils.service_enabled(settings.NOVA, self.instances, False):
             #have to reach into the nova conf (puke)
+            nova_runtime = self.instances[settings.NOVA]
             root_params['NOVA_CONF'] = sh.joinpths(nova_runtime.cfgdir, nova.API_CONF)
         return root_params
 

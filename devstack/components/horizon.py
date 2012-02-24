@@ -116,7 +116,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
             links[source_fn] = sh.joinpths("/", "etc", "horizon", fn)
         src = self._get_target_config_name(HORIZON_APACHE_CONF)
         links[src] = APACHE_CONF_TARGETS[self.distro]
-        if settings.QUANTUM_CLIENT in self.instances:
+        if utils.service_enabled(settings.QUANTUM_CLIENT, self.instances, False):
             #TODO remove this junk, blah, puke that we have to do this
             qc = self.instances[settings.QUANTUM_CLIENT]
             src_pth = sh.joinpths(qc.appdir, 'quantum')
@@ -171,7 +171,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         #Horizon currently imports quantum even if you aren't using it.
         #Instead of installing quantum we can create a simple module
         #that will pass the initial imports.
-        if settings.QUANTUM_CLIENT in self.instances:
+        if utils.service_enabled(settings.QUANTUM_CLIENT, self.instances, False):
             return
         else:
             #Make the fake quantum
@@ -256,7 +256,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
             mp['ERROR_LOG'] = sh.joinpths(self.log_dir, "error.log")
         else:
             #Enable quantum in dashboard, if requested
-            mp['QUANTUM_ENABLED'] = "%s" % (settings.QUANTUM_CLIENT in self.instances)
+            mp['QUANTUM_ENABLED'] = "%s" % (utils.service_enabled(settings.QUANTUM_CLIENT, self.instances, False))
             mp['OPENSTACK_HOST'] = self.cfg.get('host', 'ip')
         return mp
 

@@ -198,7 +198,7 @@ class QuantumInstaller(comp.PkgInstallComponent):
 
     def post_install(self):
         comp.PkgInstallComponent.post_install(self)
-        if self.q_vswitch_service and settings.DB in self.instances:
+        if self.q_vswitch_service and utils.service_enabled(settings.DB, self.instances, False):
             self._setup_db()
         if self.q_vswitch_agent:
             self._setup_bridge()

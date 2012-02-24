@@ -304,6 +304,14 @@ def joinlinesep(*pieces):
     return os.linesep.join(pieces)
 
 
+def service_enabled(name, components, empty_true=True):
+    if not components and empty_true:
+        return True
+    if name in components:
+        return True
+    return False
+
+
 def param_replace(text, replacements, ignore_missing=False):
 
     if not replacements:

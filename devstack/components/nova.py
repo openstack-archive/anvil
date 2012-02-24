@@ -318,7 +318,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         mp['TEST_FLOATING_POOL'] = self.cfg.get('nova', 'test_floating_pool')
         mp['FIXED_NETWORK_SIZE'] = self.cfg.get('nova', 'fixed_network_size')
         mp['FIXED_RANGE'] = self.cfg.get('nova', 'fixed_range')
-        if settings.QUANTUM in self.instances:
+        if utils.service_enabled(settings.QUANTUM_CLIENT, self.instances, False):
             cmds = NETWORK_SETUP_CMDS[0:1]
         else:
             cmds = NETWORK_SETUP_CMDS
@@ -370,7 +370,7 @@ class NovaInstaller(comp.PythonInstallComponent):
     def _config_adjust(self, contents, config_fn):
         if config_fn not in ADJUST_CONFIGS:
             return contents
-        if config_fn == PASTE_CONF and settings.KEYSTONE in self.instances:
+        if config_fn == PASTE_CONF and utils.service_enabled(settings.KEYSTONE, self.instances, False):
             newcontents = contents
             with io.BytesIO(contents) as stream:
                 config = cfg.IgnoreMissingConfigParser()
@@ -401,7 +401,10 @@ class NovaInstaller(comp.PythonInstallComponent):
         return (srcfn, contents)
 
     def _get_param_map(self, config_fn):
-        return keystone.get_shared_params(self.cfg)
+        mp = keystone.get_shared_params(self.cfg)
+        mp['SERVICE_PASSWORD'] = "???"
+        mp['SERVICE_USER'] = "???"
+        return mp
 
     def configure(self):
         configs_made = comp.PythonInstallComponent.configure(self)
@@ -540,7 +543,7 @@ class NovaConfConfigurator(object):
         self.cfgdir = ni.cfgdir
         self.xvnc_enabled = ni.xvnc_enabled
         self.volumes_enabled = ni.volumes_enabled
-        self.novnc_enabled = settings.NOVNC in self.instances
+        self.novnc_enabled = utils.service_enabled(settings.NOVNC, self.instances)
 
     def _getbool(self, name):
         return self.cfg.getboolean('nova', name)
@@ -705,7 +708,7 @@ class NovaConfConfigurator(object):
         nova_conf.add('iscsi_help', 'tgtadm')
 
     def _configure_network_settings(self, nova_conf):
-        if settings.QUANTUM in self.instances:
+        if utils.service_enabled(settings.QUANTUM_CLIENT, self.instances, False):
             nova_conf.add('network_manager', QUANTUM_MANAGER)
             nova_conf.add('quantum_connection_host', self.cfg.get('quantum', 'q_host'))
             nova_conf.add('quantum_connection_port', self.cfg.get('quantum', 'q_port'))
@@ -715,7 +718,7 @@ class NovaConfConfigurator(object):
                         nova_conf.add_simple(key)
                     else:
                         nova_conf.add(key, value)
-            if settings.MELANGE_CLIENT in self.instances:
+            if utils.service_enabled(settings.MELANGE_CLIENT, self.instances, False):
                 nova_conf.add('quantum_ipam_lib', QUANTUM_IPAM_LIB)
                 nova_conf.add_simple('use_melange_mac_generation')
                 nova_conf.add('melange_host', self.cfg.get('melange', 'm_host'))

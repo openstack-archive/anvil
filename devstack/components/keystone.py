@@ -180,9 +180,9 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             #nothing modified so just return the original
         elif name == CATALOG_CONF:
             nlines = list()
-            if settings.SWIFT in self.instances or not self.instances:
+            if utils.service_enabled(settings.SWIFT, self.instances):
                 nlines.extend(SWIFT_TEMPL_ADDS)
-            if settings.QUANTUM in self.instances or not self.instances:
+            if utils.service_enabled(settings.QUANTUM, self.instances):
                 nlines.extend(QUANTUM_TEMPL_ADDS)
             if nlines:
                 nlines.insert(0, "")
