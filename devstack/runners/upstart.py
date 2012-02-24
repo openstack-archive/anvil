@@ -88,7 +88,7 @@ class UpstartRunner(object):
             sh.chmod(cfg_fn, 0666)
 
     def _start(self, name, program, *program_args, **kargs):
-        tracedir = kargs.get("trace_dir")
+        tracedir = kargs["trace_dir"]
         fn_name = UPSTART_TEMPL % (name)
         tracefn = tr.touch_trace(tracedir, fn_name)
         runtrace = tr.Trace(tracefn)

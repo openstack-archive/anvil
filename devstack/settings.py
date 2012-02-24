@@ -93,8 +93,12 @@ COMPONENT_DEPENDENCIES = {
 # Different run types supported
 RUN_TYPE_FORK = "FORK"
 RUN_TYPE_UPSTART = "UPSTART"
+RUN_TYPE_SCREEN = "SCREEN"
 RUN_TYPE_DEF = RUN_TYPE_FORK
-RUN_TYPES_KNOWN = [RUN_TYPE_UPSTART, RUN_TYPE_FORK, RUN_TYPE_DEF]
+RUN_TYPES_KNOWN = [RUN_TYPE_UPSTART,
+                    RUN_TYPE_FORK,
+                    RUN_TYPE_SCREEN,
+                    RUN_TYPE_DEF]
 
 # Used to find the type in trace files
 RUN_TYPE_TYPE = "TYPE"

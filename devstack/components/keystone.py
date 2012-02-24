@@ -176,13 +176,12 @@ class KeystoneInstaller(comp.PythonInstallComponent):
                     sh.unlink(log_filename)
                     sh.touch_file(log_filename)
                     self.tracewriter.file_touched(log_filename)
-                #we might need to handle more in the future...
-            #nothing modified so just return the original
         elif name == CATALOG_CONF:
             nlines = list()
             if utils.service_enabled(settings.SWIFT, self.instances):
                 nlines.extend(SWIFT_TEMPL_ADDS)
-            if utils.service_enabled(settings.QUANTUM, self.instances):
+            if utils.service_enabled(settings.QUANTUM, self.instances) or \
+                    utils.service_enabled(settings.QUANTUM_CLIENT, self.instances):
                 nlines.extend(QUANTUM_TEMPL_ADDS)
             if nlines:
                 nlines.insert(0, "")

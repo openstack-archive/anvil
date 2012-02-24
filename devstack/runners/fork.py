@@ -77,7 +77,7 @@ class ForkRunner(object):
 
     def stop(self, name, *args, **kargs):
         with sh.Rooted(kargs.get("run_as_root", True)):
-            trace_dir = kargs.get("trace_dir")
+            trace_dir = kargs["trace_dir"]
             if not trace_dir or not sh.isdir(trace_dir):
                 msg = "No trace directory found from which to stop %s" % (name)
                 raise excp.StopException(msg)
@@ -162,8 +162,8 @@ class ForkRunner(object):
                 os._exit(0)
 
     def start(self, name, program, *program_args, **kargs):
-        tracedir = kargs.get("trace_dir")
-        appdir = kargs.get("app_dir")
+        tracedir = kargs["trace_dir"]
+        appdir = kargs["app_dir"]
         fn_name = FORK_TEMPL % (name)
         (pidfile, stderrfn, stdoutfn) = self._form_file_names(tracedir, fn_name)
         tracefn = tr.touch_trace(tracedir, fn_name)
