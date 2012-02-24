@@ -24,6 +24,7 @@ from devstack import trace as tr
 from devstack import utils
 
 from devstack.runners import fork
+from devstack.runners import upstart
 
 LOG = logging.getLogger("devstack.component")
 
@@ -345,9 +346,11 @@ class ProgramRuntime(ComponentBase):
     #what classes handle different running/stopping types
     STARTER_CLS_MAPPING = {
         settings.RUN_TYPE_FORK: fork.ForkRunner,
+        settings.RUN_TYPE_UPSTART: upstart.UpstartRunner,
     }
     STOPPER_CLS_MAPPING = {
         settings.RUN_TYPE_FORK: fork.ForkRunner,
+        settings.RUN_TYPE_UPSTART: upstart.UpstartRunner,
     }
 
     def __init__(self, component_name, *args, **kargs):
@@ -390,7 +393,7 @@ class ProgramRuntime(ComponentBase):
             msg = "Unknown run type %s found in configuration" % (run_type)
             raise excp.ConfigException(msg)
         startercls = self._getstartercls(run_type)
-        starter = startercls()
+        starter = startercls(self.cfg)
         #start all apps
         #this fns list will have info about what was started
         fns = list()
@@ -437,7 +440,7 @@ class ProgramRuntime(ComponentBase):
             killcls = None
             runtype = None
             for (cmd, action) in contents:
-                if cmd == settings.RUN_TYPE_TYPE:
+                if cmd == settings.RUN_TYPE_TYPE and action:
                     runtype = action
                     killcls = self._getstoppercls(runtype)
                     break
@@ -446,7 +449,7 @@ class ProgramRuntime(ComponentBase):
                 #we can try to stop it
                 LOG.debug("Stopping %s of run type %s" % (name, runtype))
                 #create an instance of the killer class and attempt to stop
-                killer = killcls()
+                killer = killcls(self.cfg)
                 killer.stop(name, trace_dir=self.tracedir)
                 killedam += 1
             else:

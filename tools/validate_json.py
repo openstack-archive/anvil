@@ -1,8 +1,6 @@
 """
 Searches the given path for JSON files, and validates their contents.
 
-Optionally, replaces valid JSON files with their pretty-printed
-counterparts.
 """
 
 import errno

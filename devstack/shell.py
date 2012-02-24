@@ -34,12 +34,13 @@ ROOT_USER_UID = 0
 SUDO_UID = 'SUDO_UID'
 SUDO_GID = 'SUDO_GID'
 SHELL_QUOTE_REPLACERS = {
-    "'": "\\'",
     "\"": "\\\"",
-    " ": "\\ ",
     "(": "\\(",
     ")": "\\)",
+    "$": '\$',
+    '`': '\`',
 }
+SHELL_WRAPPER = "\"%s\""
 FALSE_VALS = ['f', 'false', '0', 'off']
 
 
@@ -178,11 +179,15 @@ def shellquote(text):
         if text.find(srch) != -1:
             do_adjust = True
             break
-    if not do_adjust:
-        return text
-    for (srch, replace) in SHELL_QUOTE_REPLACERS.items():
-        text = text.replace(srch, replace)
-    return "\"" + text + "\""
+    if do_adjust:
+        for (srch, replace) in SHELL_QUOTE_REPLACERS.items():
+            text = text.replace(srch, replace)
+    if do_adjust or \
+        text.startswith((" ", "\t")) or \
+        text.endswith((" ", "\t")) or \
+        text.find("'") != -1:
+        text = SHELL_WRAPPER % (text)
+    return text
 
 
 def listdir(path):

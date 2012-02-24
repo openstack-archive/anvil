@@ -19,7 +19,7 @@
 #    under the License.
 
 """
-Installation script for Keystone's development virtualenv
+Installation script for DevstackPy's development virtualenv
 """
 
 import os
@@ -70,7 +70,7 @@ def check_dependencies():
             print 'Installing virtualenv via easy_install...',
             if not run_command(['which', 'easy_install']):
                 die('ERROR: virtualenv not found.\n\n'
-                    'Keystone development requires virtualenv, please install'
+                    'DevstackPy development requires virtualenv, please install'
                     ' it using your favorite package management tool')
             print 'done.'
     print 'done.'
@@ -99,15 +99,6 @@ def install_dependencies(venv=VENV):
     venv_tool = 'tools/with_venv.sh'
     run_command([venv_tool, 'pip', 'install', '-E', venv, '-r', PIP_REQUIRES],
                 redirect_output=False)
-
-    # Tell the virtual env how to "import keystone"
-
-    for version in ['python2.7', 'python2.6']:
-        pth = os.path.join(venv, "lib", version, "site-packages")
-        if os.path.exists(pth):
-            pthfile = os.path.join(pth, "keystone.pth")
-            f = open(pthfile, 'w')
-            f.write("%s\n" % ROOT)
 
 
 def print_help():
