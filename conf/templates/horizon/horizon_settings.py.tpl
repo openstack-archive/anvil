@@ -1,7 +1,4 @@
-# Based off of horizon_settings.py from commit 30439a6dc4
-# With a change to allow OPENSTACK_HOST to come in from 
-# the new script instead of being fixed. Also
-# QUANTUM_ENABLED was made a param. 
+# Based off of horizon_settings.py from commit 7bd3087e73c0683acf5df40d1eed51709d865c06
 
 import os
 
@@ -53,13 +50,6 @@ OPENSTACK_KEYSTONE_ADMIN_URL = "http://%s:35357/v2.0" % OPENSTACK_HOST
 OPENSTACK_KEYSTONE_DEFAULT_ROLE = "Member"
 
 SWIFT_PAGINATE_LIMIT = 100
-
-# Configure quantum connection details for networking
-QUANTUM_ENABLED = %QUANTUM_ENABLED%
-QUANTUM_URL = '%s'  % OPENSTACK_HOST
-QUANTUM_PORT = '9696'
-QUANTUM_TENANT = '1234'
-QUANTUM_CLIENT_VERSION='0.1'
 
 # If you have external monitoring links, eg:
 # EXTERNAL_MONITORING = [

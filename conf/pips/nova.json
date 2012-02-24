@@ -2,6 +2,9 @@
 # We allow simple comments (lines starting with a hash symbol)
 {
     "ubuntu-oneiric": {
+        "iso8601": {
+            "version": "0.1.4"
+        }
     },
     "rhel-6": {
         "SQLAlchemy": {
@@ -28,6 +31,9 @@
         #https://answers.launchpad.net/nova/+question/174160
         "PasteDeploy": {
             "version": "1.5"
+        },
+        "iso8601": {
+            "version": "0.1.4"
         }
     }
 }

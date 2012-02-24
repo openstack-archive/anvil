@@ -77,6 +77,21 @@ WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
 #config keys we warm up so u won't be prompted later
 WARMUP_PWS = ['horizon_keystone_admin', 'service_token']
 
+#swift template additions
+SWIFT_TEMPL_ADDS = ['catalog.RegionOne.object_store.publicURL = http://%SERVICE_HOST%:8080/v1/AUTH_$(tenant_id)s',
+                    'catalog.RegionOne.object_store.publicURL = http://%SERVICE_HOST%:8080/v1/AUTH_$(tenant_id)s',
+                    'catalog.RegionOne.object_store.adminURL = http://%SERVICE_HOST%:8080/',
+                    'catalog.RegionOne.object_store.internalURL = http://%SERVICE_HOST%:8080/v1/AUTH_$(tenant_id)s',
+                    "catalog.RegionOne.object_store.name = 'Swift Service'",
+                    '', '']
+
+#quantum template additions
+QUANTUM_TEMPL_ADDS = ['catalog.RegionOne.network.publicURL = http://%SERVICE_HOST%:9696/',
+                      'catalog.RegionOne.network.adminURL = http://%SERVICE_HOST%:9696/',
+                      'catalog.RegionOne.network.internalURL = http://%SERVICE_HOST%:9696/',
+                      "catalog.RegionOne.network.name = 'Quantum Service'",
+                      '', '']
+
 
 class KeystoneUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -163,6 +178,16 @@ class KeystoneInstaller(comp.PythonInstallComponent):
                     self.tracewriter.file_touched(log_filename)
                 #we might need to handle more in the future...
             #nothing modified so just return the original
+        elif name == CATALOG_CONF:
+            nlines = list()
+            if settings.SWIFT in self.instances or not self.instances:
+                nlines.extend(SWIFT_TEMPL_ADDS)
+            if settings.QUANTUM in self.instances or not self.instances:
+                nlines.extend(QUANTUM_TEMPL_ADDS)
+            if nlines:
+                nlines.insert(0, "")
+                nlines.insert(0, contents)
+                contents = cfg.add_header(name, utils.joinlinesep(*nlines))
         return contents
 
     def _get_source_config(self, config_fn):

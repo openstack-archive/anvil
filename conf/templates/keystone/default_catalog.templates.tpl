@@ -1,4 +1,4 @@
-# From devstack commit 6a3f607272 with no modifications
+# From devstack commit 5f9473e8b9bdc15f42db597d5d1e766b760f764e with no modifications
 
 # config for TemplatedCatalog, using camelCase because I don't want to do
 # translations for legacy compat
@@ -8,10 +8,16 @@ catalog.RegionOne.identity.internalURL = http://%SERVICE_HOST%:$(public_port)s/v
 catalog.RegionOne.identity.name = 'Identity Service'
 
 
-catalog.RegionOne.compute.publicURL = http://%SERVICE_HOST%:8774/v1.1/$(tenant_id)s
-catalog.RegionOne.compute.adminURL = http://%SERVICE_HOST%:8774/v1.1/$(tenant_id)s
-catalog.RegionOne.compute.internalURL = http://%SERVICE_HOST%:8774/v1.1/$(tenant_id)s
+catalog.RegionOne.compute.publicURL = http://%SERVICE_HOST%:8774/v2/$(tenant_id)s
+catalog.RegionOne.compute.adminURL = http://%SERVICE_HOST%:8774/v2/$(tenant_id)s
+catalog.RegionOne.compute.internalURL = http://%SERVICE_HOST%:8774/v2/$(tenant_id)s
 catalog.RegionOne.compute.name = 'Compute Service'
+
+
+catalog.RegionOne.volume.publicURL = http://%SERVICE_HOST%:8776/v1/$(tenant_id)s
+catalog.RegionOne.volume.adminURL = http://%SERVICE_HOST%:8776/v1/$(tenant_id)s
+catalog.RegionOne.volume.internalURL = http://%SERVICE_HOST%:8776/v1/$(tenant_id)s
+catalog.RegionOne.volume.name = 'Volume Service'
 
 
 catalog.RegionOne.ec2.publicURL = http://%SERVICE_HOST%:8773/services/Cloud
@@ -25,8 +31,4 @@ catalog.RegionOne.image.adminURL = http://%SERVICE_HOST%:9292/v1
 catalog.RegionOne.image.internalURL = http://%SERVICE_HOST%:9292/v1
 catalog.RegionOne.image.name = 'Image Service'
 
-
-catalog.RegionOne.object_store.publicURL = http://%SERVICE_HOST%:8080/v1/AUTH_$(tenant_id)s
-catalog.RegionOne.object_store.adminURL = http://%SERVICE_HOST%:8080/
-catalog.RegionOne.object_store.internalURL = http://%SERVICE_HOST%:8080/v1/AUTH_$(tenant_id)s
-catalog.RegionOne.object_store.name = 'Swift Service'
+# More might be added in (in code)
