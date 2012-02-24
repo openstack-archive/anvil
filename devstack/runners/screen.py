@@ -38,7 +38,7 @@ NAME = "NAME"
 
 #screen session name
 SESSION_NAME = 'stack'
-SESSION_NAME_MTCHER = re.compile(r"^\s*([\d]+\.%s)\s*(.*)$" % (SESSION_NAME))
+SESSION_NAME_MTCHER = re.compile(r"^\s*([\d]+\.%s)\s*(.*)$" % (SESSION_NAME), re.I)
 
 #how we setup screens status bar
 STATUS_BAR_CMD = r'hardstatus alwayslastline "%-Lw%{= BW}%50>%n%f* %t%{-}%+Lw%< %= %H"'
@@ -48,6 +48,7 @@ SESSION_INIT = ['screen', '-d', '-m', '-S', SESSION_NAME, '-t', SESSION_NAME, '-
 BAR_INIT = ['screen', '-r', SESSION_NAME, '-X', STATUS_BAR_CMD]
 CMD_INIT = ['screen', '-S', SESSION_NAME, '-X', 'screen', '-t', "%NAME%"]
 CMD_START = ['screen', '-S', SESSION_NAME, '-p', "%NAME%", '-X', 'stuff', "\"%CMD%\r\""]
+LIST_CMD = ['screen', '-ls']
 
 #screen rc file created
 RC_FILE = 'stack-screenrc'
@@ -55,10 +56,11 @@ RC_FILE = 'stack-screenrc'
 #used to wait until started before we can run the actual start cmd
 WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
 
+#exception message for when you already have a screen session
 ALREADY_GOIN_MSG = [
                     "You are already running a stack screen session.",
                     "To rejoin this session type 'screen -x %s'." % (SESSION_NAME),
-                    "To destroy this session, kill the running screen.",
+                    "To destroy this session, kill the running screen by running 'screen -X -S %SCREEN_ID% quit'.",
                    ]
 
 
@@ -71,12 +73,15 @@ class ScreenRunner(object):
         raise NotImplementedError(msg)
 
     def _check_start(self):
-        screen_list_cmd = ['screen', '-ls']
-        (sysout, _) = sh.execute(screen_list_cmd, check_exit_code=False)
+        (sysout, _) = sh.execute(*LIST_CMD, check_exit_code=False)
         for line in sysout.splitlines():
-            if SESSION_NAME_MTCHER.match(line):
-                msg = utils.joinlinesep(*ALREADY_GOIN_MSG)
-                raise excp.StartException(msg)
+            mtch = SESSION_NAME_MTCHER.match(line)
+            if mtch:
+                mp = {'SCREEN_ID': mtch.group(1)}
+                msg = list()
+                for piece in ALREADY_GOIN_MSG:
+                    msg.append(utils.param_replace(piece, mp))
+                raise excp.StartException(utils.joinlinesep(*msg))
 
     def _do_screen_init(self):
         sh.execute(*SESSION_INIT, shell=True)
