@@ -161,16 +161,17 @@ class ScreenRunner(object):
     def _do_start(self, session, prog_name, cmd):
         init_cmd = list()
         mp = dict()
+        run_cmd = " ".join(cmd)
         mp['SESSION_NAME'] = session
         mp['NAME'] = prog_name
-        mp['CMD'] = " ".join(cmd)
+        mp['CMD'] = run_cmd
         init_cmd = self._gen_cmd(CMD_INIT, mp)
         LOG.info("Creating a new screen window named %s in session %s." % (prog_name, session))
         sh.execute(*init_cmd,
             shell=True,
             run_as_root=ROOT_GO,
             env_overrides=self.get_env())
-        LOG.info("Waiting %s seconds before we attempt to run the command in that window." % (WAIT_ONLINE_TO))
+        LOG.info("Waiting %s seconds before we attempt to run command [%s] in that window." % (WAIT_ONLINE_TO, run_cmd))
         time.sleep(WAIT_ONLINE_TO)
         start_cmd = self._gen_cmd(CMD_START, mp)
         sh.execute(*start_cmd,
