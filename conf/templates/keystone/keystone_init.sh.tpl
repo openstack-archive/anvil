@@ -10,7 +10,7 @@ export SERVICE_TOKEN=%SERVICE_TOKEN%
 export SERVICE_ENDPOINT=%AUTH_ENDPOINT%
 
 function get_id () {
-    echo `$@ | grep id | awk '{print $4}'`
+    echo `$@ | grep ' id ' | awk '{print $4}'`
 }
 
 # Added! (NOT IN ORIGINAL)

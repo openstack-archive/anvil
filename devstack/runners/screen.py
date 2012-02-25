@@ -200,10 +200,10 @@ class ScreenRunner(object):
         full_cmd = [program] + list(program_args)
         if session_name is None:
             self._do_screen_init()
-        session_name = self._get_session()
-        if session_name is None:
-            msg = "After initializing screen with session named %s, no screen session with that name were found" % (SESSION_NAME)
-            raise excp.StartException(msg)
+            session_name = self._get_session()
+            if session_name is None:
+                msg = "After initializing screen with session named %s, no screen session with that name were found" % (SESSION_NAME)
+                raise excp.StartException(msg)
         runtrace.trace(SESSION_ID, session_name)
         self._do_start(session_name, name, full_cmd)
         return tracefn
