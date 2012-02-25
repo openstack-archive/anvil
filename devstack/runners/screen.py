@@ -83,6 +83,7 @@ class ScreenRunner(object):
         mp = dict()
         mp['SESSION_NAME'] = session_id
         mp['NAME'] = name
+        LOG.info("Stopping program running in session %s in window named %s." % (session_id, name))
         kill_cmd = self._gen_cmd(CMD_KILL, mp)
         sh.execute(*kill_cmd,
                 shell=True,
