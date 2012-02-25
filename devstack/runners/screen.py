@@ -81,8 +81,16 @@ class ScreenRunner(object):
         if not sessions:
             return None
         if len(sessions) > 1:
-            msg = "You are running multiple screen sessions [%s], please reduce the set to zero or one." % (", ".join(sessions))
-            raise excp.StartException(msg)
+            msg = [
+                    "You are running multiple screen sessions [%s], please reduce the set to zero or one." % (", ".join(sessions)),
+                  ]
+            for s in sorted(sessions):
+                mp = {'SCREEN_ID': s}
+                cmd_msg = list()
+                for piece in SCREEN_KILLER:
+                    cmd_msg.append(utils.param_replace(piece, mp))
+                msg.append("Try running '%s' to quit that session." % (" ".join(cmd_msg)))
+            raise excp.StartException(utils.joinlinesep(msg))
         return sessions[0]
 
     def _do_screen_init(self):
