@@ -48,15 +48,21 @@ STATUS_BAR_CMD = r'hardstatus alwayslastline "%-Lw%{= BW}%50>%n%f* %t%{-}%+Lw%< 
 SESSION_INIT = ['screen', '-d', '-m', '-S', SESSION_NAME, '-t', SESSION_NAME, '-s', "/bin/bash"]
 BAR_INIT = ['screen', '-r', SESSION_NAME, '-X', STATUS_BAR_CMD]
 CMD_INIT = ['screen', '-S', '%SESSION_NAME%', '-X', 'screen', '-t', "%NAME%"]
+CMD_KILL = ['screen', '-S', '%SESSION_NAME%', '-p', "%NAME%", '-X', 'kill']
+CMD_WIPE = ['screen', '-S', '%SESSION_NAME%', '-wipe']
 CMD_START = ['screen', '-S', '%SESSION_NAME%', '-p', "%NAME%", '-X', 'stuff', "\"%CMD%\r\""]
 LIST_CMD = ['screen', '-ls']
 SCREEN_KILLER = ['screen', '-X', '-S', '%SCREEN_ID%', 'quit']
 
-#screen rc file created
-RC_FILE = 'stack-screenrc'
+#where our screen sockets will go
+SCREEN_SOCKET_DIR = "/tmp/devstack-sockets"
+SCREEN_SOCKET_PERM = 0700
 
 #used to wait until started before we can run the actual start cmd
 WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
+
+#run screen as root?
+ROOT_GO = True
 
 
 class ScreenRunner(object):
@@ -64,12 +70,54 @@ class ScreenRunner(object):
         self.cfg = cfg
 
     def stop(self, name, *args, **kargs):
-        msg = "Not implemented yet"
-        raise NotImplementedError(msg)
+        tracedir = kargs["trace_dir"]
+        fn_name = SCREEN_TEMPL % (name)
+        session_id = None
+        trace_fn = tr.trace_fn(tracedir, fn_name)
+        for (key, value) in tr.parse_fn(trace_fn):
+            if key == SESSION_ID and value:
+                session_id = value
+        if not session_id:
+            msg = "Could not find a screen session id for %s" % (name)
+            raise excp.StopException(msg)
+        mp = dict()
+        mp['SESSION_NAME'] = session_id
+        mp['NAME'] = name
+        kill_cmd = self._gen_cmd(CMD_KILL, mp)
+        sh.execute(*kill_cmd,
+                shell=True,
+                run_as_root=ROOT_GO,
+                env_overrides=self.get_env(),
+                check_exit_code=False)
+        sh.unlink(trace_fn)
+        wipe_cmd = self._gen_cmd(CMD_WIPE, mp)
+        sh.execute(*wipe_cmd,
+                shell=True,
+                run_as_root=ROOT_GO,
+                env_overrides=self.get_env(),
+                check_exit_code=False)
+
+    def get_env(self):
+        env = dict()
+        env['SCREENDIR'] = SCREEN_SOCKET_DIR
+        return env
+
+    def _gen_cmd(self, base_cmd, params=dict()):
+        full_cmd = base_cmd
+        actual_cmd = list()
+        for piece in full_cmd:
+            actual_cmd.append(utils.param_replace(piece, params))
+        return actual_cmd
 
     def _active_sessions(self):
         knowns = list()
-        (sysout, _) = sh.execute(*LIST_CMD, check_exit_code=False)
+        list_cmd = self._gen_cmd(LIST_CMD)
+        (sysout, _) = sh.execute(*list_cmd,
+                            check_exit_code=False,
+                            run_as_root=ROOT_GO,
+                            env_overrides=self.get_env())
+        if sysout.lower().find("No Sockets found") != -1:
+            return knowns
         for line in sysout.splitlines():
             mtch = SESSION_NAME_MTCHER.match(line)
             if mtch:
@@ -78,6 +126,7 @@ class ScreenRunner(object):
 
     def _get_session(self):
         sessions = self._active_sessions()
+        LOG.debug("Found sessions [%s]" % ", ".join(sessions))
         if not sessions:
             return None
         if len(sessions) > 1:
@@ -89,14 +138,27 @@ class ScreenRunner(object):
                 cmd_msg = list()
                 for piece in SCREEN_KILLER:
                     cmd_msg.append(utils.param_replace(piece, mp))
+                env = self.get_env()
+                for (k, v) in env.items():
+                    cmd_msg.insert(0, "%s=%s" % (k, v))
                 msg.append("Try running '%s' to quit that session." % (" ".join(cmd_msg)))
             raise excp.StartException(utils.joinlinesep(msg))
         return sessions[0]
 
     def _do_screen_init(self):
-        sh.execute(*SESSION_INIT, shell=True)
+        LOG.info("Creating a new screen session named %s." % (SESSION_NAME))
+        session_init_cmd = self._gen_cmd(SESSION_INIT)
+        sh.execute(*session_init_cmd,
+                shell=True,
+                run_as_root=ROOT_GO,
+                env_overrides=self.get_env())
+        LOG.info("Waiting %s seconds before we attempt to set the title bar for that session." % (WAIT_ONLINE_TO))
         time.sleep(WAIT_ONLINE_TO)
-        sh.execute(*BAR_INIT, shell=True)
+        bar_init_cmd = self._gen_cmd(BAR_INIT)
+        sh.execute(*bar_init_cmd,
+                shell=True,
+                run_as_root=ROOT_GO,
+                env_overrides=self.get_env())
 
     def _do_start(self, session, prog_name, cmd):
         init_cmd = list()
@@ -104,18 +166,31 @@ class ScreenRunner(object):
         mp['SESSION_NAME'] = session
         mp['NAME'] = prog_name
         mp['CMD'] = " ".join(cmd)
-        for piece in CMD_INIT:
-            init_cmd.append(utils.param_replace(piece, mp))
-        sh.execute(*init_cmd, shell=True)
+        init_cmd = self._gen_cmd(CMD_INIT, mp)
+        sh.execute(*init_cmd,
+            shell=True,
+            run_as_root=ROOT_GO,
+            env_overrides=self.get_env())
         time.sleep(WAIT_ONLINE_TO)
-        start_cmd = list()
-        for piece in CMD_START:
-            start_cmd.append(utils.param_replace(piece, mp))
-        sh.execute(*start_cmd, shell=True)
+        start_cmd = self._gen_cmd(CMD_START, mp)
+        sh.execute(*start_cmd,
+            shell=True,
+            run_as_root=ROOT_GO,
+            env_overrides=self.get_env())
+
+    def _do_socketdir_init(self):
+        socketdir = SCREEN_SOCKET_DIR
+        with sh.Rooted(ROOT_GO):
+            if not sh.isdir(socketdir):
+                dirs = sh.mkdirslist(socketdir)
+                for d in dirs:
+                    sh.chmod(d, SCREEN_SOCKET_PERM)
+        return socketdir
 
     def _start(self, name, program, *program_args, **kargs):
-        session_name = self._get_session()
         tracedir = kargs["trace_dir"]
+        self._do_socketdir_init()
+        session_name = self._get_session()
         fn_name = SCREEN_TEMPL % (name)
         tracefn = tr.touch_trace(tracedir, fn_name)
         runtrace = tr.Trace(tracefn)
