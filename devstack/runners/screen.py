@@ -96,7 +96,7 @@ class ScreenRunner(object):
         sh.execute(*kill_cmd,
                 shell=True,
                 run_as_root=ROOT_GO,
-                env_overrides=self.get_env(),
+                env_overrides=self._get_env(),
                 check_exit_code=False)
         #we have really no way of knowing if it worked or not
         #screen sux...
@@ -104,10 +104,10 @@ class ScreenRunner(object):
         sh.execute(*wipe_cmd,
                 shell=True,
                 run_as_root=ROOT_GO,
-                env_overrides=self.get_env(),
+                env_overrides=self._get_env(),
                 check_exit_code=False)
 
-    def get_env(self):
+    def _get_env(self):
         env = dict()
         env['SCREENDIR'] = SCREEN_SOCKET_DIR
         return env
@@ -125,7 +125,7 @@ class ScreenRunner(object):
         (sysout, _) = sh.execute(*list_cmd,
                             check_exit_code=False,
                             run_as_root=ROOT_GO,
-                            env_overrides=self.get_env())
+                            env_overrides=self._get_env())
         if sysout.lower().find("No Sockets found") != -1:
             return knowns
         for line in sysout.splitlines():
@@ -146,7 +146,7 @@ class ScreenRunner(object):
             for s in sorted(sessions):
                 mp = {'SCREEN_ID': s}
                 cmd_msg = self._gen_cmd(SCREEN_KILLER, mp)
-                env = self.get_env()
+                env = self._get_env()
                 for (k, v) in env.items():
                     cmd_msg.insert(0, "%s=%s" % (k, v))
                 msg.append("Try running '%s' to quit that session." % (" ".join(cmd_msg)))
@@ -159,14 +159,14 @@ class ScreenRunner(object):
         sh.execute(*session_init_cmd,
                 shell=True,
                 run_as_root=ROOT_GO,
-                env_overrides=self.get_env())
+                env_overrides=self._get_env())
         LOG.info("Waiting %s seconds before we attempt to set the title bar for that session." % (WAIT_ONLINE_TO))
         time.sleep(WAIT_ONLINE_TO)
         bar_init_cmd = self._gen_cmd(BAR_INIT)
         sh.execute(*bar_init_cmd,
                 shell=True,
                 run_as_root=ROOT_GO,
-                env_overrides=self.get_env())
+                env_overrides=self._get_env())
 
     def _do_start(self, session, prog_name, cmd):
         init_cmd = list()
@@ -180,14 +180,14 @@ class ScreenRunner(object):
         sh.execute(*init_cmd,
             shell=True,
             run_as_root=ROOT_GO,
-            env_overrides=self.get_env())
+            env_overrides=self._get_env())
         LOG.info("Waiting %s seconds before we attempt to run command [%s] in that window." % (WAIT_ONLINE_TO, run_cmd))
         time.sleep(WAIT_ONLINE_TO)
         start_cmd = self._gen_cmd(CMD_START, mp)
         sh.execute(*start_cmd,
             shell=True,
             run_as_root=ROOT_GO,
-            env_overrides=self.get_env())
+            env_overrides=self._get_env())
         #we have really no way of knowing if it worked or not
         #screen sux...
 
