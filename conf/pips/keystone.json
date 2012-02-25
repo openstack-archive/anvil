@@ -4,9 +4,6 @@
     "ubuntu-oneiric": {
         "passlib": {
             "version": "1.5.3"
-        },
-        "pyCLI": {
-            "version": "2.0.2"
         }
     },
     "rhel-6": {
@@ -32,9 +29,6 @@
         #https://answers.launchpad.net/nova/+question/174160
         "PasteDeploy": {
             "version": "1.5"
-        },
-        "pyCLI": {
-            "version": "2.0.2"
         }
     }
 }
