@@ -72,14 +72,22 @@ class ScreenRunner(object):
     def stop(self, name, *args, **kargs):
         tracedir = kargs["trace_dir"]
         fn_name = SCREEN_TEMPL % (name)
-        session_id = None
         trace_fn = tr.trace_fn(tracedir, fn_name)
+        session_id = self._find_session(name, trace_fn)
+        self._do_stop(name, session_id)
+        sh.unlink(trace_fn)
+
+    def _find_session(self, name, trace_fn):
+        session_id = None
         for (key, value) in tr.parse_fn(trace_fn):
             if key == SESSION_ID and value:
                 session_id = value
         if not session_id:
             msg = "Could not find a screen session id for %s" % (name)
             raise excp.StopException(msg)
+        return session_id
+
+    def _do_stop(self, name, session_id):
         mp = dict()
         mp['SESSION_NAME'] = session_id
         mp['NAME'] = name
@@ -90,7 +98,8 @@ class ScreenRunner(object):
                 run_as_root=ROOT_GO,
                 env_overrides=self.get_env(),
                 check_exit_code=False)
-        sh.unlink(trace_fn)
+        #we have really no way of knowing if it worked or not
+        #screen sux...
         wipe_cmd = self._gen_cmd(CMD_WIPE, mp)
         sh.execute(*wipe_cmd,
                 shell=True,
@@ -179,6 +188,8 @@ class ScreenRunner(object):
             shell=True,
             run_as_root=ROOT_GO,
             env_overrides=self.get_env())
+        #we have really no way of knowing if it worked or not
+        #screen sux...
 
     def _do_socketdir_init(self):
         socketdir = SCREEN_SOCKET_DIR
@@ -189,26 +200,27 @@ class ScreenRunner(object):
                     sh.chmod(d, SCREEN_SOCKET_PERM)
         return socketdir
 
-    def _start(self, name, program, *program_args, **kargs):
-        tracedir = kargs["trace_dir"]
-        self._do_socketdir_init()
-        session_name = self._get_session()
+    def _begin_start(self, name, program, args, tracedir):
         fn_name = SCREEN_TEMPL % (name)
         tracefn = tr.touch_trace(tracedir, fn_name)
         runtrace = tr.Trace(tracefn)
         runtrace.trace(TYPE, RUN_TYPE)
         runtrace.trace(NAME, name)
-        runtrace.trace(ARGS, json.dumps(program_args))
-        full_cmd = [program] + list(program_args)
+        runtrace.trace(ARGS, json.dumps(args))
+        full_cmd = [program] + list(args)
+        session_name = self._get_session()
         if session_name is None:
             self._do_screen_init()
             session_name = self._get_session()
             if session_name is None:
-                msg = "After initializing screen with session named %s, no screen session with that name were found" % (SESSION_NAME)
+                msg = "After initializing screen with session named %s, no screen session with that name was found!" % (SESSION_NAME)
                 raise excp.StartException(msg)
         runtrace.trace(SESSION_ID, session_name)
         self._do_start(session_name, name, full_cmd)
         return tracefn
 
     def start(self, name, program, *program_args, **kargs):
-        return self._start(name, program, *program_args, **kargs)
+        self._do_socketdir_init()
+        tracedir = kargs["trace_dir"]
+        args = list(program_args)
+        return self._begin_start(name, program, args, tracedir)
