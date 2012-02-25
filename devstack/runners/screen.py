@@ -135,9 +135,7 @@ class ScreenRunner(object):
                   ]
             for s in sorted(sessions):
                 mp = {'SCREEN_ID': s}
-                cmd_msg = list()
-                for piece in SCREEN_KILLER:
-                    cmd_msg.append(utils.param_replace(piece, mp))
+                cmd_msg = self._gen_cmd(SCREEN_KILLER, mp)
                 env = self.get_env()
                 for (k, v) in env.items():
                     cmd_msg.insert(0, "%s=%s" % (k, v))
@@ -167,10 +165,12 @@ class ScreenRunner(object):
         mp['NAME'] = prog_name
         mp['CMD'] = " ".join(cmd)
         init_cmd = self._gen_cmd(CMD_INIT, mp)
+        LOG.info("Creating a new screen window named %s in session %s." % (prog_name, session))
         sh.execute(*init_cmd,
             shell=True,
             run_as_root=ROOT_GO,
             env_overrides=self.get_env())
+        LOG.info("Waiting %s seconds before we attempt to run the command in that window." % (WAIT_ONLINE_TO))
         time.sleep(WAIT_ONLINE_TO)
         start_cmd = self._gen_cmd(CMD_START, mp)
         sh.execute(*start_cmd,
