@@ -25,6 +25,7 @@ from devstack import utils
 
 from devstack.runners import fork
 from devstack.runners import upstart
+from devstack.runners import screen
 
 LOG = logging.getLogger("devstack.component")
 
@@ -344,13 +345,15 @@ class PythonUninstallComponent(PkgUninstallComponent):
 class ProgramRuntime(ComponentBase):
     #this here determines how we start and stop and
     #what classes handle different running/stopping types
-    STARTER_CLS_MAPPING = {
+    _STARTER_CLS_MAPPING = {
         settings.RUN_TYPE_FORK: fork.ForkRunner,
         settings.RUN_TYPE_UPSTART: upstart.UpstartRunner,
+        settings.RUN_TYPE_SCREEN: screen.ScreenRunner,
     }
-    STOPPER_CLS_MAPPING = {
+    _STOPPER_CLS_MAPPING = {
         settings.RUN_TYPE_FORK: fork.ForkRunner,
         settings.RUN_TYPE_UPSTART: upstart.UpstartRunner,
+        settings.RUN_TYPE_SCREEN: screen.ScreenRunner,
     }
 
     def __init__(self, component_name, *args, **kargs):
@@ -360,14 +363,14 @@ class ProgramRuntime(ComponentBase):
         self.starttracereader = tr.TraceReader(self.tracedir, tr.START_TRACE)
 
     def _getstartercls(self, start_mode):
-        if start_mode not in ProgramRuntime.STARTER_CLS_MAPPING:
+        if start_mode not in ProgramRuntime._STARTER_CLS_MAPPING:
             raise NotImplementedError("Can not yet start %s mode" % (start_mode))
-        return ProgramRuntime.STARTER_CLS_MAPPING.get(start_mode)
+        return ProgramRuntime._STARTER_CLS_MAPPING.get(start_mode)
 
     def _getstoppercls(self, stop_mode):
-        if stop_mode not in ProgramRuntime.STOPPER_CLS_MAPPING:
+        if stop_mode not in ProgramRuntime._STOPPER_CLS_MAPPING:
             raise NotImplementedError("Can not yet stop %s mode" % (stop_mode))
-        return ProgramRuntime.STOPPER_CLS_MAPPING.get(stop_mode)
+        return ProgramRuntime._STOPPER_CLS_MAPPING.get(stop_mode)
 
     def _get_apps_to_start(self):
         return list()

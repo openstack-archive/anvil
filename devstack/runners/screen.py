@@ -35,6 +35,7 @@ TYPE = settings.RUN_TYPE_TYPE
 SCREEN_TEMPL = "%s.screen"
 ARGS = "ARGS"
 NAME = "NAME"
+SESSION_ID = 'SESSION_ID'
 
 #screen session name
 SESSION_NAME = 'stack'
@@ -46,22 +47,16 @@ STATUS_BAR_CMD = r'hardstatus alwayslastline "%-Lw%{= BW}%50>%n%f* %t%{-}%+Lw%< 
 #cmds
 SESSION_INIT = ['screen', '-d', '-m', '-S', SESSION_NAME, '-t', SESSION_NAME, '-s', "/bin/bash"]
 BAR_INIT = ['screen', '-r', SESSION_NAME, '-X', STATUS_BAR_CMD]
-CMD_INIT = ['screen', '-S', SESSION_NAME, '-X', 'screen', '-t', "%NAME%"]
-CMD_START = ['screen', '-S', SESSION_NAME, '-p', "%NAME%", '-X', 'stuff', "\"%CMD%\r\""]
+CMD_INIT = ['screen', '-S', '%SESSION_NAME%', '-X', 'screen', '-t', "%NAME%"]
+CMD_START = ['screen', '-S', '%SESSION_NAME%', '-p', "%NAME%", '-X', 'stuff', "\"%CMD%\r\""]
 LIST_CMD = ['screen', '-ls']
+SCREEN_KILLER = ['screen', '-X', '-S', '%SCREEN_ID%', 'quit']
 
 #screen rc file created
 RC_FILE = 'stack-screenrc'
 
 #used to wait until started before we can run the actual start cmd
 WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
-
-#exception message for when you already have a screen session
-ALREADY_GOIN_MSG = [
-                    "You are already running a stack screen session.",
-                    "To rejoin this session type 'screen -x %s'." % (SESSION_NAME),
-                    "To destroy this session, kill the running screen by running 'screen -X -S %SCREEN_ID% quit'.",
-                   ]
 
 
 class ScreenRunner(object):
@@ -72,26 +67,34 @@ class ScreenRunner(object):
         msg = "Not implemented yet"
         raise NotImplementedError(msg)
 
-    def _check_start(self):
+    def _active_sessions(self):
+        knowns = list()
         (sysout, _) = sh.execute(*LIST_CMD, check_exit_code=False)
         for line in sysout.splitlines():
             mtch = SESSION_NAME_MTCHER.match(line)
             if mtch:
-                mp = {'SCREEN_ID': mtch.group(1)}
-                msg = list()
-                for piece in ALREADY_GOIN_MSG:
-                    msg.append(utils.param_replace(piece, mp))
-                raise excp.StartException(utils.joinlinesep(*msg))
+                knowns.append(mtch.group(1))
+        return knowns
+
+    def _get_session(self):
+        sessions = self._active_sessions()
+        if not sessions:
+            return None
+        if len(sessions) > 1:
+            msg = "You are running multiple screen sessions [%s], please reduce the set to zero or one." % (", ".join(sessions))
+            raise excp.StartException(msg)
+        return sessions[0]
 
     def _do_screen_init(self):
         sh.execute(*SESSION_INIT, shell=True)
         time.sleep(WAIT_ONLINE_TO)
         sh.execute(*BAR_INIT, shell=True)
 
-    def _do_start(self, name, cmd):
+    def _do_start(self, session, prog_name, cmd):
         init_cmd = list()
         mp = dict()
-        mp['NAME'] = name
+        mp['SESSION_NAME'] = session
+        mp['NAME'] = prog_name
         mp['CMD'] = " ".join(cmd)
         for piece in CMD_INIT:
             init_cmd.append(utils.param_replace(piece, mp))
@@ -103,7 +106,7 @@ class ScreenRunner(object):
         sh.execute(*start_cmd, shell=True)
 
     def _start(self, name, program, *program_args, **kargs):
-        self._check_start()
+        session_name = self._get_session()
         tracedir = kargs["trace_dir"]
         fn_name = SCREEN_TEMPL % (name)
         tracefn = tr.touch_trace(tracedir, fn_name)
@@ -112,8 +115,14 @@ class ScreenRunner(object):
         runtrace.trace(NAME, name)
         runtrace.trace(ARGS, json.dumps(program_args))
         full_cmd = [program] + list(program_args)
-        self._do_screen_init()
-        self._do_start(name, full_cmd)
+        if session_name is None:
+            self._do_screen_init()
+        session_name = self._get_session()
+        if session_name is None:
+            msg = "After initializing screen with session named %s, no screen session with that name were found" % (SESSION_NAME)
+            raise excp.StartException(msg)
+        runtrace.trace(SESSION_ID, session_name)
+        self._do_start(session_name, name, full_cmd)
         return tracefn
 
     def start(self, name, program, *program_args, **kargs):
