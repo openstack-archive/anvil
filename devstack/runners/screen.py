@@ -18,6 +18,7 @@ import json
 import re
 import time
 
+from devstack import date
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import settings
@@ -39,13 +40,14 @@ SESSION_ID = 'SESSION_ID'
 
 #screen session name
 SESSION_NAME = 'stack'
+SESSION_DEF_TITLE = SESSION_NAME
 SESSION_NAME_MTCHER = re.compile(r"^\s*([\d]+\.%s)\s*(.*)$" % (SESSION_NAME), re.I)
 
 #how we setup screens status bar
 STATUS_BAR_CMD = r'hardstatus alwayslastline "%-Lw%{= BW}%50>%n%f* %t%{-}%+Lw%< %= %H"'
 
 #cmds
-SESSION_INIT = ['screen', '-d', '-m', '-S', SESSION_NAME, '-t', SESSION_NAME, '-s', "/bin/bash"]
+SESSION_INIT = ['screen', '-d', '-m', '-S', SESSION_NAME, '-t', SESSION_DEF_TITLE, '-s', "/bin/bash"]
 BAR_INIT = ['screen', '-r', SESSION_NAME, '-X', STATUS_BAR_CMD]
 CMD_INIT = ['screen', '-S', '%SESSION_NAME%', '-X', 'screen', '-t', "%NAME%"]
 CMD_KILL = ['screen', '-S', '%SESSION_NAME%', '-p', "%NAME%", '-X', 'kill']
@@ -64,6 +66,9 @@ WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
 #run screen as root?
 ROOT_GO = True
 
+#screen rc file
+SCREEN_RC = 'stack-screenrc'
+
 
 class ScreenRunner(object):
     def __init__(self, cfg):
@@ -76,6 +81,25 @@ class ScreenRunner(object):
         session_id = self._find_session(name, trace_fn)
         self._do_stop(name, session_id)
         sh.unlink(trace_fn)
+
+    def _gen_rc(self, session_name):
+        lines = list()
+        lines.append("# RC file generated on %s" % (date.rcf8222date()))
+        lines.append("")
+        lines.append("# Environment settings (these will need to be exported)")
+        lines.append("# export SCREENDIR=%s" % (SCREEN_SOCKET_DIR))
+        lines.append("")
+        lines.append("# Session settings")
+        lines.append("sessionname %s" % (session_name))
+        lines.append(STATUS_BAR_CMD)
+        lines.append("screen -t %s bash" % (SESSION_DEF_TITLE))
+        return lines
+
+    def _write_rc(self, session_name, out_fn):
+        lines = self._gen_rc(session_name)
+        contents = utils.joinlinesep(*lines)
+        LOG.info("Writing your created screen rc file to [%s]" % (out_fn))
+        sh.write_file(out_fn, contents)
 
     def _find_session(self, name, trace_fn):
         session_id = None
@@ -215,6 +239,7 @@ class ScreenRunner(object):
             if session_name is None:
                 msg = "After initializing screen with session named %s, no screen session with that name was found!" % (SESSION_NAME)
                 raise excp.StartException(msg)
+            self._write_rc(session_name, sh.abspth(SCREEN_RC))
         runtrace.trace(SESSION_ID, session_name)
         self._do_start(session_name, name, full_cmd)
         return tracefn
