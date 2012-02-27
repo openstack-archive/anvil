@@ -190,6 +190,14 @@ DEF_VOL_TEMPL = DEF_VOL_PREFIX + '%08x'
 DEF_VIRT_DRIVER = virsh.VIRT_TYPE
 DEF_VIRT_TYPE = 'qemu'
 
+#virt drivers to there connection name
+VIRT_DRIVER_CON_MAP = {
+    virsh.VIRT_TYPE: 'libvirt',
+    'xenserver': 'xenapi',
+    'vmware': 'vmwareapi',
+    'baremetal': 'baremetal',
+}
+
 #only turned on if vswitch enabled
 QUANTUM_OPENSWITCH_OPS = {
     'libvirt_vif_type': 'ethernet',
@@ -227,7 +235,10 @@ WARMUP_PWS = ['rabbit']
 def _canon_virt_driver(virt_driver):
     if not virt_driver:
         return DEF_VIRT_DRIVER
-    return virt_driver.strip().lower()
+    virt_driver = virt_driver.strip().lower()
+    if not (virt_driver in VIRT_DRIVER_CON_MAP):
+        return DEF_VIRT_DRIVER
+    return virt_driver
 
 
 def _canon_libvirt_type(virt_type):
@@ -790,8 +801,9 @@ class NovaConfConfigurator(object):
     #configures any virt driver settings
     def _configure_virt_driver(self, nova_conf):
         drive_canon = _canon_virt_driver(self._getstr('virt_driver'))
+        nova_conf.add('connection_type', VIRT_DRIVER_CON_MAP.get(drive_canon, drive_canon))
+        #special driver settings
         if drive_canon == 'xenserver':
-            nova_conf.add('connection_type', 'xenapi')
             nova_conf.add('xenapi_connection_url', self._getstr('xa_connection_url', XA_DEF_CONNECTION_URL))
             nova_conf.add('xenapi_connection_username', self._getstr('xa_connection_username', XA_DEF_USER))
             nova_conf.add('xenapi_connection_password', self.cfg.get("passwords", "xenapi_connection"))
@@ -804,7 +816,6 @@ class NovaConfConfigurator(object):
             nova_conf.add('firewall_driver', self._getstr('xs_firewall_driver', DEF_FIREWALL_DRIVER))
             nova_conf.add('flat_network_bridge', self._getstr('xs_flat_network_bridge', XS_DEF_BRIDGE))
         elif drive_canon == virsh.VIRT_TYPE:
-            nova_conf.add('connection_type', 'libvirt')
             nova_conf.add('firewall_driver', self._getstr('libvirt_firewall_driver', DEF_FIREWALL_DRIVER))
             nova_conf.add('flat_network_bridge', self._getstr('flat_network_bridge', DEF_FLAT_VIRT_BRIDGE))
             flat_interface = self._getstr('flat_interface')
