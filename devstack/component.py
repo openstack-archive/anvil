@@ -411,10 +411,10 @@ class ProgramRuntime(ComponentBase):
             #adjust the program options now that we have real locations
             program_opts = utils.param_replace_list(self._get_app_options(app_name), self._get_param_map(app_name))
             #configure it with the given settings
-            LOG.debug("Starting [%s] with options [%s] with runner type [%s]" % (app_name, ", ".join(program_opts), run_type))
+            LOG.debug("Configure [%s] with options [%s] with runner type [%s]" % (app_name, ", ".join(program_opts), run_type))
             runtime_info = (app_pth, app_dir, program_opts)
             starter.configure(app_name, runtime_info, self.tracedir)
-            LOG.debug("Configured %s, details are in %s" % (app_name, info_fn))
+            LOG.debug("Configured %s" % (app_name))
         # Make a second pass to do the actual starting
         for app_info in apps:
             #extract needed keys

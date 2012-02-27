@@ -56,7 +56,7 @@ ROOT_GO = True
 
 class ForkRunner(RunnerBase):
     def __init__(self, cfg):
-        self.cfg = cfg
+        RunnerBase.__init__(self, cfg)
 
     def _stop_pid(self, pid):
         killed = False

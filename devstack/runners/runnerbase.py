@@ -17,8 +17,8 @@
 
 # This is the base class for the various runners
 class RunnerBase(object):
-    def __init__(self):
-        pass
+    def __init__(self, cfg):
+        self.cfg = cfg
 
     def configure(self, app_name, runtime_info, tracedir):
         return list()

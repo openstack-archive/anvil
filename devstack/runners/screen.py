@@ -74,7 +74,7 @@ SCREEN_RC = settings.RC_FN_TEMPL % ('screen')
 
 class ScreenRunner(RunnerBase):
     def __init__(self, cfg):
-        self.cfg = cfg
+        RunnerBase.__init__(self, cfg)
         self.socket_dir = sh.joinpths(tempfile.gettempdir(), SCREEN_SOCKET_DIR_NAME)
 
     def stop(self, name, tracedir):
