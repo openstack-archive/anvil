@@ -465,6 +465,8 @@ class NovaRuntime(comp.PythonRuntime):
         return result
 
     def pre_start(self):
+        # Let the parent class do its thing
+        comp.PythonRuntime.pre_start(self)
         virt_driver = _canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
         if virt_driver == virsh.VIRT_TYPE:
             virt_type = _canon_libvirt_type(self.cfg.get('nova', 'libvirt_type'))

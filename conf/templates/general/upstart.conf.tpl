@@ -5,8 +5,8 @@
 author "%AUTHOR%"
 description "This is the upstart file for %SHORT_NAME% made on %MADE_DATE%"
 
-start on %START_EVENT%
-stop on  %STOP_EVENT%
+start on %START_EVENT% or %COMPONENT_START_EVENT%
+stop on  %STOP_EVENT% or %COMPONENT_STOP_EVENT%
 
 %RESPAWN%
 
