@@ -109,9 +109,10 @@ COMPONENT_APP_DIR = "app"
 COMPONENT_CONFIG_DIR = "config"
 
 # RC files generated / used
-EC2RC_FN = 'ec2rc'
-LOCALRC_FN = 'localrc'
-OSRC_FN = 'openstackrc'
+RC_FN_TEMPL = "os-%s.rc"
+EC2RC_FN = RC_FN_TEMPL % ('ec2')
+LOCALRC_FN = RC_FN_TEMPL % ('local')
+OSRC_FN = RC_FN_TEMPL % ('core')
 
 # Program
 # actions

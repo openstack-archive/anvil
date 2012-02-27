@@ -117,18 +117,23 @@ def virt_ok(virt_type, distro):
     virt_protocol = LIBVIRT_PROTOCOL_MAP.get(virt_type)
     if not virt_protocol:
         return False
-    restart(distro)
-    cmds = list()
-    cmds.append({
-        'cmd': VIRSH_SANITY_CMD,
-        'run_as_root': True,
-    })
-    mp = dict()
-    mp['VIRT_PROTOCOL'] = virt_protocol
     try:
+        restart(distro)
+    except excp.ProcessExecutionError, e:
+        LOG.warn("Could not restart libvirt on distro [%s] due to [%s]" % (distro, e.message))
+        return False
+    try:
+        cmds = list()
+        cmds.append({
+            'cmd': VIRSH_SANITY_CMD,
+            'run_as_root': True,
+        })
+        mp = dict()
+        mp['VIRT_PROTOCOL'] = virt_protocol
         utils.execute_template(*cmds, params=mp)
         return True
-    except excp.ProcessExecutionError:
+    except excp.ProcessExecutionError, e:
+        LOG.warn("Could check if libvirt was ok for protocol [%s] due to [%s]" % (virt_protocol, e.message))
         return False
 
 
@@ -143,22 +148,25 @@ def clear_libvirt_domains(distro, virt_type, inst_prefix):
         return
     with sh.Rooted(True):
         LOG.info("Attempting to clear out leftover libvirt domains using protocol %s" % (virt_protocol))
-        restart(distro)
-        conn = None
+        try:
+            restart(distro)
+        except excp.ProcessExecutionError, e:
+            LOG.warn("Could not restart libvirt on distro [%s] due to [%s]" % (distro, e.message))
+            return
         try:
             conn = libvirt.open(virt_protocol)
-        except libvirt.libvirtError:
-            LOG.warn("Could not connect to libvirt using protocol [%s]" % (virt_protocol))
-        if conn:
-            try:
-                defined_domains = conn.listDefinedDomains()
-                kill_domains = list()
-                for domain in defined_domains:
-                    if domain.startswith(inst_prefix):
-                        kill_domains.append(domain)
-                if kill_domains:
-                    LOG.info("Found %s old domains to destroy (%s)" % (len(kill_domains), ", ".join(sorted(kill_domains))))
-                    for domain in sorted(kill_domains):
-                        _destroy_domain(libvirt, conn, domain)
-            except libvirt.libvirtError, e:
-                LOG.warn("Could not clear out libvirt domains due to [%s]" % (e.message))
+        except libvirt.libvirtError, e:
+            LOG.warn("Could not connect to libvirt using protocol [%s] due to [%s]" % (virt_protocol, e.message))
+            return
+        try:
+            defined_domains = conn.listDefinedDomains()
+            kill_domains = list()
+            for domain in defined_domains:
+                if domain.startswith(inst_prefix):
+                    kill_domains.append(domain)
+            if kill_domains:
+                LOG.info("Found %s old domains to destroy (%s)" % (len(kill_domains), ", ".join(sorted(kill_domains))))
+                for domain in sorted(kill_domains):
+                    _destroy_domain(libvirt, conn, domain)
+        except libvirt.libvirtError, e:
+            LOG.warn("Could not clear out libvirt domains due to [%s]" % (e.message))

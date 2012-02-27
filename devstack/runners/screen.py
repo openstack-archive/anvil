@@ -41,7 +41,7 @@ SESSION_ID = 'SESSION_ID'
 #screen session name
 SESSION_NAME = 'stack'
 SESSION_DEF_TITLE = SESSION_NAME
-SESSION_NAME_MTCHER = re.compile(r"^\s*([\d]+\.%s)\s*(.*)$" % (SESSION_NAME), re.I)
+SESSION_NAME_MTCHER = re.compile(r"^\s*([\d]+\.%s)\s*(.*)$" % (SESSION_NAME))
 
 #how we setup screens status bar
 STATUS_BAR_CMD = r'hardstatus alwayslastline "%-Lw%{= BW}%50>%n%f* %t%{-}%+Lw%< %= %H"'
@@ -66,8 +66,8 @@ WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
 #run screen as root?
 ROOT_GO = True
 
-#screen rc file
-SCREEN_RC = 'stack-screenrc'
+#screen RC file
+SCREEN_RC = settings.RC_FN_TEMPL % ('screen')
 
 
 class ScreenRunner(object):
@@ -90,6 +90,10 @@ class ScreenRunner(object):
             lines.append("# Environment settings (these will need to be exported)")
             for (k, v) in env_exports.items():
                 lines.append("# export %s=%s" % (k, sh.shellquote(v)))
+            lines.append("")
+        if ROOT_GO:
+            lines.append("# Screen sockets & programs were created/ran as the root user")
+            lines.append("# So you will need to run as user root (or sudo) to enter the following sessions")
             lines.append("")
         lines.append("# Session settings")
         lines.append("sessionname %s" % (session_name))
@@ -118,15 +122,14 @@ class ScreenRunner(object):
         mp = dict()
         mp['SESSION_NAME'] = session_id
         mp['NAME'] = name
-        LOG.info("Stopping program running in session %s in window named %s." % (session_id, name))
+        LOG.info("Stopping program running in session [%s] in window named [%s]." % (session_id, name))
         kill_cmd = self._gen_cmd(CMD_KILL, mp)
         sh.execute(*kill_cmd,
                 shell=True,
                 run_as_root=ROOT_GO,
                 env_overrides=self._get_env(),
                 check_exit_code=False)
-        #we have really no way of knowing if it worked or not
-        #screen sux...
+        #we have really no way of knowing if it worked or not, screen sux...
         wipe_cmd = self._gen_cmd(CMD_WIPE, mp)
         sh.execute(*wipe_cmd,
                 shell=True,
@@ -177,7 +180,7 @@ class ScreenRunner(object):
         return sessions[0]
 
     def _do_screen_init(self):
-        LOG.info("Creating a new screen session named %s." % (SESSION_NAME))
+        LOG.info("Creating a new screen session named [%s]" % (SESSION_NAME))
         session_init_cmd = self._gen_cmd(SESSION_INIT)
         sh.execute(*session_init_cmd,
                 shell=True,
@@ -199,7 +202,7 @@ class ScreenRunner(object):
         mp['NAME'] = prog_name
         mp['CMD'] = run_cmd
         init_cmd = self._gen_cmd(CMD_INIT, mp)
-        LOG.info("Creating a new screen window named %s in session %s." % (prog_name, session))
+        LOG.info("Creating a new screen window named [%s] in session [%s]" % (prog_name, session))
         sh.execute(*init_cmd,
             shell=True,
             run_as_root=ROOT_GO,
@@ -233,7 +236,7 @@ class ScreenRunner(object):
             self._do_screen_init()
             session_name = self._get_session()
             if session_name is None:
-                msg = "After initializing screen with session named %s, no screen session with that name was found!" % (SESSION_NAME)
+                msg = "After initializing screen with session named [%s], no screen session with that name was found!" % (SESSION_NAME)
                 raise excp.StartException(msg)
             self._write_rc(session_name, sh.abspth(SCREEN_RC))
         runtrace.trace(SESSION_ID, session_name)
