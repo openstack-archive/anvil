@@ -327,6 +327,9 @@ class NovaInstaller(comp.PythonInstallComponent):
     def warm_configs(self):
         for pw_key in WARMUP_PWS:
             self.cfg.get("passwords", pw_key)
+        driver_canon = _canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
+        if driver_canon == 'xenserver':
+            self.cfg.get("passwords", "xenapi_connection")
 
     def _get_config_files(self):
         cfg_files = list(CONFIGS)
