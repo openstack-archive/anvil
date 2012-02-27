@@ -94,9 +94,6 @@ _FAKE_ROOT_DIR = tempfile.gettempdir()
 
 
 def get_default_components(distro):
-    #this seems to be the default list of what to install by default
-    #ENABLED_SERVICES=${ENABLED_SERVICES:-g-api,g-reg,key,n-api,
-    #n-crt,n-obj,n-cpu,n-net,n-sch,n-novnc,n-xvnc,n-cauth,horizon,mysql,rabbit}
     def_components = dict()
     def_components[settings.GLANCE] = [
                                          glance.GAPI,
