@@ -114,7 +114,7 @@ class ScreenRunner(object):
             if key == SESSION_ID and value:
                 session_id = value
         if not session_id:
-            msg = "Could not find a screen session id for %s" % (name)
+            msg = "Could not find a screen session id for %s in file [%s]" % (name, trace_fn)
             raise excp.StopException(msg)
         return session_id
 
@@ -214,8 +214,7 @@ class ScreenRunner(object):
             shell=True,
             run_as_root=ROOT_GO,
             env_overrides=self._get_env())
-        #we have really no way of knowing if it worked or not
-        #screen sux...
+        #we have really no way of knowing if it worked or not, screen sux...
 
     def _do_socketdir_init(self, socketdir):
         with sh.Rooted(ROOT_GO):
@@ -232,14 +231,17 @@ class ScreenRunner(object):
         runtrace.trace(ARGS, json.dumps(args))
         full_cmd = [program] + list(args)
         session_name = self._get_session()
+        inited_screen = False
         if session_name is None:
+            inited_screen = True
             self._do_screen_init()
             session_name = self._get_session()
             if session_name is None:
                 msg = "After initializing screen with session named [%s], no screen session with that name was found!" % (SESSION_NAME)
                 raise excp.StartException(msg)
-            self._write_rc(session_name, sh.abspth(SCREEN_RC))
         runtrace.trace(SESSION_ID, session_name)
+        if inited_screen or not sh.isfile(SCREEN_RC):
+            self._write_rc(session_name, sh.abspth(SCREEN_RC))
         self._do_start(session_name, name, full_cmd)
         return tracefn
 
