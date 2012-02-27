@@ -71,11 +71,6 @@ ROOT_GO = True
 SCREEN_RC = settings.RC_FN_TEMPL % ('screen')
 
 
-def configure(component_name, config):
-    #return list of filenames configured (so that they can be deleted)
-    return list()
-
-
 class ScreenRunner(object):
     def __init__(self, cfg):
         self.cfg = cfg

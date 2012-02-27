@@ -55,8 +55,8 @@ STOPPER_CLS_MAPPING = {
 #runner configuration methods called in install (dependent on run type)
 RUNNER_INSTALL_CONFIG = {
     settings.RUN_TYPE_UPSTART: upstart.configure,
-    settings.RUN_TYPE_FORK: fork.configure,
-    settings.RUN_TYPE_SCREEN: screen.configure,
+    settings.RUN_TYPE_FORK: None,
+    settings.RUN_TYPE_SCREEN: None,
 }
 
 
@@ -215,20 +215,21 @@ class PkgInstallComponent(ComponentBase):
                 LOG.warn("Symlink %s => %s already exists." % (link, source))
         return len(links)
 
-    def _do_runner_configure(self):
-        run_type = utils.fetch_run_type(self.cfg)
-        run_conf_method = RUNNER_INSTALL_CONFIG.get(run_type)
-        if run_conf_method:
-            files_configured = run_conf_method(self.component_name, self.cfg)
-            for fn in files_configured:
-                self.tracewriter.cfg_write(fn)
-            return len(files_configured)
-        return 0
+    def _do_run_configuration(self):
+        files_configured = 0
+        for (k, conf_method) in RUNNER_INSTALL_CONFIG.items():
+            LOG.debug("Configuring run type [%s]" % (k))
+            if conf_method:
+                files = conf_method(self.component_name, self.cfg)
+                for fn in files:
+                    self.tracewriter.cfg_write(fn)
+                files_configured += len(files)
+        return files_configured
 
     def configure(self):
         conf_am = self._configure_files()
         conf_am += self._configure_symlinks()
-        conf_am += self._do_runner_configure()
+        conf_am += self._do_run_configuration()
         return conf_am
 
 

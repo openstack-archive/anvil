@@ -53,11 +53,6 @@ FORK_TEMPL = "%s.fork"
 ROOT_GO = True
 
 
-def configure(component_name, config):
-    #return list of filenames configured (so that they can be deleted)
-    return list()
-
-
 class ForkRunner(object):
     def __init__(self, cfg):
         self.cfg = cfg
