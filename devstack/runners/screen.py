@@ -85,13 +85,17 @@ class ScreenRunner(object):
         lines = list()
         lines.append("# RC file generated on %s" % (date.rcf8222date()))
         lines.append("")
-        lines.append("# Environment settings (these will need to be exported)")
-        lines.append("# export SCREENDIR=%s" % (SCREEN_SOCKET_DIR))
-        lines.append("")
+        env_exports = self._get_env()
+        if env_exports:
+            lines.append("# Environment settings (these will need to be exported)")
+            for (k, v) in env_exports.items():
+                lines.append("# export %s=%s" % (k, sh.shellquote(v)))
+            lines.append("")
         lines.append("# Session settings")
         lines.append("sessionname %s" % (session_name))
         lines.append(STATUS_BAR_CMD)
         lines.append("screen -t %s bash" % (SESSION_DEF_TITLE))
+        lines.append("")
         return lines
 
     def _write_rc(self, session_name, out_fn):
