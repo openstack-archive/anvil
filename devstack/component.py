@@ -38,6 +38,27 @@ STATUS_UNKNOWN = "unknown"
 STATUS_STARTED = "started"
 STATUS_STOPPED = "stopped"
 
+#which run types to which starter class
+STARTER_CLS_MAPPING = {
+    settings.RUN_TYPE_FORK: fork.ForkRunner,
+    settings.RUN_TYPE_UPSTART: upstart.UpstartRunner,
+    settings.RUN_TYPE_SCREEN: screen.ScreenRunner,
+}
+
+#which run types to which stopper class
+STOPPER_CLS_MAPPING = {
+    settings.RUN_TYPE_FORK: fork.ForkRunner,
+    settings.RUN_TYPE_UPSTART: upstart.UpstartRunner,
+    settings.RUN_TYPE_SCREEN: screen.ScreenRunner,
+}
+
+#runner configuration methods called in install (dependent on run type)
+RUNNER_INSTALL_CONFIG = {
+    settings.RUN_TYPE_UPSTART: upstart.configure,
+    settings.RUN_TYPE_FORK: fork.configure,
+    settings.RUN_TYPE_SCREEN: screen.configure,
+}
+
 
 class ComponentBase(object):
     def __init__(self, component_name, **kargs):
@@ -194,8 +215,21 @@ class PkgInstallComponent(ComponentBase):
                 LOG.warn("Symlink %s => %s already exists." % (link, source))
         return len(links)
 
+    def _do_runner_configure(self):
+        run_type = utils.fetch_run_type(self.cfg)
+        run_conf_method = RUNNER_INSTALL_CONFIG.get(run_type)
+        if run_conf_method:
+            files_configured = run_conf_method(self.component_name, self.cfg)
+            for fn in files_configured:
+                self.tracewriter.cfg_write(fn)
+            return len(files_configured)
+        return 0
+
     def configure(self):
-        return (self._configure_files() + self._configure_symlinks())
+        conf_am = self._configure_files()
+        conf_am += self._configure_symlinks()
+        conf_am += self._do_runner_configure()
+        return conf_am
 
 
 class PythonInstallComponent(PkgInstallComponent):
@@ -343,19 +377,6 @@ class PythonUninstallComponent(PkgUninstallComponent):
 
 
 class ProgramRuntime(ComponentBase):
-    #this here determines how we start and stop and
-    #what classes handle different running/stopping types
-    _STARTER_CLS_MAPPING = {
-        settings.RUN_TYPE_FORK: fork.ForkRunner,
-        settings.RUN_TYPE_UPSTART: upstart.UpstartRunner,
-        settings.RUN_TYPE_SCREEN: screen.ScreenRunner,
-    }
-    _STOPPER_CLS_MAPPING = {
-        settings.RUN_TYPE_FORK: fork.ForkRunner,
-        settings.RUN_TYPE_UPSTART: upstart.UpstartRunner,
-        settings.RUN_TYPE_SCREEN: screen.ScreenRunner,
-    }
-
     def __init__(self, component_name, *args, **kargs):
         ComponentBase.__init__(self, component_name, *args, **kargs)
         self.tracereader = tr.TraceReader(self.tracedir, tr.IN_TRACE)
@@ -363,14 +384,14 @@ class ProgramRuntime(ComponentBase):
         self.starttracereader = tr.TraceReader(self.tracedir, tr.START_TRACE)
 
     def _getstartercls(self, start_mode):
-        if start_mode not in ProgramRuntime._STARTER_CLS_MAPPING:
+        if start_mode not in STARTER_CLS_MAPPING:
             raise NotImplementedError("Can not yet start %s mode" % (start_mode))
-        return ProgramRuntime._STARTER_CLS_MAPPING.get(start_mode)
+        return STARTER_CLS_MAPPING.get(start_mode)
 
     def _getstoppercls(self, stop_mode):
-        if stop_mode not in ProgramRuntime._STOPPER_CLS_MAPPING:
+        if stop_mode not in STOPPER_CLS_MAPPING:
             raise NotImplementedError("Can not yet stop %s mode" % (stop_mode))
-        return ProgramRuntime._STOPPER_CLS_MAPPING.get(stop_mode)
+        return STOPPER_CLS_MAPPING.get(stop_mode)
 
     def _get_apps_to_start(self):
         return list()

@@ -71,6 +71,11 @@ ROOT_GO = True
 SCREEN_RC = settings.RC_FN_TEMPL % ('screen')
 
 
+def configure(component_name, config):
+    #return list of filenames configured (so that they can be deleted)
+    return list()
+
+
 class ScreenRunner(object):
     def __init__(self, cfg):
         self.cfg = cfg
@@ -217,7 +222,10 @@ class ScreenRunner(object):
         runtrace.trace(SESSION_ID, session_name)
         if inited_screen or not sh.isfile(SCREEN_RC):
             rc_gen = ScreenRcGenerator(self)
-            rc_gen.write(session_name, self._get_env(), sh.abspth(SCREEN_RC))
+            rc_contents = rc_gen.create(session_name, self._get_env())
+            out_fn = sh.abspth(SCREEN_RC)
+            LOG.info("Writing your created screen rc file to [%s]" % (out_fn))
+            sh.write_file(out_fn, rc_contents)
         self._do_start(session_name, name, full_cmd)
         return tracefn
 
@@ -252,8 +260,7 @@ class ScreenRcGenerator(object):
         lines.append("")
         return lines
 
-    def write(self, session_name, env_exports, out_fn):
+    def create(self, session_name, env_exports):
         lines = self._generate_lines(session_name, env_exports)
         contents = utils.joinlinesep(*lines)
-        LOG.info("Writing your created screen rc file to [%s]" % (out_fn))
-        sh.write_file(out_fn, contents)
+        return contents

@@ -42,6 +42,11 @@ CONF_EXT = ".conf"
 UPSTART_CONF_TMPL = 'upstart.conf'
 
 
+def configure(component_name, config):
+    #return list of filenames configured (so that they can be deleted)
+    return list()
+
+
 class UpstartRunner(object):
     def __init__(self, cfg):
         self.cfg = cfg
