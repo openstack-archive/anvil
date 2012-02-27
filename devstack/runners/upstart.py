@@ -16,6 +16,7 @@
 
 import json
 
+from runnerbase import RunnerBase
 from devstack import date
 from devstack import log as logging
 from devstack import settings
@@ -42,18 +43,19 @@ CONF_EXT = ".conf"
 UPSTART_CONF_TMPL = 'upstart.conf'
 
 
-def configure(component_name, config):
-    #return list of filenames configured (so that they can be deleted)
-    return list()
-
-
-class UpstartRunner(object):
+class UpstartRunner(RunnerBase):
     def __init__(self, cfg):
-        self.cfg = cfg
+        RunnerBase.__init__(self, cfg)
 
     def stop(self, name, trace_dir):
         msg = "Not implemented yet"
         raise NotImplementedError(msg)
+
+    def configure(self, app_name, runtime_info, tracedir):
+        LOG.info("Configure called for app:%s" % (app_name))
+        result = list()
+        result.append(self._do_upstart_configure(app_name, app_name, runtime_info))
+        return result
 
     def _get_upstart_conf_params(self, name, program_name, *program_args):
         params = dict()
@@ -61,7 +63,7 @@ class UpstartRunner(object):
             params['RESPAWN'] = "respawn"
         else:
             params['RESPAWN'] = ""
-        params['SHORT_NAME'] = name
+        params['SHORT_NAME'] = program_name 
         params['MADE_DATE'] = date.rcf8222date()
         params['START_EVENT'] = self.cfg.get('upstart', 'start_event')
         params['STOP_EVENT'] = self.cfg.get('upstart', 'stop_event')
@@ -70,18 +72,21 @@ class UpstartRunner(object):
         if program_args:
             escaped_args = list()
             for opt in program_args:
+                LOG.debug("Current opt:%s" % (opt))
                 escaped_args.append(sh.shellquote(opt))
             params['PROGRAM_OPTIONS'] = " ".join(escaped_args)
         else:
             params['PROGRAM_OPTIONS'] = ''
         return params
 
-    def _do_upstart_configure(self, name, program_name, *program_args):
+    def _do_upstart_configure(self, name, program_name, runtime_info):
+        (app_pth, app_dir, program_args) = runtime_info
         root_fn = name + CONF_EXT
         # TODO FIXME symlinks won't work. Need to copy the files there.
         # https://bugs.launchpad.net/upstart/+bug/665022
         cfg_fn = sh.joinpths(CONF_ROOT, root_fn)
         if sh.isfile(cfg_fn):
+            LOG.debug("Upstart config file already exists:%s" % (cfg_fn))
             return
         LOG.debug("Loading upstart template to be used by: %s" % (cfg_fn))
         (_, contents) = utils.load_template('general', UPSTART_CONF_TMPL)
@@ -91,6 +96,7 @@ class UpstartRunner(object):
         with sh.Rooted(True):
             sh.write_file(cfg_fn, adjusted_contents)
             sh.chmod(cfg_fn, 0666)
+        return cfg_fn
 
     def _start(self, name, program, *program_args, **kargs):
         tracedir = kargs["trace_dir"]
@@ -105,4 +111,5 @@ class UpstartRunner(object):
     def start(self, name, runtime_info, tracedir):
         #(program, appdir, program_args) = runtime_info
         msg = "Not implemented yet"
-        raise NotImplementedError(msg)
+        #raise NotImplementedError(msg)
+        LOG.debug("Start called for %s" % (name))

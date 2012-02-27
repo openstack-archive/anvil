@@ -52,13 +52,6 @@ STOPPER_CLS_MAPPING = {
     settings.RUN_TYPE_SCREEN: screen.ScreenRunner,
 }
 
-#runner configuration methods called in install (dependent on run type)
-RUNNER_INSTALL_CONFIG = {
-    settings.RUN_TYPE_UPSTART: upstart.configure,
-    settings.RUN_TYPE_FORK: None,
-    settings.RUN_TYPE_SCREEN: None,
-}
-
 
 class ComponentBase(object):
     def __init__(self, component_name, **kargs):
@@ -215,21 +208,9 @@ class PkgInstallComponent(ComponentBase):
                 LOG.warn("Symlink %s => %s already exists." % (link, source))
         return len(links)
 
-    def _do_run_configuration(self):
-        files_configured = 0
-        for (k, conf_method) in RUNNER_INSTALL_CONFIG.items():
-            LOG.debug("Configuring run type [%s]" % (k))
-            if conf_method:
-                files = conf_method(self.component_name, self.cfg)
-                for fn in files:
-                    self.tracewriter.cfg_write(fn)
-                files_configured += len(files)
-        return files_configured
-
     def configure(self):
         conf_am = self._configure_files()
         conf_am += self._configure_symlinks()
-        conf_am += self._do_run_configuration()
         return conf_am
 
 
@@ -420,6 +401,21 @@ class ProgramRuntime(ComponentBase):
         #this fns list will have info about what was started
         fns = list()
         apps = self._get_apps_to_start()
+        # First make a pass and make sure all runtime (e.g. upstart) config
+        # files are in place
+        for app_info in apps:
+            #extract needed keys
+            app_name = app_info["name"]
+            app_pth = app_info.get("path", app_name)
+            app_dir = app_info.get("app_dir", self.appdir)
+            #adjust the program options now that we have real locations
+            program_opts = utils.param_replace_list(self._get_app_options(app_name), self._get_param_map(app_name))
+            #configure it with the given settings
+            LOG.debug("Configure [%s] with options [%s] with runner type [%s]" % (app_name, ", ".join(program_opts), run_type))
+            runtime_info = (app_pth, app_dir, program_opts)
+            starter.configure(app_name, runtime_info, self.tracedir)
+            LOG.debug("Configured %s" % (app_name))
+        # Make a second pass to do the actual starting
         for app_info in apps:
             #extract needed keys
             app_name = app_info["name"]
