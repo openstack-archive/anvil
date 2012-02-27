@@ -192,11 +192,12 @@ class ScreenRunner(RunnerBase):
             env_overrides=self._get_env())
         #we have really no way of knowing if it worked or not, screen sux...
 
-    def _do_socketdir_init(self, socketdir):
+    def _do_socketdir_init(self, socketdir, perm):
+        LOG.debug("Making screen socket directory [%s] (with permissions %o)" % (socketdir, perm))
         with sh.Rooted(ROOT_GO):
             dirs = sh.mkdirslist(socketdir)
             for d in dirs:
-                sh.chmod(d, SCREEN_SOCKET_PERM)
+                sh.chmod(d, perm)
 
     def _begin_start(self, name, program, args, tracedir):
         fn_name = SCREEN_TEMPL % (name)
@@ -228,7 +229,7 @@ class ScreenRunner(RunnerBase):
     def start(self, name, runtime_info, tracedir):
         (program, _, program_args) = runtime_info
         if not sh.isdir(self.socket_dir):
-            self._do_socketdir_init(self.socket_dir)
+            self._do_socketdir_init(self.socket_dir, SCREEN_SOCKET_PERM)
         return self._begin_start(name, program, program_args, tracedir)
 
 
