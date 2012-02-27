@@ -44,22 +44,22 @@ _REVERSE_ACTIONS = [settings.UNINSTALL, settings.STOP]
 _RC_FILE_MAKE_ACTIONS = [settings.INSTALL, settings.START]
 _RC_FILE = sh.abspth(settings.OSRC_FN)
 
-# The order of which uninstalls happen + message of what is happening
+# The order of which uninstalls happen + message of what is happening (before and after)
 UNINSTALL_ORDERING = [
      (
          "Unconfiguring %s.",
          (lambda instance: (instance.unconfigure())),
-         None
+         None,
      ),
      (
          "Pre-uninstalling %s.",
          (lambda instance: (instance.pre_uninstall())),
-         None
+         None,
      ),
      (
          "Uninstalling %s.",
          (lambda instance: (instance.uninstall())),
-         None
+         None,
      ),
      (
          "Post-uninstalling %s.",
@@ -68,7 +68,7 @@ UNINSTALL_ORDERING = [
      ),
 ]
 
-# The order of which starts happen + message of what is happening
+# The order of which starts happen + message of what is happening (before and after)
 STARTS_ORDERING = [
      (
         "Pre-starting %s.",
@@ -76,18 +76,18 @@ STARTS_ORDERING = [
         None,
      ),
      (
-         "Starting %s.",
-         (lambda instance: (instance.start())),
-         "Check %s for traces of what happened.",
+        "Starting %s.",
+        (lambda instance: (instance.start())),
+        "Check %s for traces of what happened.",
      ),
      (
-         "Post-starting %s.",
-         (lambda instance:(instance.post_start())),
-         None,
+        "Post-starting %s.",
+        (lambda instance:(instance.post_start())),
+        None,
      ),
 ]
 
-# The order of which stops happen + message of what is happening
+# The order of which stops happen + message of what is happening (before and after)
 STOPS_ORDERING = [
      (
          "Stopping %s.",
@@ -96,7 +96,7 @@ STOPS_ORDERING = [
      ),
 ]
 
-# The order of which install happen + message of what is happening
+# The order of which install happen + message of what is happening (before and after)
 INSTALL_ORDERING = [
     (
         "Downloading %s.",
@@ -121,7 +121,7 @@ INSTALL_ORDERING = [
     (
         "Post-installing %s.",
         (lambda instance: (instance.post_install())),
-        None
+        None,
     ),
 ]
 
@@ -211,9 +211,9 @@ def _instanciate_components(action_name, components, distro, pkg_manager, config
 
 def _gen_localrc(config, fn):
     LOG.info("Generating a file at [%s] that will contain your environment settings." % (fn))
-    contents = env_rc.RcGenerator(config).generate()
-    with open(fn, "w") as fh:
-        fh.write(contents)
+    creator = env_rc.RcGenerator(config)
+    contents = creator.generate()
+    sh.write_file(fn, contents)
 
 
 def _run_components(action_name, component_order, components, distro, root_dir, program_args):
@@ -247,7 +247,7 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
     _post_run(action_name, root_dir, config, components.keys(), tot_time)
 
 
-def _run_action(args):
+def run(args):
 
     #input and distro checks
     (distro, platform) = utils.determine_distro()
@@ -305,8 +305,5 @@ def _run_action(args):
     LOG.info("Starting action [%s] on %s for distro [%s]" % (action, date.rcf8222date(), distro))
     _run_components(action, component_order, components, distro, rootdir, args)
     LOG.info("Finished action [%s] on %s" % (action, date.rcf8222date()))
+
     return True
-
-
-def run(args):
-    return _run_action(args)
