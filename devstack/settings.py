@@ -44,7 +44,6 @@ GLANCE = "glance"
 QUANTUM = "quantum"
 QUANTUM_CLIENT = 'quantum-client'
 SWIFT = "swift"
-SWIFT_KEYSTONE = "swift-keystone"
 HORIZON = "horizon"
 KEYSTONE = "keystone"
 KEYSTONE_CLIENT = 'keystone-client'
@@ -58,7 +57,7 @@ COMPONENT_NAMES = [
     NOVA, NOVA_CLIENT,
     GLANCE,
     QUANTUM, QUANTUM_CLIENT,
-    SWIFT, SWIFT_KEYSTONE,
+    SWIFT,
     HORIZON,
     KEYSTONE, KEYSTONE_CLIENT,
     DB,
@@ -78,8 +77,7 @@ COMPONENT_DEPENDENCIES = {
     GLANCE: [KEYSTONE, DB],
     KEYSTONE: [DB, KEYSTONE_CLIENT],
     NOVA: [KEYSTONE, GLANCE, DB, RABBIT, NOVA_CLIENT],
-    SWIFT_KEYSTONE: [KEYSTONE_CLIENT],
-    SWIFT: [SWIFT_KEYSTONE],
+    SWIFT: [KEYSTONE_CLIENT],
     NOVA_CLIENT: [],
     HORIZON: [KEYSTONE_CLIENT, GLANCE, NOVA_CLIENT],
     # More of quantums deps come from its module function get_dependencies

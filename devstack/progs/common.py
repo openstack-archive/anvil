@@ -35,7 +35,6 @@ from devstack.components import quantum
 from devstack.components import quantum_client
 from devstack.components import rabbit
 from devstack.components import swift
-from devstack.components import swift_keystone
 
 # This determines what classes to use to install/uninstall/...
 ACTION_CLASSES = {
@@ -54,7 +53,6 @@ ACTION_CLASSES = {
         settings.QUANTUM_CLIENT: quantum_client.QuantumClientInstaller,
         settings.RABBIT: rabbit.RabbitInstaller,
         settings.SWIFT: swift.SwiftInstaller,
-        settings.SWIFT_KEYSTONE: swift_keystone.SwiftKeystoneInstaller,
     },
     settings.UNINSTALL: {
         settings.DB: db.DBUninstaller,
@@ -71,7 +69,6 @@ ACTION_CLASSES = {
         settings.QUANTUM_CLIENT: quantum_client.QuantumClientUninstaller,
         settings.RABBIT: rabbit.RabbitUninstaller,
         settings.SWIFT: swift.SwiftUninstaller,
-        settings.SWIFT_KEYSTONE: swift_keystone.SwiftKeystoneUninstaller,
     },
     settings.START: {
         settings.DB: db.DBRuntime,
@@ -88,7 +85,6 @@ ACTION_CLASSES = {
         settings.QUANTUM_CLIENT: quantum_client.QuantumClientRuntime,
         settings.RABBIT: rabbit.RabbitRuntime,
         settings.SWIFT: swift.SwiftRuntime,
-        settings.SWIFT_KEYSTONE: swift_keystone.SwiftKeystoneRuntime,
     },
 }
 
@@ -116,6 +112,7 @@ def get_default_components(distro):
                                      nova.NOBJ,
                                      nova.NSCHED,
                                      nova.NXVNC,
+                                     nova.NVOL,
                                     ]
     def_components[settings.NOVNC] = []
     def_components[settings.HORIZON] = []

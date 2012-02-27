@@ -1,4 +1,4 @@
-# From devstack commit 18ee4eaf58 with modifications to parametrize
+# From devstack commit a205b46788640b226d672293dac87432e98c81cf with modifications to parametrize
 # certain variables (ports mainly).
 
 [DEFAULT]
@@ -61,6 +61,9 @@ paste.filter_factory = keystone.contrib.admin_crud:CrudExtension.factory
 [filter:ec2_extension]
 paste.filter_factory = keystone.contrib.ec2:Ec2Extension.factory
 
+[filter:s3_extension]
+paste.filter_factory = keystone.contrib.s3:S3Extension.factory
+
 [app:public_service]
 paste.app_factory = keystone.service:public_app_factory
 
@@ -68,7 +71,7 @@ paste.app_factory = keystone.service:public_app_factory
 paste.app_factory = keystone.service:admin_app_factory
 
 [pipeline:public_api]
-pipeline = token_auth admin_token_auth json_body debug ec2_extension public_service
+pipeline = token_auth admin_token_auth json_body debug ec2_extension s3_extension public_service
 
 [pipeline:admin_api]
 pipeline = token_auth admin_token_auth json_body debug ec2_extension crud_extension admin_service
