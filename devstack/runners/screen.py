@@ -16,6 +16,7 @@
 
 import json
 import re
+import tempfile
 import time
 
 from devstack import date
@@ -57,7 +58,7 @@ LIST_CMD = ['screen', '-ls']
 SCREEN_KILLER = ['screen', '-X', '-S', '%SCREEN_ID%', 'quit']
 
 #where our screen sockets will go
-SCREEN_SOCKET_DIR = "/tmp/devstack-sockets"
+SCREEN_SOCKET_DIR_NAME = "devstack-screen-sockets"
 SCREEN_SOCKET_PERM = 0700
 
 #used to wait until started before we can run the actual start cmd
@@ -73,6 +74,7 @@ SCREEN_RC = settings.RC_FN_TEMPL % ('screen')
 class ScreenRunner(object):
     def __init__(self, cfg):
         self.cfg = cfg
+        self.socket_dir = sh.joinpths(tempfile.gettempdir(), SCREEN_SOCKET_DIR_NAME)
 
     def stop(self, name, tracedir):
         fn_name = SCREEN_TEMPL % (name)
@@ -80,33 +82,6 @@ class ScreenRunner(object):
         session_id = self._find_session(name, trace_fn)
         self._do_stop(name, session_id)
         sh.unlink(trace_fn)
-
-    def _gen_rc(self, session_name):
-        lines = list()
-        lines.append("# RC file generated on %s" % (date.rcf8222date()))
-        lines.append("")
-        env_exports = self._get_env()
-        if env_exports:
-            lines.append("# Environment settings (these will need to be exported)")
-            for (k, v) in env_exports.items():
-                lines.append("# export %s=%s" % (k, sh.shellquote(v)))
-            lines.append("")
-        if ROOT_GO:
-            lines.append("# Screen sockets & programs were created/ran as the root user")
-            lines.append("# So you will need to run as user root (or sudo) to enter the following sessions")
-            lines.append("")
-        lines.append("# Session settings")
-        lines.append("sessionname %s" % (session_name))
-        lines.append(STATUS_BAR_CMD)
-        lines.append("screen -t %s bash" % (SESSION_DEF_TITLE))
-        lines.append("")
-        return lines
-
-    def _write_rc(self, session_name, out_fn):
-        lines = self._gen_rc(session_name)
-        contents = utils.joinlinesep(*lines)
-        LOG.info("Writing your created screen rc file to [%s]" % (out_fn))
-        sh.write_file(out_fn, contents)
 
     def _find_session(self, name, trace_fn):
         session_id = None
@@ -139,7 +114,7 @@ class ScreenRunner(object):
 
     def _get_env(self):
         env = dict()
-        env['SCREENDIR'] = SCREEN_SOCKET_DIR
+        env['SCREENDIR'] = self.socket_dir
         return env
 
     def _gen_cmd(self, base_cmd, params=dict()):
@@ -241,12 +216,44 @@ class ScreenRunner(object):
                 raise excp.StartException(msg)
         runtrace.trace(SESSION_ID, session_name)
         if inited_screen or not sh.isfile(SCREEN_RC):
-            self._write_rc(session_name, sh.abspth(SCREEN_RC))
+            rc_gen = ScreenRcGenerator(self)
+            rc_gen.write(session_name, self._get_env(), sh.abspth(SCREEN_RC))
         self._do_start(session_name, name, full_cmd)
         return tracefn
 
     def start(self, name, runtime_info, tracedir):
         (program, _, program_args) = runtime_info
-        if not sh.isdir(SCREEN_SOCKET_DIR):
-            self._do_socketdir_init(SCREEN_SOCKET_DIR)
+        if not sh.isdir(self.socket_dir):
+            self._do_socketdir_init(self.socket_dir)
         return self._begin_start(name, program, program_args, tracedir)
+
+
+class ScreenRcGenerator(object):
+    def __init__(self, sr):
+        self.runner = sr
+
+    def _generate_lines(self, session_name, env_exports):
+        lines = list()
+        lines.append("# RC file generated on %s" % (date.rcf8222date()))
+        lines.append("")
+        if env_exports:
+            lines.append("# Environment settings (these will need to be exported)")
+            for (k, v) in env_exports.items():
+                lines.append("# export %s=%s" % (k, sh.shellquote(v)))
+            lines.append("")
+        if ROOT_GO:
+            lines.append("# Screen sockets & programs were created/ran as the root user")
+            lines.append("# So you will need to run as user root (or sudo) to enter the following sessions")
+            lines.append("")
+        lines.append("# Session settings")
+        lines.append("sessionname %s" % (session_name))
+        lines.append(STATUS_BAR_CMD)
+        lines.append("screen -t %s bash" % (SESSION_DEF_TITLE))
+        lines.append("")
+        return lines
+
+    def write(self, session_name, env_exports, out_fn):
+        lines = self._generate_lines(session_name, env_exports)
+        contents = utils.joinlinesep(*lines)
+        LOG.info("Writing your created screen rc file to [%s]" % (out_fn))
+        sh.write_file(out_fn, contents)
