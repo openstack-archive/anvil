@@ -46,7 +46,7 @@ class UpstartRunner(object):
     def __init__(self, cfg):
         self.cfg = cfg
 
-    def stop(self, name, *args, **kargs):
+    def stop(self, name, trace_dir):
         msg = "Not implemented yet"
         raise NotImplementedError(msg)
 
@@ -97,6 +97,7 @@ class UpstartRunner(object):
         runtrace.trace(ARGS, json.dumps(program_args))
         return tracefn
 
-    def start(self, name, program, *program_args, **kargs):
+    def start(self, name, runtime_info, tracedir):
+        #(program, appdir, program_args) = runtime_info
         msg = "Not implemented yet"
         raise NotImplementedError(msg)

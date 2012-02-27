@@ -49,6 +49,9 @@ ARGS = "ARGS"
 NAME = "NAME"
 FORK_TEMPL = "%s.fork"
 
+#run fork cmds as root?
+ROOT_GO = True
+
 
 class ForkRunner(object):
     def __init__(self, cfg):
@@ -75,9 +78,8 @@ class ForkRunner(object):
                     time.sleep(SLEEP_TIME)
         return (killed, attempts)
 
-    def stop(self, name, *args, **kargs):
-        with sh.Rooted(kargs.get("run_as_root", True)):
-            trace_dir = kargs["trace_dir"]
+    def stop(self, name, trace_dir):
+        with sh.Rooted(ROOT_GO):
             if not trace_dir or not sh.isdir(trace_dir):
                 msg = "No trace directory found from which to stop %s" % (name)
                 raise excp.StopException(msg)
@@ -161,19 +163,25 @@ class ForkRunner(object):
                 #be bad right now
                 os._exit(0)
 
-    def start(self, name, program, *program_args, **kargs):
-        tracedir = kargs["trace_dir"]
-        appdir = kargs["app_dir"]
-        fn_name = FORK_TEMPL % (name)
-        (pidfile, stderrfn, stdoutfn) = self._form_file_names(tracedir, fn_name)
-        tracefn = tr.touch_trace(tracedir, fn_name)
+    def _do_trace(self, fn, tracedir, kvs):
+        tracefn = tr.touch_trace(tracedir, fn)
         runtrace = tr.Trace(tracefn)
         runtrace.trace(TYPE, RUN_TYPE)
-        runtrace.trace(PID_FN, pidfile)
-        runtrace.trace(STDERR_FN, stderrfn)
-        runtrace.trace(STDOUT_FN, stdoutfn)
-        runtrace.trace(ARGS, json.dumps(program_args))
+        for (k, v) in kvs.items():
+            runtrace.trace(k, v)
+        return tracefn
+
+    def start(self, name, runtime_info, tracedir):
+        (program, appdir, program_args) = runtime_info
+        fn_name = FORK_TEMPL % (name)
+        (pidfile, stderrfn, stdoutfn) = self._form_file_names(tracedir, fn_name)
+        trace_info = dict()
+        trace_info[PID_FN] = pidfile
+        trace_info[STDERR_FN] = stderrfn
+        trace_info[STDOUT_FN] = stdoutfn
+        trace_info[ARGS] = json.dumps(program_args)
+        tracefn = self._do_trace(fn_name, tracedir, trace_info)
         LOG.debug("Forking [%s] by running command [%s]" % (name, program))
-        with sh.Rooted(kargs.get("run_as_root", True)):
+        with sh.Rooted(ROOT_GO):
             self._fork_start(program, appdir, pidfile, stdoutfn, stderrfn, *program_args)
         return tracefn

@@ -392,9 +392,6 @@ class ProgramRuntime(ComponentBase):
     def start(self):
         #select how we are going to start it
         run_type = utils.fetch_run_type(self.cfg)
-        if run_type not in settings.RUN_TYPES_KNOWN:
-            msg = "Unknown run type %s found in configuration" % (run_type)
-            raise excp.ConfigException(msg)
         startercls = self._getstartercls(run_type)
         starter = startercls(self.cfg)
         #start all apps
@@ -403,28 +400,19 @@ class ProgramRuntime(ComponentBase):
         apps = self._get_apps_to_start()
         for app_info in apps:
             #extract needed keys
-            app_name = app_info.get("name")
+            app_name = app_info["name"]
             app_pth = app_info.get("path", app_name)
             app_dir = app_info.get("app_dir", self.appdir)
             #adjust the program options now that we have real locations
-            params = self._get_param_map(app_name)
-            program_opts = self._get_app_options(app_name)
-            if params and program_opts:
-                adjusted_opts = list()
-                for opt in program_opts:
-                    adjusted_opts.append(utils.param_replace(str(opt), params))
-                program_opts = adjusted_opts
+            program_opts = utils.param_replace_list(self._get_app_options(app_name), self._get_param_map(app_name))
             #start it with the given settings
             LOG.debug("Starting [%s] with options [%s] with runner type [%s]" % (app_name, ", ".join(program_opts), run_type))
-            fn = starter.start(app_name, app_pth, *program_opts, app_dir=app_dir, \
-                               trace_dir=self.tracedir)
-            if fn:
-                fns.append(fn)
-                LOG.debug("Started %s, details are in %s" % (app_name, fn))
-                #this trace is used to locate details about what to stop
-                self.tracewriter.started_info(app_name, fn)
-            else:
-                LOG.debug("Started %s" % (app_name))
+            runtime_info = (app_pth, app_dir, program_opts)
+            info_fn = starter.start(app_name, runtime_info, self.tracedir)
+            fns.append(info_fn)
+            LOG.debug("Started %s, details are in %s" % (app_name, info_fn))
+            #this trace is used to locate details about what to stop
+            self.tracewriter.started_info(app_name, info_fn)
         return fns
 
     def stop(self):
@@ -433,11 +421,8 @@ class ProgramRuntime(ComponentBase):
         killedam = 0
         for mp in start_traces:
             #extract the apps name and where its trace is
-            fn = mp.get('trace_fn')
-            name = mp.get('name')
-            #missing some key info, skip it
-            if fn is None or name is None:
-                continue
+            fn = mp['trace_fn']
+            name = mp['name']
             #figure out which class will stop it
             contents = tr.parse_fn(fn)
             killcls = None
@@ -453,11 +438,11 @@ class ProgramRuntime(ComponentBase):
                 LOG.debug("Stopping %s of run type %s" % (name, runtype))
                 #create an instance of the killer class and attempt to stop
                 killer = killcls(self.cfg)
-                killer.stop(name, trace_dir=self.tracedir)
+                killer.stop(name, self.tracedir)
                 killedam += 1
             else:
-                #TODO raise error??
-                pass
+                msg = "Could not figure out which class to use to stop (%s, %s)" % (name, fn)
+                raise excp.StopException(msg)
         #if we got rid of them all get rid of the trace
         if killedam == len(start_traces):
             fn = self.starttracereader.trace_fn

@@ -844,10 +844,7 @@ class NovaConf(object):
                 full_line = key_str
             else:
                 key_str = self._form_key(key, True)
-                filled_opts = list()
-                for opt in opts:
-                    if opt is not None:
-                        filled_opts.append(utils.param_replace(str(opt), param_dict))
+                filled_opts = utils.param_replace_list(opts, param_dict)
                 full_line = key_str + ",".join(filled_opts)
             gen_lines.append(full_line)
         return gen_lines

@@ -74,8 +74,7 @@ class ScreenRunner(object):
     def __init__(self, cfg):
         self.cfg = cfg
 
-    def stop(self, name, *args, **kargs):
-        tracedir = kargs["trace_dir"]
+    def stop(self, name, tracedir):
         fn_name = SCREEN_TEMPL % (name)
         trace_fn = tr.trace_fn(tracedir, fn_name)
         session_id = self._find_session(name, trace_fn)
@@ -137,11 +136,7 @@ class ScreenRunner(object):
         return env
 
     def _gen_cmd(self, base_cmd, params=dict()):
-        full_cmd = base_cmd
-        actual_cmd = list()
-        for piece in full_cmd:
-            actual_cmd.append(utils.param_replace(piece, params))
-        return actual_cmd
+        return utils.param_replace_list(base_cmd, params)
 
     def _active_sessions(self):
         knowns = list()
@@ -215,14 +210,11 @@ class ScreenRunner(object):
         #we have really no way of knowing if it worked or not
         #screen sux...
 
-    def _do_socketdir_init(self):
-        socketdir = SCREEN_SOCKET_DIR
+    def _do_socketdir_init(self, socketdir):
         with sh.Rooted(ROOT_GO):
-            if not sh.isdir(socketdir):
-                dirs = sh.mkdirslist(socketdir)
-                for d in dirs:
-                    sh.chmod(d, SCREEN_SOCKET_PERM)
-        return socketdir
+            dirs = sh.mkdirslist(socketdir)
+            for d in dirs:
+                sh.chmod(d, SCREEN_SOCKET_PERM)
 
     def _begin_start(self, name, program, args, tracedir):
         fn_name = SCREEN_TEMPL % (name)
@@ -244,8 +236,8 @@ class ScreenRunner(object):
         self._do_start(session_name, name, full_cmd)
         return tracefn
 
-    def start(self, name, program, *program_args, **kargs):
-        self._do_socketdir_init()
-        tracedir = kargs["trace_dir"]
-        args = list(program_args)
-        return self._begin_start(name, program, args, tracedir)
+    def start(self, name, runtime_info, tracedir):
+        (program, _, program_args) = runtime_info
+        if not sh.isdir(SCREEN_SOCKET_DIR):
+            self._do_socketdir_init(SCREEN_SOCKET_DIR)
+        return self._begin_start(name, program, program_args, tracedir)

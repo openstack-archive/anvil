@@ -56,28 +56,12 @@ def execute_template(*cmds, **kargs):
     ignore_missing = kargs.pop('ignore_missing', False)
     cmd_results = list()
     for cmdinfo in cmds:
-        cmd_to_run_templ = cmdinfo.get("cmd")
-        if not cmd_to_run_templ:
-            continue
-        cmd_to_run = list()
-        if not params_replacements:
-            cmd_to_run = cmd_to_run_templ
-        else:
-            for piece in cmd_to_run_templ:
-                cmd_to_run.append(param_replace(str(piece),
-                                  params_replacements,
-                                  ignore_missing=ignore_missing))
+        cmd_to_run_templ = cmdinfo["cmd"]
+        cmd_to_run = param_replace_list(cmd_to_run_templ, params_replacements, ignore_missing)
         stdin_templ = cmdinfo.get('stdin')
         stdin = None
         if stdin_templ:
-            stdin_full = list()
-            if not params_replacements:
-                stdin_full = stdin_templ
-            else:
-                for piece in stdin_templ:
-                    stdin_full.append(param_replace(str(piece),
-                                      params_replacements,
-                                      ignore_missing=ignore_missing))
+            stdin_full = param_replace_list(stdin_templ, params_replacements, ignore_missing)
             stdin = joinlinesep(*stdin_full)
         exec_result = sh.execute(*cmd_to_run,
                                  run_as_root=cmdinfo.get('run_as_root', False),
@@ -310,6 +294,16 @@ def service_enabled(name, components, empty_true=True):
     if name in components:
         return True
     return False
+
+
+def param_replace_list(values, replacements, ignore_missing=False):
+    new_values = list()
+    if not values:
+        return new_values
+    for v in values:
+        if v is not None:
+            new_values.append(param_replace(str(v), replacements, ignore_missing))
+    return new_values
 
 
 def param_replace(text, replacements, ignore_missing=False):
