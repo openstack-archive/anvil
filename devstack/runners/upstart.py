@@ -16,6 +16,7 @@
 
 import json
 
+from runnerbase import RunnerBase
 from devstack import date
 from devstack import log as logging
 from devstack import settings
@@ -47,7 +48,7 @@ def configure(component_name, config):
     return list()
 
 
-class UpstartRunner(object):
+class UpstartRunner(RunnerBase):
     def __init__(self, cfg):
         self.cfg = cfg
 

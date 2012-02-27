@@ -22,6 +22,7 @@ import signal
 import sys
 import time
 
+from runnerbase import RunnerBase
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import settings
@@ -53,7 +54,7 @@ FORK_TEMPL = "%s.fork"
 ROOT_GO = True
 
 
-class ForkRunner(object):
+class ForkRunner(RunnerBase):
     def __init__(self, cfg):
         self.cfg = cfg
 
