@@ -34,7 +34,6 @@ LIBVIRT_PROTOCOL_MAP = {
 }
 VIRT_TYPE = 'libvirt'
 VIRT_LIB = VIRT_TYPE
-DEFAULT_VIRT = 'qemu'
 
 #distros name the libvirt service differently :-(
 SV_NAME_MAP = {
@@ -112,16 +111,6 @@ def restart(distro):
         utils.execute_template(*cmds, params=mp)
         LOG.info("Restarting the libvirt service, please wait %s seconds until its started." % (WAIT_ALIVE_TIME))
         time.sleep(WAIT_ALIVE_TIME)
-
-
-def default(virt_type):
-    if not virt_type:
-        return DEFAULT_VIRT
-    virt_type = virt_type.lower().strip()
-    if not virt_type in LIBVIRT_PROTOCOL_MAP:
-        return DEFAULT_VIRT
-    else:
-        return virt_type
 
 
 def virt_ok(virt_type, distro):
