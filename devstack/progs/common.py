@@ -36,6 +36,9 @@ from devstack.components import quantum_client
 from devstack.components import rabbit
 from devstack.components import swift
 
+from devstack.packaging import apt
+from devstack.packaging import yum
+
 # This determines what classes to use to install/uninstall/...
 ACTION_CLASSES = {
     settings.INSTALL: {
@@ -88,9 +91,19 @@ ACTION_CLASSES = {
     },
 }
 
+# Just a copy
 ACTION_CLASSES[settings.STOP] = ACTION_CLASSES[settings.START]
 
+# Used only for figuring out deps
 _FAKE_ROOT_DIR = tempfile.gettempdir()
+
+# This map controls which distro has
+# which package management class
+_PKGR_MAP = {
+    settings.UBUNTU11: apt.AptPackager,
+    settings.RHEL6: yum.YumPackager,
+    settings.FEDORA16: yum.YumPackager,
+}
 
 
 def get_default_components(distro):
@@ -132,6 +145,14 @@ def get_action_cls(action_name, component_name, distro):
     if not cls:
         raise excp.StackException("Action %s has no class entry for component %s" % (action_name, component_name))
     return cls
+
+
+def get_packager(distro, keep_packages):
+    cls = _PKGR_MAP.get(distro)
+    if not cls:
+        msg = "No package manager found for distro %s!" % (distro)
+        raise excp.StackException(msg)
+    return cls(distro, keep_packages)
 
 
 def get_config():

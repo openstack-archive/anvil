@@ -24,20 +24,9 @@ from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 
-from devstack.packaging import apt
-from devstack.packaging import yum
-
 from devstack.progs import common
 
 LOG = logging.getLogger("devstack.progs.actions")
-
-# This map controls which distro has
-# which package management class
-_PKGR_MAP = {
-    settings.UBUNTU11: apt.AptPackager,
-    settings.RHEL6: yum.YumPackager,
-    settings.FEDORA16: yum.YumPackager,
-}
 
 # This is used to map an action to a useful string for
 # the welcome display
@@ -145,14 +134,6 @@ ACTION_MP = {
 }
 
 
-def _get_pkg_manager(distro, keep_packages):
-    cls = _PKGR_MAP.get(distro)
-    if not cls:
-        msg = "No package manager found for distro %s!" % (distro)
-        raise excp.StackException(msg)
-    return cls(distro, keep_packages)
-
-
 def _pre_run(action_name, root_dir, pkg_manager, config, component_order, all_instances):
     loaded_env = False
     try:
@@ -238,8 +219,8 @@ def _gen_localrc(config, fn):
 def _run_components(action_name, component_order, components, distro, root_dir, program_args):
     LOG.info("Will run action [%s] using root directory [%s]" % (action_name, root_dir))
     LOG.info("In the following order: %s" % ("->".join(component_order)))
-    pkg_manager = _get_pkg_manager(distro, program_args.get('keep_packages', True))
     config = common.get_config()
+    pkg_manager = common.get_packager(distro, program_args.get('keep_packages', True))
     all_instances = _instanciate_components(action_name, components, distro, pkg_manager, config, root_dir)
     _pre_run(action_name, root_dir, pkg_manager, config, component_order, all_instances)
     LOG.info("Activating components required to complete action %s." % (action_name))
