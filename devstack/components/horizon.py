@@ -110,10 +110,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         self._check_ug()
 
     def _get_symlinks(self):
-        links = dict()
-        for fn in self._get_config_files():
-            source_fn = self._get_target_config_name(fn)
-            links[source_fn] = sh.joinpths("/", "etc", "horizon", fn)
+        links = comp.PythonInstallComponent._get_symlinks(self)
         src = self._get_target_config_name(HORIZON_APACHE_CONF)
         links[src] = APACHE_CONF_TARGETS[self.distro]
         if utils.service_enabled(settings.QUANTUM_CLIENT, self.instances, False):

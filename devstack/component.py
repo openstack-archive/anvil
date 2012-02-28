@@ -52,6 +52,9 @@ STOPPER_CLS_MAPPING = {
     settings.RUN_TYPE_SCREEN: screen.ScreenRunner,
 }
 
+#where symlinks will go
+BASE_LINK_DIR = "/etc"
+
 
 class ComponentBase(object):
     def __init__(self, component_name, **kargs):
@@ -167,8 +170,15 @@ class PkgInstallComponent(ComponentBase):
     def _get_source_config(self, config_fn):
         return utils.load_template(self.component_name, config_fn)
 
+    def _get_link_dir(self):
+        return sh.joinpths(BASE_LINK_DIR, self.component_name)
+
     def _get_symlinks(self):
-        return dict()
+        links = dict()
+        for fn in self._get_config_files():
+            source_fn = self._get_target_config_name(fn)
+            links[source_fn] = sh.joinpths(self._get_link_dir(), fn)
+        return links
 
     def _configure_files(self):
         configs = self._get_config_files()

@@ -210,6 +210,19 @@ QUANTUM_OPENSWITCH_OPS = {
 CLEANER_DATA_CONF = 'nova-clean.sh'
 CLEANER_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
 
+#rhel6/fedora libvirt policy
+#http://wiki.libvirt.org/page/SSHPolicyKitSetup
+LIBVIRT_POLICY_FN = "/etc/polkit-1/localauthority/50-local.d/50-libvirt-remote-access.pkla"
+LIBVIRT_POLICY_CONTENTS = """
+[libvirt Management Access]
+Identity=unix-group:libvirtd
+Action=org.libvirt.unix.manage
+ResultAny=yes
+ResultInactive=yes
+ResultActive=yes
+"""
+POLICY_DISTROS = [settings.RHEL6, settings.FEDORA16]
+
 #xenserver specific defaults
 XS_DEF_INTERFACE = 'eth1'
 XA_CONNECTION_ADDR = '169.254.0.1'
@@ -305,12 +318,9 @@ class NovaInstaller(comp.PythonInstallComponent):
         return pkgs
 
     def _get_symlinks(self):
-        links = dict()
-        for fn in self._get_config_files():
-            source_fn = self._get_target_config_name(fn)
-            links[source_fn] = sh.joinpths("/", "etc", "nova", fn)
+        links = comp.PythonInstallComponent._get_symlinks(self)
         source_fn = sh.joinpths(self.cfgdir, API_CONF)
-        links[source_fn] = sh.joinpths("/", "etc", "nova", API_CONF)
+        links[source_fn] = sh.joinpths(self._get_link_dir(), API_CONF)
         return links
 
     def _get_pips(self):
@@ -436,7 +446,17 @@ class NovaInstaller(comp.PythonInstallComponent):
     def configure(self):
         configs_made = comp.PythonInstallComponent.configure(self)
         self._generate_nova_conf()
-        return configs_made + 1
+        configs_made += 1
+        # TODO: maybe this should be a subclass that handles these differences
+        driver_canon = _canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
+        if (self.distro in POLICY_DISTROS) and driver_canon == virsh.VIRT_TYPE:
+            with sh.Rooted(True):
+                dirsmade = sh.mkdirslist(sh.dirname(LIBVIRT_POLICY_FN))
+                sh.write_file(LIBVIRT_POLICY_FN, LIBVIRT_POLICY_CONTENTS)
+            self.tracewriter.dir_made(*dirsmade)
+            self.tracewriter.cfg_write(LIBVIRT_POLICY_FN)
+            configs_made += 1
+        return configs_made
 
 
 class NovaRuntime(comp.PythonRuntime):
