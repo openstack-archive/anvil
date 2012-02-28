@@ -19,7 +19,6 @@ import re
 import tempfile
 import time
 
-from runnerbase import RunnerBase
 from devstack import date
 from devstack import exceptions as excp
 from devstack import log as logging
@@ -27,6 +26,8 @@ from devstack import settings
 from devstack import shell as sh
 from devstack import trace as tr
 from devstack import utils
+
+from devstack.runners import runnerbase as base
 
 LOG = logging.getLogger("devstack.runners.screen")
 
@@ -72,9 +73,9 @@ ROOT_GO = True
 SCREEN_RC = settings.RC_FN_TEMPL % ('screen')
 
 
-class ScreenRunner(RunnerBase):
+class ScreenRunner(base.RunnerBase):
     def __init__(self, cfg):
-        RunnerBase.__init__(self, cfg)
+        base.RunnerBase.__init__(self, cfg)
         self.socket_dir = sh.joinpths(tempfile.gettempdir(), SCREEN_SOCKET_DIR_NAME)
 
     def stop(self, component_name, name, tracedir):

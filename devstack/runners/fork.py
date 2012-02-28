@@ -22,12 +22,13 @@ import signal
 import sys
 import time
 
-from runnerbase import RunnerBase
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
 from devstack import trace as tr
+
+from devstack.runners import runnerbase as base
 
 LOG = logging.getLogger("devstack.runners.fork")
 
@@ -54,9 +55,9 @@ FORK_TEMPL = "%s.fork"
 ROOT_GO = True
 
 
-class ForkRunner(RunnerBase):
+class ForkRunner(base.RunnerBase):
     def __init__(self, cfg):
-        RunnerBase.__init__(self, cfg)
+        base.RunnerBase.__init__(self, cfg)
 
     def _stop_pid(self, pid):
         killed = False
