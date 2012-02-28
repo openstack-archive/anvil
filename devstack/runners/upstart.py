@@ -21,12 +21,11 @@ import subprocess
 
 from devstack import date
 from devstack import log as logging
+from devstack import runner as base
 from devstack import settings
 from devstack import shell as sh
 from devstack import trace as tr
 from devstack import utils
-
-from devstack.runners import runnerbase as base
 
 LOG = logging.getLogger("devstack.runners.upstart")
 
@@ -48,7 +47,6 @@ CONF_EXT = ".conf"
 
 #shared template
 UPSTART_CONF_TMPL = 'upstart.conf'
-# Keep track of what we've emitted in the current python session
 
 
 class UpstartRunner(base.RunnerBase):
@@ -71,11 +69,10 @@ class UpstartRunner(base.RunnerBase):
                 self.events.add(component_event)
         sh.unlink(trace_fn)
 
-    def configure(self, component_name, app_name, runtime_info, tracedir):
-        LOG.debug("Configure called for app:%s" % (app_name))
-        result = list()
-        result.append(self._do_upstart_configure(component_name, app_name, runtime_info))
-        return result
+    def configure(self, component_name, app_name, runtime_info):
+        LOG.debug("Configure called for app: %s" % (app_name))
+        self._do_upstart_configure(component_name, app_name, runtime_info)
+        return 1
 
     def _get_upstart_conf_params(self, component_name, program_name, *program_args):
         params = dict()

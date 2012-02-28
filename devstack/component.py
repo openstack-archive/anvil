@@ -405,8 +405,8 @@ class ProgramRuntime(ComponentBase):
             # Configure it with the given settings
             LOG.info("Configuring runner for program [%s]" % (app_name))
             runtime_info = (app_pth, app_dir, program_opts)
-            starter.configure(app_name, runtime_info, self.tracedir)
-            LOG.info("Configured runner for program [%s]" % (app_name))
+            cfg_am = starter.configure(self.component_name, app_name, runtime_info)
+            LOG.info("Configured %s files for runner for program [%s]" % (cfg_am, app_name))
 
     def start(self):
         # Select how we are going to start it

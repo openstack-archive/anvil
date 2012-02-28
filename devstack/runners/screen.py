@@ -22,12 +22,11 @@ import time
 from devstack import date
 from devstack import exceptions as excp
 from devstack import log as logging
+from devstack import runner as base
 from devstack import settings
 from devstack import shell as sh
 from devstack import trace as tr
 from devstack import utils
-
-from devstack.runners import runnerbase as base
 
 LOG = logging.getLogger("devstack.runners.screen")
 
@@ -77,6 +76,9 @@ class ScreenRunner(base.RunnerBase):
     def __init__(self, cfg):
         base.RunnerBase.__init__(self, cfg)
         self.socket_dir = sh.joinpths(tempfile.gettempdir(), SCREEN_SOCKET_DIR_NAME)
+
+    def configure(self, component_name, app_name, runtime_info):
+        return 0
 
     def stop(self, component_name, name, tracedir):
         fn_name = SCREEN_TEMPL % (name)

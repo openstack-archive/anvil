@@ -20,5 +20,11 @@ class RunnerBase(object):
     def __init__(self, cfg):
         self.cfg = cfg
 
-    def configure(self, component_name, app_name, runtime_info, tracedir):
-        return list()
+    def configure(self, component_name, app_name, runtime_info):
+        raise NotImplementedError()
+
+    def start(self, component_name, name, runtime_info, tracedir):
+        raise NotImplementedError()
+
+    def stop(self, component_name, name, trace_dir):
+        raise NotImplementedError()

@@ -24,11 +24,10 @@ import time
 
 from devstack import exceptions as excp
 from devstack import log as logging
+from devstack import runner as base
 from devstack import settings
 from devstack import shell as sh
 from devstack import trace as tr
-
-from devstack.runners import runnerbase as base
 
 LOG = logging.getLogger("devstack.runners.fork")
 
@@ -172,6 +171,9 @@ class ForkRunner(base.RunnerBase):
         for (k, v) in kvs.items():
             runtrace.trace(k, v)
         return tracefn
+
+    def configure(self, component_name, app_name, runtime_info):
+        return 0
 
     def start(self, component_name, name, runtime_info, tracedir):
         (program, appdir, program_args) = runtime_info
