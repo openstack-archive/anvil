@@ -221,18 +221,8 @@ def _gen_localrc(config, fn):
     sh.write_file(fn, contents)
 
 
-def _run_components(action_name, component_order, components, distro, root_dir, program_args):
-    LOG.info("Will run action [%s] using root directory [%s]" % (action_name, root_dir))
-    LOG.info("In the following order: %s" % ("->".join(component_order)))
-    config = common.get_config()
-    pkg_manager = common.get_packager(distro, program_args.get('keep_packages', True))
-    all_instances = _instanciate_components(action_name, components, distro, pkg_manager, config, root_dir)
-    _pre_run(action_name, root_dir, pkg_manager, config, component_order, all_instances)
-    LOG.info("Activating components required to complete action %s." % (action_name))
-    force = program_args.get('force', False)
-    start_time = time.time()
-    ordering = ACTION_MP[action_name]
-    for (start_msg, functor, end_msg) in ordering:
+def _run_instances(call_ordering, all_instances, component_order, force):
+    for (start_msg, functor, end_msg) in call_ordering:
         for c in component_order:
             instance = all_instances[c]
             if start_msg:
@@ -247,6 +237,39 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
                     raise
             if end_msg:
                 LOG.info(end_msg.format(name=c, result=result))
+
+
+def _run_preqs(root_action, component_order, components, distro, root_dir, program_args, pkg_manager, config):
+    force = program_args.get('force', False)
+    if root_action == settings.START:
+        instances = _instanciate_components(settings.INSTALL, components, distro, pkg_manager, config, root_dir)
+        adjusted_order = list()
+        for c in component_order:
+            instance = instances[c]
+            if not instance.is_installed():
+                adjusted_order.append(c)
+        _run_instances(ACTION_MP[settings.INSTALL], instances, adjusted_order, force)
+    elif root_action == settings.UNINSTALL:
+        instances = _instanciate_components(settings.STOP, components, distro, pkg_manager, config, root_dir)
+        adjusted_order = list()
+        for c in component_order:
+            instance = instances[c]
+            if instance.is_started():
+                adjusted_order.append(c)
+        _run_instances(ACTION_MP[settings.STOP], instances, adjusted_order, force)
+
+
+def _run_components(action_name, component_order, components, distro, root_dir, program_args):
+    LOG.info("Will run action [%s] using root directory [%s]" % (action_name, root_dir))
+    LOG.info("In the following order: %s" % ("->".join(component_order)))
+    config = common.get_config()
+    pkg_manager = common.get_packager(distro, program_args.get('keep_packages', True))
+    all_instances = _instanciate_components(action_name, components, distro, pkg_manager, config, root_dir)
+    _pre_run(action_name, root_dir, pkg_manager, config, component_order, all_instances)
+    LOG.info("Activating components required to complete action %s." % (action_name))
+    start_time = time.time()
+    _run_preqs(action_name, component_order, components, distro, root_dir, program_args, pkg_manager, config)
+    _run_instances(ACTION_MP[action_name], all_instances, component_order, program_args.get('force', False))
     end_time = time.time()
     total_time = (end_time - start_time)
     _post_run(action_name, root_dir, config, components.keys(), total_time)
