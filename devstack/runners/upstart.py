@@ -74,7 +74,7 @@ class UpstartRunner(base.RunnerBase):
         self._do_upstart_configure(component_name, app_name, runtime_info)
         return 1
 
-    def _get_upstart_conf_params(self, component_name, program_name, *program_args):
+    def _get_upstart_conf_params(self, component_name, app_pth, program_name, *program_args):
         params = dict()
         if self.cfg.getboolean('upstart', 'respawn'):
             params['RESPAWN'] = "respawn"
@@ -86,7 +86,7 @@ class UpstartRunner(base.RunnerBase):
         params['STOP_EVENT'] = self.cfg.get('upstart', 'stop_event')
         params['COMPONENT_START_EVENT'] = component_name + START_EVENT_SUFFIX
         params['COMPONENT_STOP_EVENT'] = component_name + STOP_EVENT_SUFFIX
-        params['PROGRAM_NAME'] = sh.shellquote(program_name)
+        params['PROGRAM_NAME'] = app_pth
         params['AUTHOR'] = settings.PROG_NICE_NAME
         if program_args:
             escaped_args = list()
@@ -99,7 +99,7 @@ class UpstartRunner(base.RunnerBase):
         return params
 
     def _do_upstart_configure(self, component_name, program_name, runtime_info):
-        (_, _, program_args) = runtime_info
+        (app_pth, app_dir, program_args) = runtime_info
         root_fn = program_name + CONF_EXT
         # TODO FIXME symlinks won't work. Need to copy the files there.
         # https://bugs.launchpad.net/upstart/+bug/665022
@@ -109,7 +109,7 @@ class UpstartRunner(base.RunnerBase):
             return
         LOG.debug("Loading upstart template to be used by: %s" % (cfg_fn))
         (_, contents) = utils.load_template('general', UPSTART_CONF_TMPL)
-        params = self._get_upstart_conf_params(component_name, program_name, *program_args)
+        params = self._get_upstart_conf_params(component_name, app_pth, program_name, *program_args)
         adjusted_contents = utils.param_replace(contents, params)
         LOG.debug("Generated up start config for %s: %s" % (program_name, adjusted_contents))
         with sh.Rooted(True):
