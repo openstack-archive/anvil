@@ -87,10 +87,6 @@
             "version": "1.4*",
             "removable": true
         },
-        "python-paste": {
-            "version": "1.7.4*",
-            "removable": true
-        },
         "python-webob1.0": {
             "version": "1.0*",
             "removable": true,

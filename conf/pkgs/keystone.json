@@ -92,10 +92,6 @@
             "version": "2.2*",
             "removable": true
         },
-        "python-paste-script": {
-            "version": "1.7*",
-            "removable": true
-        },
         "python-prettytable": {
             "version": "0.5*",
             "removable": true,
@@ -105,10 +101,6 @@
         },
         "MySQL-python": {
             "version": "1.2*",
-            "removable": true
-        },
-        "python-paste": {
-            "version": "1.7.4*",
             "removable": true
         },
         "sqlite": {
