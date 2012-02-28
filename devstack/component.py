@@ -482,6 +482,9 @@ class EmptyRuntime(ComponentBase):
     def __init__(self, component_name, *args, **kargs):
         ComponentBase.__init__(self, component_name, *args, **kargs)
 
+    def configure(self):
+        return 0
+
     def pre_start(self):
         pass
 
