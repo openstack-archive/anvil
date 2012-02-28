@@ -149,9 +149,6 @@ def _pre_run(action_name, root_dir, pkg_manager, config, component_order, all_in
             LOG.info("Loaded [%s] settings from rc file [%s]" % (am_loaded, _RC_FILE))
     except IOError:
         LOG.warn('Error reading rc file located at [%s]. Skipping loading it.' % (_RC_FILE))
-    if action_name == settings.INSTALL:
-        if root_dir:
-            sh.mkdir(root_dir)
     LOG.info("Verifying that the components are ready to rock-n-roll.")
     for component in component_order:
         base_inst = all_instances[component]
@@ -162,14 +159,6 @@ def _pre_run(action_name, root_dir, pkg_manager, config, component_order, all_in
         base_inst.warm_configs()
     if action_name in _RC_FILE_MAKE_ACTIONS and not loaded_env:
         _gen_localrc(config, _RC_FILE)
-
-
-def _post_run(action_name, root_dir, config, components, time_taken):
-    LOG.info("It took (%s) to complete action [%s]" % (common.format_secs_taken(time_taken), action_name))
-    _print_cfgs(config, action_name)
-    if action_name == settings.UNINSTALL:
-        if root_dir:
-            sh.rmdir(root_dir)
 
 
 def _print_cfgs(config_obj, action):
@@ -240,8 +229,7 @@ def _run_instances(call_ordering, all_instances, component_order, force):
                 LOG.info(end_msg.format(name=c, result=result))
 
 
-def _run_preqs(root_action, component_order, components, distro, root_dir, program_args, pkg_manager, config):
-    force = program_args.get('force', False)
+def _run_preqs(root_action, component_order, components, distro, root_dir, program_args, config, pkg_manager):
     if root_action == settings.START:
         preq_action = settings.INSTALL
         instances = _instanciate_components(preq_action, components, distro, pkg_manager, config, root_dir)
@@ -251,8 +239,7 @@ def _run_preqs(root_action, component_order, components, distro, root_dir, progr
             if not instance.is_installed():
                 adjusted_order.append(c)
         if adjusted_order:
-            LOG.info("Activating prerequisite action [%s] on %s components." % (preq_action, len(adjusted_order)))
-            _run_instances(ACTION_MP[preq_action], instances, _apply_reverse(preq_action, adjusted_order), force)
+            _run_components(preq_action, adjusted_order, components, distro, root_dir, program_args, config, pkg_manager)
     elif root_action == settings.UNINSTALL:
         preq_action = settings.STOP
         instances = _instanciate_components(preq_action, components, distro, pkg_manager, config, root_dir)
@@ -262,8 +249,7 @@ def _run_preqs(root_action, component_order, components, distro, root_dir, progr
             if instance.is_started():
                 adjusted_order.append(c)
         if adjusted_order:
-            LOG.info("Activating prerequisite action [%s] on %s components." % (preq_action, len(adjusted_order)))
-            _run_instances(ACTION_MP[preq_action], instances, _apply_reverse(preq_action, adjusted_order), force)
+            _run_components(preq_action, adjusted_order, components, distro, root_dir, program_args, config, pkg_manager)
 
 
 def _apply_reverse(action_name, component_order):
@@ -273,19 +259,12 @@ def _apply_reverse(action_name, component_order):
     return adjusted_order
 
 
-def _run_components(action_name, component_order, components, distro, root_dir, program_args):
-    LOG.info("Will run action [%s] using root directory [%s]" % (action_name, root_dir))
-    config = common.get_config()
-    pkg_manager = common.get_packager(distro, program_args.get('keep_packages', True))
+def _run_components(action_name, component_order, components, distro, root_dir, program_args, config, pkg_manager):
+    _run_preqs(action_name, component_order, components, distro, root_dir, program_args, config, pkg_manager)
+    LOG.info("Activating components required to complete action [%s]" % (action_name))
     all_instances = _instanciate_components(action_name, components, distro, pkg_manager, config, root_dir)
     _pre_run(action_name, root_dir, pkg_manager, config, component_order, all_instances)
-    LOG.info("Activating components required to complete action [%s]" % (action_name))
-    start_time = time.time()
-    _run_preqs(action_name, component_order, components, distro, root_dir, program_args, pkg_manager, config)
     _run_instances(ACTION_MP[action_name], all_instances, _apply_reverse(action_name, component_order), program_args.get('force', False))
-    end_time = time.time()
-    total_time = (end_time - start_time)
-    _post_run(action_name, root_dir, config, components.keys(), total_time)
 
 
 def run(args):
@@ -339,7 +318,12 @@ def run(args):
             components[c] = ref_components.get(c)
 
     LOG.info("Starting action [%s] on %s for distro [%s]" % (action, date.rcf8222date(), distro))
-    _run_components(action, component_order, components, distro, rootdir, args)
-    LOG.info("Finished action [%s] on %s" % (action, date.rcf8222date()))
+    start_time = time.time()
+    config = common.get_config()
+    pkg_manager = common.get_packager(distro, args.pop('keep_packages', True))
+    _run_components(action, component_order, components, distro, rootdir, args, config, pkg_manager)
+    time_taken = (time.time() - start_time)
+    LOG.info("It took (%s) to complete action [%s]" % (common.format_secs_taken(time_taken), action))
+    _print_cfgs(config, action)
 
     return True
