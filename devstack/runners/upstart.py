@@ -47,18 +47,31 @@ CONF_EXT = ".conf"
 
 #shared template
 UPSTART_CONF_TMPL = 'upstart.conf'
+# Keep track of what we've emitted in the current python session
 
 
 class UpstartRunner(RunnerBase):
     def __init__(self, cfg):
         RunnerBase.__init__(self, cfg)
+        self.events = set()
 
-    def stop(self, name, trace_dir):
-        msg = "Not implemented yet"
-        raise NotImplementedError(msg)
+    def stop(self, component_name, name, tracedir):
+        fn_name = UPSTART_TEMPL % (name)
+        trace_fn = tr.trace_fn(tracedir, fn_name)
+        with sh.Rooted(True):
+            # Emit the start, keep track and only do one per component name
+            component_event = component_name + STOP_EVENT_SUFFIX
+            if component_event in self.events:
+                LOG.debug("Already emitted event:%s" % (component_event))
+            else:
+                LOG.info("About to emit event %s" % (component_event))
+                rc = subprocess.call(["/sbin/initctl", "emit", component_event])
+                LOG.info("Emit returned %s" % (rc))
+                self.events.add(component_event)
+        sh.unlink(trace_fn)
 
     def configure(self, component_name, app_name, runtime_info, tracedir):
-        LOG.info("Configure called for app:%s" % (app_name))
+        LOG.debug("Configure called for app:%s" % (app_name))
         result = list()
         result.append(self._do_upstart_configure(component_name, app_name, runtime_info))
         return result
@@ -106,7 +119,7 @@ class UpstartRunner(RunnerBase):
             sh.chmod(cfg_fn, 0666)
         return cfg_fn
 
-    def _start(self, name, program, program_args, tracedir):
+    def _start(self, component_name, name, program, program_args, tracedir):
         fn_name = UPSTART_TEMPL % (name)
         tracefn = tr.touch_trace(tracedir, fn_name)
         runtrace = tr.Trace(tracefn)
@@ -115,12 +128,16 @@ class UpstartRunner(RunnerBase):
         runtrace.trace(ARGS, json.dumps(program_args))
         with sh.Rooted(True):
             # Emit the start, keep track and only do one per component name
-            component_event = name + START_EVENT_SUFFIX
-            LOG.info("About to emit event %s" % (component_event))
-            rc = subprocess.call(["/sbin/initctl", "emit", component_event])
-            LOG.error("Emit returned %s" % (rc))
+            component_event = component_name + START_EVENT_SUFFIX
+            if component_event in self.events:
+                LOG.debug("Already emitted event:%s" % (component_event))
+            else:
+                LOG.info("About to emit event %s" % (component_event))
+                rc = subprocess.call(["/sbin/initctl", "emit", component_event])
+                LOG.debug("Emit returned %s" % (rc))
+                self.events.add(component_event)
         return tracefn
 
-    def start(self, name, runtime_info, tracedir):
+    def start(self, component_name, name, runtime_info, tracedir):
         (program, appdir, program_args) = runtime_info
-        return self._start(name, program, program_args, tracedir)
+        return self._start(component_name, name, program, program_args, tracedir)

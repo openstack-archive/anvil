@@ -428,7 +428,7 @@ class ProgramRuntime(ComponentBase):
             #start it with the given settings
             LOG.debug("Starting [%s] with options [%s] with runner type [%s]" % (app_name, ", ".join(program_opts), run_type))
             runtime_info = (app_pth, app_dir, program_opts)
-            info_fn = starter.start(app_name, runtime_info, self.tracedir)
+            info_fn = starter.start(self.component_name, app_name, runtime_info, self.tracedir)
             fns.append(info_fn)
             LOG.debug("Started %s, details are in %s" % (app_name, info_fn))
             #this trace is used to locate details about what to stop
@@ -458,7 +458,7 @@ class ProgramRuntime(ComponentBase):
                 LOG.debug("Stopping %s of run type %s" % (name, runtype))
                 #create an instance of the killer class and attempt to stop
                 killer = killcls(self.cfg)
-                killer.stop(name, self.tracedir)
+                killer.stop(self.component_name, name, self.tracedir)
                 killedam += 1
             else:
                 msg = "Could not figure out which class to use to stop (%s, %s)" % (name, fn)

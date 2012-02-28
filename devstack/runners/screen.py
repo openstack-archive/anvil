@@ -77,7 +77,7 @@ class ScreenRunner(RunnerBase):
         RunnerBase.__init__(self, cfg)
         self.socket_dir = sh.joinpths(tempfile.gettempdir(), SCREEN_SOCKET_DIR_NAME)
 
-    def stop(self, name, tracedir):
+    def stop(self, component_name, name, tracedir):
         fn_name = SCREEN_TEMPL % (name)
         trace_fn = tr.trace_fn(tracedir, fn_name)
         session_id = self._find_session(name, trace_fn)
@@ -226,7 +226,7 @@ class ScreenRunner(RunnerBase):
         self._do_start(session_name, name, full_cmd)
         return tracefn
 
-    def start(self, name, runtime_info, tracedir):
+    def start(self, component_name, name, runtime_info, tracedir):
         (program, _, program_args) = runtime_info
         if not sh.isdir(self.socket_dir):
             self._do_socketdir_init(self.socket_dir, SCREEN_SOCKET_PERM)
