@@ -14,9 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License..
 
-import time
-
-from devstack import date
 from devstack import env_rc
 from devstack import exceptions as excp
 from devstack import log as logging
@@ -28,21 +25,11 @@ from devstack.progs import common
 
 LOG = logging.getLogger("devstack.progs.actions")
 
-# This is used to map an action to a useful string for
-# the welcome display
-_WELCOME_MAP = {
-    settings.INSTALL: "INSTALLER",
-    settings.UNINSTALL: "UNINSTALLER",
-    settings.START: "STARTER",
-    settings.STOP: "STOPPER",
-}
-
 # For actions in this list we will reverse the component order
 _REVERSE_ACTIONS = [settings.UNINSTALL, settings.STOP]
 
 # For these actions we will attempt to make an rc file if it does not exist
 _RC_FILE_MAKE_ACTIONS = [settings.INSTALL, settings.START]
-_RC_FILE = sh.abspth(settings.OSRC_FN)
 
 # The order of which uninstalls happen + message of what is happening (before and after)
 UNINSTALL_ORDERING = [
@@ -157,6 +144,8 @@ class ActionRunner(object):
         self.force = kargs.get('force', False)
         self.ignore_deps = kargs.get('ignore_deps', False)
         self.ref_components = kargs.get("ref_components")
+        self.rc_file = sh.abspth(settings.OSRC_FN)
+        self.gen_rc = action in _RC_FILE_MAKE_ACTIONS
 
     def _get_components(self):
         components = self.components
@@ -215,18 +204,20 @@ class ActionRunner(object):
             preq_runner = ActionRunner(self.distro, preq_action,
                                     self.directory, self.cfg, self.pkg_manager,
                                     components=preq_components, **self.kargs)
+            preq_runner.rc_file = self.rc_file
             preq_runner.run()
 
     def _pre_run(self, instances, component_order):
-        loaded_env = False
-        try:
-            if sh.isfile(_RC_FILE):
-                LOG.info("Attempting to load rc file at [%s] which has your environment settings." % (_RC_FILE))
-                am_loaded = env_rc.RcLoader().load(_RC_FILE)
-                loaded_env = True
-                LOG.info("Loaded [%s] settings from rc file [%s]" % (am_loaded, _RC_FILE))
-        except IOError:
-            LOG.warn('Error reading rc file located at [%s]. Skipping loading it.' % (_RC_FILE))
+        loaded_rc_file = False
+        if self.rc_file:
+            try:
+                if sh.isfile(self.rc_file):
+                    LOG.info("Attempting to load rc file at [%s] which has your environment settings." % (self.rc_file))
+                    am_loaded = env_rc.RcLoader().load(self.rc_file)
+                    LOG.info("Loaded [%s] settings from rc file [%s]" % (am_loaded, self.rc_file))
+                    loaded_rc_file = True
+            except IOError:
+                LOG.warn('Error reading rc file located at [%s]. Skipping loading it.' % (self.rc_file))
         LOG.info("Verifying that the components are ready to rock-n-roll.")
         for component in component_order:
             inst = instances[component]
@@ -235,8 +226,13 @@ class ActionRunner(object):
         for component in component_order:
             inst = instances[component]
             inst.warm_configs()
-        if self.action in _RC_FILE_MAKE_ACTIONS and not loaded_env:
-            self._gen_localrc(_RC_FILE)
+        if self.gen_rc and not loaded_rc_file and self.rc_file:
+            LOG.info("Generating a file at [%s] that will contain your environment settings." % (self.rc_file))
+            creator = env_rc.RcGenerator(self.cfg)
+            contents = creator.generate()
+            sh.write_file(self.rc_file, contents)
+        if self.rc_file:
+            self.rc_file = None
 
     def _run_instances(self, instances, component_order):
         component_order = self._apply_reverse(component_order)
@@ -263,12 +259,6 @@ class ActionRunner(object):
             adjusted_order.reverse()
         return adjusted_order
 
-    def _gen_localrc(self, fn):
-        LOG.info("Generating a file at [%s] that will contain your environment settings." % (fn))
-        creator = env_rc.RcGenerator(self.cfg)
-        contents = creator.generate()
-        sh.write_file(fn, contents)
-
     def _start(self, components, component_order):
         LOG.info("Activating components required to complete action [%s]" % (self.action))
         instances = self._instanciate_components(components)
@@ -279,59 +269,3 @@ class ActionRunner(object):
     def run(self):
         (components, component_order) = self._order_components(self._get_components())
         self._start(self._inject_references(components), component_order)
-
-
-def _dump_cfgs(config_obj, action):
-
-    def item_format(key, value):
-        return "\t%s=%s" % (str(key), str(value))
-
-    def map_print(mp):
-        for key in sorted(mp.keys()):
-            value = mp.get(key)
-            LOG.info(item_format(key, value))
-
-    passwords_gotten = config_obj.pws
-    full_cfgs = config_obj.configs_fetched
-    db_dsns = config_obj.db_dsns
-    if passwords_gotten or full_cfgs or db_dsns:
-        LOG.info("After action [%s] your settings which were created or read are:" % (action))
-        if passwords_gotten:
-            LOG.info("Passwords:")
-            map_print(passwords_gotten)
-        if full_cfgs:
-            filtered = dict((k, v) for (k, v) in full_cfgs.items() if k not in passwords_gotten)
-            if filtered:
-                LOG.info("Configs:")
-                map_print(filtered)
-        if db_dsns:
-            LOG.info("Data source names:")
-            map_print(db_dsns)
-
-
-def run(args):
-    (distro, platform) = utils.determine_distro()
-    if distro is None:
-        print("Unsupported platform " + utils.color_text(platform, "red") + "!")
-        return False
-    action = args.pop("action", "").strip().lower()
-    if not (action in settings.ACTIONS):
-        print(utils.color_text("No valid action specified!", "red"))
-        return False
-    rootdir = args.pop("dir")
-    if not rootdir:
-        print(utils.color_text("No root directory specified!", "red"))
-        return False
-    (rep, maxlen) = utils.welcome(_WELCOME_MAP.get(action))
-    print(utils.center_text("Action Runner", rep, maxlen))
-    #here on out we should be using the logger (and not print)
-    start_time = time.time()
-    config = common.get_config()
-    pkg_manager = common.get_packager(distro, args.pop('keep_packages', True))
-    components = utils.parse_components(args.pop("components"))
-    runner = ActionRunner(distro, action, rootdir, config, pkg_manager, components=components, **args)
-    LOG.info("Starting action [%s] on %s for distro [%s]" % (action, date.rcf8222date(), distro))
-    runner.run()
-    LOG.info("It took (%s) to complete action [%s]" % (common.format_secs_taken((time.time() - start_time)), action))
-    _dump_cfgs(config, action)
-    return True
