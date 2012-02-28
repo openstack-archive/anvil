@@ -589,6 +589,13 @@ def _goodbye_header(worked):
 < You have been borked. >
  -----------------------
 ''')
+    potentials_fails.append(r'''
+ __________________
+/ We used to dream  \
+| of living in a    |
+\ corridor!         /
+ -------------------
+''')
     if not worked:
         msg = random.choice(potentials_fails).strip("\n\r")
         colored_msg = _color_blob(msg, 'red')
