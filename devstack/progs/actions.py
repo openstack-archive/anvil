@@ -71,6 +71,11 @@ UNINSTALL_ORDERING = [
 # The order of which starts happen + message of what is happening (before and after)
 STARTS_ORDERING = [
      (
+        "Configuring runner for {name}.",
+        (lambda instance: (instance.configure())),
+        None,
+     ),
+     (
         "Pre-starting {name}.",
         (lambda instance: (instance.pre_start())),
         None,
@@ -78,7 +83,7 @@ STARTS_ORDERING = [
      (
         "Starting {name}.",
         (lambda instance: (instance.start())),
-        "Check {result} for traces of what happened.",
+        "Started {result} applications.",
      ),
      (
         "Post-starting {name}.",

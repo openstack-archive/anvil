@@ -391,19 +391,12 @@ class ProgramRuntime(ComponentBase):
 
     def post_start(self):
         pass
-
-    def start(self):
-        #select how we are going to start it
-        run_type = utils.fetch_run_type(self.cfg)
-        startercls = self._getstartercls(run_type)
+    
+    def configure(self):
+        # First make a pass and make sure all runtime (e.g. upstart) config files are in place....
+        startercls = self._getstartercls(utils.fetch_run_type(self.cfg))
         starter = startercls(self.cfg)
-        #start all apps
-        #this fns list will have info about what was started
-        fns = list()
-        apps = self._get_apps_to_start()
-        # First make a pass and make sure all runtime (e.g. upstart) config
-        # files are in place
-        for app_info in apps:
+        for app_info in self._get_apps_to_start():
             #extract needed keys
             app_name = app_info["name"]
             app_pth = app_info.get("path", app_name)
@@ -411,37 +404,43 @@ class ProgramRuntime(ComponentBase):
             #adjust the program options now that we have real locations
             program_opts = utils.param_replace_list(self._get_app_options(app_name), self._get_param_map(app_name))
             #configure it with the given settings
-            LOG.debug("Configure [%s] with options [%s] with runner type [%s]" % (app_name, ", ".join(program_opts), run_type))
+            LOG.info("Configuring runner for program [%s]" % (app_name))
             runtime_info = (app_pth, app_dir, program_opts)
             starter.configure(app_name, runtime_info, self.tracedir)
-            LOG.debug("Configured %s" % (app_name))
-        # Make a second pass to do the actual starting
-        for app_info in apps:
-            #extract needed keys
+            LOG.info("Configured runner for program [%s]" % (app_name))
+
+    def start(self):
+        startercls = self._getstartercls(utils.fetch_run_type(self.cfg))
+        starter = startercls(self.cfg)
+        LOG.debug("Created started using class %s for component %s" % (startercls, self.component_name))
+        # Start all apps
+        am_started = 0
+        for app_info in self._get_apps_to_start():
             app_name = app_info["name"]
             app_pth = app_info.get("path", app_name)
             app_dir = app_info.get("app_dir", self.appdir)
-            #adjust the program options now that we have real locations
+            # Adjust the program options now that we have real locations
             program_opts = utils.param_replace_list(self._get_app_options(app_name), self._get_param_map(app_name))
-            #start it with the given settings
-            LOG.debug("Starting [%s] with options [%s] with runner type [%s]" % (app_name, ", ".join(program_opts), run_type))
+            # Start it with the given settings
+            LOG.info("Starting [%s] with options [%s]" % (app_name, ", ".join(program_opts)))
             runtime_info = (app_pth, app_dir, program_opts)
             info_fn = starter.start(app_name, runtime_info, self.tracedir)
-            fns.append(info_fn)
-            LOG.debug("Started %s, details are in %s" % (app_name, info_fn))
-            #this trace is used to locate details about what to stop
+            LOG.info("Started %s, details are in %s" % (app_name, info_fn))
+            # This trace is used to locate details about what to stop
             self.tracewriter.started_info(app_name, info_fn)
-        return fns
+            am_started += 1
+        return am_started
 
     def stop(self):
-        #we can only stop what has a started trace
+        # We can only stop what has a started trace
         start_traces = self.starttracereader.apps_started()
-        killedam = 0
+        killed_am = 0
+        killers = dict()
         for mp in start_traces:
-            #extract the apps name and where its trace is
+            # Extract the apps name and where its trace is
             fn = mp['trace_fn']
             name = mp['name']
-            #figure out which class will stop it
+            # Figure out which class will stop it
             contents = tr.parse_fn(fn)
             killcls = None
             runtype = None
@@ -450,23 +449,25 @@ class ProgramRuntime(ComponentBase):
                     runtype = action
                     killcls = self._getstoppercls(runtype)
                     break
-            #did we find a class that can do it?
+            # Did we find a class that can do it?
             if killcls:
-                #we can try to stop it
                 LOG.debug("Stopping %s of run type %s" % (name, runtype))
-                #create an instance of the killer class and attempt to stop
-                killer = killcls(self.cfg)
+                if killcls in killers:
+                    killer = killers[killcls]
+                else:
+                    killer = killcls(self.cfg)
+                    killers[killcls] = killer
                 killer.stop(name, self.tracedir)
-                killedam += 1
+                killed_am += 1
             else:
                 msg = "Could not figure out which class to use to stop (%s, %s)" % (name, fn)
                 raise excp.StopException(msg)
-        #if we got rid of them all get rid of the trace
-        if killedam == len(start_traces):
+        # If we got rid of them all get rid of the trace
+        if killed_am == len(start_traces):
             fn = self.starttracereader.trace_fn
             LOG.debug("Deleting trace file %s" % (fn))
             sh.unlink(fn)
-        return killedam
+        return killed_am
 
     def status(self):
         return STATUS_UNKNOWN
