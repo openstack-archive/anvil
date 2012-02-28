@@ -242,25 +242,27 @@ def _run_instances(call_ordering, all_instances, component_order, force):
 def _run_preqs(root_action, component_order, components, distro, root_dir, program_args, pkg_manager, config):
     force = program_args.get('force', False)
     if root_action == settings.START:
-        instances = _instanciate_components(settings.INSTALL, components, distro, pkg_manager, config, root_dir)
+        preq_action = settings.INSTALL
+        instances = _instanciate_components(preq_action, components, distro, pkg_manager, config, root_dir)
         adjusted_order = list()
         for c in component_order:
             instance = instances[c]
             if not instance.is_installed():
                 adjusted_order.append(c)
         if adjusted_order:
-            LOG.info("Activating prerequisite action %s on %s components." % (settings.INSTALL, len(adjusted_order)))
-            _run_instances(ACTION_MP[settings.INSTALL], instances, adjusted_order, force)
+            LOG.info("Activating prerequisite action [%s] on %s components." % (preq_action, len(adjusted_order)))
+            _run_instances(ACTION_MP[preq_action], instances, adjusted_order, force)
     elif root_action == settings.UNINSTALL:
-        instances = _instanciate_components(settings.STOP, components, distro, pkg_manager, config, root_dir)
+        preq_action = settings.STOP
+        instances = _instanciate_components(preq_action, components, distro, pkg_manager, config, root_dir)
         adjusted_order = list()
         for c in component_order:
             instance = instances[c]
             if instance.is_started():
                 adjusted_order.append(c)
         if adjusted_order:
-            LOG.info("Activating prerequisite action %s on %s components." % (settings.STOP, len(adjusted_order)))
-            _run_instances(ACTION_MP[settings.STOP], instances, adjusted_order, force)
+            LOG.info("Activating prerequisite action [%s] on %s components." % (preq_action, len(adjusted_order)))
+            _run_instances(ACTION_MP[preq_action], instances, adjusted_order, force)
 
 
 def _run_components(action_name, component_order, components, distro, root_dir, program_args):
