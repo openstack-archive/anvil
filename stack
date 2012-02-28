@@ -39,7 +39,7 @@ from devstack import utils
 from devstack.progs import actions
 from devstack.progs import common
 
-LOG = logging.getLogger("devstack.progs.actions")
+LOG = logging.getLogger("devstack.stack")
 
 # This is used to map an action to a useful string for
 # the welcome display
