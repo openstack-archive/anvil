@@ -80,7 +80,7 @@ class ForkRunner(base.RunnerBase):
                     time.sleep(SLEEP_TIME)
         return (killed, attempts)
 
-    def stop(self, name, trace_dir):
+    def stop(self, component_name, name, trace_dir):
         with sh.Rooted(ROOT_GO):
             if not trace_dir or not sh.isdir(trace_dir):
                 msg = "No trace directory found from which to stop %s" % (name)
@@ -173,7 +173,7 @@ class ForkRunner(base.RunnerBase):
             runtrace.trace(k, v)
         return tracefn
 
-    def start(self, name, runtime_info, tracedir):
+    def start(self, component_name, name, runtime_info, tracedir):
         (program, appdir, program_args) = runtime_info
         fn_name = FORK_TEMPL % (name)
         (pidfile, stderrfn, stdoutfn) = self._form_file_names(tracedir, fn_name)

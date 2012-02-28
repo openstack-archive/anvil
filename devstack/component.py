@@ -410,9 +410,9 @@ class ProgramRuntime(ComponentBase):
             LOG.info("Configured runner for program [%s]" % (app_name))
 
     def start(self):
+        # Select how we are going to start it
         startercls = self._getstartercls(utils.fetch_run_type(self.cfg))
         starter = startercls(self.cfg)
-        LOG.debug("Created started using class %s for component %s" % (startercls, self.component_name))
         # Start all apps
         am_started = 0
         for app_info in self._get_apps_to_start():
@@ -424,9 +424,9 @@ class ProgramRuntime(ComponentBase):
             # Start it with the given settings
             LOG.info("Starting [%s] with options [%s]" % (app_name, ", ".join(program_opts)))
             runtime_info = (app_pth, app_dir, program_opts)
-            info_fn = starter.start(app_name, runtime_info, self.tracedir)
-            LOG.info("Started %s, details are in %s" % (app_name, info_fn))
             # This trace is used to locate details about what to stop
+            info_fn = starter.start(self.component_name, app_name, runtime_info, self.tracedir)
+            LOG.info("Started [%s] details are in [%s]" % (app_name, info_fn))
             self.tracewriter.started_info(app_name, info_fn)
             am_started += 1
         return am_started
@@ -457,16 +457,15 @@ class ProgramRuntime(ComponentBase):
                 else:
                     killer = killcls(self.cfg)
                     killers[killcls] = killer
-                killer.stop(name, self.tracedir)
+                killer.stop(self.component_name, name, self.tracedir)
                 killed_am += 1
             else:
                 msg = "Could not figure out which class to use to stop (%s, %s)" % (name, fn)
                 raise excp.StopException(msg)
         # If we got rid of them all get rid of the trace
         if killed_am == len(start_traces):
-            fn = self.starttracereader.trace_fn
-            LOG.debug("Deleting trace file %s" % (fn))
-            sh.unlink(fn)
+            LOG.debug("Deleting trace file %s" % (self.starttracereader.trace_fn))
+            sh.unlink(self.starttracereader.trace_fn)
         return killed_am
 
     def status(self):

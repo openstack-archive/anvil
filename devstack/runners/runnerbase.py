@@ -20,5 +20,5 @@ class RunnerBase(object):
     def __init__(self, cfg):
         self.cfg = cfg
 
-    def configure(self, app_name, runtime_info, tracedir):
+    def configure(self, component_name, app_name, runtime_info, tracedir):
         return list()
