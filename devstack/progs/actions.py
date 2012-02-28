@@ -138,30 +138,150 @@ ACTION_MP = {
     settings.UNINSTALL: UNINSTALL_ORDERING,
 }
 
-
-def _pre_run(action_name, root_dir, pkg_manager, config, component_order, all_instances):
-    loaded_env = False
-    try:
-        if sh.isfile(_RC_FILE):
-            LOG.info("Attempting to load rc file at [%s] which has your environment settings." % (_RC_FILE))
-            am_loaded = env_rc.RcLoader().load(_RC_FILE)
-            loaded_env = True
-            LOG.info("Loaded [%s] settings from rc file [%s]" % (am_loaded, _RC_FILE))
-    except IOError:
-        LOG.warn('Error reading rc file located at [%s]. Skipping loading it.' % (_RC_FILE))
-    LOG.info("Verifying that the components are ready to rock-n-roll.")
-    for component in component_order:
-        base_inst = all_instances[component]
-        base_inst.verify()
-    LOG.info("Warming up your component configurations (ie so you won't be prompted later)")
-    for component in component_order:
-        base_inst = all_instances[component]
-        base_inst.warm_configs()
-    if action_name in _RC_FILE_MAKE_ACTIONS and not loaded_env:
-        _gen_localrc(config, _RC_FILE)
+# These actions must have there prerequisite action accomplished (if determined by the boolean lambda to be needed)
+PREQ_ACTIONS = {
+    settings.START: ((lambda instance: (not instance.is_installed())), settings.INSTALL),
+    settings.UNINSTALL: ((lambda instance: (instance.is_started())), settings.STOP),
+}
 
 
-def _print_cfgs(config_obj, action):
+class ActionRunner(object):
+    def __init__(self, distro, action, directory, config, pkg_manager, **kargs):
+        self.distro = distro
+        self.action = action
+        self.directory = directory
+        self.cfg = config
+        self.pkg_manager = pkg_manager
+        self.kargs = kargs
+        self.components = kargs.pop("components")
+        self.force = kargs.get('force', False)
+        self.ignore_deps = kargs.get('ignore_deps', False)
+        self.ref_components = kargs.get("ref_components")
+
+    def _get_components(self):
+        components = self.components
+        if not components:
+            components = common.get_default_components(self.distro)
+            LOG.info("Activating default components [%s]" % (", ".join(sorted(components.keys()))))
+        else:
+            LOG.info("Activating components [%s]" % (", ".join(sorted(components.keys()))))
+        return components
+
+    def _order_components(self, components):
+        adjusted_components = dict(components)
+        if self.ignore_deps:
+            return (adjusted_components, list(components.keys()))
+        all_components = common.get_components_deps(self.action, components, self.distro, self.directory)
+        component_diff = set(all_components.keys()).difference(components.keys())
+        if component_diff:
+            LOG.info("Having to activate dependent components: [%s]" % (", ".join(sorted(component_diff))))
+            for new_component in component_diff:
+                adjusted_components[new_component] = list()
+        return (adjusted_components, utils.get_components_order(all_components))
+
+    def _inject_references(self, components):
+        ref_components = utils.parse_components(self.ref_components)
+        adjusted_components = dict(components)
+        for c in ref_components.keys():
+            if c not in components:
+                adjusted_components[c] = ref_components.get(c)
+        return adjusted_components
+
+    def _instanciate_components(self, components):
+        all_instances = dict()
+        for component in components.keys():
+            cls = common.get_action_cls(self.action, component, self.distro)
+            instance = cls(instances=all_instances,
+                                  distro=self.distro,
+                                  packager=self.pkg_manager,
+                                  config=self.cfg,
+                                  root=self.directory,
+                                  opts=components.get(component, list()))
+            all_instances[component] = instance
+        return all_instances
+
+    def _run_preqs(self, components, component_order):
+        if not (self.action in PREQ_ACTIONS):
+            return
+        (check_functor, preq_action) = PREQ_ACTIONS[self.action]
+        instances = self._instanciate_components(components)
+        preq_components = dict()
+        for c in component_order:
+            instance = instances[c]
+            if check_functor(instance):
+                preq_components[c] = components[c]
+        if preq_components:
+            LOG.info("Having to activate prerequisite action [%s] for %s components." % (preq_action, len(preq_components)))
+            preq_runner = ActionRunner(self.distro, preq_action,
+                                    self.directory, self.cfg, self.pkg_manager,
+                                    components=preq_components, **self.kargs)
+            preq_runner.run()
+
+    def _pre_run(self, instances, component_order):
+        loaded_env = False
+        try:
+            if sh.isfile(_RC_FILE):
+                LOG.info("Attempting to load rc file at [%s] which has your environment settings." % (_RC_FILE))
+                am_loaded = env_rc.RcLoader().load(_RC_FILE)
+                loaded_env = True
+                LOG.info("Loaded [%s] settings from rc file [%s]" % (am_loaded, _RC_FILE))
+        except IOError:
+            LOG.warn('Error reading rc file located at [%s]. Skipping loading it.' % (_RC_FILE))
+        LOG.info("Verifying that the components are ready to rock-n-roll.")
+        for component in component_order:
+            inst = instances[component]
+            inst.verify()
+        LOG.info("Warming up your component configurations (ie so you won't be prompted later)")
+        for component in component_order:
+            inst = instances[component]
+            inst.warm_configs()
+        if self.action in _RC_FILE_MAKE_ACTIONS and not loaded_env:
+            self._gen_localrc(_RC_FILE)
+
+    def _run_instances(self, instances, component_order):
+        component_order = self._apply_reverse(component_order)
+        LOG.info("Running in the following order: %s" % ("->".join(component_order)))
+        for (start_msg, functor, end_msg) in ACTION_MP[self.action]:
+            for c in component_order:
+                instance = instances[c]
+                if start_msg:
+                    LOG.info(start_msg.format(name=c))
+                result = None
+                try:
+                    result = functor(instance)
+                except (excp.NoTraceException) as e:
+                    if self.force:
+                        LOG.debug("Skipping exception [%s]" % (e))
+                    else:
+                        raise
+                if end_msg:
+                    LOG.info(end_msg.format(name=c, result=result))
+
+    def _apply_reverse(self, component_order):
+        adjusted_order = list(component_order)
+        if self.action in _REVERSE_ACTIONS:
+            adjusted_order.reverse()
+        return adjusted_order
+
+    def _gen_localrc(self, fn):
+        LOG.info("Generating a file at [%s] that will contain your environment settings." % (fn))
+        creator = env_rc.RcGenerator(self.cfg)
+        contents = creator.generate()
+        sh.write_file(fn, contents)
+
+    def _start(self, components, component_order):
+        self._run_preqs(components, component_order)
+        LOG.info("Activating components required to complete action [%s]" % (self.action))
+        instances = self._instanciate_components(components)
+        self._pre_run(instances, component_order)
+        self._run_instances(instances, component_order)
+
+    def run(self):
+        (components, component_order) = self._order_components(self._get_components())
+        self._start(self._inject_references(components), component_order)
+
+
+def _dump_cfgs(config_obj, action):
 
     def item_format(key, value):
         return "\t%s=%s" % (str(key), str(value))
@@ -189,96 +309,11 @@ def _print_cfgs(config_obj, action):
             map_print(db_dsns)
 
 
-def _instanciate_components(action_name, components, distro, pkg_manager, config, root_dir):
-    all_instances = dict()
-    for component in components.keys():
-        cls = common.get_action_cls(action_name, component, distro)
-        instance = cls(instances=all_instances,
-                              distro=distro,
-                              packager=pkg_manager,
-                              config=config,
-                              root=root_dir,
-                              opts=components.get(component, list()))
-        all_instances[component] = instance
-    return all_instances
-
-
-def _gen_localrc(config, fn):
-    LOG.info("Generating a file at [%s] that will contain your environment settings." % (fn))
-    creator = env_rc.RcGenerator(config)
-    contents = creator.generate()
-    sh.write_file(fn, contents)
-
-
-def _run_instances(call_ordering, all_instances, component_order, force):
-    LOG.info("Running in the following order: %s" % ("->".join(component_order)))
-    for (start_msg, functor, end_msg) in call_ordering:
-        for c in component_order:
-            instance = all_instances[c]
-            if start_msg:
-                LOG.info(start_msg.format(name=c))
-            result = None
-            try:
-                result = functor(instance)
-            except (excp.NoTraceException) as e:
-                if force:
-                    LOG.debug("Skipping exception [%s]" % (e))
-                else:
-                    raise
-            if end_msg:
-                LOG.info(end_msg.format(name=c, result=result))
-
-
-def _run_preqs(root_action, component_order, components, distro, root_dir, program_args, config, pkg_manager):
-    if root_action == settings.START:
-        preq_action = settings.INSTALL
-        instances = _instanciate_components(preq_action, components, distro, pkg_manager, config, root_dir)
-        adjusted_order = list()
-        for c in component_order:
-            instance = instances[c]
-            if not instance.is_installed():
-                adjusted_order.append(c)
-        if adjusted_order:
-            _run_components(preq_action, adjusted_order, components, distro, root_dir, program_args, config, pkg_manager)
-    elif root_action == settings.UNINSTALL:
-        preq_action = settings.STOP
-        instances = _instanciate_components(preq_action, components, distro, pkg_manager, config, root_dir)
-        adjusted_order = list()
-        for c in component_order:
-            instance = instances[c]
-            if instance.is_started():
-                adjusted_order.append(c)
-        if adjusted_order:
-            _run_components(preq_action, adjusted_order, components, distro, root_dir, program_args, config, pkg_manager)
-
-
-def _apply_reverse(action_name, component_order):
-    adjusted_order = list(component_order)
-    if action_name in _REVERSE_ACTIONS:
-        adjusted_order.reverse()
-    return adjusted_order
-
-
-def _run_components(action_name, component_order, components, distro, root_dir, program_args, config, pkg_manager):
-    _run_preqs(action_name, component_order, components, distro, root_dir, program_args, config, pkg_manager)
-    LOG.info("Activating components required to complete action [%s]" % (action_name))
-    all_instances = _instanciate_components(action_name, components, distro, pkg_manager, config, root_dir)
-    _pre_run(action_name, root_dir, pkg_manager, config, component_order, all_instances)
-    _run_instances(ACTION_MP[action_name], all_instances, _apply_reverse(action_name, component_order), program_args.get('force', False))
-
-
 def run(args):
-
-    #input and distro checks
     (distro, platform) = utils.determine_distro()
     if distro is None:
         print("Unsupported platform " + utils.color_text(platform, "red") + "!")
         return False
-    defaulted_components = False
-    components = utils.parse_components(args.pop("components"))
-    if not components:
-        defaulted_components = True
-        components = common.get_default_components(distro)
     action = args.pop("action", "").strip().lower()
     if not (action in settings.ACTIONS):
         print(utils.color_text("No valid action specified!", "red"))
@@ -289,41 +324,12 @@ def run(args):
         return False
     (rep, maxlen) = utils.welcome(_WELCOME_MAP.get(action))
     print(utils.center_text("Action Runner", rep, maxlen))
-
-    #here on out we should be using the logger (and not print)
-    if not defaulted_components:
-        LOG.info("Activating components [%s]" % (", ".join(sorted(components.keys()))))
-    else:
-        LOG.info("Activating default components [%s]" % (", ".join(sorted(components.keys()))))
-
-    #determine the runtime order
-    ignore_deps = args.pop('ignore_deps', False)
-    component_order = None
-    if not ignore_deps:
-        all_components_deps = common.get_components_deps(action, components, distro, rootdir)
-        component_diff = set(all_components_deps.keys()).difference(components.keys())
-        if component_diff:
-            LOG.info("Having to activate dependent components: [%s]" \
-                         % (", ".join(sorted(component_diff))))
-            for new_component in component_diff:
-                components[new_component] = list()
-        component_order = utils.get_components_order(all_components_deps)
-    else:
-        component_order = components.keys()
-
-    #add in any that will just be referenced but which will not actually do anything (ie the action will not be applied to these)
-    ref_components = utils.parse_components(args.pop("ref_components"))
-    for c in ref_components.keys():
-        if c not in components:
-            components[c] = ref_components.get(c)
-
-    LOG.info("Starting action [%s] on %s for distro [%s]" % (action, date.rcf8222date(), distro))
     start_time = time.time()
     config = common.get_config()
     pkg_manager = common.get_packager(distro, args.pop('keep_packages', True))
-    _run_components(action, component_order, components, distro, rootdir, args, config, pkg_manager)
-    time_taken = (time.time() - start_time)
-    LOG.info("It took (%s) to complete action [%s]" % (common.format_secs_taken(time_taken), action))
-    _print_cfgs(config, action)
-
+    runner = ActionRunner(distro, action, rootdir, config, pkg_manager, **args)
+    LOG.info("Starting action [%s] on %s for distro [%s]" % (action, date.rcf8222date(), distro))
+    runner.run()
+    LOG.info("It took (%s) to complete action [%s]" % (common.format_secs_taken((time.time() - start_time)), action))
+    _dump_cfgs(config, action)
     return True
