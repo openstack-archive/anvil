@@ -100,8 +100,6 @@ class UpstartRunner(base.RunnerBase):
 
     def _do_upstart_configure(self, component_name, program_name, runtime_info):
         (app_pth, app_dir, program_args) = runtime_info
-        LOG.error("Path:%s" % (app_pth))
-        LOG.error("dir:%s" % (app_dir))
         root_fn = program_name + CONF_EXT
         # TODO FIXME symlinks won't work. Need to copy the files there.
         # https://bugs.launchpad.net/upstart/+bug/665022
