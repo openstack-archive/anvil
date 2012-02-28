@@ -251,7 +251,7 @@ def _run_preqs(root_action, component_order, components, distro, root_dir, progr
                 adjusted_order.append(c)
         if adjusted_order:
             LOG.info("Activating prerequisite action [%s] on %s components." % (preq_action, len(adjusted_order)))
-            _run_instances(ACTION_MP[preq_action], instances, adjusted_order, force)
+            _run_instances(ACTION_MP[preq_action], instances, _apply_reverse(preq_action, adjusted_order), force)
     elif root_action == settings.UNINSTALL:
         preq_action = settings.STOP
         instances = _instanciate_components(preq_action, components, distro, pkg_manager, config, root_dir)
@@ -262,7 +262,14 @@ def _run_preqs(root_action, component_order, components, distro, root_dir, progr
                 adjusted_order.append(c)
         if adjusted_order:
             LOG.info("Activating prerequisite action [%s] on %s components." % (preq_action, len(adjusted_order)))
-            _run_instances(ACTION_MP[preq_action], instances, adjusted_order, force)
+            _run_instances(ACTION_MP[preq_action], instances, _apply_reverse(preq_action, adjusted_order), force)
+
+
+def _apply_reverse(action_name, component_order):
+    adjusted_order = list(component_order)
+    if action_name in _REVERSE_ACTIONS:
+        adjusted_order.reverse()
+    return adjusted_order
 
 
 def _run_components(action_name, component_order, components, distro, root_dir, program_args):
@@ -275,7 +282,7 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
     LOG.info("Activating components required to complete action %s." % (action_name))
     start_time = time.time()
     _run_preqs(action_name, component_order, components, distro, root_dir, program_args, pkg_manager, config)
-    _run_instances(ACTION_MP[action_name], all_instances, component_order, program_args.get('force', False))
+    _run_instances(ACTION_MP[action_name], all_instances, _apply_reverse(action_name, component_order), program_args.get('force', False))
     end_time = time.time()
     total_time = (end_time - start_time)
     _post_run(action_name, root_dir, config, components.keys(), total_time)
@@ -324,11 +331,6 @@ def run(args):
         component_order = utils.get_components_order(all_components_deps)
     else:
         component_order = components.keys()
-
-    #reverse them so that we stop in the reverse order
-    #and that we uninstall in the reverse order which seems to make sense
-    if action in _REVERSE_ACTIONS:
-        component_order.reverse()
 
     #add in any that will just be referenced but which will not actually do anything (ie the action will not be applied to these)
     ref_components = utils.parse_components(args.pop("ref_components"))
