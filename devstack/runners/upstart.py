@@ -19,13 +19,14 @@ import json
 # To run the initctl command
 import subprocess
 
-from runnerbase import RunnerBase
 from devstack import date
 from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
 from devstack import trace as tr
 from devstack import utils
+
+from devstack.runners import runnerbase as base
 
 LOG = logging.getLogger("devstack.runners.upstart")
 
@@ -50,9 +51,9 @@ UPSTART_CONF_TMPL = 'upstart.conf'
 # Keep track of what we've emitted in the current python session
 
 
-class UpstartRunner(RunnerBase):
+class UpstartRunner(base.RunnerBase):
     def __init__(self, cfg):
-        RunnerBase.__init__(self, cfg)
+        base.RunnerBase.__init__(self, cfg)
         self.events = set()
 
     def stop(self, component_name, name, tracedir):
@@ -62,7 +63,7 @@ class UpstartRunner(RunnerBase):
             # Emit the start, keep track and only do one per component name
             component_event = component_name + STOP_EVENT_SUFFIX
             if component_event in self.events:
-                LOG.debug("Already emitted event:%s" % (component_event))
+                LOG.debug("Already emitted event: %s" % (component_event))
             else:
                 LOG.info("About to emit event %s" % (component_event))
                 rc = subprocess.call(["/sbin/initctl", "emit", component_event])
@@ -101,7 +102,7 @@ class UpstartRunner(RunnerBase):
         return params
 
     def _do_upstart_configure(self, component_name, program_name, runtime_info):
-        (app_pth, app_dir, program_args) = runtime_info
+        (_, _, program_args) = runtime_info
         root_fn = program_name + CONF_EXT
         # TODO FIXME symlinks won't work. Need to copy the files there.
         # https://bugs.launchpad.net/upstart/+bug/665022
@@ -139,5 +140,5 @@ class UpstartRunner(RunnerBase):
         return tracefn
 
     def start(self, component_name, name, runtime_info, tracedir):
-        (program, appdir, program_args) = runtime_info
+        (program, _, program_args) = runtime_info
         return self._start(component_name, name, program, program_args, tracedir)

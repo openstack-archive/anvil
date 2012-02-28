@@ -391,19 +391,18 @@ class ProgramRuntime(ComponentBase):
 
     def post_start(self):
         pass
-    
+
     def configure(self):
         # First make a pass and make sure all runtime (e.g. upstart) config files are in place....
         startercls = self._getstartercls(utils.fetch_run_type(self.cfg))
         starter = startercls(self.cfg)
         for app_info in self._get_apps_to_start():
-            #extract needed keys
             app_name = app_info["name"]
             app_pth = app_info.get("path", app_name)
             app_dir = app_info.get("app_dir", self.appdir)
-            #adjust the program options now that we have real locations
+            # Adjust the program options now that we have real locations
             program_opts = utils.param_replace_list(self._get_app_options(app_name), self._get_param_map(app_name))
-            #configure it with the given settings
+            # Configure it with the given settings
             LOG.info("Configuring runner for program [%s]" % (app_name))
             runtime_info = (app_pth, app_dir, program_opts)
             starter.configure(app_name, runtime_info, self.tracedir)
@@ -413,7 +412,6 @@ class ProgramRuntime(ComponentBase):
         # Select how we are going to start it
         startercls = self._getstartercls(utils.fetch_run_type(self.cfg))
         starter = startercls(self.cfg)
-        # Start all apps
         am_started = 0
         for app_info in self._get_apps_to_start():
             app_name = app_info["name"]
