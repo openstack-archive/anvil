@@ -222,6 +222,7 @@ def _gen_localrc(config, fn):
 
 
 def _run_instances(call_ordering, all_instances, component_order, force):
+    LOG.info("Running in the following order: %s" % ("->".join(component_order)))
     for (start_msg, functor, end_msg) in call_ordering:
         for c in component_order:
             instance = all_instances[c]
@@ -274,12 +275,11 @@ def _apply_reverse(action_name, component_order):
 
 def _run_components(action_name, component_order, components, distro, root_dir, program_args):
     LOG.info("Will run action [%s] using root directory [%s]" % (action_name, root_dir))
-    LOG.info("In the following order: %s" % ("->".join(component_order)))
     config = common.get_config()
     pkg_manager = common.get_packager(distro, program_args.get('keep_packages', True))
     all_instances = _instanciate_components(action_name, components, distro, pkg_manager, config, root_dir)
     _pre_run(action_name, root_dir, pkg_manager, config, component_order, all_instances)
-    LOG.info("Activating components required to complete action %s." % (action_name))
+    LOG.info("Activating components required to complete action [%s]" % (action_name))
     start_time = time.time()
     _run_preqs(action_name, component_order, components, distro, root_dir, program_args, pkg_manager, config)
     _run_instances(ACTION_MP[action_name], all_instances, _apply_reverse(action_name, component_order), program_args.get('force', False))
