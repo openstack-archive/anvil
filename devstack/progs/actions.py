@@ -248,7 +248,9 @@ def _run_preqs(root_action, component_order, components, distro, root_dir, progr
             instance = instances[c]
             if not instance.is_installed():
                 adjusted_order.append(c)
-        _run_instances(ACTION_MP[settings.INSTALL], instances, adjusted_order, force)
+        if adjusted_order:
+            LOG.info("Activating prerequisite action %s on %s components." % (settings.INSTALL, len(adjusted_order)))
+            _run_instances(ACTION_MP[settings.INSTALL], instances, adjusted_order, force)
     elif root_action == settings.UNINSTALL:
         instances = _instanciate_components(settings.STOP, components, distro, pkg_manager, config, root_dir)
         adjusted_order = list()
@@ -256,7 +258,9 @@ def _run_preqs(root_action, component_order, components, distro, root_dir, progr
             instance = instances[c]
             if instance.is_started():
                 adjusted_order.append(c)
-        _run_instances(ACTION_MP[settings.STOP], instances, adjusted_order, force)
+        if adjusted_order:
+            LOG.info("Activating prerequisite action %s on %s components." % (settings.STOP, len(adjusted_order)))
+            _run_instances(ACTION_MP[settings.STOP], instances, adjusted_order, force)
 
 
 def _run_components(action_name, component_order, components, distro, root_dir, program_args):
