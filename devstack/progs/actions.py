@@ -47,22 +47,22 @@ _RC_FILE = sh.abspth(settings.OSRC_FN)
 # The order of which uninstalls happen + message of what is happening (before and after)
 UNINSTALL_ORDERING = [
      (
-         "Unconfiguring %s.",
+         "Unconfiguring {name}.",
          (lambda instance: (instance.unconfigure())),
          None,
      ),
      (
-         "Pre-uninstalling %s.",
+         "Pre-uninstalling {name}.",
          (lambda instance: (instance.pre_uninstall())),
          None,
      ),
      (
-         "Uninstalling %s.",
+         "Uninstalling {name}.",
          (lambda instance: (instance.uninstall())),
          None,
      ),
      (
-         "Post-uninstalling %s.",
+         "Post-uninstalling {name}.",
          (lambda instance: (instance.post_uninstall())),
          None,
      ),
@@ -71,17 +71,17 @@ UNINSTALL_ORDERING = [
 # The order of which starts happen + message of what is happening (before and after)
 STARTS_ORDERING = [
      (
-        "Pre-starting %s.",
+        "Pre-starting {name}.",
         (lambda instance: (instance.pre_start())),
         None,
      ),
      (
-        "Starting %s.",
+        "Starting {name}.",
         (lambda instance: (instance.start())),
-        "Check %s for traces of what happened.",
+        "Check {result} for traces of what happened.",
      ),
      (
-        "Post-starting %s.",
+        "Post-starting {name}.",
         (lambda instance:(instance.post_start())),
         None,
      ),
@@ -90,36 +90,36 @@ STARTS_ORDERING = [
 # The order of which stops happen + message of what is happening (before and after)
 STOPS_ORDERING = [
      (
-         "Stopping %s.",
+         "Stopping {name}.",
          (lambda instance:(instance.stop())),
-         "Stopped %s items.",
+         "Stopped {result} items.",
      ),
 ]
 
 # The order of which install happen + message of what is happening (before and after)
 INSTALL_ORDERING = [
     (
-        "Downloading %s.",
+        "Downloading {name}.",
         (lambda instance: (instance.download())),
-        "Performed %s downloads.",
+        "Performed {result} downloads.",
     ),
     (
-        "Configuring %s.",
+        "Configuring {name}.",
         (lambda instance: (instance.configure())),
-        "Configured %s items.",
+        "Configured {result} items.",
     ),
     (
-        "Pre-installing %s.",
+        "Pre-installing {name}.",
         (lambda instance: (instance.pre_install())),
         None,
     ),
     (
-        "Installing %s.",
+        "Installing {name}.",
         (lambda instance: (instance.install())),
-        "Finished install - check %s for traces of what happened.",
+        "Finished install of {name} - check {result} for traces of what happened.",
     ),
     (
-        "Post-installing %s.",
+        "Post-installing {name}.",
         (lambda instance: (instance.post_install())),
         None,
     ),
@@ -231,7 +231,7 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
         for c in component_order:
             instance = all_instances[c]
             if start_msg:
-                LOG.info(start_msg % (c))
+                LOG.info(start_msg.format(name=c))
             result = None
             try:
                 result = functor(instance)
@@ -241,10 +241,10 @@ def _run_components(action_name, component_order, components, distro, root_dir, 
                 else:
                     raise
             if end_msg:
-                LOG.info(end_msg % (result))
+                LOG.info(end_msg.format(name=c, result=result))
     end_time = time.time()
-    tot_time = (end_time - start_time)
-    _post_run(action_name, root_dir, config, components.keys(), tot_time)
+    total_time = (end_time - start_time)
+    _post_run(action_name, root_dir, config, components.keys(), total_time)
 
 
 def run(args):
