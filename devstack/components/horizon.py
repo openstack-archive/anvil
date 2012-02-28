@@ -209,18 +209,15 @@ class HorizonInstaller(comp.PythonInstallComponent):
             #fix the socket prefix to someplace we can use
             fc = "WSGISocketPrefix %s" % (sh.joinpths(self.log_dir, "wsgi-socket"))
             sh.write_file(socket_fn, fc)
-            #now adjust the run user and group
-            fc = sh.load_file(httpd_fn)
-            lines = fc.splitlines()
+            #now adjust the run user and group (of httpd.conf)
             new_lines = list()
-            for line in lines:
+            for line in sh.load_file(httpd_fn).splitlines():
                 if line.startswith("User "):
                     line = "User %s" % (user)
                 if line.startswith("Group "):
                     line = "Group %s" % (group)
                 new_lines.append(line)
-            fc = utils.joinlinesep(*new_lines)
-            sh.write_file(httpd_fn, fc)
+            sh.write_file(httpd_fn, utils.joinlinesep(*new_lines))
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
@@ -248,7 +245,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
             mp['USER'] = user
             mp['GROUP'] = group
             mp['HORIZON_DIR'] = self.appdir
-            mp['HORIZON_PORT'] = self.cfg.get('horizon', 'port')
+            mp['HORIZON_PORT'] = self.cfg.getdefaulted('horizon', 'port', 80)
             mp['ACCESS_LOG'] = sh.joinpths(self.log_dir, "access.log")
             mp['ERROR_LOG'] = sh.joinpths(self.log_dir, "error.log")
         else:

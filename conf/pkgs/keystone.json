@@ -92,7 +92,7 @@
             "version": "2.2*",
             "removable": true
         },
-        "python-pastescript": {
+        "python-paste-script": {
             "version": "1.7*",
             "removable": true
         },
