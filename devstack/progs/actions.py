@@ -310,32 +310,28 @@ def _dump_cfgs(config_obj, action):
 
 
 def run(args):
-
     (distro, platform) = utils.determine_distro()
     if distro is None:
         print("Unsupported platform " + utils.color_text(platform, "red") + "!")
         return False
-
     action = args.pop("action", "").strip().lower()
     if not (action in settings.ACTIONS):
         print(utils.color_text("No valid action specified!", "red"))
         return False
-
     rootdir = args.pop("dir")
     if not rootdir:
         print(utils.color_text("No root directory specified!", "red"))
         return False
-
     (rep, maxlen) = utils.welcome(_WELCOME_MAP.get(action))
     print(utils.center_text("Action Runner", rep, maxlen))
-
+    #here on out we should be using the logger (and not print)
     start_time = time.time()
     config = common.get_config()
     pkg_manager = common.get_packager(distro, args.pop('keep_packages', True))
-    runner = ActionRunner(distro, action, rootdir, config, pkg_manager, **args)
+    components = utils.parse_components(args.pop("components"))
+    runner = ActionRunner(distro, action, rootdir, config, pkg_manager, components=components, **args)
     LOG.info("Starting action [%s] on %s for distro [%s]" % (action, date.rcf8222date(), distro))
     runner.run()
     LOG.info("It took (%s) to complete action [%s]" % (common.format_secs_taken((time.time() - start_time)), action))
     _dump_cfgs(config, action)
-
     return True
