@@ -348,6 +348,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         tgt_fn = sh.joinpths(self.bindir, NET_INIT_CONF)
         sh.write_file(tgt_fn, contents)
         sh.chmod(tgt_fn, 0755)
+        self.tracewriter.file_touched(tgt_fn)
 
     def _sync_db(self):
         LOG.info("Syncing the database with nova.")
