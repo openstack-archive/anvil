@@ -249,16 +249,15 @@ class ActionRunner(object):
                 instance = instances[c]
                 if start_msg:
                     LOG.info(start_msg.format(name=c))
-                result = None
                 try:
                     result = functor(instance)
+                    if end_msg:
+                        LOG.info(end_msg.format(name=c, result=result))
                 except (excp.NoTraceException) as e:
                     if self.force:
                         LOG.debug("Skipping exception [%s]" % (e))
                     else:
                         raise
-                if end_msg:
-                    LOG.info(end_msg.format(name=c, result=result))
 
     def _apply_reverse(self, component_order):
         adjusted_order = list(component_order)
