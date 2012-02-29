@@ -26,28 +26,27 @@ LOG = logging.getLogger("devstack.downloader")
 EXT_REG = re.compile(r"^(.*?)\.git\s*$", re.IGNORECASE)
 GIT_MASTER_BRANCH = "master"
 GIT_CACHE_DIR_ENV = "GIT_CACHE_DIR"
-
-
-def _git_cache_download(storewhere, uri, branch=None):
-    cdir = env.get_key(GIT_CACHE_DIR_ENV)
-    if cdir and sh.isdir(cdir):
-        #TODO actually do the cache...
-        pass
-    return False
+CLONE_CMD = ["git", "clone"]
+CHECKOUT_CMD =  ['git', 'checkout']
+PULL_CMD =  ['git', 'pull']
 
 
 def _gitdownload(storewhere, uri, branch=None):
-    dirsmade = sh.mkdirslist(storewhere)
-    LOG.info("Downloading from %s to %s" % (uri, storewhere))
-    #check if already done
-    if _git_cache_download(storewhere, uri, branch):
-        return dirsmade
-    #have to do it...
-    cmd = ["git", "clone"] + [uri, storewhere]
-    sh.execute(*cmd)
+    dirsmade = list()
+    if sh.isdir(storewhere):
+        LOG.info("Updating %s" % (uri, storewhere))
+        cmd = CHECKOUT_CMD + [GIT_MASTER_BRANCH]
+        sh.execute(*cmd, cwd=storewhere)
+        cmd = PULL_CMD
+        sh.execute(*cmd, cwd=storewhere)
+    else:
+        LOG.info("Downloading from %s to %s" % (uri, storewhere))
+        dirsmade.extend(sh.mkdirslist(storewhere))
+        cmd = CLONE_CMD + [uri, storewhere]
+        sh.execute(*cmd)
     if branch and branch != GIT_MASTER_BRANCH:
         LOG.info("Adjusting git branch to %s" % (branch))
-        cmd = ['git', 'checkout'] + [branch]
+        cmd = CHECKOUT_CMD + [branch]
         sh.execute(*cmd, cwd=storewhere)
     return dirsmade
 

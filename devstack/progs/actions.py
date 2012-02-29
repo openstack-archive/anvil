@@ -29,7 +29,7 @@ LOG = logging.getLogger("devstack.progs.actions")
 _REVERSE_ACTIONS = [settings.UNINSTALL, settings.STOP]
 
 # For these actions we will attempt to make an rc file if it does not exist
-_RC_FILE_MAKE_ACTIONS = [settings.INSTALL, settings.START]
+_RC_FILE_MAKE_ACTIONS = [settings.INSTALL]
 
 # The order of which uninstalls happen + message of what is happening (before and after)
 UNINSTALL_ORDERING = [
@@ -204,7 +204,6 @@ class ActionRunner(object):
             preq_runner = ActionRunner(self.distro, preq_action,
                                     self.directory, self.cfg, self.pkg_manager,
                                     components=preq_components, **self.kargs)
-            preq_runner.rc_file = self.rc_file
             preq_runner.run()
 
     def _pre_run(self, instances, component_order):
@@ -231,8 +230,6 @@ class ActionRunner(object):
             creator = env_rc.RcGenerator(self.cfg)
             contents = creator.generate()
             sh.write_file(self.rc_file, contents)
-        if self.rc_file:
-            self.rc_file = None
 
     def _run_instances(self, instances, component_order):
         component_order = self._apply_reverse(component_order)
