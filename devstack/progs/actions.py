@@ -209,6 +209,8 @@ class ActionRunner(object):
             preq_runner.run()
 
     def _pre_run(self, instances, component_order):
+        if not sh.isdir(self.directory):
+            sh.mkdir(self.directory)
         loaded_rc_file = False
         if self.rc_file:
             try:

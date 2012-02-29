@@ -341,11 +341,11 @@ class PkgUninstallComponent(ComponentBase):
     def _uninstall_dirs(self):
         dirsmade = self.tracereader.dirs_made()
         if dirsmade:
-            LOG.info("Removing %s created directories (%s)" % (len(dirsmade), ", ".join(dirsmade)))
             for dirname in dirsmade:
                 if self.kill_old and dirname == self.appdir:
                     pass
                 else:
+                    LOG.info("Removing created directory (%s)" % (dirname))
                     sh.deldir(dirname, run_as_root=True)
 
 
