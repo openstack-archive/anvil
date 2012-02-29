@@ -172,7 +172,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         if sh.isdir(path):
             (user, group) = self._get_apache_user_group()
             LOG.debug("Changing ownership (recursively) of %s so that it can be used by %s - %s",
-                path, user, group)
+                            path, user, group)
             uid = sh.getuid(user)
             gid = sh.getgid(group)
             sh.chown_r(path, uid, gid)

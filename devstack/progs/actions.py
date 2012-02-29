@@ -185,7 +185,9 @@ class ActionRunner(object):
                                   packager=self.pkg_manager,
                                   config=self.cfg,
                                   root=self.directory,
-                                  opts=components.get(component, list()))
+                                  opts=components.get(component, list()),
+                                  kill_old=self.kargs.get("kill_old")
+                                  )
             all_instances[component] = instance
         return all_instances
 
