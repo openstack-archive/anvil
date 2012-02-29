@@ -25,10 +25,9 @@ from devstack import env
 LOG = logging.getLogger("devstack.downloader")
 EXT_REG = re.compile(r"^(.*?)\.git\s*$", re.IGNORECASE)
 GIT_MASTER_BRANCH = "master"
-GIT_CACHE_DIR_ENV = "GIT_CACHE_DIR"
 CLONE_CMD = ["git", "clone"]
-CHECKOUT_CMD =  ['git', 'checkout']
-PULL_CMD =  ['git', 'pull']
+CHECKOUT_CMD = ['git', 'checkout']
+PULL_CMD = ['git', 'pull']
 
 
 def _gitdownload(storewhere, uri, branch=None):

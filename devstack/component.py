@@ -425,7 +425,7 @@ class ProgramRuntime(ComponentBase):
             program_opts = utils.param_replace_list(self._get_app_options(app_name), self._get_param_map(app_name))
             # Start it with the given settings
             LOG.info("Starting [%s] with options [%s]" % (app_name, ", ".join(program_opts)))
-            info_fn = instance.start(app_name, (app_pth, app_dir, program_opts), self.tracedir)
+            info_fn = instance.start(app_name, (app_pth, app_dir, program_opts))
             LOG.info("Started [%s] details are in [%s]" % (app_name, info_fn))
             # This trace is used to locate details about what to stop
             self.tracewriter.started_info(app_name, info_fn)
