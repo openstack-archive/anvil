@@ -34,18 +34,18 @@ PULL_CMD =  ['git', 'pull']
 def _gitdownload(storewhere, uri, branch=None):
     dirsmade = list()
     if sh.isdir(storewhere):
-        LOG.info("Updating %s" % (uri, storewhere))
+        LOG.info("Updating code located at [%s]" % (storewhere))
         cmd = CHECKOUT_CMD + [GIT_MASTER_BRANCH]
         sh.execute(*cmd, cwd=storewhere)
         cmd = PULL_CMD
         sh.execute(*cmd, cwd=storewhere)
     else:
-        LOG.info("Downloading from %s to %s" % (uri, storewhere))
+        LOG.info("Downloading from [%s] to [%s]" % (uri, storewhere))
         dirsmade.extend(sh.mkdirslist(storewhere))
         cmd = CLONE_CMD + [uri, storewhere]
         sh.execute(*cmd)
     if branch and branch != GIT_MASTER_BRANCH:
-        LOG.info("Adjusting git branch to %s" % (branch))
+        LOG.info("Adjusting git branch to [%s]" % (branch))
         cmd = CHECKOUT_CMD + [branch]
         sh.execute(*cmd, cwd=storewhere)
     return dirsmade
