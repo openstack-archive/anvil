@@ -27,7 +27,7 @@ LOG = logging.getLogger("devstack.components.horizon")
 
 #actual dir names
 ROOT_HORIZON = 'horizon'
-ROOT_DASH = 'openstack-dashboard'
+ROOT_DASH = 'openstack_dashboard'
 
 #name used for python install trace
 HORIZON_NAME = ROOT_HORIZON
@@ -163,7 +163,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         #Initialize the horizon database (it stores sessions and notices shown to users).
         #The user system is external (keystone).
         LOG.info("Initializing the horizon database.")
-        sh.execute(*DB_SYNC_CMD, cwd=self.dash_dir)
+        sh.execute(*DB_SYNC_CMD, cwd=self.appdir)
 
     def _ensure_db_access(self):
         # ../openstack-dashboard/local needs to be writeable by the runtime user
