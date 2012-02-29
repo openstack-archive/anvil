@@ -83,7 +83,7 @@ def run(args):
     if distro is None:
         print("Unsupported platform " + utils.color_text(platform, "red") + "!")
         return False
-    action = args.pop("action", "").strip().lower()
+    action = args.pop("action").strip().lower()
     if not (action in settings.ACTIONS):
         print(utils.color_text("No valid action specified!", "red"))
         return False
@@ -97,7 +97,7 @@ def run(args):
     #here on out we should be using the logger (and not print)
     start_time = time.time()
     config = common.get_config()
-    pkg_manager = common.get_packager(distro, args.pop('keep_packages', True))
+    pkg_manager = common.get_packager(distro, args.get('keep_old'))
     components = utils.parse_components(args.pop("components"))
     runner = actions.ActionRunner(distro, action, rootdir, config, pkg_manager, components=components, **args)
     LOG.info("Starting action [%s] on %s for distro [%s]" % (action, date.rcf8222date(), distro))

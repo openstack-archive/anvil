@@ -19,9 +19,11 @@ from optparse import OptionParser, OptionGroup
 
 from devstack import log as logging
 from devstack import settings
+from devstack import shell as sh
 from devstack import version
 
 HELP_WIDTH = 80
+DEF_OS_DIR = "openstack"
 LOG = logging.getLogger("devstack.opts")
 
 
@@ -40,20 +42,23 @@ def parse():
         dest="component",
         help="openstack component: %s" % (_format_list(settings.COMPONENT_NAMES)))
 
-    base_group = OptionGroup(parser, "Install/uninstall/start/stop options")
+    base_group = OptionGroup(parser, "Install & uninstall & start & stop specific options")
     base_group.add_option("-a", "--action",
         action="store",
         type="string",
         dest="action",
         metavar="ACTION",
         help="required action to perform: %s" % (_format_list(settings.ACTIONS)))
+    def_os_dir = sh.joinpths(sh.gethomedir(), DEF_OS_DIR)
     base_group.add_option("-d", "--directory",
         action="store",
         type="string",
         dest="dir",
         metavar="DIR",
+        default=def_os_dir,
         help=("empty root DIR for install or "
-              "DIR with existing components for start/stop/uninstall"))
+              "DIR with existing components for start/stop/uninstall "
+              "(default: %default)"))
     base_group.add_option("-i", "--ignore-deps",
         action="store_false",
         dest="ensure_deps",
@@ -68,13 +73,9 @@ def parse():
         dest="ref_components",
         metavar="COMPONENT",
         help="component which will not have ACTION applied but will be referenced as if it was (ACTION dependent)")
-    base_group.add_option("-k", "--keep-packages",
-        action="store_true",
-        dest="keep_packages",
-        help="uninstall will keep any installed packages on the system")
     parser.add_option_group(base_group)
 
-    stop_un_group = OptionGroup(parser, "Uninstall/stop options")
+    stop_un_group = OptionGroup(parser, "Uninstall & stop specific options")
     stop_un_group.add_option("-n", "--no-force",
         action="store_true",
         dest="force",
@@ -82,16 +83,24 @@ def parse():
         default=False)
     parser.add_option_group(stop_un_group)
 
+    un_group = OptionGroup(parser, "Uninstall specific options")
+    un_group.add_option("-k", "--keep-old",
+        action="store_true",
+        dest="keep_old",
+        help="uninstall will keep as much of the old install as it can (default: %default)",
+        default=False)
+    parser.add_option_group(un_group)
+
     #extract only what we care about
     (options, args) = parser.parse_args()
     output = dict()
-    output['components'] = options.component
-    output['dir'] = options.dir
-    output['ref_components'] = options.ref_components
-    output['action'] = options.action
+    output['components'] = options.component or list()
+    output['dir'] = options.dir or ""
+    output['ref_components'] = options.ref_components or list()
+    output['action'] = options.action or ""
     output['force'] = not options.force
     output['ignore_deps'] = not options.ensure_deps
-    output['keep_packages'] = options.keep_packages
+    output['keep_old'] = options.keep_old
     output['extras'] = args
 
     return output
