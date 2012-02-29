@@ -1,4 +1,6 @@
-# Based off of horizon_settings.py from commit 7bd3087e73c0683acf5df40d1eed51709d865c06
+#From commit b32c876ed5e66c8971c8126432c1ae957301eb08 of devstack.sh repo.
+#
+#With adjustments to make OPENSTACK_HOST a param
 
 import os
 
@@ -39,7 +41,7 @@ MAILER_EMAIL_BACKEND = EMAIL_BACKEND
 HORIZON_CONFIG = {
     'dashboards': ('nova', 'syspanel', 'settings',),
     'default_dashboard': 'nova',
-    'user_home': 'dashboard.views.user_home',
+    'user_home': 'openstack_dashboard.views.user_home',
 }
 
 OPENSTACK_HOST = "%OPENSTACK_HOST%"
@@ -100,6 +102,3 @@ SWIFT_PAGINATE_LIMIT = 100
 #            }
 #        }
 #}
-
-# How much ram on each compute host?
-COMPUTE_HOST_RAM_GB = 16

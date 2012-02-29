@@ -1,18 +1,17 @@
+#From commit b32c876ed5e66c8971c8126432c1ae957301eb08 of devstack.sh repo.
+#
+#With adjustments to make HORIZON_PORT, ERROR_LOG, ACCESS_LOG, VPN_DIR a param
+
 <VirtualHost *:%HORIZON_PORT%>
-
-#From commit 30439a6dc4
-#With adjustments to make APACHE_RUN_GROUP a param
-#and to make HORIZON_PORT a param
-
-    WSGIScriptAlias / %HORIZON_DIR%/openstack-dashboard/dashboard/wsgi/django.wsgi
+    WSGIScriptAlias / %HORIZON_DIR%/openstack_dashboard/wsgi/django.wsgi
     WSGIDaemonProcess horizon user=%USER% group=%GROUP% processes=3 threads=10
     SetEnv APACHE_RUN_USER %USER%
     SetEnv APACHE_RUN_GROUP %GROUP%
     WSGIProcessGroup horizon
 
     DocumentRoot %HORIZON_DIR%/.blackhole/
-    Alias /media %HORIZON_DIR%/openstack-dashboard/dashboard/static
-    Alias /vpn /opt/stack/vpn
+    Alias /media %HORIZON_DIR%/openstack_dashboard/static
+    Alias /vpn %VPN_DIR%
 
     <Directory />
         Options FollowSymLinks

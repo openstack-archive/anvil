@@ -65,6 +65,9 @@ APACHE_RESTART_CMD = ['service', '%SERVICE%', 'restart']
 APACHE_START_CMD = ['service', '%SERVICE%', 'start']
 APACHE_STOP_CMD = ['service', '%SERVICE%', 'stop']
 APACHE_STATUS_CMD = ['service', '%SERVICE%', 'status']
+APACHE_ERROR_LOG_FN = "error.log"
+APACHE_ACCESS_LOG_FN = "access.log"
+APACHE_DEF_PORT = 80
 
 #rhel fixups
 #TODO: maybe this should be a subclass that handles these differences
@@ -145,12 +148,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
         else:
             return comp.PythonInstallComponent._get_target_config_name(self, config_name)
 
-    def _get_python_directories(self):
-        py_dirs = dict()
-        py_dirs[HORIZON_NAME] = self.horizon_dir
-        py_dirs[DASH_NAME] = self.dash_dir
-        return py_dirs
-
     def _get_config_files(self):
         return list(CONFIGS)
 
@@ -163,19 +160,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
         #The user system is external (keystone).
         LOG.info("Initializing the horizon database.")
         sh.execute(*DB_SYNC_CMD, cwd=self.dash_dir)
-
-    def _fake_quantum(self):
-        #Horizon currently imports quantum even if you aren't using it.
-        #Instead of installing quantum we can create a simple module
-        #that will pass the initial imports.
-        if utils.service_enabled(settings.QUANTUM_CLIENT, self.instances, False):
-            return
-        else:
-            #Make the fake quantum
-            quantum_dir = sh.joinpths(self.dash_dir, 'quantum')
-            self.tracewriter.make_dir(quantum_dir)
-            self.tracewriter.touch_file(sh.joinpths(quantum_dir, '__init__.py'))
-            self.tracewriter.touch_file(sh.joinpths(quantum_dir, 'client.py'))
 
     def _ensure_db_access(self):
         # ../openstack-dashboard/local needs to be writeable by the runtime user
@@ -221,7 +205,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
-        self._fake_quantum()
         self._sync_db()
         self._setup_blackhole()
         self._ensure_db_access()
@@ -242,15 +225,14 @@ class HorizonInstaller(comp.PythonInstallComponent):
         mp = dict()
         if config_fn == HORIZON_APACHE_CONF:
             (user, group) = self._get_apache_user_group()
-            mp['USER'] = user
+            mp['ACCESS_LOG'] = sh.joinpths(self.log_dir, APACHE_ACCESS_LOG_FN)
+            mp['ERROR_LOG'] = sh.joinpths(self.log_dir, APACHE_ERROR_LOG_FN)
             mp['GROUP'] = group
             mp['HORIZON_DIR'] = self.appdir
-            mp['HORIZON_PORT'] = self.cfg.getdefaulted('horizon', 'port', 80)
-            mp['ACCESS_LOG'] = sh.joinpths(self.log_dir, "access.log")
-            mp['ERROR_LOG'] = sh.joinpths(self.log_dir, "error.log")
+            mp['HORIZON_PORT'] = self.cfg.getdefaulted('horizon', 'port', APACHE_DEF_PORT)
+            mp['USER'] = user
+            mp['VPN_DIR'] = sh.joinpths(self.appdir, "vpn")
         else:
-            #Enable quantum in dashboard, if requested
-            mp['QUANTUM_ENABLED'] = "%s" % (utils.service_enabled(settings.QUANTUM_CLIENT, self.instances, False))
             mp['OPENSTACK_HOST'] = self.cfg.get('host', 'ip')
         return mp
 
