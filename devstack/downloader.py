@@ -20,7 +20,6 @@ import re
 
 from devstack import log as logging
 from devstack import shell as sh
-from devstack import env
 
 LOG = logging.getLogger("devstack.downloader")
 EXT_REG = re.compile(r"^(.*?)\.git\s*$", re.IGNORECASE)

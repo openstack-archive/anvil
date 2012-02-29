@@ -454,7 +454,7 @@ class ProgramRuntime(ComponentBase):
                 if killcls in killer_instances:
                     killer = killer_instances[killcls]
                 else:
-                    killer = killcls(self.cfg, self.component_name)
+                    killer = killcls(self.cfg, self.component_name, self.tracedir)
                     killer_instances[killcls] = killer
                 to_kill.append((app_name, killer))
             else:

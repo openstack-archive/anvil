@@ -69,12 +69,12 @@ APACHE_ERROR_LOG_FN = "error.log"
 APACHE_ACCESS_LOG_FN = "access.log"
 APACHE_DEF_PORT = 80
 
-#rhel fixups
 #TODO: maybe this should be a subclass that handles these differences
-RHEL_FIXUPS = {
+APACHE_FIXUPS = {
     'SOCKET_CONF': "/etc/httpd/conf.d/wsgi-socket-prefix.conf",
     'HTTPD_CONF': '/etc/httpd/conf/httpd.conf',
 }
+APACHE_FIXUPS_DISTROS = [settings.RHEL6]
 
 #users which apache may not like starting as
 BAD_APACHE_USERS = ['root']
@@ -120,12 +120,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
             #TODO remove this junk, blah, puke that we have to do this
             qc = self.instances[settings.QUANTUM_CLIENT]
             src_pth = sh.joinpths(qc.appdir, 'quantum')
-            tgt_dir = sh.joinpths(self.dash_dir, 'quantum')
-            if sh.isdir(src_pth):
-                links[src_pth] = tgt_dir
-                #whhhhy???
-                if sh.isdir(tgt_dir):
-                    sh.deldir(tgt_dir)
+            links[src_pth] = tgt_dir
         return links
 
     def _check_ug(self):
@@ -184,15 +179,15 @@ class HorizonInstaller(comp.PythonInstallComponent):
     def _config_fixups(self):
         #currently just handling rhel fixups
         #TODO: maybe this should be a subclass that handles these differences
-        if self.distro != settings.RHEL6:
+        if not (self.distro in APACHE_FIXUPS_DISTROS):
             return
         #it seems like to get this to work
         #we need to do some conf.d/conf work which sort of sucks
         (user, group) = self._get_apache_user_group()
-        socket_fn = RHEL_FIXUPS.get("SOCKET_CONF")
+        socket_fn = APACHE_FIXUPS.get("SOCKET_CONF")
         self.tracewriter.file_touched(socket_fn)
         #not recorded since we aren't really creating this
-        httpd_fn = RHEL_FIXUPS.get("HTTPD_CONF")
+        httpd_fn = APACHE_FIXUPS.get("HTTPD_CONF")
         with sh.Rooted(True):
             #fix the socket prefix to someplace we can use
             fc = "WSGISocketPrefix %s" % (sh.joinpths(self.log_dir, "wsgi-socket"))
@@ -207,8 +202,23 @@ class HorizonInstaller(comp.PythonInstallComponent):
                 new_lines.append(line)
             sh.write_file(httpd_fn, utils.joinlinesep(*new_lines))
 
+    def _fix_quantum(self):
+        if utils.service_enabled(settings.QUANTUM_CLIENT, self.instances, False):
+            #TODO remove this junk, blah, puke that we have to do this
+            tgt_dir = sh.joinpths(self.dash_dir, 'quantum')
+            if sh.isdir(tgt_dir):
+                #whhhhy???
+                sh.deldir(tgt_dir)
+        else:
+            #Make the fake quantum
+            quantum_dir = sh.joinpths(self.dash_dir, 'quantum')
+            self.tracewriter.make_dir(quantum_dir)
+            self.tracewriter.touch_file(sh.joinpths(quantum_dir, '__init__.py'))
+            self.tracewriter.touch_file(sh.joinpths(quantum_dir, 'client.py'))
+
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
+        self._fix_quantum()
         self._sync_db()
         self._setup_blackhole()
         self._ensure_db_access()
