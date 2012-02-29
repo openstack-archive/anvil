@@ -178,16 +178,18 @@ class QuantumInstaller(comp.PkgInstallComponent):
             params['OVS_EXTERNAL_ID'] = external_id
             cmds = list()
             cmds.append({
-                'cmd': OVS_BRIDGE_DEL
+                'cmd': OVS_BRIDGE_DEL,
+                'run_as_root': True,
             })
             cmds.append({
-                'cmd': OVS_BRIDGE_ADD
+                'cmd': OVS_BRIDGE_ADD,
+                'run_as_root': True,
             })
             cmds.append({
-                'cmd': OVS_BRIDGE_EXTERN_ID
+                'cmd': OVS_BRIDGE_EXTERN_ID,
+                'run_as_root': True,
             })
             utils.execute_template(*cmds, params=params)
-            #TODO maybe have a trace that says we did this so that we can remove it on uninstall?
 
     def post_install(self):
         comp.PkgInstallComponent.post_install(self)
