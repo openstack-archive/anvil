@@ -167,7 +167,6 @@ class ForkRunner(base.RunnerBase):
     def _do_trace(self, fn, kvs):
         tracefn = tr.touch_trace(self.trace_dir, fn)
         runtrace = tr.Trace(tracefn)
-        runtrace.trace(TYPE, RUN_TYPE)
         for (k, v) in kvs.items():
             runtrace.trace(k, v)
         return tracefn
@@ -177,6 +176,7 @@ class ForkRunner(base.RunnerBase):
         fn_name = FORK_TEMPL % (app_name)
         (pidfile, stderrfn, stdoutfn) = self._form_file_names(fn_name)
         trace_info = dict()
+        trace_info[TYPE] = RUN_TYPE
         trace_info[PID_FN] = pidfile
         trace_info[STDERR_FN] = stderrfn
         trace_info[STDOUT_FN] = stdoutfn
