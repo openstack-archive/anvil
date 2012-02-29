@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import tempfile
+
 from optparse import IndentedHelpFormatter
 from optparse import OptionParser, OptionGroup
 
@@ -49,13 +51,13 @@ def parse():
         dest="action",
         metavar="ACTION",
         help="required action to perform: %s" % (_format_list(settings.ACTIONS)))
-    def_os_dir = sh.joinpths(sh.gethomedir(), DEF_OS_DIR)
+    default_dir = sh.joinpths(tempfile.gettempdir(), DEF_OS_DIR)
     base_group.add_option("-d", "--directory",
         action="store",
         type="string",
         dest="dir",
         metavar="DIR",
-        default=def_os_dir,
+        default=default_dir,
         help=("empty root DIR for install or "
               "DIR with existing components for start/stop/uninstall "
               "(default: %default)"))

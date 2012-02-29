@@ -210,11 +210,13 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def _fix_quantum(self):
         if not (utils.service_enabled(settings.QUANTUM_CLIENT, self.instances, False)):
-            #Make the fake quantum
+            #make the fake quantum (apparently needed so imports don't fail???)
+            #TODO remove this...
             quantum_dir = sh.joinpths(self.dash_dir, 'quantum')
-            self.tracewriter.make_dir(quantum_dir)
-            self.tracewriter.touch_file(sh.joinpths(quantum_dir, '__init__.py'))
-            self.tracewriter.touch_file(sh.joinpths(quantum_dir, 'client.py'))
+            if not sh.isdir(quantum_dir):
+                self.tracewriter.make_dir(quantum_dir)
+                self.tracewriter.touch_file(sh.joinpths(quantum_dir, '__init__.py'))
+                self.tracewriter.touch_file(sh.joinpths(quantum_dir, 'client.py'))
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)

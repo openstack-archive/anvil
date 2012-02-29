@@ -28,6 +28,9 @@ from devstack.components import keystone
 #general extraction cfg keys
 CFG_MAKE = {
     'ADMIN_PASSWORD': ('passwords', 'horizon_keystone_admin'),
+    'ADMIN_USER': ('keystone', 'admin_user'),
+    'DEMO_USER': ('keystone', 'demo_user'),
+    'INVISIBLE_USER': ('keystone', 'invisible_user'),
     'MYSQL_PASSWORD': ('passwords', 'sql'),
     'RABBIT_PASSWORD': ('passwords', 'rabbit'),
     'SERVICE_TOKEN': ('passwords', 'service_token'),
