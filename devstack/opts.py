@@ -102,5 +102,7 @@ def parse():
     output['ignore_deps'] = not options.ensure_deps
     output['keep_old'] = options.keep_old
     output['extras'] = args
+    
+    LOG.debug("Extracted options %s" % (output))
 
     return output
