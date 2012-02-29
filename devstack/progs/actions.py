@@ -140,7 +140,19 @@ class ActionRunner(object):
         self.cfg = config
         self.pkg_manager = pkg_manager
         self.kargs = kargs
-        self.components = kargs.pop("components")
+        self.components = dict()
+        def_components = common.get_default_components()
+        unclean_components = kargs.pop("components")
+        if not unclean_components:
+            self.components = def_components
+        else:
+            for (c, opts) in unclean_components:
+                if opts is None and c in def_components:
+                    self.components[c] = def_components[c]
+                elif opts is None:
+                    self.components[c] = list()
+                else:
+                    self.components[c] = opts
         self.force = kargs.get('force', False)
         self.ignore_deps = kargs.get('ignore_deps', False)
         self.ref_components = kargs.get("ref_components")
@@ -148,13 +160,7 @@ class ActionRunner(object):
         self.gen_rc = action in _RC_FILE_MAKE_ACTIONS
 
     def _get_components(self):
-        components = self.components
-        if not components:
-            components = common.get_default_components(self.distro)
-            LOG.info("Activating default components [%s]" % (", ".join(sorted(components.keys()))))
-        else:
-            LOG.info("Activating components [%s]" % (", ".join(sorted(components.keys()))))
-        return components
+        return dict(self.components)
 
     def _order_components(self, components):
         adjusted_components = dict(components)

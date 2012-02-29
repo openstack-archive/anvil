@@ -628,9 +628,8 @@ def goodbye(worked):
 
 
 def parse_components(components):
-    #none provided, init it
     if not components:
-        components = list()
+        return list()
     adjusted_components = dict()
     for c in components:
         mtch = EXT_COMPONENT.match(c)
@@ -638,8 +637,9 @@ def parse_components(components):
             component_name = mtch.group(1).lower().strip()
             if component_name in settings.COMPONENT_NAMES:
                 component_opts = mtch.group(2)
-                components_opts_cleaned = list()
+                components_opts_cleaned = None
                 if component_opts:
+                    components_opts_cleaned = list()
                     sp_component_opts = component_opts.split(",")
                     for co in sp_component_opts:
                         cleaned_opt = co.strip()

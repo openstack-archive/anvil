@@ -106,7 +106,7 @@ _PKGR_MAP = {
 }
 
 
-def get_default_components(distro):
+def get_default_components():
     def_components = dict()
     def_components[settings.GLANCE] = [
                                          glance.GAPI,

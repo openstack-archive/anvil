@@ -9,8 +9,9 @@ sys.path.insert(0, possible_topdir)
 from devstack import settings
 from devstack.progs import common
 
+
 distro = settings.RHEL6
-comps = common.get_default_components(distro)
+comps = common.get_default_components()
 
 
 def filter_c(c):
