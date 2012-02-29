@@ -46,7 +46,7 @@
             "removable": true
         },
         "python-httplib2": {
-            "version": "0.7.1*",
+            "version": "0.7*",
             "removable": true
         }
     },
