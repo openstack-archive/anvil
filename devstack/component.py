@@ -62,6 +62,7 @@ class ComponentBase(object):
         self.tracedir = sh.joinpths(self.component_root, settings.COMPONENT_TRACE_DIR)
         self.appdir = sh.joinpths(self.component_root, settings.COMPONENT_APP_DIR)
         self.cfgdir = sh.joinpths(self.component_root, settings.COMPONENT_CONFIG_DIR)
+        self.kargs = kargs
 
     def get_dependencies(self):
         deps = settings.COMPONENT_DEPENDENCIES.get(self.component_name)

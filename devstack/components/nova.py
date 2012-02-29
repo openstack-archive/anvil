@@ -15,8 +15,10 @@
 #    under the License.
 
 from urlparse import urlunparse
+
 import io
 import os
+import time
 
 from devstack import cfg
 from devstack import component as comp
@@ -48,6 +50,10 @@ LOGGING_CONF = "logging.conf"
 CONFIGS = [PASTE_CONF, POLICY_CONF, LOGGING_CONF]
 ADJUST_CONFIGS = [PASTE_CONF]
 
+#this is a special conf
+NET_INIT_CONF = 'nova-network-init.sh'
+NET_INIT_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
+
 #this db will be dropped then created
 DB_NAME = 'nova'
 
@@ -55,19 +61,6 @@ DB_NAME = 'nova'
 DB_SYNC_CMD = [
     {'cmd': ['%BINDIR%/nova-manage', '--flagfile', '%CFGFILE%',
              'db', 'sync']},
-]
-
-#these setup your dev network
-NETWORK_SETUP_CMDS = [
-    #this always happens (even in quantum mode)
-    {'cmd': ['%BINDIR%/nova-manage', '--flagfile', '%CFGFILE%',
-              'network', 'create', 'private', '%FIXED_RANGE%', 1, '%FIXED_NETWORK_SIZE%']},
-    #these only happen if not in quantum mode
-    {'cmd': ['%BINDIR%/nova-manage', '--flagfile', '%CFGFILE%',
-              'floating', 'create', '%FLOATING_RANGE%']},
-    {'cmd': ['%BINDIR%/nova-manage', '--flagfile', '%CFGFILE%',
-              'floating', 'create', '--ip_range=%TEST_FLOATING_RANGE%',
-              '--pool=%TEST_FLOATING_POOL%']}
 ]
 
 #these are used for nova volumens
@@ -244,6 +237,9 @@ REQ_PIPS = ['general.json', 'nova.json']
 #config keys we warm up so u won't be prompted later
 WARMUP_PWS = ['rabbit']
 
+#used to wait until started before we can run the data setup script
+WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
+
 
 def _canon_virt_driver(virt_driver):
     if not virt_driver:
@@ -342,24 +338,16 @@ class NovaInstaller(comp.PythonInstallComponent):
             self.cfg.get("passwords", "xenapi_connection")
 
     def _get_config_files(self):
-        cfg_files = list(CONFIGS)
-        return cfg_files
+        return list(CONFIGS)
 
-    def _setup_network(self):
-        LOG.info("Creating your nova network to be used with instances.")
-        mp = dict()
-        mp['BINDIR'] = self.bindir
-        mp['CFGFILE'] = sh.joinpths(self.cfgdir, API_CONF)
-        mp['FLOATING_RANGE'] = self.cfg.get('nova', 'floating_range')
-        mp['TEST_FLOATING_RANGE'] = self.cfg.get('nova', 'test_floating_range')
-        mp['TEST_FLOATING_POOL'] = self.cfg.get('nova', 'test_floating_pool')
-        mp['FIXED_NETWORK_SIZE'] = self.cfg.get('nova', 'fixed_network_size')
-        mp['FIXED_RANGE'] = self.cfg.get('nova', 'fixed_range')
-        if utils.service_enabled(settings.QUANTUM_CLIENT, self.instances, False):
-            cmds = NETWORK_SETUP_CMDS[0:1]
-        else:
-            cmds = NETWORK_SETUP_CMDS
-        utils.execute_template(*cmds, params=mp)
+    def _setup_network_initer(self):
+        LOG.info("Configuring nova network initializer template %s.", NET_INIT_CONF)
+        (_, contents) = utils.load_template(self.component_name, NET_INIT_CONF)
+        params = self._get_param_map(NET_INIT_CONF)
+        contents = utils.param_replace(contents, params, True)
+        tgt_fn = sh.joinpths(self.bindir, NET_INIT_CONF)
+        sh.write_file(tgt_fn, contents)
+        sh.chmod(tgt_fn, 0755)
 
     def _sync_db(self):
         LOG.info("Syncing the database with nova.")
@@ -373,8 +361,8 @@ class NovaInstaller(comp.PythonInstallComponent):
         #extra actions to do nova setup
         self._setup_db()
         self._sync_db()
-        self._setup_network()
         self._setup_cleaner()
+        self._setup_network_initer()
         #check if we need to do the vol subcomponent
         if self.volumes_enabled:
             vol_maker = NovaVolumeConfigurator(self)
@@ -438,9 +426,19 @@ class NovaInstaller(comp.PythonInstallComponent):
         return (srcfn, contents)
 
     def _get_param_map(self, config_fn):
-        mp = keystone.get_shared_params(self.cfg)
-        mp['SERVICE_PASSWORD'] = "???"
-        mp['SERVICE_USER'] = "???"
+        mp = dict()
+        if config_fn == NET_INIT_CONF:
+            mp['NOVA_DIR'] = self.appdir
+            mp['CFGFILE'] = sh.joinpths(self.cfgdir, API_CONF)
+            mp['FLOATING_RANGE'] = self.cfg.get('nova', 'floating_range')
+            mp['TEST_FLOATING_RANGE'] = self.cfg.get('nova', 'test_floating_range')
+            mp['TEST_FLOATING_POOL'] = self.cfg.get('nova', 'test_floating_pool')
+            mp['FIXED_NETWORK_SIZE'] = self.cfg.get('nova', 'fixed_network_size')
+            mp['FIXED_RANGE'] = self.cfg.get('nova', 'fixed_range')
+        else:
+            mp = keystone.get_shared_params(self.cfg)
+            mp['SERVICE_PASSWORD'] = "???"
+            mp['SERVICE_USER'] = "???"
         return mp
 
     def configure(self):
@@ -464,6 +462,33 @@ class NovaRuntime(comp.PythonRuntime):
         comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
+
+    def _setup_network_init(self):
+        tgt_fn = sh.joinpths(self.bindir, NET_INIT_CONF)
+        if sh.isfile(tgt_fn):
+            LOG.info("Creating your nova network to be used with instances.")
+            #still there, run it
+            #these environment additions are important
+            #in that they eventually affect how this script runs
+            if utils.service_enabled(settings.QUANTUM, self.instances, False):
+                LOG.info("Waiting %s seconds so that quantum can start up before running first time init." % (WAIT_ONLINE_TO))
+                time.sleep(WAIT_ONLINE_TO)
+            env = dict()
+            env['ENABLED_SERVICES'] = ",".join(self.instances.keys())
+            setup_cmd = NET_INIT_CMD_ROOT + [tgt_fn]
+            LOG.info("Running (%s) command to initialize nova's network." % (" ".join(setup_cmd)))
+            sh.execute(*setup_cmd, env_overrides=env, run_as_root=False)
+            LOG.debug("Removing (%s) file since we successfully initialized nova's network." % (tgt_fn))
+            sh.unlink(tgt_fn)
+
+    def post_start(self):
+        self._setup_network_init()
+
+    def get_dependencies(self):
+        deps = comp.PythonRuntime.get_dependencies(self)
+        if utils.service_enabled(settings.QUANTUM, self.instances, False):
+            deps.append(settings.QUANTUM)
+        return deps
 
     def _get_apps_to_start(self):
         result = list()
