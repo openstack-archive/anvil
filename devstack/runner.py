@@ -17,14 +17,24 @@
 
 # This is the base class for the various runners
 class RunnerBase(object):
-    def __init__(self, cfg):
+    def __init__(self, cfg, component_name, trace_dir):
         self.cfg = cfg
+        self.component_name = component_name
+        self.trace_dir = trace_dir
 
-    def configure(self, component_name, app_name, runtime_info):
-        raise NotImplementedError()
+    def unconfigure(self):
+        #cleans up anything configured by 
+        #this runner for any apps for this component
+        #returns how many files unconfigured
+        return 0
 
-    def start(self, component_name, name, runtime_info, tracedir):
-        raise NotImplementedError()
+    def configure(self, app_name, runtime_info):
+        #returns how many files configured
+        return 0
 
-    def stop(self, component_name, name, trace_dir):
-        raise NotImplementedError()
+    def start(self, name, runtime_info):
+        #returns a file name that contains what was started
+        return None
+
+    def stop(self, name):
+        pass

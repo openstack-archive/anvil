@@ -73,35 +73,32 @@ SCREEN_RC = settings.RC_FN_TEMPL % ('screen')
 
 
 class ScreenRunner(base.RunnerBase):
-    def __init__(self, cfg):
-        base.RunnerBase.__init__(self, cfg)
+    def __init__(self, cfg, component_name, trace_dir):
+        base.RunnerBase.__init__(self, cfg, component_name, trace_dir)
         self.socket_dir = sh.joinpths(tempfile.gettempdir(), SCREEN_SOCKET_DIR_NAME)
 
-    def configure(self, component_name, app_name, runtime_info):
-        return 0
-
-    def stop(self, component_name, name, tracedir):
-        fn_name = SCREEN_TEMPL % (name)
-        trace_fn = tr.trace_fn(tracedir, fn_name)
-        session_id = self._find_session(name, trace_fn)
-        self._do_stop(name, session_id)
+    def stop(self, app_name):
+        fn_name = SCREEN_TEMPL % (app_name)
+        trace_fn = tr.trace_fn(self.trace_dir, fn_name)
+        session_id = self._find_session(app_name, trace_fn)
+        self._do_stop(app_name, session_id)
         sh.unlink(trace_fn)
 
-    def _find_session(self, name, trace_fn):
+    def _find_session(self, app_name, trace_fn):
         session_id = None
         for (key, value) in tr.parse_fn(trace_fn):
             if key == SESSION_ID and value:
                 session_id = value
         if not session_id:
-            msg = "Could not find a screen session id for %s in file [%s]" % (name, trace_fn)
+            msg = "Could not find a screen session id for %s in file [%s]" % (app_name, trace_fn)
             raise excp.StopException(msg)
         return session_id
 
-    def _do_stop(self, name, session_id):
+    def _do_stop(self, app_name, session_id):
         mp = dict()
         mp['SESSION_NAME'] = session_id
-        mp['NAME'] = name
-        LOG.info("Stopping program running in session [%s] in window named [%s]." % (session_id, name))
+        mp['NAME'] = app_name
+        LOG.info("Stopping program running in session [%s] in window named [%s]." % (session_id, app_name))
         kill_cmd = self._gen_cmd(CMD_KILL, mp)
         sh.execute(*kill_cmd,
                 shell=True,
@@ -202,9 +199,9 @@ class ScreenRunner(base.RunnerBase):
             for d in dirs:
                 sh.chmod(d, perm)
 
-    def _begin_start(self, name, program, args, tracedir):
+    def _begin_start(self, name, program, args):
         fn_name = SCREEN_TEMPL % (name)
-        tracefn = tr.touch_trace(tracedir, fn_name)
+        tracefn = tr.touch_trace(self.trace_dir, fn_name)
         runtrace = tr.Trace(tracefn)
         runtrace.trace(TYPE, RUN_TYPE)
         runtrace.trace(NAME, name)
@@ -229,11 +226,11 @@ class ScreenRunner(base.RunnerBase):
         self._do_start(session_name, name, full_cmd)
         return tracefn
 
-    def start(self, component_name, name, runtime_info, tracedir):
+    def start(self, app_name, runtime_info):
         (program, _, program_args) = runtime_info
         if not sh.isdir(self.socket_dir):
             self._do_socketdir_init(self.socket_dir, SCREEN_SOCKET_PERM)
-        return self._begin_start(name, program, program_args, tracedir)
+        return self._begin_start(app_name, program, program_args)
 
 
 class ScreenRcGenerator(object):

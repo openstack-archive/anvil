@@ -31,7 +31,7 @@ if not LOG_FN or not os.path.isfile(LOG_FN):
 logging.config.fileConfig(LOG_FN)
 
 from devstack import date
-from devstack import log as logging
+from devstack import log as lg
 from devstack import opts
 from devstack import shell as sh
 from devstack import utils
@@ -39,7 +39,7 @@ from devstack import utils
 from devstack.progs import actions
 from devstack.progs import common
 
-LOG = logging.getLogger("devstack.stack")
+LOG = lg.getLogger("devstack.stack")
 
 # This is used to map an action to a useful string for
 # the welcome display

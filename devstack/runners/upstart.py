@@ -50,16 +50,16 @@ UPSTART_CONF_TMPL = 'upstart.conf'
 
 
 class UpstartRunner(base.RunnerBase):
-    def __init__(self, cfg):
-        base.RunnerBase.__init__(self, cfg)
+    def __init__(self, cfg, component_name, trace_dir):
+        base.RunnerBase.__init__(self, cfg, component_name, trace_dir)
         self.events = set()
 
-    def stop(self, component_name, name, tracedir):
-        fn_name = UPSTART_TEMPL % (name)
-        trace_fn = tr.trace_fn(tracedir, fn_name)
+    def stop(self, app_name):
+        fn_name = UPSTART_TEMPL % (app_name)
+        trace_fn = tr.trace_fn(self.trace_dir, fn_name)
         with sh.Rooted(True):
             # Emit the start, keep track and only do one per component name
-            component_event = component_name + STOP_EVENT_SUFFIX
+            component_event = self.component_name + STOP_EVENT_SUFFIX
             if component_event in self.events:
                 LOG.debug("Already emitted event: %s" % (component_event))
             else:
@@ -69,12 +69,12 @@ class UpstartRunner(base.RunnerBase):
                 self.events.add(component_event)
         sh.unlink(trace_fn)
 
-    def configure(self, component_name, app_name, runtime_info):
+    def configure(self, app_name, runtime_info):
         LOG.debug("Configure called for app: %s" % (app_name))
-        self._do_upstart_configure(component_name, app_name, runtime_info)
+        self._do_upstart_configure(app_name, runtime_info)
         return 1
 
-    def _get_upstart_conf_params(self, component_name, app_pth, program_name, *program_args):
+    def _get_upstart_conf_params(self, app_pth, program_name, *program_args):
         params = dict()
         if self.cfg.getboolean('upstart', 'respawn'):
             params['RESPAWN'] = "respawn"
@@ -84,8 +84,8 @@ class UpstartRunner(base.RunnerBase):
         params['MADE_DATE'] = date.rcf8222date()
         params['START_EVENT'] = self.cfg.get('upstart', 'start_event')
         params['STOP_EVENT'] = self.cfg.get('upstart', 'stop_event')
-        params['COMPONENT_START_EVENT'] = component_name + START_EVENT_SUFFIX
-        params['COMPONENT_STOP_EVENT'] = component_name + STOP_EVENT_SUFFIX
+        params['COMPONENT_START_EVENT'] = self.component_name + START_EVENT_SUFFIX
+        params['COMPONENT_STOP_EVENT'] = self.component_name + STOP_EVENT_SUFFIX
         params['PROGRAM_NAME'] = app_pth
         params['AUTHOR'] = settings.PROG_NICE_NAME
         if program_args:
@@ -98,44 +98,42 @@ class UpstartRunner(base.RunnerBase):
             params['PROGRAM_OPTIONS'] = ''
         return params
 
-    def _do_upstart_configure(self, component_name, program_name, runtime_info):
-        (app_pth, app_dir, program_args) = runtime_info
-        root_fn = program_name + CONF_EXT
+    def _do_upstart_configure(self, app_name, runtime_info):
+        (app_pth, _, program_args) = runtime_info
         # TODO FIXME symlinks won't work. Need to copy the files there.
         # https://bugs.launchpad.net/upstart/+bug/665022
-        cfg_fn = sh.joinpths(CONF_ROOT, root_fn)
+        cfg_fn = sh.joinpths(CONF_ROOT, app_name + CONF_EXT)
         if sh.isfile(cfg_fn):
-            LOG.info("Upstart config file already exists:%s" % (cfg_fn))
+            LOG.info("Upstart config file already exists: %s" % (cfg_fn))
             return
         LOG.debug("Loading upstart template to be used by: %s" % (cfg_fn))
         (_, contents) = utils.load_template('general', UPSTART_CONF_TMPL)
-        params = self._get_upstart_conf_params(component_name, app_pth, program_name, *program_args)
+        params = self._get_upstart_conf_params(app_pth, app_name, *program_args)
         adjusted_contents = utils.param_replace(contents, params)
-        LOG.debug("Generated up start config for %s: %s" % (program_name, adjusted_contents))
+        LOG.debug("Generated up start config for %s: %s" % (app_name, adjusted_contents))
         with sh.Rooted(True):
             sh.write_file(cfg_fn, adjusted_contents)
             sh.chmod(cfg_fn, 0666)
-        return cfg_fn
 
-    def _start(self, component_name, name, program, program_args, tracedir):
-        fn_name = UPSTART_TEMPL % (name)
-        tracefn = tr.touch_trace(tracedir, fn_name)
+    def _start(self, app_name, program, program_args):
+        fn_name = UPSTART_TEMPL % (app_name)
+        tracefn = tr.touch_trace(self.trace_dir, fn_name)
         runtrace = tr.Trace(tracefn)
         runtrace.trace(TYPE, RUN_TYPE)
-        runtrace.trace(NAME, name)
+        runtrace.trace(NAME, app_name)
         runtrace.trace(ARGS, json.dumps(program_args))
         with sh.Rooted(True):
             # Emit the start, keep track and only do one per component name
-            component_event = component_name + START_EVENT_SUFFIX
+            component_event = self.component_name + START_EVENT_SUFFIX
             if component_event in self.events:
-                LOG.debug("Already emitted event:%s" % (component_event))
+                LOG.debug("Already emitted event: %s" % (component_event))
             else:
-                LOG.info("About to emit event %s" % (component_event))
+                LOG.info("About to emit event: %s" % (component_event))
                 rc = subprocess.call(["/sbin/initctl", "emit", component_event])
                 LOG.debug("Emit returned %s" % (rc))
                 self.events.add(component_event)
         return tracefn
 
-    def start(self, component_name, name, runtime_info, tracedir):
+    def start(self, app_name, runtime_info):
         (program, _, program_args) = runtime_info
-        return self._start(component_name, name, program, program_args, tracedir)
+        return self._start(app_name, program, program_args)
