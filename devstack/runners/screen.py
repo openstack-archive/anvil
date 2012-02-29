@@ -240,6 +240,20 @@ class ScreenRcGenerator(object):
     def __init__(self, sr):
         self.runner = sr
 
+    def _generate_help(self, session_name, env_exports):
+        lines = list()
+        lines.append("# Screen help stuff")
+        cmd_pieces = list()
+        for (k, v) in env_exports.items():
+            cmd_pieces.append("%s=%s" % (k, sh.shellquote(v)))
+        cmd_pieces.append("screen -r %s" % (session_name))
+        if ROOT_GO:
+            cmd_pieces.insert(0, "sudo")
+        lines.append("# To connect to this session run the following command: ")
+        lines.append("# %s" % (" ".join(cmd_pieces)))
+        lines.append("")
+        return lines
+
     def _generate_lines(self, session_name, env_exports):
         lines = list()
         lines.append("# RC file generated on %s" % (date.rcf8222date()))
@@ -258,6 +272,7 @@ class ScreenRcGenerator(object):
         lines.append(STATUS_BAR_CMD)
         lines.append("screen -t %s bash" % (SESSION_DEF_TITLE))
         lines.append("")
+        lines.extend(self._generate_help(session_name, env_exports))
         return lines
 
     def create(self, session_name, env_exports):
