@@ -429,7 +429,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         mp = dict()
         if config_fn == NET_INIT_CONF:
             mp['NOVA_DIR'] = self.appdir
-            mp['CFGFILE'] = sh.joinpths(self.cfgdir, API_CONF)
+            mp['CFG_FILE'] = sh.joinpths(self.cfgdir, API_CONF)
             mp['FLOATING_RANGE'] = self.cfg.get('nova', 'floating_range')
             mp['TEST_FLOATING_RANGE'] = self.cfg.get('nova', 'test_floating_range')
             mp['TEST_FLOATING_POOL'] = self.cfg.get('nova', 'test_floating_pool')
