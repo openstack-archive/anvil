@@ -16,9 +16,6 @@
 
 import json
 
-# To run the initctl command
-import subprocess
-
 from devstack import date
 from devstack import log as logging
 from devstack import runner as base
@@ -38,6 +35,7 @@ UPSTART_TEMPL = "%s.upstart"
 ARGS = "ARGS"
 NAME = "NAME"
 
+#upstart event namings
 START_EVENT_SUFFIX = "_start"
 STOP_EVENT_SUFFIX = "_stop"
 
@@ -48,6 +46,9 @@ CONF_EXT = ".conf"
 #shared template
 UPSTART_CONF_TMPL = 'upstart.conf'
 
+#how we emit events to upstart
+EMIT_BASE_CMD = ["/sbin/initctl", "emit"]
+
 
 class UpstartRunner(base.RunnerBase):
     def __init__(self, cfg, component_name, trace_dir):
@@ -57,16 +58,15 @@ class UpstartRunner(base.RunnerBase):
     def stop(self, app_name):
         fn_name = UPSTART_TEMPL % (app_name)
         trace_fn = tr.trace_fn(self.trace_dir, fn_name)
-        with sh.Rooted(True):
-            # Emit the start, keep track and only do one per component name
-            component_event = self.component_name + STOP_EVENT_SUFFIX
-            if component_event in self.events:
-                LOG.debug("Already emitted event: %s" % (component_event))
-            else:
-                LOG.info("About to emit event %s" % (component_event))
-                rc = subprocess.call(["/sbin/initctl", "emit", component_event])
-                LOG.info("Emit returned %s" % (rc))
-                self.events.add(component_event)
+        # Emit the start, keep track and only do one per component name
+        component_event = self.component_name + STOP_EVENT_SUFFIX
+        if component_event in self.events:
+            LOG.debug("Already emitted event: %s" % (component_event))
+        else:
+            LOG.info("About to emit event: %s" % (component_event))
+            cmd = EMIT_BASE_CMD + [component_event]
+            sh.execute(*cmd, run_as_root=True)
+            self.events.add(component_event)
         sh.unlink(trace_fn)
 
     def configure(self, app_name, runtime_info):
@@ -91,7 +91,7 @@ class UpstartRunner(base.RunnerBase):
         if program_args:
             escaped_args = list()
             for opt in program_args:
-                LOG.debug("Current opt:%s" % (opt))
+                LOG.debug("Current opt: %s" % (opt))
                 escaped_args.append(sh.shellquote(opt))
             params['PROGRAM_OPTIONS'] = " ".join(escaped_args)
         else:
@@ -122,16 +122,15 @@ class UpstartRunner(base.RunnerBase):
         runtrace.trace(TYPE, RUN_TYPE)
         runtrace.trace(NAME, app_name)
         runtrace.trace(ARGS, json.dumps(program_args))
-        with sh.Rooted(True):
-            # Emit the start, keep track and only do one per component name
-            component_event = self.component_name + START_EVENT_SUFFIX
-            if component_event in self.events:
-                LOG.debug("Already emitted event: %s" % (component_event))
-            else:
-                LOG.info("About to emit event: %s" % (component_event))
-                rc = subprocess.call(["/sbin/initctl", "emit", component_event])
-                LOG.debug("Emit returned %s" % (rc))
-                self.events.add(component_event)
+        # Emit the start, keep track and only do one per component name
+        component_event = self.component_name + START_EVENT_SUFFIX
+        if component_event in self.events:
+            LOG.debug("Already emitted event: %s" % (component_event))
+        else:
+            LOG.info("About to emit event: %s" % (component_event))
+            cmd = EMIT_BASE_CMD + [component_event]
+            sh.execute(*cmd, run_as_root=True)
+            self.events.add(component_event)
         return tracefn
 
     def start(self, app_name, runtime_info):

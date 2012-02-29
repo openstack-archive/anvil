@@ -17,13 +17,13 @@
 
 # This is the base class for the various runners
 class RunnerBase(object):
-    def __init__(self, cfg, component_name, trace_dir):
-        self.cfg = cfg
+    def __init__(self, config, component_name, trace_dir):
+        self.cfg = config
         self.component_name = component_name
         self.trace_dir = trace_dir
 
     def unconfigure(self):
-        #cleans up anything configured by 
+        #cleans up anything configured by
         #this runner for any apps for this component
         #returns how many files unconfigured
         return 0
