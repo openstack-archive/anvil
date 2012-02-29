@@ -120,6 +120,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
             #TODO remove this junk, blah, puke that we have to do this
             qc = self.instances[settings.QUANTUM_CLIENT]
             src_pth = sh.joinpths(qc.appdir, 'quantum')
+            tgt_dir = sh.joinpths(self.dash_dir, 'quantum')
             links[src_pth] = tgt_dir
         return links
 
