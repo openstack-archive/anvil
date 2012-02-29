@@ -176,12 +176,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
     def pre_install(self):
         comp.PythonInstallComponent.pre_install(self)
         self.tracewriter.make_dir(self.log_dir)
-        if utils.service_enabled(settings.QUANTUM_CLIENT, self.instances, False):
-            #TODO remove this junk, blah, puke that we have to do this
-            tgt_dir = sh.joinpths(self.dash_dir, 'quantum')
-            if sh.isdir(tgt_dir):
-                #whhhhy???
-                sh.deldir(tgt_dir)
 
     def _config_fixups(self):
         #currently just handling rhel fixups
