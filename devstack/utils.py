@@ -629,7 +629,7 @@ def goodbye(worked):
 
 def parse_components(components):
     if not components:
-        return list()
+        return dict()
     adjusted_components = dict()
     for c in components:
         mtch = EXT_COMPONENT.match(c)

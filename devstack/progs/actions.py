@@ -146,7 +146,7 @@ class ActionRunner(object):
         if not unclean_components:
             self.components = def_components
         else:
-            for (c, opts) in unclean_components:
+            for (c, opts) in unclean_components.items():
                 if opts is None and c in def_components:
                     self.components[c] = def_components[c]
                 elif opts is None:
