@@ -22,7 +22,8 @@ from devstack import log as logging
 from devstack import shell as sh
 
 LOG = logging.getLogger("devstack.downloader")
-EXT_REG = re.compile(r"^(.*?)\.git\s*$", re.IGNORECASE)
+
+GIT_EXT_REG = re.compile(r"^(.*?)\.git\s*$", re.IGNORECASE)
 GIT_MASTER_BRANCH = "master"
 CLONE_CMD = ["git", "clone"]
 CHECKOUT_CMD = ['git', 'checkout']
@@ -52,8 +53,7 @@ def _gitdownload(storewhere, uri, branch=None):
 def download(storewhere, uri, branch=None):
     #figure out which type
     up = urlparse(uri)
-    if up and up.scheme.lower() == "git" or \
-        EXT_REG.match(up.path):
+    if up and up.scheme.lower() == "git" or GIT_EXT_REG.match(up.path):
         return _gitdownload(storewhere, uri, branch)
     else:
         msg = "Currently we do not know how to download from uri [%s]" % (uri)

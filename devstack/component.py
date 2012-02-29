@@ -403,6 +403,7 @@ class ProgramRuntime(ComponentBase):
         # First make a pass and make sure all runtime (e.g. upstart) config files are in place....
         cls = RUNNER_CLS_MAPPING[utils.fetch_run_type(self.cfg)]
         instance = cls(self.cfg, self.component_name, self.tracedir)
+        tot_am = 0
         for app_info in self._get_apps_to_start():
             app_name = app_info["name"]
             app_pth = app_info.get("path", app_name)
@@ -413,6 +414,8 @@ class ProgramRuntime(ComponentBase):
             LOG.info("Configuring runner for program [%s]" % (app_name))
             cfg_am = instance.configure(app_name, (app_pth, app_dir, program_opts))
             LOG.info("Configured %s files for runner for program [%s]" % (cfg_am, app_name))
+            tot_am += cfg_am
+        return tot_am
 
     def start(self):
         # Select how we are going to start it
@@ -466,7 +469,7 @@ class ProgramRuntime(ComponentBase):
         to_kill = self._locate_killers()
         for (app_name, killer) in to_kill:
             killer.stop(app_name)
-        LOG.debug("Deleting trace file %s" % (self.starttracereader.trace_fn))
+        LOG.debug("Deleting start trace file [%s]" % (self.starttracereader.trace_fn))
         sh.unlink(self.starttracereader.trace_fn)
         return len(to_kill)
 
