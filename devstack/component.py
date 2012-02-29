@@ -465,7 +465,7 @@ class ProgramRuntime(ComponentBase):
     def stop(self):
         to_kill = self._locate_killers()
         for (app_name, killer) in to_kill:
-            killer.stop(app_name, self.tracedir)
+            killer.stop(app_name)
         LOG.debug("Deleting trace file %s" % (self.starttracereader.trace_fn))
         sh.unlink(self.starttracereader.trace_fn)
         return len(to_kill)
