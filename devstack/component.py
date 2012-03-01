@@ -291,6 +291,9 @@ class PkgUninstallComponent(ComponentBase):
 
     def unconfigure(self):
         if not self.keep_old:
+            #TODO this may not be the best solution since we might actually want to remove config files
+            #but since most config files can be regenerated this should be fine (some can not though)
+            #so this is why we need to keep them
             self._unconfigure_files()
         self._unconfigure_links()
         self._unconfigure_runners()
