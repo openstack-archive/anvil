@@ -109,6 +109,11 @@ class PkgInstallComponent(ComponentBase):
             uri = self.cfg.get(uri_tuple[0], uri_tuple[1])
             self.tracewriter.downloaded(target_loc, uri)
             dirs_made = down.download(target_loc, uri, branch)
+            #ensure this is always added so that
+            #if a keep old happens then this of course
+            #won't be recreated, but if u uninstall without keeping old
+            #then this won't be deleted this time around
+            #adding it in is harmless and willl make sure its removed
             dirs_made.append(target_loc)
             self.tracewriter.dir_made(*dirs_made)
         return len(locations)
