@@ -95,7 +95,7 @@ class PkgInstallComponent(ComponentBase):
         locations = self._get_download_locations()
         base_dir = self.appdir
         for location_info in locations:
-            uri_tuple = location_info.get["uri"]
+            uri_tuple = location_info["uri"]
             branch_tuple = location_info.get("branch")
             subdir = location_info.get("subdir")
             target_loc = None
@@ -344,10 +344,14 @@ class PkgUninstallComponent(ComponentBase):
             dirsmade = [sh.abspth(d) for d in dirsmade]
             if self.keep_old:
                 olddirs = list(dirsmade)
-                downloads = set(self.tracereader.downloaded())
-                LOG.info("Attempting to keep %s download directories" % (len(downloads)))
+                downloads = (self.tracereader.downloaded())
+                places = set()
                 for info in downloads:
-                    download_place = info['target']
+                    download_place = info.get('target')
+                    if download_place:
+                        places.add(download_place)
+                LOG.info("Attempting to keep %s download directories" % (len(places)))
+                for download_place in places:
                     LOG.info("Removing parents of (%s)", download_place)
                     dirsmade = sh.remove_parents(download_place, dirsmade)
                 for d in olddirs:
