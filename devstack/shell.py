@@ -280,21 +280,19 @@ def remove_parents(child_path, paths):
     if not paths:
         return list()
     cleaned_paths = [abspth(p) for p in paths]
-    paths = [_explode_path(p) for p in cleaned_paths]
-    LOG.debug("Removing parents of [%s] from input [%s]", child_path, ",".join(paths))
-    child_path = _explode_path(abspth(child_path))
+    cleaned_child_path = abspth(child_path)
+    LOG.debug("Removing parents of [%s] from input [%s]" % (cleaned_child_path, ",".join(cleaned_paths)))
+    to_check_paths = [_explode_path(p) for p in cleaned_paths]
+    check_path = _explode_path(cleaned_child_path)
     new_paths = list()
-    for p in paths:
-        if _array_begins_with(p, child_path):
+    for p in to_check_paths:
+        if _array_begins_with(p, check_path):
             pass
         else:
             new_paths.append(p)
     ret_paths = list()
     for p in new_paths:
-        if not p:
-            continue
-        else:
-            ret_paths.append(abspth(os.sep + os.sep.join(p)))
+        ret_paths.append(abspth(os.sep + os.sep.join(p)))
     LOG.debug("Removal resulted in [%s]", ",".join(ret_paths))
     return ret_paths
 
