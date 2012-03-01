@@ -24,13 +24,6 @@
         }
     },
     "rhel-6": {
-        "MySQL-python": {
-            "version": "1.2*",
-            "removable": true
-        },
-        "SQLAlchemy": {
-            "version": "0.7.5"
-        }
     },
     "fedora-16": {
         # Seems needed for ovs_quantum_agent.py
