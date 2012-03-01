@@ -108,7 +108,9 @@ class PkgInstallComponent(ComponentBase):
                 branch = self.cfg.get(branch_tuple[0], branch_tuple[1])
             uri = self.cfg.get(uri_tuple[0], uri_tuple[1])
             self.tracewriter.downloaded(target_loc, uri)
-            self.tracewriter.dir_made(*down.download(target_loc, uri, branch))
+            dirs_made = down.download(target_loc, uri, branch)
+            dirs_made.append(target_loc)
+            self.tracewriter.dir_made(*dirs_made)
         return len(locations)
 
     def _get_param_map(self, config_fn):
