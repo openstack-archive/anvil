@@ -293,7 +293,7 @@ def remove_parents(child_path, paths):
             new_paths.append(p)
     ret_paths = list()
     for p in new_paths:
-        ret_paths.append("".join(p))
+        ret_paths.append(os.sep.join(p))
     return ret_paths
 
 
