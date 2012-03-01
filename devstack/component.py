@@ -288,7 +288,8 @@ class PkgUninstallComponent(ComponentBase):
         self.keep_old = kargs.get("keep_old")
 
     def unconfigure(self):
-        self._unconfigure_files()
+        if not self.keep_old:
+            self._unconfigure_files()
         self._unconfigure_links()
         self._unconfigure_runners()
 
