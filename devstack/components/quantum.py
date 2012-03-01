@@ -50,6 +50,7 @@ DB_NAME = 'ovs_quantum'
 OVS_BRIDGE_DEL = ['ovs-vsctl', '--no-wait', '--', '--if-exists', 'del-br', '%OVS_BRIDGE%']
 OVS_BRIDGE_ADD = ['ovs-vsctl', '--no-wait', 'add-br', '%OVS_BRIDGE%']
 OVS_BRIDGE_EXTERN_ID = ['ovs-vsctl', '--no-wait', 'br-set-external-id', '%OVS_BRIDGE%', 'bridge-id', '%OVS_EXTERNAL_ID%']
+OVS_BRIDGE_CMDS = [OVS_BRIDGE_DEL, OVS_BRIDGE_ADD, OVS_BRIDGE_EXTERN_ID]
 
 #special component options
 QUANTUM_SERVICE = 'q-svc'
@@ -181,19 +182,13 @@ class QuantumInstaller(comp.PkgInstallComponent):
             params['OVS_BRIDGE'] = bridge
             params['OVS_EXTERNAL_ID'] = external_id
             cmds = list()
-            cmds.append({
-                'cmd': OVS_BRIDGE_DEL,
-                'run_as_root': True,
-            })
-            cmds.append({
-                'cmd': OVS_BRIDGE_ADD,
-                'run_as_root': True,
-            })
-            cmds.append({
-                'cmd': OVS_BRIDGE_EXTERN_ID,
-                'run_as_root': True,
-            })
-            utils.execute_template(*cmds, params=params)
+            for cmd_templ in OVS_BRIDGE_CMDS:
+                cmds.append({
+                    'cmd': cmd_templ,
+                    'run_as_root': True,
+                })
+            if cmds:
+                utils.execute_template(*cmds, params=params)
 
     def post_install(self):
         comp.PkgInstallComponent.post_install(self)
