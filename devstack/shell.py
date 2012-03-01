@@ -281,6 +281,7 @@ def remove_parents(child_path, paths):
         return list()
     cleaned_paths = [abspth(p) for p in paths]
     paths = [_explode_path(p) for p in cleaned_paths]
+    LOG.debug("Removing parents of [%s] from input [%s]", child_path, ",".join(paths))
     child_path = _explode_path(abspth(child_path))
     new_paths = list()
     for p in paths:
@@ -294,6 +295,7 @@ def remove_parents(child_path, paths):
             continue
         else:
             ret_paths.append(abspth(os.sep + os.sep.join(p)))
+    LOG.debug("Removal resulted in [%s]", ",".join(ret_paths))
     return ret_paths
 
 
