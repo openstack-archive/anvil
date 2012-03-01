@@ -347,7 +347,9 @@ class PkgUninstallComponent(ComponentBase):
                 downloads = self.tracereader.downloaded()
                 LOG.info("Attempting to keep %s download directories" % (len(downloads)))
                 for info in downloads:
-                    dirsmade = sh.remove_parents(info['target'], dirsmade)
+                    download_place = info['target']
+                    LOG.info("Removing parents of (%s)", download_place)
+                    dirsmade = sh.remove_parents(download_place, dirsmade)
                 for d in olddirs:
                     if not (d in dirsmade):
                         LOG.info("Keeping created download directory (%s)" % (d))
