@@ -62,7 +62,7 @@ APP_OPTIONS = {
 
 #subcomponent that specifies we should make the network cidr using melange
 CREATE_CIDR = "create-cidr"
-WAIT_ONLINE_TO = 5
+WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
 
 
 class MelangeUninstaller(comp.PythonUninstallComponent):
