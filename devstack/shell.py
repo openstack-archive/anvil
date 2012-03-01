@@ -283,12 +283,15 @@ def remove_parents(child_path, paths):
     paths = [_explode_path(p) for p in cleaned_paths]
     child_path = _explode_path(abspth(child_path))
     new_paths = list()
+    print paths
+    print child_path
     for p in paths:
         if _array_begins_with(p, child_path):
             pass
         else:
             new_paths.append(p)
     ret_paths = list()
+    print new_paths
     for p in new_paths:
         if not p:
             continue

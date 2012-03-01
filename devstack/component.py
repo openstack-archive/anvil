@@ -349,7 +349,7 @@ class PkgUninstallComponent(ComponentBase):
                     download_place = info.get('target')
                     if download_place:
                         places.add(download_place)
-                LOG.info("Keeping %s download directories" % (len(places)))
+                LOG.info("Keeping %s download directories [%s]" % (len(places), ",".join(sorted(places))))
                 for download_place in places:
                     dirsmade = sh.remove_parents(download_place, dirsmade)
             for dirname in dirsmade:
