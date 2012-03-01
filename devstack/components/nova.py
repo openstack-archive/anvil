@@ -783,6 +783,7 @@ class NovaConfConfigurator(object):
         nova_conf.add('iscsi_help', 'tgtadm')
 
     def _configure_network_settings(self, nova_conf):
+        #TODO this might not be right.... 
         if utils.service_enabled(settings.QUANTUM, self.instances, False):
             nova_conf.add('network_manager', QUANTUM_MANAGER)
             nova_conf.add('quantum_connection_host', self.cfg.get('quantum', 'q_host'))
