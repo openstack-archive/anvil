@@ -286,11 +286,7 @@ class PkgUninstallComponent(ComponentBase):
     def __init__(self, component_name, *args, **kargs):
         ComponentBase.__init__(self, component_name, *args, **kargs)
         self.tracereader = tr.TraceReader(self.tracedir, tr.IN_TRACE)
-        self.keep_dirs = list()
-        if kargs.get("keep_old"):
-            self.keep_dirs.append(self.appdir)
-            self.keep_dirs.append(self.component_root)
-            self.keep_dirs.append(self.root)
+        self.keep_old = kargs.get("keep_old")
 
     def unconfigure(self):
         self._unconfigure_files()
@@ -346,12 +342,11 @@ class PkgUninstallComponent(ComponentBase):
     def _uninstall_dirs(self):
         dirsmade = self.tracereader.dirs_made()
         if dirsmade:
+            if self.keep_old:
+                dirsmade = sh.remove_parents(self.appdir, dirsmade)
             for dirname in dirsmade:
-                if dirname in self.keep_dirs:
-                    LOG.info("Keeping created directory (%s)" % (dirname))
-                else:
-                    LOG.info("Removing created directory (%s)" % (dirname))
-                    sh.deldir(dirname, run_as_root=True)
+                LOG.info("Removing created directory (%s)" % (dirname))
+                sh.deldir(dirname, run_as_root=True)
 
 
 class PythonUninstallComponent(PkgUninstallComponent):

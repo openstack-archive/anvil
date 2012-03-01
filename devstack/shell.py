@@ -42,6 +42,7 @@ SHELL_QUOTE_REPLACERS = {
 }
 SHELL_WRAPPER = "\"%s\""
 FALSE_VALS = ['f', 'false', '0', 'off']
+ROOT_PATH = os.sep
 
 
 #root context guard
@@ -266,16 +267,54 @@ def password(pw_prompt=None, pw_len=8):
         return pw
 
 
+def _explode_path(path):
+    parts = list()
+    while path != ROOT_PATH:
+        (path, name) = os.path.split(path)
+        parts.append(name)
+        if path == ROOT_PATH:
+            parts.append(path)
+    parts.reverse()
+    return parts
+
+
+def remove_parents(child_path, paths):
+    if not paths:
+        return list()
+    paths = [abspth(p) for p in paths]
+    paths = [_explode_path(p) for p in paths]
+    child_path = abspth(child_path)
+    child_path = _explode_path(child_path)
+    new_paths = list()
+    for p in paths:
+        if _array_begins_with(p, child_path):
+            pass
+        else:
+            new_paths.append(p)
+    ret_paths = list()
+    for p in new_paths:
+        ret_paths.append("".join(p))
+    return ret_paths
+
+
+def _array_begins_with(haystack, needle):
+    if len(haystack) >= len(needle):
+        return False
+    for i in range(len(haystack)):
+        if haystack[i] != needle[i]:
+            return False
+    return True
+
+
 def mkdirslist(path):
     LOG.debug("Determining potential paths to create for target path \"%s\"" % (path))
     dirs_possible = set()
     dirs_possible.add(path)
-
     while True:
         (base, _) = os.path.split(path)
         dirs_possible.add(base)
         path = base
-        if path == os.sep:
+        if path == ROOT_PATH:
             break
     #sorting is important so that we go in the right order.. (/ before /tmp and so on)
     dirs_made = list()
