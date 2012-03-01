@@ -272,6 +272,8 @@ def _explode_path(path):
     while path != ROOT_PATH:
         (path, name) = os.path.split(path)
         parts.append(name)
+        print path
+        print name
         if path == ROOT_PATH:
             parts.append(path)
     parts.reverse()
@@ -281,10 +283,9 @@ def _explode_path(path):
 def remove_parents(child_path, paths):
     if not paths:
         return list()
-    paths = [abspth(p) for p in paths]
-    paths = [_explode_path(p) for p in paths]
-    child_path = abspth(child_path)
-    child_path = _explode_path(child_path)
+    cleaned_paths = [abspth(p) for p in paths]
+    paths = [_explode_path(p) for p in cleaned_paths]
+    child_path = _explode_path(abspth(child_path))
     new_paths = list()
     for p in paths:
         if _array_begins_with(p, child_path):
