@@ -35,9 +35,33 @@
         }
     },
     "rhel-6": {
-        #TBD
+        "python-greenlet": {
+            "version": "0.3.1*",
+            "removable": true,
+            "meta": {
+                "epel" : true
+            }
+        },
+        "python-eventlet": {
+            "version": "0.9*",
+            "removable": true,
+            "meta": {
+                "epel" : true
+            }
+        },
+        "python-gflags": {
+            "version": "1.4*",
+            "removable": true,
+            "meta": {
+                "epel" : true
+            }
+        },
+        "libxml2-python": {
+            "version": "2.7*",
+            "removable": false
+        }
     },
-    "fedoara-16": {
+    "fedora-16": {
         "python-eventlet": {
             "version": "0.9*",
             "removable": true
