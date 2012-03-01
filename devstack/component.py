@@ -345,6 +345,7 @@ class PkgUninstallComponent(ComponentBase):
             if self.keep_old:
                 olddirs = list(dirsmade)
                 downloads = self.tracereader.downloaded()
+                LOG.info("Attempting to keep %s download directories" % (len(downloads)))
                 for info in downloads:
                     dirsmade = sh.remove_parents(info['target'], dirsmade)
                 for d in olddirs:
