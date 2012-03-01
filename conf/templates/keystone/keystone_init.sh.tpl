@@ -123,7 +123,7 @@ if [[ "$ENABLED_SERVICES" =~ "swift" ]]; then
                                  --type="object-store" \
                                  --description="Swift Service" 2>&1 >/dev/null
 fi
-if [[ "$ENABLED_SERVICES" =~ "quantum" ]]; then
+if [[ "$ENABLED_SERVICES" =~ "quantum-server" ]]; then
     keystone service-create \
                                  --name=quantum \
                                  --type=network \

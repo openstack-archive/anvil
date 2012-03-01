@@ -343,20 +343,15 @@ class PkgUninstallComponent(ComponentBase):
         if dirsmade:
             dirsmade = [sh.abspth(d) for d in dirsmade]
             if self.keep_old:
-                olddirs = list(dirsmade)
                 downloads = (self.tracereader.downloaded())
                 places = set()
                 for info in downloads:
                     download_place = info.get('target')
                     if download_place:
                         places.add(download_place)
-                LOG.info("Attempting to keep %s download directories" % (len(places)))
+                LOG.info("Keeping %s download directories" % (len(places)))
                 for download_place in places:
-                    LOG.info("Removing parents of (%s)", download_place)
                     dirsmade = sh.remove_parents(download_place, dirsmade)
-                for d in olddirs:
-                    if not (d in dirsmade):
-                        LOG.info("Keeping created download directory (%s)" % (d))
             for dirname in dirsmade:
                 LOG.info("Removing created directory (%s)" % (dirname))
                 sh.deldir(dirname, run_as_root=True)
