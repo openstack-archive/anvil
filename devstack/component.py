@@ -290,6 +290,7 @@ class PkgUninstallComponent(ComponentBase):
         if kargs.get("keep_old"):
             self.keep_dirs.append(self.appdir)
             self.keep_dirs.append(self.component_root)
+            self.keep_dirs.append(self.root)
 
     def unconfigure(self):
         self._unconfigure_files()
