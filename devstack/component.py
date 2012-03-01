@@ -95,11 +95,11 @@ class PkgInstallComponent(ComponentBase):
         locations = self._get_download_locations()
         base_dir = self.appdir
         for location_info in locations:
-            uri_tuple = location_info.get("uri")
+            uri_tuple = location_info.get["uri"]
             branch_tuple = location_info.get("branch")
             subdir = location_info.get("subdir")
             target_loc = None
-            if subdir and len(subdir):
+            if subdir:
                 target_loc = sh.joinpths(base_dir, subdir)
             else:
                 target_loc = base_dir
@@ -109,7 +109,6 @@ class PkgInstallComponent(ComponentBase):
             uri = self.cfg.get(uri_tuple[0], uri_tuple[1])
             self.tracewriter.downloaded(target_loc, uri)
             self.tracewriter.dir_made(*down.download(target_loc, uri, branch))
-            self.tracewriter.downloaded(target_loc, uri)
         return len(locations)
 
     def _get_param_map(self, config_fn):
@@ -343,7 +342,9 @@ class PkgUninstallComponent(ComponentBase):
         dirsmade = self.tracereader.dirs_made()
         if dirsmade:
             if self.keep_old:
-                dirsmade = sh.remove_parents(self.appdir, dirsmade)
+                downloads = self.tracereader.downloaded()
+                for info in downloads:
+                    dirsmade = sh.remove_parents(info['target'], dirsmade)
             for dirname in dirsmade:
                 LOG.info("Removing created directory (%s)" % (dirname))
                 sh.deldir(dirname, run_as_root=True)

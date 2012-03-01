@@ -178,6 +178,16 @@ class TraceReader(object):
     def exists(self):
         return sh.exists(self.trace_fn)
 
+    def downloaded(self):
+        lines = self._read()
+        locs = list()
+        for (cmd, action) in lines:
+            if cmd == DOWNLOADED and len(action):
+                jentry = json.loads(action)
+                if type(jentry) is dict:
+                    locs.append(jentry)
+        return locs
+
     def py_listing(self):
         return self._readpy()
 

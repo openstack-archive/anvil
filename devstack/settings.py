@@ -79,6 +79,7 @@ COMPONENT_DEPENDENCIES = {
     NOVA: [KEYSTONE, GLANCE, DB, RABBIT, NOVA_CLIENT],
     SWIFT: [KEYSTONE_CLIENT],
     NOVA_CLIENT: [],
+    # Horizon depends on glances client (which should really be a client package)
     HORIZON: [KEYSTONE_CLIENT, GLANCE, NOVA_CLIENT, QUANTUM_CLIENT],
     # More of quantums deps come from its module function get_dependencies
     QUANTUM: [],
