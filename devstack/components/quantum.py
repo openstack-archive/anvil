@@ -170,9 +170,7 @@ class QuantumInstaller(comp.PkgInstallComponent):
         bridge = self.cfg.get("quantum", "ovs_bridge")
         if bridge:
             LOG.info("Fixing up ovs bridge named %s.", bridge)
-            external_id = self.cfg.get("quantum", 'ovs_bridge_external_name')
-            if not external_id:
-                external_id = bridge
+            external_id = self.cfg.getdefaulted("quantum", 'ovs_bridge_external_name', bridge)
             params = dict()
             params['OVS_BRIDGE'] = bridge
             params['OVS_EXTERNAL_ID'] = external_id

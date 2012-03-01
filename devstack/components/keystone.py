@@ -82,15 +82,13 @@ SWIFT_TEMPL_ADDS = ['catalog.RegionOne.object_store.publicURL = http://%SERVICE_
                     'catalog.RegionOne.object_store.publicURL = http://%SERVICE_HOST%:8080/v1/AUTH_$(tenant_id)s',
                     'catalog.RegionOne.object_store.adminURL = http://%SERVICE_HOST%:8080/',
                     'catalog.RegionOne.object_store.internalURL = http://%SERVICE_HOST%:8080/v1/AUTH_$(tenant_id)s',
-                    "catalog.RegionOne.object_store.name = 'Swift Service'",
-                    '', '']
+                    "catalog.RegionOne.object_store.name = 'Swift Service'"]
 
 #quantum template additions
 QUANTUM_TEMPL_ADDS = ['catalog.RegionOne.network.publicURL = http://%SERVICE_HOST%:9696/',
                       'catalog.RegionOne.network.adminURL = http://%SERVICE_HOST%:9696/',
                       'catalog.RegionOne.network.internalURL = http://%SERVICE_HOST%:9696/',
-                      "catalog.RegionOne.network.name = 'Quantum Service'",
-                      '', '']
+                      "catalog.RegionOne.network.name = 'Quantum Service'"]
 
 
 class KeystoneUninstaller(comp.PythonUninstallComponent):
@@ -173,12 +171,19 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         elif name == CATALOG_CONF:
             nlines = list()
             if utils.service_enabled(settings.SWIFT, self.instances):
-                nlines.extend(SWIFT_TEMPL_ADDS)
+                mp = dict()
+                mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
+                nlines.append("# Swift additions")
+                nlines.extend(utils.param_replace_list(SWIFT_TEMPL_ADDS, mp))
+                nlines.append("")
             if utils.service_enabled(settings.QUANTUM, self.instances) or \
                     utils.service_enabled(settings.QUANTUM_CLIENT, self.instances):
-                nlines.extend(QUANTUM_TEMPL_ADDS)
+                mp = dict()
+                mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
+                nlines.append("# Quantum additions")
+                nlines.extend(utils.param_replace_list(QUANTUM_TEMPL_ADDS, mp))
+                nlines.append("")
             if nlines:
-                nlines.insert(0, "")
                 nlines.insert(0, contents)
                 contents = cfg.add_header(name, utils.joinlinesep(*nlines))
         return contents
