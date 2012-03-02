@@ -1,5 +1,6 @@
 import sys
 import os
+import tempfile
 
 possible_topdir = os.path.normpath(os.path.join(os.path.abspath(sys.argv[0]), os.pardir, os.pardir))
 sys.path.insert(0, possible_topdir)
@@ -16,6 +17,7 @@ if __name__ == "__main__":
     distro = sys.argv[1]
     fns = sys.argv[2:len(sys.argv)]
     pips = dict()
+    gen_type = "fedora.spec"
     for fn in fns:
         data = utils.load_json(fn)
         if distro in data:
@@ -30,12 +32,11 @@ if __name__ == "__main__":
                     pips[k] = version
     for (pip_name, version) in pips.items():
         print("Fetching %s (%s)" % (pip_name, version))
-        cmd = ['py2pack'] + ['fetch', pip_name]
-        if version:
-            cmd = cmd + [version]
-        sh.execute(*cmd)
-
-
-
+        cmd = ['py2pack'] + ['fetch', pip_name] + [version]
+        (sysout, stderr) = sh.execute(*cmd)
+        fn = pip_name + "-" + version + ".spec"
+        cmd = ['py2pack'] + ['generate', '-t', gen_type, "-f", fn, pip_name] + [version]
+        (sysout, stderr) = sh.execute(*cmd)
+        print("Spec should be at %s" % (fn))
 
 
