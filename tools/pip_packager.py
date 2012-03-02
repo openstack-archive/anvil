@@ -29,11 +29,10 @@ if __name__ == "__main__":
                 else:
                     pips[k] = version
     for (pip_name, version) in pips.items():
-        full_name = pip_name
+        print("Fetching %s (%s)" % (pip_name, version))
+        cmd = ['py2pack'] + ['fetch', pip_name]
         if version:
-            full_name = full_name + "==" + version
-        print("Fetching %s" % (full_name))
-        cmd = ['py2pack'] + ['fetch', full_name]
+            cmd = cmd + [version]
         sh.execute(*cmd)
 
 
