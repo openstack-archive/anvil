@@ -14,13 +14,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import ConfigParser
 import json
 import os
 import tarfile
 import tempfile
 import urllib
 import urllib2
-import ConfigParser
 
 from devstack import log
 from devstack import shell
@@ -33,13 +33,14 @@ LOG = log.getLogger("devstack.image.creator")
 
 class Image(object):
 
-    KERNEL_FORMAT = ['glance', '-A', '%TOKEN%', 'add', \
+    KERNEL_FORMAT = ['glance', 'add', '-A', '%TOKEN%', '--silent-upload', \
         'name="%IMAGE_NAME%-kernel"', 'is_public=true', 'container_format=aki', \
         'disk_format=aki']
-    INITRD_FORMAT = ['glance', 'add', '-A', '%TOKEN%', \
+    INITRD_FORMAT = ['glance', 'add', '-A', '%TOKEN%', '--silent-upload', \
         'name="%IMAGE_NAME%-ramdisk"', 'is_public=true', 'container_format=ari', \
         'disk_format=ari']
-    IMAGE_FORMAT = ['glance', 'add', '-A', '%TOKEN%', 'name="%IMAGE_NAME%.img"', \
+    IMAGE_FORMAT = ['glance', 'add', '-A', '%TOKEN%', '--silent-upload',
+        'name="%IMAGE_NAME%.img"',
         'is_public=true', 'container_format=ami', 'disk_format=ami', \
         'kernel_id=%KERNEL_ID%', 'ramdisk_id=%INITRD_ID%']
 
