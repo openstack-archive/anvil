@@ -17,6 +17,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import distutils.version
 import json
 import netifaces
 import os
@@ -42,6 +43,9 @@ DEF_IP = "127.0.0.1"
 IP_LOOKER = '8.8.8.8'
 DEF_IP_VERSION = settings.IPV4
 PRIVATE_OCTS = []
+ALL_NUMS = re.compile(r"^\d+$")
+START_NUMS = re.compile(r"^(\d+)(\D+)")
+STAR_VERSION = 0
 
 
 def load_template(component, template_name):
@@ -105,6 +109,44 @@ def load_json(fn):
         new_lines.append(line)
     data = joinlinesep(*new_lines)
     return json.loads(data)
+
+
+def versionize(input_version):
+    segments = input_version.split(".")
+    cleaned_segments = list()
+    for piece in segments:
+        piece = piece.strip()
+        if len(piece) == 0:
+            msg = "Disallowed empty version segment found"
+            raise ValueError(msg)
+        if piece == "*":
+            cleaned_segments.append(STAR_VERSION)
+        elif ALL_NUMS.match(piece):
+            cleaned_segments.append(int(piece))
+        else:
+            piece_match = START_NUMS.match(piece)
+            if not piece_match:
+                msg = "Unknown version identifier %s" % (piece)
+                raise ValueError(msg)
+            else:
+                cleaned_segments.append(int(piece_match.group(1)))
+    if not cleaned_segments:
+        msg = "Disallowed empty version found"
+        raise ValueError(msg)
+    num_parts = [str(p) for p in cleaned_segments]
+    return distutils.version.LooseVersion(".".join(num_parts))
+
+
+def sort_versions(versions, descending=True):
+    if not versions:
+        return list()
+    version_cleaned = list()
+    for v in versions:
+        version_cleaned.append(versionize(v))
+    versions_sorted = sorted(version_cleaned)
+    if not descending:
+        versions_sorted.reverse()
+    return versions_sorted
 
 
 def get_host_ip():

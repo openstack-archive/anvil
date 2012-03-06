@@ -654,7 +654,7 @@ class NovaConfConfigurator(object):
         #allow the admin api?
         if self._getbool('allow_admin_api'):
             nova_conf.add_simple('allow_admin_api')
-        
+
         #??
         nova_conf.add_simple('allow_resize_to_same_host')
 
