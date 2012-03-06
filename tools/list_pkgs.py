@@ -25,10 +25,13 @@ def get_pips(c, distro):
 
 
 if __name__ == "__main__":
-    ME = os.path.basename(sys.argv[0])
+    me = os.path.basename(sys.argv[0])
+    if len(sys.argv) < 2:
+        print("%s distro" % (me))
+        sys.exit(1)
     distro = sys.argv[1]
     for c in sorted(settings.COMPONENT_NAMES):
-        print("Packages for %s:" % (utils.color_text(c, 'green')))
+        print("Packages for %s:" % (utils.color_text(c, 'green', bold=True, underline=True)))
         pips = get_pips(c, distro)
         if pips is None or not pips:
             print("\t- %s" % (utils.color_text('N/A', 'red')))
