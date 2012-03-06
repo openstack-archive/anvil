@@ -166,7 +166,7 @@ class ActionRunner(object):
         adjusted_components = dict(components)
         if self.ignore_deps:
             return (adjusted_components, list(components.keys()))
-        all_components = common.get_components_deps(self.action, components, self.distro, self.directory)
+        all_components = common.get_components_deps(self.action, components, self.directory, self.distro)
         component_diff = set(all_components.keys()).difference(components.keys())
         if component_diff:
             LOG.info("Having to activate dependent components: [%s]" % (", ".join(sorted(component_diff))))

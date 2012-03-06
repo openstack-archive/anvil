@@ -51,12 +51,12 @@ BASE_LINK_DIR = "/etc"
 
 class ComponentBase(object):
     def __init__(self, component_name, **kargs):
+        self.component_name = component_name
         self.cfg = kargs.get("config")
         self.packager = kargs.get("packager")
         self.distro = kargs.get("distro")
-        self.component_name = component_name
-        self.instances = kargs.get("instances", set())
-        self.component_opts = kargs.get('opts', list())
+        self.instances = kargs.get("instances")
+        self.component_opts = kargs.get('opts')
         self.root = kargs.get("root")
         self.component_root = sh.joinpths(self.root, component_name)
         self.tracedir = sh.joinpths(self.component_root, settings.COMPONENT_TRACE_DIR)

@@ -1,110 +1,42 @@
-import json
 import os
 import sys
+import tempfile
 
-#useful for running like the following
-#find conf/ | grep ".json\$" | xargs python tools/list_pkgs.py "rhel-6"
+possible_topdir = os.path.normpath(os.path.join(os.path.abspath(sys.argv[0]), os.pardir, os.pardir))
+sys.path.insert(0, possible_topdir)
 
-VER_LEN = 10
-MAX_SUB_SEGMENTS = 2
+from devstack import utils
+from devstack import settings
+from devstack import component
+from devstack.progs import common
 
-def clean_file(name):
-    with open(name, "r") as f:
-        contents = f.read()
-        lines = contents.splitlines()
-        cleaned_up = list()
-        for line in lines:
-            if line.lstrip().startswith('#'):
-                continue
-            else:
-                cleaned_up.append(line)
-        cleaned_lines = os.linesep.join(cleaned_up)
-        data = json.loads(cleaned_lines)
-        return data
-
-
-def versionize(ver):
-    real_digits = list()
-    for i in range(VER_LEN):
-        if i < len(ver):
-            digit = ver[i].strip().strip("*")
-            if not len(digit):
-                real_digits.append("0" * MAX_SUB_SEGMENTS)
-            else:
-                for j in range(MAX_SUB_SEGMENTS):
-                    if j < len(digit):
-                        real_digits.append(digit[j])
-                    else:
-                        real_digits.append("0")
-        else:
-            real_digits.append("0" * MAX_SUB_SEGMENTS)
-    ver_str = "".join(real_digits)
-    return int(ver_str)
-
-
-def pick_version(old_ver, new_ver):
-    if new_ver is None:
-        return old_ver
-    if old_ver is None:
-        return new_ver
-    try:
-        old_v = versionize(old_ver.strip("*").split("."))
-        new_v = versionize(new_ver.strip("*").split("."))
-        if old_v < new_v:
-            return new_ver
-        else:
-            return old_ver
-    except ValueError:
-        return old_ver
+def get_pips(c, distro):
+    cls = common.get_action_cls(settings.INSTALL, c)
+    dummy_config = common.get_config()
+    dummy_root = tempfile.gettempdir()
+    instance = cls(instances=set(), distro=distro,
+                    packager=None, config=dummy_config,
+                    root=dummy_root, opts=list(),
+                    keep_old=False)
+    if not isinstance(instance, component.PkgInstallComponent):
+        return None
+    else:
+        return instance._get_pkgs_expanded()
 
 
 if __name__ == "__main__":
     ME = os.path.basename(sys.argv[0])
-    if len(sys.argv) == 1:
-        print("%s distro filename filename filename..." % (ME))
-        sys.exit(0)
     distro = sys.argv[1]
-    fns = sys.argv[2:len(sys.argv)]
-    pkgs = dict()
-    pips = dict()
-    for fn in fns:
-        data = clean_file(fn)
-        is_pip = False
-        if fn.find("pip") != -1:
-            #TODO this isn't that great
-            is_pip = True
-        if distro in data:
-            for (name, info) in data[distro].items():
-                if is_pip:
-                    if name in pips:
-                        my_ver = info.get("version")
-                        old_ver = pips[name]
-                        pips[name] = pick_version(old_ver, my_ver)
-                    else:
-                        pips[name] = info.get("version")
-                else:
-                    if name in pkgs:
-                        my_ver = info.get("version")
-                        old_ver = pkgs[name]
-                        pkgs[name] = pick_version(old_ver, my_ver)
-                    else:
-                        pkgs[name] = info.get("version")
-
-    print("+Pips (%s) for distro: %s" % (len(pips), distro))
-    for name in sorted(pips.keys()):
-        version = pips.get(name)
-        if version is None:
-            version = "???"
+    for c in sorted(settings.COMPONENT_NAMES):
+        print("Packages for %s:" % (utils.color_text(c, 'green')))
+        pips = get_pips(c, distro)
+        if pips is None or not pips:
+            print("\t- %s" % (utils.color_text('N/A', 'red')))
         else:
-            version = str(version)
-        print("[%s] with version [%s]" % (name, version))
-
-    print("")
-    print("+Packages (%s) for distro: %s" % (len(pkgs), distro))
-    for name in sorted(pkgs.keys()):
-        version = pkgs.get(name)
-        if version is None:
-            version = "???"
-        else:
-            version = str(version)
-        print("[%s] with version [%s]" % (name, version))
+            names = sorted(pips.keys())
+            for name in names:
+                real_name = name
+                info = pips.get(name) or dict()
+                if 'version' in info:
+                    real_name = "%s (%s)" % (name, utils.color_text(str(info.get('version')), 'blue', bold=True))
+                print("\t- %s" % real_name)

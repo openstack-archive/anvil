@@ -137,7 +137,7 @@ def format_secs_taken(secs):
     return output
 
 
-def get_action_cls(action_name, component_name, distro):
+def get_action_cls(action_name, component_name, distro=None):
     action_cls_map = ACTION_CLASSES.get(action_name)
     if not action_cls_map:
         raise excp.StackException("Action %s has no component to class mapping" % (action_name))
@@ -155,14 +155,15 @@ def get_packager(distro, keep_packages):
     return cls(distro, keep_packages)
 
 
-def get_config():
-    cfg_fn = sh.canon_path(settings.STACK_CONFIG_LOCATION)
+def get_config(cfg_fn=None):
+    if not cfg_fn:
+        cfg_fn = sh.canon_path(settings.STACK_CONFIG_LOCATION)
     config_instance = cfg.StackConfigParser()
     config_instance.read(cfg_fn)
     return config_instance
 
 
-def get_components_deps(action_name, base_components, distro, root_dir):
+def get_components_deps(action_name, base_components, root_dir=None, distro=None):
     all_components = dict()
     active_names = list(base_components)
     if not root_dir:
