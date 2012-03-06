@@ -46,6 +46,7 @@ PRIVATE_OCTS = []
 ALL_NUMS = re.compile(r"^\d+$")
 START_NUMS = re.compile(r"^(\d+)(\D+)")
 STAR_VERSION = 0
+IN_TERMINAL = (sys.stdout.isatty() or sys.stdout.isatty())
 
 
 def load_template(component, template_name):
@@ -72,6 +73,12 @@ def execute_template(*cmds, **kargs):
                                  process_input=stdin, **kargs)
         cmd_results.append(exec_result)
     return cmd_results
+
+
+def in_terminal():
+    if sys.stdout.isatty():
+        return True
+    return False
 
 
 def to_bytes(text):
@@ -438,7 +445,9 @@ def _welcome_slang():
     return random.choice(potentials).strip("\n\r")
 
 
-def color_text(text, color, bold=False, underline=False, blink=False):
+def color_text(text, color, bold=False,
+                    underline=False, blink=False,
+                    always_color=False):
     text_attrs = list()
     if bold:
         text_attrs.append('bold')
@@ -446,7 +455,10 @@ def color_text(text, color, bold=False, underline=False, blink=False):
         text_attrs.append('underline')
     if blink:
         text_attrs.append('blink')
-    return termcolor.colored(text, color, attrs=text_attrs)
+    if in_terminal() or always_color:
+        return termcolor.colored(text, color, attrs=text_attrs)
+    else:
+        return text
 
 
 def _color_blob(text, text_color):
