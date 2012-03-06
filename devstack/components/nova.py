@@ -41,13 +41,15 @@ LOG = logging.getLogger('devstack.components.nova')
 #special generated conf
 API_CONF = 'nova.conf'
 
+#how we reference some config files (in applications)
+CFG_FILE_OPT = '--config-file'
+
 #normal conf
 PASTE_CONF = 'nova-api-paste.ini'
 PASTE_SOURCE_FN = 'api-paste.ini'
 POLICY_CONF = 'policy.json'
 LOGGING_SOURCE_FN = 'logging_sample.conf'
 LOGGING_CONF = "logging.conf"
-CFG_FILE_OPT = '--config-file'
 CONFIGS = [PASTE_CONF, POLICY_CONF, LOGGING_CONF]
 ADJUST_CONFIGS = [PASTE_CONF]
 
@@ -60,8 +62,7 @@ DB_NAME = 'nova'
 
 #this makes the database be in sync with nova
 DB_SYNC_CMD = [
-    {'cmd': ['%BINDIR%/nova-manage', CFG_FILE_OPT, '%CFGFILE%',
-             'db', 'sync']},
+    {'cmd': ['%BINDIR%/nova-manage', CFG_FILE_OPT, '%CFGFILE%', 'db', 'sync']},
 ]
 
 #these are used for nova volumens
@@ -745,6 +746,8 @@ class NovaConfConfigurator(object):
             converted_flags = list()
             for f in extra_flags:
                 cleaned_opt = f.lstrip("-")
+                if len(cleaned_opt) == 0:
+                    continue
                 if cleaned_opt.find("=") == -1:
                     cleaned_opt += "=%s" % (True)
                 converted_flags.append(cleaned_opt)

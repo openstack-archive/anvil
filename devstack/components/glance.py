@@ -41,16 +41,19 @@ API_CONF = "glance-api.conf"
 REG_CONF = "glance-registry.conf"
 API_PASTE_CONF = 'glance-api-paste.ini'
 REG_PASTE_CONF = 'glance-registry-paste.ini'
+SCRUB_CONF = 'glance-scrubber.conf'
+SCRUB_PASTE_CONF = 'glance-scrubber-paste.ini'
 LOGGING_CONF = "logging.conf"
 LOGGING_SOURCE_FN = 'logging.cnf.sample'
 POLICY_JSON = 'policy.json'
 CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF,
-            REG_PASTE_CONF, POLICY_JSON, LOGGING_CONF]
-READ_CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF, REG_PASTE_CONF]
+            REG_PASTE_CONF, POLICY_JSON, LOGGING_CONF, SCRUB_CONF, SCRUB_PASTE_CONF]
+READ_CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF, REG_PASTE_CONF, SCRUB_CONF, SCRUB_PASTE_CONF]
 
 #reg, api are here as possible subcomponents
 GAPI = "api"
 GREG = "reg"
+GSCR = 'scrub'
 
 #this db will be dropped and created
 DB_NAME = "glance"
@@ -62,13 +65,15 @@ WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
 #what to start
 APP_OPTIONS = {
     'glance-api': ['--config-file', sh.joinpths('%ROOT%', "etc", API_CONF)],
-    'glance-registry': ['--config-file', sh.joinpths('%ROOT%', "etc", REG_CONF)]
+    'glance-registry': ['--config-file', sh.joinpths('%ROOT%', "etc", REG_CONF)],
+    'glance-scrubber': ['--config-file', sh.joinpths('%ROOT%', "etc", REG_CONF)],
 }
 
 #how the subcompoent small name translates to an actual app
 SUB_TO_APP = {
     GAPI: 'glance-api',
-    GREG: 'glance-registry'
+    GREG: 'glance-registry',
+    GSCR: 'glance-scrubber',
 }
 
 #subdirs of the downloaded
