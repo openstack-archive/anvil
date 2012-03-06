@@ -46,7 +46,6 @@ PRIVATE_OCTS = []
 ALL_NUMS = re.compile(r"^\d+$")
 START_NUMS = re.compile(r"^(\d+)(\D+)")
 STAR_VERSION = 0
-IN_TERMINAL = (sys.stdout.isatty() or sys.stdout.isatty())
 
 
 def load_template(component, template_name):
