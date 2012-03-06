@@ -75,12 +75,6 @@ def execute_template(*cmds, **kargs):
     return cmd_results
 
 
-def in_terminal():
-    if sys.stdout.isatty():
-        return True
-    return False
-
-
 def to_bytes(text):
     byte_val = 0
     if not text:
@@ -455,7 +449,7 @@ def color_text(text, color, bold=False,
         text_attrs.append('underline')
     if blink:
         text_attrs.append('blink')
-    if in_terminal() or always_color:
+    if sh.in_terminal() or always_color:
         return termcolor.colored(text, color, attrs=text_attrs)
     else:
         return text

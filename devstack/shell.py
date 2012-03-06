@@ -276,6 +276,13 @@ def _explode_path(path):
     return parts
 
 
+def in_terminal(check_both=False):
+    if check_both:
+        return sys.stdout.isatty() or sys.stderr.isatty()
+    else:
+        return sys.stdout.isatty()
+
+
 def remove_parents(child_path, paths):
     if not paths:
         return list()
