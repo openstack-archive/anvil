@@ -119,7 +119,8 @@ def versionize(input_version):
         if len(piece) == 0:
             msg = "Disallowed empty version segment found"
             raise ValueError(msg)
-        if piece == "*":
+        piece = piece.strip("*")
+        if len(piece) == 0:
             cleaned_segments.append(STAR_VERSION)
         elif ALL_NUMS.match(piece):
             cleaned_segments.append(int(piece))

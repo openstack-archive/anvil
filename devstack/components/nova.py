@@ -196,7 +196,7 @@ QUANTUM_OPENSWITCH_OPS = {
     'libvirt_vif_type': 'ethernet',
     'libvirt_vif_driver': 'nova.virt.libvirt.vif.LibvirtOpenVswitchDriver',
     'linuxnet_interface_driver': 'nova.network.linux_net.LinuxOVSInterfaceDriver',
-    'quantum_use_dhcp': None,
+    'quantum_use_dhcp': True,
 }
 
 #this is a special conf
@@ -239,6 +239,9 @@ WARMUP_PWS = ['rabbit']
 
 #used to wait until started before we can run the data setup script
 WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
+
+#nova conf default section
+NV_CONF_DEF_SECTION = "[DEFAULT]"
 
 
 def _canon_virt_driver(virt_driver):
@@ -635,7 +638,7 @@ class NovaConfConfigurator(object):
 
         #verbose on?
         if self._getbool('verbose'):
-            nova_conf.add_simple('verbose')
+            nova_conf.add('verbose', True)
 
         # Check if we have a logdir specified. If we do, we'll make
         # sure that it exists. We will *not* use tracewrite because we
@@ -653,10 +656,10 @@ class NovaConfConfigurator(object):
 
         #allow the admin api?
         if self._getbool('allow_admin_api'):
-            nova_conf.add_simple('allow_admin_api')
+            nova_conf.add('allow_admin_api', True)
 
         #??
-        nova_conf.add_simple('allow_resize_to_same_host')
+        nova_conf.add('allow_resize_to_same_host', True)
 
         #which scheduler do u want?
         nova_conf.add('scheduler_driver', self._getstr('scheduler', DEF_SCHEDULER))
@@ -722,27 +725,36 @@ class NovaConfConfigurator(object):
         #and extract to finish
         return self._get_content(nova_conf)
 
-    def _get_content(self, nova_conf):
-        generated_content = nova_conf.generate()
-        extra_flags = self._getstr('extra_flags')
-        if extra_flags:
-            new_contents = list()
-            new_contents.append(generated_content)
-            #Lines that start with a # are ignored as comments.
-            #Leading whitespace is also ignored in flagfiles, as are blank lines.
-            new_contents.append("")
-            new_contents.append("# Extra FLAGS")
-            new_contents.append("")
-            cleaned_lines = list()
-            extra_lines = extra_flags.splitlines()
+    def _get_extra(self, key):
+        extras = self._getstr(key)
+        cleaned_lines = list()
+        if extras:
+            extra_lines = extras.splitlines()
             for line in extra_lines:
                 cleaned_line = line.strip()
                 if len(cleaned_line):
                     cleaned_lines.append(cleaned_line)
-            #anything actually found?
-            if cleaned_lines:
-                new_contents.extend(cleaned_lines)
-                generated_content = utils.joinlinesep(*new_contents)
+        return cleaned_lines
+
+    def _get_content(self, nova_conf):
+        generated_content = nova_conf.generate()
+        extra_flags = self._get_extra('extra_flags')
+        if extra_flags:
+            LOG.warning("EXTRA_FLAGS is defined and may need to be converted to EXTRA_OPTS!")
+        extra_opts = self._get_extra('extra_opts')
+        if extra_flags or extra_opts:
+            new_contents = list()
+            new_contents.append(generated_content)
+            new_contents.append("")
+            new_contents.append("# Extra flags")
+            new_contents.append("")
+            new_contents.extend(extra_flags)
+            new_contents.append("")
+            new_contents.append("# Extra options")
+            new_contents.append("")
+            new_contents.extend(extra_opts)
+            new_contents.append("")
+            generated_content = utils.joinlinesep(*new_contents)
         return generated_content
 
     def _configure_image_service(self, nova_conf, hostip):
@@ -783,7 +795,7 @@ class NovaConfConfigurator(object):
         if not vol_name_tpl:
             vol_name_tpl = DEF_VOL_TEMPL
         nova_conf.add('volume_name_template', vol_name_tpl)
-        nova_conf.add('iscsi_help', 'tgtadm')
+        nova_conf.add('iscsi_helper', 'tgtadm')
 
     def _configure_network_settings(self, nova_conf):
         #TODO this might not be right....
@@ -793,13 +805,10 @@ class NovaConfConfigurator(object):
             nova_conf.add('quantum_connection_port', self.cfg.get('quantum', 'q_port'))
             if self.cfg.get('quantum', 'q_plugin') == 'openvswitch':
                 for (key, value) in QUANTUM_OPENSWITCH_OPS.items():
-                    if value is None:
-                        nova_conf.add_simple(key)
-                    else:
-                        nova_conf.add(key, value)
+                    nova_conf.add(key, value)
             if utils.service_enabled(settings.MELANGE_CLIENT, self.instances, False):
                 nova_conf.add('quantum_ipam_lib', QUANTUM_IPAM_LIB)
-                nova_conf.add_simple('use_melange_mac_generation')
+                nova_conf.add('use_melange_mac_generation', True)
                 nova_conf.add('melange_host', self.cfg.get('melange', 'm_host'))
                 nova_conf.add('melange_port', self.cfg.get('melange', 'm_port'))
         else:
@@ -829,16 +838,16 @@ class NovaConfConfigurator(object):
         nova_conf.add('vlan_interface', vlan_interface)
 
         #This forces dnsmasq to update its leases table when an instance is terminated.
-        nova_conf.add_simple('force_dhcp_release')
+        nova_conf.add('force_dhcp_release', True)
 
     def _configure_syslog(self, nova_conf):
         if self.cfg.getboolean('default', 'syslog'):
-            nova_conf.add_simple('use_syslog')
+            nova_conf.add('use_syslog', True)
 
     def _configure_multihost(self, nova_conf):
         if self._getbool('multi_host'):
-            nova_conf.add_simple('multi_host')
-            nova_conf.add_simple('send_arp_for_ha')
+            nova_conf.add('multi_host', True)
+            nova_conf.add('send_arp_for_ha', True)
 
     def _configure_instances_path(self, instances_path, nova_conf):
         nova_conf.add('instances_path', instances_path)
@@ -862,7 +871,7 @@ class NovaConfConfigurator(object):
             nova_conf.add('xenapi_connection_url', self._getstr('xa_connection_url', XA_DEF_CONNECTION_URL))
             nova_conf.add('xenapi_connection_username', self._getstr('xa_connection_username', XA_DEF_USER))
             nova_conf.add('xenapi_connection_password', self.cfg.get("passwords", "xenapi_connection"))
-            nova_conf.add_simple('noflat_injected')
+            nova_conf.add('noflat_injected', True)
             xs_flat_ifc = self._getstr('xs_flat_interface', XS_DEF_INTERFACE)
             if not utils.is_interface(xs_flat_ifc):
                 msg = "Xenserver flat interface %s is not a known interface" % (xs_flat_ifc)
@@ -886,44 +895,48 @@ class NovaConf(object):
     def __init__(self):
         self.lines = list()
 
-    def add_list(self, key, *params):
-        self.lines.append({'key': key, 'options': params})
-        LOG.debug("Added nova conf key %s with values [%s]" % (key, ",".join(params)))
+    def add(self, key, *values):
+        real_value = ""
+        key = str(key)
+        if len(key) == 0:
+            raise exceptions.BadParamException("Can not add a empty key")
+        if len(values) == 0:
+            raise exceptions.BadParamException("Can not add a empty value for key %s" % (key))
+        if len(values) > 1:
+            str_values = [str(v) for v in values]
+            real_value = ",".join(str_values)
+        else:
+            real_value = str(values[0])
+        self.lines.append({'key': key, 'value': real_value})
+        LOG.debug("Added nova conf key %s with value [%s]" % (key, real_value))
 
-    def add_simple(self, key):
-        self.lines.append({'key': key, 'options': None})
-        LOG.debug("Added nova conf key %s" % (key))
+    def _form_entry(self, key, value, params=None):
+        real_value = utils.param_replace(str(value), params)
+        entry = "%s=%s" % (key, real_value)
+        return entry
 
-    def add(self, key, value):
-        self.lines.append({'key': key, 'options': [value]})
-        LOG.debug("Added nova conf key %s with value [%s]" % (key, value))
+    def _generate_header(self):
+        lines = list()
+        lines.append("# Generated on %s by (%s)" % (date.rcf8222date(), sh.getuser()))
+        lines.append("")
+        lines.append(NV_CONF_DEF_SECTION)
+        lines.append("")
+        return lines
 
-    def _form_key(self, key, has_opts):
-        key_str = "--" + str(key)
-        if has_opts:
-            key_str += "="
-        return key_str
+    def _generate_footer(self):
+        return list()
 
     def generate(self, param_dict=None):
-        conf_lines = sorted(self._generate_lines(param_dict))
-        full_lines = list()
-        full_lines.append("# Generated on %s" % (date.rcf8222date()))
-        full_lines.extend(conf_lines)
-        return utils.joinlinesep(*full_lines)
+        lines = list()
+        lines.extend(self._generate_header())
+        lines.extend(sorted(self._generate_lines(param_dict)))
+        lines.extend(self._generate_footer())
+        return utils.joinlinesep(*lines)
 
-    def _generate_lines(self, param_dict=None):
-        gen_lines = list()
+    def _generate_lines(self, params=None):
+        lines = list()
         for line_entry in self.lines:
             key = line_entry.get('key')
-            opts = line_entry.get('options')
-            if not key:
-                continue
-            if opts is None:
-                key_str = self._form_key(key, False)
-                full_line = key_str
-            else:
-                key_str = self._form_key(key, True)
-                filled_opts = utils.param_replace_list(opts, param_dict)
-                full_line = key_str + ",".join(filled_opts)
-            gen_lines.append(full_line)
-        return gen_lines
+            value = line_entry.get('value')
+            lines.append(self._form_entry(key, value, params))
+        return lines
