@@ -47,6 +47,7 @@ PASTE_SOURCE_FN = 'api-paste.ini'
 POLICY_CONF = 'policy.json'
 LOGGING_SOURCE_FN = 'logging_sample.conf'
 LOGGING_CONF = "logging.conf"
+CFG_FILE_OPT = '--config-file'
 CONFIGS = [PASTE_CONF, POLICY_CONF, LOGGING_CONF]
 ADJUST_CONFIGS = [PASTE_CONF]
 
@@ -59,7 +60,7 @@ DB_NAME = 'nova'
 
 #this makes the database be in sync with nova
 DB_SYNC_CMD = [
-    {'cmd': ['%BINDIR%/nova-manage', '--flagfile', '%CFGFILE%',
+    {'cmd': ['%BINDIR%/nova-manage', CFG_FILE_OPT, '%CFGFILE%',
              'db', 'sync']},
 ]
 
@@ -133,15 +134,15 @@ PASTE_PIPELINE_KEYSTONE_ADJUST = {
 # What to start
 APP_OPTIONS = {
     #these are currently the core components/applications
-    'nova-api': ['--flagfile', '%CFGFILE%'],
-    'nova-compute': ['--flagfile', '%CFGFILE%'],
-    'nova-volume': ['--flagfile', '%CFGFILE%'],
-    'nova-network': ['--flagfile', '%CFGFILE%'],
-    'nova-scheduler': ['--flagfile', '%CFGFILE%'],
-    'nova-cert': ['--flagfile', '%CFGFILE%'],
-    'nova-objectstore': ['--flagfile', '%CFGFILE%'],
-    'nova-consoleauth': ['--flagfile', '%CFGFILE%'],
-    'nova-xvpvncproxy': ['--flagfile', '%CFGFILE%'],
+    'nova-api': [CFG_FILE_OPT, '%CFGFILE%'],
+    'nova-compute': [CFG_FILE_OPT, '%CFGFILE%'],
+    'nova-volume': [CFG_FILE_OPT, '%CFGFILE%'],
+    'nova-network': [CFG_FILE_OPT, '%CFGFILE%'],
+    'nova-scheduler': [CFG_FILE_OPT, '%CFGFILE%'],
+    'nova-cert': [CFG_FILE_OPT, '%CFGFILE%'],
+    'nova-objectstore': [CFG_FILE_OPT, '%CFGFILE%'],
+    'nova-consoleauth': [CFG_FILE_OPT, '%CFGFILE%'],
+    'nova-xvpvncproxy': [CFG_FILE_OPT, '%CFGFILE%'],
 }
 
 # Sub component names to actual app names (matching previous dict)
