@@ -22,7 +22,7 @@
         #this causes issues like the following
         #https://answers.launchpad.net/nova/+question/174160
         "PasteDeploy": {
-            "version": "1.5"
+            "version": "1.5.0"
         },
         "iso8601": {
             "version": "0.1.4"
