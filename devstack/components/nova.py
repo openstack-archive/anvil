@@ -731,12 +731,11 @@ class NovaConfConfigurator(object):
     def _get_extra(self, key):
         extras = self._getstr(key)
         cleaned_lines = list()
-        if extras:
-            extra_lines = extras.splitlines()
-            for line in extra_lines:
-                cleaned_line = line.strip()
-                if len(cleaned_line):
-                    cleaned_lines.append(cleaned_line)
+        extra_lines = extras.splitlines()
+        for line in extra_lines:
+            cleaned_line = line.strip()
+            if len(cleaned_line):
+                cleaned_lines.append(cleaned_line)
         return cleaned_lines
 
     def _convert_extra_flags(self, extra_flags):
@@ -910,20 +909,18 @@ class NovaConf(object):
     def __init__(self):
         self.lines = list()
 
-    def add(self, key, *values):
+    def add(self, key, value, *values):
         real_value = ""
-        key = str(key)
-        if len(key) == 0:
+        real_key = str(key)
+        if len(real_key) == 0:
             raise exceptions.BadParamException("Can not add a empty key")
-        if len(values) == 0:
-            raise exceptions.BadParamException("Can not add a empty value for key %s" % (key))
-        if len(values) > 1:
-            str_values = [str(v) for v in values]
+        if len(values):
+            str_values = [str(value)] + [str(v) for v in values]
             real_value = ",".join(str_values)
         else:
-            real_value = str(values[0])
-        self.lines.append({'key': key, 'value': real_value})
-        LOG.debug("Added nova conf key %s with value [%s]" % (key, real_value))
+            real_value = str(value)
+        self.lines.append({'key': real_key, 'value': real_value})
+        LOG.debug("Added nova conf key %s with value [%s]" % (real_key, real_value))
 
     def _form_entry(self, key, value, params=None):
         real_value = utils.param_replace(str(value), params)
