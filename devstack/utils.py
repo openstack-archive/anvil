@@ -334,6 +334,8 @@ def joinlinesep(*pieces):
 def service_enabled(name, components, empty_true=True):
     if not components and empty_true:
         return True
+    if not components:
+        return False
     if name in components:
         return True
     return False
