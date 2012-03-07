@@ -145,10 +145,6 @@ alias ec2-upload-bundle="ec2-upload-bundle -a ${EC2_ACCESS_KEY} -s ${EC2_SECRET_
         lines = list()
         lines.append('# Nova stuff')
         key_params = keystone.get_shared_params(self.cfg)
-        lines.extend(self._make_export('NOVA_PASSWORD', key_params['ADMIN_PASSWORD']))
-        lines.extend(self._make_export('NOVA_URL', key_params['SERVICE_ENDPOINT']))
-        lines.extend(self._make_export('NOVA_PROJECT_ID', key_params['DEMO_TENANT_NAME']))
-        lines.extend(self._make_export('NOVA_USERNAME', key_params['DEMO_USER_NAME']))
         lines.extend(self._make_export_cfg('NOVA_VERSION',
                                 ('nova', 'nova_version')))
         lines.extend(self._make_export_cfg('NOVA_CERT',
