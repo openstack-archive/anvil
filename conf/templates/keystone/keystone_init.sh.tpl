@@ -87,7 +87,7 @@ keystone user-role-add --user $DEMO_USER --role $MEMBER_ROLE --tenant_id $INVIS_
 # Services
 keystone service-create --name=keystone --type=identity --description="Keystone Identity Service" 2>&1 >/dev/null
 
-qq keystone service-create --name=nova --type=compute --description="Nova Compute Service" 2>&1 >/dev/null
+keystone service-create --name=nova --type=compute --description="Nova Compute Service" 2>&1 >/dev/null
 
 NOVA_USER=$(get_id keystone user-create --name=nova --pass="$SERVICE_PASSWORD" \
                 --tenant_id $SERVICE_TENANT --email=nova@example.com)
@@ -101,38 +101,26 @@ keystone service-create --name=glance  --type=image  --description="Glance Image
 GLANCE_USER=$(get_id keystone user-create --name=glance  --pass="$SERVICE_PASSWORD" \
                             --tenant_id $SERVICE_TENANT   --email=glance@example.com)
 
-keystone user-role-add --tenant_id $SERVICE_TENANT \
-                       --user $GLANCE_USER \
-                       --role $ADMIN_ROLE 2>&1 >/dev/null
+keystone user-role-add --tenant_id $SERVICE_TENANT --user $GLANCE_USER --role $ADMIN_ROLE 2>&1 >/dev/null
 
-keystone service-create --name="nova-volume" \
-                       --type=volume \
-                       --description="Nova Volume Service" 2>&1 >/dev/null
+keystone service-create --name="nova-volume"  --type=volume  --description="Nova Volume Service" 2>&1 >/dev/null
 
 if [[ "$ENABLED_SERVICES" =~ "swift" ]]; then
-    keystone service-create --name=swift \
-                            --type="object-store" \
-                            --description="Swift Service" 2>&1 >/dev/null
+    keystone service-create --name=swift --type="object-store" --description="Swift Service" 2>&1 >/dev/null
     SWIFT_USER=$(get_id keystone user-create --name=swift \
                                              --pass="$SERVICE_PASSWORD" \
                                              --tenant_id $SERVICE_TENANT \
                                              --email=swift@example.com)
-    keystone user-role-add --tenant_id $SERVICE_TENANT \
-                           --user $SWIFT_USER \
-                           --role $ADMIN_ROLE 2>&1 >/dev/null
+    keystone user-role-add --tenant_id $SERVICE_TENANT  --user $SWIFT_USER  --role $ADMIN_ROLE 2>&1 >/dev/null
 fi
 
 if [[ "$ENABLED_SERVICES" =~ "quantum-server" ]]; then
-    keystone service-create --name=quantum \
-                            --type=network \
-                            --description="Quantum Service" 2>&1 >/dev/null
+    keystone service-create --name=quantum  --type=network  --description="Quantum Service" 2>&1 >/dev/null
     QUANTUM_USER=$(get_id keystone user-create --name=quantum \
                                                --pass="$SERVICE_PASSWORD" \
                                                --tenant_id $SERVICE_TENANT \
                                                --email=quantum@example.com)
-    keystone user-role-add --tenant_id $SERVICE_TENANT \
-                           --user $QUANTUM_USER \
-                           --role $ADMIN_ROLE 2>&1 >/dev/null
+    keystone user-role-add --tenant_id $SERVICE_TENANT  --user $QUANTUM_USER  --role $ADMIN_ROLE 2>&1 >/dev/null
 fi
 
 # create ec2 creds and parse the secret and access key returned
