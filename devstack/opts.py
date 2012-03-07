@@ -43,6 +43,12 @@ def parse():
         action="append",
         dest="component",
         help="openstack component: %s" % (_format_list(settings.COMPONENT_NAMES)))
+    parser.add_option("-v", "--verbose",
+        action="append_const",
+        const=1,
+        dest="verbosity",
+        default=[1],
+        help="increase the verbose level")
 
     base_group = OptionGroup(parser, "Install & uninstall & start & stop specific options")
     base_group.add_option("-a", "--action",
@@ -104,7 +110,6 @@ def parse():
     output['ignore_deps'] = not options.ensure_deps
     output['keep_old'] = options.keep_old
     output['extras'] = args
-
-    LOG.debug("Extracted options %s" % (output))
+    output['verbosity'] = len(options.verbosity)
 
     return output
