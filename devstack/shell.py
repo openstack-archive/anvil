@@ -129,18 +129,21 @@ def execute(*cmd, **kwargs):
     rc = None
     result = None
     with Rooted(run_as_root):
-        obj = subprocess.Popen(execute_cmd,
-                               stdin=stdin_fh,
-                               stdout=stdout_fh,
-                               stderr=stderr_fh,
-                               close_fds=close_file_descriptors,
-                               cwd=cwd,
-                               shell=shell,
-                               env=process_env)
-        if process_input is not None:
-            result = obj.communicate(str(process_input))
-        else:
-            result = obj.communicate()
+        try:
+            obj = subprocess.Popen(execute_cmd,
+                                   stdin=stdin_fh,
+                                   stdout=stdout_fh,
+                                   stderr=stderr_fh,
+                                   close_fds=close_file_descriptors,
+                                   cwd=cwd,
+                                   shell=shell,
+                                   env=process_env)
+            if process_input is not None:
+                result = obj.communicate(str(process_input))
+            else:
+                result = obj.communicate()
+        except OSError as e:
+            raise RuntimeError('Could not run %s: %s' % (execute_cmd, e))
         if (stdin_fh != subprocess.PIPE
             and obj.stdin and close_stdin):
             obj.stdin.close()
