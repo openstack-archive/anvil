@@ -217,8 +217,6 @@ class ImageCreationService:
     def _get_token(self):
         LOG.info("Fetching your keystone admin token so that we can perform image uploads.")
 
-        pwd = self.cfg.get("passwords", "horizon_keystone_admin")
-        key_users = keystone.get_shared_users(self.cfg)
         key_params = keystone.get_shared_params(self.cfg)
         keystone_service_url = key_params['SERVICE_ENDPOINT']
         keystone_token_url = "%s/tokens" % (keystone_service_url)
@@ -230,10 +228,10 @@ class ImageCreationService:
                 {
                     "passwordCredentials":
                     {
-                        "username": key_users['ADMIN_USER_NAME'],
-                        "password": pwd,
+                        "username": key_params['ADMIN_USER_NAME'],
+                        "password": key_params['ADMIN_PASSWORD'],
                     },
-                    "tenantName": key_users['ADMIN_TENANT_NAME'],
+                    "tenantName": key_params['ADMIN_TENANT_NAME'],
                 }
              })
 

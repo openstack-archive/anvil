@@ -664,7 +664,7 @@ class NovaConfConfigurator(object):
         nova_conf.add('allow_resize_to_same_host', True)
 
         #which scheduler do u want?
-        nova_conf.add('scheduler_driver', self._getstr('scheduler', DEF_SCHEDULER))
+        nova_conf.add('compute_scheduler_driver', self._getstr('scheduler', DEF_SCHEDULER))
 
         #setup network settings
         self._configure_network_settings(nova_conf)
@@ -693,6 +693,9 @@ class NovaConfConfigurator(object):
 
         #enable the standard extensions
         nova_conf.add('osapi_compute_extension', STD_COMPUTE_EXTS)
+
+        #auth will be using keystone
+        nova_conf.add('auth_strategy', 'keystone')
 
         #vnc settings setup
         self._configure_vnc(nova_conf)

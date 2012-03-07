@@ -212,8 +212,6 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             mp['KEYSTONE_DIR'] = self.appdir
             mp.update(get_shared_params(self.cfg))
         elif config_fn == MANAGE_DATA_CONF:
-            mp['ADMIN_PASSWORD'] = self.cfg.get('passwords', 'horizon_keystone_admin')
-            mp.update(get_shared_users(self.cfg))
             mp.update(get_shared_params(self.cfg))
         return mp
 
@@ -256,20 +254,19 @@ class KeystoneRuntime(comp.PythonRuntime):
         return APP_OPTIONS.get(app)
 
 
-def get_shared_users(config):
-    mp = dict()
-    mp['ADMIN_USER_NAME'] = config.getdefaulted("keystone", "admin_user", MANAGE_ADMIN_USER)
-    mp['ADMIN_TENANT_NAME'] = mp['ADMIN_USER_NAME']
-    mp['DEMO_USER_NAME'] = config.getdefaulted("keystone", "demo_user", MANAGE_DEMO_USER)
-    mp['DEMO_TENANT_NAME'] = mp['DEMO_USER_NAME']
-    mp['INVIS_USER_NAME'] = config.getdefaulted("keystone", "invisible_user", MANAGE_INVIS_USER)
-    mp['INVIS_TENANT_NAME'] = mp['INVIS_USER_NAME']
-    return mp
-
-
 def get_shared_params(config):
     mp = dict()
     host_ip = config.get('host', 'ip')
+
+    #these match what is in keystone_init.sh
+    mp['SERVICE_TENANT_NAME'] = 'service'
+    mp['ADMIN_USER_NAME'] = 'admin'
+    mp['ADMIN_TENANT_NAME'] = mp['ADMIN_USER_NAME']
+    mp['DEMO_USER_NAME'] = 'demo'
+    mp['DEMO_TENANT_NAME'] = mp['DEMO_USER_NAME']
+
+    mp['ADMIN_PASSWORD'] = config.get('passwords', 'horizon_keystone_admin')
+    mp['SERVICE_PASSWORD'] = mp['ADMIN_PASSWORD']
 
     keystone_auth_host = config.getdefaulted('keystone', 'keystone_auth_host', host_ip)
     mp['KEYSTONE_AUTH_HOST'] = keystone_auth_host
