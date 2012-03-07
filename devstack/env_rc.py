@@ -111,8 +111,8 @@ class RcGenerator(object):
     def _generate_os_env(self):
         lines = list()
         lines.append('# Openstack stuff')
-        lines.extend(self._make_export_cfg('OS_PASSWORD', ('passwords', 'horizon_keystone_admin')))
         key_params = keystone.get_shared_params(self.cfg)
+        lines.extend(self._make_export('OS_PASSWORD', key_params['ADMIN_PASSWORD']))
         lines.extend(self._make_export('OS_TENANT_NAME', key_params['DEMO_TENANT_NAME']))
         lines.extend(self._make_export('OS_USERNAME', key_params['DEMO_USER_NAME']))
         lines.extend(self._make_export('OS_AUTH_URL', key_params['SERVICE_ENDPOINT']))
@@ -141,9 +141,8 @@ alias ec2-upload-bundle="ec2-upload-bundle -a ${EC2_ACCESS_KEY} -s ${EC2_SECRET_
     def _generate_nova_env(self):
         lines = list()
         lines.append('# Nova stuff')
-        lines.extend(self._make_export_cfg('NOVA_PASSWORD',
-                                ('passwords', 'horizon_keystone_admin')))
         key_params = keystone.get_shared_params(self.cfg)
+        lines.extend(self._make_export('NOVA_PASSWORD', key_params['ADMIN_PASSWORD']))
         lines.extend(self._make_export('NOVA_URL', key_params['SERVICE_ENDPOINT']))
         lines.extend(self._make_export('NOVA_PROJECT_ID', key_params['DEMO_TENANT_NAME']))
         lines.extend(self._make_export('NOVA_USERNAME', key_params['DEMO_USER_NAME']))
