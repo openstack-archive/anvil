@@ -221,7 +221,7 @@ class ImageCreationService:
         keystone_service_url = key_params['SERVICE_ENDPOINT']
         keystone_token_url = "%s/tokens" % (keystone_service_url)
 
-        #form the post json data
+        # form the post json data
         data = json.dumps(
             {
                 "auth":

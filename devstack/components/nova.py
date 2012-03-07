@@ -442,9 +442,7 @@ class NovaInstaller(comp.PythonInstallComponent):
             mp['FIXED_NETWORK_SIZE'] = self.cfg.get('nova', 'fixed_network_size')
             mp['FIXED_RANGE'] = self.cfg.get('nova', 'fixed_range')
         else:
-            mp = keystone.get_shared_params(self.cfg)
-            mp['SERVICE_PASSWORD'] = "???"
-            mp['SERVICE_USER'] = "???"
+            mp.update(keystone.get_shared_params(self.cfg, 'nova'))
         return mp
 
     def configure(self):

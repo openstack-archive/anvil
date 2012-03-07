@@ -190,8 +190,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
         mp['SQL_CONN'] = self.cfg.get_dbdsn(DB_NAME)
         mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
         mp['HOST_IP'] = self.cfg.get('host', 'ip')
-        mp['SERVICE_USERNAME'] = 'glance'
-        mp.update(keystone.get_shared_params(self.cfg))
+        mp.update(keystone.get_shared_params(self.cfg, 'glance'))
         return mp
 
 

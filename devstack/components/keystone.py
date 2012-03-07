@@ -254,20 +254,25 @@ class KeystoneRuntime(comp.PythonRuntime):
         return APP_OPTIONS.get(app)
 
 
-def get_shared_params(config):
+def get_shared_params(config, service_user_name=None):
     mp = dict()
     host_ip = config.get('host', 'ip')
 
     #these match what is in keystone_init.sh
     mp['SERVICE_TENANT_NAME'] = 'service'
+    if service_user_name:
+        mp['SERVICE_USERNAME'] = str(service_user_name)
     mp['ADMIN_USER_NAME'] = 'admin'
     mp['DEMO_USER_NAME'] = 'demo'
     mp['ADMIN_TENANT_NAME'] = mp['ADMIN_USER_NAME']
     mp['DEMO_TENANT_NAME'] = mp['DEMO_USER_NAME']
 
+    #tokens and passwords
+    mp['SERVICE_TOKEN'] = config.get("passwords", "service_token")
     mp['ADMIN_PASSWORD'] = config.get('passwords', 'horizon_keystone_admin')
     mp['SERVICE_PASSWORD'] = config.get('passwords', 'service_password')
 
+    #components of the auth endpoint
     keystone_auth_host = config.getdefaulted('keystone', 'keystone_auth_host', host_ip)
     mp['KEYSTONE_AUTH_HOST'] = keystone_auth_host
     keystone_auth_port = config.get('keystone', 'keystone_auth_port')
@@ -275,6 +280,7 @@ def get_shared_params(config):
     keystone_auth_proto = config.get('keystone', 'keystone_auth_protocol')
     mp['KEYSTONE_AUTH_PROTOCOL'] = keystone_auth_proto
 
+    #components of the service endpoint
     keystone_service_host = config.getdefaulted('keystone', 'keystone_service_host', host_ip)
     mp['KEYSTONE_SERVICE_HOST'] = keystone_service_host
     keystone_service_port = config.get('keystone', 'keystone_service_port')
@@ -282,15 +288,12 @@ def get_shared_params(config):
     keystone_service_proto = config.get('keystone', 'keystone_service_protocol')
     mp['KEYSTONE_SERVICE_PROTOCOL'] = keystone_service_proto
 
-    #TODO is this right???
+    #http/https endpoints
     mp['AUTH_ENDPOINT'] = urlunparse((keystone_auth_proto,
                                          "%s:%s" % (keystone_auth_host, keystone_auth_port),
                                          "v2.0", "", "", ""))
-    #TODO is this right???
     mp['SERVICE_ENDPOINT'] = urlunparse((keystone_service_proto,
                                          "%s:%s" % (keystone_service_host, keystone_service_port),
                                          "v2.0", "", "", ""))
-
-    mp['SERVICE_TOKEN'] = config.get("passwords", "service_token")
 
     return mp
