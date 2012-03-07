@@ -1,7 +1,8 @@
-# From devstack commit a205b46788640b226d672293dac87432e98c81cf with modifications to parametrize
+# From devstack commit 165121f7b69d9b8ad01d3256d068fdf77cebf840 with modifications to parametrize
 # certain variables (ports mainly).
 
 [DEFAULT]
+bind_host = 0.0.0.0
 public_port = %KEYSTONE_SERVICE_PORT%
 admin_port = %KEYSTONE_AUTH_PORT%
 admin_token = %SERVICE_TOKEN%
