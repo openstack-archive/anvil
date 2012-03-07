@@ -26,15 +26,22 @@
 # SERVICE_TENANT_NAME - name of tenant containing service accounts
 # ENABLED_SERVICES - devstackPY's list of services being activated
 
-set -o errexit
+set -e
 
 ADMIN_PASSWORD=%ADMIN_PASSWORD%
+export ADMIN_PASSWORD
+
 SERVICE_PASSWORD=%SERVICE_PASSWORD%
+export SERVICE_PASSWORD
+
 SERVICE_TOKEN=%SERVICE_TOKEN%
 export SERVICE_TOKEN
+
 SERVICE_ENDPOINT=%SERVICE_ENDPOINT%
 export SERVICE_ENDPOINT
+
 SERVICE_TENANT_NAME=%SERVICE_TENANT_NAME%
+export SERVICE_TENANT_NAME
 
 function get_id () {
     echo `$@ | awk '/ id / { print $4 }'`

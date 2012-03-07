@@ -19,11 +19,9 @@ import time
 
 from devstack import cfg
 from devstack import component as comp
-from devstack import date
 from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
-from devstack import utils
 
 from devstack.components import db
 from devstack.components import keystone
@@ -35,8 +33,6 @@ TYPE = settings.GLANCE
 LOG = logging.getLogger("devstack.components.glance")
 
 #config files/sections
-#during the transition for glance to the split config files
-#we cat them together to handle both pre- and post-merge
 API_CONF = "glance-api.conf"
 REG_CONF = "glance-registry.conf"
 API_PASTE_CONF = 'glance-api-paste.ini'
@@ -47,8 +43,10 @@ LOGGING_CONF = "logging.conf"
 LOGGING_SOURCE_FN = 'logging.cnf.sample'
 POLICY_JSON = 'policy.json'
 CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF,
-            REG_PASTE_CONF, POLICY_JSON, LOGGING_CONF, SCRUB_CONF, SCRUB_PASTE_CONF]
-READ_CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF, REG_PASTE_CONF, SCRUB_CONF, SCRUB_PASTE_CONF]
+            REG_PASTE_CONF, POLICY_JSON, LOGGING_CONF,
+            SCRUB_CONF, SCRUB_PASTE_CONF]
+READ_CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF,
+                REG_PASTE_CONF, SCRUB_CONF, SCRUB_PASTE_CONF]
 
 #reg, api are here as possible subcomponents
 GAPI = "api"
@@ -125,17 +123,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
         db.create_db(self.cfg, DB_NAME)
 
     def _get_source_config(self, config_fn):
-        if config_fn == API_CONF:
-            (fn, top) = utils.load_template(self.component_name, API_CONF)
-            (_, bottom) = self._get_source_config(API_PASTE_CONF)
-            combined = [top, "### Joined here on %s with file %s" % (date.rcf8222date(), API_PASTE_CONF), bottom]
-            return (fn, utils.joinlinesep(*combined))
-        elif config_fn == REG_CONF:
-            (fn, top) = utils.load_template(self.component_name, REG_CONF)
-            (_, bottom) = self._get_source_config(REG_PASTE_CONF)
-            combined = [top, "### Joined here on %s with file %s" % (date.rcf8222date(), REG_PASTE_CONF), bottom]
-            return (fn, utils.joinlinesep(*combined))
-        elif config_fn == POLICY_JSON:
+        if config_fn == POLICY_JSON:
             fn = sh.joinpths(self.cfgdir, POLICY_JSON)
             contents = sh.load_file(fn)
             return (fn, contents)
@@ -202,6 +190,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
         mp['SQL_CONN'] = self.cfg.get_dbdsn(DB_NAME)
         mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
         mp['HOST_IP'] = self.cfg.get('host', 'ip')
+        mp['SERVICE_USERNAME'] = 'glance'
         mp.update(keystone.get_shared_params(self.cfg))
         return mp
 

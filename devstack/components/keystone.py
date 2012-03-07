@@ -261,12 +261,12 @@ def get_shared_params(config):
     #these match what is in keystone_init.sh
     mp['SERVICE_TENANT_NAME'] = 'service'
     mp['ADMIN_USER_NAME'] = 'admin'
-    mp['ADMIN_TENANT_NAME'] = mp['ADMIN_USER_NAME']
     mp['DEMO_USER_NAME'] = 'demo'
+    mp['ADMIN_TENANT_NAME'] = mp['ADMIN_USER_NAME']
     mp['DEMO_TENANT_NAME'] = mp['DEMO_USER_NAME']
 
     mp['ADMIN_PASSWORD'] = config.get('passwords', 'horizon_keystone_admin')
-    mp['SERVICE_PASSWORD'] = mp['ADMIN_PASSWORD']
+    mp['SERVICE_PASSWORD'] = config.get('passwords', 'service_password')
 
     keystone_auth_host = config.getdefaulted('keystone', 'keystone_auth_host', host_ip)
     mp['KEYSTONE_AUTH_HOST'] = keystone_auth_host
