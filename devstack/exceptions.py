@@ -76,17 +76,24 @@ class ConfigException(StackException):
 
 
 class ProcessExecutionError(IOError):
-    def __init__(self, stdout=None, stderr=None, exit_code=None, cmd=None,
+    def __init__(self, stdout=None, stderr=None,
+                 exit_code=None, cmd=None,
                  description=None):
         self.exit_code = exit_code
         self.stderr = stderr
         self.stdout = stdout
         self.cmd = cmd
         self.description = description
-        if description is None:
-            description = ('Unexpected error while running command.')
-        if exit_code is None:
-            exit_code = '-'
+        if self.cmd is None:
+            self.cmd = '-'
+        if self.description is None:
+            self.description = 'Unexpected error while running command.'
+        if self.exit_code is None:
+            self.exit_code = '-'
+        if self.stderr is None:
+            self.stderr = '-'
+        if self.stdout is None:
+            self.stdout = '-'
         message = ('%(description)s\nCommand: %(cmd)s\n'
                     'Exit code: %(exit_code)s\nStdout: %(stdout)r\n'
                     'Stderr: %(stderr)r' % locals())

@@ -739,20 +739,23 @@ class NovaConfConfigurator(object):
                     cleaned_lines.append(cleaned_line)
         return cleaned_lines
 
+    def _convert_extra_flags(self, extra_flags):
+        converted_flags = list()
+        for f in extra_flags:
+            cleaned_opt = f.lstrip("-")
+            if len(cleaned_opt) == 0:
+                continue
+            if cleaned_opt.find("=") == -1:
+                cleaned_opt += "=%s" % (True)
+            converted_flags.append(cleaned_opt)
+        return converted_flags
+
     def _get_content(self, nova_conf):
         generated_content = nova_conf.generate()
         extra_flags = self._get_extra('extra_flags')
         if extra_flags:
             LOG.warning("EXTRA_FLAGS is defined and may need to be converted to EXTRA_OPTS!")
-            converted_flags = list()
-            for f in extra_flags:
-                cleaned_opt = f.lstrip("-")
-                if len(cleaned_opt) == 0:
-                    continue
-                if cleaned_opt.find("=") == -1:
-                    cleaned_opt += "=%s" % (True)
-                converted_flags.append(cleaned_opt)
-            extra_flags = converted_flags
+            extra_flags = self._convert_extra_flags(extra_flags)
         extra_opts = self._get_extra('extra_opts')
         if extra_flags or extra_opts:
             new_contents = list()
