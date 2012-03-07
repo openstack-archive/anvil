@@ -30,6 +30,7 @@ PW_TMPL = "Enter a password for %s: "
 ENV_PAT = re.compile(r"^\s*\$\{([\w\d]+):\-(.*)\}\s*$")
 SUB_MATCH = re.compile(r"(?:\$\(([\w\d]+):([\w\d]+))\)")
 CACHE_MSG = "(value will now be internally cached)"
+PW_SECTIONS = ['passwords']
 DEF_PW_MSG = "[or press enter to get a generated one]"
 PW_PROMPTS = {
     'horizon_keystone_admin': "Enter a password to use for horizon and keystone (20 chars or less) %s: " % (DEF_PW_MSG),
@@ -95,14 +96,13 @@ class StackConfigParser(IgnoreMissingConfigParser):
 
     def _resolve_special(self, section, option, value_gotten, auto_pw):
         key = self._makekey(section, option)
-        if value_gotten and len(value_gotten):
-            if section == 'passwords':
-                self.pws[key] = value_gotten
-        elif section == 'host' and option == 'ip':
+        if section in PW_SECTIONS and key not in self.pws:
+            self.pws[key] = value_gotten
+        if section == 'host' and option == 'ip':
             LOG.debug("Host ip from configuration/environment was empty, programatically attempting to determine it.")
             value_gotten = utils.get_host_ip()
             LOG.debug("Determined your host ip to be: \"%s\"" % (value_gotten))
-        elif section == 'passwords' and auto_pw:
+        elif section in PW_SECTIONS and auto_pw and len(value_gotten) == 0:
             LOG.debug("Being forced to ask for password for \"%s\" since the configuration value is empty.", key)
             prompt = PW_PROMPTS.get(option, PW_TMPL % (key))
             value_gotten = sh.password(prompt)

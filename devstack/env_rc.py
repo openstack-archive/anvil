@@ -65,7 +65,10 @@ class RcGenerator(object):
     def _make_export_cfg(self, export_name, cfg_section_key, default_val=''):
         (section, key) = cfg_section_key
         value = self.cfg.getdefaulted(section, key, default_val, auto_pw=False)
-        return self._make_export(export_name, value)
+        if len(value) != 0:
+            return self._make_export(export_name, value)
+        else:
+            return list()
 
     def _generate_ec2_env(self):
         lines = list()
