@@ -87,7 +87,7 @@
                 "epel" : true
             }
         },
-        "python-xattr": {
+        "pyxattr": {
             "version": "0.5*",
             "removable": true,
             "meta": {
