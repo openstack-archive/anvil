@@ -74,9 +74,6 @@ REQ_PIPS = ['general.json', 'keystone.json']
 #used to wait until started before we can run the data setup script
 WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
 
-#config keys we warm up so u won't be prompted later
-WARMUP_PWS = ['horizon_keystone_admin', 'service_token']
-
 #swift template additions
 SWIFT_TEMPL_ADDS = ['catalog.RegionOne.object_store.publicURL = http://%SERVICE_HOST%:8080/v1/AUTH_$(tenant_id)s',
                     'catalog.RegionOne.object_store.publicURL = http://%SERVICE_HOST%:8080/v1/AUTH_$(tenant_id)s',
@@ -196,8 +193,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         return comp.PythonInstallComponent._get_source_config(self, config_fn)
 
     def warm_configs(self):
-        for pw_key in WARMUP_PWS:
-            self.cfg.get("passwords", pw_key)
+        get_shared_params(self.cfg)
 
     def _get_param_map(self, config_fn):
         #these be used to fill in the configuration/cmds +
