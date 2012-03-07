@@ -22,9 +22,9 @@
 # Variables set before calling this script:
 #
 # SERVICE_TOKEN - aka admin_token in keystone.conf
-# SERVICE_ENDPOINT - local Keystone admin endpoint
+# AUTH_ENDPOINT - local Keystone admin endpoint
 # SERVICE_TENANT_NAME - name of tenant containing service accounts
-# ENABLED_SERVICES - devstackPY's list of services being activated
+# ENABLED_SERVICES - devstack's list of services being activated
 
 set -e
 
@@ -37,7 +37,8 @@ export SERVICE_PASSWORD
 SERVICE_TOKEN=%SERVICE_TOKEN%
 export SERVICE_TOKEN
 
-SERVICE_ENDPOINT=%SERVICE_ENDPOINT%
+# This is really the AUTH_ENDPOINT (wtf)
+SERVICE_ENDPOINT=%AUTH_ENDPOINT%
 export SERVICE_ENDPOINT
 
 SERVICE_TENANT_NAME=%SERVICE_TENANT_NAME%
@@ -122,11 +123,9 @@ qq keystone user-role-add --tenant_id $SERVICE_TENANT \
                        --user $GLANCE_USER \
                        --role $ADMIN_ROLE
 
-if [[ "$ENABLED_SERVICES" =~ "n-vol" ]]; then
-    qq keystone service-create --name="nova-volume" \
-                            --type=volume \
-                            --description="Nova Volume Service"
-fi
+qq keystone service-create --name="nova-volume" \
+                       --type=volume \
+                       --description="Nova Volume Service"
 
 if [[ "$ENABLED_SERVICES" =~ "swift" ]]; then
     qq keystone service-create --name=swift \

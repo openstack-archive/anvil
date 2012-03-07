@@ -102,10 +102,9 @@ class StackConfigParser(IgnoreMissingConfigParser):
             LOG.debug("Host ip from configuration/environment was empty, programatically attempting to determine it.")
             value_gotten = utils.get_host_ip()
             LOG.debug("Determined your host ip to be: \"%s\"" % (value_gotten))
-        elif section in PW_SECTIONS and auto_pw and len(value_gotten) == 0:
+        if section in PW_SECTIONS and auto_pw and len(value_gotten) == 0:
             LOG.debug("Being forced to ask for password for \"%s\" since the configuration value is empty.", key)
-            prompt = PW_PROMPTS.get(option, PW_TMPL % (key))
-            value_gotten = sh.password(prompt)
+            value_gotten = sh.password(PW_PROMPTS.get(option, PW_TMPL % (key)))
             self.pws[key] = value_gotten
         return value_gotten
 
