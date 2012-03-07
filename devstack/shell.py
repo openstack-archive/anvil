@@ -240,7 +240,7 @@ def prompt_password(pw_prompt):
             break
         if re.match(r"^(\s+)$", rc):
             LOG.warning("Whitespace not allowed as a password!")
-        elif re.match(r"^(\s+)(\S+)(\s+)$"):
+        elif re.match(r"^(\s+)(\S+)(\s+)$", rc):
             LOG.warning("Whitespace can not start or end a password!")
         else:
             break
