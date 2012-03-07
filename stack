@@ -16,6 +16,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import logging
 import logging.config
 import os
 import sys
@@ -113,6 +114,11 @@ def main():
     #do this first so people can see the help message...
     args = opts.parse()
     prog_name = sys.argv[0]
+
+    # Adjust logging verbose level based on the command line switch.
+    if args['verbosity'] >= 2:
+        lg.getLogger().setLevel(logging.DEBUG)
+    LOG.debug("Command line options %s" % (args))
 
     #will need root to setup openstack
     if not sh.got_root():
