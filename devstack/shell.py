@@ -22,6 +22,7 @@ import pwd
 import shutil
 import subprocess
 import sys
+import re
 
 from devstack import env
 from devstack import exceptions as excp
@@ -42,7 +43,6 @@ SHELL_QUOTE_REPLACERS = {
     '`': '\`',
 }
 SHELL_WRAPPER = "\"%s\""
-FALSE_VALS = ['f', 'false', '0', 'off']
 ROOT_PATH = os.sep
 
 
@@ -232,12 +232,19 @@ def _gen_password(pw_len):
     return stdout.strip()
 
 
-def prompt_password(pw_prompt=None):
-    if pw_prompt:
+def prompt_password(pw_prompt):
+    rc = ""
+    while True:
         rc = getpass.getpass(pw_prompt)
-    else:
-        rc = getpass.getpass()
-    return rc.strip()
+        if len(rc) == 0:
+            break
+        if re.match(r"^(\s+)$", rc):
+            LOG.warning("Whitespace not allowed as a password!")
+        elif re.match(r"^(\s+)(\S+)(\s+)$"):
+            LOG.warning("Whitespace can not start or end a password!")
+        else:
+            break
+    return rc
 
 
 def chown_r(path, uid, gid, run_as_root=True):
@@ -255,14 +262,9 @@ def chown_r(path, uid, gid, run_as_root=True):
                     LOG.debug("Changing ownership of %s to %s:%s" % (joinpths(root, f), uid, gid))
 
 
-def password(pw_prompt=None, pw_len=8):
-    pw = ""
-    ask_for_pw = env.get_key(PASS_ASK_ENV)
-    if ask_for_pw is not None:
-        ask_for_pw = ask_for_pw.lower().strip()
-    if ask_for_pw not in FALSE_VALS:
-        pw = prompt_password(pw_prompt)
-    if not pw:
+def password(pw_prompt, pw_len=8):
+    pw = prompt_password(pw_prompt)
+    if len(pw) == 0:
         return _gen_password(pw_len)
     else:
         return pw
