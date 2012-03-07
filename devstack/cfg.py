@@ -37,7 +37,7 @@ PW_PROMPTS = {
     'sql': 'Enter a password to use for your sql database user %s: ' % (DEF_PW_MSG),
     'rabbit': 'Enter a password to use for your rabbit user %s: ' % (DEF_PW_MSG),
     'old_sql': "Please enter your current mysql password so we that can reset it for next time: ",
-    'service_password': "Enter a service_password to use for the service authentication %s:" % (DEF_PW_MSG),
+    'service_password': "Enter a service password to use for the service authentication %s:" % (DEF_PW_MSG),
 }
 
 
