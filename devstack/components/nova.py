@@ -123,15 +123,6 @@ ADD_PKGS = {
         ],
 }
 
-# Adjustments to nova paste pipeline for keystone
-PASTE_PIPELINE_KEYSTONE_ADJUST = {
-    'pipeline:ec2cloud': {'pipeline': 'ec2faultwrap logrequest totoken authtoken keystonecontext cloudrequest authorizer ec2executor'},
-    'pipeline:ec2admin': {'pipeline': "ec2faultwrap logrequest totoken authtoken keystonecontext adminrequest authorizer ec2executor"},
-    'pipeline:openstack_compute_api_v2': {'pipeline': "faultwrap authtoken keystonecontext ratelimit osapi_compute_app_v2"},
-    'pipeline:openstack_volume_api_v1': {'pipeline': "faultwrap authtoken keystonecontext ratelimit osapi_volume_app_v1"},
-    'pipeline:openstack_api_v2': {'pipeline': 'faultwrap authtoken keystonecontext ratelimit osapi_app_v2'},
-}
-
 # What to start
 APP_OPTIONS = {
     #these are currently the core components/applications
@@ -398,33 +389,11 @@ class NovaInstaller(comp.PythonInstallComponent):
         sh.write_file(tgtfn, nova_conf)
         self.tracewriter.cfg_write(tgtfn)
 
-    def _config_adjust(self, contents, config_fn):
-        if config_fn not in ADJUST_CONFIGS:
-            return contents
-        if config_fn == PASTE_CONF and utils.service_enabled(settings.KEYSTONE, self.instances, False):
-            newcontents = contents
-            with io.BytesIO(contents) as stream:
-                config = cfg.IgnoreMissingConfigParser()
-                config.readfp(stream)
-                mods = 0
-                for section in PASTE_PIPELINE_KEYSTONE_ADJUST.keys():
-                    if config.has_section(section):
-                        section_vals = PASTE_PIPELINE_KEYSTONE_ADJUST.get(section)
-                        for (k, v) in section_vals.items():
-                            config.set(section, k, v)
-                            mods += 1
-                if mods > 0:
-                    with io.BytesIO() as outputstream:
-                        config.write(outputstream)
-                        outputstream.flush()
-                        newcontents = cfg.add_header(config_fn, outputstream.getvalue())
-            contents = newcontents
-        return contents
-
     def _get_source_config(self, config_fn):
         name = config_fn
         if config_fn == PASTE_CONF:
-            name = PASTE_SOURCE_FN
+            # Return the paste api template
+            return comp.PythonInstallComponent._get_source_config(self, PASTE_SOURCE_FN)
         elif config_fn == LOGGING_CONF:
             name = LOGGING_SOURCE_FN
         srcfn = sh.joinpths(self.cfgdir, "nova", name)
