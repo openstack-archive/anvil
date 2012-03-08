@@ -31,7 +31,7 @@ COLOR_ATTRS = {
 
 
 class TermFormatter(logging.Formatter):
-    def __init__(self, reg_fmt, date_format):
+    def __init__(self, reg_fmt=None, date_format=None):
         logging.Formatter.__init__(self, reg_fmt, date_format)
 
     def format(self, record):
