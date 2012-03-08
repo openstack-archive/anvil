@@ -92,8 +92,10 @@ def run(args):
     if not rootdir:
         print(utils.color_text("No root directory specified!", "red"))
         return False
-    (rep, maxlen) = utils.welcome(_WELCOME_MAP.get(action))
-    print(utils.center_text("Action Runner", rep, maxlen))
+
+    #welcome!
+    (repeat_string, line_max_len) = utils.welcome(_WELCOME_MAP.get(action))
+    print(utils.center_text("Action Runner", repeat_string, line_max_len))
 
     #here on out we should be using the logger (and not print)
     start_time = time.time()

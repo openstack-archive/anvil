@@ -144,7 +144,6 @@ alias ec2-upload-bundle="ec2-upload-bundle -a ${EC2_ACCESS_KEY} -s ${EC2_SECRET_
     def _generate_nova_env(self):
         lines = list()
         lines.append('# Nova stuff')
-        key_params = keystone.get_shared_params(self.cfg)
         lines.extend(self._make_export_cfg('NOVA_VERSION',
                                 ('nova', 'nova_version')))
         lines.extend(self._make_export_cfg('NOVA_CERT',

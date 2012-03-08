@@ -351,6 +351,30 @@ def param_replace_list(values, replacements, ignore_missing=False):
     return new_values
 
 
+def params_find(text):
+
+    #knock off all comments
+    cleaned_text = list()
+    for line in text.splitlines():
+        line = line.strip()
+        if len(line) == 0:
+            continue
+        if line.startswith("#"):
+            continue
+        #TODO: handle inline comments??
+        cleaned_text.append(line)
+
+    found_params = set()
+
+    def finder(match):
+        found_params.add(match.group(1))
+
+    for line in cleaned_text:
+        PARAM_SUB_REGEX.sub(finder, line)
+
+    return found_params
+
+
 def param_replace(text, replacements, ignore_missing=False):
 
     if not replacements:
@@ -364,19 +388,25 @@ def param_replace(text, replacements, ignore_missing=False):
     else:
         LOG.debug("Performing parameter replacements (not ignoring missing) on text [%s]" % (text))
 
-    def replacer(match):
-        org = match.group(0)
-        name = match.group(1)
+    possible_params = params_find(text)
+    LOG.debug("Potential parameters are [%s]" % (", ".join(possible_params)))
 
-        v = replacements.get(name)
-        if v is None and ignore_missing:
-            v = org
-        elif v is None and not ignore_missing:
-            msg = "No replacement found for parameter %s" % (org)
-            raise excp.NoReplacementException(msg)
-        else:
-            LOG.debug("Replacing [%s] with [%s]" % (org, str(v)))
-        return str(v)
+    if not ignore_missing:
+        for r in possible_params:
+            if r not in replacements:
+                msg = "No replacement found for parameter %s" % (r)
+                raise excp.NoReplacementException(msg)
+
+    def replacer(match):
+        org_val = match.group(0)
+        param_name = match.group(1)
+        replacement_value = org_val
+        if param_name in possible_params:
+            replacement_value = replacements.get(param_name)
+            if replacement_value is None:
+                replacement_value = org_val
+        LOG.debug("Replacing [%s] with [%s]" % (org_val, str(replacement_value)))
+        return replacement_value
 
     return PARAM_SUB_REGEX.sub(replacer, text)
 
