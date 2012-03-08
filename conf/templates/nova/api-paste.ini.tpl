@@ -143,15 +143,16 @@ paste.filter_factory = nova.api.auth:NovaKeystoneContext.factory
 
 [filter:authtoken]
 paste.filter_factory = keystone.middleware.auth_token:filter_factory
-service_protocol = http
-service_host = 127.0.0.1
-service_port = 5000
-auth_host = 127.0.0.1
-auth_port = 35357
-auth_protocol = http
-auth_uri = http://127.0.0.1:5000/
-# NOTE: you will have to replace the values below with an actual token
-# or user:password combination.
+
+service_host = %KEYSTONE_SERVICE_HOST%
+service_port = %KEYSTONE_SERVICE_PORT%
+service_protocol = %KEYSTONE_SERVICE_PROTOCOL%
+
+auth_host = %KEYSTONE_AUTH_HOST%
+auth_port = %KEYSTONE_AUTH_PORT%
+auth_protocol = %KEYSTONE_AUTH_PROTOCOL%
+auth_uri = %KEYSTONE_SERVICE_PROTOCOL%://%KEYSTONE_SERVICE_HOST%:%KEYSTONE_SERVICE_PORT%/
+
 admin_user = %SERVICE_USERNAME%
 admin_password = %SERVICE_PASSWORD%
 admin_token = %SERVICE_TOKEN%
