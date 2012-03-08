@@ -16,11 +16,9 @@
 
 from urlparse import urlunparse
 
-import io
 import os
 import time
 
-from devstack import cfg
 from devstack import component as comp
 from devstack import date
 from devstack import exceptions

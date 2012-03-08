@@ -355,36 +355,60 @@ def param_replace_list(values, replacements, ignore_missing=False):
     return new_values
 
 
+def find_params(text):
+    params_found = set()
+    if not text:
+        return params_found
+
+    def finder(match):
+        org_txt = match.group(0)
+        # Check if it's a comment, if so just return what it was and ignore
+        # any tokens that were there
+        if org_txt.startswith("#"):
+            return org_txt
+        param_name = match.group(1)
+        if param_name not in params_found:
+            params_found.add(param_name)
+        return org_txt
+
+    PARAM_SUB_REGEX.sub(finder, text)
+    return params_found
+
+
 def param_replace(text, replacements, ignore_missing=False):
 
     if not replacements:
-        return text
+        replacements = dict()
 
     if not text:
-        return text
+        return ""
 
     if ignore_missing:
         LOG.debug("Performing parameter replacements (ignoring missing) on text [%s]" % (text))
     else:
         LOG.debug("Performing parameter replacements (not ignoring missing) on text [%s]" % (text))
 
+    possible_params = find_params(text)
+    LOG.debug("Possible replacements are [%s]" % (", ".join(possible_params)))
+
     def replacer(match):
-        org = match.group(0)
-        name = match.group(1)
+        org_txt = match.group(0)
+        param_name = match.group(1)
         # Check if it's a comment, if so just return what it was and ignore
         # any tokens that were there
-        if org.startswith('#'):
+        if org_txt.startswith('#'):
             LOG.debug("Ignoring comment line")
-            return org
-        v = replacements.get(name)
-        if v is None and ignore_missing:
-            v = org
-        elif v is None and not ignore_missing:
-            msg = "No replacement found for parameter %s" % (org)
+            return org_txt
+        replacer = replacements.get(param_name)
+        if replacer is None and ignore_missing:
+            replacer = org_txt
+        elif replacer is None and not ignore_missing:
+            msg = "No replacement found for parameter %s" % (org_txt)
             raise excp.NoReplacementException(msg)
         else:
-            LOG.debug("Replacing [%s] with [%s]" % (org, str(v)))
-        return str(v)
+            replacer = str(replacer)
+            LOG.debug("Replacing [%s] with [%s]" % (org_txt, replacer))
+        return replacer
 
     replaced_text = PARAM_SUB_REGEX.sub(replacer, text)
     LOG.debug("Replacement/s resulted in text [%s]" % (replaced_text))
