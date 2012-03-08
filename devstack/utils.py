@@ -389,11 +389,12 @@ def param_replace(text, replacements, ignore_missing=False):
         LOG.debug("Performing parameter replacements (not ignoring missing) on text [%s]" % (text))
 
     possible_params = params_find(text)
-    LOG.debug("Potential parameters are [%s]" % (", ".join(possible_params)))
+    LOG.debug("Potential parameters that could be replaced are [%s]" % (", ".join(possible_params)))
 
     if not ignore_missing:
         for r in possible_params:
-            if r not in replacements:
+            val_found = replacements.get(r)
+            if val_found is None:
                 msg = "No replacement found for parameter %s" % (r)
                 raise excp.NoReplacementException(msg)
 
@@ -405,7 +406,9 @@ def param_replace(text, replacements, ignore_missing=False):
             replacement_value = replacements.get(param_name)
             if replacement_value is None:
                 replacement_value = org_val
-        LOG.debug("Replacing [%s] with [%s]" % (org_val, str(replacement_value)))
+            else:
+                replacement_value = str(replacement_value)
+        LOG.debug("Replacing [%s] with [%s]" % (org_val, replacement_value))
         return replacement_value
 
     return PARAM_SUB_REGEX.sub(replacer, text)
