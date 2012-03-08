@@ -34,7 +34,11 @@ from devstack import settings
 from devstack import shell as sh
 from devstack import version
 
-PARAM_SUB_REGEX = re.compile(r"%([\w\d]+?)%")
+# The pattern will match either a comment to the EOL, or a
+# token to be subbed. The replacer will check which it got and
+# act accordingly. Note that we need the MULTILINE flag
+# for the comment checks to work in a string containing newlines
+PARAM_SUB_REGEX = re.compile(r"#.*$|%([\w\d]+?)%", re.MULTILINE)
 EXT_COMPONENT = re.compile(r"^\s*([\w-]+)(?:\((.*)\))?\s*$")
 MONTY_PYTHON_TEXT_RE = re.compile("([a-z0-9A-Z\?!.,'\"]+)")
 LOG = logging.getLogger("devstack.util")
@@ -351,30 +355,6 @@ def param_replace_list(values, replacements, ignore_missing=False):
     return new_values
 
 
-def params_find(text):
-
-    #knock off all comments
-    cleaned_text = list()
-    for line in text.splitlines():
-        line = line.strip()
-        if len(line) == 0:
-            continue
-        if line.startswith("#"):
-            continue
-        #TODO: handle inline comments??
-        cleaned_text.append(line)
-
-    found_params = set()
-
-    def finder(match):
-        found_params.add(match.group(1))
-
-    for line in cleaned_text:
-        PARAM_SUB_REGEX.sub(finder, line)
-
-    return found_params
-
-
 def param_replace(text, replacements, ignore_missing=False):
 
     if not replacements:
@@ -388,28 +368,23 @@ def param_replace(text, replacements, ignore_missing=False):
     else:
         LOG.debug("Performing parameter replacements (not ignoring missing) on text [%s]" % (text))
 
-    possible_params = params_find(text)
-    LOG.debug("Potential parameters that could be replaced are [%s]" % (", ".join(possible_params)))
-
-    if not ignore_missing:
-        for r in possible_params:
-            val_found = replacements.get(r)
-            if val_found is None:
-                msg = "No replacement found for parameter %s" % (r)
-                raise excp.NoReplacementException(msg)
-
     def replacer(match):
-        org_val = match.group(0)
-        param_name = match.group(1)
-        replacement_value = org_val
-        if param_name in possible_params:
-            replacement_value = replacements.get(param_name)
-            if replacement_value is None:
-                replacement_value = org_val
-            else:
-                replacement_value = str(replacement_value)
-        LOG.debug("Replacing [%s] with [%s]" % (org_val, replacement_value))
-        return replacement_value
+        org = match.group(0)
+        name = match.group(1)
+        # Check if it's a comment, if so just return what it was and ignore
+        # any tokens that were there
+        if org.startswith('#'):
+            LOG.debug("Ignoring comment line")
+            return org
+        v = replacements.get(name)
+        if v is None and ignore_missing:
+            v = org
+        elif v is None and not ignore_missing:
+            msg = "No replacement found for parameter %s" % (org)
+            raise excp.NoReplacementException(msg)
+        else:
+            LOG.debug("Replacing [%s] with [%s]" % (org, str(v)))
+        return str(v)
 
     replaced_text = PARAM_SUB_REGEX.sub(replacer, text)
     LOG.debug("Replacement/s resulted in text [%s]" % (replaced_text))
