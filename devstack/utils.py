@@ -34,7 +34,7 @@ from devstack import settings
 from devstack import shell as sh
 from devstack import version
 
-PARAM_SUB_REGEX = re.compile(r"(#?.*)%([\w\d]+?)%")
+PARAM_SUB_REGEX = re.compile(r"%([\w\d]+?)%")
 EXT_COMPONENT = re.compile(r"^\s*([\w-]+)(?:\((.*)\))?\s*$")
 MONTY_PYTHON_TEXT_RE = re.compile("([a-z0-9A-Z\?!.,'\"]+)")
 LOG = logging.getLogger("devstack.util")
@@ -366,11 +366,7 @@ def param_replace(text, replacements, ignore_missing=False):
 
     def replacer(match):
         org = match.group(0)
-        prefix = match.group(1)
-        name = match.group(2)
-        # Check if the name is commented out. If so, ignore it
-        if prefix.find("#") > -1:
-            return org
+        name = match.group(1)
 
         v = replacements.get(name)
         if v is None and ignore_missing:
@@ -380,7 +376,6 @@ def param_replace(text, replacements, ignore_missing=False):
             raise excp.NoReplacementException(msg)
         else:
             LOG.debug("Replacing [%s] with [%s]" % (org, str(v)))
-            v = prefix + str(v)
         return str(v)
 
     return PARAM_SUB_REGEX.sub(replacer, text)
