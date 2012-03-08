@@ -411,7 +411,9 @@ def param_replace(text, replacements, ignore_missing=False):
         LOG.debug("Replacing [%s] with [%s]" % (org_val, replacement_value))
         return replacement_value
 
-    return PARAM_SUB_REGEX.sub(replacer, text)
+    replaced_text = PARAM_SUB_REGEX.sub(replacer, text)
+    LOG.debug("Replacement/s resulted in text [%s]" % (replaced_text))
+    return replaced_text
 
 
 def _get_welcome_stack():
