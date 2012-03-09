@@ -178,13 +178,20 @@ class TraceReader(object):
 
     def download_locations(self):
         lines = self.read()
-        locs = list()
+        locations = list()
         for (cmd, action) in lines:
             if cmd == DOWNLOADED and len(action):
                 entry = json.loads(action)
                 if type(entry) is dict:
-                    locs.append(entry.get('target'))
-        return locs
+                    locations.append((entry.get('target'), entry.get('uri')))
+        return locations
+
+    def _sort_paths(self, pths):
+        #ensure in ok order (ie /tmp is before /)
+        pths = list(set(pths))
+        pths.sort()
+        pths.reverse()
+        return pths
 
     def files_touched(self):
         lines = self.read()
@@ -192,9 +199,7 @@ class TraceReader(object):
         for (cmd, action) in lines:
             if cmd == FILE_TOUCHED and len(action):
                 files.append(action)
-        files = list(set(files))
-        files.sort()
-        return files
+        return self._sort_paths(files)
 
     def dirs_made(self):
         lines = self.read()
@@ -202,11 +207,7 @@ class TraceReader(object):
         for (cmd, action) in lines:
             if cmd == DIR_MADE and len(action):
                 dirs.append(action)
-        #ensure in ok order (ie /tmp is before /)
-        dirs = list(set(dirs))
-        dirs.sort()
-        dirs.reverse()
-        return dirs
+        return self._sort_paths(dirs)
 
     def apps_started(self):
         lines = self.read()
