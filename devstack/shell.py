@@ -22,14 +22,13 @@ import pwd
 import shutil
 import subprocess
 import sys
+import random
 import re
 
 from devstack import env
 from devstack import exceptions as excp
 from devstack import log as logging
 
-MKPW_CMD = ["openssl", 'rand', '-hex']
-PASS_ASK_ENV = 'PASS_ASK'
 LOG = logging.getLogger("devstack.shell")
 ROOT_USER = "root"
 ROOT_USER_UID = 0
@@ -44,6 +43,7 @@ SHELL_QUOTE_REPLACERS = {
 }
 SHELL_WRAPPER = "\"%s\""
 ROOT_PATH = os.sep
+RANDOMIZER = random.SystemRandom()
 
 
 #root context guard
@@ -231,9 +231,10 @@ def _gen_password(pw_len):
         msg = "Password length %s can not be less than or equal to zero" % (pw_len)
         raise excp.BadParamException(msg)
     LOG.debug("Generating you a pseudo-random password of byte length: %s" % (pw_len))
-    cmd = MKPW_CMD + [pw_len]
-    (stdout, _) = execute(*cmd)
-    return stdout.strip()
+    random_num = RANDOMIZER.getrandbits(pw_len * 8)
+    pw = "%x" % (random_num)
+    LOG.debug("Generated you a pseudo-random password [%s]" % (pw))
+    return pw
 
 
 def prompt_password(pw_prompt):
