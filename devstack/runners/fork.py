@@ -165,11 +165,10 @@ class ForkRunner(base.RunnerBase):
                 os._exit(0)
 
     def _do_trace(self, fn, kvs):
-        tracefn = tr.touch_trace(self.trace_dir, fn)
-        runtrace = tr.Trace(tracefn)
+        run_trace = tr.TraceWriter(tr.trace_fn(self.trace_dir, fn))
         for (k, v) in kvs.items():
-            runtrace.trace(k, v)
-        return tracefn
+            run_trace.trace(k, v)
+        return run_trace.filename()
 
     def start(self, app_name, runtime_info):
         (program, appdir, program_args) = runtime_info

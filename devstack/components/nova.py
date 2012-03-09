@@ -379,13 +379,12 @@ class NovaInstaller(comp.PythonInstallComponent):
     def _generate_nova_conf(self):
         LOG.info("Generating dynamic content for nova configuration (%s)." % (API_CONF))
         conf_gen = NovaConfConfigurator(self)
-        nova_conf = conf_gen.configure()
-        tgtfn = self._get_target_config_name(API_CONF)
-        LOG.info("Writing nova configuration to %s" % (tgtfn))
-        LOG.debug(nova_conf)
-        self.tracewriter.make_dir(sh.dirname(tgtfn))
-        sh.write_file(tgtfn, nova_conf)
-        self.tracewriter.cfg_write(tgtfn)
+        nova_conf_contents = conf_gen.configure()
+        conf_fn = self._get_target_config_name(API_CONF)
+        LOG.info("Writing nova configuration to %s" % (conf_fn))
+        LOG.debug(nova_conf_contents)
+        self.tracewriter.dirs_made(*sh.mkdirslist(sh.dirname(conf_fn)))
+        self.tracewriter.cfg_file_written(sh.write_file(conf_fn, nova_conf_contents))
 
     def _get_source_config(self, config_fn):
         name = config_fn
@@ -419,11 +418,12 @@ class NovaInstaller(comp.PythonInstallComponent):
         # TODO: maybe this should be a subclass that handles these differences
         driver_canon = _canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
         if (self.distro in POLICY_DISTROS) and driver_canon == virsh.VIRT_TYPE:
+            dirs_made = list()
             with sh.Rooted(True):
-                dirsmade = sh.mkdirslist(sh.dirname(LIBVIRT_POLICY_FN))
+                dirs_made = sh.mkdirslist(sh.dirname(LIBVIRT_POLICY_FN))
                 sh.write_file(LIBVIRT_POLICY_FN, LIBVIRT_POLICY_CONTENTS)
-            self.tracewriter.dir_made(*dirsmade)
-            self.tracewriter.cfg_write(LIBVIRT_POLICY_FN)
+            self.tracewriter.dirs_made(*dirs_made)
+            self.tracewriter.cfg_file_written(LIBVIRT_POLICY_FN)
             configs_made += 1
         return configs_made
 

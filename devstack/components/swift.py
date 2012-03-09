@@ -167,20 +167,23 @@ class SwiftInstaller(comp.PythonInstallComponent):
 
     def _create_nodes(self):
         for i in range(1, 5):
-            self.tracewriter.make_dir(sh.joinpths(self.fs_dev, '%d/node' % i))
-            self.tracewriter.symlink(sh.joinpths(self.fs_dev, str(i)),
-                                     sh.joinpths(self.datadir, str(i)))
+            self.tracewriter.dirs_made(sh.mkdirslist(sh.joinpths(self.fs_dev, '%d/node' % i)))
+            link_tgt = sh.joinpths(self.datadir, str(i))
+            sh.symlink(sh.joinpths(self.fs_dev, str(i)), link_tgt)
+            self.tracewriter.symlink_made(link_tgt)
             start_port = (6010 + (i - 1) * 5)
             self._create_node_config(i, start_port)
         self._delete_templates()
 
     def _turn_on_rsync(self):
-        self.tracewriter.symlink(sh.joinpths(self.cfgdir, RSYNC_CONF), RSYNCD_CONF_LOC)
+        sh.symlink(sh.joinpths(self.cfgdir, RSYNC_CONF), RSYNCD_CONF_LOC)
+        self.tracewriter.symlink_made(RSYNCD_CONF_LOC)
         sh.replace_in(RSYNC_CONF_LOC, RSYNC_ON_OFF_RE, 'RSYNC_ENABLE=true', True)
 
     def _create_log_dirs(self):
-        self.tracewriter.make_dir(sh.joinpths(self.logdir, 'hourly'))
-        self.tracewriter.symlink(sh.joinpths(self.cfgdir, SYSLOG_CONF), SWIFT_RSYNC_LOC)
+        self.tracewriter.dirs_made(*sh.mkdirslist(sh.joinpths(self.logdir, 'hourly')))
+        sh.symlink(sh.joinpths(self.cfgdir, SYSLOG_CONF), SWIFT_RSYNC_LOC)
+        self.tracewriter.symlink_made(SWIFT_RSYNC_LOC)
 
     def _setup_binaries(self):
         sh.move(sh.joinpths(self.cfgdir, SWIFT_MAKERINGS), self.makerings_file)

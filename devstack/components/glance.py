@@ -150,7 +150,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
                              "(and is empty)" % (cache_dir))
                     #destroy then recreate the image cache directory
                     sh.deldir(cache_dir)
-                    self.tracewriter.make_dir(cache_dir)
+                    self.tracewriter.dirs_made(*sh.mkdirslist(cache_dir))
             if config.get('default', 'default_store') == 'file':
                 file_dir = config.get('default', 'filesystem_store_datadir')
                 if file_dir:
@@ -158,26 +158,24 @@ class GlanceInstaller(comp.PythonInstallComponent):
                     #delete existing images
                     #and recreate the image directory
                     sh.deldir(file_dir)
-                    self.tracewriter.make_dir(file_dir)
+                    self.tracewriter.dirs_made(*sh.mkdirslist(file_dir))
             log_filename = config.get('default', 'log_file')
             if log_filename:
                 LOG.info("Ensuring log file %s exists and is empty." % (log_filename))
                 log_dir = sh.dirname(log_filename)
                 if log_dir:
                     LOG.info("Ensuring log directory %s exists." % (log_dir))
-                    self.tracewriter.make_dir(log_dir)
+                    self.tracewriter.dirs_made(*sh.mkdirslist(log_dir))
                 #destroy then recreate it (the log file)
                 sh.unlink(log_filename)
-                sh.touch_file(log_filename)
-                self.tracewriter.file_touched(log_filename)
+                self.tracewriter.file_touched(sh.touch_file(log_filename))
             if config.getboolean('default', 'delayed_delete'):
                 data_dir = config.get('default', 'scrubber_datadir')
                 if data_dir:
                     LOG.info("Ensuring scrubber data dir %s exists and is empty." % (data_dir))
                     #destroy then recreate the scrubber data directory
                     sh.deldir(data_dir)
-                    self.tracewriter.make_dir(data_dir)
-            #we might need to handle more in the future...
+                    self.tracewriter.dirs_made(*sh.mkdirslist(data_dir))
         #nothing modified so just return the original
         return contents
 

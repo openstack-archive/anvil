@@ -348,6 +348,7 @@ def append_file(fn, text, flush=True, quiet=False):
         f.write(text)
         if flush:
             f.flush()
+    return fn
 
 
 def write_file(fn, text, flush=True, quiet=False):
@@ -357,6 +358,7 @@ def write_file(fn, text, flush=True, quiet=False):
         f.write(text)
         if flush:
             f.flush()
+    return fn
 
 
 def touch_file(fn, die_if_there=True, quiet=False, file_size=0):
@@ -369,6 +371,7 @@ def touch_file(fn, die_if_there=True, quiet=False, file_size=0):
         if die_if_there:
             msg = "Can not touch & truncate file %s since it already exists" % (fn)
             raise excp.FileException(msg)
+    return fn
 
 
 def load_file(fn, quiet=False):

@@ -76,6 +76,9 @@ APACHE_FIXUPS = {
 }
 APACHE_FIXUPS_DISTROS = [settings.RHEL6]
 
+#for when quantum client is not need we need some fake files so python doesn't croak
+FAKE_QUANTUM_FILES = ['__init__.py', 'client.py']
+
 #users which apache may not like starting as
 BAD_APACHE_USERS = ['root']
 
@@ -153,7 +156,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def _setup_blackhole(self):
         #create an empty directory that apache uses as docroot
-        self.tracewriter.make_dir(sh.joinpths(self.appdir, BLACKHOLE_DIR))
+        self.tracewriter.dirs_made(*sh.mkdirslist(sh.joinpths(self.appdir, BLACKHOLE_DIR)))
 
     def _sync_db(self):
         #Initialize the horizon database (it stores sessions and notices shown to users).
@@ -175,7 +178,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def pre_install(self):
         comp.PythonInstallComponent.pre_install(self)
-        self.tracewriter.make_dir(self.log_dir)
+        self.tracewriter.dirs_made(*sh.mkdirslist(self.log_dir))
 
     def _config_fixups(self):
         #currently just handling rhel fixups
@@ -209,9 +212,9 @@ class HorizonInstaller(comp.PythonInstallComponent):
             #TODO remove this...
             quantum_dir = sh.joinpths(self.dash_dir, 'quantum')
             if not sh.isdir(quantum_dir):
-                self.tracewriter.make_dir(quantum_dir)
-                self.tracewriter.touch_file(sh.joinpths(quantum_dir, '__init__.py'))
-                self.tracewriter.touch_file(sh.joinpths(quantum_dir, 'client.py'))
+                self.tracewriter.dirs_made(*sh.mkdirslist(quantum_dir))
+                for fn in FAKE_QUANTUM_FILES:
+                    self.tracewriter.file_touched(sh.touch_file(sh.joinpths(quantum_dir, fn)))
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)

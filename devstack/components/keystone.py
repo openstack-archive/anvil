@@ -160,11 +160,10 @@ class KeystoneInstaller(comp.PythonInstallComponent):
                     log_dir = sh.dirname(log_filename)
                     if log_dir:
                         LOG.info("Ensuring log directory %s exists." % (log_dir))
-                        self.tracewriter.make_dir(log_dir)
+                        self.tracewriter.dirs_made(*sh.mkdirslist(log_dir))
                     #destroy then recreate it (the log file)
                     sh.unlink(log_filename)
-                    sh.touch_file(log_filename)
-                    self.tracewriter.file_touched(log_filename)
+                    self.tracewriter.file_touched(sh.touch_file(log_filename))
         elif name == CATALOG_CONF:
             nlines = list()
             if utils.service_enabled(settings.SWIFT, self.instances):

@@ -34,7 +34,6 @@ FILE_TOUCHED = "FILE_TOUCHED"
 DOWNLOADED = "DOWNLOADED"
 AP_STARTED = "AP_STARTED"
 PIP_INSTALL = 'PIP_INSTALL'
-EXEC_CMD = 'EXEC_CMD'
 
 #trace file types
 PY_TRACE = "python"
@@ -46,153 +45,149 @@ TRACE_VERSION = "TRACE_VERSION"
 TRACE_VER = 0x1
 
 
-class Trace(object):
-    def __init__(self, tracefn):
-        self.tracefn = tracefn
+def trace_fn(root_dir, name):
+    return sh.joinpths(root_dir, name + TRACE_EXT)
 
-    def filename(self):
-        return self.tracefn
+
+class TraceWriter(object):
+    def __init__(self, trace_filename):
+        self.trace_fn = trace_filename
+        self.started = False
 
     def trace(self, cmd, action=None):
         if action is None:
             action = date.rcf8222date()
-        line = TRACE_FMT % (cmd, action)
-        sh.append_file(self.tracefn, line)
+        if cmd is not None:
+            sh.append_file(self.trace_fn, TRACE_FMT % (cmd, action))
 
-
-class TraceWriter(object):
-    def __init__(self, root, name):
-        self.tracer = None
-        self.root = root
-        self.name = name
-        self.filename = None
-        self.started = False
+    def filename(self):
+        return self.trace_fn
 
     def _start(self):
         if self.started:
             return
         else:
-            dirs = sh.mkdirslist(self.root)
-            self.filename = touch_trace(self.root, self.name)
-            self.tracer = Trace(self.filename)
-            self.tracer.trace(TRACE_VERSION, str(TRACE_VER))
-            if dirs:
-                for d in dirs:
-                    self.tracer.trace(DIR_MADE, d)
+            trace_dirs = sh.mkdirslist(sh.dirname(self.trace_fn))
+            sh.touch_file(self.trace_fn)
+            self.trace(TRACE_VERSION, str(TRACE_VER))
             self.started = True
+            self.dirs_made(*trace_dirs)
 
-    def py_install(self, name, trace_filename, where):
+    def py_installed(self, name, where):
         self._start()
         what = dict()
         what['name'] = name
-        what['trace'] = trace_filename
         what['where'] = where
-        self.tracer.trace(PYTHON_INSTALL, json.dumps(what))
+        self.trace(PYTHON_INSTALL, json.dumps(what))
 
-    def cfg_write(self, cfgfile):
+    def cfg_file_written(self, fn):
         self._start()
-        self.tracer.trace(CFG_WRITING_FILE, cfgfile)
+        self.trace(CFG_WRITING_FILE, fn)
 
-    def symlink(self, source, link):
+    def symlink_made(self, link):
         self._start()
-        dirs = sh.symlink(source, link)
-        self.dir_made(*dirs)
-        self.tracer.trace(SYMLINK_MAKE, link)
+        self.trace(SYMLINK_MAKE, link)
 
-    def downloaded(self, tgt, fromwhere):
+    def download_happened(self, tgt, uri):
         self._start()
         what = dict()
         what['target'] = tgt
-        what['from'] = fromwhere
-        self.tracer.trace(DOWNLOADED, json.dumps(what))
+        what['from'] = uri
+        self.trace(DOWNLOADED, json.dumps(what))
 
-    def pip_install(self, name, pip_info):
+    def pip_installed(self, name, pip_info):
         self._start()
         what = dict()
         what['name'] = name
         what['pip_meta'] = pip_info
-        self.tracer.trace(PIP_INSTALL, json.dumps(what))
+        self.trace(PIP_INSTALL, json.dumps(what))
 
-    def make_dir(self, path):
-        self._start()
-        dirs = sh.mkdirslist(path)
-        self.dir_made(*dirs)
-        return path
-
-    def touch_file(self, path):
-        self._start()
-        sh.touch_file(path)
-        self.file_touched(path)
-        return path
-
-    def dir_made(self, *dirs):
+    def dirs_made(self, *dirs):
         self._start()
         for d in dirs:
-            self.tracer.trace(DIR_MADE, d)
+            self.trace(DIR_MADE, d)
 
     def file_touched(self, fn):
         self._start()
-        self.tracer.trace(FILE_TOUCHED, fn)
+        self.trace(FILE_TOUCHED, fn)
 
-    def package_install(self, name, pkg_info):
+    def package_installed(self, name, pkg_info):
         self._start()
         what = dict()
         what['name'] = name
         what['pkg_meta'] = pkg_info
-        self.tracer.trace(PKG_INSTALL, json.dumps(what))
+        self.trace(PKG_INSTALL, json.dumps(what))
 
     def started_info(self, name, info_fn):
         self._start()
         data = dict()
         data['name'] = name
         data['trace_fn'] = info_fn
-        self.tracer.trace(AP_STARTED, json.dumps(data))
-
-    def exec_cmd(self, cmd, result):
-        self._start()
-        data = dict()
-        data['cmd'] = cmd
-        data['result'] = result
-        self.tracer.trace(EXEC_CMD, json.dumps(data))
+        self.trace(AP_STARTED, json.dumps(data))
 
 
 class TraceReader(object):
-    def __init__(self, root, name):
-        self.root = root
-        self.name = name
-        self.trace_fn = trace_fn(root, name)
+    def __init__(self, trace_filename):
+        self.trace_fn = trace_filename
+        self.contents = None
 
-    def _readpy(self):
-        lines = self._read()
-        pyentries = list()
-        for (cmd, action) in lines:
-            if cmd == PYTHON_INSTALL and len(action):
-                jentry = json.loads(action)
-                if type(jentry) is dict:
-                    pyentries.append(jentry)
-        return pyentries
+    def filename(self):
+        return self.trace_fn
 
-    def _read(self):
-        return parse_name(self.root, self.name)
+    def _parse(self):
+        fn = self.trace_fn
+        if not sh.isfile(fn):
+            msg = "No trace found at filename %s" % (fn)
+            raise excp.NoTraceException(msg)
+        contents = sh.load_file(fn)
+        lines = contents.splitlines()
+        accum = list()
+        for line in lines:
+            ep = self._split_line(line)
+            if ep is None:
+                continue
+            accum.append(tuple(ep))
+        return accum
+
+    def read(self):
+        if self.contents is None:
+            self.contents = self._parse()
+        return self.contents
+
+    def _split_line(self, line):
+        pieces = line.split("-", 1)
+        if len(pieces) == 2:
+            cmd = pieces[0].rstrip()
+            action = pieces[1].lstrip()
+            return (cmd, action)
+        else:
+            return None
 
     def exists(self):
         return sh.exists(self.trace_fn)
 
-    def downloaded(self):
-        lines = self._read()
+    def py_listing(self):
+        lines = self.read()
+        py_entries = list()
+        for (cmd, action) in lines:
+            if cmd == PYTHON_INSTALL and len(action):
+                entry = json.loads(action)
+                if type(entry) is dict:
+                    py_entries.append((entry.get("name"), entry.get("where")))
+        return py_entries
+
+    def download_locations(self):
+        lines = self.read()
         locs = list()
         for (cmd, action) in lines:
             if cmd == DOWNLOADED and len(action):
-                jentry = json.loads(action)
-                if type(jentry) is dict:
-                    locs.append(jentry)
+                entry = json.loads(action)
+                if type(entry) is dict:
+                    locs.append(entry.get('target'))
         return locs
 
-    def py_listing(self):
-        return self._readpy()
-
     def files_touched(self):
-        lines = self._read()
+        lines = self.read()
         files = list()
         for (cmd, action) in lines:
             if cmd == FILE_TOUCHED and len(action):
@@ -202,7 +197,7 @@ class TraceReader(object):
         return files
 
     def dirs_made(self):
-        lines = self._read()
+        lines = self.read()
         dirs = list()
         for (cmd, action) in lines:
             if cmd == DIR_MADE and len(action):
@@ -214,17 +209,17 @@ class TraceReader(object):
         return dirs
 
     def apps_started(self):
-        lines = self._read()
-        files = list()
+        lines = self.read()
+        app_info = list()
         for (cmd, action) in lines:
             if cmd == AP_STARTED and len(action):
-                jdec = json.loads(action)
-                if type(jdec) is dict:
-                    files.append(jdec)
-        return files
+                entry = json.loads(action)
+                if type(entry) is dict:
+                    app_info.append((entry.get('trace_fn'), entry.get('name')))
+        return app_info
 
     def symlinks_made(self):
-        lines = self._read()
+        lines = self.read()
         files = list()
         for (cmd, action) in lines:
             if cmd == SYMLINK_MAKE and len(action):
@@ -235,7 +230,7 @@ class TraceReader(object):
         return files
 
     def files_configured(self):
-        lines = self._read()
+        lines = self.read()
         files = list()
         for (cmd, action) in lines:
             if cmd == CFG_WRITING_FILE and len(action):
@@ -245,79 +240,31 @@ class TraceReader(object):
         return files
 
     def pips_installed(self):
-        lines = self._read()
-        pipsinstalled = dict()
+        lines = self.read()
+        pips_installed = dict()
         pip_list = list()
         for (cmd, action) in lines:
             if cmd == PIP_INSTALL and len(action):
                 pip_list.append(action)
-        for pdata in pip_list:
-            pip_info_full = json.loads(pdata)
+        for pip_data in pip_list:
+            pip_info_full = json.loads(pip_data)
             if type(pip_info_full) is dict:
                 name = pip_info_full.get('name')
-                if name and len(name):
-                    pipsinstalled[name] = pip_info_full.get('pip_meta')
-        return pipsinstalled
+                if name:
+                    pips_installed[name] = pip_info_full.get('pip_meta')
+        return pips_installed
 
     def packages_installed(self):
-        lines = self._read()
-        pkgsinstalled = dict()
+        lines = self.read()
+        pkgs_installed = dict()
         pkg_list = list()
         for (cmd, action) in lines:
             if cmd == PKG_INSTALL and len(action):
                 pkg_list.append(action)
-        for pdata in pkg_list:
-            pkg_info = json.loads(pdata)
+        for pkg_data in pkg_list:
+            pkg_info = json.loads(pkg_data)
             if type(pkg_info) is dict:
                 name = pkg_info.get('name')
-                if name and len(name):
-                    pkgsinstalled[name] = pkg_info.get('pkg_meta')
-        return pkgsinstalled
-
-
-def trace_fn(rootdir, name):
-    fullname = name + TRACE_EXT
-    return sh.joinpths(rootdir, fullname)
-
-
-def touch_trace(rootdir, name):
-    tracefn = trace_fn(rootdir, name)
-    sh.touch_file(tracefn)
-    return tracefn
-
-
-def split_line(line):
-    pieces = line.split("-", 1)
-    if len(pieces) == 2:
-        cmd = pieces[0].rstrip()
-        action = pieces[1].lstrip()
-        return (cmd, action)
-    else:
-        return None
-
-
-def read(rootdir, name):
-    pth = trace_fn(rootdir, name)
-    contents = sh.load_file(pth)
-    lines = contents.splitlines()
-    return lines
-
-
-def parse_fn(fn):
-    if not sh.isfile(fn):
-        msg = "No trace found at filename %s" % (fn)
-        raise excp.NoTraceException(msg)
-    contents = sh.load_file(fn)
-    lines = contents.splitlines()
-    accum = list()
-    for line in lines:
-        ep = split_line(line)
-        if ep is None:
-            continue
-        accum.append(tuple(ep))
-    return accum
-
-
-def parse_name(rootdir, name):
-    fn = trace_fn(rootdir, name)
-    return parse_fn(fn)
+                if name:
+                    pkgs_installed[name] = pkg_info.get('pkg_meta')
+        return pkgs_installed

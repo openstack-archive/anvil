@@ -78,15 +78,14 @@ class ScreenRunner(base.RunnerBase):
         self.socket_dir = sh.joinpths(tempfile.gettempdir(), SCREEN_SOCKET_DIR_NAME)
 
     def stop(self, app_name):
-        fn_name = SCREEN_TEMPL % (app_name)
-        trace_fn = tr.trace_fn(self.trace_dir, fn_name)
+        trace_fn = tr.trace_fn(self.trace_dir, SCREEN_TEMPL % (app_name))
         session_id = self._find_session(app_name, trace_fn)
         self._do_stop(app_name, session_id)
         sh.unlink(trace_fn)
 
     def _find_session(self, app_name, trace_fn):
         session_id = None
-        for (key, value) in tr.parse_fn(trace_fn):
+        for (key, value) in tr.TraceReader(trace_fn).read():
             if key == SESSION_ID and value:
                 session_id = value
         if not session_id:
@@ -200,12 +199,10 @@ class ScreenRunner(base.RunnerBase):
                 sh.chmod(d, perm)
 
     def _begin_start(self, name, program, args):
-        fn_name = SCREEN_TEMPL % (name)
-        tracefn = tr.touch_trace(self.trace_dir, fn_name)
-        runtrace = tr.Trace(tracefn)
-        runtrace.trace(TYPE, RUN_TYPE)
-        runtrace.trace(NAME, name)
-        runtrace.trace(ARGS, json.dumps(args))
+        run_trace = tr.TraceWriter(tr.trace_fn(self.trace_dir, SCREEN_TEMPL % (name)))
+        run_trace.trace(TYPE, RUN_TYPE)
+        run_trace.trace(NAME, name)
+        run_trace.trace(ARGS, json.dumps(args))
         full_cmd = [program] + list(args)
         session_name = self._get_session()
         inited_screen = False
@@ -216,7 +213,7 @@ class ScreenRunner(base.RunnerBase):
             if session_name is None:
                 msg = "After initializing screen with session named [%s], no screen session with that name was found!" % (SESSION_NAME)
                 raise excp.StartException(msg)
-        runtrace.trace(SESSION_ID, session_name)
+        run_trace.trace(SESSION_ID, session_name)
         if inited_screen or not sh.isfile(SCREEN_RC):
             rc_gen = ScreenRcGenerator(self)
             rc_contents = rc_gen.create(session_name, self._get_env())
@@ -224,7 +221,7 @@ class ScreenRunner(base.RunnerBase):
             LOG.info("Writing your created screen rc file to [%s]" % (out_fn))
             sh.write_file(out_fn, rc_contents)
         self._do_start(session_name, name, full_cmd)
-        return tracefn
+        return run_trace.filename()
 
     def start(self, app_name, runtime_info):
         (program, _, program_args) = runtime_info

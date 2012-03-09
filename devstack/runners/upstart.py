@@ -116,12 +116,10 @@ class UpstartRunner(base.RunnerBase):
             sh.chmod(cfg_fn, 0666)
 
     def _start(self, app_name, program, program_args):
-        fn_name = UPSTART_TEMPL % (app_name)
-        tracefn = tr.touch_trace(self.trace_dir, fn_name)
-        runtrace = tr.Trace(tracefn)
-        runtrace.trace(TYPE, RUN_TYPE)
-        runtrace.trace(NAME, app_name)
-        runtrace.trace(ARGS, json.dumps(program_args))
+        run_trace = tr.TraceWriter(tr.trace_fn(self.trace_dir, UPSTART_TEMPL % (app_name)))
+        run_trace.trace(TYPE, RUN_TYPE)
+        run_trace.trace(NAME, app_name)
+        run_trace.trace(ARGS, json.dumps(program_args))
         # Emit the start, keep track and only do one per component name
         component_event = self.component_name + START_EVENT_SUFFIX
         if component_event in self.events:
@@ -131,7 +129,7 @@ class UpstartRunner(base.RunnerBase):
             cmd = EMIT_BASE_CMD + [component_event]
             sh.execute(*cmd, run_as_root=True)
             self.events.add(component_event)
-        return tracefn
+        return run_trace.filename()
 
     def start(self, app_name, runtime_info):
         (program, _, program_args) = runtime_info
