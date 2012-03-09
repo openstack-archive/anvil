@@ -16,6 +16,7 @@
 
 import os
 import re
+import sys
 
 # These also have meaning outside python,
 # ie in the pkg/pip listings so update there also!
@@ -122,7 +123,8 @@ STOP = "stop"
 ACTIONS = [INSTALL, UNINSTALL, START, STOP]
 
 # Where the configs and templates should be at.
-STACK_CONFIG_DIR = os.path.join(os.getcwd(), "conf")
+STACK_BIN_DIR = os.path.abspath(os.path.dirname(sys.argv[0]))
+STACK_CONFIG_DIR = os.path.join(STACK_BIN_DIR, "conf")
 STACK_TEMPLATE_DIR = os.path.join(STACK_CONFIG_DIR, "templates")
 STACK_PKG_DIR = os.path.join(STACK_CONFIG_DIR, "pkgs")
 STACK_PIP_DIR = os.path.join(STACK_CONFIG_DIR, "pips")
