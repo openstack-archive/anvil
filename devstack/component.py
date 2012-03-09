@@ -494,6 +494,7 @@ class PythonRuntime(ProgramRuntime):
 class EmptyRuntime(ComponentBase):
     def __init__(self, component_name, *args, **kargs):
         ComponentBase.__init__(self, component_name, *args, **kargs)
+        self.tracereader = tr.TraceReader(tr.trace_fn(self.tracedir, tr.IN_TRACE))
 
     def configure(self):
         return 0

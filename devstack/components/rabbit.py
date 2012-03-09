@@ -92,7 +92,6 @@ class RabbitInstaller(comp.PkgInstallComponent):
 class RabbitRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
         comp.EmptyRuntime.__init__(self, TYPE, *args, **kargs)
-        self.tracereader = tr.TraceReader(self.tracedir, tr.IN_TRACE)
 
     def start(self):
         if self.status() != comp.STATUS_STARTED:

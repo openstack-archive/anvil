@@ -231,7 +231,6 @@ class DBInstaller(comp.PkgInstallComponent):
 class DBRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
         comp.EmptyRuntime.__init__(self, TYPE, *args, **kargs)
-        self.tracereader = tr.TraceReader(self.tracedir, tr.IN_TRACE)
 
     def _get_run_actions(self, act, exception_cls):
         dbtype = self.cfg.get("db", "type")
