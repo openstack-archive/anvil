@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from devstack import cfg
 from devstack import downloader as down
 from devstack import exceptions as excp
 from devstack import log as logging
@@ -98,17 +99,21 @@ class PkgInstallComponent(ComponentBase):
             uri_tuple = location_info["uri"]
             branch_tuple = location_info.get("branch")
             subdir = location_info.get("subdir")
-            target_loc = None
+            target_loc = base_dir
             if subdir:
                 target_loc = sh.joinpths(base_dir, subdir)
-            else:
-                target_loc = base_dir
             branch = None
             if branch_tuple:
                 (cfg_section, cfg_key) = branch_tuple
                 branch = self.cfg.get(cfg_section, cfg_key)
+                if not branch:
+                    msg = "No branch entry found at config location [%s]" % (cfg.make_id(cfg_section, cfg_key))
+                    raise excp.ConfigException(msg)
             (cfg_section, cfg_key) = uri_tuple
             uri = self.cfg.get(cfg_section, cfg_key)
+            if not uri:
+                msg = "No uri entry found at config location [%s]" % (cfg.make_id(cfg_section, cfg_key))
+                raise excp.ConfigException(msg)
             self.tracewriter.download_happened(target_loc, uri)
             dirs_made = down.download(target_loc, uri, branch)
             #ensure this is always added so that

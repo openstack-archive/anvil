@@ -79,6 +79,15 @@ class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
         return ConfigParser.RawConfigParser.getint(self, section, option)
 
 
+def make_id(section, option):
+    joinwhat = []
+    if section is not None:
+        joinwhat.append(str(section))
+    if option is not None:
+        joinwhat.append(str(option))
+    return "/".join(joinwhat)
+
+
 class StackConfigParser(IgnoreMissingConfigParser):
     def __init__(self):
         IgnoreMissingConfigParser.__init__(self)
@@ -86,16 +95,8 @@ class StackConfigParser(IgnoreMissingConfigParser):
         self.configs_fetched = dict()
         self.db_dsns = dict()
 
-    def _make_key(self, section, option):
-        joinwhat = []
-        if section is not None:
-            joinwhat.append(str(section))
-        if option is not None:
-            joinwhat.append(str(option))
-        return "/".join(joinwhat)
-
     def _resolve_value(self, section, option, value_gotten, auto_pw):
-        key = self._make_key(section, option)
+        key = make_id(section, option)
         if section in PW_SECTIONS and key not in self.pws and value_gotten:
             self.pws[key] = value_gotten
         if section == 'host' and option == 'ip':
@@ -116,7 +117,7 @@ class StackConfigParser(IgnoreMissingConfigParser):
         return val
 
     def get(self, section, option, auto_pw=True):
-        key = self._make_key(section, option)
+        key = make_id(section, option)
         if key in self.configs_fetched:
             value = self.configs_fetched.get(key)
             LOG.debug("Fetched cached value [%s] for param [%s]" % (value, key))
