@@ -42,7 +42,6 @@ PARAM_SUB_REGEX = re.compile(r"#.*$|%([\w\d]+?)%", re.MULTILINE)
 EXT_COMPONENT = re.compile(r"^\s*([\w-]+)(?:\((.*)\))?\s*$")
 MONTY_PYTHON_TEXT_RE = re.compile("([a-z0-9A-Z\?!.,'\"]+)")
 LOG = logging.getLogger("devstack.util")
-TEMPLATE_EXT = ".tpl"
 DEF_IP = "127.0.0.1"
 IP_LOOKER = '8.8.8.8'
 DEF_IP_VERSION = settings.IPV4
@@ -72,8 +71,7 @@ COWS['unhappy'] = r'''
 
 
 def load_template(component, template_name):
-    fn = template_name + TEMPLATE_EXT
-    full_pth = sh.joinpths(settings.STACK_TEMPLATE_DIR, component, fn)
+    full_pth = sh.joinpths(settings.STACK_TEMPLATE_DIR, component, template_name)
     contents = sh.load_file(full_pth)
     return (full_pth, contents)
 
