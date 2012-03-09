@@ -833,7 +833,7 @@ class NovaConfConfigurator(object):
     def _configure_instances_path(self, instances_path, nova_conf):
         nova_conf.add('instances_path', instances_path)
         LOG.debug("Attempting to create instance directory: %s" % (instances_path))
-        self.tracewriter.make_dir(instances_path)
+        self.tracewriter.dirs_made(*sh.mkdirslist(instances_path))
         LOG.debug("Adjusting permissions of instance directory: %s" % (instances_path))
         os.chmod(instances_path, 0777)
 
