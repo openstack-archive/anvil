@@ -108,12 +108,10 @@ class DBUninstaller(comp.PkgUninstallComponent):
                 if pwd_cmd:
                     LOG.info("Ensuring your database is started before we operate on it.")
                     self.runtime.restart()
-                    user = self.cfg.get("db", "sql_user")
-                    old_pw = self.cfg.get("passwords", 'sql')
                     params = {
-                        'OLD_PASSWORD': old_pw,
+                        'OLD_PASSWORD': self.cfg.get("passwords", 'sql'),
                         'NEW_PASSWORD': RESET_BASE_PW,
-                        'USER': user,
+                        'USER': self.cfg.getdefaulted("db", "sql_user", 'root'),
                         }
                     cmds = [{'cmd': pwd_cmd}]
                     utils.execute_template(*cmds, params=params, shell=True)
@@ -135,7 +133,7 @@ class DBInstaller(comp.PkgInstallComponent):
         out = {
             'PASSWORD': self.cfg.get("passwords", "sql"),
             'BOOT_START': ("%s" % (True)).lower(),
-            'USER': self.cfg.get("db", "sql_user"),
+            'USER': self.cfg.getdefaulted("db", "sql_user", 'root'),
             'SERVICE_HOST': host_ip,
             'HOST_IP': host_ip
         }
@@ -197,7 +195,7 @@ class DBInstaller(comp.PkgInstallComponent):
                     self.runtime.restart()
                     params = {
                         'NEW_PASSWORD': self.cfg.get("passwords", "sql"),
-                        'USER': self.cfg.get("db", "sql_user"),
+                        'USER': self.cfg.getdefaulted("db", "sql_user", 'root'),
                         'OLD_PASSWORD': RESET_BASE_PW,
                         }
                     cmds = [{'cmd': pwd_cmd}]
@@ -210,7 +208,7 @@ class DBInstaller(comp.PkgInstallComponent):
         if dbactions:
             grant_cmd = dbactions.get('grant_all')
             if grant_cmd:
-                user = self.cfg.get("db", "sql_user")
+                user = self.cfg.getdefaulted("db", "sql_user", 'root')
                 LOG.info("Updating the DB to give user '%s' full control of all databases." % (user))
                 LOG.info("Ensuring your database is started before we operate on it.")
                 self.runtime.restart()
@@ -300,7 +298,7 @@ def drop_db(cfg, dbname):
         dropcmd = dbactions.get('drop_db')
         params = dict()
         params['PASSWORD'] = cfg.get("passwords", "sql")
-        params['USER'] = cfg.get("db", "sql_user")
+        params['USER'] = cfg.getdefaulted("db", "sql_user", 'root')
         params['DB'] = dbname
         cmds = list()
         cmds.append({
@@ -320,7 +318,7 @@ def create_db(cfg, dbname):
         createcmd = dbactions.get('create_db')
         params = dict()
         params['PASSWORD'] = cfg.get("passwords", "sql")
-        params['USER'] = cfg.get("db", "sql_user")
+        params['USER'] = cfg.getdefaulted("db", "sql_user", 'root')
         params['DB'] = dbname
         cmds = list()
         cmds.append({

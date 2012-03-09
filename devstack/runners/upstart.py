@@ -82,8 +82,8 @@ class UpstartRunner(base.RunnerBase):
             params['RESPAWN'] = ""
         params['SHORT_NAME'] = program_name
         params['MADE_DATE'] = date.rcf8222date()
-        params['START_EVENT'] = self.cfg.get('upstart', 'start_event')
-        params['STOP_EVENT'] = self.cfg.get('upstart', 'stop_event')
+        params['START_EVENT'] = self.cfg.getdefaulted('upstart', 'start_event', 'all_os_start')
+        params['STOP_EVENT'] = self.cfg.getdefaulted('upstart', 'stop_event', 'all_os_stop')
         params['COMPONENT_START_EVENT'] = self.component_name + START_EVENT_SUFFIX
         params['COMPONENT_STOP_EVENT'] = self.component_name + STOP_EVENT_SUFFIX
         params['PROGRAM_NAME'] = app_pth

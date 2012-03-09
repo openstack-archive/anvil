@@ -225,12 +225,8 @@ class HorizonInstaller(comp.PythonInstallComponent):
         self._config_fixups()
 
     def _get_apache_user_group(self):
-        user = self.cfg.get('horizon', 'apache_user')
-        if not user:
-            user = sh.getuser()
-        group = self.cfg.get('horizon', 'apache_group')
-        if not group:
-            group = sh.getgroupname()
+        user = self.cfg.getdefaulted('horizon', 'apache_user', sh.getuser())
+        group = self.cfg.getdefaulted('horizon', 'apache_group', sh.getgroupname())
         return (user, group)
 
     def _get_param_map(self, config_fn):

@@ -269,12 +269,11 @@ class ImageCreationService:
 
         #extract them from the config
         try:
-            flat_urls = self.cfg.get('img', 'image_urls')
-            if flat_urls:
-                expanded_urls = [x.strip() for x in flat_urls.split(',')]
-                for url in expanded_urls:
-                    if url:
-                        urls.append(url)
+            flat_urls = self.cfg.getdefaulted('img', 'image_urls', [])
+            expanded_urls = [x.strip() for x in flat_urls.split(',')]
+            for url in expanded_urls:
+                if url:
+                    urls.append(url)
         except(ConfigParser.Error):
             LOG.warn("No image configuration keys found, skipping glance image install!")
 

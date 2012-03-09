@@ -85,7 +85,7 @@ class QuantumInstaller(comp.PkgInstallComponent):
         comp.PkgInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.q_vswitch_agent = False
         self.q_vswitch_service = False
-        plugin = self.cfg.get("quantum", "q_plugin")
+        plugin = self.cfg.getdefaulted("quantum", "q_plugin", VSWITCH_PLUGIN)
         if plugin == VSWITCH_PLUGIN:
             if len(self.component_opts) == 0:
                 #default to on if not specified
@@ -174,7 +174,7 @@ class QuantumInstaller(comp.PkgInstallComponent):
             return comp.PkgInstallComponent._config_adjust(self, contents, config_fn)
 
     def _setup_bridge(self):
-        bridge = self.cfg.get("quantum", "ovs_bridge")
+        bridge = self.cfg.getdefaulted("quantum", "ovs_bridge", 'br-int')
         if bridge:
             LOG.info("Fixing up ovs bridge named %s.", bridge)
             external_id = self.cfg.getdefaulted("quantum", 'ovs_bridge_external_name', bridge)
@@ -222,7 +222,7 @@ class QuantumRuntime(comp.ProgramRuntime):
         comp.ProgramRuntime.__init__(self, TYPE, *args, **kargs)
         self.q_vswitch_agent = False
         self.q_vswitch_service = False
-        plugin = self.cfg.get("quantum", "q_plugin")
+        plugin = self.cfg.getdefaulted("quantum", "q_plugin", VSWITCH_PLUGIN)
         if plugin == VSWITCH_PLUGIN:
             if len(self.component_opts) == 0:
                 #default to on if not specified

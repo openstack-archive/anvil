@@ -45,6 +45,9 @@ ROOT_CONF_REAL_NAME = 'melange.conf'
 CONFIGS = [ROOT_CONF]
 CFG_LOC = ['etc', 'melange']
 
+#sensible defaults
+DEF_CIDR_RANGE = 'FE-EE-DD-00-00-00/24'
+
 #how we sync melange with the db
 DB_SYNC_CMD = [
     {'cmd': ['%BINDIR%/melange-manage', '--config-file=%CFG_FILE%', 'db_sync']},
@@ -168,5 +171,5 @@ class MelangeRuntime(comp.PythonRuntime):
             LOG.info("Waiting %s seconds so that the melange server can start up before cidr range creation." % (WAIT_ONLINE_TO))
             time.sleep(WAIT_ONLINE_TO)
             mp = dict()
-            mp['CIDR_RANGE'] = self.cfg.get('melange', 'm_mac_range')
+            mp['CIDR_RANGE'] = self.cfg.getdefaulted('melange', 'm_mac_range', DEF_CIDR_RANGE)
             utils.execute_template(*CIDR_CREATE_CMD, params=mp)

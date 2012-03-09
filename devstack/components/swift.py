@@ -74,7 +74,7 @@ WARMUP_PWS = ['service_token', 'swift_hash']
 class SwiftUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
-        self.datadir = sh.joinpths(self.appdir, self.cfg.get('swift', 'data_location'))
+        self.datadir = sh.joinpths(self.appdir, self.cfg.getdefaulted('swift', 'data_location', 'data'))
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
         self.logdir = sh.joinpths(self.datadir, LOG_DIR)
@@ -93,7 +93,7 @@ class SwiftInstaller(comp.PythonInstallComponent):
         comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
-        self.datadir = sh.joinpths(self.appdir, self.cfg.get('swift', 'data_location'))
+        self.datadir = sh.joinpths(self.appdir, self.cfg.getdefaulted('swift', 'data_location', 'data'))
         self.logdir = sh.joinpths(self.datadir, LOG_DIR)
         self.startmain_file = sh.joinpths(self.bindir, SWIFT_STARTMAIN)
         self.makerings_file = sh.joinpths(self.bindir, SWIFT_MAKERINGS)
@@ -121,15 +121,15 @@ class SwiftInstaller(comp.PythonInstallComponent):
 
     def _get_param_map(self, config_fn):
         return {
-            'USER': self.cfg.get('swift', 'swift_user'),
-            'GROUP': self.cfg.get('swift', 'swift_group'),
+            'USER': self.cfg.getdefaulted('swift', 'swift_user', sh.getuser()),
+            'GROUP': self.cfg.getdefaulted('swift', 'swift_group', sh.getgroupname()),
             'SWIFT_DATA_LOCATION': self.datadir,
             'SWIFT_CONFIG_LOCATION': self.cfgdir,
             'SERVICE_TOKEN': self.cfg.get('passwords', 'service_token'),
             'AUTH_SERVER': self.auth_server,
             'SWIFT_HASH': self.cfg.get('passwords', 'swift_hash'),
             'SWIFT_LOGDIR': self.logdir,
-            'SWIFT_PARTITION_POWER_SIZE': self.cfg.get('swift', 'partition_power_size'),
+            'SWIFT_PARTITION_POWER_SIZE': self.cfg.getdefaulted('swift', 'partition_power_size', '9'),
             #leave these alone, will be adjusted later
             'NODE_PATH': '%NODE_PATH%',
             'BIND_PORT': '%BIND_PORT%',
@@ -208,7 +208,7 @@ class SwiftInstaller(comp.PythonInstallComponent):
 class SwiftRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
-        self.datadir = sh.joinpths(self.appdir, self.cfg.get('swift', 'data_location'))
+        self.datadir = sh.joinpths(self.appdir, self.cfg.getdefaulted('swift', 'data_location', 'data'))
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
         self.logdir = sh.joinpths(self.datadir, LOG_DIR)

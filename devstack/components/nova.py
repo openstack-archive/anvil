@@ -402,11 +402,11 @@ class NovaInstaller(comp.PythonInstallComponent):
         if config_fn == NET_INIT_CONF:
             mp['NOVA_DIR'] = self.appdir
             mp['CFG_FILE'] = sh.joinpths(self.cfgdir, API_CONF)
-            mp['FLOATING_RANGE'] = self.cfg.get('nova', 'floating_range')
-            mp['TEST_FLOATING_RANGE'] = self.cfg.get('nova', 'test_floating_range')
-            mp['TEST_FLOATING_POOL'] = self.cfg.get('nova', 'test_floating_pool')
-            mp['FIXED_NETWORK_SIZE'] = self.cfg.get('nova', 'fixed_network_size')
-            mp['FIXED_RANGE'] = self.cfg.get('nova', 'fixed_range')
+            mp['FLOATING_RANGE'] = self.cfg.getdefaulted('nova', 'floating_range', '172.24.4.224/28')
+            mp['TEST_FLOATING_RANGE'] = self.cfg.getdefaulted('nova', 'test_floating_range', '192.168.253.0/29')
+            mp['TEST_FLOATING_POOL'] = self.cfg.getdefaulted('nova', 'test_floating_pool', 'test')
+            mp['FIXED_NETWORK_SIZE'] = self.cfg.getdefaulted('nova', 'fixed_network_size', '256')
+            mp['FIXED_RANGE'] = self.cfg.getdefaulted('nova', 'fixed_range', '10.0.0.0/24')
         else:
             mp.update(keystone.get_shared_params(self.cfg, 'nova'))
         return mp
@@ -515,12 +515,9 @@ class NovaVolumeConfigurator(object):
     def _setup_vol_groups(self):
         LOG.info("Attempting to setup volume groups for nova volume management.")
         mp = dict()
-        backing_file = self.cfg.get('nova', 'volume_backing_file')
-        # check if we need to have a default backing file
-        if not backing_file:
-            backing_file = sh.joinpths(self.appdir, 'nova-volumes-backing-file')
-        vol_group = self.cfg.get('nova', 'volume_group')
-        backing_file_size = utils.to_bytes(self.cfg.get('nova', 'volume_backing_file_size'))
+        backing_file = self.cfg.getdefaulted('nova', 'volume_backing_file', sh.joinpths(self.appdir, 'nova-volumes-backing-file'))
+        vol_group = self.cfg.getdefaulted('nova', 'volume_group', 'nova-volumes')
+        backing_file_size = utils.to_bytes(self.cfg.getdefaulted('nova', 'volume_backing_file_size', '2052M'))
         mp['VOLUME_GROUP'] = vol_group
         mp['VOLUME_BACKING_FILE'] = backing_file
         mp['VOLUME_BACKING_FILE_SIZE'] = backing_file_size
@@ -676,7 +673,7 @@ class NovaConfConfigurator(object):
         nova_conf.add('s3_host', hostip)
 
         #how is your rabbit setup?
-        nova_conf.add('rabbit_host', self.cfg.get('default', 'rabbit_host'))
+        nova_conf.add('rabbit_host', self.cfg.getdefaulted('default', 'rabbit_host', hostip))
         nova_conf.add('rabbit_password', self.cfg.get("passwords", "rabbit"))
 
         #where instances will be stored
@@ -782,16 +779,17 @@ class NovaConfConfigurator(object):
         #TODO this might not be right....
         if utils.service_enabled(settings.QUANTUM, self.instances, False):
             nova_conf.add('network_manager', QUANTUM_MANAGER)
-            nova_conf.add('quantum_connection_host', self.cfg.get('quantum', 'q_host'))
-            nova_conf.add('quantum_connection_port', self.cfg.get('quantum', 'q_port'))
+            hostip = self.cfg.get('host', 'ip')
+            nova_conf.add('quantum_connection_host', self.cfg.getdefaulted('quantum', 'q_host', hostip))
+            nova_conf.add('quantum_connection_port', self.cfg.getdefaulted('quantum', 'q_port', '9696'))
             if self.cfg.get('quantum', 'q_plugin') == 'openvswitch':
                 for (key, value) in QUANTUM_OPENSWITCH_OPS.items():
                     nova_conf.add(key, value)
             if utils.service_enabled(settings.MELANGE_CLIENT, self.instances, False):
                 nova_conf.add('quantum_ipam_lib', QUANTUM_IPAM_LIB)
                 nova_conf.add('use_melange_mac_generation', True)
-                nova_conf.add('melange_host', self.cfg.get('melange', 'm_host'))
-                nova_conf.add('melange_port', self.cfg.get('melange', 'm_port'))
+                nova_conf.add('melange_host', self.cfg.getdefaulted('melange', 'm_host', hostip))
+                nova_conf.add('melange_port', self.cfg.getdefaulted('melange', 'm_port', '9898'))
         else:
             nova_conf.add('network_manager', NET_MANAGER_TEMPLATE % (self._getstr('network_manager', DEF_NET_MANAGER)))
 

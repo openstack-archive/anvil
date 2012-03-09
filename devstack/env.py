@@ -35,11 +35,13 @@ def set(key, value):
 
 
 def get_key(key, default_value=None):
-    LOG.debug("Looking up environment variable \"%s\"" % (key))
+    if not key:
+        return default_value
+    LOG.debug("Looking up environment variable [%s]" % (key))
     value = get().get(key)
     if value is None:
-        LOG.debug("Could not find anything in environment variable \"%s\"" % (key))
+        LOG.debug("Could not find anything in environment variable [%s]" % (key))
         value = default_value
     else:
-        LOG.debug("Found \"%s\" in environment variable \"%s\"" % (value, key))
+        LOG.debug("Found [%s] in environment variable [%s]" % (value, key))
     return value

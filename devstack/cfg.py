@@ -46,7 +46,7 @@ class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
     DEF_INT = 0
     DEF_FLOAT = 0.0
     DEF_BOOLEAN = False
-    DEF_STRING = ''
+    DEF_BASE = None
 
     def __init__(self):
         ConfigParser.RawConfigParser.__init__(self)
@@ -54,7 +54,7 @@ class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
         self.optionxform = str
 
     def get(self, section, option):
-        value = IgnoreMissingConfigParser.DEF_STRING
+        value = IgnoreMissingConfigParser.DEF_BASE
         try:
             value = ConfigParser.RawConfigParser.get(self, section, option)
         except ConfigParser.NoSectionError:
@@ -86,7 +86,7 @@ class StackConfigParser(IgnoreMissingConfigParser):
         self.configs_fetched = dict()
         self.db_dsns = dict()
 
-    def _makekey(self, section, option):
+    def _make_key(self, section, option):
         joinwhat = []
         if section is not None:
             joinwhat.append(str(section))
@@ -94,76 +94,74 @@ class StackConfigParser(IgnoreMissingConfigParser):
             joinwhat.append(str(option))
         return "/".join(joinwhat)
 
-    def _resolve_special(self, section, option, value_gotten, auto_pw):
-        key = self._makekey(section, option)
-        if section in PW_SECTIONS and key not in self.pws:
+    def _resolve_value(self, section, option, value_gotten, auto_pw):
+        key = self._make_key(section, option)
+        if section in PW_SECTIONS and key not in self.pws and value_gotten:
             self.pws[key] = value_gotten
         if section == 'host' and option == 'ip':
             LOG.debug("Host ip from configuration/environment was empty, programatically attempting to determine it.")
             value_gotten = utils.get_host_ip()
-            LOG.debug("Determined your host ip to be: \"%s\"" % (value_gotten))
-        if section in PW_SECTIONS and auto_pw and len(value_gotten) == 0:
-            LOG.debug("Being forced to ask for password for \"%s\" since the configuration value is empty.", key)
+            LOG.debug("Determined your host ip to be: [%s]" % (value_gotten))
+        if section in PW_SECTIONS and auto_pw and not value_gotten:
+            LOG.debug("Being forced to ask for password for [%s] since the configuration value is empty.", key)
             value_gotten = sh.password(PW_PROMPTS.get(option, PW_TMPL % (key)))
             self.pws[key] = value_gotten
         return value_gotten
 
     def getdefaulted(self, section, option, default_val, auto_pw=True):
-        val = self.get(section, option, auto_pw=auto_pw)
-        if not val:
+        val = self.get(section, option, auto_pw)
+        if not val or not val.strip():
+            LOG.debug("Value [%s] found was not good enough, returning provided default [%s]" % (val, default_val))
             return default_val
         return val
 
     def get(self, section, option, auto_pw=True):
-        key = self._makekey(section, option)
+        key = self._make_key(section, option)
         if key in self.configs_fetched:
             value = self.configs_fetched.get(key)
-            LOG.debug("Fetched cached value \"%s\" for param \"%s\"" % (value, key))
+            LOG.debug("Fetched cached value [%s] for param [%s]" % (value, key))
         else:
-            LOG.debug("Fetching value for param \"%s\"" % (key))
-            gotten_value = self._get_special(section, option, auto_pw)
-            value = self._resolve_special(section, option, gotten_value, auto_pw)
-            LOG.debug("Fetched \"%s\" for \"%s\"" % (value, key))
+            LOG.debug("Fetching value for param [%s]" % (key))
+            gotten_value = self._get_bashed(section, option, auto_pw)
+            value = self._resolve_value(section, option, gotten_value, auto_pw)
+            LOG.debug("Fetched [%s] for [%s] %s" % (value, key, CACHE_MSG))
             self.configs_fetched[key] = value
         return value
 
-    def _extract_default(self, default_value, auto_pw):
-        if not SUB_MATCH.search(default_value):
-            return default_value
-
-        LOG.debug("Performing simple replacement on %s", default_value)
+    def _resolve_replacements(self, value, auto_pw):
+        LOG.debug("Performing simple replacement on [%s]", value)
 
         #allow for our simple replacement to occur
         def replacer(match):
             section = match.group(1)
             option = match.group(2)
-            return self.get(section, option, auto_pw)
+            return self.getdefaulted(section, option, '', auto_pw)
 
-        return SUB_MATCH.sub(replacer, default_value)
+        return SUB_MATCH.sub(replacer, value)
 
-    def _get_special(self, section, option, auto_pw):
-        key = self._makekey(section, option)
+    def _get_bashed(self, section, option, auto_pw):
         value = IgnoreMissingConfigParser.get(self, section, option)
+        if value is None:
+            return value
         extracted_val = ''
         mtch = ENV_PAT.match(value)
         if mtch:
             env_key = mtch.group(1).strip()
-            def_val = mtch.group(2)
+            def_val = mtch.group(2).strip()
             if not def_val and not env_key:
-                msg = "Invalid bash-like value \"%s\" for \"%s\"" % (value, key)
+                msg = "Invalid bash-like value [%s]" % (value)
                 raise excp.BadParamException(msg)
-            if not env_key or env.get_key(env_key) is None:
-                LOG.debug("Extracting default value from config provided default value \"%s\" for \"%s\"" % (def_val, key))
-                actual_def_val = self._extract_default(def_val, auto_pw)
-                LOG.debug("Using config provided default value \"%s\" for \"%s\" (no environment key)" % (actual_def_val, key))
-                extracted_val = actual_def_val
+            env_value = env.get_key(env_key)
+            if env_value is None:
+                LOG.debug("Extracting value from config provided default value [%s]" % (def_val))
+                extracted_val = self._resolve_replacements(def_val, auto_pw)
+                LOG.debug("Using config provided default value [%s] (no environment key)" % (extracted_val))
             else:
-                env_val = env.get_key(env_key)
-                LOG.debug("Using enviroment provided value \"%s\" for \"%s\"" % (env_val, key))
-                extracted_val = env_val
+                extracted_val = env_value
+                LOG.debug("Using enviroment provided value [%s]" % (extracted_val))
         else:
-            LOG.debug("Using raw config provided value \"%s\" for \"%s\"" % (value, key))
             extracted_val = value
+            LOG.debug("Using raw config provided value [%s]" % (extracted_val))
         return extracted_val
 
     def get_dbdsn(self, dbname):
@@ -197,7 +195,7 @@ class StackConfigParser(IgnoreMissingConfigParser):
             dsn += "/" + dbname
         else:
             dsn += "/"
-        LOG.debug("For database \"%s\" fetched dsn \"%s\" %s" % (dbname, dsn, CACHE_MSG))
+        LOG.debug("For database [%s] fetched dsn [%s] %s" % (dbname, dsn, CACHE_MSG))
         #store for later...
         self.db_dsns[dbname] = dsn
         return dsn

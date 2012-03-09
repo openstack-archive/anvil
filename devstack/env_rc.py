@@ -55,17 +55,12 @@ class RcWriter(object):
         escaped_val = sh.shellquote(value)
         full_line = "export %s=%s" % (export_name, escaped_val)
         return full_line
-    
-    def _valid_value(self, value):
-        if not value:
-            return False
-        return True
 
     def _make_dict_export(self, kvs):
         lines = list()
         for var_name in sorted(kvs.keys()):
             var_value = kvs.get(var_name)
-            if self._valid_value(var_value):
+            if var_value is not None:
                 lines.append(self._make_export(var_name, str(var_value)))
         return lines
 
@@ -76,8 +71,8 @@ class RcWriter(object):
         to_set['EC2_URL'] = self.cfg.getdefaulted('extern', 'ec2_url', ec2_url_default, auto_pw=False)
         s3_url_default = urlunparse(('http', "%s:%s" % (ip, S3_PORT), "services/Cloud", '', '', ''))
         to_set['S3_URL'] = self.cfg.getdefaulted('extern', 's3_url', s3_url_default, auto_pw=False)
-        to_set['EC2_CERT'] = self.cfg.getdefaulted('extern', 'ec2_cert_fn', '', auto_pw=False)
-        to_set['EC2_USER_ID'] = self.cfg.getdefaulted('extern', 'ec2_user_id', '', auto_pw=False)
+        to_set['EC2_CERT'] = self.cfg.get('extern', 'ec2_cert_fn', auto_pw=False)
+        to_set['EC2_USER_ID'] = self.cfg.get('extern', 'ec2_user_id', auto_pw=False)
         return to_set
 
     def _generate_ec2_env(self):
@@ -91,7 +86,7 @@ class RcWriter(object):
         to_set = dict()
         for (out_name, cfg_data) in CFG_MAKE.items():
             (section, key) = (cfg_data)
-            to_set[out_name] = self.cfg.getdefaulted(section, key, '', auto_pw=False)
+            to_set[out_name] = self.cfg.get(section, key, auto_pw=False)
         return to_set
 
     def _generate_general(self):
@@ -125,7 +120,7 @@ class RcWriter(object):
         new_vars = dict()
         updated_vars = dict()
         for (key, value) in possible_vars.items():
-            if self._valid_value(value):
+            if value is not None:
                 if key in current_vars and (current_vars.get(key) != value):
                     updated_vars[key] = value
                 elif key not in current_vars:
@@ -184,7 +179,7 @@ alias ec2-upload-bundle="ec2-upload-bundle -a ${EC2_ACCESS_KEY} -s ${EC2_SECRET_
 
     def _get_euca_envs(self):
         to_set = dict()
-        to_set['EUCALYPTUS_CERT'] = self.cfg.getdefaulted('extern', 'nova_cert_fn', '', auto_pw=False)
+        to_set['EUCALYPTUS_CERT'] = self.cfg.get('extern', 'nova_cert_fn', auto_pw=False)
         return to_set
 
     def _generate_euca_env(self):
@@ -196,8 +191,8 @@ alias ec2-upload-bundle="ec2-upload-bundle -a ${EC2_ACCESS_KEY} -s ${EC2_SECRET_
 
     def _get_nova_envs(self):
         to_set = dict()
-        to_set['NOVA_VERSION'] = self.cfg.getdefaulted('nova', 'nova_version', '', auto_pw=False)
-        to_set['NOVA_CERT'] = self.cfg.getdefaulted('extern', 'nova_cert_fn', '', auto_pw=False)
+        to_set['NOVA_VERSION'] = self.cfg.get('nova', 'nova_version', auto_pw=False)
+        to_set['NOVA_CERT'] = self.cfg.get('extern', 'nova_cert_fn', auto_pw=False)
         return to_set
 
     def _generate_nova_env(self):
