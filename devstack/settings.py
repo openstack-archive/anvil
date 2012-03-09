@@ -127,8 +127,6 @@ STACK_TEMPLATE_DIR = os.path.join(STACK_CONFIG_DIR, "templates")
 STACK_PKG_DIR = os.path.join(STACK_CONFIG_DIR, "pkgs")
 STACK_PIP_DIR = os.path.join(STACK_CONFIG_DIR, "pips")
 STACK_CONFIG_LOCATION = os.path.join(STACK_CONFIG_DIR, "stack.ini")
-STACK_LOG_CFG_LOCATION = os.path.join(STACK_CONFIG_DIR, "logging.ini")
-STACK_LOG_ENV_LOCATION = 'LOG_FILE'
 
 # These regex is how we match python platform output to a known constant
 KNOWN_DISTROS = {
