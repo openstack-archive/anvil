@@ -47,57 +47,64 @@ EXP_PAT = re.compile("^\s*export\s+(.*?)=(.*?)$", re.IGNORECASE)
 QUOTED_PAT = re.compile(r"^\s*[\"](.*)[\"]\s*$")
 
 
-class RcGenerator(object):
+class RcWriter(object):
     def __init__(self, cfg):
         self.cfg = cfg
-
-    def _generate_header(self):
-        lines = list()
-        lines.append('# Generated on %s' % (date.rcf8222date()))
-        lines.append("")
-        return lines
 
     def _make_export(self, export_name, value):
         escaped_val = sh.shellquote(value)
         full_line = "export %s=%s" % (export_name, escaped_val)
-        return [full_line]
+        return full_line
+    
+    def _valid_value(self, value):
+        if not value:
+            return False
+        return True
 
-    def _make_export_cfg(self, export_name, cfg_section_key, default_val=''):
-        (section, key) = cfg_section_key
-        value = self.cfg.getdefaulted(section, key, default_val, auto_pw=False)
-        if len(value) != 0:
-            return self._make_export(export_name, value)
-        else:
-            return list()
+    def _make_dict_export(self, kvs):
+        lines = list()
+        for var_name in sorted(kvs.keys()):
+            var_value = kvs.get(var_name)
+            if self._valid_value(var_value):
+                lines.append(self._make_export(var_name, str(var_value)))
+        return lines
+
+    def _get_ec2_envs(self):
+        to_set = dict()
+        ip = self.cfg.get('host', 'ip')
+        ec2_url_default = urlunparse(('http', "%s:%s" % (ip, EC2_PORT), "services/Cloud", '', '', ''))
+        to_set['EC2_URL'] = self.cfg.getdefaulted('extern', 'ec2_url', ec2_url_default, auto_pw=False)
+        s3_url_default = urlunparse(('http', "%s:%s" % (ip, S3_PORT), "services/Cloud", '', '', ''))
+        to_set['S3_URL'] = self.cfg.getdefaulted('extern', 's3_url', s3_url_default, auto_pw=False)
+        to_set['EC2_CERT'] = self.cfg.getdefaulted('extern', 'ec2_cert_fn', '', auto_pw=False)
+        to_set['EC2_USER_ID'] = self.cfg.getdefaulted('extern', 'ec2_user_id', '', auto_pw=False)
+        return to_set
 
     def _generate_ec2_env(self):
         lines = list()
         lines.append('# EC2 and/or S3 stuff')
-        ip = self.cfg.get('host', 'ip')
-        lines.extend(self._make_export_cfg('EC2_URL',
-                                ('extern', 'ec2_url'),
-                                urlunparse(('http', "%s:%s" % (ip, EC2_PORT), "services/Cloud", '', '', ''))))
-        lines.extend(self._make_export_cfg('S3_URL',
-                                ('extern', 's3_url'),
-                                urlunparse(('http', "%s:%s" % (ip, S3_PORT), "services/Cloud", '', '', ''))))
-        lines.extend(self._make_export_cfg('EC2_CERT',
-                                ('extern', 'ec2_cert_fn')))
-        lines.extend(self._make_export_cfg('EC2_USER_ID',
-                                ('extern', 'ec2_user_id')))
+        lines.extend(self._make_dict_export(self._get_ec2_envs()))
         lines.append("")
         return lines
+
+    def _get_general_envs(self):
+        to_set = dict()
+        for (out_name, cfg_data) in CFG_MAKE.items():
+            (section, key) = (cfg_data)
+            to_set[out_name] = self.cfg.getdefaulted(section, key, '', auto_pw=False)
+        return to_set
 
     def _generate_general(self):
         lines = list()
         lines.append('# General stuff')
-        for (out_name, cfg_data) in CFG_MAKE.items():
-            lines.extend(self._make_export_cfg(out_name, cfg_data))
+        lines.extend(self._make_dict_export(self._get_general_envs()))
         lines.append("")
         return lines
 
     def _generate_lines(self):
         lines = list()
-        lines.extend(self._generate_header())
+        lines.append('# Generated on %s' % (date.rcf8222date()))
+        lines.append("")
         lines.extend(self._generate_general())
         lines.extend(self._generate_ec2_env())
         lines.extend(self._generate_nova_env())
@@ -107,18 +114,60 @@ class RcGenerator(object):
         lines.extend(self._generate_aliases())
         return lines
 
-    def generate(self):
-        lines = self._generate_lines()
-        return utils.joinlinesep(*lines)
+    def update(self, fn):
+        current_vars = RcReader().extract(fn)
+        possible_vars = dict()
+        possible_vars.update(self._get_general_envs())
+        possible_vars.update(self._get_ec2_envs())
+        possible_vars.update(self._get_os_envs())
+        possible_vars.update(self._get_euca_envs())
+        possible_vars.update(self._get_nova_envs())
+        new_vars = dict()
+        updated_vars = dict()
+        for (key, value) in possible_vars.items():
+            if self._valid_value(value):
+                if key in current_vars and (current_vars.get(key) != value):
+                    updated_vars[key] = value
+                elif key not in current_vars:
+                    new_vars[key] = value
+        if new_vars or updated_vars:
+            lines = list()
+            lines.append("")
+            lines.append('# Updated on %s' % (date.rcf8222date()))
+            lines.append("")
+            if new_vars:
+                lines.append('# New stuff')
+                lines.extend(self._make_dict_export(new_vars))
+                lines.append("")
+            if updated_vars:
+                lines.append('# Updated stuff')
+                lines.extend(self._make_dict_export(updated_vars))
+                lines.append("")
+            append_contents = utils.joinlinesep(*lines)
+            sh.append_file(fn, append_contents)
+            return len(new_vars) + len(updated_vars)
+        else:
+            return 0
+
+    def write(self, fn):
+        contents = utils.joinlinesep(*self._generate_lines())
+        sh.write_file(fn, contents)
+
+    def _get_os_envs(self):
+        key_params = keystone.get_shared_params(self.cfg)
+        to_set = dict()
+        to_set['OS_PASSWORD'] = key_params['ADMIN_PASSWORD']
+        to_set['OS_TENANT_NAME'] = key_params['DEMO_TENANT_NAME']
+        to_set['OS_USERNAME'] = key_params['DEMO_USER_NAME']
+        # this seems named weirdly the OS_AUTH_URL is the keystone SERVICE_ENDPOINT endpoint
+        # todo: describe more why this is the case
+        to_set['OS_AUTH_URL'] = key_params['SERVICE_ENDPOINT']
+        return to_set
 
     def _generate_os_env(self):
         lines = list()
         lines.append('# Openstack stuff')
-        key_params = keystone.get_shared_params(self.cfg)
-        lines.extend(self._make_export('OS_PASSWORD', key_params['ADMIN_PASSWORD']))
-        lines.extend(self._make_export('OS_TENANT_NAME', key_params['DEMO_TENANT_NAME']))
-        lines.extend(self._make_export('OS_USERNAME', key_params['DEMO_USER_NAME']))
-        lines.extend(self._make_export('OS_AUTH_URL', key_params['SERVICE_ENDPOINT']))
+        lines.extend(self._make_dict_export(self._get_os_envs()))
         lines.append("")
         return lines
 
@@ -133,21 +182,28 @@ alias ec2-upload-bundle="ec2-upload-bundle -a ${EC2_ACCESS_KEY} -s ${EC2_SECRET_
         lines.append("")
         return lines
 
+    def _get_euca_envs(self):
+        to_set = dict()
+        to_set['EUCALYPTUS_CERT'] = self.cfg.getdefaulted('extern', 'nova_cert_fn', '', auto_pw=False)
+        return to_set
+
     def _generate_euca_env(self):
         lines = list()
         lines.append('# Eucalyptus stuff')
-        lines.extend(self._make_export_cfg('EUCALYPTUS_CERT',
-                                ('extern', 'nova_cert_fn')))
+        lines.extend(self._make_dict_export(self._get_euca_envs()))
         lines.append("")
         return lines
+
+    def _get_nova_envs(self):
+        to_set = dict()
+        to_set['NOVA_VERSION'] = self.cfg.getdefaulted('nova', 'nova_version', '', auto_pw=False)
+        to_set['NOVA_CERT'] = self.cfg.getdefaulted('extern', 'nova_cert_fn', '', auto_pw=False)
+        return to_set
 
     def _generate_nova_env(self):
         lines = list()
         lines.append('# Nova stuff')
-        lines.extend(self._make_export_cfg('NOVA_VERSION',
-                                ('nova', 'nova_version')))
-        lines.extend(self._make_export_cfg('NOVA_CERT',
-                                ('extern', 'nova_cert_fn')))
+        lines.extend(self._make_dict_export(self._get_nova_envs()))
         lines.append("")
         return lines
 
@@ -174,24 +230,28 @@ fi
         return lines
 
 
-class RcLoader(object):
+class RcReader(object):
     def __init__(self):
         pass
 
+    def extract(self, fn):
+        extracted_vars = dict()
+        contents = sh.load_file(fn)
+        for line in contents.splitlines():
+            if line.lstrip().startswith("#"):
+                continue
+            m = EXP_PAT.search(line)
+            if m:
+                key = m.group(1).strip()
+                value = m.group(2).strip()
+                quoted_mtch = QUOTED_PAT.match(value)
+                if quoted_mtch:
+                    value = quoted_mtch.group(1).decode('string_escape').strip()
+                extracted_vars[key] = value
+        return extracted_vars
+
     def load(self, fn):
-        am_set = 0
-        with open(fn, "r") as fh:
-            for line in fh:
-                m = EXP_PAT.search(line)
-                if m:
-                    key = m.group(1).strip()
-                    value = m.group(2).strip()
-                    #remove inline comment if any
-                    value = value.split("#")[0].strip()
-                    if len(key):
-                        qmtch = QUOTED_PAT.match(value)
-                        if qmtch:
-                            value = qmtch.group(1).decode('string_escape').strip()
-                        env.set(key, value)
-                        am_set += 1
-        return am_set
+        kvs = self.extract(fn)
+        for (key, value) in kvs.items():
+            env.set(key, value)
+        return len(kvs)

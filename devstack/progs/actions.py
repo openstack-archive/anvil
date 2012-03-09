@@ -217,14 +217,11 @@ class ActionRunner(object):
     def _pre_run(self, instances, component_order):
         if not sh.isdir(self.directory):
             sh.mkdir(self.directory)
-        loaded_rc_file = False
         if self.rc_file:
             try:
-                if sh.isfile(self.rc_file):
-                    LOG.info("Attempting to load rc file at [%s] which has your environment settings." % (self.rc_file))
-                    am_loaded = env_rc.RcLoader().load(self.rc_file)
-                    LOG.info("Loaded [%s] settings from rc file [%s]" % (am_loaded, self.rc_file))
-                    loaded_rc_file = True
+                LOG.info("Attempting to load rc file at [%s] which has your environment settings." % (self.rc_file))
+                am_loaded = env_rc.RcReader().load(self.rc_file)
+                LOG.info("Loaded [%s] settings from rc file [%s]" % (am_loaded, self.rc_file))
             except IOError:
                 LOG.warn('Error reading rc file located at [%s]. Skipping loading it.' % (self.rc_file))
         LOG.info("Verifying that the components are ready to rock-n-roll.")
@@ -235,11 +232,15 @@ class ActionRunner(object):
         for component in component_order:
             inst = instances[component]
             inst.warm_configs()
-        if self.gen_rc and not loaded_rc_file and self.rc_file:
-            LOG.info("Generating a file at [%s] that will contain your environment settings." % (self.rc_file))
-            creator = env_rc.RcGenerator(self.cfg)
-            contents = creator.generate()
-            sh.write_file(self.rc_file, contents)
+        if self.gen_rc and self.rc_file:
+            writer = env_rc.RcWriter(self.cfg)
+            if not sh.isfile(self.rc_file):
+                LOG.info("Generating a file at [%s] that will contain your environment settings." % (self.rc_file))
+                writer.write(self.rc_file)
+            else:
+                LOG.info("Updating a file at [%s] that contains your environment settings." % (self.rc_file))
+                am_upd = writer.update(self.rc_file)
+                LOG.info("Updated [%s] settings in rc file [%s]" % (am_upd, self.rc_file))
 
     def _run_instances(self, instances, component_order):
         component_order = self._apply_reverse(component_order)
