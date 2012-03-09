@@ -121,13 +121,13 @@ class StackConfigParser(IgnoreMissingConfigParser):
             LOG.debug("Fetched cached value \"%s\" for param \"%s\"" % (value, key))
         else:
             LOG.debug("Fetching value for param \"%s\"" % (key))
-            gotten_value = self._get_special(section, option)
+            gotten_value = self._get_special(section, option, auto_pw)
             value = self._resolve_special(section, option, gotten_value, auto_pw)
             LOG.debug("Fetched \"%s\" for \"%s\"" % (value, key))
             self.configs_fetched[key] = value
         return value
 
-    def _extract_default(self, default_value):
+    def _extract_default(self, default_value, auto_pw):
         if not SUB_MATCH.search(default_value):
             return default_value
 
@@ -137,11 +137,11 @@ class StackConfigParser(IgnoreMissingConfigParser):
         def replacer(match):
             section = match.group(1)
             option = match.group(2)
-            return self.get(section, option)
+            return self.get(section, option, auto_pw)
 
         return SUB_MATCH.sub(replacer, default_value)
 
-    def _get_special(self, section, option):
+    def _get_special(self, section, option, auto_pw):
         key = self._makekey(section, option)
         value = IgnoreMissingConfigParser.get(self, section, option)
         extracted_val = ''
@@ -154,7 +154,7 @@ class StackConfigParser(IgnoreMissingConfigParser):
                 raise excp.BadParamException(msg)
             if not env_key or env.get_key(env_key) is None:
                 LOG.debug("Extracting default value from config provided default value \"%s\" for \"%s\"" % (def_val, key))
-                actual_def_val = self._extract_default(def_val)
+                actual_def_val = self._extract_default(def_val, auto_pw)
                 LOG.debug("Using config provided default value \"%s\" for \"%s\" (no environment key)" % (actual_def_val, key))
                 extracted_val = actual_def_val
             else:
