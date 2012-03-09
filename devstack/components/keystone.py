@@ -270,17 +270,17 @@ def get_shared_params(config, service_user_name=None):
     #components of the auth endpoint
     keystone_auth_host = config.getdefaulted('keystone', 'keystone_auth_host', host_ip)
     mp['KEYSTONE_AUTH_HOST'] = keystone_auth_host
-    keystone_auth_port = config.get('keystone', 'keystone_auth_port')
+    keystone_auth_port = config.getdefaulted('keystone', 'keystone_auth_port', '35357')
     mp['KEYSTONE_AUTH_PORT'] = keystone_auth_port
-    keystone_auth_proto = config.get('keystone', 'keystone_auth_protocol')
+    keystone_auth_proto = config.getdefaulted('keystone', 'keystone_auth_protocol', 'http')
     mp['KEYSTONE_AUTH_PROTOCOL'] = keystone_auth_proto
 
     #components of the service endpoint
     keystone_service_host = config.getdefaulted('keystone', 'keystone_service_host', host_ip)
     mp['KEYSTONE_SERVICE_HOST'] = keystone_service_host
-    keystone_service_port = config.get('keystone', 'keystone_service_port')
+    keystone_service_port = config.getdefaulted('keystone', 'keystone_service_port', '5000')
     mp['KEYSTONE_SERVICE_PORT'] = keystone_service_port
-    keystone_service_proto = config.get('keystone', 'keystone_service_protocol')
+    keystone_service_proto = config.getdefaulted('keystone', 'keystone_service_protocol', 'http')
     mp['KEYSTONE_SERVICE_PROTOCOL'] = keystone_service_proto
 
     #http/https endpoints
