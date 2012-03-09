@@ -51,6 +51,26 @@ ALL_NUMS = re.compile(r"^\d+$")
 START_NUMS = re.compile(r"^(\d+)(\D+)")
 STAR_VERSION = 0
 
+#thx cowsay
+COWS = dict()
+COWS['happy'] = r'''
+{header}
+        \   {ear}__{ear}
+         \  ({eye}{eye})\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+'''
+COWS['unhappy'] = r'''
+{header}
+  \         ||       ||
+    \    __ ||-----mm||
+      \ (  )/_________)//
+        ({eye}{eye})/
+        {ear}--{ear}
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+'''
+
 
 def load_template(component, template_name):
     fn = template_name + TEMPLATE_EXT
@@ -691,21 +711,15 @@ def _goodbye_header(worked):
 
 
 def goodbye(worked):
-    #thx cowsay
-    cow = r'''
-{header}
-        \   {ear}__{ear}
-         \  ({eye}{eye})\_______
-            (__)\       )\/\
-                ||----w |
-                ||     ||
-'''
-    cow = cow.strip("\n\r")
-    ear = '^'
-    eye_fmt = 'o'
-    if not worked:
+    if worked:
+        cow = COWS['happy']
+        eye_fmt = color_text('o', 'green')
+        ear = color_text("^", 'green')
+    else:
+        cow = COWS['unhappy']
         eye_fmt = color_text("o", 'red')
-        ear = color_text(ear, 'red')
+        ear = color_text("v", 'red')
+    cow = cow.strip("\n\r")
     header = _goodbye_header(worked)
     msg = cow.format(eye=eye_fmt, ear=ear,
                      header=header)
