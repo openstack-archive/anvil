@@ -5,7 +5,26 @@
     # that we are trying to align other distributions with.
     # The versions should at least be major + minor!
     "ubuntu-oneiric": {
+        # We list out all of apaches so that it gets purged (fully)
+        # This seems to resolve the apache issue @ https://github.com/yahoo/Openstack-DevstackPy/wiki/Problems-Solved
+        # Or http://dancingpenguinsoflight.com/2009/02/how-to-completely-reset-an-apache-instance-in-ubuntu/
         "apache2": {
+            "version": "2.2*",
+            "removable": true
+        },
+        "apache2-utils": {
+            "version": "2.2*",
+            "removable": true
+        },
+        "apache2.2-common": {
+            "version": "2.2*",
+            "removable": true
+        },
+        "apache2.2-bin": {
+            "version": "2.2*",
+            "removable": true
+        },
+        "apache2-mpm-worker": {
             "version": "2.2*",
             "removable": true
         },

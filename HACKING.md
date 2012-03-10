@@ -32,6 +32,9 @@ This will suffice until a more *official* documentation site can be made.
 * Please also attempt to run [pylint] all code submitted.
  * ``./run_tests.sh  -l``
 
+* Please also attempt to run the json validation all changes to pip/pkgs json files submitted.
+ * ``./run_tests.sh  -j``
+
 ## Tests
 
 Currently we do not have any tests (WIP) but in the future these can be ran by the following command:
