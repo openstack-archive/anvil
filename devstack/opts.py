@@ -49,12 +49,11 @@ def parse():
         dest="verbosity",
         default=[1],
         help="increase the verbose level")
-    parser.add_option("", "--dryrun",
-        action="store_const",
-        const=1,
+    parser.add_option("--dryrun",
+        action="store_true",
         dest="dryrun",
-        default=0,
-        help="log actions without actually doing any of them")
+        default=False,
+        help="perform actions without actually doing any of them and/or attempt to do this: (default: %default)")
 
     base_group = OptionGroup(parser, "Install & uninstall & start & stop specific options")
     base_group.add_option("-a", "--action",
