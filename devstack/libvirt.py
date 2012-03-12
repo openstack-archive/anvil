@@ -32,8 +32,7 @@ LIBVIRT_PROTOCOL_MAP = {
     'uml': 'uml:///system',
     'lxc': 'lxc:///',
 }
-VIRT_TYPE = 'libvirt'
-VIRT_LIB = VIRT_TYPE
+VIRT_LIB = 'libvirt'
 
 #distros name the libvirt service differently :-(
 SV_NAME_MAP = {

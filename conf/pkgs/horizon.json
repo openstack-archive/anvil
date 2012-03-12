@@ -84,10 +84,6 @@
             "version": "0.7*",
             "removable": true
         },
-        "python-cloudfiles": {
-            "version": "1.7.9*",
-            "removable": true
-        },
         "python-migrate": {
             "version": "0.7*",
             "removable": true

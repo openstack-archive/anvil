@@ -7,6 +7,9 @@
         },
         "pycrypto": {
             "version": "2.3"
+        },
+        "python-cloudfiles": {
+            "version": "1.7.9.3"
         }
     },
     "rhel-6": {
