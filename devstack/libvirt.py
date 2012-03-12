@@ -14,8 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import time
-
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import settings
@@ -109,7 +107,7 @@ def restart(distro):
         mp['SERVICE'] = SV_NAME_MAP[distro]
         utils.execute_template(*cmds, params=mp)
         LOG.info("Restarting the libvirt service, please wait %s seconds until its started." % (WAIT_ALIVE_TIME))
-        time.sleep(WAIT_ALIVE_TIME)
+        sh.sleep(WAIT_ALIVE_TIME)
 
 
 def virt_ok(virt_type, distro):

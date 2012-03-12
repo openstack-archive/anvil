@@ -15,7 +15,6 @@
 #    under the License.
 
 from tempfile import TemporaryFile
-import time
 
 from devstack import component as comp
 from devstack import log as logging
@@ -133,7 +132,7 @@ class RabbitRuntime(comp.EmptyRuntime):
         LOG.info("Restarting rabbit-mq.")
         self._run_cmd(RESTART_CMD)
         LOG.info("Please wait %s seconds while it starts up." % (WAIT_ON_TIME))
-        time.sleep(WAIT_ON_TIME)
+        sh.sleep(WAIT_ON_TIME)
         return 1
 
     def stop(self):

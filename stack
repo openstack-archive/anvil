@@ -93,6 +93,10 @@ def run(args):
     #here on out we should be using the logger (and not print)
     start_time = time.time()
     config = common.get_config()
+    # Stash the dryrun value (if any) into the global configuration
+    dryrun = args.get('dryrun')
+    if dryrun:
+        sh.set_dryrun(dryrun)
     pkg_manager = common.get_packager(distro, args.get('keep_old'))
     components = utils.parse_components(args.pop("components"))
     runner = actions.ActionRunner(distro, action, rootdir, config, pkg_manager, components=components, **args)

@@ -15,7 +15,6 @@
 #    under the License.
 
 import io
-import time
 
 from urlparse import urlunparse
 
@@ -224,7 +223,7 @@ class KeystoneRuntime(comp.PythonRuntime):
             #these environment additions are important
             #in that they eventually affect how this script runs
             LOG.info("Waiting %s seconds so that keystone can start up before running first time init." % (WAIT_ONLINE_TO))
-            time.sleep(WAIT_ONLINE_TO)
+            sh.sleep(WAIT_ONLINE_TO)
             env = dict()
             env['ENABLED_SERVICES'] = ",".join(self.instances.keys())
             env['BIN_DIR'] = self.bindir

@@ -24,6 +24,7 @@ import subprocess
 import sys
 import random
 import re
+import time
 
 from devstack import env
 from devstack import exceptions as excp
@@ -44,6 +45,13 @@ SHELL_QUOTE_REPLACERS = {
 SHELL_WRAPPER = "\"%s\""
 ROOT_PATH = os.sep
 RANDOMIZER = random.SystemRandom()
+DRYRUN = None
+
+
+def set_dryrun(val):
+    global DRYRUN
+    LOG.info("Setting dryrun to:%s" % (val))
+    DRYRUN = val
 
 
 #root context guard
@@ -65,7 +73,6 @@ class Rooted(object):
 
 
 def execute(*cmd, **kwargs):
-
     process_input = kwargs.pop('process_input', None)
     check_exit_code = kwargs.pop('check_exit_code', [0])
     cwd = kwargs.pop('cwd', None)
@@ -129,27 +136,32 @@ def execute(*cmd, **kwargs):
     rc = None
     result = None
     with Rooted(run_as_root):
-        try:
-            obj = subprocess.Popen(execute_cmd,
-                                   stdin=stdin_fh,
-                                   stdout=stdout_fh,
-                                   stderr=stderr_fh,
-                                   close_fds=close_file_descriptors,
-                                   cwd=cwd,
-                                   shell=shell,
-                                   env=process_env)
-            if process_input is not None:
-                result = obj.communicate(str(process_input))
-            else:
-                result = obj.communicate()
-        except OSError as e:
-            error_description = "%s: [%s, %s]" % (e.message, e.errno, e.strerror)
-            raise excp.ProcessExecutionError(description=error_description, cmd=str_cmd)
-        if (stdin_fh != subprocess.PIPE
-            and obj.stdin and close_stdin):
-            obj.stdin.close()
-        rc = obj.returncode
-        LOG.debug('Cmd result had exit code: %s' % rc)
+        if DRYRUN:
+            LOG.info("DRYRUN:%s" % (execute_cmd))
+            # Pretend it worked
+            rc = 0
+        else:
+            try:
+                obj = subprocess.Popen(execute_cmd,
+                                       stdin=stdin_fh,
+                                       stdout=stdout_fh,
+                                       stderr=stderr_fh,
+                                       close_fds=close_file_descriptors,
+                                       cwd=cwd,
+                                       shell=shell,
+                                       env=process_env)
+                if process_input is not None:
+                    result = obj.communicate(str(process_input))
+                else:
+                    result = obj.communicate()
+            except OSError as e:
+                error_description = "%s: [%s, %s]" % (e.message, e.errno, e.strerror)
+                raise excp.ProcessExecutionError(description=error_description, cmd=str_cmd)
+            if (stdin_fh != subprocess.PIPE
+                and obj.stdin and close_stdin):
+                obj.stdin.close()
+            rc = obj.returncode
+            LOG.debug('Cmd result had exit code: %s' % rc)
 
     if not result:
         result = ("", "")
@@ -343,6 +355,10 @@ def mkdirslist(path):
 
 
 def append_file(fn, text, flush=True, quiet=False):
+    if DRYRUN:
+        LOG.info("DRYRUN append_file:%s" % (fn))
+        LOG.info("%s" % (text))
+        return fn
     if not quiet:
         LOG.debug("Appending to file %s (%d bytes)", fn, len(text))
     with open(fn, "a") as f:
@@ -353,6 +369,10 @@ def append_file(fn, text, flush=True, quiet=False):
 
 
 def write_file(fn, text, flush=True, quiet=False):
+    if DRYRUN:
+        LOG.info("DRYRUN write_file:%s" % (fn))
+        LOG.info("%s" % (text))
+        return fn
     if not quiet:
         LOG.debug("Writing to file %s (%d bytes)", fn, len(text))
     with open(fn, "w") as f:
@@ -363,6 +383,9 @@ def write_file(fn, text, flush=True, quiet=False):
 
 
 def touch_file(fn, die_if_there=True, quiet=False, file_size=0):
+    if DRYRUN:
+        LOG.info("DRYRUN touch_file:%s" % (fn))
+        return fn
     if not isfile(fn):
         if not quiet:
             LOG.debug("Touching and truncating file %s (%s)", fn, file_size)
@@ -376,16 +399,30 @@ def touch_file(fn, die_if_there=True, quiet=False, file_size=0):
 
 
 def load_file(fn, quiet=False):
+    LOG.info("load_file:%s" % (fn))
     if not quiet:
         LOG.debug("Loading data from file %s", fn)
-    with open(fn, "r") as f:
-        data = f.read()
+    try:
+        with open(fn, "r") as f:
+            data = f.read()
+    except IOError as e:
+        # If there was an error, then check if we're doing a dryrun. If
+        # yes, then return no data, otherwise the the error bubble on up
+        if DRYRUN:
+            LOG.info("DRYRUN: return no data for load_file:%s" % (fn))
+            data = ""
+        else:
+            raise e
+
     if not quiet:
         LOG.debug("Loaded (%d) bytes from file %s", len(data), fn)
     return data
 
 
 def mkdir(path, recurse=True):
+    if DRYRUN:
+        LOG.info("DRYRUN mkdir:%s" % (path))
+        return
     if not isdir(path):
         if recurse:
             LOG.debug("Recursively creating directory \"%s\"" % (path))
@@ -396,6 +433,9 @@ def mkdir(path, recurse=True):
 
 
 def deldir(path, run_as_root=False):
+    if DRYRUN:
+        LOG.info("DRYRUN deldir:%s" % (path))
+        return
     with Rooted(run_as_root):
         if isdir(path):
             LOG.debug("Recursively deleting directory tree starting at \"%s\"" % (path))
@@ -403,6 +443,9 @@ def deldir(path, run_as_root=False):
 
 
 def rmdir(path, quiet=True, run_as_root=False):
+    if DRYRUN:
+        LOG.info("DRYRUN rmdir:%s" % (path))
+        return
     if not isdir(path):
         return
     try:
@@ -422,9 +465,12 @@ def symlink(source, link, force=True, run_as_root=True):
         LOG.debug("Creating symlink from %s => %s" % (link, source))
         path = dirname(link)
         needed_pths = mkdirslist(path)
-        if force and (exists(link) or islink(link)):
-            unlink(link, True)
-        os.symlink(source, link)
+        if DRYRUN:
+            LOG.info("DRYRUN symlink from %s => %s" % (source, link))
+        else:
+            if force and (exists(link) or islink(link)):
+                unlink(link, True)
+            os.symlink(source, link)
         return needed_pths
 
 
@@ -534,6 +580,9 @@ def umount(dev_name, ignore_errors=True):
 
 
 def unlink(path, ignore_errors=True, run_as_root=False):
+    if DRYRUN:
+        LOG.info("DRYRUN unlink:%s" % (path))
+        return
     try:
         LOG.debug("Unlinking (removing) %s" % (path))
         with Rooted(run_as_root):
@@ -546,10 +595,16 @@ def unlink(path, ignore_errors=True, run_as_root=False):
 
 
 def move(src, dst):
+    if DRYRUN:
+        LOG.info("DRYRUN move:%s" % (src, dst))
+        return
     shutil.move(src, dst)
 
 
 def chmod(fname, mode):
+    if DRYRUN:
+        LOG.info("DRYRUN chmod:%s to %s" % (fname, mode))
+        return
     os.chmod(fname, mode)
 
 
@@ -567,6 +622,9 @@ def replace_in(fn, search, replace, run_as_root=False):
 
 def copy_replace_file(fsrc, fdst, linemap):
     files = mkdirslist(dirname(fdst))
+    if DRYRUN:
+        LOG.info("DRYRUN copy_replace:%s" % (fsrc, fdst))
+        return
     with open(fdst, 'w') as fh:
         for line in fileinput.input(fsrc):
             for (k, v) in linemap.items():
@@ -626,3 +684,10 @@ def geteuid():
 
 def getegid():
     return os.getegid()
+
+
+def sleep(winks):
+    if DRYRUN:
+        LOG.info("DRYRUN, sleep for:%s" % (winks))
+    else:
+        time.sleep(winks)

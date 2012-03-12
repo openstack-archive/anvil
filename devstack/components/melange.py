@@ -15,7 +15,6 @@
 #    under the License.
 
 import io
-import time
 
 from devstack import cfg
 from devstack import component as comp
@@ -169,7 +168,7 @@ class MelangeRuntime(comp.PythonRuntime):
         comp.PythonRuntime.post_start(self)
         if CREATE_CIDR in self.component_opts or not self.component_opts:
             LOG.info("Waiting %s seconds so that the melange server can start up before cidr range creation." % (WAIT_ONLINE_TO))
-            time.sleep(WAIT_ONLINE_TO)
+            sh.sleep(WAIT_ONLINE_TO)
             mp = dict()
             mp['CIDR_RANGE'] = self.cfg.getdefaulted('melange', 'm_mac_range', DEF_CIDR_RANGE)
             utils.execute_template(*CIDR_CREATE_CMD, params=mp)

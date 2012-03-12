@@ -17,7 +17,6 @@
 from urlparse import urlunparse
 
 import os
-import time
 
 from devstack import component as comp
 from devstack import date
@@ -444,7 +443,7 @@ class NovaRuntime(comp.PythonRuntime):
             #in that they eventually affect how this script runs
             if utils.service_enabled(settings.QUANTUM, self.instances, False):
                 LOG.info("Waiting %s seconds so that quantum can start up before running first time init." % (WAIT_ONLINE_TO))
-                time.sleep(WAIT_ONLINE_TO)
+                sh.sleep(WAIT_ONLINE_TO)
             env = dict()
             env['ENABLED_SERVICES'] = ",".join(self.instances.keys())
             setup_cmd = NET_INIT_CMD_ROOT + [tgt_fn]
@@ -834,7 +833,7 @@ class NovaConfConfigurator(object):
         LOG.debug("Attempting to create instance directory: %s" % (instances_path))
         self.tracewriter.dirs_made(*sh.mkdirslist(instances_path))
         LOG.debug("Adjusting permissions of instance directory: %s" % (instances_path))
-        os.chmod(instances_path, 0777)
+        sh.chmod(instances_path, 0777)
 
     def _configure_libvirt(self, virt_type, nova_conf):
         if virt_type == 'lxc':
