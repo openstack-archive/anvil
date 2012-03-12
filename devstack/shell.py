@@ -31,6 +31,7 @@ from devstack import exceptions as excp
 from devstack import log as logging
 
 LOG = logging.getLogger("devstack.shell")
+DRYLOG = logging.getLogger("DRYRUN")
 ROOT_USER = "root"
 ROOT_USER_UID = 0
 SUDO_UID = 'SUDO_UID'
@@ -137,7 +138,7 @@ def execute(*cmd, **kwargs):
     result = None
     with Rooted(run_as_root):
         if DRYRUN:
-            LOG.info("DRYRUN:%s" % (execute_cmd))
+            DRYLOG.info("execute:%s" % (execute_cmd))
             # Pretend it worked
             rc = 0
         else:
@@ -356,8 +357,8 @@ def mkdirslist(path):
 
 def append_file(fn, text, flush=True, quiet=False):
     if DRYRUN:
-        LOG.info("DRYRUN append_file:%s" % (fn))
-        LOG.info("%s" % (text))
+        DRYLOG.info("append_file:%s" % (fn))
+        DRYLOG.info("%s" % (text))
         return fn
     if not quiet:
         LOG.debug("Appending to file %s (%d bytes)", fn, len(text))
@@ -370,8 +371,8 @@ def append_file(fn, text, flush=True, quiet=False):
 
 def write_file(fn, text, flush=True, quiet=False):
     if DRYRUN:
-        LOG.info("DRYRUN write_file:%s" % (fn))
-        LOG.info("%s" % (text))
+        DRYLOG.info("write_file:%s" % (fn))
+        DRYLOG.info("%s" % (text))
         return fn
     if not quiet:
         LOG.debug("Writing to file %s (%d bytes)", fn, len(text))
@@ -384,7 +385,7 @@ def write_file(fn, text, flush=True, quiet=False):
 
 def touch_file(fn, die_if_there=True, quiet=False, file_size=0):
     if DRYRUN:
-        LOG.info("DRYRUN touch_file:%s" % (fn))
+        DRYLOG.info("touch_file:%s" % (fn))
         return fn
     if not isfile(fn):
         if not quiet:
@@ -409,7 +410,7 @@ def load_file(fn, quiet=False):
         # If there was an error, then check if we're doing a dryrun. If
         # yes, then return no data, otherwise the the error bubble on up
         if DRYRUN:
-            LOG.info("DRYRUN: return no data for load_file:%s" % (fn))
+            DRYLOG.info("return no data for load_file:%s" % (fn))
             data = ""
         else:
             raise e
@@ -421,7 +422,7 @@ def load_file(fn, quiet=False):
 
 def mkdir(path, recurse=True):
     if DRYRUN:
-        LOG.info("DRYRUN mkdir:%s" % (path))
+        DRYLOG.info("mkdir:%s" % (path))
         return
     if not isdir(path):
         if recurse:
@@ -434,7 +435,7 @@ def mkdir(path, recurse=True):
 
 def deldir(path, run_as_root=False):
     if DRYRUN:
-        LOG.info("DRYRUN deldir:%s" % (path))
+        DRYLOG.info("deldir:%s" % (path))
         return
     with Rooted(run_as_root):
         if isdir(path):
@@ -444,7 +445,7 @@ def deldir(path, run_as_root=False):
 
 def rmdir(path, quiet=True, run_as_root=False):
     if DRYRUN:
-        LOG.info("DRYRUN rmdir:%s" % (path))
+        DRYLOG.info("rmdir:%s" % (path))
         return
     if not isdir(path):
         return
@@ -466,7 +467,7 @@ def symlink(source, link, force=True, run_as_root=True):
         path = dirname(link)
         needed_pths = mkdirslist(path)
         if DRYRUN:
-            LOG.info("DRYRUN symlink from %s => %s" % (source, link))
+            DRYLOG.info("symlink from %s => %s" % (source, link))
         else:
             if force and (exists(link) or islink(link)):
                 unlink(link, True)
@@ -581,7 +582,7 @@ def umount(dev_name, ignore_errors=True):
 
 def unlink(path, ignore_errors=True, run_as_root=False):
     if DRYRUN:
-        LOG.info("DRYRUN unlink:%s" % (path))
+        DRYLOG.info("unlink:%s" % (path))
         return
     try:
         LOG.debug("Unlinking (removing) %s" % (path))
@@ -596,14 +597,14 @@ def unlink(path, ignore_errors=True, run_as_root=False):
 
 def move(src, dst):
     if DRYRUN:
-        LOG.info("DRYRUN move:%s" % (src, dst))
+        DRYLOG.info("move:%s" % (src, dst))
         return
     shutil.move(src, dst)
 
 
 def chmod(fname, mode):
     if DRYRUN:
-        LOG.info("DRYRUN chmod:%s to %s" % (fname, mode))
+        DRYLOG.info("chmod:%s to %s" % (fname, mode))
         return
     os.chmod(fname, mode)
 
@@ -623,7 +624,7 @@ def replace_in(fn, search, replace, run_as_root=False):
 def copy_replace_file(fsrc, fdst, linemap):
     files = mkdirslist(dirname(fdst))
     if DRYRUN:
-        LOG.info("DRYRUN copy_replace:%s" % (fsrc, fdst))
+        DRYLOG.info("copy_replace:%s" % (fsrc, fdst))
         return
     with open(fdst, 'w') as fh:
         for line in fileinput.input(fsrc):
@@ -688,6 +689,6 @@ def getegid():
 
 def sleep(winks):
     if DRYRUN:
-        LOG.info("DRYRUN, sleep for:%s" % (winks))
+        DRYLOG.info("sleep for:%s" % (winks))
     else:
         time.sleep(winks)
