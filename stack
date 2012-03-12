@@ -93,10 +93,10 @@ def run(args):
     #here on out we should be using the logger (and not print)
     start_time = time.time()
     config = common.get_config()
+
     # Stash the dryrun value (if any) into the global configuration
-    dryrun = args.get('dryrun')
-    if dryrun:
-        sh.set_dryrun(dryrun)
+    sh.set_dryrun(args.pop('dryrun'))
+
     pkg_manager = common.get_packager(distro, args.get('keep_old'))
     components = utils.parse_components(args.pop("components"))
     runner = actions.ActionRunner(distro, action, rootdir, config, pkg_manager, components=components, **args)
@@ -117,9 +117,12 @@ def configure_logging(args):
     # Set our pretty logger
     console_logger = logging.StreamHandler(sys.stdout)
     console_format = '%(levelname)s: @%(name)s : %(message)s'
-    console_logger.setFormatter(colorlog.TermFormatter(console_format))
+    if sh.in_terminal():
+        console_logger.setFormatter(colorlog.TermFormatter(console_format))
+    else:
+        console_logger.setFormatter(logging.Formatter(console_format))
     root_logger.addHandler(console_logger)
-
+        
     # Adjust logging verbose level based on the command line switch.
     log_level = logging.DEBUG if args['verbosity'] >= 2 else logging.INFO
     root_logger.setLevel(log_level)

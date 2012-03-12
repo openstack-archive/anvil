@@ -16,8 +16,6 @@
 
 from urlparse import urlunparse
 
-import os
-
 from devstack import component as comp
 from devstack import date
 from devstack import exceptions

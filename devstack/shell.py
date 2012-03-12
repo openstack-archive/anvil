@@ -31,7 +31,6 @@ from devstack import exceptions as excp
 from devstack import log as logging
 
 LOG = logging.getLogger("devstack.shell")
-DRYLOG = logging.getLogger("DRYRUN")
 ROOT_USER = "root"
 ROOT_USER_UID = 0
 SUDO_UID = 'SUDO_UID'
@@ -46,13 +45,19 @@ SHELL_QUOTE_REPLACERS = {
 SHELL_WRAPPER = "\"%s\""
 ROOT_PATH = os.sep
 RANDOMIZER = random.SystemRandom()
-DRYRUN = None
+DRYRUN_MODE = False
+DRY_RC = 0
+DRY_STDOUT_ERR = ("", "")
 
 
 def set_dryrun(val):
-    global DRYRUN
-    LOG.info("Setting dryrun to:%s" % (val))
-    DRYRUN = val
+    global DRYRUN_MODE
+    if val:
+        LOG.debug("Setting dryrun to: %s" % (True))
+        DRYRUN_MODE = True
+    else:
+        LOG.debug("Resetting dryrun to: %s" % (False))
+        DRYRUN_MODE = False
 
 
 #root context guard
@@ -137,10 +142,10 @@ def execute(*cmd, **kwargs):
     rc = None
     result = None
     with Rooted(run_as_root):
-        if DRYRUN:
-            DRYLOG.info("execute:%s" % (execute_cmd))
-            # Pretend it worked
-            rc = 0
+        if DRYRUN_MODE:
+            LOG.debug("Fake executing: %s" % (execute_cmd))
+            rc = DRY_RC
+            result = DRY_STDOUT_ERR
         else:
             try:
                 obj = subprocess.Popen(execute_cmd,
@@ -162,7 +167,7 @@ def execute(*cmd, **kwargs):
                 and obj.stdin and close_stdin):
                 obj.stdin.close()
             rc = obj.returncode
-            LOG.debug('Cmd result had exit code: %s' % rc)
+        LOG.debug('Cmd result had exit code: %s' % rc)
 
     if not result:
         result = ("", "")
@@ -356,42 +361,36 @@ def mkdirslist(path):
 
 
 def append_file(fn, text, flush=True, quiet=False):
-    if DRYRUN:
-        DRYLOG.info("append_file:%s" % (fn))
-        DRYLOG.info("%s" % (text))
-        return fn
     if not quiet:
-        LOG.debug("Appending to file %s (%d bytes)", fn, len(text))
-    with open(fn, "a") as f:
-        f.write(text)
-        if flush:
-            f.flush()
+        LOG.debug("Appending to file %s (%d bytes) (%s)", fn, len(text), flush)
+        LOG.debug(">> %s" % (text))
+    if not DRYRUN_MODE:
+        with open(fn, "a") as f:
+            f.write(text)
+            if flush:
+                f.flush()
     return fn
 
 
 def write_file(fn, text, flush=True, quiet=False):
-    if DRYRUN:
-        DRYLOG.info("write_file:%s" % (fn))
-        DRYLOG.info("%s" % (text))
-        return fn
     if not quiet:
         LOG.debug("Writing to file %s (%d bytes)", fn, len(text))
-    with open(fn, "w") as f:
-        f.write(text)
-        if flush:
-            f.flush()
+        LOG.debug("> %s" % (text))
+    if not DRYRUN_MODE:
+        with open(fn, "w") as f:
+            f.write(text)
+            if flush:
+                f.flush()
     return fn
 
 
 def touch_file(fn, die_if_there=True, quiet=False, file_size=0):
-    if DRYRUN:
-        DRYLOG.info("touch_file:%s" % (fn))
-        return fn
     if not isfile(fn):
         if not quiet:
             LOG.debug("Touching and truncating file %s (%s)", fn, file_size)
-        with open(fn, "w") as f:
-            f.truncate(file_size)
+        if not DRYRUN_MODE:
+            with open(fn, "w") as f:
+                f.truncate(file_size)
     else:
         if die_if_there:
             msg = "Can not touch & truncate file %s since it already exists" % (fn)
@@ -400,59 +399,50 @@ def touch_file(fn, die_if_there=True, quiet=False, file_size=0):
 
 
 def load_file(fn, quiet=False):
-    LOG.info("load_file:%s" % (fn))
     if not quiet:
         LOG.debug("Loading data from file %s", fn)
+    data = ""
     try:
         with open(fn, "r") as f:
             data = f.read()
     except IOError as e:
-        # If there was an error, then check if we're doing a dryrun. If
-        # yes, then return no data, otherwise the the error bubble on up
-        if DRYRUN:
-            DRYLOG.info("return no data for load_file:%s" % (fn))
-            data = ""
+        if DRYRUN_MODE:
+            LOG.debug("Passing on load exception since in dry-run mode")
         else:
             raise e
-
     if not quiet:
         LOG.debug("Loaded (%d) bytes from file %s", len(data), fn)
     return data
 
 
 def mkdir(path, recurse=True):
-    if DRYRUN:
-        DRYLOG.info("mkdir:%s" % (path))
-        return
     if not isdir(path):
         if recurse:
             LOG.debug("Recursively creating directory \"%s\"" % (path))
-            os.makedirs(path)
+            if not DRYRUN_MODE:
+                os.makedirs(path)
         else:
             LOG.debug("Creating directory \"%s\"" % (path))
-            os.mkdir(path)
+            if not DRYRUN_MODE:
+                os.mkdir(path)
 
 
 def deldir(path, run_as_root=False):
-    if DRYRUN:
-        DRYLOG.info("deldir:%s" % (path))
-        return
     with Rooted(run_as_root):
         if isdir(path):
             LOG.debug("Recursively deleting directory tree starting at \"%s\"" % (path))
-            shutil.rmtree(path)
+            if not DRYRUN_MODE:
+                shutil.rmtree(path)
 
 
 def rmdir(path, quiet=True, run_as_root=False):
-    if DRYRUN:
-        DRYLOG.info("rmdir:%s" % (path))
-        return
     if not isdir(path):
         return
     try:
         with Rooted(run_as_root):
             LOG.debug("Deleting directory \"%s\" with the cavet that we will fail if it's not empty." % (path))
-            os.rmdir(path)
+            if not DRYRUN_MODE:
+                os.rmdir(path)
             LOG.debug("Deleted directory \"%s\"" % (path))
     except OSError:
         if not quiet:
@@ -466,9 +456,7 @@ def symlink(source, link, force=True, run_as_root=True):
         LOG.debug("Creating symlink from %s => %s" % (link, source))
         path = dirname(link)
         needed_pths = mkdirslist(path)
-        if DRYRUN:
-            DRYLOG.info("symlink from %s => %s" % (source, link))
-        else:
+        if not DRYRUN_MODE:
             if force and (exists(link) or islink(link)):
                 unlink(link, True)
             os.symlink(source, link)
@@ -581,13 +569,11 @@ def umount(dev_name, ignore_errors=True):
 
 
 def unlink(path, ignore_errors=True, run_as_root=False):
-    if DRYRUN:
-        DRYLOG.info("unlink:%s" % (path))
-        return
     try:
         LOG.debug("Unlinking (removing) %s" % (path))
-        with Rooted(run_as_root):
-            os.unlink(path)
+        if not DRYRUN_MODE:
+            with Rooted(run_as_root):
+                os.unlink(path)
     except OSError:
         if not ignore_errors:
             raise
@@ -596,17 +582,19 @@ def unlink(path, ignore_errors=True, run_as_root=False):
 
 
 def move(src, dst):
-    if DRYRUN:
-        DRYLOG.info("move:%s" % (src, dst))
-        return
-    shutil.move(src, dst)
+    if DRYRUN_MODE:
+        LOG.debug("Faking move from: %s => %s" % (src, dst))
+    else:
+        shutil.move(src, dst)
+    return dst
 
 
 def chmod(fname, mode):
-    if DRYRUN:
-        DRYLOG.info("chmod:%s to %s" % (fname, mode))
-        return
-    os.chmod(fname, mode)
+    if DRYRUN_MODE:
+        LOG.debug("Faking chmod: %s to %s" % (fname, mode))
+    else:
+        os.chmod(fname, mode)
+    return fname
 
 
 def replace_in(fn, search, replace, run_as_root=False):
@@ -623,14 +611,14 @@ def replace_in(fn, search, replace, run_as_root=False):
 
 def copy_replace_file(fsrc, fdst, linemap):
     files = mkdirslist(dirname(fdst))
-    if DRYRUN:
-        DRYLOG.info("copy_replace:%s" % (fsrc, fdst))
-        return
-    with open(fdst, 'w') as fh:
-        for line in fileinput.input(fsrc):
-            for (k, v) in linemap.items():
-                line = line.replace(k, v)
-            fh.write(line)
+    if DRYRUN_MODE:
+        LOG.debug("Copying and replacing file: %s => %s" % (fsrc, fdst))
+    else:
+        with open(fdst, 'w') as fh:
+            for line in fileinput.input(fsrc):
+                for (k, v) in linemap.items():
+                    line = line.replace(k, v)
+                fh.write(line)
     return files
 
 
@@ -688,7 +676,7 @@ def getegid():
 
 
 def sleep(winks):
-    if DRYRUN:
-        DRYLOG.info("sleep for:%s" % (winks))
+    if DRYRUN_MODE:
+        LOG.debug("Not really sleeping for: %s seconds" % (winks))
     else:
         time.sleep(winks)
