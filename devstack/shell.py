@@ -342,6 +342,7 @@ def mkdirslist(path):
     dirs_possible.add(path)
     while True:
         (base, _) = os.path.split(path)
+        if not base: break
         dirs_possible.add(base)
         path = base
         if path == ROOT_PATH:
