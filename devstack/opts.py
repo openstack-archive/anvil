@@ -76,6 +76,12 @@ def parse():
         action="store_false",
         dest="ensure_deps",
         help="ignore dependencies when performing ACTION")
+    base_group.add_option("--no-prompt-passwords",
+                          action="store_false",
+                          dest="prompt_for_passwords",
+                          default=True,
+                          help="do not prompt the user for passwords",
+                          )
     base_group.add_option("-e", "--ensure-deps",
         action="store_true",
         dest="ensure_deps",
@@ -117,5 +123,6 @@ def parse():
     output['keep_old'] = options.keep_old
     output['extras'] = args
     output['verbosity'] = len(options.verbosity)
+    output['prompt_for_passwords'] = options.prompt_for_passwords
 
     return output

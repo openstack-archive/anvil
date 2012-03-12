@@ -12,3 +12,4 @@ pidfile
 *.komodoproject
 .coverage
 .DS_Store
+TAGS

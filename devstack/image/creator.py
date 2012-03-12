@@ -211,13 +211,14 @@ class ImageRegistry:
 
 
 class ImageCreationService:
-    def __init__(self, cfg):
+    def __init__(self, cfg, password_generator):
         self.cfg = cfg
+        self.password_generator = password_generator
 
     def _get_token(self):
         LOG.info("Fetching your keystone admin token so that we can perform image uploads.")
 
-        key_params = keystone.get_shared_params(self.cfg)
+        key_params = keystone.get_shared_params(self.cfg, self.password_generator)
         keystone_service_url = key_params['SERVICE_ENDPOINT']
         keystone_token_url = "%s/tokens" % (keystone_service_url)
 

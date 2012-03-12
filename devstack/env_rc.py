@@ -19,11 +19,14 @@ import re
 
 from devstack import date
 from devstack import env
+from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 
 from devstack.components import keystone
+
+LOG = logging.getLogger('devstack.env_rc')
 
 #general extraction cfg keys
 CFG_MAKE = {
@@ -48,8 +51,9 @@ QUOTED_PAT = re.compile(r"^\s*[\"](.*)[\"]\s*$")
 
 
 class RcWriter(object):
-    def __init__(self, cfg):
+    def __init__(self, cfg, password_generator):
         self.cfg = cfg
+        self.password_generator = password_generator
 
     def _make_export(self, export_name, value):
         escaped_val = sh.shellquote(value)
@@ -68,11 +72,11 @@ class RcWriter(object):
         to_set = dict()
         ip = self.cfg.get('host', 'ip')
         ec2_url_default = urlunparse(('http', "%s:%s" % (ip, EC2_PORT), "services/Cloud", '', '', ''))
-        to_set['EC2_URL'] = self.cfg.getdefaulted('extern', 'ec2_url', ec2_url_default, auto_pw=False)
+        to_set['EC2_URL'] = self.cfg.getdefaulted('extern', 'ec2_url', ec2_url_default)
         s3_url_default = urlunparse(('http', "%s:%s" % (ip, S3_PORT), "services/Cloud", '', '', ''))
-        to_set['S3_URL'] = self.cfg.getdefaulted('extern', 's3_url', s3_url_default, auto_pw=False)
-        to_set['EC2_CERT'] = self.cfg.get('extern', 'ec2_cert_fn', auto_pw=False)
-        to_set['EC2_USER_ID'] = self.cfg.get('extern', 'ec2_user_id', auto_pw=False)
+        to_set['S3_URL'] = self.cfg.getdefaulted('extern', 's3_url', s3_url_default)
+        to_set['EC2_CERT'] = self.cfg.get('extern', 'ec2_cert_fn')
+        to_set['EC2_USER_ID'] = self.cfg.get('extern', 'ec2_user_id')
         return to_set
 
     def _generate_ec2_env(self):
@@ -86,7 +90,7 @@ class RcWriter(object):
         to_set = dict()
         for (out_name, cfg_data) in CFG_MAKE.items():
             (section, key) = (cfg_data)
-            to_set[out_name] = self.cfg.get(section, key, auto_pw=False)
+            to_set[out_name] = self.cfg.get(section, key)
         return to_set
 
     def _generate_general(self):
@@ -149,7 +153,7 @@ class RcWriter(object):
         sh.write_file(fn, contents)
 
     def _get_os_envs(self):
-        key_params = keystone.get_shared_params(self.cfg)
+        key_params = keystone.get_shared_params(self.cfg, self.password_generator)
         to_set = dict()
         to_set['OS_PASSWORD'] = key_params['ADMIN_PASSWORD']
         to_set['OS_TENANT_NAME'] = key_params['DEMO_TENANT_NAME']
@@ -179,7 +183,7 @@ alias ec2-upload-bundle="ec2-upload-bundle -a ${EC2_ACCESS_KEY} -s ${EC2_SECRET_
 
     def _get_euca_envs(self):
         to_set = dict()
-        to_set['EUCALYPTUS_CERT'] = self.cfg.get('extern', 'nova_cert_fn', auto_pw=False)
+        to_set['EUCALYPTUS_CERT'] = self.cfg.get('extern', 'nova_cert_fn')
         return to_set
 
     def _generate_euca_env(self):
@@ -191,8 +195,8 @@ alias ec2-upload-bundle="ec2-upload-bundle -a ${EC2_ACCESS_KEY} -s ${EC2_SECRET_
 
     def _get_nova_envs(self):
         to_set = dict()
-        to_set['NOVA_VERSION'] = self.cfg.get('nova', 'nova_version', auto_pw=False)
-        to_set['NOVA_CERT'] = self.cfg.get('extern', 'nova_cert_fn', auto_pw=False)
+        to_set['NOVA_VERSION'] = self.cfg.get('nova', 'nova_version')
+        to_set['NOVA_CERT'] = self.cfg.get('extern', 'nova_cert_fn')
         return to_set
 
     def _generate_nova_env(self):

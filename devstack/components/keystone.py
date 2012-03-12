@@ -191,7 +191,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         return comp.PythonInstallComponent._get_source_config(self, config_fn)
 
     def warm_configs(self):
-        get_shared_params(self.cfg)
+        get_shared_params(self.cfg, self.password_generator)
 
     def _get_param_map(self, config_fn):
         #these be used to fill in the configuration/cmds +
@@ -204,9 +204,9 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         if config_fn == ROOT_CONF:
             mp['SQL_CONN'] = self.cfg.get_dbdsn(DB_NAME)
             mp['KEYSTONE_DIR'] = self.appdir
-            mp.update(get_shared_params(self.cfg))
+            mp.update(get_shared_params(self.cfg, self.password_generator))
         elif config_fn == MANAGE_DATA_CONF:
-            mp.update(get_shared_params(self.cfg))
+            mp.update(get_shared_params(self.cfg, self.password_generator))
         return mp
 
 
@@ -248,7 +248,8 @@ class KeystoneRuntime(comp.PythonRuntime):
         return APP_OPTIONS.get(app)
 
 
-def get_shared_params(config, service_user_name=None):
+def get_shared_params(config, password_generator, service_user_name=None):
+    LOG.debug('password_generator %s', password_generator)
     mp = dict()
     host_ip = config.get('host', 'ip')
 
@@ -262,9 +263,21 @@ def get_shared_params(config, service_user_name=None):
     mp['DEMO_TENANT_NAME'] = mp['DEMO_USER_NAME']
 
     #tokens and passwords
-    mp['SERVICE_TOKEN'] = config.get("passwords", "service_token")
-    mp['ADMIN_PASSWORD'] = config.get('passwords', 'horizon_keystone_admin')
-    mp['SERVICE_PASSWORD'] = config.get('passwords', 'service_password')
+    mp['SERVICE_TOKEN'] = password_generator.get_password(
+        'passwords',
+        "service_token",
+        'the service admin token',
+        )
+    mp['ADMIN_PASSWORD'] = password_generator.get_password(
+        'passwords',
+        'horizon_keystone_admin',
+        'the horizon and keystone admin',
+        20)
+    mp['SERVICE_PASSWORD'] = password_generator.get_password(
+        'passwords',
+        'service_password',
+        'service authentication',
+        )
 
     #components of the auth endpoint
     keystone_auth_host = config.getdefaulted('keystone', 'keystone_auth_host', host_ip)

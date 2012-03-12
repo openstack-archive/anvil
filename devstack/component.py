@@ -54,6 +54,7 @@ class ComponentBase(object):
     def __init__(self, component_name, **kargs):
         self.component_name = component_name
         self.cfg = kargs.get("config")
+        self.password_generator = kargs.get('password_generator')
         self.packager = kargs.get("packager")
         self.distro = kargs.get("distro")
         self.instances = kargs.get("instances") or dict()

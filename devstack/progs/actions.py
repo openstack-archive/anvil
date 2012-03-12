@@ -31,7 +31,8 @@ _REVERSE_ACTIONS = [settings.UNINSTALL, settings.STOP]
 # For these actions we will attempt to make an rc file if it does not exist
 _RC_FILE_MAKE_ACTIONS = [settings.INSTALL]
 
-# The order of which uninstalls happen + message of what is happening (before and after)
+# The order of which uninstalls happen + message of what is happening
+# (before and after)
 UNINSTALL_ORDERING = [
      (
          "Unconfiguring {name}.",
@@ -55,7 +56,8 @@ UNINSTALL_ORDERING = [
      ),
 ]
 
-# The order of which starts happen + message of what is happening (before and after)
+# The order of which starts happen + message of what is happening
+# (before and after)
 STARTS_ORDERING = [
      (
         "Configuring runner for {name}.",
@@ -79,7 +81,8 @@ STARTS_ORDERING = [
      ),
 ]
 
-# The order of which stops happen + message of what is happening (before and after)
+# The order of which stops happen + message of what is happening
+# (before and after)
 STOPS_ORDERING = [
      (
          "Stopping {name}.",
@@ -88,7 +91,8 @@ STOPS_ORDERING = [
      ),
 ]
 
-# The order of which install happen + message of what is happening (before and after)
+# The order of which install happen + message of what is happening
+# (before and after)
 INSTALL_ORDERING = [
     (
         "Downloading {name}.",
@@ -125,7 +129,8 @@ ACTION_MP = {
     settings.UNINSTALL: UNINSTALL_ORDERING,
 }
 
-# These actions must have there prerequisite action accomplished (if determined by the boolean lambda to be needed)
+# These actions must have there prerequisite action accomplished (if
+# determined by the boolean lambda to be needed)
 PREQ_ACTIONS = {
     settings.START: ((lambda instance: (not instance.is_installed())), settings.INSTALL),
     settings.UNINSTALL: ((lambda instance: (instance.is_started())), settings.STOP),
@@ -133,11 +138,14 @@ PREQ_ACTIONS = {
 
 
 class ActionRunner(object):
-    def __init__(self, distro, action, directory, config, pkg_manager, **kargs):
+    def __init__(self, distro, action, directory, config,
+                 password_generator, pkg_manager,
+                 **kargs):
         self.distro = distro
         self.action = action
         self.directory = directory
         self.cfg = config
+        self.password_generator = password_generator
         self.pkg_manager = pkg_manager
         self.kargs = kargs
         self.components = dict()
@@ -186,14 +194,18 @@ class ActionRunner(object):
         all_instances = dict()
         for component in components.keys():
             cls = common.get_action_cls(self.action, component, self.distro)
+            # FIXME: Instead of passing some of these options,
+            # pass a reference to the runner itself and let
+            # the component keep a weakref to it.
             instance = cls(instances=all_instances,
-                                  distro=self.distro,
-                                  packager=self.pkg_manager,
-                                  config=self.cfg,
-                                  root=self.directory,
-                                  opts=components.get(component, list()),
-                                  keep_old=self.kargs.get("keep_old")
-                                  )
+                           distro=self.distro,
+                           packager=self.pkg_manager,
+                           config=self.cfg,
+                           password_generator=self.password_generator,
+                           root=self.directory,
+                           opts=components.get(component, list()),
+                           keep_old=self.kargs.get("keep_old")
+                           )
             all_instances[component] = instance
         return all_instances
 
@@ -233,7 +245,7 @@ class ActionRunner(object):
             inst = instances[component]
             inst.warm_configs()
         if self.gen_rc and self.rc_file:
-            writer = env_rc.RcWriter(self.cfg)
+            writer = env_rc.RcWriter(self.cfg, self.password_generator)
             if not sh.isfile(self.rc_file):
                 LOG.info("Generating a file at [%s] that will contain your environment settings." % (self.rc_file))
                 writer.write(self.rc_file)

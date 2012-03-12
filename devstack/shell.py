@@ -22,8 +22,6 @@ import pwd
 import shutil
 import subprocess
 import sys
-import random
-import re
 import time
 
 from devstack import env
@@ -44,7 +42,6 @@ SHELL_QUOTE_REPLACERS = {
 }
 SHELL_WRAPPER = "\"%s\""
 ROOT_PATH = os.sep
-RANDOMIZER = random.SystemRandom()
 DRYRUN_MODE = False
 DRY_RC = 0
 DRY_STDOUT_ERR = ("", "")
@@ -244,32 +241,6 @@ def _get_suids():
     return (uid, gid)
 
 
-def _gen_password(pw_len):
-    if pw_len <= 0:
-        msg = "Password length %s can not be less than or equal to zero" % (pw_len)
-        raise excp.BadParamException(msg)
-    LOG.debug("Generating you a pseudo-random password of byte length: %s" % (pw_len))
-    random_num = RANDOMIZER.getrandbits(pw_len * 8)
-    pw = "%x" % (random_num)
-    LOG.debug("Generated you a pseudo-random password [%s]" % (pw))
-    return pw
-
-
-def prompt_password(pw_prompt):
-    rc = ""
-    while True:
-        rc = getpass.getpass(pw_prompt)
-        if len(rc) == 0:
-            break
-        if re.match(r"^(\s+)$", rc):
-            LOG.warning("Whitespace not allowed as a password!")
-        elif re.match(r"^(\s+)(\S+)(\s+)$", rc) or \
-            re.match(r"^(\S+)(\s+)$", rc) or \
-            re.match(r"^(\s+)(\S+)$", rc):
-            LOG.warning("Whitespace can not start or end a password!")
-        else:
-            break
-    return rc
 
 
 def chown_r(path, uid, gid, run_as_root=True):
@@ -286,13 +257,6 @@ def chown_r(path, uid, gid, run_as_root=True):
                     os.chown(joinpths(root, f), uid, gid)
                     LOG.debug("Changing ownership of %s to %s:%s" % (joinpths(root, f), uid, gid))
 
-
-def password(pw_prompt, pw_len=8):
-    pw = prompt_password(pw_prompt)
-    if len(pw) == 0:
-        return _gen_password(pw_len)
-    else:
-        return pw
 
 
 def _explode_path(path):

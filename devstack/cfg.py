@@ -30,16 +30,6 @@ PW_TMPL = "Enter a password for %s: "
 ENV_PAT = re.compile(r"^\s*\$\{([\w\d]+):\-(.*)\}\s*$")
 SUB_MATCH = re.compile(r"(?:\$\(([\w\d]+):([\w\d]+))\)")
 CACHE_MSG = "(value will now be internally cached)"
-PW_SECTIONS = ['passwords']
-DEF_PW_MSG = "[or press enter to get a generated one]"
-PW_PROMPTS = {
-    'horizon_keystone_admin': "Enter a password to use for horizon and keystone (20 chars or less) %s: " % (DEF_PW_MSG),
-    'service_token': 'Enter a token to use for the service admin token %s: ' % (DEF_PW_MSG),
-    'sql': 'Enter a password to use for your sql database user %s: ' % (DEF_PW_MSG),
-    'rabbit': 'Enter a password to use for your rabbit user %s: ' % (DEF_PW_MSG),
-    'old_sql': "Please enter your current mysql password so we that can reset it for next time: ",
-    'service_password': "Enter a service password to use for the service authentication %s:" % (DEF_PW_MSG),
-}
 
 
 class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
@@ -91,56 +81,54 @@ def make_id(section, option):
 class StackConfigParser(IgnoreMissingConfigParser):
     def __init__(self):
         IgnoreMissingConfigParser.__init__(self)
-        self.pws = dict()
         self.configs_fetched = dict()
         self.db_dsns = dict()
 
-    def _resolve_value(self, section, option, value_gotten, auto_pw):
+    def _resolve_value(self, section, option, value_gotten):
         key = make_id(section, option)
-        if section in PW_SECTIONS and key not in self.pws and value_gotten:
-            self.pws[key] = value_gotten
         if section == 'host' and option == 'ip':
             LOG.debug("Host ip from configuration/environment was empty, programatically attempting to determine it.")
             value_gotten = utils.get_host_ip()
             LOG.debug("Determined your host ip to be: [%s]" % (value_gotten))
-        if section in PW_SECTIONS and auto_pw and not value_gotten:
-            LOG.debug("Being forced to ask for password for [%s] since the configuration value is empty.", key)
-            value_gotten = sh.password(PW_PROMPTS.get(option, PW_TMPL % (key)))
-            self.pws[key] = value_gotten
         return value_gotten
 
-    def getdefaulted(self, section, option, default_val, auto_pw=True):
-        val = self.get(section, option, auto_pw)
+    def getdefaulted(self, section, option, default_val):
+        val = self.get(section, option)
         if not val or not val.strip():
             LOG.debug("Value [%s] found was not good enough, returning provided default [%s]" % (val, default_val))
             return default_val
         return val
 
-    def get(self, section, option, auto_pw=True):
+    def get(self, section, option):
         key = make_id(section, option)
         if key in self.configs_fetched:
             value = self.configs_fetched.get(key)
             LOG.debug("Fetched cached value [%s] for param [%s]" % (value, key))
         else:
             LOG.debug("Fetching value for param [%s]" % (key))
-            gotten_value = self._get_bashed(section, option, auto_pw)
-            value = self._resolve_value(section, option, gotten_value, auto_pw)
+            gotten_value = self._get_bashed(section, option)
+            value = self._resolve_value(section, option, gotten_value)
             LOG.debug("Fetched [%s] for [%s] %s" % (value, key, CACHE_MSG))
             self.configs_fetched[key] = value
         return value
 
-    def _resolve_replacements(self, value, auto_pw):
+    def set(self, section, option, value):
+        key = make_id(section, option)
+        self.configs_fetched[key] = value
+        return IgnoreMissingConfigParser.set(self, section, option, value)
+
+    def _resolve_replacements(self, value):
         LOG.debug("Performing simple replacement on [%s]", value)
 
         #allow for our simple replacement to occur
         def replacer(match):
             section = match.group(1)
             option = match.group(2)
-            return self.getdefaulted(section, option, '', auto_pw)
+            return self.getdefaulted(section, option, '')
 
         return SUB_MATCH.sub(replacer, value)
 
-    def _get_bashed(self, section, option, auto_pw):
+    def _get_bashed(self, section, option):
         value = IgnoreMissingConfigParser.get(self, section, option)
         if value is None:
             return value
@@ -155,7 +143,7 @@ class StackConfigParser(IgnoreMissingConfigParser):
             env_value = env.get_key(env_key)
             if env_value is None:
                 LOG.debug("Extracting value from config provided default value [%s]" % (def_val))
-                extracted_val = self._resolve_replacements(def_val, auto_pw)
+                extracted_val = self._resolve_replacements(def_val)
                 LOG.debug("Using config provided default value [%s] (no environment key)" % (extracted_val))
             else:
                 extracted_val = env_value
