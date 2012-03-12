@@ -85,6 +85,8 @@ REQ_PKGS = ['db.json']
 #config keys we warm up so u won't be prompted later
 WARMUP_PWS = ['sql']
 
+PASSWORD_DESCRIPTION = 'the database user'
+
 
 class DBUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -93,7 +95,8 @@ class DBUninstaller(comp.PkgUninstallComponent):
 
     def warm_configs(self):
         for pw_key in WARMUP_PWS:
-            self.cfg.get("passwords", pw_key)
+            self.password_generator.get_password(
+                'passwords', pw_key, PASSWORD_DESCRIPTION)
 
     def pre_uninstall(self):
         dbtype = self.cfg.get("db", "type")
@@ -106,8 +109,10 @@ class DBUninstaller(comp.PkgUninstallComponent):
                 if pwd_cmd:
                     LOG.info("Ensuring your database is started before we operate on it.")
                     self.runtime.restart()
+                    old_pw = self.password_generator.get_password(
+                        'passwords', 'sql', PASSWORD_DESCRIPTION)
                     params = {
-                        'OLD_PASSWORD': self.cfg.get("passwords", 'sql'),
+                        'OLD_PASSWORD': old_pw,
                         'NEW_PASSWORD': RESET_BASE_PW,
                         'USER': self.cfg.getdefaulted("db", "sql_user", 'root'),
                         }
@@ -129,7 +134,8 @@ class DBInstaller(comp.PkgInstallComponent):
         #in pre-install and post-install sections
         host_ip = self.cfg.get('host', 'ip')
         out = {
-            'PASSWORD': self.cfg.get("passwords", "sql"),
+            'PASSWORD': self.password_generator.get_password(
+                "passwords", "sql", PASSWORD_DESCRIPTION),
             'BOOT_START': ("%s" % (True)).lower(),
             'USER': self.cfg.getdefaulted("db", "sql_user", 'root'),
             'SERVICE_HOST': host_ip,
@@ -139,7 +145,8 @@ class DBInstaller(comp.PkgInstallComponent):
 
     def warm_configs(self):
         for pw_key in WARMUP_PWS:
-            self.cfg.get("passwords", pw_key)
+            self.password_generator.get_password(
+                'passwords', pw_key, PASSWORD_DESCRIPTION)
 
     def _configure_db_confs(self):
         dbtype = self.cfg.get("db", "type")
@@ -192,7 +199,8 @@ class DBInstaller(comp.PkgInstallComponent):
                     LOG.info("Ensuring your database is started before we operate on it.")
                     self.runtime.restart()
                     params = {
-                        'NEW_PASSWORD': self.cfg.get("passwords", "sql"),
+                        'NEW_PASSWORD': self.password_generator.get_password(
+                            "passwords", "sql", PASSWORD_DESCRIPTION),
                         'USER': self.cfg.getdefaulted("db", "sql_user", 'root'),
                         'OLD_PASSWORD': RESET_BASE_PW,
                         }
@@ -211,13 +219,11 @@ class DBInstaller(comp.PkgInstallComponent):
                 LOG.info("Ensuring your database is started before we operate on it.")
                 self.runtime.restart()
                 params = {
-                    'PASSWORD': self.cfg.get("passwords", "sql"),
+                    'PASSWORD': self.password_generator.get_password(
+                        "passwords", "sql", PASSWORD_DESCRIPTION),
                     'USER': user,
                 }
-                cmds = list()
-                cmds.append({
-                    'cmd': grant_cmd,
-                })
+                cmds = [{'cmd': grant_cmd}]
                 #shell seems to be needed here
                 #since python escapes this to much...
                 utils.execute_template(*cmds, params=params, shell=True)

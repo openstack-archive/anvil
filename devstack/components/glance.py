@@ -187,7 +187,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
         mp['SQL_CONN'] = self.cfg.get_dbdsn(DB_NAME)
         mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
         mp['HOST_IP'] = self.cfg.get('host', 'ip')
-        mp.update(keystone.get_shared_params(self.cfg, 'glance'))
+        mp.update(keystone.get_shared_params(self.cfg, self.password_generator, 'glance'))
         return mp
 
 
@@ -224,4 +224,4 @@ class GlanceRuntime(comp.PythonRuntime):
             # TODO: make this less cheesy - need to wait till glance goes online
             LOG.info("Waiting %s seconds so that glance can start up before image install." % (WAIT_ONLINE_TO))
             sh.sleep(WAIT_ONLINE_TO)
-            creator.ImageCreationService(self.cfg).install()
+            creator.ImageCreationService(self.cfg, self.password_generator).install()

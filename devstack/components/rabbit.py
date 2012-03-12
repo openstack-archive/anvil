@@ -68,12 +68,12 @@ class RabbitInstaller(comp.PkgInstallComponent):
 
     def warm_configs(self):
         for pw_key in WARMUP_PWS:
-            self.cfg.get("passwords", pw_key)
+            self.password_generator.get_password("passwords", pw_key, 'the rabbit user')
 
     def _setup_pw(self):
         LOG.info("Setting up your rabbit-mq guest password.")
         self.runtime.restart()
-        passwd = self.cfg.get("passwords", "rabbit")
+        passwd = self.password_generator.get_password('passwords', "rabbit", 'the rabbit user')
         cmd = PWD_CMD + [passwd]
         sh.execute(*cmd, run_as_root=True)
         LOG.info("Restarting so that your rabbit-mq guest password is reflected.")
