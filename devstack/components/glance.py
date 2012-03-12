@@ -15,7 +15,6 @@
 #    under the License.
 
 import io
-import time
 
 from devstack import cfg
 from devstack import component as comp
@@ -224,5 +223,5 @@ class GlanceRuntime(comp.PythonRuntime):
             #install any images that need activating...
             # TODO: make this less cheesy - need to wait till glance goes online
             LOG.info("Waiting %s seconds so that glance can start up before image install." % (WAIT_ONLINE_TO))
-            time.sleep(WAIT_ONLINE_TO)
+            sh.sleep(WAIT_ONLINE_TO)
             creator.ImageCreationService(self.cfg).install()

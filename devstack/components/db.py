@@ -14,8 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import time
-
 from devstack import component as comp
 from devstack import exceptions as excp
 from devstack import log as logging
@@ -248,7 +246,7 @@ class DBRuntime(comp.EmptyRuntime):
                 run_as_root=True,
                 check_exit_code=True)
             LOG.info("Please wait %s seconds while it starts up." % START_WAIT_TIME)
-            time.sleep(START_WAIT_TIME)
+            sh.sleep(START_WAIT_TIME)
             return 1
         else:
             return 0
@@ -270,7 +268,7 @@ class DBRuntime(comp.EmptyRuntime):
                         run_as_root=True,
                         check_exit_code=True)
         LOG.info("Please wait %s seconds while it restarts." % START_WAIT_TIME)
-        time.sleep(START_WAIT_TIME)
+        sh.sleep(START_WAIT_TIME)
         return 1
 
     def status(self):

@@ -49,6 +49,12 @@ def parse():
         dest="verbosity",
         default=[1],
         help="increase the verbose level")
+    parser.add_option("", "--dryrun",
+        action="store_const",
+        const=1,
+        dest="dryrun",
+        default=0,
+        help="log actions without actually doing any of them")
 
     base_group = OptionGroup(parser, "Install & uninstall & start & stop specific options")
     base_group.add_option("-a", "--action",
@@ -104,6 +110,7 @@ def parse():
     output = dict()
     output['components'] = options.component or list()
     output['dir'] = options.dir or ""
+    output['dryrun'] = options.dryrun or False
     output['ref_components'] = options.ref_components or list()
     output['action'] = options.action or ""
     output['force'] = not options.force
