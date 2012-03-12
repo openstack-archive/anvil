@@ -155,6 +155,7 @@ CONFIG_DIR = "etc"
 QUANTUM_MANAGER = 'nova.network.quantum.manager.QuantumManager'
 QUANTUM_IPAM_LIB = 'nova.network.quantum.melange_ipam_lib'
 NET_MANAGER_TEMPLATE = 'nova.network.manager.%s'
+FIRE_MANAGER_TEMPLATE = 'nova.virt.libvirt.firewall.%s'
 
 #sensible defaults
 DEF_IMAGE_SERVICE = 'nova.image.glance.GlanceImageService'
@@ -163,19 +164,19 @@ DEF_GLANCE_PORT = 9292
 DEF_GLANCE_SERVER = "%s" + ":%s" % (DEF_GLANCE_PORT)
 DEF_INSTANCE_PREFIX = 'instance-'
 DEF_INSTANCE_TEMPL = DEF_INSTANCE_PREFIX + '%08x'
-DEF_FIREWALL_DRIVER = 'nova.virt.firewall.IptablesFirewallDriver'
+DEF_FIREWALL_DRIVER = 'IptablesFirewallDriver'
 DEF_FLAT_VIRT_BRIDGE = 'br100'
 DEF_NET_MANAGER = 'FlatDHCPManager'
 DEF_VOL_PREFIX = 'volume-'
 DEF_VOL_TEMPL = DEF_VOL_PREFIX + '%08x'
 
 #default virt types
-DEF_VIRT_DRIVER = virsh.VIRT_TYPE
+DEF_VIRT_DRIVER = 'libvirt'
 DEF_VIRT_TYPE = 'qemu'
 
 #virt drivers to there connection name
 VIRT_DRIVER_CON_MAP = {
-    virsh.VIRT_TYPE: 'libvirt',
+    'libvirt': 'libvirt',
     'xenserver': 'xenapi',
     'vmware': 'vmwareapi',
     'baremetal': 'baremetal',
@@ -279,7 +280,7 @@ class NovaUninstaller(comp.PythonUninstallComponent):
 
     def _clear_libvirt_domains(self):
         virt_driver = _canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
-        if virt_driver == virsh.VIRT_TYPE:
+        if virt_driver == 'libvirt':
             inst_prefix = self.cfg.getdefaulted('nova', 'instance_name_prefix', DEF_INSTANCE_PREFIX)
             libvirt_type = _canon_libvirt_type(self.cfg.get('nova', 'libvirt_type'))
             virsh.clear_libvirt_domains(self.distro, libvirt_type, inst_prefix)
@@ -416,7 +417,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         configs_made += 1
         # TODO: maybe this should be a subclass that handles these differences
         driver_canon = _canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
-        if (self.distro in POLICY_DISTROS) and driver_canon == virsh.VIRT_TYPE:
+        if (self.distro in POLICY_DISTROS) and driver_canon == 'libvirt':
             dirs_made = list()
             with sh.Rooted(True):
                 dirs_made = sh.mkdirslist(sh.dirname(LIBVIRT_POLICY_FN))
@@ -483,7 +484,7 @@ class NovaRuntime(comp.PythonRuntime):
         # Let the parent class do its thing
         comp.PythonRuntime.pre_start(self)
         virt_driver = _canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
-        if virt_driver == virsh.VIRT_TYPE:
+        if virt_driver == 'libvirt':
             virt_type = _canon_libvirt_type(self.cfg.get('nova', 'libvirt_type'))
             LOG.info("Checking that your selected libvirt virtualization type [%s] is working and running." % (virt_type))
             if not virsh.virt_ok(virt_type, self.distro):
@@ -642,7 +643,7 @@ class NovaConfConfigurator(object):
 
         #configure anything libvirt releated?
         virt_driver = _canon_virt_driver(self._getstr('virt_driver'))
-        if virt_driver == virsh.VIRT_TYPE:
+        if virt_driver == 'libvirt':
             libvirt_type = _canon_libvirt_type(self._getstr('libvirt_type'))
             self._configure_libvirt(libvirt_type, nova_conf)
 
@@ -855,10 +856,10 @@ class NovaConfConfigurator(object):
                 msg = "Xenserver flat interface %s is not a known interface" % (xs_flat_ifc)
                 raise exceptions.ConfigException(msg)
             nova_conf.add('flat_interface', xs_flat_ifc)
-            nova_conf.add('firewall_driver', self._getstr('xs_firewall_driver', DEF_FIREWALL_DRIVER))
+            nova_conf.add('firewall_driver', FIRE_MANAGER_TEMPLATE % (self._getstr('xs_firewall_driver', DEF_FIREWALL_DRIVER)))
             nova_conf.add('flat_network_bridge', self._getstr('xs_flat_network_bridge', XS_DEF_BRIDGE))
-        elif drive_canon == virsh.VIRT_TYPE:
-            nova_conf.add('firewall_driver', self._getstr('libvirt_firewall_driver', DEF_FIREWALL_DRIVER))
+        elif drive_canon == 'libvirt':
+            nova_conf.add('firewall_driver', FIRE_MANAGER_TEMPLATE % (self._getstr('libvirt_firewall_driver', DEF_FIREWALL_DRIVER)))
             nova_conf.add('flat_network_bridge', self._getstr('flat_network_bridge', DEF_FLAT_VIRT_BRIDGE))
             flat_interface = self._getstr('flat_interface')
             if flat_interface:
@@ -874,10 +875,10 @@ class NovaConf(object):
         self.lines = list()
 
     def add(self, key, value, *values):
-        real_value = ""
+        if not key:
+            raise exceptions.BadParamException("Can not add a empty/none/false key")
         real_key = str(key)
-        if len(real_key) == 0:
-            raise exceptions.BadParamException("Can not add a empty key")
+        real_value = ""
         if len(values):
             str_values = [str(value)] + [str(v) for v in values]
             real_value = ",".join(str_values)
