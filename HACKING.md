@@ -48,7 +48,7 @@ Currently we do not have any tests (WIP) but in the future these can be ran by t
   
 ## Documenation
 
-Documenation should all be written in [markdown] (instead of mixing different formats)
+Documenation should all be written in [markdown]. Although github does support other formats it seems better just to stabilize on one.
 
 [CLI Auth]: http://wiki.openstack.org/CLIAuth
 [pep8]: http://www.python.org/dev/peps/pep-0008/
