@@ -21,7 +21,6 @@ import time
 import traceback
 
 from devstack import cfg_helpers
-from devstack import colorlog
 from devstack import date
 from devstack import log as logging
 from devstack import opts
@@ -130,30 +129,6 @@ def run(args):
     return True
 
 
-def configure_logging(args):
-
-    # Debug by default
-    root_logger = logging.getLogger().logger
-    root_logger.setLevel(logging.DEBUG)
-
-    # Set our pretty logger
-    console_logger = logging.StreamHandler(stream=sys.stdout)
-    console_format = '%(levelname)s: @%(name)s : %(message)s'
-    if sh.in_terminal():
-        console_logger.setFormatter(colorlog.TermFormatter(console_format))
-    else:
-        console_logger.setFormatter(logging.Formatter(console_format))
-    root_logger.addHandler(console_logger)
-
-    # Adjust logging verbose level based on the command line switch.
-    log_level = logging.INFO
-    if args['verbosity'] >= 2:
-        log_level = logging.DEBUG
-    elif args['dryrun']:
-        log_level = logging.AUDIT
-    root_logger.setLevel(log_level)
-
-
 def main():
 
     #do this first so people can see the help message...
@@ -161,7 +136,7 @@ def main():
     prog_name = sys.argv[0]
 
     # Configure logging
-    configure_logging(args)
+    utils.configure_logging(args['verbosity'], args['dryrun'])
 
     LOG.debug("Command line options %s" % (args))
 

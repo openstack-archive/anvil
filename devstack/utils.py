@@ -28,6 +28,7 @@ import socket
 import sys
 import termcolor
 
+from devstack import colorlog
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import settings
@@ -68,6 +69,30 @@ COWS['unhappy'] = r'''
         ({eye}{eye})/
         {ear}--{ear}
 '''
+
+
+def configure_logging(verbosity_level=1, dry_run=False):
+
+    # Debug by default
+    root_logger = logging.getLogger().logger
+    root_logger.setLevel(logging.DEBUG)
+
+    # Set our pretty logger
+    console_logger = logging.StreamHandler(stream=sys.stdout)
+    console_format = '%(levelname)s: @%(name)s : %(message)s'
+    if sh.in_terminal():
+        console_logger.setFormatter(colorlog.TermFormatter(console_format))
+    else:
+        console_logger.setFormatter(logging.Formatter(console_format))
+    root_logger.addHandler(console_logger)
+
+    # Adjust logging verbose level based on the command line switch.
+    log_level = logging.INFO
+    if verbosity_level >= 2:
+        log_level = logging.DEBUG
+    elif dry_run:
+        log_level = logging.AUDIT
+    root_logger.setLevel(log_level)
 
 
 def load_template(component, template_name):
