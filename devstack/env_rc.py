@@ -40,6 +40,7 @@ PASSWORDS_MAKES = {
     'SERVICE_PASSWORD': 'service_password',
     'RABBIT_PASSWORD': 'rabbit',
     'SERVICE_TOKEN': 'service_token',
+    'MYSQL_PASSWORD': 'sql',
 }
 
 #default ports
