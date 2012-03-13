@@ -64,7 +64,7 @@ class AuditAdapter(logging.LoggerAdapter):
     warn = logging.LoggerAdapter.warning
 
     def __init__(self, logger):
-        logging.LoggerAdapter.__init__(self)
+        logging.LoggerAdapter.__init__(self, logger, dict())
         self.logger = logger
 
     def audit(self, msg, *args, **kwargs):
