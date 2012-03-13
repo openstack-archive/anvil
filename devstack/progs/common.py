@@ -163,17 +163,24 @@ def get_config(cfg_fn=None):
     return config_instance
 
 
-def get_components_deps(action_name, base_components, root_dir=None, distro=None):
+def get_components_deps(runner,
+                        action_name,
+                        base_components,
+                        root_dir=None,
+                        distro=None,
+                        ):
     all_components = dict()
     active_names = list(base_components)
-    if not root_dir:
-        root_dir = _FAKE_ROOT_DIR
+    root_dir = root_dir or _FAKE_ROOT_DIR
     while len(active_names):
         component = active_names.pop()
-        component_opts = base_components.get(component) or list()
+        component_opts = base_components.get(component) or []
         cls = get_action_cls(action_name, component, distro)
-        instance = cls(root=root_dir, opts=component_opts,
-                        config=get_config())
+        instance = cls(instances=[],
+                       runner=runner,
+                       root=root_dir,
+                       opts=component_opts,
+                       )
         deps = instance.get_dependencies()
         if deps is None:
             deps = set()

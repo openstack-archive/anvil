@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import weakref
+
 from devstack import cfg
 from devstack import downloader as down
 from devstack import exceptions as excp
@@ -51,20 +53,30 @@ BASE_LINK_DIR = "/etc"
 
 
 class ComponentBase(object):
-    def __init__(self, component_name, **kargs):
+    def __init__(self, component_name, runner, root, opts, instances=None,
+                 **kwds):
         self.component_name = component_name
-        self.cfg = kargs.get("config")
-        self.password_generator = kargs.get('password_generator')
-        self.packager = kargs.get("packager")
-        self.distro = kargs.get("distro")
-        self.instances = kargs.get("instances") or dict()
-        self.component_opts = kargs.get('opts') or list()
-        self.root = kargs.get("root")
+        # The runner has a reference to us, so use a weakref here to
+        # avoid breaking garbage collection.
+        self.runner = weakref.proxy(runner)
+        self.root = root
+        self.component_opts = opts or []
+        self.instances = instances or {}
+
+        # Parts of the global runner context that we use
+        self.cfg = runner.cfg
+        self.password_generator = runner.password_generator
+        self.packager = runner.pkg_manager
+        self.distro = runner.distro
+
         self.component_root = sh.joinpths(self.root, component_name)
-        self.tracedir = sh.joinpths(self.component_root, settings.COMPONENT_TRACE_DIR)
-        self.appdir = sh.joinpths(self.component_root, settings.COMPONENT_APP_DIR)
-        self.cfgdir = sh.joinpths(self.component_root, settings.COMPONENT_CONFIG_DIR)
-        self.kargs = kargs
+        self.tracedir = sh.joinpths(self.component_root,
+                                    settings.COMPONENT_TRACE_DIR)
+        self.appdir = sh.joinpths(self.component_root,
+                                  settings.COMPONENT_APP_DIR)
+        self.cfgdir = sh.joinpths(self.component_root,
+                                  settings.COMPONENT_CONFIG_DIR)
+        self.kargs = kwds
 
     def get_dependencies(self):
         deps = settings.COMPONENT_DEPENDENCIES.get(self.component_name)

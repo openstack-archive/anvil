@@ -174,7 +174,13 @@ class ActionRunner(object):
         adjusted_components = dict(components)
         if self.ignore_deps:
             return (adjusted_components, list(components.keys()))
-        all_components = common.get_components_deps(self.action, components, self.directory, self.distro)
+        all_components = common.get_components_deps(
+            runner=self,
+            action_name=self.action,
+            base_components=components,
+            root_dir=self.directory,
+            distro=self.distro,
+            )
         component_diff = set(all_components.keys()).difference(components.keys())
         if component_diff:
             LOG.info("Having to activate dependent components: [%s]" % (", ".join(sorted(component_diff))))
@@ -198,10 +204,7 @@ class ActionRunner(object):
             # pass a reference to the runner itself and let
             # the component keep a weakref to it.
             instance = cls(instances=all_instances,
-                           distro=self.distro,
-                           packager=self.pkg_manager,
-                           config=self.cfg,
-                           password_generator=self.password_generator,
+                           runner=self,
                            root=self.directory,
                            opts=components.get(component, list()),
                            keep_old=self.kargs.get("keep_old")
