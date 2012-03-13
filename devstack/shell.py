@@ -277,7 +277,7 @@ def remove_parents(child_path, paths):
         return list()
     cleaned_paths = [abspth(p) for p in paths]
     cleaned_child_path = abspth(child_path)
-    LOG.debug("Removing parents of [%s] from input [%s]" % (cleaned_child_path, ",".join(cleaned_paths)))
+    LOG.audit("Removing parents of [%s] from input [%s]" % (cleaned_child_path, ",".join(cleaned_paths)))
     to_check_paths = [_explode_path(p) for p in cleaned_paths]
     check_path = _explode_path(cleaned_child_path)
     new_paths = list()
@@ -553,7 +553,7 @@ def move(src, dst):
 
 
 def chmod(fname, mode):
-    LOG.audit("Applying chmod: %s to %s" % (fname, mode))
+    LOG.audit("Applying chmod: %s to %o" % (fname, mode))
     if not DRYRUN_MODE:
         os.chmod(fname, mode)
     return fname
@@ -573,7 +573,7 @@ def replace_in(fn, search, replace, run_as_root=False):
 
 def copy_replace_file(fsrc, fdst, linemap):
     files = mkdirslist(dirname(fdst))
-    LOG.debug("Copying and replacing file: %s => %s" % (fsrc, fdst))
+    LOG.audit("Copying and replacing file: %s => %s" % (fsrc, fdst))
     if not DRYRUN_MODE:
         with open(fdst, 'w') as fh:
             for line in fileinput.input(fsrc):
