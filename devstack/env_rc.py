@@ -28,15 +28,18 @@ from devstack.components import keystone
 
 LOG = logging.getLogger('devstack.env_rc')
 
-#general extraction cfg keys
+#general extraction cfg keys+section
 CFG_MAKE = {
-    'ADMIN_PASSWORD': ('passwords', 'horizon_keystone_admin'),
-    'SERVICE_PASSWORD': ('passwords', 'service_password'),
-    'MYSQL_PASSWORD': ('passwords', 'sql'),
-    'RABBIT_PASSWORD': ('passwords', 'rabbit'),
-    'SERVICE_TOKEN': ('passwords', 'service_token'),
     'FLAT_INTERFACE': ('nova', 'flat_interface'),
     'HOST_IP': ('host', 'ip'),
+}
+
+#general password keys
+PASSWORDS_MAKES = {
+    'ADMIN_PASSWORD': 'horizon_keystone_admin',
+    'SERVICE_PASSWORD': 'service_password',
+    'RABBIT_PASSWORD': 'rabbit',
+    'SERVICE_TOKEN': 'service_token',
 }
 
 #default ports
@@ -85,6 +88,12 @@ class RcWriter(object):
         lines.extend(self._make_dict_export(self._get_ec2_envs()))
         lines.append("")
         return lines
+        
+    def _get_password_envs(self):
+        to_set = dict()
+        for (out_name, key) in PASSWORDS_MAKES.items():
+            to_set[out_name] = self.pw_gen.get_password(key)
+        return to_set
 
     def _get_general_envs(self):
         to_set = dict()
@@ -92,6 +101,13 @@ class RcWriter(object):
             (section, key) = (cfg_data)
             to_set[out_name] = self.cfg.get(section, key)
         return to_set
+
+    def _generate_passwords(self):
+        lines = list()
+        lines.append('# Password stuff')
+        lines.extend(self._make_dict_export(self._get_password_envs()))
+        lines.append("")
+        return lines
 
     def _generate_general(self):
         lines = list()
@@ -105,6 +121,7 @@ class RcWriter(object):
         lines.append('# Generated on %s' % (date.rcf8222date()))
         lines.append("")
         lines.extend(self._generate_general())
+        lines.extend(self._generate_passwords())
         lines.extend(self._generate_ec2_env())
         lines.extend(self._generate_nova_env())
         lines.extend(self._generate_os_env())
@@ -118,6 +135,7 @@ class RcWriter(object):
         possible_vars = dict()
         possible_vars.update(self._get_general_envs())
         possible_vars.update(self._get_ec2_envs())
+        possible_vars.update(self._get_password_envs())
         possible_vars.update(self._get_os_envs())
         possible_vars.update(self._get_euca_envs())
         possible_vars.update(self._get_nova_envs())
