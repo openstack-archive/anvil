@@ -83,10 +83,22 @@ VG_LVREMOVE_CMD = [
     {'cmd': ['lvremove', '-f', '%VOLUME_GROUP%/%LV%'],
      'run_as_root': True}
 ]
-RESTART_TGT_CMD = [
-    {'cmd': ['stop', 'tgt'], 'run_as_root': True},
-    {'cmd': ['start', 'tgt'], 'run_as_root': True}
-]
+
+# iscsi restart commands 
+RESTART_TGT_CMD = {
+    settings.UBUNTU11: [ 
+        {'cmd': ['stop', 'tgt'], 'run_as_root': True},
+        {'cmd': ['start', 'tgt'], 'run_as_root': True} 
+    ],
+    settings.RHEL6:  [
+        {'cmd': ['service', 'tgtd', 'stop'], 'run_as_root': True},
+        {'cmd': ['service', 'tgtd', 'start'], 'run_as_root': True} 
+    ],
+    settings.FEDORA16: [
+        {'cmd': ['service', 'tgtd', 'stop'], 'run_as_root': True},
+        {'cmd': ['service', 'tgtd', 'start'], 'run_as_root': True} 
+    ],
+}
 
 # NCPU, NVOL, NAPI ... are here as possible subcomponents of nova
 NCPU = "cpu"
@@ -508,6 +520,7 @@ class NovaVolumeConfigurator(object):
     def __init__(self, ni):
         self.cfg = ni.cfg
         self.appdir = ni.appdir
+        self.distro = ni.distro
 
     def setup_volumes(self):
         self._setup_vol_groups()
@@ -542,7 +555,7 @@ class NovaVolumeConfigurator(object):
         # logical volumes
         self._process_lvs(mp)
         # Finish off by restarting tgt, and ignore any errors
-        utils.execute_template(*RESTART_TGT_CMD, check_exit_code=False)
+        utils.execute_template(*RESTART_TGT_CMD[self.distro], check_exit_code=False)
 
     def _process_lvs(self, mp):
         LOG.info("Attempting to setup logical volumes for nova volume management.")
