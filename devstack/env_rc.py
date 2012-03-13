@@ -211,19 +211,13 @@ alias ec2-upload-bundle="ec2-upload-bundle -a ${EC2_ACCESS_KEY} -s ${EC2_SECRET_
         lines.append('# External includes stuff')
         extern_tpl = """
 
-# Use stored ec2 env variables
-if [ -f "{ec2rc_fn}" ]; then
-    source "{ec2rc_fn}"
-fi
-
 # Allow local overrides of env variables
 if [ -f "{localrc_fn}" ]; then
     source "{localrc_fn}"
 fi
 
 """
-        extern_inc = extern_tpl.format(ec2rc_fn=sh.abspth(settings.EC2RC_FN),
-                                   localrc_fn=sh.abspth(settings.LOCALRC_FN))
+        extern_inc = extern_tpl.format(localrc_fn=sh.abspth(settings.LOCALRC_FN))
         lines.append(extern_inc.strip())
         lines.append("")
         return lines

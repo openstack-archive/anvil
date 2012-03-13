@@ -110,7 +110,6 @@ COMPONENT_CONFIG_DIR = "config"
 
 # RC files generated / used
 RC_FN_TEMPL = "os-%s.rc"
-EC2RC_FN = RC_FN_TEMPL % ('ec2')
 LOCALRC_FN = RC_FN_TEMPL % ('local')
 OSRC_FN = RC_FN_TEMPL % ('core')
 

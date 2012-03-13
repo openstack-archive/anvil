@@ -1,4 +1,4 @@
-#From commit b32c876ed5e66c8971c8126432c1ae957301eb08 of devstack.sh repo.
+#From commit 770cec73146596c686405492e523fbe8861f36f7 of devstack.sh repo.
 #
 #With adjustments to make OPENSTACK_HOST a param
 
@@ -42,6 +42,12 @@ HORIZON_CONFIG = {
     'dashboards': ('nova', 'syspanel', 'settings',),
     'default_dashboard': 'nova',
     'user_home': 'openstack_dashboard.views.user_home',
+}
+
+# TODO(tres): Remove these once Keystone has an API to identify auth backend.
+OPENSTACK_KEYSTONE_BACKEND = {
+    'name': 'native',
+    'can_edit_user': True
 }
 
 OPENSTACK_HOST = "%OPENSTACK_HOST%"

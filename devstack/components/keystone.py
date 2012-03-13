@@ -230,9 +230,7 @@ class KeystoneRuntime(comp.PythonRuntime):
             env['BIN_DIR'] = self.bindir
             setup_cmd = MANAGE_CMD_ROOT + [tgt_fn]
             LOG.info("Running (%s) command to initialize keystone." % (" ".join(setup_cmd)))
-            (sysout, _) = sh.execute(*setup_cmd, env_overrides=env, run_as_root=False)
-            if sysout:
-                sh.write_file(sh.abspth(settings.EC2RC_FN), sysout.strip())
+            sh.execute(*setup_cmd, env_overrides=env, run_as_root=False)
             LOG.debug("Removing (%s) file since we successfully initialized keystone." % (tgt_fn))
             sh.unlink(tgt_fn)
 
