@@ -46,8 +46,11 @@ Currently we do not have any tests (WIP) but in the future these can be ran by t
 * The ``OS_*`` environment variables should be the only ones used for all
   authentication to OpenStack clients as documented in the [CLI Auth] wiki page.
   
-  
+## Documenation
+
+Documenation should all be written in [markdown] (instead of mixing different formats)
 
 [CLI Auth]: http://wiki.openstack.org/CLIAuth
 [pep8]: http://www.python.org/dev/peps/pep-0008/
 [pylint]: http://pypi.python.org/pypi/pylint
+[makdown]: http://daringfireball.net/projects/markdown/
