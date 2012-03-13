@@ -53,7 +53,8 @@ def parse():
         action="store_true",
         dest="dryrun",
         default=False,
-        help="perform actions without actually doing any of them and/or attempt to do this: (default: %default)")
+        help=("perform ACTION but do not actually run any of the commands"
+              " that would normally complete ACTION: (default: %default)"))
 
     base_group = OptionGroup(parser, "Install & uninstall & start & stop specific options")
     base_group.add_option("-a", "--action",

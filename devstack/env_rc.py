@@ -51,9 +51,9 @@ QUOTED_PAT = re.compile(r"^\s*[\"](.*)[\"]\s*$")
 
 
 class RcWriter(object):
-    def __init__(self, cfg, password_generator):
+    def __init__(self, cfg, pw_gen):
         self.cfg = cfg
-        self.password_generator = password_generator
+        self.pw_gen = pw_gen
 
     def _make_export(self, export_name, value):
         escaped_val = sh.shellquote(value)
@@ -153,7 +153,7 @@ class RcWriter(object):
         sh.write_file(fn, contents)
 
     def _get_os_envs(self):
-        key_params = keystone.get_shared_params(self.cfg, self.password_generator)
+        key_params = keystone.get_shared_params(self.cfg, self.pw_gen)
         to_set = dict()
         to_set['OS_PASSWORD'] = key_params['ADMIN_PASSWORD']
         to_set['OS_TENANT_NAME'] = key_params['DEMO_TENANT_NAME']

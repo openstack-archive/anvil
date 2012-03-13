@@ -17,6 +17,7 @@
 import io
 
 from devstack import cfg
+from devstack import cfg_helpers
 from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
@@ -88,8 +89,8 @@ class MelangeInstaller(comp.PythonInstallComponent):
 
     def _setup_db(self):
         LOG.info("Fixing up database named %s.", DB_NAME)
-        db.drop_db(self.cfg, DB_NAME)
-        db.create_db(self.cfg, DB_NAME)
+        db.drop_db(self.cfg, self.pw_gen, DB_NAME)
+        db.create_db(self.cfg, self.pw_gen, DB_NAME)
 
     def _get_pkgs(self):
         return list(REQ_PKGS)
@@ -115,7 +116,7 @@ class MelangeInstaller(comp.PythonInstallComponent):
             with io.BytesIO(contents) as stream:
                 config = cfg.IgnoreMissingConfigParser()
                 config.readfp(stream)
-                db_dsn = self.cfg.get_dbdsn(DB_NAME)
+                db_dsn = cfg_helpers.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
                 old_dbsn = config.get('DEFAULT', 'sql_connection')
                 if db_dsn != old_dbsn:
                     config.set('DEFAULT', 'sql_connection', db_dsn)

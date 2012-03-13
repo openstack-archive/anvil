@@ -17,6 +17,7 @@
 import io
 
 from devstack import cfg
+from devstack import cfg_helpers
 from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
@@ -162,7 +163,7 @@ class QuantumInstaller(comp.PkgInstallComponent):
                 config.readfp(stream)
                 db_dsn = config.get("DATABASE", "sql_connection")
                 if db_dsn:
-                    generated_dsn = self.cfg.get_dbdsn(DB_NAME)
+                    generated_dsn = cfg_helpers.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
                     if generated_dsn != db_dsn:
                         config.set("DATABASE", "sql_connection", generated_dsn)
                         with io.BytesIO() as outputstream:
@@ -199,8 +200,8 @@ class QuantumInstaller(comp.PkgInstallComponent):
 
     def _setup_db(self):
         LOG.info("Fixing up database named %s.", DB_NAME)
-        db.drop_db(self.cfg, DB_NAME)
-        db.create_db(self.cfg, DB_NAME)
+        db.drop_db(self.cfg, self.pw_gen, DB_NAME)
+        db.create_db(self.cfg, self.pw_gen, DB_NAME)
 
     def _get_source_config(self, config_fn):
         if config_fn == PLUGIN_CONF:

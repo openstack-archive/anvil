@@ -16,7 +16,7 @@
 
 import weakref
 
-from devstack import cfg
+from devstack import cfg_helpers
 from devstack import downloader as down
 from devstack import exceptions as excp
 from devstack import log as logging
@@ -53,19 +53,22 @@ BASE_LINK_DIR = "/etc"
 
 
 class ComponentBase(object):
-    def __init__(self, component_name, runner, root, opts, instances=None,
+    def __init__(self, component_name, runner,
+                 root_dir, component_options,
+                 instances=None,
                  **kwds):
         self.component_name = component_name
+
         # The runner has a reference to us, so use a weakref here to
         # avoid breaking garbage collection.
         self.runner = weakref.proxy(runner)
-        self.root = root
-        self.component_opts = opts or []
+        self.root = root_dir
+        self.component_opts = component_options or []
         self.instances = instances or {}
 
         # Parts of the global runner context that we use
         self.cfg = runner.cfg
-        self.password_generator = runner.password_generator
+        self.pw_gen = runner.pw_gen
         self.packager = runner.pkg_manager
         self.distro = runner.distro
 
@@ -79,9 +82,7 @@ class ComponentBase(object):
         self.kargs = kwds
 
     def get_dependencies(self):
-        deps = settings.COMPONENT_DEPENDENCIES.get(self.component_name)
-        if not deps:
-            return list()
+        deps = settings.COMPONENT_DEPENDENCIES.get(self.component_name) or list()
         return list(deps)
 
     def verify(self):
@@ -124,13 +125,13 @@ class PkgInstallComponent(ComponentBase):
                 branch = self.cfg.get(cfg_section, cfg_key)
                 if not branch:
                     msg = "No branch entry found at config location [%s]" % \
-                        (cfg.make_id(cfg_section, cfg_key))
+                        (cfg_helpers.make_id(cfg_section, cfg_key))
                     raise excp.ConfigException(msg)
             (cfg_section, cfg_key) = uri_tuple
             uri = self.cfg.get(cfg_section, cfg_key)
             if not uri:
                 msg = "No uri entry found at config location [%s]" % \
-                    (cfg.make_id(cfg_section, cfg_key))
+                    (cfg_helpers.make_id(cfg_section, cfg_key))
                 raise excp.ConfigException(msg)
             self.tracewriter.download_happened(target_loc, uri)
             dirs_made = down.download(target_loc, uri, branch)
@@ -450,7 +451,7 @@ class ProgramRuntime(ComponentBase):
     def configure(self):
         # First make a pass and make sure all runtime (e.g. upstart)
         # config files are in place....
-        cls = RUNNER_CLS_MAPPING[utils.fetch_run_type(self.cfg)]
+        cls = RUNNER_CLS_MAPPING[cfg_helpers.fetch_run_type(self.cfg)]
         instance = cls(self.cfg, self.component_name, self.tracedir)
         tot_am = 0
         for app_info in self._get_apps_to_start():
@@ -473,7 +474,7 @@ class ProgramRuntime(ComponentBase):
 
     def start(self):
         # Select how we are going to start it
-        cls = RUNNER_CLS_MAPPING[utils.fetch_run_type(self.cfg)]
+        cls = RUNNER_CLS_MAPPING[cfg_helpers.fetch_run_type(self.cfg)]
         instance = cls(self.cfg, self.component_name, self.tracedir)
         am_started = 0
         for app_info in self._get_apps_to_start():

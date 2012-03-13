@@ -19,6 +19,7 @@ import io
 from urlparse import urlunparse
 
 from devstack import cfg
+from devstack import cfg_helpers
 from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
@@ -132,8 +133,8 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
     def _setup_db(self):
         LOG.info("Fixing up database named %s.", DB_NAME)
-        db.drop_db(self.cfg, DB_NAME)
-        db.create_db(self.cfg, DB_NAME)
+        db.drop_db(self.cfg, self.pw_gen, DB_NAME)
+        db.create_db(self.cfg, self.pw_gen, DB_NAME)
 
     def _setup_initer(self):
         LOG.info("Configuring keystone initializer template %s.", MANAGE_DATA_CONF)
@@ -191,7 +192,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         return comp.PythonInstallComponent._get_source_config(self, config_fn)
 
     def warm_configs(self):
-        get_shared_params(self.cfg, self.password_generator)
+        get_shared_params(self.cfg, self.pw_gen)
 
     def _get_param_map(self, config_fn):
         #these be used to fill in the configuration/cmds +
@@ -202,11 +203,11 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         mp['BIN_DIR'] = self.bindir
         mp['CONFIG_FILE'] = sh.joinpths(self.cfgdir, ROOT_CONF)
         if config_fn == ROOT_CONF:
-            mp['SQL_CONN'] = self.cfg.get_dbdsn(DB_NAME)
+            mp['SQL_CONN'] = cfg_helpers.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
             mp['KEYSTONE_DIR'] = self.appdir
-            mp.update(get_shared_params(self.cfg, self.password_generator))
+            mp.update(get_shared_params(self.cfg, self.pw_gen))
         elif config_fn == MANAGE_DATA_CONF:
-            mp.update(get_shared_params(self.cfg, self.password_generator))
+            mp.update(get_shared_params(self.cfg, self.pw_gen))
         return mp
 
 
@@ -248,8 +249,7 @@ class KeystoneRuntime(comp.PythonRuntime):
         return APP_OPTIONS.get(app)
 
 
-def get_shared_params(config, password_generator, service_user_name=None):
-    LOG.debug('password_generator %s', password_generator)
+def get_shared_params(config, pw_gen, service_user_name=None):
     mp = dict()
     host_ip = config.get('host', 'ip')
 
@@ -263,18 +263,15 @@ def get_shared_params(config, password_generator, service_user_name=None):
     mp['DEMO_TENANT_NAME'] = mp['DEMO_USER_NAME']
 
     #tokens and passwords
-    mp['SERVICE_TOKEN'] = password_generator.get_password(
-        'passwords',
+    mp['SERVICE_TOKEN'] = pw_gen.get_password(
         "service_token",
         'the service admin token',
         )
-    mp['ADMIN_PASSWORD'] = password_generator.get_password(
-        'passwords',
+    mp['ADMIN_PASSWORD'] = pw_gen.get_password(
         'horizon_keystone_admin',
         'the horizon and keystone admin',
         20)
-    mp['SERVICE_PASSWORD'] = password_generator.get_password(
-        'passwords',
+    mp['SERVICE_PASSWORD'] = pw_gen.get_password(
         'service_password',
         'service authentication',
         )

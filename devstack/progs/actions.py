@@ -139,13 +139,13 @@ PREQ_ACTIONS = {
 
 class ActionRunner(object):
     def __init__(self, distro, action, directory, config,
-                 password_generator, pkg_manager,
+                 pw_gen, pkg_manager,
                  **kargs):
         self.distro = distro
         self.action = action
         self.directory = directory
         self.cfg = config
-        self.password_generator = password_generator
+        self.pw_gen = pw_gen
         self.pkg_manager = pkg_manager
         self.kargs = kargs
         self.components = dict()
@@ -205,8 +205,8 @@ class ActionRunner(object):
             # the component keep a weakref to it.
             instance = cls(instances=all_instances,
                            runner=self,
-                           root=self.directory,
-                           opts=components.get(component, list()),
+                           root_dir=self.directory,
+                           component_options=components.get(component),
                            keep_old=self.kargs.get("keep_old")
                            )
             all_instances[component] = instance
@@ -225,7 +225,8 @@ class ActionRunner(object):
         if preq_components:
             LOG.info("Having to activate prerequisite action [%s] for %s components." % (preq_action, len(preq_components)))
             preq_runner = ActionRunner(self.distro, preq_action,
-                                    self.directory, self.cfg, self.pkg_manager,
+                                    self.directory, self.cfg, self.pw_gen,
+                                    self.pkg_manager,
                                     components=preq_components, **self.kargs)
             preq_runner.run()
 
@@ -248,7 +249,7 @@ class ActionRunner(object):
             inst = instances[component]
             inst.warm_configs()
         if self.gen_rc and self.rc_file:
-            writer = env_rc.RcWriter(self.cfg, self.password_generator)
+            writer = env_rc.RcWriter(self.cfg, self.pw_gen)
             if not sh.isfile(self.rc_file):
                 LOG.info("Generating a file at [%s] that will contain your environment settings." % (self.rc_file))
                 writer.write(self.rc_file)

@@ -17,13 +17,13 @@
 import re
 import ConfigParser
 
+from devstack import cfg_helpers
 from devstack import date
 from devstack import env
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import shell as sh
 from devstack import utils
-
 
 LOG = logging.getLogger("devstack.cfg")
 ENV_PAT = re.compile(r"^\s*\$\{([\w\d]+):\-(.*)\}\s*$")
@@ -68,20 +68,10 @@ class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
         return ConfigParser.RawConfigParser.getint(self, section, option)
 
 
-def make_id(section, option):
-    joinwhat = []
-    if section is not None:
-        joinwhat.append(str(section))
-    if option is not None:
-        joinwhat.append(str(option))
-    return "/".join(joinwhat)
-
-
 class StackConfigParser(IgnoreMissingConfigParser):
-    def __init__(self):
+    def __init__(self, cache):
         IgnoreMissingConfigParser.__init__(self)
-        self.configs_fetched = dict()
-        self.db_dsns = dict()
+        self.configs_fetched = cache
 
     def _resolve_value(self, section, option, value_gotten):
         if section == 'host' and option == 'ip':
@@ -98,7 +88,7 @@ class StackConfigParser(IgnoreMissingConfigParser):
         return val
 
     def get(self, section, option):
-        key = make_id(section, option)
+        key = cfg_helpers.make_id(section, option)
         if key in self.configs_fetched:
             value = self.configs_fetched.get(key)
             LOG.debug("Fetched cached value [%s] for param [%s]" % (value, key))
@@ -109,11 +99,6 @@ class StackConfigParser(IgnoreMissingConfigParser):
             LOG.debug("Fetched [%s] for [%s] %s" % (value, key, CACHE_MSG))
             self.configs_fetched[key] = value
         return value
-
-    def set(self, section, option, value):
-        key = make_id(section, option)
-        self.configs_fetched[key] = value
-        return IgnoreMissingConfigParser.set(self, section, option, value)
 
     def _resolve_replacements(self, value):
         LOG.debug("Performing simple replacement on [%s]", value)
@@ -150,42 +135,6 @@ class StackConfigParser(IgnoreMissingConfigParser):
             extracted_val = value
             LOG.debug("Using raw config provided value [%s]" % (extracted_val))
         return extracted_val
-
-    def get_dbdsn(self, dbname):
-        #check the dsn cache
-        if dbname in self.db_dsns:
-            return self.db_dsns[dbname]
-        user = self.get("db", "sql_user")
-        host = self.get("db", "sql_host")
-        port = self.get("db", "port")
-        pw = self.get("passwords", "sql")
-        #form the dsn (from components we have...)
-        #dsn = "<driver>://<username>:<password>@<host>:<port>/<database>"
-        if not host:
-            msg = "Unable to fetch a database dsn - no sql host found"
-            raise excp.BadParamException(msg)
-        driver = self.get("db", "type")
-        if not driver:
-            msg = "Unable to fetch a database dsn - no db driver type found"
-            raise excp.BadParamException(msg)
-        dsn = driver + "://"
-        if user:
-            dsn += user
-        if pw:
-            dsn += ":" + pw
-        if user or pw:
-            dsn += "@"
-        dsn += host
-        if port:
-            dsn += ":" + port
-        if dbname:
-            dsn += "/" + dbname
-        else:
-            dsn += "/"
-        LOG.debug("For database [%s] fetched dsn [%s] %s" % (dbname, dsn, CACHE_MSG))
-        #store for later...
-        self.db_dsns[dbname] = dsn
-        return dsn
 
 
 def add_header(fn, contents):

@@ -16,6 +16,7 @@
 
 from urlparse import urlunparse
 
+from devstack import cfg_helpers
 from devstack import component as comp
 from devstack import date
 from devstack import exceptions
@@ -371,8 +372,8 @@ class NovaInstaller(comp.PythonInstallComponent):
 
     def _setup_db(self):
         LOG.info("Fixing up database named %s.", DB_NAME)
-        db.drop_db(self.cfg, DB_NAME)
-        db.create_db(self.cfg, DB_NAME)
+        db.drop_db(self.cfg, self.pw_gen, DB_NAME)
+        db.create_db(self.cfg, self.pw_gen, DB_NAME)
 
     def _generate_nova_conf(self):
         LOG.info("Generating dynamic content for nova configuration (%s)." % (API_CONF))
@@ -406,7 +407,7 @@ class NovaInstaller(comp.PythonInstallComponent):
             mp['FIXED_NETWORK_SIZE'] = self.cfg.getdefaulted('nova', 'fixed_network_size', '256')
             mp['FIXED_RANGE'] = self.cfg.getdefaulted('nova', 'fixed_range', '10.0.0.0/24')
         else:
-            mp.update(keystone.get_shared_params(self.cfg, self.password_generator, 'nova'))
+            mp.update(keystone.get_shared_params(self.cfg, self.pw_gen, 'nova'))
         return mp
 
     def configure(self):
@@ -574,6 +575,7 @@ class NovaVolumeConfigurator(object):
 class NovaConfConfigurator(object):
     def __init__(self, ni):
         self.cfg = ni.cfg
+        self.pw_gen = ni.pw_gen
         self.instances = ni.instances
         self.component_root = ni.component_root
         self.appdir = ni.appdir
@@ -637,7 +639,8 @@ class NovaConfConfigurator(object):
         nova_conf.add('my_ip', hostip)
 
         #setup your sql connection
-        nova_conf.add('sql_connection', self.cfg.get_dbdsn('nova'))
+        db_dsn = cfg_helpers.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
+        nova_conf.add('sql_connection', db_dsn)
 
         #configure anything libvirt releated?
         virt_driver = _canon_virt_driver(self._getstr('virt_driver'))

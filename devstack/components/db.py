@@ -85,9 +85,6 @@ REQ_PKGS = ['db.json']
 #config keys we warm up so u won't be prompted later
 WARMUP_PWS = ['sql']
 
-#partial of database user prompt
-PASSWORD_DESCRIPTION = 'the database user'
-
 
 class DBUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -96,8 +93,7 @@ class DBUninstaller(comp.PkgUninstallComponent):
 
     def warm_configs(self):
         for pw_key in WARMUP_PWS:
-            self.password_generator.get_password(
-                'passwords', pw_key, PASSWORD_DESCRIPTION)
+            self.pw_gen.get_password(pw_key)
 
     def pre_uninstall(self):
         dbtype = self.cfg.get("db", "type")
@@ -110,10 +106,8 @@ class DBUninstaller(comp.PkgUninstallComponent):
                 if pwd_cmd:
                     LOG.info("Ensuring your database is started before we operate on it.")
                     self.runtime.restart()
-                    old_pw = self.password_generator.get_password(
-                        'passwords', 'sql', PASSWORD_DESCRIPTION)
                     params = {
-                        'OLD_PASSWORD': old_pw,
+                        'OLD_PASSWORD': self.pw_gen.get_password('sql'),
                         'NEW_PASSWORD': RESET_BASE_PW,
                         'USER': self.cfg.getdefaulted("db", "sql_user", 'root'),
                         }
@@ -135,8 +129,7 @@ class DBInstaller(comp.PkgInstallComponent):
         #in pre-install and post-install sections
         host_ip = self.cfg.get('host', 'ip')
         out = {
-            'PASSWORD': self.password_generator.get_password(
-                "passwords", "sql", PASSWORD_DESCRIPTION),
+            'PASSWORD': self.pw_gen.get_password("sql"),
             'BOOT_START': ("%s" % (True)).lower(),
             'USER': self.cfg.getdefaulted("db", "sql_user", 'root'),
             'SERVICE_HOST': host_ip,
@@ -146,8 +139,7 @@ class DBInstaller(comp.PkgInstallComponent):
 
     def warm_configs(self):
         for pw_key in WARMUP_PWS:
-            self.password_generator.get_password(
-                'passwords', pw_key, PASSWORD_DESCRIPTION)
+            self.pw_gen.get_password(pw_key)
 
     def _configure_db_confs(self):
         dbtype = self.cfg.get("db", "type")
@@ -200,8 +192,7 @@ class DBInstaller(comp.PkgInstallComponent):
                     LOG.info("Ensuring your database is started before we operate on it.")
                     self.runtime.restart()
                     params = {
-                        'NEW_PASSWORD': self.password_generator.get_password(
-                            "passwords", "sql", PASSWORD_DESCRIPTION),
+                        'NEW_PASSWORD': self.pw_gen.get_password("sql"),
                         'USER': self.cfg.getdefaulted("db", "sql_user", 'root'),
                         'OLD_PASSWORD': RESET_BASE_PW,
                         }
@@ -220,8 +211,7 @@ class DBInstaller(comp.PkgInstallComponent):
                 LOG.info("Ensuring your database is started before we operate on it.")
                 self.runtime.restart()
                 params = {
-                    'PASSWORD': self.password_generator.get_password(
-                        "passwords", "sql", PASSWORD_DESCRIPTION),
+                    'PASSWORD': self.pw_gen.get_password("sql"),
                     'USER': user,
                 }
                 cmds = [{'cmd': grant_cmd}]
@@ -296,13 +286,13 @@ class DBRuntime(comp.EmptyRuntime):
             return comp.STATUS_UNKNOWN
 
 
-def drop_db(cfg, dbname):
+def drop_db(cfg, pw_gen, dbname):
     dbtype = cfg.get("db", "type")
     dbactions = DB_ACTIONS.get(dbtype)
     if dbactions and dbactions.get('drop_db'):
         dropcmd = dbactions.get('drop_db')
         params = dict()
-        params['PASSWORD'] = cfg.get("passwords", "sql")
+        params['PASSWORD'] = pw_gen.get_password("sql")
         params['USER'] = cfg.getdefaulted("db", "sql_user", 'root')
         params['DB'] = dbname
         cmds = list()
@@ -316,13 +306,13 @@ def drop_db(cfg, dbname):
         raise NotImplementedError(msg)
 
 
-def create_db(cfg, dbname):
+def create_db(cfg, pw_gen, dbname):
     dbtype = cfg.get("db", "type")
     dbactions = DB_ACTIONS.get(dbtype)
     if dbactions and dbactions.get('create_db'):
         createcmd = dbactions.get('create_db')
         params = dict()
-        params['PASSWORD'] = cfg.get("passwords", "sql")
+        params['PASSWORD'] = pw_gen.get_password("sql")
         params['USER'] = cfg.getdefaulted("db", "sql_user", 'root')
         params['DB'] = dbname
         cmds = list()

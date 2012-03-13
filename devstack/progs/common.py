@@ -155,10 +155,12 @@ def get_packager(distro, keep_packages):
     return cls(distro, keep_packages)
 
 
-def get_config(cfg_fn=None):
+def get_config(cfg_fn=None, kv_cache=None):
     if not cfg_fn:
         cfg_fn = sh.canon_path(settings.STACK_CONFIG_LOCATION)
-    config_instance = cfg.StackConfigParser()
+    if kv_cache is None:
+        kv_cache = dict()
+    config_instance = cfg.StackConfigParser(kv_cache)
     config_instance.read(cfg_fn)
     return config_instance
 
@@ -174,16 +176,15 @@ def get_components_deps(runner,
     root_dir = root_dir or _FAKE_ROOT_DIR
     while len(active_names):
         component = active_names.pop()
-        component_opts = base_components.get(component) or []
+        component_opts = base_components.get(component) or list()
         cls = get_action_cls(action_name, component, distro)
-        instance = cls(instances=[],
+        instance = cls(instances=list(),
                        runner=runner,
-                       root=root_dir,
-                       opts=component_opts,
+                       root_dir=root_dir,
+                       component_options=component_opts,
+                       keep_old=False
                        )
-        deps = instance.get_dependencies()
-        if deps is None:
-            deps = set()
+        deps = instance.get_dependencies() or set()
         all_components[component] = set(deps)
         for d in deps:
             if d not in all_components and d not in active_names:

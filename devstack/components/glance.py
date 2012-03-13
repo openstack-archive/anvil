@@ -17,6 +17,7 @@
 import io
 
 from devstack import cfg
+from devstack import cfg_helpers
 from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
@@ -118,8 +119,8 @@ class GlanceInstaller(comp.PythonInstallComponent):
 
     def _setup_db(self):
         LOG.info("Fixing up database named %s.", DB_NAME)
-        db.drop_db(self.cfg, DB_NAME)
-        db.create_db(self.cfg, DB_NAME)
+        db.drop_db(self.cfg, self.pw_gen, DB_NAME)
+        db.create_db(self.cfg, self.pw_gen, DB_NAME)
 
     def _get_source_config(self, config_fn):
         if config_fn == POLICY_JSON:
@@ -184,10 +185,10 @@ class GlanceInstaller(comp.PythonInstallComponent):
         mp = dict()
         mp['DEST'] = self.appdir
         mp['SYSLOG'] = self.cfg.getboolean("default", "syslog")
-        mp['SQL_CONN'] = self.cfg.get_dbdsn(DB_NAME)
+        mp['SQL_CONN'] = cfg_helpers.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
         mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
         mp['HOST_IP'] = self.cfg.get('host', 'ip')
-        mp.update(keystone.get_shared_params(self.cfg, self.password_generator, 'glance'))
+        mp.update(keystone.get_shared_params(self.cfg, self.pw_gen, 'glance'))
         return mp
 
 
@@ -224,4 +225,4 @@ class GlanceRuntime(comp.PythonRuntime):
             # TODO: make this less cheesy - need to wait till glance goes online
             LOG.info("Waiting %s seconds so that glance can start up before image install." % (WAIT_ONLINE_TO))
             sh.sleep(WAIT_ONLINE_TO)
-            creator.ImageCreationService(self.cfg, self.password_generator).install()
+            creator.ImageCreationService(self.cfg, self.pw_gen).install()
