@@ -189,6 +189,10 @@ def execute(*cmd, **kwargs):
 
 
 def abspth(path):
+    if not path:
+        path = ROOT_PATH
+    if path == "~":
+        path = gethomedir()
     return os.path.abspath(path)
 
 
@@ -246,7 +250,7 @@ def chown_r(path, uid, gid, run_as_root=True):
             LOG.audit("Changing ownership of %s to %s:%s" % (path, uid, gid))
             for root, dirs, files in os.walk(path):
                 os.chown(root, uid, gid)
-                LOG.debug("Changing ownership of %s to %s:%s" % (root, uid, gid))
+                LOG.audit("Changing ownership of %s to %s:%s" % (root, uid, gid))
                 for d in dirs:
                     os.chown(joinpths(root, d), uid, gid)
                     LOG.audit("Changing ownership of %s to %s:%s" % (joinpths(root, d), uid, gid))
@@ -257,11 +261,22 @@ def chown_r(path, uid, gid, run_as_root=True):
 
 def _explode_path(path):
     parts = list()
-    while path != ROOT_PATH:
+    path = abspth(path)
+    while path != ROOT_PATH and path:
         (path, name) = os.path.split(path)
         parts.append(name)
     parts.reverse()
     return parts
+
+
+def _explode_form_path(path):
+    ret_paths = list()
+    ret_paths.append(ROOT_PATH)
+    ex_path = _explode_path(path)
+    for i in range(len(ex_path)):
+        to_make = [ROOT_PATH] + ex_path[0:i] + [ex_path[i]]
+        ret_paths.append(joinpths(*to_make))
+    return ret_paths
 
 
 def in_terminal(check_both=False):
@@ -303,19 +318,9 @@ def _array_begins_with(haystack, needle):
 
 def mkdirslist(path):
     LOG.debug("Determining potential paths to create for target path \"%s\"" % (path))
-    dirs_possible = set()
-    dirs_possible.add(path)
-    while True:
-        (base, _) = os.path.split(path)
-        if not base:
-            break
-        dirs_possible.add(base)
-        path = base
-        if path == ROOT_PATH:
-            break
-    #sorting is important so that we go in the right order.. (/ before /tmp and so on)
+    dirs_possible = _explode_form_path(path)
     dirs_made = list()
-    for check_path in sorted(dirs_possible):
+    for check_path in dirs_possible:
         if not isdir(check_path):
             mkdir(check_path, False)
             dirs_made.append(check_path)
