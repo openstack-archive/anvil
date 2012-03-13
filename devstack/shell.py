@@ -281,7 +281,7 @@ def _explode_form_path(path):
 
 def in_terminal(check_both=False):
     if check_both:
-        return sys.stdout.isatty() or sys.stderr.isatty()
+        return sys.stdout.isatty() and sys.stderr.isatty()
     else:
         return sys.stdout.isatty()
 
@@ -329,7 +329,7 @@ def mkdirslist(path):
 
 def append_file(fn, text, flush=True, quiet=False):
     if not quiet:
-        LOG.audit("Appending to file %s (%d bytes) (%s)", fn, len(text), flush)
+        LOG.audit("Appending to file %s (%d bytes) (flush=%s)", fn, len(text), flush)
         LOG.audit(">> %s" % (text))
     if not DRYRUN_MODE:
         with open(fn, "a") as f:
@@ -341,7 +341,7 @@ def append_file(fn, text, flush=True, quiet=False):
 
 def write_file(fn, text, flush=True, quiet=False):
     if not quiet:
-        LOG.audit("Writing to file %s (%d bytes)", fn, len(text))
+        LOG.audit("Writing to file %s (%d bytes) (flush=%s)", fn, len(text), flush)
         LOG.audit("> %s" % (text))
     if not DRYRUN_MODE:
         with open(fn, "w") as f:
@@ -354,7 +354,7 @@ def write_file(fn, text, flush=True, quiet=False):
 def touch_file(fn, die_if_there=True, quiet=False, file_size=0):
     if not isfile(fn):
         if not quiet:
-            LOG.audit("Touching and truncating file %s (%s)", fn, file_size)
+            LOG.audit("Touching and truncating file %s (truncate size=%s)", fn, file_size)
         if not DRYRUN_MODE:
             with open(fn, "w") as f:
                 f.truncate(file_size)

@@ -173,11 +173,6 @@ class RcWriter(object):
     def _generate_aliases(self):
         lines = list()
         lines.append('# Alias stuff')
-        export_inc = """
-alias ec2-bundle-image="ec2-bundle-image --cert ${EC2_CERT} --privatekey ${EC2_PRIVATE_KEY} --user ${EC2_USER_ID} --ec2cert ${NOVA_CERT}"
-alias ec2-upload-bundle="ec2-upload-bundle -a ${EC2_ACCESS_KEY} -s ${EC2_SECRET_KEY} --url ${S3_URL} --ec2cert ${NOVA_CERT}"
-"""
-        lines.append(export_inc.strip())
         lines.append("")
         return lines
 
