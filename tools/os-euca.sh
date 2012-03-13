@@ -3,8 +3,8 @@
 # From devstack.sh commit 0bd2410d469f11934b5965d83b57d56418e66b48
 
 # Create EC2 credentials for the current user as defined by OS_TENANT_NAME:OS_USERNAME
-#
-# Optionally set the tenant/username via openrc
+
+set -x
 
 if [[ -n "$1" ]]; then
     USERNAME=$1
