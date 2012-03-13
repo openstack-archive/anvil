@@ -53,4 +53,4 @@ Documenation should all be written in [markdown] (instead of mixing different fo
 [CLI Auth]: http://wiki.openstack.org/CLIAuth
 [pep8]: http://www.python.org/dev/peps/pep-0008/
 [pylint]: http://pypi.python.org/pypi/pylint
-[makdown]: http://daringfireball.net/projects/markdown/
+[markdown]: http://daringfireball.net/projects/markdown/
