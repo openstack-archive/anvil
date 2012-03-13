@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-import binascii
 import ConfigParser
+import binascii
 import getpass
 import logging
 import os
@@ -53,7 +53,7 @@ class PasswordGenerator(object):
     # FIXME: Remove the "section" argument, since it is always the same.
     def get_password(self, section, option, prompt_text, length=8):
         """Returns a password identified by the configuration location."""
-        LOG.debug('looking for password %s (%s)', option, prompt_text)
+        LOG.debug('Looking for password %s (%s)', option, prompt_text)
 
         # Look in the configuration file(s)
         try:
@@ -68,7 +68,7 @@ class PasswordGenerator(object):
 
         # If we still don't have a value, make one up.
         if not password:
-            LOG.debug('no configured password for %s (%s)',
+            LOG.debug('No configured password for %s (%s)',
                       option, prompt_text)
             password = generate_random(length)
 

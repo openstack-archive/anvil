@@ -16,15 +16,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import logging
-import logging.config
 import sys
 import time
 import traceback
 
 from devstack import colorlog
 from devstack import date
-from devstack import log as lg
+from devstack import log as logging
 from devstack import opts
 from devstack import passwords
 from devstack import settings
@@ -34,7 +32,7 @@ from devstack import utils
 from devstack.progs import actions
 from devstack.progs import common
 
-LOG = lg.getLogger("devstack.stack")
+LOG = logging.getLogger("devstack.stack")
 
 # This is used to map an action to a useful string for
 # the welcome display
@@ -96,9 +94,9 @@ def run(args):
     config = common.get_config()
 
     # Stash the dryrun value (if any) into the global configuration
-    sh.set_dryrun(args.pop('dryrun'))
+    sh.set_dryrun(args['dryrun'])
     password_generator = passwords.PasswordGenerator(config, args['prompt_for_passwords'])
-    pkg_manager = common.get_packager(distro, args.get('keep_old'))
+    pkg_manager = common.get_packager(distro, args['keep_old'])
     components = utils.parse_components(args.pop("components"))
     runner = actions.ActionRunner(distro, action, rootdir, config, password_generator,
                                   pkg_manager, components=components, **args)
@@ -113,11 +111,11 @@ def run(args):
 def configure_logging(args):
 
     # Debug by default
-    root_logger = logging.getLogger('')
+    root_logger = logging.getLogger().logger
     root_logger.setLevel(logging.DEBUG)
 
     # Set our pretty logger
-    console_logger = logging.StreamHandler(sys.stdout)
+    console_logger = logging.StreamHandler(stream=sys.stdout)
     console_format = '%(levelname)s: @%(name)s : %(message)s'
     if sh.in_terminal():
         console_logger.setFormatter(colorlog.TermFormatter(console_format))
@@ -126,7 +124,11 @@ def configure_logging(args):
     root_logger.addHandler(console_logger)
         
     # Adjust logging verbose level based on the command line switch.
-    log_level = logging.DEBUG if args['verbosity'] >= 2 else logging.INFO
+    log_level = logging.INFO
+    if args['verbosity'] >= 2:
+        log_level = logging.DEBUG
+    elif args['dryrun']:
+        log_level = logging.AUDIT
     root_logger.setLevel(log_level)
 
 

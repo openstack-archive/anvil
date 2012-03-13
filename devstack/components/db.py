@@ -85,6 +85,7 @@ REQ_PKGS = ['db.json']
 #config keys we warm up so u won't be prompted later
 WARMUP_PWS = ['sql']
 
+#partial of database user prompt
 PASSWORD_DESCRIPTION = 'the database user'
 
 

@@ -101,15 +101,15 @@ def execute(*cmd, **kwargs):
         execute_cmd = str_cmd.strip()
 
     if not shell:
-        LOG.debug('Running cmd: %s' % (execute_cmd))
+        LOG.audit('Running cmd: %s' % (execute_cmd))
     else:
-        LOG.debug('Running shell cmd: %s' % (execute_cmd))
+        LOG.audit('Running shell cmd: %s' % (execute_cmd))
 
     if process_input is not None:
-        LOG.debug('With stdin: %s' % (process_input))
+        LOG.audit('With stdin: %s' % (process_input))
 
     if cwd:
-        LOG.debug("In working directory: %s" % (cwd))
+        LOG.audit("In working directory: %s" % (cwd))
 
     stdin_fh = subprocess.PIPE
     stdout_fh = subprocess.PIPE
@@ -132,7 +132,7 @@ def execute(*cmd, **kwargs):
     process_env = None
     if env_overrides and len(env_overrides):
         process_env = env.get()
-        LOG.debug("With additional environment overrides: %s" % (env_overrides))
+        LOG.audit("With additional environment overrides: %s" % (env_overrides))
         for (k, v) in env_overrides.items():
             process_env[k] = str(v)
 
@@ -140,7 +140,6 @@ def execute(*cmd, **kwargs):
     result = None
     with Rooted(run_as_root):
         if DRYRUN_MODE:
-            LOG.debug("Fake executing: %s" % (execute_cmd))
             rc = DRY_RC
             result = DRY_STDOUT_ERR
         else:
@@ -164,7 +163,7 @@ def execute(*cmd, **kwargs):
                 and obj.stdin and close_stdin):
                 obj.stdin.close()
             rc = obj.returncode
-        LOG.debug('Cmd result had exit code: %s' % rc)
+        LOG.audit('Cmd result had exit code: %s' % rc)
 
     if not result:
         result = ("", "")
@@ -241,21 +240,19 @@ def _get_suids():
     return (uid, gid)
 
 
-
-
 def chown_r(path, uid, gid, run_as_root=True):
     with Rooted(run_as_root):
         if isdir(path):
-            LOG.debug("Changing ownership of %s to %s:%s" % (path, uid, gid))
+            LOG.audit("Changing ownership of %s to %s:%s" % (path, uid, gid))
             for root, dirs, files in os.walk(path):
                 os.chown(root, uid, gid)
                 LOG.debug("Changing ownership of %s to %s:%s" % (root, uid, gid))
                 for d in dirs:
                     os.chown(joinpths(root, d), uid, gid)
-                    LOG.debug("Changing ownership of %s to %s:%s" % (joinpths(root, d), uid, gid))
+                    LOG.audit("Changing ownership of %s to %s:%s" % (joinpths(root, d), uid, gid))
                 for f in files:
                     os.chown(joinpths(root, f), uid, gid)
-                    LOG.debug("Changing ownership of %s to %s:%s" % (joinpths(root, f), uid, gid))
+                    LOG.audit("Changing ownership of %s to %s:%s" % (joinpths(root, f), uid, gid))
 
 
 
@@ -327,8 +324,8 @@ def mkdirslist(path):
 
 def append_file(fn, text, flush=True, quiet=False):
     if not quiet:
-        LOG.debug("Appending to file %s (%d bytes) (%s)", fn, len(text), flush)
-        LOG.debug(">> %s" % (text))
+        LOG.audit("Appending to file %s (%d bytes) (%s)", fn, len(text), flush)
+        LOG.audit(">> %s" % (text))
     if not DRYRUN_MODE:
         with open(fn, "a") as f:
             f.write(text)
@@ -339,8 +336,8 @@ def append_file(fn, text, flush=True, quiet=False):
 
 def write_file(fn, text, flush=True, quiet=False):
     if not quiet:
-        LOG.debug("Writing to file %s (%d bytes)", fn, len(text))
-        LOG.debug("> %s" % (text))
+        LOG.audit("Writing to file %s (%d bytes)", fn, len(text))
+        LOG.audit("> %s" % (text))
     if not DRYRUN_MODE:
         with open(fn, "w") as f:
             f.write(text)
@@ -352,7 +349,7 @@ def write_file(fn, text, flush=True, quiet=False):
 def touch_file(fn, die_if_there=True, quiet=False, file_size=0):
     if not isfile(fn):
         if not quiet:
-            LOG.debug("Touching and truncating file %s (%s)", fn, file_size)
+            LOG.audit("Touching and truncating file %s (%s)", fn, file_size)
         if not DRYRUN_MODE:
             with open(fn, "w") as f:
                 f.truncate(file_size)
@@ -365,29 +362,31 @@ def touch_file(fn, die_if_there=True, quiet=False, file_size=0):
 
 def load_file(fn, quiet=False):
     if not quiet:
-        LOG.debug("Loading data from file %s", fn)
+        LOG.audit("Loading data from file %s", fn)
     data = ""
     try:
         with open(fn, "r") as f:
             data = f.read()
     except IOError as e:
         if DRYRUN_MODE:
-            LOG.debug("Passing on load exception since in dry-run mode")
+            # We still need to actually load something (ie the json install files so thats)
+            # Why this is in the exception path.
+            LOG.audit("Passing on load exception since in dry-run mode")
         else:
             raise e
     if not quiet:
-        LOG.debug("Loaded (%d) bytes from file %s", len(data), fn)
+        LOG.audit("Loaded (%d) bytes from file %s", len(data), fn)
     return data
 
 
 def mkdir(path, recurse=True):
     if not isdir(path):
         if recurse:
-            LOG.debug("Recursively creating directory \"%s\"" % (path))
+            LOG.audit("Recursively creating directory \"%s\"" % (path))
             if not DRYRUN_MODE:
                 os.makedirs(path)
         else:
-            LOG.debug("Creating directory \"%s\"" % (path))
+            LOG.audit("Creating directory \"%s\"" % (path))
             if not DRYRUN_MODE:
                 os.mkdir(path)
 
@@ -395,7 +394,7 @@ def mkdir(path, recurse=True):
 def deldir(path, run_as_root=False):
     with Rooted(run_as_root):
         if isdir(path):
-            LOG.debug("Recursively deleting directory tree starting at \"%s\"" % (path))
+            LOG.audit("Recursively deleting directory tree starting at \"%s\"" % (path))
             if not DRYRUN_MODE:
                 shutil.rmtree(path)
 
@@ -404,11 +403,11 @@ def rmdir(path, quiet=True, run_as_root=False):
     if not isdir(path):
         return
     try:
-        with Rooted(run_as_root):
+        with audit(run_as_root):
             LOG.debug("Deleting directory \"%s\" with the cavet that we will fail if it's not empty." % (path))
             if not DRYRUN_MODE:
                 os.rmdir(path)
-            LOG.debug("Deleted directory \"%s\"" % (path))
+            LOG.audit("Deleted directory \"%s\"" % (path))
     except OSError:
         if not quiet:
             raise
@@ -418,7 +417,7 @@ def rmdir(path, quiet=True, run_as_root=False):
 
 def symlink(source, link, force=True, run_as_root=True):
     with Rooted(run_as_root):
-        LOG.debug("Creating symlink from %s => %s" % (link, source))
+        LOG.audit("Creating symlink from %s => %s" % (link, source))
         path = dirname(link)
         needed_pths = mkdirslist(path)
         if not DRYRUN_MODE:
@@ -534,30 +533,28 @@ def umount(dev_name, ignore_errors=True):
 
 
 def unlink(path, ignore_errors=True, run_as_root=False):
-    try:
-        LOG.debug("Unlinking (removing) %s" % (path))
-        if not DRYRUN_MODE:
+    LOG.audit("Unlinking (removing) %s" % (path))
+    if not DRYRUN_MODE:
+        try:
             with Rooted(run_as_root):
                 os.unlink(path)
-    except OSError:
-        if not ignore_errors:
-            raise
-        else:
-            pass
+        except OSError:
+            if not ignore_errors:
+                raise
+            else:
+                pass
 
 
 def move(src, dst):
-    if DRYRUN_MODE:
-        LOG.debug("Faking move from: %s => %s" % (src, dst))
-    else:
+    LOG.audit("Moving: %s => %s" % (src, dst))
+    if not DRYRUN_MODE:
         shutil.move(src, dst)
     return dst
 
 
 def chmod(fname, mode):
-    if DRYRUN_MODE:
-        LOG.debug("Faking chmod: %s to %s" % (fname, mode))
-    else:
+    LOG.audit("Applying chmod: %s to %s" % (fname, mode))
+    if not DRYRUN_MODE:
         os.chmod(fname, mode)
     return fname
 
@@ -576,9 +573,8 @@ def replace_in(fn, search, replace, run_as_root=False):
 
 def copy_replace_file(fsrc, fdst, linemap):
     files = mkdirslist(dirname(fdst))
-    if DRYRUN_MODE:
-        LOG.debug("Copying and replacing file: %s => %s" % (fsrc, fdst))
-    else:
+    LOG.debug("Copying and replacing file: %s => %s" % (fsrc, fdst))
+    if not DRYRUN_MODE:
         with open(fdst, 'w') as fh:
             for line in fileinput.input(fsrc):
                 for (k, v) in linemap.items():
@@ -642,6 +638,6 @@ def getegid():
 
 def sleep(winks):
     if DRYRUN_MODE:
-        LOG.debug("Not really sleeping for: %s seconds" % (winks))
+        LOG.audit("Not really sleeping for: %s seconds" % (winks))
     else:
         time.sleep(winks)

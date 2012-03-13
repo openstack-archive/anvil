@@ -44,6 +44,9 @@ WAIT_ON_TIME = settings.WAIT_ALIVE_SECS
 #config keys we warm up so u won't be prompted later
 WARMUP_PWS = ['rabbit']
 
+#partial of rabbit user prompt
+PW_USER_PROMPT = 'the rabbit user'
+
 
 class RabbitUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -68,12 +71,12 @@ class RabbitInstaller(comp.PkgInstallComponent):
 
     def warm_configs(self):
         for pw_key in WARMUP_PWS:
-            self.password_generator.get_password("passwords", pw_key, 'the rabbit user')
+            self.password_generator.get_password("passwords", pw_key, PW_USER_PROMPT)
 
     def _setup_pw(self):
         LOG.info("Setting up your rabbit-mq guest password.")
         self.runtime.restart()
-        passwd = self.password_generator.get_password('passwords', "rabbit", 'the rabbit user')
+        passwd = self.password_generator.get_password('passwords', "rabbit", PW_USER_PROMPT)
         cmd = PWD_CMD + [passwd]
         sh.execute(*cmd, run_as_root=True)
         LOG.info("Restarting so that your rabbit-mq guest password is reflected.")

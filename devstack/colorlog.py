@@ -29,6 +29,8 @@ COLOR_ATTRS = {
     logging.CRITICAL: ['bold', 'blink'],
 }
 
+UNKNOWN_COLOR = 'grey'
+
 
 class TermFormatter(logging.Formatter):
     def __init__(self, reg_fmt=None, date_format=None):
@@ -36,9 +38,8 @@ class TermFormatter(logging.Formatter):
 
     def format(self, record):
         lvl = record.levelno
-        color = COLOR_MAP.get(lvl)
-        if color:
-            record.levelname = colored(record.levelname, color)
+        color = COLOR_MAP.get(lvl, UNKNOWN_COLOR)
+        record.levelname = colored(record.levelname, color)
         attrs = COLOR_ATTRS.get(lvl)
         if attrs:
             record.msg = colored(record.msg, attrs=attrs)
