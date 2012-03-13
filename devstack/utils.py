@@ -90,7 +90,9 @@ def execute_template(*cmds, **kargs):
             stdin = joinlinesep(*stdin_full)
         exec_result = sh.execute(*cmd_to_run,
                                  run_as_root=cmdinfo.get('run_as_root', False),
-                                 process_input=stdin, **kargs)
+                                 process_input=stdin,
+                                 ignore_exit_code=cmdinfo.get('ignore_failure', False),
+                                 **kargs)
         cmd_results.append(exec_result)
     return cmd_results
 
