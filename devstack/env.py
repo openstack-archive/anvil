@@ -30,7 +30,7 @@ def set(key, value):
     #from http://docs.python.org/library/os.html
     #Calling putenv() directly does not change os.environ, so it's better to modify os.environ.
     if key is not None:
-        LOG.debug("Setting environment key [%s] to value [%s]" % (key, value))
+        LOG.audit("Setting environment key [%s] to value [%s]" % (key, value))
         os.environ[str(key)] = str(value)
 
 
