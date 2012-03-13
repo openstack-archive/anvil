@@ -122,7 +122,7 @@ def configure_logging(args):
     else:
         console_logger.setFormatter(logging.Formatter(console_format))
     root_logger.addHandler(console_logger)
-        
+
     # Adjust logging verbose level based on the command line switch.
     log_level = logging.INFO
     if args['verbosity'] >= 2:

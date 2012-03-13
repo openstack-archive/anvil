@@ -84,7 +84,6 @@ class StackConfigParser(IgnoreMissingConfigParser):
         self.db_dsns = dict()
 
     def _resolve_value(self, section, option, value_gotten):
-        key = make_id(section, option)
         if section == 'host' and option == 'ip':
             LOG.debug("Host ip from configuration/environment was empty, programatically attempting to determine it.")
             value_gotten = utils.get_host_ip()

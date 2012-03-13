@@ -255,7 +255,6 @@ def chown_r(path, uid, gid, run_as_root=True):
                     LOG.audit("Changing ownership of %s to %s:%s" % (joinpths(root, f), uid, gid))
 
 
-
 def _explode_path(path):
     parts = list()
     while path != ROOT_PATH:
@@ -308,7 +307,8 @@ def mkdirslist(path):
     dirs_possible.add(path)
     while True:
         (base, _) = os.path.split(path)
-        if not base: break
+        if not base:
+            break
         dirs_possible.add(base)
         path = base
         if path == ROOT_PATH:
@@ -403,8 +403,8 @@ def rmdir(path, quiet=True, run_as_root=False):
     if not isdir(path):
         return
     try:
-        with audit(run_as_root):
-            LOG.debug("Deleting directory \"%s\" with the cavet that we will fail if it's not empty." % (path))
+        with Rooted(run_as_root):
+            LOG.audit("Deleting directory \"%s\" with the cavet that we will fail if it's not empty." % (path))
             if not DRYRUN_MODE:
                 os.rmdir(path)
             LOG.audit("Deleted directory \"%s\"" % (path))
