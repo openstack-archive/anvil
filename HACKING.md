@@ -37,7 +37,7 @@ This will suffice until a more *official* documentation site can be made.
 
 ## Tests
 
-Currently we do not have any tests (WIP) but in the future these can be ran by the following command:
+To run our limited set of tests (WIP) use the following command:
 
     ./run_tests.sh 
     
@@ -46,9 +46,9 @@ Currently we do not have any tests (WIP) but in the future these can be ran by t
 * The ``OS_*`` environment variables should be the only ones used for all
   authentication to OpenStack clients as documented in the [CLI Auth] wiki page.
   
-## Documenation
+## Documentation
 
-Documenation should all be written in [markdown]. Although github does support other formats it seems better just to stabilize on one.
+Documentation should all be written in [markdown]. Although github does support other formats it seems better just to stabilize on one.
 
 [CLI Auth]: http://wiki.openstack.org/CLIAuth
 [pep8]: http://www.python.org/dev/peps/pep-0008/
