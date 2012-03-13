@@ -81,7 +81,7 @@ def execute(*cmd, **kwargs):
     cwd = kwargs.pop('cwd', None)
     env_overrides = kwargs.pop('env_overrides', None)
     close_stdin = kwargs.pop('close_stdin', False)
-    ignore_exit_code = False
+    ignore_exit_code = kwargs.pop('ignore_exit_code', False)
 
     if isinstance(check_exit_code, bool):
         ignore_exit_code = not check_exit_code
