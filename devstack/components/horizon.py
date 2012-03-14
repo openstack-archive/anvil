@@ -75,7 +75,7 @@ APACHE_FIXUPS = {
     'SOCKET_CONF': "/etc/httpd/conf.d/wsgi-socket-prefix.conf",
     'HTTPD_CONF': '/etc/httpd/conf/httpd.conf',
 }
-APACHE_FIXUPS_DISTROS = [settings.RHEL6]
+APACHE_FIXUPS_DISTROS = [settings.RHEL6, settings.FEDORA16]
 
 #for when quantum client is not need we need some fake files so python doesn't croak
 FAKE_QUANTUM_FILES = ['__init__.py', 'client.py']
