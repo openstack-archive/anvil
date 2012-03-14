@@ -11,7 +11,7 @@ Besides the master branch that tracks the OpenStack ``trunk`` branches will main
 OpenStack releases starting with Essex (stable/essex).
 
 The primary script in DEVSTACKpy is ``stack``, which performs the bulk of the
-work for DevStack's use cases (it acts as the main program entrypint).  
+work for DevStack's use cases (it acts as the main program entrypoint).  
 
 A number of additional scripts can be found in the ``tools`` directory that may
 be useful for other tasks related to DEVSTACKpy.
