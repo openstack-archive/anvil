@@ -50,7 +50,33 @@ To run our limited set of tests (WIP) use the following command:
 
 Documentation should all be written in [markdown]. Although github does support other formats it seems better just to stabilize on one.
 
+## Style Commandments
+
+1. Read http://www.python.org/dev/peps/pep-0008/
+1. Read http://www.python.org/dev/peps/pep-0008/ again
+1. Read on
+
+### Overall
+
+1. Put two newlines between top-level code (funcs, classes, etc)
+1. Put one newline between methods in classes and anywhere else
+1. Do not write "except:", use "except Exception:" at the very least
+1. Include your name with TODOs as in "#TODO(termie)"
+1. Do not name anything the same name as a built-in or reserved word
+
+### Imports
+
+1. Do not import objects, only modules
+1. Do not import more than one module per line
+1. Do not make relative imports
+1. Order your imports by the full module path
+1. Organize your imports in lexical order (TBD)
+
+
+
 [CLI Auth]: http://wiki.openstack.org/CLIAuth
 [pep8]: http://www.python.org/dev/peps/pep-0008/
 [pylint]: http://pypi.python.org/pypi/pylint
 [markdown]: http://daringfireball.net/projects/markdown/
+
+
