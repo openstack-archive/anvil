@@ -78,7 +78,7 @@ def configure_logging(verbosity_level=1, dry_run=False):
     root_logger.setLevel(logging.DEBUG)
 
     # Set our pretty logger
-    console_logger = logging.StreamHandler(stream=sys.stdout)
+    console_logger = logging.StreamHandler(sys.stdout)
     console_format = '%(levelname)s: @%(name)s : %(message)s'
     if sh.in_terminal():
         console_logger.setFormatter(colorlog.TermFormatter(console_format))
