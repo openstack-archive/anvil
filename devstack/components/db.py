@@ -120,18 +120,11 @@ class DBInstaller(comp.PkgInstallComponent):
             fc = utils.joinlinesep(*new_lines)
             with sh.Rooted(True):
                 sh.write_file('/etc/my.cnf', fc)
-        elif self.distro == settings.UBUNTU11 and dbtype == MYSQL:
-            LOG.info("Fixing up %s mysql configs." % (settings.UBUNTU11))
-            fc = sh.load_file('/etc/mysql/my.cnf')
-            lines = fc.splitlines()
-            new_lines = list()
-            for line in lines:
-                if line.startswith('bind-address'):
-                    line = 'bind-address = %s' % ('0.0.0.0')
-                new_lines.append(line)
-            fc = utils.joinlinesep(*new_lines)
-            with sh.Rooted(True):
-                sh.write_file('/etc/mysql/my.cnf', fc)
+        else:
+            raise NotImplementedError(
+                'Do not know how to configure db confs for %s' %
+                self.distro.name
+                )
 
     def _get_pkgs(self):
         return list(REQ_PKGS)
