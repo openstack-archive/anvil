@@ -40,59 +40,59 @@ from devstack.packaging import apt
 from devstack.packaging import yum
 
 # This determines what classes to use to install/uninstall/...
-ACTION_CLASSES = {
-    settings.INSTALL: {
-        settings.DB: db.DBInstaller,
-        settings.GLANCE: glance.GlanceInstaller,
-        settings.HORIZON: horizon.HorizonInstaller,
-        settings.KEYSTONE: keystone.KeystoneInstaller,
-        settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientInstaller,
-        settings.MELANGE: melange.MelangeInstaller,
-        settings.MELANGE_CLIENT: melange_client.MelangeClientInstaller,
-        settings.NOVA: nova.NovaInstaller,
-        settings.NOVA_CLIENT: nova_client.NovaClientInstaller,
-        settings.NOVNC: novnc.NoVNCInstaller,
-        settings.QUANTUM: quantum.QuantumInstaller,
-        settings.QUANTUM_CLIENT: quantum_client.QuantumClientInstaller,
-        settings.RABBIT: rabbit.RabbitInstaller,
-        settings.SWIFT: swift.SwiftInstaller,
-    },
-    settings.UNINSTALL: {
-        settings.DB: db.DBUninstaller,
-        settings.GLANCE: glance.GlanceUninstaller,
-        settings.HORIZON: horizon.HorizonUninstaller,
-        settings.KEYSTONE: keystone.KeystoneUninstaller,
-        settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientUninstaller,
-        settings.MELANGE: melange.MelangeUninstaller,
-        settings.MELANGE_CLIENT: melange_client.MelangeClientUninstaller,
-        settings.NOVA: nova.NovaUninstaller,
-        settings.NOVA_CLIENT: nova_client.NovaClientUninstaller,
-        settings.NOVNC: novnc.NoVNCUninstaller,
-        settings.QUANTUM: quantum.QuantumUninstaller,
-        settings.QUANTUM_CLIENT: quantum_client.QuantumClientUninstaller,
-        settings.RABBIT: rabbit.RabbitUninstaller,
-        settings.SWIFT: swift.SwiftUninstaller,
-    },
-    settings.START: {
-        settings.DB: db.DBRuntime,
-        settings.GLANCE: glance.GlanceRuntime,
-        settings.HORIZON: horizon.HorizonRuntime,
-        settings.KEYSTONE: keystone.KeystoneRuntime,
-        settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientRuntime,
-        settings.MELANGE: melange.MelangeRuntime,
-        settings.MELANGE_CLIENT: melange_client.MelangeClientRuntime,
-        settings.NOVA: nova.NovaRuntime,
-        settings.NOVA_CLIENT: nova_client.NovaClientRuntime,
-        settings.NOVNC: novnc.NoVNCRuntime,
-        settings.QUANTUM: quantum.QuantumRuntime,
-        settings.QUANTUM_CLIENT: quantum_client.QuantumClientRuntime,
-        settings.RABBIT: rabbit.RabbitRuntime,
-        settings.SWIFT: swift.SwiftRuntime,
-    },
-}
+# ACTION_CLASSES = {
+#     settings.INSTALL: {
+#         settings.DB: db.DBInstaller,
+#         settings.GLANCE: glance.GlanceInstaller,
+#         settings.HORIZON: horizon.HorizonInstaller,
+#         settings.KEYSTONE: keystone.KeystoneInstaller,
+#         settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientInstaller,
+#         settings.MELANGE: melange.MelangeInstaller,
+#         settings.MELANGE_CLIENT: melange_client.MelangeClientInstaller,
+#         settings.NOVA: nova.NovaInstaller,
+#         settings.NOVA_CLIENT: nova_client.NovaClientInstaller,
+#         settings.NOVNC: novnc.NoVNCInstaller,
+#         settings.QUANTUM: quantum.QuantumInstaller,
+#         settings.QUANTUM_CLIENT: quantum_client.QuantumClientInstaller,
+#         settings.RABBIT: rabbit.RabbitInstaller,
+#         settings.SWIFT: swift.SwiftInstaller,
+#     },
+#     settings.UNINSTALL: {
+#         settings.DB: db.DBUninstaller,
+#         settings.GLANCE: glance.GlanceUninstaller,
+#         settings.HORIZON: horizon.HorizonUninstaller,
+#         settings.KEYSTONE: keystone.KeystoneUninstaller,
+#         settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientUninstaller,
+#         settings.MELANGE: melange.MelangeUninstaller,
+#         settings.MELANGE_CLIENT: melange_client.MelangeClientUninstaller,
+#         settings.NOVA: nova.NovaUninstaller,
+#         settings.NOVA_CLIENT: nova_client.NovaClientUninstaller,
+#         settings.NOVNC: novnc.NoVNCUninstaller,
+#         settings.QUANTUM: quantum.QuantumUninstaller,
+#         settings.QUANTUM_CLIENT: quantum_client.QuantumClientUninstaller,
+#         settings.RABBIT: rabbit.RabbitUninstaller,
+#         settings.SWIFT: swift.SwiftUninstaller,
+#     },
+#     settings.START: {
+#         settings.DB: db.DBRuntime,
+#         settings.GLANCE: glance.GlanceRuntime,
+#         settings.HORIZON: horizon.HorizonRuntime,
+#         settings.KEYSTONE: keystone.KeystoneRuntime,
+#         settings.KEYSTONE_CLIENT: keystone_client.KeyStoneClientRuntime,
+#         settings.MELANGE: melange.MelangeRuntime,
+#         settings.MELANGE_CLIENT: melange_client.MelangeClientRuntime,
+#         settings.NOVA: nova.NovaRuntime,
+#         settings.NOVA_CLIENT: nova_client.NovaClientRuntime,
+#         settings.NOVNC: novnc.NoVNCRuntime,
+#         settings.QUANTUM: quantum.QuantumRuntime,
+#         settings.QUANTUM_CLIENT: quantum_client.QuantumClientRuntime,
+#         settings.RABBIT: rabbit.RabbitRuntime,
+#         settings.SWIFT: swift.SwiftRuntime,
+#     },
+# }
 
-# Just a copy
-ACTION_CLASSES[settings.STOP] = ACTION_CLASSES[settings.START]
+# # Just a copy
+# ACTION_CLASSES[settings.STOP] = ACTION_CLASSES[settings.START]
 
 # Used only for figuring out deps
 _FAKE_ROOT_DIR = tempfile.gettempdir()
@@ -137,14 +137,14 @@ def format_secs_taken(secs):
     return output
 
 
-def get_action_cls(action_name, component_name, distro=None):
-    action_cls_map = ACTION_CLASSES.get(action_name)
-    if not action_cls_map:
-        raise excp.StackException("Action %s has no component to class mapping" % (action_name))
-    cls = action_cls_map.get(component_name)
-    if not cls:
-        raise excp.StackException("Action %s has no class entry for component %s" % (action_name, component_name))
-    return cls
+# def get_action_cls(action_name, component_name, distro=None):
+#     action_cls_map = ACTION_CLASSES.get(action_name)
+#     if not action_cls_map:
+#         raise excp.StackException("Action %s has no component to class mapping" % (action_name))
+#     cls = action_cls_map.get(component_name)
+#     if not cls:
+#         raise excp.StackException("Action %s has no class entry for component %s" % (action_name, component_name))
+#     return cls
 
 
 def get_packager(distro, keep_packages):
@@ -163,28 +163,28 @@ def get_config(cfg_fn=None):
     return config_instance
 
 
-def get_components_deps(runner,
-                        action_name,
-                        base_components,
-                        root_dir=None,
-                        distro=None,
-                        ):
-    all_components = dict()
-    active_names = list(base_components)
-    root_dir = root_dir or _FAKE_ROOT_DIR
-    while len(active_names):
-        component = active_names.pop()
-        component_opts = base_components.get(component) or list()
-        cls = get_action_cls(action_name, component, distro)
-        instance = cls(instances=list(),
-                       runner=runner,
-                       root_dir=root_dir,
-                       component_options=component_opts,
-                       keep_old=False
-                       )
-        deps = instance.get_dependencies() or set()
-        all_components[component] = set(deps)
-        for d in deps:
-            if d not in all_components and d not in active_names:
-                active_names.append(d)
-    return all_components
+# def get_components_deps(runner,
+#                         action_name,
+#                         base_components,
+#                         root_dir=None,
+#                         distro=None,
+#                         ):
+#     all_components = dict()
+#     active_names = list(base_components)
+#     root_dir = root_dir or _FAKE_ROOT_DIR
+#     while len(active_names):
+#         component = active_names.pop()
+#         component_opts = base_components.get(component) or list()
+#         cls = get_action_cls(action_name, component, distro)
+#         instance = cls(instances=list(),
+#                        runner=runner,
+#                        root_dir=root_dir,
+#                        component_options=component_opts,
+#                        keep_old=False
+#                        )
+#         deps = instance.get_dependencies() or set()
+#         all_components[component] = set(deps)
+#         for d in deps:
+#             if d not in all_components and d not in active_names:
+#                 active_names.append(d)
+#     return all_components
