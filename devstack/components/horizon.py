@@ -59,7 +59,7 @@ BLACKHOLE_DIR = '.blackhole'
 #TODO: maybe this should be a subclass that handles these differences
 APACHE_SVC_NAME = {
     settings.RHEL6: 'httpd',
-    settings.FEDORA16: 'httpd', 
+    settings.FEDORA16: 'httpd',
     settings.UBUNTU11: 'apache2',
 }
 APACHE_RESTART_CMD = ['service', '%SERVICE%', 'restart']
