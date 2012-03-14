@@ -102,7 +102,7 @@ class AptPackager(pack.Packager):
 
     def _pkg_remove_special(self, name, pkginfo):
         #TODO: maybe this should be a subclass that handles these differences
-        if name == 'rabbitmq-server' and self.distro == settings.UBUNTU11:
+        if name == 'rabbitmq-server' and self.distro.name == settings.UBUNTU11:
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
             LOG.info("Handling special remove of %s." % (name))
@@ -119,7 +119,7 @@ class AptPackager(pack.Packager):
 
     def _pkg_install_special(self, name, pkginfo):
         #TODO: maybe this should be a subclass that handles these differences
-        if name == 'rabbitmq-server' and self.distro == settings.UBUNTU11:
+        if name == 'rabbitmq-server' and self.distro.name == settings.UBUNTU11:
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
             LOG.info("Handling special install of %s." % (name))

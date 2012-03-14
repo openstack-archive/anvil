@@ -82,8 +82,7 @@ class ComponentBase(object):
         self.kargs = kwds
 
     def get_dependencies(self):
-        deps = settings.COMPONENT_DEPENDENCIES.get(self.component_name) or list()
-        return list(deps)
+        return self.runner.distro.components[self.component_name].get('dependencies', [])[:]
 
     def verify(self):
         pass
@@ -157,10 +156,12 @@ class PkgInstallComponent(ComponentBase):
         pkgs = dict()
         for fn in short:
             full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
-            pkgs = utils.extract_pkg_list([full_name], self.distro, pkgs)
+            pkgs = utils.extract_pkg_list([full_name], self.distro.name, pkgs)
         return pkgs
 
     def install(self):
+        LOG.debug('Preparing to install packages for %s',
+                  self.component_name)
         pkgs = self._get_pkgs_expanded()
         if pkgs:
             pkgnames = sorted(pkgs.keys())
@@ -170,6 +171,9 @@ class PkgInstallComponent(ComponentBase):
                 self.tracewriter.package_installed(name, pkgs.get(name))
             #now actually install
             self.packager.install_batch(pkgs)
+        else:
+            LOG.info('No packages to install for %s',
+                     self.component_name)
         return self.tracedir
 
     def pre_install(self):
@@ -270,7 +274,7 @@ class PythonInstallComponent(PkgInstallComponent):
         pips = dict()
         for fn in shorts:
             full_name = sh.joinpths(settings.STACK_PIP_DIR, fn)
-            pips = utils.extract_pip_list([full_name], self.distro, pips)
+            pips = utils.extract_pip_list([full_name], self.distro.name, pips)
         return pips
 
     def _install_pips(self):

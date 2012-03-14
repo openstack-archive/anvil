@@ -22,6 +22,7 @@ import traceback
 
 from devstack import cfg_helpers
 from devstack import date
+from devstack.distro import Distro
 from devstack import env
 from devstack import env_rc
 from devstack import log as logging
@@ -102,12 +103,7 @@ def load_rc_files():
 
 
 def run(args):
-
-    (distro, platform) = utils.determine_distro()
-    if distro is None:
-        print("Unsupported platform " + utils.color_text(platform, "red") + "!")
-        return False
-
+    distro = Distro.get_current()
     action = args.pop("action").strip().lower()
     if not (action in settings.ACTIONS):
         print(utils.color_text("No valid action specified!", "red"))
@@ -138,9 +134,11 @@ def run(args):
     # Stash the dryrun value (if any) into the global configuration
     sh.set_dryrun(args['dryrun'])
 
-    config = common.get_config()
-    pw_gen = passwords.PasswordGenerator(config, args['prompt_for_passwords'])
-    pkg_manager = common.get_packager(distro, args['keep_old'])
+    config_kv_cache = dict()
+    config = common.get_config(kv_cache=config_kv_cache)
+    pw_gen = passwords.PasswordGenerator(config_kv_cache, config, args['prompt_for_passwords'])
+    pkg_factory = distro.get_packager_factory()
+    pkg_manager = pkg_factory(distro, args['keep_old'])
 
     components = utils.parse_components(args.pop("components"))
     runner = actions.ActionRunner(distro, action, rootdir, config, pw_gen,

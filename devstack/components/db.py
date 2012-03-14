@@ -29,52 +29,15 @@ LOG = logging.getLogger("devstack.components.db")
 MYSQL = 'mysql'
 START_WAIT_TIME = settings.WAIT_ALIVE_SECS
 
-#TODO maybe we should handle this differently in the future, blah
-#ie in a special set of classes (make this class abstract)...
-DB_ACTIONS = {
-    MYSQL: {
-        # Of course these aren't distro independent...
-        'runtime': {
-            settings.UBUNTU11: {
-                'start': ["service", "mysql", 'start'],
-                'stop': ["service", 'mysql', "stop"],
-                'status': ["service", 'mysql', "status"],
-                'restart': ["service", 'mysql', "restart"],
-            },
-            settings.RHEL6: {
-                'start': ["service", "mysqld", 'start'],
-                'stop': ["service", 'mysqld', "stop"],
-                'status': ["service", 'mysqld', "status"],
-                'restart': ["service", 'mysqld', "restart"],
-            },
-            settings.FEDORA16: {
-                'start': ["service", "mysqld", 'start'],
-                'stop': ["service", 'mysqld', "stop"],
-                'status': ["service", 'mysqld', "status"],
-                'restart': ["service", 'mysqld', "restart"],
-            },
-        },
-        #modification commands
-        #NOTE: we aren't stopping any sql injection...
-        'set_pwd': ['mysql', '--user=%USER%', '--password=%OLD_PASSWORD%', '-e',
-                    ("\"USE mysql; UPDATE user SET "
-                    " password=PASSWORD('%NEW_PASSWORD%') WHERE User='%USER%'; FLUSH PRIVILEGES;\"")],
-        'create_db': ['mysql', '--user=%USER%', '--password=%PASSWORD%',
-                      '-e', 'CREATE DATABASE %DB%;'],
-        'drop_db': ['mysql', '--user=%USER%', '--password=%PASSWORD%',
-                    '-e', 'DROP DATABASE IF EXISTS %DB%;'],
-        'grant_all': ["mysql", "--user=%USER%", "--password=%PASSWORD%", '-e',
-                    ("\"GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' "
-                    " IDENTIFIED BY '%PASSWORD%'; FLUSH PRIVILEGES;\"")],
-    },
-}
-
-#need to reset pw to blank since this distributions don't seem to always reset it when u uninstall the db
+#need to reset pw to blank since this distributions don't seem to
+#always reset it when u uninstall the db
 RESET_BASE_PW = ''
 
 #links about how to reset if it fails
-SQL_RESET_PW_LINKS = ['https://help.ubuntu.com/community/MysqlPasswordReset',
-                      'http://dev.mysql.com/doc/refman/5.0/en/resetting-permissions.html']
+SQL_RESET_PW_LINKS = [
+    'https://help.ubuntu.com/community/MysqlPasswordReset',
+    'http://dev.mysql.com/doc/refman/5.0/en/resetting-permissions.html',
+    ]
 
 #used as a generic error message
 BASE_ERROR = 'Currently we do not know how to [%s] for database type [%s]'
@@ -97,7 +60,7 @@ class DBUninstaller(comp.PkgUninstallComponent):
 
     def pre_uninstall(self):
         dbtype = self.cfg.get("db", "type")
-        dbactions = DB_ACTIONS.get(dbtype)
+        dbactions = self.distro.commands[dbtype]
         try:
             if dbactions:
                 LOG.info(("Attempting to reset your db password to \"%s\" so"
@@ -143,8 +106,9 @@ class DBInstaller(comp.PkgInstallComponent):
 
     def _configure_db_confs(self):
         dbtype = self.cfg.get("db", "type")
-        #TODO: maybe this should be a subclass that handles these differences
-        if self.distro == settings.RHEL6 and dbtype == MYSQL:
+        #TODO: use separate classes in devstack.distros.$distro.db and
+        # specify them in the yaml file
+        if self.distro.name == settings.RHEL6 and dbtype == MYSQL:
             LOG.info("Fixing up %s mysql configs." % (settings.RHEL6))
             fc = sh.load_file('/etc/my.cnf')
             lines = fc.splitlines()
@@ -180,7 +144,7 @@ class DBInstaller(comp.PkgInstallComponent):
 
         #extra actions to ensure we are granted access
         dbtype = self.cfg.get("db", "type")
-        dbactions = DB_ACTIONS.get(dbtype)
+        dbactions = self.distro.commands[dbtype]
 
         #set your password
         try:
@@ -226,11 +190,11 @@ class DBRuntime(comp.EmptyRuntime):
 
     def _get_run_actions(self, act, exception_cls):
         dbtype = self.cfg.get("db", "type")
-        type_actions = DB_ACTIONS.get(dbtype)
+        type_actions = self.distro.commands[dbtype]
         if type_actions is None:
             msg = BASE_ERROR % (act, dbtype)
             raise NotImplementedError(msg)
-        distro_options = type_actions.get('runtime').get(self.distro)
+        distro_options = self.distro.commands[dbtype]
         if distro_options is None:
             msg = BASE_ERROR % (act, dbtype)
             raise NotImplementedError(msg)
@@ -286,9 +250,9 @@ class DBRuntime(comp.EmptyRuntime):
             return comp.STATUS_UNKNOWN
 
 
-def drop_db(cfg, pw_gen, dbname):
+def drop_db(cfg, pw_gen, distro, dbname):
     dbtype = cfg.get("db", "type")
-    dbactions = DB_ACTIONS.get(dbtype)
+    dbactions = distro.commands[dbtype]
     if dbactions and dbactions.get('drop_db'):
         dropcmd = dbactions.get('drop_db')
         params = dict()
@@ -306,9 +270,9 @@ def drop_db(cfg, pw_gen, dbname):
         raise NotImplementedError(msg)
 
 
-def create_db(cfg, pw_gen, dbname):
+def create_db(cfg, pw_gen, distro, dbname):
     dbtype = cfg.get("db", "type")
-    dbactions = DB_ACTIONS.get(dbtype)
+    dbactions = distro.commands[dbtype]
     if dbactions and dbactions.get('create_db'):
         createcmd = dbactions.get('create_db')
         params = dict()

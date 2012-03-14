@@ -113,6 +113,7 @@ class QuantumInstaller(comp.PkgInstallComponent):
     def get_dependencies(self):
         common_deps = comp.PkgInstallComponent.get_dependencies(self)
         add_deps = list()
+        # FIXME: This should come from a persona.
         if self.q_vswitch_agent:
             #just need the client
             add_deps.append(settings.QUANTUM_CLIENT)
@@ -200,8 +201,8 @@ class QuantumInstaller(comp.PkgInstallComponent):
 
     def _setup_db(self):
         LOG.info("Fixing up database named %s.", DB_NAME)
-        db.drop_db(self.cfg, self.pw_gen, DB_NAME)
-        db.create_db(self.cfg, self.pw_gen, DB_NAME)
+        db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
+        db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
 
     def _get_source_config(self, config_fn):
         if config_fn == PLUGIN_CONF:

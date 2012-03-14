@@ -173,18 +173,16 @@ class ActionRunner(object):
         adjusted_components = dict(components)
         if self.ignore_deps:
             return (adjusted_components, list(components.keys()))
-        all_components = common.get_components_deps(
-            runner=self,
-            action_name=self.action,
-            base_components=components,
-            root_dir=self.directory,
-            distro=self.distro,
+        all_components = self.distro.resolve_component_dependencies(
+            list(components.keys())
             )
         component_diff = set(all_components.keys()).difference(components.keys())
         if component_diff:
-            LOG.info("Having to activate dependent components: [%s]" % (", ".join(sorted(component_diff))))
+            LOG.info("Activating dependencies: [%s]",
+                     ", ".join(sorted(component_diff))
+                     )
             for new_component in component_diff:
-                adjusted_components[new_component] = list()
+                adjusted_components[new_component] = []
         return (adjusted_components, utils.get_components_order(all_components))
 
     def _inject_references(self, components):
@@ -198,10 +196,7 @@ class ActionRunner(object):
     def _instanciate_components(self, components):
         all_instances = dict()
         for component in components.keys():
-            cls = common.get_action_cls(self.action, component, self.distro)
-            # FIXME: Instead of passing some of these options,
-            # pass a reference to the runner itself and let
-            # the component keep a weakref to it.
+            cls = self.distro.get_component_action_class(component, self.action)
             instance = cls(instances=all_instances,
                            runner=self,
                            root_dir=self.directory,
@@ -223,10 +218,14 @@ class ActionRunner(object):
                 preq_components[c] = components[c]
         if preq_components:
             LOG.info("Having to activate prerequisite action [%s] for %s components." % (preq_action, len(preq_components)))
-            preq_runner = ActionRunner(self.distro, preq_action,
-                                    self.directory, self.cfg, self.pw_gen,
-                                    self.pkg_manager,
-                                    components=preq_components, **self.kargs)
+            preq_runner = ActionRunner(distro=self.distro,
+                                       action=preq_action,
+                                       directory=self.directory,
+                                       config=self.cfg,
+                                       pw_gen=self.pw_gen,
+                                       pkg_manager=self.pkg_manager,
+                                       components=preq_components,
+                                       **self.kargs)
             preq_runner.run()
 
     def _pre_run(self, instances, component_order):

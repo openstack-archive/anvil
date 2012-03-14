@@ -24,17 +24,10 @@ LOG = logging.getLogger("devstack.pip")
 PIP_UNINSTALL_CMD_OPTS = ['-y', '-q']
 PIP_INSTALL_CMD_OPTS = ['-q']
 
-#the pip command is named different :-(
-PIP_CMD_NAMES = {
-    settings.RHEL6: 'pip-python',
-    settings.FEDORA16: 'pip-python',
-    settings.UBUNTU11: 'pip',
-}
-
 
 def install(pips, distro):
     pipnames = sorted(pips.keys())
-    root_cmd = PIP_CMD_NAMES[distro]
+    root_cmd = distro.commands.get('pip', 'pip')
     LOG.info("Installing python packages (%s) using command (%s)" % (", ".join(pipnames), root_cmd))
     for name in pipnames:
         pipfull = name
@@ -56,7 +49,7 @@ def install(pips, distro):
 
 def uninstall(pips, distro, skip_errors=True):
     pipnames = sorted(pips.keys())
-    root_cmd = PIP_CMD_NAMES[distro]
+    root_cmd = distro.commands.get('pip', 'pip')
     LOG.info("Uninstalling python packages (%s) using command (%s)" % (", ".join(pipnames), root_cmd))
     for name in pipnames:
         try:

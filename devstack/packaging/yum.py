@@ -62,7 +62,7 @@ class YumPackager(pack.Packager):
 
     def _remove_special(self, pkgname, pkginfo):
         #TODO: maybe this should be a subclass that handles these differences
-        if self.distro == settings.RHEL6 and pkgname in RHEL_RELINKS:
+        if self.distro.name == settings.RHEL6 and pkgname in RHEL_RELINKS:
             #we don't return true here so that
             #the normal package cleanup happens
             sh.unlink(RHEL_RELINKS.get(pkgname).get("tgt"))
@@ -84,7 +84,7 @@ class YumPackager(pack.Packager):
 
     #TODO: maybe this should be a subclass that handles these differences
     def _install_special(self, pkgname, pkginfo):
-        if self.distro == settings.RHEL6 and pkgname in RHEL_RELINKS:
+        if self.distro.name == settings.RHEL6 and pkgname in RHEL_RELINKS:
             return self._install_rhel_relinks(pkgname, pkginfo)
         return False
 

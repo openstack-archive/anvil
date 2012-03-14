@@ -293,7 +293,7 @@ class NovaUninstaller(comp.PythonUninstallComponent):
         if virt_driver == 'libvirt':
             inst_prefix = self.cfg.getdefaulted('nova', 'instance_name_prefix', DEF_INSTANCE_PREFIX)
             libvirt_type = _canon_libvirt_type(self.cfg.get('nova', 'libvirt_type'))
-            virsh.clear_libvirt_domains(self.distro, libvirt_type, inst_prefix)
+            virsh.clear_libvirt_domains(self.distro.name, libvirt_type, inst_prefix)
 
 
 class NovaInstaller(comp.PythonInstallComponent):
@@ -383,8 +383,8 @@ class NovaInstaller(comp.PythonInstallComponent):
 
     def _setup_db(self):
         LOG.info("Fixing up database named %s.", DB_NAME)
-        db.drop_db(self.cfg, self.pw_gen, DB_NAME)
-        db.create_db(self.cfg, self.pw_gen, DB_NAME)
+        db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
+        db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
 
     def _generate_nova_conf(self):
         LOG.info("Generating dynamic content for nova configuration (%s)." % (API_CONF))
@@ -427,7 +427,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         configs_made += 1
         # TODO: maybe this should be a subclass that handles these differences
         driver_canon = _canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
-        if (self.distro in POLICY_DISTROS) and driver_canon == 'libvirt':
+        if (self.distro.name in POLICY_DISTROS) and driver_canon == 'libvirt':
             dirs_made = list()
             with sh.Rooted(True):
                 dirs_made = sh.mkdirslist(sh.dirname(LIBVIRT_POLICY_FN))
@@ -467,6 +467,7 @@ class NovaRuntime(comp.PythonRuntime):
 
     def get_dependencies(self):
         deps = comp.PythonRuntime.get_dependencies(self)
+        # FIXME: This should come from a persona.
         if utils.service_enabled(settings.QUANTUM, self.instances, False):
             deps.append(settings.QUANTUM)
         return deps
@@ -497,11 +498,11 @@ class NovaRuntime(comp.PythonRuntime):
         if virt_driver == 'libvirt':
             virt_type = _canon_libvirt_type(self.cfg.get('nova', 'libvirt_type'))
             LOG.info("Checking that your selected libvirt virtualization type [%s] is working and running." % (virt_type))
-            if not virsh.virt_ok(virt_type, self.distro):
+            if not virsh.virt_ok(virt_type, self.distro.name):
                 msg = ("Libvirt type %s for distro %s does not seem to be active or configured correctly, "
-                       "perhaps you should be using %s instead." % (virt_type, self.distro, DEF_VIRT_TYPE))
+                       "perhaps you should be using %s instead." % (virt_type, self.distro.name, DEF_VIRT_TYPE))
                 raise exceptions.StartException(msg)
-            virsh.restart(self.distro)
+            virsh.restart(self.distro.name)
 
     def _get_param_map(self, app_name):
         params = comp.PythonRuntime._get_param_map(self, app_name)
@@ -553,7 +554,7 @@ class NovaVolumeConfigurator(object):
         # logical volumes
         self._process_lvs(mp)
         # Finish off by restarting tgt, and ignore any errors
-        utils.execute_template(*RESTART_TGT_CMD[self.distro], check_exit_code=False)
+        utils.execute_template(*RESTART_TGT_CMD[self.distro.name], check_exit_code=False)
 
     def _process_lvs(self, mp):
         LOG.info("Attempting to setup logical volumes for nova volume management.")
