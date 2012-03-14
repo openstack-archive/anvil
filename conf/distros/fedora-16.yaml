@@ -1,0 +1,502 @@
+# Fedora 16
+
+name: fedora-16
+distro_pattern: fedora-16
+
+packager_name: devstack.packaging.yum:YumPackager
+
+commands:
+
+  pip: python-pip
+
+  apache:
+    restart: ["service", "httpd", "restart"]
+    start: ["service", "httpd", "start"]
+    stop: ["service", "httpd", "stop"]
+    status: ["service", "httpd", "status"]
+    settings:
+       #ensure runs after wsgi.conf (naming wise)
+       conf-link-target: /etc/httpd/conf.d/wsgi-horizon-000-default.conf
+
+  mysql:
+    start: ["service", "mysql", 'start']
+    stop: ["service", 'mysql', "stop"]
+    status: ["service", 'mysql', "status"]
+    restart: ["service", 'mysql', "restart"]
+    #NOTE: we aren't stopping any sql injection...
+    set_pwd: ['mysql', '--user=%USER%', '--password=%OLD_PASSWORD%', '-e', 
+              "\"USE mysql; UPDATE user SET password=PASSWORD('%NEW_PASSWORD%') WHERE User='%USER%'; FLUSH PRIVILEGES;\""]
+    create_db: ['mysql', '--user=%USER%', '--password=%PASSWORD%', '-e', 'CREATE DATABASE %DB%;']
+    drop_db: ['mysql', '--user=%USER%', '--password=%PASSWORD%', '-e', 'DROP DATABASE IF EXISTS %DB%;']
+    grant_all: ["mysql", "--user=%USER%", "--password=%PASSWORD%", '-e', 
+                "\"GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' IDENTIFIED BY '%PASSWORD%'; FLUSH PRIVILEGES;\""]
+
+components:
+
+  db:
+    packages:
+      - name: mysql
+        removable: True
+        version: 5.5*
+      - name: mysql-server
+        removable: True
+        version: 5.5*
+
+  general:
+    packages:
+      - name: curl
+        removable: False
+        version: 7.21.7*
+      - name: euca2ools
+        removable: False
+        version: 1.3.1*
+      - name: gawk
+        removable: False
+        version: 4.0*
+      - name: git
+        removable: False
+        version: 1.7*
+      - name: iputils
+        removable: False
+        version: 20101006*
+      - name: libxml2-devel
+        removable: False
+        version: 2.7*
+      - name: libxslt-devel
+        removable: False
+        version: 1.1.26*
+      - name: lsof
+        removable: False
+        version: 4.84*
+      - name: mlocate
+        removable: False
+        version: 0.24*
+      - name: openssh-server
+        removable: False
+        version: 5.8*
+      - name: psmisc
+        removable: False
+        version: 22.13*
+      - name: pylint
+        removable: False
+        version: 0.24*
+      - name: python
+        removable: False
+        version: 2.7*
+      - name: python-coverage
+        removable: False
+        version: 3.5*
+      - name: python-devel
+        removable: False
+        version: 2.7*
+      - name: python-distutils-extra
+        removable: False
+        version: 2.29*
+      - name: python-mox
+        removable: False
+        version: 0.5.3*
+      - name: python-nose
+        removable: False
+        version: 1.1*
+      - name: python-pep8
+        removable: False
+        version: 0.6*
+      - name: python-pip
+        removable: False
+        version: 0.8*
+      - name: python-setuptools
+        removable: False
+        version: 0.6.24*
+      - name: python-unittest2
+        removable: False
+        version: 0.5.1*
+      - name: python-virtualenv
+        removable: False
+        version: 1.7*
+      - name: screen
+        removable: False
+        version: 4.1.0*
+      - name: sudo
+        removable: False
+        version: 1.8.3*
+      - name: tcpdump
+        removable: False
+        version: 4.1*
+      - name: unzip
+        removable: False
+        version: 6.0*
+      - name: wget
+        removable: False
+        version: 1.12*
+
+  glance:
+    packages:
+      - name: MySQL-python
+        removable: True
+        version: 1.2*
+      - name: python-argparse
+        removable: True
+        version: 1.1*
+      - name: python-dateutil
+        removable: True
+        version: 1.5*
+      - name: python-eventlet
+        removable: True
+        version: 0.9*
+      - name: python-greenlet
+        removable: True
+        version: 0.3.1*
+      - name: python-httplib2
+        removable: True
+        version: 0.6*
+      - name: python-prettytable
+        removable: True
+        version: 0.5*
+      - name: python-routes
+        removable: True
+        version: 1.12*
+      - name: pyxattr
+        removable: True
+        version: 0.5*
+
+  horizon:
+    packages:
+      - name: Django
+        removable: True
+        version: 1.3*
+      - name: django-registration
+        removable: True
+        version: 0.7*
+      - name: httpd
+        removable: True
+        version: 2.2*
+      - name: mod_wsgi
+        removable: True
+        version: 3.3*
+      - name: python-cherrypy
+        removable: True
+        version: 3.2*
+      - name: python-cloudfiles
+        removable: True
+        version: 1.7.9*
+      - name: python-dateutil
+        removable: True
+        version: 1.5*
+      - name: python-eventlet
+        removable: True
+        version: 0.9*
+      - name: python-kombu
+        removable: True
+        version: 1.1*
+      - name: python-migrate
+        removable: True
+        version: 0.7*
+      - name: python-paste
+        removable: True
+        version: 1.7.5*
+      - name: python-paste-deploy
+        removable: True
+        version: 1.5.0*
+      - name: python-routes
+        removable: True
+        version: 1.12*
+      - name: python-sphinx
+        removable: True
+        version: 1.0.7*
+      - name: python-sqlalchemy
+        removable: True
+        version: 0.7*
+      - name: python-webob
+        removable: True
+        version: 1.0*
+      - name: pyxattr
+        removable: True
+        version: 0.5*
+
+  keystone-client:
+    packages:
+      - name: python-argparse
+        removable: True
+        version: 1.1*
+      - name: python-prettytable
+        removable: True
+        version: 0.5*
+
+  keystone:
+    packages:
+      - name: MySQL-python
+        removable: True
+        version: 1.2*
+      - name: cyrus-sasl-lib
+        removable: False
+        version: 2.1*
+      - name: openldap
+        removable: False
+        version: 2.4*
+      - name: python-argparse
+        removable: True
+        version: 1.1*
+      - name: python-eventlet
+        removable: True
+        version: 0.9*
+      - name: python-greenlet
+        removable: True
+        version: 0.3.1*
+      - name: python-lxml
+        removable: True
+        version: 2.3*
+      - name: python-migrate
+        removable: True
+        version: 0.7*
+      - name: python-passlib
+        removable: True
+        version: 1.5*
+      - name: python-paste
+        removable: True
+        version: 1.7.5*
+      - name: python-paste-deploy
+        removable: True
+        version: 1.5*
+      - name: python-paste-script
+        removable: True
+        version: 1.7*
+      - name: python-prettytable
+        removable: True
+        version: 0.5*
+      - name: python-routes
+        removable: True
+        version: 1.12*
+      - name: python-sqlalchemy
+        removable: True
+        version: 0.7*
+      - name: python-sqlite2
+        removable: True
+        version: 2.3*
+      - name: python-webob
+        removable: True
+        version: 1.0*
+      - name: sqlite
+        removable: False
+        version: 3.7*
+
+  melange:
+    packages:
+
+  n-api:
+    packages:
+      - name: python-dateutil
+        removable: False
+        version: 1.5*
+
+  n-cpu:
+    packages:
+      - name: iscsi-initiator-utils
+        removable: True
+        version: 6.2*
+      - name: libvirt
+        removable: True
+        version: 0.9.6*
+      - name: libvirt-client
+        removable: True
+        version: 0.9.6*
+      - name: libvirt-python
+        removable: True
+        version: 0.9.6*
+      - name: lvm2
+        removable: True
+        version: 2.02*
+      - name: qemu-img
+        removable: True
+        version: 0.15*
+      - name: qemu-system-x86
+        removable: True
+        version: 0.15*
+
+  n-vnc:
+    packages:
+      - name: numpy
+        removable: True
+        version: 1.6*
+
+  n-vol:
+    packages:
+      - name: iscsi-initiator-utils
+        removable: True
+        version: 6.2*
+      - name: lvm2
+        removable: True
+        version: 2.02*
+      - name: scsi-target-utils
+        removable: True
+        version: 1.0*
+
+  nova-client:
+    packages:
+      - name: python-argparse
+        removable: True
+        version: 1.1*
+      - name: python-prettytable
+        removable: True
+        version: 0.5*
+
+  nova:
+    packages:
+      - name: MySQL-python
+        removable: True
+        version: 1.2*
+      - name: dnsmasq
+        removable: False
+        version: 2.58*
+      - name: ebtables
+        removable: False
+        version: 2.0*
+      - name: iptables
+        removable: False
+        version: 1.4*
+      - name: iputils
+        removable: False
+        version: 20101006*
+      - name: kpartx
+        removable: False
+        version: 0.4*
+      - name: libxml2-python
+        removable: False
+        version: 2.7*
+      - name: parted
+        removable: False
+        version: 3.0*
+      - name: python-boto
+        removable: True
+        version: 2.0*
+      - name: python-carrot
+        removable: True
+        version: 0.10*
+      - name: python-cheetah
+        removable: True
+        version: 2.4*
+      - name: python-crypto
+        removable: False
+        version: 2.3*
+      - name: python-eventlet
+        removable: True
+        version: 0.9*
+      - name: python-feedparser
+        removable: True
+        version: 5.0*
+      - name: python-gflags
+        removable: True
+        version: 1.5*
+      - name: python-greenlet
+        removable: True
+        version: 0.3.1*
+      - name: python-kombu
+        removable: True
+        version: 1.1*
+      - name: python-lockfile
+        removable: True
+        version: 0.9*
+      - name: python-lxml
+        removable: True
+        version: 2.3*
+      - name: python-netaddr
+        removable: True
+        version: 0.7*
+      - name: python-paste
+        removable: True
+        version: 1.7.5*
+      - name: python-routes
+        removable: True
+        version: 1.12*
+      - name: python-suds
+        removable: True
+        version: 0.4*
+      - name: pyxattr
+        removable: True
+        version: 0.5*
+      - name: socat
+        removable: True
+        version: 1.7*
+      - name: sqlite
+        removable: False
+        version: 3.7*
+
+  quantum-client:
+    packages:
+      - name: python-gflags
+        removable: True
+        version: 1.5*
+
+  quantum-openvswitch:
+    packages:
+      - name: MySQL-python
+        removable: True
+        version: 1.2*
+      - name: python-sqlalchemy
+        removable: True
+        version: 0.7*
+
+  quantum:
+    packages:
+      - name: python-eventlet
+        removable: True
+        version: 0.9*
+      - name: python-gflags
+        removable: True
+        version: 1.5*
+      - name: python-greenlet
+        removable: True
+        version: 0.3*
+      - name: python-lxml
+        removable: True
+        version: 2.3*
+      - name: python-paste
+        removable: True
+        version: 1.7*
+      - name: python-paste-deploy
+        removable: True
+        version: 1.5*
+      - name: python-routes
+        removable: True
+        version: 1.12*
+
+  rabbitmq:
+    packages:
+      - name: rabbitmq-server
+        pre-install:
+          - cmd: ['service', 'qpidd', 'stop']
+            run_as_root: True
+          - cmd: ['chkconfig', 'qpidd', 'off']
+            run_as_root: True
+            ignore_failure: True
+        removable: True
+        version: 2.6*
+
+  swift:
+    packages:
+      - name: memcached
+        removable: True
+        version: 1.4*
+      - name: python-configobj
+        removable: True
+        version: 4.7*
+      - name: python-eventlet
+        removable: True
+        version: 0.9*
+      - name: python-greenlet
+        removable: True
+        version: 0.3*
+      - name: python-netifaces
+        removable: True
+        version: 0.5*
+      - name: python-paste-deploy
+        removable: True
+        version: 1.5*
+      - name: python-webob
+        removable: True
+        version: 1.0*
+      - name: pyxattr
+        removable: True
+        version: 0.5*
+      - name: sqlite
+        removable: True
+        version: 3.7*

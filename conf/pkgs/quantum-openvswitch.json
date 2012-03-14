@@ -4,25 +4,6 @@
     # This is currently our "master" repo set with versions
     # that we are trying to align other distributions with.
     # The versions should at least be major + minor!
-    "ubuntu-oneiric": {
-        "openvswitch-switch": {
-            "version": "1.2*",
-            "removable": true
-        },
-        "openvswitch-datapath-dkms": {
-            "version": "1.2*",
-            "removable": true
-        },
-        # Seems needed for ovs_quantum_agent.py
-        "python-sqlalchemy": {
-            "version": "0.6*",
-            "removable": true
-        },
-        "python-mysqldb": {
-            "version": "1.2*",
-            "removable": true
-        }
-    },
     "rhel-6": {
     },
     "fedora-16": {
