@@ -87,13 +87,13 @@ REQ_PIPS = ['general.json', 'glance.json']
 
 class GlanceUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
 
 
 class GlanceInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonInstallComponent.__init__(self, *args, **kargs)
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
 
     def _get_download_locations(self):
@@ -194,7 +194,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
 
 class GlanceRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
-        comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.PythonRuntime.__init__(self, *args, **kargs)
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
 
     def _get_apps_to_start(self):

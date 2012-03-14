@@ -29,12 +29,12 @@ REQ_PIPS = ['general.json']
 
 class KeyStoneClientUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
 
 
 class KeyStoneClientInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonInstallComponent.__init__(self, *args, **kargs)
 
     def _get_download_locations(self):
         places = list()
@@ -53,4 +53,4 @@ class KeyStoneClientInstaller(comp.PythonInstallComponent):
 
 class KeyStoneClientRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
-        comp.EmptyRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.EmptyRuntime.__init__(self, *args, **kargs)

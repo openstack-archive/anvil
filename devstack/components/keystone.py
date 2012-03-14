@@ -90,14 +90,14 @@ QUANTUM_TEMPL_ADDS = ['catalog.RegionOne.network.publicURL = http://%SERVICE_HOS
 
 class KeystoneUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
 
 
 class KeystoneInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonInstallComponent.__init__(self, *args, **kargs)
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
 
@@ -213,7 +213,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
 class KeystoneRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
-        comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.PythonRuntime.__init__(self, *args, **kargs)
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
 

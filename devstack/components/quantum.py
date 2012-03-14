@@ -78,12 +78,12 @@ REQ_PIPS = ['quantum.json']
 
 class QuantumUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PkgUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PkgUninstallComponent.__init__(self, *args, **kargs)
 
 
 class QuantumInstaller(comp.PkgInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PkgInstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PkgInstallComponent.__init__(self, *args, **kargs)
         self.q_vswitch_agent = False
         self.q_vswitch_service = False
         plugin = self.cfg.getdefaulted("quantum", "q_plugin", VSWITCH_PLUGIN)
@@ -221,7 +221,7 @@ class QuantumInstaller(comp.PkgInstallComponent):
 
 class QuantumRuntime(comp.ProgramRuntime):
     def __init__(self, *args, **kargs):
-        comp.ProgramRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.ProgramRuntime.__init__(self, *args, **kargs)
         self.q_vswitch_agent = False
         self.q_vswitch_service = False
         plugin = self.cfg.getdefaulted("quantum", "q_plugin", VSWITCH_PLUGIN)

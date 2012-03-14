@@ -266,7 +266,7 @@ def _canon_libvirt_type(virt_type):
 
 class NovaUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
 
@@ -298,7 +298,7 @@ class NovaUninstaller(comp.PythonUninstallComponent):
 
 class NovaInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonInstallComponent.__init__(self, *args, **kargs)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
         self.paste_conf_fn = self._get_target_config_name(PASTE_CONF)
@@ -440,7 +440,7 @@ class NovaInstaller(comp.PythonInstallComponent):
 
 class NovaRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
-        comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.PythonRuntime.__init__(self, *args, **kargs)
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
 

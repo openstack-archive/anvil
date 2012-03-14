@@ -51,7 +51,7 @@ WARMUP_PWS = ['sql']
 
 class DBUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PkgUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PkgUninstallComponent.__init__(self, *args, **kargs)
         self.runtime = DBRuntime(*args, **kargs)
 
     def warm_configs(self):
@@ -84,7 +84,7 @@ class DBUninstaller(comp.PkgUninstallComponent):
 
 class DBInstaller(comp.PkgInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PkgInstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PkgInstallComponent.__init__(self, *args, **kargs)
         self.runtime = DBRuntime(*args, **kargs)
 
     def _get_param_map(self, config_fn):
@@ -179,7 +179,7 @@ class DBInstaller(comp.PkgInstallComponent):
 
 class DBRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
-        comp.EmptyRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.EmptyRuntime.__init__(self, *args, **kargs)
 
     def _get_run_actions(self, act, exception_cls):
         dbtype = self.cfg.get("db", "type")

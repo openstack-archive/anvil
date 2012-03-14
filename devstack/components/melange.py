@@ -70,12 +70,12 @@ WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
 
 class MelangeUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
 
 
 class MelangeInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonInstallComponent.__init__(self, *args, **kargs)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
         self.cfgdir = sh.joinpths(self.appdir, *CFG_LOC)
 
@@ -144,7 +144,7 @@ class MelangeInstaller(comp.PythonInstallComponent):
 
 class MelangeRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
-        comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.PythonRuntime.__init__(self, *args, **kargs)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
         self.cfgdir = sh.joinpths(self.appdir, *CFG_LOC)
 

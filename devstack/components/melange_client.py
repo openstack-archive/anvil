@@ -28,12 +28,12 @@ REQ_PKGS = ['general.json']
 
 class MelangeClientUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
 
 
 class MelangeClientInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonInstallComponent.__init__(self, *args, **kargs)
 
     def _get_download_locations(self):
         places = list()
@@ -49,4 +49,4 @@ class MelangeClientInstaller(comp.PythonInstallComponent):
 
 class MelangeClientRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
-        comp.EmptyRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.EmptyRuntime.__init__(self, *args, **kargs)

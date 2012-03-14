@@ -45,12 +45,12 @@ REQ_PIPS = ['general.json', 'n-vnc.json']
 
 class NoVNCUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
 
 
 class NoVNCInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonInstallComponent.__init__(self, *args, **kargs)
 
     def _get_python_directories(self):
         return dict()
@@ -72,7 +72,7 @@ class NoVNCInstaller(comp.PythonInstallComponent):
 
 class NoVNCRuntime(comp.ProgramRuntime):
     def __init__(self, *args, **kargs):
-        comp.ProgramRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.ProgramRuntime.__init__(self, *args, **kargs)
 
     def _get_apps_to_start(self):
         apps = list()

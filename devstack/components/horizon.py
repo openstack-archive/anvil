@@ -76,12 +76,12 @@ REQ_PIPS = ['general.json', 'horizon.json']
 
 class HorizonUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
 
 
 class HorizonInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonInstallComponent.__init__(self, *args, **kargs)
         self.horizon_dir = sh.joinpths(self.appdir, ROOT_HORIZON)
         self.dash_dir = sh.joinpths(self.appdir, ROOT_DASH)
         self.log_dir = sh.joinpths(self.component_root, LOGS_DIR)
@@ -231,7 +231,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
 class HorizonRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
-        comp.EmptyRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.EmptyRuntime.__init__(self, *args, **kargs)
 
     def start(self):
         curr_status = self.status()

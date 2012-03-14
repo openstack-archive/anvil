@@ -197,7 +197,10 @@ class ActionRunner(object):
         all_instances = dict()
         for component in components.keys():
             cls = self.distro.get_component_action_class(component, self.action)
-            instance = cls(instances=all_instances,
+            LOG.debug('instantiating %s to handle %s for %s',
+                      cls, self.action, component)
+            instance = cls(component_name=component,
+                           instances=all_instances,
                            runner=self,
                            root_dir=self.directory,
                            component_options=components.get(component),
