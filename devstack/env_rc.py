@@ -89,7 +89,7 @@ class RcWriter(object):
         lines.extend(self._make_dict_export(self._get_ec2_envs()))
         lines.append("")
         return lines
-        
+
     def _get_password_envs(self):
         to_set = dict()
         for (out_name, key) in PASSWORDS_MAKES.items():

@@ -29,7 +29,6 @@ from devstack import utils
 from devstack.components import db
 from devstack.components import keystone
 
-
 #id
 TYPE = settings.NOVA
 LOG = logging.getLogger('devstack.components.nova')
@@ -83,19 +82,19 @@ VG_LVREMOVE_CMD = [
      'run_as_root': True}
 ]
 
-# iscsi restart commands 
+# iscsi restart commands
 RESTART_TGT_CMD = {
-    settings.UBUNTU11: [ 
+    settings.UBUNTU11: [
         {'cmd': ['stop', 'tgt'], 'run_as_root': True},
-        {'cmd': ['start', 'tgt'], 'run_as_root': True} 
+        {'cmd': ['start', 'tgt'], 'run_as_root': True}
     ],
-    settings.RHEL6:  [
+    settings.RHEL6: [
         {'cmd': ['service', 'tgtd', 'stop'], 'run_as_root': True},
-        {'cmd': ['service', 'tgtd', 'start'], 'run_as_root': True} 
+        {'cmd': ['service', 'tgtd', 'start'], 'run_as_root': True}
     ],
     settings.FEDORA16: [
         {'cmd': ['service', 'tgtd', 'stop'], 'run_as_root': True},
-        {'cmd': ['service', 'tgtd', 'start'], 'run_as_root': True} 
+        {'cmd': ['service', 'tgtd', 'start'], 'run_as_root': True}
     ],
 }
 

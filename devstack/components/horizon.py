@@ -59,7 +59,7 @@ BLACKHOLE_DIR = '.blackhole'
 #TODO: maybe this should be a subclass that handles these differences
 APACHE_SVC_NAME = {
     settings.RHEL6: 'httpd',
-    settings.FEDORA16: 'httpd', 
+    settings.FEDORA16: 'httpd',
     settings.UBUNTU11: 'apache2',
 }
 APACHE_RESTART_CMD = ['service', '%SERVICE%', 'restart']
@@ -75,7 +75,7 @@ APACHE_FIXUPS = {
     'SOCKET_CONF': "/etc/httpd/conf.d/wsgi-socket-prefix.conf",
     'HTTPD_CONF': '/etc/httpd/conf/httpd.conf',
 }
-APACHE_FIXUPS_DISTROS = [settings.RHEL6]
+APACHE_FIXUPS_DISTROS = [settings.RHEL6, settings.FEDORA16]
 
 #for when quantum client is not need we need some fake files so python doesn't croak
 FAKE_QUANTUM_FILES = ['__init__.py', 'client.py']
