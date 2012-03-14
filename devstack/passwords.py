@@ -56,7 +56,7 @@ class PasswordGenerator(object):
                 break
         return rc
 
-    def get_password(self, option, prompt_text=None, length=8):
+    def get_password(self, option, prompt_text=None, length=8, do_prompt=True):
         """Returns a password identified by the configuration location."""
 
         if not prompt_text:
@@ -75,7 +75,7 @@ class PasswordGenerator(object):
                 password = ''
 
         # Optionally ask the user
-        if not password and self.prompt_user:
+        if not password and self.prompt_user and do_prompt:
             password = self._prompt_user(prompt_text)
 
         # If we still don't have a value, make one up.

@@ -93,7 +93,7 @@ class RcWriter(object):
     def _get_password_envs(self):
         to_set = dict()
         for (out_name, key) in PASSWORDS_MAKES.items():
-            to_set[out_name] = self.pw_gen.get_password(key)
+            to_set[out_name] = self.pw_gen.get_password(key, do_prompt=False)
         return to_set
 
     def _get_general_envs(self):
