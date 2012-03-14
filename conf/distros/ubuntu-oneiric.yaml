@@ -62,6 +62,10 @@ components:
               mysql-server-5.1 mysql-server/start_on_boot boolean %BOOT_START%
 
   general:
+    install: devstack.components.pkglist:Installer
+    uninstall: devstack.components.pkglist:Uninstaller
+    start: devstack.component:EmptyRuntime
+    stop: devstack.component:EmptyRuntime
     packages:
       - name: curl
         removable: false
@@ -145,6 +149,7 @@ components:
     start: devstack.components.glance:GlanceRuntime
     stop: devstack.components.glance:GlanceRuntime
     dependencies:
+      - general
       - keystone
       - db
     packages:
@@ -188,6 +193,7 @@ components:
     start: devstack.components.horizon:HorizonRuntime
     stop: devstack.components.horizon:HorizonRuntime
     dependencies:
+      - general
       - keystone-client
       - glance
       - nova-client
@@ -259,6 +265,8 @@ components:
     uninstall: devstack.components.keystone_client:KeyStoneClientUninstaller
     start: devstack.components.keystone_client:KeyStoneClientRuntime
     stop: devstack.components.keystone_client:KeyStoneClientRuntime
+    dependencies:
+      - general
     packages:
       - name: python-argparse
         removable: True
@@ -273,6 +281,7 @@ components:
     start: devstack.components.keystone:KeystoneRuntime
     stop: devstack.components.keystone:KeystoneRuntime
     dependencies:
+      - general
       - db
       - keystone-client
     packages:
@@ -337,6 +346,7 @@ components:
     start: devstack.components.melange:MelangeRuntime
     stop: devstack.components.melange:MelangeRuntime
     dependencies:
+      - general
       - db
     packages:
       - name: python-eventlet
@@ -364,13 +374,25 @@ components:
         removable: True
         version: 1.0*
 
-  n-api:
+  nova-api:
+    # FIXME: This will report that it is installing/uninstalling
+    # "general" instead of the right name.
+    install: devstack.components.pkglist:Installer
+    uninstall: devstack.components.pkglist:Uninstaller
+    start: devstack.component:EmptyRuntime
+    stop: devstack.component:EmptyRuntime
     packages:
       - name: python-dateutil
         removable: True
         version: 1.4*
 
-  n-cpu:
+  nova-cpu:
+    # FIXME: This will report that it is installing/uninstalling
+    # "general" instead of the right name.
+    install: devstack.components.pkglist:Installer
+    uninstall: devstack.components.pkglist:Uninstaller
+    start: devstack.component:EmptyRuntime
+    stop: devstack.component:EmptyRuntime
     packages:
       - name: kvm
         removable: True
@@ -402,12 +424,20 @@ components:
     uninstall: devstack.components.novnc:NoVNCUninstaller
     start: devstack.components.novnc:NoVNCRuntime
     stop: devstack.components.novnc:NoVNCRuntime
+    dependencies:
+      - general
     packages:
       - name: python-numpy
         removable: True
         version: 1:1.5*
 
-  n-vol:
+  nova-vol:
+    # FIXME: This will report that it is installing/uninstalling
+    # "general" instead of the right name.
+    install: devstack.components.pkglist:Installer
+    uninstall: devstack.components.pkglist:Uninstaller
+    start: devstack.component:EmptyRuntime
+    stop: devstack.component:EmptyRuntime
     packages:
       - name: iscsitarget
         removable: True
@@ -424,6 +454,8 @@ components:
     uninstall: devstack.components.nova_client:NovaClientUninstaller
     start: devstack.components.nova_client:NovaClientRuntime
     stop: devstack.components.nova_client:NovaClientRuntime
+    dependencies:
+      - general
     packages:
       - name: python-argparse
         removable: True
@@ -438,11 +470,15 @@ components:
     start: devstack.components.nova:NovaRuntime
     stop: devstack.components.nova:NovaRuntime
     dependencies:
+      - general
       - keystone
       - glance
       - db
       - rabbit
       - nova-client
+      - nova-cpu
+      - nova-vol
+      - nova-api
     packages:
       - name: dnsmasq-base
         removable: True
@@ -547,12 +583,20 @@ components:
     uninstall: devstack.components.quantum_client:QuantumClientUninstaller
     start: devstack.components.quantum_client:QuantumClientRuntime
     stop: devstack.components.quantum_client:QuantumClientRuntime
+    dependencies:
+      - general
     packages:
       - name: python-gflags
         removable: True
         version: 1.5*
 
   quantum-openvswitch:
+    # FIXME: This will report that it is installing/uninstalling
+    # "general" instead of the right name.
+    install: devstack.components.pkglist:Installer
+    uninstall: devstack.components.pkglist:Uninstaller
+    start: devstack.component:EmptyRuntime
+    stop: devstack.component:EmptyRuntime
     packages:
       - name: openvswitch-datapath-dkms
         removable: True
@@ -572,6 +616,12 @@ components:
     uninstall: devstack.components.quantum:QuantumUninstaller
     start: devstack.components.quantum:QuantumRuntime
     stop: devstack.components.quantum:QuantumRuntime
+    dependencies:
+      - general
+      - quantum-client
+      # Default is to include openvswitch so it is here until
+      # we add proper persona support.
+      - quantum-openvswitch
     packages:
       - name: python-eventlet
         removable: True
@@ -611,6 +661,7 @@ components:
     start: devstack.components.swift:SwiftRuntime
     stop: devstack.components.swift:SwiftRuntime
     dependencies:
+      - general
       - keystone-client
     packages:
       - name: memcached
