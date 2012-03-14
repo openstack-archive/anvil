@@ -22,7 +22,7 @@ import traceback
 
 from devstack import cfg_helpers
 from devstack import date
-from devstack.distro import Distro
+from devstack import distro
 from devstack import env
 from devstack import env_rc
 from devstack import log as logging
@@ -103,7 +103,7 @@ def load_rc_files():
 
 
 def run(args):
-    distro = Distro.get_current()
+    dist = distro.Distro.get_current()
     action = args.pop("action").strip().lower()
     if not (action in settings.ACTIONS):
         print(utils.color_text("No valid action specified!", "red"))
@@ -137,14 +137,14 @@ def run(args):
     config_kv_cache = dict()
     config = common.get_config(kv_cache=config_kv_cache)
     pw_gen = passwords.PasswordGenerator(config_kv_cache, config, args['prompt_for_passwords'])
-    pkg_factory = distro.get_packager_factory()
-    pkg_manager = pkg_factory(distro, args['keep_old'])
+    pkg_factory = dist.get_packager_factory()
+    pkg_manager = pkg_factory(dist, args['keep_old'])
 
     components = utils.parse_components(args.pop("components"))
-    runner = actions.ActionRunner(distro, action, rootdir, config, pw_gen,
+    runner = actions.ActionRunner(dist, action, rootdir, config, pw_gen,
                                   pkg_manager, components=components, **args)
 
-    LOG.info("Starting action [%s] on %s for distro [%s]" % (action, date.rcf8222date(), distro))
+    LOG.info("Starting action [%s] on %s for distro [%s]" % (action, date.rcf8222date(), dist))
     runner.run()
     LOG.info("It took (%s) to complete action [%s]" % (common.format_secs_taken((time.time() - start_time)), action))
     LOG.info("After action [%s] your settings which were created or read are:" % (action))
