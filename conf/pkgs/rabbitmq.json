@@ -58,6 +58,7 @@
                 {
                     # Qpidd runs on the same port
                     "run_as_root": true,
+                    "ignore_failure": true,
                     "cmd": [
                         "chkconfig",
                         "qpidd",
