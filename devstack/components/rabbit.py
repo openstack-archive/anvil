@@ -32,9 +32,6 @@ STATUS_CMD = ['service', "rabbitmq-server", "status"]
 RESTART_CMD = ['service', "rabbitmq-server", "restart"]
 PWD_CMD = ['rabbitmqctl', 'change_password', 'guest']
 
-#the pkg json files rabbit mq server requires for installation
-REQ_PKGS = ['rabbitmq.json']
-
 #default password
 RESET_BASE_PW = ''
 
@@ -85,9 +82,6 @@ class RabbitInstaller(comp.PkgInstallComponent):
     def post_install(self):
         comp.PkgInstallComponent.post_install(self)
         self._setup_pw()
-
-    def _get_pkgs(self):
-        return list(REQ_PKGS)
 
 
 class RabbitRuntime(comp.EmptyRuntime):

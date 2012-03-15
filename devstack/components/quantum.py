@@ -69,9 +69,6 @@ APP_OPTIONS = {
     APP_Q_AGENT: ["%OVS_CONFIG_FILE%", "-v"],
 }
 
-#the pkg json files quantum requires for installation
-REQ_PKGS = ['general.json', 'quantum.json']
-
 #pip files that nova requires
 REQ_PIPS = ['quantum.json']
 
@@ -88,16 +85,15 @@ class QuantumInstaller(comp.PkgInstallComponent):
         self.q_vswitch_service = False
         plugin = self.cfg.getdefaulted("quantum", "q_plugin", VSWITCH_PLUGIN)
         if plugin == VSWITCH_PLUGIN:
-            if len(self.component_opts) == 0:
-                #default to on if not specified
-                self.q_vswitch_agent = True
-                self.q_vswitch_service = True
-            else:
-                #only turn on if requested
-                if QUANTUM_SERVICE in self.component_opts:
-                    self.q_vswitch_service = True
-                if QUANTUM_AGENT in self.component_opts:
-                    self.q_vswitch_agent = True
+            #default to on if not specified
+            self.q_vswitch_agent = True
+            self.q_vswitch_service = True
+            # else:
+            #     #only turn on if requested
+            #     if QUANTUM_SERVICE in self.component_opts:
+            #         self.q_vswitch_service = True
+            #     if QUANTUM_AGENT in self.component_opts:
+            #         self.q_vswitch_agent = True
 
     def _get_download_locations(self):
         places = list()
@@ -121,12 +117,6 @@ class QuantumInstaller(comp.PkgInstallComponent):
             #in this case we need the db
             add_deps.append(settings.DB)
         return common_deps + add_deps
-
-    def _get_pkgs(self):
-        pkglist = list(REQ_PKGS)
-        if self.q_vswitch_service:
-            pkglist.append(PKG_VSWITCH)
-        return pkglist
 
     def _get_config_files(self):
         return list(CONFIG_FILES)
@@ -226,16 +216,15 @@ class QuantumRuntime(comp.ProgramRuntime):
         self.q_vswitch_service = False
         plugin = self.cfg.getdefaulted("quantum", "q_plugin", VSWITCH_PLUGIN)
         if plugin == VSWITCH_PLUGIN:
-            if len(self.component_opts) == 0:
-                #default to on if not specified
-                self.q_vswitch_agent = True
-                self.q_vswitch_service = True
-            else:
-                #only turn on if requested
-                if QUANTUM_SERVICE in self.component_opts:
-                    self.q_vswitch_service = True
-                if QUANTUM_AGENT in self.component_opts:
-                    self.q_vswitch_agent = True
+            #default to on if not specified
+            self.q_vswitch_agent = True
+            self.q_vswitch_service = True
+            # else:
+            #     #only turn on if requested
+            #     if QUANTUM_SERVICE in self.component_opts:
+            #         self.q_vswitch_service = True
+            #     if QUANTUM_AGENT in self.component_opts:
+            #         self.q_vswitch_agent = True
 
     def _get_apps_to_start(self):
         app_list = comp.ProgramRuntime._get_apps_to_start(self)

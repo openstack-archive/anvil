@@ -42,9 +42,6 @@ SQL_RESET_PW_LINKS = [
 #used as a generic error message
 BASE_ERROR = 'Currently we do not know how to [%s] for database type [%s]'
 
-#the pkg json files db requires for installation
-REQ_PKGS = ['db.json']
-
 #config keys we warm up so u won't be prompted later
 WARMUP_PWS = ['sql']
 
@@ -125,9 +122,6 @@ class DBInstaller(comp.PkgInstallComponent):
                 'Do not know how to configure db confs for %s' %
                 self.distro.name
                 )
-
-    def _get_pkgs(self):
-        return list(REQ_PKGS)
 
     def post_install(self):
         comp.PkgInstallComponent.post_install(self)

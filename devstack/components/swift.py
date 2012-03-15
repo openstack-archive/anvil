@@ -64,9 +64,6 @@ BIN_DIR = 'bin'
 CONFIG_DIR = 'etc'
 LOG_DIR = 'logs'
 
-#the pkg json files swift requires for installation
-REQ_PKGS = ['general.json', 'swift.json']
-
 #config keys we warm up so u won't be prompted later
 WARMUP_PWS = ['service_token', 'swift_hash']
 
@@ -111,9 +108,6 @@ class SwiftInstaller(comp.PythonInstallComponent):
 
     def _get_config_files(self):
         return list(CONFIGS)
-
-    def _get_pkgs(self):
-        return list(REQ_PKGS)
 
     def warm_configs(self):
         for pw_key in WARMUP_PWS:

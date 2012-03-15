@@ -193,17 +193,18 @@ class ActionRunner(object):
                 adjusted_components[c] = ref_components.get(c)
         return adjusted_components
 
-    def _instanciate_components(self, components):
+    def _instantiate_components(self, components):
         all_instances = dict()
         for component in components.keys():
-            cls = self.distro.get_component_action_class(component, self.action)
+            cls = self.distro.get_component_action_class(component,
+                                                         self.action)
             LOG.debug('instantiating %s to handle %s for %s',
                       cls, self.action, component)
             instance = cls(component_name=component,
                            instances=all_instances,
                            runner=self,
                            root_dir=self.directory,
-                           component_options=components.get(component),
+                           component_options=self.distro.components[component],
                            keep_old=self.kargs.get("keep_old")
                            )
             all_instances[component] = instance
@@ -213,7 +214,7 @@ class ActionRunner(object):
         if not (self.action in PREQ_ACTIONS):
             return
         (check_functor, preq_action) = PREQ_ACTIONS[self.action]
-        instances = self._instanciate_components(components)
+        instances = self._instantiate_components(components)
         preq_components = dict()
         for c in component_order:
             instance = instances[c]
@@ -278,7 +279,7 @@ class ActionRunner(object):
 
     def _start(self, components, component_order):
         LOG.info("Activating components required to complete action [%s]" % (self.action))
-        instances = self._instanciate_components(components)
+        instances = self._instantiate_components(components)
         self._pre_run(instances, component_order)
         self._run_preqs(components, component_order)
         self._run_instances(instances, component_order)

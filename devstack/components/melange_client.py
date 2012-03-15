@@ -22,9 +22,6 @@ from devstack import settings
 TYPE = settings.MELANGE_CLIENT
 LOG = logging.getLogger("devstack.components.melange_client")
 
-#the pkg json files melange client requires for installation
-REQ_PKGS = ['general.json']
-
 
 class MelangeClientUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -42,9 +39,6 @@ class MelangeClientInstaller(comp.PythonInstallComponent):
             'branch': ("git", "melangeclient_branch"),
         })
         return places
-
-    def _get_pkgs(self):
-        return list(REQ_PKGS)
 
 
 class MelangeClientRuntime(comp.EmptyRuntime):

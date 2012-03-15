@@ -67,9 +67,6 @@ BAD_APACHE_USERS = ['root']
 #apache logs will go here
 LOGS_DIR = "logs"
 
-#the pkg json files horizon requires for installation
-REQ_PKGS = ['general.json', 'horizon.json']
-
 #pip files that horizon requires
 REQ_PIPS = ['general.json', 'horizon.json']
 
@@ -120,9 +117,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
         if user in BAD_APACHE_USERS:
             msg = "You may want to adjust your configuration, (user=%s, group=%s) will not work with apache!" % (user, group)
             raise excp.ConfigException(msg)
-
-    def _get_pkgs(self):
-        return list(REQ_PKGS)
 
     def _get_pips(self):
         return list(REQ_PIPS)

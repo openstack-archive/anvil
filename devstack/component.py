@@ -63,7 +63,7 @@ class ComponentBase(object):
         # avoid breaking garbage collection.
         self.runner = weakref.proxy(runner)
         self.root = root_dir
-        self.component_opts = component_options or []
+        self.component_opts = component_options or {}
         self.instances = instances or {}
 
         # Parts of the global runner context that we use
@@ -146,29 +146,18 @@ class PkgInstallComponent(ComponentBase):
     def _get_param_map(self, config_fn):
         return dict()
 
-    def _get_pkgs(self):
-        return list()
-
-    def _get_pkgs_expanded(self):
-        short = self._get_pkgs()
-        if not short:
-            return dict()
-        pkgs = dict()
-        for fn in short:
-            full_name = sh.joinpths(settings.STACK_PKG_DIR, fn)
-            pkgs = utils.extract_pkg_list([full_name], self.distro.name, pkgs)
-        return pkgs
-
     def install(self):
         LOG.debug('Preparing to install packages for %s',
                   self.component_name)
-        pkgs = self._get_pkgs_expanded()
+        pkgs = self.component_opts.get('packages', [])
         if pkgs:
-            pkgnames = sorted(pkgs.keys())
+            pkgnames = sorted([p['name'] for p in pkgs])
             LOG.info("Installing packages (%s).", ", ".join(pkgnames))
+            # FIXME: We should only record the packages we actually
+            # install without error.
             #do this before install just incase it craps out half way through
-            for name in pkgnames:
-                self.tracewriter.package_installed(name, pkgs.get(name))
+            for pkg in pkgs:
+                self.tracewriter.package_installed(p['name'], pkg)
             #now actually install
             self.packager.install_batch(pkgs)
         else:
@@ -177,13 +166,13 @@ class PkgInstallComponent(ComponentBase):
         return self.tracedir
 
     def pre_install(self):
-        pkgs = self._get_pkgs_expanded()
+        pkgs = self.component_opts.get('packages', [])
         if pkgs:
             mp = self._get_param_map(None)
             self.packager.pre_install(pkgs, mp)
 
     def post_install(self):
-        pkgs = self._get_pkgs_expanded()
+        pkgs = self.component_opts.get('packages', [])
         if pkgs:
             mp = self._get_param_map(None)
             self.packager.post_install(pkgs, mp)

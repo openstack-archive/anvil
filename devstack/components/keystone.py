@@ -65,8 +65,6 @@ APP_OPTIONS = {
                 '--log-config=' + sh.joinpths('%ROOT%', CONFIG_DIR, 'logging.cnf')]
 }
 
-#the pkg json files keystone requires for installation
-REQ_PKGS = ['general.json', 'keystone.json']
 
 #pip files that keystone requires
 REQ_PIPS = ['general.json', 'keystone.json']
@@ -111,9 +109,6 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
     def _get_pips(self):
         return list(REQ_PIPS)
-
-    def _get_pkgs(self):
-        return list(REQ_PKGS)
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)

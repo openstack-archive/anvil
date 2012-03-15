@@ -60,12 +60,11 @@ class AptPackager(pack.Packager):
             **kargs)
 
     def _remove_batch(self, pkgs):
-        pkgnames = sorted(pkgs.keys())
         #form the needed commands
         cmds = []
         which_removed = []
-        for name in pkgnames:
-            info = pkgs.get(name) or {}
+        for info in pkgs:
+            name = info['name']
             removable = info.get('removable', True)
             if not removable:
                 continue
@@ -86,11 +85,10 @@ class AptPackager(pack.Packager):
         return which_removed
 
     def install_batch(self, pkgs):
-        pkgnames = sorted(pkgs.keys())
         #form the needed commands
         cmds = []
-        for name in pkgnames:
-            info = pkgs.get(name) or {}
+        for info in pkgs:
+            name = info['name']
             if self._pkg_install_special(name, info):
                 continue
             pkg_full = self._format_pkg(name, info.get("version"))

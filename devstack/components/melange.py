@@ -30,9 +30,6 @@ from devstack.components import db
 TYPE = settings.MELANGE
 LOG = logging.getLogger("devstack.components.melange")
 
-#the pkg json files melange requires for installation
-REQ_PKGS = ['general.json', 'melange.json']
-
 #this db will be dropped then created
 DB_NAME = 'melange'
 
@@ -91,9 +88,6 @@ class MelangeInstaller(comp.PythonInstallComponent):
         LOG.info("Fixing up database named %s.", DB_NAME)
         db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
         db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
-
-    def _get_pkgs(self):
-        return list(REQ_PKGS)
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
@@ -167,7 +161,9 @@ class MelangeRuntime(comp.PythonRuntime):
 
     def post_start(self):
         comp.PythonRuntime.post_start(self)
-        if CREATE_CIDR in self.component_opts or not self.component_opts:
+        # FIXME: This is a bit of a hack. How do we document "flags" like this?
+        flags = self.component_opts.get('flags', [])
+        if CREATE_CIDR in flags or not flags:
             LOG.info("Waiting %s seconds so that the melange server can start up before cidr range creation." % (WAIT_ONLINE_TO))
             sh.sleep(WAIT_ONLINE_TO)
             mp = dict()

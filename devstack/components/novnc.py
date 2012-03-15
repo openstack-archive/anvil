@@ -36,9 +36,6 @@ APP_OPTIONS = {
     VNC_PROXY_APP: ['--flagfile', '%NOVA_CONF%', '--web', '.'],
 }
 
-#the pkg json files no-vnc requires for installation
-REQ_PKGS = ['general.json', 'n-vnc.json']
-
 #pip files that no-vnc requires
 REQ_PIPS = ['general.json', 'n-vnc.json']
 
@@ -62,9 +59,6 @@ class NoVNCInstaller(comp.PythonInstallComponent):
             'branch': ("git", "novnc_branch"),
         })
         return places
-
-    def _get_pkgs(self):
-        return list(REQ_PKGS)
 
     def _get_pips(self):
         return list(REQ_PIPS)

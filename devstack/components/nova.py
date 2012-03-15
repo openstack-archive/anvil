@@ -111,25 +111,6 @@ NXVNC = "xvnc"
 SUBCOMPONENTS = [NCPU, NVOL, NAPI,
     NOBJ, NNET, NCERT, NSCHED, NCAUTH, NXVNC]
 
-#the pkg json files nova requires for installation
-REQ_PKGS = ['general.json', 'nova.json']
-
-# Additional packages for subcomponents
-ADD_PKGS = {
-    NAPI:
-        [
-            'n-api.json',
-        ],
-    NCPU:
-        [
-            'n-cpu.json',
-        ],
-    NVOL:
-        [
-            'n-vol.json',
-        ],
-}
-
 # What to start
 APP_OPTIONS = {
     #these are currently the core components/applications
@@ -277,9 +258,8 @@ class NovaUninstaller(comp.PythonUninstallComponent):
     def _clean_it(self):
         #these environment additions are important
         #in that they eventually affect how this script runs
-        sub_components = self.component_opts or SUBCOMPONENTS
         env = dict()
-        env['ENABLED_SERVICES'] = ",".join(sub_components)
+        env['ENABLED_SERVICES'] = ",".join(SUBCOMPONENTS)
         env['BIN_DIR'] = self.bindir
         env['VOLUME_NAME_PREFIX'] = self.cfg.getdefaulted('nova', 'volume_name_prefix', DEF_VOL_PREFIX)
         cleaner_fn = sh.joinpths(self.bindir, CLEANER_DATA_CONF)
@@ -303,19 +283,14 @@ class NovaInstaller(comp.PythonInstallComponent):
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
         self.paste_conf_fn = self._get_target_config_name(PASTE_CONF)
         self.volumes_enabled = False
-        if not self.component_opts or NVOL in self.component_opts:
+        package_names = [p['name']
+                         for p in self.component_opts.get('packages', [])
+                         ]
+        if NVOL in package_names:
             self.volumes_enabled = True
         self.xvnc_enabled = False
-        if not self.component_opts or NXVNC in self.component_opts:
+        if NXVNC in package_names:
             self.xvnc_enabled = True
-
-    def _get_pkgs(self):
-        pkgs = list(REQ_PKGS)
-        sub_components = self.component_opts or SUBCOMPONENTS
-        for c in sub_components:
-            fns = ADD_PKGS.get(c, [])
-            pkgs.extend(fns)
-        return pkgs
 
     def _get_symlinks(self):
         links = comp.PythonInstallComponent._get_symlinks(self)
@@ -473,22 +448,11 @@ class NovaRuntime(comp.PythonRuntime):
         return deps
 
     def _get_apps_to_start(self):
-        result = list()
-        if not self.component_opts:
-            apps = sorted(APP_OPTIONS.keys())
-            for app_name in apps:
-                result.append({
-                    'name': app_name,
-                    'path': sh.joinpths(self.bindir, app_name),
-                })
-        else:
-            for short_name in self.component_opts:
-                full_name = SUB_COMPONENT_NAME_MAP.get(short_name)
-                if full_name and full_name in APP_OPTIONS:
-                    result.append({
-                        'name': full_name,
-                        'path': sh.joinpths(self.bindir, full_name),
-                    })
+        result = [{'name': app_name,
+                   'path': sh.joinpths(self.bindir, app_name),
+                   }
+                  for app_name in sorted(APP_OPTIONS.keys())
+                  ]
         return result
 
     def pre_start(self):

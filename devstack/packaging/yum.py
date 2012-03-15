@@ -89,10 +89,9 @@ class YumPackager(pack.Packager):
         return False
 
     def install_batch(self, pkgs):
-        pkg_names = sorted(pkgs.keys())
         pkg_full_names = []
-        for name in pkg_names:
-            info = pkgs.get(name) or {}
+        for info in pkgs:
+            name = info['name']
             if self._install_special(name, info):
                 continue
             full_pkg_name = self._format_pkg_name(name, info.get("version"))
@@ -102,10 +101,10 @@ class YumPackager(pack.Packager):
             self._execute_yum(cmd)
 
     def _remove_batch(self, pkgs):
-        pkg_names = sorted(pkgs.keys())
         pkg_full_names = []
         which_removed = []
-        for name in pkg_names:
+        for info in pkgs:
+            name = info['name']
             info = pkgs.get(name) or {}
             removable = info.get('removable', True)
             if not removable:

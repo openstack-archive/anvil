@@ -56,10 +56,10 @@ components:
           # This apparently is a action needed for ubuntu/debian to set the password to something known....
           - run_as_root: true
             cmd: ["debconf-set-selections"]
-            stdin: |
-              mysql-server-5.1 mysql-server/root_password password %PASSWORD%
-              mysql-server-5.1 mysql-server/root_password_again password %PASSWORD%
-              mysql-server-5.1 mysql-server/start_on_boot boolean %BOOT_START%
+            stdin:
+              - mysql-server-5.1 mysql-server/root_password password %PASSWORD%
+              - mysql-server-5.1 mysql-server/root_password_again password %PASSWORD%
+              - mysql-server-5.1 mysql-server/start_on_boot boolean %BOOT_START%
 
   general:
     install: devstack.components.pkglist:Installer
@@ -116,22 +116,22 @@ components:
         removable: false
         version: 1.6.4*
       - name: python-setuptools
-        version: 0.6.16*,
+        version: 0.6.16*
         removable: false
       - name: python-dev
-        version: 2.7.2*,
+        version: 2.7.2*
         removable: false
       - name: python-nose
-        version: 1.0.0*,
+        version: 1.0.0*
         removable: false
       - name: python-mox
-        version: 0.5.3*,
+        version: 0.5.3*
         removable: false
       - name: screen
         removable: false
         version: 4.0.3*
       - name: sudo
-        removable: false,
+        removable: false
         version : 1.7.4*
       - name: tcpdump
         removable: false
