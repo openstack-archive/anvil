@@ -1,8 +1,6 @@
 # This is a extended json package definition file 
 # We allow simple comments (lines starting with a hash symbol)
 {
-    "ubuntu-oneiric": {
-    },
     "rhel-6": {
         "SQLAlchemy": {
             "version": "0.7.5"

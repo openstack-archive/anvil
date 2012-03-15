@@ -22,9 +22,6 @@ from devstack import settings
 TYPE = settings.KEYSTONE_CLIENT
 LOG = logging.getLogger("devstack.components.keystone_client")
 
-#the pkg json files keystone client requires for installation
-REQ_PIPS = ['general.json']
-
 
 class KeyStoneClientUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -42,9 +39,6 @@ class KeyStoneClientInstaller(comp.PythonInstallComponent):
             'branch': ("git", "keystoneclient_branch"),
         })
         return places
-
-    def _get_pips(self):
-        return list(REQ_PIPS)
 
 
 class KeyStoneClientRuntime(comp.EmptyRuntime):

@@ -257,43 +257,6 @@ def get_interfaces():
     return interfaces
 
 
-def determine_distro():
-    plt = platform.platform()
-    #ensure its a linux distro
-    (distname, _, _) = platform.linux_distribution()
-    if not distname:
-        return (None, plt)
-    #attempt to match it to our platforms
-    found_os = None
-    for (known_os, pattern) in settings.KNOWN_DISTROS.items():
-        if pattern.search(plt):
-            found_os = known_os
-            break
-    return (found_os, plt)
-
-
-def extract_pip_list(fns, distro, all_pips=None):
-    if not all_pips:
-        all_pips = dict()
-    for fn in fns:
-        js = load_json(fn)
-        distro_pips = js.get(distro)
-        if distro_pips:
-            all_pips.update(distro_pips)
-    return all_pips
-
-
-def extract_pkg_list(fns, distro, all_pkgs=None):
-    if not all_pkgs:
-        all_pkgs = dict()
-    for fn in fns:
-        js = load_json(fn)
-        distro_pkgs = js.get(distro)
-        if distro_pkgs:
-            all_pkgs.update(distro_pkgs)
-    return all_pkgs
-
-
 def get_components_order(components):
     if not components:
         return dict()

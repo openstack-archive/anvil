@@ -36,9 +36,6 @@ APP_OPTIONS = {
     VNC_PROXY_APP: ['--flagfile', '%NOVA_CONF%', '--web', '.'],
 }
 
-#pip files that no-vnc requires
-REQ_PIPS = ['general.json', 'n-vnc.json']
-
 
 class NoVNCUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -59,9 +56,6 @@ class NoVNCInstaller(comp.PythonInstallComponent):
             'branch': ("git", "novnc_branch"),
         })
         return places
-
-    def _get_pips(self):
-        return list(REQ_PIPS)
 
 
 class NoVNCRuntime(comp.ProgramRuntime):

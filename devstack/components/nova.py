@@ -213,9 +213,6 @@ VNC_DEF_ADDR = '127.0.0.1'
 #std compute extensions
 STD_COMPUTE_EXTS = 'nova.api.openstack.compute.contrib.standard_extensions'
 
-#pip files that nova requires
-REQ_PIPS = ['general.json', 'nova.json']
-
 #config keys we warm up so u won't be prompted later
 WARMUP_PWS = ['rabbit']
 
@@ -297,9 +294,6 @@ class NovaInstaller(comp.PythonInstallComponent):
         source_fn = sh.joinpths(self.cfgdir, API_CONF)
         links[source_fn] = sh.joinpths(self._get_link_dir(), API_CONF)
         return links
-
-    def _get_pips(self):
-        return list(REQ_PIPS)
 
     def _get_download_locations(self):
         places = list()
