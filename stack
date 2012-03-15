@@ -103,7 +103,6 @@ def load_rc_files():
 
 
 def run(args):
-    dist = distro.Distro.get_current()
     action = args.pop("action").strip().lower()
     if not (action in settings.ACTIONS):
         print(utils.color_text("No valid action specified!", "red"))
@@ -134,6 +133,7 @@ def run(args):
     # Stash the dryrun value (if any) into the global configuration
     sh.set_dryrun(args['dryrun'])
 
+    dist = distro.Distro.get_current()
     config = common.get_config()
     pw_gen = passwords.PasswordGenerator(config, args['prompt_for_passwords'])
     pkg_factory = dist.get_packager_factory()
