@@ -257,21 +257,6 @@ def get_interfaces():
     return interfaces
 
 
-def determine_distro():
-    plt = platform.platform()
-    #ensure its a linux distro
-    (distname, _, _) = platform.linux_distribution()
-    if not distname:
-        return (None, plt)
-    #attempt to match it to our platforms
-    found_os = None
-    for (known_os, pattern) in settings.KNOWN_DISTROS.items():
-        if pattern.search(plt):
-            found_os = known_os
-            break
-    return (found_os, plt)
-
-
 def get_components_order(components):
     if not components:
         return dict()
