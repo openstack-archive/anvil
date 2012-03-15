@@ -30,7 +30,7 @@ from devstack.packaging import apt
 LOG = logging.getLogger(__name__)
 
 
-class OneiricDBInstaller(db.DBInstaller):
+class DBInstaller(db.DBInstaller):
 
     def _configure_db_confs(self):
         LOG.info("Fixing up %s mysql configs.", self.distro.name)

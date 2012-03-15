@@ -41,7 +41,7 @@ commands:
 components:
 
   db:
-    install: devstack.distros.oneiric:OneiricDBInstaller
+    install: devstack.distros.oneiric:DBInstaller
     uninstall: devstack.components.db:DBUninstaller
     start: devstack.components.db:DBRuntime
     stop: devstack.components.db:DBRuntime
