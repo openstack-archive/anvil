@@ -32,12 +32,10 @@ def make_id(section, option):
 
 def fetch_run_type(config):
     run_type = config.getdefaulted("default", "run_type", settings.RUN_TYPE_DEF)
-    run_type = run_type.upper()
-    return run_type
+    return run_type.upper()
 
 
 def fetch_dbdsn(config, pw_gen, dbname=''):
-    #check the dsn cache
     user = config.get("db", "sql_user")
     host = config.get("db", "sql_host")
     port = config.get("db", "port")
@@ -65,5 +63,5 @@ def fetch_dbdsn(config, pw_gen, dbname=''):
         dsn += "/" + dbname
     else:
         dsn += "/"
-    LOG.debug("For database [%s] fetched dsn [%s]" % (dbname, dsn))
+    LOG.audit("For database [%s] fetched dsn [%s]" % (dbname, dsn))
     return dsn

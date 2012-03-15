@@ -28,8 +28,6 @@ from devstack import utils
 
 from devstack.components import db
 
-#id
-TYPE = settings.KEYSTONE
 LOG = logging.getLogger("devstack.components.keystone")
 
 #this db will be dropped then created
@@ -86,15 +84,15 @@ QUANTUM_TEMPL_ADDS = ['catalog.RegionOne.network.publicURL = http://%SERVICE_HOS
 class KeystoneUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, *args, **kargs)
-        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
-        self.bindir = sh.joinpths(self.appdir, BIN_DIR)
+        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
+        self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
 
 
 class KeystoneInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
-        self.bindir = sh.joinpths(self.appdir, BIN_DIR)
+        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
+        self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
 
     def _get_download_locations(self):
         places = list()
@@ -113,9 +111,9 @@ class KeystoneInstaller(comp.PythonInstallComponent):
     def _sync_db(self):
         LOG.info("Syncing keystone to database named %s.", DB_NAME)
         params = dict()
-        params['BINDIR'] = self.bindir
+        params['BINDIR'] = self.bin_dir
         cmds = [{'cmd': SYNC_DB_CMD}]
-        utils.execute_template(*cmds, cwd=self.bindir, params=params)
+        utils.execute_template(*cmds, cwd=self.bin_dir, params=params)
 
     def _get_config_files(self):
         return list(CONFIGS)
@@ -130,7 +128,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         (_, contents) = utils.load_template(self.component_name, MANAGE_DATA_CONF)
         params = self._get_param_map(MANAGE_DATA_CONF)
         contents = utils.param_replace(contents, params, True)
-        tgt_fn = sh.joinpths(self.bindir, MANAGE_DATA_CONF)
+        tgt_fn = sh.joinpths(self.bin_dir, MANAGE_DATA_CONF)
         sh.write_file(tgt_fn, contents)
         sh.chmod(tgt_fn, 0755)
         self.tracewriter.file_touched(tgt_fn)
@@ -175,7 +173,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
     def _get_source_config(self, config_fn):
         if config_fn == LOGGING_CONF:
-            fn = sh.joinpths(self.cfgdir, LOGGING_SOURCE_FN)
+            fn = sh.joinpths(self.cfg_dir, LOGGING_SOURCE_FN)
             contents = sh.load_file(fn)
             return (fn, contents)
         return comp.PythonInstallComponent._get_source_config(self, config_fn)
@@ -188,12 +186,12 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         #params with actual values
         mp = dict()
         mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
-        mp['DEST'] = self.appdir
-        mp['BIN_DIR'] = self.bindir
-        mp['CONFIG_FILE'] = sh.joinpths(self.cfgdir, ROOT_CONF)
+        mp['DEST'] = self.app_dir
+        mp['BIN_DIR'] = self.bin_dir
+        mp['CONFIG_FILE'] = sh.joinpths(self.cfg_dir, ROOT_CONF)
         if config_fn == ROOT_CONF:
             mp['SQL_CONN'] = cfg_helpers.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
-            mp['KEYSTONE_DIR'] = self.appdir
+            mp['KEYSTONE_DIR'] = self.app_dir
             mp.update(get_shared_params(self.cfg, self.pw_gen))
         elif config_fn == MANAGE_DATA_CONF:
             mp.update(get_shared_params(self.cfg, self.pw_gen))
@@ -203,11 +201,11 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 class KeystoneRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
-        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
-        self.bindir = sh.joinpths(self.appdir, BIN_DIR)
+        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
+        self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
 
     def post_start(self):
-        tgt_fn = sh.joinpths(self.bindir, MANAGE_DATA_CONF)
+        tgt_fn = sh.joinpths(self.bin_dir, MANAGE_DATA_CONF)
         if sh.isfile(tgt_fn):
             #still there, run it
             #these environment additions are important
@@ -216,7 +214,7 @@ class KeystoneRuntime(comp.PythonRuntime):
             sh.sleep(WAIT_ONLINE_TO)
             env = dict()
             env['ENABLED_SERVICES'] = ",".join(self.instances.keys())
-            env['BIN_DIR'] = self.bindir
+            env['BIN_DIR'] = self.bin_dir
             setup_cmd = MANAGE_CMD_ROOT + [tgt_fn]
             LOG.info("Running (%s) command to initialize keystone." % (" ".join(setup_cmd)))
             sh.execute(*setup_cmd, env_overrides=env, run_as_root=False)
@@ -228,7 +226,7 @@ class KeystoneRuntime(comp.PythonRuntime):
         for app_name in APP_OPTIONS.keys():
             apps.append({
                 'name': app_name,
-                'path': sh.joinpths(self.bindir, app_name),
+                'path': sh.joinpths(self.bin_dir, app_name),
             })
         return apps
 

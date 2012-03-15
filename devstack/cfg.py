@@ -22,6 +22,7 @@ from devstack import date
 from devstack import env
 from devstack import exceptions as excp
 from devstack import log as logging
+from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 
@@ -29,6 +30,16 @@ LOG = logging.getLogger("devstack.cfg")
 ENV_PAT = re.compile(r"^\s*\$\{([\w\d]+):\-(.*)\}\s*$")
 SUB_MATCH = re.compile(r"(?:\$\(([\w\d]+):([\w\d]+))\)")
 CACHE_MSG = "(value will now be internally cached)"
+
+
+def get_config(cfg_fn=None, cfg_cls=None):
+    if not cfg_fn:
+        cfg_fn = sh.canon_path(settings.STACK_CONFIG_LOCATION)
+    if not cfg_cls:
+        cfg_cls = StackConfigParser
+    config_instance = cfg_cls()
+    config_instance.read(cfg_fn)
+    return config_instance
 
 
 class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):

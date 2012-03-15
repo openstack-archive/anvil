@@ -28,8 +28,6 @@ from devstack.components import keystone
 
 from devstack.image import creator
 
-#id
-TYPE = settings.GLANCE
 LOG = logging.getLogger("devstack.components.glance")
 
 #config files/sections
@@ -82,13 +80,13 @@ BIN_DIR = 'bin'
 class GlanceUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, *args, **kargs)
-        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
+        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
 
 
 class GlanceInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
+        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
 
     def _get_download_locations(self):
         places = list()
@@ -112,11 +110,11 @@ class GlanceInstaller(comp.PythonInstallComponent):
 
     def _get_source_config(self, config_fn):
         if config_fn == POLICY_JSON:
-            fn = sh.joinpths(self.cfgdir, POLICY_JSON)
+            fn = sh.joinpths(self.cfg_dir, POLICY_JSON)
             contents = sh.load_file(fn)
             return (fn, contents)
         elif config_fn == LOGGING_CONF:
-            fn = sh.joinpths(self.cfgdir, LOGGING_SOURCE_FN)
+            fn = sh.joinpths(self.cfg_dir, LOGGING_SOURCE_FN)
             contents = sh.load_file(fn)
             return (fn, contents)
         return comp.PythonInstallComponent._get_source_config(self, config_fn)
@@ -171,7 +169,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
         #this dict will be used to fill in the configuration
         #params with actual values
         mp = dict()
-        mp['DEST'] = self.appdir
+        mp['DEST'] = self.app_dir
         mp['SYSLOG'] = self.cfg.getboolean("default", "syslog")
         mp['SQL_CONN'] = cfg_helpers.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
         mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
@@ -183,11 +181,11 @@ class GlanceInstaller(comp.PythonInstallComponent):
 class GlanceRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
-        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
+        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
 
     def _get_apps_to_start(self):
         apps = [{'name': app_name,
-                 'path': sh.joinpths(self.appdir, BIN_DIR, app_name),
+                 'path': sh.joinpths(self.app_dir, BIN_DIR, app_name),
                  }
                 for app_name in APP_OPTIONS.keys()
                 ]

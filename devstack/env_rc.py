@@ -246,11 +246,25 @@ class RcReader(object):
     def __init__(self):
         pass
 
+    def _is_comment(self, line):
+        if line.lstrip().startswith("#"):
+            return True
+        return False
+
     def extract(self, fn):
         extracted_vars = dict()
-        contents = sh.load_file(fn)
+        contents = ''
+        #not using shell here since
+        #we don't want this to be "nulled" in a dry-run
+        LOG.audit("Loading rc file [%s]" % (fn))
+        try:
+            with open(fn, 'r') as fh:
+                contents = fh.read()
+        except IOError as e:
+            LOG.warn("Failed extracting rc file [%s] due to [%s]" % (fn, e.message))
+            return extracted_vars
         for line in contents.splitlines():
-            if line.lstrip().startswith("#"):
+            if self._is_comment(line):
                 continue
             m = EXP_PAT.search(line)
             if m:

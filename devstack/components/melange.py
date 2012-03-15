@@ -26,8 +26,6 @@ from devstack import utils
 
 from devstack.components import db
 
-#id
-TYPE = settings.MELANGE
 LOG = logging.getLogger("devstack.components.melange")
 
 #this db will be dropped then created
@@ -47,7 +45,7 @@ DEF_CIDR_RANGE = 'FE-EE-DD-00-00-00/24'
 
 #how we sync melange with the db
 DB_SYNC_CMD = [
-    {'cmd': ['%BINDIR%/melange-manage', '--config-file=%CFG_FILE%', 'db_sync']},
+    {'cmd': ['%BIN_DIR%/melange-manage', '--config-file=%CFG_FILE%', 'db_sync']},
 ]
 
 #???
@@ -73,8 +71,8 @@ class MelangeUninstaller(comp.PythonUninstallComponent):
 class MelangeInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.bindir = sh.joinpths(self.appdir, BIN_DIR)
-        self.cfgdir = sh.joinpths(self.appdir, *CFG_LOC)
+        self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
+        self.cfg_dir = sh.joinpths(self.app_dir, *CFG_LOC)
 
     def _get_download_locations(self):
         places = list()
@@ -97,8 +95,8 @@ class MelangeInstaller(comp.PythonInstallComponent):
     def _sync_db(self):
         LOG.info("Syncing the database with melange.")
         mp = dict()
-        mp['BINDIR'] = self.bindir
-        mp['CFG_FILE'] = sh.joinpths(self.cfgdir, ROOT_CONF_REAL_NAME)
+        mp['BIN_DIR'] = self.bin_dir
+        mp['CFG_FILE'] = sh.joinpths(self.cfg_dir, ROOT_CONF_REAL_NAME)
         utils.execute_template(*DB_SYNC_CMD, params=mp)
 
     def _get_config_files(self):
@@ -123,7 +121,7 @@ class MelangeInstaller(comp.PythonInstallComponent):
 
     def _get_source_config(self, config_fn):
         if config_fn == ROOT_CONF:
-            srcfn = sh.joinpths(self.cfgdir, config_fn)
+            srcfn = sh.joinpths(self.cfg_dir, config_fn)
             contents = sh.load_file(srcfn)
             return (srcfn, contents)
         else:
@@ -131,7 +129,7 @@ class MelangeInstaller(comp.PythonInstallComponent):
 
     def _get_target_config_name(self, config_fn):
         if config_fn == ROOT_CONF:
-            return sh.joinpths(self.cfgdir, ROOT_CONF_REAL_NAME)
+            return sh.joinpths(self.cfg_dir, ROOT_CONF_REAL_NAME)
         else:
             return comp.PythonInstallComponent._get_target_config_name(self, config_fn)
 
@@ -139,15 +137,15 @@ class MelangeInstaller(comp.PythonInstallComponent):
 class MelangeRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
-        self.bindir = sh.joinpths(self.appdir, BIN_DIR)
-        self.cfgdir = sh.joinpths(self.appdir, *CFG_LOC)
+        self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
+        self.cfg_dir = sh.joinpths(self.app_dir, *CFG_LOC)
 
     def _get_apps_to_start(self):
         apps = list()
         for app_name in APP_OPTIONS.keys():
             apps.append({
                 'name': app_name,
-                'path': sh.joinpths(self.bindir, app_name),
+                'path': sh.joinpths(self.bin_dir, app_name),
             })
         return apps
 
@@ -156,7 +154,7 @@ class MelangeRuntime(comp.PythonRuntime):
 
     def _get_param_map(self, app_name):
         pmap = comp.PythonRuntime._get_param_map(self, app_name)
-        pmap['CFG_FILE'] = sh.joinpths(self.cfgdir, ROOT_CONF_REAL_NAME)
+        pmap['CFG_FILE'] = sh.joinpths(self.cfg_dir, ROOT_CONF_REAL_NAME)
         return pmap
 
     def post_start(self):

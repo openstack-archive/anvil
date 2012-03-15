@@ -21,8 +21,6 @@ from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 
-#id
-TYPE = settings.DB
 LOG = logging.getLogger("devstack.components.db")
 
 #used for special setups
@@ -239,7 +237,7 @@ class DBRuntime(comp.EmptyRuntime):
 
 def drop_db(cfg, pw_gen, distro, dbname):
     dbtype = cfg.get("db", "type")
-    dbactions = distro.commands[dbtype]
+    dbactions = distro.get_command(dbtype)
     if dbactions and dbactions.get('drop_db'):
         dropcmd = dbactions.get('drop_db')
         params = dict()
@@ -259,7 +257,7 @@ def drop_db(cfg, pw_gen, distro, dbname):
 
 def create_db(cfg, pw_gen, distro, dbname):
     dbtype = cfg.get("db", "type")
-    dbactions = distro.commands[dbtype]
+    dbactions = distro.get_command(dbtype)
     if dbactions and dbactions.get('create_db'):
         createcmd = dbactions.get('create_db')
         params = dict()

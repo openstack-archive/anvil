@@ -21,8 +21,6 @@ from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 
-#id
-TYPE = settings.HORIZON
 LOG = logging.getLogger("devstack.components.horizon")
 
 #actual dir names
@@ -52,11 +50,12 @@ APACHE_ACCESS_LOG_FN = "access.log"
 APACHE_DEF_PORT = 80
 
 #TODO: maybe this should be a subclass that handles these differences
-APACHE_FIXUPS = {
-    'SOCKET_CONF': "/etc/httpd/conf.d/wsgi-socket-prefix.conf",
-    'HTTPD_CONF': '/etc/httpd/conf/httpd.conf',
-}
-APACHE_FIXUPS_DISTROS = [settings.RHEL6, settings.FEDORA16]
+# APACHE_FIXUPS = {
+#     'SOCKET_CONF': "/etc/httpd/conf.d/wsgi-socket-prefix.conf",
+#     'HTTPD_CONF': '/etc/httpd/conf/httpd.conf',
+# }
+# APACHE_FIXUPS_DISTROS = [settings.RHEL6, settings.FEDORA16]
+APACHE_FIXUPS_DISTROS = []
 
 #for when quantum client is not need we need some fake files so python doesn't croak
 FAKE_QUANTUM_FILES = ['__init__.py', 'client.py']
@@ -76,9 +75,9 @@ class HorizonUninstaller(comp.PythonUninstallComponent):
 class HorizonInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.horizon_dir = sh.joinpths(self.appdir, ROOT_HORIZON)
-        self.dash_dir = sh.joinpths(self.appdir, ROOT_DASH)
-        self.log_dir = sh.joinpths(self.component_root, LOGS_DIR)
+        self.horizon_dir = sh.joinpths(self.app_dir, ROOT_HORIZON)
+        self.dash_dir = sh.joinpths(self.app_dir, ROOT_DASH)
+        self.log_dir = sh.joinpths(self.component_dir, LOGS_DIR)
 
     def _get_download_locations(self):
         places = list()
@@ -98,7 +97,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         if utils.service_enabled(settings.QUANTUM_CLIENT, self.instances, False):
             #TODO remove this junk, blah, puke that we have to do this
             qc = self.instances[settings.QUANTUM_CLIENT]
-            src_pth = sh.joinpths(qc.appdir, 'quantum')
+            src_pth = sh.joinpths(qc.app_dir, 'quantum')
             tgt_dir = sh.joinpths(self.dash_dir, 'quantum')
             links[src_pth] = tgt_dir
         return links
@@ -126,13 +125,13 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def _setup_blackhole(self):
         #create an empty directory that apache uses as docroot
-        self.tracewriter.dirs_made(*sh.mkdirslist(sh.joinpths(self.appdir, BLACKHOLE_DIR)))
+        self.tracewriter.dirs_made(*sh.mkdirslist(sh.joinpths(self.app_dir, BLACKHOLE_DIR)))
 
     def _sync_db(self):
         #Initialize the horizon database (it stores sessions and notices shown to users).
         #The user system is external (keystone).
         LOG.info("Initializing the horizon database.")
-        sh.execute(*DB_SYNC_CMD, cwd=self.appdir)
+        sh.execute(*DB_SYNC_CMD, cwd=self.app_dir)
 
     def _ensure_db_access(self):
         # ../openstack-dashboard/local needs to be writeable by the runtime user
@@ -208,10 +207,10 @@ class HorizonInstaller(comp.PythonInstallComponent):
             mp['ACCESS_LOG'] = sh.joinpths(self.log_dir, APACHE_ACCESS_LOG_FN)
             mp['ERROR_LOG'] = sh.joinpths(self.log_dir, APACHE_ERROR_LOG_FN)
             mp['GROUP'] = group
-            mp['HORIZON_DIR'] = self.appdir
+            mp['HORIZON_DIR'] = self.app_dir
             mp['HORIZON_PORT'] = self.cfg.getdefaulted('horizon', 'port', APACHE_DEF_PORT)
             mp['USER'] = user
-            mp['VPN_DIR'] = sh.joinpths(self.appdir, "vpn")
+            mp['VPN_DIR'] = sh.joinpths(self.app_dir, "vpn")
         else:
             mp['OPENSTACK_HOST'] = self.cfg.get('host', 'ip')
         return mp

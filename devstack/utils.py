@@ -257,79 +257,10 @@ def get_interfaces():
     return interfaces
 
 
-def get_components_order(components):
-    if not components:
-        return dict()
-    #deep copy so components isn't messed with
-    all_components = dict()
-    for (name, deps) in components.items():
-        all_components[name] = set(deps)
-    #figure out which ones have no one depending on them
-    no_deps_components = set()
-    for (name, deps) in all_components.items():
-        referenced = False
-        for (_name, _deps) in all_components.items():
-            if _name == name:
-                continue
-            else:
-                if name in _deps:
-                    referenced = True
-                    break
-        if not referenced:
-            no_deps_components.add(name)
-    if not no_deps_components:
-        msg = "Components specifed have no root components, there is most likely a dependency cycle!"
-        raise excp.DependencyException(msg)
-    #now we have to do a quick check to ensure no component is causing a cycle
-    for (root, deps) in all_components.items():
-        #DFS down through the "roots" deps and there deps and so on and
-        #ensure that nobody is referencing the "root" component name,
-        #that would mean there is a cycle if a dependency of the "root" is.
-        active_deps = list(deps)
-        checked_deps = dict()
-        while len(active_deps):
-            dep = active_deps.pop()
-            itsdeps = all_components.get(dep)
-            checked_deps[dep] = True
-            if root in itsdeps:
-                msg = "Circular dependency between component %s and component %s!" % (root, dep)
-                raise excp.DependencyException(msg)
-            else:
-                for d in itsdeps:
-                    if d not in checked_deps and d not in active_deps:
-                        active_deps.append(d)
-    #now form the order
-    #basically a topological sorting
-    #https://en.wikipedia.org/wiki/Topological_sorting
-    ordering = list()
-    no_edges = set(no_deps_components)
-    while len(no_edges):
-        node = no_edges.pop()
-        ordering.append(node)
-        its_deps = all_components.get(node)
-        while len(its_deps):
-            name = its_deps.pop()
-            referenced = False
-            for (_name, _deps) in all_components.items():
-                if _name == name:
-                    continue
-                else:
-                    if name in _deps:
-                        referenced = True
-                        break
-            if not referenced:
-                no_edges.add(name)
-    #should now be no edges else something bad happended
-    for (_, deps) in all_components.items():
-        if len(deps):
-            msg = "Your specified components have at least one cycle!"
-            raise excp.DependencyException(msg)
-    #reverse so its in the right order for us since we just determined
-    #the pkgs that have no one depending on them (which should be installed
-    #last and those that have incoming edges that packages are depending on need
-    #to go first, but those were inserted last), so this reverse fixes that
-    ordering.reverse()
-    return ordering
+def format_secs_taken(secs):
+    output = "%.03f seconds" % (secs)
+    output += " or %.02f minutes" % (secs / 60.0)
+    return output
 
 
 def joinlinesep(*pieces):
@@ -705,28 +636,6 @@ def goodbye(worked):
     msg = cow.format(eye=eye_fmt, ear=ear,
                      header=header)
     print(msg)
-
-
-def parse_components(components):
-    if not components:
-        return dict()
-    adjusted_components = dict()
-    for c in components:
-        mtch = EXT_COMPONENT.match(c)
-        if mtch:
-            component_name = mtch.group(1).lower().strip()
-            if component_name in settings.COMPONENT_NAMES:
-                component_opts = mtch.group(2)
-                components_opts_cleaned = None
-                if component_opts:
-                    components_opts_cleaned = list()
-                    sp_component_opts = component_opts.split(",")
-                    for co in sp_component_opts:
-                        cleaned_opt = co.strip()
-                        if cleaned_opt:
-                            components_opts_cleaned.append(cleaned_opt)
-                adjusted_components[component_name] = components_opts_cleaned
-    return adjusted_components
 
 
 def welcome(ident):

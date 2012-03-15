@@ -64,7 +64,7 @@ class Distro(object):
         LOG.debug('Looking for distro data for %s (%s)', plt, distname)
         for p in cls.load_all():
             if p.supports_distro(plt):
-                LOG.info('Using distro "%s" for "%s"', p.name, plt)
+                LOG.info('Using distro "%s" for platform "%s"', p.name, plt)
                 return p
         else:
             raise RuntimeError(
@@ -77,6 +77,15 @@ class Distro(object):
         self.packager_name = packager_name
         self.commands = commands
         self.components = components
+
+    def __repr__(self):
+        return "\"%s\" using packager \"%s\"" % (self.name, self.packager_name)
+
+    def get_command(self, cmd_key, quiet=False):
+        if not quiet:
+            return self.commands[cmd_key]
+        else:
+            return self.commands.get(cmd_key)
 
     def supports_distro(self, distro_name):
         """Does this distro support the named Linux distro?
@@ -97,27 +106,3 @@ class Distro(object):
             raise RuntimeError('No class configured to %s %s on %s' %
                                (action, name, self.name))
         return importer.import_entry_point(entry_point)
-
-    def resolve_component_dependencies(self, components):
-        """Returns list of all components needed for the named components."""
-        all_components = {}
-        active_names = [(c, None) for c in components]
-        while active_names:
-            component, parent = active_names.pop()
-            try:
-                component_details = self.components[component]
-            except KeyError:
-                if parent:
-                    raise RuntimeError(
-                        'Could not find details about component %r, a dependency of %s, for %s' %
-                        (component, parent, self.name))
-                else:
-                    raise RuntimeError(
-                        'Could not find details about component %r for %s' %
-                        (component, self.name))
-            deps = set(component_details.get('dependencies', []))
-            all_components[component] = deps
-            for d in deps:
-                if d not in all_components and d not in active_names:
-                    active_names.append((d, component))
-        return all_components

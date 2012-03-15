@@ -43,5 +43,5 @@ def get_key(key, default_value=None):
         LOG.debug("Could not find anything in environment variable [%s]" % (key))
         value = default_value
     else:
-        LOG.debug("Found [%s] in environment variable [%s]" % (value, key))
+        LOG.audit("Found [%s] in environment variable [%s]" % (value, key))
     return value

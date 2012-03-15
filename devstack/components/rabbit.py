@@ -21,8 +21,6 @@ from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
 
-#id
-TYPE = settings.RABBIT
 LOG = logging.getLogger("devstack.components.rabbit")
 
 #hopefully these are distro independent..

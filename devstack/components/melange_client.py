@@ -18,8 +18,6 @@ from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
 
-#id
-TYPE = settings.MELANGE_CLIENT
 LOG = logging.getLogger("devstack.components.melange_client")
 
 

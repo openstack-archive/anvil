@@ -29,17 +29,15 @@ from devstack import utils
 from devstack.components import db
 from devstack.components import keystone
 
-#id
-TYPE = settings.NOVA
 LOG = logging.getLogger('devstack.components.nova')
 
-#special generated conf
+# Special generated conf
 API_CONF = 'nova.conf'
 
-#how we reference some config files (in applications)
+# How we reference some config files (in applications)
 CFG_FILE_OPT = '--config-file'
 
-#normal conf
+# Normal conf
 PASTE_CONF = 'nova-api-paste.ini'
 PASTE_SOURCE_FN = 'api-paste.ini'
 POLICY_CONF = 'policy.json'
@@ -48,19 +46,19 @@ LOGGING_CONF = "logging.conf"
 CONFIGS = [PASTE_CONF, POLICY_CONF, LOGGING_CONF]
 ADJUST_CONFIGS = [PASTE_CONF]
 
-#this is a special conf
+# This is a special conf
 NET_INIT_CONF = 'nova-network-init.sh'
 NET_INIT_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
 
-#this db will be dropped then created
+# This db will be dropped then created
 DB_NAME = 'nova'
 
-#this makes the database be in sync with nova
+# This makes the database be in sync with nova
 DB_SYNC_CMD = [
-    {'cmd': ['%BINDIR%/nova-manage', CFG_FILE_OPT, '%CFGFILE%', 'db', 'sync']},
+    {'cmd': ['%BIN_DIR%/nova-manage', CFG_FILE_OPT, '%CFGFILE%', 'db', 'sync']},
 ]
 
-#these are used for nova volumens
+# These are used for nova volumes
 VG_CHECK_CMD = [
     {'cmd': ['vgs', '%VOLUME_GROUP%'],
      'run_as_root': True}
@@ -82,21 +80,6 @@ VG_LVREMOVE_CMD = [
      'run_as_root': True}
 ]
 
-# iscsi restart commands
-RESTART_TGT_CMD = {
-    settings.UBUNTU11: [
-        {'cmd': ['stop', 'tgt'], 'run_as_root': True},
-        {'cmd': ['start', 'tgt'], 'run_as_root': True}
-    ],
-    settings.RHEL6: [
-        {'cmd': ['service', 'tgtd', 'stop'], 'run_as_root': True},
-        {'cmd': ['service', 'tgtd', 'start'], 'run_as_root': True}
-    ],
-    settings.FEDORA16: [
-        {'cmd': ['service', 'tgtd', 'stop'], 'run_as_root': True},
-        {'cmd': ['service', 'tgtd', 'start'], 'run_as_root': True}
-    ],
-}
 
 # NCPU, NVOL, NAPI ... are here as possible subcomponents of nova
 NCPU = "cpu"
@@ -187,16 +170,15 @@ CLEANER_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
 
 #rhel6/fedora libvirt policy
 #http://wiki.libvirt.org/page/SSHPolicyKitSetup
-LIBVIRT_POLICY_FN = "/etc/polkit-1/localauthority/50-local.d/50-libvirt-remote-access.pkla"
-LIBVIRT_POLICY_CONTENTS = """
-[libvirt Management Access]
-Identity=unix-group:libvirtd
-Action=org.libvirt.unix.manage
-ResultAny=yes
-ResultInactive=yes
-ResultActive=yes
-"""
-POLICY_DISTROS = [settings.RHEL6, settings.FEDORA16]
+#LIBVIRT_POLICY_FN = "/etc/polkit-1/localauthority/50-local.d/50-libvirt-remote-access.pkla"
+#LIBVIRT_POLICY_CONTENTS = """
+#[libvirt Management Access]
+#Identity=unix-group:libvirtd
+#Action=org.libvirt.unix.manage
+#ResultAny=yes
+#ResultInactive=yes
+#ResultActive=yes
+#"""
 
 #xenserver specific defaults
 XS_DEF_INTERFACE = 'eth1'
@@ -245,8 +227,8 @@ def _canon_libvirt_type(virt_type):
 class NovaUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, *args, **kargs)
-        self.bindir = sh.joinpths(self.appdir, BIN_DIR)
-        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
+        self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
+        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
 
     def pre_uninstall(self):
         self._clear_libvirt_domains()
@@ -256,10 +238,10 @@ class NovaUninstaller(comp.PythonUninstallComponent):
         #these environment additions are important
         #in that they eventually affect how this script runs
         env = dict()
-        env['ENABLED_SERVICES'] = ",".join(SUBCOMPONENTS)
-        env['BIN_DIR'] = self.bindir
+        env['ENABLED_SERVICES'] = ",".join(self.subsystems)
+        env['BIN_DIR'] = self.bin_dir
         env['VOLUME_NAME_PREFIX'] = self.cfg.getdefaulted('nova', 'volume_name_prefix', DEF_VOL_PREFIX)
-        cleaner_fn = sh.joinpths(self.bindir, CLEANER_DATA_CONF)
+        cleaner_fn = sh.joinpths(self.bin_dir, CLEANER_DATA_CONF)
         if sh.isfile(cleaner_fn):
             LOG.info("Cleaning up your system by running nova cleaner script [%s]." % (cleaner_fn))
             cmd = CLEANER_CMD_ROOT + [cleaner_fn]
@@ -270,28 +252,25 @@ class NovaUninstaller(comp.PythonUninstallComponent):
         if virt_driver == 'libvirt':
             inst_prefix = self.cfg.getdefaulted('nova', 'instance_name_prefix', DEF_INSTANCE_PREFIX)
             libvirt_type = _canon_libvirt_type(self.cfg.get('nova', 'libvirt_type'))
-            virsh.clear_libvirt_domains(self.distro.name, libvirt_type, inst_prefix)
+            virsh.clear_libvirt_domains(self.distro, libvirt_type, inst_prefix)
 
 
 class NovaInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.bindir = sh.joinpths(self.appdir, BIN_DIR)
-        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
+        self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
+        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
         self.paste_conf_fn = self._get_target_config_name(PASTE_CONF)
         self.volumes_enabled = False
-        package_names = [p['name']
-                         for p in self.component_opts.get('packages', [])
-                         ]
-        if NVOL in package_names:
+        if NVOL in self.subsystems:
             self.volumes_enabled = True
         self.xvnc_enabled = False
-        if NXVNC in package_names:
+        if NXVNC in self.subsystems:
             self.xvnc_enabled = True
 
     def _get_symlinks(self):
         links = comp.PythonInstallComponent._get_symlinks(self)
-        source_fn = sh.joinpths(self.cfgdir, API_CONF)
+        source_fn = sh.joinpths(self.cfg_dir, API_CONF)
         links[source_fn] = sh.joinpths(self._get_link_dir(), API_CONF)
         return links
 
@@ -318,7 +297,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         (_, contents) = utils.load_template(self.component_name, NET_INIT_CONF)
         params = self._get_param_map(NET_INIT_CONF)
         contents = utils.param_replace(contents, params, True)
-        tgt_fn = sh.joinpths(self.bindir, NET_INIT_CONF)
+        tgt_fn = sh.joinpths(self.bin_dir, NET_INIT_CONF)
         sh.write_file(tgt_fn, contents)
         sh.chmod(tgt_fn, 0755)
         self.tracewriter.file_touched(tgt_fn)
@@ -326,8 +305,8 @@ class NovaInstaller(comp.PythonInstallComponent):
     def _sync_db(self):
         LOG.info("Syncing the database with nova.")
         mp = dict()
-        mp['BINDIR'] = self.bindir
-        mp['CFGFILE'] = sh.joinpths(self.cfgdir, API_CONF)
+        mp['BIN_DIR'] = self.bin_dir
+        mp['CFGFILE'] = sh.joinpths(self.cfg_dir, API_CONF)
         utils.execute_template(*DB_SYNC_CMD, params=mp)
 
     def post_install(self):
@@ -345,7 +324,7 @@ class NovaInstaller(comp.PythonInstallComponent):
     def _setup_cleaner(self):
         LOG.info("Configuring cleaner template %s.", CLEANER_DATA_CONF)
         (_, contents) = utils.load_template(self.component_name, CLEANER_DATA_CONF)
-        tgt_fn = sh.joinpths(self.bindir, CLEANER_DATA_CONF)
+        tgt_fn = sh.joinpths(self.bin_dir, CLEANER_DATA_CONF)
         sh.write_file(tgt_fn, contents)
         sh.chmod(tgt_fn, 0755)
         self.tracewriter.file_touched(tgt_fn)
@@ -372,15 +351,15 @@ class NovaInstaller(comp.PythonInstallComponent):
             return comp.PythonInstallComponent._get_source_config(self, PASTE_SOURCE_FN)
         elif config_fn == LOGGING_CONF:
             name = LOGGING_SOURCE_FN
-        srcfn = sh.joinpths(self.cfgdir, "nova", name)
+        srcfn = sh.joinpths(self.cfg_dir, "nova", name)
         contents = sh.load_file(srcfn)
         return (srcfn, contents)
 
     def _get_param_map(self, config_fn):
         mp = dict()
         if config_fn == NET_INIT_CONF:
-            mp['NOVA_DIR'] = self.appdir
-            mp['CFG_FILE'] = sh.joinpths(self.cfgdir, API_CONF)
+            mp['NOVA_DIR'] = self.app_dir
+            mp['CFG_FILE'] = sh.joinpths(self.cfg_dir, API_CONF)
             mp['FLOATING_RANGE'] = self.cfg.getdefaulted('nova', 'floating_range', '172.24.4.224/28')
             mp['TEST_FLOATING_RANGE'] = self.cfg.getdefaulted('nova', 'test_floating_range', '192.168.253.0/29')
             mp['TEST_FLOATING_POOL'] = self.cfg.getdefaulted('nova', 'test_floating_pool', 'test')
@@ -394,15 +373,16 @@ class NovaInstaller(comp.PythonInstallComponent):
         configs_made = comp.PythonInstallComponent.configure(self)
         self._generate_nova_conf()
         configs_made += 1
-        # TODO: maybe this should be a subclass that handles these differences
         driver_canon = _canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
-        if (self.distro.name in POLICY_DISTROS) and driver_canon == 'libvirt':
+        # TODO maybe move this??
+        if  driver_canon == 'libvirt' and self.distro.get_command('virt-policy', quiet=True):
+            (fn, contents) = self.distro.get_command('virt-policy')
             dirs_made = list()
             with sh.Rooted(True):
-                dirs_made = sh.mkdirslist(sh.dirname(LIBVIRT_POLICY_FN))
-                sh.write_file(LIBVIRT_POLICY_FN, LIBVIRT_POLICY_CONTENTS)
+                dirs_made = sh.mkdirslist(sh.dirname(fn))
+                sh.write_file(fn, contents)
             self.tracewriter.dirs_made(*dirs_made)
-            self.tracewriter.cfg_file_written(LIBVIRT_POLICY_FN)
+            self.tracewriter.cfg_file_written(fn)
             configs_made += 1
         return configs_made
 
@@ -410,11 +390,11 @@ class NovaInstaller(comp.PythonInstallComponent):
 class NovaRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
-        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
-        self.bindir = sh.joinpths(self.appdir, BIN_DIR)
+        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
+        self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
 
     def _setup_network_init(self):
-        tgt_fn = sh.joinpths(self.bindir, NET_INIT_CONF)
+        tgt_fn = sh.joinpths(self.bin_dir, NET_INIT_CONF)
         if sh.isfile(tgt_fn):
             LOG.info("Creating your nova network to be used with instances.")
             #still there, run it
@@ -434,16 +414,9 @@ class NovaRuntime(comp.PythonRuntime):
     def post_start(self):
         self._setup_network_init()
 
-    def get_dependencies(self):
-        deps = comp.PythonRuntime.get_dependencies(self)
-        # FIXME: This should come from a persona.
-        if utils.service_enabled(settings.QUANTUM, self.instances, False):
-            deps.append(settings.QUANTUM)
-        return deps
-
     def _get_apps_to_start(self):
         result = [{'name': app_name,
-                   'path': sh.joinpths(self.bindir, app_name),
+                   'path': sh.joinpths(self.bin_dir, app_name),
                    }
                   for app_name in sorted(APP_OPTIONS.keys())
                   ]
@@ -456,15 +429,15 @@ class NovaRuntime(comp.PythonRuntime):
         if virt_driver == 'libvirt':
             virt_type = _canon_libvirt_type(self.cfg.get('nova', 'libvirt_type'))
             LOG.info("Checking that your selected libvirt virtualization type [%s] is working and running." % (virt_type))
-            if not virsh.virt_ok(virt_type, self.distro.name):
-                msg = ("Libvirt type %s for distro %s does not seem to be active or configured correctly, "
-                       "perhaps you should be using %s instead." % (virt_type, self.distro.name, DEF_VIRT_TYPE))
+            if not virsh.virt_ok(virt_type, self.distro):
+                msg = ("Libvirt type %s does not seem to be active or configured correctly, "
+                       "perhaps you should be using %s instead." % (virt_type, DEF_VIRT_TYPE))
                 raise exceptions.StartException(msg)
-            virsh.restart(self.distro.name)
+            virsh.restart(self.distro)
 
     def _get_param_map(self, app_name):
         params = comp.PythonRuntime._get_param_map(self, app_name)
-        params['CFGFILE'] = sh.joinpths(self.cfgdir, API_CONF)
+        params['CFGFILE'] = sh.joinpths(self.cfg_dir, API_CONF)
         return params
 
     def _get_app_options(self, app):
@@ -476,7 +449,7 @@ class NovaRuntime(comp.PythonRuntime):
 class NovaVolumeConfigurator(object):
     def __init__(self, ni):
         self.cfg = ni.cfg
-        self.appdir = ni.appdir
+        self.app_dir = ni.app_dir
         self.distro = ni.distro
 
     def setup_volumes(self):
@@ -485,7 +458,7 @@ class NovaVolumeConfigurator(object):
     def _setup_vol_groups(self):
         LOG.info("Attempting to setup volume groups for nova volume management.")
         mp = dict()
-        backing_file = self.cfg.getdefaulted('nova', 'volume_backing_file', sh.joinpths(self.appdir, 'nova-volumes-backing-file'))
+        backing_file = self.cfg.getdefaulted('nova', 'volume_backing_file', sh.joinpths(self.app_dir, 'nova-volumes-backing-file'))
         vol_group = self.cfg.getdefaulted('nova', 'volume_group', 'nova-volumes')
         backing_file_size = utils.to_bytes(self.cfg.getdefaulted('nova', 'volume_backing_file_size', '2052M'))
         mp['VOLUME_GROUP'] = vol_group
@@ -512,7 +485,10 @@ class NovaVolumeConfigurator(object):
         # logical volumes
         self._process_lvs(mp)
         # Finish off by restarting tgt, and ignore any errors
-        utils.execute_template(*RESTART_TGT_CMD[self.distro.name], check_exit_code=False)
+        iscsi_cmds = self.distro.get_command('iscsi', quiet=True)
+        if iscsi_cmds:
+            restart_cmd = iscsi_cmds['restart']
+            utils.execute_template(*restart_cmd, run_as_root=True, check_exit_code=False)
 
     def _process_lvs(self, mp):
         LOG.info("Attempting to setup logical volumes for nova volume management.")
@@ -548,12 +524,12 @@ class NovaConfConfigurator(object):
         self.cfg = ni.cfg
         self.pw_gen = ni.pw_gen
         self.instances = ni.instances
-        self.component_root = ni.component_root
-        self.appdir = ni.appdir
+        self.component_dir = ni.component_dir
+        self.app_dir = ni.app_dir
         self.tracewriter = ni.tracewriter
         self.paste_conf_fn = ni.paste_conf_fn
         self.distro = ni.distro
-        self.cfgdir = ni.cfgdir
+        self.cfg_dir = ni.cfg_dir
         self.xvnc_enabled = ni.xvnc_enabled
         self.volumes_enabled = ni.volumes_enabled
         self.novnc_enabled = utils.service_enabled(settings.NOVNC, self.instances)
@@ -649,7 +625,7 @@ class NovaConfConfigurator(object):
         nova_conf.add('rabbit_password', self.cfg.get("passwords", "rabbit"))
 
         #where instances will be stored
-        instances_path = self._getstr('instances_path', sh.joinpths(self.component_root, 'instances'))
+        instances_path = self._getstr('instances_path', sh.joinpths(self.component_dir, 'instances'))
         self._configure_instances_path(instances_path, nova_conf)
 
         #is this a multihost setup?
@@ -766,7 +742,7 @@ class NovaConfConfigurator(object):
             nova_conf.add('network_manager', NET_MANAGER_TEMPLATE % (self._getstr('network_manager', DEF_NET_MANAGER)))
 
         #dhcp bridge stuff???
-        nova_conf.add('dhcpbridge_flagfile', sh.joinpths(self.cfgdir, API_CONF))
+        nova_conf.add('dhcpbridge_flagfile', sh.joinpths(self.cfg_dir, API_CONF))
 
         #Network prefix for the IP network that all the projects for future VM guests reside on. Example: 192.168.0.0/12
         nova_conf.add('fixed_range', self._getstr('fixed_range'))

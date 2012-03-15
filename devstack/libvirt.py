@@ -32,13 +32,6 @@ LIBVIRT_PROTOCOL_MAP = {
 }
 VIRT_LIB = 'libvirt'
 
-#distros name the libvirt service differently :-(
-SV_NAME_MAP = {
-    settings.RHEL6: 'libvirtd',
-    settings.FEDORA16: 'libvirtd',
-    settings.UBUNTU11: 'libvirt-bin',
-}
-
 #how libvirt is restarted
 LIBVIRT_RESTART_CMD = ['service', '%SERVICE%', 'restart']
 
@@ -71,7 +64,7 @@ def _status(distro):
         'run_as_root': True,
     })
     mp = dict()
-    mp['SERVICE'] = SV_NAME_MAP[distro]
+    mp['SERVICE'] = distro.get_command('libvirt-daemon')
     result = utils.execute_template(*cmds,
                                 check_exit_code=False,
                                 params=mp)
@@ -104,7 +97,7 @@ def restart(distro):
             'run_as_root': True,
         })
         mp = dict()
-        mp['SERVICE'] = SV_NAME_MAP[distro]
+        mp['SERVICE'] = distro.get_command('libvirt-daemon')
         utils.execute_template(*cmds, params=mp)
         LOG.info("Restarting the libvirt service, please wait %s seconds until its started." % (WAIT_ALIVE_TIME))
         sh.sleep(WAIT_ALIVE_TIME)
@@ -117,7 +110,7 @@ def virt_ok(virt_type, distro):
     try:
         restart(distro)
     except excp.ProcessExecutionError, e:
-        LOG.warn("Could not restart libvirt on distro [%s] due to [%s]" % (distro, e.message))
+        LOG.warn("Could not restart libvirt due to [%s]" % (e))
         return False
     try:
         cmds = list()
@@ -148,7 +141,7 @@ def clear_libvirt_domains(distro, virt_type, inst_prefix):
         try:
             restart(distro)
         except excp.ProcessExecutionError, e:
-            LOG.warn("Could not restart libvirt on distro [%s] due to [%s]" % (distro, e.message))
+            LOG.warn("Could not restart libvirt due to [%s]" % (e))
             return
         try:
             conn = libvirt.open(virt_protocol)

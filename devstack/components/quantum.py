@@ -26,8 +26,6 @@ from devstack import utils
 
 from devstack.components import db
 
-#id
-TYPE = settings.QUANTUM
 LOG = logging.getLogger("devstack.components.quantum")
 
 #vswitch pkgs
@@ -117,10 +115,10 @@ class QuantumInstaller(comp.PkgInstallComponent):
 
     def _get_target_config_name(self, config_fn):
         if config_fn == PLUGIN_CONF:
-            tgt_loc = [self.appdir] + PLUGIN_LOC + [config_fn]
+            tgt_loc = [self.app_dir] + PLUGIN_LOC + [config_fn]
             return sh.joinpths(*tgt_loc)
         elif config_fn == AGENT_CONF:
-            tgt_loc = [self.appdir] + AGENT_LOC + [config_fn]
+            tgt_loc = [self.app_dir] + AGENT_LOC + [config_fn]
             return sh.joinpths(*tgt_loc)
         else:
             return comp.PkgInstallComponent._get_target_config_name(self, config_fn)
@@ -190,12 +188,12 @@ class QuantumInstaller(comp.PkgInstallComponent):
 
     def _get_source_config(self, config_fn):
         if config_fn == PLUGIN_CONF:
-            srcloc = [self.appdir] + PLUGIN_LOC + [config_fn]
+            srcloc = [self.app_dir] + PLUGIN_LOC + [config_fn]
             srcfn = sh.joinpths(*srcloc)
             contents = sh.load_file(srcfn)
             return (srcfn, contents)
         elif config_fn == AGENT_CONF:
-            srcloc = [self.appdir] + AGENT_LOC + [config_fn]
+            srcloc = [self.app_dir] + AGENT_LOC + [config_fn]
             srcfn = sh.joinpths(*srcloc)
             contents = sh.load_file(srcfn)
             return (srcfn, contents)
@@ -225,10 +223,10 @@ class QuantumRuntime(comp.ProgramRuntime):
         if self.q_vswitch_service:
             app_list.append({
                     'name': APP_Q_SERVER,
-                    'path': sh.joinpths(self.appdir, BIN_DIR, APP_Q_SERVER),
+                    'path': sh.joinpths(self.app_dir, BIN_DIR, APP_Q_SERVER),
             })
         if self.q_vswitch_agent:
-            full_pth = [self.appdir] + AGENT_BIN_LOC + [APP_Q_AGENT]
+            full_pth = [self.app_dir] + AGENT_BIN_LOC + [APP_Q_AGENT]
             app_list.append({
                     'name': APP_Q_AGENT,
                     'path': sh.joinpths(*full_pth)
@@ -241,8 +239,8 @@ class QuantumRuntime(comp.ProgramRuntime):
     def _get_param_map(self, app_name):
         param_dict = comp.ProgramRuntime._get_param_map(self, app_name)
         if app_name == APP_Q_AGENT:
-            tgt_loc = [self.appdir] + AGENT_LOC + [AGENT_CONF]
+            tgt_loc = [self.app_dir] + AGENT_LOC + [AGENT_CONF]
             param_dict['OVS_CONFIG_FILE'] = sh.joinpths(*tgt_loc)
         elif app_name == APP_Q_SERVER:
-            param_dict['QUANTUM_CONFIG_FILE'] = sh.joinpths(self.appdir, CONFIG_DIR, QUANTUM_CONF)
+            param_dict['QUANTUM_CONFIG_FILE'] = sh.joinpths(self.app_dir, CONFIG_DIR, QUANTUM_CONF)
         return param_dict

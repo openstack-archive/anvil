@@ -10,7 +10,7 @@ LOG = logging.getLogger(__name__)
 
 
 class OneiricDBInstaller(db.DBInstaller):
-
+    
     def _configure_db_confs(self):
         LOG.info("Fixing up %s mysql configs.", self.distro.name)
         fc = sh.load_file('/etc/mysql/my.cnf')

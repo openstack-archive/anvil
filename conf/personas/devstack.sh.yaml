@@ -1,0 +1,31 @@
+---
+created_on: Wed, 14 Mar 2012 17:28:24 -0700
+description: Devstack.sh matching component installation (as of the above date).
+supports:
+- rhel-6
+- ubuntu-oneiric
+- fedora-16
+components:
+- db
+- rabbit-mq
+- keystone-client
+- keystone
+- glance
+- nova
+- no-vnc
+- quantum-client
+- nova-client
+- horizon
+subsystems:
+  glance:
+  - api
+  - reg
+  nova:
+  - api
+  - cauth
+  - cert
+  - cpu
+  - net
+  - sched
+  - vol
+  - xvnc

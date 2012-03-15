@@ -18,6 +18,8 @@ commands:
     status: ["service", "apache2", "status"]
     settings:
        conf-link-target: /etc/apache2/sites-enabled/000-default
+  
+  libvirt-daemon: 'libvirt-bin'
 
   mysql:
     start: ["service", "mysql", 'start']
@@ -31,7 +33,12 @@ commands:
     drop_db: ['mysql', '--user=%USER%', '--password=%PASSWORD%', '-e', 'DROP DATABASE IF EXISTS %DB%;']
     grant_all: ["mysql", "--user=%USER%", "--password=%PASSWORD%", '-e', 
                 "\"GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' IDENTIFIED BY '%PASSWORD%'; FLUSH PRIVILEGES;\""]
-
+  iscsi:
+    start: ['service', 'tgt', 'start']
+    stop: ['service', 'tgt', 'stop']
+    restart: ['service', 'tgt', 'restart']
+    status: ['service', 'tgt', 'status']
+  
 components:
 
   db:
@@ -435,7 +442,7 @@ components:
         removable: True
         version: 0.14.*
 
-  n-vnc:
+  no-vnc:
     install: devstack.components.novnc:NoVNCInstaller
     uninstall: devstack.components.novnc:NoVNCUninstaller
     start: devstack.components.novnc:NoVNCRuntime
@@ -664,7 +671,7 @@ components:
         removable: True
         version: 1.12*
 
-  rabbit:
+  rabbit-mq:
     install: devstack.components.rabbit:RabbitInstaller
     uninstall: devstack.components.rabbit:RabbitUninstaller
     start: devstack.components.rabbit:RabbitRuntime

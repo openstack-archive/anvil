@@ -18,13 +18,6 @@ import os
 import re
 import sys
 
-# These also have meaning outside python,
-# ie in the pkg/pip listings so update there also!
-# FIXME: Delete
-UBUNTU11 = "ubuntu-oneiric"
-RHEL6 = "rhel-6"
-FEDORA16 = "fedora-16"
-
 # What this program is called
 PROG_NICE_NAME = "DEVSTACKpy"
 
@@ -36,7 +29,7 @@ POST_INSTALL = 'post-install'
 IPV4 = 'IPv4'
 IPV6 = 'IPv6'
 
-#how long to wait for a service to startup
+# How long to wait for a service to startup
 WAIT_ALIVE_SECS = 5
 
 # Component name mappings
@@ -67,29 +60,6 @@ COMPONENT_NAMES = [
     NOVNC,
     MELANGE, MELANGE_CLIENT,
 ]
-
-# When a component is asked for it may
-# need another component, that dependency
-# mapping is listed here. A topological sort
-# will be applied to determine the exact order.
-# COMPONENT_DEPENDENCIES = {
-#     DB: [],
-#     KEYSTONE_CLIENT: [],
-#     RABBIT: [],
-#     GLANCE: [KEYSTONE, DB],
-#     KEYSTONE: [DB, KEYSTONE_CLIENT],
-#     NOVA: [KEYSTONE, GLANCE, DB, RABBIT, NOVA_CLIENT],
-#     SWIFT: [KEYSTONE_CLIENT],
-#     NOVA_CLIENT: [],
-#     # Horizon depends on glances client (which should really be a client package)
-#     HORIZON: [KEYSTONE_CLIENT, GLANCE, NOVA_CLIENT, QUANTUM_CLIENT],
-#     # More of quantums deps come from its module function get_dependencies
-#     QUANTUM: [],
-#     NOVNC: [NOVA],
-#     QUANTUM_CLIENT: [],
-#     MELANGE: [DB],
-#     MELANGE_CLIENT: [],
-# }
 
 # Different run types supported
 RUN_TYPE_FORK = "FORK"
@@ -126,6 +96,4 @@ ACTIONS = [INSTALL, UNINSTALL, START, STOP]
 STACK_BIN_DIR = os.path.abspath(os.path.dirname(sys.argv[0]))
 STACK_CONFIG_DIR = os.path.join(STACK_BIN_DIR, "conf")
 STACK_TEMPLATE_DIR = os.path.join(STACK_CONFIG_DIR, "templates")
-STACK_PKG_DIR = os.path.join(STACK_CONFIG_DIR, "pkgs")
-STACK_PIP_DIR = os.path.join(STACK_CONFIG_DIR, "pips")
 STACK_CONFIG_LOCATION = os.path.join(STACK_CONFIG_DIR, "stack.ini")
