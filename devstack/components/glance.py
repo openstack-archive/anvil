@@ -78,9 +78,6 @@ SUB_TO_APP = {
 CONFIG_DIR = 'etc'
 BIN_DIR = 'bin'
 
-#pip files that glance requires
-REQ_PIPS = ['general.json', 'glance.json']
-
 
 class GlanceUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -103,9 +100,6 @@ class GlanceInstaller(comp.PythonInstallComponent):
 
     def _get_config_files(self):
         return list(CONFIGS)
-
-    def _get_pips(self):
-        return list(REQ_PIPS)
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)

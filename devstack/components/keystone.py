@@ -66,9 +66,6 @@ APP_OPTIONS = {
 }
 
 
-#pip files that keystone requires
-REQ_PIPS = ['general.json', 'keystone.json']
-
 #used to wait until started before we can run the data setup script
 WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
 
@@ -106,9 +103,6 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             'branch': ("git", "keystone_branch"),
         })
         return places
-
-    def _get_pips(self):
-        return list(REQ_PIPS)
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)

@@ -69,9 +69,6 @@ APP_OPTIONS = {
     APP_Q_AGENT: ["%OVS_CONFIG_FILE%", "-v"],
 }
 
-#pip files that nova requires
-REQ_PIPS = ['quantum.json']
-
 
 class QuantumUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -102,9 +99,6 @@ class QuantumInstaller(comp.PkgInstallComponent):
             'branch': ("git", "quantum_branch"),
         })
         return places
-
-    def _get_pips(self):
-        return list(REQ_PIPS)
 
     def get_dependencies(self):
         common_deps = comp.PkgInstallComponent.get_dependencies(self)

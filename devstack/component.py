@@ -62,6 +62,7 @@ class ComponentBase(object):
         # The runner has a reference to us, so use a weakref here to
         # avoid breaking garbage collection.
         self.runner = weakref.proxy(runner)
+
         self.root = root_dir
         self.component_opts = component_options or {}
         self.instances = instances or {}
@@ -253,21 +254,10 @@ class PythonInstallComponent(PkgInstallComponent):
         py_dirs[self.component_name] = self.appdir
         return py_dirs
 
-    def _get_pips(self):
-        return list()
-
-    def _get_pips_expanded(self):
-        shorts = self._get_pips()
-        if not shorts:
-            return dict()
-        pips = dict()
-        for fn in shorts:
-            full_name = sh.joinpths(settings.STACK_PIP_DIR, fn)
-            pips = utils.extract_pip_list([full_name], self.distro.name, pips)
-        return pips
-
     def _install_pips(self):
-        pips = self._get_pips_expanded()
+        pips = dict((p['name'], p)
+                    for p in self.component_opts.get('pips', [])
+                    )
         if pips:
             LOG.info("Setting up %s pips (%s)",
                      len(pips), ", ".join(pips.keys()))

@@ -67,9 +67,6 @@ BAD_APACHE_USERS = ['root']
 #apache logs will go here
 LOGS_DIR = "logs"
 
-#pip files that horizon requires
-REQ_PIPS = ['general.json', 'horizon.json']
-
 
 class HorizonUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -117,9 +114,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
         if user in BAD_APACHE_USERS:
             msg = "You may want to adjust your configuration, (user=%s, group=%s) will not work with apache!" % (user, group)
             raise excp.ConfigException(msg)
-
-    def _get_pips(self):
-        return list(REQ_PIPS)
 
     def _get_target_config_name(self, config_name):
         if config_name == HORIZON_PY_CONF:
