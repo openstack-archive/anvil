@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 
 import glob
 import json
@@ -15,9 +16,10 @@ def load_json(fn):
         )
     return json.loads(data)
 
-distro = sys.argv[1]
+inputdir = sys.argv[1]
+distro = sys.argv[2]
 
-for input_file in glob.glob('conf/pkgs/*.json'):
+for input_file in glob.glob('%s/*.json' % inputdir):
     data = load_json(input_file)
 
     print
