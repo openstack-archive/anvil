@@ -16,7 +16,6 @@
 
 from urlparse import urlunparse
 
-from devstack import cfg_helpers
 from devstack import component as comp
 from devstack import date
 from devstack import exceptions
@@ -610,7 +609,7 @@ class NovaConfConfigurator(object):
         nova_conf.add('my_ip', hostip)
 
         #setup your sql connection
-        db_dsn = cfg_helpers.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
+        db_dsn = db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
         nova_conf.add('sql_connection', db_dsn)
 
         #configure anything libvirt releated?

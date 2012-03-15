@@ -17,7 +17,6 @@
 import io
 
 from devstack import cfg
-from devstack import cfg_helpers
 from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
@@ -173,7 +172,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
         mp = dict()
         mp['DEST'] = self.appdir
         mp['SYSLOG'] = self.cfg.getboolean("default", "syslog")
-        mp['SQL_CONN'] = cfg_helpers.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
+        mp['SQL_CONN'] = db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
         mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
         mp['HOST_IP'] = self.cfg.get('host', 'ip')
         mp.update(keystone.get_shared_params(self.cfg, self.pw_gen, 'glance'))

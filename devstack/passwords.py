@@ -23,17 +23,6 @@ import re
 
 LOG = logging.getLogger("devstack.passwords")
 PW_SECTION = 'passwords'
-HELPFUL_DESCRIPTIONS = {
-    'sql': 'the database user',
-    'rabbit': 'the rabbit user',
-    'horizon_keystone_admin': 'the horizon and keystone admin',
-    'service_password': 'service authentication',
-    "service_token": 'the service admin token',
-}
-
-
-def get_pw_usage(option):
-    return HELPFUL_DESCRIPTIONS.get(option, '???')
 
 
 def generate_random(length):
@@ -78,12 +67,8 @@ class PasswordGenerator(object):
     def _set_through(self, option, value):
         self.cfg.set(PW_SECTION, option, value)
 
-    def get_password(self, option, prompt_text=None, length=8):
+    def get_password(self, option, prompt_text, length=8):
         """Returns a password identified by the configuration location."""
-
-        if not prompt_text:
-            prompt_text = get_pw_usage(option)
-
         LOG.debug('Looking for password %s (%s)', option, prompt_text)
 
         # Look in the configuration file(s)

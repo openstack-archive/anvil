@@ -14,7 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import settings
 
@@ -31,39 +30,7 @@ def make_id(section, option):
 
 
 def fetch_run_type(config):
-    run_type = config.getdefaulted("default", "run_type", settings.RUN_TYPE_DEF)
+    run_type = config.getdefaulted("default", "run_type",
+                                   settings.RUN_TYPE_DEF)
     run_type = run_type.upper()
     return run_type
-
-
-def fetch_dbdsn(config, pw_gen, dbname=''):
-    #check the dsn cache
-    user = config.get("db", "sql_user")
-    host = config.get("db", "sql_host")
-    port = config.get("db", "port")
-    pw = pw_gen.get_password("sql")
-    #form the dsn (from components we have...)
-    #dsn = "<driver>://<username>:<password>@<host>:<port>/<database>"
-    if not host:
-        msg = "Unable to fetch a database dsn - no sql host found"
-        raise excp.BadParamException(msg)
-    driver = config.get("db", "type")
-    if not driver:
-        msg = "Unable to fetch a database dsn - no db driver type found"
-        raise excp.BadParamException(msg)
-    dsn = driver + "://"
-    if user:
-        dsn += user
-    if pw:
-        dsn += ":" + pw
-    if user or pw:
-        dsn += "@"
-    dsn += host
-    if port:
-        dsn += ":" + port
-    if dbname:
-        dsn += "/" + dbname
-    else:
-        dsn += "/"
-    LOG.debug("For database [%s] fetched dsn [%s]" % (dbname, dsn))
-    return dsn

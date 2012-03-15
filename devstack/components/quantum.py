@@ -17,7 +17,6 @@
 import io
 
 from devstack import cfg
-from devstack import cfg_helpers
 from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
@@ -148,7 +147,7 @@ class QuantumInstaller(comp.PkgInstallComponent):
                 config.readfp(stream)
                 db_dsn = config.get("DATABASE", "sql_connection")
                 if db_dsn:
-                    generated_dsn = cfg_helpers.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
+                    generated_dsn = db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
                     if generated_dsn != db_dsn:
                         config.set("DATABASE", "sql_connection", generated_dsn)
                         with io.BytesIO() as outputstream:

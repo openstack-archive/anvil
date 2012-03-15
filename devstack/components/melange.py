@@ -17,7 +17,6 @@
 import io
 
 from devstack import cfg
-from devstack import cfg_helpers
 from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
@@ -110,7 +109,7 @@ class MelangeInstaller(comp.PythonInstallComponent):
             with io.BytesIO(contents) as stream:
                 config = cfg.IgnoreMissingConfigParser()
                 config.readfp(stream)
-                db_dsn = cfg_helpers.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
+                db_dsn = db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
                 old_dbsn = config.get('DEFAULT', 'sql_connection')
                 if db_dsn != old_dbsn:
                     config.set('DEFAULT', 'sql_connection', db_dsn)
