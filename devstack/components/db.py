@@ -22,6 +22,7 @@ from devstack import shell as sh
 from devstack import utils
 
 #id
+# FIXME: This should probably come from the persona
 TYPE = settings.DB
 LOG = logging.getLogger("devstack.components.db")
 
@@ -43,7 +44,8 @@ SQL_RESET_PW_LINKS = [
 BASE_ERROR = 'Currently we do not know how to [%s] for database type [%s]'
 
 #config keys we warm up so u won't be prompted later
-WARMUP_PWS = ['sql']
+PASSWORD_PROMPT = 'the database user'
+WARMUP_PWS = [('sql', PASSWORD_PROMPT)]
 
 
 class DBUninstaller(comp.PkgUninstallComponent):
@@ -52,8 +54,8 @@ class DBUninstaller(comp.PkgUninstallComponent):
         self.runtime = DBRuntime(*args, **kargs)
 
     def warm_configs(self):
-        for pw_key in WARMUP_PWS:
-            self.pw_gen.get_password(pw_key)
+        for key, prompt in WARMUP_PWS:
+            self.pw_gen.get_password(key, prompt)
 
     def pre_uninstall(self):
         dbtype = self.cfg.get("db", "type")
@@ -67,7 +69,7 @@ class DBUninstaller(comp.PkgUninstallComponent):
                     LOG.info("Ensuring your database is started before we operate on it.")
                     self.runtime.restart()
                     params = {
-                        'OLD_PASSWORD': self.pw_gen.get_password('sql'),
+                        'OLD_PASSWORD': self.pw_gen.get_password('sql', PASSWORD_PROMPT),
                         'NEW_PASSWORD': RESET_BASE_PW,
                         'USER': self.cfg.getdefaulted("db", "sql_user", 'root'),
                         }
@@ -89,7 +91,7 @@ class DBInstaller(comp.PkgInstallComponent):
         #in pre-install and post-install sections
         host_ip = self.cfg.get('host', 'ip')
         out = {
-            'PASSWORD': self.pw_gen.get_password("sql"),
+            'PASSWORD': self.pw_gen.get_password("sql", PASSWORD_PROMPT),
             'BOOT_START': ("%s" % (True)).lower(),
             'USER': self.cfg.getdefaulted("db", "sql_user", 'root'),
             'SERVICE_HOST': host_ip,
@@ -98,8 +100,8 @@ class DBInstaller(comp.PkgInstallComponent):
         return out
 
     def warm_configs(self):
-        for pw_key in WARMUP_PWS:
-            self.pw_gen.get_password(pw_key)
+        for key, prompt in WARMUP_PWS:
+            self.pw_gen.get_password(key, prompt)
 
     def _configure_db_confs(self):
         dbtype = self.cfg.get("db", "type")
@@ -143,7 +145,7 @@ class DBInstaller(comp.PkgInstallComponent):
                     LOG.info("Ensuring your database is started before we operate on it.")
                     self.runtime.restart()
                     params = {
-                        'NEW_PASSWORD': self.pw_gen.get_password("sql"),
+                        'NEW_PASSWORD': self.pw_gen.get_password("sql", PASSWORD_PROMPT),
                         'USER': self.cfg.getdefaulted("db", "sql_user", 'root'),
                         'OLD_PASSWORD': RESET_BASE_PW,
                         }
@@ -162,7 +164,7 @@ class DBInstaller(comp.PkgInstallComponent):
                 LOG.info("Ensuring your database is started before we operate on it.")
                 self.runtime.restart()
                 params = {
-                    'PASSWORD': self.pw_gen.get_password("sql"),
+                    'PASSWORD': self.pw_gen.get_password("sql", PASSWORD_PROMPT),
                     'USER': user,
                 }
                 cmds = [{'cmd': grant_cmd}]
@@ -243,7 +245,7 @@ def drop_db(cfg, pw_gen, distro, dbname):
     if dbactions and dbactions.get('drop_db'):
         dropcmd = dbactions.get('drop_db')
         params = dict()
-        params['PASSWORD'] = pw_gen.get_password("sql")
+        params['PASSWORD'] = pw_gen.get_password("sql", PASSWORD_PROMPT)
         params['USER'] = cfg.getdefaulted("db", "sql_user", 'root')
         params['DB'] = dbname
         cmds = list()
@@ -263,7 +265,7 @@ def create_db(cfg, pw_gen, distro, dbname):
     if dbactions and dbactions.get('create_db'):
         createcmd = dbactions.get('create_db')
         params = dict()
-        params['PASSWORD'] = pw_gen.get_password("sql")
+        params['PASSWORD'] = pw_gen.get_password("sql", PASSWORD_PROMPT)
         params['USER'] = cfg.getdefaulted("db", "sql_user", 'root')
         params['DB'] = dbname
         cmds = list()
@@ -275,3 +277,36 @@ def create_db(cfg, pw_gen, distro, dbname):
     else:
         msg = BASE_ERROR % ('create', dbtype)
         raise NotImplementedError(msg)
+
+
+def fetch_dbdsn(config, pw_gen, dbname=''):
+    """Return the database connection string, including password."""
+    user = config.get("db", "sql_user")
+    host = config.get("db", "sql_host")
+    port = config.get("db", "port")
+    pw = pw_gen.get_password("sql", PASSWORD_PROMPT)
+    #form the dsn (from components we have...)
+    #dsn = "<driver>://<username>:<password>@<host>:<port>/<database>"
+    if not host:
+        msg = "Unable to fetch a database dsn - no sql host found"
+        raise excp.BadParamException(msg)
+    driver = config.get("db", "type")
+    if not driver:
+        msg = "Unable to fetch a database dsn - no db driver type found"
+        raise excp.BadParamException(msg)
+    dsn = driver + "://"
+    if user:
+        dsn += user
+    if pw:
+        dsn += ":" + pw
+    if user or pw:
+        dsn += "@"
+    dsn += host
+    if port:
+        dsn += ":" + port
+    if dbname:
+        dsn += "/" + dbname
+    else:
+        dsn += "/"
+    LOG.debug("For database [%s] fetched dsn [%s]" % (dbname, dsn))
+    return dsn

@@ -19,7 +19,6 @@ import io
 from urlparse import urlunparse
 
 from devstack import cfg
-from devstack import cfg_helpers
 from devstack import component as comp
 from devstack import log as logging
 from devstack import settings
@@ -192,7 +191,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         mp['BIN_DIR'] = self.bindir
         mp['CONFIG_FILE'] = sh.joinpths(self.cfgdir, ROOT_CONF)
         if config_fn == ROOT_CONF:
-            mp['SQL_CONN'] = cfg_helpers.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
+            mp['SQL_CONN'] = db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
             mp['KEYSTONE_DIR'] = self.appdir
             mp.update(get_shared_params(self.cfg, self.pw_gen))
         elif config_fn == MANAGE_DATA_CONF:
@@ -250,9 +249,19 @@ def get_shared_params(config, pw_gen, service_user_name=None):
     mp['DEMO_TENANT_NAME'] = mp['DEMO_USER_NAME']
 
     #tokens and passwords
-    mp['SERVICE_TOKEN'] = pw_gen.get_password("service_token")
-    mp['ADMIN_PASSWORD'] = pw_gen.get_password('horizon_keystone_admin', length=20)
-    mp['SERVICE_PASSWORD'] = pw_gen.get_password('service_password')
+    mp['SERVICE_TOKEN'] = pw_gen.get_password(
+        "service_token",
+        'the service admin token',
+        )
+    mp['ADMIN_PASSWORD'] = pw_gen.get_password(
+        'horizon_keystone_admin',
+        'the horizon and keystone admin',
+        length=20,
+        )
+    mp['SERVICE_PASSWORD'] = pw_gen.get_password(
+        'service_password',
+        'service authentication',
+        )
 
     #components of the auth endpoint
     keystone_auth_host = config.getdefaulted('keystone', 'keystone_auth_host', host_ip)
