@@ -155,12 +155,10 @@ def get_packager(distro, keep_packages):
     return cls(distro, keep_packages)
 
 
-def get_config(cfg_fn=None, kv_cache=None):
+def get_config(cfg_fn=None):
     if not cfg_fn:
         cfg_fn = sh.canon_path(settings.STACK_CONFIG_LOCATION)
-    if kv_cache is None:
-        kv_cache = dict()
-    config_instance = cfg.StackConfigParser(kv_cache)
+    config_instance = cfg.StackConfigParser()
     config_instance.read(cfg_fn)
     return config_instance
 

@@ -164,7 +164,6 @@ class ActionRunner(object):
         self.force = kargs.get('force', False)
         self.ignore_deps = kargs.get('ignore_deps', False)
         self.ref_components = kargs.get("ref_components")
-        self.rc_file = sh.abspth(settings.OSRC_FN)
         self.gen_rc = action in _RC_FILE_MAKE_ACTIONS
 
     def _get_components(self):
@@ -233,13 +232,6 @@ class ActionRunner(object):
     def _pre_run(self, instances, component_order):
         if not sh.isdir(self.directory):
             sh.mkdir(self.directory)
-        if self.rc_file:
-            try:
-                LOG.info("Attempting to load rc file at [%s] which has your environment settings." % (self.rc_file))
-                am_loaded = env_rc.RcReader().load(self.rc_file)
-                LOG.info("Loaded [%s] settings from rc file [%s]" % (am_loaded, self.rc_file))
-            except IOError:
-                LOG.warn('Error reading rc file located at [%s]. Skipping loading it.' % (self.rc_file))
         LOG.info("Verifying that the components are ready to rock-n-roll.")
         for component in component_order:
             inst = instances[component]
@@ -248,15 +240,15 @@ class ActionRunner(object):
         for component in component_order:
             inst = instances[component]
             inst.warm_configs()
-        if self.gen_rc and self.rc_file:
-            writer = env_rc.RcWriter(self.cfg, self.pw_gen)
-            if not sh.isfile(self.rc_file):
-                LOG.info("Generating a file at [%s] that will contain your environment settings." % (self.rc_file))
-                writer.write(self.rc_file)
+        if self.gen_rc:
+            writer = env_rc.RcWriter(self.cfg, self.pw_gen, self.directory)
+            if not sh.isfile(settings.OSRC_FN):
+                LOG.info("Generating a file at [%s] that will contain your environment settings." % (settings.OSRC_FN))
+                writer.write(settings.OSRC_FN)
             else:
-                LOG.info("Updating a file at [%s] that contains your environment settings." % (self.rc_file))
-                am_upd = writer.update(self.rc_file)
-                LOG.info("Updated [%s] settings in rc file [%s]" % (am_upd, self.rc_file))
+                LOG.info("Updating a file at [%s] that contains your environment settings." % (settings.OSRC_FN))
+                am_upd = writer.update(settings.OSRC_FN)
+                LOG.info("Updated [%s] settings in rc file [%s]" % (am_upd, settings.OSRC_FN))
 
     def _run_instances(self, instances, component_order):
         component_order = self._apply_reverse(component_order)

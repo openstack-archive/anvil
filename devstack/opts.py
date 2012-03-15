@@ -19,11 +19,9 @@ from optparse import OptionParser, OptionGroup
 
 from devstack import log as logging
 from devstack import settings
-from devstack import shell as sh
 from devstack import version
 
 HELP_WIDTH = 80
-DEF_OS_DIR = "openstack"
 LOG = logging.getLogger("devstack.opts")
 
 
@@ -61,16 +59,13 @@ def parse():
         dest="action",
         metavar="ACTION",
         help="required action to perform: %s" % (_format_list(settings.ACTIONS)))
-    default_dir = sh.joinpths(sh.gethomedir(), DEF_OS_DIR)
     base_group.add_option("-d", "--directory",
         action="store",
         type="string",
         dest="dir",
         metavar="DIR",
-        default=default_dir,
         help=("empty root DIR for install or "
-              "DIR with existing components for start/stop/uninstall "
-              "(default: %default)"))
+              "DIR with existing components for start/stop/uninstall"))
     base_group.add_option("-i", "--ignore-deps",
         action="store_false",
         dest="ensure_deps",

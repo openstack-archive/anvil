@@ -43,6 +43,9 @@ PASSWORDS_MAKES = {
     'MYSQL_PASSWORD': 'sql',
 }
 
+#install root
+INSTALL_ROOT = 'INSTALL_ROOT'
+
 #default ports
 EC2_PORT = 8773
 S3_PORT = 3333
@@ -55,9 +58,10 @@ QUOTED_PAT = re.compile(r"^\s*[\"](.*)[\"]\s*$")
 
 
 class RcWriter(object):
-    def __init__(self, cfg, pw_gen):
+    def __init__(self, cfg, pw_gen, root_dir):
         self.cfg = cfg
         self.pw_gen = pw_gen
+        self.root_dir = root_dir
 
     def _make_export(self, export_name, value):
         escaped_val = sh.shellquote(value)
@@ -93,7 +97,7 @@ class RcWriter(object):
     def _get_password_envs(self):
         to_set = dict()
         for (out_name, key) in PASSWORDS_MAKES.items():
-            to_set[out_name] = self.pw_gen.get_password(key, do_prompt=False)
+            to_set[out_name] = self.pw_gen.extract(key)
         return to_set
 
     def _get_general_envs(self):
@@ -101,6 +105,7 @@ class RcWriter(object):
         for (out_name, cfg_data) in CFG_MAKE.items():
             (section, key) = (cfg_data)
             to_set[out_name] = self.cfg.get(section, key)
+        to_set[INSTALL_ROOT] = self.root_dir
         return to_set
 
     def _generate_passwords(self):

@@ -88,9 +88,9 @@ def configure_logging(verbosity_level=1, dry_run=False):
 
     # Adjust logging verbose level based on the command line switch.
     log_level = logging.INFO
-    if verbosity_level >= 2:
+    if verbosity_level >= 3:
         log_level = logging.DEBUG
-    elif dry_run:
+    elif verbosity_level == 2 or dry_run:
         log_level = logging.AUDIT
     root_logger.setLevel(log_level)
 

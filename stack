@@ -22,6 +22,8 @@ import traceback
 
 from devstack import cfg_helpers
 from devstack import date
+from devstack import env
+from devstack import env_rc
 from devstack import log as logging
 from devstack import opts
 from devstack import passwords
@@ -87,19 +89,39 @@ def dump_config(config_cache):
             map_print(entries)
 
 
+def load_rc_files():
+    fns = [settings.OSRC_FN]
+    for fn in fns:
+        try:
+            LOG.debug("Attempting to load rc file at [%s] which has your environment settings." % (fn))
+            am_loaded = env_rc.RcReader().load(fn)
+            LOG.debug("Loaded [%s] settings from rc file [%s]" % (am_loaded, fn))
+        except IOError:
+            LOG.warn('Error reading rc file located at [%s]. Skipping loading it.' % (fn))
+    return len(fns)
+
+
 def run(args):
+
     (distro, platform) = utils.determine_distro()
     if distro is None:
         print("Unsupported platform " + utils.color_text(platform, "red") + "!")
         return False
+
     action = args.pop("action").strip().lower()
     if not (action in settings.ACTIONS):
         print(utils.color_text("No valid action specified!", "red"))
         return False
+
+    loaded_rcs = False
     rootdir = args.pop("dir")
     if not rootdir:
-        print(utils.color_text("No root directory specified!", "red"))
-        return False
+        load_rc_files()
+        loaded_rcs = True
+        rootdir = env.get_key(env_rc.INSTALL_ROOT)
+        if not rootdir:
+            print(utils.color_text("No root directory specified!", "red"))
+            return False
 
     #welcome!
     (repeat_string, line_max_len) = utils.welcome(_WELCOME_MAP.get(action))
@@ -108,12 +130,16 @@ def run(args):
     #here on out we should be using the logger (and not print)
     start_time = time.time()
 
+    # if we didn't load them before, load them now
+    if not loaded_rcs:
+        load_rc_files()
+        loaded_rcs = True
+
     # Stash the dryrun value (if any) into the global configuration
     sh.set_dryrun(args['dryrun'])
 
-    config_kv_cache = dict()
-    config = common.get_config(kv_cache=config_kv_cache)
-    pw_gen = passwords.PasswordGenerator(config_kv_cache, config, args['prompt_for_passwords'])
+    config = common.get_config()
+    pw_gen = passwords.PasswordGenerator(config, args['prompt_for_passwords'])
     pkg_manager = common.get_packager(distro, args['keep_old'])
 
     components = utils.parse_components(args.pop("components"))
@@ -125,7 +151,7 @@ def run(args):
     LOG.info("It took (%s) to complete action [%s]" % (common.format_secs_taken((time.time() - start_time)), action))
     LOG.info("After action [%s] your settings which were created or read are:" % (action))
 
-    dump_config(config_kv_cache)
+    dump_config(config.configs_fetched)
     return True
 
 

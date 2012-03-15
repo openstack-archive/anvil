@@ -261,18 +261,9 @@ def get_shared_params(config, pw_gen, service_user_name=None):
     mp['DEMO_TENANT_NAME'] = mp['DEMO_USER_NAME']
 
     #tokens and passwords
-    mp['SERVICE_TOKEN'] = pw_gen.get_password(
-        "service_token",
-        'the service admin token',
-        )
-    mp['ADMIN_PASSWORD'] = pw_gen.get_password(
-        'horizon_keystone_admin',
-        'the horizon and keystone admin',
-        20)
-    mp['SERVICE_PASSWORD'] = pw_gen.get_password(
-        'service_password',
-        'service authentication',
-        )
+    mp['SERVICE_TOKEN'] = pw_gen.get_password("service_token")
+    mp['ADMIN_PASSWORD'] = pw_gen.get_password('horizon_keystone_admin', length=20)
+    mp['SERVICE_PASSWORD'] = pw_gen.get_password('service_password')
 
     #components of the auth endpoint
     keystone_auth_host = config.getdefaulted('keystone', 'keystone_auth_host', host_ip)

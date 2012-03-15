@@ -69,9 +69,9 @@ class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
 
 
 class StackConfigParser(IgnoreMissingConfigParser):
-    def __init__(self, cache):
+    def __init__(self):
         IgnoreMissingConfigParser.__init__(self)
-        self.configs_fetched = cache
+        self.configs_fetched = dict()
 
     def _resolve_value(self, section, option, value_gotten):
         if section == 'host' and option == 'ip':
@@ -99,6 +99,12 @@ class StackConfigParser(IgnoreMissingConfigParser):
             LOG.debug("Fetched [%s] for [%s] %s" % (value, key, CACHE_MSG))
             self.configs_fetched[key] = value
         return value
+
+    def set(self, section, option, value):
+        key = cfg_helpers.make_id(section, option)
+        LOG.audit("Setting config value [%s] for param [%s]" % (value, key))
+        self.configs_fetched[key] = value
+        IgnoreMissingConfigParser.set(self, section, option, value)
 
     def _resolve_replacements(self, value):
         LOG.debug("Performing simple replacement on [%s]", value)
