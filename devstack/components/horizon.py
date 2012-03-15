@@ -40,13 +40,6 @@ HORIZON_APACHE_CONF = '000-default'
 CONFIGS = [HORIZON_PY_CONF, HORIZON_APACHE_CONF]
 
 #http://wiki.apache.org/httpd/DistrosDefaultLayout
-#TODO: maybe this should be a subclass that handles these differences
-APACHE_CONF_TARGETS = {
-    settings.UBUNTU11: '/etc/apache2/sites-enabled/000-default',
-    #ensure runs after wsgi.conf (naming wise)
-    settings.RHEL6: '/etc/httpd/conf.d/wsgi-horizon-000-default.conf',
-    settings.FEDORA16: '/etc/httpd/conf.d/wsgi-horizon-000-default.conf',
-}
 
 #db sync that needs to happen for horizon
 DB_SYNC_CMD = ['python', 'manage.py', 'syncdb']
@@ -54,18 +47,6 @@ DB_SYNC_CMD = ['python', 'manage.py', 'syncdb']
 #special apache directory (TODO describe more about this)
 BLACKHOLE_DIR = '.blackhole'
 
-#hopefully this will be distro independent ??
-#of course they aren't!
-#TODO: maybe this should be a subclass that handles these differences
-APACHE_SVC_NAME = {
-    settings.RHEL6: 'httpd',
-    settings.FEDORA16: 'httpd',
-    settings.UBUNTU11: 'apache2',
-}
-APACHE_RESTART_CMD = ['service', '%SERVICE%', 'restart']
-APACHE_START_CMD = ['service', '%SERVICE%', 'start']
-APACHE_STOP_CMD = ['service', '%SERVICE%', 'stop']
-APACHE_STATUS_CMD = ['service', '%SERVICE%', 'status']
 APACHE_ERROR_LOG_FN = "error.log"
 APACHE_ACCESS_LOG_FN = "access.log"
 APACHE_DEF_PORT = 80
@@ -86,21 +67,18 @@ BAD_APACHE_USERS = ['root']
 #apache logs will go here
 LOGS_DIR = "logs"
 
-#the pkg json files horizon requires for installation
-REQ_PKGS = ['general.json', 'horizon.json']
-
 #pip files that horizon requires
 REQ_PIPS = ['general.json', 'horizon.json']
 
 
 class HorizonUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
 
 
 class HorizonInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonInstallComponent.__init__(self, *args, **kargs)
         self.horizon_dir = sh.joinpths(self.appdir, ROOT_HORIZON)
         self.dash_dir = sh.joinpths(self.appdir, ROOT_DASH)
         self.log_dir = sh.joinpths(self.component_root, LOGS_DIR)
@@ -119,7 +97,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
     def _get_symlinks(self):
         links = comp.PythonInstallComponent._get_symlinks(self)
         src = self._get_target_config_name(HORIZON_APACHE_CONF)
-        links[src] = APACHE_CONF_TARGETS[self.distro]
+        links[src] = self.distro.commands['apache']['settings']['conf-link-target']
         if utils.service_enabled(settings.QUANTUM_CLIENT, self.instances, False):
             #TODO remove this junk, blah, puke that we have to do this
             qc = self.instances[settings.QUANTUM_CLIENT]
@@ -139,9 +117,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
         if user in BAD_APACHE_USERS:
             msg = "You may want to adjust your configuration, (user=%s, group=%s) will not work with apache!" % (user, group)
             raise excp.ConfigException(msg)
-
-    def _get_pkgs(self):
-        return list(REQ_PKGS)
 
     def _get_pips(self):
         return list(REQ_PIPS)
@@ -250,65 +225,53 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
 class HorizonRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
-        comp.EmptyRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.EmptyRuntime.__init__(self, *args, **kargs)
 
     def start(self):
         curr_status = self.status()
         if curr_status == comp.STATUS_STARTED:
             return self.restart()
         else:
-            mp = dict()
-            mp['SERVICE'] = APACHE_SVC_NAME[self.distro]
-            cmds = list()
-            cmds.append({
-                'cmd': APACHE_START_CMD,
-                'run_as_root': True,
-            })
+            cmds = [{
+                    'cmd': self.distro.commands['apache']['start'],
+                    'run_as_root': True,
+                    }]
             utils.execute_template(*cmds,
                     check_exit_code=True,
-                    params=mp)
+                    params={})
             return 1
 
     def restart(self):
-        mp = dict()
-        mp['SERVICE'] = APACHE_SVC_NAME[self.distro]
-        cmds = list()
-        cmds.append({
-            'cmd': APACHE_RESTART_CMD,
+        cmds = [{
+            'cmd': self.distro.commands['apache']['restart'],
             'run_as_root': True,
-        })
+            }]
         utils.execute_template(*cmds,
-                            check_exit_code=True,
-                            params=mp)
+                                check_exit_code=True,
+                                params={})
         return 1
 
     def stop(self):
         curr_status = self.status()
         if curr_status != comp.STATUS_STOPPED:
-            mp = dict()
-            mp['SERVICE'] = APACHE_SVC_NAME[self.distro]
-            cmds = list()
-            cmds.append({
-                'cmd': APACHE_STOP_CMD,
-                'run_as_root': True,
-            })
+            cmds = [{
+                    'cmd': self.distro.commands['apache']['stop'],
+                    'run_as_root': True,
+                    }]
             utils.execute_template(*cmds,
-                                check_exit_code=True,
-                                params=mp)
+                                    check_exit_code=True,
+                                    params={})
             return 1
         return 0
 
     def status(self):
-        mp = dict()
-        mp['SERVICE'] = APACHE_SVC_NAME[self.distro]
-        cmds = list()
-        cmds.append({
-            'cmd': APACHE_STATUS_CMD,
-            'run_as_root': True,
-        })
+        cmds = [{
+                'cmd': self.distro.commands['apache']['status'],
+                'run_as_root': True,
+                }]
         run_result = utils.execute_template(*cmds,
-                            check_exit_code=False,
-                            params=mp)
+                                             check_exit_code=False,
+                                             params={})
         if not run_result or not run_result[0]:
             return comp.STATUS_UNKNOWN
         (sysout, stderr) = run_result[0]

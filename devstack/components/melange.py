@@ -30,9 +30,6 @@ from devstack.components import db
 TYPE = settings.MELANGE
 LOG = logging.getLogger("devstack.components.melange")
 
-#the pkg json files melange requires for installation
-REQ_PKGS = ['general.json', 'melange.json']
-
 #this db will be dropped then created
 DB_NAME = 'melange'
 
@@ -70,12 +67,12 @@ WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
 
 class MelangeUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
 
 
 class MelangeInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonInstallComponent.__init__(self, *args, **kargs)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
         self.cfgdir = sh.joinpths(self.appdir, *CFG_LOC)
 
@@ -89,11 +86,8 @@ class MelangeInstaller(comp.PythonInstallComponent):
 
     def _setup_db(self):
         LOG.info("Fixing up database named %s.", DB_NAME)
-        db.drop_db(self.cfg, self.pw_gen, DB_NAME)
-        db.create_db(self.cfg, self.pw_gen, DB_NAME)
-
-    def _get_pkgs(self):
-        return list(REQ_PKGS)
+        db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
+        db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
@@ -144,7 +138,7 @@ class MelangeInstaller(comp.PythonInstallComponent):
 
 class MelangeRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
-        comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.PythonRuntime.__init__(self, *args, **kargs)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
         self.cfgdir = sh.joinpths(self.appdir, *CFG_LOC)
 
@@ -167,7 +161,9 @@ class MelangeRuntime(comp.PythonRuntime):
 
     def post_start(self):
         comp.PythonRuntime.post_start(self)
-        if CREATE_CIDR in self.component_opts or not self.component_opts:
+        # FIXME: This is a bit of a hack. How do we document "flags" like this?
+        flags = self.component_opts.get('flags', [])
+        if CREATE_CIDR in flags or not flags:
             LOG.info("Waiting %s seconds so that the melange server can start up before cidr range creation." % (WAIT_ONLINE_TO))
             sh.sleep(WAIT_ONLINE_TO)
             mp = dict()

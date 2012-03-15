@@ -4,52 +4,6 @@
     # This is currently our "master" repo set with versions
     # that we are trying to align other distributions with.
     # The versions should at least be major + minor!
-    "ubuntu-oneiric": {
-        "python-eventlet": {
-            "version": "0.9*",
-            "removable": true
-        },
-        "python-routes": {
-            "version": "1.12*",
-            "removable": true
-        },
-        "python-greenlet": {
-            "version": "0.3.1*",
-            "removable": true
-        },
-        "python-argparse": {
-            "version": "1.1*",
-            "removable": true
-        },
-        "python-prettytable": {
-            "version": "0.5*",
-            "removable": true
-        },
-        "python-mysqldb": {
-            "version": "1.2*",
-            "removable": true
-        },
-        "python-sqlalchemy": {
-            "version": "0.6.8*",
-            "removable": true
-        },
-        "python-pastedeploy": {
-            "version": "1.5.0*",
-            "removable": true
-        },
-        "python-xattr": {
-            "version": "0.6*",
-            "removable": true
-        },
-        "python-dateutil": {
-            "version": "1.4*",
-            "removable": true
-        },
-        "python-httplib2": {
-            "version": "0.7*",
-            "removable": true
-        }
-    },
     "rhel-6": {
         "python-eventlet": {
             "version": "0.9*",

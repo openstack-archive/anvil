@@ -4,41 +4,6 @@
     # This is currently our "master" repo set with versions
     # that we are trying to align other distributions with.
     # The versions should at least be major + minor!
-    "ubuntu-oneiric": {
-        "lvm2": {
-            "version": "2.02*",
-            "removable": true
-        },
-        "open-iscsi": {
-            "version": "2.0*",
-            "removable": true
-        },
-        "open-iscsi-utils": {
-            "version": "2.0*",
-            "removable": true
-        },
-        # Only really needed if you plan on using kvm
-        "kvm": {
-            "version": "1:84*",
-            "removable": true
-        },
-        "qemu-kvm": {
-            "version": "0.14.*",
-            "removable": true
-        },
-        "python-libvirt": {
-            "version": "0.9.2*",
-            "removable": true
-        },
-        "libvirt-bin": {
-            "version": "0.9*",
-            "removable": true
-        },
-        "libvirt0": {
-            "version": "0.9*",
-            "removable": true
-        }
-    },
     "rhel-6": {
         "lvm2": {
             "version": "2.02*",

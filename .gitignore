@@ -13,3 +13,4 @@ pidfile
 .coverage
 .DS_Store
 TAGS
+*.rc

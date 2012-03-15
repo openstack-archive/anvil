@@ -60,12 +60,11 @@ class AptPackager(pack.Packager):
             **kargs)
 
     def _remove_batch(self, pkgs):
-        pkgnames = sorted(pkgs.keys())
         #form the needed commands
         cmds = []
         which_removed = []
-        for name in pkgnames:
-            info = pkgs.get(name) or {}
+        for info in pkgs:
+            name = info['name']
             removable = info.get('removable', True)
             if not removable:
                 continue
@@ -86,11 +85,10 @@ class AptPackager(pack.Packager):
         return which_removed
 
     def install_batch(self, pkgs):
-        pkgnames = sorted(pkgs.keys())
         #form the needed commands
         cmds = []
-        for name in pkgnames:
-            info = pkgs.get(name) or {}
+        for info in pkgs:
+            name = info['name']
             if self._pkg_install_special(name, info):
                 continue
             pkg_full = self._format_pkg(name, info.get("version"))
@@ -102,7 +100,7 @@ class AptPackager(pack.Packager):
 
     def _pkg_remove_special(self, name, pkginfo):
         #TODO: maybe this should be a subclass that handles these differences
-        if name == 'rabbitmq-server' and self.distro == settings.UBUNTU11:
+        if name == 'rabbitmq-server' and self.distro.name == settings.UBUNTU11:
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
             LOG.info("Handling special remove of %s." % (name))
@@ -119,7 +117,7 @@ class AptPackager(pack.Packager):
 
     def _pkg_install_special(self, name, pkginfo):
         #TODO: maybe this should be a subclass that handles these differences
-        if name == 'rabbitmq-server' and self.distro == settings.UBUNTU11:
+        if name == 'rabbitmq-server' and self.distro.name == settings.UBUNTU11:
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
             LOG.info("Handling special install of %s." % (name))

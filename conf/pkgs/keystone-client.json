@@ -4,16 +4,6 @@
     # This is currently our "master" repo set with versions
     # that we are trying to align other distributions with.
     # The versions should at least be major + minor!
-    "ubuntu-oneiric": {
-        "python-prettytable": {
-            "version": "0.5*",
-            "removable": true
-        },
-        "python-argparse": {
-            "version": "1.1*",
-            "removable": true
-        }
-    },
     "rhel-6": {
         "python-argparse": {
             "version": "1.2*",

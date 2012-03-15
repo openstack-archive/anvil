@@ -32,9 +32,6 @@ STATUS_CMD = ['service', "rabbitmq-server", "status"]
 RESTART_CMD = ['service', "rabbitmq-server", "restart"]
 PWD_CMD = ['rabbitmqctl', 'change_password', 'guest']
 
-#the pkg json files rabbit mq server requires for installation
-REQ_PKGS = ['rabbitmq.json']
-
 #default password
 RESET_BASE_PW = ''
 
@@ -50,7 +47,7 @@ PW_USER_PROMPT = 'the rabbit user'
 
 class RabbitUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PkgUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PkgUninstallComponent.__init__(self, *args, **kargs)
         self.runtime = RabbitRuntime(*args, **kargs)
 
     def pre_uninstall(self):
@@ -66,7 +63,7 @@ class RabbitUninstaller(comp.PkgUninstallComponent):
 
 class RabbitInstaller(comp.PkgInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PkgInstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PkgInstallComponent.__init__(self, *args, **kargs)
         self.runtime = RabbitRuntime(*args, **kargs)
 
     def warm_configs(self):
@@ -86,13 +83,10 @@ class RabbitInstaller(comp.PkgInstallComponent):
         comp.PkgInstallComponent.post_install(self)
         self._setup_pw()
 
-    def _get_pkgs(self):
-        return list(REQ_PKGS)
-
 
 class RabbitRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
-        comp.EmptyRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.EmptyRuntime.__init__(self, *args, **kargs)
 
     def start(self):
         if self.status() != comp.STATUS_STARTED:

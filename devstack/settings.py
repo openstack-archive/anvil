@@ -20,6 +20,7 @@ import sys
 
 # These also have meaning outside python,
 # ie in the pkg/pip listings so update there also!
+# FIXME: Delete
 UBUNTU11 = "ubuntu-oneiric"
 RHEL6 = "rhel-6"
 FEDORA16 = "fedora-16"
@@ -50,7 +51,7 @@ KEYSTONE = "keystone"
 KEYSTONE_CLIENT = 'keystone-client'
 DB = "db"
 RABBIT = "rabbit"
-NOVNC = 'novnc'
+NOVNC = 'n-vnc'
 XVNC = 'xvnc'
 MELANGE = 'melange'
 MELANGE_CLIENT = 'melange-client'
@@ -71,24 +72,24 @@ COMPONENT_NAMES = [
 # need another component, that dependency
 # mapping is listed here. A topological sort
 # will be applied to determine the exact order.
-COMPONENT_DEPENDENCIES = {
-    DB: [],
-    KEYSTONE_CLIENT: [],
-    RABBIT: [],
-    GLANCE: [KEYSTONE, DB],
-    KEYSTONE: [DB, KEYSTONE_CLIENT],
-    NOVA: [KEYSTONE, GLANCE, DB, RABBIT, NOVA_CLIENT],
-    SWIFT: [KEYSTONE_CLIENT],
-    NOVA_CLIENT: [],
-    # Horizon depends on glances client (which should really be a client package)
-    HORIZON: [KEYSTONE_CLIENT, GLANCE, NOVA_CLIENT, QUANTUM_CLIENT],
-    # More of quantums deps come from its module function get_dependencies
-    QUANTUM: [],
-    NOVNC: [NOVA],
-    QUANTUM_CLIENT: [],
-    MELANGE: [DB],
-    MELANGE_CLIENT: [],
-}
+# COMPONENT_DEPENDENCIES = {
+#     DB: [],
+#     KEYSTONE_CLIENT: [],
+#     RABBIT: [],
+#     GLANCE: [KEYSTONE, DB],
+#     KEYSTONE: [DB, KEYSTONE_CLIENT],
+#     NOVA: [KEYSTONE, GLANCE, DB, RABBIT, NOVA_CLIENT],
+#     SWIFT: [KEYSTONE_CLIENT],
+#     NOVA_CLIENT: [],
+#     # Horizon depends on glances client (which should really be a client package)
+#     HORIZON: [KEYSTONE_CLIENT, GLANCE, NOVA_CLIENT, QUANTUM_CLIENT],
+#     # More of quantums deps come from its module function get_dependencies
+#     QUANTUM: [],
+#     NOVNC: [NOVA],
+#     QUANTUM_CLIENT: [],
+#     MELANGE: [DB],
+#     MELANGE_CLIENT: [],
+# }
 
 # Different run types supported
 RUN_TYPE_FORK = "FORK"
@@ -128,10 +129,3 @@ STACK_TEMPLATE_DIR = os.path.join(STACK_CONFIG_DIR, "templates")
 STACK_PKG_DIR = os.path.join(STACK_CONFIG_DIR, "pkgs")
 STACK_PIP_DIR = os.path.join(STACK_CONFIG_DIR, "pips")
 STACK_CONFIG_LOCATION = os.path.join(STACK_CONFIG_DIR, "stack.ini")
-
-# These regex is how we match python platform output to a known constant
-KNOWN_DISTROS = {
-    UBUNTU11: re.compile(r'Ubuntu(.*)oneiric', re.IGNORECASE),
-    RHEL6: re.compile(r'redhat-6\.2', re.IGNORECASE),
-    FEDORA16: re.compile(r'fedora-16', re.IGNORECASE),
-}

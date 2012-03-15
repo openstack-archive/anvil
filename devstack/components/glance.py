@@ -78,22 +78,19 @@ SUB_TO_APP = {
 CONFIG_DIR = 'etc'
 BIN_DIR = 'bin'
 
-#the pkg json files glance requires for installation
-REQ_PKGS = ['general.json', 'glance.json']
-
 #pip files that glance requires
 REQ_PIPS = ['general.json', 'glance.json']
 
 
 class GlanceUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
 
 
 class GlanceInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonInstallComponent.__init__(self, *args, **kargs)
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
 
     def _get_download_locations(self):
@@ -110,17 +107,14 @@ class GlanceInstaller(comp.PythonInstallComponent):
     def _get_pips(self):
         return list(REQ_PIPS)
 
-    def _get_pkgs(self):
-        return list(REQ_PKGS)
-
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
         self._setup_db()
 
     def _setup_db(self):
         LOG.info("Fixing up database named %s.", DB_NAME)
-        db.drop_db(self.cfg, self.pw_gen, DB_NAME)
-        db.create_db(self.cfg, self.pw_gen, DB_NAME)
+        db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
+        db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
 
     def _get_source_config(self, config_fn):
         if config_fn == POLICY_JSON:
@@ -194,25 +188,15 @@ class GlanceInstaller(comp.PythonInstallComponent):
 
 class GlanceRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
-        comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.PythonRuntime.__init__(self, *args, **kargs)
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
 
     def _get_apps_to_start(self):
-        apps = list()
-        if not self.component_opts:
-            for app_name in APP_OPTIONS.keys():
-                apps.append({
-                    'name': app_name,
-                    'path': sh.joinpths(self.appdir, BIN_DIR, app_name),
-                })
-        else:
-            for short_name in self.component_opts:
-                full_name = SUB_TO_APP.get(short_name)
-                if full_name and full_name in APP_OPTIONS:
-                    apps.append({
-                        'name': full_name,
-                        'path': sh.joinpths(self.appdir, BIN_DIR, full_name),
-                    })
+        apps = [{'name': app_name,
+                 'path': sh.joinpths(self.appdir, BIN_DIR, app_name),
+                 }
+                for app_name in APP_OPTIONS.keys()
+                ]
         return apps
 
     def _get_app_options(self, app):
@@ -220,9 +204,8 @@ class GlanceRuntime(comp.PythonRuntime):
 
     def post_start(self):
         comp.PythonRuntime.post_start(self)
-        if NO_IMG_START not in self.component_opts:
-            #install any images that need activating...
-            # TODO: make this less cheesy - need to wait till glance goes online
-            LOG.info("Waiting %s seconds so that glance can start up before image install." % (WAIT_ONLINE_TO))
-            sh.sleep(WAIT_ONLINE_TO)
-            creator.ImageCreationService(self.cfg, self.pw_gen).install()
+        #install any images that need activating...
+        # TODO: make this less cheesy - need to wait till glance goes online
+        LOG.info("Waiting %s seconds so that glance can start up before image install." % (WAIT_ONLINE_TO))
+        sh.sleep(WAIT_ONLINE_TO)
+        creator.ImageCreationService(self.cfg, self.pw_gen).install()

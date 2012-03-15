@@ -35,21 +35,19 @@ class Packager(object):
         return []
 
     def pre_install(self, pkgs, installparams=None):
-        pkgnames = sorted(pkgs.keys())
-        for name in pkgnames:
-            packageinfo = pkgs.get(name)
+        for packageinfo in pkgs:
             preinstallcmds = packageinfo.get(settings.PRE_INSTALL)
-            if preinstallcmds and len(preinstallcmds):
-                LOG.info("Running pre-install commands for package %s." % (name))
+            if preinstallcmds:
+                LOG.info("Running pre-install commands for package %s.",
+                         packageinfo['name'])
                 utils.execute_template(*preinstallcmds, params=installparams)
 
     def post_install(self, pkgs, installparams=None):
-        pkgnames = sorted(pkgs.keys())
-        for name in pkgnames:
-            packageinfo = pkgs.get(name)
+        for packageinfo in pkgs:
             postinstallcmds = packageinfo.get(settings.POST_INSTALL)
             if postinstallcmds and len(postinstallcmds):
-                LOG.info("Running post-install commands for package %s." % (name))
+                LOG.info("Running post-install commands for package %s.",
+                         packageinfo['name'])
                 utils.execute_template(*postinstallcmds, params=installparams)
 
     def _remove_batch(self, pkgs):

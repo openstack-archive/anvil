@@ -36,21 +36,18 @@ APP_OPTIONS = {
     VNC_PROXY_APP: ['--flagfile', '%NOVA_CONF%', '--web', '.'],
 }
 
-#the pkg json files no-vnc requires for installation
-REQ_PKGS = ['general.json', 'n-vnc.json']
-
 #pip files that no-vnc requires
 REQ_PIPS = ['general.json', 'n-vnc.json']
 
 
 class NoVNCUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
 
 
 class NoVNCInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonInstallComponent.__init__(self, *args, **kargs)
 
     def _get_python_directories(self):
         return dict()
@@ -63,16 +60,13 @@ class NoVNCInstaller(comp.PythonInstallComponent):
         })
         return places
 
-    def _get_pkgs(self):
-        return list(REQ_PKGS)
-
     def _get_pips(self):
         return list(REQ_PIPS)
 
 
 class NoVNCRuntime(comp.ProgramRuntime):
     def __init__(self, *args, **kargs):
-        comp.ProgramRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.ProgramRuntime.__init__(self, *args, **kargs)
 
     def _get_apps_to_start(self):
         apps = list()

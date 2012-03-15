@@ -64,16 +64,13 @@ BIN_DIR = 'bin'
 CONFIG_DIR = 'etc'
 LOG_DIR = 'logs'
 
-#the pkg json files swift requires for installation
-REQ_PKGS = ['general.json', 'swift.json']
-
 #config keys we warm up so u won't be prompted later
 WARMUP_PWS = ['service_token', 'swift_hash']
 
 
 class SwiftUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
         self.datadir = sh.joinpths(self.appdir, self.cfg.getdefaulted('swift', 'data_location', 'data'))
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
@@ -90,7 +87,7 @@ class SwiftUninstaller(comp.PythonUninstallComponent):
 
 class SwiftInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonInstallComponent.__init__(self, *args, **kargs)
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
         self.datadir = sh.joinpths(self.appdir, self.cfg.getdefaulted('swift', 'data_location', 'data'))
@@ -111,9 +108,6 @@ class SwiftInstaller(comp.PythonInstallComponent):
 
     def _get_config_files(self):
         return list(CONFIGS)
-
-    def _get_pkgs(self):
-        return list(REQ_PKGS)
 
     def warm_configs(self):
         for pw_key in WARMUP_PWS:
@@ -207,7 +201,7 @@ class SwiftInstaller(comp.PythonInstallComponent):
 
 class SwiftRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
-        comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.PythonRuntime.__init__(self, *args, **kargs)
         self.datadir = sh.joinpths(self.appdir, self.cfg.getdefaulted('swift', 'data_location', 'data'))
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)

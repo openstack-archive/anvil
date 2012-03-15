@@ -23,18 +23,17 @@ TYPE = settings.KEYSTONE_CLIENT
 LOG = logging.getLogger("devstack.components.keystone_client")
 
 #the pkg json files keystone client requires for installation
-REQ_PKGS = ['general.json', 'keystone-client.json']
 REQ_PIPS = ['general.json']
 
 
 class KeyStoneClientUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
 
 
 class KeyStoneClientInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonInstallComponent.__init__(self, *args, **kargs)
 
     def _get_download_locations(self):
         places = list()
@@ -44,13 +43,10 @@ class KeyStoneClientInstaller(comp.PythonInstallComponent):
         })
         return places
 
-    def _get_pkgs(self):
-        return list(REQ_PKGS)
-
     def _get_pips(self):
         return list(REQ_PIPS)
 
 
 class KeyStoneClientRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
-        comp.EmptyRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.EmptyRuntime.__init__(self, *args, **kargs)

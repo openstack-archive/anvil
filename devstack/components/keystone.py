@@ -65,8 +65,6 @@ APP_OPTIONS = {
                 '--log-config=' + sh.joinpths('%ROOT%', CONFIG_DIR, 'logging.cnf')]
 }
 
-#the pkg json files keystone requires for installation
-REQ_PKGS = ['general.json', 'keystone.json']
 
 #pip files that keystone requires
 REQ_PIPS = ['general.json', 'keystone.json']
@@ -90,14 +88,14 @@ QUANTUM_TEMPL_ADDS = ['catalog.RegionOne.network.publicURL = http://%SERVICE_HOS
 
 class KeystoneUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
 
 
 class KeystoneInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, TYPE, *args, **kargs)
+        comp.PythonInstallComponent.__init__(self, *args, **kargs)
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
 
@@ -111,9 +109,6 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
     def _get_pips(self):
         return list(REQ_PIPS)
-
-    def _get_pkgs(self):
-        return list(REQ_PKGS)
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
@@ -133,8 +128,8 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
     def _setup_db(self):
         LOG.info("Fixing up database named %s.", DB_NAME)
-        db.drop_db(self.cfg, self.pw_gen, DB_NAME)
-        db.create_db(self.cfg, self.pw_gen, DB_NAME)
+        db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
+        db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
 
     def _setup_initer(self):
         LOG.info("Configuring keystone initializer template %s.", MANAGE_DATA_CONF)
@@ -213,7 +208,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
 class KeystoneRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
-        comp.PythonRuntime.__init__(self, TYPE, *args, **kargs)
+        comp.PythonRuntime.__init__(self, *args, **kargs)
         self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
         self.bindir = sh.joinpths(self.appdir, BIN_DIR)
 

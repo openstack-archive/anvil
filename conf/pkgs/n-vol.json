@@ -4,20 +4,6 @@
     # This is currently our "master" repo set with versions
     # that we are trying to align other distributions with.
     # The versions should at least be major + minor!
-    "ubuntu-oneiric": {
-        "tgt": {
-            "version": "1:1*",
-            "removable": true
-        },
-        "iscsitarget": {
-            "version": "1.4*",
-            "removable": true
-        },
-        "lvm2": {
-            "version": "2.02*",
-            "removable": true
-        }
-    },
     "rhel-6": {
         "lvm2": {
             "version": "2.02*",
