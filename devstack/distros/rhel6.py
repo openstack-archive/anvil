@@ -15,7 +15,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""Platform-specific logic for RHEL6 components.
+"""Platform-specific logic for RedHat Enterprise Linux v6 components.
 """
 
 from devstack import log as logging
@@ -31,22 +31,20 @@ SOCKET_CONF = "/etc/httpd/conf.d/wsgi-socket-prefix.conf"
 HTTPD_CONF = '/etc/httpd/conf/httpd.conf'
 
 
-class Rhel6DBInstaller(db.DBInstaller):
+class DBInstaller(db.DBInstaller):
 
     def _configure_db_confs(self):
-        dbtype = self.cfg.get("db", "type")
-        if dbtype == 'mysql':
-            LOG.info("Fixing up mysql configs.")
-            fc = sh.load_file('/etc/my.cnf')
-            lines = fc.splitlines()
-            new_lines = list()
-            for line in lines:
-                if line.startswith('skip-grant-tables'):
-                    line = '#' + line
-                new_lines.append(line)
-            fc = utils.joinlinesep(*new_lines)
-            with sh.Rooted(True):
-                sh.write_file('/etc/my.cnf', fc)
+        LOG.info("Fixing up %s mysql configs.", self.distro.name)
+        fc = sh.load_file('/etc/my.cnf')
+        lines = fc.splitlines()
+        new_lines = list()
+        for line in lines:
+            if line.startswith('skip-grant-tables'):
+                line = '#' + line
+            new_lines.append(line)
+        fc = utils.joinlinesep(*new_lines)
+        with sh.Rooted(True):
+            sh.write_file('/etc/my.cnf', fc)
 
 
 class Rhel6HorizonInstaller(horizon.HorizonInstaller):
