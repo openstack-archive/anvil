@@ -1,17 +1,6 @@
 # This is a extended json package definition file 
 # We allow simple comments (lines starting with a hash symbol)
 {
-    "ubuntu-oneiric": {
-        "django-nose-selenium": {
-            "version": "0.7.3"
-        },
-        "pycrypto": {
-            "version": "2.3"
-        },
-        "python-cloudfiles": {
-            "version": "1.7.9.3"
-        }
-    },
     "rhel-6": {
         #the base is 2.0, need to upgrade
         "pycrypto": {

@@ -142,6 +142,9 @@ components:
       - name: wget
         removable: false
         version: 1.12*
+    pips:
+      - name: mock
+        version: 0.8.0
 
   glance:
     install: devstack.components.glance:GlanceInstaller
@@ -186,6 +189,9 @@ components:
       - name: python-httplib2
         version: 0.7*
         removable: true
+    pips:
+      - name: iso8601
+        version: 0.1.4
 
   horizon:
     install: devstack.components.horizon:HorizonInstaller
@@ -259,6 +265,13 @@ components:
       - name: python-webob
         removable: True
         version: 1.0*
+    pips:
+      - name: django-nose-selenium
+        version: 0.7.3
+      - name: pycrypto
+        version: 2.3
+      - name: python-cloudfiles
+        version: 1.7.9.3
 
   keystone-client:
     install: devstack.components.keystone_client:KeyStoneClientInstaller
@@ -339,6 +352,9 @@ components:
       - name: sqlite3
         removable: True
         version: 3.7*
+    pips:
+      - name: passlib
+        version: 1.5.3
 
   melange:
     install: devstack.components.melange:MelangeInstaller
@@ -577,6 +593,9 @@ components:
       - name: vlan
         removable: True
         version: 1.9*
+    pips:
+      - name: iso8601
+        version: 0.1.4
 
   quantum-client:
     install: devstack.components.quantum_client:QuantumClientInstaller

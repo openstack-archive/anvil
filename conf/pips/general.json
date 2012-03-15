@@ -1,11 +1,6 @@
 # This is a extended json package definition file 
 # We allow simple comments (lines starting with a hash symbol)
 {
-    "ubuntu-oneiric": {
-        "mock": {
-            "version": "0.8.0"
-        }
-    },
     "rhel-6": {
         "coverage": {
             "version": "3.5.1"
