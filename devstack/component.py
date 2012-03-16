@@ -264,9 +264,9 @@ class PythonInstallComponent(PkgInstallComponent):
         if pips:
             pip_names = set([p['name'] for p in pips])
             LOG.info("Setting up %s pips (%s)", len(pip_names), ", ".join(pip_names))
-            for pip in pips:
-                self.tracewriter.pip_installed(pip)
-                pip.install(pip, self.distro)
+            for info in pips:
+                self.tracewriter.pip_installed(info)
+                pip.install(info, self.distro)
 
     def _install_python_setups(self):
         pydirs = self._get_python_directories()
