@@ -93,10 +93,10 @@ class ComponentBase(object):
         knowns = self.known_subsystems()
         for s in self.desired_subsystems:
             if s not in knowns:
-                raise RuntimeError("Unknown subsystem %r requested" % (s))
+                raise ValueError("Unknown subsystem %r requested" % (s))
         for s in self.subsystem_info.keys():
             if s not in knowns:
-                raise RuntimeError("Unknown subsystem %r provided" % (s))
+                raise ValueError("Unknown subsystem %r provided" % (s))
 
     def known_subsystems(self):
         return list()

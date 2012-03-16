@@ -62,7 +62,8 @@ CONFIG_DIR = 'etc'
 LOG_DIR = 'logs'
 
 # Config keys we warm up so u won't be prompted later
-WARMUP_PWS = ['service_token', 'swift_hash']
+WARMUP_PWS = [('service_token', 'the service admin token'),
+              ('swift_hash', 'the random unique string for your swift cluster')]
 
 
 class SwiftUninstaller(comp.PythonUninstallComponent):
@@ -107,8 +108,8 @@ class SwiftInstaller(comp.PythonInstallComponent):
         return list(CONFIGS)
 
     def warm_configs(self):
-        for pw_key in WARMUP_PWS:
-            self.pw_gen.get_password(pw_key)
+        for (pw_key, prompt) in WARMUP_PWS:
+            self.pw_gen.get_password(pw_key, prompt)
 
     def _get_param_map(self, config_fn):
         return {

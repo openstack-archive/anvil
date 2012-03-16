@@ -28,6 +28,8 @@ from devstack import env
 from devstack import env_rc
 from devstack import log as logging
 from devstack import opts
+from devstack import passwords
+from devstack import persona
 from devstack import settings
 from devstack import shell as sh
 from devstack import utils
@@ -101,6 +103,17 @@ def load_rc_files():
     return len(fns)
 
 
+def load_verify_persona(fn, dist):
+    instance = persona.Persona.load_file(fn)
+    instance.verify(dist)
+    return instance
+
+
+def setup_root(root_dir):
+    if not sh.isdir(root_dir):
+        sh.mkdir(root_dir)
+
+
 def run(args):
     action = args.pop("action", '').strip().lower()
     if not (action in settings.ACTIONS):
@@ -117,6 +130,7 @@ def run(args):
             print(utils.color_text("No root directory specified!", "red"))
             return False
     root_dir = sh.abspth(root_dir)
+    setup_root(root_dir)
 
     persona_fn = args.pop('persona_fn')
     if not persona_fn or not sh.isfile(persona_fn):
@@ -137,16 +151,27 @@ def run(args):
         loaded_rcs = True
 
     # Stash the dryrun value (if any) into the global configuration
-    sh.set_dryrun(args.pop('dryrun'))
+    sh.set_dryrun(args.get('dryrun', False))
 
+    # Params for the runner...
     dist = distro.Distro.get_current()
+    persona_inst = load_verify_persona(persona_fn, dist)
     config = cfg.get_config()
-    runner = actions.ActionRunner(dist, action, config, **args)
+    pw_gen = passwords.PasswordGenerator(config, args.get('prompt_for_passwords', True))
+    pkg_cls = dist.get_packager_factory()
+    pkg_manager = pkg_cls(dist, args.get('keep_old', False))
 
-    LOG.info("Starting action [%s] on %s for distro [%s]" % (action, date.rcf8222date(), dist))
+    runner = actions.ActionRunner(dist, action,
+                                  config, pw_gen,
+                                  pkg_manager,
+                                  **args)
+
+    LOG.info("Starting action [%s] on %s for distro: %s" % (action, date.rcf8222date(), dist.name))
+    LOG.info("Using persona: %s" % (persona_inst))
+    LOG.info("In root directory: %s" % (root_dir))
 
     start_time = time.time()
-    runner.run(persona_fn, root_dir)
+    runner.run(persona_inst, root_dir)
     end_time = time.time()
 
     LOG.info("It took (%s) to complete action [%s]" %
