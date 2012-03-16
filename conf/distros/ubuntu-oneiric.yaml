@@ -49,7 +49,6 @@ commands:
         - service
         - libvirt-bin
         - status
-    libvirt-daemon: libvirt-bin
     mysql:
         # NOTE: we aren't stopping any sql injection...
         create_db:

@@ -33,7 +33,6 @@ commands:
         - service
         - libvirtd
         - status
-    libvirt-daemon: libvirtd
     mysql:
         # NOTE: we aren't stopping any sql injection...
         create_db:
