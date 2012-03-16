@@ -55,7 +55,7 @@ BASE_LINK_DIR = "/etc"
 
 class ComponentBase(object):
     def __init__(self,
-                 subsystems,
+                 desired_subsystems,
                  subsystem_info,
                  runner,
                  component_dir,
@@ -64,7 +64,7 @@ class ComponentBase(object):
                  *args,
                  **kargs):
 
-        self.desired_subsystems = subsystems
+        self.desired_subsystems = desired_subsystems
         self.instances = all_instances
         self.component_name = name
         self.subsystem_info = subsystem_info

@@ -170,7 +170,7 @@ class ActionRunner(object):
                 raise RuntimeError("Persona does not support distro %s"
                                    % (self.distro.name))
             for c in persona['components']:
-                if c not in self.distro.components:
+                if not self.distro.known_component(c):
                     raise RuntimeError("Distro %s does not support component %s" %
                                         (self.distro.name, c))
         except (KeyError, RuntimeError) as e:
@@ -181,7 +181,7 @@ class ActionRunner(object):
 
     def _construct_instances(self, persona, action, root_dir):
         components = persona['components']  # Required
-        subsystems = persona.get('subsystems') or dict()  # Not required
+        desired_subsystems = persona.get('subsystems', dict())  # Not required
         instances = dict()
         for c in components:
             (cls, my_info) = self.distro.extract_component(c, action)
@@ -189,10 +189,11 @@ class ActionRunner(object):
             cls_kvs = dict()
             cls_kvs['runner'] = self
             cls_kvs['component_dir'] = sh.joinpths(root_dir, c)
-            cls_kvs['subsystem_info'] = subsystems.get(c, dict())
+            cls_kvs['subsystem_info'] = my_info.pop('subsystems', dict())
             cls_kvs['all_instances'] = instances
             cls_kvs['name'] = c
             cls_kvs['keep_old'] = self.keep_old
+            cls_kvs['desired_subsystems'] = set(desired_subsystems.get(c, list()))
             # The above is not overrideable...
             for (k, v) in my_info.items():
                 if k not in cls_kvs:

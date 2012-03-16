@@ -96,6 +96,9 @@ class Distro(object):
         else:
             return root.get(end_key)
 
+    def known_component(self, name):
+        return name in self._components
+
     def supports_distro(self, distro_name):
         """Does this distro support the named Linux distro?
 
