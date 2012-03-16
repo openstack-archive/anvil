@@ -28,7 +28,6 @@ from devstack import env
 from devstack import env_rc
 from devstack import log as logging
 from devstack import opts
-from devstack import passwords
 from devstack import settings
 from devstack import shell as sh
 from devstack import utils
@@ -128,7 +127,9 @@ def run(args):
     (repeat_string, line_max_len) = utils.welcome(_WELCOME_MAP.get(action))
     print(utils.center_text("Action Runner", repeat_string, line_max_len))
 
+    # !!
     # Here on out we should be using the logger (and not print)!!
+    # !!
 
     # If we didn't load them before, load them now
     if not loaded_rcs:

@@ -16,6 +16,9 @@
 #    under the License.
 
 
+from devstack import utils
+
+
 def partition(fullname):
     """
     The name should be in dotted.path:ClassName syntax.
@@ -30,9 +33,9 @@ def import_entry_point(fullname):
     """
     Given a name import the class and return it.
     """
-    module_name, ignore, classname = partition(fullname)
+    (module_name, _, classname) = partition(fullname)
     try:
-        module = __import__(module_name)
+        module = utils.import_module(module_name, False)
         for submodule in module_name.split('.')[1:]:
             module = getattr(module, submodule)
         cls = getattr(module, classname)

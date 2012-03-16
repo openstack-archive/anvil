@@ -80,15 +80,8 @@ class QuantumInstaller(comp.PkgInstallComponent):
         self.q_vswitch_service = False
         plugin = self.cfg.getdefaulted("quantum", "q_plugin", VSWITCH_PLUGIN)
         if plugin == VSWITCH_PLUGIN:
-            #default to on if not specified
             self.q_vswitch_agent = True
             self.q_vswitch_service = True
-            # else:
-            #     #only turn on if requested
-            #     if QUANTUM_SERVICE in self.component_opts:
-            #         self.q_vswitch_service = True
-            #     if QUANTUM_AGENT in self.component_opts:
-            #         self.q_vswitch_agent = True
 
     def _get_download_locations(self):
         places = list()
@@ -97,18 +90,6 @@ class QuantumInstaller(comp.PkgInstallComponent):
             'branch': ("git", "quantum_branch"),
         })
         return places
-
-    def get_dependencies(self):
-        common_deps = comp.PkgInstallComponent.get_dependencies(self)
-        add_deps = list()
-        # FIXME: This should come from a persona.
-        if self.q_vswitch_agent:
-            #just need the client
-            add_deps.append(settings.QUANTUM_CLIENT)
-        if self.q_vswitch_service:
-            #in this case we need the db
-            add_deps.append(settings.DB)
-        return common_deps + add_deps
 
     def _get_config_files(self):
         return list(CONFIG_FILES)

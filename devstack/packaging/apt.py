@@ -14,11 +14,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import time
 
 from devstack import log as logging
 from devstack import packager as pack
-from devstack import settings
 from devstack import shell as sh
 
 LOG = logging.getLogger("devstack.packaging.apt")

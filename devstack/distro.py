@@ -16,7 +16,6 @@
 #    under the License.
 
 import glob
-import os
 import platform
 import re
 
@@ -25,31 +24,28 @@ import yaml
 from devstack import importer
 from devstack import log as logging
 from devstack import settings
-from devstack import utils
-
+from devstack import shell as sh
 
 LOG = logging.getLogger('devstack.distro')
-
-DISTRO_CONF_DIR = os.path.join(settings.STACK_CONFIG_DIR, 'distros')
 
 
 class Distro(object):
 
     @classmethod
-    def load_all(cls, path=DISTRO_CONF_DIR):
+    def load_all(cls, path=settings.STACK_DISTRO_DIR):
         """Returns a list of the known distros."""
         results = []
-        input_files = glob.glob(os.path.join(DISTRO_CONF_DIR, '*.yaml'))
+        input_files = glob.glob(sh.joinpths(path, '*.yaml'))
         if not input_files:
             raise RuntimeError(
                 'Did not find any distro definition files in %s' %
-                DISTRO_CONF_DIR)
+                path)
         for filename in input_files:
             try:
                 with open(filename, 'r') as f:
                     data = yaml.load(f)
                 results.append(cls(**data))
-            except Exception as err:
+            except (IOError, yaml.YAMLError) as err:
                 LOG.warning('Could not load distro definition from %s: %s',
                             filename, err)
         return results
@@ -81,11 +77,23 @@ class Distro(object):
     def __repr__(self):
         return "\"%s\" using packager \"%s\"" % (self.name, self.packager_name)
 
-    def get_command(self, cmd_key, quiet=False):
+    def get_command(self, key, *args, **kargs):
+        place = self.commands
+        acutal_keys = [key] + list(args)
+        run_over_keys = acutal_keys[0:-1]
+        end_key = acutal_keys[-1]
+        quiet = kargs.get('quiet', False)
+        for k in run_over_keys:
+            if quiet:
+                place = place.get(k)
+                if place is None:
+                    return None
+            else:
+                place = place[k]
         if not quiet:
-            return self.commands[cmd_key]
+            return place[end_key]
         else:
-            return self.commands.get(cmd_key)
+            return place.get(end_key)
 
     def supports_distro(self, distro_name):
         """Does this distro support the named Linux distro?

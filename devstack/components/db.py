@@ -143,8 +143,8 @@ class DBInstaller(comp.PkgInstallComponent):
                     'USER': user,
                 }
                 cmds = [{'cmd': grant_cmd}]
-                #shell seems to be needed here
-                #since python escapes this to much...
+                # Shell seems to be needed here
+                # since python escapes this to much...
                 utils.execute_template(*cmds, params=params, shell=True)
 
 

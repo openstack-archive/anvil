@@ -16,7 +16,6 @@
 
 from devstack import log as logging
 from devstack import packager as pack
-from devstack import settings
 from devstack import shell as sh
 
 LOG = logging.getLogger("devstack.packaging.yum")
@@ -62,10 +61,10 @@ class YumPackager(pack.Packager):
 
     def _remove_special(self, pkgname, pkginfo):
         #TODO: maybe this should be a subclass that handles these differences
-        if self.distro.name == settings.RHEL6 and pkgname in RHEL_RELINKS:
-            #we don't return true here so that
-            #the normal package cleanup happens
-            sh.unlink(RHEL_RELINKS.get(pkgname).get("tgt"))
+        #if self.distro.name == settings.RHEL6 and pkgname in RHEL_RELINKS:
+        #    #we don't return true here so that
+        #    #the normal package cleanup happens
+        #    sh.unlink(RHEL_RELINKS.get(pkgname).get("tgt"))
         return False
 
     #TODO: maybe this should be a subclass that handles these differences
@@ -84,8 +83,9 @@ class YumPackager(pack.Packager):
 
     #TODO: maybe this should be a subclass that handles these differences
     def _install_special(self, pkgname, pkginfo):
-        if self.distro.name == settings.RHEL6 and pkgname in RHEL_RELINKS:
-            return self._install_rhel_relinks(pkgname, pkginfo)
+        # FIXME
+        #if self.distro.name == settings.RHEL6 and pkgname in RHEL_RELINKS:
+        #    return self._install_rhel_relinks(pkgname, pkginfo)
         return False
 
     def install_batch(self, pkgs):

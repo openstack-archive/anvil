@@ -21,7 +21,6 @@ import distutils.version
 import json
 import netifaces
 import os
-import platform
 import random
 import re
 import socket
@@ -139,12 +138,15 @@ def to_bytes(text):
     return byte_val
 
 
-def import_module(module_name):
+def import_module(module_name, quiet=True):
     try:
         __import__(module_name)
         return sys.modules.get(module_name, None)
     except ImportError:
-        return None
+        if quiet:
+            return None
+        else:
+            raise
 
 
 def load_json(fn):

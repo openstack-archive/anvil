@@ -18,10 +18,17 @@
 """Platform-specific logic for RHEL6 components.
 """
 
-from devstack.components import db
 from devstack import log as logging
+from devstack import shell as sh
+from devstack import utils
+
+from devstack.components import db
+from devstack.components import horizon
 
 LOG = logging.getLogger(__name__)
+
+SOCKET_CONF = "/etc/httpd/conf.d/wsgi-socket-prefix.conf"
+HTTPD_CONF = '/etc/httpd/conf/httpd.conf'
 
 
 class Rhel6DBInstaller(db.DBInstaller):
@@ -40,3 +47,25 @@ class Rhel6DBInstaller(db.DBInstaller):
             fc = utils.joinlinesep(*new_lines)
             with sh.Rooted(True):
                 sh.write_file('/etc/my.cnf', fc)
+
+
+class Rhel6HorizonInstaller(horizon.HorizonInstaller):
+
+    def _config_fixups(self):
+        (user, group) = self._get_apache_user_group()
+        self.tracewriter.file_touched(SOCKET_CONF)
+        # Not recorded since we aren't really creating this
+        LOG.info("Fixing up %s and %s files" % (SOCKET_CONF, HTTPD_CONF))
+        with sh.Rooted(True):
+            # Fix the socket prefix to someplace we can use
+            fc = "WSGISocketPrefix %s" % (sh.joinpths(self.log_dir, "wsgi-socket"))
+            sh.write_file(SOCKET_CONF, fc)
+            # Now adjust the run user and group (of httpd.conf)
+            new_lines = list()
+            for line in sh.load_file(HTTPD_CONF).splitlines():
+                if line.startswith("User "):
+                    line = "User %s" % (user)
+                if line.startswith("Group "):
+                    line = "Group %s" % (group)
+                new_lines.append(line)
+            sh.write_file(HTTPD_CONF, utils.joinlinesep(*new_lines))

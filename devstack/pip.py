@@ -18,7 +18,6 @@
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import shell as sh
-from devstack import settings
 
 LOG = logging.getLogger("devstack.pip")
 PIP_UNINSTALL_CMD_OPTS = ['-y', '-q']
