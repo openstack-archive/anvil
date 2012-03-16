@@ -23,6 +23,7 @@ COLOR_MAP = {
     logging.WARNING: 'yellow',
     logging.ERROR: 'red',
     logging.CRITICAL: 'red',
+    logging.AUDIT: 'green',
 }
 
 COLOR_ATTRS = {

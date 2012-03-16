@@ -439,6 +439,8 @@ class NovaRuntime(comp.PythonRuntime):
         comp.PythonRuntime.pre_start(self)
         virt_driver = _canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
         if virt_driver == 'libvirt':
+            # FIXME: The configuration for the virtualization-type
+            # should come from the persona.
             virt_type = _canon_libvirt_type(self.cfg.get('nova', 'libvirt_type'))
             LOG.info("Checking that your selected libvirt virtualization type [%s] is working and running." % (virt_type))
             if not virsh.virt_ok(virt_type, self.distro):

@@ -38,10 +38,21 @@ commands:
     restart: ['service', 'tgt', 'restart']
     status: ['service', 'tgt', 'status']
 
+  tgt:
+    restart:
+      - cmd: ['stop', 'tgt']
+        run_as_root: true
+      - cmd: ['start', 'tgt']
+        run_as_root: true
+
+  libvirt:
+    restart: ['service', 'libvirt-bin', 'restart']
+    status: ['service', 'libvirt-bin', 'status']
+
 components:
 
   db:
-    install: devstack.distros.oneiric:OneiricDBInstaller
+    install: devstack.distros.oneiric:DBInstaller
     uninstall: devstack.components.db:DBUninstaller
     start: devstack.components.db:DBRuntime
     stop: devstack.components.db:DBRuntime
