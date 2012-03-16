@@ -19,7 +19,6 @@ from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
-from devstack import utils
 
 LOG = logging.getLogger("devstack.progs.actions")
 
@@ -172,7 +171,7 @@ class ActionRunner(object):
             for (k, v) in my_info.items():
                 if k not in cls_kvs:
                     cls_kvs[k] = v
-            instances[c] = utils.construct_instance(cls, **cls_kvs)
+            instances[c] = cls(**cls_kvs)
         return instances
 
     def _verify_components(self, component_order, instances):

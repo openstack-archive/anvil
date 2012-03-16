@@ -21,6 +21,8 @@ LOG = logging.getLogger("devstack.packager")
 
 
 class Packager(object):
+
+    @logging.log_debug
     def __init__(self, distro, keep_packages):
         self.distro = distro
         self.keep_packages = keep_packages

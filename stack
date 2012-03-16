@@ -159,14 +159,14 @@ def run(args):
     config = cfg.get_config()
     pw_gen = passwords.PasswordGenerator(config, args.get('prompt_for_passwords', True))
     pkg_cls = dist.get_packager_factory()
-    pkg_manager = pkg_cls(distro, args.get('keep_old', False))
+    pkg_manager = pkg_cls(dist, args.get('keep_old', False))
 
     runner = actions.ActionRunner(dist, action,
                                   config, pw_gen,
                                   pkg_manager,
                                   **args)
 
-    LOG.info("Starting action [%s] on %s for distro: %s" % (action, date.rcf8222date(), dist))
+    LOG.info("Starting action [%s] on %s for distro: %s" % (action, date.rcf8222date(), dist.name))
     LOG.info("Using persona: %s" % (persona_inst))
     LOG.info("In root directory: %s" % (root_dir))
 

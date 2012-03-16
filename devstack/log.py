@@ -80,12 +80,10 @@ def getLogger(name='devstack'):
 
 def log_debug(f):
     @functools.wraps(f)
-    def wrapper(*args, **kw):
-        if root.isEnabledFor(debug):
-            logging.debug('%s(%s, %s) ->', f.func_name, str(args), str(kw))
-        rv = f(*args, **kw)
-        if root.isEnabledFor(debug):
-            logging.debug(pprint.pformat(rv, indent=2))
-            logging.debug('')
+    def wrapper(*args, **kargs):
+        logger = getLogger()
+        logger.debug('%s(%s, %s) ->', f.func_name, str(args), str(kargs))
+        rv = f(*args, **kargs)
+        logger.debug("<- %s" % (pprint.pformat(rv, indent=2)))
         return rv
     return wrapper

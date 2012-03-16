@@ -95,13 +95,6 @@ def configure_logging(verbosity_level=1, dry_run=False):
     root_logger.setLevel(log_level)
 
 
-def construct_instance(cls, *args, **kargs):
-    LOG.debug("Constructing class %s", cls)
-    LOG.debug("Using arg map %s", kargs)
-    LOG.debug("Using arg list %s", args)
-    return cls(*args, **kargs)
-
-
 def load_template(component, template_name):
     full_pth = sh.joinpths(settings.STACK_TEMPLATE_DIR, component, template_name)
     contents = sh.load_file(full_pth)

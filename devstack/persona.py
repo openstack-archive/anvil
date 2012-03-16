@@ -19,7 +19,6 @@ import yaml
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import shell as sh
-from devstack import utils
 
 LOG = logging.getLogger("devstack.persona")
 
@@ -30,7 +29,7 @@ class Persona(object):
     def load_file(cls, fn):
         persona_fn = sh.abspth(fn)
         LOG.audit("Loading persona from file [%s]", persona_fn)
-        cls_kvs = dict()
+        cls_kvs = None
         try:
             with open(persona_fn, "r") as fh:
                 cls_kvs = yaml.load(fh.read())
@@ -38,14 +37,16 @@ class Persona(object):
             LOG.warning('Could not load persona definition from %s: %s',
                              persona_fn, err)
         instance = None
-        try:
-            cls_kvs['source'] = persona_fn
-            instance = utils.construct_instance(cls, **cls_kvs)
-        except Exception as err:
-            LOG.warning('Could not initialize instance %s using parameter map %s: %s',
-                            cls, cls_kvs, err)
+        if cls_kvs is not None:
+            try:
+                cls_kvs['source'] = persona_fn
+                instance = cls(**cls_kvs)
+            except Exception as err:
+                LOG.warning('Could not initialize instance %s using parameter map %s: %s',
+                                cls, cls_kvs, err)
         return instance
 
+    @logging.log_debug
     def __init__(self, description,
                        supports,
                        components,
@@ -59,7 +60,7 @@ class Persona(object):
         self.description = description
         self.component_options = options
 
-    def __repr__(self):
+    def __str__(self):
         info = "%s" % (self.description)
         if self.source:
             info += " from source %s:" % (self.source)

@@ -25,7 +25,6 @@ from devstack import importer
 from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
-from devstack import utils
 
 LOG = logging.getLogger('devstack.distro')
 
@@ -41,19 +40,22 @@ class Distro(object):
             raise RuntimeError(
                 'Did not find any distro definition files in %s' %
                 path)
-        for filename in input_files:
-            cls_kvs = dict()
+        for fn in input_files:
+            cls_kvs = None
+            filename = sh.abspth(fn)
+            LOG.audit("Attempting to load distro definition from [%s]" % (filename))
             try:
                 with open(filename, 'r') as f:
                     cls_kvs = yaml.load(f)
             except (IOError, yaml.YAMLError) as err:
                 LOG.warning('Could not load distro definition from %s: %s',
                             filename, err)
-            try:
-                results.append(utils.construct_instance(cls, **cls_kvs))
-            except Exception as err:
-                LOG.warning('Could not initialize instance %s using parameter map %s: %s',
-                            cls, cls_kvs, err)
+            if cls_kvs is not None:
+                try:
+                    results.append(cls(**cls_kvs))
+                except Exception as err:
+                    LOG.warning('Could not initialize instance %s using parameter map %s: %s',
+                                cls, cls_kvs, err)
         return results
 
     @classmethod
@@ -73,15 +75,13 @@ class Distro(object):
                 'No platform configuration data for %s (%s)' %
                 (plt, distname))
 
+    @logging.log_debug
     def __init__(self, name, distro_pattern, packager_name, commands, components):
         self.name = name
         self._distro_pattern = re.compile(distro_pattern, re.IGNORECASE)
         self._packager_name = packager_name
         self._commands = commands
         self._components = components
-
-    def __repr__(self):
-        return "\"%s\" using packager \"%s\"" % (self.name, self._packager_name)
 
     def get_command(self, key, *more_keys, **kargs):
         """ Gets a end object for a given set of keys """
