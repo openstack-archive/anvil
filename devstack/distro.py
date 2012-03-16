@@ -21,6 +21,7 @@ import re
 
 import yaml
 
+from devstack import decorators
 from devstack import importer
 from devstack import log as logging
 from devstack import settings
@@ -75,7 +76,7 @@ class Distro(object):
                 'No platform configuration data for %s (%s)' %
                 (plt, distname))
 
-    @logging.log_debug
+    @decorators.log_debug
     def __init__(self, name, distro_pattern, packager_name, commands, components):
         self.name = name
         self._distro_pattern = re.compile(distro_pattern, re.IGNORECASE)

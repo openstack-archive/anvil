@@ -16,6 +16,7 @@
 
 import yaml
 
+from devstack import decorators
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import shell as sh
@@ -46,7 +47,7 @@ class Persona(object):
                                 cls, cls_kvs, err)
         return instance
 
-    @logging.log_debug
+    @decorators.log_debug
     def __init__(self, description,
                        supports,
                        components,
