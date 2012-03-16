@@ -225,7 +225,7 @@ class ActionRunner(object):
                 LOG.info("Activating prerequisite action [%s] requested by (%s) components."
                     % (preq_action, ", ".join(checks_passed_components)))
                 self._run_action(persona, preq_action, root_dir)
-        component_order = self._apply_reverse(action, persona['components'])
+        component_order = self._apply_reverse(action, persona.wanted_components)
         LOG.info("Activating components [%s] (in that order) for action [%s]" %
                   ("->".join(component_order), action))
         self._verify_components(component_order, instances)
