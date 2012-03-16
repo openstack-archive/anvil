@@ -21,6 +21,8 @@ from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 
+import abc
+
 LOG = logging.getLogger("devstack.components.db")
 
 # How long we wait before using the database after a restart
@@ -78,6 +80,8 @@ class DBUninstaller(comp.PkgUninstallComponent):
 
 
 class DBInstaller(comp.PkgInstallComponent):
+    __meta__ = abc.ABCMeta
+
     def __init__(self, *args, **kargs):
         comp.PkgInstallComponent.__init__(self, *args, **kargs)
         self.runtime = DBRuntime(*args, **kargs)
@@ -99,6 +103,7 @@ class DBInstaller(comp.PkgInstallComponent):
         for key, prompt in WARMUP_PWS:
             self.pw_gen.get_password(key, prompt)
 
+    @abc.abstractmethod
     def _configure_db_confs(self):
         pass
 
