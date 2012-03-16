@@ -46,33 +46,33 @@ class DBInstaller(db.DBInstaller):
             sh.write_file('/etc/mysql/my.cnf', fc)
 
 
-class OneiricAptPackager(apt.AptPackager):
+class AptPackager(apt.AptPackager):
 
-    def _pkg_remove_special(self, name, pkginfo):
+    def _remove_special(self, name, info):
         if name == 'rabbitmq-server':
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
             LOG.info("Handling special remove of %s." % (name))
-            pkg_full = self._format_pkg(name, pkginfo.get("version"))
-            cmd = apt.APT_GET + apt.APT_REMOVE + [pkg_full]
+            pkg_full = self._format_pkg_name(name, info.get("version"))
+            cmd = apt.APT_REMOVE + [pkg_full]
             self._execute_apt(cmd)
             #probably useful to do this
             time.sleep(1)
             #purge
-            cmd = apt.APT_GET + apt.APT_PURGE + [pkg_full]
+            cmd = apt.APT_PURGE + [pkg_full]
             self._execute_apt(cmd)
             return True
         return False
 
-    def _pkg_install_special(self, name, pkginfo):
+    def _install_special(self, name, info):
         if name == 'rabbitmq-server':
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
             LOG.info("Handling special install of %s." % (name))
             #this seems to be a temporary fix for that bug
             with tempfile.TemporaryFile() as f:
-                pkg_full = self._format_pkg(name, pkginfo.get("version"))
-                cmd = apt.APT_GET + apt.APT_INSTALL + [pkg_full]
+                pkg_full = self._format_pkg_name(name, info.get("version"))
+                cmd = apt.APT_INSTALL + [pkg_full]
                 self._execute_apt(cmd, stdout_fh=f, stderr_fh=f)
                 return True
         return False

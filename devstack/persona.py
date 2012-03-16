@@ -79,9 +79,9 @@ class Persona(object):
         # Some sanity checks against the given distro
         d_name = distro.name
         if d_name not in self.distro_support:
-            msg = "Distro %s not supported" % (d_name)
+            msg = "Distro %r not supported" % (d_name)
             raise excp.ConfigException(msg)
         for c in self.wanted_components:
             if not distro.known_component(c):
-                raise RuntimeError("Distro %s does not support component %s" %
+                raise RuntimeError("Distro %r does not support component %r" %
                                         (d_name, c))

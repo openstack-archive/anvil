@@ -166,9 +166,9 @@ def run(args):
                                   pkg_manager,
                                   **args)
 
-    LOG.info("Starting action [%s] on %s for distro: %s" % (action, date.rcf8222date(), dist.name))
-    LOG.info("Using persona: %s" % (persona_inst))
-    LOG.info("In root directory: %s" % (root_dir))
+    LOG.info("Starting action %r on %s for distro: %r" % (action, date.rcf8222date(), dist.name))
+    LOG.info("Using persona: %r" % (persona_fn))
+    LOG.info("In root directory: %r" % (root_dir))
 
     start_time = time.time()
     runner.run(persona_inst, root_dir)

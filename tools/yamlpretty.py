@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
-import yaml
 import os
 import sys
+
+import yaml
 
 # See: http://pyyaml.org/wiki/PyYAMLDocumentation
 

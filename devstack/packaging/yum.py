@@ -30,74 +30,36 @@ YUM_REMOVE = ['erase', '-y', "-t"]
 # Yum separates its pkg names and versions with a dash
 VERSION_TEMPL = "%s-%s"
 
-# Need to relink for rhel (not a bug!)
-# TODO: maybe this should be a subclass that handles these differences
-RHEL_RELINKS = {
-    'python-webob1.0': {
-        "src": '/usr/lib/python2.6/site-packages/WebOb-1.0.8-py2.6.egg/webob/',
-        'tgt': '/usr/lib/python2.6/site-packages/webob',
-    },
-    'python-nose1.1': {
-        "src": '/usr/lib/python2.6/site-packages/nose-1.1.2-py2.6.egg/nose/',
-        'tgt': '/usr/lib/python2.6/site-packages/nose',
-    },
-}
-
 
 class YumPackager(pack.Packager):
     def __init__(self, distro, keep_packages):
         pack.Packager.__init__(self, distro, keep_packages)
 
     def _format_pkg_name(self, name, version):
-        if version is not None and len(version):
+        if version:
             return VERSION_TEMPL % (name, version)
         else:
             return name
 
     def _execute_yum(self, cmd, **kargs):
-        return sh.execute(*cmd, run_as_root=True,
+        full_cmd = YUM_CMD + cmd
+        return sh.execute(*full_cmd, run_as_root=True,
             check_exit_code=True,
             **kargs)
 
-    def _remove_special(self, pkgname, pkginfo):
-        # TODO: maybe this should be a subclass that handles these differences
-        # if self.distro.name == settings.RHEL6 and pkgname in RHEL_RELINKS:
-        #    #we don't return true here so that
-        #    #the normal package cleanup happens
-        #    sh.unlink(RHEL_RELINKS.get(pkgname).get("tgt"))
+    def _remove_special(self, name, info):
         return False
 
-    # TODO: maybe this should be a subclass that handles these differences
-    def _install_rhel_relinks(self, pkgname, pkginfo):
-        full_pkg_name = self._format_pkg_name(pkgname, pkginfo.get("version"))
-        install_cmd = YUM_CMD + YUM_INSTALL + [full_pkg_name]
-        self._execute_yum(install_cmd)
-        tgt = RHEL_RELINKS.get(pkgname).get("tgt")
-        src = RHEL_RELINKS.get(pkgname).get("src")
-        if not sh.islink(tgt):
-            # This is actually a feature, EPEL must not conflict with RHEL, so X pkg installs newer version in parallel.
-            #
-            # This of course doesn't work when running from git like devstack does....
-            sh.symlink(src, tgt)
-        return True
-
-    # TODO: maybe this should be a subclass that handles these differences
-    def _install_special(self, pkgname, pkginfo):
-        # FIXME:
-        # if self.distro.name == settings.RHEL6 and pkgname in RHEL_RELINKS:
-        #    return self._install_rhel_relinks(pkgname, pkginfo)
+    def _install_special(self, name, info):
         return False
 
-    def install_batch(self, pkgs):
-        pkg_full_names = []
-        for info in pkgs:
-            name = info['name']
-            if self._install_special(name, info):
-                continue
-            full_pkg_name = self._format_pkg_name(name, info.get("version"))
-            pkg_full_names.append(full_pkg_name)
-        if pkg_full_names:
-            cmd = YUM_CMD + YUM_INSTALL + pkg_full_names
+    def install(self, pkg):
+        name = pkg['name']
+        if self._install_special(name, pkg):
+            return
+        else:
+            full_pkg_name = self._format_pkg_name(name, pkg.get("version"))
+            cmd = YUM_INSTALL + [full_pkg_name]
             self._execute_yum(cmd)
 
     def _remove_batch(self, pkgs):
@@ -111,11 +73,11 @@ class YumPackager(pack.Packager):
                 continue
             if self._remove_special(name, info):
                 which_removed.append(name)
-                continue
-            full_pkg_name = self._format_pkg_name(name, info.get("version"))
-            pkg_full_names.append(full_pkg_name)
-            which_removed.append(name)
+            else:
+                full_pkg_name = self._format_pkg_name(name, info.get("version"))
+                pkg_full_names.append(full_pkg_name)
+                which_removed.append(name)
         if pkg_full_names:
-            cmd = YUM_CMD + YUM_REMOVE + pkg_full_names
+            cmd = YUM_REMOVE + pkg_full_names
             self._execute_yum(cmd)
         return which_removed

@@ -25,10 +25,24 @@ from devstack import utils
 from devstack.components import db
 from devstack.components import horizon
 
+from devstack.packaging import yum
+
 LOG = logging.getLogger(__name__)
 
 SOCKET_CONF = "/etc/httpd/conf.d/wsgi-socket-prefix.conf"
 HTTPD_CONF = '/etc/httpd/conf/httpd.conf'
+
+# Need to relink for rhel (not a bug!)
+RHEL_RELINKS = {
+    'python-webob1.0': {
+        "src": '/usr/lib/python2.6/site-packages/WebOb-1.0.8-py2.6.egg/webob/',
+        'tgt': '/usr/lib/python2.6/site-packages/webob',
+    },
+    'python-nose1.1': {
+        "src": '/usr/lib/python2.6/site-packages/nose-1.1.2-py2.6.egg/nose/',
+        'tgt': '/usr/lib/python2.6/site-packages/nose',
+    },
+}
 
 
 class DBInstaller(db.DBInstaller):
@@ -47,12 +61,12 @@ class DBInstaller(db.DBInstaller):
             sh.write_file('/etc/my.cnf', fc)
 
 
-class Rhel6HorizonInstaller(horizon.HorizonInstaller):
+class HorizonInstaller(horizon.HorizonInstaller):
 
     def _config_fixups(self):
         (user, group) = self._get_apache_user_group()
+        # This is recorded so it gets cleaned up during uninstall
         self.tracewriter.file_touched(SOCKET_CONF)
-        # Not recorded since we aren't really creating this
         LOG.info("Fixing up %s and %s files" % (SOCKET_CONF, HTTPD_CONF))
         with sh.Rooted(True):
             # Fix the socket prefix to someplace we can use
@@ -67,3 +81,29 @@ class Rhel6HorizonInstaller(horizon.HorizonInstaller):
                     line = "Group %s" % (group)
                 new_lines.append(line)
             sh.write_file(HTTPD_CONF, utils.joinlinesep(*new_lines))
+
+
+class YumPackager(yum.YumPackager):
+
+    def _remove_special(self, name, info):
+        if name in RHEL_RELINKS:
+            # Note: we don't return true here so that
+            # the normal package cleanup happens...
+            sh.unlink(RHEL_RELINKS.get(name).get("tgt"))
+        return False
+
+    def _install_special(self, name, info):
+        if name in RHEL_RELINKS:
+            full_pkg_name = self._format_pkg_name(name, info.get("version"))
+            install_cmd = yum.YUM_INSTALL + [full_pkg_name]
+            self._execute_yum(install_cmd)
+            tgt = RHEL_RELINKS.get(pkgname).get("tgt")
+            src = RHEL_RELINKS.get(pkgname).get("src")
+            if not sh.islink(tgt):
+                # This is actually a feature, EPEL must not conflict with RHEL, so X pkg installs newer version in parallel.
+                #
+                # This of course doesn't work when running from git like devstack does....
+                sh.symlink(src, tgt)
+            return True
+        else:
+            return False
