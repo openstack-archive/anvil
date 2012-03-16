@@ -117,6 +117,7 @@ def run(args):
         if not root_dir:
             print(utils.color_text("No root directory specified!", "red"))
             return False
+    root_dir = sh.abspth(root_dir)
 
     persona_fn = args.pop('persona_fn')
     if not persona_fn or not sh.isfile(persona_fn):
