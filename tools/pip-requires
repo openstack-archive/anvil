@@ -4,6 +4,7 @@
 # Development
 netifaces
 termcolor
+pyyaml # reading data files
 
 # Testing
 nose # for test discovery and console feedback
