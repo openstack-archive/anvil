@@ -27,6 +27,7 @@ from devstack import utils
 
 from devstack.components import db
 from devstack.components import keystone
+from devstack.components import rabbit
 
 LOG = logging.getLogger('devstack.components.nova')
 
@@ -196,7 +197,7 @@ VNC_DEF_ADDR = '127.0.0.1'
 STD_COMPUTE_EXTS = 'nova.api.openstack.compute.contrib.standard_extensions'
 
 # Config keys we warm up so u won't be prompted later
-WARMUP_PWS = ['rabbit']
+WARMUP_PWS = [('rabbit', rabbit.PW_USER_PROMPT)]
 
 # Used to wait until started before we can run the data setup script
 WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
@@ -292,9 +293,9 @@ class NovaInstaller(comp.PythonInstallComponent):
         warm_pws = list(WARMUP_PWS)
         driver_canon = _canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
         if driver_canon == 'xenserver':
-            warm_pws.append('xenapi_connection')
-        for pw_key in warm_pws:
-            self.pw_gen.get_password(pw_key)
+            warm_pws.append(('xenapi_connection', 'the Xen API connection'))
+        for pw_key, pw_prompt in warm_pws:
+            self.pw_gen.get_password(pw_key, pw_prompt)
 
     def _get_config_files(self):
         return list(CONFIGS)
