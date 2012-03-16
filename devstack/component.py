@@ -32,23 +32,24 @@ from devstack.runners import screen
 
 LOG = logging.getLogger("devstack.component")
 
-#how we actually setup and unsetup python
+# How we actually setup and unsetup python
 PY_INSTALL = ['python', 'setup.py', 'develop']
 PY_UNINSTALL = ['python', 'setup.py', 'develop', '--uninstall']
 
-#runtime status constants (return by runtime status)
+# Runtime status constants (return by runtime status) 
+# TODO: move...
 STATUS_UNKNOWN = "unknown"
 STATUS_STARTED = "started"
 STATUS_STOPPED = "stopped"
 
-#which run types to which runner class
+# Which run types to which runner class
 RUNNER_CLS_MAPPING = {
     settings.RUN_TYPE_FORK: fork.ForkRunner,
     settings.RUN_TYPE_UPSTART: upstart.UpstartRunner,
     settings.RUN_TYPE_SCREEN: screen.ScreenRunner,
 }
 
-#where symlinks will go
+# Where symlinks will go
 BASE_LINK_DIR = "/etc"
 
 
@@ -266,7 +267,7 @@ class PythonInstallComponent(PkgInstallComponent):
                 # Todo handle duplicates/version differences?
                 LOG.debug("Extending pip list with pips for subsystem %s" % (name))
                 subsystem_pips = self.subsystems[name].get('pips', list()) 
-                pip_list.extend(subsystem_pkgs)
+                pip_list.extend(subsystem_pips)
         return pip_list
 
     def _install_pips(self):
