@@ -497,9 +497,9 @@ class NovaVolumeConfigurator(object):
         # logical volumes
         self._process_lvs(mp)
         # Finish off by restarting tgt, and ignore any errors
-        iscsi_restart = self.distro.get_command('iscsi', 'restart', quiet=True)
-        if iscsi_restart:
-            utils.execute_template(*iscsi_restart, run_as_root=True, check_exit_code=False)
+        cmdrestart = self.distro.get_command('iscsi', 'restart', quiet=True)
+        if cmdrestart:
+            sh.execute(*cmdrestart, run_as_root=True, check_exit_code=False)
 
     def _process_lvs(self, mp):
         LOG.info("Attempting to setup logical volumes for nova volume management.")
