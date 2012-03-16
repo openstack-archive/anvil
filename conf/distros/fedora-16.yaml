@@ -31,6 +31,10 @@ commands:
     grant_all: ["mysql", "--user=%USER%", "--password=%PASSWORD%", '-e', 
                 "\"GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' IDENTIFIED BY '%PASSWORD%'; FLUSH PRIVILEGES;\""]
 
+  libvirt:
+    restart: ['service', 'libvirtd', 'restart']
+    status: ['service', 'libvirtd', 'status']
+
 components:
 
   db:
