@@ -38,6 +38,17 @@ commands:
     restart: ['service', 'tgt', 'restart']
     status: ['service', 'tgt', 'status']
 
+  tgt:
+    restart:
+      - cmd: ['stop', 'tgt']
+        run_as_root: true
+      - cmd: ['start', 'tgt']
+        run_as_root: true
+
+  libvirt:
+    restart: ['service', 'libvirt-bin', 'restart']
+    status: ['service', 'libvirt-bin', 'status']
+
 components:
 
   db:

@@ -32,11 +32,18 @@ LIBVIRT_PROTOCOL_MAP = {
 }
 VIRT_LIB = 'libvirt'
 
-# How libvirt is restarted
-LIBVIRT_RESTART_CMD = ['service', '%SERVICE%', 'restart']
+# #distros name the libvirt service differently :-(
+# SV_NAME_MAP = {
+#     settings.RHEL6: 'libvirtd',
+#     settings.FEDORA16: 'libvirtd',
+#     settings.UBUNTU11: 'libvirt-bin',
+# }
 
-# How we check its status
-LIBVIRT_STATUS_CMD = ['service', '%SERVICE%', 'status']
+# #how libvirt is restarted
+# LIBVIRT_RESTART_CMD = ['service', '%SERVICE%', 'restart']
+
+# #how we check its status
+# LIBVIRT_STATUS_CMD = ['service', '%SERVICE%', 'status']
 
 # This is just used to check that libvirt will work with
 # a given protocol, may not be ideal but does seem to crap
@@ -58,16 +65,12 @@ def _get_virt_lib():
 
 
 def _status(distro):
-    cmds = list()
-    cmds.append({
-        'cmd': LIBVIRT_STATUS_CMD,
-        'run_as_root': True,
-    })
-    mp = dict()
-    mp['SERVICE'] = distro.get_command('libvirt-daemon')
+    cmds = [{'cmd': distro.get_command('libvirt', 'status'),
+             'run_as_root': True,
+             }]
     result = utils.execute_template(*cmds,
-                                check_exit_code=False,
-                                params=mp)
+                                     check_exit_code=False,
+                                     params={})
     if not result or not result[0]:
         return _DEAD
     (sysout, stderr) = result[0]
@@ -91,14 +94,11 @@ def _destroy_domain(libvirt, conn, dom_name):
 
 def restart(distro):
     if _status(distro) != _ALIVE:
-        cmds = list()
-        cmds.append({
-            'cmd': LIBVIRT_RESTART_CMD,
-            'run_as_root': True,
-        })
-        mp = dict()
-        mp['SERVICE'] = distro.get_command('libvirt-daemon')
-        utils.execute_template(*cmds, params=mp)
+        cmds = [{
+                'cmd': distro.get_command('libvirt', 'restart'),
+                'run_as_root': True,
+                }]
+        utils.execute_template(*cmds, params={})
         LOG.info("Restarting the libvirt service, please wait %s seconds until its started." % (WAIT_ALIVE_TIME))
         sh.sleep(WAIT_ALIVE_TIME)
 
