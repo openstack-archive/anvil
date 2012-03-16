@@ -54,7 +54,7 @@ BASE_LINK_DIR = "/etc"
 
 class ComponentBase(object):
     def __init__(self,
-                 subsystems,
+                 active_subsystems,
                  runner,
                  component_dir,
                  all_instances,
@@ -62,7 +62,7 @@ class ComponentBase(object):
                  *args,
                  **kargs):
 
-        self.subsystems = subsystems
+        self.active_subsystems = active_subsystems
         self.instances = all_instances
 
         # The runner has a reference to us, so use a weakref here to
@@ -107,6 +107,7 @@ class PkgInstallComponent(ComponentBase):
         self.tracewriter = tr.TraceWriter(tr.trace_fn(self.trace_dir,
                                                       tr.IN_TRACE))
         self.packages = kargs.get('packages', list())
+        self.subsystems = kargs.get('subsystems', dict())
 
     def _get_download_locations(self):
         return list()
@@ -150,7 +151,14 @@ class PkgInstallComponent(ComponentBase):
         return dict()
 
     def _get_packages(self):
-        return self.packages
+        pkg_list = list(self.packages)
+        for name in self.active_subsystems:
+            if name in self.subsystems:
+                # Todo handle duplicates/version differences?
+                LOG.debug("Extending package list with packages for subsystem %s" % (name))
+                subsystem_pkgs = self.subsystems[name].get('packages', list()) 
+                pkg_list.extend(subsystem_pkgs)
+        return pkg_list
 
     def install(self):
         LOG.debug('Preparing to install packages for %s',
@@ -206,13 +214,9 @@ class PkgInstallComponent(ComponentBase):
         if configs:
             LOG.info("Configuring %s files", len(configs))
             for fn in configs:
-                #get the params and where it should come from and
-                #where it should go
                 parameters = self._get_param_map(fn)
                 tgt_fn = self._get_target_config_name(fn)
-                #ensure directory is there (if not created previously)
                 self.tracewriter.dirs_made(*sh.mkdirslist(sh.dirname(tgt_fn)))
-                #now configure it
                 LOG.info("Configuring file %s", fn)
                 (source_fn, contents) = self._get_source_config(fn)
                 LOG.debug("Replacing parameters in file %s", source_fn)
@@ -221,7 +225,6 @@ class PkgInstallComponent(ComponentBase):
                 LOG.debug("Applying side-effects of param replacement for template %s", source_fn)
                 contents = self._config_adjust(contents, fn)
                 LOG.info("Writing configuration file %s", tgt_fn)
-                #this trace is used to remove the files configured
                 self.tracewriter.cfg_file_written(sh.write_file(tgt_fn,
                                                                 contents))
         return len(configs)
@@ -255,9 +258,16 @@ class PythonInstallComponent(PkgInstallComponent):
         py_dirs = dict()
         py_dirs[self.component_name] = self.app_dir
         return py_dirs
-        
+
     def _get_pips(self):
-        return self.pips
+        pip_list = list(self.pips)
+        for name in self.active_subsystems:
+            if name in self.subsystems:
+                # Todo handle duplicates/version differences?
+                LOG.debug("Extending pip list with pips for subsystem %s" % (name))
+                subsystem_pips = self.subsystems[name].get('pips', list()) 
+                pip_list.extend(subsystem_pkgs)
+        return pip_list
 
     def _install_pips(self):
         pips = self._get_pips()

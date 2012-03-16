@@ -189,20 +189,23 @@ class ActionRunner(object):
         subsystems = persona.get('subsystems') or dict()  # Not required
         instances = dict()
         for c in components:
-            cls = self.distro.get_component_action_class(c, action)
+            (cls, my_info) = self.distro.extract_component(c, action)
             LOG.debug("Constructing class %s" % (cls))
             cls_kvs = dict()
             cls_kvs['runner'] = self
             cls_kvs['component_dir'] = sh.joinpths(root_dir, c)
-            cls_kvs['subsystems'] = set(subsystems.get(c, list()))
+            cls_kvs['active_subsystems'] = set(subsystems.get(c, list()))
             cls_kvs['all_instances'] = instances
             cls_kvs['name'] = c
-            # FIXME: we are always sending these... (even if not used)
             cls_kvs['keep_old'] = self.keep_old
-            cls_kvs['packages'] = self.distro.get_packages(c)
-            cls_kvs['pips'] = self.distro.get_pips(c)
-            LOG.debug("Using k/v map %s", cls_kvs)
-            instances[c] = cls(*list(), **cls_kvs)
+            # The above is not overrideable...
+            for (k, v) in my_info.items():
+                if k not in cls_kvs:
+                    cls_kvs[k] = v
+            LOG.debug("Using arg map %s", cls_kvs)
+            cls_args = list()
+            LOG.debug("Using arg list %s", cls_args)
+            instances[c] = cls(*cls_args, **cls_kvs)
         return instances
     
     def _verify_components(self, component_order, instances):

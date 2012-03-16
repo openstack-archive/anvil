@@ -238,7 +238,7 @@ class NovaUninstaller(comp.PythonUninstallComponent):
         #these environment additions are important
         #in that they eventually affect how this script runs
         env = dict()
-        env['ENABLED_SERVICES'] = ",".join(self.subsystems)
+        env['ENABLED_SERVICES'] = ",".join(self.active_subsystems)
         env['BIN_DIR'] = self.bin_dir
         env['VOLUME_NAME_PREFIX'] = self.cfg.getdefaulted('nova', 'volume_name_prefix', DEF_VOL_PREFIX)
         cleaner_fn = sh.joinpths(self.bin_dir, CLEANER_DATA_CONF)
@@ -262,10 +262,10 @@ class NovaInstaller(comp.PythonInstallComponent):
         self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
         self.paste_conf_fn = self._get_target_config_name(PASTE_CONF)
         self.volumes_enabled = False
-        if NVOL in self.subsystems:
+        if NVOL in self.active_subsystems:
             self.volumes_enabled = True
         self.xvnc_enabled = False
-        if NXVNC in self.subsystems:
+        if NXVNC in self.active_subsystems:
             self.xvnc_enabled = True
 
     def _get_symlinks(self):

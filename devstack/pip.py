@@ -38,7 +38,7 @@ def install(pip, distro):
     if options is not None:
         LOG.debug("Using pip options: %s" % (str(options)))
         real_cmd += [str(options)]
-    real_cmd += [pipfull]
+    real_cmd += [name_full]
     sh.execute(*real_cmd, run_as_root=True)
 
 

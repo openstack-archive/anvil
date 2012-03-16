@@ -81,12 +81,6 @@ class Distro(object):
     def __repr__(self):
         return "\"%s\" using packager \"%s\"" % (self.name, self.packager_name)
 
-    def get_packages(self, name):
-        return self.components[name].get('packages', list())
-
-    def get_pips(self, name):
-        return self.components[name].get('pips', list())
-
     def get_command(self, cmd_key, quiet=False):
         if not quiet:
             return self.commands[cmd_key]
@@ -104,11 +98,19 @@ class Distro(object):
         """Return a factory for a package manager."""
         return importer.import_entry_point(self.packager_name)
 
-    def get_component_action_class(self, name, action):
-        """Return the class to use for doing the action w/the component."""
+    def extract_component(self, name, action):
+        """Return the class + component info to use for doing the action w/the component."""
         try:
-            entry_point = self.components[name][action]
+            # Use a copy instead of the original
+            component_info = dict(self.components[name])
+            entry_point = component_info[action]
+            cls = importer.import_entry_point(entry_point)
+            # Knock all action class info (and any other keys)
+            key_deletions = [action] + settings.ACTIONS
+            for k in key_deletions:
+                if k in component_info:
+                    del component_info[k]
+            return (cls, component_info)
         except KeyError:
             raise RuntimeError('No class configured to %s %s on %s' %
                                (action, name, self.name))
-        return importer.import_entry_point(entry_point)
