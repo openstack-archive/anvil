@@ -28,13 +28,13 @@ from devstack.components import keystone
 
 LOG = logging.getLogger('devstack.env_rc')
 
-#general extraction cfg keys+section
+# General extraction cfg keys + sections
 CFG_MAKE = {
     'FLAT_INTERFACE': ('nova', 'flat_interface'),
     'HOST_IP': ('host', 'ip'),
 }
 
-#general password keys
+# General password keys
 PASSWORDS_MAKES = {
     'ADMIN_PASSWORD': 'horizon_keystone_admin',
     'SERVICE_PASSWORD': 'service_password',
@@ -43,17 +43,17 @@ PASSWORDS_MAKES = {
     'MYSQL_PASSWORD': 'sql',
 }
 
-#install root
+# Install root output name and env variable name
 INSTALL_ROOT = 'INSTALL_ROOT'
 
-#default ports
+# Default ports
 EC2_PORT = 8773
 S3_PORT = 3333
 
-#how we know if a line is an export or if it isn't (simpe edition)
+# How we know if a line is an export or if it isn't (simpe edition)
 EXP_PAT = re.compile("^\s*export\s+(.*?)=(.*?)$", re.IGNORECASE)
 
-#how we unquote a string (simple edition)
+# How we unquote a string (simple edition)
 QUOTED_PAT = re.compile(r"^\s*[\"](.*)[\"]\s*$")
 
 
@@ -182,8 +182,8 @@ class RcWriter(object):
         to_set['OS_PASSWORD'] = key_params['ADMIN_PASSWORD']
         to_set['OS_TENANT_NAME'] = key_params['DEMO_TENANT_NAME']
         to_set['OS_USERNAME'] = key_params['DEMO_USER_NAME']
-        # this seems named weirdly the OS_AUTH_URL is the keystone SERVICE_ENDPOINT endpoint
-        # todo: describe more why this is the case
+        # This seems named weirdly the OS_AUTH_URL is the keystone SERVICE_ENDPOINT endpoint
+        # Todo: describe more why this is the case...
         to_set['OS_AUTH_URL'] = key_params['SERVICE_ENDPOINT']
         return to_set
 
@@ -254,8 +254,6 @@ class RcReader(object):
     def extract(self, fn):
         extracted_vars = dict()
         contents = ''
-        #not using shell here since
-        #we don't want this to be "nulled" in a dry-run
         LOG.audit("Loading rc file [%s]" % (fn))
         try:
             with open(fn, 'r') as fh:

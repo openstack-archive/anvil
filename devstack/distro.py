@@ -69,48 +69,49 @@ class Distro(object):
 
     def __init__(self, name, distro_pattern, packager_name, commands, components):
         self.name = name
-        self.distro_pattern = re.compile(distro_pattern, re.IGNORECASE)
-        self.packager_name = packager_name
-        self.commands = commands
-        self.components = components
+        self._distro_pattern = re.compile(distro_pattern, re.IGNORECASE)
+        self._packager_name = packager_name
+        self._commands = commands
+        self._components = components
 
     def __repr__(self):
-        return "\"%s\" using packager \"%s\"" % (self.name, self.packager_name)
+        return "\"%s\" using packager \"%s\"" % (self.name, self._packager_name)
 
-    def get_command(self, key, *args, **kargs):
-        place = self.commands
-        acutal_keys = [key] + list(args)
+    def get_command(self, key, *more_keys, **kargs):
+        """ Gets a end object for a given set of keys """
+        root = self._commands
+        acutal_keys = [key] + list(more_keys)
         run_over_keys = acutal_keys[0:-1]
         end_key = acutal_keys[-1]
         quiet = kargs.get('quiet', False)
         for k in run_over_keys:
             if quiet:
-                place = place.get(k)
-                if place is None:
+                root = root.get(k)
+                if root is None:
                     return None
             else:
-                place = place[k]
+                root = root[k]
         if not quiet:
-            return place[end_key]
+            return root[end_key]
         else:
-            return place.get(end_key)
+            return root.get(end_key)
 
     def supports_distro(self, distro_name):
         """Does this distro support the named Linux distro?
 
         :param distro_name: Return value from platform.linux_distribution().
         """
-        return bool(self.distro_pattern.search(distro_name))
+        return bool(self._distro_pattern.search(distro_name))
 
     def get_packager_factory(self):
         """Return a factory for a package manager."""
-        return importer.import_entry_point(self.packager_name)
+        return importer.import_entry_point(self._packager_name)
 
     def extract_component(self, name, action):
         """Return the class + component info to use for doing the action w/the component."""
         try:
             # Use a copy instead of the original
-            component_info = dict(self.components[name])
+            component_info = dict(self._components[name])
             entry_point = component_info[action]
             cls = importer.import_entry_point(entry_point)
             # Knock all action class info (and any other keys)

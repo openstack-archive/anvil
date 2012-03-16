@@ -22,7 +22,7 @@ from devstack import utils
 
 LOG = logging.getLogger('devstack.libvirt')
 
-#http://libvirt.org/uri.html
+# See: http://libvirt.org/uri.html
 LIBVIRT_PROTOCOL_MAP = {
     'qemu': "qemu:///system",
     'kvm': "qemu:///system",
@@ -32,28 +32,28 @@ LIBVIRT_PROTOCOL_MAP = {
 }
 VIRT_LIB = 'libvirt'
 
-#how libvirt is restarted
+# How libvirt is restarted
 LIBVIRT_RESTART_CMD = ['service', '%SERVICE%', 'restart']
 
-#how we check its status
+# How we check its status
 LIBVIRT_STATUS_CMD = ['service', '%SERVICE%', 'status']
 
-#this is just used to check that libvirt will work with
-#a given protocol, may not be ideal but does seem to crap
-#out if it won't work, so thats good
+# This is just used to check that libvirt will work with
+# a given protocol, may not be ideal but does seem to crap
+# out if it won't work, so thats good...
 VIRSH_SANITY_CMD = ['virsh', '-c', '%VIRT_PROTOCOL%', 'uri']
 
-#status is either dead or alive!
+# Status is either dead or alive!
 _DEAD = 'DEAD'
 _ALIVE = 'ALIVE'
 
-#alive wait time, just a sleep we put into so that the service can start up
+# Alive wait time, just a sleep we put into so that the service can start up
 WAIT_ALIVE_TIME = settings.WAIT_ALIVE_SECS
 
 
 def _get_virt_lib():
-    #late import so that we don't always need this library to be active
-    #ie if u aren't using libvirt in the first place
+    # Late import so that we don't always need this library to be active
+    # ie if u aren't using libvirt in the first place...
     return utils.import_module(VIRT_LIB)
 
 

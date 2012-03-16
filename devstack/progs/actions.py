@@ -150,10 +150,6 @@ class ActionRunner(object):
         self.kargs = kargs
 
     def _apply_reverse(self, action, component_order):
-        if not component_order:
-            component_order = list()
-        else:
-            component_order = list(component_order)
         adjusted_order = list(component_order)
         if action in REVERSE_ACTIONS:
             adjusted_order.reverse()
@@ -193,7 +189,7 @@ class ActionRunner(object):
             cls_kvs = dict()
             cls_kvs['runner'] = self
             cls_kvs['component_dir'] = sh.joinpths(root_dir, c)
-            cls_kvs['active_subsystems'] = set(subsystems.get(c, list()))
+            cls_kvs['subsystem_info'] = subsystems.get(c, dict())
             cls_kvs['all_instances'] = instances
             cls_kvs['name'] = c
             cls_kvs['keep_old'] = self.keep_old

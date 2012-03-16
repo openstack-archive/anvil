@@ -154,11 +154,7 @@ class DBRuntime(comp.EmptyRuntime):
 
     def _get_run_actions(self, act, exception_cls):
         dbtype = self.cfg.get("db", "type")
-        type_actions = self.distro.commands[dbtype]
-        if type_actions is None:
-            msg = BASE_ERROR % (act, dbtype)
-            raise NotImplementedError(msg)
-        distro_options = self.distro.commands[dbtype]
+        distro_options = self.distro.get_command(dbtype)
         if distro_options is None:
             msg = BASE_ERROR % (act, dbtype)
             raise NotImplementedError(msg)

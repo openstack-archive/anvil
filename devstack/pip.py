@@ -42,7 +42,7 @@ def install(pip, distro):
 
 
 def uninstall_batch(pips, distro, skip_errors=True):
-    names = [p['name'] for p in pips]
+    names = set([p['name'] for p in pips])
     root_cmd = distro.get_command('pip')
     for name in names:
         try:

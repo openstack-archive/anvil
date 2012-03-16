@@ -23,7 +23,7 @@ from devstack import utils
 
 LOG = logging.getLogger("devstack.components.swift")
 
-#swift has alot of config files!
+# Swift has alot of config files!
 SWIFT_CONF = 'swift.conf'
 PROXY_SERVER_CONF = 'proxy-server.conf'
 ACCOUNT_SERVER_CONF = 'account-server.conf'
@@ -42,26 +42,26 @@ CONFIGS = [SWIFT_CONF, PROXY_SERVER_CONF, ACCOUNT_SERVER_CONF,
 SWIFT_RSYNC_LOC = '/etc/rsyslog.d/10-swift.conf'
 DEF_LOOP_SIZE = 1000000
 
-#adjustments to rsync/rsyslog
+# Adjustments to rsync/rsyslog
 RSYNC_CONF_LOC = '/etc/default/rsync'
 RSYNCD_CONF_LOC = '/etc/rsyncd.conf'
 RSYNC_SERVICE_RESTART = ['service', 'rsync', 'restart']
 RSYSLOG_SERVICE_RESTART = ['service', 'rsyslog', 'restart']
 RSYNC_ON_OFF_RE = re.compile(r'^\s*RSYNC_ENABLE\s*=\s*(.*)$', re.I)
 
-#defines our auth service type
+# Defines our auth service type
 AUTH_SERVICE = 'keystone'
 
-#defines what type of loopback filesystem we will make
-#xfs is preferred due to its extended attributes
+# Defines what type of loopback filesystem we will make
+# xfs is preferred due to its extended attributes
 FS_TYPE = "xfs"
 
-#subdirs of the git checkout
+# Subdirs of the git checkout
 BIN_DIR = 'bin'
 CONFIG_DIR = 'etc'
 LOG_DIR = 'logs'
 
-#config keys we warm up so u won't be prompted later
+# Config keys we warm up so u won't be prompted later
 WARMUP_PWS = ['service_token', 'swift_hash']
 
 
@@ -108,7 +108,7 @@ class SwiftInstaller(comp.PythonInstallComponent):
 
     def warm_configs(self):
         for pw_key in WARMUP_PWS:
-            self.cfg.get("passwords", pw_key)
+            self.pw_gen.get_password(pw_key)
 
     def _get_param_map(self, config_fn):
         return {
@@ -121,7 +121,7 @@ class SwiftInstaller(comp.PythonInstallComponent):
             'SWIFT_HASH': self.cfg.get('passwords', 'swift_hash'),
             'SWIFT_LOGDIR': self.logdir,
             'SWIFT_PARTITION_POWER_SIZE': self.cfg.getdefaulted('swift', 'partition_power_size', '9'),
-            #leave these alone, will be adjusted later
+            # Note: leave these alone, will be adjusted later
             'NODE_PATH': '%NODE_PATH%',
             'BIND_PORT': '%BIND_PORT%',
             'LOG_FACILITY': '%LOG_FACILITY%',

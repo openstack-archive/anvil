@@ -24,7 +24,7 @@ commands:
     stop: ["service", 'mysql', "stop"]
     status: ["service", 'mysql', "status"]
     restart: ["service", 'mysql', "restart"]
-    #NOTE: we aren't stopping any sql injection...
+    # NOTE: we aren't stopping any sql injection...
     set_pwd: ['mysql', '--user=%USER%', '--password=%OLD_PASSWORD%', '-e', 
               "\"USE mysql; UPDATE user SET password=PASSWORD('%NEW_PASSWORD%') WHERE User='%USER%'; FLUSH PRIVILEGES;\""]
     create_db: ['mysql', '--user=%USER%', '--password=%PASSWORD%', '-e', 'CREATE DATABASE %DB%;']

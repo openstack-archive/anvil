@@ -25,15 +25,15 @@ def partition(fullname):
     """
     if ':' not in fullname:
         raise ValueError('Invalid entry point specifier %r' % fullname)
-    module_name, ignore, classname = fullname.partition(':')
-    return (module_name, ignore, classname)
+    (module_name, _, classname) = fullname.partition(':')
+    return (module_name, classname)
 
 
 def import_entry_point(fullname):
     """
     Given a name import the class and return it.
     """
-    (module_name, _, classname) = partition(fullname)
+    (module_name, classname) = partition(fullname)
     try:
         module = utils.import_module(module_name, False)
         for submodule in module_name.split('.')[1:]:

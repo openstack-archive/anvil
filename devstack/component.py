@@ -55,7 +55,8 @@ BASE_LINK_DIR = "/etc"
 
 class ComponentBase(object):
     def __init__(self,
-                 active_subsystems,
+                 subsystems,
+                 subsystem_info,
                  runner,
                  component_dir,
                  all_instances,
@@ -63,9 +64,10 @@ class ComponentBase(object):
                  *args,
                  **kargs):
 
-        self.active_subsystems = active_subsystems
+        self.desired_subsystems = subsystems
         self.instances = all_instances
         self.component_name = name
+        self.subsystem_info = subsystem_info
 
         # The runner has a reference to us, so use a weakref here to
         # avoid breaking garbage collection.
@@ -87,7 +89,17 @@ class ComponentBase(object):
                                   settings.COMPONENT_CONFIG_DIR)
 
     def verify(self):
-        pass
+        # Ensure subsystems are known...
+        knowns = self.known_subsystems()
+        for s in self.desired_subsystems:
+            if s not in knowns:
+                raise RuntimeError("Unknown subsystem %r requested" % (s))
+        for s in self.subsystem_info.keys():
+            if s not in knowns:
+                raise RuntimeError("Unknown subsystem %r provided" % (s))
+
+    def known_subsystems(self):
+        return list()
 
     def warm_configs(self):
         pass
@@ -106,7 +118,6 @@ class PkgInstallComponent(ComponentBase):
         self.tracewriter = tr.TraceWriter(tr.trace_fn(self.trace_dir,
                                                       tr.IN_TRACE))
         self.packages = kargs.get('packages', list())
-        self.subsystems = kargs.get('subsystems', dict())
 
     def _get_download_locations(self):
         return list()
@@ -117,10 +128,10 @@ class PkgInstallComponent(ComponentBase):
         for location_info in locations:
             uri_tuple = location_info["uri"]
             branch_tuple = location_info.get("branch")
-            subdir = location_info.get("subdir")
+            sub_dir = location_info.get("subdir")
             target_loc = base_dir
-            if subdir:
-                target_loc = sh.joinpths(base_dir, subdir)
+            if sub_dir:
+                target_loc = sh.joinpths(base_dir, sub_dir)
             branch = None
             if branch_tuple:
                 (cfg_section, cfg_key) = branch_tuple
@@ -137,11 +148,11 @@ class PkgInstallComponent(ComponentBase):
                 raise excp.ConfigException(msg)
             self.tracewriter.download_happened(target_loc, uri)
             dirs_made = down.download(target_loc, uri, branch)
-            #ensure this is always added so that
-            #if a keep old happens then this of course
-            #won't be recreated, but if u uninstall without keeping old
-            #then this won't be deleted this time around
-            #adding it in is harmless and willl make sure its removed
+            # Here we ensure this is always added so that
+            # if a keep old happens then this of course
+            # won't be recreated, but if u uninstall without keeping old
+            # then this won't be deleted this time around
+            # adding it in is harmless and will make sure its removed.
             dirs_made.append(target_loc)
             self.tracewriter.dirs_made(*dirs_made)
         return len(locations)
@@ -151,11 +162,11 @@ class PkgInstallComponent(ComponentBase):
 
     def _get_packages(self):
         pkg_list = list(self.packages)
-        for name in self.active_subsystems:
-            if name in self.subsystems:
+        for name in self.desired_subsystems:
+            if name in self.subsystem_info:
                 # Todo handle duplicates/version differences?
                 LOG.debug("Extending package list with packages for subsystem %s" % (name))
-                subsystem_pkgs = self.subsystems[name].get('packages', list())
+                subsystem_pkgs = self.subsystem_info[name].get('packages', list())
                 pkg_list.extend(subsystem_pkgs)
         return pkg_list
 
@@ -230,6 +241,9 @@ class PkgInstallComponent(ComponentBase):
 
     def _configure_symlinks(self):
         links = self._get_symlinks()
+        # This sort happens so that we link in the correct order
+        # although it might not matter. Either way. We ensure that the right
+        # order happens. Ie /etc/blah link runs before /etc/blah/blah
         link_srcs = sorted(links.keys())
         link_srcs.reverse()
         for source in link_srcs:
@@ -238,8 +252,8 @@ class PkgInstallComponent(ComponentBase):
                 LOG.info("Symlinking %s => %s", link, source)
                 self.tracewriter.dirs_made(*sh.symlink(source, link))
                 self.tracewriter.symlink_made(link)
-            except OSError:
-                LOG.warn("Symlink %s => %s already exists.", link, source)
+            except OSError as e:
+                LOG.warn("Symlink (%s => %s) error (%s)", link, source, e)
         return len(links)
 
     def configure(self):
@@ -260,11 +274,11 @@ class PythonInstallComponent(PkgInstallComponent):
 
     def _get_pips(self):
         pip_list = list(self.pips)
-        for name in self.active_subsystems:
-            if name in self.subsystems:
+        for name in self.desired_subsystems:
+            if name in self.subsystem_info:
                 # Todo handle duplicates/version differences?
                 LOG.debug("Extending pip list with pips for subsystem %s" % (name))
-                subsystem_pips = self.subsystems[name].get('pips', list())
+                subsystem_pips = self.subsystem_info[name].get('pips', list())
                 pip_list.extend(subsystem_pips)
         return pip_list
 
@@ -292,6 +306,8 @@ class PythonInstallComponent(PkgInstallComponent):
                 py_trace_name = "%s-%s" % (tr.PY_TRACE, name)
                 py_writer = tr.TraceWriter(tr.trace_fn(self.trace_dir,
                                                        py_trace_name))
+                # Format or json encoding isn't really needed here since this is
+                # more just for information output/lookup if desired.
                 py_writer.trace("CMD", " ".join(PY_INSTALL))
                 py_writer.trace("STDOUT", stdout)
                 py_writer.trace("STDERR", stderr)
@@ -316,10 +332,10 @@ class PkgUninstallComponent(ComponentBase):
 
     def unconfigure(self):
         if not self.keep_old:
-            #TODO this may not be the best solution siance we might
-            #actually want to remove config files but since most
-            #config files can be regenerated this should be fine (some
-            #can not though) so this is why we need to keep them
+            # TODO this may not be the best solution siance we might
+            # actually want to remove config files but since most
+            # config files can be regenerated this should be fine (some
+            # can not though) so this is why we need to keep them.
             self._unconfigure_files()
         self._unconfigure_links()
         self._unconfigure_runners()

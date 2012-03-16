@@ -23,17 +23,17 @@ class RunnerBase(object):
         self.trace_dir = trace_dir
 
     def unconfigure(self):
-        #cleans up anything configured by
-        #this runner for any apps for this component
-        #returns how many files unconfigured
+        # Cleans up anything configured by
+        # this runner for any apps for this component
+        # returns how many files unconfigured
         return 0
 
     def configure(self, app_name, runtime_info):
-        #returns how many files configured
+        # Returns how many files configured
         return 0
 
     def start(self, name, runtime_info):
-        #returns a file name that contains what was started
+        # Returns a file name that contains what was started
         return None
 
     def stop(self, name):

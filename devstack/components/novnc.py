@@ -24,13 +24,13 @@ from devstack.components import nova
 
 LOG = logging.getLogger("devstack.components.novnc")
 
-#where the application is really
+# Where the application is really
 UTIL_DIR = 'utils'
 
 VNC_PROXY_APP = 'nova-novncproxy'
 APP_OPTIONS = {
-    #this reaches into the nova configuration file
-    #TODO can we stop that?
+    # This reaches into the nova configuration file
+    # TODO can we stop that?
     VNC_PROXY_APP: ['--flagfile', '%NOVA_CONF%', '--web', '.'],
 }
 
@@ -72,7 +72,7 @@ class NoVNCRuntime(comp.ProgramRuntime):
     def _get_param_map(self, app_name):
         root_params = comp.ProgramRuntime._get_param_map(self, app_name)
         if app_name == VNC_PROXY_APP and utils.service_enabled(settings.NOVA, self.instances, False):
-            #have to reach into the nova conf (puke)
+            # FIXME: Have to reach into the nova conf (puke)
             nova_runtime = self.instances[settings.NOVA]
             root_params['NOVA_CONF'] = sh.joinpths(nova_runtime.cfg_dir, nova.API_CONF)
         return root_params

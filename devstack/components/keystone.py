@@ -30,32 +30,32 @@ from devstack.components import db
 
 LOG = logging.getLogger("devstack.components.keystone")
 
-#this db will be dropped then created
+# This db will be dropped then created
 DB_NAME = "keystone"
 
-#subdirs of the git checkout
+# Subdirs of the git checkout
 BIN_DIR = "bin"
 CONFIG_DIR = "etc"
 
-#simple confs
+# Simple confs
 ROOT_CONF = "keystone.conf"
 CATALOG_CONF = 'default_catalog.templates'
 LOGGING_CONF = "logging.conf"
 LOGGING_SOURCE_FN = 'logging.conf.sample'
 CONFIGS = [ROOT_CONF, CATALOG_CONF, LOGGING_CONF]
 
-#this is a special conf
+# This is a special conf/init script
 MANAGE_DATA_CONF = 'keystone_init.sh'
 MANAGE_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
 MANAGE_ADMIN_USER = 'admin'
 MANAGE_DEMO_USER = 'demo'
 MANAGE_INVIS_USER = 'invisible_to_admin'
 
-#sync db command
+# Sync db command
 MANAGE_APP_NAME = 'keystone-manage'
 SYNC_DB_CMD = [sh.joinpths('%BINDIR%', MANAGE_APP_NAME), 'db_sync']
 
-#what to start
+# What to start
 APP_NAME = 'keystone-all'
 APP_OPTIONS = {
     APP_NAME: ['--config-file', sh.joinpths('%ROOT%', CONFIG_DIR, ROOT_CONF),
@@ -64,17 +64,19 @@ APP_OPTIONS = {
 }
 
 
-#used to wait until started before we can run the data setup script
+# Used to wait until started before we can run the data setup script
 WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
 
-#swift template additions
+# Swift template additions
+# TODO: get rid of these
 SWIFT_TEMPL_ADDS = ['catalog.RegionOne.object_store.publicURL = http://%SERVICE_HOST%:8080/v1/AUTH_$(tenant_id)s',
                     'catalog.RegionOne.object_store.publicURL = http://%SERVICE_HOST%:8080/v1/AUTH_$(tenant_id)s',
                     'catalog.RegionOne.object_store.adminURL = http://%SERVICE_HOST%:8080/',
                     'catalog.RegionOne.object_store.internalURL = http://%SERVICE_HOST%:8080/v1/AUTH_$(tenant_id)s',
                     "catalog.RegionOne.object_store.name = 'Swift Service'"]
 
-#quantum template additions
+# Quantum template additions
+# TODO: get rid of these
 QUANTUM_TEMPL_ADDS = ['catalog.RegionOne.network.publicURL = http://%SERVICE_HOST%:9696/',
                       'catalog.RegionOne.network.adminURL = http://%SERVICE_HOST%:9696/',
                       'catalog.RegionOne.network.internalURL = http://%SERVICE_HOST%:9696/',
@@ -135,9 +137,9 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
     def _config_adjust(self, contents, name):
         if name == ROOT_CONF:
-            #use config parser and
-            #then extract known configs that
-            #will need locations/directories/files made (or touched)...
+            # Use config parser and
+            # then extract known configs that
+            # ill need locations/directories/files made (or touched)...
             with io.BytesIO(contents) as stream:
                 config = cfg.IgnoreMissingConfigParser()
                 config.readfp(stream)
@@ -148,7 +150,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
                     if log_dir:
                         LOG.info("Ensuring log directory %s exists." % (log_dir))
                         self.tracewriter.dirs_made(*sh.mkdirslist(log_dir))
-                    #destroy then recreate it (the log file)
+                    # Destroy then recreate it (the log file)
                     sh.unlink(log_filename)
                     self.tracewriter.file_touched(sh.touch_file(log_filename))
         elif name == CATALOG_CONF:
@@ -182,8 +184,8 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         get_shared_params(self.cfg, self.pw_gen)
 
     def _get_param_map(self, config_fn):
-        #these be used to fill in the configuration/cmds +
-        #params with actual values
+        # These be used to fill in the configuration/cmds +
+        # params with actual values
         mp = dict()
         mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
         mp['DEST'] = self.app_dir
@@ -207,9 +209,9 @@ class KeystoneRuntime(comp.PythonRuntime):
     def post_start(self):
         tgt_fn = sh.joinpths(self.bin_dir, MANAGE_DATA_CONF)
         if sh.isfile(tgt_fn):
-            #still there, run it
-            #these environment additions are important
-            #in that they eventually affect how this script runs
+            # If its still there, run it
+            # these environment additions are important
+            # in that they eventually affect how this script runs
             LOG.info("Waiting %s seconds so that keystone can start up before running first time init." % (WAIT_ONLINE_TO))
             sh.sleep(WAIT_ONLINE_TO)
             env = dict()
@@ -238,7 +240,7 @@ def get_shared_params(config, pw_gen, service_user_name=None):
     mp = dict()
     host_ip = config.get('host', 'ip')
 
-    #these match what is in keystone_init.sh
+    # These match what is in keystone_init.sh
     mp['SERVICE_TENANT_NAME'] = 'service'
     if service_user_name:
         mp['SERVICE_USERNAME'] = str(service_user_name)
@@ -247,12 +249,12 @@ def get_shared_params(config, pw_gen, service_user_name=None):
     mp['ADMIN_TENANT_NAME'] = mp['ADMIN_USER_NAME']
     mp['DEMO_TENANT_NAME'] = mp['DEMO_USER_NAME']
 
-    #tokens and passwords
+    # Tokens and passwords
     mp['SERVICE_TOKEN'] = pw_gen.get_password("service_token")
     mp['ADMIN_PASSWORD'] = pw_gen.get_password('horizon_keystone_admin', length=20)
     mp['SERVICE_PASSWORD'] = pw_gen.get_password('service_password')
 
-    #components of the auth endpoint
+    # Components of the auth endpoint
     keystone_auth_host = config.getdefaulted('keystone', 'keystone_auth_host', host_ip)
     mp['KEYSTONE_AUTH_HOST'] = keystone_auth_host
     keystone_auth_port = config.getdefaulted('keystone', 'keystone_auth_port', '35357')
@@ -260,7 +262,7 @@ def get_shared_params(config, pw_gen, service_user_name=None):
     keystone_auth_proto = config.getdefaulted('keystone', 'keystone_auth_protocol', 'http')
     mp['KEYSTONE_AUTH_PROTOCOL'] = keystone_auth_proto
 
-    #components of the service endpoint
+    # Components of the service endpoint
     keystone_service_host = config.getdefaulted('keystone', 'keystone_service_host', host_ip)
     mp['KEYSTONE_SERVICE_HOST'] = keystone_service_host
     keystone_service_port = config.getdefaulted('keystone', 'keystone_service_port', '5000')
@@ -268,7 +270,7 @@ def get_shared_params(config, pw_gen, service_user_name=None):
     keystone_service_proto = config.getdefaulted('keystone', 'keystone_service_protocol', 'http')
     mp['KEYSTONE_SERVICE_PROTOCOL'] = keystone_service_proto
 
-    #http/https endpoints
+    # Uri's of the http/https endpoints
     mp['AUTH_ENDPOINT'] = urlunparse((keystone_auth_proto,
                                          "%s:%s" % (keystone_auth_host, keystone_auth_port),
                                          "v2.0", "", "", ""))

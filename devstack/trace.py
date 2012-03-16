@@ -15,16 +15,17 @@
 #    under the License.
 
 import json
+import os
 
 from devstack import date
 from devstack import exceptions as excp
 from devstack import shell as sh
 
-#trace per line output and file extension formats
-TRACE_FMT = "%s - %s\n"
+# Trace per line output format and file extension formats
+TRACE_FMT = ("%s - %s" + os.linesep)
 TRACE_EXT = ".trace"
 
-#common trace actions
+# Common trace actions
 CFG_WRITING_FILE = "CFG_WRITING_FILE"
 SYMLINK_MAKE = "SYMLINK_MAKE"
 PKG_INSTALL = "PKG_INSTALL"
@@ -35,12 +36,12 @@ DOWNLOADED = "DOWNLOADED"
 AP_STARTED = "AP_STARTED"
 PIP_INSTALL = 'PIP_INSTALL'
 
-#trace file types
+# Common trace file types (or the expected common ones)
 PY_TRACE = "python"
 IN_TRACE = "install"
 START_TRACE = "start"
 
-#used to note version of trace
+# Used to note version of trace
 TRACE_VERSION = "TRACE_VERSION"
 TRACE_VER = 0x1
 
@@ -181,7 +182,7 @@ class TraceReader(object):
         return locations
 
     def _sort_paths(self, pths):
-        #ensure in ok order (ie /tmp is before /)
+        # Ensure in correct order (ie /tmp is before /)
         pths = list(set(pths))
         pths.sort()
         pths.reverse()
@@ -215,14 +216,11 @@ class TraceReader(object):
 
     def symlinks_made(self):
         lines = self.read()
-        files = list()
+        links = list()
         for (cmd, action) in lines:
             if cmd == SYMLINK_MAKE and len(action):
-                files.append(action)
-        #ensure in ok order (ie /tmp is before /)
-        files.sort()
-        files.reverse()
-        return files
+                links.append(action)
+        return links
 
     def files_configured(self):
         lines = self.read()

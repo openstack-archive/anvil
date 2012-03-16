@@ -24,7 +24,7 @@ import pprint
 from logging.handlers import SysLogHandler
 from logging.handlers import WatchedFileHandler
 
-# a list of things we want to replicate from logging levels
+# Alist of things we want to replicate from logging levels
 CRITICAL = logging.CRITICAL
 FATAL = logging.FATAL
 ERROR = logging.ERROR
@@ -34,13 +34,13 @@ INFO = logging.INFO
 DEBUG = logging.DEBUG
 NOTSET = logging.NOTSET
 
-# our new audit level
-# http://docs.python.org/howto/logging.html#logging-levels
+# Our new audit level
+# See: http://docs.python.org/howto/logging.html#logging-levels
 logging.AUDIT = logging.DEBUG + 1
 logging.addLevelName(logging.AUDIT, 'AUDIT')
 AUDIT = logging.AUDIT
 
-# methods
+# Methods
 debug = logging.debug
 info = logging.info
 warning = logging.warning
@@ -50,11 +50,11 @@ exception = logging.exception
 critical = logging.critical
 log = logging.log
 
-# classes
+# Classes
 root = logging.root
 Formatter = logging.Formatter
 
-# handlers
+# Handlers
 StreamHandler = logging.StreamHandler
 WatchedFileHandler = WatchedFileHandler
 SysLogHandler = SysLogHandler

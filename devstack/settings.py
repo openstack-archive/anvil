@@ -20,10 +20,6 @@ import sys
 # What this program is called
 PROG_NICE_NAME = "DEVSTACKpy"
 
-# These 2 identify the json post and pre install sections
-PRE_INSTALL = 'pre-install'
-POST_INSTALL = 'post-install'
-
 # Ip version constants for network ip detection
 IPV4 = 'IPv4'
 IPV6 = 'IPv6'
@@ -43,7 +39,7 @@ KEYSTONE = "keystone"
 KEYSTONE_CLIENT = 'keystone-client'
 DB = "db"
 RABBIT = "rabbit"
-NOVNC = 'n-vnc'
+NOVNC = 'no-vnc'
 XVNC = 'xvnc'
 MELANGE = 'melange'
 MELANGE_CLIENT = 'melange-client'

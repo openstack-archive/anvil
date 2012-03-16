@@ -50,7 +50,8 @@ ALL_NUMS = re.compile(r"^\d+$")
 START_NUMS = re.compile(r"^(\d+)(\D+)")
 STAR_VERSION = 0
 
-#thx cowsay
+# Thx cowsay
+# See: http://www.nog.net/~tony/warez/cowsay.shtml
 COWS = dict()
 COWS['happy'] = r'''
 {header}
@@ -208,6 +209,8 @@ def get_host_ip():
     were to be sent out to some well known address on the Internet. In this
     case, a private address is used, but the specific address does not
     matter much.  No traffic is actually sent.
+
+    Adjusted from nova code...
     """
     ip = None
     try:
@@ -218,7 +221,7 @@ def get_host_ip():
         ip = addr
     except socket.error:
         pass
-    #attempt to find it
+    # Ettempt to find it
     if not ip:
         interfaces = get_interfaces()
         for (_, net_info) in interfaces.items():
@@ -229,7 +232,7 @@ def get_host_ip():
                 if first_oct and first_oct not in PRIVATE_OCTS:
                     ip = a_ip
                     break
-    #just return a localhost version then
+    # Just return a localhost version then
     if not ip:
         ip = DEF_IP
     return ip
@@ -248,13 +251,13 @@ def get_interfaces():
         interface_addresses = netifaces.ifaddresses(intfc)
         ip6 = interface_addresses.get(netifaces.AF_INET6)
         if ip6 and len(ip6):
-            #just take the first
+            # Just take the first
             interface_info[settings.IPV6] = ip6[0]
         ip4 = interface_addresses.get(netifaces.AF_INET)
         if ip4 and len(ip4):
-            #just take the first
+            # Just take the first
             interface_info[settings.IPV4] = ip4[0]
-        #there are others but this is good for now
+        # Note: there are others but this is good for now..
         interfaces[intfc] = interface_info
     return interfaces
 
@@ -351,7 +354,8 @@ def param_replace(text, replacements, ignore_missing=False):
 
 def _get_welcome_stack():
     possibles = list()
-    #thank you figlet ;)
+    # Thank you figlet ;)
+    # See: http://www.figlet.org/
     possibles.append(r'''
   ___  ____  _____ _   _ ____ _____  _    ____ _  __
  / _ \|  _ \| ____| \ | / ___|_   _|/ \  / ___| |/ /
@@ -407,7 +411,7 @@ def center_text(text, fill, max_len):
 def _welcome_slang():
     potentials = list()
     potentials.append("And now for something completely different!")
-    return random.choice(potentials).strip("\n\r")
+    return random.choice(potentials)
 
 
 def color_text(text, color, bold=False,
@@ -436,7 +440,8 @@ def _color_blob(text, text_color):
 
 
 def _goodbye_header(worked):
-    #cowsay headers
+    # Cowsay headers
+    # See: http://www.nog.net/~tony/warez/cowsay.shtml
     potentials_oks = list()
     potentials_oks.append(r'''
  ___________
@@ -649,8 +654,8 @@ def welcome(ident):
     footer += color_text(lower, 'blue', True)
     uncolored_footer = (settings.PROG_NICE_NAME + ": " + lower)
     if max_line_len - len(uncolored_footer) > 0:
-        #this format string will center the uncolored text which
-        #we will then replace with the color text equivalent
+        # This format string will center the uncolored text which
+        # we will then replace with the color text equivalent.
         centered_str = center_text(uncolored_footer, " ", max_line_len)
         footer = centered_str.replace(uncolored_footer, footer)
     print(welcome_header)

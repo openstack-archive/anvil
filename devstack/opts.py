@@ -36,7 +36,7 @@ def parse():
     help_formatter = IndentedHelpFormatter(width=HELP_WIDTH)
     parser = OptionParser(version=version_str, formatter=help_formatter)
 
-    #root options
+    # Root options
     parser.add_option("-v", "--verbose",
         action="append_const",
         const=1,
@@ -50,7 +50,7 @@ def parse():
         help=("perform ACTION but do not actually run any of the commands"
               " that would normally complete ACTION: (default: %default)"))
 
-    #install/start/stop/uninstall specific options
+    # Install/start/stop/uninstall specific options
     base_group = OptionGroup(parser, "Install & uninstall & start & stop specific options")
     base_group.add_option("-p", "--persona",
         action="store",
@@ -79,7 +79,7 @@ def parse():
                           )
     parser.add_option_group(base_group)
 
-    #uninstall and stop options
+    # Uninstall and stop options
     stop_un_group = OptionGroup(parser, "Uninstall & stop specific options")
     stop_un_group.add_option("-n", "--no-force",
         action="store_true",
@@ -96,7 +96,7 @@ def parse():
         default=False)
     parser.add_option_group(un_group)
 
-    #extract only what we care about
+    # Extract only what we care about
     (options, args) = parser.parse_args()
     output = dict()
     output['dir'] = options.dir or ""

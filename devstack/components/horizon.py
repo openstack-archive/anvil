@@ -76,6 +76,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         return places
 
     def verify(self):
+        comp.PythonInstallComponent.verify(self)
         self._check_ug()
 
     def _get_symlinks(self):

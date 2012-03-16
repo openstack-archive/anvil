@@ -28,37 +28,37 @@ from devstack.components import db
 
 LOG = logging.getLogger("devstack.components.melange")
 
-#this db will be dropped then created
+# This db will be dropped then created
 DB_NAME = 'melange'
 
-#subdirs of the checkout/download
+# Subdirs of the checkout/download
 BIN_DIR = 'bin'
 
-#configs
+# Basic configs
 ROOT_CONF = 'melange.conf.sample'
 ROOT_CONF_REAL_NAME = 'melange.conf'
 CONFIGS = [ROOT_CONF]
 CFG_LOC = ['etc', 'melange']
 
-#sensible defaults
+# Sensible defaults
 DEF_CIDR_RANGE = 'FE-EE-DD-00-00-00/24'
 
-#how we sync melange with the db
+# How we sync melange with the db
 DB_SYNC_CMD = [
     {'cmd': ['%BIN_DIR%/melange-manage', '--config-file=%CFG_FILE%', 'db_sync']},
 ]
 
-#???
+# TODO: ???
 CIDR_CREATE_CMD = [
     {'cmd': ['melange', 'mac_address_range', 'create', 'cidr', '%CIDR_RANGE%']},
 ]
 
-#what to start
+# What to start
 APP_OPTIONS = {
     'melange-server': ['--config-file', '%CFG_FILE%'],
 }
 
-#subcomponent that specifies we should make the network cidr using melange
+# Special option that specifies we should make the network cidr using melange
 CREATE_CIDR = "create-cidr"
 WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
 
@@ -160,8 +160,8 @@ class MelangeRuntime(comp.PythonRuntime):
     def post_start(self):
         comp.PythonRuntime.post_start(self)
         # FIXME: This is a bit of a hack. How do we document "flags" like this?
-        flags = self.component_opts.get('flags', [])
-        if CREATE_CIDR in flags or not flags:
+        flags = []
+        if CREATE_CIDR in flags:
             LOG.info("Waiting %s seconds so that the melange server can start up before cidr range creation." % (WAIT_ONLINE_TO))
             sh.sleep(WAIT_ONLINE_TO)
             mp = dict()

@@ -15,7 +15,6 @@
 #    under the License.
 
 from devstack import log as logging
-from devstack import settings
 from devstack import utils
 
 LOG = logging.getLogger("devstack.packager")
@@ -32,11 +31,11 @@ class Packager(object):
     def remove_batch(self, pkgs):
         if not self.keep_packages:
             return self._remove_batch(pkgs)
-        return []
+        return list()
 
     def pre_install(self, pkgs, params=None):
         for info in pkgs:
-            cmds = info.get(settings.PRE_INSTALL)
+            cmds = info.get('pre-install')
             if cmds:
                 LOG.info("Running pre-install commands for package %s.",
                          info['name'])
@@ -44,7 +43,7 @@ class Packager(object):
 
     def post_install(self, pkgs, params=None):
         for info in pkgs:
-            cmds = info.get(settings.POST_INSTALL)
+            cmds = info.get('post-install')
             if cmds:
                 LOG.info("Running post-install commands for package %s.",
                          info['name'])

@@ -30,25 +30,25 @@ from devstack import utils
 
 LOG = logging.getLogger("devstack.runners.screen")
 
-#my type
+# My running type
 RUN_TYPE = settings.RUN_TYPE_SCREEN
 TYPE = settings.RUN_TYPE_TYPE
 
-#trace constants
+# Trace constants
 SCREEN_TEMPL = "%s.screen"
 ARGS = "ARGS"
 NAME = "NAME"
 SESSION_ID = 'SESSION_ID'
 
-#screen session name
+# Screen session name
 SESSION_NAME = 'stack'
 SESSION_DEF_TITLE = SESSION_NAME
 SESSION_NAME_MTCHER = re.compile(r"^\s*([\d]+\.%s)\s*(.*)$" % (SESSION_NAME))
 
-#how we setup screens status bar
+# How we setup screens status bar
 STATUS_BAR_CMD = r'hardstatus alwayslastline "%-Lw%{= BW}%50>%n%f* %t%{-}%+Lw%< %= %H"'
 
-#cmds
+# Screen commands/template commands
 SESSION_INIT = ['screen', '-d', '-m', '-S', SESSION_NAME, '-t', SESSION_DEF_TITLE, '-s', "/bin/bash"]
 BAR_INIT = ['screen', '-r', SESSION_NAME, '-X', STATUS_BAR_CMD]
 CMD_INIT = ['screen', '-S', '%SESSION_NAME%', '-X', 'screen', '-t', "%NAME%"]
@@ -58,17 +58,17 @@ CMD_START = ['screen', '-S', '%SESSION_NAME%', '-p', "%NAME%", '-X', 'stuff', "\
 LIST_CMD = ['screen', '-ls']
 SCREEN_KILLER = ['screen', '-X', '-S', '%SCREEN_ID%', 'quit']
 
-#where our screen sockets will go
+# Where our screen sockets will go
 SCREEN_SOCKET_DIR_NAME = "devstack-screen-sockets"
 SCREEN_SOCKET_PERM = 0700
 
-#used to wait until started before we can run the actual start cmd
+# Used to wait until started before we can run the actual start cmd
 WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
 
-#run screen as root?
+# Run screen as root?
 ROOT_GO = True
 
-#screen RC file
+# Screen RC file
 SCREEN_RC = settings.RC_FN_TEMPL % ('screen')
 
 
@@ -104,7 +104,7 @@ class ScreenRunner(base.RunnerBase):
                 run_as_root=ROOT_GO,
                 env_overrides=self._get_env(),
                 check_exit_code=False)
-        #we have really no way of knowing if it worked or not, screen sux...
+        # We have really no way of knowing if it worked or not, screen sux...
         wipe_cmd = self._gen_cmd(CMD_WIPE, mp)
         sh.execute(*wipe_cmd,
                 shell=True,
@@ -189,7 +189,7 @@ class ScreenRunner(base.RunnerBase):
             shell=True,
             run_as_root=ROOT_GO,
             env_overrides=self._get_env())
-        #we have really no way of knowing if it worked or not, screen sux...
+        # We have really no way of knowing if it worked or not, screen sux...
 
     def _do_socketdir_init(self, socketdir, perm):
         LOG.debug("Making screen socket directory [%s] (with permissions %o)" % (socketdir, perm))
