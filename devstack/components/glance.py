@@ -27,11 +27,9 @@ from devstack.components import keystone
 
 from devstack.image import creator
 
-#id
-TYPE = settings.GLANCE
 LOG = logging.getLogger("devstack.components.glance")
 
-#config files/sections
+# Config files/sections
 API_CONF = "glance-api.conf"
 REG_CONF = "glance-registry.conf"
 API_PASTE_CONF = 'glance-api-paste.ini'
@@ -47,33 +45,32 @@ CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF,
 READ_CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF,
                 REG_PASTE_CONF, SCRUB_CONF, SCRUB_PASTE_CONF]
 
-#reg, api are here as possible subcomponents
+# Reg, api, scrub are here as possible subsystems
 GAPI = "api"
 GREG = "reg"
 GSCR = 'scrub'
 
-#this db will be dropped and created
+# This db will be dropped and created
 DB_NAME = "glance"
 
-#special subcomponents/options that are used in starting to know that images should be uploaded
-NO_IMG_START = "no-image-upload"
+# How long to wait before attempting image upload
 WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
 
-#what to start
+# What applications to start
 APP_OPTIONS = {
     'glance-api': ['--config-file', sh.joinpths('%ROOT%', "etc", API_CONF)],
     'glance-registry': ['--config-file', sh.joinpths('%ROOT%', "etc", REG_CONF)],
     'glance-scrubber': ['--config-file', sh.joinpths('%ROOT%', "etc", REG_CONF)],
 }
 
-#how the subcompoent small name translates to an actual app
+# How the subcompoent small name translates to an actual app
 SUB_TO_APP = {
     GAPI: 'glance-api',
     GREG: 'glance-registry',
     GSCR: 'glance-scrubber',
 }
 
-#subdirs of the downloaded
+# Subdirs of the downloaded (we are overriding the original)
 CONFIG_DIR = 'etc'
 BIN_DIR = 'bin'
 
@@ -81,13 +78,16 @@ BIN_DIR = 'bin'
 class GlanceUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, *args, **kargs)
-        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
+        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
+
+    def known_subsystems(self):
+        return SUB_TO_APP.keys()
 
 
 class GlanceInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
+        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
 
     def _get_download_locations(self):
         places = list()
@@ -96,6 +96,9 @@ class GlanceInstaller(comp.PythonInstallComponent):
             'branch': ("git", "glance_branch"),
         })
         return places
+
+    def known_subsystems(self):
+        return SUB_TO_APP.keys()
 
     def _get_config_files(self):
         return list(CONFIGS)
@@ -111,22 +114,22 @@ class GlanceInstaller(comp.PythonInstallComponent):
 
     def _get_source_config(self, config_fn):
         if config_fn == POLICY_JSON:
-            fn = sh.joinpths(self.cfgdir, POLICY_JSON)
+            fn = sh.joinpths(self.cfg_dir, POLICY_JSON)
             contents = sh.load_file(fn)
             return (fn, contents)
         elif config_fn == LOGGING_CONF:
-            fn = sh.joinpths(self.cfgdir, LOGGING_SOURCE_FN)
+            fn = sh.joinpths(self.cfg_dir, LOGGING_SOURCE_FN)
             contents = sh.load_file(fn)
             return (fn, contents)
         return comp.PythonInstallComponent._get_source_config(self, config_fn)
 
     def _config_adjust(self, contents, name):
-        #even bother opening??
+        # Even bother opening??
         if name not in READ_CONFIGS:
             return contents
-        #use config parser and
-        #then extract known configs that
-        #will need locations/directories/files made (or touched)...
+        # Use config parser and
+        # then extract known configs that
+        # will need locations/directories/files made (or touched)...
         with io.BytesIO(contents) as stream:
             config = cfg.IgnoreMissingConfigParser()
             config.readfp(stream)
@@ -135,15 +138,15 @@ class GlanceInstaller(comp.PythonInstallComponent):
                 if cache_dir:
                     LOG.info("Ensuring image cache data directory %s exists "\
                              "(and is empty)" % (cache_dir))
-                    #destroy then recreate the image cache directory
+                    # Destroy then recreate the image cache directory
                     sh.deldir(cache_dir)
                     self.tracewriter.dirs_made(*sh.mkdirslist(cache_dir))
             if config.get('default', 'default_store') == 'file':
                 file_dir = config.get('default', 'filesystem_store_datadir')
                 if file_dir:
                     LOG.info("Ensuring file system store directory %s exists and is empty." % (file_dir))
-                    #delete existing images
-                    #and recreate the image directory
+                    # Delete existing images
+                    # and recreate the image directory
                     sh.deldir(file_dir)
                     self.tracewriter.dirs_made(*sh.mkdirslist(file_dir))
             log_filename = config.get('default', 'log_file')
@@ -153,24 +156,24 @@ class GlanceInstaller(comp.PythonInstallComponent):
                 if log_dir:
                     LOG.info("Ensuring log directory %s exists." % (log_dir))
                     self.tracewriter.dirs_made(*sh.mkdirslist(log_dir))
-                #destroy then recreate it (the log file)
+                # Destroy then recreate it (the log file)
                 sh.unlink(log_filename)
                 self.tracewriter.file_touched(sh.touch_file(log_filename))
             if config.getboolean('default', 'delayed_delete'):
                 data_dir = config.get('default', 'scrubber_datadir')
                 if data_dir:
                     LOG.info("Ensuring scrubber data dir %s exists and is empty." % (data_dir))
-                    #destroy then recreate the scrubber data directory
+                    # Destroy then recreate the scrubber data directory
                     sh.deldir(data_dir)
                     self.tracewriter.dirs_made(*sh.mkdirslist(data_dir))
-        #nothing modified so just return the original
+        # Nothing modified so just return the original
         return contents
 
     def _get_param_map(self, config_fn):
-        #this dict will be used to fill in the configuration
-        #params with actual values
+        # This dict will be used to fill in the configuration
+        # params with actual values
         mp = dict()
-        mp['DEST'] = self.appdir
+        mp['DEST'] = self.app_dir
         mp['SYSLOG'] = self.cfg.getboolean("default", "syslog")
         mp['SQL_CONN'] = db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
         mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
@@ -182,14 +185,19 @@ class GlanceInstaller(comp.PythonInstallComponent):
 class GlanceRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
-        self.cfgdir = sh.joinpths(self.appdir, CONFIG_DIR)
+        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
+        self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
+
+    def known_subsystems(self):
+        return SUB_TO_APP.keys()
 
     def _get_apps_to_start(self):
-        apps = [{'name': app_name,
-                 'path': sh.joinpths(self.appdir, BIN_DIR, app_name),
-                 }
-                for app_name in APP_OPTIONS.keys()
-                ]
+        apps = list()
+        for subsys in self.desired_subsystems:
+            app = dict()
+            app['name'] = SUB_TO_APP[subsys]
+            app['path'] = sh.joinpths(self.bin_dir, app['name'])
+            apps.append(app)
         return apps
 
     def _get_app_options(self, app):
@@ -197,7 +205,7 @@ class GlanceRuntime(comp.PythonRuntime):
 
     def post_start(self):
         comp.PythonRuntime.post_start(self)
-        #install any images that need activating...
+        # Install any images that need activating...
         # TODO: make this less cheesy - need to wait till glance goes online
         LOG.info("Waiting %s seconds so that glance can start up before image install." % (WAIT_ONLINE_TO))
         sh.sleep(WAIT_ONLINE_TO)

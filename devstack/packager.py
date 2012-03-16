@@ -15,7 +15,6 @@
 #    under the License.
 
 from devstack import log as logging
-from devstack import settings
 from devstack import utils
 
 LOG = logging.getLogger("devstack.packager")
@@ -26,29 +25,29 @@ class Packager(object):
         self.distro = distro
         self.keep_packages = keep_packages
 
-    def install_batch(self, pkgs):
+    def install(self, pkg):
         raise NotImplementedError()
 
     def remove_batch(self, pkgs):
         if not self.keep_packages:
             return self._remove_batch(pkgs)
-        return []
+        return list()
 
-    def pre_install(self, pkgs, installparams=None):
-        for packageinfo in pkgs:
-            preinstallcmds = packageinfo.get(settings.PRE_INSTALL)
-            if preinstallcmds:
+    def pre_install(self, pkgs, params=None):
+        for info in pkgs:
+            cmds = info.get('pre-install')
+            if cmds:
                 LOG.info("Running pre-install commands for package %s.",
-                         packageinfo['name'])
-                utils.execute_template(*preinstallcmds, params=installparams)
+                         info['name'])
+                utils.execute_template(*cmds, params=params)
 
-    def post_install(self, pkgs, installparams=None):
-        for packageinfo in pkgs:
-            postinstallcmds = packageinfo.get(settings.POST_INSTALL)
-            if postinstallcmds and len(postinstallcmds):
+    def post_install(self, pkgs, params=None):
+        for info in pkgs:
+            cmds = info.get('post-install')
+            if cmds:
                 LOG.info("Running post-install commands for package %s.",
-                         packageinfo['name'])
-                utils.execute_template(*postinstallcmds, params=installparams)
+                         info['name'])
+                utils.execute_template(*cmds, params=params)
 
     def _remove_batch(self, pkgs):
         raise NotImplementedError()

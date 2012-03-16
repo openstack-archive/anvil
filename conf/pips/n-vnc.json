@@ -1,9 +1,0 @@
-# This is a extended json package definition file 
-# We allow simple comments (lines starting with a hash symbol)
-{
-    "rhel-6": {
-        "numpy": {
-            "version": "1.5"
-        }
-    }
-}

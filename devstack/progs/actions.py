@@ -14,22 +14,22 @@
 #    License for the specific language governing permissions and limitations
 #    under the License..
 
+import yaml
+
 from devstack import env_rc
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
-from devstack import utils
-
-from devstack.progs import common
+from devstack import passwords
 
 LOG = logging.getLogger("devstack.progs.actions")
 
 # For actions in this list we will reverse the component order
-_REVERSE_ACTIONS = [settings.UNINSTALL, settings.STOP]
+REVERSE_ACTIONS = [settings.UNINSTALL, settings.STOP]
 
 # For these actions we will attempt to make an rc file if it does not exist
-_RC_FILE_MAKE_ACTIONS = [settings.INSTALL]
+RC_FILE_MAKE_ACTIONS = [settings.INSTALL]
 
 # The order of which uninstalls happen + message of what is happening
 # (before and after)
@@ -138,125 +138,96 @@ PREQ_ACTIONS = {
 
 
 class ActionRunner(object):
-    def __init__(self, distro, action, directory, config,
-                 pw_gen, pkg_manager,
-                 **kargs):
+    def __init__(self, distro, action, cfg, **kargs):
         self.distro = distro
         self.action = action
-        self.directory = directory
-        self.cfg = config
-        self.pw_gen = pw_gen
-        self.pkg_manager = pkg_manager
-        self.kargs = kargs
-        self.components = dict()
-        def_components = common.get_default_components()
-        unclean_components = kargs.pop("components")
-        if not unclean_components:
-            self.components = def_components
-        else:
-            for (c, opts) in unclean_components.items():
-                if opts is None and c in def_components:
-                    self.components[c] = def_components[c]
-                elif opts is None:
-                    self.components[c] = list()
-                else:
-                    self.components[c] = opts
+        self.cfg = cfg
+        self.pw_gen = passwords.PasswordGenerator(self.cfg, kargs.get('prompt_for_passwords', True))
+        pkg_cls = distro.get_packager_factory()
+        self.keep_old = kargs.get('keep_old')
+        self.pkg_manager = pkg_cls(self.distro, self.keep_old)
         self.force = kargs.get('force', False)
-        self.ignore_deps = kargs.get('ignore_deps', False)
-        self.ref_components = kargs.get("ref_components")
-        self.gen_rc = action in _RC_FILE_MAKE_ACTIONS
+        self.kargs = kargs
 
-    def _get_components(self):
-        return dict(self.components)
+    def _apply_reverse(self, action, component_order):
+        adjusted_order = list(component_order)
+        if action in REVERSE_ACTIONS:
+            adjusted_order.reverse()
+        return adjusted_order
 
-    def _order_components(self, components):
-        adjusted_components = dict(components)
-        if self.ignore_deps:
-            return (adjusted_components, list(components.keys()))
-        all_components = self.distro.resolve_component_dependencies(
-            list(components.keys())
-            )
-        component_diff = set(all_components.keys()).difference(components.keys())
-        if component_diff:
-            LOG.info("Activating dependencies: [%s]",
-                     ", ".join(sorted(component_diff))
-                     )
-            for new_component in component_diff:
-                adjusted_components[new_component] = []
-        return (adjusted_components, utils.get_components_order(all_components))
+    def _load_persona(self, persona_fn):
+        persona_fn = sh.abspth(persona_fn)
+        LOG.audit("Loading persona from file [%s]", persona_fn)
+        contents = ''
+        with open(persona_fn, "r") as fh:
+            contents = fh.read()
+        return self._verify_persona(yaml.load(contents), persona_fn)
 
-    def _inject_references(self, components):
-        ref_components = utils.parse_components(self.ref_components)
-        adjusted_components = dict(components)
-        for c in ref_components.keys():
-            if c not in components:
-                adjusted_components[c] = ref_components.get(c)
-        return adjusted_components
+    def _verify_persona(self, persona, fn):
+        # Some sanity checks
+        try:
+            if self.distro.name not in persona['supports']:
+                raise RuntimeError("Persona does not support distro %s"
+                                   % (self.distro.name))
+            for c in persona['components']:
+                if not self.distro.known_component(c):
+                    raise RuntimeError("Distro %s does not support component %s" %
+                                        (self.distro.name, c))
+        except (KeyError, RuntimeError) as e:
+            msg = ("Could not validate persona defined in [%s] due to: %s"
+                    % (fn, e))
+            raise excp.ConfigException(msg)
+        return persona
 
-    def _instantiate_components(self, components):
-        all_instances = dict()
-        for component in components.keys():
-            cls = self.distro.get_component_action_class(component,
-                                                         self.action)
-            LOG.debug('instantiating %s to handle %s for %s',
-                      cls, self.action, component)
-            instance = cls(component_name=component,
-                           instances=all_instances,
-                           runner=self,
-                           root_dir=self.directory,
-                           component_options=self.distro.components[component],
-                           keep_old=self.kargs.get("keep_old")
-                           )
-            all_instances[component] = instance
-        return all_instances
+    def _construct_instances(self, persona, action, root_dir):
+        components = persona['components']  # Required
+        desired_subsystems = persona.get('subsystems', dict())  # Not required
+        instances = dict()
+        for c in components:
+            (cls, my_info) = self.distro.extract_component(c, action)
+            LOG.debug("Constructing class %s" % (cls))
+            cls_kvs = dict()
+            cls_kvs['runner'] = self
+            cls_kvs['component_dir'] = sh.joinpths(root_dir, c)
+            cls_kvs['subsystem_info'] = my_info.pop('subsystems', dict())
+            cls_kvs['all_instances'] = instances
+            cls_kvs['name'] = c
+            cls_kvs['keep_old'] = self.keep_old
+            cls_kvs['desired_subsystems'] = set(desired_subsystems.get(c, list()))
+            # The above is not overrideable...
+            for (k, v) in my_info.items():
+                if k not in cls_kvs:
+                    cls_kvs[k] = v
+            LOG.debug("Using arg map %s", cls_kvs)
+            cls_args = list()
+            LOG.debug("Using arg list %s", cls_args)
+            instances[c] = cls(*cls_args, **cls_kvs)
+        return instances
 
-    def _run_preqs(self, components, component_order):
-        if not (self.action in PREQ_ACTIONS):
-            return
-        (check_functor, preq_action) = PREQ_ACTIONS[self.action]
-        instances = self._instantiate_components(components)
-        preq_components = dict()
+    def _verify_components(self, component_order, instances):
+        LOG.info("Verifying that the components are ready to rock-n-roll.")
         for c in component_order:
             instance = instances[c]
-            if check_functor(instance):
-                preq_components[c] = components[c]
-        if preq_components:
-            LOG.info("Having to activate prerequisite action [%s] for %s components." % (preq_action, len(preq_components)))
-            preq_runner = ActionRunner(distro=self.distro,
-                                       action=preq_action,
-                                       directory=self.directory,
-                                       config=self.cfg,
-                                       pw_gen=self.pw_gen,
-                                       pkg_manager=self.pkg_manager,
-                                       components=preq_components,
-                                       **self.kargs)
-            preq_runner.run()
+            instance.verify()
 
-    def _pre_run(self, instances, component_order):
-        if not sh.isdir(self.directory):
-            sh.mkdir(self.directory)
-        LOG.info("Verifying that the components are ready to rock-n-roll.")
-        for component in component_order:
-            inst = instances[component]
-            inst.verify()
+    def _warm_components(self, component_order, instances):
         LOG.info("Warming up your component configurations (ie so you won't be prompted later)")
-        for component in component_order:
-            inst = instances[component]
-            inst.warm_configs()
-        if self.gen_rc:
-            writer = env_rc.RcWriter(self.cfg, self.pw_gen, self.directory)
-            if not sh.isfile(settings.OSRC_FN):
-                LOG.info("Generating a file at [%s] that will contain your environment settings." % (settings.OSRC_FN))
-                writer.write(settings.OSRC_FN)
-            else:
-                LOG.info("Updating a file at [%s] that contains your environment settings." % (settings.OSRC_FN))
-                am_upd = writer.update(settings.OSRC_FN)
-                LOG.info("Updated [%s] settings in rc file [%s]" % (am_upd, settings.OSRC_FN))
+        for c in component_order:
+            instance = instances[c]
+            instance.warm_configs()
 
-    def _run_instances(self, instances, component_order):
-        component_order = self._apply_reverse(component_order)
-        LOG.info("Running in the following order: %s" % ("->".join(component_order)))
-        for (start_msg, functor, end_msg) in ACTION_MP[self.action]:
+    def _write_rc_file(self, root_dir):
+        writer = env_rc.RcWriter(self.cfg, self.pw_gen, root_dir)
+        if not sh.isfile(settings.OSRC_FN):
+            LOG.info("Generating a file at [%s] that will contain your environment settings." % (settings.OSRC_FN))
+            writer.write(settings.OSRC_FN)
+        else:
+            LOG.info("Updating a file at [%s] that contains your environment settings." % (settings.OSRC_FN))
+            am_upd = writer.update(settings.OSRC_FN)
+            LOG.info("Updated [%s] settings in rc file [%s]" % (am_upd, settings.OSRC_FN))
+
+    def _run_instances(self, action, component_order, instances):
+        for (start_msg, functor, end_msg) in ACTION_MP[action]:
             for c in component_order:
                 instance = instances[c]
                 if start_msg:
@@ -271,19 +242,33 @@ class ActionRunner(object):
                     else:
                         raise
 
-    def _apply_reverse(self, component_order):
-        adjusted_order = list(component_order)
-        if self.action in _REVERSE_ACTIONS:
-            adjusted_order.reverse()
-        return adjusted_order
+    def _run_action(self, persona, action, root_dir):
+        LOG.info("Running action [%s] using root directory [%s]" % (action, root_dir))
+        instances = self._construct_instances(persona, action, root_dir)
+        if action in PREQ_ACTIONS:
+            (check_functor, preq_action) = PREQ_ACTIONS[action]
+            checks_passed_components = list()
+            for (c, instance) in instances.items():
+                if check_functor(instance):
+                    checks_passed_components.append(c)
+            if checks_passed_components:
+                LOG.info("Activating prerequisite action [%s] requested by (%s) components."
+                    % (preq_action, ", ".join(checks_passed_components)))
+                self._run_action(persona, preq_action, root_dir)
+        component_order = self._apply_reverse(action, persona['components'])
+        LOG.info("Activating components [%s] (in that order) for action [%s]" %
+                  ("->".join(component_order), action))
+        self._verify_components(component_order, instances)
+        self._warm_components(component_order, instances)
+        if action in RC_FILE_MAKE_ACTIONS:
+            self._write_rc_file(root_dir)
+        self._run_instances(action, component_order, instances)
 
-    def _start(self, components, component_order):
-        LOG.info("Activating components required to complete action [%s]" % (self.action))
-        instances = self._instantiate_components(components)
-        self._pre_run(instances, component_order)
-        self._run_preqs(components, component_order)
-        self._run_instances(instances, component_order)
+    def _setup_root(self, root_dir):
+        if not sh.isdir(root_dir):
+            sh.mkdir(root_dir)
 
-    def run(self):
-        (components, component_order) = self._order_components(self._get_components())
-        self._start(self._inject_references(components), component_order)
+    def run(self, persona_fn, root_dir):
+        persona = self._load_persona(persona_fn)
+        self._setup_root(root_dir)
+        self._run_action(persona, self.action, root_dir)

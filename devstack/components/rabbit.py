@@ -21,27 +21,25 @@ from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
 
-#id
-TYPE = settings.RABBIT
 LOG = logging.getLogger("devstack.components.rabbit")
 
-#hopefully these are distro independent..
+# So far these are distro independent..
 START_CMD = ['service', "rabbitmq-server", "start"]
 STOP_CMD = ['service', "rabbitmq-server", "stop"]
 STATUS_CMD = ['service', "rabbitmq-server", "status"]
 RESTART_CMD = ['service', "rabbitmq-server", "restart"]
 PWD_CMD = ['rabbitmqctl', 'change_password', 'guest']
 
-#default password
+# Default password (guest)
 RESET_BASE_PW = ''
 
-#how long we wait for rabbitmq to start up before doing commands on it
+# How long we wait for rabbitmq to start up before doing commands on it
 WAIT_ON_TIME = settings.WAIT_ALIVE_SECS
 
-#config keys we warm up so u won't be prompted later
+# Config keys we warm up so u won't be prompted later
 WARMUP_PWS = ['rabbit']
 
-#partial of rabbit user prompt
+# Partial of rabbit user prompt
 PW_USER_PROMPT = 'the rabbit user'
 
 
@@ -96,8 +94,9 @@ class RabbitRuntime(comp.EmptyRuntime):
             return 0
 
     def status(self):
-        #this has got to be the worst status output
-        #i have ever seen (its like a weird mix json+crap)
+        # This has got to be the worst status output.
+        #
+        # I have ever seen (its like a weird mix json+crap)
         run_result = sh.execute(*STATUS_CMD,
                         check_exit_code=False,
                         run_as_root=True)
@@ -114,12 +113,15 @@ class RabbitRuntime(comp.EmptyRuntime):
             return comp.STATUS_UNKNOWN
 
     def _run_cmd(self, cmd, check_exit=True):
-        #this seems to fix one of the bugs with rabbit mq starting and stopping
-        #not cool, possibly connected to the following bugs:
-        #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
-        #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
+        # This seems to fix one of the bugs with rabbit mq starting and stopping
+        # not cool, possibly connected to the following bugs:
         #
-        #rhel seems to have this bug also...
+        # See: https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
+        # See: https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
+        #
+        # RHEL seems to have this bug also...
+        #
+        # TODO: Move to distro dir...
         with TemporaryFile() as f:
             return sh.execute(*cmd, run_as_root=True,
                         stdout_fh=f, stderr_fh=f,

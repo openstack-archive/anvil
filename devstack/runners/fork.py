@@ -31,18 +31,18 @@ from devstack import trace as tr
 
 LOG = logging.getLogger("devstack.runners.fork")
 
-#maximum for the number of available file descriptors (when not found)
+# Maximum for the number of available file descriptors (when not found)
 MAXFD = 2048
 
-#how many times we try to kill and how much sleep (seconds) between each try
+# How many times we try to kill and how much sleep (seconds) between each try
 MAX_KILL_TRY = 5
 SLEEP_TIME = 1
 
-#my type
+# My runner type
 RUN_TYPE = settings.RUN_TYPE_FORK
 TYPE = settings.RUN_TYPE_TYPE
 
-#trace constants
+# Trace constants
 PID_FN = "PID_FN"
 STDOUT_FN = "STDOUT_FN"
 STDERR_FN = "STDERR_FN"
@@ -50,7 +50,7 @@ ARGS = "ARGS"
 NAME = "NAME"
 FORK_TEMPL = "%s.fork"
 
-#run fork cmds as root?
+# Run fork cmds as root?
 ROOT_GO = True
 
 
@@ -90,7 +90,7 @@ class ForkRunner(base.RunnerBase):
             if sh.isfile(pid_file) and sh.isfile(trace_fn):
                 pid = int(sh.load_file(pid_file).strip())
                 (killed, attempts) = self._stop_pid(pid)
-                #trash the files
+                # Trash the files if it worked
                 if killed:
                     LOG.debug("Killed pid %s after %s attempts" % (pid, attempts))
                     LOG.debug("Removing pid file %s" % (pid_file))
@@ -115,22 +115,22 @@ class ForkRunner(base.RunnerBase):
         return (pidfile, stderr, stdout)
 
     def _fork_start(self, program, appdir, pid_fn, stdout_fn, stderr_fn, *args):
-        #first child, not the real program
+        # First child, not the real program
         pid = os.fork()
         if pid == 0:
-            #upon return the calling process shall be the session
-            #leader of this new session,
-            #shall be the process group leader of a new process group,
-            #and shall have no controlling terminal.
+            # Upon return the calling process shall be the session
+            # leader of this new session,
+            # shall be the process group leader of a new process group,
+            # and shall have no controlling terminal.
             os.setsid()
             pid = os.fork()
-            #fork to get daemon out - this time under init control
-            #and now fully detached (no shell possible)
+            # Fork to get daemon out - this time under init control
+            # and now fully detached (no shell possible)
             if pid == 0:
-                #move to where application should be
+                # Move to where application should be
                 if appdir:
                     os.chdir(appdir)
-                #close other fds
+                # Close other fds (or try)
                 limits = resource.getrlimit(resource.RLIMIT_NOFILE)
                 mkfd = limits[1]
                 if mkfd == resource.RLIM_INFINITY:
@@ -141,27 +141,27 @@ class ForkRunner(base.RunnerBase):
                     except OSError:
                         #not open, thats ok
                         pass
-                #now adjust stderr and stdout
+                # Now adjust stderr and stdout
                 if stdout_fn:
                     stdoh = open(stdout_fn, "w")
                     os.dup2(stdoh.fileno(), sys.stdout.fileno())
                 if stderr_fn:
                     stdeh = open(stderr_fn, "w")
                     os.dup2(stdeh.fileno(), sys.stderr.fileno())
-                #now exec...
-                #the arguments to the child process should
-                #start with the name of the command being run
+                # Now exec...
+                # Note: The arguments to the child process should
+                # start with the name of the command being run
                 prog_little = os.path.basename(program)
                 actualargs = [prog_little] + list(args)
                 os.execlp(program, *actualargs)
             else:
-                #write out the child pid
+                # Write out the child pid
                 contents = str(pid) + os.linesep
                 sh.write_file(pid_fn, contents, quiet=True)
-                #not exit or sys.exit, this is recommended
-                #since it will do the right cleanups that we want
-                #not calling any atexit functions, which would
-                #be bad right now
+                # Not exit or sys.exit, this is recommended
+                # since it will do the right cleanups that we want
+                # not calling any atexit functions, which would
+                # be bad right now
                 os._exit(0)
 
     def _do_trace(self, fn, kvs):

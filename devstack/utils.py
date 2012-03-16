@@ -21,7 +21,6 @@ import distutils.version
 import json
 import netifaces
 import os
-import platform
 import random
 import re
 import socket
@@ -51,7 +50,8 @@ ALL_NUMS = re.compile(r"^\d+$")
 START_NUMS = re.compile(r"^(\d+)(\D+)")
 STAR_VERSION = 0
 
-#thx cowsay
+# Thx cowsay
+# See: http://www.nog.net/~tony/warez/cowsay.shtml
 COWS = dict()
 COWS['happy'] = r'''
 {header}
@@ -139,12 +139,15 @@ def to_bytes(text):
     return byte_val
 
 
-def import_module(module_name):
+def import_module(module_name, quiet=True):
     try:
         __import__(module_name)
         return sys.modules.get(module_name, None)
     except ImportError:
-        return None
+        if quiet:
+            return None
+        else:
+            raise
 
 
 def load_json(fn):
@@ -206,6 +209,8 @@ def get_host_ip():
     were to be sent out to some well known address on the Internet. In this
     case, a private address is used, but the specific address does not
     matter much.  No traffic is actually sent.
+
+    Adjusted from nova code...
     """
     ip = None
     try:
@@ -216,7 +221,7 @@ def get_host_ip():
         ip = addr
     except socket.error:
         pass
-    #attempt to find it
+    # Ettempt to find it
     if not ip:
         interfaces = get_interfaces()
         for (_, net_info) in interfaces.items():
@@ -227,7 +232,7 @@ def get_host_ip():
                 if first_oct and first_oct not in PRIVATE_OCTS:
                     ip = a_ip
                     break
-    #just return a localhost version then
+    # Just return a localhost version then
     if not ip:
         ip = DEF_IP
     return ip
@@ -246,90 +251,21 @@ def get_interfaces():
         interface_addresses = netifaces.ifaddresses(intfc)
         ip6 = interface_addresses.get(netifaces.AF_INET6)
         if ip6 and len(ip6):
-            #just take the first
+            # Just take the first
             interface_info[settings.IPV6] = ip6[0]
         ip4 = interface_addresses.get(netifaces.AF_INET)
         if ip4 and len(ip4):
-            #just take the first
+            # Just take the first
             interface_info[settings.IPV4] = ip4[0]
-        #there are others but this is good for now
+        # Note: there are others but this is good for now..
         interfaces[intfc] = interface_info
     return interfaces
 
 
-def get_components_order(components):
-    if not components:
-        return dict()
-    #deep copy so components isn't messed with
-    all_components = dict()
-    for (name, deps) in components.items():
-        all_components[name] = set(deps)
-    #figure out which ones have no one depending on them
-    no_deps_components = set()
-    for (name, deps) in all_components.items():
-        referenced = False
-        for (_name, _deps) in all_components.items():
-            if _name == name:
-                continue
-            else:
-                if name in _deps:
-                    referenced = True
-                    break
-        if not referenced:
-            no_deps_components.add(name)
-    if not no_deps_components:
-        msg = "Components specifed have no root components, there is most likely a dependency cycle!"
-        raise excp.DependencyException(msg)
-    #now we have to do a quick check to ensure no component is causing a cycle
-    for (root, deps) in all_components.items():
-        #DFS down through the "roots" deps and there deps and so on and
-        #ensure that nobody is referencing the "root" component name,
-        #that would mean there is a cycle if a dependency of the "root" is.
-        active_deps = list(deps)
-        checked_deps = dict()
-        while len(active_deps):
-            dep = active_deps.pop()
-            itsdeps = all_components.get(dep)
-            checked_deps[dep] = True
-            if root in itsdeps:
-                msg = "Circular dependency between component %s and component %s!" % (root, dep)
-                raise excp.DependencyException(msg)
-            else:
-                for d in itsdeps:
-                    if d not in checked_deps and d not in active_deps:
-                        active_deps.append(d)
-    #now form the order
-    #basically a topological sorting
-    #https://en.wikipedia.org/wiki/Topological_sorting
-    ordering = list()
-    no_edges = set(no_deps_components)
-    while len(no_edges):
-        node = no_edges.pop()
-        ordering.append(node)
-        its_deps = all_components.get(node)
-        while len(its_deps):
-            name = its_deps.pop()
-            referenced = False
-            for (_name, _deps) in all_components.items():
-                if _name == name:
-                    continue
-                else:
-                    if name in _deps:
-                        referenced = True
-                        break
-            if not referenced:
-                no_edges.add(name)
-    #should now be no edges else something bad happended
-    for (_, deps) in all_components.items():
-        if len(deps):
-            msg = "Your specified components have at least one cycle!"
-            raise excp.DependencyException(msg)
-    #reverse so its in the right order for us since we just determined
-    #the pkgs that have no one depending on them (which should be installed
-    #last and those that have incoming edges that packages are depending on need
-    #to go first, but those were inserted last), so this reverse fixes that
-    ordering.reverse()
-    return ordering
+def format_secs_taken(secs):
+    output = "%.03f seconds" % (secs)
+    output += " or %.02f minutes" % (secs / 60.0)
+    return output
 
 
 def joinlinesep(*pieces):
@@ -418,7 +354,8 @@ def param_replace(text, replacements, ignore_missing=False):
 
 def _get_welcome_stack():
     possibles = list()
-    #thank you figlet ;)
+    # Thank you figlet ;)
+    # See: http://www.figlet.org/
     possibles.append(r'''
   ___  ____  _____ _   _ ____ _____  _    ____ _  __
  / _ \|  _ \| ____| \ | / ___|_   _|/ \  / ___| |/ /
@@ -474,7 +411,7 @@ def center_text(text, fill, max_len):
 def _welcome_slang():
     potentials = list()
     potentials.append("And now for something completely different!")
-    return random.choice(potentials).strip("\n\r")
+    return random.choice(potentials)
 
 
 def color_text(text, color, bold=False,
@@ -503,7 +440,8 @@ def _color_blob(text, text_color):
 
 
 def _goodbye_header(worked):
-    #cowsay headers
+    # Cowsay headers
+    # See: http://www.nog.net/~tony/warez/cowsay.shtml
     potentials_oks = list()
     potentials_oks.append(r'''
  ___________
@@ -707,28 +645,6 @@ def goodbye(worked):
     print(msg)
 
 
-def parse_components(components):
-    if not components:
-        return dict()
-    adjusted_components = dict()
-    for c in components:
-        mtch = EXT_COMPONENT.match(c)
-        if mtch:
-            component_name = mtch.group(1).lower().strip()
-            if component_name in settings.COMPONENT_NAMES:
-                component_opts = mtch.group(2)
-                components_opts_cleaned = None
-                if component_opts:
-                    components_opts_cleaned = list()
-                    sp_component_opts = component_opts.split(",")
-                    for co in sp_component_opts:
-                        cleaned_opt = co.strip()
-                        if cleaned_opt:
-                            components_opts_cleaned.append(cleaned_opt)
-                adjusted_components[component_name] = components_opts_cleaned
-    return adjusted_components
-
-
 def welcome(ident):
     lower = "| %s %s |" % (ident, version.version_string())
     welcome_header = _get_welcome_stack()
@@ -738,8 +654,8 @@ def welcome(ident):
     footer += color_text(lower, 'blue', True)
     uncolored_footer = (settings.PROG_NICE_NAME + ": " + lower)
     if max_line_len - len(uncolored_footer) > 0:
-        #this format string will center the uncolored text which
-        #we will then replace with the color text equivalent
+        # This format string will center the uncolored text which
+        # we will then replace with the color text equivalent.
         centered_str = center_text(uncolored_footer, " ", max_line_len)
         footer = centered_str.replace(uncolored_footer, footer)
     print(welcome_header)

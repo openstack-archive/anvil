@@ -35,10 +35,8 @@ def parse():
     version_str = "%prog v" + version.version_string()
     help_formatter = IndentedHelpFormatter(width=HELP_WIDTH)
     parser = OptionParser(version=version_str, formatter=help_formatter)
-    parser.add_option("-c", "--component",
-        action="append",
-        dest="component",
-        help="openstack component: %s" % (_format_list(settings.COMPONENT_NAMES)))
+
+    # Root options
     parser.add_option("-v", "--verbose",
         action="append_const",
         const=1,
@@ -52,7 +50,14 @@ def parse():
         help=("perform ACTION but do not actually run any of the commands"
               " that would normally complete ACTION: (default: %default)"))
 
+    # Install/start/stop/uninstall specific options
     base_group = OptionGroup(parser, "Install & uninstall & start & stop specific options")
+    base_group.add_option("-p", "--persona",
+        action="store",
+        type="string",
+        dest="persona_fn",
+        metavar="FILE",
+        help="required persona yaml file to apply")
     base_group.add_option("-a", "--action",
         action="store",
         type="string",
@@ -66,28 +71,15 @@ def parse():
         metavar="DIR",
         help=("empty root DIR for install or "
               "DIR with existing components for start/stop/uninstall"))
-    base_group.add_option("-i", "--ignore-deps",
-        action="store_false",
-        dest="ensure_deps",
-        help="ignore dependencies when performing ACTION")
     base_group.add_option("--no-prompt-passwords",
                           action="store_false",
                           dest="prompt_for_passwords",
                           default=True,
                           help="do not prompt the user for passwords",
                           )
-    base_group.add_option("-e", "--ensure-deps",
-        action="store_true",
-        dest="ensure_deps",
-        help="ensure dependencies when performing ACTION (default: %default)",
-        default=True)
-    base_group.add_option("-r", "--ref-component",
-        action="append",
-        dest="ref_components",
-        metavar="COMPONENT",
-        help="component which will not have ACTION applied but will be referenced as if it was (ACTION dependent)")
     parser.add_option_group(base_group)
 
+    # Uninstall and stop options
     stop_un_group = OptionGroup(parser, "Uninstall & stop specific options")
     stop_un_group.add_option("-n", "--no-force",
         action="store_true",
@@ -104,18 +96,16 @@ def parse():
         default=False)
     parser.add_option_group(un_group)
 
-    #extract only what we care about
+    # Extract only what we care about
     (options, args) = parser.parse_args()
     output = dict()
-    output['components'] = options.component or list()
     output['dir'] = options.dir or ""
     output['dryrun'] = options.dryrun or False
-    output['ref_components'] = options.ref_components or list()
     output['action'] = options.action or ""
     output['force'] = not options.force
-    output['ignore_deps'] = not options.ensure_deps
     output['keep_old'] = options.keep_old
     output['extras'] = args
+    output['persona_fn'] = options.persona_fn
     output['verbosity'] = len(options.verbosity)
     output['prompt_for_passwords'] = options.prompt_for_passwords
 

@@ -25,41 +25,39 @@ from devstack import utils
 
 from devstack.components import db
 
-#id
-TYPE = settings.MELANGE
 LOG = logging.getLogger("devstack.components.melange")
 
-#this db will be dropped then created
+# This db will be dropped then created
 DB_NAME = 'melange'
 
-#subdirs of the checkout/download
+# Subdirs of the checkout/download
 BIN_DIR = 'bin'
 
-#configs
+# Basic configs
 ROOT_CONF = 'melange.conf.sample'
 ROOT_CONF_REAL_NAME = 'melange.conf'
 CONFIGS = [ROOT_CONF]
 CFG_LOC = ['etc', 'melange']
 
-#sensible defaults
+# Sensible defaults
 DEF_CIDR_RANGE = 'FE-EE-DD-00-00-00/24'
 
-#how we sync melange with the db
+# How we sync melange with the db
 DB_SYNC_CMD = [
-    {'cmd': ['%BINDIR%/melange-manage', '--config-file=%CFG_FILE%', 'db_sync']},
+    {'cmd': ['%BIN_DIR%/melange-manage', '--config-file=%CFG_FILE%', 'db_sync']},
 ]
 
-#???
+# TODO: ???
 CIDR_CREATE_CMD = [
     {'cmd': ['melange', 'mac_address_range', 'create', 'cidr', '%CIDR_RANGE%']},
 ]
 
-#what to start
+# What to start
 APP_OPTIONS = {
     'melange-server': ['--config-file', '%CFG_FILE%'],
 }
 
-#subcomponent that specifies we should make the network cidr using melange
+# Special option that specifies we should make the network cidr using melange
 CREATE_CIDR = "create-cidr"
 WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
 
@@ -72,8 +70,8 @@ class MelangeUninstaller(comp.PythonUninstallComponent):
 class MelangeInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.bindir = sh.joinpths(self.appdir, BIN_DIR)
-        self.cfgdir = sh.joinpths(self.appdir, *CFG_LOC)
+        self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
+        self.cfg_dir = sh.joinpths(self.app_dir, *CFG_LOC)
 
     def _get_download_locations(self):
         places = list()
@@ -96,8 +94,8 @@ class MelangeInstaller(comp.PythonInstallComponent):
     def _sync_db(self):
         LOG.info("Syncing the database with melange.")
         mp = dict()
-        mp['BINDIR'] = self.bindir
-        mp['CFG_FILE'] = sh.joinpths(self.cfgdir, ROOT_CONF_REAL_NAME)
+        mp['BIN_DIR'] = self.bin_dir
+        mp['CFG_FILE'] = sh.joinpths(self.cfg_dir, ROOT_CONF_REAL_NAME)
         utils.execute_template(*DB_SYNC_CMD, params=mp)
 
     def _get_config_files(self):
@@ -122,7 +120,7 @@ class MelangeInstaller(comp.PythonInstallComponent):
 
     def _get_source_config(self, config_fn):
         if config_fn == ROOT_CONF:
-            srcfn = sh.joinpths(self.cfgdir, config_fn)
+            srcfn = sh.joinpths(self.cfg_dir, config_fn)
             contents = sh.load_file(srcfn)
             return (srcfn, contents)
         else:
@@ -130,7 +128,7 @@ class MelangeInstaller(comp.PythonInstallComponent):
 
     def _get_target_config_name(self, config_fn):
         if config_fn == ROOT_CONF:
-            return sh.joinpths(self.cfgdir, ROOT_CONF_REAL_NAME)
+            return sh.joinpths(self.cfg_dir, ROOT_CONF_REAL_NAME)
         else:
             return comp.PythonInstallComponent._get_target_config_name(self, config_fn)
 
@@ -138,15 +136,15 @@ class MelangeInstaller(comp.PythonInstallComponent):
 class MelangeRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
-        self.bindir = sh.joinpths(self.appdir, BIN_DIR)
-        self.cfgdir = sh.joinpths(self.appdir, *CFG_LOC)
+        self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
+        self.cfg_dir = sh.joinpths(self.app_dir, *CFG_LOC)
 
     def _get_apps_to_start(self):
         apps = list()
         for app_name in APP_OPTIONS.keys():
             apps.append({
                 'name': app_name,
-                'path': sh.joinpths(self.bindir, app_name),
+                'path': sh.joinpths(self.bin_dir, app_name),
             })
         return apps
 
@@ -155,14 +153,14 @@ class MelangeRuntime(comp.PythonRuntime):
 
     def _get_param_map(self, app_name):
         pmap = comp.PythonRuntime._get_param_map(self, app_name)
-        pmap['CFG_FILE'] = sh.joinpths(self.cfgdir, ROOT_CONF_REAL_NAME)
+        pmap['CFG_FILE'] = sh.joinpths(self.cfg_dir, ROOT_CONF_REAL_NAME)
         return pmap
 
     def post_start(self):
         comp.PythonRuntime.post_start(self)
         # FIXME: This is a bit of a hack. How do we document "flags" like this?
-        flags = self.component_opts.get('flags', [])
-        if CREATE_CIDR in flags or not flags:
+        flags = []
+        if CREATE_CIDR in flags:
             LOG.info("Waiting %s seconds so that the melange server can start up before cidr range creation." % (WAIT_ONLINE_TO))
             sh.sleep(WAIT_ONLINE_TO)
             mp = dict()

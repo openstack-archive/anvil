@@ -16,10 +16,7 @@
 
 from devstack import component as comp
 from devstack import log as logging
-from devstack import settings
 
-#id
-TYPE = settings.NOVA_CLIENT
 LOG = logging.getLogger("devstack.components.nova_client")
 
 

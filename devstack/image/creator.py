@@ -236,16 +236,16 @@ class ImageCreationService:
                 }
              })
 
-        # prepare the request
+        # Prepare the request
         request = urllib2.Request(keystone_token_url)
 
-        # post body
+        # Post body
         request.add_data(data)
 
-        # content type
+        # Content type
         request.add_header('Content-Type', 'application/json')
 
-        # make the request
+        # Make the request
         LOG.info("Getting your token from url [%s], please wait..." % (keystone_token_url))
         LOG.debug("With post json data %s" % (data))
         response = urllib2.urlopen(request)
@@ -258,7 +258,7 @@ class ImageCreationService:
             msg = "Response from url [%s] did not match expected json format." % (keystone_token_url)
             raise IOError(msg)
 
-        #basic checks passed, extract it!
+        # Basic checks passed, extract it!
         tok = token['access']['token']['id']
         LOG.debug("Got token %s" % (tok))
         return tok
@@ -268,7 +268,7 @@ class ImageCreationService:
         token = None
         LOG.info("Setting up any specified images in glance.")
 
-        #extract them from the config
+        # Extract the urls from the config
         try:
             flat_urls = self.cfg.getdefaulted('img', 'image_urls', [])
             expanded_urls = [x.strip() for x in flat_urls.split(',')]
@@ -278,7 +278,7 @@ class ImageCreationService:
         except(ConfigParser.Error):
             LOG.warn("No image configuration keys found, skipping glance image install!")
 
-        #install them in glance
+        # Install them in glance
         am_installed = 0
         if urls:
             LOG.info("Attempting to download & extract and upload (%s) images." % (", ".join(urls)))

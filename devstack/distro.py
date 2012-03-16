@@ -16,7 +16,6 @@
 #    under the License.
 
 import glob
-import os
 import platform
 import re
 
@@ -25,31 +24,28 @@ import yaml
 from devstack import importer
 from devstack import log as logging
 from devstack import settings
-from devstack import utils
-
+from devstack import shell as sh
 
 LOG = logging.getLogger('devstack.distro')
-
-DISTRO_CONF_DIR = os.path.join(settings.STACK_CONFIG_DIR, 'distros')
 
 
 class Distro(object):
 
     @classmethod
-    def load_all(cls, path=DISTRO_CONF_DIR):
+    def load_all(cls, path=settings.STACK_DISTRO_DIR):
         """Returns a list of the known distros."""
         results = []
-        input_files = glob.glob(os.path.join(DISTRO_CONF_DIR, '*.yaml'))
+        input_files = glob.glob(sh.joinpths(path, '*.yaml'))
         if not input_files:
             raise RuntimeError(
                 'Did not find any distro definition files in %s' %
-                DISTRO_CONF_DIR)
+                path)
         for filename in input_files:
             try:
                 with open(filename, 'r') as f:
                     data = yaml.load(f)
                 results.append(cls(**data))
-            except Exception as err:
+            except (IOError, yaml.YAMLError) as err:
                 LOG.warning('Could not load distro definition from %s: %s',
                             filename, err)
         return results
@@ -64,7 +60,7 @@ class Distro(object):
         LOG.debug('Looking for distro data for %s (%s)', plt, distname)
         for p in cls.load_all():
             if p.supports_distro(plt):
-                LOG.info('Using distro "%s" for "%s"', p.name, plt)
+                LOG.info('Using distro "%s" for platform "%s"', p.name, plt)
                 return p
         else:
             raise RuntimeError(
@@ -73,51 +69,60 @@ class Distro(object):
 
     def __init__(self, name, distro_pattern, packager_name, commands, components):
         self.name = name
-        self.distro_pattern = re.compile(distro_pattern, re.IGNORECASE)
-        self.packager_name = packager_name
-        self.commands = commands
-        self.components = components
+        self._distro_pattern = re.compile(distro_pattern, re.IGNORECASE)
+        self._packager_name = packager_name
+        self._commands = commands
+        self._components = components
+
+    def __repr__(self):
+        return "\"%s\" using packager \"%s\"" % (self.name, self._packager_name)
+
+    def get_command(self, key, *more_keys, **kargs):
+        """ Gets a end object for a given set of keys """
+        root = self._commands
+        acutal_keys = [key] + list(more_keys)
+        run_over_keys = acutal_keys[0:-1]
+        end_key = acutal_keys[-1]
+        quiet = kargs.get('quiet', False)
+        for k in run_over_keys:
+            if quiet:
+                root = root.get(k)
+                if root is None:
+                    return None
+            else:
+                root = root[k]
+        if not quiet:
+            return root[end_key]
+        else:
+            return root.get(end_key)
+
+    def known_component(self, name):
+        return name in self._components
 
     def supports_distro(self, distro_name):
         """Does this distro support the named Linux distro?
 
         :param distro_name: Return value from platform.linux_distribution().
         """
-        return bool(self.distro_pattern.search(distro_name))
+        return bool(self._distro_pattern.search(distro_name))
 
     def get_packager_factory(self):
         """Return a factory for a package manager."""
-        return importer.import_entry_point(self.packager_name)
+        return importer.import_entry_point(self._packager_name)
 
-    def get_component_action_class(self, name, action):
-        """Return the class to use for doing the action w/the component."""
+    def extract_component(self, name, action):
+        """Return the class + component info to use for doing the action w/the component."""
         try:
-            entry_point = self.components[name][action]
+            # Use a copy instead of the original
+            component_info = dict(self._components[name])
+            entry_point = component_info[action]
+            cls = importer.import_entry_point(entry_point)
+            # Knock all action class info (and any other keys)
+            key_deletions = [action] + settings.ACTIONS
+            for k in key_deletions:
+                if k in component_info:
+                    del component_info[k]
+            return (cls, component_info)
         except KeyError:
             raise RuntimeError('No class configured to %s %s on %s' %
                                (action, name, self.name))
-        return importer.import_entry_point(entry_point)
-
-    def resolve_component_dependencies(self, components):
-        """Returns list of all components needed for the named components."""
-        all_components = {}
-        active_names = [(c, None) for c in components]
-        while active_names:
-            component, parent = active_names.pop()
-            try:
-                component_details = self.components[component]
-            except KeyError:
-                if parent:
-                    raise RuntimeError(
-                        'Could not find details about component %r, a dependency of %s, for %s' %
-                        (component, parent, self.name))
-                else:
-                    raise RuntimeError(
-                        'Could not find details about component %r for %s' %
-                        (component, self.name))
-            deps = set(component_details.get('dependencies', []))
-            all_components[component] = deps
-            for d in deps:
-                if d not in all_components and d not in active_names:
-                    active_names.append((d, component))
-        return all_components

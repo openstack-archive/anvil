@@ -18,40 +18,33 @@
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import shell as sh
-from devstack import settings
 
 LOG = logging.getLogger("devstack.pip")
 PIP_UNINSTALL_CMD_OPTS = ['-y', '-q']
 PIP_INSTALL_CMD_OPTS = ['-q']
 
 
-def install(pips, distro):
-    pipnames = sorted(pips.keys())
-    root_cmd = distro.commands.get('pip', 'pip')
-    LOG.info("Installing python packages (%s) using command (%s)" % (", ".join(pipnames), root_cmd))
-    for name in pipnames:
-        pipfull = name
-        pipinfo = pips.get(name)
-        if pipinfo and pipinfo.get('version'):
-            version = pipinfo.get('version')
-            if version is not None:
-                pipfull = pipfull + "==" + str(version)
-        LOG.debug("Installing python package (%s)" % (pipfull))
-        real_cmd = [root_cmd, 'install']
-        real_cmd += PIP_INSTALL_CMD_OPTS
-        options = pipinfo.get('options')
-        if options is not None:
-            LOG.debug("Using pip options: %s" % (str(options)))
-            real_cmd += [str(options)]
-        real_cmd += [pipfull]
-        sh.execute(*real_cmd, run_as_root=True)
+def install(pip, distro):
+    name = pip['name']
+    root_cmd = distro.get_command('pip')
+    LOG.audit("Installing python package (%s) using pip command (%s)" % (name, root_cmd))
+    name_full = name
+    version = pip.get('version')
+    if version is not None:
+        name_full += "==" + str(version)
+    real_cmd = [root_cmd, 'install'] + PIP_INSTALL_CMD_OPTS
+    options = pip.get('options')
+    if options is not None:
+        LOG.debug("Using pip options: %s" % (str(options)))
+        real_cmd += [str(options)]
+    real_cmd += [name_full]
+    sh.execute(*real_cmd, run_as_root=True)
 
 
-def uninstall(pips, distro, skip_errors=True):
-    pipnames = sorted(pips.keys())
-    root_cmd = distro.commands.get('pip', 'pip')
-    LOG.info("Uninstalling python packages (%s) using command (%s)" % (", ".join(pipnames), root_cmd))
-    for name in pipnames:
+def uninstall_batch(pips, distro, skip_errors=True):
+    names = set([p['name'] for p in pips])
+    root_cmd = distro.get_command('pip')
+    for name in names:
         try:
             LOG.debug("Uninstalling python package (%s)" % (name))
             cmd = [root_cmd, 'uninstall'] + PIP_UNINSTALL_CMD_OPTS + [str(name)]

@@ -20,6 +20,7 @@ import sys
 import time
 import traceback
 
+from devstack import cfg
 from devstack import cfg_helpers
 from devstack import date
 from devstack import distro
@@ -27,13 +28,11 @@ from devstack import env
 from devstack import env_rc
 from devstack import log as logging
 from devstack import opts
-from devstack import passwords
 from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 
 from devstack.progs import actions
-from devstack.progs import common
 
 
 LOG = logging.getLogger("devstack.stack")
@@ -50,7 +49,7 @@ _WELCOME_MAP = {
 _CFG_GROUPS = {
     cfg_helpers.make_id('passwords', None): 'Passwords',
     cfg_helpers.make_id('db', None): 'Database info',
-    #catch all
+    # Catch all
     cfg_helpers.make_id(None, None): 'Misc configs',
 }
 
@@ -68,12 +67,12 @@ def dump_config(config_cache):
             value = mp.get(key)
             LOG.info(item_format(key, value))
 
-    #first partition into our groups
+    # First partition into our groups
     partitions = dict()
     for name in _CFG_ORDERING:
         partitions[name] = dict()
 
-    #now put the config cached values into there partition
+    # Now put the config cached values into there partitions
     for (k, v) in config_cache.items():
         for name in _CFG_ORDERING:
             entries = partitions[name]
@@ -81,7 +80,7 @@ def dump_config(config_cache):
                 entries[k] = v
                 break
 
-    #now print them..
+    # Now print them..
     for name in _CFG_ORDERING:
         nice_name = _CFG_GROUPS.get(name)
         LOG.info(nice_name + ":")
@@ -103,49 +102,55 @@ def load_rc_files():
 
 
 def run(args):
-    action = args.pop("action").strip().lower()
+    action = args.pop("action", '').strip().lower()
     if not (action in settings.ACTIONS):
         print(utils.color_text("No valid action specified!", "red"))
         return False
 
     loaded_rcs = False
-    rootdir = args.pop("dir")
-    if not rootdir:
+    root_dir = args.pop("dir")
+    if not root_dir:
         load_rc_files()
         loaded_rcs = True
-        rootdir = env.get_key(env_rc.INSTALL_ROOT)
-        if not rootdir:
+        root_dir = env.get_key(env_rc.INSTALL_ROOT)
+        if not root_dir:
             print(utils.color_text("No root directory specified!", "red"))
             return False
+    root_dir = sh.abspth(root_dir)
 
-    #welcome!
+    persona_fn = args.pop('persona_fn')
+    if not persona_fn or not sh.isfile(persona_fn):
+        print(utils.color_text("No valid persona file name specified!", "red"))
+        return False
+
+    # Welcome!
     (repeat_string, line_max_len) = utils.welcome(_WELCOME_MAP.get(action))
     print(utils.center_text("Action Runner", repeat_string, line_max_len))
 
-    #here on out we should be using the logger (and not print)
-    start_time = time.time()
+    # !!
+    # Here on out we should be using the logger (and not print)!!
+    # !!
 
-    # if we didn't load them before, load them now
+    # If we didn't load them before, load them now
     if not loaded_rcs:
         load_rc_files()
         loaded_rcs = True
 
     # Stash the dryrun value (if any) into the global configuration
-    sh.set_dryrun(args['dryrun'])
+    sh.set_dryrun(args.pop('dryrun'))
 
     dist = distro.Distro.get_current()
-    config = common.get_config()
-    pw_gen = passwords.PasswordGenerator(config, args['prompt_for_passwords'])
-    pkg_factory = dist.get_packager_factory()
-    pkg_manager = pkg_factory(dist, args['keep_old'])
-
-    components = utils.parse_components(args.pop("components"))
-    runner = actions.ActionRunner(dist, action, rootdir, config, pw_gen,
-                                  pkg_manager, components=components, **args)
+    config = cfg.get_config()
+    runner = actions.ActionRunner(dist, action, config, **args)
 
     LOG.info("Starting action [%s] on %s for distro [%s]" % (action, date.rcf8222date(), dist))
-    runner.run()
-    LOG.info("It took (%s) to complete action [%s]" % (common.format_secs_taken((time.time() - start_time)), action))
+
+    start_time = time.time()
+    runner.run(persona_fn, root_dir)
+    end_time = time.time()
+
+    LOG.info("It took (%s) to complete action [%s]" %
+              (utils.format_secs_taken((end_time - start_time)), action))
     LOG.info("After action [%s] your settings which were created or read are:" % (action))
 
     dump_config(config.configs_fetched)
@@ -154,7 +159,7 @@ def run(args):
 
 def main():
 
-    #do this first so people can see the help message...
+    # Do this first so people can see the help message...
     args = opts.parse()
     prog_name = sys.argv[0]
 
@@ -163,7 +168,7 @@ def main():
 
     LOG.debug("Command line options %s" % (args))
 
-    #will need root to setup openstack
+    # Will need root to setup openstack
     if not sh.got_root():
         rest_args = sys.argv[1:]
         print("This program requires a user with sudo access.")
@@ -173,7 +178,7 @@ def main():
         return 1
 
     try:
-        #drop to usermode
+        # Drop to usermode
         sh.user_mode(False)
         started_ok = run(args)
         if not started_ok:

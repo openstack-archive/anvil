@@ -25,16 +25,13 @@ from devstack import utils
 
 from devstack.components import db
 
-#id
-TYPE = settings.QUANTUM
 LOG = logging.getLogger("devstack.components.quantum")
 
-#vswitch pkgs
+# Openvswitch special settings
 VSWITCH_PLUGIN = 'openvswitch'
-PKG_VSWITCH = "quantum-openvswitch.json"
 V_PROVIDER = "quantum.plugins.openvswitch.ovs_quantum_plugin.OVSQuantumPlugin"
 
-#config files (some only modified if running as openvswitch)
+# Config files (some only modified if running as openvswitch)
 PLUGIN_CONF = "plugins.ini"
 QUANTUM_CONF = 'quantum.conf'
 PLUGIN_LOC = ['etc']
@@ -43,24 +40,20 @@ AGENT_LOC = ["etc", "quantum", "plugins", "openvswitch"]
 AGENT_BIN_LOC = ["quantum", "plugins", "openvswitch", 'agent']
 CONFIG_FILES = [PLUGIN_CONF, AGENT_CONF]
 
-#this db will be dropped and created
+# This db will be dropped and created
 DB_NAME = 'ovs_quantum'
 
-#opensvswitch bridge setup/teardown/name commands
+# Opensvswitch bridge setup/teardown/name commands
 OVS_BRIDGE_DEL = ['ovs-vsctl', '--no-wait', '--', '--if-exists', 'del-br', '%OVS_BRIDGE%']
 OVS_BRIDGE_ADD = ['ovs-vsctl', '--no-wait', 'add-br', '%OVS_BRIDGE%']
 OVS_BRIDGE_EXTERN_ID = ['ovs-vsctl', '--no-wait', 'br-set-external-id', '%OVS_BRIDGE%', 'bridge-id', '%OVS_EXTERNAL_ID%']
 OVS_BRIDGE_CMDS = [OVS_BRIDGE_DEL, OVS_BRIDGE_ADD, OVS_BRIDGE_EXTERN_ID]
 
-#special component options
-QUANTUM_SERVICE = 'q-svc'
-QUANTUM_AGENT = 'q-agt'
-
-#subdirs of the downloaded
+# Subdirs of the downloaded
 CONFIG_DIR = 'etc'
 BIN_DIR = 'bin'
 
-#what to start (only if openvswitch enabled)
+# What to start (only if openvswitch enabled)
 APP_Q_SERVER = 'quantum-server'
 APP_Q_AGENT = 'ovs_quantum_agent.py'
 APP_OPTIONS = {
@@ -81,15 +74,8 @@ class QuantumInstaller(comp.PkgInstallComponent):
         self.q_vswitch_service = False
         plugin = self.cfg.getdefaulted("quantum", "q_plugin", VSWITCH_PLUGIN)
         if plugin == VSWITCH_PLUGIN:
-            #default to on if not specified
             self.q_vswitch_agent = True
             self.q_vswitch_service = True
-            # else:
-            #     #only turn on if requested
-            #     if QUANTUM_SERVICE in self.component_opts:
-            #         self.q_vswitch_service = True
-            #     if QUANTUM_AGENT in self.component_opts:
-            #         self.q_vswitch_agent = True
 
     def _get_download_locations(self):
         places = list()
@@ -99,34 +85,22 @@ class QuantumInstaller(comp.PkgInstallComponent):
         })
         return places
 
-    def get_dependencies(self):
-        common_deps = comp.PkgInstallComponent.get_dependencies(self)
-        add_deps = list()
-        # FIXME: This should come from a persona.
-        if self.q_vswitch_agent:
-            #just need the client
-            add_deps.append(settings.QUANTUM_CLIENT)
-        if self.q_vswitch_service:
-            #in this case we need the db
-            add_deps.append(settings.DB)
-        return common_deps + add_deps
-
     def _get_config_files(self):
         return list(CONFIG_FILES)
 
     def _get_target_config_name(self, config_fn):
         if config_fn == PLUGIN_CONF:
-            tgt_loc = [self.appdir] + PLUGIN_LOC + [config_fn]
+            tgt_loc = [self.app_dir] + PLUGIN_LOC + [config_fn]
             return sh.joinpths(*tgt_loc)
         elif config_fn == AGENT_CONF:
-            tgt_loc = [self.appdir] + AGENT_LOC + [config_fn]
+            tgt_loc = [self.app_dir] + AGENT_LOC + [config_fn]
             return sh.joinpths(*tgt_loc)
         else:
             return comp.PkgInstallComponent._get_target_config_name(self, config_fn)
 
     def _config_adjust(self, contents, config_fn):
         if config_fn == PLUGIN_CONF and self.q_vswitch_service:
-            #need to fix the "Quantum plugin provider module"
+            # Need to fix the "Quantum plugin provider module"
             newcontents = contents
             with io.BytesIO(contents) as stream:
                 config = cfg.IgnoreMissingConfigParser()
@@ -140,7 +114,7 @@ class QuantumInstaller(comp.PkgInstallComponent):
                         newcontents = cfg.add_header(config_fn, outputstream.getvalue())
             return newcontents
         elif config_fn == AGENT_CONF and self.q_vswitch_agent:
-            #Need to adjust the sql connection
+            # Need to adjust the sql connection
             newcontents = contents
             with io.BytesIO(contents) as stream:
                 config = cfg.IgnoreMissingConfigParser()
@@ -189,12 +163,12 @@ class QuantumInstaller(comp.PkgInstallComponent):
 
     def _get_source_config(self, config_fn):
         if config_fn == PLUGIN_CONF:
-            srcloc = [self.appdir] + PLUGIN_LOC + [config_fn]
+            srcloc = [self.app_dir] + PLUGIN_LOC + [config_fn]
             srcfn = sh.joinpths(*srcloc)
             contents = sh.load_file(srcfn)
             return (srcfn, contents)
         elif config_fn == AGENT_CONF:
-            srcloc = [self.appdir] + AGENT_LOC + [config_fn]
+            srcloc = [self.app_dir] + AGENT_LOC + [config_fn]
             srcfn = sh.joinpths(*srcloc)
             contents = sh.load_file(srcfn)
             return (srcfn, contents)
@@ -209,25 +183,19 @@ class QuantumRuntime(comp.ProgramRuntime):
         self.q_vswitch_service = False
         plugin = self.cfg.getdefaulted("quantum", "q_plugin", VSWITCH_PLUGIN)
         if plugin == VSWITCH_PLUGIN:
-            #default to on if not specified
+            # Default to on if not specified
             self.q_vswitch_agent = True
             self.q_vswitch_service = True
-            # else:
-            #     #only turn on if requested
-            #     if QUANTUM_SERVICE in self.component_opts:
-            #         self.q_vswitch_service = True
-            #     if QUANTUM_AGENT in self.component_opts:
-            #         self.q_vswitch_agent = True
 
     def _get_apps_to_start(self):
         app_list = comp.ProgramRuntime._get_apps_to_start(self)
         if self.q_vswitch_service:
             app_list.append({
                     'name': APP_Q_SERVER,
-                    'path': sh.joinpths(self.appdir, BIN_DIR, APP_Q_SERVER),
+                    'path': sh.joinpths(self.app_dir, BIN_DIR, APP_Q_SERVER),
             })
         if self.q_vswitch_agent:
-            full_pth = [self.appdir] + AGENT_BIN_LOC + [APP_Q_AGENT]
+            full_pth = [self.app_dir] + AGENT_BIN_LOC + [APP_Q_AGENT]
             app_list.append({
                     'name': APP_Q_AGENT,
                     'path': sh.joinpths(*full_pth)
@@ -240,8 +208,8 @@ class QuantumRuntime(comp.ProgramRuntime):
     def _get_param_map(self, app_name):
         param_dict = comp.ProgramRuntime._get_param_map(self, app_name)
         if app_name == APP_Q_AGENT:
-            tgt_loc = [self.appdir] + AGENT_LOC + [AGENT_CONF]
+            tgt_loc = [self.app_dir] + AGENT_LOC + [AGENT_CONF]
             param_dict['OVS_CONFIG_FILE'] = sh.joinpths(*tgt_loc)
         elif app_name == APP_Q_SERVER:
-            param_dict['QUANTUM_CONFIG_FILE'] = sh.joinpths(self.appdir, CONFIG_DIR, QUANTUM_CONF)
+            param_dict['QUANTUM_CONFIG_FILE'] = sh.joinpths(self.app_dir, CONFIG_DIR, QUANTUM_CONF)
         return param_dict

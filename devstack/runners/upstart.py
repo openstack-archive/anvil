@@ -26,27 +26,27 @@ from devstack import utils
 
 LOG = logging.getLogger("devstack.runners.upstart")
 
-#my type
+# My run type
 RUN_TYPE = settings.RUN_TYPE_UPSTART
 TYPE = settings.RUN_TYPE_TYPE
 
-#trace constants
+# Trace constants
 UPSTART_TEMPL = "%s.upstart"
 ARGS = "ARGS"
 NAME = "NAME"
 
-#upstart event namings
+# Upstart event namings
 START_EVENT_SUFFIX = "_start"
 STOP_EVENT_SUFFIX = "_stop"
 
-#where upstart configs go
+# Where upstart configs go
 CONF_ROOT = "/etc/init"
 CONF_EXT = ".conf"
 
-#shared template
+# Shared template
 UPSTART_CONF_TMPL = 'upstart.conf'
 
-#how we emit events to upstart
+# How we emit events to upstart
 EMIT_BASE_CMD = ["/sbin/initctl", "emit"]
 
 

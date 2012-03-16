@@ -15,16 +15,17 @@
 #    under the License.
 
 import json
+import os
 
 from devstack import date
 from devstack import exceptions as excp
 from devstack import shell as sh
 
-#trace per line output and file extension formats
-TRACE_FMT = "%s - %s\n"
+# Trace per line output format and file extension formats
+TRACE_FMT = ("%s - %s" + os.linesep)
 TRACE_EXT = ".trace"
 
-#common trace actions
+# Common trace actions
 CFG_WRITING_FILE = "CFG_WRITING_FILE"
 SYMLINK_MAKE = "SYMLINK_MAKE"
 PKG_INSTALL = "PKG_INSTALL"
@@ -35,12 +36,12 @@ DOWNLOADED = "DOWNLOADED"
 AP_STARTED = "AP_STARTED"
 PIP_INSTALL = 'PIP_INSTALL'
 
-#trace file types
+# Common trace file types (or the expected common ones)
 PY_TRACE = "python"
 IN_TRACE = "install"
 START_TRACE = "start"
 
-#used to note version of trace
+# Used to note version of trace
 TRACE_VERSION = "TRACE_VERSION"
 TRACE_VER = 0x1
 
@@ -95,12 +96,9 @@ class TraceWriter(object):
         what['from'] = uri
         self.trace(DOWNLOADED, json.dumps(what))
 
-    def pip_installed(self, name, pip_info):
+    def pip_installed(self, pip_info):
         self._start()
-        what = dict()
-        what['name'] = name
-        what['pip_meta'] = pip_info
-        self.trace(PIP_INSTALL, json.dumps(what))
+        self.trace(PIP_INSTALL, json.dumps(pip_info))
 
     def dirs_made(self, *dirs):
         self._start()
@@ -111,12 +109,9 @@ class TraceWriter(object):
         self._start()
         self.trace(FILE_TOUCHED, fn)
 
-    def package_installed(self, name, pkg_info):
+    def package_installed(self, pkg_info):
         self._start()
-        what = dict()
-        what['name'] = name
-        what['pkg_meta'] = pkg_info
-        self.trace(PKG_INSTALL, json.dumps(what))
+        self.trace(PKG_INSTALL, json.dumps(pkg_info))
 
     def started_info(self, name, info_fn):
         self._start()
@@ -187,7 +182,7 @@ class TraceReader(object):
         return locations
 
     def _sort_paths(self, pths):
-        #ensure in ok order (ie /tmp is before /)
+        # Ensure in correct order (ie /tmp is before /)
         pths = list(set(pths))
         pths.sort()
         pths.reverse()
@@ -221,14 +216,11 @@ class TraceReader(object):
 
     def symlinks_made(self):
         lines = self.read()
-        files = list()
+        links = list()
         for (cmd, action) in lines:
             if cmd == SYMLINK_MAKE and len(action):
-                files.append(action)
-        #ensure in ok order (ie /tmp is before /)
-        files.sort()
-        files.reverse()
-        return files
+                links.append(action)
+        return links
 
     def files_configured(self):
         lines = self.read()
@@ -242,7 +234,7 @@ class TraceReader(object):
 
     def pips_installed(self):
         lines = self.read()
-        pips_installed = dict()
+        pips_installed = list()
         pip_list = list()
         for (cmd, action) in lines:
             if cmd == PIP_INSTALL and len(action):
@@ -250,14 +242,12 @@ class TraceReader(object):
         for pip_data in pip_list:
             pip_info_full = json.loads(pip_data)
             if type(pip_info_full) is dict:
-                name = pip_info_full.get('name')
-                if name:
-                    pips_installed[name] = pip_info_full.get('pip_meta')
+                pips_installed.append(pip_info_full)
         return pips_installed
 
     def packages_installed(self):
         lines = self.read()
-        pkgs_installed = dict()
+        pkgs_installed = list()
         pkg_list = list()
         for (cmd, action) in lines:
             if cmd == PKG_INSTALL and len(action):
@@ -265,7 +255,5 @@ class TraceReader(object):
         for pkg_data in pkg_list:
             pkg_info = json.loads(pkg_data)
             if type(pkg_info) is dict:
-                name = pkg_info.get('name')
-                if name:
-                    pkgs_installed[name] = pkg_info.get('pkg_meta')
+                pkgs_installed.append(pkg_info)
         return pkgs_installed

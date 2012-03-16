@@ -22,7 +22,7 @@ from devstack import utils
 
 LOG = logging.getLogger('devstack.libvirt')
 
-#http://libvirt.org/uri.html
+# See: http://libvirt.org/uri.html
 LIBVIRT_PROTOCOL_MAP = {
     'qemu': "qemu:///system",
     'kvm': "qemu:///system",
@@ -32,35 +32,28 @@ LIBVIRT_PROTOCOL_MAP = {
 }
 VIRT_LIB = 'libvirt'
 
-#distros name the libvirt service differently :-(
-SV_NAME_MAP = {
-    settings.RHEL6: 'libvirtd',
-    settings.FEDORA16: 'libvirtd',
-    settings.UBUNTU11: 'libvirt-bin',
-}
-
-#how libvirt is restarted
+# How libvirt is restarted
 LIBVIRT_RESTART_CMD = ['service', '%SERVICE%', 'restart']
 
-#how we check its status
+# How we check its status
 LIBVIRT_STATUS_CMD = ['service', '%SERVICE%', 'status']
 
-#this is just used to check that libvirt will work with
-#a given protocol, may not be ideal but does seem to crap
-#out if it won't work, so thats good
+# This is just used to check that libvirt will work with
+# a given protocol, may not be ideal but does seem to crap
+# out if it won't work, so thats good...
 VIRSH_SANITY_CMD = ['virsh', '-c', '%VIRT_PROTOCOL%', 'uri']
 
-#status is either dead or alive!
+# Status is either dead or alive!
 _DEAD = 'DEAD'
 _ALIVE = 'ALIVE'
 
-#alive wait time, just a sleep we put into so that the service can start up
+# Alive wait time, just a sleep we put into so that the service can start up
 WAIT_ALIVE_TIME = settings.WAIT_ALIVE_SECS
 
 
 def _get_virt_lib():
-    #late import so that we don't always need this library to be active
-    #ie if u aren't using libvirt in the first place
+    # Late import so that we don't always need this library to be active
+    # ie if u aren't using libvirt in the first place...
     return utils.import_module(VIRT_LIB)
 
 
@@ -71,7 +64,7 @@ def _status(distro):
         'run_as_root': True,
     })
     mp = dict()
-    mp['SERVICE'] = SV_NAME_MAP[distro]
+    mp['SERVICE'] = distro.get_command('libvirt-daemon')
     result = utils.execute_template(*cmds,
                                 check_exit_code=False,
                                 params=mp)
@@ -104,7 +97,7 @@ def restart(distro):
             'run_as_root': True,
         })
         mp = dict()
-        mp['SERVICE'] = SV_NAME_MAP[distro]
+        mp['SERVICE'] = distro.get_command('libvirt-daemon')
         utils.execute_template(*cmds, params=mp)
         LOG.info("Restarting the libvirt service, please wait %s seconds until its started." % (WAIT_ALIVE_TIME))
         sh.sleep(WAIT_ALIVE_TIME)
@@ -117,7 +110,7 @@ def virt_ok(virt_type, distro):
     try:
         restart(distro)
     except excp.ProcessExecutionError, e:
-        LOG.warn("Could not restart libvirt on distro [%s] due to [%s]" % (distro, e.message))
+        LOG.warn("Could not restart libvirt due to [%s]" % (e))
         return False
     try:
         cmds = list()
@@ -148,7 +141,7 @@ def clear_libvirt_domains(distro, virt_type, inst_prefix):
         try:
             restart(distro)
         except excp.ProcessExecutionError, e:
-            LOG.warn("Could not restart libvirt on distro [%s] due to [%s]" % (distro, e.message))
+            LOG.warn("Could not restart libvirt due to [%s]" % (e))
             return
         try:
             conn = libvirt.open(virt_protocol)

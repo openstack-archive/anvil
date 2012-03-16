@@ -178,11 +178,11 @@ def execute(*cmd, **kwargs):
         raise excp.ProcessExecutionError(exit_code=rc, stdout=stdout, \
                                          stderr=stderr, cmd=str_cmd)
     else:
-        #log it anyway
+        # Log it anyway
         if rc not in check_exit_code:
             LOG.debug("A failure may of just happened when running command \"%s\" [%s] (%s, %s)", \
                 str_cmd, rc, stdout.strip(), stderr.strip())
-        #log for debugging figuring stuff out
+        # Log for debugging figuring stuff out
         LOG.debug("Received stdout: %s" % (stdout.strip()))
         LOG.debug("Received stderr: %s" % (stderr.strip()))
         return (stdout, stderr)
@@ -197,7 +197,7 @@ def abspth(path):
 
 
 def shellquote(text):
-    #TODO since there doesn't seem to be a standard lib that actually works use this way...
+    # TODO since there doesn't seem to be a standard lib that actually works use this way...
     do_adjust = False
     for srch in SHELL_QUOTE_REPLACERS.keys():
         if text.find(srch) != -1:
@@ -369,16 +369,9 @@ def load_file(fn, quiet=False):
     if not quiet:
         LOG.audit("Loading data from file %s", fn)
     data = ""
-    try:
+    if not DRYRUN_MODE:
         with open(fn, "r") as f:
             data = f.read()
-    except IOError as e:
-        if DRYRUN_MODE:
-            # We still need to actually load something (ie the json install files so thats)
-            # Why this is in the exception path.
-            LOG.audit("Passing on load exception since in dry-run mode")
-        else:
-            raise e
     if not quiet:
         LOG.audit("Loaded (%d) bytes from file %s", len(data), fn)
     return data
@@ -500,16 +493,16 @@ def create_loopback_file(fname, size, bsize=1024, fs_type='ext3', run_as_root=Fa
               'count=0', 'seek=%d' % size]
     mkfs_cmd = ['mkfs.%s' % fs_type, '-f', '-i', 'size=%d' % bsize, fname]
 
-    # make sure folder exists
+    # Make sure folder exists
     files = mkdirslist(dirname(fname))
 
-    # create file
+    # Create file
     touch_file(fname)
 
-    # fill with zeroes
+    # Fill with zeroes
     execute(*dd_cmd, run_as_root=run_as_root)
 
-    # create fs on the file
+    # Create fs on the file
     execute(*mkfs_cmd, run_as_root=run_as_root)
 
     return files

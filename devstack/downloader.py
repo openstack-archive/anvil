@@ -51,7 +51,6 @@ def _gitdownload(storewhere, uri, branch=None):
 
 
 def download(storewhere, uri, branch=None):
-    #figure out which type
     up = urlparse(uri)
     if up and up.scheme.lower() == "git" or GIT_EXT_REG.match(up.path):
         return _gitdownload(storewhere, uri, branch)

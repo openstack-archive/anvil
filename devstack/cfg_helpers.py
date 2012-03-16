@@ -30,7 +30,5 @@ def make_id(section, option):
 
 
 def fetch_run_type(config):
-    run_type = config.getdefaulted("default", "run_type",
-                                   settings.RUN_TYPE_DEF)
-    run_type = run_type.upper()
-    return run_type
+    run_type = config.getdefaulted("default", "run_type", settings.RUN_TYPE_DEF)
+    return run_type.upper()
