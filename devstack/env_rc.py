@@ -261,7 +261,7 @@ class RcReader(object):
             with open(fn, 'r') as fh:
                 contents = fh.read()
         except IOError as e:
-            LOG.warn("Failed extracting rc file [%s] due to [%s]" % (fn, e.message))
+            LOG.warn("Failed extracting rc file [%s] due to [%s]" % (fn, e))
             return extracted_vars
         for line in contents.splitlines():
             if self._is_comment(line):

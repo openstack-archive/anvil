@@ -62,7 +62,6 @@ class ComponentBase(object):
                  *args,
                  **kargs):
 
-        # Required vars
         self.subsystems = subsystems
         self.instances = all_instances
 
@@ -107,6 +106,7 @@ class PkgInstallComponent(ComponentBase):
         ComponentBase.__init__(self, *args, **kargs)
         self.tracewriter = tr.TraceWriter(tr.trace_fn(self.trace_dir,
                                                       tr.IN_TRACE))
+        self.packages = kargs.get('packages', list())
 
     def _get_download_locations(self):
         return list()
@@ -149,33 +149,32 @@ class PkgInstallComponent(ComponentBase):
     def _get_param_map(self, config_fn):
         return dict()
 
+    def _get_packages(self):
+        return self.packages
+
     def install(self):
         LOG.debug('Preparing to install packages for %s',
                   self.component_name)
-        pkgs = self.component_opts.get('packages', [])
+        pkgs = self._get_packages()
         if pkgs:
-            pkgnames = sorted([p['name'] for p in pkgs])
-            LOG.info("Installing packages (%s).", ", ".join(pkgnames))
-            # FIXME: We should only record the packages we actually
-            # install without error.
-            #do this before install just incase it craps out half way through
-            for pkg in pkgs:
-                self.tracewriter.package_installed(p['name'], pkg)
-            #now actually install
-            self.packager.install_batch(pkgs)
+            pkg_names = set([p['name'] for p in pkgs])
+            LOG.info("Setting up %s packages (%s)" % (len(pkg_names), ", ".join(pkg_names)))
+            for p in pkgs:
+                self.tracewriter.package_installed(p)
+                self.packager.install(p)
         else:
             LOG.info('No packages to install for %s',
                      self.component_name)
         return self.trace_dir
 
     def pre_install(self):
-        pkgs = self.component_opts.get('packages', [])
+        pkgs = self._get_packages()
         if pkgs:
             mp = self._get_param_map(None)
             self.packager.pre_install(pkgs, mp)
 
     def post_install(self):
-        pkgs = self.component_opts.get('packages', [])
+        pkgs = self._get_packages()
         if pkgs:
             mp = self._get_param_map(None)
             self.packager.post_install(pkgs, mp)
@@ -250,24 +249,24 @@ class PkgInstallComponent(ComponentBase):
 class PythonInstallComponent(PkgInstallComponent):
     def __init__(self, *args, **kargs):
         PkgInstallComponent.__init__(self, *args, **kargs)
+        self.pips = kargs.get('pips', list())
 
     def _get_python_directories(self):
         py_dirs = dict()
         py_dirs[self.component_name] = self.app_dir
         return py_dirs
+        
+    def _get_pips(self):
+        return self.pips
 
     def _install_pips(self):
-        pips = dict((p['name'], p)
-                    for p in self.component_opts.get('pips', [])
-                    )
+        pips = self._get_pips()
         if pips:
-            LOG.info("Setting up %s pips (%s)",
-                     len(pips), ", ".join(pips.keys()))
-            #do this before install just incase it craps out half way through
-            for name in pips.keys():
-                self.tracewriter.pip_installed(name, pips.get(name))
-            #now install
-            pip.install(pips, self.distro)
+            pip_names = set([p['name'] for p in pips])
+            LOG.info("Setting up %s pips (%s)", len(pip_names), ", ".join(pip_names))
+            for pip in pips:
+                self.tracewriter.pip_installed(pip)
+                pip.install(pip, self.distro)
 
     def _install_python_setups(self):
         pydirs = self._get_python_directories()
@@ -276,11 +275,8 @@ class PythonInstallComponent(PkgInstallComponent):
                      len(pydirs), pydirs)
             for (name, wkdir) in pydirs.items():
                 working_dir = wkdir or self.app_dir
-                #ensure working dir is there
                 self.tracewriter.dirs_made(*sh.mkdirslist(working_dir))
-                #do this before write just incase it craps out half way through
                 self.tracewriter.py_installed(name, working_dir)
-                #now actually do it
                 (stdout, stderr) = sh.execute(*PY_INSTALL,
                                                cwd=working_dir,
                                                run_as_root=True)
@@ -356,11 +352,11 @@ class PkgUninstallComponent(ComponentBase):
     def _uninstall_pkgs(self):
         pkgsfull = self.tracereader.packages_installed()
         if pkgsfull:
-            LOG.info("Potentially removing %s packages (%s)",
-                     len(pkgsfull), ", ".join(sorted(pkgsfull.keys())))
+            LOG.info("Potentially removing %s packages",
+                     len(pkgsfull))
             which_removed = self.packager.remove_batch(pkgsfull)
             LOG.info("Actually removed %s packages (%s)",
-                     len(which_removed), ", ".join(sorted(which_removed)))
+                     len(which_removed), ", ".join(which_removed))
 
     def _uninstall_touched_files(self):
         filestouched = self.tracereader.files_touched()
@@ -399,8 +395,9 @@ class PythonUninstallComponent(PkgUninstallComponent):
     def _uninstall_pips(self):
         pips = self.tracereader.pips_installed()
         if pips:
-            LOG.info("Uninstalling %s pips.", len(pips))
-            pip.uninstall(pips, self.distro)
+            names = set([p['name'] for p in pips])
+            LOG.info("Uninstalling %s python packages (%s)" % (len(names), ", ".join(names)))
+            pip.uninstall_batch(pips, self.distro)
 
     def _uninstall_python(self):
         pylisting = self.tracereader.py_listing()

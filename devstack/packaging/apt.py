@@ -14,7 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from tempfile import TemporaryFile
 import time
 
 from devstack import log as logging
@@ -24,20 +23,21 @@ from devstack import shell as sh
 
 LOG = logging.getLogger("devstack.packaging.apt")
 
-#base apt commands
+# Base apt commands
 APT_GET = ['apt-get']
 APT_PURGE = ["purge", "-y"]
 APT_REMOVE = ["remove", "-y"]
 APT_INSTALL = ["install", "-y"]
 APT_AUTOREMOVE = ['autoremove', '-y']
 
-#should we use remove or purge?
+# Should we use remove or purge?
 APT_DO_REMOVE = APT_PURGE
 
-#make sure its non-interactive
+# Make sure its non-interactive
+# http://awaseconfigurations.wordpress.com/tag/debian_frontend/
 ENV_ADDITIONS = {'DEBIAN_FRONTEND': 'noninteractive'}
 
-#apt separates its pkg names and versions with a equal sign
+# Apt separates its pkg names and versions with a equal sign
 VERSION_TEMPL = "%s=%s"
 
 
@@ -60,7 +60,6 @@ class AptPackager(pack.Packager):
             **kargs)
 
     def _remove_batch(self, pkgs):
-        #form the needed commands
         cmds = []
         which_removed = []
         for info in pkgs:
@@ -78,53 +77,22 @@ class AptPackager(pack.Packager):
         if cmds:
             cmd = APT_GET + APT_DO_REMOVE + cmds
             self._execute_apt(cmd)
-        #clean them out (if we did anything)
         if which_removed and self.auto_remove:
             cmd = APT_GET + APT_AUTOREMOVE
             self._execute_apt(cmd)
         return which_removed
 
-    def install_batch(self, pkgs):
-        #form the needed commands
-        cmds = []
-        for info in pkgs:
-            name = info['name']
-            if self._pkg_install_special(name, info):
-                continue
-            pkg_full = self._format_pkg(name, info.get("version"))
-            cmds.append(pkg_full)
-        #install them
-        if cmds:
-            cmd = APT_GET + APT_INSTALL + cmds
+    def install(self, pkg):
+        name = pkg['name']
+        if self._pkg_install_special(name, pkg):
+            return
+        else:
+            pkg_full = self._format_pkg(name, pkg.get("version")) 
+            cmd = APT_GET + APT_INSTALL + [pkg_full]
             self._execute_apt(cmd)
 
-    def _pkg_remove_special(self, name, pkginfo):
-        #TODO: maybe this should be a subclass that handles these differences
-        if name == 'rabbitmq-server' and self.distro.name == settings.UBUNTU11:
-            #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
-            #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
-            LOG.info("Handling special remove of %s." % (name))
-            pkg_full = self._format_pkg(name, pkginfo.get("version"))
-            cmd = APT_GET + APT_REMOVE + [pkg_full]
-            self._execute_apt(cmd)
-            #probably useful to do this
-            time.sleep(1)
-            #purge
-            cmd = APT_GET + APT_PURGE + [pkg_full]
-            self._execute_apt(cmd)
-            return True
+    def _pkg_remove_special(self, name, info):
         return False
 
-    def _pkg_install_special(self, name, pkginfo):
-        #TODO: maybe this should be a subclass that handles these differences
-        if name == 'rabbitmq-server' and self.distro.name == settings.UBUNTU11:
-            #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
-            #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
-            LOG.info("Handling special install of %s." % (name))
-            #this seems to be a temporary fix for that bug
-            with TemporaryFile() as f:
-                pkg_full = self._format_pkg(name, pkginfo.get("version"))
-                cmd = APT_GET + APT_INSTALL + [pkg_full]
-                self._execute_apt(cmd, stdout_fh=f, stderr_fh=f)
-                return True
+    def _pkg_install_special(self, name, info):
         return False

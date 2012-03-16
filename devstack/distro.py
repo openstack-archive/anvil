@@ -81,6 +81,12 @@ class Distro(object):
     def __repr__(self):
         return "\"%s\" using packager \"%s\"" % (self.name, self.packager_name)
 
+    def get_packages(self, name):
+        return self.components[name].get('packages', list())
+
+    def get_pips(self, name):
+        return self.components[name].get('pips', list())
+
     def get_command(self, cmd_key, quiet=False):
         if not quiet:
             return self.commands[cmd_key]

@@ -5,7 +5,7 @@
 name: ubuntu-oneiric
 distro_pattern: Ubuntu(.*)oneiric
 
-packager_name: devstack.packaging.apt:AptPackager
+packager_name: devstack.distros.oneiric:OneiricAptPackager
 
 commands:
 

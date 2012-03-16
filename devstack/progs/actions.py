@@ -145,7 +145,8 @@ class ActionRunner(object):
         self.cfg = cfg
         self.pw_gen = passwords.PasswordGenerator(self.cfg, kargs.get('prompt_for_passwords', True))
         pkg_cls = distro.get_packager_factory()
-        self.pkg_manager = pkg_cls(self.distro.name, kargs.get('keep_old', False))
+        self.keep_old = kargs.get('keep_old')
+        self.pkg_manager = pkg_cls(self.distro, self.keep_old)
         self.force = kargs.get('force', False)
         self.kargs = kargs
 
@@ -196,8 +197,10 @@ class ActionRunner(object):
             cls_kvs['subsystems'] = set(subsystems.get(c, list()))
             cls_kvs['all_instances'] = instances
             cls_kvs['name'] = c
-            # FIXME:
-            cls_kvs['keep_old'] = False
+            # FIXME: we are always sending these... (even if not used)
+            cls_kvs['keep_old'] = self.keep_old
+            cls_kvs['packages'] = self.distro.get_packages(c)
+            cls_kvs['pips'] = self.distro.get_pips(c)
             LOG.debug("Using k/v map %s", cls_kvs)
             instances[c] = cls(*list(), **cls_kvs)
         return instances
