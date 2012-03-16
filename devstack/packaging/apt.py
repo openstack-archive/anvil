@@ -87,7 +87,7 @@ class AptPackager(pack.Packager):
         if self._pkg_install_special(name, pkg):
             return
         else:
-            pkg_full = self._format_pkg(name, pkg.get("version")) 
+            pkg_full = self._format_pkg(name, pkg.get("version"))
             cmd = APT_GET + APT_INSTALL + [pkg_full]
             self._execute_apt(cmd)
 

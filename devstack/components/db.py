@@ -23,24 +23,22 @@ from devstack import utils
 
 LOG = logging.getLogger("devstack.components.db")
 
-#used for special setups
-MYSQL = 'mysql'
 START_WAIT_TIME = settings.WAIT_ALIVE_SECS
 
-#need to reset pw to blank since this distributions don't seem to
-#always reset it when u uninstall the db
+# Need to reset pw to blank since this distributions don't seem to
+# always reset it when u uninstall the db
 RESET_BASE_PW = ''
 
-#links about how to reset if it fails
+# Links about how to reset if it fails
 SQL_RESET_PW_LINKS = [
     'https://help.ubuntu.com/community/MysqlPasswordReset',
     'http://dev.mysql.com/doc/refman/5.0/en/resetting-permissions.html',
     ]
 
-#used as a generic error message
+# Used as a generic error message
 BASE_ERROR = 'Currently we do not know how to [%s] for database type [%s]'
 
-#config keys we warm up so u won't be prompted later
+# PW keys we warm up so u won't be prompted later
 WARMUP_PWS = ['sql']
 
 
@@ -55,7 +53,7 @@ class DBUninstaller(comp.PkgUninstallComponent):
 
     def pre_uninstall(self):
         dbtype = self.cfg.get("db", "type")
-        dbactions = self.distro.commands[dbtype]
+        dbactions = self.distro.get_command(dbtype, quiet=True)
         try:
             if dbactions:
                 LOG.info(("Attempting to reset your db password to \"%s\" so"
@@ -83,8 +81,8 @@ class DBInstaller(comp.PkgInstallComponent):
         self.runtime = DBRuntime(*args, **kargs)
 
     def _get_param_map(self, config_fn):
-        #this dictionary will be used for parameter replacement
-        #in pre-install and post-install sections
+        # This dictionary will be used for parameter replacement
+        # In pre-install and post-install sections
         host_ip = self.cfg.get('host', 'ip')
         out = {
             'PASSWORD': self.pw_gen.get_password("sql"),
@@ -100,38 +98,19 @@ class DBInstaller(comp.PkgInstallComponent):
             self.pw_gen.get_password(pw_key)
 
     def _configure_db_confs(self):
-        dbtype = self.cfg.get("db", "type")
-        #TODO: use separate classes in devstack.distros.$distro.db and
-        # specify them in the yaml file
-        if self.distro.name == settings.RHEL6 and dbtype == MYSQL:
-            LOG.info("Fixing up %s mysql configs." % (settings.RHEL6))
-            fc = sh.load_file('/etc/my.cnf')
-            lines = fc.splitlines()
-            new_lines = list()
-            for line in lines:
-                if line.startswith('skip-grant-tables'):
-                    line = '#' + line
-                new_lines.append(line)
-            fc = utils.joinlinesep(*new_lines)
-            with sh.Rooted(True):
-                sh.write_file('/etc/my.cnf', fc)
-        else:
-            raise NotImplementedError(
-                'Do not know how to configure db confs for %s' %
-                self.distro.name
-                )
+        pass
 
     def post_install(self):
         comp.PkgInstallComponent.post_install(self)
 
-        #fix up the db configs
+        # Fix up the db configs
         self._configure_db_confs()
 
-        #extra actions to ensure we are granted access
+        # Extra actions to ensure we are granted access
         dbtype = self.cfg.get("db", "type")
-        dbactions = self.distro.commands[dbtype]
+        dbactions = self.distro.get_command(dbtype, quiet=True)
 
-        #set your password
+        # Set your password
         try:
             if dbactions:
                 pwd_cmd = dbactions.get('set_pwd')
@@ -151,7 +130,7 @@ class DBInstaller(comp.PkgInstallComponent):
             LOG.warn(("Couldn't set your db password. It might have already been "
                        "set by a previous process."))
 
-        #ensure access granted
+        # Ensure access granted
         if dbactions:
             grant_cmd = dbactions.get('grant_all')
             if grant_cmd:

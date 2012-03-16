@@ -183,7 +183,7 @@ class ActionRunner(object):
                     % (fn, e))
             raise excp.ConfigException(msg)
         return persona
-    
+
     def _construct_instances(self, persona, action, root_dir):
         components = persona['components']  # Required
         subsystems = persona.get('subsystems') or dict()  # Not required
@@ -207,19 +207,19 @@ class ActionRunner(object):
             LOG.debug("Using arg list %s", cls_args)
             instances[c] = cls(*cls_args, **cls_kvs)
         return instances
-    
+
     def _verify_components(self, component_order, instances):
         LOG.info("Verifying that the components are ready to rock-n-roll.")
         for c in component_order:
             instance = instances[c]
             instance.verify()
-    
+
     def _warm_components(self, component_order, instances):
         LOG.info("Warming up your component configurations (ie so you won't be prompted later)")
         for c in component_order:
             instance = instances[c]
             instance.warm_configs()
-    
+
     def _write_rc_file(self, root_dir):
         writer = env_rc.RcWriter(self.cfg, self.pw_gen, root_dir)
         if not sh.isfile(settings.OSRC_FN):
@@ -229,7 +229,7 @@ class ActionRunner(object):
             LOG.info("Updating a file at [%s] that contains your environment settings." % (settings.OSRC_FN))
             am_upd = writer.update(settings.OSRC_FN)
             LOG.info("Updated [%s] settings in rc file [%s]" % (am_upd, settings.OSRC_FN))
-    
+
     def _run_instances(self, action, component_order, instances):
         for (start_msg, functor, end_msg) in ACTION_MP[action]:
             for c in component_order:
@@ -260,16 +260,19 @@ class ActionRunner(object):
                     % (preq_action, ", ".join(checks_passed_components)))
                 self._run_action(persona, preq_action, root_dir)
         component_order = self._apply_reverse(action, persona['components'])
-        LOG.info("Activating components [%s] (in that order) for action [%s]" % 
+        LOG.info("Activating components [%s] (in that order) for action [%s]" %
                   ("->".join(component_order), action))
         self._verify_components(component_order, instances)
         self._warm_components(component_order, instances)
         if action in RC_FILE_MAKE_ACTIONS:
             self._write_rc_file(root_dir)
         self._run_instances(action, component_order, instances)
-        
-    def run(self, persona_fn, root_dir):
-        persona = self._load_persona(persona_fn)
+
+    def _setup_root(self, root_dir):
         if not sh.isdir(root_dir):
             sh.mkdir(root_dir)
+
+    def run(self, persona_fn, root_dir):
+        persona = self._load_persona(persona_fn)
+        self._setup_root(root_dir)
         self._run_action(persona, self.action, root_dir)

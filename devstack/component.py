@@ -36,7 +36,7 @@ LOG = logging.getLogger("devstack.component")
 PY_INSTALL = ['python', 'setup.py', 'develop']
 PY_UNINSTALL = ['python', 'setup.py', 'develop', '--uninstall']
 
-# Runtime status constants (return by runtime status) 
+# Runtime status constants (return by runtime status)
 # TODO: move...
 STATUS_UNKNOWN = "unknown"
 STATUS_STARTED = "started"
@@ -65,6 +65,7 @@ class ComponentBase(object):
 
         self.active_subsystems = active_subsystems
         self.instances = all_instances
+        self.component_name = name
 
         # The runner has a reference to us, so use a weakref here to
         # avoid breaking garbage collection.
@@ -75,10 +76,7 @@ class ComponentBase(object):
         self.pw_gen = runner.pw_gen
         self.packager = runner.pkg_manager
         self.distro = runner.distro
-        
-        # What this component is called
-        self.component_name = name
-        
+
         # Required component directories
         self.component_dir = component_dir
         self.trace_dir = sh.joinpths(self.component_dir,
@@ -157,7 +155,7 @@ class PkgInstallComponent(ComponentBase):
             if name in self.subsystems:
                 # Todo handle duplicates/version differences?
                 LOG.debug("Extending package list with packages for subsystem %s" % (name))
-                subsystem_pkgs = self.subsystems[name].get('packages', list()) 
+                subsystem_pkgs = self.subsystems[name].get('packages', list())
                 pkg_list.extend(subsystem_pkgs)
         return pkg_list
 
@@ -266,7 +264,7 @@ class PythonInstallComponent(PkgInstallComponent):
             if name in self.subsystems:
                 # Todo handle duplicates/version differences?
                 LOG.debug("Extending pip list with pips for subsystem %s" % (name))
-                subsystem_pips = self.subsystems[name].get('pips', list()) 
+                subsystem_pips = self.subsystems[name].get('pips', list())
                 pip_list.extend(subsystem_pips)
         return pip_list
 
@@ -275,9 +273,9 @@ class PythonInstallComponent(PkgInstallComponent):
         if pips:
             pip_names = set([p['name'] for p in pips])
             LOG.info("Setting up %s pips (%s)", len(pip_names), ", ".join(pip_names))
-            for info in pips:
-                self.tracewriter.pip_installed(info)
-                pip.install(info, self.distro)
+            for p in pips:
+                self.tracewriter.pip_installed(p)
+                pip.install(p, self.distro)
 
     def _install_python_setups(self):
         pydirs = self._get_python_directories()
