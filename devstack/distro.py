@@ -25,6 +25,7 @@ from devstack import importer
 from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
+from devstack import utils
 
 LOG = logging.getLogger('devstack.distro')
 
@@ -41,13 +42,18 @@ class Distro(object):
                 'Did not find any distro definition files in %s' %
                 path)
         for filename in input_files:
+            cls_kvs = dict()
             try:
                 with open(filename, 'r') as f:
-                    data = yaml.load(f)
-                results.append(cls(**data))
+                    cls_kvs = yaml.load(f)
             except (IOError, yaml.YAMLError) as err:
                 LOG.warning('Could not load distro definition from %s: %s',
                             filename, err)
+            try:
+                results.append(utils.construct_instance(cls, **cls_kvs))
+            except Exception as err:
+                LOG.warning('Could not initialize instance %s using parameter map %s: %s',
+                            cls, cls_kvs, err)
         return results
 
     @classmethod

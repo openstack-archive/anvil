@@ -1,10 +1,12 @@
 ---
-created_on: Wed, 14 Mar 2012 17:28:24 -0700
-description: Devstack.sh matching component installation (as of the above date).
+description: Devstack.sh matching component installation.
 supports:
 - rhel-6
 - ubuntu-oneiric
 - fedora-16
+options:
+  glance:
+    - load-images
 components:
 - db
 - rabbit-mq

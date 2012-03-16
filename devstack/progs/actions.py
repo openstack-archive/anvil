@@ -14,14 +14,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License..
 
-import yaml
-
 from devstack import env_rc
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
-from devstack import passwords
+from devstack import utils
 
 LOG = logging.getLogger("devstack.progs.actions")
 
@@ -138,16 +136,16 @@ PREQ_ACTIONS = {
 
 
 class ActionRunner(object):
-    def __init__(self, distro, action, cfg, **kargs):
+    def __init__(self, distro, action,
+                    cfg, pw_gen, pkg_manager,
+                    **kargs):
         self.distro = distro
         self.action = action
         self.cfg = cfg
-        self.pw_gen = passwords.PasswordGenerator(self.cfg, kargs.get('prompt_for_passwords', True))
-        pkg_cls = distro.get_packager_factory()
-        self.keep_old = kargs.get('keep_old')
-        self.pkg_manager = pkg_cls(self.distro, self.keep_old)
+        self.pw_gen = pw_gen
+        self.pkg_manager = pkg_manager
+        self.keep_old = kargs.get('keep_old', False)
         self.force = kargs.get('force', False)
-        self.kargs = kargs
 
     def _apply_reverse(self, action, component_order):
         adjusted_order = list(component_order)
@@ -155,33 +153,9 @@ class ActionRunner(object):
             adjusted_order.reverse()
         return adjusted_order
 
-    def _load_persona(self, persona_fn):
-        persona_fn = sh.abspth(persona_fn)
-        LOG.audit("Loading persona from file [%s]", persona_fn)
-        contents = ''
-        with open(persona_fn, "r") as fh:
-            contents = fh.read()
-        return self._verify_persona(yaml.load(contents), persona_fn)
-
-    def _verify_persona(self, persona, fn):
-        # Some sanity checks
-        try:
-            if self.distro.name not in persona['supports']:
-                raise RuntimeError("Persona does not support distro %s"
-                                   % (self.distro.name))
-            for c in persona['components']:
-                if not self.distro.known_component(c):
-                    raise RuntimeError("Distro %s does not support component %s" %
-                                        (self.distro.name, c))
-        except (KeyError, RuntimeError) as e:
-            msg = ("Could not validate persona defined in [%s] due to: %s"
-                    % (fn, e))
-            raise excp.ConfigException(msg)
-        return persona
-
     def _construct_instances(self, persona, action, root_dir):
-        components = persona['components']  # Required
-        desired_subsystems = persona.get('subsystems', dict())  # Not required
+        components = persona.wanted_components
+        desired_subsystems = persona.wanted_subsystems or dict()
         instances = dict()
         for c in components:
             (cls, my_info) = self.distro.extract_component(c, action)
@@ -198,10 +172,7 @@ class ActionRunner(object):
             for (k, v) in my_info.items():
                 if k not in cls_kvs:
                     cls_kvs[k] = v
-            LOG.debug("Using arg map %s", cls_kvs)
-            cls_args = list()
-            LOG.debug("Using arg list %s", cls_args)
-            instances[c] = cls(*cls_args, **cls_kvs)
+            instances[c] = utils.construct_instance(cls, **cls_kvs)
         return instances
 
     def _verify_components(self, component_order, instances):
@@ -243,7 +214,6 @@ class ActionRunner(object):
                         raise
 
     def _run_action(self, persona, action, root_dir):
-        LOG.info("Running action [%s] using root directory [%s]" % (action, root_dir))
         instances = self._construct_instances(persona, action, root_dir)
         if action in PREQ_ACTIONS:
             (check_functor, preq_action) = PREQ_ACTIONS[action]
@@ -264,11 +234,5 @@ class ActionRunner(object):
             self._write_rc_file(root_dir)
         self._run_instances(action, component_order, instances)
 
-    def _setup_root(self, root_dir):
-        if not sh.isdir(root_dir):
-            sh.mkdir(root_dir)
-
-    def run(self, persona_fn, root_dir):
-        persona = self._load_persona(persona_fn)
-        self._setup_root(root_dir)
+    def run(self, persona, root_dir):
         self._run_action(persona, self.action, root_dir)
