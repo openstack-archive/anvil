@@ -35,7 +35,7 @@ def import_entry_point(fullname):
     """
     (module_name, classname) = partition(fullname)
     try:
-        module = utils.import_module(module_name, False)
+        module = __import__(module_name)
         for submodule in module_name.split('.')[1:]:
             module = getattr(module, submodule)
         cls = getattr(module, classname)
