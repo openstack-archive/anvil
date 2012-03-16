@@ -5,8 +5,6 @@ supports:
 - ubuntu-oneiric
 - fedora-16
 options:
-  glance:
-    - load-images
 components:
 - db
 - rabbit-mq
