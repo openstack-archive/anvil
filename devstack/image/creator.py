@@ -45,8 +45,6 @@ class Image(object):
         'is_public=true', 'container_format=ami', 'disk_format=ami', \
         'kernel_id=%KERNEL_ID%', 'ramdisk_id=%INITRD_ID%']
 
-    REPORTSIZE = 10485760
-
     tmpdir = tempfile.gettempdir()
 
     def __init__(self, url, token):
