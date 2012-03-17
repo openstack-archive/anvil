@@ -17,14 +17,17 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import distutils.version
 import json
-import netifaces
 import os
 import random
 import re
 import socket
 import sys
+import contextlib
+
+import distutils.version
+import netifaces
+import progressbar
 import termcolor
 
 from devstack import colorlog
@@ -137,6 +140,21 @@ def to_bytes(text):
     else:
         byte_val = int(text)
     return byte_val
+
+
+@contextlib.contextmanager
+def progress_bar(name, max_am):
+    widgets = [
+        '%s: ' % (name), progressbar.Percentage(),
+        ' ', progressbar.Bar(),
+        ' ', progressbar.ETA(),
+    ]
+    p_bar = progressbar.ProgressBar(maxval=max_am, widgets=widgets)
+    p_bar.start()
+    try:
+        yield p_bar
+    finally:
+        p_bar.finish()
 
 
 def import_module(module_name, quiet=True):

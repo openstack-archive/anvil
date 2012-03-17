@@ -188,9 +188,11 @@ class PkgInstallComponent(ComponentBase):
         if pkgs:
             pkg_names = set([p['name'] for p in pkgs])
             LOG.info("Setting up %s packages (%s)" % (len(pkg_names), ", ".join(pkg_names)))
-            for p in pkgs:
-                self.tracewriter.package_installed(p)
-                self.packager.install(p)
+            with utils.progress_bar('Packages', len(pkgs)) as p_bar:
+                for (i, p) in enumerate(pkgs):
+                    self.tracewriter.package_installed(p)
+                    self.packager.install(p)
+                    p_bar.update(i + 1)
         else:
             LOG.info('No packages to install for %s',
                      self.component_name)
@@ -298,9 +300,11 @@ class PythonInstallComponent(PkgInstallComponent):
         if pips:
             pip_names = set([p['name'] for p in pips])
             LOG.info("Setting up %s pips (%s)", len(pip_names), ", ".join(pip_names))
-            for p in pips:
-                self.tracewriter.pip_installed(p)
-                pip.install(p, self.distro)
+            with utils.progress_bar('Pips', len(pips)) as p_bar:
+                for (i, p) in enumerate(pips):
+                    self.tracewriter.pip_installed(p)
+                    pip.install(p, self.distro)
+                    p_bar.update(i + 1)
 
     def _install_python_setups(self):
         pydirs = self._get_python_directories()
