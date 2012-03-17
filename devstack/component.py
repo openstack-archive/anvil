@@ -53,8 +53,8 @@ RUNNER_CLS_MAPPING = {
 BASE_LINK_DIR = "/etc"
 
 # Progress bar titles
-UNINSTALL_TITLE = utils.color_text('Uninstalling', 'blue')
-INSTALL_TITLE = utils.color_text('Installing', 'blue')
+UNINSTALL_TITLE = 'Uninstalling'
+INSTALL_TITLE = 'Installing'
 
 
 class ComponentBase(object):

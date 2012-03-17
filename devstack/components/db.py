@@ -211,7 +211,8 @@ class DBRuntime(comp.EmptyRuntime):
         combined = combined.lower()
         if combined.find("running") != -1:
             return comp.STATUS_STARTED
-        elif combined.find("stop") != -1:
+        elif combined.find("stop") != -1 or \
+             combined.find('unrecognized') != -1:
             return comp.STATUS_STOPPED
         else:
             return comp.STATUS_UNKNOWN

@@ -235,9 +235,11 @@ class HorizonRuntime(comp.EmptyRuntime):
         (sysout, stderr) = run_result[0]
         combined = str(sysout) + str(stderr)
         combined = combined.lower()
-        if sysout.find("is running") != -1:
+        if combined.find("is running") != -1:
             return comp.STATUS_STARTED
-        elif sysout.find("not running") != -1 or sysout.find("stopped") != -1:
+        elif combined.find("not running") != -1 or \
+             combined.find("stopped") != -1 or \
+             combined.find('unrecognized') != -1:
             return comp.STATUS_STOPPED
         else:
             return comp.STATUS_UNKNOWN

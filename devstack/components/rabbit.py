@@ -105,7 +105,9 @@ class RabbitRuntime(comp.EmptyRuntime):
         (sysout, stderr) = run_result
         combined = str(sysout) + str(stderr)
         combined = combined.lower()
-        if combined.find('nodedown') != -1 or combined.find("unable to connect to node") != -1:
+        if combined.find('nodedown') != -1 or \
+           combined.find("unable to connect to node") != -1 or \
+           combined.find('unrecognized') != -1:
             return comp.STATUS_STOPPED
         elif combined.find('running_applications') != -1:
             return comp.STATUS_STARTED

@@ -145,7 +145,7 @@ def to_bytes(text):
 @contextlib.contextmanager
 def progress_bar(name, max_am):
     widgets = [
-        ' %s: ' % (name), progressbar.Percentage(),
+        '%s: ' % (name), progressbar.Percentage(),
         ' ', progressbar.Bar(),
         ' ', progressbar.ETA(),
     ]
