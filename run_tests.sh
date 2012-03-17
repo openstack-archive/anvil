@@ -16,7 +16,7 @@ function usage {
   echo "  -P, --skip-pep8          Just run tests; skip pep8 check."
   echo "  -p, --pep8               Just run pep8."
   echo "  -l, --pylint             Just run pylint."
-  echo "  -j, --json               Just validate JSON."
+  echo "  -y, --yaml               Just validate YAML."
   echo "  -c, --with-coverage      Generate coverage report."
   echo "  -h, --help               Print this usage message."
   echo "  --hide-elapsed           Don't print the elapsed time for each test along with slow test list."
@@ -48,7 +48,7 @@ function process_option {
       -P|--skip-pep8) skip_pep8=1;;
       -p|--pep8) just_pep8=1;;
       -l|--pylint) just_pylint=1;;
-      -j|--json) just_json=1;;
+      -y|--yaml) just_yaml=1;;
       -c|--with-coverage) coverage=1;;
       -*) addlopts="$addlopts $1";;
       *) addlargs="$addlargs $1"
@@ -67,7 +67,7 @@ wrapper=""
 just_pep8=0
 skip_pep8=0
 just_pylint=0
-just_json=0
+just_yaml=0
 coverage=0
 pylintrc_fn="pylintrc"
 
@@ -164,9 +164,12 @@ function run_pylint {
   fi
 }
 
-function validate_json {
-  echo "Validating JSON..."
-  python tools/validate_json.py
+function validate_yaml {
+    echo "Validating YAML files..."
+    for f in `find conf/ -name *.yaml -type f`; do
+        echo "Checking yaml file: $f"
+        tools/validate_yaml.py $f
+    done
 }
 
 
@@ -185,8 +188,8 @@ if [ $just_pylint -eq 1 ]; then
     exit
 fi
 
-if [ $just_json -eq 1 ]; then
-    validate_json
+if [ $just_yaml -eq 1 ]; then
+    validate_yaml
     exit
 fi
 
