@@ -26,11 +26,16 @@ from devstack import shell as sh
 
 LOG = logging.getLogger("devstack.downloader")
 
+# Git commands/subcommands/how we know if using git (scheme matching)
+GIT_SCHEMES = ['git']
 GIT_EXT_REG = re.compile(r"^(.*?)\.git\s*$", re.IGNORECASE)
 GIT_MASTER_BRANCH = "master"
 CLONE_CMD = ["git", "clone"]
 CHECKOUT_CMD = ['git', 'checkout']
 PULL_CMD = ['git', 'pull']
+
+# Schemes we will attempt to use urllib to download
+URLLIB_SCHEMES = ['http', 'ftp', 'file']
 
 
 class Downloader(object):
@@ -69,7 +74,7 @@ class GitDownloader(Downloader):
         return dirsmade
 
 
-class HttpDownloader(Downloader):
+class UrlLibDownloader(Downloader):
 
     def __init__(self, uri, store_where, **kargs):
         Downloader.__init__(self, uri, store_where)
@@ -99,7 +104,7 @@ class HttpDownloader(Downloader):
             self.p_bar.update(byte_down)
 
     def download(self):
-        LOG.info('Downloading using http: %r to %r', self.uri, self.store_where)
+        LOG.info('Downloading using urllib: %r to %r', self.uri, self.store_where)
         dirsmade = sh.mkdirslist(sh.dirname(self.store_where))
         try:
             urllib.urlretrieve(self.uri, self.store_where, self._report)
@@ -112,11 +117,12 @@ class HttpDownloader(Downloader):
 
 def download(uri, storewhere, **kargs):
     downloader_cls = None
-    up = urlparse.urlparse(uri)
-    if up and up.scheme.lower() == "git" or GIT_EXT_REG.match(up.path):
+    uri_pieces = urlparse.urlparse(uri)
+    canon_scheme = uri_pieces.scheme.lower()
+    if canon_scheme in GIT_SCHEMES or GIT_EXT_REG.match(uri_pieces.path):
         downloader_cls = GitDownloader
-    elif up and up.scheme.lower() == "http":
-        downloader_cls = HttpDownloader
+    elif canon_scheme in URLLIB_SCHEMES:
+        downloader_cls = UrlLibDownloader
     if not downloader_cls:
         msg = "Currently we do not know how to download from uri: %r" % (uri)
         raise NotImplementedError(msg)
