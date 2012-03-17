@@ -44,15 +44,15 @@ class AptPackager(pack.Packager):
         pack.Packager.__init__(self, distro, keep_packages)
         self.auto_remove = True
 
-    def _format_pkg(self, name, version):
+    def _format_pkg_name(self, name, version):
         if version:
-            pkg_full_name = VERSION_TEMPL % (name, version)
+            return VERSION_TEMPL % (name, version)
         else:
-            pkg_full_name = name
-        return pkg_full_name
+            return name
 
     def _execute_apt(self, cmd, **kargs):
-        return sh.execute(*cmd, run_as_root=True,
+        full_cmd = APT_GET + cmd
+        return sh.execute(*full_cmd, run_as_root=True,
             check_exit_code=True,
             env_overrides=ENV_ADDITIONS,
             **kargs)
@@ -65,32 +65,33 @@ class AptPackager(pack.Packager):
             removable = info.get('removable', True)
             if not removable:
                 continue
-            if self._pkg_remove_special(name, info):
+            if self._remove_special(name, info):
                 which_removed.append(name)
                 continue
-            pkg_full = self._format_pkg(name, info.get("version"))
+            pkg_full = self._format_pkg_name(name, info.get("version"))
             if pkg_full:
                 cmds.append(pkg_full)
                 which_removed.append(name)
         if cmds:
-            cmd = APT_GET + APT_DO_REMOVE + cmds
+            cmd = APT_DO_REMOVE + cmds
             self._execute_apt(cmd)
         if which_removed and self.auto_remove:
-            cmd = APT_GET + APT_AUTOREMOVE
+            cmd = APT_AUTOREMOVE
             self._execute_apt(cmd)
         return which_removed
 
     def install(self, pkg):
         name = pkg['name']
-        if self._pkg_install_special(name, pkg):
+        if self._install_special(name, pkg):
             return
         else:
-            pkg_full = self._format_pkg(name, pkg.get("version"))
-            cmd = APT_GET + APT_INSTALL + [pkg_full]
-            self._execute_apt(cmd)
+            pkg_full = self._format_pkg_name(name, pkg.get("version"))
+            if pkg_full:
+                cmd = APT_INSTALL + [pkg_full]
+                self._execute_apt(cmd)
 
-    def _pkg_remove_special(self, name, info):
+    def _remove_special(self, name, info):
         return False
 
-    def _pkg_install_special(self, name, info):
+    def _install_special(self, name, info):
         return False

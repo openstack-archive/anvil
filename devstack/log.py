@@ -17,9 +17,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import functools
 import logging
-import pprint
 
 from logging.handlers import SysLogHandler
 from logging.handlers import WatchedFileHandler
@@ -76,14 +74,3 @@ class AuditAdapter(logging.LoggerAdapter):
 
 def getLogger(name='devstack'):
     return AuditAdapter(logging.getLogger(name))
-
-
-def log_debug(f):
-    @functools.wraps(f)
-    def wrapper(*args, **kargs):
-        logger = getLogger()
-        logger.debug('%s(%s, %s) ->', f.func_name, str(args), str(kargs))
-        rv = f(*args, **kargs)
-        logger.debug("<- %s" % (pprint.pformat(rv, indent=2)))
-        return rv
-    return wrapper

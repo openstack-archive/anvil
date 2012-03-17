@@ -1,13 +1,7 @@
 ---
-description: Devstack.sh matching component installation.
-supports:
-- rhel-6
-- ubuntu-oneiric
-- fedora-16
-options:
-  glance:
-    - load-images
 components:
+# Order matters here!
+- general
 - db
 - rabbit-mq
 - keystone-client
@@ -18,16 +12,24 @@ components:
 - quantum-client
 - nova-client
 - horizon
+description: Devstack.sh matching component installation.
+options: null
 subsystems:
-  glance:
-  - api
-  - reg
-  nova:
-  - api
-  - cauth
-  - cert
-  - cpu
-  - net
-  - sched
-  - vol
-  - xvnc
+    glance:
+    - api
+    - reg
+    nova:
+    - api
+    - cauth
+    - cert
+    - cpu
+    - net
+    - sched
+    - vol
+    - xvnc
+supports:
+- rhel-6
+- ubuntu-oneiric
+- fedora-16
+...
+

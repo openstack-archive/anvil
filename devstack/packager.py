@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from devstack import decorators
 from devstack import log as logging
 from devstack import utils
 
@@ -22,7 +23,7 @@ LOG = logging.getLogger("devstack.packager")
 
 class Packager(object):
 
-    @logging.log_debug
+    @decorators.log_debug
     def __init__(self, distro, keep_packages):
         self.distro = distro
         self.keep_packages = keep_packages

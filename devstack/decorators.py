@@ -1,7 +1,6 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 #    Copyright (C) 2012 Yahoo! Inc. All Rights Reserved.
-#    Copyright (C) 2012 New Dream Network, LLC (DreamHost) All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -15,13 +14,22 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import functools
+import pprint
 
-from devstack import component
+from devstack import log as logging
+
+# Very useful example ones...
+# See: http://wiki.python.org/moin/PythonDecoratorLibrary
+
+LOG = logging.getLogger("devstack.decorators")
 
 
-class Installer(component.PkgInstallComponent):
-    pass
-
-
-class Uninstaller(component.PkgUninstallComponent):
-    pass
+def log_debug(f):
+    @functools.wraps(f)
+    def wrapper(*args, **kargs):
+        LOG.debug('%s(%s, %s) ->', f.func_name, str(args), str(kargs))
+        rv = f(*args, **kargs)
+        LOG.debug("<- %s" % (pprint.pformat(rv, indent=2)))
+        return rv
+    return wrapper

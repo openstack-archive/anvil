@@ -1,662 +1,696 @@
+---
 # Ubuntu 11 (Oneiric)
-
-name: ubuntu-oneiric
 distro_pattern: Ubuntu(.*)oneiric
-
-packager_name: devstack.distros.oneiric:OneiricAptPackager
-
+name: ubuntu-oneiric
+packager_name: devstack.distros.oneiric:AptPackager
 commands:
-
-  pip: pip
-
-  apache:
-    restart: ["service", "apache2", "restart"]
-    start: ["service", "apache2", "start"]
-    stop: ["service", "apache2", "stop"]
-    status: ["service", "apache2", "status"]
-    settings:
-       conf-link-target: /etc/apache2/sites-enabled/000-default
-  
-  libvirt-daemon: 'libvirt-bin'
-
-  mysql:
-    start: ["service", "mysql", 'start']
-    stop: ["service", 'mysql', "stop"]
-    status: ["service", 'mysql', "status"]
-    restart: ["service", 'mysql', "restart"]
-    # NOTE: we aren't stopping any sql injection...
-    set_pwd: ['mysql', '--user=%USER%', '--password=%OLD_PASSWORD%', '-e', 
-              "\"USE mysql; UPDATE user SET password=PASSWORD('%NEW_PASSWORD%') WHERE User='%USER%'; FLUSH PRIVILEGES;\""]
-    create_db: ['mysql', '--user=%USER%', '--password=%PASSWORD%', '-e', 'CREATE DATABASE %DB%;']
-    drop_db: ['mysql', '--user=%USER%', '--password=%PASSWORD%', '-e', 'DROP DATABASE IF EXISTS %DB%;']
-    grant_all: ["mysql", "--user=%USER%", "--password=%PASSWORD%", '-e', 
-                "\"GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' IDENTIFIED BY '%PASSWORD%'; FLUSH PRIVILEGES;\""]
-
-  iscsi:
-    start: ['service', 'tgt', 'start']
-    stop: ['service', 'tgt', 'stop']
-    restart: ['service', 'tgt', 'restart']
-    status: ['service', 'tgt', 'status']
-
-  tgt:
-    restart:
-      - cmd: ['stop', 'tgt']
-        run_as_root: true
-      - cmd: ['start', 'tgt']
-        run_as_root: true
-
-  libvirt:
-    restart: ['service', 'libvirt-bin', 'restart']
-    status: ['service', 'libvirt-bin', 'status']
-
+    apache:
+        restart:
+        - service
+        - apache2
+        - restart
+        settings:
+            conf-link-target: /etc/apache2/sites-enabled/000-default
+        start:
+        - service
+        - apache2
+        - start
+        status:
+        - service
+        - apache2
+        - status
+        stop:
+        - service
+        - apache2
+        - stop
+    iscsi:
+        restart:
+        - service
+        - tgt
+        - restart
+        start:
+        - service
+        - tgt
+        - start
+        status:
+        - service
+        - tgt
+        - status
+        stop:
+        - service
+        - tgt
+        - stop
+    libvirt:
+        restart:
+        - service
+        - libvirt-bin
+        - restart
+        status:
+        - service
+        - libvirt-bin
+        - status
+    libvirt-daemon: libvirt-bin
+    mysql:
+        # NOTE: we aren't stopping any sql injection...
+        create_db:
+        - mysql
+        - --user=%USER%
+        - --password=%PASSWORD%
+        - -e
+        - CREATE DATABASE %DB%;
+        drop_db:
+        - mysql
+        - --user=%USER%
+        - --password=%PASSWORD%
+        - -e
+        - DROP DATABASE IF EXISTS %DB%;
+        grant_all:
+        - mysql
+        - --user=%USER%
+        - --password=%PASSWORD%
+        - -e
+        - '"GRANT ALL PRIVILEGES ON *.* TO ''%USER%''@''%'' IDENTIFIED BY ''%PASSWORD%'';
+            FLUSH PRIVILEGES;"'
+        restart:
+        - service
+        - mysql
+        - restart
+        set_pwd:
+        - mysql
+        - --user=%USER%
+        - --password=%OLD_PASSWORD%
+        - -e
+        - '"USE mysql; UPDATE user SET password=PASSWORD(''%NEW_PASSWORD%'') WHERE
+            User=''%USER%''; FLUSH PRIVILEGES;"'
+        start:
+        - service
+        - mysql
+        - start
+        status:
+        - service
+        - mysql
+        - status
+        stop:
+        - service
+        - mysql
+        - stop
+    pip: pip
 components:
-
-  db:
-    install: devstack.distros.oneiric:DBInstaller
-    uninstall: devstack.components.db:DBUninstaller
-    start: devstack.components.db:DBRuntime
-    stop: devstack.components.db:DBRuntime
-    packages:
-      - name: mysql-client-5.1
-        version: 5.1*
-        removable: true
-      - name: mysql-server-core-5.1
-        version: 5.1*
-        removable: true
-      - name: mysql-common
-        version: 5.1*
-        removable: true
-      - name: mysql-server-5.1
-        version: 5.1*
-        removable: true
-        pre-install:
-          # This apparently is a action needed for ubuntu/debian to set the password to something known....
-          - run_as_root: true
-            cmd: ["debconf-set-selections"]
-            stdin:
-              - mysql-server-5.1 mysql-server/root_password password %PASSWORD%
-              - mysql-server-5.1 mysql-server/root_password_again password %PASSWORD%
-              - mysql-server-5.1 mysql-server/start_on_boot boolean %BOOT_START%
-
-  general:
-    install: devstack.components.pkglist:Installer
-    uninstall: devstack.components.pkglist:Uninstaller
-    start: devstack.component:EmptyRuntime
-    stop: devstack.component:EmptyRuntime
-    packages:
-      - name: curl
-        removable: false
-        version: 7.21.6*
-      - name: euca2ools
-        removable: false
-        version: 2.0.0*
-      - name: git
-        removable: false
-        version: 1:1*
-      - name: gawk
-        version: 1:3*
-        removable: false
-      - name: iputils-ping
-        removable: false
-        version: 3:20101006*
-      - name: locate
-        removable: false
-        version: 4.4.2*
-      - name: lsof
-        removable: false
-        version: 4.81*
-      - name: openssh-server
-        removable: false
-        version: 1:5.8*
-      - name: pep8
-        removable: false
-        version: 0.6.1*
-      - name: psmisc
-        removable: false
-        version: 22.14*
-      - name: pylint
-        removable: false
-        version: 0.23*
-      - name: python
-        removable: false
-        version: 2.7.2*
-      - name: python-coverage
-        removable: false
-        version: 3.4*
-      - name: python-pip
-        removable: false
-        version: 1.0*
-      - name: python-unittest2
-        removable: false
-        version: 0.5.1*
-      - name: python-virtualenv
-        removable: false
-        version: 1.6.4*
-      - name: python-setuptools
-        version: 0.6.16*
-        removable: false
-      - name: python-dev
-        version: 2.7.2*
-        removable: false
-      - name: python-nose
-        version: 1.0.0*
-        removable: false
-      - name: python-mox
-        version: 0.5.3*
-        removable: false
-      - name: screen
-        removable: false
-        version: 4.0.3*
-      - name: sudo
-        removable: false
-        version : 1.7.4*
-      - name: tcpdump
-        removable: false
-        version: 4.1.1*
-      - name: unzip
-        removable: false
-        version: 6.0*
-      - name: wget
-        removable: false
-        version: 1.12*
-    pips:
-      - name: mock
-        version: 0.8.0
-
-  glance:
-    install: devstack.components.glance:GlanceInstaller
-    uninstall: devstack.components.glance:GlanceUninstaller
-    start: devstack.components.glance:GlanceRuntime
-    stop: devstack.components.glance:GlanceRuntime
-    packages:
-      - name: python-eventlet
-        version: 0.9*
-        removable: true
-      - name: python-routes
-        version: 1.12*
-        removable: true
-      - name: python-greenlet
-        version: 0.3.1*
-        removable: true
-      - name: python-argparse
-        version: 1.1*
-        removable: true
-      - name: python-prettytable
-        version: 0.5*
-        removable: true
-      - name: python-mysqldb
-        version: 1.2*
-        removable: true
-      - name: python-sqlalchemy
-        version: 0.6.8*
-        removable: true
-      - name: python-pastedeploy
-        version: 1.5.0*
-        removable: true
-      - name: python-xattr
-        version: 0.6*
-        removable: true
-      - name: python-dateutil
-        version: 1.4*
-        removable: true
-      - name: python-httplib2
-        version: 0.7*
-        removable: true
-    pips:
-      - name: iso8601
-        version: 0.1.4
-
-  horizon:
-    install: devstack.components.horizon:HorizonInstaller
-    uninstall: devstack.components.horizon:HorizonUninstaller
-    start: devstack.components.horizon:HorizonRuntime
-    stop: devstack.components.horizon:HorizonRuntime
-    packages:
-      - name: apache2
-        removable: True
-        version: 2.2*
-      - name: apache2-mpm-worker
-        removable: True
-        version: 2.2*
-      - name: apache2-utils
-        removable: True
-        version: 2.2*
-      - name: apache2.2-bin
-        removable: True
-        version: 2.2*
-      - name: apache2.2-common
-        removable: True
-        version: 2.2*
-      - name: libapache2-mod-wsgi
-        removable: True
-        version: 3.3*
-      - name: python-cherrypy3
-        removable: True
-        version: 3.1*
-      - name: python-dateutil
-        removable: True
-        version: 1.4*
-      - name: python-django
-        removable: True
-        version: 1.3*
-      - name: python-django-mailer
-        removable: True
-        version: 0.2*
-      - name: python-django-nose
-        removable: True
-        version: 0.1*
-      - name: python-django-registration
-        removable: True
-        version: 0.7*
-      - name: python-eventlet
-        removable: True
-        version: 0.9*
-      - name: python-kombu
-        removable: True
-        version: 1.0*
-      - name: python-migrate
-        removable: True
-        version: 0.7*
-      - name: python-paste
-        removable: True
-        version: 1.7.5*
-      - name: python-pastedeploy
-        removable: True
-        version: 1.5.0*
-      - name: python-routes
-        removable: True
-        version: 1.12*
-      - name: python-sqlalchemy
-        removable: True
-        version: 0.6*
-      - name: python-webob
-        removable: True
-        version: 1.0*
-    pips:
-      - name: django-nose-selenium
-        version: 0.7.3
-      - name: pycrypto
-        version: 2.3
-      - name: python-cloudfiles
-        version: 1.7.9.3
-
-  keystone-client:
-    install: devstack.components.keystone_client:KeyStoneClientInstaller
-    uninstall: devstack.components.keystone_client:KeyStoneClientUninstaller
-    start: devstack.components.keystone_client:KeyStoneClientRuntime
-    stop: devstack.components.keystone_client:KeyStoneClientRuntime
-    packages:
-      - name: python-argparse
-        removable: True
-        version: 1.1*
-      - name: python-prettytable
-        removable: True
-        version: 0.5*
-
-  keystone:
-    install: devstack.components.keystone:KeystoneInstaller
-    uninstall: devstack.components.keystone:KeystoneUninstaller
-    start: devstack.components.keystone:KeystoneRuntime
-    stop: devstack.components.keystone:KeystoneRuntime
-    packages:
-      - name: libldap2-dev
-        removable: True
-        version: 2.4*
-      - name: libsasl2-dev
-        removable: True
-        version: 2.1*
-      - name: python-argparse
-        removable: True
-        version: 1.1*
-      - name: python-bcrypt
-        removable: True
-        version: 0.1*
-      - name: python-eventlet
-        removable: True
-        version: 0.9*
-      - name: python-greenlet
-        removable: True
-        version: 0.3*
-      - name: python-lxml
-        removable: True
-        version: 2.3*
-      - name: python-migrate
-        removable: True
-        version: 0.7*
-      - name: python-mysqldb
-        removable: True
-        version: 1.2*
-      - name: python-paste
-        removable: True
-        version: 1.7.5*
-      - name: python-pastedeploy
-        removable: True
-        version: 1.5*
-      - name: python-pastescript
-        removable: True
-        version: 1.7*
-      - name: python-prettytable
-        removable: True
-        version: 0.5*
-      - name: python-pysqlite2
-        removable: True
-        version: 2.6*
-      - name: python-routes
-        removable: True
-        version: 1.12*
-      - name: python-sqlalchemy
-        removable: True
-        version: 0.6*
-      - name: python-webob
-        removable: True
-        version: 1.0*
-      - name: sqlite3
-        removable: True
-        version: 3.7*
-    pips:
-      - name: passlib
-        version: 1.5.3
-
-  melange:
-    install: devstack.components.melange:MelangeInstaller
-    uninstall: devstack.components.melange:MelangeUninstaller
-    start: devstack.components.melange:MelangeRuntime
-    stop: devstack.components.melange:MelangeRuntime
-    packages:
-      - name: python-eventlet
-        removable: True
-        version: 0.9*
-      - name: python-greenlet
-        removable: True
-        version: 0.3.1*
-      - name: python-mysqldb
-        removable: True
-        version: 1.2*
-      - name: python-paste
-        removable: True
-        version: 1.7.5*
-      - name: python-pastedeploy
-        removable: True
-        version: 1.5*
-      - name: python-routes
-        removable: True
-        version: 1.12*
-      - name: python-sqlalchemy
-        removable: True
-        version: 0.6*
-      - name: python-webob
-        removable: True
-        version: 1.0*
-
-  no-vnc:
-    install: devstack.components.novnc:NoVNCInstaller
-    uninstall: devstack.components.novnc:NoVNCUninstaller
-    start: devstack.components.novnc:NoVNCRuntime
-    stop: devstack.components.novnc:NoVNCRuntime
-    packages:
-      - name: python-numpy
-        removable: True
-        version: 1:1.5*
-
-  nova-client:
-    install: devstack.components.nova_client:NovaClientInstaller
-    uninstall: devstack.components.nova_client:NovaClientUninstaller
-    start: devstack.components.nova_client:NovaClientRuntime
-    stop: devstack.components.nova_client:NovaClientRuntime
-    packages:
-      - name: python-argparse
-        removable: True
-        version: 1.1*
-      - name: python-prettytable
-        removable: True
-        version: 0.5*
-
-  nova:
-    install: devstack.components.nova:NovaInstaller
-    uninstall: devstack.components.nova:NovaUninstaller
-    start: devstack.components.nova:NovaRuntime
-    stop: devstack.components.nova:NovaRuntime
-    packages:
-      - name: dnsmasq-base
-        removable: True
-        version: 2.57*
-      - name: dnsmasq-utils
-        removable: True
-        version: 2.57*
-      - name: ebtables
-        removable: True
-        version: 2.0*
-      - name: iptables
-        removable: False
-        version: 1.4*
-      - name: iputils-arping
-        removable: True
-        version: 3:20101006*
-      - name: kpartx
-        removable: True
-        version: 0.4*
-      - name: parted
-        removable: True
-        version: 2.3*
-      - name: python-boto
-        removable: True
-        version: 2.0*
-      - name: python-carrot
-        removable: True
-        version: 0.10*
-      - name: python-cheetah
-        removable: True
-        version: 2.4*
-      - name: python-crypto
-        removable: True
-        version: 2.3*
-      - name: python-eventlet
-        removable: True
-        version: 0.9*
-      - name: python-feedparser
-        removable: True
-        version: 5.0*
-      - name: python-gflags
-        removable: True
-        version: 1.5*
-      - name: python-greenlet
-        removable: True
-        version: 0.3*
-      - name: python-kombu
-        removable: True
-        version: 1.0*
-      - name: python-libxml2
-        removable: True
-        version: 2.7*
-      - name: python-lockfile
-        removable: True
-        version: 1:0*
-      - name: python-lxml
-        removable: True
-        version: 2.3*
-      - name: python-migrate
-        removable: True
-        version: 0.7*
-      - name: python-mysqldb
-        removable: True
-        version: 1.2*
-      - name: python-netaddr
-        removable: True
-        version: 0.7*
-      - name: python-paste
-        removable: True
-        version: 1.7*
-      - name: python-pastedeploy
-        allowed: ">="
-        removable: True
-        version: 1.5.0-2
-      - name: python-routes
-        removable: True
-        version: 1.12*
-      - name: python-sqlalchemy
-        removable: True
-        version: 0.6*
-      - name: python-suds
-        removable: True
-        version: 0.4*
-      - name: python-tempita
-        removable: True
-        version: 0.5*
-      - name: python-xattr
-        removable: True
-        version: 0.6*
-      - name: socat
-        removable: True
-        version: 1.7*
-      - name: sqlite3
-        removable: True
-        version: 3.7*
-      - name: vlan
-        removable: True
-        version: 1.9*
-    pips:
-      - name: iso8601
-        version: 0.1.4
-    subsystems:
-      vol:
+    db:
+        install: devstack.distros.oneiric:DBInstaller
         packages:
-          - name: iscsitarget
-            removable: True
-            version: 1.4*
-          - name: lvm2
-            removable: True
-            version: 2.02*
-          - name: tgt
-            removable: True
+        -   name: mysql-client-5.1
+            removable: true
+            version: 5.1*
+        -   name: mysql-server-core-5.1
+            removable: true
+            version: 5.1*
+        -   name: mysql-common
+            removable: true
+            version: 5.1*
+        -   name: mysql-server-5.1
+            pre-install:
+            # This apparently is a action needed for ubuntu/debian to set the password to something known....
+            -   cmd:
+                - debconf-set-selections
+                run_as_root: true
+                stdin:
+                - mysql-server-5.1 mysql-server/root_password password %PASSWORD%
+                - mysql-server-5.1 mysql-server/root_password_again password %PASSWORD%
+                - mysql-server-5.1 mysql-server/start_on_boot boolean %BOOT_START%
+            removable: true
+            version: 5.1*
+        start: devstack.components.db:DBRuntime
+        stop: devstack.components.db:DBRuntime
+        uninstall: devstack.components.db:DBUninstaller
+    general:
+        install: devstack.components.pkglist:Installer
+        packages:
+        -   name: curl
+            removable: false
+            version: 7.21.6*
+        -   name: euca2ools
+            removable: false
+            version: 2.0.0*
+        -   name: git
+            removable: false
             version: 1:1*
-      api:
+        -   name: gawk
+            removable: false
+            version: 1:3*
+        -   name: iputils-ping
+            removable: false
+            version: 3:20101006*
+        -   name: locate
+            removable: false
+            version: 4.4.2*
+        -   name: lsof
+            removable: false
+            version: 4.81*
+        -   name: openssh-server
+            removable: false
+            version: 1:5.8*
+        -   name: pep8
+            removable: false
+            version: 0.6.1*
+        -   name: psmisc
+            removable: false
+            version: 22.14*
+        -   name: pylint
+            removable: false
+            version: 0.23*
+        -   name: python
+            removable: false
+            version: 2.7.2*
+        -   name: python-coverage
+            removable: false
+            version: 3.4*
+        -   name: python-pip
+            removable: false
+            version: 1.0*
+        -   name: python-unittest2
+            removable: false
+            version: 0.5.1*
+        -   name: python-virtualenv
+            removable: false
+            version: 1.6.4*
+        -   name: python-setuptools
+            removable: false
+            version: 0.6.16*
+        -   name: python-dev
+            removable: false
+            version: 2.7.2*
+        -   name: python-nose
+            removable: false
+            version: 1.0.0*
+        -   name: python-mox
+            removable: false
+            version: 0.5.3*
+        -   name: screen
+            removable: false
+            version: 4.0.3*
+        -   name: sudo
+            removable: false
+            version: 1.7.4*
+        -   name: tcpdump
+            removable: false
+            version: 4.1.1*
+        -   name: unzip
+            removable: false
+            version: 6.0*
+        -   name: wget
+            removable: false
+            version: 1.12*
+        pips:
+        -   name: mock
+            version: 0.8.0
+        start: devstack.component:EmptyRuntime
+        stop: devstack.component:EmptyRuntime
+        uninstall: devstack.components.pkglist:Uninstaller
+    glance:
+        install: devstack.components.glance:GlanceInstaller
         packages:
-          - name: python-dateutil
-            removable: True
-            version: 1.4*
-      cpu:
-        packages:
-          - name: kvm
-            removable: True
-            version: 1:84*
-          - name: libvirt-bin
-            removable: True
+        -   name: python-eventlet
+            removable: true
             version: 0.9*
-          - name: libvirt0
-            removable: True
-            version: 0.9*
-          - name: lvm2
-            removable: True
-            version: 2.02*
-          - name: open-iscsi
-            removable: True
-            version: 2.0*
-          - name: open-iscsi-utils
-            removable: True
-            version: 2.0*
-          - name: python-libvirt
-            removable: True
-            version: 0.9.2*
-          - name: qemu-kvm
-            removable: True
-            version: 0.14.*
-                            
-  quantum-client:
-    install: devstack.components.quantum_client:QuantumClientInstaller
-    uninstall: devstack.components.quantum_client:QuantumClientUninstaller
-    start: devstack.components.quantum_client:QuantumClientRuntime
-    stop: devstack.components.quantum_client:QuantumClientRuntime
-    packages:
-      - name: python-gflags
-        removable: True
-        version: 1.5*
-
-  quantum:
-    install: devstack.components.quantum:QuantumInstaller
-    uninstall: devstack.components.quantum:QuantumUninstaller
-    start: devstack.components.quantum:QuantumRuntime
-    stop: devstack.components.quantum:QuantumRuntime
-    packages:
-      - name: python-eventlet
-        removable: True
-        version: 0.9*
-      - name: python-gflags
-        removable: True
-        version: 1.5*
-      - name: python-greenlet
-        removable: True
-        version: 0.3*
-      - name: python-lxml
-        removable: True
-        version: 2.3*
-      - name: python-paste
-        removable: True
-        version: 1.7*
-      - name: python-pastedeploy
-        removable: True
-        version: 1.5*
-      - name: python-routes
-        removable: True
-        version: 1.12*
-    subsystems:
-      openvswitch:
-        packages:
-          - name: openvswitch-datapath-dkms
-            removable: True
+        -   name: python-routes
+            removable: true
+            version: 1.12*
+        -   name: python-greenlet
+            removable: true
+            version: 0.3.1*
+        -   name: python-argparse
+            removable: true
+            version: 1.1*
+        -   name: python-prettytable
+            removable: true
+            version: 0.5*
+        -   name: python-mysqldb
+            removable: true
             version: 1.2*
-          - name: openvswitch-switch
-            removable: True
-            version: 1.2*
-          - name: python-mysqldb
-            removable: True
-            version: 1.2*
-          - name: python-sqlalchemy
-            removable: True
+        -   name: python-sqlalchemy
+            removable: true
+            version: 0.6.8*
+        -   name: python-pastedeploy
+            removable: true
+            version: 1.5.0*
+        -   name: python-xattr
+            removable: true
             version: 0.6*
+        -   name: python-dateutil
+            removable: true
+            version: 1.4*
+        -   name: python-httplib2
+            removable: true
+            version: 0.7*
+        pips:
+        -   name: iso8601
+            version: 0.1.4
+        start: devstack.components.glance:GlanceRuntime
+        stop: devstack.components.glance:GlanceRuntime
+        uninstall: devstack.components.glance:GlanceUninstaller
+    horizon:
+        install: devstack.components.horizon:HorizonInstaller
+        packages:
+        -   name: apache2
+            removable: true
+            version: 2.2*
+        -   name: apache2-mpm-worker
+            removable: true
+            version: 2.2*
+        -   name: apache2-utils
+            removable: true
+            version: 2.2*
+        -   name: apache2.2-bin
+            removable: true
+            version: 2.2*
+        -   name: apache2.2-common
+            removable: true
+            version: 2.2*
+        -   name: libapache2-mod-wsgi
+            removable: true
+            version: 3.3*
+        -   name: python-cherrypy3
+            removable: true
+            version: 3.1*
+        -   name: python-dateutil
+            removable: true
+            version: 1.4*
+        -   name: python-django
+            removable: true
+            version: 1.3*
+        -   name: python-django-mailer
+            removable: true
+            version: 0.2*
+        -   name: python-django-nose
+            removable: true
+            version: 0.1*
+        -   name: python-django-registration
+            removable: true
+            version: 0.7*
+        -   name: python-eventlet
+            removable: true
+            version: 0.9*
+        -   name: python-kombu
+            removable: true
+            version: 1.0*
+        -   name: python-migrate
+            removable: true
+            version: 0.7*
+        -   name: python-paste
+            removable: true
+            version: 1.7.5*
+        -   name: python-pastedeploy
+            removable: true
+            version: 1.5.0*
+        -   name: python-routes
+            removable: true
+            version: 1.12*
+        -   name: python-sqlalchemy
+            removable: true
+            version: 0.6*
+        -   name: python-webob
+            removable: true
+            version: 1.0*
+        pips:
+        -   name: django-nose-selenium
+            version: 0.7.3
+        -   name: pycrypto
+            version: 2.3
+        -   name: python-cloudfiles
+            version: 1.7.9.3
+        start: devstack.components.horizon:HorizonRuntime
+        stop: devstack.components.horizon:HorizonRuntime
+        uninstall: devstack.components.horizon:HorizonUninstaller
+    keystone:
+        install: devstack.components.keystone:KeystoneInstaller
+        packages:
+        -   name: libldap2-dev
+            removable: true
+            version: 2.4*
+        -   name: libsasl2-dev
+            removable: true
+            version: 2.1*
+        -   name: python-argparse
+            removable: true
+            version: 1.1*
+        -   name: python-bcrypt
+            removable: true
+            version: 0.1*
+        -   name: python-eventlet
+            removable: true
+            version: 0.9*
+        -   name: python-greenlet
+            removable: true
+            version: 0.3*
+        -   name: python-lxml
+            removable: true
+            version: 2.3*
+        -   name: python-migrate
+            removable: true
+            version: 0.7*
+        -   name: python-mysqldb
+            removable: true
+            version: 1.2*
+        -   name: python-paste
+            removable: true
+            version: 1.7.5*
+        -   name: python-pastedeploy
+            removable: true
+            version: 1.5*
+        -   name: python-pastescript
+            removable: true
+            version: 1.7*
+        -   name: python-prettytable
+            removable: true
+            version: 0.5*
+        -   name: python-pysqlite2
+            removable: true
+            version: 2.6*
+        -   name: python-routes
+            removable: true
+            version: 1.12*
+        -   name: python-sqlalchemy
+            removable: true
+            version: 0.6*
+        -   name: python-webob
+            removable: true
+            version: 1.0*
+        -   name: sqlite3
+            removable: true
+            version: 3.7*
+        pips:
+        -   name: passlib
+            version: 1.5.3
+        start: devstack.components.keystone:KeystoneRuntime
+        stop: devstack.components.keystone:KeystoneRuntime
+        uninstall: devstack.components.keystone:KeystoneUninstaller
+    keystone-client:
+        install: devstack.components.keystone_client:KeyStoneClientInstaller
+        packages:
+        -   name: python-argparse
+            removable: true
+            version: 1.1*
+        -   name: python-prettytable
+            removable: true
+            version: 0.5*
+        start: devstack.components.keystone_client:KeyStoneClientRuntime
+        stop: devstack.components.keystone_client:KeyStoneClientRuntime
+        uninstall: devstack.components.keystone_client:KeyStoneClientUninstaller
+    melange:
+        install: devstack.components.melange:MelangeInstaller
+        packages:
+        -   name: python-eventlet
+            removable: true
+            version: 0.9*
+        -   name: python-greenlet
+            removable: true
+            version: 0.3.1*
+        -   name: python-mysqldb
+            removable: true
+            version: 1.2*
+        -   name: python-paste
+            removable: true
+            version: 1.7.5*
+        -   name: python-pastedeploy
+            removable: true
+            version: 1.5*
+        -   name: python-routes
+            removable: true
+            version: 1.12*
+        -   name: python-sqlalchemy
+            removable: true
+            version: 0.6*
+        -   name: python-webob
+            removable: true
+            version: 1.0*
+        start: devstack.components.melange:MelangeRuntime
+        stop: devstack.components.melange:MelangeRuntime
+        uninstall: devstack.components.melange:MelangeUninstaller
+    no-vnc:
+        install: devstack.components.novnc:NoVNCInstaller
+        packages:
+        -   name: python-numpy
+            removable: true
+            version: 1:1.5*
+        start: devstack.components.novnc:NoVNCRuntime
+        stop: devstack.components.novnc:NoVNCRuntime
+        uninstall: devstack.components.novnc:NoVNCUninstaller
+    nova:
+        install: devstack.components.nova:NovaInstaller
+        packages:
+        -   name: dnsmasq-base
+            removable: true
+            version: 2.57*
+        -   name: dnsmasq-utils
+            removable: true
+            version: 2.57*
+        -   name: ebtables
+            removable: true
+            version: 2.0*
+        -   name: iptables
+            removable: false
+            version: 1.4*
+        -   name: iputils-arping
+            removable: true
+            version: 3:20101006*
+        -   name: kpartx
+            removable: true
+            version: 0.4*
+        -   name: parted
+            removable: true
+            version: 2.3*
+        -   name: python-boto
+            removable: true
+            version: 2.0*
+        -   name: python-carrot
+            removable: true
+            version: 0.10*
+        -   name: python-cheetah
+            removable: true
+            version: 2.4*
+        -   name: python-crypto
+            removable: true
+            version: 2.3*
+        -   name: python-eventlet
+            removable: true
+            version: 0.9*
+        -   name: python-feedparser
+            removable: true
+            version: 5.0*
+        -   name: python-gflags
+            removable: true
+            version: 1.5*
+        -   name: python-greenlet
+            removable: true
+            version: 0.3*
+        -   name: python-kombu
+            removable: true
+            version: 1.0*
+        -   name: python-libxml2
+            removable: true
+            version: 2.7*
+        -   name: python-lockfile
+            removable: true
+            version: 1:0*
+        -   name: python-lxml
+            removable: true
+            version: 2.3*
+        -   name: python-migrate
+            removable: true
+            version: 0.7*
+        -   name: python-mysqldb
+            removable: true
+            version: 1.2*
+        -   name: python-netaddr
+            removable: true
+            version: 0.7*
+        -   name: python-paste
+            removable: true
+            version: 1.7*
+        -   name: python-pastedeploy
+            removable: true
+            version: 1.5.0-2
+        -   name: python-routes
+            removable: true
+            version: 1.12*
+        -   name: python-sqlalchemy
+            removable: true
+            version: 0.6*
+        -   name: python-suds
+            removable: true
+            version: 0.4*
+        -   name: python-tempita
+            removable: true
+            version: 0.5*
+        -   name: python-xattr
+            removable: true
+            version: 0.6*
+        -   name: socat
+            removable: true
+            version: 1.7*
+        -   name: sqlite3
+            removable: true
+            version: 3.7*
+        -   name: vlan
+            removable: true
+            version: 1.9*
+        pips:
+        -   name: iso8601
+            version: 0.1.4
+        start: devstack.components.nova:NovaRuntime
+        stop: devstack.components.nova:NovaRuntime
+        subsystems:
+            api:
+                packages:
+                -   name: python-dateutil
+                    removable: true
+                    version: 1.4*
+            cpu:
+                packages:
+                -   name: kvm
+                    removable: true
+                    version: 1:84*
+                -   name: libvirt-bin
+                    removable: true
+                    version: 0.9*
+                -   name: libvirt0
+                    removable: true
+                    version: 0.9*
+                -   name: lvm2
+                    removable: true
+                    version: 2.02*
+                -   name: open-iscsi
+                    removable: true
+                    version: 2.0*
+                -   name: open-iscsi-utils
+                    removable: true
+                    version: 2.0*
+                -   name: python-libvirt
+                    removable: true
+                    version: 0.9.2*
+                -   name: qemu-kvm
+                    removable: true
+                    version: 0.14.*
+            vol:
+                packages:
+                -   name: iscsitarget
+                    removable: true
+                    version: 1.4*
+                -   name: lvm2
+                    removable: true
+                    version: 2.02*
+                -   name: tgt
+                    removable: true
+                    version: 1:1*
+        uninstall: devstack.components.nova:NovaUninstaller
+    nova-client:
+        install: devstack.components.nova_client:NovaClientInstaller
+        packages:
+        -   name: python-argparse
+            removable: true
+            version: 1.1*
+        -   name: python-prettytable
+            removable: true
+            version: 0.5*
+        start: devstack.components.nova_client:NovaClientRuntime
+        stop: devstack.components.nova_client:NovaClientRuntime
+        uninstall: devstack.components.nova_client:NovaClientUninstaller
+    quantum:
+        install: devstack.components.quantum:QuantumInstaller
+        packages:
+        -   name: python-eventlet
+            removable: true
+            version: 0.9*
+        -   name: python-gflags
+            removable: true
+            version: 1.5*
+        -   name: python-greenlet
+            removable: true
+            version: 0.3*
+        -   name: python-lxml
+            removable: true
+            version: 2.3*
+        -   name: python-paste
+            removable: true
+            version: 1.7*
+        -   name: python-pastedeploy
+            removable: true
+            version: 1.5*
+        -   name: python-routes
+            removable: true
+            version: 1.12*
+        start: devstack.components.quantum:QuantumRuntime
+        stop: devstack.components.quantum:QuantumRuntime
+        subsystems:
+            openvswitch:
+                packages:
+                -   name: openvswitch-datapath-dkms
+                    removable: true
+                    version: 1.2*
+                -   name: openvswitch-switch
+                    removable: true
+                    version: 1.2*
+                -   name: python-mysqldb
+                    removable: true
+                    version: 1.2*
+                -   name: python-sqlalchemy
+                    removable: true
+                    version: 0.6*
+        uninstall: devstack.components.quantum:QuantumUninstaller
+    quantum-client:
+        install: devstack.components.quantum_client:QuantumClientInstaller
+        packages:
+        -   name: python-gflags
+            removable: true
+            version: 1.5*
+        start: devstack.components.quantum_client:QuantumClientRuntime
+        stop: devstack.components.quantum_client:QuantumClientRuntime
+        uninstall: devstack.components.quantum_client:QuantumClientUninstaller
+    rabbit-mq:
+        install: devstack.components.rabbit:RabbitInstaller
+        packages:
+        -   name: rabbitmq-server
+            removable: true
+            version: 2.5*
+        start: devstack.components.rabbit:RabbitRuntime
+        stop: devstack.components.rabbit:RabbitRuntime
+        uninstall: devstack.components.rabbit:RabbitUninstaller
+    swift:
+        install: devstack.components.swift:SwiftInstaller
+        packages:
+        -   name: memcached
+            removable: true
+            version: 1.4*
+        -   name: python-configobj
+            removable: true
+            version: 4.7*
+        -   name: python-eventlet
+            removable: true
+            version: 0.9*
+        -   name: python-greenlet
+            removable: true
+            version: 0.3*
+        -   name: python-netifaces
+            removable: true
+            version: 0.5*
+        -   name: python-pastedeploy
+            removable: true
+            version: 1.5*
+        -   name: python-webob
+            removable: true
+            version: 1.0*
+        -   name: python-xattr
+            removable: true
+            version: 0.6*
+        -   name: sqlite3
+            removable: true
+            version: 3.7*
+        -   name: xfsprogs
+            removable: true
+            version: 3.1*
+        start: devstack.components.swift:SwiftRuntime
+        stop: devstack.components.swift:SwiftRuntime
+        uninstall: devstack.components.swift:SwiftUninstaller
+...
 
-  rabbit-mq:
-    install: devstack.components.rabbit:RabbitInstaller
-    uninstall: devstack.components.rabbit:RabbitUninstaller
-    start: devstack.components.rabbit:RabbitRuntime
-    stop: devstack.components.rabbit:RabbitRuntime
-    packages:
-      - name: rabbitmq-server
-        removable: True
-        version: 2.5*
-
-  swift:
-    install: devstack.components.swift:SwiftInstaller
-    uninstall: devstack.components.swift:SwiftUninstaller
-    start: devstack.components.swift:SwiftRuntime
-    stop: devstack.components.swift:SwiftRuntime
-    packages:
-      - name: memcached
-        removable: True
-        version: 1.4*
-      - name: python-configobj
-        removable: True
-        version: 4.7*
-      - name: python-eventlet
-        removable: True
-        version: 0.9*
-      - name: python-greenlet
-        removable: True
-        version: 0.3*
-      - name: python-netifaces
-        removable: True
-        version: 0.5*
-      - name: python-pastedeploy
-        removable: True
-        version: 1.5*
-      - name: python-webob
-        removable: True
-        version: 1.0*
-      - name: python-xattr
-        removable: True
-        version: 0.6*
-      - name: sqlite3
-        removable: True
-        version: 3.7*
-      - name: xfsprogs
-        removable: True
-        version: 3.1*

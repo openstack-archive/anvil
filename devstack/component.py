@@ -377,8 +377,9 @@ class PkgUninstallComponent(ComponentBase):
     def _uninstall_pkgs(self):
         pkgsfull = self.tracereader.packages_installed()
         if pkgsfull:
-            LOG.info("Potentially removing %s packages",
-                     len(pkgsfull))
+            pkg_names = set([p['name'] for p in pkgsfull])
+            LOG.info("Potentially removing %s packages (%s)",
+                     len(pkg_names), ", ".join(pkg_names))
             which_removed = self.packager.remove_batch(pkgsfull)
             LOG.info("Actually removed %s packages (%s)",
                      len(which_removed), ", ".join(which_removed))

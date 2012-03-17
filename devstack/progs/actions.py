@@ -155,6 +155,7 @@ class ActionRunner(object):
     def _construct_instances(self, persona, action, root_dir):
         components = persona.wanted_components
         desired_subsystems = persona.wanted_subsystems or dict()
+        component_opts = persona.component_options or dict()
         instances = dict()
         for c in components:
             (cls, my_info) = self.distro.extract_component(c, action)
@@ -167,6 +168,7 @@ class ActionRunner(object):
             cls_kvs['name'] = c
             cls_kvs['keep_old'] = self.keep_old
             cls_kvs['desired_subsystems'] = set(desired_subsystems.get(c, list()))
+            cls_kvs['options'] = set(component_opts.get(c, list()))
             # The above is not overrideable...
             for (k, v) in my_info.items():
                 if k not in cls_kvs:
