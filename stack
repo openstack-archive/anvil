@@ -136,6 +136,7 @@ def run(args):
     if not persona_fn or not sh.isfile(persona_fn):
         print(utils.color_text("No valid persona file name specified!", "red"))
         return False
+    persona_fn = sh.abspth(persona_fn)
 
     # Welcome!
     (repeat_string, line_max_len) = utils.welcome(_WELCOME_MAP.get(action))
