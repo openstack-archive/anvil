@@ -27,7 +27,8 @@ IPV6 = 'IPv6'
 # How long to wait for a service to startup
 WAIT_ALIVE_SECS = 5
 
-# Component name mappings
+# Component names
+# FIXME: move?? remove??
 NOVA = "nova"
 NOVA_CLIENT = 'nova-client'
 GLANCE = "glance"
