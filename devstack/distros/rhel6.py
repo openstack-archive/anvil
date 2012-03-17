@@ -34,14 +34,14 @@ HTTPD_CONF = '/etc/httpd/conf/httpd.conf'
 
 # Need to relink for rhel (not a bug!)
 RHEL_RELINKS = {
-    'python-webob1.0': {
-        "src": '/usr/lib/python2.6/site-packages/WebOb-1.0.8-py2.6.egg/webob/',
-        'tgt': '/usr/lib/python2.6/site-packages/webob',
-    },
-    'python-nose1.1': {
-        "src": '/usr/lib/python2.6/site-packages/nose-1.1.2-py2.6.egg/nose/',
-        'tgt': '/usr/lib/python2.6/site-packages/nose',
-    },
+    'python-webob1.0': (
+        '/usr/lib/python2.6/site-packages/WebOb-1.0.8-py2.6.egg/webob/',
+        '/usr/lib/python2.6/site-packages/webob'
+    ),
+    'python-nose1.1': (
+        '/usr/lib/python2.6/site-packages/nose-1.1.2-py2.6.egg/nose/',
+        '/usr/lib/python2.6/site-packages/nose',
+    )
 }
 
 
@@ -89,7 +89,9 @@ class YumPackager(yum.YumPackager):
         if name in RHEL_RELINKS:
             # Note: we don't return true here so that
             # the normal package cleanup happens...
-            sh.unlink(RHEL_RELINKS.get(name).get("tgt"))
+            (_, tgt) = RHEL_RELINKS.get(name)
+            if sh.islink(tgt):
+                sh.unlink(tgt)
         return False
 
     def _install_special(self, name, info):
@@ -97,8 +99,7 @@ class YumPackager(yum.YumPackager):
             full_pkg_name = self._format_pkg_name(name, info.get("version"))
             install_cmd = yum.YUM_INSTALL + [full_pkg_name]
             self._execute_yum(install_cmd)
-            tgt = RHEL_RELINKS.get(pkgname).get("tgt")
-            src = RHEL_RELINKS.get(pkgname).get("src")
+            (src, tgt) = RHEL_RELINKS.get(name)
             if not sh.islink(tgt):
                 # This is actually a feature, EPEL must not conflict with RHEL, so X pkg installs newer version in parallel.
                 #
