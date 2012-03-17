@@ -67,7 +67,6 @@ class YumPackager(pack.Packager):
         which_removed = []
         for info in pkgs:
             name = info['name']
-            info = pkgs.get(name) or {}
             removable = info.get('removable', True)
             if not removable:
                 continue
