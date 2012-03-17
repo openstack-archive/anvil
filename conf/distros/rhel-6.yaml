@@ -220,7 +220,7 @@ components:
                 epel: true
             name: python-httplib2
             removable: true
-            version: 0.4*
+            version: 0.7*
         -   meta:
                 epel: true
             name: python-prettytable
