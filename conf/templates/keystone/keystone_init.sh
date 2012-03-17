@@ -1,26 +1,26 @@
 #!/bin/bash
 
-# From devstack.sh commit edf59ca44331106ba895eee78ae1d8602764eb4c
+# From devstack.sh commit 77b0e1d8ff9617dc71cf92a7a9d7fb850e2e5998
 
 #
 # Initial data for Keystone using python-keystoneclient
 #
 # Tenant               User      Roles
-# -------------------------------------------------------
+# ------------------------------------------------------------------
 # admin                admin     admin
 # service              glance    admin
-# service              nova      admin
+# service              nova      admin, [ResellerAdmin (swift only)]
 # service              quantum   admin        # if enabled
 # service              swift     admin        # if enabled
 # demo                 admin     admin
-# demo                 demo      Member,sysadmin,netadmin
+# demo                 demo      Member, anotherrole
 # invisible_to_admin   demo      Member
 #
 # Variables set before calling this script:
 # SERVICE_TOKEN - aka admin_token in keystone.conf
 # SERVICE_ENDPOINT - local Keystone admin endpoint
 # SERVICE_TENANT_NAME - name of tenant containing service accounts
-# ENABLED_SERVICES - stack.sh's list of services to start
+# ENABLED_SERVICES - stack's list of services to start
 
 set -e
 
@@ -64,15 +64,15 @@ DEMO_USER=$(get_id keystone user-create --name=demo \
 ADMIN_ROLE=$(get_id keystone role-create --name=admin)
 KEYSTONEADMIN_ROLE=$(get_id keystone role-create --name=KeystoneAdmin)
 KEYSTONESERVICE_ROLE=$(get_id keystone role-create --name=KeystoneServiceAdmin)
-SYSADMIN_ROLE=$(get_id keystone role-create --name=sysadmin)
-NETADMIN_ROLE=$(get_id keystone role-create --name=netadmin)
+# ANOTHER_ROLE demonstrates that an arbitrary role may be created and used
+# TODO(sleepsonthefloor): show how this can be used for rbac in the future!
+ANOTHER_ROLE=$(get_id keystone role-create --name=anotherrole)
 
 
 # Add Roles to Users in Tenants
 keystone user-role-add --user $ADMIN_USER --role $ADMIN_ROLE --tenant_id $ADMIN_TENANT
 keystone user-role-add --user $ADMIN_USER --role $ADMIN_ROLE --tenant_id $DEMO_TENANT
-keystone user-role-add --user $DEMO_USER --role $SYSADMIN_ROLE --tenant_id $DEMO_TENANT
-keystone user-role-add --user $DEMO_USER --role $NETADMIN_ROLE --tenant_id $DEMO_TENANT
+keystone user-role-add --user $DEMO_USER --role $ANOTHER_ROLE --tenant_id $DEMO_TENANT
 
 # TODO(termie): these two might be dubious
 keystone user-role-add --user $ADMIN_USER --role $KEYSTONEADMIN_ROLE --tenant_id $ADMIN_TENANT
@@ -110,9 +110,18 @@ if [[ "$ENABLED_SERVICES" =~ "swift" ]]; then
     keystone user-role-add --tenant_id $SERVICE_TENANT \
                            --user $SWIFT_USER \
                            --role $ADMIN_ROLE
+    # Nova needs ResellerAdmin role to download images when accessing
+    # swift through the s3 api. The admin role in swift allows a user
+    # to act as an admin for their tenant, but ResellerAdmin is needed
+    # for a user to act as any tenant. The name of this role is also
+    # configurable in swift-proxy.conf
+    RESELLER_ROLE=$(get_id keystone role-create --name=ResellerAdmin)
+    keystone user-role-add --tenant_id $SERVICE_TENANT \
+                           --user $NOVA_USER \
+                           --role $RESELLER_ROLE
 fi
 
-if [[ "$ENABLED_SERVICES" =~ "quantum-server" ]]; then
+if [[ "$ENABLED_SERVICES" =~ "quantum" ]]; then
     QUANTUM_USER=$(get_id keystone user-create --name=quantum \
                                                --pass="$SERVICE_PASSWORD" \
                                                --tenant_id $SERVICE_TENANT \
