@@ -58,15 +58,15 @@ commands:
             User=''%USER%''; FLUSH PRIVILEGES;"'
         start:
         - service
-        - mysql
+        - mysqld
         - start
         status:
         - service
-        - mysql
+        - mysqld
         - status
         stop:
         - service
-        - mysql
+        - mysqld
         - stop
     pip: pip-python
 components:
