@@ -52,6 +52,10 @@ RUNNER_CLS_MAPPING = {
 # Where symlinks will go
 BASE_LINK_DIR = "/etc"
 
+# Progress bar titles
+UNINSTALL_TITLE = utils.color_text('Uninstalling', 'blue')
+INSTALL_TITLE = utils.color_text('Installing', 'blue')
+
 
 class ComponentBase(object):
     def __init__(self,
@@ -188,7 +192,7 @@ class PkgInstallComponent(ComponentBase):
         if pkgs:
             pkg_names = set([p['name'] for p in pkgs])
             LOG.info("Setting up %s packages (%s)" % (len(pkg_names), ", ".join(pkg_names)))
-            with utils.progress_bar('Packages', len(pkgs)) as p_bar:
+            with utils.progress_bar(INSTALL_TITLE, len(pkgs)) as p_bar:
                 for (i, p) in enumerate(pkgs):
                     self.tracewriter.package_installed(p)
                     self.packager.install(p)
@@ -300,7 +304,7 @@ class PythonInstallComponent(PkgInstallComponent):
         if pips:
             pip_names = set([p['name'] for p in pips])
             LOG.info("Setting up %s pips (%s)", len(pip_names), ", ".join(pip_names))
-            with utils.progress_bar('Pips', len(pips)) as p_bar:
+            with utils.progress_bar(INSTALL_TITLE, len(pips)) as p_bar:
                 for (i, p) in enumerate(pips):
                     self.tracewriter.pip_installed(p)
                     pip.install(p, self.distro)
@@ -390,12 +394,17 @@ class PkgUninstallComponent(ComponentBase):
         pass
 
     def _uninstall_pkgs(self):
-        pkgsfull = self.tracereader.packages_installed()
-        if pkgsfull:
-            pkg_names = set([p['name'] for p in pkgsfull])
+        pkgs = self.tracereader.packages_installed()
+        if pkgs:
+            pkg_names = set([p['name'] for p in pkgs])
             LOG.info("Potentially removing %s packages (%s)",
                      len(pkg_names), ", ".join(pkg_names))
-            which_removed = self.packager.remove_batch(pkgsfull)
+            which_removed = set()
+            with utils.progress_bar(UNINSTALL_TITLE, len(pkgs)) as p_bar:
+                for (i, p) in enumerate(pkgs):
+                    if self.packager.remove(p):
+                        which_removed.add(p['name'])
+                    p_bar.update(i + 1)
             LOG.info("Actually removed %s packages (%s)",
                      len(which_removed), ", ".join(which_removed))
 
@@ -438,7 +447,10 @@ class PythonUninstallComponent(PkgUninstallComponent):
         if pips:
             names = set([p['name'] for p in pips])
             LOG.info("Uninstalling %s python packages (%s)" % (len(names), ", ".join(names)))
-            pip.uninstall_batch(pips, self.distro)
+            with utils.progress_bar(UNINSTALL_TITLE, len(pips)) as p_bar:
+                for (i, p) in enumerate(pips):
+                    pip.uninstall(p, self.distro)
+                    p_bar.update(i + 1)
 
     def _uninstall_python(self):
         pylisting = self.tracereader.py_listing()

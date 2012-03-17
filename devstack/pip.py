@@ -41,17 +41,16 @@ def install(pip, distro):
     sh.execute(*real_cmd, run_as_root=True)
 
 
-def uninstall_batch(pips, distro, skip_errors=True):
-    names = set([p['name'] for p in pips])
+def uninstall(pip, distro, skip_errors=True):
     root_cmd = distro.get_command('pip')
-    for name in names:
-        try:
-            LOG.debug("Uninstalling python package (%s)" % (name))
-            cmd = [root_cmd, 'uninstall'] + PIP_UNINSTALL_CMD_OPTS + [str(name)]
-            sh.execute(*cmd, run_as_root=True)
-        except excp.ProcessExecutionError:
-            if skip_errors:
-                LOG.warn(("Ignoring execution error that occured when uninstalling pip %s!"
-                    " (this may be ok if it was uninstalled by a previous component)") % (name))
-            else:
-                raise
+    name = pip['name']
+    try:
+        LOG.audit("Uninstalling python package (%s) using pip command (%s)" % (name))
+        cmd = [root_cmd, 'uninstall'] + PIP_UNINSTALL_CMD_OPTS + [str(name)]
+        sh.execute(*cmd, run_as_root=True)
+    except excp.ProcessExecutionError:
+        if skip_errors:
+            LOG.debug(("Ignoring execution error that occured when uninstalling pip %s!"
+                " (this may be ok if it was uninstalled by a previous component)") % (name))
+        else:
+            raise
