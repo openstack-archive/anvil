@@ -57,8 +57,7 @@ APP_OPTIONS = {
     'melange-server': ['--config-file', '%CFG_FILE%'],
 }
 
-# Special option that specifies we should make the network cidr using melange
-CREATE_CIDR = "create-cidr"
+# Wait time before we try to init melanges cidr (waiting for the server to start...)
 WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
 
 
@@ -156,11 +155,12 @@ class MelangeRuntime(comp.PythonRuntime):
         pmap['CFG_FILE'] = sh.joinpths(self.cfg_dir, ROOT_CONF_REAL_NAME)
         return pmap
 
+    def known_options(self):
+        return set(["create-cidr"])
+
     def post_start(self):
         comp.PythonRuntime.post_start(self)
-        # FIXME: This is a bit of a hack. How do we document "flags" like this?
-        flags = []
-        if CREATE_CIDR in flags:
+        if "create-cidr" in self.options:
             LOG.info("Waiting %s seconds so that the melange server can start up before cidr range creation." % (WAIT_ONLINE_TO))
             sh.sleep(WAIT_ONLINE_TO)
             mp = dict()

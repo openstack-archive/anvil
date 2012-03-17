@@ -150,18 +150,6 @@ def import_module(module_name, quiet=True):
             raise
 
 
-def load_json(fn):
-    data = sh.load_file(fn)
-    lines = data.splitlines()
-    new_lines = list()
-    for line in lines:
-        if line.lstrip().startswith('#'):
-            continue
-        new_lines.append(line)
-    data = joinlinesep(*new_lines)
-    return json.loads(data)
-
-
 def versionize(input_version):
     segments = input_version.split(".")
     cleaned_segments = list()
@@ -270,16 +258,6 @@ def format_secs_taken(secs):
 
 def joinlinesep(*pieces):
     return os.linesep.join(pieces)
-
-
-def service_enabled(name, components, empty_true=True):
-    if not components and empty_true:
-        return True
-    if not components:
-        return False
-    if name in components:
-        return True
-    return False
 
 
 def param_replace_list(values, replacements, ignore_missing=False):

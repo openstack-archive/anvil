@@ -109,6 +109,9 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         self._sync_db()
         self._setup_initer()
 
+    def known_options(self):
+        return set(['swift', 'quantum'])
+
     def _sync_db(self):
         LOG.info("Syncing keystone to database named %s.", DB_NAME)
         params = dict()
@@ -154,14 +157,13 @@ class KeystoneInstaller(comp.PythonInstallComponent):
                     self.tracewriter.file_touched(sh.touch_file(log_filename))
         elif name == CATALOG_CONF:
             nlines = list()
-            if utils.service_enabled(settings.SWIFT, self.instances):
+            if 'swift' in self.options:
                 mp = dict()
                 mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
                 nlines.append("# Swift additions")
                 nlines.extend(utils.param_replace_list(SWIFT_TEMPL_ADDS, mp))
                 nlines.append("")
-            if utils.service_enabled(settings.QUANTUM, self.instances) or \
-                    utils.service_enabled(settings.QUANTUM_CLIENT, self.instances):
+            if 'quantum' in self.options:
                 mp = dict()
                 mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
                 nlines.append("# Quantum additions")

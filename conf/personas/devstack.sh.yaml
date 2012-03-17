@@ -13,7 +13,11 @@ components:
 - nova-client
 - horizon
 description: Devstack.sh matching component installation.
-options: null
+options:
+    no-vnc:
+        nova: nova
+    nova:
+    - no-vnc
 subsystems:
     glance:
     - api

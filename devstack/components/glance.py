@@ -187,7 +187,6 @@ class GlanceRuntime(comp.PythonRuntime):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
-        self.options = kargs.get('options', set())
 
     def known_subsystems(self):
         return SUB_TO_APP.keys()
@@ -203,6 +202,9 @@ class GlanceRuntime(comp.PythonRuntime):
 
     def _get_app_options(self, app):
         return APP_OPTIONS.get(app)
+
+    def known_options(self):
+        return set(['no-load-images'])
 
     def post_start(self):
         comp.PythonRuntime.post_start(self)

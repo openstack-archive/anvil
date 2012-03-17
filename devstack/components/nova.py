@@ -272,6 +272,9 @@ class NovaInstaller(comp.PythonInstallComponent):
         if NXVNC in self.desired_subsystems:
             self.xvnc_enabled = True
 
+    def known_options(self):
+        return set(['no-vnc', 'quantum', 'melange'])
+
     def known_subsystems(self):
         return SUBSYSTEMS
 
@@ -408,7 +411,7 @@ class NovaRuntime(comp.PythonRuntime):
             # If still there, run it
             # these environment additions are important
             # in that they eventually affect how this script runs
-            if utils.service_enabled(settings.QUANTUM, self.instances, False):
+            if 'quantum' in self.options:
                 LOG.info("Waiting %s seconds so that quantum can start up before running first time init." % (WAIT_ONLINE_TO))
                 sh.sleep(WAIT_ONLINE_TO)
             env = dict()
@@ -421,6 +424,9 @@ class NovaRuntime(comp.PythonRuntime):
 
     def post_start(self):
         self._setup_network_init()
+
+    def known_options(self):
+        return set(['quantum'])
 
     def known_subsystems(self):
         return SUBSYSTEMS
@@ -545,7 +551,8 @@ class NovaConfConfigurator(object):
         self.cfg_dir = ni.cfg_dir
         self.xvnc_enabled = ni.xvnc_enabled
         self.volumes_enabled = ni.volumes_enabled
-        self.novnc_enabled = utils.service_enabled(settings.NOVNC, self.instances)
+        self.options = ni.options
+        self.novnc_enabled = 'no-vnc' in self.options
 
     def _getbool(self, name):
         return self.cfg.getboolean('nova', name)
@@ -737,7 +744,7 @@ class NovaConfConfigurator(object):
 
     def _configure_network_settings(self, nova_conf):
         # TODO this might not be right....
-        if utils.service_enabled(settings.QUANTUM, self.instances, False):
+        if 'quantum' in self.options:
             nova_conf.add('network_manager', QUANTUM_MANAGER)
             hostip = self.cfg.get('host', 'ip')
             nova_conf.add('quantum_connection_host', self.cfg.getdefaulted('quantum', 'q_host', hostip))
@@ -745,7 +752,7 @@ class NovaConfConfigurator(object):
             if self.cfg.get('quantum', 'q_plugin') == 'openvswitch':
                 for (key, value) in QUANTUM_OPENSWITCH_OPS.items():
                     nova_conf.add(key, value)
-            if utils.service_enabled(settings.MELANGE_CLIENT, self.instances, False):
+            if 'melange' in self.options:
                 nova_conf.add('quantum_ipam_lib', QUANTUM_IPAM_LIB)
                 nova_conf.add('use_melange_mac_generation', True)
                 nova_conf.add('melange_host', self.cfg.getdefaulted('melange', 'm_host', hostip))

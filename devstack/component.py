@@ -60,6 +60,7 @@ class ComponentBase(object):
                  runner,
                  component_dir,
                  all_instances,
+                 options,
                  name,
                  *args,
                  **kargs):
@@ -68,6 +69,7 @@ class ComponentBase(object):
         self.instances = all_instances
         self.component_name = name
         self.subsystem_info = subsystem_info
+        self.options = options
 
         # The runner has a reference to us, so use a weakref here to
         # avoid breaking garbage collection.
@@ -97,16 +99,22 @@ class ComponentBase(object):
         for s in self.subsystem_info.keys():
             if s not in knowns:
                 raise ValueError("Unknown subsystem %r provided" % (s))
+        known_options = self.known_options()
+        for s in self.options:
+            if s not in known_options:
+                LOG.warning("Unknown option %r provided" % (s))
 
     def known_subsystems(self):
-        return list()
+        return set()
+
+    def known_options(self):
+        return set()
 
     def warm_configs(self):
         pass
 
     def is_started(self):
-        reader = tr.TraceReader(tr.trace_fn(self.trace_dir, tr.START_TRACE))
-        return reader.exists()
+        return tr.TraceReader(tr.trace_fn(self.trace_dir, tr.START_TRACE))
 
     def is_installed(self):
         return tr.TraceReader(tr.trace_fn(self.trace_dir, tr.IN_TRACE)).exists()
