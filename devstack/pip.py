@@ -24,18 +24,21 @@ PIP_UNINSTALL_CMD_OPTS = ['-y', '-q']
 PIP_INSTALL_CMD_OPTS = ['-q']
 
 
+def _make_pip_name(name, version):
+    if version is None:
+        return str(name)
+    return "%s==%s" % (name, version)
+
+
 def install(pip, distro):
     name = pip['name']
     root_cmd = distro.get_command('pip')
     LOG.audit("Installing python package (%s) using pip command (%s)" % (name, root_cmd))
-    name_full = name
-    version = pip.get('version')
-    if version is not None:
-        name_full += "==" + str(version)
+    name_full = _make_pip_name(name, pip.get('version'))
     real_cmd = [root_cmd, 'install'] + PIP_INSTALL_CMD_OPTS
     options = pip.get('options')
-    if options is not None:
-        LOG.debug("Using pip options: %s" % (str(options)))
+    if options:
+        LOG.debug("Using pip options: %s" % (options))
         real_cmd += [str(options)]
     real_cmd += [name_full]
     sh.execute(*real_cmd, run_as_root=True)
@@ -43,10 +46,11 @@ def install(pip, distro):
 
 def uninstall(pip, distro, skip_errors=True):
     root_cmd = distro.get_command('pip')
-    name = pip['name']
     try:
-        LOG.audit("Uninstalling python package (%s) using pip command (%s)" % (name))
-        cmd = [root_cmd, 'uninstall'] + PIP_UNINSTALL_CMD_OPTS + [str(name)]
+        # Versions don't seem to matter here...
+        name = _make_pip_name(pip['name'], None)
+        LOG.audit("Uninstalling python package (%s) using pip command (%s)" % (name, root_cmd))
+        cmd = [root_cmd, 'uninstall'] + PIP_UNINSTALL_CMD_OPTS + [name]
         sh.execute(*cmd, run_as_root=True)
     except excp.ProcessExecutionError:
         if skip_errors:
