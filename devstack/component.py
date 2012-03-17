@@ -95,14 +95,17 @@ class ComponentBase(object):
         knowns = self.known_subsystems()
         for s in self.desired_subsystems:
             if s not in knowns:
-                raise ValueError("Unknown subsystem %r requested for %r" % (s, self))
+                raise ValueError("Unknown subsystem %r requested for (%s)" % (s, self))
         for s in self.subsystem_info.keys():
             if s not in knowns:
-                raise ValueError("Unknown subsystem %r provided for %r" % (s, self))
+                raise ValueError("Unknown subsystem %r provided for (%s)" % (s, self))
         known_options = self.known_options()
         for s in self.options:
             if s not in known_options:
-                LOG.warning("Unknown option %r provided for %r" % (s, self))
+                LOG.warning("Unknown option %r provided for (%s)" % (s, self))
+
+    def __str__(self):
+        return "%r: %s" % (self.__class__.__name__, self.component_name)
 
     def known_subsystems(self):
         return set()
