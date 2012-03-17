@@ -95,16 +95,6 @@ commands:
         - mysql
         - stop
     pip: pip
-    tgt:
-        restart:
-        -   cmd:
-            - stop
-            - tgt
-            run_as_root: true
-        -   cmd:
-            - start
-            - tgt
-            run_as_root: true
 components:
     db:
         install: devstack.distros.oneiric:DBInstaller
