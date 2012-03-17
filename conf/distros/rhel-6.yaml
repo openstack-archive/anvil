@@ -57,7 +57,7 @@ commands:
             FLUSH PRIVILEGES;"'
         restart:
         - service
-        - mysql
+        - mysqld
         - restart
         set_pwd:
         - mysql
