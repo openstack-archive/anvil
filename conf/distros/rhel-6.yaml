@@ -68,7 +68,7 @@ commands:
         - service
         - mysql
         - stop
-    pip: python-pip
+    pip: pip-python
 components:
     db:
         install: devstack.distros.rhel6:DBInstaller
