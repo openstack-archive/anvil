@@ -24,6 +24,16 @@ commands:
         - service
         - httpd
         - stop
+    libvirt:
+        restart:
+        - service
+        - libvirtd
+        - restart
+        status:
+        - service
+        - libvirtd
+        - status
+    libvirt-daemon: libvirtd
     mysql:
         # NOTE: we aren't stopping any sql injection...
         create_db:
