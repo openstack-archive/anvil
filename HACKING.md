@@ -32,8 +32,8 @@ This will suffice until a more *official* documentation site can be made.
 * Please also attempt to run [pylint] all code submitted.
  * ``./run_tests.sh  -l``
 
-* Please also attempt to run the json validation all changes to pip/pkgs json files submitted.
- * ``./run_tests.sh  -j``
+* Please also attempt to run the yaml validation if you adjust any yaml files in the `conf` directory.
+ * ``./run_tests.sh  -y``
 
 ## Tests
 
