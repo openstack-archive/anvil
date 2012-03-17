@@ -161,14 +161,16 @@ class PkgInstallComponent(ComponentBase):
                 msg = "No uri entry found at config location [%s]" % \
                     (cfg_helpers.make_id(cfg_section, cfg_key))
                 raise excp.ConfigException(msg)
+            # Activate da download!
             self.tracewriter.download_happened(target_loc, uri)
-            dirs_made = down.download(target_loc, uri, branch)
+            dirs_made = down.download(uri, target_loc, branch=branch)
             # Here we ensure this is always added so that
             # if a keep old happens then this of course
             # won't be recreated, but if u uninstall without keeping old
             # then this won't be deleted this time around
             # adding it in is harmless and will make sure its removed.
-            dirs_made.append(target_loc)
+            if target_loc not in dirs_made:
+                dirs_made.append(target_loc)
             self.tracewriter.dirs_made(*dirs_made)
         return len(locations)
 

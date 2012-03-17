@@ -19,12 +19,13 @@ import json
 import os
 import tarfile
 import tempfile
-import urllib
 import urllib2
 
+from devstack import downloader as down
 from devstack import log
 from devstack import shell
 from devstack import utils
+
 from devstack.components import keystone
 
 
@@ -61,27 +62,9 @@ class Image(object):
         self.initrd_id = ''
         self.tmp_folder = None
         self.registry = ImageRegistry(token)
-        self.last_report = 0
-
-    def _format_progress(self, curr_size, total_size):
-        if curr_size > total_size:
-            curr_size = total_size
-        progress = ("%d" % (curr_size)) + "b"
-        progress += "/"
-        progress += ("%d" % (total_size)) + "b"
-        perc_done = "%.02f" % (((curr_size) / (float(total_size)) * 100.0)) + "%"
-        return "[%s](%s)" % (progress, perc_done)
-
-    def _report(self, blocks, block_size, size):
-        downloaded = blocks * block_size
-        if (downloaded - self.last_report) > Image.REPORTSIZE:
-            progress = self._format_progress((blocks * block_size), size)
-            LOG.info('Download progress: %s', progress)
-            self.last_report = downloaded
 
     def _download(self):
-        LOG.info('Downloading %s to %s', self.url, self.download_file_name)
-        urllib.urlretrieve(self.url, self.download_file_name, self._report)
+        return down.download(self.url, self.download_file_name)
 
     def _unpack(self):
         parts = self.download_name.split('.')
