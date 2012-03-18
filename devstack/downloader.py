@@ -15,9 +15,7 @@
 #    under the License.
 
 
-import re
 import urllib
-import urlparse
 
 import progressbar
 
@@ -26,16 +24,11 @@ from devstack import shell as sh
 
 LOG = logging.getLogger("devstack.downloader")
 
-# Git commands/subcommands/how we know if using git (scheme matching)
-GIT_SCHEMES = ['git']
-GIT_EXT_REG = re.compile(r"^(.*?)\.git\s*$", re.IGNORECASE)
+# Git commands/subcommands
 GIT_MASTER_BRANCH = "master"
 CLONE_CMD = ["git", "clone"]
 CHECKOUT_CMD = ['git', 'checkout']
 PULL_CMD = ['git', 'pull']
-
-# Schemes we will attempt to use urllib to download
-URLLIB_SCHEMES = ['http', 'ftp', 'file']
 
 
 class Downloader(object):
@@ -105,26 +98,9 @@ class UrlLibDownloader(Downloader):
 
     def download(self):
         LOG.info('Downloading using urllib: %r to %r', self.uri, self.store_where)
-        dirsmade = sh.mkdirslist(sh.dirname(self.store_where))
         try:
             urllib.urlretrieve(self.uri, self.store_where, self._report)
         finally:
             if self.p_bar:
                 self.p_bar.finish()
                 self.p_bar = None
-        return dirsmade
-
-
-def download(uri, storewhere, **kargs):
-    downloader_cls = None
-    uri_pieces = urlparse.urlparse(uri)
-    canon_scheme = uri_pieces.scheme.lower()
-    if canon_scheme in GIT_SCHEMES or GIT_EXT_REG.match(uri_pieces.path):
-        downloader_cls = GitDownloader
-    elif canon_scheme in URLLIB_SCHEMES:
-        downloader_cls = UrlLibDownloader
-    if not downloader_cls:
-        msg = "Currently we do not know how to download from uri: %r" % (uri)
-        raise NotImplementedError(msg)
-    downloader = downloader_cls(uri, storewhere, **kargs)
-    return downloader.download()

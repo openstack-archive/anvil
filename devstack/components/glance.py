@@ -25,7 +25,7 @@ from devstack import shell as sh
 from devstack.components import db
 from devstack.components import keystone
 
-from devstack.image import creator
+from devstack.image import uploader
 
 LOG = logging.getLogger("devstack.components.glance")
 
@@ -215,4 +215,4 @@ class GlanceRuntime(comp.PythonRuntime):
             # TODO: make this less cheesy - need to wait till glance goes online
             LOG.info("Waiting %s seconds so that glance can start up before image install." % (WAIT_ONLINE_TO))
             sh.sleep(WAIT_ONLINE_TO)
-            creator.ImageCreationService(self.cfg, self.pw_gen).install()
+            uploader.Service(self.cfg, self.pw_gen).install()

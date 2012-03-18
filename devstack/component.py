@@ -163,7 +163,7 @@ class PkgInstallComponent(ComponentBase):
                 raise excp.ConfigException(msg)
             # Activate da download!
             self.tracewriter.download_happened(target_loc, uri)
-            dirs_made = down.download(uri, target_loc, branch=branch)
+            dirs_made = self._do_download(uri, target_loc, branch)
             # Here we ensure this is always added so that
             # if a keep old happens then this of course
             # won't be recreated, but if u uninstall without keeping old
@@ -173,6 +173,10 @@ class PkgInstallComponent(ComponentBase):
                 dirs_made.append(target_loc)
             self.tracewriter.dirs_made(*dirs_made)
         return len(locations)
+
+    def _do_download(self, uri, target_dir, branch):
+        downloader = down.GitDownloader(uri, target_dir, branch)
+        return downloader.download()
 
     def _get_param_map(self, config_fn):
         return dict()
