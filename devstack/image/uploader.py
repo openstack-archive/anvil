@@ -215,7 +215,7 @@ class Image(object):
                 continue
             LOG.debug("Checking if you already have an image named %r" % (name))
             if self._registry.has_image(name):
-                LOG.warn("You already 'seem' to have image named %r, skipping that install..." % (name))
+                LOG.warn("You already 'seem' to have image named %r, skipping its install..." % (name))
                 found_name = True
                 break
         if not found_name:
@@ -226,8 +226,11 @@ class Image(object):
                 locations = Unpacker().unpack(url_fn, fetch_fn, tdir)
                 tgt_image_name = self._generate_img_name(url_fn)
                 self._register(tgt_image_name, locations)
+                return tgt_image_name
             finally:
                 sh.deldir(tdir)
+        else:
+            return None
 
 
 class Registry:
@@ -345,8 +348,10 @@ class Service:
             token = self._get_token()
             for url in urls:
                 try:
-                    Image(url, token).install()
-                    am_installed += 1
+                    name = Image(url, token).install()
+                    if name:
+                        LOG.info("Installed image named %r" % (name))
+                        am_installed += 1
                 except (IOError, tarfile.TarError) as e:
                     LOG.exception('Installing %r failed due to: %s', url, e)
         return am_installed

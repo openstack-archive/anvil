@@ -21,7 +21,6 @@ from urlparse import urlunparse
 from devstack import cfg
 from devstack import component as comp
 from devstack import log as logging
-from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 
@@ -62,9 +61,6 @@ APP_OPTIONS = {
                 '--log-config=' + sh.joinpths('%ROOT%', CONFIG_DIR, 'logging.cnf')]
 }
 
-
-# Used to wait until started before we can run the data setup script
-WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
 
 # Swift template additions
 # TODO: get rid of these
@@ -206,6 +202,7 @@ class KeystoneRuntime(comp.PythonRuntime):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
+        self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
 
     def post_start(self):
         tgt_fn = sh.joinpths(self.bin_dir, MANAGE_DATA_CONF)
@@ -213,8 +210,8 @@ class KeystoneRuntime(comp.PythonRuntime):
             # If its still there, run it
             # these environment additions are important
             # in that they eventually affect how this script runs
-            LOG.info("Waiting %s seconds so that keystone can start up before running first time init." % (WAIT_ONLINE_TO))
-            sh.sleep(WAIT_ONLINE_TO)
+            LOG.info("Waiting %s seconds so that keystone can start up before running first time init." % (self.wait_time))
+            sh.sleep(self.wait_time)
             env = dict()
             env['ENABLED_SERVICES'] = ",".join(self.instances.keys())
             env['BIN_DIR'] = self.bin_dir

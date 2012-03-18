@@ -24,9 +24,6 @@ PROG_NICE_NAME = "DEVSTACKpy"
 IPV4 = 'IPv4'
 IPV6 = 'IPv6'
 
-# How long to wait for a service to startup
-WAIT_ALIVE_SECS = 5
-
 # Different run types supported
 RUN_TYPE_FORK = "FORK"
 RUN_TYPE_UPSTART = "UPSTART"

@@ -18,7 +18,6 @@ from tempfile import TemporaryFile
 
 from devstack import component as comp
 from devstack import log as logging
-from devstack import settings
 from devstack import shell as sh
 
 LOG = logging.getLogger("devstack.components.rabbit")
@@ -32,9 +31,6 @@ PWD_CMD = ['rabbitmqctl', 'change_password', 'guest']
 
 # Default password (guest)
 RESET_BASE_PW = ''
-
-# How long we wait for rabbitmq to start up before doing commands on it
-WAIT_ON_TIME = settings.WAIT_ALIVE_SECS
 
 # Config keys we warm up so u won't be prompted later
 WARMUP_PWS = ['rabbit']
@@ -85,6 +81,7 @@ class RabbitInstaller(comp.PkgInstallComponent):
 class RabbitRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
         comp.EmptyRuntime.__init__(self, *args, **kargs)
+        self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
 
     def start(self):
         if self.status() != comp.STATUS_STARTED:
@@ -132,8 +129,8 @@ class RabbitRuntime(comp.EmptyRuntime):
     def restart(self):
         LOG.info("Restarting rabbit-mq.")
         self._run_cmd(RESTART_CMD)
-        LOG.info("Please wait %s seconds while it starts up." % (WAIT_ON_TIME))
-        sh.sleep(WAIT_ON_TIME)
+        LOG.info("Please wait %s seconds while it starts up." % (self.wait_time))
+        sh.sleep(self.wait_time)
         return 1
 
     def stop(self):

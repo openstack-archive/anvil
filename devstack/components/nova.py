@@ -21,7 +21,6 @@ from devstack import date
 from devstack import exceptions
 from devstack import libvirt as virsh
 from devstack import log as logging
-from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 
@@ -198,9 +197,6 @@ STD_COMPUTE_EXTS = 'nova.api.openstack.compute.contrib.standard_extensions'
 
 # Config keys we warm up so u won't be prompted later
 WARMUP_PWS = [('rabbit', rabbit.PW_USER_PROMPT)]
-
-# Used to wait until started before we can run the data setup script
-WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
 
 # Nova conf default section
 NV_CONF_DEF_SECTION = "[DEFAULT]"
@@ -403,6 +399,7 @@ class NovaRuntime(comp.PythonRuntime):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
+        self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
 
     def _setup_network_init(self):
         tgt_fn = sh.joinpths(self.bin_dir, NET_INIT_CONF)
@@ -412,8 +409,8 @@ class NovaRuntime(comp.PythonRuntime):
             # these environment additions are important
             # in that they eventually affect how this script runs
             if 'quantum' in self.options:
-                LOG.info("Waiting %s seconds so that quantum can start up before running first time init." % (WAIT_ONLINE_TO))
-                sh.sleep(WAIT_ONLINE_TO)
+                LOG.info("Waiting %s seconds so that quantum can start up before running first time init." % (self.wait_time))
+                sh.sleep(self.wait_time)
             env = dict()
             env['ENABLED_SERVICES'] = ",".join(self.instances.keys())
             setup_cmd = NET_INIT_CMD_ROOT + [tgt_fn]
