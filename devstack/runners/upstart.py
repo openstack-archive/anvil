@@ -63,7 +63,7 @@ class UpstartRunner(base.RunnerBase):
         if component_event in self.events:
             LOG.debug("Already emitted event: %s" % (component_event))
         else:
-            LOG.info("About to emit event: %s" % (component_event))
+            LOG.debug("About to emit event: %s" % (component_event))
             cmd = EMIT_BASE_CMD + [component_event]
             sh.execute(*cmd, run_as_root=True)
             self.events.add(component_event)
@@ -104,7 +104,7 @@ class UpstartRunner(base.RunnerBase):
         # https://bugs.launchpad.net/upstart/+bug/665022
         cfg_fn = sh.joinpths(CONF_ROOT, app_name + CONF_EXT)
         if sh.isfile(cfg_fn):
-            LOG.info("Upstart config file already exists: %s" % (cfg_fn))
+            LOG.debug("Upstart config file already exists: %s" % (cfg_fn))
             return
         LOG.debug("Loading upstart template to be used by: %s" % (cfg_fn))
         (_, contents) = utils.load_template('general', UPSTART_CONF_TMPL)
@@ -125,7 +125,7 @@ class UpstartRunner(base.RunnerBase):
         if component_event in self.events:
             LOG.debug("Already emitted event: %s" % (component_event))
         else:
-            LOG.info("About to emit event: %s" % (component_event))
+            LOG.debug("About to emit event: %s" % (component_event))
             cmd = EMIT_BASE_CMD + [component_event]
             sh.execute(*cmd, run_as_root=True)
             self.events.add(component_event)

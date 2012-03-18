@@ -97,7 +97,7 @@ class ScreenRunner(base.RunnerBase):
         mp = dict()
         mp['SESSION_NAME'] = session_id
         mp['NAME'] = app_name
-        LOG.info("Stopping program running in session [%s] in window named [%s]." % (session_id, app_name))
+        LOG.debug("Stopping program running in session [%s] in window named [%s]." % (session_id, app_name))
         kill_cmd = self._gen_cmd(CMD_KILL, mp)
         sh.execute(*kill_cmd,
                 shell=True,
@@ -155,13 +155,13 @@ class ScreenRunner(base.RunnerBase):
         return sessions[0]
 
     def _do_screen_init(self):
-        LOG.info("Creating a new screen session named [%s]" % (SESSION_NAME))
+        LOG.debug("Creating a new screen session named [%s]" % (SESSION_NAME))
         session_init_cmd = self._gen_cmd(SESSION_INIT)
         sh.execute(*session_init_cmd,
                 shell=True,
                 run_as_root=ROOT_GO,
                 env_overrides=self._get_env())
-        LOG.info("Waiting %s seconds before we attempt to set the title bar for that session." % (WAIT_ONLINE_TO))
+        LOG.debug("Waiting %s seconds before we attempt to set the title bar for that session." % (WAIT_ONLINE_TO))
         time.sleep(WAIT_ONLINE_TO)
         bar_init_cmd = self._gen_cmd(BAR_INIT)
         sh.execute(*bar_init_cmd,
@@ -177,12 +177,12 @@ class ScreenRunner(base.RunnerBase):
         mp['NAME'] = prog_name
         mp['CMD'] = run_cmd
         init_cmd = self._gen_cmd(CMD_INIT, mp)
-        LOG.info("Creating a new screen window named [%s] in session [%s]" % (prog_name, session))
+        LOG.debug("Creating a new screen window named [%s] in session [%s]" % (prog_name, session))
         sh.execute(*init_cmd,
             shell=True,
             run_as_root=ROOT_GO,
             env_overrides=self._get_env())
-        LOG.info("Waiting %s seconds before we attempt to run command [%s] in that window." % (WAIT_ONLINE_TO, run_cmd))
+        LOG.debug("Waiting %s seconds before we attempt to run command [%s] in that window." % (WAIT_ONLINE_TO, run_cmd))
         time.sleep(WAIT_ONLINE_TO)
         start_cmd = self._gen_cmd(CMD_START, mp)
         sh.execute(*start_cmd,

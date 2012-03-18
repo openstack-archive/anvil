@@ -367,7 +367,6 @@ class PkgUninstallComponent(ComponentBase):
 
     def _unconfigure_runners(self):
         if RUNNER_CLS_MAPPING:
-            LOG.info("Unconfiguring %s runners.", len(RUNNER_CLS_MAPPING))
             for (_, cls) in RUNNER_CLS_MAPPING.items():
                 instance = cls(self.cfg, self.component_name, self.trace_dir)
                 instance.unconfigure()
@@ -505,10 +504,10 @@ class ProgramRuntime(ComponentBase):
                 self._get_param_map(app_name),
                 )
             # Configure it with the given settings
-            LOG.info("Configuring runner for program [%s]", app_name)
+            LOG.debug("Configuring runner for program [%s]", app_name)
             cfg_am = instance.configure(app_name,
                                         (app_pth, app_dir, program_opts))
-            LOG.info("Configured %s files for runner for program [%s]",
+            LOG.debug("Configured %s files for runner for program [%s]",
                      cfg_am, app_name)
             tot_am += cfg_am
         return tot_am
@@ -528,12 +527,12 @@ class ProgramRuntime(ComponentBase):
                 self._get_param_map(app_name),
                 )
             # Start it with the given settings
-            LOG.info("Starting [%s] with options [%s]",
+            LOG.debug("Starting [%s] with options [%s]",
                      app_name, ", ".join(program_opts))
             info_fn = instance.start(app_name,
                                      (app_pth, app_dir, program_opts),
                                      )
-            LOG.info("Started [%s] details are in [%s]", app_name, info_fn)
+            LOG.debug("Started [%s] details are in [%s]", app_name, info_fn)
             # This trace is used to locate details about what to stop
             self.tracewriter.started_info(app_name, info_fn)
             am_started += 1
