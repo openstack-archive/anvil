@@ -150,7 +150,7 @@ class Image(object):
         initrd = locations.get('ramdisk')
         initrd_id = None
         if initrd:
-            LOG.info('Adding ramdisk %s to glance.', initrd)
+            LOG.info('Adding ramdisk %r to glance.', initrd)
             params = {'TOKEN': self.token, 'IMAGE_NAME': image_name}
             cmd = {'cmd': INITRD_ADD}
             with open(initrd, 'r') as fh:
@@ -164,7 +164,7 @@ class Image(object):
         # Upload the root, we must have one...
         img_id = None
         root_image = locations['image']
-        LOG.info('Adding image %s to glance.', root_image)
+        LOG.info('Adding image %r to glance.', root_image)
         params = {'TOKEN': self.token, 'IMAGE_NAME': image_name,
                   'KERNEL_ID': kernel_id, 'INITRD_ID': initrd_id}
         cmd = {'cmd': IMAGE_ADD}
