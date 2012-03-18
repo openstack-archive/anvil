@@ -121,7 +121,7 @@ class ComponentBase(object):
         pass
 
     def is_started(self):
-        return tr.TraceReader(tr.trace_fn(self.trace_dir, tr.START_TRACE))
+        return tr.TraceReader(tr.trace_fn(self.trace_dir, tr.START_TRACE)).exists()
 
     def is_installed(self):
         return tr.TraceReader(tr.trace_fn(self.trace_dir, tr.IN_TRACE)).exists()
