@@ -101,7 +101,7 @@ class Unpacker(object):
         if kernel_fn:
             locations['kernel'] = sh.joinpths(extract_dir, kernel_fn)
         if ramdisk_fn:
-            locations['ramdisk'] = sh.joinpths(extract_dir, kernel_fn)
+            locations['ramdisk'] = sh.joinpths(extract_dir, ramdisk_fn)
         locations['image'] = sh.joinpths(extract_dir, root_img_fn)
         return locations
 
