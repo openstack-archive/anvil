@@ -133,7 +133,7 @@ class Image(object):
 
         # Upload the kernel, if we have one
         kernel = locations.get('kernel')
-        kernel_id = None
+        kernel_id = ''
         if kernel:
             LOG.info('Adding kernel %r to glance.', kernel)
             params = {'TOKEN': self.token, 'IMAGE_NAME': image_name}
@@ -148,7 +148,7 @@ class Image(object):
 
         # Upload the ramdisk, if we have one
         initrd = locations.get('ramdisk')
-        initrd_id = None
+        initrd_id = ''
         if initrd:
             LOG.info('Adding ramdisk %r to glance.', initrd)
             params = {'TOKEN': self.token, 'IMAGE_NAME': image_name}
@@ -162,7 +162,7 @@ class Image(object):
                 initrd_id = stdout.split(':')[1].strip()
 
         # Upload the root, we must have one...
-        img_id = None
+        img_id = ''
         root_image = locations['image']
         LOG.info('Adding image %r to glance.', root_image)
         params = {'TOKEN': self.token, 'IMAGE_NAME': image_name,
