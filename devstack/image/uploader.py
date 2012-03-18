@@ -94,7 +94,7 @@ class Unpacker(object):
             raise RuntimeError(msg)
         extract_dir = sh.joinpths(tmp_dir, root_name)
         sh.mkdir(extract_dir)
-        LOG.info("Extracting to %r", extract_dir)
+        LOG.info("Extracting %r to %r", file_location, extract_dir)
         with contextlib.closing(tarfile.open(file_location, 'r')) as tfh:
             tfh.extractall(extract_dir)
         locations = dict()
