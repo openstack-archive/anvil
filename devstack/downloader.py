@@ -43,9 +43,9 @@ class Downloader(object):
 
 class GitDownloader(Downloader):
 
-    def __init__(self, uri, store_where, **kargs):
+    def __init__(self, uri, store_where, branch):
         Downloader.__init__(self, uri, store_where)
-        self.branch = kargs.get('branch')
+        self.branch = branch
 
     def download(self):
         dirsmade = list()
