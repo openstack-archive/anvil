@@ -75,7 +75,7 @@ class Unpacker(object):
         kernel_fn = None
         ramdisk_fn = None
         root_img_fn = None
-        with contextlib.closing(tarfile.open(file_location)) as tfh:
+        with contextlib.closing(tarfile.open(file_location, 'r')) as tfh:
             for tmemb in tfh.getmembers():
                 fn = tmemb.name
                 if KERNEL_FN_MATCH.match(fn):
@@ -95,7 +95,7 @@ class Unpacker(object):
         extract_dir = sh.joinpths(tmp_dir, root_name)
         sh.mkdir(extract_dir)
         LOG.info("Extracting to %r", extract_dir)
-        with contextlib.closing(tarfile.open(file_location)) as tfh:
+        with contextlib.closing(tarfile.open(file_location, 'r')) as tfh:
             tfh.extractall(extract_dir)
         locations = dict()
         if kernel_fn:
@@ -138,7 +138,7 @@ class Image(object):
             LOG.info('Adding kernel %r to glance.', kernel)
             params = {'TOKEN': self.token, 'IMAGE_NAME': image_name}
             cmd = {'cmd': KERNEL_ADD}
-            with open(kernel) as fh:
+            with open(kernel, 'r') as fh:
                 res = utils.execute_template(cmd,
                     params=params, stdin_fh=fh,
                     close_stdin=True)
@@ -153,7 +153,7 @@ class Image(object):
             LOG.info('Adding ramdisk %s to glance.', initrd)
             params = {'TOKEN': self.token, 'IMAGE_NAME': image_name}
             cmd = {'cmd': INITRD_ADD}
-            with open(initrd) as fh:
+            with open(initrd, 'r') as fh:
                 res = utils.execute_template(cmd,
                     params=params, stdin_fh=fh,
                     close_stdin=True)
@@ -168,7 +168,7 @@ class Image(object):
         params = {'TOKEN': self.token, 'IMAGE_NAME': image_name,
                   'KERNEL_ID': kernel_id, 'INITRD_ID': initrd_id}
         cmd = {'cmd': IMAGE_ADD}
-        with open(root_image) as fh:
+        with open(root_image, 'r') as fh:
             res = utils.execute_template(cmd,
                 params=params, stdin_fh=fh,
                 close_stdin=True)
