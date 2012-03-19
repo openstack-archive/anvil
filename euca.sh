@@ -4,7 +4,7 @@
 
 # Create EC2 credentials for the current user as defined by OS_TENANT_NAME:OS_USERNAME
 
-set -x
+ME=`basename $0`
 
 if [[ -n "$1" ]]; then
     USERNAME=$1
@@ -15,11 +15,21 @@ if [[ -n "$2" ]]; then
 fi
 
 # Find the other rc files
-RC_DIR=../
 CORE_RC="os-core.rc"
+GEN_CMD="stack -a install"
+
+if [ ! -f $CORE_RC ];
+then
+    echo "File '$CORE_RC' needed before running '$ME'"
+    echo "Please run './$GEN_CMD' to get this file."
+    exit 1
+fi
+
+# Now we start showing whats happening
+set -x
 
 # Get user configuration
-source $RC_DIR/$CORE_RC
+source $CORE_RC
 
 # Set the ec2 url so euca2ools works
 export EC2_URL=$(keystone catalog --service ec2 | awk '/ publicURL / { print $4 }')
