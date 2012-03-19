@@ -30,7 +30,16 @@ commands:
     drop_db: ['mysql', '--user=%USER%', '--password=%PASSWORD%', '-e', 'DROP DATABASE IF EXISTS %DB%;']
     grant_all: ["mysql", "--user=%USER%", "--password=%PASSWORD%", '-e', 
                 "\"GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' IDENTIFIED BY '%PASSWORD%'; FLUSH PRIVILEGES;\""]
-
+  git:
+    checkout:
+      - git
+      - checkout
+    clone:
+      - git
+      - clone
+    pull:
+      - git
+      - pull
   libvirt:
     restart: ['service', 'libvirtd', 'restart']
     status: ['service', 'libvirtd', 'status']
