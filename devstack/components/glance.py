@@ -19,13 +19,12 @@ import io
 from devstack import cfg
 from devstack import component as comp
 from devstack import log as logging
-from devstack import settings
 from devstack import shell as sh
 
 from devstack.components import db
 from devstack.components import keystone
 
-from devstack.image import creator
+from devstack.image import uploader
 
 LOG = logging.getLogger("devstack.components.glance")
 
@@ -52,9 +51,6 @@ GSCR = 'scrub'
 
 # This db will be dropped and created
 DB_NAME = "glance"
-
-# How long to wait before attempting image upload
-WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
 
 # What applications to start
 APP_OPTIONS = {
@@ -187,7 +183,7 @@ class GlanceRuntime(comp.PythonRuntime):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
-        self.options = kargs.get('options', set())
+        self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
 
     def known_subsystems(self):
         return SUB_TO_APP.keys()
@@ -204,6 +200,9 @@ class GlanceRuntime(comp.PythonRuntime):
     def _get_app_options(self, app):
         return APP_OPTIONS.get(app)
 
+    def known_options(self):
+        return set(['no-load-images'])
+
     def post_start(self):
         comp.PythonRuntime.post_start(self)
         if 'no-load-images' in self.options:
@@ -211,6 +210,6 @@ class GlanceRuntime(comp.PythonRuntime):
         else:
             # Install any images that need activating...
             # TODO: make this less cheesy - need to wait till glance goes online
-            LOG.info("Waiting %s seconds so that glance can start up before image install." % (WAIT_ONLINE_TO))
-            sh.sleep(WAIT_ONLINE_TO)
-            creator.ImageCreationService(self.cfg, self.pw_gen).install()
+            LOG.info("Waiting %s seconds so that glance can start up before image install." % (self.wait_time))
+            sh.sleep(self.wait_time)
+            uploader.Service(self.cfg, self.pw_gen).install()

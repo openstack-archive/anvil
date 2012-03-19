@@ -56,8 +56,9 @@ def parse():
         action="store",
         type="string",
         dest="persona_fn",
+        default='conf/personas/devstack.sh.yaml',
         metavar="FILE",
-        help="required persona yaml file to apply")
+        help="required persona yaml file to apply (default: %default)")
     base_group.add_option("-a", "--action",
         action="store",
         type="string",

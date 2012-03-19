@@ -57,28 +57,19 @@ class AptPackager(pack.Packager):
             env_overrides=ENV_ADDITIONS,
             **kargs)
 
-    def _remove_batch(self, pkgs):
-        cmds = []
-        which_removed = []
-        for info in pkgs:
-            name = info['name']
-            removable = info.get('removable', True)
-            if not removable:
-                continue
-            if self._remove_special(name, info):
-                which_removed.append(name)
-                continue
-            pkg_full = self._format_pkg_name(name, info.get("version"))
-            if pkg_full:
-                cmds.append(pkg_full)
-                which_removed.append(name)
-        if cmds:
-            cmd = APT_DO_REMOVE + cmds
-            self._execute_apt(cmd)
-        if which_removed and self.auto_remove:
-            cmd = APT_AUTOREMOVE
-            self._execute_apt(cmd)
-        return which_removed
+    def _remove(self, pkg):
+        removable = pkg.get('removable', True)
+        if not removable:
+            return False
+        name = pkg['name']
+        if self._remove_special(name, pkg):
+            return True
+        pkg_full = self._format_pkg_name(name, pkg.get("version"))
+        cmd = APT_DO_REMOVE + [pkg_full]
+        self._execute_apt(cmd)
+        if self.auto_remove:
+            self._execute_apt(APT_AUTOREMOVE)
+        return True
 
     def install(self, pkg):
         name = pkg['name']
@@ -86,9 +77,8 @@ class AptPackager(pack.Packager):
             return
         else:
             pkg_full = self._format_pkg_name(name, pkg.get("version"))
-            if pkg_full:
-                cmd = APT_INSTALL + [pkg_full]
-                self._execute_apt(cmd)
+            cmd = APT_INSTALL + [pkg_full]
+            self._execute_apt(cmd)
 
     def _remove_special(self, name, info):
         return False

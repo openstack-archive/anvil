@@ -17,14 +17,17 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import distutils.version
-import json
-import netifaces
+import contextlib
 import os
 import random
 import re
 import socket
 import sys
+import tempfile
+
+import distutils.version
+import netifaces
+import progressbar
 import termcolor
 
 from devstack import colorlog
@@ -139,6 +142,37 @@ def to_bytes(text):
     return byte_val
 
 
+@contextlib.contextmanager
+def progress_bar(name, max_am, reverse=False):
+    widgets = list()
+    widgets.append('%s: ' % (name))
+    widgets.append(progressbar.Percentage())
+    widgets.append(' ')
+    if reverse:
+        widgets.append(progressbar.ReverseBar())
+    else:
+        widgets.append(progressbar.Bar())
+    widgets.append(' ')
+    widgets.append(progressbar.ETA())
+    p_bar = progressbar.ProgressBar(maxval=max_am, widgets=widgets)
+    p_bar.start()
+    try:
+        yield p_bar
+    finally:
+        p_bar.finish()
+
+
+@contextlib.contextmanager
+def tempdir():
+    # This seems like it was only added in python 3.2
+    # Make it since its useful...
+    tdir = tempfile.mkdtemp()
+    try:
+        yield tdir
+    finally:
+        sh.deldir(tdir)
+
+
 def import_module(module_name, quiet=True):
     try:
         __import__(module_name)
@@ -148,18 +182,6 @@ def import_module(module_name, quiet=True):
             return None
         else:
             raise
-
-
-def load_json(fn):
-    data = sh.load_file(fn)
-    lines = data.splitlines()
-    new_lines = list()
-    for line in lines:
-        if line.lstrip().startswith('#'):
-            continue
-        new_lines.append(line)
-    data = joinlinesep(*new_lines)
-    return json.loads(data)
 
 
 def versionize(input_version):
@@ -270,16 +292,6 @@ def format_secs_taken(secs):
 
 def joinlinesep(*pieces):
     return os.linesep.join(pieces)
-
-
-def service_enabled(name, components, empty_true=True):
-    if not components and empty_true:
-        return True
-    if not components:
-        return False
-    if name in components:
-        return True
-    return False
 
 
 def param_replace_list(values, replacements, ignore_missing=False):

@@ -19,7 +19,6 @@ import io
 from devstack import cfg
 from devstack import component as comp
 from devstack import log as logging
-from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 
@@ -56,10 +55,6 @@ CIDR_CREATE_CMD = [
 APP_OPTIONS = {
     'melange-server': ['--config-file', '%CFG_FILE%'],
 }
-
-# Special option that specifies we should make the network cidr using melange
-CREATE_CIDR = "create-cidr"
-WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
 
 
 class MelangeUninstaller(comp.PythonUninstallComponent):
@@ -138,6 +133,7 @@ class MelangeRuntime(comp.PythonRuntime):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
         self.cfg_dir = sh.joinpths(self.app_dir, *CFG_LOC)
+        self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
 
     def _get_apps_to_start(self):
         apps = list()
@@ -156,13 +152,14 @@ class MelangeRuntime(comp.PythonRuntime):
         pmap['CFG_FILE'] = sh.joinpths(self.cfg_dir, ROOT_CONF_REAL_NAME)
         return pmap
 
+    def known_options(self):
+        return set(["create-cidr"])
+
     def post_start(self):
         comp.PythonRuntime.post_start(self)
-        # FIXME: This is a bit of a hack. How do we document "flags" like this?
-        flags = []
-        if CREATE_CIDR in flags:
-            LOG.info("Waiting %s seconds so that the melange server can start up before cidr range creation." % (WAIT_ONLINE_TO))
-            sh.sleep(WAIT_ONLINE_TO)
+        if "create-cidr" in self.options:
+            LOG.info("Waiting %s seconds so that the melange server can start up before cidr range creation." % (self.wait_time))
+            sh.sleep(self.wait_time)
             mp = dict()
             mp['CIDR_RANGE'] = self.cfg.getdefaulted('melange', 'm_mac_range', DEF_CIDR_RANGE)
             utils.execute_template(*CIDR_CREATE_CMD, params=mp)
