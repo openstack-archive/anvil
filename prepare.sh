@@ -21,7 +21,7 @@ if [[ `cat /etc/issue | grep -i "ubuntu"` ]] ; then
     echo "Installing pypi packages: $PIPS"
     $PIP install netifaces termcolor
     echo "DEVSTACKpy for ubuntu is ready to rock & roll."
-elif [[ `cat /etc/issue | grep -i "red hat.*release.*6.*"` ]] ; then
+elif [[ `cat /etc/issue | grep -i "red hat enterprise.*release.*6.*"` ]] ; then
     EPEL_RPM="epel-release-6-5.noarch.rpm"
     PKGS="python-pip gcc python-netifaces git python-pep8 pylint python-progressbar python"
     PIPS="termcolor pyyaml"
@@ -53,7 +53,7 @@ elif [[ `cat /etc/issue | grep -i "fedora.*release.*16"` ]] ; then
     $PIP install $PIPS
     echo "DEVSTACKpy for Fedora 16 is ready to rock & roll."
 else
-    echo "DEVSTACKpy '$ME' is being ran on an unknown distrobution."
+    echo "DEVSTACKpy '$ME' is being ran on an unknown distribution."
     echo "Please update '$URL' when you get it to run. Much appreciated!"
 fi
 
