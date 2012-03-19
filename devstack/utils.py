@@ -17,12 +17,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import contextlib
 import os
 import random
 import re
 import socket
 import sys
-import contextlib
+import tempfile
 
 import distutils.version
 import netifaces
@@ -159,6 +160,17 @@ def progress_bar(name, max_am, reverse=False):
         yield p_bar
     finally:
         p_bar.finish()
+
+
+@contextlib.contextmanager
+def tempdir():
+    # This seems like it was only added in python 3.2
+    # Make it since its useful...
+    tdir = tempfile.mkdtemp()
+    try:
+        yield tdir
+    finally:
+        sh.deldir(tdir)
 
 
 def import_module(module_name, quiet=True):

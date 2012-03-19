@@ -19,7 +19,6 @@ import json
 import os
 import re
 import tarfile
-import tempfile
 import urllib2
 import urlparse
 
@@ -219,16 +218,13 @@ class Image(object):
                 found_name = True
                 break
         if not found_name:
-            tdir = tempfile.mkdtemp()
-            try:
+            with utils.tempdir() as tdir:
                 fetch_fn = sh.joinpths(tdir, url_fn)
                 down.UrlLibDownloader(self.url, fetch_fn).download()
                 locations = Unpacker().unpack(url_fn, fetch_fn, tdir)
                 tgt_image_name = self._generate_img_name(url_fn)
                 self._register(tgt_image_name, locations)
                 return tgt_image_name
-            finally:
-                sh.deldir(tdir)
         else:
             return None
 
