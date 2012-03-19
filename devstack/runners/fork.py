@@ -181,7 +181,7 @@ class ForkRunner(base.RunnerBase):
         trace_info[STDOUT_FN] = stdoutfn
         trace_info[ARGS] = json.dumps(program_args)
         tracefn = self._do_trace(fn_name, trace_info)
-        LOG.info("Forking [%s] by running command [%s]" % (app_name, program))
+        LOG.debug("Forking [%s] by running command [%s]" % (app_name, program))
         with sh.Rooted(ROOT_GO):
             self._fork_start(program, appdir, pidfile, stdoutfn, stderrfn, *program_args)
         return tracefn

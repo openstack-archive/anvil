@@ -5,6 +5,7 @@
 netifaces
 termcolor
 pyyaml # reading data files
+progressbar 
 
 # Testing
 nose # for test discovery and console feedback

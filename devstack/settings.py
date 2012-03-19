@@ -24,39 +24,6 @@ PROG_NICE_NAME = "DEVSTACKpy"
 IPV4 = 'IPv4'
 IPV6 = 'IPv6'
 
-# How long to wait for a service to startup
-WAIT_ALIVE_SECS = 5
-
-# Component names
-# FIXME: move?? remove??
-NOVA = "nova"
-NOVA_CLIENT = 'nova-client'
-GLANCE = "glance"
-QUANTUM = "quantum-server"
-QUANTUM_CLIENT = 'quantum-client'
-SWIFT = "swift"
-HORIZON = "horizon"
-KEYSTONE = "keystone"
-KEYSTONE_CLIENT = 'keystone-client'
-DB = "db"
-RABBIT = "rabbit"
-NOVNC = 'no-vnc'
-XVNC = 'xvnc'
-MELANGE = 'melange'
-MELANGE_CLIENT = 'melange-client'
-COMPONENT_NAMES = [
-    NOVA, NOVA_CLIENT,
-    GLANCE,
-    QUANTUM, QUANTUM_CLIENT,
-    SWIFT,
-    HORIZON,
-    KEYSTONE, KEYSTONE_CLIENT,
-    DB,
-    RABBIT,
-    NOVNC,
-    MELANGE, MELANGE_CLIENT,
-]
-
 # Different run types supported
 RUN_TYPE_FORK = "FORK"
 RUN_TYPE_UPSTART = "UPSTART"

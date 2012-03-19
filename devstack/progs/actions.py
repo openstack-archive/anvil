@@ -163,12 +163,12 @@ class ActionRunner(object):
             cls_kvs = dict()
             cls_kvs['runner'] = self
             cls_kvs['component_dir'] = sh.joinpths(root_dir, c)
-            cls_kvs['subsystem_info'] = my_info.pop('subsystems', dict())
+            cls_kvs['subsystem_info'] = my_info.get('subsystems') or dict()
             cls_kvs['all_instances'] = instances
             cls_kvs['name'] = c
             cls_kvs['keep_old'] = self.keep_old
-            cls_kvs['desired_subsystems'] = set(desired_subsystems.get(c, list()))
-            cls_kvs['options'] = set(component_opts.get(c, list()))
+            cls_kvs['desired_subsystems'] = desired_subsystems.get(c) or set()
+            cls_kvs['options'] = component_opts.get(c) or dict()
             # The above is not overrideable...
             for (k, v) in my_info.items():
                 if k not in cls_kvs:

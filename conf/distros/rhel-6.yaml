@@ -24,6 +24,16 @@ commands:
         - service
         - httpd
         - stop
+    git:
+        checkout:
+          - git
+          - checkout
+        clone:
+          - git
+          - clone
+        pull:
+          - git
+          - pull
     libvirt:
         restart:
         - service

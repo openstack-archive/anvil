@@ -17,7 +17,6 @@
 from devstack import component as comp
 from devstack import exceptions as excp
 from devstack import log as logging
-from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 
@@ -75,20 +74,28 @@ class HorizonInstaller(comp.PythonInstallComponent):
         })
         return places
 
+    def known_options(self):
+        return set(['quantum-client'])
+
     def verify(self):
         comp.PythonInstallComponent.verify(self)
         self._check_ug()
 
     def _get_symlinks(self):
         links = comp.PythonInstallComponent._get_symlinks(self)
-        src = self._get_target_config_name(HORIZON_APACHE_CONF)
-        links[src] = self.distro.get_command('apache', 'settings', 'conf-link-target')
-        if utils.service_enabled(settings.QUANTUM_CLIENT, self.instances, False):
-            # TODO remove this junk, blah, puke that we have to do this
-            qc = self.instances[settings.QUANTUM_CLIENT]
-            src_pth = sh.joinpths(qc.app_dir, 'quantum')
-            tgt_dir = sh.joinpths(self.dash_dir, 'quantum')
-            links[src_pth] = tgt_dir
+        link_tgt = self.distro.get_command('apache', 'settings',
+                                            'conf-link-target', quiet=True)
+        if link_tgt:
+            src = self._get_target_config_name(HORIZON_APACHE_CONF)
+            links[src] = link_tgt
+        if 'quantum-client' in self.options:
+            q_name = self.options['quantum-client']
+            if q_name in self.instances:
+                # TODO remove this junk, blah, puke that we have to do this
+                qc = self.instances[q_name]
+                src_pth = sh.joinpths(qc.app_dir, 'quantum')
+                tgt_dir = sh.joinpths(self.dash_dir, 'quantum')
+                links[src_pth] = tgt_dir
         return links
 
     def _check_ug(self):
@@ -100,7 +107,9 @@ class HorizonInstaller(comp.PythonInstallComponent):
             msg = "No group named %s exists on this system!" % (group)
             raise excp.ConfigException(msg)
         if user in BAD_APACHE_USERS:
-            msg = "You may want to adjust your configuration, (user=%s, group=%s) will not work with apache!" % (user, group)
+            msg = ("You may want to adjust your configuration, "
+                    "(user=%s, group=%s) will not work with apache!"
+                    % (user, group))
             raise excp.ConfigException(msg)
 
     def _get_target_config_name(self, config_name):
@@ -226,9 +235,11 @@ class HorizonRuntime(comp.EmptyRuntime):
         (sysout, stderr) = run_result[0]
         combined = str(sysout) + str(stderr)
         combined = combined.lower()
-        if sysout.find("is running") != -1:
+        if combined.find("is running") != -1:
             return comp.STATUS_STARTED
-        elif sysout.find("not running") != -1 or sysout.find("stopped") != -1:
+        elif combined.find("not running") != -1 or \
+             combined.find("stopped") != -1 or \
+             combined.find('unrecognized') != -1:
             return comp.STATUS_STOPPED
         else:
             return comp.STATUS_UNKNOWN

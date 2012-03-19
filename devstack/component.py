@@ -52,6 +52,10 @@ RUNNER_CLS_MAPPING = {
 # Where symlinks will go
 BASE_LINK_DIR = "/etc"
 
+# Progress bar titles
+UNINSTALL_TITLE = 'Uninstalling'
+INSTALL_TITLE = 'Installing'
+
 
 class ComponentBase(object):
     def __init__(self,
@@ -60,6 +64,7 @@ class ComponentBase(object):
                  runner,
                  component_dir,
                  all_instances,
+                 options,
                  name,
                  *args,
                  **kargs):
@@ -68,6 +73,7 @@ class ComponentBase(object):
         self.instances = all_instances
         self.component_name = name
         self.subsystem_info = subsystem_info
+        self.options = options
 
         # The runner has a reference to us, so use a weakref here to
         # avoid breaking garbage collection.
@@ -93,20 +99,29 @@ class ComponentBase(object):
         knowns = self.known_subsystems()
         for s in self.desired_subsystems:
             if s not in knowns:
-                raise ValueError("Unknown subsystem %r requested" % (s))
+                raise ValueError("Unknown subsystem %r requested for (%s)" % (s, self))
         for s in self.subsystem_info.keys():
             if s not in knowns:
-                raise ValueError("Unknown subsystem %r provided" % (s))
+                raise ValueError("Unknown subsystem %r provided for (%s)" % (s, self))
+        known_options = self.known_options()
+        for s in self.options:
+            if s not in known_options:
+                LOG.warning("Unknown option %r provided for (%s)" % (s, self))
+
+    def __str__(self):
+        return "%r: %s" % (self.__class__.__name__, self.component_name)
 
     def known_subsystems(self):
-        return list()
+        return set()
+
+    def known_options(self):
+        return set()
 
     def warm_configs(self):
         pass
 
     def is_started(self):
-        reader = tr.TraceReader(tr.trace_fn(self.trace_dir, tr.START_TRACE))
-        return reader.exists()
+        return tr.TraceReader(tr.trace_fn(self.trace_dir, tr.START_TRACE)).exists()
 
     def is_installed(self):
         return tr.TraceReader(tr.trace_fn(self.trace_dir, tr.IN_TRACE)).exists()
@@ -146,16 +161,21 @@ class PkgInstallComponent(ComponentBase):
                 msg = "No uri entry found at config location [%s]" % \
                     (cfg_helpers.make_id(cfg_section, cfg_key))
                 raise excp.ConfigException(msg)
+            # Activate da download!
             self.tracewriter.download_happened(target_loc, uri)
-            dirs_made = down.download(target_loc, uri, branch)
+            dirs_made = self._do_download(uri, target_loc, branch)
             # Here we ensure this is always added so that
             # if a keep old happens then this of course
             # won't be recreated, but if u uninstall without keeping old
             # then this won't be deleted this time around
             # adding it in is harmless and will make sure its removed.
-            dirs_made.append(target_loc)
+            if target_loc not in dirs_made:
+                dirs_made.append(target_loc)
             self.tracewriter.dirs_made(*dirs_made)
         return len(locations)
+
+    def _do_download(self, uri, target_dir, branch):
+        return down.GitDownloader(self.distro, uri, target_dir, branch).download()
 
     def _get_param_map(self, config_fn):
         return dict()
@@ -177,9 +197,11 @@ class PkgInstallComponent(ComponentBase):
         if pkgs:
             pkg_names = set([p['name'] for p in pkgs])
             LOG.info("Setting up %s packages (%s)" % (len(pkg_names), ", ".join(pkg_names)))
-            for p in pkgs:
-                self.tracewriter.package_installed(p)
-                self.packager.install(p)
+            with utils.progress_bar(INSTALL_TITLE, len(pkgs)) as p_bar:
+                for (i, p) in enumerate(pkgs):
+                    self.tracewriter.package_installed(p)
+                    self.packager.install(p)
+                    p_bar.update(i + 1)
         else:
             LOG.info('No packages to install for %s',
                      self.component_name)
@@ -287,9 +309,11 @@ class PythonInstallComponent(PkgInstallComponent):
         if pips:
             pip_names = set([p['name'] for p in pips])
             LOG.info("Setting up %s pips (%s)", len(pip_names), ", ".join(pip_names))
-            for p in pips:
-                self.tracewriter.pip_installed(p)
-                pip.install(p, self.distro)
+            with utils.progress_bar(INSTALL_TITLE, len(pips)) as p_bar:
+                for (i, p) in enumerate(pips):
+                    self.tracewriter.pip_installed(p)
+                    pip.install(p, self.distro)
+                    p_bar.update(i + 1)
 
     def _install_python_setups(self):
         pydirs = self._get_python_directories()
@@ -342,7 +366,6 @@ class PkgUninstallComponent(ComponentBase):
 
     def _unconfigure_runners(self):
         if RUNNER_CLS_MAPPING:
-            LOG.info("Unconfiguring %s runners.", len(RUNNER_CLS_MAPPING))
             for (_, cls) in RUNNER_CLS_MAPPING.items():
                 instance = cls(self.cfg, self.component_name, self.trace_dir)
                 instance.unconfigure()
@@ -375,12 +398,17 @@ class PkgUninstallComponent(ComponentBase):
         pass
 
     def _uninstall_pkgs(self):
-        pkgsfull = self.tracereader.packages_installed()
-        if pkgsfull:
-            pkg_names = set([p['name'] for p in pkgsfull])
+        pkgs = self.tracereader.packages_installed()
+        if pkgs:
+            pkg_names = set([p['name'] for p in pkgs])
             LOG.info("Potentially removing %s packages (%s)",
                      len(pkg_names), ", ".join(pkg_names))
-            which_removed = self.packager.remove_batch(pkgsfull)
+            which_removed = set()
+            with utils.progress_bar(UNINSTALL_TITLE, len(pkgs), reverse=True) as p_bar:
+                for (i, p) in enumerate(pkgs):
+                    if self.packager.remove(p):
+                        which_removed.add(p['name'])
+                    p_bar.update(i + 1)
             LOG.info("Actually removed %s packages (%s)",
                      len(which_removed), ", ".join(which_removed))
 
@@ -423,7 +451,10 @@ class PythonUninstallComponent(PkgUninstallComponent):
         if pips:
             names = set([p['name'] for p in pips])
             LOG.info("Uninstalling %s python packages (%s)" % (len(names), ", ".join(names)))
-            pip.uninstall_batch(pips, self.distro)
+            with utils.progress_bar(UNINSTALL_TITLE, len(pips), reverse=True) as p_bar:
+                for (i, p) in enumerate(pips):
+                    pip.uninstall(p, self.distro)
+                    p_bar.update(i + 1)
 
     def _uninstall_python(self):
         pylisting = self.tracereader.py_listing()
@@ -472,10 +503,10 @@ class ProgramRuntime(ComponentBase):
                 self._get_param_map(app_name),
                 )
             # Configure it with the given settings
-            LOG.info("Configuring runner for program [%s]", app_name)
+            LOG.debug("Configuring runner for program [%s]", app_name)
             cfg_am = instance.configure(app_name,
                                         (app_pth, app_dir, program_opts))
-            LOG.info("Configured %s files for runner for program [%s]",
+            LOG.debug("Configured %s files for runner for program [%s]",
                      cfg_am, app_name)
             tot_am += cfg_am
         return tot_am
@@ -495,12 +526,12 @@ class ProgramRuntime(ComponentBase):
                 self._get_param_map(app_name),
                 )
             # Start it with the given settings
-            LOG.info("Starting [%s] with options [%s]",
+            LOG.debug("Starting [%s] with options [%s]",
                      app_name, ", ".join(program_opts))
             info_fn = instance.start(app_name,
                                      (app_pth, app_dir, program_opts),
                                      )
-            LOG.info("Started [%s] details are in [%s]", app_name, info_fn)
+            LOG.debug("Started [%s] details are in [%s]", app_name, info_fn)
             # This trace is used to locate details about what to stop
             self.tracewriter.started_info(app_name, info_fn)
             am_started += 1

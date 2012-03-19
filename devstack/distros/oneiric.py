@@ -52,7 +52,7 @@ class AptPackager(apt.AptPackager):
         if name == 'rabbitmq-server':
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
-            LOG.info("Handling special remove of %s." % (name))
+            LOG.debug("Handling special remove of %s." % (name))
             pkg_full = self._format_pkg_name(name, info.get("version"))
             cmd = apt.APT_REMOVE + [pkg_full]
             self._execute_apt(cmd)
@@ -68,7 +68,7 @@ class AptPackager(apt.AptPackager):
         if name == 'rabbitmq-server':
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
             #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
-            LOG.info("Handling special install of %s." % (name))
+            LOG.debug("Handling special install of %s." % (name))
             #this seems to be a temporary fix for that bug
             with tempfile.TemporaryFile() as f:
                 pkg_full = self._format_pkg_name(name, info.get("version"))

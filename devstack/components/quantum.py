@@ -19,7 +19,6 @@ import io
 from devstack import cfg
 from devstack import component as comp
 from devstack import log as logging
-from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 
@@ -85,6 +84,9 @@ class QuantumInstaller(comp.PkgInstallComponent):
         })
         return places
 
+    def known_options(self):
+        return set(['no-ovs-db-init', 'no-ovs-bridge-init'])
+
     def _get_config_files(self):
         return list(CONFIG_FILES)
 
@@ -133,30 +135,32 @@ class QuantumInstaller(comp.PkgInstallComponent):
             return comp.PkgInstallComponent._config_adjust(self, contents, config_fn)
 
     def _setup_bridge(self):
+        if not self.q_vswitch_agent or \
+                'no-ovs-bridge-init' in self.options:
+            return
         bridge = self.cfg.getdefaulted("quantum", "ovs_bridge", 'br-int')
-        if bridge:
-            LOG.info("Fixing up ovs bridge named %s.", bridge)
-            external_id = self.cfg.getdefaulted("quantum", 'ovs_bridge_external_name', bridge)
-            params = dict()
-            params['OVS_BRIDGE'] = bridge
-            params['OVS_EXTERNAL_ID'] = external_id
-            cmds = list()
-            for cmd_templ in OVS_BRIDGE_CMDS:
-                cmds.append({
-                    'cmd': cmd_templ,
-                    'run_as_root': True,
-                })
-            if cmds:
-                utils.execute_template(*cmds, params=params)
+        LOG.info("Fixing up ovs bridge named %s.", bridge)
+        external_id = self.cfg.getdefaulted("quantum", 'ovs_bridge_external_name', bridge)
+        params = dict()
+        params['OVS_BRIDGE'] = bridge
+        params['OVS_EXTERNAL_ID'] = external_id
+        cmds = list()
+        for cmd_templ in OVS_BRIDGE_CMDS:
+            cmds.append({
+                'cmd': cmd_templ,
+                'run_as_root': True,
+            })
+        utils.execute_template(*cmds, params=params)
 
     def post_install(self):
         comp.PkgInstallComponent.post_install(self)
-        if self.q_vswitch_service and utils.service_enabled(settings.DB, self.instances, False):
-            self._setup_db()
-        if self.q_vswitch_agent:
-            self._setup_bridge()
+        self._setup_db()
+        self._setup_bridge()
 
     def _setup_db(self):
+        if not self.q_vswitch_service or \
+                'no-ovs-db-init' in self.options:
+            return
         LOG.info("Fixing up database named %s.", DB_NAME)
         db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
         db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME)

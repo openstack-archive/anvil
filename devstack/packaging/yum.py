@@ -58,25 +58,19 @@ class YumPackager(pack.Packager):
         if self._install_special(name, pkg):
             return
         else:
-            full_pkg_name = self._format_pkg_name(name, pkg.get("version"))
-            cmd = YUM_INSTALL + [full_pkg_name]
+            pkg_full = self._format_pkg_name(name, pkg.get("version"))
+            cmd = YUM_INSTALL + [pkg_full]
             self._execute_yum(cmd)
 
-    def _remove_batch(self, pkgs):
-        pkg_full_names = []
-        which_removed = []
-        for info in pkgs:
-            name = info['name']
-            removable = info.get('removable', True)
-            if not removable:
-                continue
-            if self._remove_special(name, info):
-                which_removed.append(name)
-            else:
-                full_pkg_name = self._format_pkg_name(name, info.get("version"))
-                pkg_full_names.append(full_pkg_name)
-                which_removed.append(name)
-        if pkg_full_names:
-            cmd = YUM_REMOVE + pkg_full_names
+    def _remove(self, pkg):
+        removable = pkg.get('removable', True)
+        if not removable:
+            return False
+        name = pkg['name']
+        if self._remove_special(name, pkg):
+            return True
+        else:
+            pkg_full = self._format_pkg_name(name, pkg.get("version"))
+            cmd = YUM_REMOVE + [pkg_full]
             self._execute_yum(cmd)
-        return which_removed
+            return True

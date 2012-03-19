@@ -17,16 +17,12 @@
 from devstack import component as comp
 from devstack import exceptions as excp
 from devstack import log as logging
-from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 
 import abc
 
 LOG = logging.getLogger("devstack.components.db")
-
-# How long we wait before using the database after a restart
-START_WAIT_TIME = settings.WAIT_ALIVE_SECS
 
 # Need to reset pw to blank since this distributions don't seem to
 # always reset it when u uninstall the db
@@ -158,6 +154,7 @@ class DBInstaller(comp.PkgInstallComponent):
 class DBRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
         comp.EmptyRuntime.__init__(self, *args, **kargs)
+        self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
 
     def _get_run_actions(self, act, exception_cls):
         dbtype = self.cfg.get("db", "type")
@@ -173,8 +170,8 @@ class DBRuntime(comp.EmptyRuntime):
             sh.execute(*startcmd,
                 run_as_root=True,
                 check_exit_code=True)
-            LOG.info("Please wait %s seconds while it starts up." % START_WAIT_TIME)
-            sh.sleep(START_WAIT_TIME)
+            LOG.info("Please wait %s seconds while it starts up." % self.wait_time)
+            sh.sleep(self.wait_time)
             return 1
         else:
             return 0
@@ -195,8 +192,8 @@ class DBRuntime(comp.EmptyRuntime):
         sh.execute(*restartcmd,
                         run_as_root=True,
                         check_exit_code=True)
-        LOG.info("Please wait %s seconds while it restarts." % START_WAIT_TIME)
-        sh.sleep(START_WAIT_TIME)
+        LOG.info("Please wait %s seconds while it restarts." % self.wait_time)
+        sh.sleep(self.wait_time)
         return 1
 
     def status(self):
@@ -211,7 +208,8 @@ class DBRuntime(comp.EmptyRuntime):
         combined = combined.lower()
         if combined.find("running") != -1:
             return comp.STATUS_STARTED
-        elif combined.find("stop") != -1:
+        elif combined.find("stop") != -1 or \
+             combined.find('unrecognized') != -1:
             return comp.STATUS_STOPPED
         else:
             return comp.STATUS_UNKNOWN

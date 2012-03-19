@@ -16,7 +16,6 @@
 
 from devstack import exceptions as excp
 from devstack import log as logging
-from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 
@@ -42,7 +41,8 @@ _DEAD = 'DEAD'
 _ALIVE = 'ALIVE'
 
 # Alive wait time, just a sleep we put into so that the service can start up
-WAIT_ALIVE_TIME = settings.WAIT_ALIVE_SECS
+# FIXME: take from config...
+WAIT_ALIVE_TIME = 5
 
 
 def _get_virt_lib():

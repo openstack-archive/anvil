@@ -17,7 +17,6 @@
 import json
 import re
 import tempfile
-import time
 
 from devstack import date
 from devstack import exceptions as excp
@@ -62,9 +61,6 @@ SCREEN_KILLER = ['screen', '-X', '-S', '%SCREEN_ID%', 'quit']
 SCREEN_SOCKET_DIR_NAME = "devstack-screen-sockets"
 SCREEN_SOCKET_PERM = 0700
 
-# Used to wait until started before we can run the actual start cmd
-WAIT_ONLINE_TO = settings.WAIT_ALIVE_SECS
-
 # Run screen as root?
 ROOT_GO = True
 
@@ -76,6 +72,7 @@ class ScreenRunner(base.RunnerBase):
     def __init__(self, cfg, component_name, trace_dir):
         base.RunnerBase.__init__(self, cfg, component_name, trace_dir)
         self.socket_dir = sh.joinpths(tempfile.gettempdir(), SCREEN_SOCKET_DIR_NAME)
+        self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
 
     def stop(self, app_name):
         trace_fn = tr.trace_fn(self.trace_dir, SCREEN_TEMPL % (app_name))
@@ -97,7 +94,7 @@ class ScreenRunner(base.RunnerBase):
         mp = dict()
         mp['SESSION_NAME'] = session_id
         mp['NAME'] = app_name
-        LOG.info("Stopping program running in session [%s] in window named [%s]." % (session_id, app_name))
+        LOG.debug("Stopping program running in session [%s] in window named [%s]." % (session_id, app_name))
         kill_cmd = self._gen_cmd(CMD_KILL, mp)
         sh.execute(*kill_cmd,
                 shell=True,
@@ -155,14 +152,14 @@ class ScreenRunner(base.RunnerBase):
         return sessions[0]
 
     def _do_screen_init(self):
-        LOG.info("Creating a new screen session named [%s]" % (SESSION_NAME))
+        LOG.debug("Creating a new screen session named [%s]" % (SESSION_NAME))
         session_init_cmd = self._gen_cmd(SESSION_INIT)
         sh.execute(*session_init_cmd,
                 shell=True,
                 run_as_root=ROOT_GO,
                 env_overrides=self._get_env())
-        LOG.info("Waiting %s seconds before we attempt to set the title bar for that session." % (WAIT_ONLINE_TO))
-        time.sleep(WAIT_ONLINE_TO)
+        LOG.debug("Waiting %s seconds before we attempt to set the title bar for that session." % (self.wait_time))
+        sh.sleep(self.wait_time)
         bar_init_cmd = self._gen_cmd(BAR_INIT)
         sh.execute(*bar_init_cmd,
                 shell=True,
@@ -177,13 +174,13 @@ class ScreenRunner(base.RunnerBase):
         mp['NAME'] = prog_name
         mp['CMD'] = run_cmd
         init_cmd = self._gen_cmd(CMD_INIT, mp)
-        LOG.info("Creating a new screen window named [%s] in session [%s]" % (prog_name, session))
+        LOG.debug("Creating a new screen window named [%s] in session [%s]" % (prog_name, session))
         sh.execute(*init_cmd,
             shell=True,
             run_as_root=ROOT_GO,
             env_overrides=self._get_env())
-        LOG.info("Waiting %s seconds before we attempt to run command [%s] in that window." % (WAIT_ONLINE_TO, run_cmd))
-        time.sleep(WAIT_ONLINE_TO)
+        LOG.debug("Waiting %s seconds before we attempt to run command [%s] in that window." % (self.wait_time, run_cmd))
+        sh.sleep(self.wait_time)
         start_cmd = self._gen_cmd(CMD_START, mp)
         sh.execute(*start_cmd,
             shell=True,

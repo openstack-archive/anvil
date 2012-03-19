@@ -31,10 +31,11 @@ class Packager(object):
     def install(self, pkg):
         raise NotImplementedError()
 
-    def remove_batch(self, pkgs):
-        if not self.keep_packages:
-            return self._remove_batch(pkgs)
-        return list()
+    def remove(self, pkg):
+        if self.keep_packages:
+            return False
+        else:
+            return self._remove(pkg)
 
     def pre_install(self, pkgs, params=None):
         for info in pkgs:
@@ -52,5 +53,5 @@ class Packager(object):
                          info['name'])
                 utils.execute_template(*cmds, params=params)
 
-    def _remove_batch(self, pkgs):
+    def _remove(self, pkg):
         raise NotImplementedError()
