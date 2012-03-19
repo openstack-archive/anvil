@@ -49,7 +49,7 @@ class GitDownloader(Downloader):
         dirsmade = list()
         if sh.isdir(self.store_where):
             LOG.info("Updating using git: located at %r" % (self.store_where))
-            cmd = self.distro.get_command('git', 'checkout')
+            cmd = list(self.distro.get_command('git', 'checkout'))
             cmd += [GIT_MASTER_BRANCH]
             sh.execute(*cmd, cwd=self.store_where)
             cmd = self.distro.get_command('git', 'pull')
@@ -57,12 +57,12 @@ class GitDownloader(Downloader):
         else:
             LOG.info("Downloading using git: %r to %r" % (self.uri, self.store_where))
             dirsmade.extend(sh.mkdirslist(self.store_where))
-            cmd = self.distro.get_command('git', 'clone')
+            cmd = list(self.distro.get_command('git', 'clone'))
             cmd += [self.uri, self.store_where]
             sh.execute(*cmd)
         if self.branch and self.branch != GIT_MASTER_BRANCH:
             LOG.info("Adjusting branch using git: %r" % (self.branch))
-            cmd = self.distro.get_command('git', 'checkout')
+            cmd = list(self.distro.get_command('git', 'checkout'))
             cmd += [self.branch]
             sh.execute(*cmd, cwd=self.store_where)
         return dirsmade

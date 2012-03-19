@@ -91,6 +91,8 @@ class Distro(object):
         run_over_keys = acutal_keys[0:-1]
         end_key = acutal_keys[-1]
         quiet = kargs.get('quiet', False)
+        LOG.debug("Running over keys (%s)" % (", ".join(run_over_keys)))
+        LOG.debug("End key is (%s)" % (end_key))
         for k in run_over_keys:
             if quiet:
                 root = root.get(k)
@@ -98,10 +100,13 @@ class Distro(object):
                     return None
             else:
                 root = root[k]
+        end_value = None
         if not quiet:
-            return root[end_key]
+            end_value = root[end_key]
         else:
-            return root.get(end_key)
+            end_value = root.get(end_key)
+        LOG.debug("Retrieved end command: %s", end_value)
+        return end_value
 
     def known_component(self, name):
         return name in self._components
