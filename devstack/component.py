@@ -405,7 +405,7 @@ class PkgUninstallComponent(ComponentBase):
             LOG.info("Potentially removing %s packages (%s)",
                      len(pkg_names), ", ".join(pkg_names))
             which_removed = set()
-            with utils.progress_bar(UNINSTALL_TITLE, len(pkgs)) as p_bar:
+            with utils.progress_bar(UNINSTALL_TITLE, len(pkgs), reverse=True) as p_bar:
                 for (i, p) in enumerate(pkgs):
                     if self.packager.remove(p):
                         which_removed.add(p['name'])
@@ -452,7 +452,7 @@ class PythonUninstallComponent(PkgUninstallComponent):
         if pips:
             names = set([p['name'] for p in pips])
             LOG.info("Uninstalling %s python packages (%s)" % (len(names), ", ".join(names)))
-            with utils.progress_bar(UNINSTALL_TITLE, len(pips)) as p_bar:
+            with utils.progress_bar(UNINSTALL_TITLE, len(pips), reverse=True) as p_bar:
                 for (i, p) in enumerate(pips):
                     pip.uninstall(p, self.distro)
                     p_bar.update(i + 1)

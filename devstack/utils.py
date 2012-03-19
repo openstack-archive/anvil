@@ -142,12 +142,17 @@ def to_bytes(text):
 
 
 @contextlib.contextmanager
-def progress_bar(name, max_am):
-    widgets = [
-        '%s: ' % (name), progressbar.Percentage(),
-        ' ', progressbar.Bar(),
-        ' ', progressbar.ETA(),
-    ]
+def progress_bar(name, max_am, reverse=False):
+    widgets = list()
+    widgets.append('%s: ' % (name))
+    widgets.append(progressbar.Percentage())
+    widgets.append(' ')
+    if reverse:
+        widgets.append(progressbar.ReverseBar())
+    else:
+        widgets.append(progressbar.Bar())
+    widgets.append(' ')
+    widgets.append(progressbar.ETA())
     p_bar = progressbar.ProgressBar(maxval=max_am, widgets=widgets)
     p_bar.start()
     try:
