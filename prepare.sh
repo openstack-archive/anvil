@@ -10,7 +10,7 @@ URL="https://github.com/yahoo/Openstack-DevstackPy/wiki/Simple-Setup"
 ME=`basename $0`
 
 if [[ `cat /etc/issue | grep -i "ubuntu"` ]] ; then
-    PKGS="git python-pip python-dev python-yaml gcc pep8 pylint"
+    PKGS="git python-pip python-dev python-yaml gcc pep8 pylint python-progressbar python"
     PIPS="netifaces termcolor"
     APT="apt-get -y -qq"
     PIP="pip -q"
