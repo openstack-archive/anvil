@@ -23,6 +23,16 @@ commands:
         - service
         - apache2
         - stop
+    git:
+        checkout:
+          - git
+          - checkout
+        clone:
+          - git
+          - clone
+        pull:
+          - git
+          - pull
     iscsi:
         restart:
         - service

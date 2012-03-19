@@ -24,11 +24,8 @@ from devstack import shell as sh
 
 LOG = logging.getLogger("devstack.downloader")
 
-# Git commands/subcommands
+# Git master branch
 GIT_MASTER_BRANCH = "master"
-CLONE_CMD = ["git", "clone"]
-CHECKOUT_CMD = ['git', 'checkout']
-PULL_CMD = ['git', 'pull']
 
 
 class Downloader(object):
@@ -43,26 +40,30 @@ class Downloader(object):
 
 class GitDownloader(Downloader):
 
-    def __init__(self, uri, store_where, branch):
+    def __init__(self, distro, uri, store_where, branch):
         Downloader.__init__(self, uri, store_where)
         self.branch = branch
+        self.distro = distro
 
     def download(self):
         dirsmade = list()
         if sh.isdir(self.store_where):
             LOG.info("Updating using git: located at %r" % (self.store_where))
-            cmd = CHECKOUT_CMD + [GIT_MASTER_BRANCH]
+            cmd = self.distro.get_command('git', 'checkout')
+            cmd += [GIT_MASTER_BRANCH]
             sh.execute(*cmd, cwd=self.store_where)
-            cmd = PULL_CMD
+            cmd = self.distro.get_command('git', 'pull')
             sh.execute(*cmd, cwd=self.store_where)
         else:
             LOG.info("Downloading using git: %r to %r" % (self.uri, self.store_where))
             dirsmade.extend(sh.mkdirslist(self.store_where))
-            cmd = CLONE_CMD + [self.uri, self.store_where]
+            cmd = self.distro.get_command('git', 'clone')
+            cmd += [self.uri, self.store_where]
             sh.execute(*cmd)
         if self.branch and self.branch != GIT_MASTER_BRANCH:
             LOG.info("Adjusting branch using git: %r" % (self.branch))
-            cmd = CHECKOUT_CMD + [self.branch]
+            cmd = self.distro.get_command('git', 'checkout')
+            cmd += [self.branch]
             sh.execute(*cmd, cwd=self.store_where)
         return dirsmade
 

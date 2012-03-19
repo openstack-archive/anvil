@@ -175,8 +175,7 @@ class PkgInstallComponent(ComponentBase):
         return len(locations)
 
     def _do_download(self, uri, target_dir, branch):
-        downloader = down.GitDownloader(uri, target_dir, branch)
-        return downloader.download()
+        return down.GitDownloader(self.distro, uri, target_dir, branch).download()
 
     def _get_param_map(self, config_fn):
         return dict()
