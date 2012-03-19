@@ -32,19 +32,6 @@ LIBVIRT_PROTOCOL_MAP = {
 }
 VIRT_LIB = 'libvirt'
 
-# #distros name the libvirt service differently :-(
-# SV_NAME_MAP = {
-#     settings.RHEL6: 'libvirtd',
-#     settings.FEDORA16: 'libvirtd',
-#     settings.UBUNTU11: 'libvirt-bin',
-# }
-
-# #how libvirt is restarted
-# LIBVIRT_RESTART_CMD = ['service', '%SERVICE%', 'restart']
-
-# #how we check its status
-# LIBVIRT_STATUS_CMD = ['service', '%SERVICE%', 'status']
-
 # This is just used to check that libvirt will work with
 # a given protocol, may not be ideal but does seem to crap
 # out if it won't work, so thats good...

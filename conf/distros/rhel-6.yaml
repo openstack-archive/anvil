@@ -33,7 +33,6 @@ commands:
         - service
         - libvirtd
         - status
-    libvirt-daemon: libvirtd
     mysql:
         # NOTE: we aren't stopping any sql injection...
         create_db:
@@ -79,6 +78,14 @@ commands:
         - mysqld
         - stop
     pip: pip-python
+
+    rabbit-mq:
+      start: ['service', "rabbitmq-server", "start"]
+      stop: ['service', "rabbitmq-server", "stop"]
+      status: ['service', "rabbitmq-server", "status"]
+      restart: ['service', "rabbitmq-server", "restart"]
+      change_password: ['rabbitmqctl', 'change_password', 'guest']
+
 components:
     db:
         install: devstack.distros.rhel6:DBInstaller

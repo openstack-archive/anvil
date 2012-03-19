@@ -23,13 +23,6 @@ from devstack import shell as sh
 
 LOG = logging.getLogger("devstack.components.rabbit")
 
-# So far these are distro independent..
-START_CMD = ['service', "rabbitmq-server", "start"]
-STOP_CMD = ['service', "rabbitmq-server", "stop"]
-STATUS_CMD = ['service', "rabbitmq-server", "status"]
-RESTART_CMD = ['service', "rabbitmq-server", "restart"]
-PWD_CMD = ['rabbitmqctl', 'change_password', 'guest']
-
 # Default password (guest)
 RESET_BASE_PW = ''
 
@@ -52,7 +45,7 @@ class RabbitUninstaller(comp.PkgUninstallComponent):
         try:
             self.runtime.restart()
             LOG.info("Attempting to reset the rabbit-mq guest password to \"%s\"", RESET_BASE_PW)
-            cmd = PWD_CMD + [RESET_BASE_PW]
+            cmd = self.distro.get_command('rabbit-mq', 'change_password') + [RESET_BASE_PW]
             sh.execute(*cmd, run_as_root=True)
         except IOError:
             LOG.warn(("Could not reset the rabbit-mq password. You might have to manually "
@@ -72,7 +65,7 @@ class RabbitInstaller(comp.PkgInstallComponent):
         LOG.info("Setting up your rabbit-mq guest password.")
         self.runtime.restart()
         passwd = self.pw_gen.get_password("rabbit", PW_USER_PROMPT)
-        cmd = PWD_CMD + [passwd]
+        cmd = self.distro.get_command('rabbit-mq', 'change_password') + [passwd]
         sh.execute(*cmd, run_as_root=True)
         LOG.info("Restarting so that your rabbit-mq guest password is reflected.")
         self.runtime.restart()
@@ -88,7 +81,7 @@ class RabbitRuntime(comp.EmptyRuntime):
 
     def start(self):
         if self.status() != comp.STATUS_STARTED:
-            self._run_cmd(START_CMD)
+            self._run_cmd(self.distro.get_command('rabbit-mq', 'start'))
             return 1
         else:
             return 0
@@ -97,9 +90,10 @@ class RabbitRuntime(comp.EmptyRuntime):
         # This has got to be the worst status output.
         #
         # I have ever seen (its like a weird mix json+crap)
-        run_result = sh.execute(*STATUS_CMD,
-                        check_exit_code=False,
-                        run_as_root=True)
+        run_result = sh.execute(
+            *self.distro.get_command('rabbit-mq', 'status'),
+            check_exit_code=False,
+            run_as_root=True)
         if not run_result:
             return comp.STATUS_UNKNOWN
         (sysout, stderr) = run_result
@@ -129,14 +123,14 @@ class RabbitRuntime(comp.EmptyRuntime):
 
     def restart(self):
         LOG.info("Restarting rabbit-mq.")
-        self._run_cmd(RESTART_CMD)
+        self._run_cmd(self.distro.get_command('rabbit-mq', 'restart'))
         LOG.info("Please wait %s seconds while it starts up." % (WAIT_ON_TIME))
         sh.sleep(WAIT_ON_TIME)
         return 1
 
     def stop(self):
         if self.status() != comp.STATUS_STOPPED:
-            self._run_cmd(STOP_CMD)
+            self._run_cmd(self.distro.get_command('rabbit-mq', 'stop'))
             return 1
         else:
             return 0

@@ -31,6 +31,17 @@ commands:
     grant_all: ["mysql", "--user=%USER%", "--password=%PASSWORD%", '-e', 
                 "\"GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' IDENTIFIED BY '%PASSWORD%'; FLUSH PRIVILEGES;\""]
 
+  libvirt:
+    restart: ['service', 'libvirtd', 'restart']
+    status: ['service', 'libvirtd', 'status']
+
+  rabbit-mq:
+    start: ['service', "rabbitmq-server", "start"]
+    stop: ['service', "rabbitmq-server", "stop"]
+    status: ['service', "rabbitmq-server", "status"]
+    restart: ['service', "rabbitmq-server", "restart"]
+    change_password: ['rabbitmqctl', 'change_password', 'guest']
+
 components:
 
   db:
@@ -459,7 +470,7 @@ components:
         removable: True
         version: 1.12*
 
-  rabbitmq:
+  rabbit-mq:
     packages:
       - name: rabbitmq-server
         pre-install:
