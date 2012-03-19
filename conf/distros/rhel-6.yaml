@@ -572,7 +572,7 @@ components:
                     version: 6.2*
                 -   name: libguestfs
                     removable: true
-                    version: 1.2.7*
+                    version: 1.7*
                 -   name: libguestfs-mount
                     removable: true
                     version: 1.7.17*
