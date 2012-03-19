@@ -459,7 +459,7 @@ components:
         removable: True
         version: 1.12*
 
-  rabbitmq:
+  rabbit-mq:
     packages:
       - name: rabbitmq-server
         pre-install:
