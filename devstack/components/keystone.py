@@ -68,14 +68,14 @@ SWIFT_TEMPL_ADDS = ['catalog.RegionOne.object_store.publicURL = http://%SERVICE_
                     'catalog.RegionOne.object_store.publicURL = http://%SERVICE_HOST%:8080/v1/AUTH_$(tenant_id)s',
                     'catalog.RegionOne.object_store.adminURL = http://%SERVICE_HOST%:8080/',
                     'catalog.RegionOne.object_store.internalURL = http://%SERVICE_HOST%:8080/v1/AUTH_$(tenant_id)s',
-                    "catalog.RegionOne.object_store.name = 'Swift Service'"]
+                    "catalog.RegionOne.object_store.name = Swift Service"]
 
 # Quantum template additions
 # TODO: get rid of these
 QUANTUM_TEMPL_ADDS = ['catalog.RegionOne.network.publicURL = http://%SERVICE_HOST%:9696/',
                       'catalog.RegionOne.network.adminURL = http://%SERVICE_HOST%:9696/',
                       'catalog.RegionOne.network.internalURL = http://%SERVICE_HOST%:9696/',
-                      "catalog.RegionOne.network.name = 'Quantum Service'"]
+                      "catalog.RegionOne.network.name = Quantum Service"]
 
 
 class KeystoneUninstaller(comp.PythonUninstallComponent):

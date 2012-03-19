@@ -74,9 +74,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
         })
         return places
 
-    def known_options(self):
-        return set(['quantum-client'])
-
     def verify(self):
         comp.PythonInstallComponent.verify(self)
         self._check_ug()
@@ -88,14 +85,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
         if link_tgt:
             src = self._get_target_config_name(HORIZON_APACHE_CONF)
             links[src] = link_tgt
-        if 'quantum-client' in self.options:
-            q_name = self.options['quantum-client']
-            if q_name in self.instances:
-                # TODO remove this junk, blah, puke that we have to do this
-                qc = self.instances[q_name]
-                src_pth = sh.joinpths(qc.app_dir, 'quantum')
-                tgt_dir = sh.joinpths(self.dash_dir, 'quantum')
-                links[src_pth] = tgt_dir
         return links
 
     def _check_ug(self):
