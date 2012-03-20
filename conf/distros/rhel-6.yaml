@@ -442,7 +442,7 @@ components:
         stop: devstack.components.novnc:NoVNCRuntime
         uninstall: devstack.components.novnc:NoVNCUninstaller
     nova:
-        install: devstack.components.nova:NovaInstaller
+        install: devstack.distros.rhel6:NovaInstaller
         packages:
         -   name: MySQL-python
             removable: true

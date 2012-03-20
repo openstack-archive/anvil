@@ -38,7 +38,7 @@ CONFIG_DIR = "etc"
 # Simple confs
 ROOT_CONF = "keystone.conf"
 CATALOG_CONF = 'default_catalog.templates'
-LOGGING_CONF = "logging.conf"
+LOGGING_CONF = "logging.cnf"  # WHHHHY U NO LEAVE NAMES SAME!
 LOGGING_SOURCE_FN = 'logging.conf.sample'
 CONFIGS = [ROOT_CONF, CATALOG_CONF, LOGGING_CONF]
 
