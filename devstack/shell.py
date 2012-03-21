@@ -101,9 +101,9 @@ def execute(*cmd, **kwargs):
         execute_cmd = str_cmd.strip()
 
     if not shell:
-        LOG.audit('Running cmd: %s' % (execute_cmd))
+        LOG.audit('Running cmd: %r' % (execute_cmd))
     else:
-        LOG.audit('Running shell cmd: %s' % (execute_cmd))
+        LOG.audit('Running shell cmd: %r' % (execute_cmd))
 
     if process_input is not None:
         LOG.audit('With stdin: %s' % (process_input))

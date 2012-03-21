@@ -53,12 +53,12 @@ class DBUninstaller(comp.PkgUninstallComponent):
 
     def pre_uninstall(self):
         dbtype = self.cfg.get("db", "type")
-        dbactions = self.distro.get_command(dbtype, quiet=True)
+        dbactions = self.distro.get_command_config(dbtype, quiet=True)
         try:
             if dbactions:
                 LOG.info(("Attempting to reset your db password to \"%s\" so"
                           " that we can set it the next time you install.") % (RESET_BASE_PW))
-                pwd_cmd = dbactions.get('set_pwd')
+                pwd_cmd = self.distro.get_command(dbtype, 'set_pwd')
                 if pwd_cmd:
                     LOG.info("Ensuring your database is started before we operate on it.")
                     self.runtime.restart()
@@ -68,7 +68,7 @@ class DBUninstaller(comp.PkgUninstallComponent):
                         'USER': self.cfg.getdefaulted("db", "sql_user", 'root'),
                         }
                     cmds = [{'cmd': pwd_cmd}]
-                    utils.execute_template(*cmds, params=params, shell=True)
+                    utils.execute_template(*cmds, params=params)
         except IOError:
             LOG.warn(("Could not reset the database password. You might have to manually "
                       "reset the password to \"%s\" before the next install") % (RESET_BASE_PW))
@@ -111,12 +111,12 @@ class DBInstaller(comp.PkgInstallComponent):
 
         # Extra actions to ensure we are granted access
         dbtype = self.cfg.get("db", "type")
-        dbactions = self.distro.get_command(dbtype, quiet=True)
+        dbactions = self.distro.get_command_config(dbtype, quiet=True)
 
         # Set your password
         try:
             if dbactions:
-                pwd_cmd = dbactions.get('set_pwd')
+                pwd_cmd = self.distro.get_command(dbtype, 'set_pwd')
                 if pwd_cmd:
                     LOG.info(("Attempting to set your db password"
                           " just incase it wasn't set previously."))
@@ -128,14 +128,14 @@ class DBInstaller(comp.PkgInstallComponent):
                         'OLD_PASSWORD': RESET_BASE_PW,
                         }
                     cmds = [{'cmd': pwd_cmd}]
-                    utils.execute_template(*cmds, params=params, shell=True)
+                    utils.execute_template(*cmds, params=params)
         except IOError:
             LOG.warn(("Couldn't set your db password. It might have already been "
                        "set by a previous process."))
 
         # Ensure access granted
         if dbactions:
-            grant_cmd = dbactions.get('grant_all')
+            grant_cmd = self.distro.get_command(dbtype, 'grant_all')
             if grant_cmd:
                 user = self.cfg.getdefaulted("db", "sql_user", 'root')
                 LOG.info("Updating the DB to give user '%s' full control of all databases." % (user))
@@ -148,7 +148,7 @@ class DBInstaller(comp.PkgInstallComponent):
                 cmds = [{'cmd': grant_cmd}]
                 # Shell seems to be needed here
                 # since python escapes this to much...
-                utils.execute_template(*cmds, params=params, shell=True)
+                utils.execute_template(*cmds, params=params)
 
 
 class DBRuntime(comp.EmptyRuntime):
@@ -158,11 +158,11 @@ class DBRuntime(comp.EmptyRuntime):
 
     def _get_run_actions(self, act, exception_cls):
         dbtype = self.cfg.get("db", "type")
-        distro_options = self.distro.get_command(dbtype)
+        distro_options = self.distro.get_command_config(dbtype)
         if distro_options is None:
             msg = BASE_ERROR % (act, dbtype)
             raise NotImplementedError(msg)
-        return distro_options.get(act)
+        return self.distro.get_command(dbtype, act)
 
     def start(self):
         if self.status() != comp.STATUS_STARTED:
@@ -190,8 +190,8 @@ class DBRuntime(comp.EmptyRuntime):
         LOG.info("Restarting your database.")
         restartcmd = self._get_run_actions('restart', excp.RestartException)
         sh.execute(*restartcmd,
-                        run_as_root=True,
-                        check_exit_code=True)
+                    run_as_root=True,
+                    check_exit_code=True)
         LOG.info("Please wait %s seconds while it restarts." % self.wait_time)
         sh.sleep(self.wait_time)
         return 1
@@ -217,9 +217,8 @@ class DBRuntime(comp.EmptyRuntime):
 
 def drop_db(cfg, pw_gen, distro, dbname):
     dbtype = cfg.get("db", "type")
-    dbactions = distro.get_command(dbtype)
-    if dbactions and dbactions.get('drop_db'):
-        dropcmd = dbactions.get('drop_db')
+    dropcmd = distro.get_command(dbtype, 'drop_db', silent=True)
+    if dropcmd:
         params = dict()
         params['PASSWORD'] = pw_gen.get_password("sql", PASSWORD_PROMPT)
         params['USER'] = cfg.getdefaulted("db", "sql_user", 'root')
@@ -237,9 +236,8 @@ def drop_db(cfg, pw_gen, distro, dbname):
 
 def create_db(cfg, pw_gen, distro, dbname):
     dbtype = cfg.get("db", "type")
-    dbactions = distro.get_command(dbtype)
-    if dbactions and dbactions.get('create_db'):
-        createcmd = dbactions.get('create_db')
+    createcmd = distro.get_command(dbtype, 'create_db', silent=True)
+    if createcmd:
         params = dict()
         params['PASSWORD'] = pw_gen.get_password("sql", PASSWORD_PROMPT)
         params['USER'] = cfg.getdefaulted("db", "sql_user", 'root')

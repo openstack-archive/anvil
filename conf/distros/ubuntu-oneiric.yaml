@@ -5,111 +5,41 @@ name: ubuntu-oneiric
 packager_name: devstack.distros.oneiric:AptPackager
 commands:
     apache:
-        restart:
-        - service
-        - apache2
-        - restart
+        restart: service apache2 restart
         settings:
             conf-link-target: /etc/apache2/sites-enabled/000-default
-        start:
-        - service
-        - apache2
-        - start
-        status:
-        - service
-        - apache2
-        - status
-        stop:
-        - service
-        - apache2
-        - stop
+        start: service apache2 start
+        status: service apache2 status
+        stop: service apache2 stop
     git:
-        checkout:
-          - git
-          - checkout
-        clone:
-          - git
-          - clone
-        pull:
-          - git
-          - pull
+        checkout: git checkout
+        clone: git clone
+        pull: git pull
     iscsi:
-        restart:
-        - service
-        - tgt
-        - restart
-        start:
-        - service
-        - tgt
-        - start
-        status:
-        - service
-        - tgt
-        - status
-        stop:
-        - service
-        - tgt
-        - stop
+        restart: service tgt restart
+        start: service tgt start
+        status: service tgt status
+        stop: service tgt stop
     libvirt:
-        restart:
-        - service
-        - libvirt-bin
-        - restart
-        status:
-        - service
-        - libvirt-bin
-        - status
+        restart: service libvirt-bin restart
+        status: service libvirt-bin status
     mysql:
         # NOTE: we aren't stopping any sql injection...
-        create_db:
-        - mysql
-        - --user=%USER%
-        - --password=%PASSWORD%
-        - -e
-        - CREATE DATABASE %DB%;
-        drop_db:
-        - mysql
-        - --user=%USER%
-        - --password=%PASSWORD%
-        - -e
-        - DROP DATABASE IF EXISTS %DB%;
-        grant_all:
-        - mysql
-        - --user=%USER%
-        - --password=%PASSWORD%
-        - -e
-        - '"GRANT ALL PRIVILEGES ON *.* TO ''%USER%''@''%'' IDENTIFIED BY ''%PASSWORD%'';
-            FLUSH PRIVILEGES;"'
-        restart:
-        - service
-        - mysql
-        - restart
-        set_pwd:
-        - mysql
-        - --user=%USER%
-        - --password=%OLD_PASSWORD%
-        - -e
-        - '"USE mysql; UPDATE user SET password=PASSWORD(''%NEW_PASSWORD%'') WHERE
-            User=''%USER%''; FLUSH PRIVILEGES;"'
-        start:
-        - service
-        - mysql
-        - start
-        status:
-        - service
-        - mysql
-        - status
-        stop:
-        - service
-        - mysql
-        - stop
+        create_db: mysql --user=%USER% --password=%PASSWORD% -e "CREATE DATABASE %DB%;"
+        drop_db: mysql --user=%USER% --password=%PASSWORD% -e "DROP DATABASE IF EXISTS %DB%;"
+        grant_all: mysql --user=%USER% --password=%PASSWORD% -e "GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' IDENTIFIED BY '%PASSWORD%'; FLUSH PRIVILEGES;"
+        restart: service mysql restart
+        set_pwd: mysql --user=%USER% --password=%OLD_PASSWORD% -e "USE mysql; UPDATE user SET password=PASSWORD('%NEW_PASSWORD%') WHERE User='%USER%'; FLUSH PRIVILEGES;"
+        start: service mysql start
+        status: service mysql status
+        stop: service mysql stop
     pip: pip
     rabbit-mq:
-        start: ['service', "rabbitmq-server", "start"]
-        stop: ['service', "rabbitmq-server", "stop"]
-        status: ['service', "rabbitmq-server", "status"]
-        restart: ['service', "rabbitmq-server", "restart"]
-        change_password: ['rabbitmqctl', 'change_password', 'guest']
+        start: service rabbitmq-server start
+        stop: service rabbitmq-server stop
+        status: service rabbitmq-server status
+        restart: service rabbitmq-server restart
+        change_password: rabbitmqctl change_password guest
 
 components:
     db:

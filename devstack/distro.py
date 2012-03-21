@@ -18,6 +18,7 @@
 import glob
 import platform
 import re
+import shlex
 
 import yaml
 
@@ -84,7 +85,7 @@ class Distro(object):
         self._commands = commands
         self._components = components
 
-    def get_command(self, key, *more_keys, **kargs):
+    def get_command_config(self, key, *more_keys, **kargs):
         """ Gets a end object for a given set of keys """
         root = self._commands
         acutal_keys = [key] + list(more_keys)
@@ -105,8 +106,17 @@ class Distro(object):
             end_value = root[end_key]
         else:
             end_value = root.get(end_key)
-        LOG.debug("Retrieved end command: %s", end_value)
+        LOG.debug("Retrieved end command config: %s", end_value)
         return end_value
+
+    def get_command(self, key, *more_keys, **kargs):
+        """Retrieves a string for running a command from the setup
+        and splits it to return a list.
+        """
+        val = self.get_command_config(key, *more_keys, **kargs)
+        ret_val = shlex.split(val) if val else []
+        LOG.debug("Parsed configured command: %s", ret_val)
+        return ret_val
 
     def known_component(self, name):
         return name in self._components
