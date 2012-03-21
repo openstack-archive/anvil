@@ -43,7 +43,11 @@ commands:
 
 components:
     db:
-        install: devstack.distros.oneiric:DBInstaller
+        action_classes:
+            install: devstack.distros.oneiric:DBInstaller
+            start: devstack.components.db:DBRuntime
+            stop: devstack.components.db:DBRuntime
+            uninstall: devstack.components.db:DBUninstaller
         packages:
         -   name: mysql-client-5.1
             removable: true
@@ -66,11 +70,12 @@ components:
                 - mysql-server-5.1 mysql-server/start_on_boot boolean %BOOT_START%
             removable: true
             version: 5.1*
-        start: devstack.components.db:DBRuntime
-        stop: devstack.components.db:DBRuntime
-        uninstall: devstack.components.db:DBUninstaller
     general:
-        install: devstack.components.pkglist:Installer
+        action_classes:
+            install: devstack.components.pkglist:Installer
+            start: devstack.component:EmptyRuntime
+            stop: devstack.component:EmptyRuntime
+            uninstall: devstack.components.pkglist:Uninstaller
         packages:
         -   name: curl
             removable: false
@@ -150,11 +155,12 @@ components:
         pips:
         -   name: mock
             version: 0.8.0
-        start: devstack.component:EmptyRuntime
-        stop: devstack.component:EmptyRuntime
-        uninstall: devstack.components.pkglist:Uninstaller
     glance:
-        install: devstack.components.glance:GlanceInstaller
+        action_classes:
+            install: devstack.components.glance:GlanceInstaller
+            start: devstack.components.glance:GlanceRuntime
+            stop: devstack.components.glance:GlanceRuntime
+            uninstall: devstack.components.glance:GlanceUninstaller
         packages:
         -   name: python-eventlet
             removable: true
@@ -192,11 +198,12 @@ components:
         pips:
         -   name: iso8601
             version: 0.1.4
-        start: devstack.components.glance:GlanceRuntime
-        stop: devstack.components.glance:GlanceRuntime
-        uninstall: devstack.components.glance:GlanceUninstaller
     horizon:
-        install: devstack.components.horizon:HorizonInstaller
+        action_classes:
+            install: devstack.components.horizon:HorizonInstaller
+            start: devstack.components.horizon:HorizonRuntime
+            stop: devstack.components.horizon:HorizonRuntime
+            uninstall: devstack.components.horizon:HorizonUninstaller
         packages:
         -   name: apache2
             removable: true
@@ -265,11 +272,12 @@ components:
             version: 2.3
         -   name: python-cloudfiles
             version: 1.7.9.3
-        start: devstack.components.horizon:HorizonRuntime
-        stop: devstack.components.horizon:HorizonRuntime
-        uninstall: devstack.components.horizon:HorizonUninstaller
     keystone:
-        install: devstack.components.keystone:KeystoneInstaller
+        action_classes:
+            install: devstack.components.keystone:KeystoneInstaller
+            start: devstack.components.keystone:KeystoneRuntime
+            stop: devstack.components.keystone:KeystoneRuntime
+            uninstall: devstack.components.keystone:KeystoneUninstaller
         packages:
         -   name: libldap2-dev
             removable: true
@@ -328,11 +336,12 @@ components:
         pips:
         -   name: passlib
             version: 1.5.3
-        start: devstack.components.keystone:KeystoneRuntime
-        stop: devstack.components.keystone:KeystoneRuntime
-        uninstall: devstack.components.keystone:KeystoneUninstaller
     keystone-client:
-        install: devstack.components.keystone_client:KeyStoneClientInstaller
+        action_classes:
+            install: devstack.components.keystone_client:KeyStoneClientInstaller
+            start: devstack.components.keystone_client:KeyStoneClientRuntime
+            stop: devstack.components.keystone_client:KeyStoneClientRuntime
+            uninstall: devstack.components.keystone_client:KeyStoneClientUninstaller
         packages:
         -   name: python-argparse
             removable: true
@@ -340,11 +349,12 @@ components:
         -   name: python-prettytable
             removable: true
             version: 0.5*
-        start: devstack.components.keystone_client:KeyStoneClientRuntime
-        stop: devstack.components.keystone_client:KeyStoneClientRuntime
-        uninstall: devstack.components.keystone_client:KeyStoneClientUninstaller
     melange:
-        install: devstack.components.melange:MelangeInstaller
+        action_classes:
+            install: devstack.components.melange:MelangeInstaller
+            start: devstack.components.melange:MelangeRuntime
+            stop: devstack.components.melange:MelangeRuntime
+            uninstall: devstack.components.melange:MelangeUninstaller
         packages:
         -   name: python-eventlet
             removable: true
@@ -370,20 +380,22 @@ components:
         -   name: python-webob
             removable: true
             version: 1.0*
-        start: devstack.components.melange:MelangeRuntime
-        stop: devstack.components.melange:MelangeRuntime
-        uninstall: devstack.components.melange:MelangeUninstaller
     no-vnc:
-        install: devstack.components.novnc:NoVNCInstaller
+        action_classes:
+            install: devstack.components.novnc:NoVNCInstaller
+            start: devstack.components.novnc:NoVNCRuntime
+            stop: devstack.components.novnc:NoVNCRuntime
+            uninstall: devstack.components.novnc:NoVNCUninstaller
         packages:
         -   name: python-numpy
             removable: true
             version: 1:1.5*
-        start: devstack.components.novnc:NoVNCRuntime
-        stop: devstack.components.novnc:NoVNCRuntime
-        uninstall: devstack.components.novnc:NoVNCUninstaller
     nova:
-        install: devstack.components.nova:NovaInstaller
+        action_classes:
+            install: devstack.components.nova:NovaInstaller
+            start: devstack.components.nova:NovaRuntime
+            stop: devstack.components.nova:NovaRuntime
+            uninstall: devstack.components.nova:NovaUninstaller
         packages:
         -   name: dnsmasq-base
             removable: true
@@ -484,8 +496,6 @@ components:
         pips:
         -   name: iso8601
             version: 0.1.4
-        start: devstack.components.nova:NovaRuntime
-        stop: devstack.components.nova:NovaRuntime
         subsystems:
             api:
                 packages:
@@ -529,9 +539,12 @@ components:
                 -   name: tgt
                     removable: true
                     version: 1:1*
-        uninstall: devstack.components.nova:NovaUninstaller
     nova-client:
-        install: devstack.components.nova_client:NovaClientInstaller
+        action_classes:
+            install: devstack.components.nova_client:NovaClientInstaller
+            start: devstack.components.nova_client:NovaClientRuntime
+            stop: devstack.components.nova_client:NovaClientRuntime
+            uninstall: devstack.components.nova_client:NovaClientUninstaller
         packages:
         -   name: python-argparse
             removable: true
@@ -539,11 +552,12 @@ components:
         -   name: python-prettytable
             removable: true
             version: 0.5*
-        start: devstack.components.nova_client:NovaClientRuntime
-        stop: devstack.components.nova_client:NovaClientRuntime
-        uninstall: devstack.components.nova_client:NovaClientUninstaller
     quantum:
-        install: devstack.components.quantum:QuantumInstaller
+        action_classes:
+            install: devstack.components.quantum:QuantumInstaller
+            start: devstack.components.quantum:QuantumRuntime
+            stop: devstack.components.quantum:QuantumRuntime
+            uninstall: devstack.components.quantum:QuantumUninstaller
         packages:
         -   name: python-eventlet
             removable: true
@@ -566,8 +580,6 @@ components:
         -   name: python-routes
             removable: true
             version: 1.12*
-        start: devstack.components.quantum:QuantumRuntime
-        stop: devstack.components.quantum:QuantumRuntime
         subsystems:
             openvswitch:
                 packages:
@@ -583,27 +595,32 @@ components:
                 -   name: python-sqlalchemy
                     removable: true
                     version: 0.6*
-        uninstall: devstack.components.quantum:QuantumUninstaller
     quantum-client:
-        install: devstack.components.quantum_client:QuantumClientInstaller
+        action_classes:
+            install: devstack.components.quantum_client:QuantumClientInstaller
+            start: devstack.components.quantum_client:QuantumClientRuntime
+            stop: devstack.components.quantum_client:QuantumClientRuntime
+            uninstall: devstack.components.quantum_client:QuantumClientUninstaller
         packages:
         -   name: python-gflags
             removable: true
             version: 1.5*
-        start: devstack.components.quantum_client:QuantumClientRuntime
-        stop: devstack.components.quantum_client:QuantumClientRuntime
-        uninstall: devstack.components.quantum_client:QuantumClientUninstaller
     rabbit-mq:
-        install: devstack.components.rabbit:RabbitInstaller
+        action_classes:
+            install: devstack.components.rabbit:RabbitInstaller
+            start: devstack.components.rabbit:RabbitRuntime
+            stop: devstack.components.rabbit:RabbitRuntime
+            uninstall: devstack.components.rabbit:RabbitUninstaller
         packages:
         -   name: rabbitmq-server
             removable: true
             version: 2.5*
-        start: devstack.components.rabbit:RabbitRuntime
-        stop: devstack.components.rabbit:RabbitRuntime
-        uninstall: devstack.components.rabbit:RabbitUninstaller
     swift:
-        install: devstack.components.swift:SwiftInstaller
+        action_classes:
+            install: devstack.components.swift:SwiftInstaller
+            start: devstack.components.swift:SwiftRuntime
+            stop: devstack.components.swift:SwiftRuntime
+            uninstall: devstack.components.swift:SwiftUninstaller
         packages:
         -   name: memcached
             removable: true
@@ -635,8 +652,5 @@ components:
         -   name: xfsprogs
             removable: true
             version: 3.1*
-        start: devstack.components.swift:SwiftRuntime
-        stop: devstack.components.swift:SwiftRuntime
-        uninstall: devstack.components.swift:SwiftUninstaller
 ...
 

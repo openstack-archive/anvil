@@ -17,6 +17,7 @@
 from optparse import IndentedHelpFormatter
 from optparse import OptionParser, OptionGroup
 
+from devstack.progs import actions
 from devstack import log as logging
 from devstack import settings
 from devstack import version
@@ -64,7 +65,7 @@ def parse():
         type="string",
         dest="action",
         metavar="ACTION",
-        help="required action to perform: %s" % (_format_list(settings.ACTIONS)))
+        help="required action to perform: %s" % (_format_list(actions.get_action_names())))
     base_group.add_option("-d", "--directory",
         action="store",
         type="string",

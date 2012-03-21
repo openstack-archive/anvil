@@ -137,13 +137,11 @@ class Distro(object):
         try:
             # Use a copy instead of the original
             component_info = dict(self._components[name])
-            entry_point = component_info[action]
+            entry_point = component_info['action_classes'][action]
             cls = importer.import_entry_point(entry_point)
-            # Knock all action class info (and any other keys)
-            key_deletions = [action] + settings.ACTIONS
-            for k in key_deletions:
-                if k in component_info:
-                    del component_info[k]
+            # Remove action class info
+            if 'action_classes' in component_info:
+                del component_info['action_classes']
             return (cls, component_info)
         except KeyError:
             raise RuntimeError('No class configured to %s %s on %s' %
