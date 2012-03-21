@@ -32,7 +32,7 @@ def _make_pip_name(name, version):
 
 def install(pip, distro):
     name = pip['name']
-    root_cmd = distro.get_command('pip')
+    root_cmd = distro.get_command_config('pip')
     LOG.audit("Installing python package (%s) using pip command (%s)" % (name, root_cmd))
     name_full = _make_pip_name(name, pip.get('version'))
     real_cmd = [root_cmd, 'install'] + PIP_INSTALL_CMD_OPTS

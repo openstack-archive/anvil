@@ -1,101 +1,42 @@
 ---
 # RedHat Enterprise Linux 6
-distro_pattern: redhat-6(.*)
 name: rhel-6
-packager_name: devstack.distros.rhel6:YumPackager
+distro_pattern: redhat-6(.*)
 commands:
     apache:
-        restart:
-        - service
-        - httpd
-        - restart
+        restart: service httpd restart
         settings:
-            # Ensure runs after wsgi.conf (file naming wise)
             conf-link-target: /etc/httpd/conf.d/wsgi-horizon-000-default.conf
-        start:
-        - service
-        - httpd
-        - start
-        status:
-        - service
-        - httpd
-        - status
-        stop:
-        - service
-        - httpd
-        - stop
+        start: service httpd start
+        status: service httpd status
+        stop: service httpd stop
     git:
-        checkout:
-          - git
-          - checkout
-        clone:
-          - git
-          - clone
-        pull:
-          - git
-          - pull
+        checkout: git checkout
+        clone: git clone
+        pull: git pull
     libvirt:
-        restart:
-        - service
-        - libvirtd
-        - restart
-        status:
-        - service
-        - libvirtd
-        - status
+        restart: service libvirtd restart
+        status: service libvirtd status
     mysql:
-        # NOTE: we aren't stopping any sql injection...
-        create_db:
-        - mysql
-        - --user=%USER%
-        - --password=%PASSWORD%
-        - -e
-        - CREATE DATABASE %DB%;
-        drop_db:
-        - mysql
-        - --user=%USER%
-        - --password=%PASSWORD%
-        - -e
-        - DROP DATABASE IF EXISTS %DB%;
-        grant_all:
-        - mysql
-        - --user=%USER%
-        - --password=%PASSWORD%
-        - -e
-        - '"GRANT ALL PRIVILEGES ON *.* TO ''%USER%''@''%'' IDENTIFIED BY ''%PASSWORD%'';
-            FLUSH PRIVILEGES;"'
-        restart:
-        - service
-        - mysqld
-        - restart
-        set_pwd:
-        - mysql
-        - --user=%USER%
-        - --password=%OLD_PASSWORD%
-        - -e
-        - '"USE mysql; UPDATE user SET password=PASSWORD(''%NEW_PASSWORD%'') WHERE
-            User=''%USER%''; FLUSH PRIVILEGES;"'
-        start:
-        - service
-        - mysqld
-        - start
-        status:
-        - service
-        - mysqld
-        - status
-        stop:
-        - service
-        - mysqld
-        - stop
+        create_db: mysql --user=%USER% --password=%PASSWORD% -e "CREATE DATABASE %DB%;"
+        drop_db: mysql --user=%USER% --password=%PASSWORD% -e "DROP DATABASE IF EXISTS
+            %DB%;"
+        grant_all: mysql --user=%USER% --password=%PASSWORD% -e "GRANT ALL PRIVILEGES
+            ON *.* TO '%USER%'@'%' IDENTIFIED BY '%PASSWORD%'; FLUSH PRIVILEGES;"
+        restart: service mysqld restart
+        set_pwd: mysql --user=%USER% --password=%OLD_PASSWORD% -e "USE mysql; UPDATE
+            user SET password=PASSWORD('%NEW_PASSWORD%') WHERE User='%USER%'; FLUSH
+            PRIVILEGES;"
+        start: service mysqld start
+        status: service mysqld status
+        stop: service mysqld stop
     pip: pip-python
-
     rabbit-mq:
-      start: ['service', "rabbitmq-server", "start"]
-      stop: ['service', "rabbitmq-server", "stop"]
-      status: ['service', "rabbitmq-server", "status"]
-      restart: ['service', "rabbitmq-server", "restart"]
-      change_password: ['rabbitmqctl', 'change_password', 'guest']
-
+        change_password: rabbitmqctl change_password guest
+        restart: service rabbitmq-server restart
+        start: service rabbitmq-server start
+        status: service rabbitmq-server status
+        stop: service rabbitmq-server stop
 components:
     db:
         install: devstack.distros.rhel6:DBInstaller
@@ -702,5 +643,6 @@ components:
         start: devstack.components.swift:SwiftRuntime
         stop: devstack.components.swift:SwiftRuntime
         uninstall: devstack.components.swift:SwiftUninstaller
+packager_name: devstack.distros.rhel6:YumPackager
 ...
 

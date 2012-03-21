@@ -49,6 +49,8 @@ RSYNC_SERVICE_RESTART = ['service', 'rsync', 'restart']
 RSYSLOG_SERVICE_RESTART = ['service', 'rsyslog', 'restart']
 RSYNC_ON_OFF_RE = re.compile(r'^\s*RSYNC_ENABLE\s*=\s*(.*)$', re.I)
 
+# FIXME: This should come from the persona, if we really expect
+# people to change it.
 # Defines our auth service type
 AUTH_SERVICE = 'keystone'
 

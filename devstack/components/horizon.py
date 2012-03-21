@@ -80,8 +80,9 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def _get_symlinks(self):
         links = comp.PythonInstallComponent._get_symlinks(self)
-        link_tgt = self.distro.get_command('apache', 'settings',
-                                            'conf-link-target', quiet=True)
+        link_tgt = self.distro.get_command_config(
+            'apache', 'settings', 'conf-link-target',
+            quiet=True)
         if link_tgt:
             src = self._get_target_config_name(HORIZON_APACHE_CONF)
             links[src] = link_tgt
