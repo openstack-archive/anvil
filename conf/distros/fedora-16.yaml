@@ -39,6 +39,7 @@ commands:
         stop: service rabbitmq-server stop
 components:
     db:
+        action_classes: {}
         packages:
         -   name: mysql
             removable: true
@@ -47,6 +48,7 @@ components:
             removable: true
             version: 5.5*
     general:
+        action_classes: {}
         packages:
         -   name: curl
             removable: false
@@ -133,6 +135,7 @@ components:
             removable: false
             version: 1.12*
     glance:
+        action_classes: {}
         packages:
         -   name: MySQL-python
             removable: true
@@ -162,6 +165,7 @@ components:
             removable: true
             version: 0.5*
     horizon:
+        action_classes: {}
         packages:
         -   name: Django
             removable: true
@@ -215,6 +219,7 @@ components:
             removable: true
             version: 0.5*
     keystone:
+        action_classes: {}
         packages:
         -   name: MySQL-python
             removable: true
@@ -271,6 +276,7 @@ components:
             removable: false
             version: 3.7*
     keystone-client:
+        action_classes: {}
         packages:
         -   name: python-argparse
             removable: true
@@ -279,13 +285,16 @@ components:
             removable: true
             version: 0.5*
     melange:
+        action_classes: {}
         packages: null
     n-api:
+        action_classes: {}
         packages:
         -   name: python-dateutil
             removable: false
             version: 1.5*
     n-cpu:
+        action_classes: {}
         packages:
         -   name: iscsi-initiator-utils
             removable: true
@@ -309,11 +318,13 @@ components:
             removable: true
             version: 0.15*
     n-vnc:
+        action_classes: {}
         packages:
         -   name: numpy
             removable: true
             version: 1.6*
     n-vol:
+        action_classes: {}
         packages:
         -   name: iscsi-initiator-utils
             removable: true
@@ -325,6 +336,7 @@ components:
             removable: true
             version: 1.0*
     nova:
+        action_classes: {}
         packages:
         -   name: MySQL-python
             removable: true
@@ -405,6 +417,7 @@ components:
             removable: false
             version: 3.7*
     nova-client:
+        action_classes: {}
         packages:
         -   name: python-argparse
             removable: true
@@ -413,6 +426,7 @@ components:
             removable: true
             version: 0.5*
     quantum:
+        action_classes: {}
         packages:
         -   name: python-eventlet
             removable: true
@@ -436,11 +450,13 @@ components:
             removable: true
             version: 1.12*
     quantum-client:
+        action_classes: {}
         packages:
         -   name: python-gflags
             removable: true
             version: 1.5*
     quantum-openvswitch:
+        action_classes: {}
         packages:
         -   name: MySQL-python
             removable: true
@@ -449,6 +465,7 @@ components:
             removable: true
             version: 0.7*
     rabbit-mq:
+        action_classes: {}
         packages:
         -   name: rabbitmq-server
             pre-install:
@@ -466,6 +483,7 @@ components:
             removable: true
             version: 2.6*
     swift:
+        action_classes: {}
         packages:
         -   name: memcached
             removable: true
@@ -496,3 +514,4 @@ components:
             version: 3.7*
 packager_name: devstack.packaging.yum:YumPackager
 ...
+
