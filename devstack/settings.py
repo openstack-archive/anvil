@@ -47,14 +47,6 @@ RC_FN_TEMPL = "os-%s.rc"
 LOCALRC_FN = RC_FN_TEMPL % ('local')
 OSRC_FN = RC_FN_TEMPL % ('core')
 
-# Program
-# actions
-INSTALL = "install"
-UNINSTALL = "uninstall"
-START = "start"
-STOP = "stop"
-ACTIONS = [INSTALL, UNINSTALL, START, STOP]
-
 # Where the configs and templates should be at.
 STACK_BIN_DIR = os.path.abspath(os.path.dirname(sys.argv[0]))
 STACK_CONFIG_DIR = os.path.join(STACK_BIN_DIR, "conf")

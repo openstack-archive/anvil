@@ -22,6 +22,7 @@ import shlex
 
 import yaml
 
+from devstack.progs import actions
 from devstack import decorators
 from devstack import importer
 from devstack import log as logging
@@ -140,7 +141,9 @@ class Distro(object):
             entry_point = component_info[action]
             cls = importer.import_entry_point(entry_point)
             # Knock all action class info (and any other keys)
-            key_deletions = [action] + settings.ACTIONS
+            # FIXME: This module shouldn't need to have knowledge
+            # of all available actions.
+            key_deletions = [action] + actions.get_action_names()
             for k in key_deletions:
                 if k in component_info:
                     del component_info[k]

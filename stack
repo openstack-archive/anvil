@@ -39,15 +39,6 @@ from devstack.progs import actions
 
 LOG = logging.getLogger("devstack.stack")
 
-# This is used to map an action to a useful string for
-# the welcome display
-_WELCOME_MAP = {
-    settings.INSTALL: "INSTALLER",
-    settings.UNINSTALL: "UNINSTALLER",
-    settings.START: "STARTER",
-    settings.STOP: "STOPPER",
-}
-
 _CFG_GROUPS = {
     cfg_helpers.make_id('passwords', None): 'Passwords',
     cfg_helpers.make_id('db', None): 'Database info',
@@ -116,7 +107,7 @@ def setup_root(root_dir):
 
 def run(args):
     action = args.pop("action", '').strip().lower()
-    if not (action in settings.ACTIONS):
+    if action not in actions.get_action_names():
         print(utils.color_text("No valid action specified!", "red"))
         return False
 
@@ -139,7 +130,7 @@ def run(args):
     persona_fn = sh.abspth(persona_fn)
 
     # Welcome!
-    (repeat_string, line_max_len) = utils.welcome(_WELCOME_MAP.get(action))
+    (repeat_string, line_max_len) = utils.welcome(action.upper())
     print(utils.center_text("Action Runner", repeat_string, line_max_len))
 
     # !!
@@ -162,10 +153,12 @@ def run(args):
     pkg_cls = dist.get_packager_factory()
     pkg_manager = pkg_cls(dist, args.get('keep_old', False))
 
-    runner = actions.ActionRunner(dist, action,
-                                  config, pw_gen,
-                                  pkg_manager,
-                                  **args)
+    runner_factory = actions.get_runner_factory(action)
+    runner = runner_factory(dist,
+                            config,
+                            pw_gen,
+                            pkg_manager,
+                            **args)
 
     LOG.info("Starting action %r on %s for distro: %r" % (action, date.rcf8222date(), dist.name))
     LOG.info("Using persona: %r" % (persona_fn))
