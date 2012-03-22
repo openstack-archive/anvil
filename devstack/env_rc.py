@@ -39,7 +39,8 @@ PASSWORDS_MAKES = {
     'ADMIN_PASSWORD': 'horizon_keystone_admin',
     'SERVICE_PASSWORD': 'service_password',
     'RABBIT_PASSWORD': 'rabbit',
-    'SERVICE_TOKEN': 'service_token',
+    # https://bugs.launchpad.net/keystone/+bug/962600
+    # 'SERVICE_TOKEN': 'service_token',
     'MYSQL_PASSWORD': 'sql',
 }
 
@@ -190,9 +191,10 @@ class RcWriter(object):
         return to_set
 
     def _get_misc_envs(self):
-        #key_params = keystone.get_shared_params(self.cfg, self.pw_gen)
         to_set = dict()
-        #to_set.update(key_params)
+        # https://bugs.launchpad.net/keystone/+bug/962600
+        # key_params = keystone.get_shared_params(self.cfg, self.pw_gen)
+        # to_set.update(key_params)
         return to_set
 
     def _generate_misc_env(self):
