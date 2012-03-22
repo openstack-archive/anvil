@@ -44,18 +44,16 @@ class Packager(object):
             return False
         return self._remove(pkg)
 
-    def pre_install(self, pkgs, params=None):
-        for info in pkgs:
-            cmds = info.get('pre-install')
-            if cmds:
-                LOG.info("Running pre-install commands for package %s.",
-                         info['name'])
-                utils.execute_template(*cmds, params=params)
+    def pre_install(self, pkg, params=None):
+        cmds = pkg.get('pre-install')
+        if cmds:
+            LOG.info("Running pre-install commands for package %s.",
+                     pkg['name'])
+            utils.execute_template(*cmds, params=params)
 
-    def post_install(self, pkgs, params=None):
-        for info in pkgs:
-            cmds = info.get('post-install')
-            if cmds:
-                LOG.info("Running post-install commands for package %s.",
-                         info['name'])
-                utils.execute_template(*cmds, params=params)
+    def post_install(self, pkg, params=None):
+        cmds = pkg.get('post-install')
+        if cmds:
+            LOG.info("Running post-install commands for package %s.",
+                     pkg['name'])
+            utils.execute_template(*cmds, params=params)
