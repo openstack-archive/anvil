@@ -186,16 +186,18 @@ class Image(object):
     def _generate_check_names(self, url_fn):
         name_checks = list()
         name_checks.append(url_fn)
+        name_checks.append("%s.img" % (url_fn))
+        name_checks.append("%s-img" % (url_fn))
         name = url_fn
         for look_for in NAME_CLEANUPS:
             name = name.replace(look_for, '')
             name_checks.append(name)
             name_checks.append("%s.img" % (name))
             name_checks.append("%s-img" % (name))
+        name = self._generate_img_name(url_fn)
         name_checks.append(name)
         name_checks.append("%s.img" % (name))
         name_checks.append("%s-img" % (name))
-        name_checks.append(self._generate_img_name(url_fn))
         return set(name_checks)
 
     def _extract_url_fn(self):

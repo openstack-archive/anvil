@@ -25,11 +25,11 @@ then
     exit 1
 fi
 
-# Now we start showing whats happening
-set -x
-
 # Get user configuration
 source $CORE_RC
+
+# Now we start showing whats happening
+set -x
 
 # Set the ec2 url so euca2ools works
 export EC2_URL=$(keystone catalog --service ec2 | awk '/ publicURL / { print $4 }')

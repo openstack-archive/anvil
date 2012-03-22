@@ -190,9 +190,9 @@ class RcWriter(object):
         return to_set
 
     def _get_misc_envs(self):
-        key_params = keystone.get_shared_params(self.cfg, self.pw_gen)
+        #key_params = keystone.get_shared_params(self.cfg, self.pw_gen)
         to_set = dict()
-        to_set.update(key_params)
+        #to_set.update(key_params)
         return to_set
 
     def _generate_misc_env(self):
