@@ -413,11 +413,14 @@ class NovaRuntime(comp.PythonRuntime):
             # should come from the persona.
             virt_type = lv.canon_libvirt_type(self.cfg.get('nova', 'libvirt_type'))
             LOG.info("Checking that your selected libvirt virtualization type %r is working and running." % (virt_type))
-            if not self.virsh.check_virt(virt_type):
+            try:
+                self.virsh.check_virt(virt_type)
+                self.virsh.restart_service()
+            except exceptions.ProcessExecutionError as e:
                 msg = ("Libvirt type %r does not seem to be active or configured correctly, "
-                       "perhaps you should be using %r instead." % (virt_type, lv.DEF_VIRT_TYPE))
+                        "perhaps you should be using %r instead: %s" %
+                        (virt_type, lv.DEF_VIRT_TYPE, e))
                 raise exceptions.StartException(msg)
-            self.virsh.restart_service()
 
     def _get_param_map(self, app_name):
         params = comp.PythonRuntime._get_param_map(self, app_name)

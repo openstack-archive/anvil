@@ -91,26 +91,16 @@ class Virsh(object):
 
     def check_virt(self, virt_type):
         virt_protocol = LIBVIRT_PROTOCOL_MAP.get(virt_type)
-        if not virt_protocol:
-            return False
-        try:
-            self.restart_service()
-        except excp.ProcessExecutionError, e:
-            LOG.warn("Could not restart libvirt due to: %s" % (e))
-            return False
-        try:
-            cmds = list()
-            cmds.append({
-                'cmd': self.distro.get_command('libvirt', 'verify'),
-                'run_as_root': True,
-            })
-            mp = dict()
-            mp['VIRT_PROTOCOL'] = virt_protocol
-            utils.execute_template(*cmds, params=mp)
-            return True
-        except excp.ProcessExecutionError as e:
-            LOG.warn("Could check if libvirt was ok for protocol %r due to: %s" % (virt_protocol, e))
-            return False
+        self.restart_service()
+        cmds = list()
+        cmds.append({
+            'cmd': self.distro.get_command('libvirt', 'verify'),
+            'run_as_root': True,
+        })
+        mp = dict()
+        mp['VIRT_PROTOCOL'] = virt_protocol
+        mp['VIRT_TYPE'] = virt_type
+        utils.execute_template(*cmds, params=mp)
 
     def clear_domains(self, virt_type, inst_prefix):
         libvirt = _get_virt_lib()
