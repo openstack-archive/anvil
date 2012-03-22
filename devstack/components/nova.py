@@ -561,6 +561,12 @@ class NovaConfConfigurator(object):
         # Which scheduler do u want?
         nova_conf.add('compute_scheduler_driver', self._getstr('scheduler', DEF_SCHEDULER))
 
+        # Rate limit the api??
+        if self._getbool('api_rate_limit'):
+            nova_conf.add('api_rate_limit', str(True))
+        else:
+            nova_conf.add('api_rate_limit', str(False))
+
         # Setup any network settings
         self._configure_network_settings(nova_conf)
 
