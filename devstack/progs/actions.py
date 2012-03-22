@@ -29,6 +29,7 @@ class ActionRunner(object):
     __meta__ = abc.ABCMeta
 
     PREREQ = None
+    NAME = None
 
     def __init__(self,
                  distro,
@@ -69,13 +70,13 @@ class ActionRunner(object):
         """Create component objects for each component in the persona.
         """
         components = persona.wanted_components
-        desired_subsystems = persona.wanted_subsystems or dict()
-        component_opts = persona.component_options or dict()
-        instances = dict()
+        desired_subsystems = persona.wanted_subsystems or {}
+        component_opts = persona.component_options or {}
+        instances = {}
         for c in components:
             (cls, my_info) = self.distro.extract_component(c, self.NAME)
             LOG.debug("Constructing class %s" % (cls))
-            cls_kvs = dict()
+            cls_kvs = {}
             cls_kvs['runner'] = self
             cls_kvs['component_dir'] = sh.joinpths(root_dir, c)
             cls_kvs['subsystem_info'] = my_info.get('subsystems', {})
@@ -310,7 +311,6 @@ class UninstallRunner(ActionRunner):
             component_order,
             instances,
             )
-
 
 
 _NAMES_TO_RUNNER = {

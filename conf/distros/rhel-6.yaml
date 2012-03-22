@@ -17,6 +17,8 @@ commands:
     libvirt:
         restart: service libvirtd restart
         status: service libvirtd status
+        # This is just used to check that libvirt will work with a given protocol
+        verify: virsh -c %VIRT_PROTOCOL% uri
     mysql:
         create_db: mysql --user=%USER% --password=%PASSWORD% -e "CREATE DATABASE %DB%;"
         drop_db: mysql --user=%USER% --password=%PASSWORD% -e "DROP DATABASE IF EXISTS

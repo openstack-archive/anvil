@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import contextlib
+
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import shell as sh
@@ -29,121 +31,118 @@ LIBVIRT_PROTOCOL_MAP = {
     'uml': 'uml:///system',
     'lxc': 'lxc:///',
 }
-VIRT_LIB = 'libvirt'
-
-# This is just used to check that libvirt will work with
-# a given protocol, may not be ideal but does seem to crap
-# out if it won't work, so thats good...
-VIRSH_SANITY_CMD = ['virsh', '-c', '%VIRT_PROTOCOL%', 'uri']
 
 # Status is either dead or alive!
 _DEAD = 'DEAD'
 _ALIVE = 'ALIVE'
 
-# Alive wait time, just a sleep we put into so that the service can start up
-# FIXME: take from config...
-WAIT_ALIVE_TIME = 5
+# Type that should always work
+DEF_VIRT_TYPE = 'qemu'
+
+
+def canon_libvirt_type(virt_type):
+    if not virt_type:
+        return DEF_VIRT_TYPE
+    virt_type = virt_type.lower().strip()
+    if not (virt_type in LIBVIRT_PROTOCOL_MAP):
+        return DEF_VIRT_TYPE
+    else:
+        return virt_type
 
 
 def _get_virt_lib():
     # Late import so that we don't always need this library to be active
     # ie if u aren't using libvirt in the first place...
-    return utils.import_module(VIRT_LIB)
+    return utils.import_module('libvirt')
 
 
-def _status(distro):
-    cmds = [{'cmd': distro.get_command('libvirt', 'status'),
-             'run_as_root': True,
-             }]
-    result = utils.execute_template(*cmds,
-                                     check_exit_code=False,
-                                     params={})
-    if not result or not result[0]:
-        return _DEAD
-    (sysout, stderr) = result[0]
-    combined = str(sysout) + str(stderr)
-    combined = combined.lower()
-    if combined.find("running") != -1 or combined.find('start') != -1:
-        return _ALIVE
-    else:
-        return _DEAD
+class Virsh(object):
 
+    def __init__(self, config, distro):
+        self.cfg = config
+        self.distro = distro
+        self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
 
-def _destroy_domain(libvirt, conn, dom_name):
-    try:
-        dom = conn.lookupByName(dom_name)
-        LOG.debug("Destroying domain (%s) (id=%s) running %s" % (dom_name, dom.ID(), dom.OSType()))
-        dom.destroy()
-        dom.undefine()
-    except libvirt.libvirtError, e:
-        LOG.warn("Could not clear out libvirt domain (%s) due to [%s]" % (dom_name, e.message))
+    def _service_status(self):
+        cmd = self.distro.get_command('libvirt', 'status')
+        (stdout, stderr) = sh.execute(*cmd, run_as_root=True, check_exit_code=False)
+        combined = (stdout + stderr).lower()
+        if combined.find("running") != -1 or combined.find('start') != -1:
+            return _ALIVE
+        else:
+            return _DEAD
 
-
-def restart(distro):
-    if _status(distro) != _ALIVE:
-        cmds = [{
-                'cmd': distro.get_command('libvirt', 'restart'),
-                'run_as_root': True,
-                }]
-        utils.execute_template(*cmds, params={})
-        LOG.info("Restarting the libvirt service, please wait %s seconds until its started." % (WAIT_ALIVE_TIME))
-        sh.sleep(WAIT_ALIVE_TIME)
-
-
-def virt_ok(virt_type, distro):
-    virt_protocol = LIBVIRT_PROTOCOL_MAP.get(virt_type)
-    if not virt_protocol:
-        return False
-    try:
-        restart(distro)
-    except excp.ProcessExecutionError, e:
-        LOG.warn("Could not restart libvirt due to [%s]" % (e))
-        return False
-    try:
-        cmds = list()
-        cmds.append({
-            'cmd': VIRSH_SANITY_CMD,
-            'run_as_root': True,
-        })
-        mp = dict()
-        mp['VIRT_PROTOCOL'] = virt_protocol
-        utils.execute_template(*cmds, params=mp)
-        return True
-    except excp.ProcessExecutionError, e:
-        LOG.warn("Could check if libvirt was ok for protocol [%s] due to [%s]" % (virt_protocol, e.message))
-        return False
-
-
-def clear_libvirt_domains(distro, virt_type, inst_prefix):
-    libvirt = _get_virt_lib()
-    if not libvirt:
-        LOG.warn("Could not clear out libvirt domains, libvirt not available for python.")
-        return
-    virt_protocol = LIBVIRT_PROTOCOL_MAP.get(virt_type)
-    if not virt_protocol:
-        LOG.warn("Could not clear out libvirt domains, no known protocol for virt type %s" % (virt_type))
-        return
-    with sh.Rooted(True):
-        LOG.info("Attempting to clear out leftover libvirt domains using protocol %s" % (virt_protocol))
+    def _destroy_domain(self, conn, dom_name):
+        libvirt = _get_virt_lib()
         try:
-            restart(distro)
+            dom = conn.lookupByName(dom_name)
+            LOG.debug("Destroying domain (%r) (id=%s) running %r" % (dom_name, dom.ID(), dom.OSType()))
+            dom.destroy()
+            dom.undefine()
+        except libvirt.libvirtError as e:
+            LOG.warn("Could not clear out libvirt domain %r due to: %s" % (dom_name, e))
+
+    def restart_service(self):
+        if self._service_status() != _ALIVE:
+            cmd = self.distro.get_command('libvirt', 'restart')
+            sh.execute(*cmd, run_as_root=True)
+            LOG.info("Restarting the libvirt service, please wait %s seconds until its started." % (self.wait_time))
+            sh.sleep(self.wait_time)
+
+    def check_virt(self, virt_type):
+        virt_protocol = LIBVIRT_PROTOCOL_MAP.get(virt_type)
+        if not virt_protocol:
+            return False
+        try:
+            self.restart_service()
         except excp.ProcessExecutionError, e:
-            LOG.warn("Could not restart libvirt due to [%s]" % (e))
-            return
+            LOG.warn("Could not restart libvirt due to: %s" % (e))
+            return False
         try:
-            conn = libvirt.open(virt_protocol)
-        except libvirt.libvirtError, e:
-            LOG.warn("Could not connect to libvirt using protocol [%s] due to [%s]" % (virt_protocol, e.message))
+            cmds = list()
+            cmds.append({
+                'cmd': self.distro.get_command('libvirt', 'verify'),
+                'run_as_root': True,
+            })
+            mp = dict()
+            mp['VIRT_PROTOCOL'] = virt_protocol
+            utils.execute_template(*cmds, params=mp)
+            return True
+        except excp.ProcessExecutionError as e:
+            LOG.warn("Could check if libvirt was ok for protocol %r due to: %s" % (virt_protocol, e))
+            return False
+
+    def clear_domains(self, virt_type, inst_prefix):
+        libvirt = _get_virt_lib()
+        if not libvirt:
+            LOG.warn("Could not clear out libvirt domains, libvirt not available for python.")
             return
-        try:
-            defined_domains = conn.listDefinedDomains()
-            kill_domains = list()
-            for domain in defined_domains:
-                if domain.startswith(inst_prefix):
-                    kill_domains.append(domain)
-            if kill_domains:
-                LOG.info("Found %s old domains to destroy (%s)" % (len(kill_domains), ", ".join(sorted(kill_domains))))
-                for domain in sorted(kill_domains):
-                    _destroy_domain(libvirt, conn, domain)
-        except libvirt.libvirtError, e:
-            LOG.warn("Could not clear out libvirt domains due to [%s]" % (e.message))
+        virt_protocol = LIBVIRT_PROTOCOL_MAP.get(virt_type)
+        if not virt_protocol:
+            LOG.warn("Could not clear out libvirt domains, no known protocol for virt type %r" % (virt_type))
+            return
+        with sh.Rooted(True):
+            LOG.info("Attempting to clear out leftover libvirt domains using protocol %r" % (virt_protocol))
+            try:
+                self.restart_service()
+            except excp.ProcessExecutionError as e:
+                LOG.warn("Could not restart libvirt due to: %s" % (e))
+                return
+            try:
+                conn = libvirt.open(virt_protocol)
+            except libvirt.libvirtError as e:
+                LOG.warn("Could not connect to libvirt using protocol %r due to: %s" % (virt_protocol, e))
+                return
+            with contextlib.closing(conn) as ch:
+                try:
+                    defined_domains = ch.listDefinedDomains()
+                    kill_domains = list()
+                    for domain in defined_domains:
+                        if domain.startswith(inst_prefix):
+                            kill_domains.append(domain)
+                    if kill_domains:
+                        LOG.info("Found %s old domains to destroy (%s)" % (len(kill_domains), ", ".join(sorted(kill_domains))))
+                        for domain in sorted(kill_domains):
+                            self._destroy_domain(ch, domain)
+                except libvirt.libvirtError, e:
+                    LOG.warn("Could not clear out libvirt domains due to %s" % (e))

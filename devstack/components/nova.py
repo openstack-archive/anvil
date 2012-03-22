@@ -19,7 +19,7 @@ from urlparse import urlunparse
 from devstack import component as comp
 from devstack import date
 from devstack import exceptions
-from devstack import libvirt as virsh
+from devstack import libvirt as lv
 from devstack import log as logging
 from devstack import shell as sh
 from devstack import utils
@@ -145,7 +145,6 @@ DEF_VOL_TEMPL = DEF_VOL_PREFIX + '%08x'
 
 # Default virt types
 DEF_VIRT_DRIVER = 'libvirt'
-DEF_VIRT_TYPE = 'qemu'
 
 # Virt drivers map -> to there connection name
 VIRT_DRIVER_CON_MAP = {
@@ -198,21 +197,12 @@ def canon_virt_driver(virt_driver):
     return virt_driver
 
 
-def canon_libvirt_type(virt_type):
-    if not virt_type:
-        return DEF_VIRT_TYPE
-    virt_type = virt_type.lower().strip()
-    if not (virt_type in virsh.LIBVIRT_PROTOCOL_MAP):
-        return DEF_VIRT_TYPE
-    else:
-        return virt_type
-
-
 class NovaUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
         self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
+        self.virsh = lv.Virsh(self.cfg, self.distro)
 
     def known_subsystems(self):
         return SUBSYSTEMS
@@ -238,8 +228,8 @@ class NovaUninstaller(comp.PythonUninstallComponent):
         virt_driver = canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
         if virt_driver == 'libvirt':
             inst_prefix = self.cfg.getdefaulted('nova', 'instance_name_prefix', DEF_INSTANCE_PREFIX)
-            libvirt_type = canon_libvirt_type(self.cfg.get('nova', 'libvirt_type'))
-            virsh.clear_libvirt_domains(self.distro, libvirt_type, inst_prefix)
+            libvirt_type = lv.canon_libvirt_type(self.cfg.get('nova', 'libvirt_type'))
+            self.virsh.clear_domains(libvirt_type, inst_prefix)
 
 
 class NovaInstaller(comp.PythonInstallComponent):
@@ -376,6 +366,7 @@ class NovaRuntime(comp.PythonRuntime):
         self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
         self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
+        self.virsh = lv.Virsh(self.cfg, self.distro)
 
     def _setup_network_init(self):
         tgt_fn = sh.joinpths(self.bin_dir, NET_INIT_CONF)
@@ -420,13 +411,13 @@ class NovaRuntime(comp.PythonRuntime):
         if virt_driver == 'libvirt':
             # FIXME: The configuration for the virtualization-type
             # should come from the persona.
-            virt_type = canon_libvirt_type(self.cfg.get('nova', 'libvirt_type'))
-            LOG.info("Checking that your selected libvirt virtualization type [%s] is working and running." % (virt_type))
-            if not virsh.virt_ok(virt_type, self.distro):
-                msg = ("Libvirt type %s does not seem to be active or configured correctly, "
-                       "perhaps you should be using %s instead." % (virt_type, DEF_VIRT_TYPE))
+            virt_type = lv.canon_libvirt_type(self.cfg.get('nova', 'libvirt_type'))
+            LOG.info("Checking that your selected libvirt virtualization type %r is working and running." % (virt_type))
+            if not self.virsh.check_virt(virt_type):
+                msg = ("Libvirt type %r does not seem to be active or configured correctly, "
+                       "perhaps you should be using %r instead." % (virt_type, lv.DEF_VIRT_TYPE))
                 raise exceptions.StartException(msg)
-            virsh.restart(self.distro)
+            self.virsh.restart_service()
 
     def _get_param_map(self, app_name):
         params = comp.PythonRuntime._get_param_map(self, app_name)
@@ -584,7 +575,7 @@ class NovaConfConfigurator(object):
         # Configure anything libvirt related?
         virt_driver = canon_virt_driver(self._getstr('virt_driver'))
         if virt_driver == 'libvirt':
-            libvirt_type = canon_libvirt_type(self._getstr('libvirt_type'))
+            libvirt_type = lv.canon_libvirt_type(self._getstr('libvirt_type'))
             self._configure_libvirt(libvirt_type, nova_conf)
 
         # How instances will be presented
