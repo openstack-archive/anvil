@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import abc
+
 from devstack import decorators
 from devstack import log as logging
 from devstack import utils
@@ -22,20 +24,25 @@ LOG = logging.getLogger("devstack.packager")
 
 
 class Packager(object):
+    __meta__ = abc.ABCMeta
 
     @decorators.log_debug
-    def __init__(self, distro, keep_packages):
+    def __init__(self, distro):
         self.distro = distro
-        self.keep_packages = keep_packages
 
+    @abc.abstractmethod
     def install(self, pkg):
-        raise NotImplementedError()
+        pass
+
+    @abc.abstractmethod
+    def _remove(self, pkg):
+        pass
 
     def remove(self, pkg):
-        if self.keep_packages:
+        removable = pkg.get('removable', True)
+        if not removable:
             return False
-        else:
-            return self._remove(pkg)
+        return self._remove(pkg)
 
     def pre_install(self, pkgs, params=None):
         for info in pkgs:
@@ -52,6 +59,3 @@ class Packager(object):
                 LOG.info("Running post-install commands for package %s.",
                          info['name'])
                 utils.execute_template(*cmds, params=params)
-
-    def _remove(self, pkg):
-        raise NotImplementedError()

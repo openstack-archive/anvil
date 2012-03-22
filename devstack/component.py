@@ -398,6 +398,9 @@ class PkgUninstallComponent(ComponentBase):
         pass
 
     def _uninstall_pkgs(self):
+        if self.keep_old:
+            LOG.info('Keep-old flag set, not removing packages')
+            return
         pkgs = self.tracereader.packages_installed()
         if pkgs:
             pkg_names = set([p['name'] for p in pkgs])
