@@ -134,9 +134,12 @@ class YumPackager(yum.YumPackager):
             self._execute_yum(install_cmd)
             (src, tgt) = RHEL_RELINKS.get(name)
             if not sh.islink(tgt):
-                # This is actually a feature, EPEL must not conflict with RHEL, so X pkg installs newer version in parallel.
+                # This is actually a feature, EPEL must not conflict
+                # with RHEL, so X pkg installs newer version in
+                # parallel.
                 #
-                # This of course doesn't work when running from git like devstack does....
+                # This of course doesn't work when running from git
+                # like devstack does....
                 sh.symlink(src, tgt)
             return True
         else:
