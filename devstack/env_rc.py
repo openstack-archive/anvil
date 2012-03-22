@@ -133,6 +133,7 @@ class RcWriter(object):
         lines.extend(self._generate_os_env())
         lines.extend(self._generate_euca_env())
         lines.extend(self._generate_extern_inc())
+        lines.extend(self._generate_misc_env())
         lines.extend(self._generate_aliases())
         return lines
 
@@ -145,6 +146,7 @@ class RcWriter(object):
         possible_vars.update(self._get_os_envs())
         possible_vars.update(self._get_euca_envs())
         possible_vars.update(self._get_nova_envs())
+        possible_vars.update(self._get_misc_envs())
         new_vars = dict()
         updated_vars = dict()
         for (key, value) in possible_vars.items():
@@ -186,6 +188,19 @@ class RcWriter(object):
         # Todo: describe more why this is the case...
         to_set['OS_AUTH_URL'] = key_params['SERVICE_ENDPOINT']
         return to_set
+
+    def _get_misc_envs(self):
+        key_params = keystone.get_shared_params(self.cfg, self.pw_gen)
+        to_set = dict()
+        to_set.update(key_params)
+        return to_set
+
+    def _generate_misc_env(self):
+        lines = list()
+        lines.append('# Misc stuff')
+        lines.extend(self._make_dict_export(self._get_misc_envs()))
+        lines.append("")
+        return lines
 
     def _generate_os_env(self):
         lines = list()

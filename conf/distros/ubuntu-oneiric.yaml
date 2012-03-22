@@ -23,6 +23,8 @@ commands:
     libvirt:
         restart: service libvirt-bin restart
         status: service libvirt-bin status
+        # This is just used to check that libvirt will work with a given protocol
+        verify: virsh -c %VIRT_PROTOCOL% uri
     mysql:
         # NOTE: we aren't stopping any sql injection...
         create_db: mysql --user=%USER% --password=%PASSWORD% -e "CREATE DATABASE %DB%;"
