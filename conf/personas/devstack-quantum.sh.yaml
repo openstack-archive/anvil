@@ -1,0 +1,46 @@
+---
+components:
+# Order matters here!
+- general
+- db
+- rabbit-mq
+- keystone-client
+- keystone
+- glance
+- quantum
+- quantum-client
+- nova-client
+- nova
+- no-vnc
+- horizon
+description: Devstack.sh matching component installation + quantum!
+options:
+    no-vnc:
+        # This is the nova component name (we need this to hook into the nova conf...)
+        nova: nova
+    nova:
+    - no-vnc
+    # Signal nova we are using quantum
+    - quantum
+    keystone:
+    # Signal keystone we are using quantum
+    - quantum
+subsystems:
+    glance:
+    - api
+    - reg
+    nova:
+    - api
+    - cauth
+    - cert
+    - cpu
+    - net
+    - sched
+    - vol
+    - xvnc
+supports:
+- rhel-6
+- ubuntu-oneiric
+- fedora-16
+...
+
