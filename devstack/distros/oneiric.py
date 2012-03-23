@@ -46,33 +46,30 @@ class DBInstaller(db.DBInstaller):
             sh.write_file('/etc/mysql/my.cnf', fc)
 
 
-class AptPackager(apt.AptPackager):
+class RabbitPackager(apt.AptPackager):
 
-    def _remove_special(self, name, info):
-        if name == 'rabbitmq-server':
-            #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
-            #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
-            LOG.debug("Handling special remove of %s." % (name))
-            pkg_full = self._format_pkg_name(name, info.get("version"))
-            cmd = apt.APT_REMOVE + [pkg_full]
-            self._execute_apt(cmd)
-            #probably useful to do this
-            time.sleep(1)
-            #purge
-            cmd = apt.APT_PURGE + [pkg_full]
-            self._execute_apt(cmd)
-            return True
-        return False
+    def _remove(self, pkg):
+        #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
+        #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
+        name = pkg['name']
+        LOG.debug("Handling special remove of %s." % (name))
+        pkg_full = self._format_pkg_name(name, pkg.get("version"))
+        cmd = apt.APT_REMOVE + [pkg_full]
+        self._execute_apt(cmd)
+        #probably useful to do this
+        time.sleep(1)
+        #purge
+        cmd = apt.APT_PURGE + [pkg_full]
+        self._execute_apt(cmd)
+        return True
 
-    def _install_special(self, name, info):
-        if name == 'rabbitmq-server':
-            #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
-            #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
-            LOG.debug("Handling special install of %s." % (name))
-            #this seems to be a temporary fix for that bug
-            with tempfile.TemporaryFile() as f:
-                pkg_full = self._format_pkg_name(name, info.get("version"))
-                cmd = apt.APT_INSTALL + [pkg_full]
-                self._execute_apt(cmd, stdout_fh=f, stderr_fh=f)
-                return True
-        return False
+    def install(self, pkg):
+        #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
+        #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
+        name = pkg['name']
+        LOG.debug("Handling special install of %s." % (name))
+        #this seems to be a temporary fix for that bug
+        with tempfile.TemporaryFile() as f:
+            pkg_full = self._format_pkg_name(name, pkg.get("version"))
+            cmd = apt.APT_INSTALL + [pkg_full]
+            self._execute_apt(cmd, stdout_fh=f, stderr_fh=f)

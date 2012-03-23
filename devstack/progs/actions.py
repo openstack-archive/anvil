@@ -35,12 +35,10 @@ class ActionRunner(object):
                  distro,
                  cfg,
                  pw_gen,
-                 pkg_manager,
                  **kargs):
         self.distro = distro
         self.cfg = cfg
         self.pw_gen = pw_gen
-        self.pkg_manager = pkg_manager
         self.keep_old = kargs.get('keep_old', False)
         self.force = kargs.get('force', False)
 
@@ -135,7 +133,6 @@ class ActionRunner(object):
             prereq = self.PREREQ(self.distro,
                                  self.cfg,
                                  self.pw_gen,
-                                 self.pkg_manager,
                                  keep_old=self.keep_old,
                                  force=self.force,
                                  )

@@ -40,8 +40,9 @@ VERSION_TEMPL = "%s=%s"
 
 
 class AptPackager(pack.Packager):
-    def __init__(self, distro, keep_packages):
-        pack.Packager.__init__(self, distro, keep_packages)
+    def __init__(self, distro):
+        pack.Packager.__init__(self, distro)
+        # FIXME: Should this be coming from a setting somewhere?
         self.auto_remove = True
 
     def _format_pkg_name(self, name, version):
@@ -58,12 +59,7 @@ class AptPackager(pack.Packager):
             **kargs)
 
     def _remove(self, pkg):
-        removable = pkg.get('removable', True)
-        if not removable:
-            return False
         name = pkg['name']
-        if self._remove_special(name, pkg):
-            return True
         pkg_full = self._format_pkg_name(name, pkg.get("version"))
         cmd = APT_DO_REMOVE + [pkg_full]
         self._execute_apt(cmd)
@@ -73,15 +69,6 @@ class AptPackager(pack.Packager):
 
     def install(self, pkg):
         name = pkg['name']
-        if self._install_special(name, pkg):
-            return
-        else:
-            pkg_full = self._format_pkg_name(name, pkg.get("version"))
-            cmd = APT_INSTALL + [pkg_full]
-            self._execute_apt(cmd)
-
-    def _remove_special(self, name, info):
-        return False
-
-    def _install_special(self, name, info):
-        return False
+        pkg_full = self._format_pkg_name(name, pkg.get("version"))
+        cmd = APT_INSTALL + [pkg_full]
+        self._execute_apt(cmd)

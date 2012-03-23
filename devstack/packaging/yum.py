@@ -32,8 +32,8 @@ VERSION_TEMPL = "%s-%s"
 
 
 class YumPackager(pack.Packager):
-    def __init__(self, distro, keep_packages):
-        pack.Packager.__init__(self, distro, keep_packages)
+    def __init__(self, distro):
+        pack.Packager.__init__(self, distro)
 
     def _format_pkg_name(self, name, version):
         if version:
@@ -63,14 +63,10 @@ class YumPackager(pack.Packager):
             self._execute_yum(cmd)
 
     def _remove(self, pkg):
-        removable = pkg.get('removable', True)
-        if not removable:
-            return False
         name = pkg['name']
         if self._remove_special(name, pkg):
             return True
-        else:
-            pkg_full = self._format_pkg_name(name, pkg.get("version"))
-            cmd = YUM_REMOVE + [pkg_full]
-            self._execute_yum(cmd)
-            return True
+        pkg_full = self._format_pkg_name(name, pkg.get("version"))
+        cmd = YUM_REMOVE + [pkg_full]
+        self._execute_yum(cmd)
+        return True
