@@ -19,6 +19,7 @@ import weakref
 from devstack import cfg_helpers
 from devstack import downloader as down
 from devstack import exceptions as excp
+from devstack import importer
 from devstack import log as logging
 from devstack import pip
 from devstack import settings
@@ -82,7 +83,6 @@ class ComponentBase(object):
         # Parts of the global runner context that we use
         self.cfg = runner.cfg
         self.pw_gen = runner.pw_gen
-        self.packager = runner.pkg_manager
         self.distro = runner.distro
 
         # Required component directories
@@ -127,9 +127,30 @@ class ComponentBase(object):
         return tr.TraceReader(tr.trace_fn(self.trace_dir, tr.IN_TRACE)).exists()
 
 
-class PkgInstallComponent(ComponentBase):
+class PackageBasedComponentMixin(object):
+    """Mix this into classes that need to manipulate
+    OS-level packages.
+    """
+    PACKAGER_KEY_NAME = 'packager_name'
+
+    def __init__(self):
+        self.default_packager = self.distro.get_default_package_manager()
+
+    def get_packager(self, pkg_info):
+        if self.PACKAGER_KEY_NAME in pkg_info:
+            packager_name = pkg_info[self.PACKAGER_KEY_NAME]
+            LOG.debug('Loading custom package manager %s', packager_name)
+            packager = importer.import_entry_point(packager_name)(self.distro)
+        else:
+            LOG.debug('Using default package manager')
+            packager = self.default_packager
+        return packager
+
+
+class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
     def __init__(self, *args, **kargs):
         ComponentBase.__init__(self, *args, **kargs)
+        PackageBasedComponentMixin.__init__(self)
         self.tracewriter = tr.TraceWriter(tr.trace_fn(self.trace_dir,
                                                       tr.IN_TRACE))
         self.packages = kargs.get('packages', list())
@@ -185,8 +206,10 @@ class PkgInstallComponent(ComponentBase):
         for name in self.desired_subsystems:
             if name in self.subsystem_info:
                 # Todo handle duplicates/version differences?
-                LOG.debug("Extending package list with packages for subsystem %s" % (name))
-                subsystem_pkgs = self.subsystem_info[name].get('packages', list())
+                LOG.debug(
+                    "Extending package list with packages for subsystem %s",
+                    name)
+                subsystem_pkgs = self.subsystem_info[name].get('packages', [])
                 pkg_list.extend(subsystem_pkgs)
         return pkg_list
 
@@ -196,11 +219,13 @@ class PkgInstallComponent(ComponentBase):
         pkgs = self._get_packages()
         if pkgs:
             pkg_names = set([p['name'] for p in pkgs])
-            LOG.info("Setting up %s packages (%s)" % (len(pkg_names), ", ".join(pkg_names)))
+            LOG.info("Setting up %s packages (%s)",
+                     len(pkg_names), ", ".join(pkg_names))
             with utils.progress_bar(INSTALL_TITLE, len(pkgs)) as p_bar:
                 for (i, p) in enumerate(pkgs):
                     self.tracewriter.package_installed(p)
-                    self.packager.install(p)
+                    packager = self.get_packager(p)
+                    packager.install(p)
                     p_bar.update(i + 1)
         else:
             LOG.info('No packages to install for %s',
@@ -211,13 +236,17 @@ class PkgInstallComponent(ComponentBase):
         pkgs = self._get_packages()
         if pkgs:
             mp = self._get_param_map(None)
-            self.packager.pre_install(pkgs, mp)
+            for p in pkgs:
+                packager = self.get_packager(p)
+                packager.pre_install(p, mp)
 
     def post_install(self):
         pkgs = self._get_packages()
         if pkgs:
             mp = self._get_param_map(None)
-            self.packager.post_install(pkgs, mp)
+            for p in pkgs:
+                packager = self.get_packager(p)
+                packager.post_install(p, mp)
 
     def _get_config_files(self):
         return list()
@@ -347,9 +376,10 @@ class PythonInstallComponent(PkgInstallComponent):
         return trace_dir
 
 
-class PkgUninstallComponent(ComponentBase):
+class PkgUninstallComponent(ComponentBase, PackageBasedComponentMixin):
     def __init__(self, *args, **kargs):
         ComponentBase.__init__(self, *args, **kargs)
+        PackageBasedComponentMixin.__init__(self)
         self.tracereader = tr.TraceReader(tr.trace_fn(self.trace_dir,
                                                       tr.IN_TRACE))
         self.keep_old = kargs.get('keep_old')
@@ -398,6 +428,9 @@ class PkgUninstallComponent(ComponentBase):
         pass
 
     def _uninstall_pkgs(self):
+        if self.keep_old:
+            LOG.info('Keep-old flag set, not removing packages')
+            return
         pkgs = self.tracereader.packages_installed()
         if pkgs:
             pkg_names = set([p['name'] for p in pkgs])
@@ -406,7 +439,8 @@ class PkgUninstallComponent(ComponentBase):
             which_removed = set()
             with utils.progress_bar(UNINSTALL_TITLE, len(pkgs), reverse=True) as p_bar:
                 for (i, p) in enumerate(pkgs):
-                    if self.packager.remove(p):
+                    packager = self.get_packager(p)
+                    if packager.remove(p):
                         which_removed.add(p['name'])
                     p_bar.update(i + 1)
             LOG.info("Actually removed %s packages (%s)",

@@ -2,7 +2,7 @@
 # Ubuntu 11 (Oneiric)
 distro_pattern: Ubuntu(.*)oneiric
 name: ubuntu-oneiric
-packager_name: devstack.distros.oneiric:AptPackager
+packager_name: devstack.packaging.apt:AptPackager
 commands:
     apache:
         restart: service apache2 restart
@@ -617,6 +617,7 @@ components:
         -   name: rabbitmq-server
             removable: true
             version: 2.5*
+            packager_name: devstack.distros.oneiric:RabbitPackager
     swift:
         action_classes:
             install: devstack.components.swift:SwiftInstaller
