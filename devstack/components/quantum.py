@@ -73,6 +73,7 @@ class QuantumInstaller(comp.PkgInstallComponent):
         self.q_vswitch_service = False
         plugin = self.cfg.getdefaulted("quantum", "q_plugin", VSWITCH_PLUGIN)
         if plugin == VSWITCH_PLUGIN:
+            # FIXME: Make these subsystems
             self.q_vswitch_agent = True
             self.q_vswitch_service = True
 

@@ -35,7 +35,7 @@ if [ -f $RC_DIR/$EC2_RC ];
 then
     echo "Woah cowboy you seem to already have '$RC_DIR/$EC2_RC'!"
     while true; do
-        read -p "Continue? " yn
+        read -p "Overwrite it and continue? " yn
         case $yn in
             [Yy]* ) break;;
             [Nn]* ) exit 1;;
