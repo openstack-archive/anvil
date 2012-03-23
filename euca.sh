@@ -28,6 +28,10 @@ fi
 # Get user configuration
 source $CORE_RC
 
+# Bug https://bugs.launchpad.net/keystone/+bug/962600
+unset SERVICE_TOKEN
+unset SERVICE_ENDPOINT
+
 # Now we start showing whats happening
 set -x
 

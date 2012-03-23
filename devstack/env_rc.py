@@ -39,8 +39,7 @@ PASSWORDS_MAKES = {
     'ADMIN_PASSWORD': 'horizon_keystone_admin',
     'SERVICE_PASSWORD': 'service_password',
     'RABBIT_PASSWORD': 'rabbit',
-    # https://bugs.launchpad.net/keystone/+bug/962600
-    # 'SERVICE_TOKEN': 'service_token',
+    'SERVICE_TOKEN': 'service_token',
     'MYSQL_PASSWORD': 'sql',
 }
 
