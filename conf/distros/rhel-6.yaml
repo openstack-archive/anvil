@@ -2,6 +2,7 @@
 # RedHat Enterprise Linux 6
 name: rhel-6
 distro_pattern: redhat-6(.*)
+packager_name: devstack.packaging.yum:YumPackager
 commands:
     apache:
         restart: service httpd restart
@@ -250,6 +251,12 @@ components:
             name: python-webob1.0
             removable: true
             version: 1.0*
+            packager_name: devstack.distros.rhel6:YumPackagerWithRelinks
+            packager_options:
+                links:
+                    - source: /usr/lib/python2.6/site-packages/WebOb-1.0.8-py2.6.egg/webob/
+                      target: /usr/lib/python2.6/site-packages/webob
+
         pips:
         -   name: CherryPy
             version: 3.2.2
@@ -659,6 +666,5 @@ components:
             start: devstack.components.swift:SwiftRuntime
             stop: devstack.components.swift:SwiftRuntime
             uninstall: devstack.components.swift:SwiftUninstaller
-packager_name: devstack.distros.rhel6:YumPackager
 ...
 

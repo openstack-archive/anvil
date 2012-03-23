@@ -128,14 +128,21 @@ class ComponentBase(object):
 
 
 class PackageBasedComponentMixin(object):
+    """Mix this into classes that need to manipulate
+    OS-level packages.
+    """
+    PACKAGER_KEY_NAME = 'packager_name'
+
     def __init__(self):
         self.default_packager = self.distro.get_default_package_manager()
 
     def get_packager(self, pkg_info):
-        if 'packager' in pkg_info:
-            packager_name = pkg_info['packager']
+        if self.PACKAGER_KEY_NAME in pkg_info:
+            packager_name = pkg_info[self.PACKAGER_KEY_NAME]
+            LOG.debug('Loading custom package manager %s', packager_name)
             packager = importer.import_entry_point(packager_name)(self.distro)
         else:
+            LOG.debug('Using default package manager')
             packager = self.default_packager
         return packager
 
@@ -199,8 +206,10 @@ class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
         for name in self.desired_subsystems:
             if name in self.subsystem_info:
                 # Todo handle duplicates/version differences?
-                LOG.debug("Extending package list with packages for subsystem %s" % (name))
-                subsystem_pkgs = self.subsystem_info[name].get('packages', list())
+                LOG.debug(
+                    "Extending package list with packages for subsystem %s",
+                    name)
+                subsystem_pkgs = self.subsystem_info[name].get('packages', [])
                 pkg_list.extend(subsystem_pkgs)
         return pkg_list
 
@@ -210,7 +219,8 @@ class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
         pkgs = self._get_packages()
         if pkgs:
             pkg_names = set([p['name'] for p in pkgs])
-            LOG.info("Setting up %s packages (%s)" % (len(pkg_names), ", ".join(pkg_names)))
+            LOG.info("Setting up %s packages (%s)",
+                     len(pkg_names), ", ".join(pkg_names))
             with utils.progress_bar(INSTALL_TITLE, len(pkgs)) as p_bar:
                 for (i, p) in enumerate(pkgs):
                     self.tracewriter.package_installed(p)

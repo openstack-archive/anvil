@@ -33,18 +33,6 @@ LOG = logging.getLogger(__name__)
 SOCKET_CONF = "/etc/httpd/conf.d/wsgi-socket-prefix.conf"
 HTTPD_CONF = '/etc/httpd/conf/httpd.conf'
 
-# Need to relink for rhel (not a bug!)
-RHEL_RELINKS = {
-    'python-webob1.0': (
-        '/usr/lib/python2.6/site-packages/WebOb-1.0.8-py2.6.egg/webob/',
-        '/usr/lib/python2.6/site-packages/webob'
-    ),
-    'python-nose1.1': (
-        '/usr/lib/python2.6/site-packages/nose-1.1.2-py2.6.egg/nose/',
-        '/usr/lib/python2.6/site-packages/nose',
-    )
-}
-
 # See: http://wiki.libvirt.org/page/SSHPolicyKitSetup
 # FIXME: take from distro config??
 LIBVIRT_POLICY_FN = "/etc/polkit-1/localauthority/50-local.d/50-libvirt-access.pkla"
@@ -116,23 +104,23 @@ class NovaInstaller(nova.NovaInstaller):
         return configs_made
 
 
-class YumPackager(yum.YumPackager):
+class YumPackagerWithRelinks(yum.YumPackager):
 
-    def _remove_special(self, name, info):
-        if name in RHEL_RELINKS:
-            # Note: we don't return true here so that
-            # the normal package cleanup happens...
-            (_, tgt) = RHEL_RELINKS.get(name)
-            if sh.islink(tgt):
-                sh.unlink(tgt)
-        return False
+    def _remove(self, pkg):
+        response = yum.YumPackager._remove(self, pkg)
+        if response:
+            options = pkg.get('packager_options', {})
+            links = options.get('links', [])
+            for src, tgt in links:
+                if sh.islink(tgt):
+                    sh.unlink(tgt)
+        return response
 
-    def _install_special(self, name, info):
-        if name in RHEL_RELINKS:
-            full_pkg_name = self._format_pkg_name(name, info.get("version"))
-            install_cmd = yum.YUM_INSTALL + [full_pkg_name]
-            self._execute_yum(install_cmd)
-            (src, tgt) = RHEL_RELINKS.get(name)
+    def install(self, pkg):
+        yum.YumPackager.install(self, pkg)
+        options = pkg.get('packager_options', {})
+        links = options.get('links', [])
+        for src, tgt in links:
             if not sh.islink(tgt):
                 # This is actually a feature, EPEL must not conflict
                 # with RHEL, so X pkg installs newer version in
@@ -141,6 +129,4 @@ class YumPackager(yum.YumPackager):
                 # This of course doesn't work when running from git
                 # like devstack does....
                 sh.symlink(src, tgt)
-            return True
-        else:
-            return False
+        return True
