@@ -31,11 +31,11 @@ fi
 source $RC_DIR/$CORE_RC
 
 # Woah!
-if [ -f $RC_DIR/$EC2_RC];
+if [ -f $RC_DIR/$EC2_RC ];
 then
     echo "Woah cowboy you seem to already have '$RC_DIR/$EC2_RC'!"
     while true; do
-        read -p "Continue?" yn
+        read -p "Continue? " yn
         case $yn in
             [Yy]* ) break;;
             [Nn]* ) exit 1;;
