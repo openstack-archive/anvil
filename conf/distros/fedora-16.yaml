@@ -1,5 +1,5 @@
-# Fedora 16
 ---
+# Fedora 16 configuration for DevstackPy
 name: fedora-16
 distro_pattern: fedora-16
 commands:
@@ -17,6 +17,8 @@ commands:
     libvirt:
         restart: service libvirtd restart
         status: service libvirtd status
+        # This is just used to check that libvirt will work with a given protocol
+        verify: virsh -c %VIRT_PROTOCOL% uri
     mysql:
         create_db: mysql --user=%USER% --password=%PASSWORD% -e "CREATE DATABASE %DB%;"
         drop_db: mysql --user=%USER% --password=%PASSWORD% -e "DROP DATABASE IF EXISTS
@@ -30,7 +32,7 @@ commands:
         start: service mysqld start
         status: service mysqld status
         stop: service mysqld stop
-    pip: python-pip
+    pip: pip-python
     rabbit-mq:
         change_password: rabbitmqctl change_password guest
         restart: service rabbitmq-server restart
@@ -39,7 +41,11 @@ commands:
         stop: service rabbitmq-server stop
 components:
     db:
-        action_classes: {}
+        action_classes:
+            install: devstack.distros.fedora16:DBInstaller
+            start: devstack.components.db:DBRuntime
+            stop: devstack.components.db:DBRuntime
+            uninstall: devstack.components.db:DBUninstaller
         packages:
         -   name: mysql
             removable: true
@@ -48,7 +54,11 @@ components:
             removable: true
             version: 5.5*
     general:
-        action_classes: {}
+        action_classes:
+            install: devstack.components.pkglist:Installer
+            start: devstack.component:EmptyRuntime
+            stop: devstack.component:EmptyRuntime
+            uninstall: devstack.components.pkglist:Uninstaller
         packages:
         -   name: curl
             removable: false
@@ -135,14 +145,15 @@ components:
             removable: false
             version: 1.12*
     glance:
-        action_classes: {}
+        action_classes:
+            install: devstack.components.glance:GlanceInstaller
+            start: devstack.components.glance:GlanceRuntime
+            stop: devstack.components.glance:GlanceRuntime
+            uninstall: devstack.components.glance:GlanceUninstaller
         packages:
         -   name: MySQL-python
             removable: true
             version: 1.2*
-        -   name: python-argparse
-            removable: true
-            version: 1.1*
         -   name: python-dateutil
             removable: true
             version: 1.5*
@@ -155,17 +166,30 @@ components:
         -   name: python-httplib2
             removable: true
             version: 0.6*
+        -   name: python-paste-deploy
+            removable: true
+            version: 1.5.0*
         -   name: python-prettytable
             removable: true
             version: 0.5*
         -   name: python-routes
             removable: true
             version: 1.12*
+        -   name: python-sqlalchemy
+            removable: true
+            version: 0.7.5*
+        -   name: python-wsgiref
+            removable: true
+            version: 0.1.2*
         -   name: pyxattr
             removable: true
             version: 0.5*
     horizon:
-        action_classes: {}
+        action_classes:
+            install: devstack.distros.fedora16:HorizonInstaller
+            start: devstack.components.horizon:HorizonRuntime
+            stop: devstack.components.horizon:HorizonRuntime
+            uninstall: devstack.components.horizon:HorizonUninstaller
         packages:
         -   name: Django
             removable: true
@@ -179,6 +203,12 @@ components:
         -   name: mod_wsgi
             removable: true
             version: 3.3*
+        -   name: python-anyjson
+            removable: true
+            version: 0.3.*
+        -   name: python-boto
+            removable: true
+            version: 2.0*
         -   name: python-cherrypy
             removable: true
             version: 3.2*
@@ -191,6 +221,12 @@ components:
         -   name: python-eventlet
             removable: true
             version: 0.9*
+        -   name: python-greenlet
+            removable: true
+            version: 0.3*
+        -   name: python-httplib2
+            removable: true
+            version: 0.6*
         -   name: python-kombu
             removable: true
             version: 1.1*
@@ -219,7 +255,11 @@ components:
             removable: true
             version: 0.5*
     keystone:
-        action_classes: {}
+        action_classes:
+            install: devstack.components.keystone:KeystoneInstaller
+            start: devstack.components.keystone:KeystoneRuntime
+            stop: devstack.components.keystone:KeystoneRuntime
+            uninstall: devstack.components.keystone:KeystoneUninstaller
         packages:
         -   name: MySQL-python
             removable: true
@@ -227,12 +267,15 @@ components:
         -   name: cyrus-sasl-lib
             removable: false
             version: 2.1*
+        -   name: cyrus-sasl-devel
+            removable: false
+            version: 2.1*
         -   name: openldap
             removable: false
             version: 2.4*
-        -   name: python-argparse
-            removable: true
-            version: 1.1*
+        -   name: openldap-devel
+            removable: false
+            version: 2.4*
         -   name: python-eventlet
             removable: true
             version: 0.9*
@@ -276,81 +319,56 @@ components:
             removable: false
             version: 3.7*
     keystone-client:
-        action_classes: {}
+        action_classes:
+            install: devstack.components.keystone_client:KeyStoneClientInstaller
+            start: devstack.components.keystone_client:KeyStoneClientRuntime
+            stop: devstack.components.keystone_client:KeyStoneClientRuntime
+            uninstall: devstack.components.keystone_client:KeyStoneClientUninstaller
         packages:
-        -   name: python-argparse
-            removable: true
-            version: 1.1*
         -   name: python-prettytable
             removable: true
             version: 0.5*
     melange:
-        action_classes: {}
+        action_classes:
+            install: devstack.components.melange:MelangeInstaller
+            start: devstack.components.melange:MelangeRuntime
+            stop: devstack.components.melange:MelangeRuntime
+            uninstall: devstack.components.melange:MelangeUninstaller
         packages: null
-    n-api:
-        action_classes: {}
-        packages:
-        -   name: python-dateutil
-            removable: false
-            version: 1.5*
-    n-cpu:
-        action_classes: {}
-        packages:
-        -   name: iscsi-initiator-utils
-            removable: true
-            version: 6.2*
-        -   name: libvirt
-            removable: true
-            version: 0.9.6*
-        -   name: libvirt-client
-            removable: true
-            version: 0.9.6*
-        -   name: libvirt-python
-            removable: true
-            version: 0.9.6*
-        -   name: lvm2
-            removable: true
-            version: 2.02*
-        -   name: qemu-img
-            removable: true
-            version: 0.15*
-        -   name: qemu-system-x86
-            removable: true
-            version: 0.15*
-    n-vnc:
-        action_classes: {}
+    no-vnc:
+        action_classes:
+            install: devstack.components.novnc:NoVNCInstaller
+            start: devstack.components.novnc:NoVNCRuntime
+            stop: devstack.components.novnc:NoVNCRuntime
+            uninstall: devstack.components.novnc:NoVNCUninstaller
         packages:
         -   name: numpy
-            removable: true
+            removable: false
             version: 1.6*
-    n-vol:
-        action_classes: {}
-        packages:
-        -   name: iscsi-initiator-utils
-            removable: true
-            version: 6.2*
-        -   name: lvm2
-            removable: true
-            version: 2.02*
-        -   name: scsi-target-utils
-            removable: true
-            version: 1.0*
     nova:
-        action_classes: {}
+        action_classes:
+            install: devstack.distros.fedora16:NovaInstaller
+            start: devstack.components.nova:NovaRuntime
+            stop: devstack.components.nova:NovaRuntime
+            uninstall: devstack.components.nova:NovaUninstaller
         packages:
         -   name: MySQL-python
             removable: true
             version: 1.2*
         -   name: dnsmasq
             removable: false
-            version: 2.58*
+            version: 2.5*
+        -   name: dnsmasq-utils
+            removable: false
+            version: 2.5*
         -   name: ebtables
             removable: false
             version: 2.0*
         -   name: iptables
             removable: false
             version: 1.4*
-        -   name: iputils
+            # iputils includes arping for Fedora 
+        -   name: iputils 
             removable: false
             version: 20101006*
         -   name: kpartx
@@ -398,9 +416,15 @@ components:
         -   name: python-netaddr
             removable: true
             version: 0.7*
+        -   name: python-paramiko
+            removable: true
+            version: 1.7.7*
         -   name: python-paste
             removable: true
             version: 1.7.5*
+        -   name: python-paste-deploy
+            removable: true
+            version: 1.5*
         -   name: python-routes
             removable: true
             version: 1.12*
@@ -416,18 +440,109 @@ components:
         -   name: sqlite
             removable: false
             version: 3.7*
+        -   name: vconfig
+            removable: false
+            version: 1.9*     
+        pips:
+        -   name: Paste
+            version: 1.7.5.1
+        -   name: PasteDeploy
+            version: '1.5'
+        -   name: PasteScript
+            version: 1.7.5
+        -   name: Routes
+            version: 1.12.3
+        -   name: SQLAlchemy
+            version: 0.7.5
+        -   name: Tempita
+            options: --upgrade
+            version: 0.5dev
+        -   name: iso8601
+            version: 0.1.4
+        -   name: pycrypto
+            options: --upgrade
+            version: '2.5'
+        -   name: sqlalchemy-migrate
+            version: 0.7.2
+        subsystems:
+            api:
+                packages:
+                -   name: python-dateutil
+                    removable: false
+                    version: 1.5*
+            cpu:
+                packages:
+                -   name: iscsi-initiator-utils
+                    removable: true
+                    version: 6.2*
+                -   name: libguestfs
+                    removable: true
+                    version: 1.16*
+                    #TODO(mikeyp) libguestfs-mount 1.12 is what fedora
+                    #    provides - seems old compared to libguestfs v 1.16
+                -   name: libguestfs-mount
+                    removable: true
+                    version: 1.12*
+                -   name: libguestfs-tools
+                    removable: true
+                    version: 1.16*
+                -   name: libvirt
+                    removable: true
+                    version: 0.9.6*
+                -   name: libvirt-client
+                    removable: true
+                    version: 0.9.6*
+                -   name: libvirt-python
+                    removable: true
+                    version: 0.9.6*
+                -   name: lvm2
+                    removable: true
+                    version: 2.02*
+                -   name: qemu-img
+                    removable: true
+                    version: 0.15*
+                -   name: qemu-kvm
+                    removable: true
+                    version: 0.15*
+                -   name: qemu-system-x86
+                    removable: true
+                    version: 0.15*
+            vol:
+                packages:
+                -   name: iscsi-initiator-utils
+                    removable: true
+                    version: 6.2*
+                -   name: lvm2
+                    removable: true
+                    version: 2.02*
+                -   name: scsi-target-utils
+                    removable: true
+                    version: 1.0*
     nova-client:
-        action_classes: {}
+        action_classes:
+            install: devstack.components.nova_client:NovaClientInstaller
+            start: devstack.components.nova_client:NovaClientRuntime
+            stop: devstack.components.nova_client:NovaClientRuntime
+            uninstall: devstack.components.nova_client:NovaClientUninstaller
         packages:
-        -   name: python-argparse
-            removable: true
-            version: 1.1*
         -   name: python-prettytable
             removable: true
             version: 0.5*
     quantum:
-        action_classes: {}
+        action_classes:
+            install: devstack.components.quantum:QuantumInstaller
+            start: devstack.components.quantum:QuantumRuntime
+            stop: devstack.components.quantum:QuantumRuntime
+            uninstall: devstack.components.quantum:QuantumUninstaller
         packages:
+        -   name: libxml2-python
+            removable: false
+            version: 2.7*
+            # TODO(mikeyp) verify libxml2-python is really needed in addition
+            #              to libxml2-python.
+        -   name: python-lxml
+            removable: true
+            version: 2.3*
         -   name: python-eventlet
             removable: true
             version: 0.9*
@@ -437,9 +552,6 @@ components:
         -   name: python-greenlet
             removable: true
             version: 0.3*
-        -   name: python-lxml
-            removable: true
-            version: 2.3*
         -   name: python-paste
             removable: true
             version: 1.7*
@@ -449,23 +561,35 @@ components:
         -   name: python-routes
             removable: true
             version: 1.12*
+        pips:
+        -   name: Paste
+            version: 1.7.5.1
+        -   name: PasteDeploy
+            version: '1.5'
+        -   name: PasteScript
+            version: 1.7.5
+        -   name: Routes
+            version: 1.12.3
+        -   name: SQLAlchemy
+            version: 0.7.5
+        -   name: sqlalchemy-migrate
+            version: 0.7.2
     quantum-client:
-        action_classes: {}
+        action_classes:
+            install: devstack.components.quantum_client:QuantumClientInstaller
+            start: devstack.components.quantum_client:QuantumClientRuntime
+            stop: devstack.components.quantum_client:QuantumClientRuntime
+            uninstall: devstack.components.quantum_client:QuantumClientUninstaller
         packages:
         -   name: python-gflags
             removable: true
             version: 1.5*
-    quantum-openvswitch:
-        action_classes: {}
-        packages:
-        -   name: MySQL-python
-            removable: true
-            version: 1.2*
-        -   name: python-sqlalchemy
-            removable: true
-            version: 0.7*
     rabbit-mq:
-        action_classes: {}
+        action_classes:
+            install: devstack.components.rabbit:RabbitInstaller
+            start: devstack.components.rabbit:RabbitRuntime
+            stop: devstack.components.rabbit:RabbitRuntime
+            uninstall: devstack.components.rabbit:RabbitUninstaller
         packages:
         -   name: rabbitmq-server
             pre-install:
@@ -483,7 +607,11 @@ components:
             removable: true
             version: 2.6*
     swift:
-        action_classes: {}
+        action_classes: 
+            install: devstack.components.swift:SwiftInstaller
+            start: devstack.components.swift:SwiftRuntime
+            stop: devstack.components.swift:SwiftRuntime
+            uninstall: devstack.components.swift:SwiftUninstaller
         packages:
         -   name: memcached
             removable: true
@@ -503,6 +631,11 @@ components:
         -   name: python-paste-deploy
             removable: true
             version: 1.5*
+            # TODO(mikeyp) resolve python-simplejson, listed in devstack
+            #              is it really needed ?
+        -   name : python-simplejson
+            version: 2.1.6*
+            removable: true
         -   name: python-webob
             removable: true
             version: 1.0*
@@ -512,6 +645,9 @@ components:
         -   name: sqlite
             removable: true
             version: 3.7*
+        -   name: xfsprogs
+            removable: true
+            version: 3.1*
 packager_name: devstack.packaging.yum:YumPackager
 ...
 
