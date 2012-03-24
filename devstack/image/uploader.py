@@ -29,7 +29,7 @@ from devstack import utils
 
 from devstack.components import keystone
 
-LOG = log.getLogger("devstack.image.creator")
+LOG = log.getLogger("devstack.image.uploader")
 
 # These are used when looking inside archives
 KERNEL_FN_MATCH = re.compile(r"(.*)vmlinuz$", re.I)
