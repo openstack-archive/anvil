@@ -60,7 +60,6 @@ FS_TYPE = "xfs"
 
 # Subdirs of the git checkout
 BIN_DIR = 'bin'
-CONFIG_DIR = 'etc'
 LOG_DIR = 'logs'
 
 # Config keys we warm up so u won't be prompted later
@@ -72,7 +71,6 @@ class SwiftUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, *args, **kargs)
         self.datadir = sh.joinpths(self.app_dir, self.cfg.getdefaulted('swift', 'data_location', 'data'))
-        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
         self.logdir = sh.joinpths(self.datadir, LOG_DIR)
 
@@ -88,7 +86,6 @@ class SwiftUninstaller(comp.PythonUninstallComponent):
 class SwiftInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
         self.datadir = sh.joinpths(self.app_dir, self.cfg.getdefaulted('swift', 'data_location', 'data'))
         self.logdir = sh.joinpths(self.datadir, LOG_DIR)
@@ -203,7 +200,6 @@ class SwiftRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.datadir = sh.joinpths(self.app_dir, self.cfg.getdefaulted('swift', 'data_location', 'data'))
-        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
         self.logdir = sh.joinpths(self.datadir, LOG_DIR)
 

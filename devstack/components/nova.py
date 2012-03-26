@@ -122,7 +122,6 @@ SUB_COMPONENT_NAME_MAP = {
 
 # Subdirs of the checkout/download
 BIN_DIR = 'bin'
-CONFIG_DIR = "etc"
 
 # Network class/driver/manager templs
 QUANTUM_MANAGER = 'nova.network.quantum.manager.QuantumManager'
@@ -201,7 +200,6 @@ class NovaUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
-        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
         self.virsh = lv.Virsh(self.cfg, self.distro)
 
     def known_subsystems(self):
@@ -236,7 +234,6 @@ class NovaInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
-        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
         self.paste_conf_fn = self._get_target_config_name(PASTE_CONF)
         self.volumes_enabled = False
         if NVOL in self.desired_subsystems:
@@ -329,15 +326,13 @@ class NovaInstaller(comp.PythonInstallComponent):
         self.tracewriter.cfg_file_written(sh.write_file(conf_fn, nova_conf_contents))
 
     def _get_source_config(self, config_fn):
-        name = config_fn
         if config_fn == PASTE_CONF:
-            # Return the paste api template
             return comp.PythonInstallComponent._get_source_config(self, PASTE_SOURCE_FN)
-        elif config_fn == LOGGING_CONF:
-            name = LOGGING_SOURCE_FN
-        srcfn = sh.joinpths(self.cfg_dir, "nova", name)
-        contents = sh.load_file(srcfn)
-        return (srcfn, contents)
+        if config_fn == LOGGING_CONF:
+            config_fn = LOGGING_SOURCE_FN
+        fn = sh.joinpths(self.app_dir, 'etc', "nova", config_fn)
+        contents = sh.load_file(fn)
+        return (fn, contents)
 
     def _get_param_map(self, config_fn):
         mp = dict()
@@ -363,7 +358,6 @@ class NovaInstaller(comp.PythonInstallComponent):
 class NovaRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
-        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
         self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
         self.virsh = lv.Virsh(self.cfg, self.distro)

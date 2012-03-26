@@ -104,6 +104,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def _get_target_config_name(self, config_name):
         if config_name == HORIZON_PY_CONF:
+            # FIXME don't write to checked out locations...
             return sh.joinpths(self.dash_dir, *HORIZON_PY_CONF_TGT)
         else:
             return comp.PythonInstallComponent._get_target_config_name(self, config_name)

@@ -33,7 +33,6 @@ DB_NAME = "keystone"
 
 # Subdirs of the git checkout
 BIN_DIR = "bin"
-CONFIG_DIR = "etc"
 
 # Simple confs
 ROOT_CONF = "keystone.conf"
@@ -56,9 +55,9 @@ SYNC_DB_CMD = [sh.joinpths('%BINDIR%', MANAGE_APP_NAME), 'db_sync']
 # What to start
 APP_NAME = 'keystone-all'
 APP_OPTIONS = {
-    APP_NAME: ['--config-file', sh.joinpths('%ROOT%', CONFIG_DIR, ROOT_CONF),
+    APP_NAME: ['--config-file', sh.joinpths('%CONFIG_DIR%', ROOT_CONF),
                 "--debug", '-d',
-                '--log-config=' + sh.joinpths('%ROOT%', CONFIG_DIR, 'logging.cnf')]
+                '--log-config=' + sh.joinpths('%CONFIG_DIR%', LOGGING_CONF)]
 }
 
 
@@ -81,14 +80,11 @@ QUANTUM_TEMPL_ADDS = ['catalog.RegionOne.network.publicURL = http://%SERVICE_HOS
 class KeystoneUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, *args, **kargs)
-        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
-        self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
 
 
 class KeystoneInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
 
     def _get_download_locations(self):
@@ -172,7 +168,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
     def _get_source_config(self, config_fn):
         if config_fn == LOGGING_CONF:
-            fn = sh.joinpths(self.cfg_dir, LOGGING_SOURCE_FN)
+            fn = sh.joinpths(self.app_dir, 'etc', LOGGING_SOURCE_FN)
             contents = sh.load_file(fn)
             return (fn, contents)
         return comp.PythonInstallComponent._get_source_config(self, config_fn)
@@ -200,7 +196,6 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 class KeystoneRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
-        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
         self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
 

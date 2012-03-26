@@ -35,7 +35,6 @@ PLUGIN_CONF = "plugins.ini"
 QUANTUM_CONF = 'quantum.conf'
 PLUGIN_LOC = ['etc']
 AGENT_CONF = 'ovs_quantum_plugin.ini'
-AGENT_LOC = ["etc", "quantum", "plugins", "openvswitch"]
 AGENT_BIN_LOC = ["quantum", "plugins", "openvswitch", 'agent']
 CONFIG_FILES = [PLUGIN_CONF, AGENT_CONF]
 
@@ -48,10 +47,6 @@ OVS_BRIDGE_ADD = ['ovs-vsctl', '--no-wait', 'add-br', '%OVS_BRIDGE%']
 OVS_BRIDGE_EXTERN_ID = ['ovs-vsctl', '--no-wait', 'br-set-external-id', '%OVS_BRIDGE%', 'bridge-id', '%OVS_EXTERNAL_ID%']
 OVS_BRIDGE_CMDS = [OVS_BRIDGE_DEL, OVS_BRIDGE_ADD, OVS_BRIDGE_EXTERN_ID]
 
-# Subdirs of the downloaded
-CONFIG_DIR = 'etc'
-BIN_DIR = 'bin'
-
 # What to start (only if openvswitch enabled)
 APP_Q_SERVER = 'quantum-server'
 APP_Q_AGENT = 'ovs_quantum_agent.py'
@@ -59,6 +54,7 @@ APP_OPTIONS = {
     APP_Q_SERVER: ["%QUANTUM_CONFIG_FILE%"],
     APP_Q_AGENT: ["%OVS_CONFIG_FILE%", "-v"],
 }
+
 
 class QuantumMixin(object):
 
@@ -95,16 +91,6 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
             # FIXME: Make these subsystems
             self.q_vswitch_agent = True
             self.q_vswitch_service = True
-
-    def _get_target_config_name(self, config_fn):
-        if config_fn == PLUGIN_CONF:
-            tgt_loc = [self.app_dir] + PLUGIN_LOC + [config_fn]
-            return sh.joinpths(*tgt_loc)
-        elif config_fn == AGENT_CONF:
-            tgt_loc = [self.app_dir] + AGENT_LOC + [config_fn]
-            return sh.joinpths(*tgt_loc)
-        else:
-            return comp.PkgInstallComponent._get_target_config_name(self, config_fn)
 
     def _config_adjust(self, contents, config_fn):
         if config_fn == PLUGIN_CONF and self.q_vswitch_service:
@@ -173,13 +159,11 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
 
     def _get_source_config(self, config_fn):
         if config_fn == PLUGIN_CONF:
-            srcloc = [self.app_dir] + PLUGIN_LOC + [config_fn]
-            srcfn = sh.joinpths(*srcloc)
+            srcfn = sh.joinpths(self.app_dir, 'etc', config_fn)
             contents = sh.load_file(srcfn)
             return (srcfn, contents)
         elif config_fn == AGENT_CONF:
-            srcloc = [self.app_dir] + AGENT_LOC + [config_fn]
-            srcfn = sh.joinpths(*srcloc)
+            srcfn = sh.joinpths(self.app_dir, 'etc', 'quantum', 'plugins', 'openvswitch', config_fn)
             contents = sh.load_file(srcfn)
             return (srcfn, contents)
         else:
@@ -201,14 +185,14 @@ class QuantumRuntime(QuantumMixin, comp.ProgramRuntime):
         app_list = comp.ProgramRuntime._get_apps_to_start(self)
         if self.q_vswitch_service:
             app_list.append({
-                    'name': APP_Q_SERVER,
-                    'path': sh.joinpths(self.app_dir, BIN_DIR, APP_Q_SERVER),
+                'name': APP_Q_SERVER,
+                'path': sh.joinpths(self.app_dir, 'bin', APP_Q_SERVER),
             })
         if self.q_vswitch_agent:
-            full_pth = [self.app_dir] + AGENT_BIN_LOC + [APP_Q_AGENT]
             app_list.append({
-                    'name': APP_Q_AGENT,
-                    'path': sh.joinpths(*full_pth)
+                'name': APP_Q_AGENT,
+                # WHY U SO BURIED....
+                'path': sh.joinpths(self.app_dir, "quantum", "plugins", "openvswitch", 'agent', APP_Q_AGENT)
             })
         return app_list
 
@@ -218,8 +202,7 @@ class QuantumRuntime(QuantumMixin, comp.ProgramRuntime):
     def _get_param_map(self, app_name):
         param_dict = comp.ProgramRuntime._get_param_map(self, app_name)
         if app_name == APP_Q_AGENT:
-            tgt_loc = [self.app_dir] + AGENT_LOC + [AGENT_CONF]
-            param_dict['OVS_CONFIG_FILE'] = sh.joinpths(*tgt_loc)
+            param_dict['OVS_CONFIG_FILE'] = sh.joinpths(self.cfg_dir, AGENT_CONF)
         elif app_name == APP_Q_SERVER:
-            param_dict['QUANTUM_CONFIG_FILE'] = sh.joinpths(self.app_dir, CONFIG_DIR, QUANTUM_CONF)
+            param_dict['QUANTUM_CONFIG_FILE'] = sh.joinpths(self.cfg_dir, QUANTUM_CONF)
         return param_dict

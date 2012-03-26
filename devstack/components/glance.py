@@ -54,9 +54,9 @@ DB_NAME = "glance"
 
 # What applications to start
 APP_OPTIONS = {
-    'glance-api': ['--config-file', sh.joinpths('%ROOT%', "etc", API_CONF)],
-    'glance-registry': ['--config-file', sh.joinpths('%ROOT%', "etc", REG_CONF)],
-    'glance-scrubber': ['--config-file', sh.joinpths('%ROOT%', "etc", REG_CONF)],
+    'glance-api': ['--config-file', sh.joinpths('%CONFIG_DIR%', API_CONF)],
+    'glance-registry': ['--config-file', sh.joinpths('%CONFIG_DIR%', REG_CONF)],
+    'glance-scrubber': ['--config-file', sh.joinpths('%CONFIG_DIR%', REG_CONF)],
 }
 
 # How the subcompoent small name translates to an actual app
@@ -67,14 +67,12 @@ SUB_TO_APP = {
 }
 
 # Subdirs of the downloaded (we are overriding the original)
-CONFIG_DIR = 'etc'
 BIN_DIR = 'bin'
 
 
 class GlanceUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, *args, **kargs)
-        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
 
     def known_subsystems(self):
         return SUB_TO_APP.keys()
@@ -83,7 +81,6 @@ class GlanceUninstaller(comp.PythonUninstallComponent):
 class GlanceInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
 
     def _get_download_locations(self):
         places = list()
@@ -110,11 +107,11 @@ class GlanceInstaller(comp.PythonInstallComponent):
 
     def _get_source_config(self, config_fn):
         if config_fn == POLICY_JSON:
-            fn = sh.joinpths(self.cfg_dir, POLICY_JSON)
+            fn = sh.joinpths(self.app_dir, 'etc', POLICY_JSON)
             contents = sh.load_file(fn)
             return (fn, contents)
         elif config_fn == LOGGING_CONF:
-            fn = sh.joinpths(self.cfg_dir, LOGGING_SOURCE_FN)
+            fn = sh.joinpths(self.app_dir, 'etc', LOGGING_SOURCE_FN)
             contents = sh.load_file(fn)
             return (fn, contents)
         return comp.PythonInstallComponent._get_source_config(self, config_fn)
@@ -181,7 +178,6 @@ class GlanceInstaller(comp.PythonInstallComponent):
 class GlanceRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
-        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
         self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
 
