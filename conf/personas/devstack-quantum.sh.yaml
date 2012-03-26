@@ -38,6 +38,8 @@ subsystems:
     - sched
     - vol
     - xvnc
+    quantum:
+    - openvswitch
 supports:
 - rhel-6
 - ubuntu-oneiric

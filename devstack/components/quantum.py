@@ -60,22 +60,16 @@ APP_OPTIONS = {
     APP_Q_AGENT: ["%OVS_CONFIG_FILE%", "-v"],
 }
 
+class QuantumMixin(object):
 
-class QuantumUninstaller(comp.PkgUninstallComponent):
-    def __init__(self, *args, **kargs):
-        comp.PkgUninstallComponent.__init__(self, *args, **kargs)
+    def known_options(self):
+        return set(['no-ovs-db-init', 'no-ovs-bridge-init'])
 
+    def known_subsystems(self):
+        return set(['openvswitch'])
 
-class QuantumInstaller(comp.PkgInstallComponent):
-    def __init__(self, *args, **kargs):
-        comp.PkgInstallComponent.__init__(self, *args, **kargs)
-        self.q_vswitch_agent = False
-        self.q_vswitch_service = False
-        plugin = self.cfg.getdefaulted("quantum", "q_plugin", VSWITCH_PLUGIN)
-        if plugin == VSWITCH_PLUGIN:
-            # FIXME: Make these subsystems
-            self.q_vswitch_agent = True
-            self.q_vswitch_service = True
+    def _get_config_files(self):
+        return list(CONFIG_FILES)
 
     def _get_download_locations(self):
         places = list()
@@ -85,11 +79,22 @@ class QuantumInstaller(comp.PkgInstallComponent):
         })
         return places
 
-    def known_options(self):
-        return set(['no-ovs-db-init', 'no-ovs-bridge-init'])
 
-    def _get_config_files(self):
-        return list(CONFIG_FILES)
+class QuantumUninstaller(QuantumMixin, comp.PkgUninstallComponent):
+    def __init__(self, *args, **kargs):
+        comp.PkgUninstallComponent.__init__(self, *args, **kargs)
+
+
+class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
+    def __init__(self, *args, **kargs):
+        comp.PkgInstallComponent.__init__(self, *args, **kargs)
+        self.q_vswitch_agent = False
+        self.q_vswitch_service = False
+        plugin = self.cfg.getdefaulted("quantum", "q_plugin", VSWITCH_PLUGIN)
+        if plugin == VSWITCH_PLUGIN:
+            # FIXME: Make these subsystems
+            self.q_vswitch_agent = True
+            self.q_vswitch_service = True
 
     def _get_target_config_name(self, config_fn):
         if config_fn == PLUGIN_CONF:
@@ -181,7 +186,7 @@ class QuantumInstaller(comp.PkgInstallComponent):
             return comp.PkgInstallComponent._get_source_config(self, config_fn)
 
 
-class QuantumRuntime(comp.ProgramRuntime):
+class QuantumRuntime(QuantumMixin, comp.ProgramRuntime):
     def __init__(self, *args, **kargs):
         comp.ProgramRuntime.__init__(self, *args, **kargs)
         self.q_vswitch_agent = False
