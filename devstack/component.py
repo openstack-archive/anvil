@@ -109,7 +109,7 @@ class ComponentBase(object):
                 LOG.warning("Unknown option %r provided for (%s)" % (s, self))
 
     def __str__(self):
-        return "%r: %s" % (self.__class__.__name__, self.component_name)
+        return "%s: %s" % (self.__class__.__name__, self.component_name)
 
     def known_subsystems(self):
         return set()
