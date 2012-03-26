@@ -585,6 +585,8 @@ components:
         subsystems:
             openvswitch:
                 packages:
+                -   name: linux-headers-server
+                    removable: true
                 -   name: openvswitch-datapath-dkms
                     removable: true
                     version: 1.2*
