@@ -775,7 +775,7 @@ class NovaConfConfigurator(object):
             for p in sh.explode_path(instance_parent):
                 if not os.access(os.X_OK) and sh.isdir(p):
                     # Need to be able to go into that directory
-                    sh.chmod(p, 0755)
+                    sh.chmod(p, os.stat(p).st_mode | 0755)
 
     def _configure_libvirt(self, virt_type, nova_conf):
         if virt_type == 'lxc':
