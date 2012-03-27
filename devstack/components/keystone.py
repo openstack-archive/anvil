@@ -210,7 +210,7 @@ class KeystoneRuntime(comp.PythonRuntime):
 
     def post_start(self):
         tgt_fn = sh.joinpths(self.bin_dir, MANAGE_DATA_CONF)
-        if sh.isfile(tgt_fn):
+        if sh.is_executable(tgt_fn):
             # If its still there, run it
             # these environment additions are important
             # in that they eventually affect how this script runs
@@ -222,21 +222,17 @@ class KeystoneRuntime(comp.PythonRuntime):
             setup_cmd = MANAGE_CMD_ROOT + [tgt_fn]
             LOG.info("Running %r command to initialize keystone." % (" ".join(setup_cmd)))
             sh.execute(*setup_cmd, env_overrides=env, run_as_root=False)
-            self._backup_key_init(tgt_fn, env)
+            self._toggle_key_init(tgt_fn, env)
 
-    def _backup_key_init(self, src_fn, env):
-        tgt_fn = utils.make_backup_fn(src_fn)
-        LOG.info("Moving %r to %r since we successfully initialized keystone.", src_fn, tgt_fn)
-        sh.move(src_fn, tgt_fn)
+    def _toggle_key_init(self, src_fn, env):
         add_lines = list()
         add_lines.append('')
         add_lines.append('# Ran on %s by %s' % (date.rcf8222date(), sh.getuser()))
         add_lines.append('# With environment:')
-        for k, v in env.items():
+        for (k, v) in env.items():
             add_lines.append('# %s => %s' % (k, v))
-        sh.append_file(tgt_fn, utils.joinlinesep(*add_lines))
-        # FIXME - add a trace?
-        return tgt_fn
+        sh.append_file(src_fn, utils.joinlinesep(*add_lines))
+        sh.chmod(src_fn, 0644)
 
     def _get_apps_to_start(self):
         apps = list()

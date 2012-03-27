@@ -31,6 +31,7 @@ import progressbar
 import termcolor
 
 from devstack import colorlog
+from devstack import date
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import settings
@@ -96,10 +97,6 @@ def configure_logging(verbosity_level=1, dry_run=False):
     elif verbosity_level == 2 or dry_run:
         log_level = logging.AUDIT
     root_logger.setLevel(log_level)
-
-
-def make_backup_fn(src_fn):
-    return "%s.bak" % (src_fn)
 
 
 def load_template(component, template_name):

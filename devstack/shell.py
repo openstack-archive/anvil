@@ -632,6 +632,12 @@ def user_mode(quiet=True):
             raise excp.StackException(msg)
 
 
+def is_executable(fn):
+    if not isfile(fn):
+        return False
+    return os.access(fn, os.X_OK)
+
+
 def geteuid():
     return os.geteuid()
 

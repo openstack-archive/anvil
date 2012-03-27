@@ -363,23 +363,19 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
         self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
         self.virsh = lv.Virsh(self.cfg, self.distro)
 
-    def _backup_network_init(self, src_fn, env):
-        tgt_fn = utils.make_backup_fn(src_fn)
-        LOG.info("Moving %r to %r since we successfully initialized nova's network.", src_fn, tgt_fn)
-        sh.move(src_fn, tgt_fn)
+    def _toggle_network_init(self, src_fn, env):
         add_lines = list()
         add_lines.append('')
         add_lines.append('# Ran on %s by %s' % (date.rcf8222date(), sh.getuser()))
         add_lines.append('# With environment:')
         for k, v in env.items():
             add_lines.append('# %s => %s' % (k, v))
-        sh.append_file(tgt_fn, utils.joinlinesep(*add_lines))
-        # FIXME - add a trace?
-        return tgt_fn
+        sh.append_file(src_fn, utils.joinlinesep(*add_lines))
+        sh.chmod(src_fn, 0644)
 
     def _setup_network_init(self):
         tgt_fn = sh.joinpths(self.bin_dir, NET_INIT_CONF)
-        if sh.isfile(tgt_fn):
+        if sh.is_executable(tgt_fn):
             LOG.info("Creating your nova network to be used with instances.")
             # If still there, run it
             # these environment additions are important
@@ -392,7 +388,7 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
             setup_cmd = NET_INIT_CMD_ROOT + [tgt_fn]
             LOG.info("Running %r command to initialize nova's network." % (" ".join(setup_cmd)))
             sh.execute(*setup_cmd, env_overrides=env, run_as_root=False)
-            self._backup_network_init(tgt_fn, env)
+            self._toggle_network_init(tgt_fn, env)
 
     def post_start(self):
         self._setup_network_init()
