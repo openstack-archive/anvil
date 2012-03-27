@@ -45,7 +45,7 @@ ROOT_PATH = os.sep
 DRYRUN_MODE = False
 DRY_RC = 0
 DRY_STDOUT_ERR = ("", "")
-BOOL_MP = {
+BOOL2STR = {
     True: 'true',
     False: 'false',
 }
@@ -54,10 +54,10 @@ BOOL_MP = {
 def set_dryrun(val):
     global DRYRUN_MODE
     if val:
-        LOG.debug("Setting dryrun to: %s" % (BOOL_MP.get(True)))
+        LOG.debug("Setting dryrun to: %s" % (BOOL2STR.get(True)))
         DRYRUN_MODE = True
     else:
-        LOG.debug("Resetting dryrun to: %s" % (BOOL_MP.get(False)))
+        LOG.debug("Resetting dryrun to: %s" % (BOOL2STR.get(False)))
         DRYRUN_MODE = False
 
 
@@ -335,7 +335,7 @@ def mkdirslist(path):
 
 def append_file(fn, text, flush=True, quiet=False):
     if not quiet:
-        LOG.audit("Appending to file %r (%d bytes) (flush=%s)", fn, len(text), BOOL_MP.get(flush))
+        LOG.audit("Appending to file %r (%d bytes) (flush=%s)", fn, len(text), BOOL2STR.get(flush))
         LOG.audit(">> %s" % (text))
     if not DRYRUN_MODE:
         with open(fn, "a") as f:
@@ -347,7 +347,7 @@ def append_file(fn, text, flush=True, quiet=False):
 
 def write_file(fn, text, flush=True, quiet=False):
     if not quiet:
-        LOG.audit("Writing to file %r (%d bytes) (flush=%s)", fn, len(text), BOOL_MP.get(flush))
+        LOG.audit("Writing to file %r (%d bytes) (flush=%s)", fn, len(text), BOOL2STR.get(flush))
         LOG.audit("> %s" % (text))
     if not DRYRUN_MODE:
         with open(fn, "w") as f:
@@ -633,9 +633,7 @@ def user_mode(quiet=True):
 
 
 def is_executable(fn):
-    if not isfile(fn):
-        return False
-    return os.access(fn, os.X_OK)
+    return isfile(fn) and os.access(fn, os.X_OK)
 
 
 def geteuid():
