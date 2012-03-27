@@ -56,6 +56,15 @@ EXP_PAT = re.compile("^\s*export\s+(.*?)=(.*?)$", re.IGNORECASE)
 # How we unquote a string (simple edition)
 QUOTED_PAT = re.compile(r"^\s*[\"](.*)[\"]\s*$")
 
+# Allow external includes via this template
+EXTERN_TPL = """
+# Allow local overrides of env variables using {fn}
+if [ -f "{fn}" ]; then
+    source "{fn}"
+fi
+"""
+EXTERN_INCLUDES = ['localrc', 'eucarc']
+
 
 class RcWriter(object):
     def __init__(self, cfg, pw_gen, root_dir):
@@ -244,16 +253,10 @@ class RcWriter(object):
     def _generate_extern_inc(self):
         lines = list()
         lines.append('# External includes stuff')
-        extern_tpl = """
-
-# Allow local overrides of env variables
-if [ -f "{localrc_fn}" ]; then
-    source "{localrc_fn}"
-fi
-
-"""
-        extern_inc = extern_tpl.format(localrc_fn=sh.abspth(settings.LOCALRC_FN))
-        lines.append(extern_inc.strip())
+        for inc_fn in EXTERN_INCLUDES:
+            extern_inc = EXTERN_TPL.format(fn=inc_fn)
+            lines.append(extern_inc.strip())
+            lines.append('')
         lines.append("")
         return lines
 
