@@ -286,9 +286,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
 
     def _sync_db(self):
         LOG.info("Syncing the database with nova.")
-        mp = dict()
-        mp['BIN_DIR'] = self.bin_dir
-        mp['CFG_FILE'] = sh.joinpths(self.cfg_dir, API_CONF)
+        mp = self._get_param_map(None)
         utils.execute_template(*DB_SYNC_CMD, params=mp)
 
     def post_install(self):
@@ -340,6 +338,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
     def _get_param_map(self, config_fn):
         mp = comp.PythonInstallComponent._get_param_map(self, config_fn)
         mp['CFG_FILE'] = sh.joinpths(self.cfg_dir, API_CONF)
+        mp['BIN_DIR'] = self.bin_dir
         if config_fn == NET_INIT_CONF:
             mp['FLOATING_RANGE'] = self.cfg.getdefaulted('nova', 'floating_range', '172.24.4.224/28')
             mp['TEST_FLOATING_RANGE'] = self.cfg.getdefaulted('nova', 'test_floating_range', '192.168.253.0/29')
@@ -374,7 +373,7 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
         add_lines.append('# With environment:')
         for k, v in env.items():
             add_lines.append('# %s => %s' % (k, v))
-        sh.append_file(tgt_fn, utils.joinlinesep(add_lines))
+        sh.append_file(tgt_fn, utils.joinlinesep(*add_lines))
         # FIXME - add a trace?
         return tgt_fn
 

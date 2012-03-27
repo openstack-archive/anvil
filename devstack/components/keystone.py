@@ -234,7 +234,7 @@ class KeystoneRuntime(comp.PythonRuntime):
         add_lines.append('# With environment:')
         for k, v in env.items():
             add_lines.append('# %s => %s' % (k, v))
-        sh.append_file(tgt_fn, utils.joinlinesep(add_lines))
+        sh.append_file(tgt_fn, utils.joinlinesep(*add_lines))
         # FIXME - add a trace?
         return tgt_fn
 
