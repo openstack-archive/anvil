@@ -15,6 +15,7 @@
 #    under the License.
 
 import os
+import weakref
 
 from urlparse import urlunparse
 
@@ -424,10 +425,11 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
 # This will configure nova volumes which in a developer box
 # is a volume group (lvm) that are backed by a loopback file
 class NovaVolumeConfigurator(object):
-    def __init__(self, ni):
-        self.cfg = ni.cfg
-        self.app_dir = ni.app_dir
-        self.distro = ni.distro
+    def __init__(self, installer):
+        self.installer = weakref.proxy(installer)
+        self.cfg = installer.cfg
+        self.app_dir = installer.app_dir
+        self.distro = installer.distro
 
     def setup_volumes(self):
         self._setup_vol_groups()
@@ -495,21 +497,23 @@ class NovaVolumeConfigurator(object):
 # This class has the smarts to build the configuration file based on
 # various runtime values. A useful reference for figuring out this
 # is at http://docs.openstack.org/diablo/openstack-compute/admin/content/ch_configuring-openstack-compute.html
+# See also: https://github.com/openstack/nova/blob/master/etc/nova/nova.conf.sample
 class NovaConfConfigurator(object):
-    def __init__(self, ni):
-        self.cfg = ni.cfg
-        self.pw_gen = ni.pw_gen
-        self.instances = ni.instances
-        self.component_dir = ni.component_dir
-        self.app_dir = ni.app_dir
-        self.tracewriter = ni.tracewriter
-        self.paste_conf_fn = ni.paste_conf_fn
-        self.distro = ni.distro
-        self.cfg_dir = ni.cfg_dir
-        self.xvnc_enabled = ni.xvnc_enabled
-        self.volumes_enabled = ni.volumes_enabled
-        self.options = ni.options
-        self.novnc_enabled = 'no-vnc' in self.options
+    def __init__(self, installer):
+        self.installer = weakref.proxy(installer)
+        self.cfg = installer.cfg
+        self.pw_gen = installer.pw_gen
+        self.instances = installer.instances
+        self.component_dir = installer.component_dir
+        self.app_dir = installer.app_dir
+        self.tracewriter = installer.tracewriter
+        self.paste_conf_fn = installer.paste_conf_fn
+        self.distro = installer.distro
+        self.cfg_dir = installer.cfg_dir
+        self.options = installer.options
+        self.xvnc_enabled = installer.xvnc_enabled
+        self.volumes_enabled = installer.volumes_enabled
+        self.novnc_enabled = 'no-vnc' in installer.options
 
     def _getbool(self, name):
         return self.cfg.getboolean('nova', name)
@@ -737,11 +741,11 @@ class NovaConfConfigurator(object):
 
         # Do a little check to make sure actually have that interface/s
         if not utils.is_interface(public_interface):
-            msg = "Public interface %s is not a known interface" % (public_interface)
+            msg = "Public interface %r is not a known interface" % (public_interface)
             raise exceptions.ConfigException(msg)
 
         if not utils.is_interface(vlan_interface):
-            msg = "VLAN interface %s is not a known interface" % (vlan_interface)
+            msg = "VLAN interface %r is not a known interface" % (vlan_interface)
             raise exceptions.ConfigException(msg)
 
         nova_conf.add('public_interface', public_interface)
@@ -827,7 +831,7 @@ class NovaConf(object):
         else:
             real_value = str(value)
         self.lines.append({'key': real_key, 'value': real_value})
-        LOG.debug("Added nova conf key %s with value [%s]" % (real_key, real_value))
+        LOG.debug("Added nova conf key %r with value %r" % (real_key, real_value))
 
     def _form_entry(self, key, value, params=None):
         real_value = utils.param_replace(str(value), params)
