@@ -390,7 +390,7 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
             env = dict()
             env['ENABLED_SERVICES'] = ",".join(self.instances.keys())
             setup_cmd = NET_INIT_CMD_ROOT + [tgt_fn]
-            LOG.info("Running (%s) command to initialize nova's network." % (" ".join(setup_cmd)))
+            LOG.info("Running %r command to initialize nova's network." % (" ".join(setup_cmd)))
             sh.execute(*setup_cmd, env_overrides=env, run_as_root=False)
             self._backup_network_init(tgt_fn, env)
 
