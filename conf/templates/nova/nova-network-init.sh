@@ -6,7 +6,7 @@ set -o errexit
 # Create a small network
 nova-manage --flagfile %CFG_FILE% network create private %FIXED_RANGE% 1 %FIXED_NETWORK_SIZE%
 
-if [[ "$ENABLED_SERVICES" =~ "quantum-server" ]]; then
+if [[ "$ENABLED_SERVICES" =~ "quantum" ]]; then
     echo "Not creating floating IPs (not supported by quantum server)"
 else
     # Create some floating ips

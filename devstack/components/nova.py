@@ -363,16 +363,6 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
         self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
         self.virsh = lv.Virsh(self.cfg, self.distro)
 
-    def _toggle_network_init(self, src_fn, env):
-        add_lines = list()
-        add_lines.append('')
-        add_lines.append('# Ran on %s by %s' % (date.rcf8222date(), sh.getuser()))
-        add_lines.append('# With environment:')
-        for k, v in env.items():
-            add_lines.append('# %s => %s' % (k, v))
-        sh.append_file(src_fn, utils.joinlinesep(*add_lines))
-        sh.chmod(src_fn, 0644)
-
     def _setup_network_init(self):
         tgt_fn = sh.joinpths(self.bin_dir, NET_INIT_CONF)
         if sh.is_executable(tgt_fn):
@@ -384,11 +374,11 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
                 LOG.info("Waiting %s seconds so that quantum can start up before running first time init." % (self.wait_time))
                 sh.sleep(self.wait_time)
             env = dict()
-            env['ENABLED_SERVICES'] = ",".join(self.instances.keys())
+            env['ENABLED_SERVICES'] = ",".join(self.options)
             setup_cmd = NET_INIT_CMD_ROOT + [tgt_fn]
             LOG.info("Running %r command to initialize nova's network." % (" ".join(setup_cmd)))
             sh.execute(*setup_cmd, env_overrides=env, run_as_root=False)
-            self._toggle_network_init(tgt_fn, env)
+            utils.mark_unexecute_file(tgt_fn, env)
 
     def post_start(self):
         self._setup_network_init()

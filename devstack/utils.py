@@ -100,9 +100,8 @@ def configure_logging(verbosity_level=1, dry_run=False):
 
 
 def load_template(component, template_name):
-    full_pth = sh.joinpths(settings.STACK_TEMPLATE_DIR, component, template_name)
-    contents = sh.load_file(full_pth)
-    return (full_pth, contents)
+    templ_pth = sh.joinpths(settings.STACK_TEMPLATE_DIR, component, template_name)
+    return (templ_pth, sh.load_file(templ_pth))
 
 
 def execute_template(*cmds, **kargs):
@@ -143,6 +142,17 @@ def to_bytes(text):
     return byte_val
 
 
+def mark_unexecute_file(fn, kvs, comment_start='#'):
+    add_lines = list()
+    add_lines.append('')
+    add_lines.append(comment_start + ' Ran on %s by %s' % (date.rcf8222date(), sh.getuser()))
+    add_lines.append(comment_start + ' With data:')
+    for (k, v) in kvs.items():
+        add_lines.append(comment_start + ' %s => %s' % (k, v))
+    sh.append_file(fn, joinlinesep(*add_lines))
+    sh.chmod(fn, 0644)
+
+
 @contextlib.contextmanager
 def progress_bar(name, max_am, reverse=False):
     widgets = list()
@@ -167,22 +177,12 @@ def progress_bar(name, max_am, reverse=False):
 def tempdir():
     # This seems like it was only added in python 3.2
     # Make it since its useful...
+    # See: http://bugs.python.org/file12970/tempdir.patch
     tdir = tempfile.mkdtemp()
     try:
         yield tdir
     finally:
         sh.deldir(tdir)
-
-
-def import_module(module_name, quiet=True):
-    try:
-        __import__(module_name)
-        return sys.modules.get(module_name, None)
-    except ImportError:
-        if quiet:
-            return None
-        else:
-            raise
 
 
 def versionize(input_version):
@@ -262,9 +262,7 @@ def get_host_ip():
 
 
 def is_interface(intfc):
-    if intfc in get_interfaces():
-        return True
-    return False
+    return intfc in get_interfaces()
 
 
 def get_interfaces():
@@ -273,11 +271,11 @@ def get_interfaces():
         interface_info = dict()
         interface_addresses = netifaces.ifaddresses(intfc)
         ip6 = interface_addresses.get(netifaces.AF_INET6)
-        if ip6 and len(ip6):
+        if ip6:
             # Just take the first
             interface_info[settings.IPV6] = ip6[0]
         ip4 = interface_addresses.get(netifaces.AF_INET)
-        if ip4 and len(ip4):
+        if ip4:
             # Just take the first
             interface_info[settings.IPV4] = ip4[0]
         # Note: there are others but this is good for now..
@@ -418,8 +416,7 @@ ____ ___  ____ _  _ ____ ___ ____ ____ _  _
 
 
 def center_text(text, fill, max_len):
-    centered_str = '{0:{fill}{align}{size}}'.format(text, fill=fill, align="^", size=max_len)
-    return centered_str
+    return '{0:{fill}{align}{size}}'.format(text, fill=fill, align="^", size=max_len)
 
 
 def _welcome_slang():

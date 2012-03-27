@@ -17,6 +17,7 @@
 import contextlib
 
 from devstack import exceptions as excp
+from devstack import importer
 from devstack import log as logging
 from devstack import shell as sh
 from devstack import utils
@@ -50,12 +51,6 @@ def canon_libvirt_type(virt_type):
         return virt_type
 
 
-def _get_virt_lib():
-    # Late import so that we don't always need this library to be active
-    # ie if u aren't using libvirt in the first place...
-    return utils.import_module('libvirt')
-
-
 class Virsh(object):
 
     def __init__(self, config, distro):
@@ -73,7 +68,7 @@ class Virsh(object):
             return _DEAD
 
     def _destroy_domain(self, conn, dom_name):
-        libvirt = _get_virt_lib()
+        libvirt = importer.import_module('libvirt')
         try:
             dom = conn.lookupByName(dom_name)
             LOG.debug("Destroying domain (%r) (id=%s) running %r" % (dom_name, dom.ID(), dom.OSType()))
@@ -103,7 +98,7 @@ class Virsh(object):
         utils.execute_template(*cmds, params=mp)
 
     def clear_domains(self, virt_type, inst_prefix):
-        libvirt = _get_virt_lib()
+        libvirt = importer.import_module('libvirt')
         if not libvirt:
             LOG.warn("Could not clear out libvirt domains, libvirt not available for python.")
             return

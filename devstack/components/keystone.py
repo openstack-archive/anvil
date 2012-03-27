@@ -20,7 +20,6 @@ from urlparse import urlunparse
 
 from devstack import cfg
 from devstack import component as comp
-from devstack import date
 from devstack import log as logging
 from devstack import shell as sh
 from devstack import utils
@@ -222,17 +221,7 @@ class KeystoneRuntime(comp.PythonRuntime):
             setup_cmd = MANAGE_CMD_ROOT + [tgt_fn]
             LOG.info("Running %r command to initialize keystone." % (" ".join(setup_cmd)))
             sh.execute(*setup_cmd, env_overrides=env, run_as_root=False)
-            self._toggle_key_init(tgt_fn, env)
-
-    def _toggle_key_init(self, src_fn, env):
-        add_lines = list()
-        add_lines.append('')
-        add_lines.append('# Ran on %s by %s' % (date.rcf8222date(), sh.getuser()))
-        add_lines.append('# With environment:')
-        for (k, v) in env.items():
-            add_lines.append('# %s => %s' % (k, v))
-        sh.append_file(src_fn, utils.joinlinesep(*add_lines))
-        sh.chmod(src_fn, 0644)
+            utils.mark_unexecute_file(tgt_fn, env)
 
     def _get_apps_to_start(self):
         apps = list()
