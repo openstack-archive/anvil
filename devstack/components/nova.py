@@ -365,7 +365,7 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
 
     def _backup_network_init(self, src_fn, env):
         tgt_fn = utils.make_backup_fn(src_fn)
-        LOG.debug("Moving %r to %r since we successfully initialized nova's network.", src_fn, tgt_fn)
+        LOG.info("Moving %r to %r since we successfully initialized nova's network.", src_fn, tgt_fn)
         sh.move(src_fn, tgt_fn)
         add_lines = list()
         add_lines.append('')
