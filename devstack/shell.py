@@ -285,10 +285,8 @@ def _explode_form_path(path):
     return ret_paths
 
 
-def rchmod(path, perm):
-    paths = _explode_form_path(path)
-    for p in paths:
-        chmod(p, perm)
+def explode_path(path):
+    return _explode_form_path(path)
 
 
 def in_terminal(check_both=False):

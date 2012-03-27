@@ -49,7 +49,6 @@ LOG = logging.getLogger("devstack.util")
 DEF_IP = "127.0.0.1"
 IP_LOOKER = '8.8.8.8'
 DEF_IP_VERSION = settings.IPV4
-PRIVATE_OCTS = []
 ALL_NUMS = re.compile(r"^\d+$")
 START_NUMS = re.compile(r"^(\d+)(\D+)")
 STAR_VERSION = 0
@@ -250,9 +249,8 @@ def get_host_ip():
         for (_, net_info) in interfaces.items():
             ip_info = net_info.get(DEF_IP_VERSION)
             if ip_info:
-                a_ip = ip_info.get('addr') or ""
-                first_oct = a_ip.split(".")[0]
-                if first_oct and first_oct not in PRIVATE_OCTS:
+                a_ip = ip_info.get('addr')
+                if a_ip:
                     ip = a_ip
                     break
     # Just return a localhost version then

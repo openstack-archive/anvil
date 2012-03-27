@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import os
+
 from urlparse import urlunparse
 
 from devstack import component as comp
@@ -759,13 +761,21 @@ class NovaConfConfigurator(object):
 
     def _configure_instances_path(self, instances_path, nova_conf):
         nova_conf.add('instances_path', instances_path)
-        LOG.debug("Attempting to create instance directory: %s" % (instances_path))
+        LOG.debug("Attempting to create instance directory: %r", instances_path)
         self.tracewriter.dirs_made(*sh.mkdirslist(instances_path))
-        LOG.debug("Adjusting permissions of instance directory: %s" % (instances_path))
+        LOG.debug("Adjusting permissions of instance directory: %r", instances_path)
         sh.chmod(instances_path, 0777)
+        instance_parent = sh.dirname(instances_path)
+        LOG.debug("Adjusting permissions of instance directory parent: %r", instance_parent)
+        # In cases where you are using kvm + qemu
+        # On certain distros (ie RHEL) this user needs to be able
+        # To enter the parents of the instance path, if this is in /home/BLAH/ then 
+        # Without enabling the whole path, this user can't write there. This helps fix that
         with sh.Rooted(True):
-            # This seems required... (maybe only on RHEL?)
-            sh.rchmod(sh.dirname(instances_path), 0665)
+            for p in sh.explode_path(instance_parent):
+                if not os.access(os.X_OK) and sh.isdir(p):
+                    # Need to be able to go into that directory
+                    sh.chmod(p, 0755)
 
     def _configure_libvirt(self, virt_type, nova_conf):
         if virt_type == 'lxc':
