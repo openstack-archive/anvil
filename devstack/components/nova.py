@@ -763,6 +763,9 @@ class NovaConfConfigurator(object):
         self.tracewriter.dirs_made(*sh.mkdirslist(instances_path))
         LOG.debug("Adjusting permissions of instance directory: %s" % (instances_path))
         sh.chmod(instances_path, 0777)
+        with sh.Rooted(True):
+            # This seems required... (maybe only on RHEL?)
+            sh.rchmod(sh.dirname(instances_path), 0665)
 
     def _configure_libvirt(self, virt_type, nova_conf):
         if virt_type == 'lxc':

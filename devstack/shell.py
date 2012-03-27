@@ -285,6 +285,12 @@ def _explode_form_path(path):
     return ret_paths
 
 
+def rchmod(path, perm):
+    paths = _explode_form_path(path)
+    for p in paths:
+        chmod(p, perm)
+
+
 def in_terminal(check_both=False):
     if check_both:
         return sys.stdout.isatty() and sys.stderr.isatty()
