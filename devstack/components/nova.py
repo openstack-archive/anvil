@@ -769,11 +769,11 @@ class NovaConfConfigurator(object):
         LOG.debug("Adjusting permissions of instance directory parent: %r", instance_parent)
         # In cases where you are using kvm + qemu
         # On certain distros (ie RHEL) this user needs to be able
-        # To enter the parents of the instance path, if this is in /home/BLAH/ then 
-        # Without enabling the whole path, this user can't write there. This helps fix that
+        # To enter the parents of the instance path, if this is in /home/BLAH/ then
+        # Without enabling the whole path, this user can't write there. This helps fix that...
         with sh.Rooted(True):
             for p in sh.explode_path(instance_parent):
-                if not os.access(os.X_OK) and sh.isdir(p):
+                if not os.access(p, os.X_OK) and sh.isdir(p):
                     # Need to be able to go into that directory
                     sh.chmod(p, os.stat(p).st_mode | 0755)
 
