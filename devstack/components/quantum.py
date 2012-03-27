@@ -163,6 +163,7 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
             contents = sh.load_file(srcfn)
             return (srcfn, contents)
         elif config_fn == AGENT_CONF:
+            # WHY U SO BURIED....
             srcfn = sh.joinpths(self.app_dir, 'etc', 'quantum', 'plugins', 'openvswitch', config_fn)
             contents = sh.load_file(srcfn)
             return (srcfn, contents)

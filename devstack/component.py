@@ -199,7 +199,13 @@ class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
         return down.GitDownloader(self.distro, uri, target_dir, branch).download()
 
     def _get_param_map(self, config_fn):
-        return dict()
+        return {
+            'COMPONENT_DIR': self.component_dir,
+            'APP_DIR': self.app_dir,
+            'CONFIG_DIR': self.cfg_dir,
+            'TRACE_DIR': self.trace_dir,
+            'CONFIG_FN': config_fn,
+        }
 
     def _get_packages(self):
         pkg_list = list(self.packages)

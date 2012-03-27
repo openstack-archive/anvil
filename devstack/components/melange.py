@@ -113,6 +113,7 @@ class MelangeInstaller(comp.PythonInstallComponent):
 
     def _get_source_config(self, config_fn):
         if config_fn == ROOT_CONF:
+            # FIXME, maybe we shouldn't be sucking this from the checkout??
             fn = sh.joinpths(self.app_dir, 'etc', 'melange', config_fn)
             contents = sh.load_file(fn)
             return (fn, contents)
@@ -144,9 +145,9 @@ class MelangeRuntime(comp.PythonRuntime):
         return APP_OPTIONS.get(app)
 
     def _get_param_map(self, app_name):
-        pmap = comp.PythonRuntime._get_param_map(self, app_name)
-        pmap['CFG_FILE'] = sh.joinpths(self.cfg_dir, ROOT_CONF_REAL_NAME)
-        return pmap
+        mp = comp.PythonRuntime._get_param_map(self, app_name)
+        mp['CFG_FILE'] = sh.joinpths(self.cfg_dir, ROOT_CONF_REAL_NAME)
+        return mp
 
     def known_options(self):
         return set(["create-cidr"])

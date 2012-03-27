@@ -157,7 +157,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
     def _get_param_map(self, config_fn):
         # This dict will be used to fill in the configuration
         # params with actual values
-        mp = dict()
+        mp = comp.PythonInstallComponent._get_param_map(self, config_fn)
         if config_fn == HORIZON_APACHE_CONF:
             (user, group) = self._get_apache_user_group()
             mp['GROUP'] = group

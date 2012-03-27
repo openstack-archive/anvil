@@ -98,6 +98,10 @@ def configure_logging(verbosity_level=1, dry_run=False):
     root_logger.setLevel(log_level)
 
 
+def make_backup_fn(src_fn):
+    return "%s.bak" % (src_fn)
+
+
 def load_template(component, template_name):
     full_pth = sh.joinpths(settings.STACK_TEMPLATE_DIR, component, template_name)
     contents = sh.load_file(full_pth)
@@ -338,7 +342,8 @@ def param_replace(text, replacements, ignore_missing=False):
         LOG.debug("Performing parameter replacements (not ignoring missing) on text [%s]" % (text))
 
     possible_params = find_params(text)
-    LOG.debug("Possible replacements are [%s]" % (", ".join(possible_params)))
+    LOG.debug("Possible replacements are: %r" % (", ".join(possible_params)))
+    LOG.debug("Given substitutions are: %s" % (replacements))
 
     def replacer(match):
         org_txt = match.group(0)
