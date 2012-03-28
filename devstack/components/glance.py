@@ -104,7 +104,7 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
         self._setup_db()
 
     def _setup_db(self):
-        LOG.info("Fixing up database named %s.", DB_NAME)
+        LOG.info("Fixing up database named %r", DB_NAME)
         db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
         db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
 

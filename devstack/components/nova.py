@@ -277,7 +277,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
             self.pw_gen.get_password(pw_key, pw_prompt)
 
     def _setup_network_initer(self):
-        LOG.info("Configuring nova network initializer template %s.", NET_INIT_CONF)
+        LOG.info("Configuring nova network initializer template %r", NET_INIT_CONF)
         (_, contents) = utils.load_template(self.component_name, NET_INIT_CONF)
         params = self._get_param_map(NET_INIT_CONF)
         contents = utils.param_replace(contents, params, True)
@@ -314,7 +314,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         self.tracewriter.file_touched(tgt_fn)
 
     def _setup_db(self):
-        LOG.info("Fixing up database named %s.", DB_NAME)
+        LOG.info("Fixing up database named %r", DB_NAME)
         db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
         db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
 
@@ -323,7 +323,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         conf_gen = NovaConfConfigurator(self)
         nova_conf_contents = conf_gen.configure()
         conf_fn = self._get_target_config_name(API_CONF)
-        LOG.info("Writing nova configuration to %s" % (conf_fn))
+        LOG.info("Writing nova configuration to %r" % (conf_fn))
         LOG.debug(nova_conf_contents)
         self.tracewriter.dirs_made(*sh.mkdirslist(sh.dirname(conf_fn)))
         self.tracewriter.cfg_file_written(sh.write_file(conf_fn, nova_conf_contents))
@@ -445,12 +445,12 @@ class NovaVolumeConfigurator(object):
         mp['VOLUME_BACKING_FILE_SIZE'] = backing_file_size
         try:
             utils.execute_template(*VG_CHECK_CMD, params=mp)
-            LOG.warn("Volume group already exists: %s" % (vol_group))
+            LOG.warn("Volume group already exists: %r" % (vol_group))
         except exceptions.ProcessExecutionError as err:
             # Check that the error from VG_CHECK is an expected error
             if err.exit_code != 5:
                 raise
-            LOG.info("Need to create volume group: %s" % (vol_group))
+            LOG.info("Need to create volume group: %r" % (vol_group))
             sh.touch_file(backing_file, die_if_there=False, file_size=backing_file_size)
             vg_dev_result = utils.execute_template(*VG_DEV_CMD, params=mp)
             if vg_dev_result and vg_dev_result[0]:
@@ -472,15 +472,14 @@ class NovaVolumeConfigurator(object):
         LOG.info("Attempting to setup logical volumes for nova volume management.")
         lvs_result = utils.execute_template(*VG_LVS_CMD, params=mp)
         if lvs_result and lvs_result[0]:
-            LOG.debug("LVS result: %s" % (lvs_result))
             vol_name_prefix = self.cfg.getdefaulted('nova', 'volume_name_prefix', DEF_VOL_PREFIX)
-            LOG.debug("Using volume name prefix: %s" % (vol_name_prefix))
+            LOG.debug("Using volume name prefix: %r" % (vol_name_prefix))
             (sysout, _) = lvs_result[0]
             for stdout_line in sysout.split('\n'):
                 stdout_line = stdout_line.strip()
                 if stdout_line:
                     # Ignore blank lines
-                    LOG.debug("Processing LVS output line: %s" % (stdout_line))
+                    LOG.debug("Processing LVS output line: %r" % (stdout_line))
                     if stdout_line.startswith(vol_name_prefix):
                         # TODO still need to implement the following:
                         # tid=`egrep "^tid.+$lv" /proc/net/iet/volume | cut -f1 -d' ' | tr ':' '='`

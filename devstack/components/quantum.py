@@ -153,7 +153,7 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
         if not self.q_vswitch_service or \
                 'no-ovs-db-init' in self.options:
             return
-        LOG.info("Fixing up database named %s.", DB_NAME)
+        LOG.info("Fixing up database named %r", DB_NAME)
         db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
         db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
 
