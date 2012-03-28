@@ -139,7 +139,7 @@ class PackageBasedComponentMixin(object):
     def get_packager(self, pkg_info):
         if self.PACKAGER_KEY_NAME in pkg_info:
             packager_name = pkg_info[self.PACKAGER_KEY_NAME]
-            LOG.debug('Loading custom package manager %s', packager_name)
+            LOG.debug('Loading custom package manager %r', packager_name)
             packager = importer.import_entry_point(packager_name)(self.distro)
         else:
             LOG.debug('Using default package manager')
@@ -173,13 +173,13 @@ class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
                 (cfg_section, cfg_key) = branch_tuple
                 branch = self.cfg.get(cfg_section, cfg_key)
                 if not branch:
-                    msg = "No branch entry found at config location [%s]" % \
+                    msg = "No branch entry found at config location %r" % \
                         (cfg_helpers.make_id(cfg_section, cfg_key))
                     raise excp.ConfigException(msg)
             (cfg_section, cfg_key) = uri_tuple
             uri = self.cfg.get(cfg_section, cfg_key)
             if not uri:
-                msg = "No uri entry found at config location [%s]" % \
+                msg = "No uri entry found at config location %r" % \
                     (cfg_helpers.make_id(cfg_section, cfg_key))
                 raise excp.ConfigException(msg)
             # Activate da download!
@@ -213,14 +213,14 @@ class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
             if name in self.subsystem_info:
                 # Todo handle duplicates/version differences?
                 LOG.debug(
-                    "Extending package list with packages for subsystem %s",
+                    "Extending package list with packages for subsystem %r",
                     name)
                 subsystem_pkgs = self.subsystem_info[name].get('packages', [])
                 pkg_list.extend(subsystem_pkgs)
         return pkg_list
 
     def install(self):
-        LOG.debug('Preparing to install packages for %s',
+        LOG.debug('Preparing to install packages for %r',
                   self.component_name)
         pkgs = self._get_packages()
         if pkgs:
@@ -234,7 +234,7 @@ class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
                     packager.install(p)
                     p_bar.update(i + 1)
         else:
-            LOG.info('No packages to install for %s',
+            LOG.info('No packages to install for %r',
                      self.component_name)
         return self.trace_dir
 
@@ -284,14 +284,14 @@ class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
                 parameters = self._get_param_map(fn)
                 tgt_fn = self._get_target_config_name(fn)
                 self.tracewriter.dirs_made(*sh.mkdirslist(sh.dirname(tgt_fn)))
-                LOG.info("Configuring file %s", fn)
+                LOG.info("Configuring file %r", fn)
                 (source_fn, contents) = self._get_source_config(fn)
-                LOG.debug("Replacing parameters in file %s", source_fn)
+                LOG.debug("Replacing parameters in file %r", source_fn)
                 LOG.debug("Replacements = %s", parameters)
                 contents = utils.param_replace(contents, parameters)
-                LOG.debug("Applying side-effects of param replacement for template %s", source_fn)
+                LOG.debug("Applying side-effects of param replacement for template %r", source_fn)
                 contents = self._config_adjust(contents, fn)
-                LOG.info("Writing configuration file %s", tgt_fn)
+                LOG.info("Writing configuration file %r", tgt_fn)
                 self.tracewriter.cfg_file_written(sh.write_file(tgt_fn,
                                                                 contents))
         return len(configs)
@@ -306,11 +306,11 @@ class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
         for source in link_srcs:
             link = links.get(source)
             try:
-                LOG.info("Symlinking %s => %s", link, source)
+                LOG.info("Symlinking %r => %r", link, source)
                 self.tracewriter.dirs_made(*sh.symlink(source, link))
                 self.tracewriter.symlink_made(link)
             except OSError as e:
-                LOG.warn("Symlink (%s => %s) error (%s)", link, source, e)
+                LOG.warn("Symlink (%r => %r) error (%s)", link, source, e)
         return len(links)
 
     def configure(self):
@@ -334,7 +334,7 @@ class PythonInstallComponent(PkgInstallComponent):
         for name in self.desired_subsystems:
             if name in self.subsystem_info:
                 # Todo handle duplicates/version differences?
-                LOG.debug("Extending pip list with pips for subsystem %s" % (name))
+                LOG.debug("Extending pip list with pips for subsystem %r" % (name))
                 subsystem_pips = self.subsystem_info[name].get('pips', list())
                 pip_list.extend(subsystem_pips)
         return pip_list
@@ -468,12 +468,12 @@ class PkgUninstallComponent(ComponentBase, PackageBasedComponentMixin):
                 places = set()
                 for (pth_loc, _) in self.tracereader.download_locations():
                     places.add(pth_loc)
-                LOG.info("Keeping %s download directories [%s]",
-                         len(places), ",".join(sorted(places)))
+                LOG.info("Keeping %s download directories (%s)",
+                         len(places), ", ".join(sorted(places)))
                 for download_place in places:
                     dirsmade = sh.remove_parents(download_place, dirsmade)
             for dirname in dirsmade:
-                LOG.info("Removing created directory (%s)", dirname)
+                LOG.info("Removing created directory %r", dirname)
                 sh.deldir(dirname, run_as_root=True)
 
 
@@ -546,10 +546,10 @@ class ProgramRuntime(ComponentBase):
                 self._get_param_map(app_name),
                 )
             # Configure it with the given settings
-            LOG.debug("Configuring runner for program [%s]", app_name)
+            LOG.debug("Configuring runner for program %r", app_name)
             cfg_am = instance.configure(app_name,
                                         (app_pth, app_dir, program_opts))
-            LOG.debug("Configured %s files for runner for program [%s]",
+            LOG.debug("Configured %s files for runner for program %r",
                      cfg_am, app_name)
             tot_am += cfg_am
         return tot_am
@@ -569,12 +569,12 @@ class ProgramRuntime(ComponentBase):
                 self._get_param_map(app_name),
                 )
             # Start it with the given settings
-            LOG.debug("Starting [%s] with options [%s]",
+            LOG.debug("Starting %r with options (%s)",
                      app_name, ", ".join(program_opts))
             info_fn = instance.start(app_name,
                                      (app_pth, app_dir, program_opts),
                                      )
-            LOG.debug("Started [%s] details are in [%s]", app_name, info_fn)
+            LOG.info("Started %r details are in %r", app_name, info_fn)
             # This trace is used to locate details about what to stop
             self.tracewriter.started_info(app_name, info_fn)
             am_started += 1
@@ -611,7 +611,7 @@ class ProgramRuntime(ComponentBase):
         to_kill = self._locate_killers()
         for (app_name, killer) in to_kill:
             killer.stop(app_name)
-        LOG.debug("Deleting start trace file [%s]",
+        LOG.debug("Deleting start trace file %r",
                   self.tracereader.filename())
         sh.unlink(self.tracereader.filename())
         return len(to_kill)
