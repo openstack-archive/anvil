@@ -85,11 +85,14 @@ class MelangeInstaller(comp.PythonInstallComponent):
         self._sync_db()
 
     def _sync_db(self):
-        LOG.info("Syncing the database with melange.")
-        mp = dict()
-        mp['BIN_DIR'] = self.bin_dir
+        LOG.info("Syncing melange to database named %r", DB_NAME)
+        utils.execute_template(*DB_SYNC_CMD, params=self._get_param_map(None))
+
+    def _get_param_map(self, config_fn):
+        mp = comp.PythonInstallComponent._get_param_map(self, config_fn)
         mp['CFG_FILE'] = sh.joinpths(self.cfg_dir, ROOT_CONF_REAL_NAME)
-        utils.execute_template(*DB_SYNC_CMD, params=mp)
+        mp['BIN_DIR'] = self.bin_dir
+        return mp
 
     def _get_config_files(self):
         return list(CONFIGS)
@@ -98,12 +101,12 @@ class MelangeInstaller(comp.PythonInstallComponent):
         if config_fn == ROOT_CONF:
             newcontents = contents
             with io.BytesIO(contents) as stream:
-                config = cfg.IgnoreMissingConfigParser()
+                config = cfg.IgnoreMissingConfigParser(cs=False)
                 config.readfp(stream)
                 db_dsn = db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
-                old_dbsn = config.get('DEFAULT', 'sql_connection')
+                old_dbsn = config.get('default', 'sql_connection')
                 if db_dsn != old_dbsn:
-                    config.set('DEFAULT', 'sql_connection', db_dsn)
+                    config.set('default', 'sql_connection', db_dsn)
                     with io.BytesIO() as outputstream:
                         config.write(outputstream)
                         outputstream.flush()

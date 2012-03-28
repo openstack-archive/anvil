@@ -97,11 +97,11 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
             # Need to fix the "Quantum plugin provider module"
             newcontents = contents
             with io.BytesIO(contents) as stream:
-                config = cfg.IgnoreMissingConfigParser()
+                config = cfg.IgnoreMissingConfigParser(cs=False)
                 config.readfp(stream)
-                provider = config.get("PLUGIN", "provider")
+                provider = config.get("plugin", "provider")
                 if provider != V_PROVIDER:
-                    config.set("PLUGIN", "provider", V_PROVIDER)
+                    config.set("plugin", "provider", V_PROVIDER)
                     with io.BytesIO() as outputstream:
                         config.write(outputstream)
                         outputstream.flush()
@@ -111,13 +111,13 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
             # Need to adjust the sql connection
             newcontents = contents
             with io.BytesIO(contents) as stream:
-                config = cfg.IgnoreMissingConfigParser()
+                config = cfg.IgnoreMissingConfigParser(cs=False)
                 config.readfp(stream)
-                db_dsn = config.get("DATABASE", "sql_connection")
+                db_dsn = config.get("database", "sql_connection")
                 if db_dsn:
                     generated_dsn = db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
                     if generated_dsn != db_dsn:
-                        config.set("DATABASE", "sql_connection", generated_dsn)
+                        config.set("database", "sql_connection", generated_dsn)
                         with io.BytesIO() as outputstream:
                             config.write(outputstream)
                             outputstream.flush()

@@ -288,7 +288,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         self.tracewriter.file_touched(tgt_fn)
 
     def _sync_db(self):
-        LOG.info("Syncing the database with nova.")
+        LOG.info("Syncing nova to database named %r", DB_NAME)
         mp = self._get_param_map(None)
         utils.execute_template(*DB_SYNC_CMD, params=mp)
 
