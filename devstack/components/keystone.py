@@ -112,7 +112,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         return set(['swift', 'quantum'])
 
     def _sync_db(self):
-        LOG.info("Syncing keystone to database named %s.", DB_NAME)
+        LOG.info("Syncing keystone to database named %r", DB_NAME)
         mp = self._get_param_map(None)
         cmds = [{'cmd': SYNC_DB_CMD}]
         utils.execute_template(*cmds, cwd=self.bin_dir, params=mp)
