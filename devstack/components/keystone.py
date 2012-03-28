@@ -142,7 +142,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             # then extract known configs that
             # ill need locations/directories/files made (or touched)...
             with io.BytesIO(contents) as stream:
-                config = cfg.IgnoreMissingConfigParser()
+                config = cfg.IgnoreMissingConfigParser(cs=False)
                 config.readfp(stream)
                 log_filename = config.get('default', 'log_file')
                 if log_filename:

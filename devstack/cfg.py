@@ -48,10 +48,12 @@ class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
     DEF_BOOLEAN = False
     DEF_BASE = None
 
-    def __init__(self):
+    def __init__(self, cs=True):
         ConfigParser.RawConfigParser.__init__(self)
-        #make option names case sensitive
-        self.optionxform = str
+        if cs:
+            # Make option names case sensitive
+            # See: http://docs.python.org/library/configparser.html#ConfigParser.RawConfigParser.optionxform
+            self.optionxform = str
 
     def get(self, section, option):
         value = IgnoreMissingConfigParser.DEF_BASE
@@ -80,8 +82,8 @@ class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
 
 
 class StackConfigParser(IgnoreMissingConfigParser):
-    def __init__(self):
-        IgnoreMissingConfigParser.__init__(self)
+    def __init__(self, cs=True):
+        IgnoreMissingConfigParser.__init__(self, cs)
         self.configs_fetched = dict()
 
     def _resolve_value(self, section, option, value_gotten):

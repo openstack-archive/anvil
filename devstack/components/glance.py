@@ -129,7 +129,7 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
         # then extract known configs that
         # will need locations/directories/files made (or touched)...
         with io.BytesIO(contents) as stream:
-            config = cfg.IgnoreMissingConfigParser()
+            config = cfg.IgnoreMissingConfigParser(cs=False)
             config.readfp(stream)
             if config.getboolean('default', 'image_cache_enabled'):
                 cache_dir = config.get('default', "image_cache_datadir")
