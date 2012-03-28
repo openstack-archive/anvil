@@ -330,9 +330,9 @@ def param_replace(text, replacements, ignore_missing=False):
         return ""
 
     if ignore_missing:
-        LOG.debug("Performing parameter replacements (ignoring missing) on text [%s]" % (text))
+        LOG.debug("Performing parameter replacements (ignoring missing) on text %r" % (text))
     else:
-        LOG.debug("Performing parameter replacements (not ignoring missing) on text [%s]" % (text))
+        LOG.debug("Performing parameter replacements (not ignoring missing) on text %r" % (text))
 
     possible_params = find_params(text)
     LOG.debug("Possible replacements are: %r" % (", ".join(possible_params)))
@@ -341,24 +341,24 @@ def param_replace(text, replacements, ignore_missing=False):
     def replacer(match):
         org_txt = match.group(0)
         param_name = match.group(1)
-        # Check if it's a comment, if so just return what it was and ignore
+        # Check if it's a comment,
+        # if so just return what it was and ignore
         # any tokens that were there
         if org_txt.startswith('#'):
-            LOG.debug("Ignoring comment line")
             return org_txt
         replacer = replacements.get(param_name)
         if replacer is None and ignore_missing:
             replacer = org_txt
         elif replacer is None and not ignore_missing:
-            msg = "No replacement found for parameter %s" % (org_txt)
+            msg = "No replacement found for parameter %r" % (org_txt)
             raise excp.NoReplacementException(msg)
         else:
             replacer = str(replacer)
-            LOG.debug("Replacing [%s] with [%s]" % (org_txt, replacer))
+            LOG.debug("Replacing %r with %r" % (org_txt, replacer))
         return replacer
 
     replaced_text = PARAM_SUB_REGEX.sub(replacer, text)
-    LOG.debug("Replacement/s resulted in text [%s]" % (replaced_text))
+    LOG.debug("Replacement/s resulted in text %r" % (replaced_text))
     return replaced_text
 
 
