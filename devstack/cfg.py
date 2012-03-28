@@ -90,13 +90,13 @@ class StackConfigParser(IgnoreMissingConfigParser):
         if section == 'host' and option == 'ip':
             LOG.debug("Host ip from configuration/environment was empty, programatically attempting to determine it.")
             value_gotten = utils.get_host_ip()
-            LOG.debug("Determined your host ip to be: [%s]" % (value_gotten))
+            LOG.debug("Determined your host ip to be: %r" % (value_gotten))
         return value_gotten
 
     def getdefaulted(self, section, option, default_val):
         val = self.get(section, option)
         if not val or not val.strip():
-            LOG.debug("Value [%s] found was not good enough, returning provided default [%s]" % (val, default_val))
+            LOG.debug("Value %r found was not good enough, returning provided default '%s'" % (val, default_val))
             return default_val
         return val
 
@@ -104,23 +104,23 @@ class StackConfigParser(IgnoreMissingConfigParser):
         key = cfg_helpers.make_id(section, option)
         if key in self.configs_fetched:
             value = self.configs_fetched.get(key)
-            LOG.debug("Fetched cached value [%s] for param [%s]" % (value, key))
+            LOG.debug("Fetched cached value '%s' for param %r" % (value, key))
         else:
-            LOG.debug("Fetching value for param [%s]" % (key))
+            LOG.debug("Fetching value for param %r" % (key))
             gotten_value = self._get_bashed(section, option)
             value = self._resolve_value(section, option, gotten_value)
-            LOG.debug("Fetched [%s] for [%s] %s" % (value, key, CACHE_MSG))
+            LOG.debug("Fetched %r for %r %s" % (value, key, CACHE_MSG))
             self.configs_fetched[key] = value
         return value
 
     def set(self, section, option, value):
         key = cfg_helpers.make_id(section, option)
-        LOG.audit("Setting config value [%s] for param [%s]" % (value, key))
+        LOG.audit("Setting config value '%s' for param %r" % (value, key))
         self.configs_fetched[key] = value
         IgnoreMissingConfigParser.set(self, section, option, value)
 
     def _resolve_replacements(self, value):
-        LOG.debug("Performing simple replacement on [%s]", value)
+        LOG.debug("Performing simple replacement on %r", value)
 
         #allow for our simple replacement to occur
         def replacer(match):
@@ -140,19 +140,19 @@ class StackConfigParser(IgnoreMissingConfigParser):
             env_key = mtch.group(1).strip()
             def_val = mtch.group(2).strip()
             if not def_val and not env_key:
-                msg = "Invalid bash-like value [%s]" % (value)
+                msg = "Invalid bash-like value %r" % (value)
                 raise excp.BadParamException(msg)
             env_value = env.get_key(env_key)
             if env_value is None:
-                LOG.debug("Extracting value from config provided default value [%s]" % (def_val))
+                LOG.debug("Extracting value from config provided default value %r" % (def_val))
                 extracted_val = self._resolve_replacements(def_val)
-                LOG.debug("Using config provided default value [%s] (no environment key)" % (extracted_val))
+                LOG.debug("Using config provided default value %r (no environment key)" % (extracted_val))
             else:
                 extracted_val = env_value
-                LOG.debug("Using enviroment provided value [%s]" % (extracted_val))
+                LOG.debug("Using enviroment provided value %r" % (extracted_val))
         else:
             extracted_val = value
-            LOG.debug("Using raw config provided value [%s]" % (extracted_val))
+            LOG.debug("Using raw config provided value %r" % (extracted_val))
         return extracted_val
 
 
