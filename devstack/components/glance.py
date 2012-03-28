@@ -54,9 +54,9 @@ DB_NAME = "glance"
 
 # What applications to start
 APP_OPTIONS = {
-    'glance-api': ['--config-file', sh.joinpths('%ROOT%', "etc", API_CONF)],
-    'glance-registry': ['--config-file', sh.joinpths('%ROOT%', "etc", REG_CONF)],
-    'glance-scrubber': ['--config-file', sh.joinpths('%ROOT%', "etc", REG_CONF)],
+    'glance-api': ['--config-file', sh.joinpths('%CONFIG_DIR%', API_CONF)],
+    'glance-registry': ['--config-file', sh.joinpths('%CONFIG_DIR%', REG_CONF)],
+    'glance-scrubber': ['--config-file', sh.joinpths('%CONFIG_DIR%', REG_CONF)],
 }
 
 # How the subcompoent small name translates to an actual app
@@ -67,23 +67,19 @@ SUB_TO_APP = {
 }
 
 # Subdirs of the downloaded (we are overriding the original)
-CONFIG_DIR = 'etc'
 BIN_DIR = 'bin'
 
 
-class GlanceUninstaller(comp.PythonUninstallComponent):
-    def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
-        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
+class GlanceMixin(object):
+
+    def known_options(self):
+        return set(['no-load-images'])
 
     def known_subsystems(self):
         return SUB_TO_APP.keys()
 
-
-class GlanceInstaller(comp.PythonInstallComponent):
-    def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
+    def _get_config_files(self):
+        return list(CONFIGS)
 
     def _get_download_locations(self):
         places = list()
@@ -93,11 +89,15 @@ class GlanceInstaller(comp.PythonInstallComponent):
         })
         return places
 
-    def known_subsystems(self):
-        return SUB_TO_APP.keys()
 
-    def _get_config_files(self):
-        return list(CONFIGS)
+class GlanceUninstaller(GlanceMixin, comp.PythonUninstallComponent):
+    def __init__(self, *args, **kargs):
+        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
+
+
+class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
+    def __init__(self, *args, **kargs):
+        comp.PythonInstallComponent.__init__(self, *args, **kargs)
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
@@ -110,11 +110,13 @@ class GlanceInstaller(comp.PythonInstallComponent):
 
     def _get_source_config(self, config_fn):
         if config_fn == POLICY_JSON:
-            fn = sh.joinpths(self.cfg_dir, POLICY_JSON)
+            # FIXME, maybe we shouldn't be sucking this from the checkout??
+            fn = sh.joinpths(self.app_dir, 'etc', POLICY_JSON)
             contents = sh.load_file(fn)
             return (fn, contents)
         elif config_fn == LOGGING_CONF:
-            fn = sh.joinpths(self.cfg_dir, LOGGING_SOURCE_FN)
+            # FIXME, maybe we shouldn't be sucking this from the checkout??
+            fn = sh.joinpths(self.app_dir, 'etc', LOGGING_SOURCE_FN)
             contents = sh.load_file(fn)
             return (fn, contents)
         return comp.PythonInstallComponent._get_source_config(self, config_fn)
@@ -132,25 +134,24 @@ class GlanceInstaller(comp.PythonInstallComponent):
             if config.getboolean('default', 'image_cache_enabled'):
                 cache_dir = config.get('default', "image_cache_datadir")
                 if cache_dir:
-                    LOG.info("Ensuring image cache data directory %s exists "\
-                             "(and is empty)" % (cache_dir))
+                    LOG.info("Ensuring image cache data directory %r exists (and is empty)" % (cache_dir))
                     # Destroy then recreate the image cache directory
                     sh.deldir(cache_dir)
                     self.tracewriter.dirs_made(*sh.mkdirslist(cache_dir))
             if config.get('default', 'default_store') == 'file':
                 file_dir = config.get('default', 'filesystem_store_datadir')
                 if file_dir:
-                    LOG.info("Ensuring file system store directory %s exists and is empty." % (file_dir))
+                    LOG.info("Ensuring file system store directory %r exists and is empty." % (file_dir))
                     # Delete existing images
                     # and recreate the image directory
                     sh.deldir(file_dir)
                     self.tracewriter.dirs_made(*sh.mkdirslist(file_dir))
             log_filename = config.get('default', 'log_file')
             if log_filename:
-                LOG.info("Ensuring log file %s exists and is empty." % (log_filename))
+                LOG.info("Ensuring log file %r exists and is empty." % (log_filename))
                 log_dir = sh.dirname(log_filename)
                 if log_dir:
-                    LOG.info("Ensuring log directory %s exists." % (log_dir))
+                    LOG.info("Ensuring log directory %r exists." % (log_dir))
                     self.tracewriter.dirs_made(*sh.mkdirslist(log_dir))
                 # Destroy then recreate it (the log file)
                 sh.unlink(log_filename)
@@ -158,18 +159,22 @@ class GlanceInstaller(comp.PythonInstallComponent):
             if config.getboolean('default', 'delayed_delete'):
                 data_dir = config.get('default', 'scrubber_datadir')
                 if data_dir:
-                    LOG.info("Ensuring scrubber data dir %s exists and is empty." % (data_dir))
+                    LOG.info("Ensuring scrubber data dir %r exists and is empty." % (data_dir))
                     # Destroy then recreate the scrubber data directory
                     sh.deldir(data_dir)
                     self.tracewriter.dirs_made(*sh.mkdirslist(data_dir))
         # Nothing modified so just return the original
         return contents
 
+    def _get_image_dir(self):
+        # This might be changed often so make it a function
+        return sh.joinpths(self.component_dir, 'images')
+
     def _get_param_map(self, config_fn):
         # This dict will be used to fill in the configuration
         # params with actual values
-        mp = dict()
-        mp['DEST'] = self.app_dir
+        mp = comp.PythonInstallComponent._get_param_map(self, config_fn)
+        mp['IMG_DIR'] = self._get_image_dir()
         mp['SYSLOG'] = self.cfg.getboolean("default", "syslog")
         mp['SQL_CONN'] = db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
         mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
@@ -178,30 +183,23 @@ class GlanceInstaller(comp.PythonInstallComponent):
         return mp
 
 
-class GlanceRuntime(comp.PythonRuntime):
+class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
-        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
         self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
-
-    def known_subsystems(self):
-        return SUB_TO_APP.keys()
 
     def _get_apps_to_start(self):
         apps = list()
         for subsys in self.desired_subsystems:
-            app = dict()
-            app['name'] = SUB_TO_APP[subsys]
-            app['path'] = sh.joinpths(self.bin_dir, app['name'])
-            apps.append(app)
+            apps.append({
+                'name': SUB_TO_APP[subsys],
+                'path': sh.joinpths(self.bin_dir, SUB_TO_APP[subsys]),
+            })
         return apps
 
     def _get_app_options(self, app):
         return APP_OPTIONS.get(app)
-
-    def known_options(self):
-        return set(['no-load-images'])
 
     def post_start(self):
         comp.PythonRuntime.post_start(self)

@@ -33,7 +33,6 @@ DB_NAME = "keystone"
 
 # Subdirs of the git checkout
 BIN_DIR = "bin"
-CONFIG_DIR = "etc"
 
 # Simple confs
 ROOT_CONF = "keystone.conf"
@@ -47,18 +46,25 @@ MANAGE_DATA_CONF = 'keystone_init.sh'
 MANAGE_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
 MANAGE_ADMIN_USER = 'admin'
 MANAGE_DEMO_USER = 'demo'
-MANAGE_INVIS_USER = 'invisible_to_admin'
+MANGER_SERVICE_TENANT = 'service'
 
 # Sync db command
-MANAGE_APP_NAME = 'keystone-manage'
-SYNC_DB_CMD = [sh.joinpths('%BINDIR%', MANAGE_APP_NAME), 'db_sync']
+SYNC_DB_CMD = [sh.joinpths('%BIN_DIR%', 'keystone-manage'),
+                '--config-file=%s' % (sh.joinpths('%CONFIG_DIR%', ROOT_CONF)),
+                '--debug', '-v',
+                # Available commands:
+                # db_sync: Sync the database.
+                # export_legacy_catalog: Export the service catalog from a legacy database.
+                # import_legacy: Import a legacy database.
+                # import_nova_auth: Import a dump of nova auth data into keystone.
+                'db_sync']
 
 # What to start
 APP_NAME = 'keystone-all'
 APP_OPTIONS = {
-    APP_NAME: ['--config-file', sh.joinpths('%ROOT%', CONFIG_DIR, ROOT_CONF),
-                "--debug", '-d',
-                '--log-config=' + sh.joinpths('%ROOT%', CONFIG_DIR, 'logging.cnf')]
+    APP_NAME: ['--config-file=%s' % (sh.joinpths('%CONFIG_DIR%', ROOT_CONF)),
+                "--debug", '-v',
+                '--log-config=%s' % (sh.joinpths('%CONFIG_DIR%', LOGGING_CONF))],
 }
 
 
@@ -81,14 +87,11 @@ QUANTUM_TEMPL_ADDS = ['catalog.RegionOne.network.publicURL = http://%SERVICE_HOS
 class KeystoneUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, *args, **kargs)
-        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
-        self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
 
 
 class KeystoneInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
 
     def _get_download_locations(self):
@@ -110,10 +113,9 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
     def _sync_db(self):
         LOG.info("Syncing keystone to database named %s.", DB_NAME)
-        params = dict()
-        params['BINDIR'] = self.bin_dir
+        mp = self._get_param_map(None)
         cmds = [{'cmd': SYNC_DB_CMD}]
-        utils.execute_template(*cmds, cwd=self.bin_dir, params=params)
+        utils.execute_template(*cmds, cwd=self.bin_dir, params=mp)
 
     def _get_config_files(self):
         return list(CONFIGS)
@@ -126,8 +128,9 @@ class KeystoneInstaller(comp.PythonInstallComponent):
     def _setup_initer(self):
         LOG.info("Configuring keystone initializer template %s.", MANAGE_DATA_CONF)
         (_, contents) = utils.load_template(self.component_name, MANAGE_DATA_CONF)
-        params = self._get_param_map(MANAGE_DATA_CONF)
-        contents = utils.param_replace(contents, params, True)
+        mp = self._get_param_map(MANAGE_DATA_CONF)
+        contents = utils.param_replace(contents, mp, True)
+        # FIXME, stop placing in checkout dir...
         tgt_fn = sh.joinpths(self.bin_dir, MANAGE_DATA_CONF)
         sh.write_file(tgt_fn, contents)
         sh.chmod(tgt_fn, 0755)
@@ -172,7 +175,8 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
     def _get_source_config(self, config_fn):
         if config_fn == LOGGING_CONF:
-            fn = sh.joinpths(self.cfg_dir, LOGGING_SOURCE_FN)
+            # FIXME, maybe we shouldn't be sucking this from the checkout??
+            fn = sh.joinpths(self.app_dir, 'etc', LOGGING_SOURCE_FN)
             contents = sh.load_file(fn)
             return (fn, contents)
         return comp.PythonInstallComponent._get_source_config(self, config_fn)
@@ -183,7 +187,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
     def _get_param_map(self, config_fn):
         # These be used to fill in the configuration/cmds +
         # params with actual values
-        mp = dict()
+        mp = comp.PythonInstallComponent._get_param_map(self, config_fn)
         mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
         mp['DEST'] = self.app_dir
         mp['BIN_DIR'] = self.bin_dir
@@ -200,13 +204,12 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 class KeystoneRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
-        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
         self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
 
     def post_start(self):
         tgt_fn = sh.joinpths(self.bin_dir, MANAGE_DATA_CONF)
-        if sh.isfile(tgt_fn):
+        if sh.is_executable(tgt_fn):
             # If its still there, run it
             # these environment additions are important
             # in that they eventually affect how this script runs
@@ -216,10 +219,9 @@ class KeystoneRuntime(comp.PythonRuntime):
             env['ENABLED_SERVICES'] = ",".join(self.instances.keys())
             env['BIN_DIR'] = self.bin_dir
             setup_cmd = MANAGE_CMD_ROOT + [tgt_fn]
-            LOG.info("Running (%s) command to initialize keystone." % (" ".join(setup_cmd)))
+            LOG.info("Running %r command to initialize keystone." % (" ".join(setup_cmd)))
             sh.execute(*setup_cmd, env_overrides=env, run_as_root=False)
-            LOG.debug("Removing (%s) file since we successfully initialized keystone." % (tgt_fn))
-            sh.unlink(tgt_fn)
+            utils.mark_unexecute_file(tgt_fn, env)
 
     def _get_apps_to_start(self):
         apps = list()
@@ -239,11 +241,11 @@ def get_shared_params(config, pw_gen, service_user_name=None):
     host_ip = config.get('host', 'ip')
 
     # These match what is in keystone_init.sh
-    mp['SERVICE_TENANT_NAME'] = 'service'
+    mp['SERVICE_TENANT_NAME'] = MANGER_SERVICE_TENANT
     if service_user_name:
         mp['SERVICE_USERNAME'] = str(service_user_name)
-    mp['ADMIN_USER_NAME'] = 'admin'
-    mp['DEMO_USER_NAME'] = 'demo'
+    mp['ADMIN_USER_NAME'] = MANAGE_ADMIN_USER
+    mp['DEMO_USER_NAME'] = MANAGE_DEMO_USER
     mp['ADMIN_TENANT_NAME'] = mp['ADMIN_USER_NAME']
     mp['DEMO_TENANT_NAME'] = mp['DEMO_USER_NAME']
 

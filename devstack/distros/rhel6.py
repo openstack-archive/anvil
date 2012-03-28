@@ -111,7 +111,7 @@ class YumPackagerWithRelinks(yum.YumPackager):
         if response:
             options = pkg.get('packager_options', {})
             links = options.get('links', [])
-            for src, tgt in links:
+            for (_, tgt) in links:
                 if sh.islink(tgt):
                     sh.unlink(tgt)
         return response

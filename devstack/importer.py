@@ -15,6 +15,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import sys
+
 
 def partition(fullname):
     """
@@ -40,3 +42,14 @@ def import_entry_point(fullname):
         raise RuntimeError('Could not load entry point %s: %s' %
                            (fullname, err))
     return cls
+
+
+def import_module(module_name, quiet=True):
+    try:
+        __import__(module_name)
+        return sys.modules.get(module_name, None)
+    except ImportError:
+        if quiet:
+            return None
+        else:
+            raise

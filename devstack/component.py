@@ -199,7 +199,13 @@ class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
         return down.GitDownloader(self.distro, uri, target_dir, branch).download()
 
     def _get_param_map(self, config_fn):
-        return dict()
+        return {
+            'COMPONENT_DIR': self.component_dir,
+            'APP_DIR': self.app_dir,
+            'CONFIG_DIR': self.cfg_dir,
+            'TRACE_DIR': self.trace_dir,
+            'CONFIG_FN': config_fn,
+        }
 
     def _get_packages(self):
         pkg_list = list(self.packages)
@@ -512,7 +518,10 @@ class ProgramRuntime(ComponentBase):
 
     def _get_param_map(self, app_name):
         return {
-            'ROOT': self.app_dir,
+            'COMPONENT_DIR': self.component_dir,
+            'APP_DIR': self.app_dir,
+            'CONFIG_DIR': self.cfg_dir,
+            'TRACE_DIR': self.trace_dir,
         }
 
     def pre_start(self):
@@ -582,7 +591,6 @@ class ProgramRuntime(ComponentBase):
                 if cmd == settings.RUN_TYPE_TYPE and action:
                     killcls = RUNNER_CLS_MAPPING.get(action)
                     break
-
             # Did we find a class that can do it?
             if killcls:
                 if killcls in killer_instances:

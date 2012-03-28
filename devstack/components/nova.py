@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import os
+
 from urlparse import urlunparse
 
 from devstack import component as comp
@@ -54,7 +56,7 @@ DB_NAME = 'nova'
 
 # This makes the database be in sync with nova
 DB_SYNC_CMD = [
-    {'cmd': ['%BIN_DIR%/nova-manage', CFG_FILE_OPT, '%CFGFILE%', 'db', 'sync']},
+    {'cmd': ['%BIN_DIR%/nova-manage', CFG_FILE_OPT, '%CFG_FILE%', 'db', 'sync']},
 ]
 
 # These are used for nova volumes
@@ -96,15 +98,15 @@ SUBSYSTEMS = [NCPU, NVOL, NAPI,
 # What to start
 APP_OPTIONS = {
     #these are currently the core components/applications
-    'nova-api': [CFG_FILE_OPT, '%CFGFILE%'],
-    'nova-compute': [CFG_FILE_OPT, '%CFGFILE%'],
-    'nova-volume': [CFG_FILE_OPT, '%CFGFILE%'],
-    'nova-network': [CFG_FILE_OPT, '%CFGFILE%'],
-    'nova-scheduler': [CFG_FILE_OPT, '%CFGFILE%'],
-    'nova-cert': [CFG_FILE_OPT, '%CFGFILE%'],
-    'nova-objectstore': [CFG_FILE_OPT, '%CFGFILE%'],
-    'nova-consoleauth': [CFG_FILE_OPT, '%CFGFILE%'],
-    'nova-xvpvncproxy': [CFG_FILE_OPT, '%CFGFILE%'],
+    'nova-api': [CFG_FILE_OPT, '%CFG_FILE%'],
+    'nova-compute': [CFG_FILE_OPT, '%CFG_FILE%'],
+    'nova-volume': [CFG_FILE_OPT, '%CFG_FILE%'],
+    'nova-network': [CFG_FILE_OPT, '%CFG_FILE%'],
+    'nova-scheduler': [CFG_FILE_OPT, '%CFG_FILE%'],
+    'nova-cert': [CFG_FILE_OPT, '%CFG_FILE%'],
+    'nova-objectstore': [CFG_FILE_OPT, '%CFG_FILE%'],
+    'nova-consoleauth': [CFG_FILE_OPT, '%CFG_FILE%'],
+    'nova-xvpvncproxy': [CFG_FILE_OPT, '%CFG_FILE%'],
 }
 
 # Sub component names to actual app names (matching previous dict)
@@ -122,7 +124,6 @@ SUB_COMPONENT_NAME_MAP = {
 
 # Subdirs of the checkout/download
 BIN_DIR = 'bin'
-CONFIG_DIR = "etc"
 
 # Network class/driver/manager templs
 QUANTUM_MANAGER = 'nova.network.quantum.manager.QuantumManager'
@@ -197,15 +198,31 @@ def canon_virt_driver(virt_driver):
     return virt_driver
 
 
-class NovaUninstaller(comp.PythonUninstallComponent):
+class NovaMixin(object):
+
+    def known_options(self):
+        return set(['no-vnc', 'quantum', 'melange'])
+
+    def known_subsystems(self):
+        return list(SUBSYSTEMS)
+
+    def _get_config_files(self):
+        return list(CONFIGS)
+
+    def _get_download_locations(self):
+        places = list()
+        places.append({
+            'uri': ("git", "nova_repo"),
+            'branch': ("git", "nova_branch"),
+        })
+        return places
+
+
+class NovaUninstaller(NovaMixin, comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
-        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
         self.virsh = lv.Virsh(self.cfg, self.distro)
-
-    def known_subsystems(self):
-        return SUBSYSTEMS
 
     def pre_uninstall(self):
         self._clear_libvirt_domains()
@@ -220,7 +237,7 @@ class NovaUninstaller(comp.PythonUninstallComponent):
         env['VOLUME_NAME_PREFIX'] = self.cfg.getdefaulted('nova', 'volume_name_prefix', DEF_VOL_PREFIX)
         cleaner_fn = sh.joinpths(self.bin_dir, CLEANER_DATA_CONF)
         if sh.isfile(cleaner_fn):
-            LOG.info("Cleaning up your system by running nova cleaner script [%s]." % (cleaner_fn))
+            LOG.info("Cleaning up your system by running nova cleaner script %r" % (cleaner_fn))
             cmd = CLEANER_CMD_ROOT + [cleaner_fn]
             sh.execute(*cmd, run_as_root=True, env_overrides=env)
 
@@ -232,11 +249,10 @@ class NovaUninstaller(comp.PythonUninstallComponent):
             self.virsh.clear_domains(libvirt_type, inst_prefix)
 
 
-class NovaInstaller(comp.PythonInstallComponent):
+class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
-        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
         self.paste_conf_fn = self._get_target_config_name(PASTE_CONF)
         self.volumes_enabled = False
         if NVOL in self.desired_subsystems:
@@ -245,25 +261,11 @@ class NovaInstaller(comp.PythonInstallComponent):
         if NXVNC in self.desired_subsystems:
             self.xvnc_enabled = True
 
-    def known_options(self):
-        return set(['no-vnc', 'quantum', 'melange'])
-
-    def known_subsystems(self):
-        return SUBSYSTEMS
-
     def _get_symlinks(self):
         links = comp.PythonInstallComponent._get_symlinks(self)
         source_fn = sh.joinpths(self.cfg_dir, API_CONF)
         links[source_fn] = sh.joinpths(self._get_link_dir(), API_CONF)
         return links
-
-    def _get_download_locations(self):
-        places = list()
-        places.append({
-            'uri': ("git", "nova_repo"),
-            'branch': ("git", "nova_branch"),
-        })
-        return places
 
     def warm_configs(self):
         warm_pws = list(WARMUP_PWS)
@@ -273,14 +275,12 @@ class NovaInstaller(comp.PythonInstallComponent):
         for pw_key, pw_prompt in warm_pws:
             self.pw_gen.get_password(pw_key, pw_prompt)
 
-    def _get_config_files(self):
-        return list(CONFIGS)
-
     def _setup_network_initer(self):
         LOG.info("Configuring nova network initializer template %s.", NET_INIT_CONF)
         (_, contents) = utils.load_template(self.component_name, NET_INIT_CONF)
         params = self._get_param_map(NET_INIT_CONF)
         contents = utils.param_replace(contents, params, True)
+        # FIXME, stop placing in checkout dir...
         tgt_fn = sh.joinpths(self.bin_dir, NET_INIT_CONF)
         sh.write_file(tgt_fn, contents)
         sh.chmod(tgt_fn, 0755)
@@ -288,9 +288,7 @@ class NovaInstaller(comp.PythonInstallComponent):
 
     def _sync_db(self):
         LOG.info("Syncing the database with nova.")
-        mp = dict()
-        mp['BIN_DIR'] = self.bin_dir
-        mp['CFGFILE'] = sh.joinpths(self.cfg_dir, API_CONF)
+        mp = self._get_param_map(None)
         utils.execute_template(*DB_SYNC_CMD, params=mp)
 
     def post_install(self):
@@ -306,8 +304,9 @@ class NovaInstaller(comp.PythonInstallComponent):
             vol_maker.setup_volumes()
 
     def _setup_cleaner(self):
-        LOG.info("Configuring cleaner template %s.", CLEANER_DATA_CONF)
+        LOG.info("Configuring cleaner template %r", CLEANER_DATA_CONF)
         (_, contents) = utils.load_template(self.component_name, CLEANER_DATA_CONF)
+        # FIXME, stop placing in checkout dir...
         tgt_fn = sh.joinpths(self.bin_dir, CLEANER_DATA_CONF)
         sh.write_file(tgt_fn, contents)
         sh.chmod(tgt_fn, 0755)
@@ -319,7 +318,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
 
     def _generate_nova_conf(self):
-        LOG.info("Generating dynamic content for nova configuration (%s)." % (API_CONF))
+        LOG.info("Generating dynamic content for nova in file %r" % (API_CONF))
         conf_gen = NovaConfConfigurator(self)
         nova_conf_contents = conf_gen.configure()
         conf_fn = self._get_target_config_name(API_CONF)
@@ -329,21 +328,20 @@ class NovaInstaller(comp.PythonInstallComponent):
         self.tracewriter.cfg_file_written(sh.write_file(conf_fn, nova_conf_contents))
 
     def _get_source_config(self, config_fn):
-        name = config_fn
         if config_fn == PASTE_CONF:
-            # Return the paste api template
             return comp.PythonInstallComponent._get_source_config(self, PASTE_SOURCE_FN)
-        elif config_fn == LOGGING_CONF:
-            name = LOGGING_SOURCE_FN
-        srcfn = sh.joinpths(self.cfg_dir, "nova", name)
-        contents = sh.load_file(srcfn)
-        return (srcfn, contents)
+        if config_fn == LOGGING_CONF:
+            config_fn = LOGGING_SOURCE_FN
+        # FIXME, maybe we shouldn't be sucking these from checked out code?
+        fn = sh.joinpths(self.app_dir, 'etc', "nova", config_fn)
+        contents = sh.load_file(fn)
+        return (fn, contents)
 
     def _get_param_map(self, config_fn):
-        mp = dict()
+        mp = comp.PythonInstallComponent._get_param_map(self, config_fn)
+        mp['CFG_FILE'] = sh.joinpths(self.cfg_dir, API_CONF)
+        mp['BIN_DIR'] = self.bin_dir
         if config_fn == NET_INIT_CONF:
-            mp['NOVA_DIR'] = self.app_dir
-            mp['CFG_FILE'] = sh.joinpths(self.cfg_dir, API_CONF)
             mp['FLOATING_RANGE'] = self.cfg.getdefaulted('nova', 'floating_range', '172.24.4.224/28')
             mp['TEST_FLOATING_RANGE'] = self.cfg.getdefaulted('nova', 'test_floating_range', '192.168.253.0/29')
             mp['TEST_FLOATING_POOL'] = self.cfg.getdefaulted('nova', 'test_floating_pool', 'test')
@@ -360,17 +358,16 @@ class NovaInstaller(comp.PythonInstallComponent):
         return configs_made
 
 
-class NovaRuntime(comp.PythonRuntime):
+class NovaRuntime(NovaMixin, comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
-        self.cfg_dir = sh.joinpths(self.app_dir, CONFIG_DIR)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
         self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
         self.virsh = lv.Virsh(self.cfg, self.distro)
 
     def _setup_network_init(self):
         tgt_fn = sh.joinpths(self.bin_dir, NET_INIT_CONF)
-        if sh.isfile(tgt_fn):
+        if sh.is_executable(tgt_fn):
             LOG.info("Creating your nova network to be used with instances.")
             # If still there, run it
             # these environment additions are important
@@ -379,29 +376,22 @@ class NovaRuntime(comp.PythonRuntime):
                 LOG.info("Waiting %s seconds so that quantum can start up before running first time init." % (self.wait_time))
                 sh.sleep(self.wait_time)
             env = dict()
-            env['ENABLED_SERVICES'] = ",".join(self.instances.keys())
+            env['ENABLED_SERVICES'] = ",".join(self.options)
             setup_cmd = NET_INIT_CMD_ROOT + [tgt_fn]
-            LOG.info("Running (%s) command to initialize nova's network." % (" ".join(setup_cmd)))
+            LOG.info("Running %r command to initialize nova's network." % (" ".join(setup_cmd)))
             sh.execute(*setup_cmd, env_overrides=env, run_as_root=False)
-            LOG.debug("Removing (%s) file since we successfully initialized nova's network." % (tgt_fn))
-            sh.unlink(tgt_fn)
+            utils.mark_unexecute_file(tgt_fn, env)
 
     def post_start(self):
         self._setup_network_init()
 
-    def known_options(self):
-        return set(['quantum'])
-
-    def known_subsystems(self):
-        return SUBSYSTEMS
-
     def _get_apps_to_start(self):
         apps = list()
         for subsys in self.desired_subsystems:
-            app = dict()
-            app['name'] = SUB_COMPONENT_NAME_MAP[subsys]
-            app['path'] = sh.joinpths(self.bin_dir, app['name'])
-            apps.append(app)
+            apps.append({
+                'name': SUB_COMPONENT_NAME_MAP[subsys],
+                'path': sh.joinpths(self.bin_dir, SUB_COMPONENT_NAME_MAP[subsys]),
+            })
         return apps
 
     def pre_start(self):
@@ -424,7 +414,7 @@ class NovaRuntime(comp.PythonRuntime):
 
     def _get_param_map(self, app_name):
         params = comp.PythonRuntime._get_param_map(self, app_name)
-        params['CFGFILE'] = sh.joinpths(self.cfg_dir, API_CONF)
+        params['CFG_FILE'] = sh.joinpths(self.cfg_dir, API_CONF)
         return params
 
     def _get_app_options(self, app):
@@ -771,10 +761,21 @@ class NovaConfConfigurator(object):
 
     def _configure_instances_path(self, instances_path, nova_conf):
         nova_conf.add('instances_path', instances_path)
-        LOG.debug("Attempting to create instance directory: %s" % (instances_path))
+        LOG.debug("Attempting to create instance directory: %r", instances_path)
         self.tracewriter.dirs_made(*sh.mkdirslist(instances_path))
-        LOG.debug("Adjusting permissions of instance directory: %s" % (instances_path))
+        LOG.debug("Adjusting permissions of instance directory: %r", instances_path)
         sh.chmod(instances_path, 0777)
+        instance_parent = sh.dirname(instances_path)
+        LOG.debug("Adjusting permissions of instance directory parent: %r", instance_parent)
+        # In cases where you are using kvm + qemu
+        # On certain distros (ie RHEL) this user needs to be able
+        # To enter the parents of the instance path, if this is in /home/BLAH/ then
+        # Without enabling the whole path, this user can't write there. This helps fix that...
+        with sh.Rooted(True):
+            for p in sh.explode_path(instance_parent):
+                if not os.access(p, os.X_OK) and sh.isdir(p):
+                    # Need to be able to go into that directory
+                    sh.chmod(p, os.stat(p).st_mode | 0755)
 
     def _configure_libvirt(self, virt_type, nova_conf):
         if virt_type == 'lxc':

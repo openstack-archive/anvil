@@ -26,8 +26,6 @@ from devstack.components import db
 from devstack.components import horizon
 from devstack.components import nova
 
-from devstack.packaging import yum
-
 LOG = logging.getLogger(__name__)
 
 SOCKET_CONF = "/etc/httpd/conf.d/wsgi-socket-prefix.conf"

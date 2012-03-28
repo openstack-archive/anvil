@@ -36,7 +36,6 @@ BIN_DIR = 'bin'
 ROOT_CONF = 'melange.conf.sample'
 ROOT_CONF_REAL_NAME = 'melange.conf'
 CONFIGS = [ROOT_CONF]
-CFG_LOC = ['etc', 'melange']
 
 # Sensible defaults
 DEF_CIDR_RANGE = 'FE-EE-DD-00-00-00/24'
@@ -53,7 +52,7 @@ CIDR_CREATE_CMD = [
 
 # What to start
 APP_OPTIONS = {
-    'melange-server': ['--config-file', '%CFG_FILE%'],
+    'melange-server': ['--config-file=%CFG_FILE%'],
 }
 
 
@@ -66,7 +65,6 @@ class MelangeInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
-        self.cfg_dir = sh.joinpths(self.app_dir, *CFG_LOC)
 
     def _get_download_locations(self):
         places = list()
@@ -115,11 +113,11 @@ class MelangeInstaller(comp.PythonInstallComponent):
 
     def _get_source_config(self, config_fn):
         if config_fn == ROOT_CONF:
-            srcfn = sh.joinpths(self.cfg_dir, config_fn)
-            contents = sh.load_file(srcfn)
-            return (srcfn, contents)
-        else:
-            return comp.PythonInstallComponent._get_source_config(self, config_fn)
+            # FIXME, maybe we shouldn't be sucking this from the checkout??
+            fn = sh.joinpths(self.app_dir, 'etc', 'melange', config_fn)
+            contents = sh.load_file(fn)
+            return (fn, contents)
+        return comp.PythonInstallComponent._get_source_config(self, config_fn)
 
     def _get_target_config_name(self, config_fn):
         if config_fn == ROOT_CONF:
@@ -132,7 +130,6 @@ class MelangeRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
-        self.cfg_dir = sh.joinpths(self.app_dir, *CFG_LOC)
         self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
 
     def _get_apps_to_start(self):
@@ -148,9 +145,9 @@ class MelangeRuntime(comp.PythonRuntime):
         return APP_OPTIONS.get(app)
 
     def _get_param_map(self, app_name):
-        pmap = comp.PythonRuntime._get_param_map(self, app_name)
-        pmap['CFG_FILE'] = sh.joinpths(self.cfg_dir, ROOT_CONF_REAL_NAME)
-        return pmap
+        mp = comp.PythonRuntime._get_param_map(self, app_name)
+        mp['CFG_FILE'] = sh.joinpths(self.cfg_dir, ROOT_CONF_REAL_NAME)
+        return mp
 
     def known_options(self):
         return set(["create-cidr"])
