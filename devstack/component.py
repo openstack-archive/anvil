@@ -158,33 +158,38 @@ class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
     def _get_download_locations(self):
         return list()
 
-    def download(self):
-        locations = self._get_download_locations()
-        base_dir = self.app_dir
-        for location_info in locations:
-            uri_tuple = location_info["uri"]
-            branch_tuple = location_info.get("branch")
-            sub_dir = location_info.get("subdir")
-            target_loc = base_dir
-            if sub_dir:
-                target_loc = sh.joinpths(base_dir, sub_dir)
+    def _get_real_download_locations(self):
+        real_locations = list()
+        for info in self._get_download_locations():
+            section, key = info["uri"]
+            uri = self.cfg.get(section, key)
+            target_directory = self.app_dir
+            if 'subdir' in info:
+                target_directory = sh.joinpths(target_directory, info["subdir"])
             branch = None
-            if branch_tuple:
-                (cfg_section, cfg_key) = branch_tuple
-                branch = self.cfg.get(cfg_section, cfg_key)
-                if not branch:
-                    msg = "No branch entry found at config location %r" % \
-                        (cfg_helpers.make_id(cfg_section, cfg_key))
-                    raise excp.ConfigException(msg)
-            (cfg_section, cfg_key) = uri_tuple
-            uri = self.cfg.get(cfg_section, cfg_key)
-            if not uri:
-                msg = "No uri entry found at config location %r" % \
-                    (cfg_helpers.make_id(cfg_section, cfg_key))
-                raise excp.ConfigException(msg)
+            if 'branch' in info:
+                section, key = info['branch']
+                branch = self.cfg.get(section, key)
+            real_locations.append({
+                'uri': uri,
+                'target': target_directory,
+                'branch': branch,
+            })
+        return real_locations
+
+    def download(self):
+        download_am = 0
+        for info in self._get_real_download_locations():
+            # Extract da download!
+            uri = info['uri']
+            target_loc = info['target']
+            branch = info['branch']
+            if not uri or not target_loc:
+                continue
             # Activate da download!
             self.tracewriter.download_happened(target_loc, uri)
             dirs_made = self._do_download(uri, target_loc, branch)
+            download_am += 1
             # Here we ensure this is always added so that
             # if a keep old happens then this of course
             # won't be recreated, but if u uninstall without keeping old
@@ -193,7 +198,7 @@ class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
             if target_loc not in dirs_made:
                 dirs_made.append(target_loc)
             self.tracewriter.dirs_made(*dirs_made)
-        return len(locations)
+        return download_am
 
     def _do_download(self, uri, target_dir, branch):
         return down.GitDownloader(self.distro, uri, target_dir, branch).download()
@@ -287,7 +292,6 @@ class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
                 LOG.info("Configuring file %r", fn)
                 (source_fn, contents) = self._get_source_config(fn)
                 LOG.debug("Replacing parameters in file %r", source_fn)
-                LOG.debug("Replacements = %s", parameters)
                 contents = utils.param_replace(contents, parameters)
                 LOG.debug("Applying side-effects of param replacement for template %r", source_fn)
                 contents = self._config_adjust(contents, fn)
@@ -314,9 +318,7 @@ class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
         return len(links)
 
     def configure(self):
-        conf_am = self._configure_files()
-        conf_am += self._configure_symlinks()
-        return conf_am
+        return self._configure_files() + self._configure_symlinks()
 
 
 class PythonInstallComponent(PkgInstallComponent):
