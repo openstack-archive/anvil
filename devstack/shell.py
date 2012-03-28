@@ -161,8 +161,8 @@ def execute(*cmd, **kwargs):
                 else:
                     result = obj.communicate()
             except OSError as e:
-                error_description = "%s: [%s, %s]" % (e.message, e.errno, e.strerror)
-                raise excp.ProcessExecutionError(description=error_description, cmd=str_cmd)
+                raise excp.ProcessExecutionError(description="%s: [%s, %s]" % (e, e.errno, e.strerror),
+                                                 cmd=str_cmd)
             if (stdin_fh != subprocess.PIPE
                 and obj.stdin and close_stdin):
                 obj.stdin.close()
