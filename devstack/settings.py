@@ -44,7 +44,6 @@ COMPONENT_CONFIG_DIR = "config"
 
 # RC files generated / used
 RC_FN_TEMPL = "os-%s.rc"
-LOCALRC_FN = RC_FN_TEMPL % ('local')
 OSRC_FN = RC_FN_TEMPL % ('core')
 
 # Where the configs and templates should be at.

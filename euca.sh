@@ -17,7 +17,7 @@ fi
 # Find the other rc files
 RC_DIR=$(cd $(dirname "$BASH_SOURCE") && pwd)
 CORE_RC="os-core.rc"
-EC2_RC="os-ec2.rc"
+EC2_RC="eucarc"
 
 if [ ! -f $RC_DIR/$CORE_RC ];
 then

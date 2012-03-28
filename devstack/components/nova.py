@@ -15,6 +15,7 @@
 #    under the License.
 
 import os
+import weakref
 
 from urlparse import urlunparse
 
@@ -276,7 +277,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
             self.pw_gen.get_password(pw_key, pw_prompt)
 
     def _setup_network_initer(self):
-        LOG.info("Configuring nova network initializer template %s.", NET_INIT_CONF)
+        LOG.info("Configuring nova network initializer template %r", NET_INIT_CONF)
         (_, contents) = utils.load_template(self.component_name, NET_INIT_CONF)
         params = self._get_param_map(NET_INIT_CONF)
         contents = utils.param_replace(contents, params, True)
@@ -313,7 +314,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         self.tracewriter.file_touched(tgt_fn)
 
     def _setup_db(self):
-        LOG.info("Fixing up database named %s.", DB_NAME)
+        LOG.info("Fixing up database named %r", DB_NAME)
         db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
         db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
 
@@ -322,7 +323,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         conf_gen = NovaConfConfigurator(self)
         nova_conf_contents = conf_gen.configure()
         conf_fn = self._get_target_config_name(API_CONF)
-        LOG.info("Writing nova configuration to %s" % (conf_fn))
+        LOG.info("Writing nova configuration to %r" % (conf_fn))
         LOG.debug(nova_conf_contents)
         self.tracewriter.dirs_made(*sh.mkdirslist(sh.dirname(conf_fn)))
         self.tracewriter.cfg_file_written(sh.write_file(conf_fn, nova_conf_contents))
@@ -424,10 +425,11 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
 # This will configure nova volumes which in a developer box
 # is a volume group (lvm) that are backed by a loopback file
 class NovaVolumeConfigurator(object):
-    def __init__(self, ni):
-        self.cfg = ni.cfg
-        self.app_dir = ni.app_dir
-        self.distro = ni.distro
+    def __init__(self, installer):
+        self.installer = weakref.proxy(installer)
+        self.cfg = installer.cfg
+        self.app_dir = installer.app_dir
+        self.distro = installer.distro
 
     def setup_volumes(self):
         self._setup_vol_groups()
@@ -443,12 +445,12 @@ class NovaVolumeConfigurator(object):
         mp['VOLUME_BACKING_FILE_SIZE'] = backing_file_size
         try:
             utils.execute_template(*VG_CHECK_CMD, params=mp)
-            LOG.warn("Volume group already exists: %s" % (vol_group))
+            LOG.warn("Volume group already exists: %r" % (vol_group))
         except exceptions.ProcessExecutionError as err:
             # Check that the error from VG_CHECK is an expected error
             if err.exit_code != 5:
                 raise
-            LOG.info("Need to create volume group: %s" % (vol_group))
+            LOG.info("Need to create volume group: %r" % (vol_group))
             sh.touch_file(backing_file, die_if_there=False, file_size=backing_file_size)
             vg_dev_result = utils.execute_template(*VG_DEV_CMD, params=mp)
             if vg_dev_result and vg_dev_result[0]:
@@ -470,15 +472,14 @@ class NovaVolumeConfigurator(object):
         LOG.info("Attempting to setup logical volumes for nova volume management.")
         lvs_result = utils.execute_template(*VG_LVS_CMD, params=mp)
         if lvs_result and lvs_result[0]:
-            LOG.debug("LVS result: %s" % (lvs_result))
             vol_name_prefix = self.cfg.getdefaulted('nova', 'volume_name_prefix', DEF_VOL_PREFIX)
-            LOG.debug("Using volume name prefix: %s" % (vol_name_prefix))
+            LOG.debug("Using volume name prefix: %r" % (vol_name_prefix))
             (sysout, _) = lvs_result[0]
             for stdout_line in sysout.split('\n'):
                 stdout_line = stdout_line.strip()
                 if stdout_line:
                     # Ignore blank lines
-                    LOG.debug("Processing LVS output line: %s" % (stdout_line))
+                    LOG.debug("Processing LVS output line: %r" % (stdout_line))
                     if stdout_line.startswith(vol_name_prefix):
                         # TODO still need to implement the following:
                         # tid=`egrep "^tid.+$lv" /proc/net/iet/volume | cut -f1 -d' ' | tr ':' '='`
@@ -495,21 +496,23 @@ class NovaVolumeConfigurator(object):
 # This class has the smarts to build the configuration file based on
 # various runtime values. A useful reference for figuring out this
 # is at http://docs.openstack.org/diablo/openstack-compute/admin/content/ch_configuring-openstack-compute.html
+# See also: https://github.com/openstack/nova/blob/master/etc/nova/nova.conf.sample
 class NovaConfConfigurator(object):
-    def __init__(self, ni):
-        self.cfg = ni.cfg
-        self.pw_gen = ni.pw_gen
-        self.instances = ni.instances
-        self.component_dir = ni.component_dir
-        self.app_dir = ni.app_dir
-        self.tracewriter = ni.tracewriter
-        self.paste_conf_fn = ni.paste_conf_fn
-        self.distro = ni.distro
-        self.cfg_dir = ni.cfg_dir
-        self.xvnc_enabled = ni.xvnc_enabled
-        self.volumes_enabled = ni.volumes_enabled
-        self.options = ni.options
-        self.novnc_enabled = 'no-vnc' in self.options
+    def __init__(self, installer):
+        self.installer = weakref.proxy(installer)
+        self.cfg = installer.cfg
+        self.pw_gen = installer.pw_gen
+        self.instances = installer.instances
+        self.component_dir = installer.component_dir
+        self.app_dir = installer.app_dir
+        self.tracewriter = installer.tracewriter
+        self.paste_conf_fn = installer.paste_conf_fn
+        self.distro = installer.distro
+        self.cfg_dir = installer.cfg_dir
+        self.options = installer.options
+        self.xvnc_enabled = installer.xvnc_enabled
+        self.volumes_enabled = installer.volumes_enabled
+        self.novnc_enabled = 'no-vnc' in installer.options
 
     def _getbool(self, name):
         return self.cfg.getboolean('nova', name)
@@ -737,11 +740,11 @@ class NovaConfConfigurator(object):
 
         # Do a little check to make sure actually have that interface/s
         if not utils.is_interface(public_interface):
-            msg = "Public interface %s is not a known interface" % (public_interface)
+            msg = "Public interface %r is not a known interface" % (public_interface)
             raise exceptions.ConfigException(msg)
 
         if not utils.is_interface(vlan_interface):
-            msg = "VLAN interface %s is not a known interface" % (vlan_interface)
+            msg = "VLAN interface %r is not a known interface" % (vlan_interface)
             raise exceptions.ConfigException(msg)
 
         nova_conf.add('public_interface', public_interface)
@@ -827,7 +830,7 @@ class NovaConf(object):
         else:
             real_value = str(value)
         self.lines.append({'key': real_key, 'value': real_value})
-        LOG.debug("Added nova conf key %s with value [%s]" % (real_key, real_value))
+        LOG.debug("Added nova conf key %r with value %r" % (real_key, real_value))
 
     def _form_entry(self, key, value, params=None):
         real_value = utils.param_replace(str(value), params)

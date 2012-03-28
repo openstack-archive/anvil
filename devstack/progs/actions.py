@@ -128,7 +128,7 @@ class ActionRunner(object):
             if self._instance_needs_prereq(instance)
             ]
         if components_needing_prereq:
-            LOG.info("Processing prerequisite action [%s] requested by (%s) components.",
+            LOG.info("Processing prerequisite action %s requested by (%s) components.",
                      self.PREREQ.NAME, ", ".join(components_needing_prereq))
             prereq = self.PREREQ(self.distro,
                                  self.cfg,
@@ -142,12 +142,11 @@ class ActionRunner(object):
         instances = self._construct_instances(persona, root_dir)
         self._handle_prereq(persona, instances, root_dir)
         component_order = self._order_components(persona.wanted_components)
-        LOG.info("Processing components [%s] (in that order) for action [%s]",
+        LOG.info("Processing components [%s] (in that order) for action %r",
                  "->".join(component_order), self.NAME)
         self._verify_components(component_order, instances)
         self._warm_components(component_order, instances)
         self._run(persona, root_dir, component_order, instances)
-        return
 
 
 class InstallRunner(ActionRunner):
@@ -159,14 +158,14 @@ class InstallRunner(ActionRunner):
     def _write_rc_file(self, root_dir):
         writer = env_rc.RcWriter(self.cfg, self.pw_gen, root_dir)
         if not sh.isfile(settings.OSRC_FN):
-            LOG.info("Generating a file at [%s] that will contain your environment settings.",
+            LOG.info("Generating a file at %r that will contain your environment settings.",
                      settings.OSRC_FN)
             writer.write(settings.OSRC_FN)
         else:
-            LOG.info("Updating a file at [%s] that contains your environment settings.",
+            LOG.info("Updating a file at %r that contains your environment settings.",
                      settings.OSRC_FN)
             am_upd = writer.update(settings.OSRC_FN)
-            LOG.info("Updated [%s] settings in rc file [%s]",
+            LOG.info("Updated %s settings in rc file %r",
                      am_upd, settings.OSRC_FN)
 
     def _run(self, persona, root_dir, component_order, instances):
