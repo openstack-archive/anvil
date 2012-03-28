@@ -21,6 +21,7 @@ from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
+from devstack import utils
 
 LOG = logging.getLogger("devstack.progs.actions")
 
@@ -48,7 +49,7 @@ class ActionRunner(object):
 
         Return boolean where True means invoke the prereq.
         """
-        return
+        return False
 
     @abc.abstractmethod
     def _run(self, persona, root_dir, component_order, instances):
@@ -120,30 +121,31 @@ class ActionRunner(object):
                     raise
 
     def _handle_prereq(self, persona, instances, root_dir):
-        if not self.PREREQ:
+        preq_cls = self.PREREQ
+        if not preq_cls:
             return
-        components_needing_prereq = [
-            c
-            for (c, instance) in instances.items()
-            if self._instance_needs_prereq(instance)
-            ]
+        components_needing_prereq = []
+        for (c, instance) in instances.items():
+            if self._instance_needs_prereq(instance):
+                components_needing_prereq.append(c)
+        preq_cls_name = preq_cls.NAME or "???"
         if components_needing_prereq:
-            LOG.info("Processing prerequisite action %s requested by (%s) components.",
-                     self.PREREQ.NAME, ", ".join(components_needing_prereq))
-            prereq = self.PREREQ(self.distro,
-                                 self.cfg,
-                                 self.pw_gen,
-                                 keep_old=self.keep_old,
-                                 force=self.force,
+            LOG.info("Processing prerequisite action %r requested by (%s) components.",
+                        preq_cls_name, ", ".join(components_needing_prereq))
+            prereq_instance = preq_cls(self.distro,
+                                    self.cfg,
+                                    self.pw_gen,
+                                    keep_old=self.keep_old,
+                                    force=self.force
                                  )
-            prereq.run(persona, root_dir)
+            prereq_instance.run(persona, root_dir)
 
     def run(self, persona, root_dir):
         instances = self._construct_instances(persona, root_dir)
         self._handle_prereq(persona, instances, root_dir)
         component_order = self._order_components(persona.wanted_components)
-        LOG.info("Processing components [%s] (in that order) for action %r",
-                 "->".join(component_order), self.NAME)
+        LOG.info("Processing components for action %r", (self.NAME or "???"))
+        utils.log_iterable(component_order, header="Activating in the following order:")
         self._verify_components(component_order, instances)
         self._warm_components(component_order, instances)
         self._run(persona, root_dir, component_order, instances)
