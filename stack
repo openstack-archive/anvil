@@ -118,8 +118,7 @@ def run(args):
         loaded_rcs = True
         root_dir = env.get_key(env_rc.INSTALL_ROOT)
         if not root_dir:
-            print(utils.color_text("No root directory specified!", "red"))
-            return False
+            root_dir = utils.joinpths(sh.gethomedir(), 'openstack')
     root_dir = sh.abspth(root_dir)
     setup_root(root_dir)
 
