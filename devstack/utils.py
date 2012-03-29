@@ -152,11 +152,13 @@ def mark_unexecute_file(fn, kvs, comment_start='#'):
     sh.chmod(fn, 0644)
 
 
-def log_iterable(to_log, header=None):
+def log_iterable(to_log, header=None, logger=None):
+    if not logger:
+        logger = LOG
     if header:
-        LOG.info(header)
+        logger.info(header)
     for c in to_log:
-        LOG.info("|-- %s", color_text(c, 'blue'))
+        logger.info("|-- %s", color_text(c, 'blue'))
 
 
 @contextlib.contextmanager

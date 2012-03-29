@@ -145,7 +145,9 @@ class ActionRunner(object):
         self._handle_prereq(persona, instances, root_dir)
         component_order = self._order_components(persona.wanted_components)
         LOG.info("Processing components for action %r", (self.NAME or "???"))
-        utils.log_iterable(component_order, header="Activating in the following order:")
+        utils.log_iterable(component_order,
+                        header="Activating in the following order:",
+                        logger=LOG)
         self._verify_components(component_order, instances)
         self._warm_components(component_order, instances)
         self._run(persona, root_dir, component_order, instances)
