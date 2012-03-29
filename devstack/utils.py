@@ -152,6 +152,13 @@ def mark_unexecute_file(fn, kvs, comment_start='#'):
     sh.chmod(fn, 0644)
 
 
+def log_iterable(to_log, header=None):
+    if header:
+        LOG.info(header)
+    for c in to_log:
+        LOG.info("|-- %s", color_text(c, 'blue'))
+
+
 @contextlib.contextmanager
 def progress_bar(name, max_am, reverse=False):
     widgets = list()
