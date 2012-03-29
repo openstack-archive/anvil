@@ -256,17 +256,25 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
         self.paste_conf_fn = self._get_target_config_name(PASTE_CONF)
         self.volumes_enabled = False
-        if NVOL in self.desired_subsystems:
-            self.volumes_enabled = True
-        self.xvnc_enabled = False
-        if NXVNC in self.desired_subsystems:
-            self.xvnc_enabled = True
+        self.volume_configurator = None
+        self.volumes_enabled = NVOL in self.desired_subsystems
+        self.xvnc_enabled = NXVNC in self.desired_subsystems
+        self.volume_maker = None
+        if self.volumes_enabled:
+            self.volume_maker = NovaVolumeConfigurator(self)
+        self.conf_maker = NovaConfConfigurator(self)
 
     def _get_symlinks(self):
         links = comp.PythonInstallComponent._get_symlinks(self)
         source_fn = sh.joinpths(self.cfg_dir, API_CONF)
         links[source_fn] = sh.joinpths(self._get_link_dir(), API_CONF)
         return links
+
+    def verify(self):
+        comp.PythonInstallComponent.verify(self)
+        self.conf_maker.verify()
+        if self.volume_maker:
+            self.volume_maker.verify()
 
     def warm_configs(self):
         warm_pws = list(WARMUP_PWS)
@@ -300,9 +308,8 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         self._setup_cleaner()
         self._setup_network_initer()
         # Check if we need to do the vol subsystem
-        if self.volumes_enabled:
-            vol_maker = NovaVolumeConfigurator(self)
-            vol_maker.setup_volumes()
+        if self.volume_maker:
+            self.volume_maker.setup_volumes()
 
     def _setup_cleaner(self):
         LOG.info("Configuring cleaner template %r", CLEANER_DATA_CONF)
@@ -319,12 +326,9 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
 
     def _generate_nova_conf(self):
-        LOG.info("Generating dynamic content for nova in file %r" % (API_CONF))
-        conf_gen = NovaConfConfigurator(self)
-        nova_conf_contents = conf_gen.configure()
         conf_fn = self._get_target_config_name(API_CONF)
-        LOG.info("Writing nova configuration to %r" % (conf_fn))
-        LOG.debug(nova_conf_contents)
+        LOG.info("Generating dynamic content for nova: %r" % (conf_fn))
+        nova_conf_contents = self.conf_maker.configure()
         self.tracewriter.dirs_made(*sh.mkdirslist(sh.dirname(conf_fn)))
         self.tracewriter.cfg_file_written(sh.write_file(conf_fn, nova_conf_contents))
 
@@ -434,6 +438,9 @@ class NovaVolumeConfigurator(object):
     def setup_volumes(self):
         self._setup_vol_groups()
 
+    def verify(self):
+        pass
+
     def _setup_vol_groups(self):
         LOG.info("Attempting to setup volume groups for nova volume management.")
         mp = dict()
@@ -519,6 +526,29 @@ class NovaConfConfigurator(object):
 
     def _getstr(self, name, default=''):
         return self.cfg.getdefaulted('nova', name, default)
+
+    def verify(self):
+        # Do a little check to make sure actually have that interface/s
+        public_interface = self._getstr('public_interface')
+        vlan_interface = self._getstr('vlan_interface', public_interface)
+        if not utils.is_interface(public_interface):
+            msg = "Public interface %r is not a known interface" % (public_interface)
+            raise exceptions.ConfigException(msg)
+        if not utils.is_interface(vlan_interface):
+            msg = "VLAN interface %r is not a known interface" % (vlan_interface)
+            raise exceptions.ConfigException(msg)
+        # Driver specific interface checks
+        drive_canon = canon_virt_driver(self._getstr('virt_driver'))
+        if drive_canon == 'xenserver':
+            xs_flat_ifc = self._getstr('xs_flat_interface', XS_DEF_INTERFACE)
+            if xs_flat_ifc and not utils.is_interface(xs_flat_ifc):
+                msg = "Xenserver flat interface %s is not a known interface" % (xs_flat_ifc)
+                raise exceptions.ConfigException(msg)
+        elif drive_canon == 'libvirt':
+            flat_interface = self._getstr('flat_interface')
+            if flat_interface and not utils.is_interface(flat_interface:
+                    msg = "Libvirt flat interface %s is not a known interface" % (flat_interface)
+                    raise exceptions.ConfigException(msg)
 
     def configure(self):
         # Everything built goes in here
@@ -737,16 +767,6 @@ class NovaConfConfigurator(object):
         # of public_interface. We'll grab the value and keep it handy.
         public_interface = self._getstr('public_interface')
         vlan_interface = self._getstr('vlan_interface', public_interface)
-
-        # Do a little check to make sure actually have that interface/s
-        if not utils.is_interface(public_interface):
-            msg = "Public interface %r is not a known interface" % (public_interface)
-            raise exceptions.ConfigException(msg)
-
-        if not utils.is_interface(vlan_interface):
-            msg = "VLAN interface %r is not a known interface" % (vlan_interface)
-            raise exceptions.ConfigException(msg)
-
         nova_conf.add('public_interface', public_interface)
         nova_conf.add('vlan_interface', vlan_interface)
 
@@ -796,21 +816,16 @@ class NovaConfConfigurator(object):
             nova_conf.add('xenapi_connection_username', self._getstr('xa_connection_username', XA_DEF_USER))
             nova_conf.add('xenapi_connection_password', self.cfg.get("passwords", "xenapi_connection"))
             nova_conf.add('noflat_injected', True)
-            xs_flat_ifc = self._getstr('xs_flat_interface', XS_DEF_INTERFACE)
-            if not utils.is_interface(xs_flat_ifc):
-                msg = "Xenserver flat interface %s is not a known interface" % (xs_flat_ifc)
-                raise exceptions.ConfigException(msg)
-            nova_conf.add('flat_interface', xs_flat_ifc)
             nova_conf.add('firewall_driver', FIRE_MANAGER_TEMPLATE % (self._getstr('xs_firewall_driver', DEF_FIREWALL_DRIVER)))
             nova_conf.add('flat_network_bridge', self._getstr('xs_flat_network_bridge', XS_DEF_BRIDGE))
+            xs_flat_ifc = self._getstr('xs_flat_interface', XS_DEF_INTERFACE)
+            if xs_flat_ifc:
+                nova_conf.add('flat_interface', xs_flat_ifc)
         elif drive_canon == 'libvirt':
             nova_conf.add('firewall_driver', FIRE_MANAGER_TEMPLATE % (self._getstr('libvirt_firewall_driver', DEF_FIREWALL_DRIVER)))
             nova_conf.add('flat_network_bridge', self._getstr('flat_network_bridge', DEF_FLAT_VIRT_BRIDGE))
             flat_interface = self._getstr('flat_interface')
             if flat_interface:
-                if not utils.is_interface(flat_interface):
-                    msg = "Libvirt flat interface %s is not a known interface" % (flat_interface)
-                    raise exceptions.ConfigException(msg)
                 nova_conf.add('flat_interface', flat_interface)
 
 
