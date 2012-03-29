@@ -469,14 +469,16 @@ class PkgUninstallComponent(ComponentBase, PackageBasedComponentMixin):
             dirs_made = [sh.abspth(d) for d in dirs_made]
             if self.keep_old:
                 download_places = [path_location[0] for path_location in self.tracereader.download_locations()]
-                utils.log_iterable(download_places, logger=LOG,
-                    header="Keeping %s download directories" % (len(download_places)))
-                for download_place in download_places:
-                    dirs_made = sh.remove_parents(download_place, dirs_made)
-            utils.log_iterable(dirs_made, logger=LOG,
-                header="Removing %s created directories" % (len(dirs_made)))
-            for dir_name in dirs_made:
-                sh.deldir(dir_name, run_as_root=True)
+                if download_places:
+                    utils.log_iterable(download_places, logger=LOG,
+                        header="Keeping %s download directories (and there children directories)" % (len(download_places)))
+                    for download_place in download_places:
+                        dirs_made = sh.remove_parents(download_place, dirs_made)
+            if dirs_made:
+                utils.log_iterable(dirs_made, logger=LOG,
+                    header="Removing %s created directories" % (len(dirs_made)))
+                for dir_name in dirs_made:
+                    sh.deldir(dir_name, run_as_root=True)
 
 
 class PythonUninstallComponent(PkgUninstallComponent):
@@ -489,6 +491,9 @@ class PythonUninstallComponent(PkgUninstallComponent):
         PkgUninstallComponent.uninstall(self)
 
     def _uninstall_pips(self):
+        if self.keep_old:
+            LOG.info('Keep-old flag set, not removing any python packages.')
+            return
         pips = self.tracereader.pips_installed()
         if pips:
             pip_names = set([p['name'] for p in pips])

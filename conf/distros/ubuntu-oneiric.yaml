@@ -14,7 +14,6 @@ commands:
     git:
         checkout: git checkout
         clone: git clone
-        pull: git pull
     iscsi:
         restart: service tgt restart
         start: service tgt start

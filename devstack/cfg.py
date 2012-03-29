@@ -117,6 +117,8 @@ class StackConfigParser(IgnoreMissingConfigParser):
         key = cfg_helpers.make_id(section, option)
         LOG.audit("Setting config value '%s' for param %r" % (value, key))
         self.configs_fetched[key] = value
+        if not self.has_section(section):
+            self.add_section(section)
         IgnoreMissingConfigParser.set(self, section, option, value)
 
     def _resolve_replacements(self, value):

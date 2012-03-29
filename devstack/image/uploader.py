@@ -32,21 +32,17 @@ from devstack.components import keystone
 LOG = log.getLogger("devstack.image.uploader")
 
 # These are used when looking inside archives
-KERNEL_FN_MATCH = re.compile(r"(.*)vmlinuz$", re.I)
-RAMDISK_FN_MATCH = re.compile(r"(.*)initrd$", re.I)
+KERNEL_FN_MATCH = re.compile(r"(.*)-vmlinuz$", re.I)
+RAMDISK_FN_MATCH = re.compile(r"(.*)-initrd$", re.I)
 IMAGE_FN_MATCH = re.compile(r"(.*)img$", re.I)
 
 # Glance commands
-KERNEL_ADD = ['glance', 'add', '-A', '%TOKEN%', '--silent-upload',
-    'name="%IMAGE_NAME%-kernel"', 'is_public=true', 'container_format=aki',
-    'disk_format=aki']
-INITRD_ADD = ['glance', 'add', '-A', '%TOKEN%', '--silent-upload',
-    'name="%IMAGE_NAME%-ramdisk"', 'is_public=true', 'container_format=ari',
-    'disk_format=ari']
-IMAGE_ADD = ['glance', 'add', '-A', '%TOKEN%', '--silent-upload',
-    'name="%IMAGE_NAME%.img"',
-    'is_public=true', 'container_format=ami', 'disk_format=ami',
-    'kernel_id=%KERNEL_ID%', 'ramdisk_id=%INITRD_ID%']
+IMAGE_ADD = ['glance', 'add', '-A', '%TOKEN%',
+             '--silent-upload',
+             'name="%NAME%"',
+             'is_public=true',
+             'container_format=%CONTAINER_FORMAT%',
+             'disk_format=%DISK_FORMAT%']
 DETAILS_SHOW = ['glance', '-A', '%TOKEN%', 'details']
 
 # Extensions that tarfile knows how to work with
@@ -58,6 +54,7 @@ TAR_EXTS = ['.tgz', '.gzip', '.gz', '.bz2', '.tar']
 NAME_CLEANUPS = [
     '.tar.gz',
     '.img.gz',
+    '.qcow2',
     '.img',
 ] + TAR_EXTS
 NAME_CLEANUPS.sort()
@@ -96,26 +93,38 @@ class Unpacker(object):
         LOG.info("Extracting %r to %r", file_location, extract_dir)
         with contextlib.closing(tarfile.open(file_location, 'r')) as tfh:
             tfh.extractall(extract_dir)
-        locations = dict()
+        info = dict()
         if kernel_fn:
-            locations['kernel'] = sh.joinpths(extract_dir, kernel_fn)
+            info['kernel'] = {
+                'FILE_NAME': sh.joinpths(extract_dir, kernel_fn),
+                'DISK_FORMAT': 'aki',
+                'CONTAINER_FORMAT': 'aki',
+            }
         if ramdisk_fn:
-            locations['ramdisk'] = sh.joinpths(extract_dir, ramdisk_fn)
-        locations['image'] = sh.joinpths(extract_dir, root_img_fn)
-        return locations
-
-    def _unpack_image(self, file_name, file_location, tmp_dir):
-        locations = dict()
-        locations['image'] = file_location
-        return locations
+            info['ramdisk'] = {
+                'FILE_NAME': sh.joinpths(extract_dir, ramdisk_fn),
+                'DISK_FORMAT': 'ari',
+                'CONTAINER_FORMAT': 'ari',
+            }
+        info['FILE_NAME'] = sh.joinpths(extract_dir, root_img_fn)
+        info['DISK_FORMAT'] = 'ami'
+        info['CONTAINER_FORMAT'] = 'ami'
+        return info
 
     def unpack(self, file_name, file_location, tmp_dir):
         (_, fn_ext) = os.path.splitext(file_name)
         fn_ext = fn_ext.lower()
         if fn_ext in TAR_EXTS:
             return self._unpack_tar(file_name, file_location, tmp_dir)
-        elif fn_ext in ['.img']:
-            return self._unpack_image(file_name, file_location, tmp_dir)
+        elif fn_ext in ['.img', '.qcow2']:
+            info = dict()
+            info['FILE_NAME'] = file_location,
+            if fn_ext == '.img':
+                info['DISK_FORMAT'] = 'raw'
+            else:
+                info['DISK_FORMAT'] = 'qcow2'
+            info['CONTAINER_FORMAT'] = 'bare'
+            return info
         else:
             msg = "Currently we do not know how to unpack %r" % (file_name)
             raise NotImplementedError(msg)
@@ -128,16 +137,18 @@ class Image(object):
         self.token = token
         self._registry = Registry(token)
 
-    def _register(self, image_name, locations):
+    def _register(self, image_name, location):
 
         # Upload the kernel, if we have one
-        kernel = locations.get('kernel')
+        kernel = location.pop('kernel', None)
         kernel_id = ''
         if kernel:
-            LOG.info('Adding kernel %r to glance.', kernel)
-            params = {'TOKEN': self.token, 'IMAGE_NAME': image_name}
-            cmd = {'cmd': KERNEL_ADD}
-            with open(kernel, 'r') as fh:
+            LOG.info('Adding kernel %s to glance.', kernel)
+            params = dict(kernel)
+            params['TOKEN'] = self.token
+            params['NAME'] = "%s-vmlinuz" % (image_name)
+            cmd = {'cmd': IMAGE_ADD}
+            with open(params['FILE_NAME'], 'r') as fh:
                 res = utils.execute_template(cmd,
                     params=params, stdin_fh=fh,
                     close_stdin=True)
@@ -146,13 +157,15 @@ class Image(object):
                 kernel_id = stdout.split(':')[1].strip()
 
         # Upload the ramdisk, if we have one
-        initrd = locations.get('ramdisk')
+        initrd = location.pop('ramdisk', None)
         initrd_id = ''
         if initrd:
-            LOG.info('Adding ramdisk %r to glance.', initrd)
-            params = {'TOKEN': self.token, 'IMAGE_NAME': image_name}
-            cmd = {'cmd': INITRD_ADD}
-            with open(initrd, 'r') as fh:
+            LOG.info('Adding ramdisk %s to glance.', initrd)
+            params = dict(initrd)
+            params['TOKEN'] = self.token
+            params['NAME'] = "%s-initrd" % (image_name)
+            cmd = {'cmd': IMAGE_ADD}
+            with open(params['FILE_NAME'], 'r') as fh:
                 res = utils.execute_template(cmd,
                     params=params, stdin_fh=fh,
                     close_stdin=True)
@@ -161,16 +174,24 @@ class Image(object):
                 initrd_id = stdout.split(':')[1].strip()
 
         # Upload the root, we must have one...
-        img_id = ''
-        root_image = locations['image']
-        LOG.info('Adding image %r to glance.', root_image)
-        params = {'TOKEN': self.token, 'IMAGE_NAME': image_name,
-                  'KERNEL_ID': kernel_id, 'INITRD_ID': initrd_id}
-        cmd = {'cmd': IMAGE_ADD}
-        with open(root_image, 'r') as fh:
+        root_image = dict(location)
+        LOG.info('Adding image %s to glance.', root_image)
+        add_cmd = list(IMAGE_ADD)
+        params = dict(root_image)
+        params['TOKEN'] = self.token
+        params['NAME'] = image_name
+        if kernel_id:
+            add_cmd += ['kernel_id=%KERNEL_ID%']
+            params['KERNEL_ID'] = kernel_id
+        if initrd_id:
+            add_cmd += ['ramdisk_id=%INITRD_ID%']
+            params['INITRD_ID'] = initrd_id
+        cmd = {'cmd': add_cmd}
+        with open(params['FILE_NAME'], 'r') as fh:
             res = utils.execute_template(cmd,
                 params=params, stdin_fh=fh,
                 close_stdin=True)
+        img_id = ''
         if res:
             (stdout, _) = res[0]
             img_id = stdout.split(':')[1].strip()
@@ -223,9 +244,9 @@ class Image(object):
             with utils.tempdir() as tdir:
                 fetch_fn = sh.joinpths(tdir, url_fn)
                 down.UrlLibDownloader(self.url, fetch_fn).download()
-                locations = Unpacker().unpack(url_fn, fetch_fn, tdir)
+                unpack_info = Unpacker().unpack(url_fn, fetch_fn, tdir)
                 tgt_image_name = self._generate_img_name(url_fn)
-                self._register(tgt_image_name, locations)
+                self._register(tgt_image_name, unpack_info)
                 return tgt_image_name
         else:
             return None
@@ -300,17 +321,16 @@ class Service:
              })
 
         # Prepare the request
-        request = urllib2.Request(keystone_token_url)
-
-        # Post body
-        request.add_data(data)
-
-        # Content type
-        request.add_header('Content-Type', 'application/json')
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        request = urllib2.Request(keystone_token_url, data=data, headers=headers)
 
         # Make the request
-        LOG.info("Getting your token from url [%s], please wait..." % (keystone_token_url))
-        LOG.debug("With post json data %s" % (data))
+        LOG.info("Getting your token from url %r, please wait..." % (keystone_token_url))
+        LOG.debug("With post data %s" % (data))
+        LOG.debug("With headers %s" % (headers))
+
         response = urllib2.urlopen(request)
 
         token = json.loads(response.read())
@@ -320,36 +340,33 @@ class Service:
             not token.get('access') or not type(token.get('access')) is dict or
             not token.get('access').get('token') or not type(token.get('access').get('token')) is dict or
             not token.get('access').get('token').get('id')):
-            msg = "Response from url [%s] did not match expected json format." % (keystone_token_url)
+            msg = "Response from url %r did not match expected json format." % (keystone_token_url)
             raise IOError(msg)
 
         # Basic checks passed, extract it!
         tok = token['access']['token']['id']
-        LOG.debug("Got token %s" % (tok))
+        LOG.debug("Got token %r" % (tok))
         return tok
 
     def install(self):
         LOG.info("Setting up any specified images in glance.")
 
         # Extract the urls from the config
-        urls = list()
-        flat_urls = self.cfg.getdefaulted('img', 'image_urls', [])
-        expanded_urls = [x.strip() for x in flat_urls.split(',')]
-        for url in expanded_urls:
-            if len(url):
-                urls.append(url)
+        flat_locations = self.cfg.getdefaulted('img', 'image_urls', '')
+        locations = [loc.strip() for loc in flat_locations.split(',') if len(loc.strip())]
 
         # Install them in glance
         am_installed = 0
-        if urls:
-            LOG.info("Attempting to download & extract and upload (%s) images." % (", ".join(urls)))
+        if locations:
+            utils.log_iterable(locations, logger=LOG,
+                                header="Attempting to download+extract+upload %s images." % len(locations))
             token = self._get_token()
-            for url in urls:
+            for uri in locations:
                 try:
-                    name = Image(url, token).install()
+                    name = Image(uri, token).install()
                     if name:
                         LOG.info("Installed image named %r" % (name))
                         am_installed += 1
                 except (IOError, tarfile.TarError) as e:
-                    LOG.exception('Installing %r failed due to: %s', url, e)
+                    LOG.exception('Installing %r failed due to: %s', uri, e)
         return am_installed
