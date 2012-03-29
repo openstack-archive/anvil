@@ -126,7 +126,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
 
     def _setup_initer(self):
-        LOG.info("Configuring keystone initializer template %s.", MANAGE_DATA_CONF)
+        LOG.info("Configuring keystone initializer template %r", MANAGE_DATA_CONF)
         (_, contents) = utils.load_template(self.component_name, MANAGE_DATA_CONF)
         mp = self._get_param_map(MANAGE_DATA_CONF)
         contents = utils.param_replace(contents, mp, True)

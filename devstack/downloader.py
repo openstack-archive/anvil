@@ -48,20 +48,15 @@ class GitDownloader(Downloader):
     def download(self):
         dirsmade = list()
         if sh.isdir(self.store_where):
-            LOG.info("Updating using git: located at %r" % (self.store_where))
-            cmd = list(self.distro.get_command('git', 'checkout'))
-            cmd += [GIT_MASTER_BRANCH]
-            sh.execute(*cmd, cwd=self.store_where)
-            cmd = self.distro.get_command('git', 'pull')
-            sh.execute(*cmd, cwd=self.store_where)
+            LOG.info("Existing directory located at %r, leaving it alone." % (self.store_where))
         else:
-            LOG.info("Downloading using git: %r to %r" % (self.uri, self.store_where))
+            LOG.info("Downloading %r to %r" % (self.uri, self.store_where))
             dirsmade.extend(sh.mkdirslist(self.store_where))
             cmd = list(self.distro.get_command('git', 'clone'))
             cmd += [self.uri, self.store_where]
             sh.execute(*cmd)
         if self.branch and self.branch != GIT_MASTER_BRANCH:
-            LOG.info("Adjusting branch using git: %r" % (self.branch))
+            LOG.info("Adjusting branch to %r" % (self.branch))
             cmd = list(self.distro.get_command('git', 'checkout'))
             cmd += [self.branch]
             sh.execute(*cmd, cwd=self.store_where)
