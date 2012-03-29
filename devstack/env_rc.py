@@ -272,12 +272,12 @@ class RcReader(object):
     def extract(self, fn):
         extracted_vars = dict()
         contents = ''
-        LOG.audit("Loading rc file [%s]" % (fn))
+        LOG.audit("Loading rc file %r" % (fn))
         try:
             with open(fn, 'r') as fh:
                 contents = fh.read()
         except IOError as e:
-            LOG.warn("Failed extracting rc file [%s] due to [%s]" % (fn, e))
+            LOG.warn("Failed extracting rc file %r due to %s" % (fn, e))
             return extracted_vars
         for line in contents.splitlines():
             if self._is_comment(line):
