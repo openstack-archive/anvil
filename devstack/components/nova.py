@@ -547,8 +547,8 @@ class NovaConfConfigurator(object):
         elif drive_canon == 'libvirt':
             flat_interface = self._getstr('flat_interface')
             if flat_interface and not utils.is_interface(flat_interface):
-                    msg = "Libvirt flat interface %s is not a known interface" % (flat_interface)
-                    raise exceptions.ConfigException(msg)
+                msg = "Libvirt flat interface %s is not a known interface" % (flat_interface)
+                raise exceptions.ConfigException(msg)
 
     def configure(self):
         # Everything built goes in here

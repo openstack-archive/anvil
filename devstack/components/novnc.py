@@ -33,17 +33,9 @@ APP_OPTIONS = {
 }
 
 
-class NoVNCUninstaller(comp.PythonUninstallComponent):
-    def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
-
-
-class NoVNCInstaller(comp.PythonInstallComponent):
-    def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, *args, **kargs)
-
-    def _get_python_directories(self):
-        return dict()
+class NoVNCMixin(object):
+    def known_options(self):
+        return set(['nova'])
 
     def _get_download_locations(self):
         places = list()
@@ -54,7 +46,20 @@ class NoVNCInstaller(comp.PythonInstallComponent):
         return places
 
 
-class NoVNCRuntime(comp.ProgramRuntime):
+class NoVNCUninstaller(NoVNCMixin, comp.PythonUninstallComponent):
+    def __init__(self, *args, **kargs):
+        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
+
+
+class NoVNCInstaller(NoVNCMixin, comp.PythonInstallComponent):
+    def __init__(self, *args, **kargs):
+        comp.PythonInstallComponent.__init__(self, *args, **kargs)
+
+    def _get_python_directories(self):
+        return dict()
+
+
+class NoVNCRuntime(NoVNCMixin, comp.ProgramRuntime):
     def __init__(self, *args, **kargs):
         comp.ProgramRuntime.__init__(self, *args, **kargs)
 
@@ -66,9 +71,6 @@ class NoVNCRuntime(comp.ProgramRuntime):
                 'path': sh.joinpths(self.app_dir, UTIL_DIR, app_name),
             })
         return apps
-
-    def known_options(self):
-        return set(['nova'])
 
     def _get_param_map(self, app_name):
         root_params = comp.ProgramRuntime._get_param_map(self, app_name)
