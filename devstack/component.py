@@ -178,18 +178,17 @@ class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
         return real_locations
 
     def download(self):
-        download_am = 0
-        for info in self._get_real_download_locations():
+        download_locs = self._get_real_download_locations()
+        uris = [loc['uri'] for loc in download_locs]
+        utils.log_iterable(uris, header="Downloading from %s uris" % (len(uris)))
+        for info in download_locs:
             # Extract da download!
             uri = info['uri']
             target_loc = info['target']
             branch = info['branch']
-            if not uri or not target_loc:
-                continue
             # Activate da download!
             self.tracewriter.download_happened(target_loc, uri)
             dirs_made = self._do_download(uri, target_loc, branch)
-            download_am += 1
             # Here we ensure this is always added so that
             # if a keep old happens then this of course
             # won't be recreated, but if u uninstall without keeping old
@@ -198,7 +197,7 @@ class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
             if target_loc not in dirs_made:
                 dirs_made.append(target_loc)
             self.tracewriter.dirs_made(*dirs_made)
-        return download_am
+        return len(download_locs)
 
     def _do_download(self, uri, target_dir, branch):
         return down.GitDownloader(self.distro, uri, target_dir, branch).download()
@@ -225,13 +224,11 @@ class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
         return pkg_list
 
     def install(self):
-        LOG.debug('Preparing to install packages for %r',
-                  self.component_name)
+        LOG.debug('Preparing to install packages for %r', self.component_name)
         pkgs = self._get_packages()
         if pkgs:
             pkg_names = set([p['name'] for p in pkgs])
-            LOG.info("Setting up %s packages (%s)",
-                     len(pkg_names), ", ".join(pkg_names))
+            utils.log_iterable(pkg_names, header="Setting up %s distribution packages" % (len(pkg_names)))
             with utils.progress_bar(INSTALL_TITLE, len(pkgs)) as p_bar:
                 for (i, p) in enumerate(pkgs):
                     self.tracewriter.package_installed(p)
@@ -239,8 +236,7 @@ class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
                     packager.install(p)
                     p_bar.update(i + 1)
         else:
-            LOG.info('No packages to install for %r',
-                     self.component_name)
+            LOG.info('No packages to install for %r', self.component_name)
         return self.trace_dir
 
     def pre_install(self):
@@ -282,10 +278,10 @@ class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
         return links
 
     def _configure_files(self):
-        configs = self._get_config_files()
-        if configs:
-            LOG.info("Configuring %s files", len(configs))
-            for fn in configs:
+        config_fns = self._get_config_files()
+        if config_fns:
+            utils.log_iterable(config_fns, header="Configuring %s files" % (len(config_fns)))
+            for fn in config_fns:
                 parameters = self._get_param_map(fn)
                 tgt_fn = self._get_target_config_name(fn)
                 self.tracewriter.dirs_made(*sh.mkdirslist(sh.dirname(tgt_fn)))
@@ -298,7 +294,7 @@ class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
                 LOG.info("Writing configuration file %r", tgt_fn)
                 self.tracewriter.cfg_file_written(sh.write_file(tgt_fn,
                                                                 contents))
-        return len(configs)
+        return len(config_fns)
 
     def _configure_symlinks(self):
         links = self._get_symlinks()
@@ -335,7 +331,7 @@ class PythonInstallComponent(PkgInstallComponent):
         pip_list = list(self.pips)
         for name in self.desired_subsystems:
             if name in self.subsystem_info:
-                # Todo handle duplicates/version differences?
+                # TODO handle duplicates/version differences?
                 LOG.debug("Extending pip list with pips for subsystem %r" % (name))
                 subsystem_pips = self.subsystem_info[name].get('pips', list())
                 pip_list.extend(subsystem_pips)
@@ -345,7 +341,7 @@ class PythonInstallComponent(PkgInstallComponent):
         pips = self._get_pips()
         if pips:
             pip_names = set([p['name'] for p in pips])
-            LOG.info("Setting up %s pips (%s)", len(pip_names), ", ".join(pip_names))
+            utils.log_iterable(pip_names, header="Setting up %s python packages" % (len(pip_names)))
             with utils.progress_bar(INSTALL_TITLE, len(pips)) as p_bar:
                 for (i, p) in enumerate(pips):
                     self.tracewriter.pip_installed(p)
@@ -353,12 +349,13 @@ class PythonInstallComponent(PkgInstallComponent):
                     p_bar.update(i + 1)
 
     def _install_python_setups(self):
-        pydirs = self._get_python_directories()
-        if pydirs:
-            LOG.info("Setting up %s python directories (%s)",
-                     len(pydirs), pydirs)
-            for (name, wkdir) in pydirs.items():
-                working_dir = wkdir or self.app_dir
+        py_dirs = self._get_python_directories()
+        if py_dirs:
+            real_dirs = dict()
+            for (name, wkdir) in py_dirs.items():
+                real_dirs[name] = wkdir or self.app_dir
+            utils.log_iterable(real_dirs.values(), header="Setting up %s python directories" % (len(real_dirs)))
+            for (name, working_dir) in real_dirs.items():
                 self.tracewriter.dirs_made(*sh.mkdirslist(working_dir))
                 self.tracewriter.py_installed(name, working_dir)
                 (stdout, stderr) = sh.execute(*PY_INSTALL,
@@ -409,19 +406,17 @@ class PkgUninstallComponent(ComponentBase, PackageBasedComponentMixin):
                 instance.unconfigure()
 
     def _unconfigure_links(self):
-        symfiles = self.tracereader.symlinks_made()
-        if symfiles:
-            LOG.info("Removing %s symlink files (%s)",
-                     len(symfiles), ", ".join(symfiles))
-            for fn in symfiles:
+        sym_files = self.tracereader.symlinks_made()
+        if sym_files:
+            utils.log_iterable(sym_files, header="Removing %s symlink files" % (len(sym_files)))
+            for fn in sym_files:
                 sh.unlink(fn, run_as_root=True)
 
     def _unconfigure_files(self):
-        cfgfiles = self.tracereader.files_configured()
-        if cfgfiles:
-            LOG.info("Removing %s configuration files (%s)",
-                     len(cfgfiles), ", ".join(cfgfiles))
-            for fn in cfgfiles:
+        cfg_files = self.tracereader.files_configured()
+        if cfg_files:
+            utils.log_iterable(cfg_files, header="Removing %s configuration files" % (len(cfg_files)))
+            for fn in cfg_files:
                 sh.unlink(fn, run_as_root=True)
 
     def uninstall(self):
@@ -437,13 +432,12 @@ class PkgUninstallComponent(ComponentBase, PackageBasedComponentMixin):
 
     def _uninstall_pkgs(self):
         if self.keep_old:
-            LOG.info('Keep-old flag set, not removing packages')
+            LOG.info('Keep-old flag set, not removing any packages.')
             return
         pkgs = self.tracereader.packages_installed()
         if pkgs:
             pkg_names = set([p['name'] for p in pkgs])
-            LOG.info("Potentially removing %s packages (%s)",
-                     len(pkg_names), ", ".join(pkg_names))
+            utils.log_iterable(pkg_names, header="Potentially removing %s packages" % (len(pkg_names)))
             which_removed = set()
             with utils.progress_bar(UNINSTALL_TITLE, len(pkgs), reverse=True) as p_bar:
                 for (i, p) in enumerate(pkgs):
@@ -451,32 +445,27 @@ class PkgUninstallComponent(ComponentBase, PackageBasedComponentMixin):
                     if packager.remove(p):
                         which_removed.add(p['name'])
                     p_bar.update(i + 1)
-            LOG.info("Actually removed %s packages (%s)",
-                     len(which_removed), ", ".join(which_removed))
+            utils.log_iterable(which_removed, header="Actually removed %s packages" % (len(which_removed)))
 
     def _uninstall_touched_files(self):
-        filestouched = self.tracereader.files_touched()
-        if filestouched:
-            LOG.info("Removing %s touched files (%s)",
-                     len(filestouched), ", ".join(filestouched))
-            for fn in filestouched:
+        files_touched = self.tracereader.files_touched()
+        if files_touched:
+            utils.log_iterable(files_touched, header="Removing %s touched files" % (len(files_touched)))
+            for fn in files_touched:
                 sh.unlink(fn, run_as_root=True)
 
     def _uninstall_dirs(self):
-        dirsmade = self.tracereader.dirs_made()
-        if dirsmade:
-            dirsmade = [sh.abspth(d) for d in dirsmade]
+        dirs_made = self.tracereader.dirs_made()
+        if dirs_made:
+            dirs_made = [sh.abspth(d) for d in dirs_made]
             if self.keep_old:
-                places = set()
-                for (pth_loc, _) in self.tracereader.download_locations():
-                    places.add(pth_loc)
-                LOG.info("Keeping %s download directories (%s)",
-                         len(places), ", ".join(sorted(places)))
-                for download_place in places:
-                    dirsmade = sh.remove_parents(download_place, dirsmade)
-            for dirname in dirsmade:
-                LOG.info("Removing created directory %r", dirname)
-                sh.deldir(dirname, run_as_root=True)
+                download_places = [path_location[0] for path_location in self.tracereader.download_locations()]
+                utils.log_iterable(download_places, header="Keeping %s download directories" % (len(download_places)))
+                for download_place in download_places:
+                    dirs_made = sh.remove_parents(download_place, dirs_made)
+            utils.log_iterable(dirs_made, header="Removing %s created directories" % (len(dirs_made)))
+            for dir_name in dirs_made:
+                sh.deldir(dir_name, run_as_root=True)
 
 
 class PythonUninstallComponent(PkgUninstallComponent):
@@ -491,18 +480,21 @@ class PythonUninstallComponent(PkgUninstallComponent):
     def _uninstall_pips(self):
         pips = self.tracereader.pips_installed()
         if pips:
-            names = set([p['name'] for p in pips])
-            LOG.info("Uninstalling %s python packages (%s)" % (len(names), ", ".join(names)))
+            pip_names = set([p['name'] for p in pips])
+            utils.log_iterable(pip_names, header="Uninstalling %s python packages" % (len(pip_names)))
             with utils.progress_bar(UNINSTALL_TITLE, len(pips), reverse=True) as p_bar:
                 for (i, p) in enumerate(pips):
                     pip.uninstall(p, self.distro)
                     p_bar.update(i + 1)
 
     def _uninstall_python(self):
-        pylisting = self.tracereader.py_listing()
-        if pylisting:
-            LOG.info("Uninstalling %s python setups.", len(pylisting))
-            for (_, where) in pylisting:
+        py_listing = self.tracereader.py_listing()
+        if py_listing:
+            py_listing_dirs = set()
+            for (_, where) in py_listing:
+                py_listing_dirs.add(where)
+            utils.log_iterable(py_listing_dirs, header="Uninstalling %s python setups" % (len(py_listing_dirs)))
+            for where in py_listing_dirs:
                 sh.execute(*PY_UNINSTALL, cwd=where, run_as_root=True)
 
 
