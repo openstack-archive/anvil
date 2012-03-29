@@ -41,8 +41,8 @@ elif [[ `cat /etc/issue | grep -i "red hat enterprise.*release.*6.*"` ]] ; then
     $PIP install $PIPS
     echo "DEVSTACKpy for RHEL 6 is ready to rock & roll."
 elif [[ `cat /etc/issue | grep -i "fedora.*release.*16"` ]] ; then
-    PKGS="python-pip gcc python-netifaces git python-pep8 pylint python-yaml python python-progressbar"
-    PIPS="termcolor"
+    PKGS="python-pip gcc python-netifaces git python-pep8 pylint python python-progressbar"
+    PIPS="termcolor pyyaml"
     PIP="pip-python -q"
     YUM="yum install -q -y"
     # Now do it!
