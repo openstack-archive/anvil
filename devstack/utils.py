@@ -83,7 +83,7 @@ def construct_log_level(verbosity_level, dry_run=False):
     return log_level
 
 
-def configure_logging(log_level):
+def configure_logging(log_level, cli_args):
     root_logger = logging.getLogger().logger
     console_logger = logging.StreamHandler(sys.stdout)
     console_format = '%(levelname)s: @%(name)s : %(message)s'
