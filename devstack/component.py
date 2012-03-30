@@ -444,7 +444,8 @@ class PkgUninstallComponent(ComponentBase, PackageBasedComponentMixin):
         pkgs = self.tracereader.packages_installed()
         if pkgs:
             pkg_names = set([p['name'] for p in pkgs])
-            utils.log_iterable(pkg_names, header="Potentially removing %s packages" % (len(pkg_names)))
+            utils.log_iterable(pkg_names, logger=LOG,
+                header="Potentially removing %s packages" % (len(pkg_names)))
             which_removed = set()
             with utils.progress_bar(UNINSTALL_TITLE, len(pkgs), reverse=True) as p_bar:
                 for (i, p) in enumerate(pkgs):
