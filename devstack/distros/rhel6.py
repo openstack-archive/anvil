@@ -101,11 +101,13 @@ class RabbitRuntime(rabbit.RabbitRuntime):
         # See: http://lists.rabbitmq.com/pipermail/rabbitmq-discuss/2011-March/011916.html
         # This seems like a bug, since we are just using service init and service restart...
         # And not trying to run this service directly...
-        if sh.isdir('/var/log/rabbitmq'):
+        base_dir = sh.joinpths("/", 'var', 'log', 'rabbitmq')
+        if sh.isdir(base_dir):
             with sh.Rooted(True):
-                for fn in sh.listdir('/var/log/rabbitmq'):
+                # Seems like we need root perms to list that directory...
+                for fn in sh.listdir(base_dir):
                     if re.match("(.*?)(err|log)$", fn, re.I):
-                        sh.chmod(fn, 0666)
+                        sh.chmod(sh.joinpths(base_dir, fn), 0666)
 
     def start(self):
         self._destroy_log_dir()

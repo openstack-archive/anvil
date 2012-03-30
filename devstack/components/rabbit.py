@@ -36,6 +36,11 @@ class RabbitUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PkgUninstallComponent.__init__(self, *args, **kargs)
         self.runtime = RabbitRuntime(*args, **kargs)
+        (runtime_cls, _) = self.distro.extract_component(self.component_name, 'running')
+        if not runtime_cls:
+            self.runtime = RabbitRuntime(*args, **kargs)
+        else:
+            self.runtime = runtime_cls(*args, **kargs)
 
     def pre_uninstall(self):
         try:
@@ -51,7 +56,11 @@ class RabbitUninstaller(comp.PkgUninstallComponent):
 class RabbitInstaller(comp.PkgInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PkgInstallComponent.__init__(self, *args, **kargs)
-        self.runtime = RabbitRuntime(*args, **kargs)
+        (runtime_cls, _) = self.distro.extract_component(self.component_name, 'running')
+        if not runtime_cls:
+            self.runtime = RabbitRuntime(*args, **kargs)
+        else:
+            self.runtime = runtime_cls(*args, **kargs)
 
     def warm_configs(self):
         for pw_key in WARMUP_PWS:

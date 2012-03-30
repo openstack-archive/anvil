@@ -212,7 +212,7 @@ class InstallRunner(ActionRunner):
 
 
 class StartRunner(ActionRunner):
-    NAME = 'start'
+    NAME = 'running'
     PREREQ = InstallRunner
 
     def _instance_needs_prereq(self, instance):
@@ -250,7 +250,7 @@ class StartRunner(ActionRunner):
 
 
 class StopRunner(ActionRunner):
-    NAME = 'stop'
+    NAME = 'running'
 
     def _instance_needs_prereq(self, instance):
         return False

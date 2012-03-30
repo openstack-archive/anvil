@@ -45,7 +45,11 @@ WARMUP_PWS = [('sql', PASSWORD_PROMPT)]
 class DBUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PkgUninstallComponent.__init__(self, *args, **kargs)
-        self.runtime = DBRuntime(*args, **kargs)
+        (runtime_cls, _) = self.distro.extract_component(self.component_name, 'running')
+        if not runtime_cls:
+            self.runtime = DBRuntime(*args, **kargs)
+        else:
+            self.runtime = runtime_cls(*args, **kargs)
 
     def warm_configs(self):
         for key, prompt in WARMUP_PWS:
@@ -81,7 +85,11 @@ class DBInstaller(comp.PkgInstallComponent):
 
     def __init__(self, *args, **kargs):
         comp.PkgInstallComponent.__init__(self, *args, **kargs)
-        self.runtime = DBRuntime(*args, **kargs)
+        (runtime_cls, _) = self.distro.extract_component(self.component_name, 'running')
+        if not runtime_cls:
+            self.runtime = DBRuntime(*args, **kargs)
+        else:
+            self.runtime = runtime_cls(*args, **kargs)
 
     def _get_param_map(self, config_fn):
         # This dictionary will be used for parameter replacement
@@ -278,8 +286,8 @@ def fetch_dbdsn(config, pw_gen, dbname=''):
     if port:
         dsn += ":" + str(port)
     if dbname:
-        dsn += "/" + dbname
+        dsn += "/" + dbname + "?charset=utf8"
     else:
         dsn += "/"
-    LOG.debug("For database [%s] fetched dsn [%s]" % (dbname, dsn))
+    LOG.debug("For database %r fetched dsn %r" % (dbname, dsn))
     return dsn

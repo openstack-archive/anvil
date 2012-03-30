@@ -31,11 +31,6 @@ from devstack.components import keystone
 
 LOG = log.getLogger("devstack.image.uploader")
 
-# These are used when looking inside archives
-KERNEL_FN_MATCH = re.compile(r"(.*)-vmlinuz$", re.I)
-RAMDISK_FN_MATCH = re.compile(r"(.*)-initrd$", re.I)
-IMAGE_FN_MATCH = re.compile(r"(.*)img$", re.I)
-
 # Glance commands
 IMAGE_ADD = ['glance', 'add', '-A', '%TOKEN%',
              '--silent-upload',
@@ -63,28 +58,39 @@ NAME_CLEANUPS.reverse()
 
 class Unpacker(object):
 
-    def __init__(self):
-        pass
-
-    def _unpack_tar(self, file_name, file_location, tmp_dir):
-        (root_name, _) = os.path.splitext(file_name)
+    def _find_pieces(self, arc_fn):
         kernel_fn = None
         ramdisk_fn = None
-        root_img_fn = None
-        with contextlib.closing(tarfile.open(file_location, 'r')) as tfh:
+        img_fn = None
+
+        def is_kernel(fn):
+            return re.match(r"(.*)-vmlinuz$", fn, re.I) or re.match(r'(.*?)aki-tty/image$', fn, re.I)
+
+        def is_root(fn):
+            return re.match(r"(.*)img$", fn, re.I) or re.match(r'(.*?)ami-tty/image$', fn, re.I)
+
+        def is_ramdisk(fn):
+            return re.match(r"(.*)-initrd$", fn, re.I) or re.match(r'(.*?)ari-tty/image$', fn, re.I)
+
+        with contextlib.closing(tarfile.open(arc_fn, 'r')) as tfh:
             for tmemb in tfh.getmembers():
                 fn = tmemb.name
-                if KERNEL_FN_MATCH.match(fn):
+                if is_kernel(fn):
                     kernel_fn = fn
                     LOG.debug("Found kernel: %r" % (fn))
-                elif RAMDISK_FN_MATCH.match(fn):
+                elif is_ramdisk(fn):
                     ramdisk_fn = fn
                     LOG.debug("Found ram disk: %r" % (fn))
-                elif IMAGE_FN_MATCH.match(fn):
-                    root_img_fn = fn
+                elif is_root(fn):
+                    img_fn = fn
                     LOG.debug("Found root image: %r" % (fn))
                 else:
                     LOG.debug("Unknown member %r - skipping" % (fn))
+        return (img_fn, ramdisk_fn, kernel_fn)
+
+    def _unpack_tar(self, file_name, file_location, tmp_dir):
+        (root_name, _) = os.path.splitext(file_name)
+        (root_img_fn, ramdisk_fn, kernel_fn) = self._find_pieces(file_location)
         if not root_img_fn:
             msg = "Image %r has no root image member" % (file_name)
             raise RuntimeError(msg)
