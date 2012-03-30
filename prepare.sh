@@ -23,8 +23,8 @@ if [[ `cat /etc/issue | grep -i "ubuntu"` ]] ; then
     echo "DEVSTACKpy for ubuntu is ready to rock & roll."
 elif [[ `cat /etc/issue | grep -i "red hat enterprise.*release.*6.*"` ]] ; then
     EPEL_RPM="epel-release-6-5.noarch.rpm"
-    PKGS="python-pip gcc python-netifaces git python-pep8 pylint python-progressbar python"
-    PIPS="termcolor pyyaml"
+    PKGS="python-pip gcc python-netifaces git python-pep8 pylint python-progressbar python PyYAML"
+    PIPS="termcolor"
     PIP="pip-python -q"
     YUM="yum install -q -y"
     WGET="wget -q"
