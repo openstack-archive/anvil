@@ -14,6 +14,7 @@ DEVSTACKpy Documentation
    topics/warning
    topics/basics
    topics/qanda
+   topics/knownissues
    topics/bugshugscode
    topics/advanced/index
    
