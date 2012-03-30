@@ -375,3 +375,5 @@ appreciated!
 
 .. _euca2ools: http://open.eucalyptus.com/wiki/Euca2oolsGuide
 .. _PID: http://en.wikipedia.org/wiki/Process_identifier
+.. _tty: http://linux.die.net/man/4/tty
+.. _apache: https://httpd.apache.org/
