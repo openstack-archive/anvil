@@ -110,6 +110,14 @@ class ComponentBase(object):
 
     def __str__(self):
         return "%s: %s" % (self.__class__.__name__, self.component_name)
+    
+    def _get_params(self):
+        return {
+            'COMPONENT_DIR': self.component_dir,
+            'APP_DIR': self.app_dir,
+            'CONFIG_DIR': self.cfg_dir,
+            'TRACE_DIR': self.trace_dir,
+        }
 
     def known_subsystems(self):
         return set()
@@ -204,13 +212,9 @@ class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
         return down.GitDownloader(self.distro, uri, target_dir, branch).download()
 
     def _get_param_map(self, config_fn):
-        return {
-            'COMPONENT_DIR': self.component_dir,
-            'APP_DIR': self.app_dir,
-            'CONFIG_DIR': self.cfg_dir,
-            'TRACE_DIR': self.trace_dir,
-            'CONFIG_FN': config_fn,
-        }
+        mp = ComponentBase._get_params(self)
+        mp['CONFIG_FN'] = config_fn or ''
+        return mp
 
     def _get_packages(self):
         pkg_list = list(self.packages)
@@ -530,12 +534,9 @@ class ProgramRuntime(ComponentBase):
         return list()
 
     def _get_param_map(self, app_name):
-        return {
-            'COMPONENT_DIR': self.component_dir,
-            'APP_DIR': self.app_dir,
-            'CONFIG_DIR': self.cfg_dir,
-            'TRACE_DIR': self.trace_dir,
-        }
+        mp = ComponentBase._get_params(self)
+        mp['APP_NAME'] = app_name or ''
+        return mp
 
     def pre_start(self):
         pass
