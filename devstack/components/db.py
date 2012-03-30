@@ -86,15 +86,16 @@ class DBInstaller(comp.PkgInstallComponent):
     def _get_param_map(self, config_fn):
         # This dictionary will be used for parameter replacement
         # In pre-install and post-install sections
-        host_ip = self.cfg.get('host', 'ip')
-        out = {
+        mp = comp.PkgInstallComponent._get_param_map(self, config_fn)
+        adds = {
             'PASSWORD': self.pw_gen.get_password("sql", PASSWORD_PROMPT),
             'BOOT_START': ("%s" % (True)).lower(),
             'USER': self.cfg.getdefaulted("db", "sql_user", 'root'),
-            'SERVICE_HOST': host_ip,
-            'HOST_IP': host_ip
+            'SERVICE_HOST': self.cfg.get('host', 'ip'),
+            'HOST_IP': self.cfg.get('host', 'ip'),
         }
-        return out
+        mp.update(adds)
+        return mp
 
     def warm_configs(self):
         for key, prompt in WARMUP_PWS:

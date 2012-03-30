@@ -74,13 +74,17 @@ COWS['unhappy'] = r'''
 '''
 
 
-def configure_logging(verbosity_level=1, dry_run=False):
+def construct_log_level(verbosity_level, dry_run=False):
+    log_level = logging.INFO
+    if verbosity_level >= 3:
+        log_level = logging.DEBUG
+    elif verbosity_level == 2 or dry_run:
+        log_level = logging.AUDIT
+    return log_level
 
-    # Debug by default
+
+def configure_logging(log_level):
     root_logger = logging.getLogger().logger
-    root_logger.setLevel(logging.DEBUG)
-
-    # Set our pretty logger
     console_logger = logging.StreamHandler(sys.stdout)
     console_format = '%(levelname)s: @%(name)s : %(message)s'
     if sh.in_terminal():
@@ -88,13 +92,6 @@ def configure_logging(verbosity_level=1, dry_run=False):
     else:
         console_logger.setFormatter(logging.Formatter(console_format))
     root_logger.addHandler(console_logger)
-
-    # Adjust logging verbose level based on the command line switch.
-    log_level = logging.INFO
-    if verbosity_level >= 3:
-        log_level = logging.DEBUG
-    elif verbosity_level == 2 or dry_run:
-        log_level = logging.AUDIT
     root_logger.setLevel(log_level)
 
 
