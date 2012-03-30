@@ -201,9 +201,177 @@ network configuration.
 Please reference
 http://docs.openstack.org/diablo/openstack-compute/admin/content/configuring-networking-on-the-compute-node.html
 
-If you need to adjust those variables the matching conf
+If you need to adjust those variables the matching config variables in
+``stack.ini`` are:
 
-TRUNCATED! Please download pandoc if you want to convert large files.
+::
 
-.. _tty: http://linux.die.net/man/4/tty
-.. _apache: https://httpd.apache.org/
+    # Network settings
+    # Very useful to read over:
+    # http://docs.openstack.org/cactus/openstack-compute/admin/content/configuring-networking-on-the-compute-node.html
+    fixed_range = ${NOVA_FIXED_RANGE:-10.0.0.0/24}
+    fixed_network_size = ${NOVA_FIXED_NETWORK_SIZE:-256}
+    network_manager = ${NET_MAN:-FlatDHCPManager}
+    public_interface = ${PUBLIC_INTERFACE:-eth0}
+
+    # DHCP Warning: If your flat interface device uses DHCP, there will be a hiccup while the network 
+    # is moved from the flat interface to the flat network bridge. This will happen when you launch 
+    # your first instance. Upon launch you will lose all connectivity to the node, and the vm launch will probably fail.
+    #
+    # If you are running on a single node and don't need to access the VMs from devices other than 
+    # that node, you can set the flat interface to the same value as FLAT_NETWORK_BRIDGE. This will stop the network hiccup from occurring.
+    flat_interface = ${FLAT_INTERFACE:-eth0}
+    vlan_interface = ${VLAN_INTERFACE:-$(nova:public_interface)}
+    flat_network_bridge = ${FLAT_NETWORK_BRIDGE:-br100}
+
+    # Test floating pool and range are used for testing. 
+    # They are defined here until the admin APIs can replace nova-manage
+    floating_range = ${FLOATING_RANGE:-172.24.4.224/28}
+    test_floating_pool = ${TEST_FLOATING_POOL:-test}
+    test_floating_range = ${TEST_FLOATING_RANGE:-192.168.253.0/29}
+
+
+Installing
+----------
+
+Now install *OpenStacks* components by running the following:
+
+::
+
+    sudo ./stack -a install -d ~/openstack
+
+You should see a set of distribution packages and/or pips being
+installed, python setups occurring and configuration files being written
+as DEVSTACKpy figures out how to install your desired components (if you
+desire more informational output add a ``-v`` or a ``-vv`` to that
+command).
+
+Starting
+--------
+
+Now that you have installed *OpenStack* you can now start your
+*OpenStack* components by running the following.
+
+::
+
+    sudo ./stack -a start -d ~/openstack
+
+If you desire more informational output add a ``-v`` or a ``-vv`` to
+that command.
+
+Check horizon
+~~~~~~~~~~~~~
+
+Once that occurs you should be able to go to your hosts ip with a web
+browser and view horizon which can be logged in with the user ``admin``
+and the password you entered when prompted for
+``Enter a password to use for horizon and keystone``. If you let the
+system auto-generate one for you you will need to check the final output
+of the above install and pick up the password that was generated which
+should be displayed at key ``passwords/horizon_keystone_admin``. You can
+also later find this authentication information in the generated
+``os-core.rc`` file.
+
+If you see a login page and can access horizon then:
+
+``Congratulations. You did it!``
+
+Command line tools
+~~~~~~~~~~~~~~~~~~
+
+In your DEVSTACKpy directory:
+
+::
+
+    source os-core.rc
+
+This should set up the environment variables you need to run OpenStack
+CLI tools:
+
+::
+
+    nova <command> [options] [args]
+    nova-manage <command> [options] [args]
+    keystone <command> [options] [args]
+    glance <command> [options] [args]
+    ....
+
+If you desire to use eucalyptus tools (ie `euca2ools`_) which use the
+EC2 apis run the following to get your EC2 certs:
+
+::
+
+    euca.sh $OS_USERNAME $OS_TENANT_NAME
+
+It broke?
+~~~~~~~~~
+
+*Otherwise* you may have to look at the output of what was started. To
+accomplish this you may have to log at the ``stderr`` and ``stdout``
+that is being generated from the running *OpenStack* process (by default
+they are forked as daemons). For this information check the output of
+the start command for a line like
+``Check * for traces of what happened``. This is usually a good starting
+point, to check out those files contents and then look up the files that
+contain the applications `PID`_ and ``stderr`` and ``stdout``.
+
+If the install section had warning messages or exceptions were thrown
+there, that may also be the problem. Sometimes running the uninstall
+section below will clean this up, your mileage may vary though.
+
+Another tip is to edit run with more verbose logging by running with the
+following ``-v`` option or the ``-vv`` option. This may give you more
+insights by showing you what was executed/installed/configured
+(uninstall & start by installing again to get the additional logging
+output).
+
+Stopping
+--------
+
+Once you have started *OpenStack* services you can stop them by running
+the following:
+
+::
+
+    sudo ./stack -a stop -d ~/openstack
+
+You should see a set of stop actions happening and ``stderr`` and
+``stdout`` and ``pid`` files being removed (if you desire more
+informational output add a ``-v`` or a ``-vv`` to that command). This
+ensures the above a daemon that was started is now killed. A good way to
+check if it killed everything correctly is to run the following.
+
+::
+
+    sudo ps -elf | grep python
+    sudo ps -elf | grep apache
+
+There should be no entries like ``nova``, ``glance``, ``apache``,
+``httpd``. If there are then the stop may have not occurred correctly.
+If this is the case run again with a ``-v`` or a ``-vv`` or check the
+``stderr``, ``stdout``, ``pid`` files for any useful information on what
+is happening.
+
+Uninstalling
+------------
+
+Once you have stopped (if you have started it) *OpenStack* services you
+can uninstall them by running the following:
+
+::
+
+    sudo ./stack -a uninstall -d ~/openstack
+
+You should see a set of packages, configuration and directories, being
+removed (if you desire more informational output add a ``-v`` or a
+``-vv`` to that command). On completion the directory specified at
+~/openstack be empty.
+
+Issues
+======
+
+Please report issues/bugs to https://launchpad.net/devstackpy. Much
+appreciated!
+
+.. _euca2ools: http://open.eucalyptus.com/wiki/Euca2oolsGuide
+.. _PID: http://en.wikipedia.org/wiki/Process_identifier
