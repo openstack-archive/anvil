@@ -33,7 +33,7 @@ def _make_pip_name(name, version):
 def install(pip, distro):
     name = pip['name']
     root_cmd = distro.get_command_config('pip')
-    LOG.audit("Installing python package (%s) using pip command (%s)" % (name, root_cmd))
+    LOG.audit("Installing python package %r using pip command %s" % (name, root_cmd))
     name_full = _make_pip_name(name, pip.get('version'))
     real_cmd = [root_cmd, 'install'] + PIP_INSTALL_CMD_OPTS
     options = pip.get('options')
@@ -49,12 +49,12 @@ def uninstall(pip, distro, skip_errors=True):
     try:
         # Versions don't seem to matter here...
         name = _make_pip_name(pip['name'], None)
-        LOG.audit("Uninstalling python package (%s) using pip command (%s)" % (name, root_cmd))
+        LOG.audit("Uninstalling python package %r using pip command %s" % (name, root_cmd))
         cmd = [root_cmd, 'uninstall'] + PIP_UNINSTALL_CMD_OPTS + [name]
         sh.execute(*cmd, run_as_root=True)
     except excp.ProcessExecutionError:
         if skip_errors:
-            LOG.debug(("Ignoring execution error that occured when uninstalling pip %s!"
+            LOG.debug(("Ignoring execution error that occured when uninstalling pip %r!"
                 " (this may be ok if it was uninstalled by a previous component)") % (name))
         else:
             raise
