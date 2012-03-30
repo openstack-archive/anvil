@@ -275,7 +275,7 @@ def fetch_dbdsn(config, pw_gen, dbname=''):
         dsn += "@"
     dsn += host
     if port:
-        dsn += ":" + port
+        dsn += ":" + str(port)
     if dbname:
         dsn += "/" + dbname
     else:
