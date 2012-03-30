@@ -18,7 +18,7 @@
 
 import sys
 import time
-import traceback
+import traceback as tb
 
 from devstack import cfg
 from devstack import cfg_helpers
@@ -179,7 +179,8 @@ def main():
     prog_name = sys.argv[0]
 
     # Configure logging
-    utils.configure_logging(args['verbosity'], args['dryrun'])
+    verbosity = args['verbosity']
+    utils.configure_logging(verbosity, args['dryrun'])
 
     LOG.debug("Command line options %s" % (args))
 
@@ -206,7 +207,12 @@ def main():
             return 0
     except Exception:
         utils.goodbye(False)
-        traceback.print_exc(file=sys.stdout)
+        traceback = None
+        if verbosity >= 3:
+            # See: http://docs.python.org/library/traceback.html
+            traceback = sys.exc_traceback
+        tb.print_exception(sys.exc_type, sys.exc_value,
+                traceback, file=sys.stdout)
         return 1
 
 
