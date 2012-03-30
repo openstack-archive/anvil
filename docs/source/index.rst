@@ -9,4 +9,11 @@ DEVSTACKpy Documentation
 .. toctree::
    :maxdepth: 2
 
-   topics/index
+   topics/goals
+   topics/features
+   topics/warning
+   topics/basics
+   topics/qanda
+   topics/bugshugscode
+   topics/advanced/index
+   

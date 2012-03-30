@@ -1,4 +1,5 @@
-Topics
+=========
+Basics
 =========
 
 .. toctree::
@@ -6,6 +7,5 @@ Topics
 
    gettingstarted
    usageexamples
-   bugshugscode
-   qanda
    solvedproblems
+   
