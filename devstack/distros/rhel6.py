@@ -25,6 +25,7 @@ from devstack import utils
 from devstack.components import db
 from devstack.components import horizon
 from devstack.components import nova
+from devstack.components import rabbit
 
 from devstack.packaging import yum
 
@@ -83,6 +84,31 @@ class HorizonInstaller(horizon.HorizonInstaller):
                     line = "Group %s" % (group)
                 new_lines.append(line)
             sh.write_file(HTTPD_CONF, utils.joinlinesep(*new_lines))
+
+
+class RabbitRuntime(rabbit.RabbitRuntime):
+    
+    def _destroy_log_dir(self):
+        # This seems needed...
+        #
+        # Due to the following:
+        # <<< Restarting rabbitmq-server: RabbitMQ is not running
+        # <<< sh: /var/log/rabbitmq/startup_log: Permission denied
+        # <<< FAILED - check /var/log/rabbitmq/startup_{log, _err}
+        #
+        # See: http://lists.rabbitmq.com/pipermail/rabbitmq-discuss/2011-March/011916.html
+        # This seems like a bug, since we are just using service init and service restart...
+        # And not trying to run this service directly...
+        if sh.isdir('/var/log/rabbitmq'):
+            sh.deldir('/var/log/rabbitmq', run_as_root=True)
+
+    def start(self):
+        self._destroy_log_dir()
+        return rabbit.RabbitRuntime.start(self)
+
+    def restart(self):
+        self._destroy_log_dir()
+        return rabbit.RabbitRuntime.restart(self)
 
 
 class NovaInstaller(nova.NovaInstaller):

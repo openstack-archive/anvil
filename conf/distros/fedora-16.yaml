@@ -591,8 +591,8 @@ components:
     rabbit-mq:
         action_classes:
             install: devstack.components.rabbit:RabbitInstaller
-            start: devstack.components.rabbit:RabbitRuntime
-            stop: devstack.components.rabbit:RabbitRuntime
+            start: devstack.distros.fedora16:RabbitRuntime
+            stop: devstack.distros.fedora16:RabbitRuntime
             uninstall: devstack.components.rabbit:RabbitUninstaller
         packages:
         -   name: rabbitmq-server
