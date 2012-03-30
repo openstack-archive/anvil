@@ -110,7 +110,7 @@ class ComponentBase(object):
 
     def __str__(self):
         return "%s: %s" % (self.__class__.__name__, self.component_name)
-    
+
     def _get_params(self):
         return {
             'COMPONENT_DIR': self.component_dir,
