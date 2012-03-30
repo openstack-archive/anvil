@@ -33,7 +33,7 @@ LOG = logging.getLogger(__name__)
 class DBInstaller(db.DBInstaller):
 
     def _configure_db_confs(self):
-        LOG.info("Fixing up %s mysql configs.", self.distro.name)
+        LOG.info("Fixing up %r mysql configs.", self.distro.name)
         fc = sh.load_file('/etc/mysql/my.cnf')
         lines = fc.splitlines()
         new_lines = list()
@@ -52,7 +52,7 @@ class RabbitPackager(apt.AptPackager):
         #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
         #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
         name = pkg['name']
-        LOG.debug("Handling special remove of %s." % (name))
+        LOG.debug("Handling special remove of %r" % (name))
         pkg_full = self._format_pkg_name(name, pkg.get("version"))
         cmd = apt.APT_REMOVE + [pkg_full]
         self._execute_apt(cmd)
@@ -67,7 +67,7 @@ class RabbitPackager(apt.AptPackager):
         #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
         #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
         name = pkg['name']
-        LOG.debug("Handling special install of %s." % (name))
+        LOG.debug("Handling special install of %r" % (name))
         #this seems to be a temporary fix for that bug
         with tempfile.TemporaryFile() as f:
             pkg_full = self._format_pkg_name(name, pkg.get("version"))

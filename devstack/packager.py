@@ -47,13 +47,13 @@ class Packager(object):
     def pre_install(self, pkg, params=None):
         cmds = pkg.get('pre-install')
         if cmds:
-            LOG.info("Running pre-install commands for package %s.",
+            LOG.info("Running pre-install commands for package %r.",
                      pkg['name'])
             utils.execute_template(*cmds, params=params)
 
     def post_install(self, pkg, params=None):
         cmds = pkg.get('post-install')
         if cmds:
-            LOG.info("Running post-install commands for package %s.",
+            LOG.info("Running post-install commands for package %r.",
                      pkg['name'])
             utils.execute_template(*cmds, params=params)

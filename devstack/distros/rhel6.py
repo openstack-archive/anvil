@@ -50,7 +50,7 @@ DEF_IDENT = 'unix-group:libvirtd'
 class DBInstaller(db.DBInstaller):
 
     def _configure_db_confs(self):
-        LOG.info("Fixing up %s mysql configs.", self.distro.name)
+        LOG.info("Fixing up %r mysql configs.", self.distro.name)
         fc = sh.load_file('/etc/my.cnf')
         lines = fc.splitlines()
         new_lines = list()
@@ -69,7 +69,7 @@ class HorizonInstaller(horizon.HorizonInstaller):
         (user, group) = self._get_apache_user_group()
         # This is recorded so it gets cleaned up during uninstall
         self.tracewriter.file_touched(SOCKET_CONF)
-        LOG.info("Fixing up %s and %s files" % (SOCKET_CONF, HTTPD_CONF))
+        LOG.info("Fixing up %r and %r files" % (SOCKET_CONF, HTTPD_CONF))
         with sh.Rooted(True):
             # Fix the socket prefix to someplace we can use
             fc = "WSGISocketPrefix %s" % (sh.joinpths(self.log_dir, "wsgi-socket"))
