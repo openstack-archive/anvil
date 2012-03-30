@@ -87,18 +87,28 @@ class HorizonInstaller(horizon.HorizonInstaller):
 
 class NovaInstaller(nova.NovaInstaller):
 
+    def _get_policy(self, ident_users):
+        fn = LIBVIRT_POLICY_FN
+        contents = LIBVIRT_POLICY_CONTENTS.format(idents=(";".join(ident_users)))
+        return (fn, contents)
+
+    def _get_policy_users(self):
+        ident_users = set()
+        ident_users.add(DEF_IDENT)
+        ident_users.add('unix-user:%s' % (sh.getuser()))
+        return ident_users
+
     def configure(self):
         configs_made = nova.NovaInstaller.configure(self)
         driver_canon = nova.canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
         if driver_canon == 'libvirt':
-            ident_users = set()
-            ident_users.add(DEF_IDENT)
-            ident_users.add('unix-user:%s' % (sh.getuser()))
-            fc_contents = LIBVIRT_POLICY_CONTENTS.format(idents=(";".join(ident_users)))
+            (fn, contents) = self._get_policy(self._get_policy_users())
+            dirs_made = list()
             with sh.Rooted(True):
-                dirs_made = sh.mkdirslist(sh.dirname(LIBVIRT_POLICY_FN))
-                sh.write_file(LIBVIRT_POLICY_FN, fc_contents)
-            self.tracewriter.cfg_file_written(LIBVIRT_POLICY_FN)
+                # TODO check if this dir is restricted before assuming it isn't?
+                dirs_made.extend(sh.mkdirslist(sh.dirname(fn)))
+                sh.write_file(fn, contents)
+            self.tracewriter.cfg_file_written(fn)
             self.tracewriter.dirs_made(*dirs_made)
             configs_made += 1
         return configs_made
