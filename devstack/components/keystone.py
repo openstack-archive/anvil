@@ -140,7 +140,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         if name == ROOT_CONF:
             # Use config parser and
             # then extract known configs that
-            # ill need locations/directories/files made (or touched)...
+            # will need locations/directories/files made (or touched)...
             with io.BytesIO(contents) as stream:
                 config = cfg.IgnoreMissingConfigParser(cs=False)
                 config.readfp(stream)

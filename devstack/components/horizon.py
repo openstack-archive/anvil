@@ -91,10 +91,10 @@ class HorizonInstaller(comp.PythonInstallComponent):
     def _check_ug(self):
         (user, group) = self._get_apache_user_group()
         if not sh.user_exists(user):
-            msg = "No user named %s exists on this system!" % (user)
+            msg = "No user named %r exists on this system!" % (user)
             raise excp.ConfigException(msg)
         if not sh.group_exists(group):
-            msg = "No group named %s exists on this system!" % (group)
+            msg = "No group named %r exists on this system!" % (group)
             raise excp.ConfigException(msg)
         if user in BAD_APACHE_USERS:
             msg = ("You may want to adjust your configuration, "
@@ -129,11 +129,9 @@ class HorizonInstaller(comp.PythonInstallComponent):
         path = sh.joinpths(self.dash_dir, 'local')
         if sh.isdir(path):
             (user, group) = self._get_apache_user_group()
-            LOG.debug("Changing ownership (recursively) of %s so that it can be used by %s - %s",
-                            path, user, group)
-            uid = sh.getuid(user)
-            gid = sh.getgid(group)
-            sh.chown_r(path, uid, gid)
+            LOG.debug("Changing ownership (recursively) of %r so that it can be used by %r/%r",
+                            path, group, user)
+            sh.chown_r(path, sh.getuid(user), sh.getgid(group))
 
     def pre_install(self):
         comp.PythonInstallComponent.pre_install(self)
@@ -208,8 +206,7 @@ class HorizonRuntime(comp.EmptyRuntime):
                     'run_as_root': True,
                     }]
             utils.execute_template(*cmds,
-                                    check_exit_code=True,
-                                    params={})
+                                    check_exit_code=True)
             return 1
         return 0
 
@@ -219,13 +216,11 @@ class HorizonRuntime(comp.EmptyRuntime):
                 'run_as_root': True,
                 }]
         run_result = utils.execute_template(*cmds,
-                                             check_exit_code=False,
-                                             params={})
+                                             check_exit_code=False)
         if not run_result or not run_result[0]:
             return comp.STATUS_UNKNOWN
         (sysout, stderr) = run_result[0]
-        combined = str(sysout) + str(stderr)
-        combined = combined.lower()
+        combined = (str(sysout) + str(stderr)).lower()
         if combined.find("is running") != -1:
             return comp.STATUS_STARTED
         elif combined.find("not running") != -1 or \

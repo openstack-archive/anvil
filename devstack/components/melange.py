@@ -47,7 +47,7 @@ DB_SYNC_CMD = [
 
 # TODO: ???
 CIDR_CREATE_CMD = [
-    {'cmd': ['melange', 'mac_address_range', 'create', 'cidr', '%CIDR_RANGE%']},
+    {'cmd': ['melange', '--config-file=%CFG_FILE%', 'mac_address_range', 'create', 'cidr', '%CIDR_RANGE%']},
 ]
 
 # What to start
