@@ -18,6 +18,8 @@
 """Platform-specific logic for RedHat Enterprise Linux v6 components.
 """
 
+import re
+
 from devstack import log as logging
 from devstack import shell as sh
 from devstack import utils
@@ -87,7 +89,7 @@ class HorizonInstaller(horizon.HorizonInstaller):
 
 
 class RabbitRuntime(rabbit.RabbitRuntime):
-    
+
     def _destroy_log_dir(self):
         # This seems needed...
         #
@@ -100,7 +102,10 @@ class RabbitRuntime(rabbit.RabbitRuntime):
         # This seems like a bug, since we are just using service init and service restart...
         # And not trying to run this service directly...
         if sh.isdir('/var/log/rabbitmq'):
-            sh.deldir('/var/log/rabbitmq', run_as_root=True)
+            with sh.Rooted(True):
+                for fn in sh.listdir('/var/log/rabbitmq'):
+                    if re.match("(.*?)(err|log)$", fn, re.I):
+                        sh.chmod(fn, 0666)
 
     def start(self):
         self._destroy_log_dir()
