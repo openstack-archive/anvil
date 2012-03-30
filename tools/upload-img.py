@@ -31,7 +31,7 @@ if __name__ == "__main__":
     (options, args) = parser.parse_args()
     uris = options.uris or list()
     uri_sep = ",".join(uris)
-    utils.configure_logging(3)
+    utils.configure_logging(logging.DEBUG)
     config = cfg.StackConfigParser()
     config.add_section('img')
     config.set('img', 'image_urls', uri_sep)

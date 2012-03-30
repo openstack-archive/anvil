@@ -179,10 +179,11 @@ def main():
     prog_name = sys.argv[0]
 
     # Configure logging
-    verbosity = args['verbosity']
-    utils.configure_logging(verbosity, args['dryrun'])
+    log_level = utils.construct_log_level(args['verbosity'], args['dryrun'])
+    utils.configure_logging(log_level)
 
     LOG.debug("Command line options %s" % (args))
+    LOG.debug("Log level is: %s" % (log_level))
 
     # Will need root to setup openstack
     if not sh.got_root():
@@ -208,7 +209,7 @@ def main():
     except Exception:
         utils.goodbye(False)
         traceback = None
-        if verbosity >= 3:
+        if log_level <= logging.DEBUG:
             # See: http://docs.python.org/library/traceback.html
             traceback = sys.exc_traceback
         tb.print_exception(sys.exc_type, sys.exc_value,
