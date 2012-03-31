@@ -326,6 +326,9 @@ components:
         -   name: python-prettytable
             removable: true
             version: 0.5*
+        -   name: python-paste-deploy
+            removable: true
+            version: 1.5.0*
     melange:
         action_classes:
             install: devstack.components.melange:MelangeInstaller
