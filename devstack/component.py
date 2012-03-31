@@ -560,7 +560,7 @@ class ProgramRuntime(ComponentBase):
                 self._get_param_map(app_name),
                 )
             # Configure it with the given settings
-            LOG.debug("Configuring runner for program %r", app_name)
+            LOG.debug("Configuring runner (%s) for program %r", cls, app_name)
             cfg_am = instance.configure(app_name,
                                         (app_pth, app_dir, program_opts))
             LOG.debug("Configured %s files for runner for program %r",

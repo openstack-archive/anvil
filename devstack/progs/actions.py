@@ -220,7 +220,7 @@ class StartRunner(ActionRunner):
 
     def _run(self, persona, root_dir, component_order, instances):
         self._run_phase(
-            'Configuring runner for {name}',
+            None,
             lambda i: i.configure(),
             None,
             component_order,
