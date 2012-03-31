@@ -243,16 +243,16 @@ def drop_db(cfg, pw_gen, distro, dbname):
 
 def create_db(cfg, pw_gen, distro, dbname, utf8=False):
     dbtype = cfg.get("db", "type")
-    createcmd = distro.get_command(dbtype, 'create_db', silent=True)
+    if not utf8:
+        createcmd = distro.get_command(dbtype, 'create_db', silent=True)
+    else:
+        createcmd = distro.get_command(dbtype, 'create_db_utf8', silent=True)
     if createcmd:
         params = dict()
         params['PASSWORD'] = pw_gen.get_password("sql", PASSWORD_PROMPT)
         params['USER'] = cfg.getdefaulted("db", "sql_user", 'root')
         params['DB'] = dbname
         cmds = list()
-        if utf8:
-            # WHY U NOT SET EVERYWHERE...
-            createcmd += ['CHARACTER SET utf8']
         cmds.append({
             'cmd': createcmd,
             'run_as_root': False,
