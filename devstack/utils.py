@@ -83,6 +83,17 @@ def construct_log_level(verbosity_level, dry_run=False):
     return log_level
 
 
+def make_bool(val):
+    if not val:
+        return False
+    if type(val) is bool:
+        return val
+    sval = str(val).lower().strip()
+    if sval in ['true', '1', 'on', 'yes', 't']:
+        return True
+    return False
+
+
 def configure_logging(log_level, cli_args):
     root_logger = logging.getLogger().logger
     console_logger = logging.StreamHandler(sys.stdout)

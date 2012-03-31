@@ -19,6 +19,7 @@ from tempfile import TemporaryFile
 from devstack import component as comp
 from devstack import log as logging
 from devstack import shell as sh
+from devstack import utils
 
 LOG = logging.getLogger("devstack.components.rabbit")
 
@@ -84,6 +85,7 @@ class RabbitRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
         comp.EmptyRuntime.__init__(self, *args, **kargs)
         self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
+        self.redir_out = utils.make_bool(self.distro.get_command_config('rabbit-mq', 'redirect-outs'))
 
     def start(self):
         if self.status() != comp.STATUS_STARTED:
@@ -122,12 +124,14 @@ class RabbitRuntime(comp.EmptyRuntime):
         # See: https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
         #
         # RHEL seems to have this bug also...
-        #
-        # TODO: Move to distro dir...
-        with TemporaryFile() as f:
+        if self.redir_out:
+            with TemporaryFile() as f:
+                return sh.execute(*cmd, run_as_root=True,
+                            stdout_fh=f, stderr_fh=f,
+                            check_exit_code=check_exit)
+        else:
             return sh.execute(*cmd, run_as_root=True,
-                        stdout_fh=f, stderr_fh=f,
-                        check_exit_code=check_exit)
+                                check_exit_code=check_exit)
 
     def restart(self):
         LOG.info("Restarting rabbit-mq.")
