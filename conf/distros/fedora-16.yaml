@@ -99,7 +99,7 @@ components:
             version: 22.13*
         -   name: pylint
             removable: false
-            version: 0.24*
+            version: 0.2*
         -   name: python
             removable: false
             version: 2.7*
