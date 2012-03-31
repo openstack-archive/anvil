@@ -106,7 +106,7 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
     def _setup_db(self):
         LOG.info("Fixing up database named %r", DB_NAME)
         db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
-        db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
+        db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME, utf8=True)
 
     def _get_source_config(self, config_fn):
         if config_fn == POLICY_JSON:
@@ -176,7 +176,7 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
         mp = comp.PythonInstallComponent._get_param_map(self, config_fn)
         mp['IMG_DIR'] = self._get_image_dir()
         mp['SYSLOG'] = self.cfg.getboolean("default", "syslog")
-        mp['SQL_CONN'] = db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
+        mp['SQL_CONN'] = db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME, utf8=True)
         mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
         mp['HOST_IP'] = self.cfg.get('host', 'ip')
         mp.update(keystone.get_shared_params(self.cfg, self.pw_gen, 'glance'))

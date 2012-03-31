@@ -77,7 +77,7 @@ class MelangeInstaller(comp.PythonInstallComponent):
     def _setup_db(self):
         LOG.info("Fixing up database named %r", DB_NAME)
         db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
-        db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
+        db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME, utf8=True)
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
@@ -103,7 +103,7 @@ class MelangeInstaller(comp.PythonInstallComponent):
             with io.BytesIO(contents) as stream:
                 config = cfg.IgnoreMissingConfigParser(cs=False)
                 config.readfp(stream)
-                db_dsn = db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
+                db_dsn = db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME, utf8=True)
                 old_dbsn = config.get('default', 'sql_connection')
                 if db_dsn != old_dbsn:
                     config.set('default', 'sql_connection', db_dsn)

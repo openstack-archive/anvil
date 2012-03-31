@@ -241,7 +241,7 @@ def drop_db(cfg, pw_gen, distro, dbname):
         raise NotImplementedError(msg)
 
 
-def create_db(cfg, pw_gen, distro, dbname):
+def create_db(cfg, pw_gen, distro, dbname, utf8=False):
     dbtype = cfg.get("db", "type")
     createcmd = distro.get_command(dbtype, 'create_db', silent=True)
     if createcmd:
@@ -250,6 +250,9 @@ def create_db(cfg, pw_gen, distro, dbname):
         params['USER'] = cfg.getdefaulted("db", "sql_user", 'root')
         params['DB'] = dbname
         cmds = list()
+        if utf8:
+            # WHY U NOT SET EVERYWHERE...
+            createcmd += ['CHARACTER SET utf8']
         cmds.append({
             'cmd': createcmd,
             'run_as_root': False,
@@ -260,7 +263,7 @@ def create_db(cfg, pw_gen, distro, dbname):
         raise NotImplementedError(msg)
 
 
-def fetch_dbdsn(config, pw_gen, dbname=''):
+def fetch_dbdsn(config, pw_gen, dbname, utf8=False):
     """Return the database connection string, including password."""
     user = config.get("db", "sql_user")
     host = config.get("db", "sql_host")
@@ -275,18 +278,21 @@ def fetch_dbdsn(config, pw_gen, dbname=''):
     if not driver:
         msg = "Unable to fetch a database dsn - no db driver type found"
         raise excp.BadParamException(msg)
-    dsn = driver + "://"
+    dsn = str(driver) + "://"
     if user:
-        dsn += user
+        dsn += str(user)
     if pw:
-        dsn += ":" + pw
+        dsn += ":" + str(pw)
     if user or pw:
         dsn += "@"
-    dsn += host
+    dsn += str(host)
     if port:
         dsn += ":" + str(port)
     if dbname:
-        dsn += "/" + dbname + "?charset=utf8"
+        dsn += "/" + str(dbname)
+        if utf8:
+            # WHY U NOT SET EVERYWHERE...
+            dsn += "?charset=utf8"
     else:
         dsn += "/"
     LOG.debug("For database %r fetched dsn %r" % (dbname, dsn))
