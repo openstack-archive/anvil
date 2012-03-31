@@ -90,7 +90,7 @@ class HorizonInstaller(horizon.HorizonInstaller):
 
 class RabbitRuntime(rabbit.RabbitRuntime):
 
-    def _destroy_log_dir(self):
+    def _fix_log_dir(self):
         # This seems needed...
         #
         # Due to the following:
@@ -110,11 +110,11 @@ class RabbitRuntime(rabbit.RabbitRuntime):
                         sh.chmod(sh.joinpths(base_dir, fn), 0666)
 
     def start(self):
-        self._destroy_log_dir()
+        self._fix_log_dir()
         return rabbit.RabbitRuntime.start(self)
 
     def restart(self):
-        self._destroy_log_dir()
+        self._fix_log_dir()
         return rabbit.RabbitRuntime.restart(self)
 
 
