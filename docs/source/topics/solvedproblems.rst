@@ -14,6 +14,29 @@ Mysql user denied
 This seems common and can be fixed by running one of the steps at
 http://dev.mysql.com/doc/refman/5.0/en/resetting-permissions.html
 
+Mysql unknown instance
+----------------------
+
+This seems to happen sometimes with the following exception:
+
+::
+
+     ProcessExecutionError: None
+     Command: service mysql restart
+     Exit code: 1
+     Stdout: ''
+     Stderr: 'restart: Unknown instance: \n'
+
+     
+To resolve this the following seems to work:
+
+::
+
+    MYSQL_PKGS=`sudo dpkg --get-selections | grep mysql | cut -f 1`
+    echo $MYSQL_PKGS
+    sudo apt-get remove --purge $MYSQL_PKGS
+
+
 Horizon dead on start
 ---------------------
 
