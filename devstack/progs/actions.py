@@ -212,7 +212,7 @@ class InstallRunner(ActionRunner):
 
 
 class StartRunner(ActionRunner):
-    NAME = 'start'
+    NAME = 'running'
     PREREQ = InstallRunner
 
     def _instance_needs_prereq(self, instance):
@@ -220,7 +220,7 @@ class StartRunner(ActionRunner):
 
     def _run(self, persona, root_dir, component_order, instances):
         self._run_phase(
-            'Configuring runner for {name}',
+            None,
             lambda i: i.configure(),
             None,
             component_order,
@@ -250,7 +250,7 @@ class StartRunner(ActionRunner):
 
 
 class StopRunner(ActionRunner):
-    NAME = 'stop'
+    NAME = 'running'
 
     def _instance_needs_prereq(self, instance):
         return False

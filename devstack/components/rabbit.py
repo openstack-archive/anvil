@@ -19,6 +19,7 @@ from tempfile import TemporaryFile
 from devstack import component as comp
 from devstack import log as logging
 from devstack import shell as sh
+from devstack import utils
 
 LOG = logging.getLogger("devstack.components.rabbit")
 
@@ -36,22 +37,31 @@ class RabbitUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PkgUninstallComponent.__init__(self, *args, **kargs)
         self.runtime = RabbitRuntime(*args, **kargs)
+        (runtime_cls, _) = self.distro.extract_component(self.component_name, 'running')
+        if not runtime_cls:
+            self.runtime = RabbitRuntime(*args, **kargs)
+        else:
+            self.runtime = runtime_cls(*args, **kargs)
 
     def pre_uninstall(self):
         try:
             self.runtime.restart()
-            LOG.info("Attempting to reset the rabbit-mq guest password to \"%s\"", RESET_BASE_PW)
+            LOG.info("Attempting to reset the rabbit-mq guest password to %r", RESET_BASE_PW)
             cmd = self.distro.get_command('rabbit-mq', 'change_password') + [RESET_BASE_PW]
             sh.execute(*cmd, run_as_root=True)
         except IOError:
             LOG.warn(("Could not reset the rabbit-mq password. You might have to manually "
-                      "reset the password to \"%s\" before the next install") % (RESET_BASE_PW))
+                      "reset the password to %r before the next install") % (RESET_BASE_PW))
 
 
 class RabbitInstaller(comp.PkgInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PkgInstallComponent.__init__(self, *args, **kargs)
-        self.runtime = RabbitRuntime(*args, **kargs)
+        (runtime_cls, _) = self.distro.extract_component(self.component_name, 'running')
+        if not runtime_cls:
+            self.runtime = RabbitRuntime(*args, **kargs)
+        else:
+            self.runtime = runtime_cls(*args, **kargs)
 
     def warm_configs(self):
         for pw_key in WARMUP_PWS:
@@ -75,6 +85,7 @@ class RabbitRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
         comp.EmptyRuntime.__init__(self, *args, **kargs)
         self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
+        self.redir_out = utils.make_bool(self.distro.get_command_config('rabbit-mq', 'redirect-outs'))
 
     def start(self):
         if self.status() != comp.STATUS_STARTED:
@@ -113,12 +124,14 @@ class RabbitRuntime(comp.EmptyRuntime):
         # See: https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
         #
         # RHEL seems to have this bug also...
-        #
-        # TODO: Move to distro dir...
-        with TemporaryFile() as f:
+        if self.redir_out:
+            with TemporaryFile() as f:
+                return sh.execute(*cmd, run_as_root=True,
+                            stdout_fh=f, stderr_fh=f,
+                            check_exit_code=check_exit)
+        else:
             return sh.execute(*cmd, run_as_root=True,
-                        stdout_fh=f, stderr_fh=f,
-                        check_exit_code=check_exit)
+                                check_exit_code=check_exit)
 
     def restart(self):
         LOG.info("Restarting rabbit-mq.")

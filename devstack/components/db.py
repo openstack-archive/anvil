@@ -45,7 +45,11 @@ WARMUP_PWS = [('sql', PASSWORD_PROMPT)]
 class DBUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PkgUninstallComponent.__init__(self, *args, **kargs)
-        self.runtime = DBRuntime(*args, **kargs)
+        (runtime_cls, _) = self.distro.extract_component(self.component_name, 'running')
+        if not runtime_cls:
+            self.runtime = DBRuntime(*args, **kargs)
+        else:
+            self.runtime = runtime_cls(*args, **kargs)
 
     def warm_configs(self):
         for key, prompt in WARMUP_PWS:
@@ -81,7 +85,11 @@ class DBInstaller(comp.PkgInstallComponent):
 
     def __init__(self, *args, **kargs):
         comp.PkgInstallComponent.__init__(self, *args, **kargs)
-        self.runtime = DBRuntime(*args, **kargs)
+        (runtime_cls, _) = self.distro.extract_component(self.component_name, 'running')
+        if not runtime_cls:
+            self.runtime = DBRuntime(*args, **kargs)
+        else:
+            self.runtime = runtime_cls(*args, **kargs)
 
     def _get_param_map(self, config_fn):
         # This dictionary will be used for parameter replacement
@@ -233,9 +241,12 @@ def drop_db(cfg, pw_gen, distro, dbname):
         raise NotImplementedError(msg)
 
 
-def create_db(cfg, pw_gen, distro, dbname):
+def create_db(cfg, pw_gen, distro, dbname, utf8=False):
     dbtype = cfg.get("db", "type")
-    createcmd = distro.get_command(dbtype, 'create_db', silent=True)
+    if not utf8:
+        createcmd = distro.get_command(dbtype, 'create_db', silent=True)
+    else:
+        createcmd = distro.get_command(dbtype, 'create_db_utf8', silent=True)
     if createcmd:
         params = dict()
         params['PASSWORD'] = pw_gen.get_password("sql", PASSWORD_PROMPT)
@@ -252,7 +263,7 @@ def create_db(cfg, pw_gen, distro, dbname):
         raise NotImplementedError(msg)
 
 
-def fetch_dbdsn(config, pw_gen, dbname=''):
+def fetch_dbdsn(config, pw_gen, dbname, utf8=False):
     """Return the database connection string, including password."""
     user = config.get("db", "sql_user")
     host = config.get("db", "sql_host")
@@ -267,19 +278,22 @@ def fetch_dbdsn(config, pw_gen, dbname=''):
     if not driver:
         msg = "Unable to fetch a database dsn - no db driver type found"
         raise excp.BadParamException(msg)
-    dsn = driver + "://"
+    dsn = str(driver) + "://"
     if user:
-        dsn += user
+        dsn += str(user)
     if pw:
-        dsn += ":" + pw
+        dsn += ":" + str(pw)
     if user or pw:
         dsn += "@"
-    dsn += host
+    dsn += str(host)
     if port:
         dsn += ":" + str(port)
     if dbname:
-        dsn += "/" + dbname
+        dsn += "/" + str(dbname)
+        if utf8:
+            # WHY U NOT SET EVERYWHERE...
+            dsn += "?charset=utf8"
     else:
         dsn += "/"
-    LOG.debug("For database [%s] fetched dsn [%s]" % (dbname, dsn))
+    LOG.debug("For database %r fetched dsn %r" % (dbname, dsn))
     return dsn

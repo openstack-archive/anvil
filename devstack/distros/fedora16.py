@@ -30,6 +30,10 @@ LOG = logging.getLogger(__name__)
 LIBVIRT_POLICY_FN = "/etc/polkit-1/localauthority/50-local.d/50-libvirt-access.pkla"
 
 
+class RabbitRuntime(rhel6.RabbitRuntime):
+    pass
+
+
 class DBInstaller(rhel6.DBInstaller):
     pass
 

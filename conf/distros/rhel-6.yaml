@@ -22,6 +22,8 @@ commands:
     mysql:
         # NOTE: we aren't stopping any sql injection...
         create_db: mysql --user=%USER% --password=%PASSWORD% -e 
+          "CREATE DATABASE %DB%;"
+        create_db_utf8: mysql --user=%USER% --password=%PASSWORD% -e 
           "CREATE DATABASE %DB% CHARACTER SET utf8;"
         drop_db: mysql --user=%USER% --password=%PASSWORD% -e 
           "DROP DATABASE IF EXISTS %DB%;"
@@ -43,12 +45,12 @@ commands:
         start: service rabbitmq-server start
         status: service rabbitmq-server status
         stop: service rabbitmq-server stop
+        redirect-outs: true
 components:
     db:
         action_classes:
             install: devstack.distros.rhel6:DBInstaller
-            start: devstack.components.db:DBRuntime
-            stop: devstack.components.db:DBRuntime
+            running: devstack.components.db:DBRuntime
             uninstall: devstack.components.db:DBUninstaller
         packages:
         -   name: mysql
@@ -60,8 +62,7 @@ components:
     general:
         action_classes:
             install: devstack.components.pkglist:Installer
-            start: devstack.component:EmptyRuntime
-            stop: devstack.component:EmptyRuntime
+            running: devstack.component:EmptyRuntime
             uninstall: devstack.components.pkglist:Uninstaller
         packages:
         -   name: coreutils
@@ -171,8 +172,7 @@ components:
     glance:
         action_classes:
             install: devstack.components.glance:GlanceInstaller
-            start: devstack.components.glance:GlanceRuntime
-            stop: devstack.components.glance:GlanceRuntime
+            running: devstack.components.glance:GlanceRuntime
             uninstall: devstack.components.glance:GlanceUninstaller
         packages:
         -   name: MySQL-python
@@ -226,8 +226,7 @@ components:
     horizon:
         action_classes:
             install: devstack.distros.rhel6:HorizonInstaller
-            start: devstack.components.horizon:HorizonRuntime
-            stop: devstack.components.horizon:HorizonRuntime
+            running: devstack.components.horizon:HorizonRuntime
             uninstall: devstack.components.horizon:HorizonUninstaller
         packages:
         -   name: httpd
@@ -295,8 +294,7 @@ components:
     keystone:
         action_classes:
             install: devstack.components.keystone:KeystoneInstaller
-            start: devstack.components.keystone:KeystoneRuntime
-            stop: devstack.components.keystone:KeystoneRuntime
+            running: devstack.components.keystone:KeystoneRuntime
             uninstall: devstack.components.keystone:KeystoneUninstaller
         packages:
         -   name: MySQL-python
@@ -373,8 +371,7 @@ components:
     keystone-client:
         action_classes:
             install: devstack.components.keystone_client:KeyStoneClientInstaller
-            start: devstack.components.keystone_client:KeyStoneClientRuntime
-            stop: devstack.components.keystone_client:KeyStoneClientRuntime
+            running: devstack.components.keystone_client:KeyStoneClientRuntime
             uninstall: devstack.components.keystone_client:KeyStoneClientUninstaller
         packages:
         -   meta:
@@ -390,14 +387,12 @@ components:
     melange:
         action_classes:
             install: devstack.components.melange:MelangeInstaller
-            start: devstack.components.melange:MelangeRuntime
-            stop: devstack.components.melange:MelangeRuntime
+            running: devstack.components.melange:MelangeRuntime
             uninstall: devstack.components.melange:MelangeUninstaller
     no-vnc:
         action_classes:
             install: devstack.components.novnc:NoVNCInstaller
-            start: devstack.components.novnc:NoVNCRuntime
-            stop: devstack.components.novnc:NoVNCRuntime
+            running: devstack.components.novnc:NoVNCRuntime
             uninstall: devstack.components.novnc:NoVNCUninstaller
         pips:
         -   name: numpy
@@ -405,8 +400,7 @@ components:
     nova:
         action_classes:
             install: devstack.distros.rhel6:NovaInstaller
-            start: devstack.components.nova:NovaRuntime
-            stop: devstack.components.nova:NovaRuntime
+            running: devstack.components.nova:NovaRuntime
             uninstall: devstack.components.nova:NovaUninstaller
         packages:
         -   name: MySQL-python
@@ -574,8 +568,7 @@ components:
     nova-client:
         action_classes:
             install: devstack.components.nova_client:NovaClientInstaller
-            start: devstack.components.nova_client:NovaClientRuntime
-            stop: devstack.components.nova_client:NovaClientRuntime
+            running: devstack.components.nova_client:NovaClientRuntime
             uninstall: devstack.components.nova_client:NovaClientUninstaller
         packages:
         -   meta:
@@ -591,8 +584,7 @@ components:
     quantum:
         action_classes:
             install: devstack.components.quantum:QuantumInstaller
-            start: devstack.components.quantum:QuantumRuntime
-            stop: devstack.components.quantum:QuantumRuntime
+            running: devstack.components.quantum:QuantumRuntime
             uninstall: devstack.components.quantum:QuantumUninstaller
         packages:
         -   name: libxml2-python
@@ -629,8 +621,7 @@ components:
     quantum-client:
         action_classes:
             install: devstack.components.quantum_client:QuantumClientInstaller
-            start: devstack.components.quantum_client:QuantumClientRuntime
-            stop: devstack.components.quantum_client:QuantumClientRuntime
+            running: devstack.components.quantum_client:QuantumClientRuntime
             uninstall: devstack.components.quantum_client:QuantumClientUninstaller
         packages:
         -   meta:
@@ -641,8 +632,7 @@ components:
     rabbit-mq:
         action_classes:
             install: devstack.components.rabbit:RabbitInstaller
-            start: devstack.components.rabbit:RabbitRuntime
-            stop: devstack.components.rabbit:RabbitRuntime
+            running: devstack.distros.rhel6:RabbitRuntime
             uninstall: devstack.components.rabbit:RabbitUninstaller
         packages:
         -   meta:
@@ -666,8 +656,7 @@ components:
     swift:
         action_classes:
             install: devstack.components.swift:SwiftInstaller
-            start: devstack.components.swift:SwiftRuntime
-            stop: devstack.components.swift:SwiftRuntime
+            running: devstack.components.swift:SwiftRuntime
             uninstall: devstack.components.swift:SwiftUninstaller
 ...
 

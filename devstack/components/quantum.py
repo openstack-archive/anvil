@@ -115,7 +115,7 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
                 config.readfp(stream)
                 db_dsn = config.get("database", "sql_connection")
                 if db_dsn:
-                    generated_dsn = db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
+                    generated_dsn = db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME, utf8=True)
                     if generated_dsn != db_dsn:
                         config.set("database", "sql_connection", generated_dsn)
                         with io.BytesIO() as outputstream:
@@ -155,7 +155,7 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
             return
         LOG.info("Fixing up database named %r", DB_NAME)
         db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
-        db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
+        db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME, utf8=True)
 
     def _get_source_config(self, config_fn):
         if config_fn == PLUGIN_CONF:

@@ -123,7 +123,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
     def _setup_db(self):
         LOG.info("Fixing up database named %r", DB_NAME)
         db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
-        db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
+        db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME, utf8=True)
 
     def _setup_initer(self):
         LOG.info("Configuring keystone initializer template %r", MANAGE_DATA_CONF)
@@ -193,7 +193,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         mp['BIN_DIR'] = self.bin_dir
         mp['CONFIG_FILE'] = sh.joinpths(self.cfg_dir, ROOT_CONF)
         if config_fn == ROOT_CONF:
-            mp['SQL_CONN'] = db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
+            mp['SQL_CONN'] = db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME, utf8=True)
             mp['KEYSTONE_DIR'] = self.app_dir
             mp.update(get_shared_params(self.cfg, self.pw_gen))
         elif config_fn == MANAGE_DATA_CONF:
