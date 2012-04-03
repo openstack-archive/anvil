@@ -40,17 +40,17 @@ class Distro(object):
         input_files = glob.glob(sh.joinpths(path, '*.yaml'))
         if not input_files:
             raise RuntimeError(
-                'Did not find any distro definition files in %s' %
+                'Did not find any distro definition files in %r' %
                 path)
         for fn in input_files:
             cls_kvs = None
             filename = sh.abspth(fn)
-            LOG.audit("Attempting to load distro definition from [%s]" % (filename))
+            LOG.audit("Attempting to load distro definition from %r" % (filename))
             try:
                 with open(filename, 'r') as f:
                     cls_kvs = yaml.load(f)
             except (IOError, yaml.YAMLError) as err:
-                LOG.warning('Could not load distro definition from %s: %s',
+                LOG.warning('Could not load distro definition from %r: %s',
                             filename, err)
             if cls_kvs is not None:
                 try:
@@ -66,15 +66,15 @@ class Distro(object):
         plt = platform.platform()
         distname = platform.linux_distribution()[0]
         if not distname:
-            raise RuntimeError('Unsupported platform %s' % plt)
-        LOG.debug('Looking for distro data for %s (%s)', plt, distname)
+            raise RuntimeError('Unsupported linux (?) platform %r' % plt)
+        LOG.debug('Looking for distro data for %r (%s)', plt, distname)
         for p in cls.load_all():
             if p.supports_distro(plt):
-                LOG.info('Using distro "%s" for platform "%s"', p.name, plt)
+                LOG.info('Using distro %r for platform %r', p.name, plt)
                 return p
         else:
             raise RuntimeError(
-                'No platform configuration data for %s (%s)' %
+                'No platform configuration data for %r (%s)' %
                 (plt, distname))
 
     @decorators.log_debug
