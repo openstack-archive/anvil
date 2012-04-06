@@ -47,6 +47,6 @@ Please either use `launchpad’s email system`_ or find us on ``irc.freenode.net
 
 .. _apache version 2.0 license: https://github.com/yahoo/Openstack-DevstackPy/blob/master/LICENSE
 .. _github’s issue tracking system: https://github.com/yahoo/Openstack-Devstackpy/issues
-.. _launchpad’s issue tracking system: http://launchpad.net/~devstackpy
+.. _launchpad’s issue tracking system: http://launchpad.net/devstackpy
 .. _launchpad’s email system: https://launchpad.net/%7Edevstackpy/+contactuser
 .. _hacking guidelines: https://github.com/yahoo/Openstack-DevstackPy/blob/master/HACKING.md
