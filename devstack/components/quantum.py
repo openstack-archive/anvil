@@ -99,9 +99,9 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
             with io.BytesIO(contents) as stream:
                 config = cfg.IgnoreMissingConfigParser(cs=False)
                 config.readfp(stream)
-                provider = config.get("plugin", "provider")
+                provider = config.get("PLUGIN", "provider")
                 if provider != V_PROVIDER:
-                    config.set("plugin", "provider", V_PROVIDER)
+                    config.set("PLUGIN", "provider", V_PROVIDER)
                     with io.BytesIO() as outputstream:
                         config.write(outputstream)
                         outputstream.flush()
