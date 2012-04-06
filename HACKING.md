@@ -48,7 +48,7 @@ To run our limited set of tests (WIP) use the following command:
   
 ## Documentation
 
-Documentation should all be written in [markdown]. Although github does support other formats it seems better just to stabilize on one.
+Documentation should all be written in [markdown] or [rst]. Although github does support other formats it seems better just to stabilize on one.
 
 ## Style Commandments
 
@@ -78,5 +78,5 @@ Documentation should all be written in [markdown]. Although github does support 
 [pep8]: http://www.python.org/dev/peps/pep-0008/
 [pylint]: http://pypi.python.org/pypi/pylint
 [markdown]: http://daringfireball.net/projects/markdown/
-
+[rst]: http://docutils.sourceforge.net/docs/user/rst/quickstart.html
 
