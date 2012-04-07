@@ -14,7 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-DEVSTACK_VERSION = ['2012', '1']
+DEVSTACK_VERSION = ['2012', '4']
 YEAR, COUNT = DEVSTACK_VERSION
 FINAL = False  # May never be final ;-)
 
@@ -28,11 +28,3 @@ def version_string():
         return canonical_version_string()
     else:
         return '%s-dev' % (canonical_version_string(),)
-
-
-def vcs_version_string():
-    return 'LOCALBRANCH:LOCALREVISION'
-
-
-def version_string_with_vcs():
-    return '%s-%s' % (canonical_version_string(), vcs_version_string())
