@@ -27,8 +27,3 @@ def make_id(section, option):
     if option is not None:
         joinwhat.append(str(option))
     return "/".join(joinwhat)
-
-
-def fetch_run_type(config):
-    run_type = config.getdefaulted("default", "run_type", settings.RUN_TYPE_DEF)
-    return run_type.upper()

@@ -6,11 +6,10 @@ if [ "$(id -u)" != "0" ]; then
 fi
 
 # This should follow what is on the following website.
-URL="https://github.com/yahoo/Openstack-DevstackPy/wiki/Simple-Setup"
 ME=`basename $0`
 
 if [[ `cat /etc/issue | grep -i "ubuntu"` ]] ; then
-    PKGS="git python-pip python-dev python-yaml gcc pep8 pylint python-progressbar python"
+    PKGS="gcc git pep8 pylint python python-dev python-iniparse python-pip python-progressbar python-yaml"
     PIPS="netifaces termcolor"
     APT="apt-get -y -qq"
     PIP="pip -q"
@@ -19,12 +18,11 @@ if [[ `cat /etc/issue | grep -i "ubuntu"` ]] ; then
     echo "Installing packages: $PKGS"
     $APT install $PKGS
     echo "Installing pypi packages: $PIPS"
-    $PIP install netifaces termcolor
-    echo "DEVSTACKpy for ubuntu is ready to rock & roll."
+    $PIP install netifaces termcolor --upgrade
 elif [[ `cat /etc/issue | grep -i "red hat enterprise.*release.*6.*"` ]] ; then
     EPEL_RPM="epel-release-6-5.noarch.rpm"
-    PKGS="python-pip gcc python-netifaces git python-pep8 pylint python-progressbar python PyYAML"
-    PIPS="termcolor"
+    PKGS="gcc git pylint python python-netifaces python-pep8 python-pip python-progressbar PyYAML"
+    PIPS="termcolor iniparse==0.4"
     PIP="pip-python -q"
     YUM="yum install -q -y"
     WGET="wget -q"
@@ -38,10 +36,9 @@ elif [[ `cat /etc/issue | grep -i "red hat enterprise.*release.*6.*"` ]] ; then
     echo "Installing packages: $PKGS"
     $YUM install $PKGS
     echo "Installing pypi packages: $PIPS"
-    $PIP install $PIPS
-    echo "DEVSTACKpy for RHEL 6 is ready to rock & roll."
+    $PIP install $PIPS --upgrade
 elif [[ `cat /etc/issue | grep -i "fedora.*release.*16"` ]] ; then
-    PKGS="python-pip gcc python-netifaces git python-pep8 pylint python python-progressbar PyYAML"
+    PKGS="gcc git pylint python python-netifaces python-pep8 python-pip python-progressbar PyYAML python-iniparse"
     PIPS="termcolor"
     PIP="pip-python -q"
     YUM="yum install -q -y"
@@ -50,11 +47,9 @@ elif [[ `cat /etc/issue | grep -i "fedora.*release.*16"` ]] ; then
     echo "Installing packages: $PKGS"
     $YUM install $PKGS
     echo "Installing pypi packages: $PIPS"
-    $PIP install $PIPS
-    echo "DEVSTACKpy for Fedora 16 is ready to rock & roll."
+    $PIP install $PIPS --upgrade
 else
     echo "DEVSTACKpy '$ME' is being ran on an unknown distribution."
-    echo "Please update '$URL' when you get it to run. Much appreciated!"
 fi
 
 

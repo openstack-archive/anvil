@@ -72,7 +72,7 @@ class ScreenRunner(base.RunnerBase):
     def __init__(self, cfg, component_name, trace_dir):
         base.RunnerBase.__init__(self, cfg, component_name, trace_dir)
         self.socket_dir = sh.joinpths(tempfile.gettempdir(), SCREEN_SOCKET_DIR_NAME)
-        self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
+        self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
 
     def stop(self, app_name):
         trace_fn = tr.trace_fn(self.trace_dir, SCREEN_TEMPL % (app_name))

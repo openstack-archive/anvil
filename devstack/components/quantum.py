@@ -28,7 +28,6 @@ LOG = logging.getLogger("devstack.components.quantum")
 
 # Openvswitch special settings
 VSWITCH_PLUGIN = 'openvswitch'
-V_PROVIDER = "quantum.plugins.openvswitch.ovs_quantum_plugin.OVSQuantumPlugin"
 
 # Config files (some only modified if running as openvswitch)
 PLUGIN_CONF = "plugins.ini"
@@ -95,34 +94,20 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
     def _config_adjust(self, contents, config_fn):
         if config_fn == PLUGIN_CONF and self.q_vswitch_service:
             # Need to fix the "Quantum plugin provider module"
-            newcontents = contents
             with io.BytesIO(contents) as stream:
-                config = cfg.IgnoreMissingConfigParser(cs=False)
+                config = cfg.IgnoreMissingConfigParser()
                 config.readfp(stream)
-                provider = config.get("PLUGIN", "provider")
-                if provider != V_PROVIDER:
-                    config.set("PLUGIN", "provider", V_PROVIDER)
-                    with io.BytesIO() as outputstream:
-                        config.write(outputstream)
-                        outputstream.flush()
-                        newcontents = cfg.add_header(config_fn, outputstream.getvalue())
-            return newcontents
+                config.set("plugin", "provider", "quantum.plugins.openvswitch.ovs_quantum_plugin.OVSQuantumPlugin")
+                contents = config.stringify(config_fn)
+            return contents
         elif config_fn == AGENT_CONF and self.q_vswitch_agent:
             # Need to adjust the sql connection
-            newcontents = contents
             with io.BytesIO(contents) as stream:
-                config = cfg.IgnoreMissingConfigParser(cs=False)
+                config = cfg.IgnoreMissingConfigParser()
                 config.readfp(stream)
-                db_dsn = config.get("database", "sql_connection")
-                if db_dsn:
-                    generated_dsn = db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME, utf8=True)
-                    if generated_dsn != db_dsn:
-                        config.set("database", "sql_connection", generated_dsn)
-                        with io.BytesIO() as outputstream:
-                            config.write(outputstream)
-                            outputstream.flush()
-                            newcontents = cfg.add_header(config_fn, outputstream.getvalue())
-            return newcontents
+                config.set("database", "sql_connection", db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME, utf8=True))
+                contents = config.stringify(config_fn)
+            return contents
         else:
             return comp.PkgInstallComponent._config_adjust(self, contents, config_fn)
 

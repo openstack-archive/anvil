@@ -14,8 +14,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import io
 import re
-import ConfigParser
+
+import iniparse
 
 from devstack import cfg_helpers
 from devstack import date
@@ -32,58 +34,74 @@ SUB_MATCH = re.compile(r"(?:\$\(([\w\d]+):([\w\d]+))\)")
 CACHE_MSG = "(value will now be internally cached)"
 
 
-def get_config(cfg_fn=None, cfg_cls=None):
+def get_config(cfg_fn=None):
     if not cfg_fn:
         cfg_fn = sh.canon_path(settings.STACK_CONFIG_LOCATION)
-    if not cfg_cls:
-        cfg_cls = StackConfigParser
-    config_instance = cfg_cls()
-    config_instance.read(cfg_fn)
-    return config_instance
+    return StackConfigParser(fns=[cfg_fn])
 
 
-class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
+class IgnoreMissingConfigParser(iniparse.RawConfigParser):
     DEF_INT = 0
     DEF_FLOAT = 0.0
     DEF_BOOLEAN = False
     DEF_BASE = None
 
-    def __init__(self, cs=True):
-        ConfigParser.RawConfigParser.__init__(self)
+    def __init__(self, cs=True, fns=None):
+        iniparse.RawConfigParser.__init__(self)
         if cs:
             # Make option names case sensitive
             # See: http://docs.python.org/library/configparser.html#ConfigParser.RawConfigParser.optionxform
             self.optionxform = str
+        if fns:
+            for f in fns:
+                self.read(f)
 
     def get(self, section, option):
         value = self.DEF_BASE
         try:
-            value = ConfigParser.RawConfigParser.get(self, section, option)
-        except ConfigParser.NoSectionError:
+            value = iniparse.RawConfigParser.get(self, section, option)
+        except iniparse.NoSectionError:
             pass
-        except ConfigParser.NoOptionError:
+        except iniparse.NoOptionError:
             pass
         return value
+
+    def set(self, section, option, value):
+        if not self.has_section(section) and section.lower() != 'default':
+            self.add_section(section)
+        iniparse.RawConfigParser.set(self, section, option, value)
+
+    def remove_option(self, section, option):
+        if self.has_option(section, option):
+            iniparse.RawConfigParser.remove_option(self, section, option)
 
     def getboolean(self, section, option):
         if not self.has_option(section, option):
             return self.DEF_BOOLEAN
-        return ConfigParser.RawConfigParser.getboolean(self, section, option)
+        return iniparse.RawConfigParser.getboolean(self, section, option)
 
     def getfloat(self, section, option):
         if not self.has_option(section, option):
             return self.DEF_FLOAT
-        return ConfigParser.RawConfigParser.getfloat(self, section, option)
+        return iniparse.RawConfigParser.getfloat(self, section, option)
 
     def getint(self, section, option):
         if not self.has_option(section, option):
             return self.DEF_INT
-        return ConfigParser.RawConfigParser.getint(self, section, option)
+        return iniparse.RawConfigParser.getint(self, section, option)
+    
+    def stringify(self, fn=None):
+        contents = ''
+        with io.BytesIO() as outputstream:
+            self.write(outputstream)
+            outputstream.flush()
+            contents = add_header(fn, outputstream.getvalue())
+        return contents
 
 
 class StackConfigParser(IgnoreMissingConfigParser):
-    def __init__(self, cs=True):
-        IgnoreMissingConfigParser.__init__(self, cs)
+    def __init__(self, cs=True, fns=None):
+        IgnoreMissingConfigParser.__init__(self, cs, fns)
         self.configs_fetched = dict()
 
     def _resolve_value(self, section, option, value_gotten):
@@ -117,8 +135,6 @@ class StackConfigParser(IgnoreMissingConfigParser):
         key = cfg_helpers.make_id(section, option)
         LOG.audit("Setting config value '%s' for param %r" % (value, key))
         self.configs_fetched[key] = value
-        if not self.has_section(section):
-            self.add_section(section)
         IgnoreMissingConfigParser.set(self, section, option, value)
 
     def _resolve_replacements(self, value):
@@ -160,11 +176,11 @@ class StackConfigParser(IgnoreMissingConfigParser):
 
 def add_header(fn, contents):
     lines = list()
+    if not fn:
+        fn = "???"
     lines.append('# Adjusted source file %s' % (fn.strip()))
     lines.append("# On %s" % (date.rcf8222date()))
     lines.append("# By user %s, group %s" % (sh.getuser(), sh.getgroupname()))
-    lines.append("# Comments may have been removed (TODO: darn python config writer)")
-    # TODO Maybe use https://code.google.com/p/iniparse/ which seems to preserve comments!
     lines.append("")
     if contents:
         lines.append(contents)

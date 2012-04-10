@@ -99,19 +99,13 @@ class MelangeInstaller(comp.PythonInstallComponent):
 
     def _config_adjust(self, contents, config_fn):
         if config_fn == ROOT_CONF:
-            newcontents = contents
             with io.BytesIO(contents) as stream:
-                config = cfg.IgnoreMissingConfigParser(cs=False)
+                config = cfg.IgnoreMissingConfigParser()
                 config.readfp(stream)
-                db_dsn = db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME, utf8=True)
-                old_dbsn = config.get('default', 'sql_connection')
-                if db_dsn != old_dbsn:
-                    config.set('default', 'sql_connection', db_dsn)
-                    with io.BytesIO() as outputstream:
-                        config.write(outputstream)
-                        outputstream.flush()
-                        newcontents = cfg.add_header(config_fn, outputstream.getvalue())
-            contents = newcontents
+                config.set('DEFAULT', 'sql_connection', db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME, utf8=True))
+                config.set('DEFAULT', 'verbose', True)
+                config.set('DEFAULT', 'debug', True)
+                contents = config.stringify(config_fn)
         return contents
 
     def _get_source_config(self, config_fn):
@@ -133,7 +127,7 @@ class MelangeRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
-        self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
+        self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
 
     def _get_apps_to_start(self):
         apps = list()

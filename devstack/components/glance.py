@@ -33,16 +33,11 @@ API_CONF = "glance-api.conf"
 REG_CONF = "glance-registry.conf"
 API_PASTE_CONF = 'glance-api-paste.ini'
 REG_PASTE_CONF = 'glance-registry-paste.ini'
-SCRUB_CONF = 'glance-scrubber.conf'
-SCRUB_PASTE_CONF = 'glance-scrubber-paste.ini'
 LOGGING_CONF = "logging.conf"
 LOGGING_SOURCE_FN = 'logging.cnf.sample'
 POLICY_JSON = 'policy.json'
 CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF,
-            REG_PASTE_CONF, POLICY_JSON, LOGGING_CONF,
-            SCRUB_CONF, SCRUB_PASTE_CONF]
-READ_CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF,
-                REG_PASTE_CONF, SCRUB_CONF, SCRUB_PASTE_CONF]
+            REG_PASTE_CONF, POLICY_JSON, LOGGING_CONF]
 
 # Reg, api, scrub are here as possible subsystems
 GAPI = "api"
@@ -109,85 +104,87 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
         db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME, utf8=True)
 
     def _get_source_config(self, config_fn):
-        if config_fn == POLICY_JSON:
-            # FIXME, maybe we shouldn't be sucking this from the checkout??
-            fn = sh.joinpths(self.app_dir, 'etc', POLICY_JSON)
-            contents = sh.load_file(fn)
-            return (fn, contents)
-        elif config_fn == LOGGING_CONF:
-            # FIXME, maybe we shouldn't be sucking this from the checkout??
-            fn = sh.joinpths(self.app_dir, 'etc', LOGGING_SOURCE_FN)
-            contents = sh.load_file(fn)
-            return (fn, contents)
-        return comp.PythonInstallComponent._get_source_config(self, config_fn)
+        real_fn = config_fn
+        if config_fn == LOGGING_CONF:
+            real_fn = LOGGING_SOURCE_FN
+        fn = sh.joinpths(self.app_dir, 'etc', real_fn)
+        return (fn, sh.load_file(fn))
+
+    def _config_adjust_registry(self, contents, fn):
+        with io.BytesIO(contents) as stream:
+            config = cfg.IgnoreMissingConfigParser()
+            config.readfp(stream)
+            config.set('DEFAULT', 'debug', True)
+            config.set('DEFAULT', 'verbose', True)
+            config.remove_option('DEFAULT', 'log_file')
+            config.set('DEFAULT', 'sql_connection',
+                                db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME, utf8=True))
+            config.set('paste_deploy', 'flavor', 'keystone')
+            return config.stringify(fn)
+        return contents
+
+    def _config_adjust_paste(self, contents, fn):
+        params = keystone.get_shared_params(self.cfg, self.pw_gen, 'glance')
+        with io.BytesIO(contents) as stream:
+            config = cfg.IgnoreMissingConfigParser()
+            config.readfp(stream)
+            config.set('filter:authtoken', 'auth_host', params['KEYSTONE_AUTH_HOST'])
+            config.set('filter:authtoken', 'auth_port', params['KEYSTONE_AUTH_PORT'])
+            config.set('filter:authtoken', 'auth_protocol', params['KEYSTONE_AUTH_PROTOCOL'])
+            config.set('filter:authtoken', 'auth_uri', params['SERVICE_ENDPOINT'])
+            config.set('filter:authtoken', 'admin_tenant_name', params['SERVICE_TENANT_NAME'])
+            config.set('filter:authtoken', 'admin_user', params['SERVICE_USERNAME'])
+            config.set('filter:authtoken', 'admin_password', params['SERVICE_PASSWORD'])
+            config.set('filter:authtoken', 'service_host', params['KEYSTONE_SERVICE_HOST'])
+            config.set('filter:authtoken', 'service_port', params['KEYSTONE_SERVICE_PORT'])
+            config.set('filter:authtoken', 'service_protocol', params['KEYSTONE_SERVICE_PROTOCOL'])
+            contents = config.stringify(fn)
+        return contents
+
+    def _config_adjust_api(self, contents, fn):
+        with io.BytesIO(contents) as stream:
+            config = cfg.IgnoreMissingConfigParser()
+            config.readfp(stream)
+            img_store_dir = self._get_image_dir()
+            config.set('DEFAULT', 'debug', True)
+            config.set('DEFAULT', 'verbose', True)
+            config.set('DEFAULT', 'default_store', 'file')
+            config.set('DEFAULT', 'filesystem_store_datadir', img_store_dir)
+            config.remove_option('DEFAULT', 'log_file')
+            config.set('paste_deploy', 'flavor', 'keystone')
+            LOG.info("Ensuring file system store directory %r exists and is empty." % (img_store_dir))
+            sh.deldir(img_store_dir)
+            self.tracewriter.dirs_made(*sh.mkdirslist(img_store_dir))
+            return config.stringify(fn)
+
+    def _config_param_replace(self, config_fn, contents, parameters):
+        if config_fn in [REG_CONF, REG_PASTE_CONF, API_CONF, API_PASTE_CONF]:
+            return contents
+        else:
+            return comp.PythonInstallComponent._config_param_replace(self, config_fn, contents, parameters)
 
     def _config_adjust(self, contents, name):
-        # Even bother opening??
-        if name not in READ_CONFIGS:
+        if name == REG_CONF:
+            return self._config_adjust_registry(contents, name)
+        elif name == REG_PASTE_CONF:
+            return self._config_adjust_paste(contents, name)
+        elif name == API_CONF:
+            return self._config_adjust_api(contents, name)
+        elif name == API_PASTE_CONF:
+            return self._config_adjust_paste(contents, name)
+        else:
             return contents
-        # Use config parser and
-        # then extract known configs that
-        # will need locations/directories/files made (or touched)...
-        with io.BytesIO(contents) as stream:
-            config = cfg.IgnoreMissingConfigParser(cs=False)
-            config.readfp(stream)
-            if config.getboolean('default', 'image_cache_enabled'):
-                cache_dir = config.get('default', "image_cache_datadir")
-                if cache_dir:
-                    LOG.info("Ensuring image cache data directory %r exists (and is empty)" % (cache_dir))
-                    # Destroy then recreate the image cache directory
-                    sh.deldir(cache_dir)
-                    self.tracewriter.dirs_made(*sh.mkdirslist(cache_dir))
-            if config.get('default', 'default_store') == 'file':
-                file_dir = config.get('default', 'filesystem_store_datadir')
-                if file_dir:
-                    LOG.info("Ensuring file system store directory %r exists and is empty." % (file_dir))
-                    # Delete existing images
-                    # and recreate the image directory
-                    sh.deldir(file_dir)
-                    self.tracewriter.dirs_made(*sh.mkdirslist(file_dir))
-            log_filename = config.get('default', 'log_file')
-            if log_filename:
-                LOG.info("Ensuring log file %r exists and is empty." % (log_filename))
-                log_dir = sh.dirname(log_filename)
-                if log_dir:
-                    LOG.info("Ensuring log directory %r exists." % (log_dir))
-                    self.tracewriter.dirs_made(*sh.mkdirslist(log_dir))
-                # Destroy then recreate it (the log file)
-                sh.unlink(log_filename)
-                self.tracewriter.file_touched(sh.touch_file(log_filename))
-            if config.getboolean('default', 'delayed_delete'):
-                data_dir = config.get('default', 'scrubber_datadir')
-                if data_dir:
-                    LOG.info("Ensuring scrubber data dir %r exists and is empty." % (data_dir))
-                    # Destroy then recreate the scrubber data directory
-                    sh.deldir(data_dir)
-                    self.tracewriter.dirs_made(*sh.mkdirslist(data_dir))
-        # Nothing modified so just return the original
-        return contents
 
     def _get_image_dir(self):
         # This might be changed often so make it a function
         return sh.joinpths(self.component_dir, 'images')
-
-    def _get_param_map(self, config_fn):
-        # This dict will be used to fill in the configuration
-        # params with actual values
-        mp = comp.PythonInstallComponent._get_param_map(self, config_fn)
-        mp['IMG_DIR'] = self._get_image_dir()
-        mp['SYSLOG'] = self.cfg.getboolean("default", "syslog")
-        mp['SQL_CONN'] = db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME, utf8=True)
-        mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
-        mp['HOST_IP'] = self.cfg.get('host', 'ip')
-        mp.update(keystone.get_shared_params(self.cfg, self.pw_gen, 'glance'))
-        return mp
 
 
 class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
-        self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
+        self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
 
     def _get_apps_to_start(self):
         apps = list()
