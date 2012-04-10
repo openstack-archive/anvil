@@ -14,11 +14,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import io
 import os
 import weakref
 
 from urlparse import urlunparse
 
+from devstack import cfg
 from devstack import component as comp
 from devstack import date
 from devstack import exceptions
@@ -134,7 +136,7 @@ FIRE_MANAGER_TEMPLATE = 'nova.virt.libvirt.firewall.%s'
 
 # Sensible defaults
 DEF_IMAGE_SERVICE = 'nova.image.glance.GlanceImageService'
-DEF_SCHEDULER = 'nova.scheduler.simple.SimpleScheduler'
+DEF_SCHEDULER = 'nova.scheduler.filter_scheduler.FilterScheduler'
 DEF_GLANCE_PORT = 9292
 DEF_GLANCE_SERVER = "%s" + ":%s" % (DEF_GLANCE_PORT)
 DEF_INSTANCE_PREFIX = 'instance-'
@@ -332,15 +334,54 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         self.tracewriter.dirs_made(*sh.mkdirslist(sh.dirname(conf_fn)))
         self.tracewriter.cfg_file_written(sh.write_file(conf_fn, nova_conf_contents))
 
+    def _config_param_replace(self, config_fn, contents, parameters):
+        if config_fn in [PASTE_CONF, LOGGING_CONF]:
+            return contents
+        else:
+            return comp.PythonInstallComponent._config_param_replace(self, config_fn, contents, parameters)
+
     def _get_source_config(self, config_fn):
         if config_fn == PASTE_CONF:
-            return comp.PythonInstallComponent._get_source_config(self, PASTE_SOURCE_FN)
-        if config_fn == LOGGING_CONF:
+            config_fn = PASTE_SOURCE_FN
+        elif config_fn == LOGGING_CONF:
             config_fn = LOGGING_SOURCE_FN
-        # FIXME, maybe we shouldn't be sucking these from checked out code?
         fn = sh.joinpths(self.app_dir, 'etc', "nova", config_fn)
-        contents = sh.load_file(fn)
-        return (fn, contents)
+        return (fn, sh.load_file(fn))
+
+    def _config_adjust_paste(self, contents, fn):
+        params = keystone.get_shared_params(self.cfg, self.pw_gen, 'nova')
+        with io.BytesIO(contents) as stream:
+            config = cfg.IgnoreMissingConfigParser()
+            config.readfp(stream)
+            config.set('filter:authtoken', 'auth_host', params['KEYSTONE_AUTH_HOST'])
+            config.set('filter:authtoken', 'auth_port', params['KEYSTONE_AUTH_PORT'])
+            config.set('filter:authtoken', 'auth_protocol', params['KEYSTONE_AUTH_PROTOCOL'])
+            config.set('filter:authtoken', 'auth_uri', params['SERVICE_ENDPOINT'])
+            config.set('filter:authtoken', 'admin_tenant_name', params['SERVICE_TENANT_NAME'])
+            config.set('filter:authtoken', 'admin_user', params['SERVICE_USERNAME'])
+            config.set('filter:authtoken', 'admin_password', params['SERVICE_PASSWORD'])
+            config.set('filter:authtoken', 'service_host', params['KEYSTONE_SERVICE_HOST'])
+            config.set('filter:authtoken', 'service_port', params['KEYSTONE_SERVICE_PORT'])
+            config.set('filter:authtoken', 'service_protocol', params['KEYSTONE_SERVICE_PROTOCOL'])
+            contents = config.stringify(fn)
+        return contents
+
+    def _config_adjust_logging(self, contents, fn):
+        with io.BytesIO(contents) as stream:
+            config = cfg.IgnoreMissingConfigParser()
+            config.readfp(stream)
+            config.set('logger_root', 'level', 'DEBUG')
+            config.set('logger_root', 'handlers', "stdout,")
+            contents = config.stringify(fn)
+        return contents
+
+    def _config_adjust(self, contents, name):
+        if name == PASTE_CONF:
+            return self._config_adjust_paste(contents, name)
+        elif name == LOGGING_CONF:
+            return self._config_adjust_logging(contents, name)
+        else:
+            return contents
 
     def _get_param_map(self, config_fn):
         mp = comp.PythonInstallComponent._get_param_map(self, config_fn)
@@ -352,8 +393,6 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
             mp['TEST_FLOATING_POOL'] = self.cfg.getdefaulted('nova', 'test_floating_pool', 'test')
             mp['FIXED_NETWORK_SIZE'] = self.cfg.getdefaulted('nova', 'fixed_network_size', '256')
             mp['FIXED_RANGE'] = self.cfg.getdefaulted('nova', 'fixed_range', '10.0.0.0/24')
-        else:
-            mp.update(keystone.get_shared_params(self.cfg, self.pw_gen, 'nova'))
         return mp
 
     def configure(self):
@@ -367,7 +406,7 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
-        self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
+        self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
         self.virsh = lv.Virsh(self.cfg, self.distro)
 
     def _setup_network_init(self):
@@ -601,8 +640,7 @@ class NovaConfConfigurator(object):
         nova_conf.add('my_ip', hostip)
 
         # Setup your sql connection
-        db_dsn = db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME)
-        nova_conf.add('sql_connection', db_dsn)
+        nova_conf.add('sql_connection', db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME))
 
         # Configure anything libvirt related?
         virt_driver = canon_virt_driver(self._getstr('virt_driver'))
@@ -636,7 +674,7 @@ class NovaConfConfigurator(object):
         nova_conf.add('s3_host', hostip)
 
         # How is your rabbit setup?
-        nova_conf.add('rabbit_host', self.cfg.getdefaulted('default', 'rabbit_host', hostip))
+        nova_conf.add('rabbit_host', self.cfg.getdefaulted('rabbit', 'rabbit_host', hostip))
         nova_conf.add('rabbit_password', self.cfg.get("passwords", "rabbit"))
 
         # Where instances will be stored
@@ -645,9 +683,6 @@ class NovaConfConfigurator(object):
 
         # Is this a multihost setup?
         self._configure_multihost(nova_conf)
-
-        # Enable syslog??
-        self._configure_syslog(nova_conf)
 
         # Handle any virt driver specifics
         self._configure_virt_driver(nova_conf)
@@ -772,10 +807,6 @@ class NovaConfConfigurator(object):
 
         # This forces dnsmasq to update its leases table when an instance is terminated.
         nova_conf.add('force_dhcp_release', True)
-
-    def _configure_syslog(self, nova_conf):
-        if self.cfg.getboolean('default', 'syslog'):
-            nova_conf.add('use_syslog', True)
 
     def _configure_multihost(self, nova_conf):
         if self._getbool('multi_host'):

@@ -162,7 +162,7 @@ class DBInstaller(comp.PkgInstallComponent):
 class DBRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
         comp.EmptyRuntime.__init__(self, *args, **kargs)
-        self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
+        self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
 
     def _get_run_actions(self, act, exception_cls):
         dbtype = self.cfg.get("db", "type")

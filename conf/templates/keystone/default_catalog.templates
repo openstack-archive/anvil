@@ -36,5 +36,5 @@ catalog.RegionOne.image.publicURL = http://%SERVICE_HOST%:9292/v1
 catalog.RegionOne.image.adminURL = http://%SERVICE_HOST%:9292/v1
 catalog.RegionOne.image.internalURL = http://%SERVICE_HOST%:9292/v1
 catalog.RegionOne.image.name = Image Service
-
+ 
 # More might be added in (in code)

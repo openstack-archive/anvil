@@ -56,7 +56,7 @@ class Virsh(object):
     def __init__(self, config, distro):
         self.cfg = config
         self.distro = distro
-        self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
+        self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
 
     def _service_status(self):
         cmd = self.distro.get_command('libvirt', 'status')

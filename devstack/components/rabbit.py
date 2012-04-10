@@ -84,7 +84,7 @@ class RabbitInstaller(comp.PkgInstallComponent):
 class RabbitRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
         comp.EmptyRuntime.__init__(self, *args, **kargs)
-        self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
+        self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
         self.redir_out = utils.make_bool(self.distro.get_command_config('rabbit-mq', 'redirect-outs'))
 
     def start(self):

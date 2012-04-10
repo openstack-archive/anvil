@@ -37,7 +37,7 @@ BIN_DIR = "bin"
 # Simple confs
 ROOT_CONF = "keystone.conf"
 CATALOG_CONF = 'default_catalog.templates'
-LOGGING_CONF = "logging.cnf"  # WHHHHY U NO LEAVE NAMES SAME!
+LOGGING_CONF = "logging.conf"
 LOGGING_SOURCE_FN = 'logging.conf.sample'
 CONFIGS = [ROOT_CONF, CATALOG_CONF, LOGGING_CONF]
 
@@ -136,50 +136,75 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         sh.chmod(tgt_fn, 0755)
         self.tracewriter.file_touched(tgt_fn)
 
-    def _config_adjust(self, contents, name):
-        if name == ROOT_CONF:
-            # Use config parser and
-            # then extract known configs that
-            # will need locations/directories/files made (or touched)...
-            with io.BytesIO(contents) as stream:
-                config = cfg.IgnoreMissingConfigParser(cs=False)
-                config.readfp(stream)
-                log_filename = config.get('default', 'log_file')
-                if log_filename:
-                    LOG.info("Ensuring log file %s exists and is empty." % (log_filename))
-                    log_dir = sh.dirname(log_filename)
-                    if log_dir:
-                        LOG.info("Ensuring log directory %s exists." % (log_dir))
-                        self.tracewriter.dirs_made(*sh.mkdirslist(log_dir))
-                    # Destroy then recreate it (the log file)
-                    sh.unlink(log_filename)
-                    self.tracewriter.file_touched(sh.touch_file(log_filename))
-        elif name == CATALOG_CONF:
-            nlines = list()
-            if 'swift' in self.options:
-                mp = dict()
-                mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
-                nlines.append("# Swift additions")
-                nlines.extend(utils.param_replace_list(SWIFT_TEMPL_ADDS, mp))
-                nlines.append("")
-            if 'quantum' in self.options:
-                mp = dict()
-                mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
-                nlines.append("# Quantum additions")
-                nlines.extend(utils.param_replace_list(QUANTUM_TEMPL_ADDS, mp))
-                nlines.append("")
-            if nlines:
-                nlines.insert(0, contents)
-                contents = cfg.add_header(name, utils.joinlinesep(*nlines))
+    def _get_source_config(self, config_fn):
+        if config_fn == CATALOG_CONF:
+            return comp.PythonInstallComponent._get_source_config(self, config_fn)
+        else:
+            real_fn = config_fn
+            if config_fn == LOGGING_CONF:
+                real_fn = LOGGING_SOURCE_FN
+            fn = sh.joinpths(self.app_dir, 'etc', real_fn)
+            return (fn, sh.load_file(fn))
+
+    def _config_adjust_logging(self, contents, fn):
+        with io.BytesIO(contents) as stream:
+            config = cfg.IgnoreMissingConfigParser()
+            config.readfp(stream)
+            config.set('logger_root', 'level', 'DEBUG')
+            config.set('logger_root', 'handlers', "devel,production")
+            contents = config.stringify(fn)
         return contents
 
-    def _get_source_config(self, config_fn):
-        if config_fn == LOGGING_CONF:
-            # FIXME, maybe we shouldn't be sucking this from the checkout??
-            fn = sh.joinpths(self.app_dir, 'etc', LOGGING_SOURCE_FN)
-            contents = sh.load_file(fn)
-            return (fn, contents)
-        return comp.PythonInstallComponent._get_source_config(self, config_fn)
+    def _config_adjust_root(self, contents, fn):
+        params = get_shared_params(self.cfg, self.pw_gen)
+        with io.BytesIO(contents) as stream:
+            config = cfg.IgnoreMissingConfigParser()
+            config.readfp(stream)
+            config.set('DEFAULT', 'admin_token', params['SERVICE_TOKEN'])
+            config.set('DEFAULT', 'admin_port', params['KEYSTONE_AUTH_PORT'])
+            config.set('DEFAULT', 'verbose', True)
+            config.set('DEFAULT', 'debug', True)
+            config.remove_option('DEFAULT', 'log_config')
+            config.set('sql', 'connection', db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME, utf8=True))
+            config.set('catalog', 'template_file', sh.joinpths(self.cfg_dir, CATALOG_CONF))
+            config.set('catalog', 'driver', "keystone.catalog.backends.templated.TemplatedCatalog")
+            config.set('ec2', 'driver', "keystone.contrib.ec2.backends.sql.Ec2")
+            config.set('filter:s3_extension', 'paste.filter_factory', "keystone.contrib.s3:S3Extension.factory")
+            config.set('pipeline:admin_api', 'pipeline', ('token_auth admin_token_auth xml_body '
+                            'json_body debug ec2_extension s3_extension crud_extension admin_service'))
+            contents = config.stringify(fn)
+        # FIXME: LP 966670 fixes this in keystone
+        sh.unlink(sh.joinpths(self.app_dir, 'etc', fn))
+        return contents
+
+    def _config_adjust_catalog(self, contents, fn):
+        nlines = list()
+        if 'swift' in self.options:
+            mp = dict()
+            mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
+            nlines.append("# Swift additions")
+            nlines.extend(utils.param_replace_list(SWIFT_TEMPL_ADDS, mp))
+            nlines.append("")
+        if 'quantum' in self.options:
+            mp = dict()
+            mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
+            nlines.append("# Quantum additions")
+            nlines.extend(utils.param_replace_list(QUANTUM_TEMPL_ADDS, mp))
+            nlines.append("")
+        if nlines:
+            nlines.insert(0, contents)
+            contents = cfg.add_header(fn, utils.joinlinesep(*nlines))
+        return contents
+
+    def _config_adjust(self, contents, name):
+        if name == ROOT_CONF:
+            return self._config_adjust_root(contents, name)
+        elif name == CATALOG_CONF:
+            return self._config_adjust_catalog(contents, name)
+        elif name == LOGGING_CONF:
+            return self._config_adjust_logging(contents, name)
+        else:
+            return contents
 
     def warm_configs(self):
         get_shared_params(self.cfg, self.pw_gen)
@@ -192,12 +217,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         mp['DEST'] = self.app_dir
         mp['BIN_DIR'] = self.bin_dir
         mp['CONFIG_FILE'] = sh.joinpths(self.cfg_dir, ROOT_CONF)
-        if config_fn == ROOT_CONF:
-            mp['SQL_CONN'] = db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME, utf8=True)
-            mp['KEYSTONE_DIR'] = self.app_dir
-            mp.update(get_shared_params(self.cfg, self.pw_gen))
-        elif config_fn == MANAGE_DATA_CONF:
-            mp.update(get_shared_params(self.cfg, self.pw_gen))
+        mp.update(get_shared_params(self.cfg, self.pw_gen))
         return mp
 
 
@@ -205,7 +225,7 @@ class KeystoneRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
-        self.wait_time = max(self.cfg.getint('default', 'service_wait_seconds'), 1)
+        self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
 
     def post_start(self):
         tgt_fn = sh.joinpths(self.bin_dir, MANAGE_DATA_CONF)

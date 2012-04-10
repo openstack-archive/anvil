@@ -283,24 +283,25 @@ class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
             links[source_fn] = sh.joinpths(self._get_link_dir(), fn)
         return links
 
+    def _config_param_replace(self, config_fn, contents, parameters):
+        return utils.param_replace(contents, parameters)
+
     def _configure_files(self):
         config_fns = self._get_config_files()
         if config_fns:
             utils.log_iterable(config_fns, logger=LOG,
                 header="Configuring %s files" % (len(config_fns)))
             for fn in config_fns:
-                parameters = self._get_param_map(fn)
                 tgt_fn = self._get_target_config_name(fn)
                 self.tracewriter.dirs_made(*sh.mkdirslist(sh.dirname(tgt_fn)))
                 LOG.info("Configuring file %r", fn)
                 (source_fn, contents) = self._get_source_config(fn)
                 LOG.debug("Replacing parameters in file %r", source_fn)
-                contents = utils.param_replace(contents, parameters)
-                LOG.debug("Applying side-effects of param replacement for template %r", source_fn)
+                contents = self._config_param_replace(fn, contents, self._get_param_map(fn))
+                LOG.debug("Applying final adjustments in file %r", source_fn)
                 contents = self._config_adjust(contents, fn)
-                LOG.info("Writing configuration file %r", tgt_fn)
-                self.tracewriter.cfg_file_written(sh.write_file(tgt_fn,
-                                                                contents))
+                LOG.info("Writing configuration file %r => %r", source_fn, tgt_fn)
+                self.tracewriter.cfg_file_written(sh.write_file(tgt_fn, contents))
         return len(config_fns)
 
     def _configure_symlinks(self):
@@ -543,11 +544,14 @@ class ProgramRuntime(ComponentBase):
 
     def post_start(self):
         pass
+    
+    def _fetch_run_type(self):
+        return self.cfg.getdefaulted("DEFAULT", "run_type", settings.RUN_TYPE_DEF).upper()
 
     def configure(self):
         # First make a pass and make sure all runtime (e.g. upstart)
         # config files are in place....
-        cls = RUNNER_CLS_MAPPING[cfg_helpers.fetch_run_type(self.cfg)]
+        cls = RUNNER_CLS_MAPPING[self._fetch_run_type()]
         instance = cls(self.cfg, self.component_name, self.trace_dir)
         tot_am = 0
         for app_info in self._get_apps_to_start():
@@ -570,7 +574,7 @@ class ProgramRuntime(ComponentBase):
 
     def start(self):
         # Select how we are going to start it
-        cls = RUNNER_CLS_MAPPING[cfg_helpers.fetch_run_type(self.cfg)]
+        cls = RUNNER_CLS_MAPPING[self._fetch_run_type()]
         instance = cls(self.cfg, self.component_name, self.trace_dir)
         am_started = 0
         for app_info in self._get_apps_to_start():
