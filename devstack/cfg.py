@@ -17,7 +17,7 @@
 import io
 import re
 
-import iniparse as ConfigParser
+import iniparse
 
 from devstack import cfg_helpers
 from devstack import date
@@ -37,19 +37,17 @@ CACHE_MSG = "(value will now be internally cached)"
 def get_config(cfg_fn=None):
     if not cfg_fn:
         cfg_fn = sh.canon_path(settings.STACK_CONFIG_LOCATION)
-    config_instance = StackConfigParser()
-    config_instance.read(cfg_fn)
-    return config_instance
+    return StackConfigParser(fns=[cfg_fn])
 
 
-class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
+class IgnoreMissingConfigParser(iniparse.RawConfigParser):
     DEF_INT = 0
     DEF_FLOAT = 0.0
     DEF_BOOLEAN = False
     DEF_BASE = None
 
     def __init__(self, cs=True, fns=None):
-        ConfigParser.RawConfigParser.__init__(self)
+        iniparse.RawConfigParser.__init__(self)
         if cs:
             # Make option names case sensitive
             # See: http://docs.python.org/library/configparser.html#ConfigParser.RawConfigParser.optionxform
@@ -61,36 +59,36 @@ class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
     def get(self, section, option):
         value = self.DEF_BASE
         try:
-            value = ConfigParser.RawConfigParser.get(self, section, option)
-        except ConfigParser.NoSectionError:
+            value = iniparse.RawConfigParser.get(self, section, option)
+        except iniparse.NoSectionError:
             pass
-        except ConfigParser.NoOptionError:
+        except iniparse.NoOptionError:
             pass
         return value
 
     def set(self, section, option, value):
         if not self.has_section(section) and section.lower() != 'default':
             self.add_section(section)
-        ConfigParser.RawConfigParser.set(self, section, option, value)
+        iniparse.RawConfigParser.set(self, section, option, value)
 
     def remove_option(self, section, option):
         if self.has_option(section, option):
-            ConfigParser.RawConfigParser.remove_option(self, section, option)
+            iniparse.RawConfigParser.remove_option(self, section, option)
 
     def getboolean(self, section, option):
         if not self.has_option(section, option):
             return self.DEF_BOOLEAN
-        return ConfigParser.RawConfigParser.getboolean(self, section, option)
+        return iniparse.RawConfigParser.getboolean(self, section, option)
 
     def getfloat(self, section, option):
         if not self.has_option(section, option):
             return self.DEF_FLOAT
-        return ConfigParser.RawConfigParser.getfloat(self, section, option)
+        return iniparse.RawConfigParser.getfloat(self, section, option)
 
     def getint(self, section, option):
         if not self.has_option(section, option):
             return self.DEF_INT
-        return ConfigParser.RawConfigParser.getint(self, section, option)
+        return iniparse.RawConfigParser.getint(self, section, option)
     
     def stringify(self, fn=None):
         contents = ''
@@ -102,8 +100,8 @@ class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
 
 
 class StackConfigParser(IgnoreMissingConfigParser):
-    def __init__(self, cs=True):
-        IgnoreMissingConfigParser.__init__(self, cs)
+    def __init__(self, cs=True, fns=None):
+        IgnoreMissingConfigParser.__init__(self, cs, fns)
         self.configs_fetched = dict()
 
     def _resolve_value(self, section, option, value_gotten):
