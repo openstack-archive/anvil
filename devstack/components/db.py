@@ -144,19 +144,31 @@ class DBInstaller(comp.PkgInstallComponent):
                        "set by a previous process."))
 
         # Ensure access granted
-        if dbactions:
-            grant_cmd = self.distro.get_command(dbtype, 'grant_all')
-            if grant_cmd:
-                user = self.cfg.getdefaulted("db", "sql_user", 'root')
-                LOG.info("Updating the DB to give user %r full control of all databases." % (user))
-                LOG.info("Ensuring your database is started before we operate on it.")
-                self.runtime.restart()
-                params = {
-                    'PASSWORD': self.pw_gen.get_password("sql", PASSWORD_PROMPT),
-                    'USER': user,
-                }
-                cmds = [{'cmd': grant_cmd}]
-                utils.execute_template(*cmds, params=params)
+        user = self.cfg.getdefaulted("db", "sql_user", 'root')
+        grant_permissions(self.cfg, self.pw_gen, self.distro, user, restart_func=self.runtime.restart)
+
+
+def grant_permissions(cfg, pw_gen, distro, user, restart_func=None):
+    """Grant permissions on the database.
+    """
+    dbtype = cfg.get("db", "type")
+    dbactions = distro.get_command_config(dbtype, quiet=True)
+    if dbactions:
+        grant_cmd = distro.get_command(dbtype, 'grant_all')
+        if grant_cmd:
+            if restart_func:
+                LOG.info("Ensuring the database is started")
+                restart_func()
+            params = {
+                'PASSWORD': pw_gen.get_password("sql", PASSWORD_PROMPT),
+                'USER': user,
+            }
+            cmds = [{'cmd': grant_cmd}]
+            LOG.info(
+                "Giving user %r full control of all databases.",
+                user)
+            utils.execute_template(*cmds, params=params)
+    return
 
 
 class DBRuntime(comp.EmptyRuntime):
@@ -248,6 +260,7 @@ def create_db(cfg, pw_gen, distro, dbname, utf8=False):
     else:
         createcmd = distro.get_command(dbtype, 'create_db_utf8', silent=True)
     if createcmd:
+        LOG.debug('Creating %s database %s', dbtype, dbname)
         params = dict()
         params['PASSWORD'] = pw_gen.get_password("sql", PASSWORD_PROMPT)
         params['USER'] = cfg.getdefaulted("db", "sql_user", 'root')

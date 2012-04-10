@@ -11,12 +11,15 @@ USE_SSL = False
 
 LOCAL_PATH = os.path.dirname(os.path.abspath(__file__))
 
-# FIXME: We need to change this to mysql, instead of sqlite.
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(LOCAL_PATH, 'dashboard_openstack.sqlite3'),
-        'TEST_NAME': os.path.join(LOCAL_PATH, 'test.sqlite3'),
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': '%DB_NAME%',
+        'USER': '%DB_USER%',
+        'PASSWORD': '%DB_PASSWORD%',
+        'HOST': '%DB_HOST%',
+        'PORT': %DB_PORT%,
+        'TEST_NAME': '%DB_NAME%test',
     },
 }
 

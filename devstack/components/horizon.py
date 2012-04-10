@@ -20,6 +20,8 @@ from devstack import log as logging
 from devstack import shell as sh
 from devstack import utils
 
+from devstack.components import db
+
 LOG = logging.getLogger("devstack.components.horizon")
 
 # Actual dir names
@@ -52,6 +54,8 @@ BAD_APACHE_USERS = ['root']
 
 # Apache logs will go here
 LOGS_DIR = "logs"
+
+DB_NAME = 'horizon'
 
 
 class HorizonUninstaller(comp.PythonUninstallComponent):
@@ -122,16 +126,13 @@ class HorizonInstaller(comp.PythonInstallComponent):
         LOG.info("Initializing the horizon database.")
         sh.execute(*DB_SYNC_CMD, cwd=self.app_dir)
 
-    def _ensure_db_access(self):
-        # Need db access:
-        # openstack-dashboard/local needs to be writeable by the runtime user
-        # since currently its storing the sql-lite databases there (TODO fix that)
-        path = sh.joinpths(self.dash_dir, 'local')
-        if sh.isdir(path):
-            (user, group) = self._get_apache_user_group()
-            LOG.debug("Changing ownership (recursively) of %r so that it can be used by %r/%r",
-                            path, group, user)
-            sh.chown_r(path, sh.getuid(user), sh.getgid(group))
+    def _setup_db(self):
+        LOG.info("Fixing up database named %r", DB_NAME)
+        db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
+        db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME, utf8=True)
+        # db.grant_permissions(self.cfg, self.pw_gen, self.distro,
+        #                      self.cfg.getdefaulted('db', 'sql_user', 'root')
+        #                      )
 
     def pre_install(self):
         comp.PythonInstallComponent.pre_install(self)
@@ -142,9 +143,9 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
+        self._setup_db()
         self._sync_db()
         self._setup_blackhole()
-        self._ensure_db_access()
         self._config_fixups()
 
     def _get_apache_user_group(self):
@@ -167,6 +168,11 @@ class HorizonInstaller(comp.PythonInstallComponent):
             mp['VPN_DIR'] = sh.joinpths(self.app_dir, "vpn")
         else:
             mp['OPENSTACK_HOST'] = self.cfg.get('host', 'ip')
+            mp['DB_NAME'] = DB_NAME
+            mp['DB_USER'] = self.cfg.getdefaulted('db', 'sql_user', 'root')
+            mp['DB_PASSWORD'] = self.pw_gen.get_password('sql', db.PASSWORD_PROMPT)
+            mp['DB_HOST'] = self.cfg.get("db", "sql_host")
+            mp['DB_PORT'] = self.cfg.get("db", "port")
         return mp
 
 
