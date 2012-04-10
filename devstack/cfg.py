@@ -59,7 +59,7 @@ class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
                 self.read(f)
 
     def get(self, section, option):
-        value = IgnoreMissingConfigParser.DEF_BASE
+        value = self.DEF_BASE
         try:
             value = ConfigParser.RawConfigParser.get(self, section, option)
         except ConfigParser.NoSectionError:
@@ -79,17 +79,17 @@ class IgnoreMissingConfigParser(ConfigParser.RawConfigParser):
 
     def getboolean(self, section, option):
         if not self.has_option(section, option):
-            return IgnoreMissingConfigParser.DEF_BOOLEAN
+            return self.DEF_BOOLEAN
         return ConfigParser.RawConfigParser.getboolean(self, section, option)
 
     def getfloat(self, section, option):
         if not self.has_option(section, option):
-            return IgnoreMissingConfigParser.DEF_FLOAT
+            return self.DEF_FLOAT
         return ConfigParser.RawConfigParser.getfloat(self, section, option)
 
     def getint(self, section, option):
         if not self.has_option(section, option):
-            return IgnoreMissingConfigParser.DEF_INT
+            return self.DEF_INT
         return ConfigParser.RawConfigParser.getint(self, section, option)
     
     def stringify(self, fn=None):

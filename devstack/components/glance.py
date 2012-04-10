@@ -115,6 +115,7 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
             config = cfg.IgnoreMissingConfigParser()
             config.readfp(stream)
             config.set('DEFAULT', 'debug', True)
+            config.set('DEFAULT', 'verbose', True)
             config.remove_option('DEFAULT', 'log_file')
             config.set('DEFAULT', 'sql_connection',
                                 db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME, utf8=True))
