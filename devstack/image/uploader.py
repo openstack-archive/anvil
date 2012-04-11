@@ -124,7 +124,7 @@ class Unpacker(object):
             return self._unpack_tar(file_name, file_location, tmp_dir)
         elif fn_ext in ['.img', '.qcow2']:
             info = dict()
-            info['FILE_NAME'] = file_location,
+            info['FILE_NAME'] = file_location
             if fn_ext == '.img':
                 info['DISK_FORMAT'] = 'raw'
             else:
