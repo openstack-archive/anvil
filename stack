@@ -121,6 +121,9 @@ def run(args):
             root_dir = sh.joinpths(sh.gethomedir(), 'openstack')
     root_dir = sh.abspth(root_dir)
     setup_root(root_dir)
+    if not sh.isuseable(root_dir):
+        print(utils.color_text("Unreadable/writeable/executable root directory %r provided!" % (root_dir), "red"))
+        return False
 
     persona_fn = args.pop('persona_fn')
     if not persona_fn or not sh.isfile(persona_fn):
