@@ -70,6 +70,8 @@ class RandomPasswordLookup(object):
         """Returns a randomly generated password of the specified length."""
         LOG.debug("Generating a pseudo-random password of %d characters",
                   length)
+        if length <= 0:
+            return ''
         return binascii.hexlify(os.urandom((length + 1) / 2))[:length]
 
     def get_password(self, option, **kargs):
@@ -95,7 +97,7 @@ class PasswordGenerator(object):
     def get_password(self, option, prompt_text='', length=8):
         """Returns a password identified by the configuration location."""
 
-        LOG.debug('Looking for password %r using prompt %r', option, prompt_text)
+        LOG.debug('Looking for password for %r using prompt %r', option, prompt_text)
 
         # Activate our lookup chain
         password = ''
@@ -107,5 +109,9 @@ class PasswordGenerator(object):
 
         # Update via set through to the config
         self._set_through(option, password)
+
+        # Just warn if its empty (oh well...)
+        if len(password) == 0:
+            LOG.warn("Password provided for %r is empty", option)
 
         return password
