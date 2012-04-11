@@ -544,7 +544,7 @@ class ProgramRuntime(ComponentBase):
 
     def post_start(self):
         pass
-    
+
     def _fetch_run_type(self):
         return self.cfg.getdefaulted("DEFAULT", "run_type", settings.RUN_TYPE_DEF).upper()
 

@@ -200,7 +200,7 @@ def abspth(path):
     return os.path.abspath(path)
 
 
-def isuseable(path, options=os.W_OK|os.R_OK|os.X_OK):
+def isuseable(path, options=os.W_OK | os.R_OK | os.X_OK):
     return os.access(path, options)
 
 
