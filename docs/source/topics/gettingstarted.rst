@@ -136,6 +136,22 @@ We need to add a admin user so that horizon can run under `apache`_.
 
 You are off the hook as long as your user has ``sudo`` access.
 
+Get git!
+--------
+
+**For Ubuntu:**
+
+::
+
+    $ sudo apt-get install git -y
+
+**For RHEL/Fedora 16:**
+
+::
+
+    $ sudo yum install git -y
+
+
 Download
 --------
 
