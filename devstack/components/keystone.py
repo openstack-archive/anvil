@@ -36,6 +36,7 @@ BIN_DIR = "bin"
 
 # Simple confs
 ROOT_CONF = "keystone.conf"
+ROOT_SOURCE_FN = "keystone.conf.sample"
 CATALOG_CONF = 'default_catalog.templates'
 LOGGING_CONF = "logging.conf"
 LOGGING_SOURCE_FN = 'logging.conf.sample'
@@ -143,6 +144,8 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             real_fn = config_fn
             if config_fn == LOGGING_CONF:
                 real_fn = LOGGING_SOURCE_FN
+            elif config_fn == ROOT_CONF:
+                real_fn = ROOT_SOURCE_FN
             fn = sh.joinpths(self.app_dir, 'etc', real_fn)
             return (fn, sh.load_file(fn))
 
