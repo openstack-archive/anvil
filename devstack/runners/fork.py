@@ -25,7 +25,6 @@ import time
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import runner as base
-from devstack import settings
 from devstack import shell as sh
 from devstack import trace as tr
 
@@ -38,10 +37,6 @@ MAXFD = 2048
 MAX_KILL_TRY = 5
 SLEEP_TIME = 1
 
-# My runner type
-RUN_TYPE = settings.RUN_TYPE_FORK
-TYPE = settings.RUN_TYPE_TYPE
-
 # Trace constants
 PID_FN = "PID_FN"
 STDOUT_FN = "STDOUT_FN"
@@ -49,9 +44,6 @@ STDERR_FN = "STDERR_FN"
 ARGS = "ARGS"
 NAME = "NAME"
 FORK_TEMPL = "%s.fork"
-
-# Run fork cmds as root?
-ROOT_GO = True
 
 
 class ForkRunner(base.RunnerBase):
@@ -80,9 +72,9 @@ class ForkRunner(base.RunnerBase):
         return (killed, attempts)
 
     def stop(self, app_name):
-        with sh.Rooted(ROOT_GO):
+        with sh.Rooted(True):
             if not sh.isdir(self.trace_dir):
-                msg = "No trace directory found from which to stop %s" % (app_name)
+                msg = "No trace directory found from which to stop %r" % (app_name)
                 raise excp.StopException(msg)
             fn_name = FORK_TEMPL % (app_name)
             (pid_file, stderr_fn, stdout_fn) = self._form_file_names(fn_name)
@@ -95,26 +87,25 @@ class ForkRunner(base.RunnerBase):
                     LOG.debug("Killed pid %s after %s attempts" % (pid, attempts))
                     LOG.debug("Removing pid file %s" % (pid_file))
                     sh.unlink(pid_file)
-                    LOG.debug("Removing stderr file %s" % (stderr_fn))
+                    LOG.debug("Removing stderr file %r" % (stderr_fn))
                     sh.unlink(stderr_fn)
-                    LOG.debug("Removing stdout file %s" % (stdout_fn))
+                    LOG.debug("Removing stdout file %r" % (stdout_fn))
                     sh.unlink(stdout_fn)
-                    LOG.debug("Removing %s trace file %s" % (app_name, trace_fn))
+                    LOG.debug("Removing %r trace file %r" % (app_name, trace_fn))
                     sh.unlink(trace_fn)
                 else:
-                    msg = "Could not stop %s after %s attempts" % (app_name, attempts)
+                    msg = "Could not stop %r after %s attempts" % (app_name, attempts)
                     raise excp.StopException(msg)
             else:
-                msg = "No pid or trace file could be found to stop %s in directory %s" % (app_name, self.trace_dir)
+                msg = "No pid or trace file could be found to stop %r in directory %r" % (app_name, self.trace_dir)
                 raise excp.StopException(msg)
 
     def _form_file_names(self, file_name):
-        pidfile = sh.joinpths(self.trace_dir, file_name + ".pid")
-        stderr = sh.joinpths(self.trace_dir, file_name + ".stderr")
-        stdout = sh.joinpths(self.trace_dir, file_name + ".stdout")
-        return (pidfile, stderr, stdout)
+        return (sh.joinpths(self.trace_dir, file_name + ".pid"),
+                sh.joinpths(self.trace_dir, file_name + ".stderr"),
+                sh.joinpths(self.trace_dir, file_name + ".stdout"))
 
-    def _fork_start(self, program, appdir, pid_fn, stdout_fn, stderr_fn, *args):
+    def _fork_start(self, program, app_dir, pid_fn, stdout_fn, stderr_fn, *args):
         # First child, not the real program
         pid = os.fork()
         if pid == 0:
@@ -128,8 +119,8 @@ class ForkRunner(base.RunnerBase):
             # and now fully detached (no shell possible)
             if pid == 0:
                 # Move to where application should be
-                if appdir:
-                    os.chdir(appdir)
+                if app_dir:
+                    os.chdir(app_dir)
                 # Close other fds (or try)
                 limits = resource.getrlimit(resource.RLIMIT_NOFILE)
                 mkfd = limits[1]
@@ -170,18 +161,19 @@ class ForkRunner(base.RunnerBase):
             run_trace.trace(k, v)
         return run_trace.filename()
 
-    def start(self, app_name, runtime_info):
-        (program, appdir, program_args) = runtime_info
+    def _begin_start(self, app_name, app_pth, app_wkdir, args):
         fn_name = FORK_TEMPL % (app_name)
-        (pidfile, stderrfn, stdoutfn) = self._form_file_names(fn_name)
+        (pid_fn, stderr_fn, stdout_fn) = self._form_file_names(fn_name)
         trace_info = dict()
-        trace_info[TYPE] = RUN_TYPE
-        trace_info[PID_FN] = pidfile
-        trace_info[STDERR_FN] = stderrfn
-        trace_info[STDOUT_FN] = stdoutfn
-        trace_info[ARGS] = json.dumps(program_args)
-        tracefn = self._do_trace(fn_name, trace_info)
-        LOG.debug("Forking [%s] by running command [%s]" % (app_name, program))
-        with sh.Rooted(ROOT_GO):
-            self._fork_start(program, appdir, pidfile, stdoutfn, stderrfn, *program_args)
-        return tracefn
+        trace_info[PID_FN] = pid_fn
+        trace_info[STDERR_FN] = stderr_fn
+        trace_info[STDOUT_FN] = stdout_fn
+        trace_info[ARGS] = json.dumps(args)
+        trace_fn = self._do_trace(fn_name, trace_info)
+        LOG.debug("Forking %r by running command %r with args (%s)" % (app_name, app_pth, " ".join(args)))
+        with sh.Rooted(True):
+            self._fork_start(app_pth, app_wkdir, pid_fn, stdout_fn, stderr_fn, *args)
+        return trace_fn
+
+    def start(self, app_name, app_pth, app_dir, opts):
+        return self._begin_start(app_name, app_pth, app_dir, opts)

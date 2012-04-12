@@ -28,8 +28,6 @@ LOG = logging.getLogger("devstack.progs.actions")
 
 class ActionRunner(object):
     __meta__ = abc.ABCMeta
-
-    PREREQ = None
     NAME = None
 
     def __init__(self,
@@ -44,10 +42,14 @@ class ActionRunner(object):
         self.force = kargs.get('force', False)
 
     @abc.abstractmethod
-    def _instance_needs_prereq(self, instance):
-        """Determine if the instance will require our prereq to be invoked.
+    def prerequisite(self):
+        return None
 
-        Return boolean where True means invoke the prereq.
+    @abc.abstractmethod
+    def _instance_needs_prereq(self, instance):
+        """Determine if the instance will require our prerequisite to be invoked.
+
+        Return boolean where True means invoke the prerequisite.
         """
         return False
 
@@ -121,7 +123,7 @@ class ActionRunner(object):
                     raise
 
     def _handle_prereq(self, persona, instances, root_dir):
-        preq_cls = self.PREREQ
+        preq_cls = self.prerequisite()
         if not preq_cls:
             return
         components_needing_prereq = []
@@ -154,6 +156,7 @@ class ActionRunner(object):
 
 
 class InstallRunner(ActionRunner):
+
     NAME = 'install'
 
     def _instance_needs_prereq(self, instance):
@@ -212,11 +215,14 @@ class InstallRunner(ActionRunner):
 
 
 class StartRunner(ActionRunner):
+
     NAME = 'running'
-    PREREQ = InstallRunner
 
     def _instance_needs_prereq(self, instance):
         return not instance.is_installed()
+
+    def prerequisite(self):
+        return InstallRunner
 
     def _run(self, persona, root_dir, component_order, instances):
         self._run_phase(
@@ -250,6 +256,7 @@ class StartRunner(ActionRunner):
 
 
 class StopRunner(ActionRunner):
+
     NAME = 'running'
 
     def _instance_needs_prereq(self, instance):
@@ -271,8 +278,11 @@ class StopRunner(ActionRunner):
 
 
 class UninstallRunner(ActionRunner):
+
     NAME = 'uninstall'
-    PREREQ = StopRunner
+
+    def prerequisite(self):
+        return StopRunner
 
     def _instance_needs_prereq(self, instance):
         return instance.is_started()
@@ -318,7 +328,7 @@ _NAMES_TO_RUNNER = {
     'uninstall': UninstallRunner,
     'start': StartRunner,
     'stop': StopRunner,
-    }
+}
 
 
 def get_action_names():

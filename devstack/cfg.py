@@ -89,7 +89,7 @@ class IgnoreMissingConfigParser(iniparse.RawConfigParser):
         if not self.has_option(section, option):
             return self.DEF_INT
         return iniparse.RawConfigParser.getint(self, section, option)
-    
+
     def stringify(self, fn=None):
         contents = ''
         with io.BytesIO() as outputstream:

@@ -24,19 +24,6 @@ PROG_NICE_NAME = "DEVSTACKpy"
 IPV4 = 'IPv4'
 IPV6 = 'IPv6'
 
-# Different run types supported
-RUN_TYPE_FORK = "FORK"
-RUN_TYPE_UPSTART = "UPSTART"
-RUN_TYPE_SCREEN = "SCREEN"
-RUN_TYPE_DEF = RUN_TYPE_FORK
-RUN_TYPES_KNOWN = [RUN_TYPE_UPSTART,
-                    RUN_TYPE_FORK,
-                    RUN_TYPE_SCREEN,
-                    RUN_TYPE_DEF]
-
-# Used to find the type in trace files
-RUN_TYPE_TYPE = "TYPE"
-
 # Default subdirs of a components root directory
 COMPONENT_TRACE_DIR = "traces"
 COMPONENT_APP_DIR = "app"

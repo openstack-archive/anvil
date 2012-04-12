@@ -200,6 +200,10 @@ def abspth(path):
     return os.path.abspath(path)
 
 
+def isuseable(path, options=os.W_OK | os.R_OK | os.X_OK):
+    return os.access(path, options)
+
+
 def shellquote(text):
     # TODO since there doesn't seem to be a standard lib that actually works use this way...
     do_adjust = False

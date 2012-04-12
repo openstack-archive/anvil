@@ -181,7 +181,7 @@ components:
             version: 1.12*
         -   name: python-sqlalchemy
             removable: true
-            version: 0.7.5*
+            version: 0.7*
         -   name: python-wsgiref
             removable: true
             version: 0.1.2*
@@ -426,6 +426,9 @@ components:
         -   name: python-paste-deploy
             removable: true
             version: 1.5*
+        -   name: python-sqlalchemy
+            removable: true
+            version: 0.7*
         -   name: python-routes
             removable: true
             version: 1.12*
@@ -453,8 +456,6 @@ components:
             version: 1.7.5
         -   name: Routes
             version: 1.12.3
-        -   name: SQLAlchemy
-            version: 0.7.5
         -   name: Tempita
             options: --upgrade
             version: 0.5dev
@@ -557,6 +558,9 @@ components:
         -   name: python-paste-deploy
             removable: true
             version: 1.5*
+        -   name: python-sqlalchemy
+            removable: true
+            version: 0.7*
         -   name: python-routes
             removable: true
             version: 1.12*
@@ -569,8 +573,6 @@ components:
             version: 1.7.5
         -   name: Routes
             version: 1.12.3
-        -   name: SQLAlchemy
-            version: 0.7.5
         -   name: sqlalchemy-migrate
             version: 0.7.2
     quantum-client:

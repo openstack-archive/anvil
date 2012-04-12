@@ -26,10 +26,6 @@ from devstack import utils
 
 LOG = logging.getLogger("devstack.runners.upstart")
 
-# My run type
-RUN_TYPE = settings.RUN_TYPE_UPSTART
-TYPE = settings.RUN_TYPE_TYPE
-
 # Trace constants
 UPSTART_TEMPL = "%s.upstart"
 ARGS = "ARGS"
@@ -61,17 +57,17 @@ class UpstartRunner(base.RunnerBase):
         # Emit the start, keep track and only do one per component name
         component_event = self.component_name + STOP_EVENT_SUFFIX
         if component_event in self.events:
-            LOG.debug("Already emitted event: %s" % (component_event))
+            LOG.debug("Already emitted event: %r" % (component_event))
         else:
-            LOG.debug("About to emit event: %s" % (component_event))
+            LOG.debug("About to emit event: %r" % (component_event))
             cmd = EMIT_BASE_CMD + [component_event]
             sh.execute(*cmd, run_as_root=True)
             self.events.add(component_event)
         sh.unlink(trace_fn)
 
-    def configure(self, app_name, runtime_info):
-        LOG.debug("Configure called for app: %s" % (app_name))
-        self._do_upstart_configure(app_name, runtime_info)
+    def configure(self, app_name, app_pth, app_dir, opts):
+        LOG.debug("Configure called for app: %r" % (app_name))
+        self._do_upstart_configure(app_name, app_pth, app_dir, opts)
         return 1
 
     def _get_upstart_conf_params(self, app_pth, program_name, *program_args):
@@ -98,39 +94,36 @@ class UpstartRunner(base.RunnerBase):
             params['PROGRAM_OPTIONS'] = ''
         return params
 
-    def _do_upstart_configure(self, app_name, runtime_info):
-        (app_pth, _, program_args) = runtime_info
+    def _do_upstart_configure(self, app_name, app_pth, app_dir, program_args):
         # TODO FIXME symlinks won't work. Need to copy the files there.
         # https://bugs.launchpad.net/upstart/+bug/665022
         cfg_fn = sh.joinpths(CONF_ROOT, app_name + CONF_EXT)
         if sh.isfile(cfg_fn):
-            LOG.debug("Upstart config file already exists: %s" % (cfg_fn))
+            LOG.debug("Upstart config file already exists: %r" % (cfg_fn))
             return
-        LOG.debug("Loading upstart template to be used by: %s" % (cfg_fn))
+        LOG.debug("Loading upstart template to be used by: %r" % (cfg_fn))
         (_, contents) = utils.load_template('general', UPSTART_CONF_TMPL)
         params = self._get_upstart_conf_params(app_pth, app_name, *program_args)
         adjusted_contents = utils.param_replace(contents, params)
-        LOG.debug("Generated up start config for %s: %s" % (app_name, adjusted_contents))
+        LOG.debug("Generated up start config for %r: %s" % (app_name, adjusted_contents))
         with sh.Rooted(True):
             sh.write_file(cfg_fn, adjusted_contents)
             sh.chmod(cfg_fn, 0666)
 
     def _start(self, app_name, program, program_args):
         run_trace = tr.TraceWriter(tr.trace_fn(self.trace_dir, UPSTART_TEMPL % (app_name)))
-        run_trace.trace(TYPE, RUN_TYPE)
         run_trace.trace(NAME, app_name)
         run_trace.trace(ARGS, json.dumps(program_args))
         # Emit the start, keep track and only do one per component name
         component_event = self.component_name + START_EVENT_SUFFIX
         if component_event in self.events:
-            LOG.debug("Already emitted event: %s" % (component_event))
+            LOG.debug("Already emitted event: %r" % (component_event))
         else:
-            LOG.debug("About to emit event: %s" % (component_event))
+            LOG.debug("About to emit event: %r" % (component_event))
             cmd = EMIT_BASE_CMD + [component_event]
             sh.execute(*cmd, run_as_root=True)
             self.events.add(component_event)
         return run_trace.filename()
 
-    def start(self, app_name, runtime_info):
-        (program, _, program_args) = runtime_info
-        return self._start(app_name, program, program_args)
+    def start(self, app_name, app_pth, app_dir, opts):
+        return self._start(app_name, app_pth, opts)

@@ -113,11 +113,12 @@ class TraceWriter(object):
         self._start()
         self.trace(PKG_INSTALL, json.dumps(pkg_info))
 
-    def started_info(self, name, info_fn):
+    def app_started(self, name, info_fn, how):
         self._start()
         data = dict()
         data['name'] = name
         data['trace_fn'] = info_fn
+        data['how'] = how
         self.trace(AP_STARTED, json.dumps(data))
 
 
@@ -161,6 +162,16 @@ class TraceReader(object):
     def exists(self):
         return sh.exists(self.trace_fn)
 
+    def apps_started(self):
+        lines = self.read()
+        apps = list()
+        for (cmd, action) in lines:
+            if cmd == AP_STARTED and len(action):
+                entry = json.loads(action)
+                if type(entry) is dict:
+                    apps.append((entry.get('name'), entry.get('trace_fn'), entry.get('how')))
+        return apps
+
     def py_listing(self):
         lines = self.read()
         py_entries = list()
@@ -203,16 +214,6 @@ class TraceReader(object):
             if cmd == DIR_MADE and len(action):
                 dirs.append(action)
         return self._sort_paths(dirs)
-
-    def apps_started(self):
-        lines = self.read()
-        app_info = list()
-        for (cmd, action) in lines:
-            if cmd == AP_STARTED and len(action):
-                entry = json.loads(action)
-                if type(entry) is dict:
-                    app_info.append((entry.get('trace_fn'), entry.get('name')))
-        return app_info
 
     def symlinks_made(self):
         lines = self.read()
