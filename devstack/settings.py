@@ -31,7 +31,6 @@ COMPONENT_CONFIG_DIR = "config"
 
 # RC files generated / used
 RC_FN_TEMPL = "os-%s.rc"
-OSRC_FN = RC_FN_TEMPL % ('core')
 
 # Where the configs and templates should be at.
 STACK_BIN_DIR = os.path.abspath(os.path.dirname(sys.argv[0]))
@@ -39,3 +38,7 @@ STACK_CONFIG_DIR = os.path.join(STACK_BIN_DIR, "conf")
 STACK_DISTRO_DIR = os.path.join(STACK_CONFIG_DIR, "distros")
 STACK_TEMPLATE_DIR = os.path.join(STACK_CONFIG_DIR, "templates")
 STACK_CONFIG_LOCATION = os.path.join(STACK_CONFIG_DIR, "stack.ini")
+
+
+def gen_rc_filename(root_name):
+    return RC_FN_TEMPL % (root_name)

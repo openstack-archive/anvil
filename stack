@@ -83,7 +83,8 @@ def dump_config(config_cache):
 
 
 def load_rc_files():
-    fns = [settings.OSRC_FN]
+    fns = list()
+    fns.append(sh.abspth(settings.gen_rc_filename('core')))
     for fn in fns:
         try:
             LOG.info("Attempting to load file %r which has your environment settings." % (fn))
