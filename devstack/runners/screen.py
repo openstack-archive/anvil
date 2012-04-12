@@ -229,8 +229,7 @@ class ScreenRcGenerator(object):
         for (k, v) in env_exports.items():
             cmd_pieces.append("%s=%s" % (k, sh.shellquote(v)))
         cmd_pieces.append("screen -r %s" % (session_name))
-        if True:
-            cmd_pieces.insert(0, "sudo")
+        cmd_pieces.insert(0, "sudo")
         lines.append("# To connect to this session run the following command: ")
         lines.append("# %s" % (" ".join(cmd_pieces)))
         lines.append("")
@@ -245,10 +244,9 @@ class ScreenRcGenerator(object):
             for (k, v) in env_exports.items():
                 lines.append("# export %s=%s" % (k, sh.shellquote(v)))
             lines.append("")
-        if True:
-            lines.append("# Screen sockets & programs were created/ran as the root user")
-            lines.append("# So you will need to run as user root (or sudo) to enter the following sessions")
-            lines.append("")
+        lines.append("# Screen sockets & programs were created/ran as the root user")
+        lines.append("# So you will need to run as user root (or sudo) to enter the following sessions")
+        lines.append("")
         lines.append("# Session settings")
         lines.append("sessionname %s" % (session_name))
         lines.append(STATUS_BAR_CMD)
