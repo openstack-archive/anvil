@@ -28,13 +28,13 @@ class RunnerBase(object):
         # returns how many files unconfigured
         return 0
 
-    def configure(self, app_name, runtime_info):
+    def configure(self, app_name, app_pth, app_dir, opts):
         # Returns how many files configured
         return 0
 
-    def start(self, name, runtime_info):
+    def start(self, app_name, app_pth, app_dir, opts):
         # Returns a file name that contains what was started
         return None
 
-    def stop(self, name):
+    def stop(self, app_name):
         pass

@@ -29,10 +29,6 @@ from devstack import utils
 
 LOG = logging.getLogger("devstack.runners.screen")
 
-# My running type
-RUN_TYPE = settings.RUN_TYPE_SCREEN
-TYPE = settings.RUN_TYPE_TYPE
-
 # Trace constants
 SCREEN_TEMPL = "%s.screen"
 ARGS = "ARGS"
@@ -61,9 +57,6 @@ SCREEN_KILLER = ['screen', '-X', '-S', '%SCREEN_ID%', 'quit']
 SCREEN_SOCKET_DIR_NAME = "devstack-screen-sockets"
 SCREEN_SOCKET_PERM = 0700
 
-# Run screen as root?
-ROOT_GO = True
-
 # Screen RC file
 SCREEN_RC = settings.RC_FN_TEMPL % ('screen')
 
@@ -86,7 +79,7 @@ class ScreenRunner(base.RunnerBase):
             if key == SESSION_ID and value:
                 session_id = value
         if not session_id:
-            msg = "Could not find a screen session id for %s in file [%s]" % (app_name, trace_fn)
+            msg = "Could not find a screen session id for %r in file %r" % (app_name, trace_fn)
             raise excp.StopException(msg)
         return session_id
 
@@ -94,18 +87,18 @@ class ScreenRunner(base.RunnerBase):
         mp = dict()
         mp['SESSION_NAME'] = session_id
         mp['NAME'] = app_name
-        LOG.debug("Stopping program running in session [%s] in window named [%s]." % (session_id, app_name))
+        LOG.debug("Stopping program running in session %r in window named %r" % (session_id, app_name))
         kill_cmd = self._gen_cmd(CMD_KILL, mp)
         sh.execute(*kill_cmd,
                 shell=True,
-                run_as_root=ROOT_GO,
+                run_as_root=True,
                 env_overrides=self._get_env(),
                 check_exit_code=False)
         # We have really no way of knowing if it worked or not, screen sux...
         wipe_cmd = self._gen_cmd(CMD_WIPE, mp)
         sh.execute(*wipe_cmd,
                 shell=True,
-                run_as_root=ROOT_GO,
+                run_as_root=True,
                 env_overrides=self._get_env(),
                 check_exit_code=False)
 
@@ -122,7 +115,7 @@ class ScreenRunner(base.RunnerBase):
         list_cmd = self._gen_cmd(LIST_CMD)
         (sysout, _) = sh.execute(*list_cmd,
                             check_exit_code=False,
-                            run_as_root=ROOT_GO,
+                            run_as_root=True,
                             env_overrides=self._get_env())
         if sysout.lower().find("No Sockets found") != -1:
             return knowns
@@ -147,23 +140,23 @@ class ScreenRunner(base.RunnerBase):
                 env = self._get_env()
                 for (k, v) in env.items():
                     cmd_msg.insert(0, "%s=%s" % (k, v))
-                msg.append("Try running '%s' to quit that session." % (" ".join(cmd_msg)))
+                msg.append("Try running %r to quit that session." % (" ".join(cmd_msg)))
             raise excp.StartException(utils.joinlinesep(msg))
         return sessions[0]
 
     def _do_screen_init(self):
-        LOG.debug("Creating a new screen session named [%s]" % (SESSION_NAME))
+        LOG.debug("Creating a new screen session named %r" % (SESSION_NAME))
         session_init_cmd = self._gen_cmd(SESSION_INIT)
         sh.execute(*session_init_cmd,
                 shell=True,
-                run_as_root=ROOT_GO,
+                run_as_root=True,
                 env_overrides=self._get_env())
         LOG.debug("Waiting %s seconds before we attempt to set the title bar for that session." % (self.wait_time))
         sh.sleep(self.wait_time)
         bar_init_cmd = self._gen_cmd(BAR_INIT)
         sh.execute(*bar_init_cmd,
                 shell=True,
-                run_as_root=ROOT_GO,
+                run_as_root=True,
                 env_overrides=self._get_env())
 
     def _do_start(self, session, prog_name, cmd):
@@ -174,30 +167,29 @@ class ScreenRunner(base.RunnerBase):
         mp['NAME'] = prog_name
         mp['CMD'] = run_cmd
         init_cmd = self._gen_cmd(CMD_INIT, mp)
-        LOG.debug("Creating a new screen window named [%s] in session [%s]" % (prog_name, session))
+        LOG.debug("Creating a new screen window named %r in session %r" % (prog_name, session))
         sh.execute(*init_cmd,
             shell=True,
-            run_as_root=ROOT_GO,
+            run_as_root=True,
             env_overrides=self._get_env())
-        LOG.debug("Waiting %s seconds before we attempt to run command [%s] in that window." % (self.wait_time, run_cmd))
+        LOG.debug("Waiting %s seconds before we attempt to run command %r in that window." % (self.wait_time, run_cmd))
         sh.sleep(self.wait_time)
         start_cmd = self._gen_cmd(CMD_START, mp)
         sh.execute(*start_cmd,
             shell=True,
-            run_as_root=ROOT_GO,
+            run_as_root=True,
             env_overrides=self._get_env())
         # We have really no way of knowing if it worked or not, screen sux...
 
     def _do_socketdir_init(self, socketdir, perm):
-        LOG.debug("Making screen socket directory [%s] (with permissions %o)" % (socketdir, perm))
-        with sh.Rooted(ROOT_GO):
+        LOG.debug("Making screen socket directory %r (with permissions %o)" % (socketdir, perm))
+        with sh.Rooted(True):
             dirs = sh.mkdirslist(socketdir)
             for d in dirs:
                 sh.chmod(d, perm)
 
     def _begin_start(self, name, program, args):
         run_trace = tr.TraceWriter(tr.trace_fn(self.trace_dir, SCREEN_TEMPL % (name)))
-        run_trace.trace(TYPE, RUN_TYPE)
         run_trace.trace(NAME, name)
         run_trace.trace(ARGS, json.dumps(args))
         full_cmd = [program] + list(args)
@@ -208,23 +200,22 @@ class ScreenRunner(base.RunnerBase):
             self._do_screen_init()
             session_name = self._get_session()
             if session_name is None:
-                msg = "After initializing screen with session named [%s], no screen session with that name was found!" % (SESSION_NAME)
+                msg = "After initializing screen with session named %r, no screen session with that name was found!" % (SESSION_NAME)
                 raise excp.StartException(msg)
         run_trace.trace(SESSION_ID, session_name)
         if inited_screen or not sh.isfile(SCREEN_RC):
             rc_gen = ScreenRcGenerator(self)
             rc_contents = rc_gen.create(session_name, self._get_env())
             out_fn = sh.abspth(SCREEN_RC)
-            LOG.info("Writing your created screen rc file to [%s]" % (out_fn))
+            LOG.info("Writing your created screen rc file to %r" % (out_fn))
             sh.write_file(out_fn, rc_contents)
         self._do_start(session_name, name, full_cmd)
         return run_trace.filename()
 
-    def start(self, app_name, runtime_info):
-        (program, _, program_args) = runtime_info
+    def start(self, app_name, app_pth, app_dir, opts):
         if not sh.isdir(self.socket_dir):
             self._do_socketdir_init(self.socket_dir, SCREEN_SOCKET_PERM)
-        return self._begin_start(app_name, program, program_args)
+        return self._begin_start(app_name, app_pth, opts)
 
 
 class ScreenRcGenerator(object):
@@ -238,7 +229,7 @@ class ScreenRcGenerator(object):
         for (k, v) in env_exports.items():
             cmd_pieces.append("%s=%s" % (k, sh.shellquote(v)))
         cmd_pieces.append("screen -r %s" % (session_name))
-        if ROOT_GO:
+        if True:
             cmd_pieces.insert(0, "sudo")
         lines.append("# To connect to this session run the following command: ")
         lines.append("# %s" % (" ".join(cmd_pieces)))
@@ -254,7 +245,7 @@ class ScreenRcGenerator(object):
             for (k, v) in env_exports.items():
                 lines.append("# export %s=%s" % (k, sh.shellquote(v)))
             lines.append("")
-        if ROOT_GO:
+        if True:
             lines.append("# Screen sockets & programs were created/ran as the root user")
             lines.append("# So you will need to run as user root (or sudo) to enter the following sessions")
             lines.append("")

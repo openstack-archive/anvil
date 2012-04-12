@@ -16,9 +16,7 @@
 
 import weakref
 
-from devstack import cfg_helpers
 from devstack import downloader as down
-from devstack import exceptions as excp
 from devstack import importer
 from devstack import log as logging
 from devstack import pip
@@ -26,10 +24,6 @@ from devstack import settings
 from devstack import shell as sh
 from devstack import trace as tr
 from devstack import utils
-
-from devstack.runners import fork
-from devstack.runners import upstart
-from devstack.runners import screen
 
 LOG = logging.getLogger("devstack.component")
 
@@ -42,13 +36,6 @@ PY_UNINSTALL = ['python', 'setup.py', 'develop', '--uninstall']
 STATUS_UNKNOWN = "unknown"
 STATUS_STARTED = "started"
 STATUS_STOPPED = "stopped"
-
-# Which run types to which runner class
-RUNNER_CLS_MAPPING = {
-    settings.RUN_TYPE_FORK: fork.ForkRunner,
-    settings.RUN_TYPE_UPSTART: upstart.UpstartRunner,
-    settings.RUN_TYPE_SCREEN: screen.ScreenRunner,
-}
 
 # Where symlinks will go
 BASE_LINK_DIR = "/etc"
@@ -407,13 +394,6 @@ class PkgUninstallComponent(ComponentBase, PackageBasedComponentMixin):
             # can not though) so this is why we need to keep them.
             self._unconfigure_files()
         self._unconfigure_links()
-        self._unconfigure_runners()
-
-    def _unconfigure_runners(self):
-        if RUNNER_CLS_MAPPING:
-            for (_, cls) in RUNNER_CLS_MAPPING.items():
-                instance = cls(self.cfg, self.component_name, self.trace_dir)
-                instance.unconfigure()
 
     def _unconfigure_links(self):
         sym_files = self.tracereader.symlinks_made()
@@ -546,35 +526,32 @@ class ProgramRuntime(ComponentBase):
         pass
 
     def _fetch_run_type(self):
-        return self.cfg.getdefaulted("DEFAULT", "run_type", settings.RUN_TYPE_DEF).upper()
+        return self.cfg.getdefaulted("DEFAULT", "run_type", 'devstack.runners.fork:ForkRunner')
 
     def configure(self):
-        # First make a pass and make sure all runtime (e.g. upstart)
+        # First make a pass and make sure all runtime (e.g. upstart starting)
         # config files are in place....
-        cls = RUNNER_CLS_MAPPING[self._fetch_run_type()]
+        run_type = self._fetch_run_type()
+        cls = importer.import_entry_point(run_type)
         instance = cls(self.cfg, self.component_name, self.trace_dir)
         tot_am = 0
         for app_info in self._get_apps_to_start():
             app_name = app_info["name"]
             app_pth = app_info.get("path", app_name)
             app_dir = app_info.get("app_dir", self.app_dir)
-            # Adjust the program options now that we have real locations
-            program_opts = utils.param_replace_list(
-                self._get_app_options(app_name),
-                self._get_param_map(app_name),
-                )
             # Configure it with the given settings
-            LOG.debug("Configuring runner (%s) for program %r", cls, app_name)
+            LOG.debug("Configuring runner %r for program %r", run_type, app_name)
             cfg_am = instance.configure(app_name,
-                                        (app_pth, app_dir, program_opts))
-            LOG.debug("Configured %s files for runner for program %r",
-                     cfg_am, app_name)
+                     app_pth=app_pth, app_dir=app_dir,
+                     opts=utils.param_replace_list(self._get_app_options(app_name), self._get_param_map(app_name)))
+            LOG.debug("Configured %s files for runner for program %r", cfg_am, app_name)
             tot_am += cfg_am
         return tot_am
 
     def start(self):
         # Select how we are going to start it
-        cls = RUNNER_CLS_MAPPING[self._fetch_run_type()]
+        run_type = self._fetch_run_type()
+        cls = importer.import_entry_point(run_type)
         instance = cls(self.cfg, self.component_name, self.trace_dir)
         am_started = 0
         for app_info in self._get_apps_to_start():
@@ -582,56 +559,48 @@ class ProgramRuntime(ComponentBase):
             app_pth = app_info.get("path", app_name)
             app_dir = app_info.get("app_dir", self.app_dir)
             # Adjust the program options now that we have real locations
-            program_opts = utils.param_replace_list(
-                self._get_app_options(app_name),
-                self._get_param_map(app_name),
-                )
+            program_opts = utils.param_replace_list(self._get_app_options(app_name), self._get_param_map(app_name))
             # Start it with the given settings
-            LOG.debug("Starting %r with options (%s)",
-                     app_name, ", ".join(program_opts))
-            info_fn = instance.start(app_name,
-                                     (app_pth, app_dir, program_opts),
-                                     )
-            LOG.info("Started %r details are in %r", app_name, info_fn)
+            LOG.debug("Starting %r with options (%s) using %r",
+                     app_name, ", ".join(program_opts), run_type)
+            details_fn = instance.start(app_name,
+                app_pth=app_pth, app_dir=app_dir, opts=program_opts)
+            LOG.info("Started %r details are in %r", app_name, details_fn)
             # This trace is used to locate details about what to stop
-            self.tracewriter.started_info(app_name, info_fn)
+            self.tracewriter.app_started(app_name, details_fn, run_type)
             am_started += 1
         return am_started
 
-    def _locate_killers(self):
-        start_traces = self.tracereader.apps_started()
+    def _locate_killers(self, apps_started):
         killer_instances = dict()
         to_kill = list()
-        for (trace_fn, app_name) in start_traces:
-            # Figure out which class will stop it
+        for (app_name, trace_fn, how) in apps_started:
             killcls = None
-            for (cmd, action) in tr.TraceReader(trace_fn).read():
-                if cmd == settings.RUN_TYPE_TYPE and action:
-                    killcls = RUNNER_CLS_MAPPING.get(action)
-                    break
-            # Did we find a class that can do it?
-            if killcls:
-                if killcls in killer_instances:
-                    killer = killer_instances[killcls]
-                else:
-                    killer = killcls(self.cfg,
-                                     self.component_name,
-                                     self.trace_dir,
-                                     )
-                    killer_instances[killcls] = killer
-                to_kill.append((app_name, killer))
+            try:
+                killcls = importer.import_entry_point(how)
+            except RuntimeError as e:
+                LOG.warn("Could not load class %r which should be used to stop %r: %s", how, app_name, e)
+            if killcls in killer_instances:
+                killer = killer_instances[killcls]
             else:
-                msg = "Could not figure out which class to use to stop (%s, %s)" % (app_name, trace_fn)
-                raise excp.StopException(msg)
+                killer = killcls(self.cfg,
+                                 self.component_name,
+                                 self.trace_dir)
+                killer_instances[killcls] = killer
+            to_kill.append((app_name, killer))
         return to_kill
 
     def stop(self):
-        to_kill = self._locate_killers()
+        apps_started = self.tracereader.apps_started()
+        to_kill = self._locate_killers(apps_started)
         for (app_name, killer) in to_kill:
             killer.stop(app_name)
-        LOG.debug("Deleting start trace file %r",
-                  self.tracereader.filename())
-        sh.unlink(self.tracereader.filename())
+        if len(apps_started) == len(to_kill):
+            LOG.debug("Deleting start trace file %r", self.tracereader.filename())
+            sh.unlink(self.tracereader.filename())
+            for (app_name, killer) in to_kill:
+                LOG.debug("Unconfiguring %r after successful stopping", app_name)
+                killer.unconfigure()
         return len(to_kill)
 
     def status(self):
