@@ -44,6 +44,9 @@ commands:
         status: service mysql status
         stop: service mysql stop
     pip: pip
+    # Used to know where to find nova root wrap
+    bin_dir: "/usr/local/bin/"
+    sudoers_dir: "/etc/sudoers.d/"
     rabbit-mq:
         start: service rabbitmq-server start
         stop: service rabbitmq-server stop

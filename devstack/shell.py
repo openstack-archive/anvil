@@ -30,6 +30,7 @@ from devstack import log as logging
 
 LOG = logging.getLogger("devstack.shell")
 ROOT_USER = "root"
+ROOT_GROUP = ROOT_USER
 ROOT_USER_UID = 0
 SUDO_UID = 'SUDO_UID'
 SUDO_GID = 'SUDO_GID'
@@ -252,21 +253,27 @@ def _get_suids():
     return (uid, gid)
 
 
+def chown(path, uid, gid, run_as_root=True):
+    LOG.audit("Changing ownership of %r to %s:%s" % (path, uid, gid))
+    with Rooted(run_as_root):
+        if not DRYRUN_MODE:
+            os.chown(path, uid, gid)
+    return 1
+
+
 def chown_r(path, uid, gid, run_as_root=True):
+    changed = 0
     with Rooted(run_as_root):
         if isdir(path):
-            LOG.audit("Changing ownership of %r to %s:%s" % (path, uid, gid))
             for root, dirs, files in os.walk(path):
-                os.chown(root, uid, gid)
-                LOG.audit("Changing ownership of %r to %s:%s" % (root, uid, gid))
+                changed += chown(root, uid, gid)
                 for d in dirs:
                     dir_pth = joinpths(root, d)
-                    os.chown(dir_pth, uid, gid)
-                    LOG.audit("Changing ownership of %r to %s:%s" % (dir_pth, uid, gid))
+                    changed += chown(dir_pth, uid, gid)
                 for f in files:
                     fn_pth = joinpths(root, f)
-                    os.chown(fn_pth, uid, gid)
-                    LOG.audit("Changing ownership of %r to %s:%s" % (fn_pth, uid, gid))
+                    changed += chown(fn_pth, uid, gid)
+    return changed
 
 
 def _explode_path(path):

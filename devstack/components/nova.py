@@ -261,6 +261,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         self.volume_configurator = None
         self.volumes_enabled = NVOL in self.desired_subsystems
         self.xvnc_enabled = NXVNC in self.desired_subsystems
+        self.root_wrap_bin = sh.joinpths(self.distro.get_command_config('bin_dir'), 'nova-rootwrap')
         self.volume_maker = None
         if self.volumes_enabled:
             self.volume_maker = NovaVolumeConfigurator(self)
@@ -327,10 +328,10 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
         db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
 
-    def _generate_nova_conf(self):
+    def _generate_nova_conf(self, root_wrapped):
         conf_fn = self._get_target_config_name(API_CONF)
         LOG.info("Generating dynamic content for nova: %r" % (conf_fn))
-        nova_conf_contents = self.conf_maker.configure()
+        nova_conf_contents = self.conf_maker.configure(root_wrapped)
         self.tracewriter.dirs_made(*sh.mkdirslist(sh.dirname(conf_fn)))
         self.tracewriter.cfg_file_written(sh.write_file(conf_fn, nova_conf_contents))
 
@@ -395,9 +396,27 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
             mp['FIXED_RANGE'] = self.cfg.getdefaulted('nova', 'fixed_range', '10.0.0.0/24')
         return mp
 
+    def _generate_root_wrap(self):
+        if not self.cfg.getboolean('nova', 'do_root_wrap'):
+            return False
+        else:
+            lines = list()
+            lines.append("%s ALL=(root) NOPASSWD: %s" % (sh.getuser(), self.root_wrap_bin))
+            fc = utils.joinlinesep(*lines)
+            root_wrap_fn = sh.joinpths(self.distro.get_command_config('sudoers_dir'), 'nova-rootwrap')
+            self.tracewriter.file_touched(root_wrap_fn)
+            with sh.Rooted(True):
+                sh.write_file(root_wrap_fn, fc)
+                sh.chmod(root_wrap_fn, 0440)
+                sh.chown(root_wrap_fn, sh.getuid(sh.ROOT_USER), sh.getgid(sh.ROOT_GROUP))
+            return True
+
     def configure(self):
         configs_made = comp.PythonInstallComponent.configure(self)
-        self._generate_nova_conf()
+        root_wrapped = self._generate_root_wrap()
+        if root_wrapped:
+            configs_made += 1
+        self._generate_nova_conf(root_wrapped)
         configs_made += 1
         return configs_made
 
@@ -589,7 +608,7 @@ class NovaConfConfigurator(object):
                 msg = "Libvirt flat interface %s is not a known interface" % (flat_interface)
                 raise exceptions.ConfigException(msg)
 
-    def configure(self):
+    def configure(self, root_wrapped):
         # Everything built goes in here
         nova_conf = NovaConf()
 
@@ -687,6 +706,10 @@ class NovaConfConfigurator(object):
         # Handle any virt driver specifics
         self._configure_virt_driver(nova_conf)
 
+        # Setup our root wrap helper that will limit our sudo ability
+        if root_wrapped:
+            self._configure_root_wrap(nova_conf)
+
         # Annnnnd extract to finish
         return self._get_content(nova_conf)
 
@@ -732,6 +755,9 @@ class NovaConfConfigurator(object):
             new_contents.append("")
             generated_content = utils.joinlinesep(*new_contents)
         return generated_content
+
+    def _configure_root_wrap(self, nova_conf):
+        nova_conf.add('root_helper', 'sudo %s' % (self.install.root_wrap_bin))
 
     def _configure_image_service(self, nova_conf, hostip):
         # What image service we will u be using sir?
