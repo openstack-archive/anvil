@@ -200,7 +200,7 @@ def main():
 
     try:
         # Drop to usermode
-        sh.user_mode(False)
+        sh.user_mode(quiet=False)
         started_ok = run(args)
         if not started_ok:
             me = utils.color_text(prog_name, "red", True)

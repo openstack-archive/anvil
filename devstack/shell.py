@@ -70,6 +70,7 @@ class Rooted(object):
 
     def __enter__(self):
         if self.root_mode and not got_root():
+            LOG.debug("Engaging root mode")
             root_mode()
             self.engaged = True
         return self.engaged
@@ -77,6 +78,7 @@ class Rooted(object):
     def __exit__(self, type, value, traceback):
         if self.root_mode and self.engaged:
             user_mode()
+            LOG.debug("Disengaging root mode")
             self.engaged = False
 
 
@@ -140,6 +142,22 @@ def execute(*cmd, **kwargs):
         LOG.audit("With additional environment overrides: %s" % (env_overrides))
         for (k, v) in env_overrides.items():
             process_env[k] = str(v)
+    else:
+        process_env = env.get()
+
+    LOG.debug("With environment %s", process_env)
+    demoter = None
+    def demoter_functor(user_uid, user_gid):
+        def doit():
+            os.setregid(user_gid, user_gid)
+            os.setreuid(user_uid, user_uid)
+        return doit
+
+    if not run_as_root:
+        (user_uid, user_gid) = get_suids()
+        if user_uid and user_gid:
+            LOG.debug("Not running as root, we will run with real & effective gid:uid --> %s:%s", user_gid, user_uid)
+            demoter = demoter_functor(user_uid=user_uid, user_gid=user_gid)
 
     rc = None
     result = None
@@ -156,6 +174,7 @@ def execute(*cmd, **kwargs):
                                        close_fds=close_file_descriptors,
                                        cwd=cwd,
                                        shell=shell,
+                                       preexec_fn=demoter,
                                        env=process_env)
                 if process_input is not None:
                     result = obj.communicate(str(process_input))
@@ -243,7 +262,7 @@ def joinpths(*paths):
     return os.path.join(*paths)
 
 
-def _get_suids():
+def get_suids():
     uid = env.get_key(SUDO_UID)
     if uid is not None:
         uid = int(uid)
@@ -483,7 +502,7 @@ def group_exists(grpname):
 
 
 def getuser():
-    (uid, _) = _get_suids()
+    (uid, gid) = get_suids()
     if uid is None:
         return getpass.getuser()
     return pwd.getpwuid(uid).pw_name
@@ -493,8 +512,12 @@ def getuid(username):
     return pwd.getpwnam(username).pw_uid
 
 
-def gethomedir():
-    return os.path.expanduser("~")
+def gethomedir(user=None):
+    if not user:
+        user = getuser()
+    home_dir = os.path.expanduser("~%s" % (user))
+    LOG.audit("Fetching homedir of %r => %r", user, home_dir)
+    return home_dir
 
 
 def getgid(groupname):
@@ -502,11 +525,10 @@ def getgid(groupname):
 
 
 def getgroupname():
-    (_, gid) = _get_suids()
+    (uid, gid) = get_suids()
     if gid is None:
-        return os.getgid()
-    else:
-        return grp.getgrgid(gid).gr_name
+        gid = os.getgid()
+    return grp.getgrgid(gid).gr_name
 
 
 def create_loopback_file(fname, size, bsize=1024, fs_type='ext3', run_as_root=False):
@@ -628,7 +650,7 @@ def root_mode(quiet=True):
 
 
 def user_mode(quiet=True):
-    (sudo_uid, sudo_gid) = _get_suids()
+    (sudo_uid, sudo_gid) = get_suids()
     if sudo_uid is not None and sudo_gid is not None:
         try:
             LOG.debug("Dropping permissions to (user=%s, group=%s)" % (sudo_uid, sudo_gid))
