@@ -94,6 +94,41 @@ def make_bool(val):
     return False
 
 
+def get_from_path(items, path, quiet=True):
+
+    (first_token, sep, remainder) = path.partition('/')
+
+    if len(path) == 0:
+        return items
+
+    LOG.debug("Looking up %r in %s" % (path, items))
+
+    if len(first_token) == 0:
+        if not quiet:
+            raise RuntimeError("Invalid first token found in %s" % (path))
+        else:
+            return None
+
+    if isinstance(items, list):
+        index = int(first_token)
+        ok_use = (index < len(items) and index >= 0)
+        if quiet and not ok_use:
+            return None
+        else:
+            LOG.debug("Looking up index %s in list %s" % (index, items))
+            return get_from_path(items[index], remainder)
+    else:
+        get_method = getattr(items, 'get', None)
+        if not get_method:
+            if not quiet:
+                raise RuntimeError("Can not figure out how to extract an item from %s" % (items))
+            else:
+                return None
+        else:
+            LOG.debug("Looking up %r in object %s with method %s" % (first_token, items, get_method))
+            return get_from_path(get_method(first_token), remainder)
+
+
 def configure_logging(log_level, cli_args):
     root_logger = logging.getLogger().logger
     console_logger = logging.StreamHandler(sys.stdout)

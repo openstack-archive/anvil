@@ -163,17 +163,15 @@ class InstallRunner(ActionRunner):
         return False
 
     def _write_rc_file(self, root_dir):
+        fn = sh.abspth(settings.gen_rc_filename('core'))
         writer = env_rc.RcWriter(self.cfg, self.pw_gen, root_dir)
-        if not sh.isfile(settings.OSRC_FN):
-            LOG.info("Generating a file at %r that will contain your environment settings.",
-                     settings.OSRC_FN)
-            writer.write(settings.OSRC_FN)
+        if not sh.isfile(fn):
+            LOG.info("Generating a file at %r that will contain your environment settings.", fn)
+            writer.write(fn)
         else:
-            LOG.info("Updating a file at %r that contains your environment settings.",
-                     settings.OSRC_FN)
-            am_upd = writer.update(settings.OSRC_FN)
-            LOG.info("Updated %s settings in rc file %r",
-                     am_upd, settings.OSRC_FN)
+            LOG.info("Updating a file at %r that contains your environment settings.", fn)
+            am_upd = writer.update(fn)
+            LOG.info("Updated %s settings in rc file %r", am_upd, fn)
 
     def _run(self, persona, root_dir, component_order, instances):
         self._write_rc_file(root_dir)

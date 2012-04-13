@@ -176,8 +176,6 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             config.set('pipeline:admin_api', 'pipeline', ('token_auth admin_token_auth xml_body '
                             'json_body debug ec2_extension s3_extension crud_extension admin_service'))
             contents = config.stringify(fn)
-        # FIXME: LP 966670 fixes this in keystone
-        sh.unlink(sh.joinpths(self.app_dir, 'etc', fn))
         return contents
 
     def _config_adjust_catalog(self, contents, fn):

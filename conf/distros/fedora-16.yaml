@@ -39,6 +39,9 @@ commands:
         status: service mysqld status
         stop: service mysqld stop
     pip: pip-python
+    # Used to know where to find nova root wrap
+    bin_dir: "/usr/bin"
+    sudoers_dir: "/etc/sudoers.d/"
     rabbit-mq:
         change_password: rabbitmqctl change_password guest
         restart: service rabbitmq-server restart
