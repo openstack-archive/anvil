@@ -561,8 +561,7 @@ class ProgramRuntime(ComponentBase):
             # Adjust the program options now that we have real locations
             program_opts = utils.param_replace_list(self._get_app_options(app_name), self._get_param_map(app_name))
             # Start it with the given settings
-            LOG.debug("Starting %r with options (%s) using %r",
-                     app_name, ", ".join(program_opts), run_type)
+            LOG.debug("Starting %r using %r", app_name,  run_type)
             details_fn = instance.start(app_name,
                 app_pth=app_pth, app_dir=app_dir, opts=program_opts)
             LOG.info("Started %r details are in %r", app_name, details_fn)
@@ -578,6 +577,7 @@ class ProgramRuntime(ComponentBase):
             killcls = None
             try:
                 killcls = importer.import_entry_point(how)
+                LOG.debug("Stopping %r using %r", app_name, how)
             except RuntimeError as e:
                 LOG.warn("Could not load class %r which should be used to stop %r: %s", how, app_name, e)
             if killcls in killer_instances:

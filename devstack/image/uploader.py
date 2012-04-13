@@ -338,21 +338,13 @@ class Service:
         LOG.debug("With headers %s" % (headers))
 
         response = urllib2.urlopen(request)
-
-        token = json.loads(response.read())
-
-        # TODO is there a better way to validate???
-        if (not token or not type(token) is dict or
-            not token.get('access') or not type(token.get('access')) is dict or
-            not token.get('access').get('token') or not type(token.get('access').get('token')) is dict or
-            not token.get('access').get('token').get('id')):
+        token = utils.get_from_path(json.loads(response.read()), "access/token/id")
+        if not token:
             msg = "Response from url %r did not match expected json format." % (keystone_token_url)
             raise IOError(msg)
 
-        # Basic checks passed, extract it!
-        tok = token['access']['token']['id']
-        LOG.debug("Got token %r" % (tok))
-        return tok
+        LOG.debug("Got token %r" % (token))
+        return token
 
     def install(self):
         LOG.info("Setting up any specified images in glance.")
