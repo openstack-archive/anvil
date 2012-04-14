@@ -36,6 +36,7 @@ subsystems:
 supports:
 - rhel-6
 - ubuntu-oneiric
+- ubuntu-precise
 - fedora-16
 ...
 
