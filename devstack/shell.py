@@ -147,6 +147,7 @@ def execute(*cmd, **kwargs):
 
     LOG.debug("With environment %s", process_env)
     demoter = None
+
     def demoter_functor(user_uid, user_gid):
         def doit():
             os.setregid(user_gid, user_gid)

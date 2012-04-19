@@ -238,9 +238,6 @@ components:
         -   name: python-dateutil
             removable: true
             version: 1.4*
-        -   name: python-django
-            removable: true
-            version: 1.3*
         -   name: python-django-mailer
             removable: true
             version: 0.2*
@@ -275,6 +272,8 @@ components:
             removable: true
             version: 1.0*
         pips:
+        -   name: django
+            version: 1.4
         -   name: django-nose-selenium
             version: 0.7.3
         -   name: pycrypto

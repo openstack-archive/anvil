@@ -561,7 +561,7 @@ class ProgramRuntime(ComponentBase):
             # Adjust the program options now that we have real locations
             program_opts = utils.param_replace_list(self._get_app_options(app_name), self._get_param_map(app_name))
             # Start it with the given settings
-            LOG.debug("Starting %r using %r", app_name,  run_type)
+            LOG.debug("Starting %r using %r", app_name, run_type)
             details_fn = instance.start(app_name,
                 app_pth=app_pth, app_dir=app_dir, opts=program_opts)
             LOG.info("Started %r details are in %r", app_name, details_fn)
