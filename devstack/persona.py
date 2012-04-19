@@ -29,7 +29,7 @@ class Persona(object):
     @classmethod
     def load_file(cls, fn):
         persona_fn = sh.abspth(fn)
-        LOG.audit("Loading persona from file [%s]", persona_fn)
+        LOG.audit("Loading persona from file %r", persona_fn)
         cls_kvs = None
         try:
             with open(persona_fn, "r") as fh:

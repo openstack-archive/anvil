@@ -71,6 +71,7 @@ class HorizonInstaller(horizon.HorizonInstaller):
         LOG.info("Fixing up %r" % ("/etc/httpd/conf.d/wsgi-socket-prefix.conf"))
         contents = "WSGISocketPrefix %s" % (sh.joinpths(self.log_dir, "wsgi-socket"))
         with sh.Rooted(True):
+            # The name seems to need to come after wsgi.conf (so thats what we are doing)
             sh.write_file("/etc/httpd/conf.d/wsgi-socket-prefix.conf", contents)
 
     def _config_fix_httpd(self):
