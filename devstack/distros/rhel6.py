@@ -87,7 +87,7 @@ class HorizonInstaller(horizon.HorizonInstaller):
                 line = "User %s" % (user)
             if re.match("^\s*Group\s+(.*)$", line, re.I):
                 line = "Group %s" % (group)
-            if re.match("^\s*Listen\s+(.*)$", re.I):
+            if re.match("^\s*Listen\s+(.*)$", line, re.I):
                 line = "Listen 0.0.0.0:80"
             new_lines.append(line)
         contents = utils.joinlinesep(*new_lines)
