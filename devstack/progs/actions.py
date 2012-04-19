@@ -19,9 +19,12 @@ import abc
 from devstack import env_rc
 from devstack import exceptions as excp
 from devstack import log as logging
+from devstack import packager
+from devstack import pip
 from devstack import settings
 from devstack import shell as sh
 from devstack import utils
+
 
 LOG = logging.getLogger("devstack.progs.actions")
 
@@ -74,6 +77,8 @@ class ActionRunner(object):
         desired_subsystems = persona.wanted_subsystems or {}
         component_opts = persona.component_options or {}
         instances = {}
+        pip_factory = packager.PackagerFactory(self.distro, pip.Packager(self.distro))
+        pkg_factory = packager.PackagerFactory(self.distro, self.distro.get_default_package_manager())
         for c in components:
             (cls, my_info) = self.distro.extract_component(c, self.NAME)
             LOG.debug("Constructing class %s" % (cls))
@@ -86,6 +91,8 @@ class ActionRunner(object):
             cls_kvs['keep_old'] = self.keep_old
             cls_kvs['desired_subsystems'] = desired_subsystems.get(c, set())
             cls_kvs['options'] = component_opts.get(c, {})
+            cls_kvs['pip_factory'] = pip_factory
+            cls_kvs['packager_factory'] = pkg_factory
             # The above is not overrideable...
             for (k, v) in my_info.items():
                 if k not in cls_kvs:

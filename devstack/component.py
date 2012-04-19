@@ -17,8 +17,10 @@
 import weakref
 
 from devstack import downloader as down
+from devstack import exceptions as excp
 from devstack import importer
 from devstack import log as logging
+from devstack import packager
 from devstack import pip
 from devstack import settings
 from devstack import shell as sh
@@ -122,33 +124,13 @@ class ComponentBase(object):
         return tr.TraceReader(tr.trace_fn(self.trace_dir, tr.IN_TRACE)).exists()
 
 
-class PackageBasedComponentMixin(object):
-    """Mix this into classes that need to manipulate
-    OS-level packages.
-    """
-    PACKAGER_KEY_NAME = 'packager_name'
-
-    def __init__(self):
-        self.default_packager = self.distro.get_default_package_manager()
-
-    def get_packager(self, pkg_info):
-        if self.PACKAGER_KEY_NAME in pkg_info:
-            packager_name = pkg_info[self.PACKAGER_KEY_NAME]
-            LOG.debug('Loading custom package manager %r', packager_name)
-            packager = importer.import_entry_point(packager_name)(self.distro)
-        else:
-            LOG.debug('Using default package manager')
-            packager = self.default_packager
-        return packager
-
-
-class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
-    def __init__(self, *args, **kargs):
+class PkgInstallComponent(ComponentBase):
+    def __init__(self, packager_factory, *args, **kargs):
         ComponentBase.__init__(self, *args, **kargs)
-        PackageBasedComponentMixin.__init__(self)
         self.tracewriter = tr.TraceWriter(tr.trace_fn(self.trace_dir,
                                                       tr.IN_TRACE))
         self.packages = kargs.get('packages', list())
+        self.packager_factory = packager_factory
 
     def _get_download_locations(self):
         return list()
@@ -207,46 +189,32 @@ class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
         pkg_list = list(self.packages)
         for name in self.desired_subsystems:
             if name in self.subsystem_info:
-                # Todo handle duplicates/version differences?
-                LOG.debug(
-                    "Extending package list with packages for subsystem %r",
-                    name)
-                subsystem_pkgs = self.subsystem_info[name].get('packages', [])
-                pkg_list.extend(subsystem_pkgs)
+                LOG.debug("Extending package list with packages for subsystem %r", name)
+                pkg_list.extend(self.subsystem_info[name].get('packages', []))
         return pkg_list
 
     def install(self):
         LOG.debug('Preparing to install packages for %r', self.component_name)
         pkgs = self._get_packages()
-        if pkgs:
-            pkg_names = set([p['name'] for p in pkgs])
-            utils.log_iterable(pkg_names, logger=LOG,
-                header="Setting up %s distribution packages" % (len(pkg_names)))
-            with utils.progress_bar(INSTALL_TITLE, len(pkgs)) as p_bar:
-                for (i, p) in enumerate(pkgs):
-                    self.tracewriter.package_installed(p)
-                    packager = self.get_packager(p)
-                    packager.install(p)
-                    p_bar.update(i + 1)
-        else:
-            LOG.info('No packages to install for %r', self.component_name)
+        pkg_names = set([p['name'] for p in pkgs])
+        utils.log_iterable(pkg_names, logger=LOG,
+            header="Setting up %s distribution packages" % (len(pkg_names)))
+        with utils.progress_bar(INSTALL_TITLE, len(pkgs)) as p_bar:
+            for (i, p) in enumerate(pkgs):
+                self.tracewriter.package_installed(p)
+                self.packager_factory.get_packager_for(p).install(p)
+                p_bar.update(i + 1)
         return self.trace_dir
 
     def pre_install(self):
         pkgs = self._get_packages()
-        if pkgs:
-            mp = self._get_param_map(None)
-            for p in pkgs:
-                packager = self.get_packager(p)
-                packager.pre_install(p, mp)
+        for p in pkgs:
+            self.packager_factory.get_packager_for(p).pre_install(p, self._get_param_map(None))
 
     def post_install(self):
         pkgs = self._get_packages()
-        if pkgs:
-            mp = self._get_param_map(None)
-            for p in pkgs:
-                packager = self.get_packager(p)
-                packager.post_install(p, mp)
+        for p in pkgs:
+            self.packager_factory.get_packager_for(p).post_install(p, self._get_param_map(None))
 
     def _get_config_files(self):
         return list()
@@ -313,9 +281,10 @@ class PkgInstallComponent(ComponentBase, PackageBasedComponentMixin):
 
 
 class PythonInstallComponent(PkgInstallComponent):
-    def __init__(self, *args, **kargs):
+    def __init__(self, pip_factory, *args, **kargs):
         PkgInstallComponent.__init__(self, *args, **kargs)
         self.pips = kargs.get('pips', list())
+        self.pip_factory = pip_factory
 
     def _get_python_directories(self):
         py_dirs = dict()
@@ -326,7 +295,6 @@ class PythonInstallComponent(PkgInstallComponent):
         pip_list = list(self.pips)
         for name in self.desired_subsystems:
             if name in self.subsystem_info:
-                # TODO handle duplicates/version differences?
                 LOG.debug("Extending pip list with pips for subsystem %r" % (name))
                 subsystem_pips = self.subsystem_info[name].get('pips', list())
                 pip_list.extend(subsystem_pips)
@@ -341,8 +309,20 @@ class PythonInstallComponent(PkgInstallComponent):
             with utils.progress_bar(INSTALL_TITLE, len(pips)) as p_bar:
                 for (i, p) in enumerate(pips):
                     self.tracewriter.pip_installed(p)
-                    pip.install(p, self.distro)
+                    self.pip_factory.get_packager_for(p).install(p)
                     p_bar.update(i + 1)
+
+    def pre_install(self):
+        PkgInstallComponent.pre_install(self)
+        pips = self._get_pips()
+        for p in pips:
+            self.pip_factory.get_packager_for(p).pre_install(p, self._get_param_map(None))
+
+    def post_install(self):
+        PkgInstallComponent.post_install(self)
+        pips = self._get_pips()
+        for p in pips:
+            self.pip_factory.get_packager_for(p).post_install(p, self._get_param_map(None))
 
     def _install_python_setups(self):
         py_dirs = self._get_python_directories()
@@ -378,13 +358,13 @@ class PythonInstallComponent(PkgInstallComponent):
         return trace_dir
 
 
-class PkgUninstallComponent(ComponentBase, PackageBasedComponentMixin):
-    def __init__(self, *args, **kargs):
+class PkgUninstallComponent(ComponentBase):
+    def __init__(self, packager_factory, *args, **kargs):
         ComponentBase.__init__(self, *args, **kargs)
-        PackageBasedComponentMixin.__init__(self)
         self.tracereader = tr.TraceReader(tr.trace_fn(self.trace_dir,
                                                       tr.IN_TRACE))
-        self.keep_old = kargs.get('keep_old')
+        self.keep_old = kargs.get('keep_old', False)
+        self.packager_factory = packager_factory
 
     def unconfigure(self):
         if not self.keep_old:
@@ -434,8 +414,7 @@ class PkgUninstallComponent(ComponentBase, PackageBasedComponentMixin):
             which_removed = set()
             with utils.progress_bar(UNINSTALL_TITLE, len(pkgs), reverse=True) as p_bar:
                 for (i, p) in enumerate(pkgs):
-                    packager = self.get_packager(p)
-                    if packager.remove(p):
+                    if self.packager_factory.get_packager_for(p).remove(p):
                         which_removed.add(p['name'])
                     p_bar.update(i + 1)
             utils.log_iterable(which_removed, logger=LOG,
@@ -468,8 +447,9 @@ class PkgUninstallComponent(ComponentBase, PackageBasedComponentMixin):
 
 
 class PythonUninstallComponent(PkgUninstallComponent):
-    def __init__(self, *args, **kargs):
+    def __init__(self, pip_factory, *args, **kargs):
         PkgUninstallComponent.__init__(self, *args, **kargs)
+        self.pip_factory = pip_factory
 
     def uninstall(self):
         self._uninstall_python()
@@ -487,7 +467,11 @@ class PythonUninstallComponent(PkgUninstallComponent):
                 header="Uninstalling %s python packages" % (len(pip_names)))
             with utils.progress_bar(UNINSTALL_TITLE, len(pips), reverse=True) as p_bar:
                 for (i, p) in enumerate(pips):
-                    pip.uninstall(p, self.distro)
+                    try:
+                        self.pip_factory.get_packager_for(p).remove(p)
+                    except excp.ProcessExecutionError as e:
+                        # NOTE(harlowja): pip seems to die if a pkg isn't there even in quiet mode
+                        pass
                     p_bar.update(i + 1)
 
     def _uninstall_python(self):
@@ -580,6 +564,7 @@ class ProgramRuntime(ComponentBase):
                 LOG.debug("Stopping %r using %r", app_name, how)
             except RuntimeError as e:
                 LOG.warn("Could not load class %r which should be used to stop %r: %s", how, app_name, e)
+                continue
             if killcls in killer_instances:
                 killer = killer_instances[killcls]
             else:

@@ -170,7 +170,7 @@ class YumPackagerWithRelinks(yum.YumPackager):
                     sh.unlink(tgt)
         return response
 
-    def install(self, pkg):
+    def _install(self, pkg):
         yum.YumPackager.install(self, pkg)
         options = pkg.get('packager_options', {})
         links = options.get('links', [])

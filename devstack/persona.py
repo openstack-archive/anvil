@@ -47,7 +47,6 @@ class Persona(object):
                                 cls, cls_kvs, err)
         return instance
 
-    @decorators.log_debug
     def __init__(self, description,
                        supports,
                        components,

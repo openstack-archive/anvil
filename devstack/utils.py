@@ -49,8 +49,6 @@ LOG = logging.getLogger("devstack.util")
 DEF_IP = "127.0.0.1"
 IP_LOOKER = '8.8.8.8'
 DEF_IP_VERSION = settings.IPV4
-ALL_NUMS = re.compile(r"^\d+$")
-START_NUMS = re.compile(r"^(\d+)(\D+)")
 STAR_VERSION = 0
 
 # Thx cowsay
@@ -236,31 +234,29 @@ def tempdir():
         sh.deldir(tdir)
 
 
-def versionize(input_version):
+def versionize(input_version, unknown_version="-1.0"):
+    if input_version == None:
+        return distutils.version.LooseVersion(unknown_version)
+    input_version = str(input_version)
     segments = input_version.split(".")
     cleaned_segments = list()
     for piece in segments:
         piece = piece.strip()
         if len(piece) == 0:
-            msg = "Disallowed empty version segment found"
-            raise ValueError(msg)
-        piece = piece.strip("*")
-        if len(piece) == 0:
-            cleaned_segments.append(STAR_VERSION)
-        elif ALL_NUMS.match(piece):
-            cleaned_segments.append(int(piece))
+            cleaned_segments.append("")
         else:
-            piece_match = START_NUMS.match(piece)
-            if not piece_match:
-                msg = "Unknown version identifier %s" % (piece)
-                raise ValueError(msg)
+            piece = piece.strip("*")
+            if len(piece) == 0:
+                cleaned_segments.append(STAR_VERSION)
             else:
-                cleaned_segments.append(int(piece_match.group(1)))
+                try:
+                    piece = int(piece)
+                except ValueError:
+                    pass
+                cleaned_segments.append(piece)
     if not cleaned_segments:
-        msg = "Disallowed empty version found"
-        raise ValueError(msg)
-    num_parts = [str(p) for p in cleaned_segments]
-    return distutils.version.LooseVersion(".".join(num_parts))
+        return distutils.version.LooseVersion(unknown_version)
+    return distutils.version.LooseVersion(".".join([str(p) for p in cleaned_segments]))
 
 
 def sort_versions(versions, descending=True):
@@ -706,8 +702,8 @@ def goodbye(worked):
     print(msg)
 
 
-def welcome(ident):
-    lower = "| %s %s |" % (ident, version.version_string())
+def welcome():
+    lower = "| %s |" % (version.version_string())
     welcome_header = _get_welcome_stack()
     max_line_len = len(max(welcome_header.splitlines(), key=len))
     footer = color_text(settings.PROG_NICE_NAME, 'green')

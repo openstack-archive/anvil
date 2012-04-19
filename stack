@@ -107,6 +107,9 @@ def setup_root(root_dir):
 
 
 def run(args):
+    (repeat_string, line_max_len) = utils.welcome(action.upper())
+    print(utils.center_text("Action Runner", repeat_string, line_max_len))
+
     action = args.pop("action", '').strip().lower()
     if action not in actions.get_action_names():
         print(utils.color_text("No valid action specified!", "red"))
@@ -122,19 +125,12 @@ def run(args):
             root_dir = sh.joinpths(sh.gethomedir(), 'openstack')
     root_dir = sh.abspth(root_dir)
     setup_root(root_dir)
-    if not sh.isuseable(root_dir):
-        print(utils.color_text("Unreadable/writeable/executable root directory %r provided!" % (root_dir), "red"))
-        return False
 
     persona_fn = args.pop('persona_fn')
     if not persona_fn or not sh.isfile(persona_fn):
         print(utils.color_text("No valid persona file name specified!", "red"))
         return False
     persona_fn = sh.abspth(persona_fn)
-
-    # Welcome!
-    (repeat_string, line_max_len) = utils.welcome(action.upper())
-    print(utils.center_text("Action Runner", repeat_string, line_max_len))
 
     # !!
     # Here on out we should be using the logger (and not print)!!

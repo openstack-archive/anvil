@@ -32,6 +32,7 @@ VERSION_TEMPL = "%s-%s"
 
 
 class YumPackager(pack.Packager):
+
     def __init__(self, distro):
         pack.Packager.__init__(self, distro)
 
@@ -53,7 +54,7 @@ class YumPackager(pack.Packager):
     def _install_special(self, name, info):
         return False
 
-    def install(self, pkg):
+    def _install(self, pkg):
         name = pkg['name']
         if self._install_special(name, pkg):
             return
