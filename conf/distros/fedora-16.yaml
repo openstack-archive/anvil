@@ -197,9 +197,6 @@ components:
             running: devstack.components.horizon:HorizonRuntime
             uninstall: devstack.components.horizon:HorizonUninstaller
         packages:
-        -   name: Django
-            removable: true
-            version: 1.3*
         -   name: django-registration
             removable: true
             version: 0.7*
@@ -260,6 +257,9 @@ components:
         -   name: pyxattr
             removable: true
             version: 0.5*
+        pips:
+        -   name: django
+            version: 1.4
     keystone:
         action_classes:
             install: devstack.components.keystone:KeystoneInstaller

@@ -130,9 +130,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
         LOG.info("Fixing up database named %r", DB_NAME)
         db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
         db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME, utf8=True)
-        # db.grant_permissions(self.cfg, self.pw_gen, self.distro,
-        #                      self.cfg.getdefaulted('db', 'sql_user', 'root')
-        #                      )
 
     def pre_install(self):
         comp.PythonInstallComponent.pre_install(self)
@@ -146,6 +143,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         self._setup_db()
         self._sync_db()
         self._setup_blackhole()
+        # Anything to fixup after it was installed??
         self._config_fixups()
 
     def _get_apache_user_group(self):

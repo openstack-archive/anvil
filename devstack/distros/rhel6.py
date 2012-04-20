@@ -33,9 +33,6 @@ from devstack.packaging import yum
 
 LOG = logging.getLogger(__name__)
 
-SOCKET_CONF = "/etc/httpd/conf.d/wsgi-socket-prefix.conf"
-HTTPD_CONF = '/etc/httpd/conf/httpd.conf'
-
 # See: http://wiki.libvirt.org/page/SSHPolicyKitSetup
 # FIXME: take from distro config??
 LIBVIRT_POLICY_FN = "/etc/polkit-1/localauthority/50-local.d/50-libvirt-access.pkla"
@@ -68,24 +65,38 @@ class DBInstaller(db.DBInstaller):
 
 class HorizonInstaller(horizon.HorizonInstaller):
 
-    def _config_fixups(self):
-        (user, group) = self._get_apache_user_group()
+    def _config_fix_wsgi(self):
         # This is recorded so it gets cleaned up during uninstall
-        self.tracewriter.file_touched(SOCKET_CONF)
-        LOG.info("Fixing up %r and %r files" % (SOCKET_CONF, HTTPD_CONF))
+        self.tracewriter.file_touched("/etc/httpd/conf.d/wsgi-socket-prefix.conf")
+        LOG.info("Fixing up %r" % ("/etc/httpd/conf.d/wsgi-socket-prefix.conf"))
+        contents = "WSGISocketPrefix %s" % (sh.joinpths(self.log_dir, "wsgi-socket"))
         with sh.Rooted(True):
-            # Fix the socket prefix to someplace we can use
-            fc = "WSGISocketPrefix %s" % (sh.joinpths(self.log_dir, "wsgi-socket"))
-            sh.write_file(SOCKET_CONF, fc)
-            # Now adjust the run user and group (of httpd.conf)
-            new_lines = list()
-            for line in sh.load_file(HTTPD_CONF).splitlines():
-                if line.startswith("User "):
-                    line = "User %s" % (user)
-                if line.startswith("Group "):
-                    line = "Group %s" % (group)
-                new_lines.append(line)
-            sh.write_file(HTTPD_CONF, utils.joinlinesep(*new_lines))
+            # The name seems to need to come after wsgi.conf (so thats what we are doing)
+            sh.write_file("/etc/httpd/conf.d/wsgi-socket-prefix.conf", contents)
+
+    def _config_fix_httpd(self):
+        LOG.info("Fixing up %r" % ('/etc/httpd/conf/httpd.conf'))
+        (user, group) = self._get_apache_user_group()
+        old_lines = sh.load_file('/etc/httpd/conf/httpd.conf').splitlines()
+        new_lines = list()
+        for line in old_lines:
+            # Directives in the configuration files are case-insensitive,
+            # but arguments to directives are often case sensitive...
+            # NOTE(harlowja): we aren't handling multi-line fixups...
+            if re.match("^\s*User\s+(.*)$", line, re.I):
+                line = "User %s" % (user)
+            if re.match("^\s*Group\s+(.*)$", line, re.I):
+                line = "Group %s" % (group)
+            if re.match("^\s*Listen\s+(.*)$", line, re.I):
+                line = "Listen 0.0.0.0:80"
+            new_lines.append(line)
+        contents = utils.joinlinesep(*new_lines)
+        with sh.Rooted(True):
+            sh.write_file('/etc/httpd/conf/httpd.conf', contents)
+
+    def _config_fixups(self):
+        self._config_fix_wsgi()
+        self._config_fix_httpd()
 
 
 class RabbitRuntime(rabbit.RabbitRuntime):
@@ -159,7 +170,7 @@ class YumPackagerWithRelinks(yum.YumPackager):
                     sh.unlink(tgt)
         return response
 
-    def install(self, pkg):
+    def _install(self, pkg):
         yum.YumPackager.install(self, pkg)
         options = pkg.get('packager_options', {})
         links = options.get('links', [])

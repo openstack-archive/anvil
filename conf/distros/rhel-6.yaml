@@ -276,7 +276,7 @@ components:
         -   name: SQLAlchemy
             version: 0.7.5
         -   name: django
-            version: 1.3.1
+            version: 1.4
         -   name: django-mailer
             version: 0.1.0
         -   name: django-nose

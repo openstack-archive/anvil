@@ -145,8 +145,9 @@ def execute(*cmd, **kwargs):
     else:
         process_env = env.get()
 
-    LOG.debug("With environment %s", process_env)
+    # LOG.debug("With environment %s", process_env)
     demoter = None
+
     def demoter_functor(user_uid, user_gid):
         def doit():
             os.setregid(user_gid, user_gid)
@@ -155,9 +156,10 @@ def execute(*cmd, **kwargs):
 
     if not run_as_root:
         (user_uid, user_gid) = get_suids()
-        if user_uid and user_gid:
-            LOG.debug("Not running as root, we will run with real & effective gid:uid --> %s:%s", user_gid, user_uid)
-            demoter = demoter_functor(user_uid=user_uid, user_gid=user_gid)
+        LOG.audit("Running as (user=%s, group=%s)", user_uid, user_gid)
+        demoter = demoter_functor(user_uid=user_uid, user_gid=user_gid)
+    else:
+        LOG.audit("Running as (user=%s, group=%s)", ROOT_USER_UID, ROOT_USER_UID)
 
     rc = None
     result = None
@@ -639,7 +641,7 @@ def root_mode(quiet=True):
             raise excp.StackException(msg)
     else:
         try:
-            LOG.debug("Escalating permissions to (user=%s, group=%s)" % (root_uid, root_gid))
+            LOG.audit("Escalating permissions to (user=%s, group=%s)" % (root_uid, root_gid))
             os.setreuid(0, root_uid)
             os.setregid(0, root_gid)
         except OSError:
@@ -653,7 +655,7 @@ def user_mode(quiet=True):
     (sudo_uid, sudo_gid) = get_suids()
     if sudo_uid is not None and sudo_gid is not None:
         try:
-            LOG.debug("Dropping permissions to (user=%s, group=%s)" % (sudo_uid, sudo_gid))
+            LOG.audit("Dropping permissions to (user=%s, group=%s)" % (sudo_uid, sudo_gid))
             os.setregid(0, sudo_gid)
             os.setreuid(0, sudo_uid)
         except OSError:

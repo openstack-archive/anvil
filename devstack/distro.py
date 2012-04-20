@@ -77,7 +77,6 @@ class Distro(object):
                 'No platform configuration data for %r (%s)' %
                 (plt, distname))
 
-    @decorators.log_debug
     def __init__(self, name, distro_pattern, packager_name, commands, components):
         self.name = name
         self._distro_pattern = re.compile(distro_pattern, re.IGNORECASE)

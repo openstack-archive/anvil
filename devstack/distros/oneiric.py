@@ -63,7 +63,7 @@ class RabbitPackager(apt.AptPackager):
         self._execute_apt(cmd)
         return True
 
-    def install(self, pkg):
+    def _install(self, pkg):
         #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
         #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
         name = pkg['name']

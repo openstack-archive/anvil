@@ -40,6 +40,7 @@ VERSION_TEMPL = "%s=%s"
 
 
 class AptPackager(pack.Packager):
+
     def __init__(self, distro):
         pack.Packager.__init__(self, distro)
         # FIXME: Should this be coming from a setting somewhere?
@@ -67,7 +68,7 @@ class AptPackager(pack.Packager):
             self._execute_apt(APT_AUTOREMOVE)
         return True
 
-    def install(self, pkg):
+    def _install(self, pkg):
         name = pkg['name']
         pkg_full = self._format_pkg_name(name, pkg.get("version"))
         cmd = APT_INSTALL + [pkg_full]
