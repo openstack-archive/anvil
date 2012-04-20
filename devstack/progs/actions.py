@@ -77,8 +77,8 @@ class ActionRunner(object):
         desired_subsystems = persona.wanted_subsystems or {}
         component_opts = persona.component_options or {}
         instances = {}
-        pip_factory = packager.PackagerFactory(self.distro, pip.Packager(self.distro))
-        pkg_factory = packager.PackagerFactory(self.distro, self.distro.get_default_package_manager())
+        pip_factory = packager.PackagerFactory(self.distro, pip.Packager)
+        pkg_factory = packager.PackagerFactory(self.distro, self.distro.get_default_package_manager_cls())
         for c in components:
             (cls, my_info) = self.distro.extract_component(c, self.NAME)
             LOG.debug("Constructing class %s" % (cls))

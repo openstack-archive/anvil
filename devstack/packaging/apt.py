@@ -41,11 +41,6 @@ VERSION_TEMPL = "%s=%s"
 
 class AptPackager(pack.Packager):
 
-    def __init__(self, distro):
-        pack.Packager.__init__(self, distro)
-        # FIXME: Should this be coming from a setting somewhere?
-        self.auto_remove = True
-
     def _format_pkg_name(self, name, version):
         if version:
             return VERSION_TEMPL % (name, version)
@@ -64,8 +59,7 @@ class AptPackager(pack.Packager):
         pkg_full = self._format_pkg_name(name, pkg.get("version"))
         cmd = APT_DO_REMOVE + [pkg_full]
         self._execute_apt(cmd)
-        if self.auto_remove:
-            self._execute_apt(APT_AUTOREMOVE)
+        self._execute_apt(APT_AUTOREMOVE)
         return True
 
     def _install(self, pkg):

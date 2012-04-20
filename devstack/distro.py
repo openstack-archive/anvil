@@ -126,9 +126,9 @@ class Distro(object):
         """
         return bool(self._distro_pattern.search(distro_name))
 
-    def get_default_package_manager(self):
+    def get_default_package_manager_cls(self):
         """Return a package manager that will work for this distro."""
-        return importer.import_entry_point(self._packager_name)(self)
+        return importer.import_entry_point(self._packager_name)
 
     def extract_component(self, name, action):
         """Return the class + component info to use for doing the action w/the component."""

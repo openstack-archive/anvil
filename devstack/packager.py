@@ -34,9 +34,9 @@ class Packager(object):
 
     __meta__ = abc.ABCMeta
 
-    def __init__(self, distro):
+    def __init__(self, distro, registry):
         self.distro = distro
-        self.registry = PackageRegistry()
+        self.registry = registry
 
     def install(self, pkg):
         name = pkg['name']
@@ -102,20 +102,30 @@ class PackagerFactory(object):
 
     PACKAGER_KEY_NAME = 'packager_name'
 
-    def __init__(self, distro, default_packager):
-        self.default_packager = default_packager
+    def __init__(self, distro, default_packager_cls):
+        self.default_packager = None
+        self.default_packager_cls = default_packager_cls
         self.distro = distro
         self.fetched_packagers = dict()
+        self.registry = PackageRegistry()
+
+    def _construct_pkger(self, cls):
+        return cls(self.distro, self.registry)
+
+    def _get_default_pkgr(self):
+        if not self.default_packager:
+            self.default_packager = self._construct_pkger(self.default_packager_cls)
+        return self.default_packager
 
     def get_packager_for(self, pkg_info):
-        if self.PACKAGER_KEY_NAME in pkg_info:
-            packager_name = pkg_info[self.PACKAGER_KEY_NAME]
+        packager_name = pkg_info.get(self.PACKAGER_KEY_NAME)
+        if not packager_name or not packager_name.strip():
+            packager = self._get_default_pkgr()
+        else:
             if packager_name in self.fetched_packagers:
                 packager = self.fetched_packagers[packager_name]
             else:
                 LOG.debug('Loading custom package manager %r for package %r', packager_name, pkg_info['name'])
-                packager = importer.import_entry_point(packager_name)(self.distro)
+                packager = self._construct_pkger(importer.import_entry_point(packager_name))
                 self.fetched_packagers[packager_name] = packager
-        else:
-            packager = self.default_packager
         return packager

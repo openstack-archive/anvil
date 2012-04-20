@@ -33,9 +33,6 @@ VERSION_TEMPL = "%s-%s"
 
 class YumPackager(pack.Packager):
 
-    def __init__(self, distro):
-        pack.Packager.__init__(self, distro)
-
     def _format_pkg_name(self, name, version):
         if version:
             return VERSION_TEMPL % (name, version)
