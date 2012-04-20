@@ -107,7 +107,8 @@ def setup_root(root_dir):
 
 
 def run(args):
-    (repeat_string, line_max_len) = utils.welcome(action.upper())
+
+    (repeat_string, line_max_len) = utils.welcome()
     print(utils.center_text("Action Runner", repeat_string, line_max_len))
 
     action = args.pop("action", '').strip().lower()
