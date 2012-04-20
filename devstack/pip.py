@@ -15,10 +15,8 @@
 #    under the License.
 
 
-from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import shell as sh
-from devstack import utils
 from devstack import packager as pack
 
 LOG = logging.getLogger("devstack.pip")

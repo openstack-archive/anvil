@@ -15,9 +15,7 @@
 #    under the License.
 
 import abc
-import collections
 
-from devstack import decorators
 from devstack import importer
 from devstack import log as logging
 from devstack import utils
@@ -43,10 +41,12 @@ class Packager(object):
     def install(self, pkg):
         name = pkg['name']
         version = pkg.get('version')
+        skip_install = False
         if name in self.registry.installed:
             existing_version = self.registry.installed[name]
             if version == existing_version:
                 LOG.debug("Skipping install of %r since it already happened.", name)
+                skip_install = True
             else:
                 if existing_version is not None:
                     if utils.versionize(existing_version) < utils.versionize(version):
@@ -55,11 +55,12 @@ class Packager(object):
                         LOG.warn("A request has come in for a older version of %r v(%s), when v(%s) was previously installed!", name, version, existing_version)
                 else:
                     LOG.warn("A request has come in for a different version of %r v(%s), when a unspecified version was previously installed!", name, version)
-        self._install(pkg)
-        LOG.debug("Noting that %r - v(%s) was installed.", name, (version or "??"))
-        self.registry.installed[name] = version
-        if name in self.registry.removed:
-            del(self.registry.removed[name])
+        if not skip_install:
+            self._install(pkg)
+            LOG.debug("Noting that %r - v(%s) was installed.", name, (version or "??"))
+            self.registry.installed[name] = version
+            if name in self.registry.removed:
+                del(self.registry.removed[name])
 
     def remove(self, pkg):
         removable = pkg.get('removable', True)

@@ -20,8 +20,6 @@ from devstack import downloader as down
 from devstack import exceptions as excp
 from devstack import importer
 from devstack import log as logging
-from devstack import packager
-from devstack import pip
 from devstack import settings
 from devstack import shell as sh
 from devstack import trace as tr
@@ -469,7 +467,7 @@ class PythonUninstallComponent(PkgUninstallComponent):
                 for (i, p) in enumerate(pips):
                     try:
                         self.pip_factory.get_packager_for(p).remove(p)
-                    except excp.ProcessExecutionError as e:
+                    except excp.ProcessExecutionError:
                         # NOTE(harlowja): pip seems to die if a pkg isn't there even in quiet mode
                         pass
                     p_bar.update(i + 1)

@@ -22,7 +22,6 @@ import shlex
 
 import yaml
 
-from devstack import decorators
 from devstack import importer
 from devstack import log as logging
 from devstack import settings
