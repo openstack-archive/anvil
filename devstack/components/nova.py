@@ -757,7 +757,7 @@ class NovaConfConfigurator(object):
         return generated_content
 
     def _configure_root_wrap(self, nova_conf):
-        nova_conf.add('root_helper', 'sudo %s' % (self.install.root_wrap_bin))
+        nova_conf.add('root_helper', 'sudo %s' % (self.installer.root_wrap_bin))
 
     def _configure_image_service(self, nova_conf, hostip):
         # What image service we will u be using sir?

@@ -26,24 +26,16 @@ TRACE_FMT = ("%s - %s" + os.linesep)
 TRACE_EXT = ".trace"
 
 # Common trace actions
+AP_STARTED = "AP_STARTED"
 CFG_WRITING_FILE = "CFG_WRITING_FILE"
-SYMLINK_MAKE = "SYMLINK_MAKE"
+DIR_MADE = "DIR_MADE"
+DOWNLOADED = "DOWNLOADED"
+FILE_TOUCHED = "FILE_TOUCHED"
+MARK_MADE = "MARK_MADE"
+PIP_INSTALL = 'PIP_INSTALL'
 PKG_INSTALL = "PKG_INSTALL"
 PYTHON_INSTALL = "PYTHON_INSTALL"
-DIR_MADE = "DIR_MADE"
-FILE_TOUCHED = "FILE_TOUCHED"
-DOWNLOADED = "DOWNLOADED"
-AP_STARTED = "AP_STARTED"
-PIP_INSTALL = 'PIP_INSTALL'
-
-# Common trace file types (or the expected common ones)
-PY_TRACE = "python"
-IN_TRACE = "install"
-START_TRACE = "start"
-
-# Used to note version of trace
-TRACE_VERSION = "TRACE_VERSION"
-TRACE_VER = 0x1
+SYMLINK_MAKE = "SYMLINK_MAKE"
 
 
 def trace_fn(root_dir, name):
@@ -51,9 +43,11 @@ def trace_fn(root_dir, name):
 
 
 class TraceWriter(object):
-    def __init__(self, trace_filename):
+
+    def __init__(self, trace_filename, break_if_there=True):
         self.trace_fn = trace_filename
         self.started = False
+        self.break_if_there = break_if_there
 
     def trace(self, cmd, action=None):
         if action is None:
@@ -64,13 +58,18 @@ class TraceWriter(object):
     def filename(self):
         return self.trace_fn
 
+    def mark(self, details):
+        self._start()
+        what = dict()
+        what['details'] = details
+        self.trace(MARK_MADE, json.dumps(what))
+
     def _start(self):
         if self.started:
             return
         else:
             trace_dirs = sh.mkdirslist(sh.dirname(self.trace_fn))
-            sh.touch_file(self.trace_fn)
-            self.trace(TRACE_VERSION, str(TRACE_VER))
+            sh.touch_file(self.trace_fn, die_if_there=self.break_if_there)
             self.started = True
             self.dirs_made(*trace_dirs)
 
@@ -123,6 +122,7 @@ class TraceWriter(object):
 
 
 class TraceReader(object):
+
     def __init__(self, trace_filename):
         self.trace_fn = trace_filename
         self.contents = None
@@ -191,6 +191,16 @@ class TraceReader(object):
                 if type(entry) is dict:
                     locations.append((entry.get('target'), entry.get('uri')))
         return locations
+
+    def marks_made(self):
+        lines = self.read()
+        marks = list()
+        for (cmd, action) in lines:
+            if cmd == MARK_MADE and len(action):
+                entry = json.loads(action)
+                if type(entry) is dict:
+                    marks.append(entry.get('details'))
+        return marks
 
     def _sort_paths(self, pths):
         # Ensure in correct order (ie /tmp is before /)

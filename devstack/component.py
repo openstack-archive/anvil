@@ -20,7 +20,6 @@ from devstack import downloader as down
 from devstack import exceptions as excp
 from devstack import importer
 from devstack import log as logging
-from devstack import settings
 from devstack import shell as sh
 from devstack import trace as tr
 from devstack import utils
@@ -51,6 +50,9 @@ class ComponentBase(object):
                  subsystem_info,
                  runner,
                  component_dir,
+                 trace_dir,
+                 app_dir,
+                 cfg_dir,
                  all_instances,
                  options,
                  name,
@@ -74,12 +76,9 @@ class ComponentBase(object):
 
         # Required component directories
         self.component_dir = component_dir
-        self.trace_dir = sh.joinpths(self.component_dir,
-                                    settings.COMPONENT_TRACE_DIR)
-        self.app_dir = sh.joinpths(self.component_dir,
-                                  settings.COMPONENT_APP_DIR)
-        self.cfg_dir = sh.joinpths(self.component_dir,
-                                  settings.COMPONENT_CONFIG_DIR)
+        self.trace_dir = trace_dir
+        self.app_dir = app_dir
+        self.cfg_dir = cfg_dir
 
     def verify(self):
         # Ensure subsystems are known...
@@ -116,17 +115,17 @@ class ComponentBase(object):
         pass
 
     def is_started(self):
-        return tr.TraceReader(tr.trace_fn(self.trace_dir, tr.START_TRACE)).exists()
+        return tr.TraceReader(tr.trace_fn(self.trace_dir, "start")).exists()
 
     def is_installed(self):
-        return tr.TraceReader(tr.trace_fn(self.trace_dir, tr.IN_TRACE)).exists()
+        return tr.TraceReader(tr.trace_fn(self.trace_dir, "install")).exists()
 
 
 class PkgInstallComponent(ComponentBase):
     def __init__(self, packager_factory, *args, **kargs):
         ComponentBase.__init__(self, *args, **kargs)
         self.tracewriter = tr.TraceWriter(tr.trace_fn(self.trace_dir,
-                                                      tr.IN_TRACE))
+                                                      "install"), break_if_there=False)
         self.packages = kargs.get('packages', list())
         self.packager_factory = packager_factory
 
@@ -336,9 +335,9 @@ class PythonInstallComponent(PkgInstallComponent):
                 (stdout, stderr) = sh.execute(*PY_INSTALL,
                                                cwd=working_dir,
                                                run_as_root=True)
-                py_trace_name = "%s-%s" % (tr.PY_TRACE, name)
+                py_trace_name = "%s.%s" % (name, 'python')
                 py_writer = tr.TraceWriter(tr.trace_fn(self.trace_dir,
-                                                       py_trace_name))
+                                                       py_trace_name), break_if_there=False)
                 # Format or json encoding isn't really needed here since this is
                 # more just for information output/lookup if desired.
                 py_writer.trace("CMD", " ".join(PY_INSTALL))
@@ -360,7 +359,7 @@ class PkgUninstallComponent(ComponentBase):
     def __init__(self, packager_factory, *args, **kargs):
         ComponentBase.__init__(self, *args, **kargs)
         self.tracereader = tr.TraceReader(tr.trace_fn(self.trace_dir,
-                                                      tr.IN_TRACE))
+                                                      "install"))
         self.keep_old = kargs.get('keep_old', False)
         self.packager_factory = packager_factory
 
@@ -487,8 +486,8 @@ class PythonUninstallComponent(PkgUninstallComponent):
 class ProgramRuntime(ComponentBase):
     def __init__(self, *args, **kargs):
         ComponentBase.__init__(self, *args, **kargs)
-        self.tracewriter = tr.TraceWriter(tr.trace_fn(self.trace_dir, tr.START_TRACE))
-        self.tracereader = tr.TraceReader(tr.trace_fn(self.trace_dir, tr.START_TRACE))
+        self.tracewriter = tr.TraceWriter(tr.trace_fn(self.trace_dir, "start"), break_if_there=True)
+        self.tracereader = tr.TraceReader(tr.trace_fn(self.trace_dir, "start"))
 
     def _get_apps_to_start(self):
         return list()
@@ -601,7 +600,7 @@ class PythonRuntime(ProgramRuntime):
 class EmptyRuntime(ComponentBase):
     def __init__(self, *args, **kargs):
         ComponentBase.__init__(self, *args, **kargs)
-        self.tracereader = tr.TraceReader(tr.trace_fn(self.trace_dir, tr.IN_TRACE))
+        self.tracereader = tr.TraceReader(tr.trace_fn(self.trace_dir, "install"))
 
     def configure(self):
         return 0

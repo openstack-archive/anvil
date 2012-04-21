@@ -118,18 +118,18 @@ def load_rc_files():
     return loaded_am
 
 
-def load_verify_persona(fn, distro):
+def load_verify_persona(fn, distro_instance):
     """
     Loads and verifies the given persona under the given distro.
 
     Arguments:
         fn: persona file name/path
-        distro: the distrobution object to use for verification
+        distro_instance: the distrobution object to use for verification
     Returns: the persona instance from that file (verified)
     """
 
     instance = persona.Persona.load_file(fn)
-    instance.verify(distro)
+    instance.verify(distro_instance)
     return instance
 
 
