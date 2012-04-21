@@ -39,6 +39,7 @@ from devstack.progs import actions
 
 LOG = logging.getLogger("devstack.stack")
 
+# The grouping of our pretty printing of config
 _CFG_GROUPS = {
     cfg_helpers.make_id('passwords', None): 'Passwords',
     cfg_helpers.make_id('db', None): 'Database info',
@@ -46,11 +47,25 @@ _CFG_GROUPS = {
     cfg_helpers.make_id(None, None): 'Misc configs',
 }
 
+# The order in which we will pretty print our config cache
 _CFG_ORDERING = sorted(_CFG_GROUPS.keys())
 _CFG_ORDERING.reverse()
 
+# Which rc files we will attempt to load
+RC_FILES = [
+    sh.abspth(settings.gen_rc_filename('core')),
+]
+
 
 def dump_config(config_cache):
+    """
+    Dumps the given config key value cache in the
+    order that stack is defined to group that cache
+    in a nice and pretty manner.
+
+    Arguments:
+        config_cache: map of items to group and then pretty print
+    """
 
     def item_format(key, value):
         return "\t%s=%s" % (str(key), str(value))
@@ -83,30 +98,62 @@ def dump_config(config_cache):
 
 
 def load_rc_files():
-    fns = list()
-    fns.append(sh.abspth(settings.gen_rc_filename('core')))
-    for fn in fns:
+    """
+    Loads the desired set of rc files that stack will use to
+    pre-populate its environment settings from.
+
+    Arguments: N/A
+    Returns: the number of files loaded
+    """
+
+    loaded_am = 0
+    for fn in RC_FILES:
         try:
             LOG.info("Attempting to load file %r which has your environment settings." % (fn))
             am_loaded = env_rc.RcReader().load(fn)
             LOG.info("Loaded %s settings from file %r" % (am_loaded, fn))
+            loaded_am += 1
         except IOError:
             LOG.warn('Error reading file located at %r. Skipping loading it.' % (fn))
-    return len(fns)
+    return loaded_am
 
 
-def load_verify_persona(fn, dist):
+def load_verify_persona(fn, distro):
+    """
+    Loads and verifies the given persona under the given distro.
+
+    Arguments:
+        fn: persona file name/path
+        distro: the distrobution object to use for verification
+    Returns: the persona instance from that file (verified)
+    """
+
     instance = persona.Persona.load_file(fn)
-    instance.verify(dist)
+    instance.verify(distro)
     return instance
 
 
 def setup_root(root_dir):
+    """
+    Ensures the root dir is created and setup as desired.
+
+    Arguments:
+        root_dir: the location of the desired root install directory
+    Returns: N/A
+    """
+
     if not sh.isdir(root_dir):
         sh.mkdir(root_dir)
 
 
 def run(args):
+    """
+    Starts the execution of devstackpy after
+    args have been parsed and logging has been setup.
+
+    Arguments: N/A
+    Returns: True for success to run, False for failure to start
+    """
 
     (repeat_string, line_max_len) = utils.welcome()
     print(utils.center_text("Action Runner", repeat_string, line_max_len))
@@ -174,6 +221,14 @@ def run(args):
 
 
 def main():
+    """
+    Starts the execution of devstack py without
+    injecting variables into the global namespace. Ensures that
+    logging is setup and that sudo access is available and in-use.
+
+    Arguments: N/A
+    Returns: 1 for success, 0 for failure
+    """
 
     # Do this first so people can see the help message...
     args = opts.parse()
