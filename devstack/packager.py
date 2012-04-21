@@ -115,6 +115,7 @@ class PackagerFactory(object):
     def _get_default_pkgr(self):
         if not self.default_packager:
             self.default_packager = self._construct_pkger(self.default_packager_cls)
+            LOG.debug('Loading default package manager %s', self.default_packager_cls)
         return self.default_packager
 
     def get_packager_for(self, pkg_info):
@@ -125,7 +126,8 @@ class PackagerFactory(object):
             if packager_name in self.fetched_packagers:
                 packager = self.fetched_packagers[packager_name]
             else:
-                LOG.debug('Loading custom package manager %r for package %r', packager_name, pkg_info['name'])
-                packager = self._construct_pkger(importer.import_entry_point(packager_name))
+                packager_cls = importer.import_entry_point(packager_name)
+                LOG.debug('Loading custom package manager %s for package %r', packager_cls, pkg_info['name'])
+                packager = self._construct_pkger(packager_cls)
                 self.fetched_packagers[packager_name] = packager
         return packager
