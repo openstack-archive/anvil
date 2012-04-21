@@ -50,11 +50,14 @@ class Packager(object):
             else:
                 if existing_version is not None:
                     if utils.versionize(existing_version) < utils.versionize(version):
-                        LOG.warn("A request has come in for a newer version of %r v(%s), when v(%s) was previously installed!", name, version, existing_version)
+                        LOG.warn(("A request has come in for a 'potentially' newer version of %r v(%s),"
+                            " when v(%s) was previously installed!"), name, version, existing_version)
                     elif utils.versionize(existing_version) > utils.versionize(version):
-                        LOG.warn("A request has come in for a older version of %r v(%s), when v(%s) was previously installed!", name, version, existing_version)
+                        LOG.warn(("A request has come in for a 'potentially' older version of %r v(%s), "
+                            "when v(%s) was previously installed!"), name, version, existing_version)
                 else:
-                    LOG.warn("A request has come in for a different version of %r v(%s), when a unspecified version was previously installed!", name, version)
+                    LOG.warn(("A request has come in for a 'potentially' different version of %r v(%s),"
+                        " when a unspecified version was previously installed!"), name, version)
         if not skip_install:
             self._install(pkg)
             LOG.debug("Noting that %r - v(%s) was installed.", name, (version or "??"))
