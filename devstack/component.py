@@ -392,6 +392,8 @@ class PkgUninstallComponent(ComponentBase):
         self._uninstall_pkgs()
         self._uninstall_touched_files()
         self._uninstall_dirs()
+        LOG.debug("Deleting install trace file %r", self.tracereader.filename())
+        sh.unlink(self.tracereader.filename())
 
     def post_uninstall(self):
         pass
