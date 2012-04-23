@@ -39,12 +39,14 @@ class ActionRunner(object):
                  distro,
                  cfg,
                  pw_gen,
+                 root_dir,
                  **kargs):
         self.distro = distro
         self.cfg = cfg
         self.pw_gen = pw_gen
         self.keep_old = kargs.get('keep_old', False)
         self.force = kargs.get('force', False)
+        self.root_dir = root_dir
 
     @abc.abstractmethod
     def prerequisite(self):
@@ -59,7 +61,7 @@ class ActionRunner(object):
         return False
 
     @abc.abstractmethod
-    def _run(self, persona, root_dir, component_order, instances):
+    def _run(self, persona, component_order, instances):
         """Run the phases of processing for this action.
 
         Subclasses are expected to override this method to
@@ -72,8 +74,8 @@ class ActionRunner(object):
         # Duplicate the list to avoid problems if it is updated later.
         return components[:]
 
-    def get_component_dirs(self, root_dir, component):
-        component_dir = sh.joinpths(root_dir, component)
+    def get_component_dirs(self, component):
+        component_dir = sh.joinpths(self.root_dir, component)
         trace_dir = sh.joinpths(component_dir, settings.COMPONENT_TRACE_DIR)
         app_dir = sh.joinpths(component_dir, settings.COMPONENT_APP_DIR)
         cfg_dir = sh.joinpths(component_dir, settings.COMPONENT_CONFIG_DIR)
@@ -82,9 +84,10 @@ class ActionRunner(object):
             'trace_dir': trace_dir,
             'app_dir': app_dir,
             'cfg_dir': cfg_dir,
+            'root_dir': self.root_dir,
         }
 
-    def _construct_instances(self, persona, root_dir):
+    def _construct_instances(self, persona):
         """
         Create component objects for each component in the persona.
         """
@@ -99,7 +102,7 @@ class ActionRunner(object):
             LOG.debug("Constructing class %s" % (cls))
             cls_kvs = {}
             cls_kvs['runner'] = self
-            cls_kvs.update(self.get_component_dirs(root_dir, c))
+            cls_kvs.update(self.get_component_dirs(c))
             cls_kvs['subsystem_info'] = my_info.get('subsystems', {})
             cls_kvs['all_instances'] = instances
             cls_kvs['name'] = c
@@ -127,21 +130,19 @@ class ActionRunner(object):
             instance = instances[c]
             instance.warm_configs()
 
-    def _get_phase_dir(self, instance):
-        return instance.trace_dir
-
     def _skip_phase(self, instance, mark):
         phase_fn = "%s.phases" % (self.NAME)
-        trace_fn = tr.trace_fn(self._get_phase_dir(instance), phase_fn)
-        LOG.debug("Checking if we already completed phase %r by looking in %r", mark, trace_fn)
-        reader = tr.TraceReader(trace_fn)
+        trace_fn = tr.trace_fn(self.root_dir, phase_fn)
+        name = instance.component_name
+        LOG.debug("Checking if we already completed phase %r by looking in %r for component %s", mark, trace_fn, name)
         skipable = False
         try:
+            reader = tr.TraceReader(trace_fn)
             marks = reader.marks_made()
             for mark_found in marks:
-                if mark == mark_found.get('id'):
+                if mark == mark_found.get('id') and name == mark_found.get('name'):
                     skipable = True
-                    LOG.debug("Completed phase %r on: %s", mark, mark_found.get('when'))
+                    LOG.debug("Completed phase %r on for component %s: %s", mark, mark_found.get('name'), mark_found.get('when'))
                     break
         except excp.NoTraceException:
             pass
@@ -149,12 +150,14 @@ class ActionRunner(object):
 
     def _mark_phase(self, instance, mark):
         phase_fn = "%s.phases" % (self.NAME)
-        trace_fn = tr.trace_fn(self._get_phase_dir(instance), phase_fn)
+        trace_fn = tr.trace_fn(self.root_dir, phase_fn)
+        name = instance.component_name
         writer = tr.TraceWriter(trace_fn, break_if_there=False)
-        LOG.debug("Marking we completed phase %r in file %r", mark, trace_fn)
+        LOG.debug("Marking we completed phase %r in file %r for component %s", mark, trace_fn, name)
         details = {
             'id': mark,
             'when': date.rcf8222date(),
+            'name': name,
         }
         writer.mark(details)
 
@@ -174,17 +177,16 @@ class ActionRunner(object):
                     self._mark_phase(instance, phase_name)
                 except (excp.NoTraceException) as e:
                     if self.force:
-                        LOG.debug("Skipping exception [%s]" % (e))
+                        LOG.debug("Skipping exception: %s" % (e))
                     else:
                         raise
 
-    def _delete_phase_files(self, instance, names):
-        phase_dir = self._get_phase_dir(instance)
+    def _delete_phase_files(self, names):
+        phase_dir = self.root_dir
         for name in names:
-            phase_fn = "%s.phases" % (name)
-            sh.unlink(tr.trace_fn(phase_dir, phase_fn))
+            sh.unlink(tr.trace_fn(phase_dir, "%s.phases" % (name)))
 
-    def _handle_prereq(self, persona, instances, root_dir):
+    def _handle_prereq(self, persona, instances):
         preq_cls = self.prerequisite()
         if not preq_cls:
             return
@@ -200,13 +202,14 @@ class ActionRunner(object):
                                     self.cfg,
                                     self.pw_gen,
                                     keep_old=self.keep_old,
-                                    force=self.force
+                                    force=self.force,
+                                    root_dir=self.root_dir,
                                  )
-            prereq_instance.run(persona, root_dir)
+            prereq_instance.run(persona)
 
-    def run(self, persona, root_dir):
-        instances = self._construct_instances(persona, root_dir)
-        self._handle_prereq(persona, instances, root_dir)
+    def run(self, persona):
+        instances = self._construct_instances(persona)
+        self._handle_prereq(persona, instances)
         component_order = self._order_components(persona.wanted_components)
         LOG.info("Processing components for action %r", (self.NAME or "???"))
         utils.log_iterable(component_order,
@@ -214,7 +217,7 @@ class ActionRunner(object):
                         logger=LOG)
         self._verify_components(component_order, instances)
         self._warm_components(component_order, instances)
-        self._run(persona, root_dir, component_order, instances)
+        self._run(persona, component_order, instances)
 
 
 class InstallRunner(ActionRunner):
@@ -224,9 +227,9 @@ class InstallRunner(ActionRunner):
     def _instance_needs_prereq(self, instance):
         return False
 
-    def _write_rc_file(self, root_dir):
+    def _write_rc_file(self):
         fn = sh.abspth(settings.gen_rc_filename('core'))
-        writer = env_rc.RcWriter(self.cfg, self.pw_gen, root_dir)
+        writer = env_rc.RcWriter(self.cfg, self.pw_gen, self.root_dir)
         if not sh.isfile(fn):
             LOG.info("Generating a file at %r that will contain your environment settings.", fn)
             writer.write(fn)
@@ -235,8 +238,8 @@ class InstallRunner(ActionRunner):
             am_upd = writer.update(fn)
             LOG.info("Updated %s settings in rc file %r", am_upd, fn)
 
-    def _run(self, persona, root_dir, component_order, instances):
-        self._write_rc_file(root_dir)
+    def _run(self, persona, component_order, instances):
+        self._write_rc_file()
         self._run_phase(
             'Downloading {name}',
             lambda i: i.download(),
@@ -289,7 +292,7 @@ class StartRunner(ActionRunner):
     def prerequisite(self):
         return InstallRunner
 
-    def _run(self, persona, root_dir, component_order, instances):
+    def _run(self, persona, component_order, instances):
         self._run_phase(
             'Configuring runner for {name}',
             lambda i: i.configure(),
@@ -336,7 +339,7 @@ class StopRunner(ActionRunner):
         components.reverse()
         return components
 
-    def _run(self, persona, root_dir, component_order, instances):
+    def _run(self, persona, component_order, instances):
         self._run_phase(
             'Stopping {name}',
             lambda i: i.stop(),
@@ -345,8 +348,7 @@ class StopRunner(ActionRunner):
             instances,
             "Stopped"
             )
-        for i in instances.values():
-            self._delete_phase_files(i, set([self.NAME, StartRunner.NAME]))
+        self._delete_phase_files(set([self.NAME, StartRunner.NAME]))
 
 
 class UninstallRunner(ActionRunner):
@@ -364,7 +366,7 @@ class UninstallRunner(ActionRunner):
         components.reverse()
         return components
 
-    def _run(self, persona, root_dir, component_order, instances):
+    def _run(self, persona, component_order, instances):
         self._run_phase(
             'Unconfiguring {name}',
             lambda i: i.unconfigure(),
@@ -397,8 +399,7 @@ class UninstallRunner(ActionRunner):
             instances,
             "Post-uninstall"
             )
-        for i in instances.values():
-            self._delete_phase_files(i, set([self.NAME, InstallRunner.NAME]))
+        self._delete_phase_files(set([self.NAME, InstallRunner.NAME]))
 
 
 _NAMES_TO_RUNNER = {
