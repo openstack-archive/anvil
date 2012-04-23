@@ -193,14 +193,15 @@ class PkgInstallComponent(ComponentBase):
     def install(self):
         LOG.debug('Preparing to install packages for %r', self.component_name)
         pkgs = self._get_packages()
-        pkg_names = set([p['name'] for p in pkgs])
-        utils.log_iterable(pkg_names, logger=LOG,
-            header="Setting up %s distribution packages" % (len(pkg_names)))
-        with utils.progress_bar(INSTALL_TITLE, len(pkgs)) as p_bar:
-            for (i, p) in enumerate(pkgs):
-                self.tracewriter.package_installed(p)
-                self.packager_factory.get_packager_for(p).install(p)
-                p_bar.update(i + 1)
+        if pkgs:
+            pkg_names = set([p['name'] for p in pkgs])
+            utils.log_iterable(pkg_names, logger=LOG,
+                header="Setting up %s distribution packages" % (len(pkg_names)))
+            with utils.progress_bar(INSTALL_TITLE, len(pkgs)) as p_bar:
+                for (i, p) in enumerate(pkgs):
+                    self.tracewriter.package_installed(p)
+                    self.packager_factory.get_packager_for(p).install(p)
+                    p_bar.update(i + 1)
         return self.trace_dir
 
     def pre_install(self):
