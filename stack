@@ -202,6 +202,7 @@ def run(args):
     runner = runner_factory(dist,
                             config,
                             pw_gen,
+                            root_dir=root_dir,
                             **args)
 
     LOG.info("Starting action %r on %s for distro: %r" % (action, date.rcf8222date(), dist.name))
@@ -209,7 +210,7 @@ def run(args):
     LOG.info("In root directory: %r" % (root_dir))
 
     start_time = time.time()
-    runner.run(persona_inst, root_dir)
+    runner.run(persona_inst)
     end_time = time.time()
 
     LOG.info("It took (%s) to complete action %r" %

@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import re
 import weakref
 
 from devstack import downloader as down
@@ -105,6 +106,12 @@ class ComponentBase(object):
             'TRACE_DIR': self.trace_dir,
         }
 
+    def _get_trace_files(self):
+        return {
+            'start': tr.trace_fn(self.trace_dir, "start"),
+            'install': tr.trace_fn(self.trace_dir, "install"),
+        }
+
     def known_subsystems(self):
         return set()
 
@@ -115,17 +122,16 @@ class ComponentBase(object):
         pass
 
     def is_started(self):
-        return tr.TraceReader(tr.trace_fn(self.trace_dir, "start")).exists()
+        return tr.TraceReader(self._get_trace_files()['start']).exists()
 
     def is_installed(self):
-        return tr.TraceReader(tr.trace_fn(self.trace_dir, "install")).exists()
+        return tr.TraceReader(self._get_trace_files()['install']).exists()
 
 
 class PkgInstallComponent(ComponentBase):
     def __init__(self, packager_factory, *args, **kargs):
         ComponentBase.__init__(self, *args, **kargs)
-        self.tracewriter = tr.TraceWriter(tr.trace_fn(self.trace_dir,
-                                                      "install"), break_if_there=False)
+        self.tracewriter = tr.TraceWriter(self._get_trace_files()['install'], break_if_there=False)
         self.packages = kargs.get('packages', list())
         self.packager_factory = packager_factory
 
@@ -359,8 +365,7 @@ class PythonInstallComponent(PkgInstallComponent):
 class PkgUninstallComponent(ComponentBase):
     def __init__(self, packager_factory, *args, **kargs):
         ComponentBase.__init__(self, *args, **kargs)
-        self.tracereader = tr.TraceReader(tr.trace_fn(self.trace_dir,
-                                                      "install"))
+        self.tracereader = tr.TraceReader(self._get_trace_files()['install'])
         self.keep_old = kargs.get('keep_old', False)
         self.packager_factory = packager_factory
 
@@ -469,9 +474,11 @@ class PythonUninstallComponent(PkgUninstallComponent):
                 for (i, p) in enumerate(pips):
                     try:
                         self.pip_factory.get_packager_for(p).remove(p)
-                    except excp.ProcessExecutionError:
+                    except excp.ProcessExecutionError as e:
                         # NOTE(harlowja): pip seems to die if a pkg isn't there even in quiet mode
-                        pass
+                        combined = (str(e.stderr) + str(e.stdout))
+                        if not re.search(r"not\s+installed", combined, re.I):
+                            raise
                     p_bar.update(i + 1)
 
     def _uninstall_python(self):
@@ -489,8 +496,8 @@ class PythonUninstallComponent(PkgUninstallComponent):
 class ProgramRuntime(ComponentBase):
     def __init__(self, *args, **kargs):
         ComponentBase.__init__(self, *args, **kargs)
-        self.tracewriter = tr.TraceWriter(tr.trace_fn(self.trace_dir, "start"), break_if_there=True)
-        self.tracereader = tr.TraceReader(tr.trace_fn(self.trace_dir, "start"))
+        self.tracewriter = tr.TraceWriter(self._get_trace_files()['start'], break_if_there=True)
+        self.tracereader = tr.TraceReader(self._get_trace_files()['start'])
 
     def _get_apps_to_start(self):
         return list()
@@ -603,7 +610,7 @@ class PythonRuntime(ProgramRuntime):
 class EmptyRuntime(ComponentBase):
     def __init__(self, *args, **kargs):
         ComponentBase.__init__(self, *args, **kargs)
-        self.tracereader = tr.TraceReader(tr.trace_fn(self.trace_dir, "install"))
+        self.tracereader = tr.TraceReader(self._get_trace_files()['install'])
 
     def configure(self):
         return 0

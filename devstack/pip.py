@@ -46,7 +46,7 @@ class Packager(pack.Packager):
         sh.execute(*real_cmd, run_as_root=True)
 
     def _remove(self, pip):
-        root_cmd = self.distro.get_command('pip')
+        root_cmd = self.distro.get_command_config('pip')
         # Versions don't seem to matter here...
         name = self._make_pip_name(pip['name'], None)
         LOG.audit("Uninstalling python package %r using pip command %s" % (name, root_cmd))
