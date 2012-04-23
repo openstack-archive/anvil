@@ -16,7 +16,6 @@
 
 import yaml
 
-from devstack import decorators
 from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import shell as sh

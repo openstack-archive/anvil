@@ -18,9 +18,9 @@ be useful for other tasks related to DEVSTACKpy.
 
 ## Documentation
 
-Please create documentation on the GitHub wiki located at:
+Please create documentation in the ``docs/`` folder which will be synced with:
 
-https://github.com/yahoo/Openstack-DevstackPy/wiki
+http://readthedocs.org/docs/devstackpy/
 
 This will suffice until a more *official* documentation site can be made.
 
@@ -48,7 +48,7 @@ To run our limited set of tests (WIP) use the following command:
   
 ## Documentation
 
-Documentation should all be written in [markdown] or [rst]. Although github does support other formats it seems better just to stabilize on one.
+Documentation should all be written in [markdown] or [rst]. Although github does support other formats it seems better just to stabilize on one of those.
 
 ## Style Commandments
 

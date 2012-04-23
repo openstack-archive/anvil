@@ -15,7 +15,6 @@
 #    under the License.
 
 from devstack import log as logging
-from devstack import settings
 
 LOG = logging.getLogger("devstack.cfg.helpers")
 

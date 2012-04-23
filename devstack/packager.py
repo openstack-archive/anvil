@@ -15,9 +15,7 @@
 #    under the License.
 
 import abc
-import collections
 
-from devstack import decorators
 from devstack import importer
 from devstack import log as logging
 from devstack import utils
@@ -36,30 +34,36 @@ class Packager(object):
 
     __meta__ = abc.ABCMeta
 
-    def __init__(self, distro):
+    def __init__(self, distro, registry):
         self.distro = distro
-        self.registry = PackageRegistry()
+        self.registry = registry
 
     def install(self, pkg):
         name = pkg['name']
         version = pkg.get('version')
+        skip_install = False
         if name in self.registry.installed:
             existing_version = self.registry.installed[name]
             if version == existing_version:
                 LOG.debug("Skipping install of %r since it already happened.", name)
+                skip_install = True
             else:
                 if existing_version is not None:
                     if utils.versionize(existing_version) < utils.versionize(version):
-                        LOG.warn("A request has come in for a newer version of %r v(%s), when v(%s) was previously installed!", name, version, existing_version)
+                        LOG.warn(("A request has come in for a 'potentially' newer version of %r v(%s),"
+                            " when v(%s) was previously installed!"), name, version, existing_version)
                     elif utils.versionize(existing_version) > utils.versionize(version):
-                        LOG.warn("A request has come in for a older version of %r v(%s), when v(%s) was previously installed!", name, version, existing_version)
+                        LOG.warn(("A request has come in for a 'potentially' older version of %r v(%s), "
+                            "when v(%s) was previously installed!"), name, version, existing_version)
                 else:
-                    LOG.warn("A request has come in for a different version of %r v(%s), when a unspecified version was previously installed!", name, version)
-        self._install(pkg)
-        LOG.debug("Noting that %r - v(%s) was installed.", name, (version or "??"))
-        self.registry.installed[name] = version
-        if name in self.registry.removed:
-            del(self.registry.removed[name])
+                    LOG.warn(("A request has come in for a 'potentially' different version of %r v(%s),"
+                        " when a unspecified version was previously installed!"), name, version)
+        if not skip_install:
+            self._install(pkg)
+            LOG.debug("Noting that %r - v(%s) was installed.", name, (version or "??"))
+            self.registry.installed[name] = version
+            if name in self.registry.removed:
+                del(self.registry.removed[name])
 
     def remove(self, pkg):
         removable = pkg.get('removable', True)
@@ -101,20 +105,32 @@ class PackagerFactory(object):
 
     PACKAGER_KEY_NAME = 'packager_name'
 
-    def __init__(self, distro, default_packager):
-        self.default_packager = default_packager
+    def __init__(self, distro, default_packager_cls):
+        self.default_packager = None
+        self.default_packager_cls = default_packager_cls
         self.distro = distro
         self.fetched_packagers = dict()
+        self.registry = PackageRegistry()
+
+    def _construct_pkger(self, cls):
+        return cls(self.distro, self.registry)
+
+    def _get_default_pkgr(self):
+        if not self.default_packager:
+            self.default_packager = self._construct_pkger(self.default_packager_cls)
+            LOG.debug('Loading default package manager %s', self.default_packager_cls)
+        return self.default_packager
 
     def get_packager_for(self, pkg_info):
-        if self.PACKAGER_KEY_NAME in pkg_info:
-            packager_name = pkg_info[self.PACKAGER_KEY_NAME]
+        packager_name = pkg_info.get(self.PACKAGER_KEY_NAME)
+        if not packager_name or not packager_name.strip():
+            packager = self._get_default_pkgr()
+        else:
             if packager_name in self.fetched_packagers:
                 packager = self.fetched_packagers[packager_name]
             else:
-                LOG.debug('Loading custom package manager %r for package %r', packager_name, pkg_info['name'])
-                packager = importer.import_entry_point(packager_name)(self.distro)
+                packager_cls = importer.import_entry_point(packager_name)
+                LOG.debug('Loading custom package manager %s for package %r', packager_cls, pkg_info['name'])
+                packager = self._construct_pkger(packager_cls)
                 self.fetched_packagers[packager_name] = packager
-        else:
-            packager = self.default_packager
         return packager

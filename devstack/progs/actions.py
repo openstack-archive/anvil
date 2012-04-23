@@ -16,6 +16,7 @@
 
 import abc
 
+from devstack import date
 from devstack import env_rc
 from devstack import exceptions as excp
 from devstack import log as logging
@@ -23,6 +24,7 @@ from devstack import packager
 from devstack import pip
 from devstack import settings
 from devstack import shell as sh
+from devstack import trace as tr
 from devstack import utils
 
 
@@ -70,21 +72,34 @@ class ActionRunner(object):
         # Duplicate the list to avoid problems if it is updated later.
         return components[:]
 
+    def get_component_dirs(self, root_dir, component):
+        component_dir = sh.joinpths(root_dir, component)
+        trace_dir = sh.joinpths(component_dir, settings.COMPONENT_TRACE_DIR)
+        app_dir = sh.joinpths(component_dir, settings.COMPONENT_APP_DIR)
+        cfg_dir = sh.joinpths(component_dir, settings.COMPONENT_CONFIG_DIR)
+        return {
+            'component_dir': component_dir,
+            'trace_dir': trace_dir,
+            'app_dir': app_dir,
+            'cfg_dir': cfg_dir,
+        }
+
     def _construct_instances(self, persona, root_dir):
-        """Create component objects for each component in the persona.
+        """
+        Create component objects for each component in the persona.
         """
         components = persona.wanted_components
         desired_subsystems = persona.wanted_subsystems or {}
         component_opts = persona.component_options or {}
         instances = {}
-        pip_factory = packager.PackagerFactory(self.distro, pip.Packager(self.distro))
-        pkg_factory = packager.PackagerFactory(self.distro, self.distro.get_default_package_manager())
+        pip_factory = packager.PackagerFactory(self.distro, pip.Packager)
+        pkg_factory = packager.PackagerFactory(self.distro, self.distro.get_default_package_manager_cls())
         for c in components:
             (cls, my_info) = self.distro.extract_component(c, self.NAME)
             LOG.debug("Constructing class %s" % (cls))
             cls_kvs = {}
             cls_kvs['runner'] = self
-            cls_kvs['component_dir'] = sh.joinpths(root_dir, c)
+            cls_kvs.update(self.get_component_dirs(root_dir, c))
             cls_kvs['subsystem_info'] = my_info.get('subsystems', {})
             cls_kvs['all_instances'] = instances
             cls_kvs['name'] = c
@@ -112,22 +127,62 @@ class ActionRunner(object):
             instance = instances[c]
             instance.warm_configs()
 
-    def _run_phase(self, start_msg, functor, end_msg, component_order, instances):
-        """Run a given 'functor' across all of the components, in order.
+    def _get_phase_dir(self, instance):
+        return instance.trace_dir
+
+    def _skip_phase(self, instance, mark):
+        phase_fn = "%s.phases" % (self.NAME)
+        trace_fn = tr.trace_fn(self._get_phase_dir(instance), phase_fn)
+        LOG.debug("Checking if we already completed phase %r by looking in %r", mark, trace_fn)
+        reader = tr.TraceReader(trace_fn)
+        skipable = False
+        try:
+            marks = reader.marks_made()
+            for mark_found in marks:
+                if mark == mark_found.get('id'):
+                    skipable = True
+                    LOG.debug("Completed phase %r on: %s", mark, mark_found.get('when'))
+                    break
+        except excp.NoTraceException:
+            pass
+        return skipable
+
+    def _mark_phase(self, instance, mark):
+        phase_fn = "%s.phases" % (self.NAME)
+        trace_fn = tr.trace_fn(self._get_phase_dir(instance), phase_fn)
+        writer = tr.TraceWriter(trace_fn, break_if_there=False)
+        LOG.debug("Marking we completed phase %r in file %r", mark, trace_fn)
+        details = {
+            'id': mark,
+            'when': date.rcf8222date(),
+        }
+        writer.mark(details)
+
+    def _run_phase(self, start_msg, functor, end_msg, component_order, instances, phase_name):
+        """
+        Run a given 'functor' across all of the components, in order.
         """
         for c in component_order:
             instance = instances[c]
-            if start_msg:
+            if self._skip_phase(instance, phase_name):
+                LOG.debug("Skipping phase named %r for component %r", phase_name, c)
+            else:
                 LOG.info(start_msg.format(name=c))
-            try:
-                result = functor(instance)
-                if end_msg:
+                try:
+                    result = functor(instance)
                     LOG.info(end_msg.format(name=c, result=result))
-            except (excp.NoTraceException) as e:
-                if self.force:
-                    LOG.debug("Skipping exception [%s]" % (e))
-                else:
-                    raise
+                    self._mark_phase(instance, phase_name)
+                except (excp.NoTraceException) as e:
+                    if self.force:
+                        LOG.debug("Skipping exception [%s]" % (e))
+                    else:
+                        raise
+
+    def _delete_phase_files(self, instance, names):
+        phase_dir = self._get_phase_dir(instance)
+        for name in names:
+            phase_fn = "%s.phases" % (name)
+            sh.unlink(tr.trace_fn(phase_dir, phase_fn))
 
     def _handle_prereq(self, persona, instances, root_dir):
         preq_cls = self.prerequisite()
@@ -188,6 +243,7 @@ class InstallRunner(ActionRunner):
             "Performed {result} downloads.",
             component_order,
             instances,
+            "Download"
             )
         self._run_phase(
             'Configuring {name}',
@@ -195,27 +251,31 @@ class InstallRunner(ActionRunner):
             "Configured {result} items.",
             component_order,
             instances,
+            "Configure"
             )
         self._run_phase(
             'Pre-installing {name}',
             lambda i: i.pre_install(),
-            None,
+            "Finished pre-install of {name}",
             component_order,
             instances,
+            "Pre-install"
             )
         self._run_phase(
             'Installing {name}',
             lambda i: i.install(),
-            "Finished install of {name} - check {result} for traces of what happened.",
+            "Finished install of {name} - check {result} for information on what was done.",
             component_order,
             instances,
+            "Install"
             )
         self._run_phase(
             'Post-installing {name}',
             lambda i: i.post_install(),
-            None,
+            "Finished post-install of {name}",
             component_order,
             instances,
+            "Post-install"
             )
 
 
@@ -231,32 +291,36 @@ class StartRunner(ActionRunner):
 
     def _run(self, persona, root_dir, component_order, instances):
         self._run_phase(
-            None,
+            'Configuring runner for {name}',
             lambda i: i.configure(),
-            None,
+            "Finished configuring runner for {name}",
             component_order,
             instances,
+            "Configure"
             )
         self._run_phase(
             'Pre-starting {name}',
             lambda i: i.pre_start(),
-            None,
+            "Finished pre-start of {name}",
             component_order,
             instances,
+            "Pre-start"
             )
         self._run_phase(
             'Starting {name}',
             lambda i: i.start(),
-            "Started {result} applications.",
+            "Started {result} applications",
             component_order,
             instances,
+            "Start"
             )
         self._run_phase(
             'Post-starting {name}',
             lambda i: i.post_start(),
-            None,
+            "Finished post-start of {name}",
             component_order,
             instances,
+            "Post-start"
             )
 
 
@@ -279,7 +343,10 @@ class StopRunner(ActionRunner):
             'Stopped {result} items',
             component_order,
             instances,
+            "Stopped"
             )
+        for i in instances.values():
+            self._delete_phase_files(i, set([self.NAME, StartRunner.NAME]))
 
 
 class UninstallRunner(ActionRunner):
@@ -301,31 +368,37 @@ class UninstallRunner(ActionRunner):
         self._run_phase(
             'Unconfiguring {name}',
             lambda i: i.unconfigure(),
-            None,
+            "Finished unconfiguring of {name}",
             component_order,
             instances,
+            "Unconfigure"
             )
         self._run_phase(
             'Pre-uninstalling {name}',
             lambda i: i.pre_uninstall(),
-            None,
+            "Finished pre-uninstall of {name}",
             component_order,
             instances,
+            "Pre-uninstall"
             )
         self._run_phase(
             'Uninstalling {name}',
             lambda i: i.uninstall(),
-            None,
+            "Finished uninstall of {name}",
             component_order,
             instances,
+            "Uninstall"
             )
         self._run_phase(
             'Post-uninstalling {name}',
             lambda i: i.post_uninstall(),
-            None,
+            "Finished post-uninstall of {name}",
             component_order,
             instances,
+            "Post-uninstall"
             )
+        for i in instances.values():
+            self._delete_phase_files(i, set([self.NAME, InstallRunner.NAME]))
 
 
 _NAMES_TO_RUNNER = {
@@ -337,13 +410,15 @@ _NAMES_TO_RUNNER = {
 
 
 def get_action_names():
-    """Returns a list of the available action names.
+    """
+    Returns a list of the available action names.
     """
     return sorted(_NAMES_TO_RUNNER.keys())
 
 
 def get_runner_factory(action):
-    """Given an action name, look up the factory for that action runner.
+    """
+    Given an action name, look up the factory for that action runner.
     """
     try:
         return _NAMES_TO_RUNNER[action]
