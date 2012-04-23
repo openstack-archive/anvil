@@ -72,7 +72,7 @@ class ActionRunner(object):
         """Returns the components in the order they should be processed.
         """
         # Duplicate the list to avoid problems if it is updated later.
-        return components[:]
+        return list(components)
 
     def get_component_dirs(self, component):
         component_dir = sh.joinpths(self.root_dir, component)
@@ -170,10 +170,12 @@ class ActionRunner(object):
             if self._skip_phase(instance, phase_name):
                 LOG.debug("Skipping phase named %r for component %r", phase_name, c)
             else:
-                LOG.info(start_msg.format(name=c))
+                if start_msg:
+                    LOG.info(start_msg.format(name=c))
                 try:
                     result = functor(instance)
-                    LOG.info(end_msg.format(name=c, result=result))
+                    if end_msg:
+                        LOG.info(end_msg.format(name=c, result=result))
                     self._mark_phase(instance, phase_name)
                 except (excp.NoTraceException) as e:
                     if self.force:
@@ -259,7 +261,7 @@ class InstallRunner(ActionRunner):
         self._run_phase(
             'Pre-installing {name}',
             lambda i: i.pre_install(),
-            "Finished pre-install of {name}",
+            None,
             component_order,
             instances,
             "Pre-install"
@@ -275,7 +277,7 @@ class InstallRunner(ActionRunner):
         self._run_phase(
             'Post-installing {name}',
             lambda i: i.post_install(),
-            "Finished post-install of {name}",
+            None,
             component_order,
             instances,
             "Post-install"
@@ -294,9 +296,9 @@ class StartRunner(ActionRunner):
 
     def _run(self, persona, component_order, instances):
         self._run_phase(
-            'Configuring runner for {name}',
+            None,
             lambda i: i.configure(),
-            "Finished configuring runner for {name}",
+            None,
             component_order,
             instances,
             "Configure"
@@ -304,7 +306,7 @@ class StartRunner(ActionRunner):
         self._run_phase(
             'Pre-starting {name}',
             lambda i: i.pre_start(),
-            "Finished pre-start of {name}",
+            None,
             component_order,
             instances,
             "Pre-start"
@@ -320,7 +322,7 @@ class StartRunner(ActionRunner):
         self._run_phase(
             'Post-starting {name}',
             lambda i: i.post_start(),
-            "Finished post-start of {name}",
+            None,
             component_order,
             instances,
             "Post-start"
@@ -370,7 +372,7 @@ class UninstallRunner(ActionRunner):
         self._run_phase(
             'Unconfiguring {name}',
             lambda i: i.unconfigure(),
-            "Finished unconfiguring of {name}",
+            None,
             component_order,
             instances,
             "Unconfigure"
@@ -378,7 +380,7 @@ class UninstallRunner(ActionRunner):
         self._run_phase(
             'Pre-uninstalling {name}',
             lambda i: i.pre_uninstall(),
-            "Finished pre-uninstall of {name}",
+            None,
             component_order,
             instances,
             "Pre-uninstall"
@@ -386,7 +388,7 @@ class UninstallRunner(ActionRunner):
         self._run_phase(
             'Uninstalling {name}',
             lambda i: i.uninstall(),
-            "Finished uninstall of {name}",
+            None,
             component_order,
             instances,
             "Uninstall"
@@ -394,7 +396,7 @@ class UninstallRunner(ActionRunner):
         self._run_phase(
             'Post-uninstalling {name}',
             lambda i: i.post_uninstall(),
-            "Finished post-uninstall of {name}",
+            None,
             component_order,
             instances,
             "Post-uninstall"
