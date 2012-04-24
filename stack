@@ -120,7 +120,9 @@ def find_config(args):
     locs.append(sh.joinpths("/etc", "devstack", "stack.ini"))
     locs.append(sh.joinpths(settings.STACK_CONFIG_DIR, "stack.ini"))
     for path in locs:
+        LOG.debug("Looking for devstack configuration in: %r", path)
         if sh.isfile(path):
+            LOG.debug("Found devstack configuration in: %r", path)
             return path
     return None
 
@@ -138,6 +140,9 @@ def establish_config(args):
         env_resolver = cfg.EnvResolver(base_config)
         proxy_config.add_read_resolver(env_resolver)
         proxy_config.add_set_resolver(env_resolver)
+    utils.log_iterable(proxy_config.read_resolvers, 
+        header="Config lookup will use the following resolvers:",
+        logger=LOG)
     return proxy_config
 
 
