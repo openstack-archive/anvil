@@ -88,7 +88,7 @@ class IgnoreMissingConfigParser(iniparse.RawConfigParser):
         with io.BytesIO() as outputstream:
             self.write(outputstream)
             outputstream.flush()
-            contents = add_header(fn, outputstream.getvalue())
+            contents = utils.add_header(fn, outputstream.getvalue())
         return contents
 
 

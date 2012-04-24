@@ -114,7 +114,7 @@ def parse():
     output['extras'] = args
     output['persona_fn'] = options.persona_fn
     output['verbosity'] = len(options.verbosity)
-    output['cli_overrides'] = options.cli_overrides
+    output['cli_overrides'] = options.cli_overrides or list()
     output['prompt_for_passwords'] = options.prompt_for_passwords
 
     return output
