@@ -32,11 +32,13 @@ class Packager(pack.Packager):
             return "%s" % (name)
         return "%s==%s" % (name, version)
 
+    def _get_pip_command(self):
+        return self.distro.get_command_config('pip')
+
     def _install(self, pip):
-        name = pip['name']
-        root_cmd = self.distro.get_command_config('pip')
-        LOG.audit("Installing python package %r using pip command %s" % (name, root_cmd))
-        name_full = self._make_pip_name(name, pip.get('version'))
+        root_cmd = self._get_pip_command()
+        name_full = self._make_pip_name(pip['name'], pip.get('version'))
+        LOG.audit("Installing python package %r using pip command %s" % (name_full, root_cmd))
         real_cmd = [root_cmd] + ['install'] + PIP_INSTALL_CMD_OPTS
         options = pip.get('options')
         if options:
@@ -46,7 +48,7 @@ class Packager(pack.Packager):
         sh.execute(*real_cmd, run_as_root=True)
 
     def _remove(self, pip):
-        root_cmd = self.distro.get_command_config('pip')
+        root_cmd = self._get_pip_command()
         # Versions don't seem to matter here...
         name = self._make_pip_name(pip['name'], None)
         LOG.audit("Uninstalling python package %r using pip command %s" % (name, root_cmd))

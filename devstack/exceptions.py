@@ -23,18 +23,6 @@ class InstallException(StackException):
     pass
 
 
-class PackageException(StackException):
-    pass
-
-
-class BadRegexException(StackException):
-    pass
-
-
-class DependencyException(StackException):
-    pass
-
-
 class BadParamException(StackException):
     pass
 
@@ -48,10 +36,6 @@ class NoReplacementException(StackException):
 
 
 class StartException(StackException):
-    pass
-
-
-class NoIpException(StackException):
     pass
 
 

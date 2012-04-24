@@ -47,7 +47,7 @@ commands:
         restart: service rabbitmq-server restart
         start: service rabbitmq-server start
         status: service rabbitmq-server status
-        stop: service rabbitmq-server stop
+        stop: service rabbitmq-server stop                 
         redirect-outs: true
 components:
     db:
@@ -74,9 +74,7 @@ components:
         -   name: curl
             removable: false
             version: 7.19.7*
-        -   meta:
-                epel: true
-            name: euca2ools
+        -   name: euca2ools
             removable: false
             version: 1.3.1*
         -   name: gawk
@@ -106,9 +104,7 @@ components:
         -   name: psmisc
             removable: false
             version: 22.6*
-        -   meta:
-                epel: true
-            name: pylint
+        -   name: pylint
             removable: false
             version: 0.21*
         -   name: python
@@ -117,37 +113,25 @@ components:
         -   name: python-devel
             removable: false
             version: 2.6*
-        -   meta:
-                epel: true
-            name: python-distutils-extra
+        -   name: python-distutils-extra
             removable: false
             version: 2.29*
-        -   meta:
-                epel: true
-            name: python-mox
+        -   name: python-mox
             removable: false
             version: 0.5.3*
-        -   meta:
-                epel: true
-            name: python-pep8
+        -   name: python-pep8
             removable: false
             version: 0.6*
-        -   meta:
-                epel: true
-            name: python-pip
+        -   name: python-pip
             removable: false
             version: 0.8*
         -   name: python-setuptools
             removable: false
             version: 0.6.10*
-        -   meta:
-                epel: true
-            name: python-unittest2
+        -   name: python-unittest2
             removable: false
             version: 0.5.1*
-        -   meta:
-                epel: true
-            name: python-virtualenv
+        -   name: python-virtualenv
             removable: false
             version: 1.7*
         -   name: screen
@@ -181,37 +165,28 @@ components:
         -   name: MySQL-python
             removable: true
             version: 1.2*
-        -   meta:
-                epel: true
-            name: python-argparse
+        -   name: python-argparse
             removable: true
             version: 1.2*
         -   name: python-dateutil
             removable: true
             version: 1.4*
-        -   meta:
-                epel: true
-            name: python-eventlet
+        -   name: pysendfile
+            removable: true
+            version: 2.0*
+        -   name: python-eventlet
             removable: true
             version: 0.9*
-        -   meta:
-                epel: true
-            name: python-greenlet
+        -   name: python-greenlet
             removable: true
             version: 0.3.1*
-        -   meta:
-                epel: true
-            name: python-httplib2
+        -   name: python-httplib2
             removable: true
             version: 0.7*
-        -   meta:
-                epel: true
-            name: python-prettytable
+        -   name: python-prettytable
             removable: true
             version: 0.5*
-        -   meta:
-                epel: true
-            name: pyxattr
+        -   name: pyxattr
             removable: true
             version: 0.5*
         pips:
@@ -241,19 +216,13 @@ components:
         -   name: python-dateutil
             removable: true
             version: 1.4*
-        -   meta:
-                epel: true
-            name: python-eventlet
+        -   name: python-eventlet
             removable: true
             version: 0.9*
-        -   meta:
-                epel: true
-            name: python-kombu
+        -   name: python-kombu
             removable: true
             version: 1.1*
-        -   meta:
-                epel: true
-            name: python-webob1.0
+        -   name: python-webob1.0
             removable: true
             version: 1.0*
             packager_name: devstack.distros.rhel6:YumPackagerWithRelinks
@@ -261,7 +230,6 @@ components:
                 links:
                     - source: /usr/lib/python2.6/site-packages/WebOb-1.0.8-py2.6.egg/webob/
                       target: /usr/lib/python2.6/site-packages/webob
-
         pips:
         -   name: CherryPy
             version: 3.2.2
@@ -312,42 +280,28 @@ components:
         -   name: openldap-devel
             removable: true
             version: 2.4*
-        -   meta:
-                epel: true
-            name: python-argparse
+        -   name: python-argparse
             removable: true
             version: 1.2*
-        -   meta:
-                epel: true
-            name: python-eventlet
+        -   name: python-eventlet
             removable: true
             version: 0.9*
-        -   meta:
-                epel: true
-            name: python-greenlet
+        -   name: python-greenlet
             removable: true
             version: 0.3.1*
         -   name: python-lxml
             removable: true
             version: 2.2*
-        -   meta:
-                epel: true
-            name: python-passlib
+        -   name: python-passlib
             removable: true
             version: 1.5*
-        -   meta:
-                epel: true
-            name: python-prettytable
+        -   name: python-prettytable
             removable: true
             version: 0.5*
-        -   meta:
-                epel: true
-            name: python-sqlite2
+        -   name: python-sqlite2
             removable: true
             version: 2.3*
-        -   meta:
-                epel: true
-            name: python-webob1.0
+        -   name: python-webob1.0
             removable: true
             version: 1.0*
         -   name: sqlite
@@ -377,14 +331,10 @@ components:
             running: devstack.components.keystone_client:KeyStoneClientRuntime
             uninstall: devstack.components.keystone_client:KeyStoneClientUninstaller
         packages:
-        -   meta:
-                epel: true
-            name: python-argparse
+        -   name: python-argparse
             removable: true
             version: 1.2*
-        -   meta:
-                epel: true
-            name: python-prettytable
+        -   name: python-prettytable
             removable: true
             version: 0.5*
     melange:
@@ -430,14 +380,10 @@ components:
         -   name: parted
             removable: false
             version: 2.1*
-        -   meta:
-                epel: true
-            name: python-boto
+        -   name: python-boto
             removable: true
             version: 2.0*
-        -   meta:
-                epel: true
-            name: python-carrot
+        -   name: python-carrot
             removable: true
             version: 0.10*
         -   name: python-cheetah
@@ -446,34 +392,22 @@ components:
         -   name: python-crypto
             removable: false
             version: 2.0*
-        -   meta:
-                epel: true
-            name: python-eventlet
+        -   name: python-eventlet
             removable: true
             version: 0.9*
-        -   meta:
-                epel: true
-            name: python-feedparser
+        -   name: python-feedparser
             removable: true
             version: 5.0*
-        -   meta:
-                epel: true
-            name: python-gflags
+        -   name: python-gflags
             removable: true
             version: 1.4*
-        -   meta:
-                epel: true
-            name: python-greenlet
+        -   name: python-greenlet
             removable: true
             version: 0.3.1*
-        -   meta:
-                epel: true
-            name: python-kombu
+        -   name: python-kombu
             removable: true
             version: 1.1*
-        -   meta:
-                epel: true
-            name: python-lockfile
+        -   name: python-lockfile
             removable: true
             version: 0.8*
         -   name: python-lxml
@@ -485,14 +419,10 @@ components:
         -   name: python-suds
             removable: true
             version: 0.4*
-        -   meta:
-                epel: true
-            name: pyxattr
+        -   name: pyxattr
             removable: true
             version: 0.5*
-        -   meta:
-                epel: true
-            name: socat
+        -   name: socat
             removable: true
             version: 1.7*
         -   name: sqlite
@@ -574,14 +504,10 @@ components:
             running: devstack.components.nova_client:NovaClientRuntime
             uninstall: devstack.components.nova_client:NovaClientUninstaller
         packages:
-        -   meta:
-                epel: true
-            name: python-argparse
+        -   name: python-argparse
             removable: true
             version: 1.2*
-        -   meta:
-                epel: true
-            name: python-prettytable
+        -   name: python-prettytable
             removable: true
             version: 0.5*
     quantum:
@@ -593,19 +519,13 @@ components:
         -   name: libxml2-python
             removable: false
             version: 2.7*
-        -   meta:
-                epel: true
-            name: python-eventlet
+        -   name: python-eventlet
             removable: true
             version: 0.9*
-        -   meta:
-                epel: true
-            name: python-gflags
+        -   name: python-gflags
             removable: true
             version: 1.4*
-        -   meta:
-                epel: true
-            name: python-greenlet
+        -   name: python-greenlet
             removable: true
             version: 0.3.1*
         pips:
@@ -627,9 +547,7 @@ components:
             running: devstack.components.quantum_client:QuantumClientRuntime
             uninstall: devstack.components.quantum_client:QuantumClientUninstaller
         packages:
-        -   meta:
-                epel: true
-            name: python-gflags
+        -   name: python-gflags
             removable: true
             version: 1.4*
     rabbit-mq:
@@ -638,9 +556,7 @@ components:
             running: devstack.distros.rhel6:RabbitRuntime
             uninstall: devstack.components.rabbit:RabbitUninstaller
         packages:
-        -   meta:
-                epel: true
-            name: rabbitmq-server
+        -   name: rabbitmq-server
             pre-install:
             -   cmd:
                 - service

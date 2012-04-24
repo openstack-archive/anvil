@@ -194,7 +194,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             nlines.append("")
         if nlines:
             nlines.insert(0, contents)
-            contents = cfg.add_header(fn, utils.joinlinesep(*nlines))
+            contents = utils.add_header(fn, utils.joinlinesep(*nlines))
         return contents
 
     def _config_adjust(self, contents, name):

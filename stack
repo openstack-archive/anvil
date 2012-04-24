@@ -40,7 +40,7 @@ from devstack.progs import actions
 LOG = logging.getLogger("devstack.stack")
 
 # The grouping of our pretty printing of config
-_CFG_GROUPS = {
+CFG_GROUPS = {
     cfg_helpers.make_id('passwords', None): 'Passwords',
     cfg_helpers.make_id('db', None): 'Database info',
     # Catch all
@@ -48,53 +48,13 @@ _CFG_GROUPS = {
 }
 
 # The order in which we will pretty print our config cache
-_CFG_ORDERING = sorted(_CFG_GROUPS.keys())
-_CFG_ORDERING.reverse()
+CFG_ORDERING = sorted(CFG_GROUPS.keys())
+CFG_ORDERING.reverse()
 
 # Which rc files we will attempt to load
 RC_FILES = [
     sh.abspth(settings.gen_rc_filename('core')),
 ]
-
-
-def dump_config(config_cache):
-    """
-    Dumps the given config key value cache in the
-    order that stack is defined to group that cache
-    in a nice and pretty manner.
-
-    Arguments:
-        config_cache: map of items to group and then pretty print
-    """
-
-    def item_format(key, value):
-        return "\t%s=%s" % (str(key), str(value))
-
-    def map_print(mp):
-        for key in sorted(mp.keys()):
-            value = mp.get(key)
-            LOG.info(item_format(key, value))
-
-    # First partition into our groups
-    partitions = dict()
-    for name in _CFG_ORDERING:
-        partitions[name] = dict()
-
-    # Now put the config cached values into there partitions
-    for (k, v) in config_cache.items():
-        for name in _CFG_ORDERING:
-            entries = partitions[name]
-            if k.startswith(name):
-                entries[k] = v
-                break
-
-    # Now print them..
-    for name in _CFG_ORDERING:
-        nice_name = _CFG_GROUPS.get(name)
-        LOG.info(nice_name + ":")
-        entries = partitions.get(name)
-        if entries:
-            map_print(entries)
 
 
 def load_rc_files():
@@ -146,6 +106,49 @@ def setup_root(root_dir):
         sh.mkdir(root_dir)
 
 
+def find_config(args):
+    """
+    Finds the stack configuration file.
+
+    Arguments:
+        args: command line args
+    Returns: the file location or None if not found
+    """
+
+    locs = []
+    locs.append(settings.STACK_CONFIG_LOCATION)
+    locs.append(sh.joinpths("/etc", "devstack", "stack.ini"))
+    locs.append(sh.joinpths(settings.STACK_CONFIG_DIR, "stack.ini"))
+    for path in locs:
+        LOG.debug("Looking for devstack configuration in: %r", path)
+        if sh.isfile(path):
+            LOG.debug("Found devstack configuration in: %r", path)
+            return path
+    return None
+
+
+def establish_config(args):
+    base_config = None
+    config_location = find_config(args)
+    if config_location:
+        base_config = cfg.IgnoreMissingConfigParser()
+        with open(config_location, "r") as fh:
+            base_config.readfp(fh)
+    proxy_config = cfg.ProxyConfig()
+    proxy_config.add_read_resolver(cfg.CliResolver.create(args['cli_overrides']))
+    if base_config:
+        env_resolver = cfg.EnvResolver(base_config)
+        proxy_config.add_read_resolver(env_resolver)
+        proxy_config.add_set_resolver(env_resolver)
+    resolver_names = list()
+    for r in proxy_config.read_resolvers:
+        resolver_names.append(r.__class__.__name__)
+    utils.log_iterable(resolver_names,
+        header="Config lookup will use the following resolvers:",
+        logger=LOG)
+    return proxy_config
+
+
 def run(args):
     """
     Starts the execution of devstackpy after
@@ -195,7 +198,7 @@ def run(args):
     # Params for the runner...
     dist = distro.Distro.get_current()
     persona_inst = load_verify_persona(persona_fn, dist)
-    config = cfg.get_config()
+    config = establish_config(args)
     pw_gen = passwords.PasswordGenerator(config, args.get('prompt_for_passwords', True))
 
     runner_factory = actions.get_runner_factory(action)
@@ -217,7 +220,7 @@ def run(args):
               (utils.format_secs_taken((end_time - start_time)), action))
     LOG.info("After action %r your settings which were created or read are:" % (action))
 
-    dump_config(config.configs_fetched)
+    config.pprint(CFG_GROUPS, CFG_ORDERING)
     return True
 
 

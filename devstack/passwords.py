@@ -24,7 +24,7 @@ LOG = logging.getLogger("devstack.passwords")
 PW_SECTION = 'passwords'
 
 
-class InputPasswordLookup(object):
+class InputPassword(object):
     def __init__(self, cfg):
         self.cfg = cfg
 
@@ -54,7 +54,7 @@ class InputPasswordLookup(object):
         return self._prompt_user(kargs.get('prompt_text', '??'))
 
 
-class ConfigPasswordLookup(object):
+class ConfigPassword(object):
     def __init__(self, cfg):
         self.cfg = cfg
 
@@ -62,7 +62,7 @@ class ConfigPasswordLookup(object):
         return self.cfg.get(PW_SECTION, option)
 
 
-class RandomPasswordLookup(object):
+class RandomPassword(object):
     def __init__(self, cfg):
         self.cfg = cfg
 
@@ -83,10 +83,10 @@ class PasswordGenerator(object):
     def __init__(self, cfg, prompt_user=True):
         self.cfg = cfg
         self.lookups = []
-        self.lookups.append(ConfigPasswordLookup(cfg))
+        self.lookups.append(ConfigPassword(cfg))
         if prompt_user:
-            self.lookups.append(InputPasswordLookup(cfg))
-        self.lookups.append(RandomPasswordLookup(cfg))
+            self.lookups.append(InputPassword(cfg))
+        self.lookups.append(RandomPassword(cfg))
 
     def extract(self, option):
         return self.cfg.get(PW_SECTION, option)
