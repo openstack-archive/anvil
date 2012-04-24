@@ -210,6 +210,8 @@ def log_iterable(to_log, header=None, logger=None):
     if not logger:
         logger = LOG
     if header:
+        if not header.endswith(":"):
+            header += ":"
         logger.info(header)
     for c in to_log:
         logger.info("|-- %s", color_text(c, 'blue'))
