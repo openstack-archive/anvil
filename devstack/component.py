@@ -370,12 +370,7 @@ class PkgUninstallComponent(ComponentBase):
         self.packager_factory = packager_factory
 
     def unconfigure(self):
-        if not self.keep_old:
-            # TODO this may not be the best solution siance we might
-            # actually want to remove config files but since most
-            # config files can be regenerated this should be fine (some
-            # can not though) so this is why we need to keep them.
-            self._unconfigure_files()
+        self._unconfigure_files()
         self._unconfigure_links()
 
     def _unconfigure_links(self):
@@ -410,20 +405,20 @@ class PkgUninstallComponent(ComponentBase):
     def _uninstall_pkgs(self):
         if self.keep_old:
             LOG.info('Keep-old flag set, not removing any packages.')
-            return
-        pkgs = self.tracereader.packages_installed()
-        if pkgs:
-            pkg_names = set([p['name'] for p in pkgs])
-            utils.log_iterable(pkg_names, logger=LOG,
-                header="Potentially removing %s packages" % (len(pkg_names)))
-            which_removed = set()
-            with utils.progress_bar(UNINSTALL_TITLE, len(pkgs), reverse=True) as p_bar:
-                for (i, p) in enumerate(pkgs):
-                    if self.packager_factory.get_packager_for(p).remove(p):
-                        which_removed.add(p['name'])
-                    p_bar.update(i + 1)
-            utils.log_iterable(which_removed, logger=LOG,
-                header="Actually removed %s packages" % (len(which_removed)))
+        else:
+            pkgs = self.tracereader.packages_installed()
+            if pkgs:
+                pkg_names = set([p['name'] for p in pkgs])
+                utils.log_iterable(pkg_names, logger=LOG,
+                    header="Potentially removing %s packages" % (len(pkg_names)))
+                which_removed = set()
+                with utils.progress_bar(UNINSTALL_TITLE, len(pkgs), reverse=True) as p_bar:
+                    for (i, p) in enumerate(pkgs):
+                        if self.packager_factory.get_packager_for(p).remove(p):
+                            which_removed.add(p['name'])
+                        p_bar.update(i + 1)
+                utils.log_iterable(which_removed, logger=LOG,
+                    header="Actually removed %s packages" % (len(which_removed)))
 
     def _uninstall_touched_files(self):
         files_touched = self.tracereader.files_touched()
@@ -464,28 +459,28 @@ class PythonUninstallComponent(PkgUninstallComponent):
     def _uninstall_pips(self):
         if self.keep_old:
             LOG.info('Keep-old flag set, not removing any python packages.')
-            return
-        pips = self.tracereader.pips_installed()
-        if pips:
-            pip_names = set([p['name'] for p in pips])
-            utils.log_iterable(pip_names, logger=LOG,
-                header="Uninstalling %s python packages" % (len(pip_names)))
-            with utils.progress_bar(UNINSTALL_TITLE, len(pips), reverse=True) as p_bar:
-                for (i, p) in enumerate(pips):
-                    try:
-                        self.pip_factory.get_packager_for(p).remove(p)
-                    except excp.ProcessExecutionError as e:
-                        # NOTE(harlowja): pip seems to die if a pkg isn't there even in quiet mode
-                        combined = (str(e.stderr) + str(e.stdout))
-                        if not re.search(r"not\s+installed", combined, re.I):
-                            raise
-                    p_bar.update(i + 1)
+        else:
+            pips = self.tracereader.pips_installed()
+            if pips:
+                pip_names = set([p['name'] for p in pips])
+                utils.log_iterable(pip_names, logger=LOG,
+                    header="Uninstalling %s python packages" % (len(pip_names)))
+                with utils.progress_bar(UNINSTALL_TITLE, len(pips), reverse=True) as p_bar:
+                    for (i, p) in enumerate(pips):
+                        try:
+                            self.pip_factory.get_packager_for(p).remove(p)
+                        except excp.ProcessExecutionError as e:
+                            # NOTE(harlowja): pip seems to die if a pkg isn't there even in quiet mode
+                            combined = (str(e.stderr) + str(e.stdout))
+                            if not re.search(r"not\s+installed", combined, re.I):
+                                raise
+                        p_bar.update(i + 1)
 
     def _uninstall_python(self):
         py_listing = self.tracereader.py_listing()
         if py_listing:
             py_listing_dirs = set()
-            for (_, where) in py_listing:
+            for (name, where) in py_listing:
                 py_listing_dirs.add(where)
             utils.log_iterable(py_listing_dirs, logger=LOG,
                 header="Uninstalling %s python setups" % (len(py_listing_dirs)))
