@@ -172,6 +172,9 @@ components:
             running: devstack.components.glance:GlanceRuntime
             uninstall: devstack.components.glance:GlanceUninstaller
         packages:
+        -   name: pysendfile
+            removable: true
+            version: 2.0*
         -   name: python-eventlet
             removable: true
             version: 0.9*

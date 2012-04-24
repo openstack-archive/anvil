@@ -92,6 +92,19 @@ def make_bool(val):
     return False
 
 
+def add_header(fn, contents):
+    lines = list()
+    if not fn:
+        fn = "???"
+    lines.append('# Adjusted source file %s' % (fn.strip()))
+    lines.append("# On %s" % (date.rcf8222date()))
+    lines.append("# By user %s, group %s" % (sh.getuser(), sh.getgroupname()))
+    lines.append("")
+    if contents:
+        lines.append(contents)
+    return joinlinesep(*lines)
+
+
 def get_from_path(items, path, quiet=True):
 
     (first_token, sep, remainder) = path.partition('/')

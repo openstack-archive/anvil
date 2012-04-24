@@ -43,6 +43,12 @@ def parse():
         dest="verbosity",
         default=[1],
         help="increase the verbose level")
+    parser.add_option("-o", "--override",
+        action="append",
+        dest="cli_overrides",
+        metavar="OPTION",
+        help=("override configuration values (format SECTION/OPTION/VALUE, note "
+                "if section is empty 'DEFAULT' is assumed)"))
     parser.add_option("--dryrun",
         action="store_true",
         dest="dryrun",
@@ -108,6 +114,7 @@ def parse():
     output['extras'] = args
     output['persona_fn'] = options.persona_fn
     output['verbosity'] = len(options.verbosity)
+    output['cli_overrides'] = options.cli_overrides
     output['prompt_for_passwords'] = options.prompt_for_passwords
 
     return output

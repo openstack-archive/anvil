@@ -31,13 +31,6 @@ from devstack import utils
 LOG = logging.getLogger("devstack.cfg")
 ENV_PAT = re.compile(r"^\s*\$\{([\w\d]+):\-(.*)\}\s*$")
 SUB_MATCH = re.compile(r"(?:\$\(([\w\d]+):([\w\d]+))\)")
-CACHE_MSG = "(value will now be internally cached)"
-
-
-def get_config(cfg_fn=None):
-    if not cfg_fn:
-        cfg_fn = sh.canon_path(settings.STACK_CONFIG_LOCATION)
-    return StackConfigParser(fns=[cfg_fn])
 
 
 class IgnoreMissingConfigParser(iniparse.RawConfigParser):
@@ -99,10 +92,129 @@ class IgnoreMissingConfigParser(iniparse.RawConfigParser):
         return contents
 
 
-class StackConfigParser(IgnoreMissingConfigParser):
-    def __init__(self, cs=True, fns=None):
-        IgnoreMissingConfigParser.__init__(self, cs, fns)
-        self.configs_fetched = dict()
+class ProxyConfig(object):
+
+    def __init__(self, cache_enabled=True):
+        self.read_resolvers = []
+        self.set_resolvers = []
+        self.cache_enabled = cache_enabled
+        self.cache = dict()
+
+    def add_read_resolver(self, resolver):
+        self.read_resolvers.append(resolver)
+
+    def add_set_resolver(self, resolver):
+        self.set_resolvers.append(resolver)
+
+    def get(self, section, option):
+        # Try the cache first
+        cache_key = None
+        if self.cache_enabled:
+            cache_key = cfg_helpers.make_id(section, option)
+            if cache_key in self.cache:
+                return self.cache[cache_key]
+        # Check the resolvers
+        val = None
+        for resolver in self.read_resolvers:
+            LOG.debug("Looking for %r using resolver %s", cfg_helpers.make_id(section, option), resolver)
+            val = resolver.get(section, option)
+            if val is not None:
+                LOG.debug("Found value %r for %r using resolver %s", cfg_helpers.make_id(section, option), val, resolver)
+                break
+        if self.cache_enabled:
+            self.cache[cache_key] = val
+        return val
+
+    def getdefaulted(self, section, option, default_value=''):
+        val = self.get(section, option)
+        if not val or not val.strip():
+            return default_value
+        return val
+
+    def getfloat(self, section, option):
+        try:
+            return float(self.get(section, option))
+        except ValueError:
+            return None
+
+    def getint(self, section, option):
+        try:
+            return int(self.get(section, option))
+        except ValueError:
+            return None
+
+    def getboolean(self, section, option):
+        return utils.make_bool(self.getdefaulted(section, option))
+
+    def pprint(self, group_by, order_by):
+        """
+        Dumps the given config key value cache in the
+        order that stack is defined to group that cache
+        in a nice and pretty manner.
+
+        Arguments:
+            config_cache: map of items to group and then pretty print
+        """
+        if not self.cache_enabled:
+            return
+
+        LOG.debug("Grouping by %s", group_by.keys())
+        LOG.debug("Ordering by %s", order_by)
+
+        def item_format(key, value):
+            return "\t%s=%s" % (str(key), str(value))
+
+        def map_print(mp):
+            for key in sorted(mp.keys()):
+                value = mp.get(key)
+                LOG.info(item_format(key, value))
+
+        # First partition into our groups
+        partitions = dict()
+        for name in group_by.keys():
+            partitions[name] = dict()
+
+        # Now put the config cached values into there partitions
+        for (k, v) in self.cache.items():
+            for name in order_by:
+                entries = partitions[name]
+                if k.startswith(name):
+                    entries[k] = v
+                    break
+
+        # Now print them..
+        for name in order_by:
+            nice_name = group_by.get(name)
+            LOG.info(nice_name + ":")
+            entries = partitions.get(name)
+            if entries:
+                map_print(entries)
+
+    def set(self, section, option, value):
+        for resolver in self.set_resolvers:
+            LOG.debug("Setting %r to %s using resolver %s", cfg_helpers.make_id(section, option), value, resolver)
+            resolver.set(section, option, value)
+        if self.cache_enabled:
+            cache_key = cfg_helpers.make_id(section, option)
+            self.cache[cache_key] = value
+
+
+class ConfigResolver(object):
+
+    def __init__(self, backing):
+        self.backing = backing
+
+    def get(self, section, option):
+        return self.backing.get(section, option)
+
+    def set(self, section, option, value):
+        self.backing.set(section, option, value)
+
+
+class DynamicResolver(ConfigResolver):
+
+    def get(self, section, option):
+        return self._resolve_value(section, option, ConfigResolver.get(self, section, option))
 
     def _resolve_value(self, section, option, value_gotten):
         if section == 'host' and option == 'ip':
@@ -111,45 +223,47 @@ class StackConfigParser(IgnoreMissingConfigParser):
             LOG.debug("Determined your host ip to be: %r" % (value_gotten))
         return value_gotten
 
-    def getdefaulted(self, section, option, default_val):
-        val = self.get(section, option)
-        if not val or not val.strip():
-            LOG.debug("Value %r found was not good enough, returning provided default '%s'" % (val, default_val))
-            return default_val
-        return val
+
+class CliResolver(object):
+
+    def __init__(self, cli_args):
+        self.cli_args = cli_args
 
     def get(self, section, option):
-        key = cfg_helpers.make_id(section, option)
-        if key in self.configs_fetched:
-            value = self.configs_fetched.get(key)
-            LOG.debug("Fetched cached value '%s' for param %r" % (value, key))
-        else:
-            LOG.debug("Fetching value for param %r" % (key))
-            gotten_value = self._get_bashed(section, option)
-            value = self._resolve_value(section, option, gotten_value)
-            LOG.debug("Fetched %r for %r %s" % (value, key, CACHE_MSG))
-            self.configs_fetched[key] = value
-        return value
+        return self.cli_args.get(cfg_helpers.make_id(section, option))
 
-    def set(self, section, option, value):
-        key = cfg_helpers.make_id(section, option)
-        LOG.audit("Setting config value '%s' for param %r" % (value, key))
-        self.configs_fetched[key] = value
-        IgnoreMissingConfigParser.set(self, section, option, value)
+    @classmethod
+    def create(cls, cli_args):
+        parsed_args = dict()
+        for c in cli_args:
+            if not c:
+                continue
+            split_up = c.split("/")
+            if len(split_up) != 3:
+                LOG.warn("Badly formatted cli option: %r", c)
+            else:
+                section = (split_up[0]).strip()
+                if not section or section.lower() == 'default':
+                    section = 'DEFAULT'
+                option = split_up[1].strip()
+                value = split_up[2]
+                parsed_args[cfg_helpers.make_id(section, option)] = value
+        return cls(parsed_args)
 
-    def _resolve_replacements(self, value):
-        LOG.debug("Performing simple replacement on %r", value)
 
-        #allow for our simple replacement to occur
-        def replacer(match):
-            section = match.group(1)
-            option = match.group(2)
-            return self.getdefaulted(section, option, '')
+class EnvResolver(DynamicResolver):
 
-        return SUB_MATCH.sub(replacer, value)
+    def get(self, section, option):
+        return self._resolve_value(section, option, self._get_bashed(section, option))
+
+    def _getdefaulted(self, section, option, default_value):
+        val = self.get(section, option)
+        if not val or not val.strip():
+            return default_value
+        return val
 
     def _get_bashed(self, section, option):
-        value = IgnoreMissingConfigParser.get(self, section, option)
+        value = DynamicResolver.get(self, section, option)
         if value is None:
             return value
         extracted_val = ''
@@ -173,15 +287,14 @@ class StackConfigParser(IgnoreMissingConfigParser):
             LOG.debug("Using raw config provided value %r" % (extracted_val))
         return extracted_val
 
+    def _resolve_replacements(self, value):
+        LOG.debug("Performing simple replacement on %r", value)
 
-def add_header(fn, contents):
-    lines = list()
-    if not fn:
-        fn = "???"
-    lines.append('# Adjusted source file %s' % (fn.strip()))
-    lines.append("# On %s" % (date.rcf8222date()))
-    lines.append("# By user %s, group %s" % (sh.getuser(), sh.getgroupname()))
-    lines.append("")
-    if contents:
-        lines.append(contents)
-    return utils.joinlinesep(*lines)
+        # Allow for our simple replacement to occur
+        def replacer(match):
+            section = match.group(1)
+            option = match.group(2)
+            # We use the default fetcher here so that we don't try to put in None values...
+            return self._getdefaulted(section, option, '')
+
+        return SUB_MATCH.sub(replacer, value)
