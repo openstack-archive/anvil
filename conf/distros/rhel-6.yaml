@@ -171,9 +171,6 @@ components:
         -   name: python-dateutil
             removable: true
             version: 1.4*
-        -   name: pysendfile
-            removable: true
-            version: 2.0*
         -   name: python-eventlet
             removable: true
             version: 0.9*
