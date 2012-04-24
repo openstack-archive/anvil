@@ -108,7 +108,7 @@ class ScreenRunner(base.RunnerBase):
         return env
 
     def _gen_cmd(self, base_cmd, params=dict()):
-        return utils.param_replace_list(base_cmd, params)
+        return utils.param_replace_list(base_cmd, params, ignore_missing=True)
 
     def _active_sessions(self):
         knowns = list()
