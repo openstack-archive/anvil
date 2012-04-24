@@ -20,12 +20,9 @@ import re
 import iniparse
 
 from devstack import cfg_helpers
-from devstack import date
 from devstack import env
 from devstack import exceptions as excp
 from devstack import log as logging
-from devstack import settings
-from devstack import shell as sh
 from devstack import utils
 
 LOG = logging.getLogger("devstack.cfg")

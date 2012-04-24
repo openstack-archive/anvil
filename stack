@@ -128,6 +128,15 @@ def find_config(args):
 
 
 def establish_config(args):
+    """
+    Creates the stack configuration object using the set of
+    desired configuration resolvers to be used and returns
+    the wrapper that knows how to activate those resolvers.
+
+    Arguments:
+        args: command line args
+    """
+
     base_config = None
     config_location = find_config(args)
     if config_location:
@@ -140,10 +149,7 @@ def establish_config(args):
         env_resolver = cfg.EnvResolver(base_config)
         proxy_config.add_read_resolver(env_resolver)
         proxy_config.add_set_resolver(env_resolver)
-    resolver_names = list()
-    for r in proxy_config.read_resolvers:
-        resolver_names.append(r.__class__.__name__)
-    utils.log_iterable(resolver_names,
+    utils.log_iterable(map((lambda i: i.__class__.__name__), proxy_config.read_resolvers),
         header="Config lookup will use the following resolvers:",
         logger=LOG)
     return proxy_config
