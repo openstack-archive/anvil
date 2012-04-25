@@ -63,7 +63,7 @@ SCREEN_RC = settings.RC_FN_TEMPL % ('screen')
 
 class ScreenRunner(base.Runner):
     def __init__(self, cfg, component_name, trace_dir):
-        base.RunnerBase.__init__(self, cfg, component_name, trace_dir)
+        base.Runner.__init__(self, cfg, component_name, trace_dir)
         self.socket_dir = sh.joinpths(tempfile.gettempdir(), SCREEN_SOCKET_DIR_NAME)
         self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
 
