@@ -16,6 +16,7 @@
 
 import contextlib
 
+from devstack import colorizer
 from devstack import exceptions as excp
 from devstack import importer
 from devstack import log as logging
@@ -75,7 +76,7 @@ class Virsh(object):
             dom.destroy()
             dom.undefine()
         except libvirt.libvirtError as e:
-            LOG.warn("Could not clear out libvirt domain %r due to: %s" % (dom_name, e))
+            LOG.warn("Could not clear out libvirt domain %s due to: %s", colorizer.quote(dom_name), e)
 
     def restart_service(self):
         if self._service_status() != _ALIVE:
@@ -104,10 +105,10 @@ class Virsh(object):
             return
         virt_protocol = LIBVIRT_PROTOCOL_MAP.get(virt_type)
         if not virt_protocol:
-            LOG.warn("Could not clear out libvirt domains, no known protocol for virt type %r" % (virt_type))
+            LOG.warn("Could not clear out libvirt domains, no known protocol for virt type: %s", colorizer.quote(virt_type))
             return
         with sh.Rooted(True):
-            LOG.info("Attempting to clear out leftover libvirt domains using protocol %r" % (virt_protocol))
+            LOG.info("Attempting to clear out leftover libvirt domains using protocol: %s", colorizer.quote(virt_protocol))
             try:
                 self.restart_service()
             except excp.ProcessExecutionError as e:
@@ -116,7 +117,7 @@ class Virsh(object):
             try:
                 conn = libvirt.open(virt_protocol)
             except libvirt.libvirtError as e:
-                LOG.warn("Could not connect to libvirt using protocol %r due to: %s" % (virt_protocol, e))
+                LOG.warn("Could not connect to libvirt using protocol %s due to: %s" % colorizer.quote(virt_protocol), e)
                 return
             with contextlib.closing(conn) as ch:
                 try:
@@ -131,4 +132,4 @@ class Virsh(object):
                         for domain in sorted(kill_domains):
                             self._destroy_domain(ch, domain)
                 except libvirt.libvirtError, e:
-                    LOG.warn("Could not clear out libvirt domains due to %s" % (e))
+                    LOG.warn("Could not clear out libvirt domains due to: %s", e)
