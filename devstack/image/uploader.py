@@ -357,7 +357,7 @@ class Service:
         am_installed = 0
         if locations:
             utils.log_iterable(locations, logger=LOG,
-                                header="Attempting to download+extract+upload %s images." % len(locations))
+                                header="Attempting to download+extract+upload %s images" % len(locations))
             token = self._get_token()
             for uri in locations:
                 try:
