@@ -62,8 +62,8 @@ class DBUninstaller(comp.PkgUninstallComponent):
         dbactions = self.distro.get_command_config(dbtype, quiet=True)
         try:
             if dbactions:
-                LOG.info(("Attempting to reset your db password to %r so"
-                          " that we can set it the next time you install.") % (RESET_BASE_PW))
+                LOG.info(("Attempting to reset your db password to %s so"
+                          " that we can set it the next time you install."), colorizer.quote(RESET_BASE_PW))
                 pwd_cmd = self.distro.get_command(dbtype, 'set_pwd')
                 if pwd_cmd:
                     LOG.info("Ensuring your database is started before we operate on it.")
@@ -77,7 +77,7 @@ class DBUninstaller(comp.PkgUninstallComponent):
                     utils.execute_template(*cmds, params=params)
         except IOError:
             LOG.warn(("Could not reset the database password. You might have to manually "
-                      "reset the password to %r before the next install") % (RESET_BASE_PW))
+                      "reset the password to %s before the next install"), colorizer.quote(RESET_BASE_PW))
             utils.log_iterable(SQL_RESET_PW_LINKS, logger=LOG,
                                 header="To aid in this check out:")
 

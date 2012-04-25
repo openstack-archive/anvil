@@ -185,6 +185,8 @@ def mark_unexecute_file(fn, kvs, comment_start='#'):
 
 
 def log_iterable(to_log, header=None, logger=None, do_color=True):
+    if not to_log:
+        return
     if not logger:
         logger = LOG
     if header:
@@ -680,8 +682,7 @@ def goodbye(worked):
         ear = colorizer.color("v", 'red')
     cow = cow.strip("\n\r")
     header = _goodbye_header(worked)
-    msg = cow.format(eye=eye_fmt, ear=ear,
-                     header=header)
+    msg = cow.format(eye=eye_fmt, ear=ear, header=header)
     print(msg)
 
 
