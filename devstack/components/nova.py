@@ -205,7 +205,7 @@ def canon_virt_driver(virt_driver):
 class NovaMixin(object):
 
     def known_options(self):
-        return set(['no-vnc', 'quantum', 'melange'])
+        return set(['no-vnc', 'quantum', 'melange', 'no-db-sync'])
 
     def known_subsystems(self):
         return list(SUBSYSTEMS)
@@ -307,10 +307,12 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
         # Extra actions to do nova setup
-        self._setup_db()
-        self._sync_db()
+        if 'no-db-sync' not in self.options:
+            self._setup_db()
+            self._sync_db()
         self._setup_cleaner()
-        self._setup_network_initer()
+        if NNET in self.desired_subsystems:
+            self._setup_network_initer()
         # Check if we need to do the vol subsystem
         if self.volume_maker:
             self.volume_maker.setup_volumes()

@@ -21,7 +21,6 @@ import os
 import pwd
 import shutil
 import subprocess
-import sys
 import time
 
 from devstack import env

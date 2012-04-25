@@ -486,6 +486,9 @@ components:
         -   name: python-iso8601
             removable: true
             version: 0.1*
+        pips:
+        -   name: webob
+            version: 1.0.8
         subsystems:
             api:
                 packages:

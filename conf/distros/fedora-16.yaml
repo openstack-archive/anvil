@@ -356,6 +356,9 @@ components:
             running: devstack.components.nova:NovaRuntime
             uninstall: devstack.components.nova:NovaUninstaller
         packages:
+        -   name: python-webob
+            removable: true
+            version: 1.0*
         -   name: MySQL-python
             removable: true
             version: 1.2*

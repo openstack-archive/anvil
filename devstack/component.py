@@ -17,6 +17,7 @@
 import re
 import weakref
 
+from devstack import colorizer
 from devstack import downloader as down
 from devstack import exceptions as excp
 from devstack import importer
@@ -253,13 +254,13 @@ class PkgInstallComponent(ComponentBase):
             for fn in config_fns:
                 tgt_fn = self._get_target_config_name(fn)
                 self.tracewriter.dirs_made(*sh.mkdirslist(sh.dirname(tgt_fn)))
-                LOG.info("Configuring file %r", fn)
+                LOG.info("Configuring file %s.", colorizer.quote(fn))
                 (source_fn, contents) = self._get_source_config(fn)
                 LOG.debug("Replacing parameters in file %r", source_fn)
                 contents = self._config_param_replace(fn, contents, self._get_param_map(fn))
                 LOG.debug("Applying final adjustments in file %r", source_fn)
                 contents = self._config_adjust(contents, fn)
-                LOG.info("Writing configuration file %r => %r", source_fn, tgt_fn)
+                LOG.info("Writing configuration file %s to %s.", colorizer.quote(source_fn), colorizer.quote(tgt_fn))
                 self.tracewriter.cfg_file_written(sh.write_file(tgt_fn, contents))
         return len(config_fns)
 
@@ -273,11 +274,11 @@ class PkgInstallComponent(ComponentBase):
         for source in link_srcs:
             link = links.get(source)
             try:
-                LOG.info("Symlinking %r => %r", link, source)
+                LOG.info("Symlinking %s to %s.", colorizer.quote(link), colorizer.quote(source))
                 self.tracewriter.dirs_made(*sh.symlink(source, link))
                 self.tracewriter.symlink_made(link)
             except OSError as e:
-                LOG.warn("Symlink (%r => %r) error (%s)", link, source, e)
+                LOG.warn("Symlinking %s to %s failed: %s", colorizer.quote(link), colorizer.quote(source), e)
         return len(links)
 
     def configure(self):
@@ -550,7 +551,7 @@ class ProgramRuntime(ComponentBase):
             LOG.debug("Starting %r using %r", app_name, run_type)
             details_fn = instance.start(app_name,
                 app_pth=app_pth, app_dir=app_dir, opts=program_opts)
-            LOG.info("Started %r details are in %r", app_name, details_fn)
+            LOG.info("Started %s details are in %s", colorizer.quote(app_name), colorizer.quote(details_fn))
             # This trace is used to locate details about what to stop
             self.tracewriter.app_started(app_name, details_fn, run_type)
             am_started += 1
@@ -565,7 +566,7 @@ class ProgramRuntime(ComponentBase):
                 killcls = importer.import_entry_point(how)
                 LOG.debug("Stopping %r using %r", app_name, how)
             except RuntimeError as e:
-                LOG.warn("Could not load class %r which should be used to stop %r: %s", how, app_name, e)
+                LOG.warn("Could not load class %s which should be used to stop %s: %s", colorizer.quote(how), colorizer.quote(app_name), e)
                 continue
             if killcls in killer_instances:
                 killer = killer_instances[killcls]

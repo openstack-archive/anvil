@@ -301,6 +301,11 @@ components:
         -   name: python-webob1.0
             removable: true
             version: 1.0*
+            packager_name: devstack.distros.rhel6:YumPackagerWithRelinks
+            packager_options:
+                links:
+                    - source: /usr/lib/python2.6/site-packages/WebOb-1.0.8-py2.6.egg/webob/
+                      target: /usr/lib/python2.6/site-packages/webob
         -   name: sqlite
             removable: false
             version: 3.6*
@@ -353,6 +358,14 @@ components:
             running: devstack.components.nova:NovaRuntime
             uninstall: devstack.components.nova:NovaUninstaller
         packages:
+        -   name: python-webob1.0
+            removable: true
+            version: 1.0*
+            packager_name: devstack.distros.rhel6:YumPackagerWithRelinks
+            packager_options:
+                links:
+                    - source: /usr/lib/python2.6/site-packages/WebOb-1.0.8-py2.6.egg/webob/
+                      target: /usr/lib/python2.6/site-packages/webob
         -   name: MySQL-python
             removable: true
             version: 1.2*

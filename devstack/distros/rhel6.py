@@ -172,7 +172,7 @@ class YumPackagerWithRelinks(yum.YumPackager):
         return response
 
     def _install(self, pkg):
-        yum.YumPackager.install(self, pkg)
+        yum.YumPackager._install(self, pkg)
         options = pkg.get('packager_options', {})
         links = options.get('links', [])
         for src, tgt in links:

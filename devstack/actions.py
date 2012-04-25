@@ -178,13 +178,13 @@ class ActionRunner(object):
             else:
                 try:
                     if functors.start:
-                        functors.start(c)
+                        functors.start(instance)
                     result = None
                     if functors.run:
                         result = functors.run(instance)
                     if functors.end:
-                        functors.end(c, result)
-                    component_results[c] = result
+                        functors.end(instance, result)
+                    component_results[instance] = result
                     self._mark_phase(instance, phase_name)
                 except (excp.NoTraceException) as e:
                     if self.force:
@@ -243,20 +243,20 @@ class InstallRunner(ActionRunner):
         fn = sh.abspth(settings.gen_rc_filename('core'))
         writer = env_rc.RcWriter(self.cfg, self.pw_gen, self.root_dir)
         if not sh.isfile(fn):
-            LOG.info("Generating a file at %r that will contain your environment settings.", fn)
+            LOG.info("Generating a file at %s that will contain your environment settings.", colorizer.quote(fn))
             writer.write(fn)
         else:
-            LOG.info("Updating a file at %r that contains your environment settings.", fn)
+            LOG.info("Updating a file at %s that contains your environment settings.", colorizer.quote(fn))
             am_upd = writer.update(fn)
-            LOG.info("Updated %s settings in rc file %r", am_upd, fn)
+            LOG.info("Updated %s settings.", colorizer.quote(am_upd))
 
     def _run(self, persona, component_order, instances):
         self._write_rc_file()
-        results = self._run_phase(
+        self._run_phase(
             PhaseFunctors(
-                start=lambda name: LOG.info('Downloading %s.', colorizer.quote(name)),
+                start=lambda i: LOG.info('Downloading %s.', colorizer.quote(i.component_name)),
                 run=lambda i: i.download(),
-                end=lambda name, result: LOG.info("Performed %s downloads.", result),
+                end=lambda i, result: LOG.info("Performed %s downloads.", result),
             ),
             component_order,
             instances,
@@ -264,9 +264,9 @@ class InstallRunner(ActionRunner):
             )
         self._run_phase(
             PhaseFunctors(
-                start=lambda name: LOG.info('Configuring %s.', colorizer.quote(name)),
+                start=lambda i: LOG.info('Configuring %s.', colorizer.quote(i.component_name)),
                 run=lambda i: i.configure(),
-                end=lambda name, result: LOG.info("Configured %s items.", colorizer.quote(result)),
+                end=lambda i, result: LOG.info("Configured %s items.", colorizer.quote(result)),
             ),
             component_order,
             instances,
@@ -282,12 +282,18 @@ class InstallRunner(ActionRunner):
             instances,
             "Pre-install"
             )
+
+        def install_start(instance):
+            subsystems = set(list(instance.desired_subsystems))
+            utils.log_iterable(subsystems, logger=LOG,
+                header='Installing %s using subsystems' % colorizer.quote(instance.component_name))
+
         self._run_phase(
             PhaseFunctors(
-                start=lambda name: LOG.info('Installing %s.', colorizer.quote(name)),
+                start=install_start,
                 run=lambda i: i.install(),
-                end=(lambda name, result: LOG.info("Finished install of %s items - check %s for information on what was done.",
-                        colorizer.quote(name), colorizer.quote(result))),
+                end=(lambda i, result: LOG.info("Finished install of %s items - check %s for information on what was done.",
+                        colorizer.quote(i.component_name), colorizer.quote(result))),
             ),
             component_order,
             instances,
@@ -295,7 +301,7 @@ class InstallRunner(ActionRunner):
             )
         self._run_phase(
             PhaseFunctors(
-                start=lambda name: LOG.info('Post-installing %s.', colorizer.quote(name)),
+                start=lambda i: LOG.info('Post-installing %s.', colorizer.quote(i.component_name)),
                 run=lambda i: i.post_install(),
                 end=None
             ),
@@ -338,9 +344,9 @@ class StartRunner(ActionRunner):
             )
         self._run_phase(
             PhaseFunctors(
-                start=lambda name: LOG.info('Starting %s.', name),
+                start=lambda i: LOG.info('Starting %s.', i.component_name),
                 run=lambda i: i.start(),
-                end=lambda name, result: LOG.info("Start %s applications", colorizer.quote(result)),
+                end=lambda i, result: LOG.info("Start %s applications", colorizer.quote(result)),
             ),
             component_order,
             instances,
@@ -348,7 +354,7 @@ class StartRunner(ActionRunner):
             )
         self._run_phase(
             PhaseFunctors(
-                start=lambda name: LOG.info('Post-starting %s.', colorizer.quote(name)),
+                start=lambda i: LOG.info('Post-starting %s.', colorizer.quote(i.component_name)),
                 run=lambda i: i.post_start(),
                 end=None,
             ),
@@ -373,9 +379,9 @@ class StopRunner(ActionRunner):
     def _run(self, persona, component_order, instances):
         self._run_phase(
             PhaseFunctors(
-                start=lambda name: LOG.info('Stopping %s.', colorizer.quote(name)),
+                start=lambda i: LOG.info('Stopping %s.', colorizer.quote(i.component_name)),
                 run=lambda i: i.stop(),
-                end=lambda name, result: LOG.info("Stopped %s items", colorizer.quote(result)),
+                end=lambda i, result: LOG.info("Stopped %s items.", colorizer.quote(result)),
             ),
             component_order,
             instances,
@@ -402,7 +408,7 @@ class UninstallRunner(ActionRunner):
     def _run(self, persona, component_order, instances):
         self._run_phase(
             PhaseFunctors(
-                start=lambda name: LOG.info('Unconfiguring %s.', colorizer.quote(name)),
+                start=lambda i: LOG.info('Unconfiguring %s.', colorizer.quote(i.component_name)),
                 run=lambda i: i.unconfigure(),
                 end=None,
             ),
@@ -422,7 +428,7 @@ class UninstallRunner(ActionRunner):
             )
         self._run_phase(
             PhaseFunctors(
-                start=lambda name: LOG.info('Uninstalling %s.', colorizer.quote(name)),
+                start=lambda i: LOG.info('Uninstalling %s.', colorizer.quote(i.component_name)),
                 run=lambda i: i.uninstall(),
                 end=None,
             ),
@@ -432,7 +438,7 @@ class UninstallRunner(ActionRunner):
             )
         self._run_phase(
             PhaseFunctors(
-                start=lambda name: LOG.info('Post-uninstalling %s.', colorizer.quote(name)),
+                start=lambda i: LOG.info('Post-uninstalling %s.', colorizer.quote(i.component_name)),
                 run=lambda i: i.post_uninstall(),
                 end=None,
             ),

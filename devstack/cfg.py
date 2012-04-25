@@ -181,7 +181,7 @@ class ProxyConfig(object):
 
         # Now print them..
         for name in order_by:
-            nice_name = group_by.get(name)
+            nice_name = group_by.get(name, "???")
             LOG.info(nice_name + ":")
             entries = partitions.get(name)
             if entries:
