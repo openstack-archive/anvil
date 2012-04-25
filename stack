@@ -20,8 +20,10 @@ import sys
 import time
 import traceback as tb
 
+from devstack import actions
 from devstack import cfg
 from devstack import cfg_helpers
+from devstack import colorizer
 from devstack import date
 from devstack import distro
 from devstack import env
@@ -33,8 +35,6 @@ from devstack import persona
 from devstack import settings
 from devstack import shell as sh
 from devstack import utils
-
-from devstack.progs import actions
 
 
 LOG = logging.getLogger("devstack.stack")
@@ -69,12 +69,12 @@ def load_rc_files():
     loaded_am = 0
     for fn in RC_FILES:
         try:
-            LOG.info("Attempting to load file %r which has your environment settings." % (fn))
+            LOG.info("Attempting to load file %s which has your environment settings.", colorizer.quote(fn))
             am_loaded = env_rc.RcReader().load(fn)
-            LOG.info("Loaded %s settings from file %r" % (am_loaded, fn))
+            LOG.info("Loaded %s settings.", colorizer.quote(am_loaded))
             loaded_am += 1
         except IOError:
-            LOG.warn('Error reading file located at %r. Skipping loading it.' % (fn))
+            LOG.warn('Error reading file located at %s. Skipping loading it.', colorizer.quote(fn))
     return loaded_am
 
 
@@ -128,6 +128,15 @@ def find_config(args):
 
 
 def establish_config(args):
+    """
+    Creates the stack configuration object using the set of
+    desired configuration resolvers to be used and returns
+    the wrapper that knows how to activate those resolvers.
+
+    Arguments:
+        args: command line args
+    """
+
     base_config = None
     config_location = find_config(args)
     if config_location:
@@ -140,13 +149,18 @@ def establish_config(args):
         env_resolver = cfg.EnvResolver(base_config)
         proxy_config.add_read_resolver(env_resolver)
         proxy_config.add_set_resolver(env_resolver)
-    resolver_names = list()
-    for r in proxy_config.read_resolvers:
-        resolver_names.append(r.__class__.__name__)
-    utils.log_iterable(resolver_names,
+    utils.log_iterable(utils.get_class_names(proxy_config.read_resolvers),
         header="Config lookup will use the following resolvers:",
         logger=LOG)
     return proxy_config
+
+
+def establish_passwords(config, args):
+    pw_gen = passwords.PasswordGenerator(config, args.get('prompt_for_passwords', True))
+    utils.log_iterable(utils.get_class_names(pw_gen.lookups),
+        header="Password finding will use the following lookups:",
+        logger=LOG)
+    return pw_gen
 
 
 def run(args):
@@ -163,7 +177,7 @@ def run(args):
 
     action = args.pop("action", '').strip().lower()
     if action not in actions.get_action_names():
-        print(utils.color_text("No valid action specified!", "red"))
+        print(colorizer.color_text("No valid action specified!", "red"))
         return False
 
     loaded_rcs = False
@@ -179,7 +193,7 @@ def run(args):
 
     persona_fn = args.pop('persona_fn')
     if not persona_fn or not sh.isfile(persona_fn):
-        print(utils.color_text("No valid persona file name specified!", "red"))
+        print(colorizer.color_text("No valid persona file name specified!", "red"))
         return False
     persona_fn = sh.abspth(persona_fn)
 
@@ -199,7 +213,7 @@ def run(args):
     dist = distro.Distro.get_current()
     persona_inst = load_verify_persona(persona_fn, dist)
     config = establish_config(args)
-    pw_gen = passwords.PasswordGenerator(config, args.get('prompt_for_passwords', True))
+    pw_gen = establish_passwords(config, args)
 
     runner_factory = actions.get_runner_factory(action)
     runner = runner_factory(dist,
@@ -208,20 +222,30 @@ def run(args):
                             root_dir=root_dir,
                             **args)
 
-    LOG.info("Starting action %r on %s for distro: %r" % (action, date.rcf8222date(), dist.name))
-    LOG.info("Using persona: %r" % (persona_fn))
-    LOG.info("In root directory: %r" % (root_dir))
+    LOG.info("Starting action %s on %s for distro: %s",
+                colorizer.quote(action), colorizer.quote(date.rcf8222date()), colorizer.quote(dist.name))
+    LOG.info("Using persona: %s", colorizer.quote(persona_fn))
+    LOG.info("In root directory: %s", colorizer.quote(root_dir))
 
     start_time = time.time()
     runner.run(persona_inst)
     end_time = time.time()
 
-    LOG.info("It took (%s) to complete action %r" %
-              (utils.format_secs_taken((end_time - start_time)), action))
-    LOG.info("After action %r your settings which were created or read are:" % (action))
+    LOG.info("It took (%s) to complete action %s.",
+              colorizer.quote(utils.format_secs_taken((end_time - start_time))), colorizer.quote(action))
+    LOG.info("After action %s your settings which were created or read are:", colorizer.quote(action))
 
     config.pprint(CFG_GROUPS, CFG_ORDERING)
     return True
+
+
+def construct_log_level(verbosity_level, dry_run=False):
+    log_level = logging.INFO
+    if verbosity_level >= 3:
+        log_level = logging.DEBUG
+    elif verbosity_level == 2 or dry_run:
+        log_level = logging.AUDIT
+    return log_level
 
 
 def main():
@@ -239,8 +263,8 @@ def main():
     prog_name = sys.argv[0]
 
     # Configure logging
-    log_level = utils.construct_log_level(args['verbosity'], args['dryrun'])
-    utils.configure_logging(log_level, args)
+    log_level = construct_log_level(args['verbosity'], args['dryrun'])
+    logging.setupLogging(log_level)
 
     LOG.debug("Command line options %s" % (args))
     LOG.debug("Log level is: %s" % (log_level))
@@ -250,7 +274,7 @@ def main():
         rest_args = sys.argv[1:]
         print("This program requires a user with sudo access.")
         msg = "Perhaps you should try %s %s" % \
-                (utils.color_text("sudo %s" % (prog_name), "red", True), " ".join(rest_args))
+                (colorizer.color("sudo %s" % (prog_name), "red", True), " ".join(rest_args))
         print(msg)
         return 1
 
@@ -259,8 +283,8 @@ def main():
         sh.user_mode(quiet=False)
         started_ok = run(args)
         if not started_ok:
-            me = utils.color_text(prog_name, "red", True)
-            me += " " + utils.color_text('--help', 'red')
+            me = colorizer.color(prog_name, "red", True)
+            me += " " + colorizer.color('--help', 'red')
             print("Perhaps you should try %s" % (me))
             return 1
         else:

@@ -28,9 +28,8 @@ import tempfile
 import distutils.version
 import netifaces
 import progressbar
-import termcolor
 
-from devstack import colorlog
+from devstack import colorizer
 from devstack import date
 from devstack import exceptions as excp
 from devstack import log as logging
@@ -70,15 +69,6 @@ COWS['unhappy'] = r'''
         ({eye}{eye})/
         {ear}--{ear}
 '''
-
-
-def construct_log_level(verbosity_level, dry_run=False):
-    log_level = logging.INFO
-    if verbosity_level >= 3:
-        log_level = logging.DEBUG
-    elif verbosity_level == 2 or dry_run:
-        log_level = logging.AUDIT
-    return log_level
 
 
 def make_bool(val):
@@ -140,18 +130,6 @@ def get_from_path(items, path, quiet=True):
             return get_from_path(get_method(first_token), remainder)
 
 
-def configure_logging(log_level, cli_args):
-    root_logger = logging.getLogger().logger
-    console_logger = logging.StreamHandler(sys.stdout)
-    console_format = '%(levelname)s: @%(name)s : %(message)s'
-    if sh.in_terminal():
-        console_logger.setFormatter(colorlog.TermFormatter(console_format))
-    else:
-        console_logger.setFormatter(logging.Formatter(console_format))
-    root_logger.addHandler(console_logger)
-    root_logger.setLevel(log_level)
-
-
 def load_template(component, template_name):
     templ_pth = sh.joinpths(settings.STACK_TEMPLATE_DIR, component, template_name)
     return (templ_pth, sh.load_file(templ_pth))
@@ -206,7 +184,7 @@ def mark_unexecute_file(fn, kvs, comment_start='#'):
     sh.chmod(fn, 0644)
 
 
-def log_iterable(to_log, header=None, logger=None):
+def log_iterable(to_log, header=None, logger=None, do_color=True):
     if not logger:
         logger = LOG
     if header:
@@ -214,7 +192,9 @@ def log_iterable(to_log, header=None, logger=None):
             header += ":"
         logger.info(header)
     for c in to_log:
-        logger.info("|-- %s", color_text(c, 'blue'))
+        if do_color:
+            c = colorizer.color(c, 'blue')
+        logger.info("|-- %s", c)
 
 
 @contextlib.contextmanager
@@ -354,6 +334,10 @@ def joinlinesep(*pieces):
     return os.linesep.join(pieces)
 
 
+def get_class_names(objects):
+    return map((lambda i: i.__class__.__name__), objects)
+
+
 def param_replace_list(values, replacements, ignore_missing=False):
     new_values = list()
     if not values:
@@ -486,27 +470,11 @@ def _welcome_slang():
     return random.choice(potentials)
 
 
-def color_text(text, color, bold=False,
-                    underline=False, blink=False,
-                    always_color=False):
-    text_attrs = list()
-    if bold:
-        text_attrs.append('bold')
-    if underline:
-        text_attrs.append('underline')
-    if blink:
-        text_attrs.append('blink')
-    if sh.in_terminal() or always_color:
-        return termcolor.colored(text, color, attrs=text_attrs)
-    else:
-        return text
-
-
 def _color_blob(text, text_color):
 
     def replacer(match):
         contents = match.group(1)
-        return color_text(contents, text_color)
+        return colorizer.color(contents, text_color)
 
     return MONTY_PYTHON_TEXT_RE.sub(replacer, text)
 
@@ -704,12 +672,12 @@ def _goodbye_header(worked):
 def goodbye(worked):
     if worked:
         cow = COWS['happy']
-        eye_fmt = color_text('o', 'green')
-        ear = color_text("^", 'green')
+        eye_fmt = colorizer.color('o', 'green')
+        ear = colorizer.color("^", 'green')
     else:
         cow = COWS['unhappy']
-        eye_fmt = color_text("o", 'red')
-        ear = color_text("v", 'red')
+        eye_fmt = colorizer.color("o", 'red')
+        ear = colorizer.color("v", 'red')
     cow = cow.strip("\n\r")
     header = _goodbye_header(worked)
     msg = cow.format(eye=eye_fmt, ear=ear,
@@ -721,9 +689,9 @@ def welcome():
     lower = "| %s |" % (version.version_string())
     welcome_header = _get_welcome_stack()
     max_line_len = len(max(welcome_header.splitlines(), key=len))
-    footer = color_text(settings.PROG_NICE_NAME, 'green')
+    footer = colorizer.color(settings.PROG_NICE_NAME, 'green')
     footer += ": "
-    footer += color_text(lower, 'blue', True)
+    footer += colorizer.color(lower, 'blue', bold=True)
     uncolored_footer = (settings.PROG_NICE_NAME + ": " + lower)
     if max_line_len - len(uncolored_footer) > 0:
         # This format string will center the uncolored text which
@@ -734,5 +702,5 @@ def welcome():
     print(footer)
     real_max = max(max_line_len, len(uncolored_footer))
     slang = center_text(_welcome_slang(), ' ', real_max)
-    print(color_text(slang, 'magenta', bold=True))
+    print(colorizer.color(slang, 'magenta', bold=True))
     return ("-", real_max)

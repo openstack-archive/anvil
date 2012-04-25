@@ -46,7 +46,7 @@ NAME = "NAME"
 FORK_TEMPL = "%s.fork"
 
 
-class ForkRunner(base.RunnerBase):
+class ForkRunner(base.Runner):
     def __init__(self, cfg, component_name, trace_dir):
         base.RunnerBase.__init__(self, cfg, component_name, trace_dir)
 

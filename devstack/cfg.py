@@ -20,12 +20,9 @@ import re
 import iniparse
 
 from devstack import cfg_helpers
-from devstack import date
 from devstack import env
 from devstack import exceptions as excp
 from devstack import log as logging
-from devstack import settings
-from devstack import shell as sh
 from devstack import utils
 
 LOG = logging.getLogger("devstack.cfg")
@@ -240,14 +237,16 @@ class CliResolver(object):
                 continue
             split_up = c.split("/")
             if len(split_up) != 3:
-                LOG.warn("Badly formatted cli option: %r", c)
+                LOG.warn("Incorrectly formatted cli option: %r", c)
             else:
                 section = (split_up[0]).strip()
                 if not section or section.lower() == 'default':
                     section = 'DEFAULT'
                 option = split_up[1].strip()
-                value = split_up[2]
-                parsed_args[cfg_helpers.make_id(section, option)] = value
+                if not option:
+                    LOG.warn("Badly formatted cli option - no option name: %r", c)
+                else:
+                    parsed_args[cfg_helpers.make_id(section, option)] = split_up[2]
         return cls(parsed_args)
 
 

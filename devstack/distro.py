@@ -22,6 +22,7 @@ import shlex
 
 import yaml
 
+from devstack import colorizer
 from devstack import importer
 from devstack import log as logging
 from devstack import settings
@@ -69,7 +70,7 @@ class Distro(object):
         LOG.debug('Looking for distro data for %r (%s)', plt, distname)
         for p in cls.load_all():
             if p.supports_distro(plt):
-                LOG.info('Using distro %r for platform %r', p.name, plt)
+                LOG.info('Using distro %s for platform %s', colorizer.quote(p.name), colorizer.quote(plt))
                 return p
         else:
             raise RuntimeError(
