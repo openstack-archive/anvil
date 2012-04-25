@@ -104,7 +104,7 @@ class PasswordGenerator(object):
         for lookup in self.lookups:
             LOG.debug("Looking up password using instance %s", lookup)
             password = lookup.get_password(option, prompt_text=prompt_text, length=length)
-            if len(password):
+            if password is not None and len(password):
                 break
 
         # Update via set through to the config
