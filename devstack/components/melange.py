@@ -17,6 +17,7 @@
 import io
 
 from devstack import cfg
+from devstack import colorizer
 from devstack import component as comp
 from devstack import log as logging
 from devstack import shell as sh
@@ -75,7 +76,6 @@ class MelangeInstaller(comp.PythonInstallComponent):
         return places
 
     def _setup_db(self):
-        LOG.info("Fixing up database named %r", DB_NAME)
         db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
         db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME, utf8=True)
 
@@ -85,7 +85,7 @@ class MelangeInstaller(comp.PythonInstallComponent):
         self._sync_db()
 
     def _sync_db(self):
-        LOG.info("Syncing melange to database named %r", DB_NAME)
+        LOG.info("Syncing melange to database: %s", colorizer.quote(DB_NAME))
         utils.execute_template(*DB_SYNC_CMD, params=self._get_param_map(None))
 
     def _get_param_map(self, config_fn):

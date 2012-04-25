@@ -17,6 +17,7 @@
 import io
 
 from devstack import cfg
+from devstack import colorizer
 from devstack import component as comp
 from devstack import log as logging
 from devstack import shell as sh
@@ -116,7 +117,7 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
                 'no-ovs-bridge-init' in self.options:
             return
         bridge = self.cfg.getdefaulted("quantum", "ovs_bridge", 'br-int')
-        LOG.info("Fixing up ovs bridge named %s.", bridge)
+        LOG.info("Fixing up ovs bridge named: %s", colorizer.quote(bridge))
         external_id = self.cfg.getdefaulted("quantum", 'ovs_bridge_external_name', bridge)
         params = dict()
         params['OVS_BRIDGE'] = bridge
@@ -138,7 +139,6 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
         if not self.q_vswitch_service or \
                 'no-ovs-db-init' in self.options:
             return
-        LOG.info("Fixing up database named %r", DB_NAME)
         db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
         db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME, utf8=True)
 

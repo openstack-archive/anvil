@@ -286,7 +286,7 @@ class InstallRunner(ActionRunner):
             PhaseFunctors(
                 start=lambda name: LOG.info('Installing %s.', colorizer.quote(name)),
                 run=lambda i: i.install(),
-                end=(lambda name, result: LOG.info("Finished install of %s items - check %s for information on what was done",
+                end=(lambda name, result: LOG.info("Finished install of %s items - check %s for information on what was done.",
                         colorizer.quote(name), colorizer.quote(result))),
             ),
             component_order,

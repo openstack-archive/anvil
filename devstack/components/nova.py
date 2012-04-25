@@ -21,6 +21,7 @@ import weakref
 from urlparse import urlunparse
 
 from devstack import cfg
+from devstack import colorizer
 from devstack import component as comp
 from devstack import date
 from devstack import exceptions
@@ -240,7 +241,7 @@ class NovaUninstaller(NovaMixin, comp.PythonUninstallComponent):
         env['VOLUME_NAME_PREFIX'] = self.cfg.getdefaulted('nova', 'volume_name_prefix', DEF_VOL_PREFIX)
         cleaner_fn = sh.joinpths(self.bin_dir, CLEANER_DATA_CONF)
         if sh.isfile(cleaner_fn):
-            LOG.info("Cleaning up your system by running nova cleaner script %r" % (cleaner_fn))
+            LOG.info("Cleaning up your system by running nova cleaner script: %s", colorizer.quote(cleaner_fn))
             cmd = CLEANER_CMD_ROOT + [cleaner_fn]
             sh.execute(*cmd, run_as_root=True, env_overrides=env)
 
@@ -288,7 +289,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
             self.pw_gen.get_password(pw_key, pw_prompt)
 
     def _setup_network_initer(self):
-        LOG.info("Configuring nova network initializer template %r", NET_INIT_CONF)
+        LOG.info("Configuring nova network initializer template: %s", colorizer.quote(NET_INIT_CONF))
         (_, contents) = utils.load_template(self.component_name, NET_INIT_CONF)
         params = self._get_param_map(NET_INIT_CONF)
         contents = utils.param_replace(contents, params, True)
@@ -299,7 +300,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         self.tracewriter.file_touched(tgt_fn)
 
     def _sync_db(self):
-        LOG.info("Syncing nova to database named %r", DB_NAME)
+        LOG.info("Syncing nova to database named: %s", colorizer.quote(DB_NAME))
         mp = self._get_param_map(None)
         utils.execute_template(*DB_SYNC_CMD, params=mp)
 
@@ -315,7 +316,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
             self.volume_maker.setup_volumes()
 
     def _setup_cleaner(self):
-        LOG.info("Configuring cleaner template %r", CLEANER_DATA_CONF)
+        LOG.info("Configuring cleaner template: %s", colorizer.quote(CLEANER_DATA_CONF))
         (_, contents) = utils.load_template(self.component_name, CLEANER_DATA_CONF)
         # FIXME, stop placing in checkout dir...
         tgt_fn = sh.joinpths(self.bin_dir, CLEANER_DATA_CONF)
@@ -324,13 +325,12 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         self.tracewriter.file_touched(tgt_fn)
 
     def _setup_db(self):
-        LOG.info("Fixing up database named %r", DB_NAME)
         db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
         db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
 
     def _generate_nova_conf(self, root_wrapped):
         conf_fn = self._get_target_config_name(API_CONF)
-        LOG.info("Generating dynamic content for nova: %r" % (conf_fn))
+        LOG.info("Generating dynamic content for nova: %s", colorizer.quote(conf_fn))
         nova_conf_contents = self.conf_maker.configure(root_wrapped)
         self.tracewriter.dirs_made(*sh.mkdirslist(sh.dirname(conf_fn)))
         self.tracewriter.cfg_file_written(sh.write_file(conf_fn, nova_conf_contents))

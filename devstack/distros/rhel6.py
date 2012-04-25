@@ -20,6 +20,7 @@
 
 import re
 
+from devstack import colorizer
 from devstack import log as logging
 from devstack import shell as sh
 from devstack import utils
@@ -50,7 +51,7 @@ DEF_IDENT = 'unix-group:libvirtd'
 class DBInstaller(db.DBInstaller):
 
     def _configure_db_confs(self):
-        LOG.info("Fixing up %r mysql configs.", self.distro.name)
+        LOG.info("Fixing up %s mysql configs.", colorizer.quote(self.distro.name))
         fc = sh.load_file('/etc/my.cnf')
         lines = fc.splitlines()
         new_lines = list()
@@ -68,14 +69,14 @@ class HorizonInstaller(horizon.HorizonInstaller):
     def _config_fix_wsgi(self):
         # This is recorded so it gets cleaned up during uninstall
         self.tracewriter.file_touched("/etc/httpd/conf.d/wsgi-socket-prefix.conf")
-        LOG.info("Fixing up %r" % ("/etc/httpd/conf.d/wsgi-socket-prefix.conf"))
+        LOG.info("Fixing up: %s", colorizer.quote("/etc/httpd/conf.d/wsgi-socket-prefix.conf"))
         contents = "WSGISocketPrefix %s" % (sh.joinpths(self.log_dir, "wsgi-socket"))
         with sh.Rooted(True):
             # The name seems to need to come after wsgi.conf (so thats what we are doing)
             sh.write_file("/etc/httpd/conf.d/wsgi-socket-prefix.conf", contents)
 
     def _config_fix_httpd(self):
-        LOG.info("Fixing up %r" % ('/etc/httpd/conf/httpd.conf'))
+        LOG.info("Fixing up: %s", colorizer.quote('/etc/httpd/conf/httpd.conf'))
         (user, group) = self._get_apache_user_group()
         old_lines = sh.load_file('/etc/httpd/conf/httpd.conf').splitlines()
         new_lines = list()
