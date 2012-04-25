@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from devstack import colorizer
 from devstack import component as comp
 from devstack import exceptions as excp
 from devstack import log as logging
@@ -239,6 +240,7 @@ def drop_db(cfg, pw_gen, distro, dbname):
     dbtype = cfg.get("db", "type")
     dropcmd = distro.get_command(dbtype, 'drop_db', silent=True)
     if dropcmd:
+        LOG.info('Dropping %s database: %s', colorizer.quote(dbtype), colorizer.quote(dbname))
         params = dict()
         params['PASSWORD'] = pw_gen.get_password("sql", PASSWORD_PROMPT)
         params['USER'] = cfg.getdefaulted("db", "sql_user", 'root')
@@ -261,7 +263,7 @@ def create_db(cfg, pw_gen, distro, dbname, utf8=False):
     else:
         createcmd = distro.get_command(dbtype, 'create_db_utf8', silent=True)
     if createcmd:
-        LOG.debug('Creating %s database %s', dbtype, dbname)
+        LOG.info('Creating %s database: %s', colorizer.quote(dbtype), colorizer.quote(dbname))
         params = dict()
         params['PASSWORD'] = pw_gen.get_password("sql", PASSWORD_PROMPT)
         params['USER'] = cfg.getdefaulted("db", "sql_user", 'root')

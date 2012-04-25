@@ -19,6 +19,7 @@ import io
 from urlparse import urlunparse
 
 from devstack import cfg
+from devstack import colorizer
 from devstack import component as comp
 from devstack import log as logging
 from devstack import shell as sh
@@ -113,7 +114,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         return set(['swift', 'quantum'])
 
     def _sync_db(self):
-        LOG.info("Syncing keystone to database named %r", DB_NAME)
+        LOG.info("Syncing keystone to database: %s", colorizer.quote(DB_NAME))
         mp = self._get_param_map(None)
         cmds = [{'cmd': SYNC_DB_CMD}]
         utils.execute_template(*cmds, cwd=self.bin_dir, params=mp)
@@ -122,12 +123,11 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         return list(CONFIGS)
 
     def _setup_db(self):
-        LOG.info("Fixing up database named %r", DB_NAME)
         db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
         db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME, utf8=True)
 
     def _setup_initer(self):
-        LOG.info("Configuring keystone initializer template %r", MANAGE_DATA_CONF)
+        LOG.info("Configuring keystone initializer template: %s", colorizer.quote(MANAGE_DATA_CONF))
         (_, contents) = utils.load_template(self.component_name, MANAGE_DATA_CONF)
         mp = self._get_param_map(MANAGE_DATA_CONF)
         contents = utils.param_replace(contents, mp, True)

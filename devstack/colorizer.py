@@ -31,7 +31,10 @@ def quote(data, quote_color='green'):
     if not is_terminal():
         return "'%s'" % (data)
     else:
-        return color(data, quote_color)
+        text = str(data)
+        if len(text) == 0:
+            text = "''"
+        return color(text, quote_color)
 
 
 def format(data, params):

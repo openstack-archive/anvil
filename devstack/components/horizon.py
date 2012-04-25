@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from devstack import colorizer
 from devstack import component as comp
 from devstack import exceptions as excp
 from devstack import log as logging
@@ -55,6 +56,7 @@ BAD_APACHE_USERS = ['root']
 # Apache logs will go here
 LOGS_DIR = "logs"
 
+# This db will be dropped and created
 DB_NAME = 'horizon'
 
 
@@ -123,11 +125,10 @@ class HorizonInstaller(comp.PythonInstallComponent):
     def _sync_db(self):
         # Initialize the horizon database (it stores sessions and notices shown to users).
         # The user system is external (keystone).
-        LOG.info("Initializing the horizon database.")
+        LOG.info("Syncing horizon to database: %s", colorizer.quote(DB_NAME))
         sh.execute(*DB_SYNC_CMD, cwd=self.app_dir)
 
     def _setup_db(self):
-        LOG.info("Fixing up database named %r", DB_NAME)
         db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
         db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME, utf8=True)
 

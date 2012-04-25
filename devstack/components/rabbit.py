@@ -16,6 +16,7 @@
 
 from tempfile import TemporaryFile
 
+from devstack import colorizer
 from devstack import component as comp
 from devstack import log as logging
 from devstack import shell as sh
@@ -46,12 +47,12 @@ class RabbitUninstaller(comp.PkgUninstallComponent):
     def pre_uninstall(self):
         try:
             self.runtime.restart()
-            LOG.info("Attempting to reset the rabbit-mq guest password to %r", RESET_BASE_PW)
+            LOG.info("Attempting to reset the rabbit-mq guest password to: %s", colorizer.quote(RESET_BASE_PW))
             cmd = self.distro.get_command('rabbit-mq', 'change_password') + [RESET_BASE_PW]
             sh.execute(*cmd, run_as_root=True)
         except IOError:
             LOG.warn(("Could not reset the rabbit-mq password. You might have to manually "
-                      "reset the password to %r before the next install") % (RESET_BASE_PW))
+                      "reset the password to %s before the next install"), colorizer.quote(RESET_BASE_PW))
 
 
 class RabbitInstaller(comp.PkgInstallComponent):

@@ -33,7 +33,7 @@ LOG = logging.getLogger(__name__)
 class DBInstaller(db.DBInstaller):
 
     def _configure_db_confs(self):
-        LOG.info("Fixing up %r mysql configs.", self.distro.name)
+        LOG.info("Fixing up %s mysql configs.", colorizer.quote(self.distro.name))
         fc = sh.load_file('/etc/mysql/my.cnf')
         lines = fc.splitlines()
         new_lines = list()

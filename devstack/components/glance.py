@@ -17,6 +17,7 @@
 import io
 
 from devstack import cfg
+from devstack import colorizer
 from devstack import component as comp
 from devstack import log as logging
 from devstack import shell as sh
@@ -99,7 +100,6 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
         self._setup_db()
 
     def _setup_db(self):
-        LOG.info("Fixing up database named %r", DB_NAME)
         db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
         db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME, utf8=True)
 
