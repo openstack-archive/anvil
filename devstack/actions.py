@@ -243,12 +243,12 @@ class InstallRunner(ActionRunner):
         fn = sh.abspth(settings.gen_rc_filename('core'))
         writer = env_rc.RcWriter(self.cfg, self.pw_gen, self.root_dir)
         if not sh.isfile(fn):
-            LOG.info("Generating a file at %r that will contain your environment settings.", fn)
+            LOG.info("Generating a file at %s that will contain your environment settings.", colorizer.quote(fn))
             writer.write(fn)
         else:
-            LOG.info("Updating a file at %r that contains your environment settings.", fn)
+            LOG.info("Updating a file at %s that contains your environment settings.", colorizer.quote(fn))
             am_upd = writer.update(fn)
-            LOG.info("Updated %s settings in rc file %r", am_upd, fn)
+            LOG.info("Updated %s settings.", colorizer.quote(am_upd))
 
     def _run(self, persona, component_order, instances):
         self._write_rc_file()
