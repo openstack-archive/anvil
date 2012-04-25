@@ -21,10 +21,13 @@
 import tempfile
 import time
 
-from devstack.components import db
+from devstack import colorizer
 from devstack import log as logging
 from devstack import shell as sh
 from devstack import utils
+
+from devstack.components import db
+
 from devstack.packaging import apt
 
 LOG = logging.getLogger(__name__)
