@@ -253,7 +253,7 @@ class CliResolver(object):
 class EnvResolver(DynamicResolver):
 
     def get(self, section, option):
-        return self._resolve_value(section, option, self._get_bashed(section, option))
+        return self._get_bashed(section, option)
 
     def _getdefaulted(self, section, option, default_value):
         val = self.get(section, option)
@@ -273,6 +273,7 @@ class EnvResolver(DynamicResolver):
             if not def_val and not env_key:
                 msg = "Invalid bash-like value %r" % (value)
                 raise excp.BadParamException(msg)
+            LOG.debug("Looking for that value in environment variable: %r", env_key)
             env_value = env.get_key(env_key)
             if env_value is None:
                 LOG.debug("Extracting value from config provided default value %r" % (def_val))

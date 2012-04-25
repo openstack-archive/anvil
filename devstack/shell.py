@@ -156,8 +156,11 @@ def execute(*cmd, **kwargs):
 
     if not run_as_root:
         (user_uid, user_gid) = get_suids()
-        LOG.audit("Running as (user=%s, group=%s)", user_uid, user_gid)
-        demoter = demoter_functor(user_uid=user_uid, user_gid=user_gid)
+        if user_uid is None or user_gid is None:
+            pass
+        else:
+            LOG.audit("Running as (user=%s, group=%s)", user_uid, user_gid)
+            demoter = demoter_functor(user_uid=user_uid, user_gid=user_gid)
     else:
         LOG.audit("Running as (user=%s, group=%s)", ROOT_USER_UID, ROOT_USER_UID)
 
