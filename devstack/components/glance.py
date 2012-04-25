@@ -17,7 +17,6 @@
 import io
 
 from devstack import cfg
-from devstack import colorizer
 from devstack import component as comp
 from devstack import log as logging
 from devstack import shell as sh

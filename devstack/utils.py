@@ -22,7 +22,6 @@ import os
 import random
 import re
 import socket
-import sys
 import tempfile
 
 import distutils.version
