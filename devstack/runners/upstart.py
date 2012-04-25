@@ -48,7 +48,7 @@ EMIT_BASE_CMD = ["/sbin/initctl", "emit"]
 
 class UpstartRunner(base.Runner):
     def __init__(self, cfg, component_name, trace_dir):
-        base.RunnerBase.__init__(self, cfg, component_name, trace_dir)
+        base.Runner.__init__(self, cfg, component_name, trace_dir)
         self.events = set()
 
     def stop(self, app_name):
