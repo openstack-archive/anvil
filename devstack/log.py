@@ -18,11 +18,15 @@
 #    under the License.
 
 import logging
+import sys
 
 from logging.handlers import SysLogHandler
 from logging.handlers import WatchedFileHandler
 
-# Alist of things we want to replicate from logging levels
+from devstack import colorizer
+
+
+# A list of things we want to replicate from logging levels
 CRITICAL = logging.CRITICAL
 FATAL = logging.FATAL
 ERROR = logging.ERROR
@@ -58,19 +62,61 @@ WatchedFileHandler = WatchedFileHandler
 SysLogHandler = SysLogHandler
 
 
-class AuditAdapter(logging.LoggerAdapter):
+class TermFormatter(logging.Formatter):
+
+    COLOR_MAP = {
+        logging.DEBUG: 'blue',
+        logging.INFO: 'cyan',
+        logging.WARNING: 'yellow',
+        logging.ERROR: 'red',
+        logging.CRITICAL: 'red',
+        logging.AUDIT: 'green',
+    }
+    MSG_COLORS = {
+        logging.CRITICAL: 'red',
+    }
+
+    def __init__(self, reg_fmt=None, date_format=None):
+        logging.Formatter.__init__(self, reg_fmt, date_format)
+
+    def _format_msg(self, lvl, msg):
+        color_to_be = self.MSG_COLORS.get(lvl)
+        if color_to_be:
+            return colorizer.color(msg, color_to_be, bold=True)
+        else:
+            return msg
+
+    def _format_lvl(self, lvl, lvl_name):
+        color_to_be = self.COLOR_MAP.get(lvl)
+        if color_to_be:
+            return colorizer.color(lvl_name, color_to_be)
+        else:
+            return lvl_name
+
+    def format(self, record):
+        record.levelname = self._format_lvl(record.levelno, record.levelname)
+        record.msg = self._format_msg(record.levelno, record.msg)
+        return logging.Formatter.format(self, record)
+
+
+class TermAdapter(logging.LoggerAdapter):
+
     warn = logging.LoggerAdapter.warning
 
     def __init__(self, logger):
         logging.LoggerAdapter.__init__(self, logger, dict())
-        self.logger = logger
 
     def audit(self, msg, *args, **kwargs):
         self.log(logging.AUDIT, msg, *args, **kwargs)
 
-    def process(self, msg, kwargs):
-        return msg, kwargs
+
+def setupLogging(log_level, format='%(levelname)s: @%(name)s : %(message)s'):
+    root_logger = getLogger().logger
+    console_logger = StreamHandler(sys.stdout)
+    console_logger.setFormatter(TermFormatter(format))
+    root_logger.addHandler(console_logger)
+    root_logger.setLevel(log_level)
 
 
 def getLogger(name='devstack'):
-    return AuditAdapter(logging.getLogger(name))
+    return TermAdapter(logging.getLogger(name))

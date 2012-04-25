@@ -32,7 +32,7 @@ RESET_BASE_PW = ''
 SQL_RESET_PW_LINKS = [
     'https://help.ubuntu.com/community/MysqlPasswordReset',
     'http://dev.mysql.com/doc/refman/5.0/en/resetting-permissions.html',
-    ]
+]
 
 # Used as a generic error message
 BASE_ERROR = 'Currently we do not know how to %r for database type %r'
@@ -43,6 +43,7 @@ WARMUP_PWS = [('sql', PASSWORD_PROMPT)]
 
 
 class DBUninstaller(comp.PkgUninstallComponent):
+
     def __init__(self, *args, **kargs):
         comp.PkgUninstallComponent.__init__(self, *args, **kargs)
         (runtime_cls, _) = self.distro.extract_component(self.component_name, 'running')

@@ -321,13 +321,6 @@ def explode_path(path):
     return _explode_form_path(path)
 
 
-def in_terminal(check_both=False):
-    if check_both:
-        return sys.stdout.isatty() and sys.stderr.isatty()
-    else:
-        return sys.stdout.isatty()
-
-
 def remove_parents(child_path, paths):
     if not paths:
         return list()

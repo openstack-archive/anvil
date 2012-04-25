@@ -14,9 +14,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import abc
 
-# This is the base class for the various runners
-class RunnerBase(object):
+
+class Runner(object):
+    __meta__ = abc.ABCMeta
+
     def __init__(self, config, component_name, trace_dir):
         self.cfg = config
         self.component_name = component_name
@@ -34,7 +37,8 @@ class RunnerBase(object):
 
     def start(self, app_name, app_pth, app_dir, opts):
         # Returns a file name that contains what was started
-        return None
+        pass
 
     def stop(self, app_name):
+        # Stops the given app
         pass

@@ -46,7 +46,7 @@ UPSTART_CONF_TMPL = 'upstart.conf'
 EMIT_BASE_CMD = ["/sbin/initctl", "emit"]
 
 
-class UpstartRunner(base.RunnerBase):
+class UpstartRunner(base.Runner):
     def __init__(self, cfg, component_name, trace_dir):
         base.RunnerBase.__init__(self, cfg, component_name, trace_dir)
         self.events = set()
