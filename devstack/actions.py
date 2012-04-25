@@ -285,8 +285,11 @@ class InstallRunner(ActionRunner):
 
         def install_start(instance):
             subsystems = set(list(instance.desired_subsystems))
-            utils.log_iterable(subsystems, logger=LOG,
-                header='Installing %s using subsystems' % colorizer.quote(instance.component_name))
+            if subsystems:
+                utils.log_iterable(subsystems, logger=LOG,
+                    header='Installing %s using subsystems' % colorizer.quote(instance.component_name))
+            else:
+                LOG.info("Installing %s.", colorizer.quote(instance.component_name))
 
         self._run_phase(
             PhaseFunctors(
