@@ -202,58 +202,18 @@ class ConfigResolver(object):
         self.backing = backing
 
     def get(self, section, option):
-        return self.backing.get(section, option)
+        return self._resolve_value(section, option, self._get_bashed(section, option))
 
     def set(self, section, option, value):
         self.backing.set(section, option, value)
 
-
-class DynamicResolver(ConfigResolver):
-
-    def get(self, section, option):
-        return self._resolve_value(section, option, ConfigResolver.get(self, section, option))
-
     def _resolve_value(self, section, option, value_gotten):
-        if section == 'host' and option == 'ip':
-            LOG.debug("Host ip from configuration/environment was empty, programatically attempting to determine it.")
-            value_gotten = utils.get_host_ip()
-            LOG.debug("Determined your host ip to be: %r" % (value_gotten))
+        if not value_gotten:
+            if section == 'host' and option == 'ip':
+                LOG.debug("Host ip from configuration/environment was empty, programatically attempting to determine it.")
+                value_gotten = utils.get_host_ip()
+                LOG.debug("Determined your host ip to be: %r" % (value_gotten))
         return value_gotten
-
-
-class CliResolver(object):
-
-    def __init__(self, cli_args):
-        self.cli_args = cli_args
-
-    def get(self, section, option):
-        return self.cli_args.get(cfg_helpers.make_id(section, option))
-
-    @classmethod
-    def create(cls, cli_args):
-        parsed_args = dict()
-        for c in cli_args:
-            if not c:
-                continue
-            split_up = c.split("/")
-            if len(split_up) != 3:
-                LOG.warn("Incorrectly formatted cli option: %r", c)
-            else:
-                section = (split_up[0]).strip()
-                if not section or section.lower() == 'default':
-                    section = 'DEFAULT'
-                option = split_up[1].strip()
-                if not option:
-                    LOG.warn("Badly formatted cli option - no option name: %r", c)
-                else:
-                    parsed_args[cfg_helpers.make_id(section, option)] = split_up[2]
-        return cls(parsed_args)
-
-
-class EnvResolver(DynamicResolver):
-
-    def get(self, section, option):
-        return self._get_bashed(section, option)
 
     def _getdefaulted(self, section, option, default_value):
         val = self.get(section, option)
@@ -262,7 +222,7 @@ class EnvResolver(DynamicResolver):
         return val
 
     def _get_bashed(self, section, option):
-        value = DynamicResolver.get(self, section, option)
+        value = self.backing.get(section, option)
         if value is None:
             return value
         extracted_val = ''
@@ -298,3 +258,44 @@ class EnvResolver(DynamicResolver):
             return self._getdefaulted(section, option, '')
 
         return SUB_MATCH.sub(replacer, value)
+
+
+class CliResolver(object):
+
+    def __init__(self, cli_args):
+        self.cli_args = cli_args
+
+    def get(self, section, option):
+        return self.cli_args.get(cfg_helpers.make_id(section, option))
+
+    @classmethod
+    def create(cls, cli_args):
+        parsed_args = dict()
+        for c in cli_args:
+            if not c:
+                continue
+            split_up = c.split("/")
+            if len(split_up) != 3:
+                LOG.warn("Incorrectly formatted cli option: %r", c)
+            else:
+                section = (split_up[0]).strip()
+                if not section or section.lower() == 'default':
+                    section = 'DEFAULT'
+                option = split_up[1].strip()
+                if not option:
+                    LOG.warn("Badly formatted cli option - no option name: %r", c)
+                else:
+                    parsed_args[cfg_helpers.make_id(section, option)] = split_up[2]
+        return cls(parsed_args)
+
+
+class EnvResolver(object):
+
+    def __init__(self):
+        pass
+
+    def _form_key(self, section, option):
+        return cfg_helpers.make_id(section, option)
+
+    def get(self, section, option):
+        return env.get_key(self._form_key(section, option))

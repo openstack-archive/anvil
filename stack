@@ -145,10 +145,11 @@ def establish_config(args):
             base_config.readfp(fh)
     proxy_config = cfg.ProxyConfig()
     proxy_config.add_read_resolver(cfg.CliResolver.create(args['cli_overrides']))
+    proxy_config.add_read_resolver(cfg.EnvResolver())
     if base_config:
-        env_resolver = cfg.EnvResolver(base_config)
-        proxy_config.add_read_resolver(env_resolver)
-        proxy_config.add_set_resolver(env_resolver)
+        cfg_resolver = cfg.ConfigResolver(base_config)
+        proxy_config.add_read_resolver(cfg_resolver)
+        proxy_config.add_set_resolver(cfg_resolver)
     utils.log_iterable(utils.get_class_names(proxy_config.read_resolvers),
         header="Config lookup will use the following resolvers:",
         logger=LOG)
@@ -231,8 +232,9 @@ def run(args):
     runner.run(persona_inst)
     end_time = time.time()
 
-    LOG.info("It took (%s) to complete action %s.",
-              colorizer.quote(utils.format_secs_taken((end_time - start_time))), colorizer.quote(action))
+    pretty_time = utils.format_time(end_time - start_time)
+    LOG.info("It took %s seconds or %s minutes to complete action %s.",
+        colorizer.quote(pretty_time['seconds']), colorizer.quote(pretty_time['minutes']), colorizer.quote(action))
     LOG.info("After action %s your settings which were created or read are:", colorizer.quote(action))
 
     config.pprint(CFG_GROUPS, CFG_ORDERING)
