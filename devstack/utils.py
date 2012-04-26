@@ -325,10 +325,11 @@ def get_interfaces():
     return interfaces
 
 
-def format_secs_taken(secs):
-    output = "%.03f seconds" % (secs)
-    output += " or %.02f minutes" % (secs / 60.0)
-    return output
+def format_time(secs):
+    return {
+        'seconds': "%.03f" % (secs),
+        "minutes": "%.02f" % (secs / 60.0),
+    }
 
 
 def joinlinesep(*pieces):

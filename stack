@@ -232,8 +232,9 @@ def run(args):
     runner.run(persona_inst)
     end_time = time.time()
 
-    LOG.info("It took (%s) to complete action %s.",
-              colorizer.quote(utils.format_secs_taken((end_time - start_time))), colorizer.quote(action))
+    pretty_time = utils.format_time(end_time - start_time)
+    LOG.info("It took %s seconds or %s minutes to complete action %s.",
+        colorizer.quote(pretty_time['seconds']), colorizer.quote(pretty_time['minutes']), colorizer.quote(action))
     LOG.info("After action %s your settings which were created or read are:", colorizer.quote(action))
 
     config.pprint(CFG_GROUPS, CFG_ORDERING)
