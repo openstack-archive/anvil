@@ -240,7 +240,7 @@ class KeystoneRuntime(comp.PythonRuntime):
             env['ENABLED_SERVICES'] = ",".join(self.instances.keys())
             env['BIN_DIR'] = self.bin_dir
             setup_cmd = MANAGE_CMD_ROOT + [tgt_fn]
-            LOG.info("Running %r command to initialize keystone." % (" ".join(setup_cmd)))
+            LOG.info("Running %s command to initialize keystone.", colorizer.quote(" ".join(setup_cmd)))
             sh.execute(*setup_cmd, env_overrides=env, run_as_root=False)
             utils.mark_unexecute_file(tgt_fn, env)
 

@@ -205,6 +205,9 @@ components:
         -   name: python-iso8601
             removable: true
             version: 0.1*
+        pips:
+        -   name: jsonschema
+            version: 0.2
     horizon:
         action_classes:
             install: devstack.components.horizon:HorizonInstaller

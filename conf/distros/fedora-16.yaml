@@ -191,6 +191,9 @@ components:
         -   name: pyxattr
             removable: true
             version: 0.5*
+        pips:
+        -   name: jsonschema
+            version: 0.2
     horizon:
         action_classes:
             install: devstack.distros.fedora16:HorizonInstaller

@@ -166,7 +166,9 @@ class YumPackagerWithRelinks(yum.YumPackager):
         if response:
             options = pkg.get('packager_options', {})
             links = options.get('links', [])
-            for (_, tgt) in links:
+            for entry in links:
+                src = entry['source']
+                tgt = entry['target']
                 if sh.islink(tgt):
                     sh.unlink(tgt)
         return response
@@ -175,7 +177,9 @@ class YumPackagerWithRelinks(yum.YumPackager):
         yum.YumPackager._install(self, pkg)
         options = pkg.get('packager_options', {})
         links = options.get('links', [])
-        for src, tgt in links:
+        for entry in links:
+            src = entry['source']
+            tgt = entry['target']
             if not sh.islink(tgt):
                 # This is actually a feature, EPEL must not conflict
                 # with RHEL, so X pkg installs newer version in

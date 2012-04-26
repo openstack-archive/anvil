@@ -208,6 +208,8 @@ components:
         pips:
         -   name: iso8601
             version: 0.1.4
+        -   name: jsonschema
+            version: 0.2
     horizon:
         action_classes:
             install: devstack.components.horizon:HorizonInstaller

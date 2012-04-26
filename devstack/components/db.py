@@ -151,7 +151,8 @@ class DBInstaller(comp.PkgInstallComponent):
 
 
 def grant_permissions(cfg, pw_gen, distro, user, restart_func=None):
-    """Grant permissions on the database.
+    """
+    Grant permissions on the database.
     """
     dbtype = cfg.get("db", "type")
     dbactions = distro.get_command_config(dbtype, quiet=True)
@@ -166,9 +167,7 @@ def grant_permissions(cfg, pw_gen, distro, user, restart_func=None):
                 'USER': user,
             }
             cmds = [{'cmd': grant_cmd}]
-            LOG.info(
-                "Giving user %r full control of all databases.",
-                user)
+            LOG.info( "Giving user %s full control of all databases.", colorizer.quote(user))
             utils.execute_template(*cmds, params=params)
     return
 
@@ -285,8 +284,9 @@ def fetch_dbdsn(config, pw_gen, dbname, utf8=False):
     host = config.get("db", "sql_host")
     port = config.get("db", "port")
     pw = pw_gen.get_password("sql", PASSWORD_PROMPT)
-    #form the dsn (from components we have...)
-    #dsn = "<driver>://<username>:<password>@<host>:<port>/<database>"
+    # Form the dsn (from components we have...)
+    # dsn = "<driver>://<username>:<password>@<host>:<port>/<database>"
+    # See: http://en.wikipedia.org/wiki/Data_Source_Name
     if not host:
         msg = "Unable to fetch a database dsn - no sql host found"
         raise excp.BadParamException(msg)
