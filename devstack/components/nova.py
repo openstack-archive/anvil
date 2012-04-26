@@ -443,7 +443,7 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
             env = dict()
             env['ENABLED_SERVICES'] = ",".join(self.options)
             setup_cmd = NET_INIT_CMD_ROOT + [tgt_fn]
-            LOG.info("Running %r command to initialize nova's network." % (" ".join(setup_cmd)))
+            LOG.info("Running %s command to initialize nova's network.", colorizer.quote(" ".join(setup_cmd)))
             sh.execute(*setup_cmd, env_overrides=env, run_as_root=False)
             utils.mark_unexecute_file(tgt_fn, env)
 
@@ -467,7 +467,7 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
             # FIXME: The configuration for the virtualization-type
             # should come from the persona.
             virt_type = lv.canon_libvirt_type(self.cfg.get('nova', 'libvirt_type'))
-            LOG.info("Checking that your selected libvirt virtualization type %r is working and running." % (virt_type))
+            LOG.info("Checking that your selected libvirt virtualization type %s is working and running.", colorizer.quote(virt_type))
             try:
                 self.virsh.check_virt(virt_type)
                 self.virsh.restart_service()

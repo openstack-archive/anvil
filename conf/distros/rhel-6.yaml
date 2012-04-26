@@ -198,6 +198,8 @@ components:
         -   name: pycrypto
             options: --upgrade
             version: '2.5'
+        -   name: jsonschema
+            version: 0.2
     horizon:
         action_classes:
             install: devstack.distros.rhel6:HorizonInstaller
