@@ -53,3 +53,5 @@ if [[ "$ENABLED_SERVICES" =~ "vol" ]]; then
     iscsiadm --mode node | grep $VOLUME_NAME_PREFIX | cut -d " " -f2 | iscsiadm --mode node --op delete
 
 fi
+
+exit 0
