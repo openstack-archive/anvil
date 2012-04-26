@@ -167,7 +167,7 @@ def grant_permissions(cfg, pw_gen, distro, user, restart_func=None):
                 'USER': user,
             }
             cmds = [{'cmd': grant_cmd}]
-            LOG.info( "Giving user %s full control of all databases.", colorizer.quote(user))
+            LOG.info("Giving user %s full control of all databases.", colorizer.quote(user))
             utils.execute_template(*cmds, params=params)
     return
 

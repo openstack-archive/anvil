@@ -16,6 +16,7 @@
 
 import abc
 
+from devstack import colorizer
 from devstack import importer
 from devstack import log as logging
 from devstack import utils
@@ -50,14 +51,14 @@ class Packager(object):
             else:
                 if existing_version is not None:
                     if utils.versionize(existing_version) < utils.versionize(version):
-                        LOG.warn(("A request has come in for a 'potentially' newer version of %r v(%s),"
-                            " when v(%s) was previously installed!"), name, version, existing_version)
+                        LOG.warn(("A request has come in for a 'potentially' newer version of %s v(%s),"
+                            " when v(%s) was previously installed!"), colorizer.quote(name), version, existing_version)
                     elif utils.versionize(existing_version) > utils.versionize(version):
-                        LOG.warn(("A request has come in for a 'potentially' older version of %r v(%s), "
-                            "when v(%s) was previously installed!"), name, version, existing_version)
+                        LOG.warn(("A request has come in for a 'potentially' older version of %s v(%s), "
+                            "when v(%s) was previously installed!"), colorizer.quote(name), version, existing_version)
                 else:
-                    LOG.warn(("A request has come in for a 'potentially' different version of %r v(%s),"
-                        " when a unspecified version was previously installed!"), name, version)
+                    LOG.warn(("A request has come in for a 'potentially' different version of %s v(%s),"
+                        " when a unspecified version was previously installed!"), colorizer.quote(name), version)
         if not skip_install:
             self._install(pkg)
             LOG.debug("Noting that %r - v(%s) was installed.", name, (version or "??"))
@@ -83,13 +84,13 @@ class Packager(object):
     def pre_install(self, pkg, params=None):
         cmds = pkg.get('pre-install')
         if cmds:
-            LOG.info("Running pre-install commands for package %r.", pkg['name'])
+            LOG.info("Running pre-install commands for package %s.", colorizer.quote(pkg['name']))
             utils.execute_template(*cmds, params=params)
 
     def post_install(self, pkg, params=None):
         cmds = pkg.get('post-install')
         if cmds:
-            LOG.info("Running post-install commands for package %r.", pkg['name'])
+            LOG.info("Running post-install commands for package %s.", colorizer.quote(pkg['name']))
             utils.execute_template(*cmds, params=params)
 
     @abc.abstractmethod
