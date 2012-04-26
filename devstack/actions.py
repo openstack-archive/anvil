@@ -208,8 +208,8 @@ class ActionRunner(object):
                 components_needing_prereq.append(c)
         preq_cls_name = preq_cls.NAME or "???"
         if components_needing_prereq:
-            LOG.info("Processing prerequisite action %s requested by (%s) components.",
-                        colorizer.quote(preq_cls_name), ", ".join(components_needing_prereq))
+            utils.log_iterable(components_needing_prereq, logger=LOG,
+                header="Processing prerequisite action %s requested by" % colorizer.quote(preq_cls_name))
             prereq_instance = preq_cls(self.distro,
                                     self.cfg,
                                     self.pw_gen,
