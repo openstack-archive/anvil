@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash
 
 # This script cleans up the system as part of a nova uninstall
 #
@@ -10,6 +10,9 @@ if [[ $EUID -ne 0 ]]; then
    echo "This script must be run as root!" 1>&2
    exit 1
 fi
+
+set +o errexit
+set -x
 
 # Set up some good defaults
 ENABLED_SERVICES=${ENABLED_SERVICES:-net,vol}
