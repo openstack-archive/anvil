@@ -471,6 +471,7 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
             try:
                 self.virsh.check_virt(virt_type)
                 self.virsh.restart_service()
+                LOG.info("Libvirt virtualization type %s seems to be working and running.", colorizer.quote(virt_type))
             except exceptions.ProcessExecutionError as e:
                 msg = ("Libvirt type %r does not seem to be active or configured correctly, "
                         "perhaps you should be using %r instead: %s" %

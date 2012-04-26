@@ -7,10 +7,10 @@ echo "Clearing your network up."
 if [[ -n `brctl show  | grep -i br100` ]]
 then
     echo "Clearing br100 and making $ETH_SRC be the real interface."
-    #sudo ifconfig $ETH_SRC down
-    #sudo ifconfig br100 down
-    #sudo brctl delif br100 $ETH_SRC
-    #sudo brctl delbr br100
+    sudo ifconfig $ETH_SRC down
+    sudo ifconfig br100 down
+    sudo brctl delif br100 $ETH_SRC
+    sudo brctl delbr br100
 fi
 
 if [[ -n `brctl show  | grep -i virbr0` ]]
@@ -19,6 +19,14 @@ then
     sudo ifconfig virbr0 down
     sudo brctl delbr virbr0
 fi
+
+
+for pid in `ps -elf | grep -i dnsmasq | grep nova | perl -le 'while (<>) { my $pid = (split /\s+/)[3]; print $pid; }'`
+do
+    echo "Killing leftover nova dnsmasq process with process id $pid"
+    kill -9 $pid
+done
+
 
 if [[ -z `grep "iface $ETH_SRC" /etc/network/interfaces` ]]
 then
