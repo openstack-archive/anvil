@@ -192,7 +192,7 @@ class Image(object):
     def _check_name(self, name):
         LOG.info("Checking if image %s already exists already in glance.", colorizer.quote(name))
         if name in self.registry:
-            raise IOError("Image named %s already exists" % (name))
+            raise IOError("Image named %s already exists." % (name))
 
     def _register(self, image_name, location):
 
@@ -284,17 +284,16 @@ class Image(object):
 
 
 class Service:
-    def __init__(self, cfg, urls):
+    def __init__(self, cfg):
         self.cfg = cfg
-        self.urls = urls
 
-    def install(self):
+    def install(self, urls):
         # Install them in glance
         am_installed = 0
-        if self.urls:
-            utils.log_iterable(self.urls, logger=LOG,
-                                header="Attempting to download+extract+upload %s images" % len(self.urls))
-            for uri in self.urls:
+        if urls:
+            utils.log_iterable(urls, logger=LOG,
+                                header="Attempting to download+extract+upload %s images" % len(urls))
+            for uri in urls:
                 try:
                     name = Image(uri, self.cfg).install()
                     if name:

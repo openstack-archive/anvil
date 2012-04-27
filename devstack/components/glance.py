@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from urlparse import urlunparse
+
 import io
 
 from devstack import cfg
@@ -197,6 +199,15 @@ class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
     def _get_app_options(self, app):
         return APP_OPTIONS.get(app)
 
+    def _get_image_urls(self):
+        uris = self.cfg.getdefaulted('glance', 'image_urls', '').split(",")
+        cleaned_uris = list()
+        for uri in uris:
+            uri = uri.strip()
+            if uri:
+                cleaned_uris.append(uri)
+        return cleaned_uris
+
     def post_start(self):
         comp.PythonRuntime.post_start(self)
         if 'no-load-images' in self.options:
@@ -208,7 +219,7 @@ class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
             sh.sleep(self.wait_time)
             upload_cfg = get_shared_params(self.cfg)
             upload_cfg.update(keystone.get_shared_params(self.cfg, self.pw_gen, 'glance'))
-            uploader.Service(upload_cfg).install()
+            uploader.Service(upload_cfg).install(self._get_image_urls())
 
 
 def get_shared_params(config):

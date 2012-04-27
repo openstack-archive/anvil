@@ -14,7 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from urlparse import urlunparse
 
 from devstack import component as comp
 from devstack import log as logging
