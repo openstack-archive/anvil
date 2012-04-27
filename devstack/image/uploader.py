@@ -27,18 +27,23 @@ from devstack import log
 from devstack import shell as sh
 from devstack import utils
 
+from devstack.components import glance_client
 from devstack.components import keystone
 
 LOG = log.getLogger("devstack.image.uploader")
 
-# Glance commands
-IMAGE_ADD = ['glance', 'add', '-A', '%TOKEN%',
-             '--silent-upload',
-             'name="%NAME%"',
-             'is_public=true',
-             'container_format=%CONTAINER_FORMAT%',
-             'disk_format=%DISK_FORMAT%']
-DETAILS_SHOW = ['glance', '-A', '%TOKEN%', 'details']
+# Glance client commands
+IMAGE_ADD = ['glance',
+             '--os-auth-token', '%TOKEN%',
+             '--os-image-url', '%GLANCE_HOSTPORT%',
+             '--os-username', '%DEMO_USER_NAME%',
+             '--os-tenant-name', '%DEMO_TENANT_NAME%',
+             'image-create',
+             '--name', '%NAME%',
+             '--public',
+             '--container-format', '%CONTAINER_FORMAT%',
+             '--disk-format', '%DISK_FORMAT%']
+
 
 # Extensions that tarfile knows how to work with
 TAR_EXTS = ['.tgz', '.gzip', '.gz', '.bz2', '.tar']
@@ -138,10 +143,19 @@ class Unpacker(object):
 
 class Image(object):
 
-    def __init__(self, url, token):
+    def __init__(self, url, token, cfg, pw_gen):
         self.url = url
         self.token = token
-        self._registry = Registry(token)
+        self.cfg = cfg
+        self.pw_gen = pw_gen
+
+    def _extract_id(self, output):
+        if not output:
+            return None
+        for line in output.splitlines():
+            if line.startswith("| id"):
+                return line.split("|")[2].strip()
+        return None
 
     def _register(self, image_name, location):
 
@@ -150,7 +164,9 @@ class Image(object):
         kernel_id = ''
         if kernel:
             LOG.info('Adding kernel %s to glance.', kernel)
-            params = dict(kernel)
+            params = glance_client.get_shared_params(self.cfg)
+            params.update(keystone.get_shared_params(self.cfg, self.pw_gen))
+            params.update(dict(kernel))
             params['TOKEN'] = self.token
             params['NAME'] = "%s-vmlinuz" % (image_name)
             cmd = {'cmd': IMAGE_ADD}
@@ -160,14 +176,16 @@ class Image(object):
                     close_stdin=True)
             if res:
                 (stdout, _) = res[0]
-                kernel_id = stdout.split(':')[1].strip()
+                kernel_id = self._extract_id(stdout)
 
         # Upload the ramdisk, if we have one
         initrd = location.pop('ramdisk', None)
         initrd_id = ''
         if initrd:
             LOG.info('Adding ramdisk %s to glance.', initrd)
-            params = dict(initrd)
+            params = glance_client.get_shared_params(self.cfg)
+            params.update(keystone.get_shared_params(self.cfg, self.pw_gen))
+            params.update(dict(initrd))
             params['TOKEN'] = self.token
             params['NAME'] = "%s-initrd" % (image_name)
             cmd = {'cmd': IMAGE_ADD}
@@ -177,20 +195,22 @@ class Image(object):
                     close_stdin=True)
             if res:
                 (stdout, _) = res[0]
-                initrd_id = stdout.split(':')[1].strip()
+                initrd_id = self._extract_id(stdout)
 
         # Upload the root, we must have one...
         root_image = dict(location)
         LOG.info('Adding image %s to glance.', root_image)
         add_cmd = list(IMAGE_ADD)
-        params = dict(root_image)
+        params = glance_client.get_shared_params(self.cfg)
+        params.update(keystone.get_shared_params(self.cfg, self.pw_gen))
+        params.update(dict(root_image))
         params['TOKEN'] = self.token
         params['NAME'] = image_name
         if kernel_id:
-            add_cmd += ['kernel_id=%KERNEL_ID%']
+            add_cmd += ['--property', 'kernel_id=%KERNEL_ID%']
             params['KERNEL_ID'] = kernel_id
         if initrd_id:
-            add_cmd += ['ramdisk_id=%INITRD_ID%']
+            add_cmd += ['--property', 'ramdisk_id=%INITRD_ID%']
             params['INITRD_ID'] = initrd_id
         cmd = {'cmd': add_cmd}
         with open(params['FILE_NAME'], 'r') as fh:
@@ -200,7 +220,7 @@ class Image(object):
         img_id = ''
         if res:
             (stdout, _) = res[0]
-            img_id = stdout.split(':')[1].strip()
+            img_id = self._extract_id(stdout)
 
         return img_id
 
@@ -209,23 +229,6 @@ class Image(object):
         for look_for in NAME_CLEANUPS:
             name = name.replace(look_for, '')
         return name
-
-    def _generate_check_names(self, url_fn):
-        name_checks = list()
-        name_checks.append(url_fn)
-        name_checks.append("%s.img" % (url_fn))
-        name_checks.append("%s-img" % (url_fn))
-        name = url_fn
-        for look_for in NAME_CLEANUPS:
-            name = name.replace(look_for, '')
-            name_checks.append(name)
-            name_checks.append("%s.img" % (name))
-            name_checks.append("%s-img" % (name))
-        name = self._generate_img_name(url_fn)
-        name_checks.append(name)
-        name_checks.append("%s.img" % (name))
-        name_checks.append("%s-img" % (name))
-        return set(name_checks)
 
     def _extract_url_fn(self):
         pieces = urlparse.urlparse(self.url)
@@ -236,68 +239,13 @@ class Image(object):
         if not url_fn:
             msg = "Can not determine file name from url: %r" % (self.url)
             raise RuntimeError(msg)
-        check_names = self._generate_check_names(url_fn)
-        found_name = False
-        for name in check_names:
-            if not name:
-                continue
-            LOG.debug("Checking if you already have an image named %r" % (name))
-            if self._registry.has_image(name):
-                LOG.warn("You already 'seem' to have image named %r, skipping its install..." % (name))
-                found_name = True
-                break
-        if not found_name:
-            with utils.tempdir() as tdir:
-                fetch_fn = sh.joinpths(tdir, url_fn)
-                down.UrlLibDownloader(self.url, fetch_fn).download()
-                unpack_info = Unpacker().unpack(url_fn, fetch_fn, tdir)
-                tgt_image_name = self._generate_img_name(url_fn)
-                self._register(tgt_image_name, unpack_info)
-                return tgt_image_name
-        else:
-            return None
-
-
-class Registry:
-
-    def __init__(self, token):
-        self.token = token
-        self._info = {}
-        self._loaded = False
-
-    def _parse(self, text):
-        current = {}
-        for line in text.splitlines():
-            if not line:
-                continue
-            if line.startswith("==="):
-                if 'id' in current:
-                    id_ = current['id']
-                    del(current['id'])
-                    self._info[id_] = current
-                current = {}
-            else:
-                l = line.split(':', 1)
-                current[l[0].strip().lower()] = l[1].strip().replace('"', '')
-
-    def _load(self):
-        if self._loaded:
-            return
-        LOG.info('Loading current glance image information.')
-        params = {'TOKEN': self.token}
-        cmd = {'cmd': DETAILS_SHOW}
-        res = utils.execute_template(cmd, params=params)
-        if res:
-            (stdout, _) = res[0]
-            self._parse(stdout)
-        self._loaded = True
-
-    def has_image(self, image):
-        return image in self.get_image_names()
-
-    def get_image_names(self):
-        self._load()
-        return [self._info[k]['name'] for k in self._info.keys()]
+        with utils.tempdir() as tdir:
+            fetch_fn = sh.joinpths(tdir, url_fn)
+            down.UrlLibDownloader(self.url, fetch_fn).download()
+            unpack_info = Unpacker().unpack(url_fn, fetch_fn, tdir)
+            tgt_image_name = self._generate_img_name(url_fn)
+            self._register(tgt_image_name, unpack_info)
+            return tgt_image_name
 
 
 class Service:
@@ -361,7 +309,7 @@ class Service:
             token = self._get_token()
             for uri in locations:
                 try:
-                    name = Image(uri, token).install()
+                    name = Image(uri, token, self.cfg, self.pw_gen).install()
                     if name:
                         LOG.info("Installed image named %r" % (name))
                         am_installed += 1

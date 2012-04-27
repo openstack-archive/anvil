@@ -194,6 +194,15 @@ components:
         pips:
         -   name: jsonschema
             version: 0.2
+    glance-client:
+        action_classes:
+            install: devstack.components.glance_client:GlanceClientInstaller
+            running: devstack.components.glance_client:GlanceClientRuntime
+            uninstall: devstack.components.glance_client:GlanceClientUninstaller
+        packages:
+        -   name: python-prettytable
+            removable: true
+            version: 0.5*
     horizon:
         action_classes:
             install: devstack.distros.fedora16:HorizonInstaller

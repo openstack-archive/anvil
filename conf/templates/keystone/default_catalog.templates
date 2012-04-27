@@ -1,5 +1,3 @@
-# From devstack commit 06a09d0c33f0626379cad377b4ffa20fcda54858 with no modifications
-
 # config for TemplatedCatalog, using camelCase because I don't want to do
 # translations for legacy compat
 catalog.RegionOne.identity.publicURL = http://%SERVICE_HOST%:$(public_port)s/v2.0
@@ -32,9 +30,9 @@ catalog.RegionOne.s3.internalURL = http://%SERVICE_HOST%:3333
 catalog.RegionOne.s3.name = S3 Service
 
 
-catalog.RegionOne.image.publicURL = http://%SERVICE_HOST%:9292/v1
-catalog.RegionOne.image.adminURL = http://%SERVICE_HOST%:9292/v1
-catalog.RegionOne.image.internalURL = http://%SERVICE_HOST%:9292/v1
+catalog.RegionOne.image.publicURL = http://%SERVICE_HOST%:9292
+catalog.RegionOne.image.adminURL = http://%SERVICE_HOST%:9292
+catalog.RegionOne.image.internalURL = http://%SERVICE_HOST%:9292
 catalog.RegionOne.image.name = Image Service
  
 # More might be added in (in code)
