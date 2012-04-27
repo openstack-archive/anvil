@@ -26,9 +26,6 @@ from devstack import log
 from devstack import shell as sh
 from devstack import utils
 
-from devstack.components import glance_client
-from devstack.components import keystone
-
 LOG = log.getLogger("devstack.image.uploader")
 
 # Glance client commands
@@ -147,14 +144,12 @@ class Unpacker(object):
 
 
 class Registry(object):
-    def __init__(self, cfg, pw_gen):
+    def __init__(self, cfg):
         self.cfg = cfg
-        self.pw_gen = pw_gen
 
     def _extract_names(self):
         names = dict()
-        params = glance_client.get_shared_params(self.cfg)
-        params.update(keystone.get_shared_params(self.cfg, self.pw_gen))
+        params = dict(self.cfg)
         cmd = {'cmd': IMAGE_LIST}
         res = utils.execute_template(cmd, params=params)
         if res:
@@ -179,11 +174,10 @@ class Registry(object):
 
 class Image(object):
 
-    def __init__(self, url, cfg, pw_gen):
+    def __init__(self, url, cfg):
         self.url = url
         self.cfg = cfg
-        self.pw_gen = pw_gen
-        self.registry = Registry(cfg, pw_gen)
+        self.registry = Registry(cfg)
 
     def _extract_id(self, output):
         if not output:
@@ -207,8 +201,7 @@ class Image(object):
         kernel_id = ''
         if kernel:
             LOG.info('Adding kernel %s to glance.', colorizer.quote(kernel))
-            params = glance_client.get_shared_params(self.cfg)
-            params.update(keystone.get_shared_params(self.cfg, self.pw_gen))
+            params = dict(self.cfg)
             params.update(dict(kernel))
             kernel_image_name = "%s-vmlinuz" % (image_name)
             self._check_name(kernel_image_name)
@@ -227,8 +220,7 @@ class Image(object):
         initrd_id = ''
         if initrd:
             LOG.info('Adding ramdisk %s to glance.', colorizer.quote(initrd))
-            params = glance_client.get_shared_params(self.cfg)
-            params.update(keystone.get_shared_params(self.cfg, self.pw_gen))
+            params = dict(self.cfg)
             params.update(dict(initrd))
             ram_image_name = "%s-initrd" % (image_name)
             params['NAME'] = ram_image_name
@@ -246,8 +238,7 @@ class Image(object):
         root_image = dict(location)
         LOG.info('Adding image %s to glance.', colorizer.quote(root_image))
         add_cmd = list(IMAGE_ADD)
-        params = glance_client.get_shared_params(self.cfg)
-        params.update(keystone.get_shared_params(self.cfg, self.pw_gen))
+        params = dict(self.cfg)
         params.update(dict(root_image))
         self._check_name(image_name)
         params['NAME'] = image_name
@@ -293,25 +284,19 @@ class Image(object):
 
 
 class Service:
-    def __init__(self, cfg, pw_gen):
+    def __init__(self, cfg, urls):
         self.cfg = cfg
-        self.pw_gen = pw_gen
+        self.urls = urls
 
     def install(self):
-        LOG.info("Setting up any specified images in glance.")
-
-        # Extract the urls from the config
-        flat_locations = self.cfg.getdefaulted('img', 'image_urls', '')
-        locations = [loc.strip() for loc in flat_locations.split(',') if len(loc.strip())]
-
         # Install them in glance
         am_installed = 0
-        if locations:
-            utils.log_iterable(locations, logger=LOG,
-                                header="Attempting to download+extract+upload %s images" % len(locations))
-            for uri in locations:
+        if self.urls:
+            utils.log_iterable(self.urls, logger=LOG,
+                                header="Attempting to download+extract+upload %s images" % len(self.urls))
+            for uri in self.urls:
                 try:
-                    name = Image(uri, self.cfg, self.pw_gen).install()
+                    name = Image(uri, self.cfg).install()
                     if name:
                         LOG.info("Installed image named %s", colorizer.quote(name))
                         am_installed += 1

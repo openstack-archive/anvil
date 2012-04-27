@@ -206,4 +206,25 @@ class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
             # TODO: make this less cheesy - need to wait till glance goes online
             LOG.info("Waiting %s seconds so that glance can start up before image install." % (self.wait_time))
             sh.sleep(self.wait_time)
-            uploader.Service(self.cfg, self.pw_gen).install()
+            upload_cfg = get_shared_params(self.cfg)
+            upload_cfg.update(keystone.get_shared_params(self.cfg, self.pw_gen, 'glance'))
+            uploader.Service(upload_cfg).install()
+
+
+def get_shared_params(config):
+    mp = dict()
+
+    host_ip = config.get('host', 'ip')
+    glance_host = config.getdefaulted('glance', 'glance_host', host_ip)
+    mp['GLANCE_HOST'] = glance_host
+    glance_port = config.getdefaulted('glance', 'glance_port', '9292')
+    mp['GLANCE_PORT'] = glance_port
+    glance_protocol = config.getdefaulted('glance', 'glance_protocol', 'http')
+    mp['GLANCE_PROTOCOL'] = glance_protocol
+
+    # Uri's of the http/https endpoints
+    mp['GLANCE_HOSTPORT'] = urlunparse((glance_protocol,
+                                         "%s:%s" % (glance_host, glance_port),
+                                         "", "", "", ""))
+
+    return mp
