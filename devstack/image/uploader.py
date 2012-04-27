@@ -15,13 +15,12 @@
 #    under the License.
 
 import contextlib
-import json
 import os
 import re
 import tarfile
-import urllib2
 import urlparse
 
+from devstack import colorizer
 from devstack import downloader as down
 from devstack import log
 from devstack import shell as sh
@@ -34,16 +33,22 @@ LOG = log.getLogger("devstack.image.uploader")
 
 # Glance client commands
 IMAGE_ADD = ['glance',
-             '--os-auth-token', '%TOKEN%',
              '--os-image-url', '%GLANCE_HOSTPORT%',
              '--os-username', '%DEMO_USER_NAME%',
              '--os-tenant-name', '%DEMO_TENANT_NAME%',
+             '--os-auth-url', '%SERVICE_ENDPOINT%',
              'image-create',
              '--name', '%NAME%',
              '--public',
              '--container-format', '%CONTAINER_FORMAT%',
              '--disk-format', '%DISK_FORMAT%']
 
+IMAGE_LIST = ['glance',
+             '--os-image-url', '%GLANCE_HOSTPORT%',
+             '--os-username', '%DEMO_USER_NAME%',
+             '--os-tenant-name', '%DEMO_TENANT_NAME%',
+             '--os-auth-url', '%SERVICE_ENDPOINT%',
+             'image-list']
 
 # Extensions that tarfile knows how to work with
 TAR_EXTS = ['.tgz', '.gzip', '.gz', '.bz2', '.tar']
@@ -101,7 +106,7 @@ class Unpacker(object):
             raise RuntimeError(msg)
         extract_dir = sh.joinpths(tmp_dir, root_name)
         sh.mkdir(extract_dir)
-        LOG.info("Extracting %r to %r", file_location, extract_dir)
+        LOG.info("Extracting %s to %s", colorizer.quote(file_location), colorizer.quote(extract_dir))
         with contextlib.closing(tarfile.open(file_location, 'r')) as tfh:
             tfh.extractall(extract_dir)
         info = dict()
@@ -141,21 +146,59 @@ class Unpacker(object):
             raise NotImplementedError(msg)
 
 
-class Image(object):
-
-    def __init__(self, url, token, cfg, pw_gen):
-        self.url = url
-        self.token = token
+class Registry(object):
+    def __init__(self, cfg, pw_gen):
         self.cfg = cfg
         self.pw_gen = pw_gen
+
+    def _extract_names(self):
+        names = dict()
+        params = glance_client.get_shared_params(self.cfg)
+        params.update(keystone.get_shared_params(self.cfg, self.pw_gen))
+        cmd = {'cmd': IMAGE_LIST}
+        res = utils.execute_template(cmd, params=params)
+        if res:
+            (stdout, _) = res[0]
+            for line in stdout.splitlines():
+                if line.startswith("|"):
+                    pieces = line.split("|")
+                    if len(pieces) >= 3:
+                        name = pieces[2].strip()
+                        image_id = pieces[1].strip()
+                        if name and image_id:
+                            names[name] = image_id
+        return names
+
+    def __contains__(self, name):
+        names = self._extract_names()
+        if name in names:
+            return True
+        else:
+            return False
+
+
+class Image(object):
+
+    def __init__(self, url, cfg, pw_gen):
+        self.url = url
+        self.cfg = cfg
+        self.pw_gen = pw_gen
+        self.registry = Registry(cfg, pw_gen)
 
     def _extract_id(self, output):
         if not output:
             return None
         for line in output.splitlines():
             if line.startswith("| id"):
-                return line.split("|")[2].strip()
+                pieces = line.split("|")
+                if len(pieces) >= 3:
+                    return pieces[2].strip()
         return None
+
+    def _check_name(self, name):
+        LOG.info("Checking if image %s already exists already in glance.", colorizer.quote(name))
+        if name in self.registry:
+            raise IOError("Image named %s already exists" % (name))
 
     def _register(self, image_name, location):
 
@@ -163,12 +206,13 @@ class Image(object):
         kernel = location.pop('kernel', None)
         kernel_id = ''
         if kernel:
-            LOG.info('Adding kernel %s to glance.', kernel)
+            LOG.info('Adding kernel %s to glance.', colorizer.quote(kernel))
             params = glance_client.get_shared_params(self.cfg)
             params.update(keystone.get_shared_params(self.cfg, self.pw_gen))
             params.update(dict(kernel))
-            params['TOKEN'] = self.token
-            params['NAME'] = "%s-vmlinuz" % (image_name)
+            kernel_image_name = "%s-vmlinuz" % (image_name)
+            self._check_name(kernel_image_name)
+            params['NAME'] = kernel_image_name
             cmd = {'cmd': IMAGE_ADD}
             with open(params['FILE_NAME'], 'r') as fh:
                 res = utils.execute_template(cmd,
@@ -182,12 +226,13 @@ class Image(object):
         initrd = location.pop('ramdisk', None)
         initrd_id = ''
         if initrd:
-            LOG.info('Adding ramdisk %s to glance.', initrd)
+            LOG.info('Adding ramdisk %s to glance.', colorizer.quote(initrd))
             params = glance_client.get_shared_params(self.cfg)
             params.update(keystone.get_shared_params(self.cfg, self.pw_gen))
             params.update(dict(initrd))
-            params['TOKEN'] = self.token
-            params['NAME'] = "%s-initrd" % (image_name)
+            ram_image_name = "%s-initrd" % (image_name)
+            params['NAME'] = ram_image_name
+            self._check_name(ram_image_name)
             cmd = {'cmd': IMAGE_ADD}
             with open(params['FILE_NAME'], 'r') as fh:
                 res = utils.execute_template(cmd,
@@ -199,12 +244,12 @@ class Image(object):
 
         # Upload the root, we must have one...
         root_image = dict(location)
-        LOG.info('Adding image %s to glance.', root_image)
+        LOG.info('Adding image %s to glance.', colorizer.quote(root_image))
         add_cmd = list(IMAGE_ADD)
         params = glance_client.get_shared_params(self.cfg)
         params.update(keystone.get_shared_params(self.cfg, self.pw_gen))
         params.update(dict(root_image))
-        params['TOKEN'] = self.token
+        self._check_name(image_name)
         params['NAME'] = image_name
         if kernel_id:
             add_cmd += ['--property', 'kernel_id=%KERNEL_ID%']
@@ -237,8 +282,7 @@ class Image(object):
     def install(self):
         url_fn = self._extract_url_fn()
         if not url_fn:
-            msg = "Can not determine file name from url: %r" % (self.url)
-            raise RuntimeError(msg)
+            raise RuntimeError("Can not determine file name from url: %r" % (self.url))
         with utils.tempdir() as tdir:
             fetch_fn = sh.joinpths(tdir, url_fn)
             down.UrlLibDownloader(self.url, fetch_fn).download()
@@ -253,47 +297,6 @@ class Service:
         self.cfg = cfg
         self.pw_gen = pw_gen
 
-    def _get_token(self):
-        LOG.info("Fetching your keystone admin token so that we can perform image uploads/detail calls.")
-
-        key_params = keystone.get_shared_params(self.cfg, self.pw_gen)
-        keystone_service_url = key_params['SERVICE_ENDPOINT']
-        keystone_token_url = "%s/tokens" % (keystone_service_url)
-
-        # form the post json data
-        data = json.dumps(
-            {
-                "auth":
-                {
-                    "passwordCredentials":
-                    {
-                        "username": key_params['ADMIN_USER_NAME'],
-                        "password": key_params['ADMIN_PASSWORD'],
-                    },
-                    "tenantName": key_params['ADMIN_TENANT_NAME'],
-                }
-             })
-
-        # Prepare the request
-        headers = {
-            'Content-Type': 'application/json'
-        }
-        request = urllib2.Request(keystone_token_url, data=data, headers=headers)
-
-        # Make the request
-        LOG.info("Getting your token from url %r, please wait..." % (keystone_token_url))
-        LOG.debug("With post data %s" % (data))
-        LOG.debug("With headers %s" % (headers))
-
-        response = urllib2.urlopen(request)
-        token = utils.get_from_path(json.loads(response.read()), "access/token/id")
-        if not token:
-            msg = "Response from url %r did not match expected json format." % (keystone_token_url)
-            raise IOError(msg)
-
-        LOG.debug("Got token %r" % (token))
-        return token
-
     def install(self):
         LOG.info("Setting up any specified images in glance.")
 
@@ -306,12 +309,11 @@ class Service:
         if locations:
             utils.log_iterable(locations, logger=LOG,
                                 header="Attempting to download+extract+upload %s images" % len(locations))
-            token = self._get_token()
             for uri in locations:
                 try:
-                    name = Image(uri, token, self.cfg, self.pw_gen).install()
+                    name = Image(uri, self.cfg, self.pw_gen).install()
                     if name:
-                        LOG.info("Installed image named %r" % (name))
+                        LOG.info("Installed image named %s", colorizer.quote(name))
                         am_installed += 1
                 except (IOError, tarfile.TarError) as e:
                     LOG.exception('Installing %r failed due to: %s', uri, e)
