@@ -96,9 +96,6 @@ class ForkRunner(base.Runner):
                 else:
                     msg = "Could not stop %r after %s attempts" % (app_name, attempts)
                     raise excp.StopException(msg)
-            else:
-                msg = "No pid or trace file could be found to stop %r in directory %r" % (app_name, self.trace_dir)
-                raise excp.StopException(msg)
 
     def _form_file_names(self, file_name):
         return (sh.joinpths(self.trace_dir, file_name + ".pid"),
