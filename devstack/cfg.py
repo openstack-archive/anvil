@@ -25,9 +25,10 @@ from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import utils
 
-LOG = logging.getLogger("devstack.cfg")
 ENV_PAT = re.compile(r"^\s*\$\{([\w\d]+):\-(.*)\}\s*$")
 SUB_MATCH = re.compile(r"(?:\$\(([\w\d]+):([\w\d]+))\)")
+
+LOG = logging.getLogger(__name__)
 
 
 class IgnoreMissingConfigParser(iniparse.RawConfigParser):

@@ -22,7 +22,7 @@ from devstack import log as logging
 from devstack import shell as sh
 from devstack import utils
 
-LOG = logging.getLogger("devstack.components.rabbit")
+LOG = logging.getLogger(__name__)
 
 # Default password (guest)
 RESET_BASE_PW = ''

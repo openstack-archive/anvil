@@ -23,7 +23,7 @@ from devstack import log as logging
 from devstack import shell as sh
 from devstack import utils
 
-LOG = logging.getLogger('devstack.libvirt')
+LOG = logging.getLogger(__name__)
 
 # See: http://libvirt.org/uri.html
 LIBVIRT_PROTOCOL_MAP = {

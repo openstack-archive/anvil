@@ -14,10 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from devstack import log as logging
-
-LOG = logging.getLogger("devstack.cfg.helpers")
-
 
 def make_id(section, option):
     joinwhat = []

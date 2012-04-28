@@ -23,7 +23,7 @@ from devstack import utils
 
 import abc
 
-LOG = logging.getLogger("devstack.components.db")
+LOG = logging.getLogger(__name__)
 
 # Need to reset pw to blank since this distributions don't seem to
 # always reset it when u uninstall the db

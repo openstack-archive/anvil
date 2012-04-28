@@ -34,7 +34,7 @@ from devstack.components import db
 from devstack.components import keystone
 from devstack.components import rabbit
 
-LOG = logging.getLogger('devstack.components.nova')
+LOG = logging.getLogger(__name__)
 
 # Special generated conf
 API_CONF = 'nova.conf'

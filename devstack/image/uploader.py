@@ -26,7 +26,7 @@ from devstack import log
 from devstack import shell as sh
 from devstack import utils
 
-LOG = log.getLogger("devstack.image.uploader")
+LOG = log.getLogger(__name__)
 
 # Glance client commands
 IMAGE_ADD = ['glance',
@@ -102,7 +102,7 @@ class Unpacker(object):
         (root_img_fn, ramdisk_fn, kernel_fn) = self._find_pieces(file_location)
         if not root_img_fn:
             msg = "Image %r has no root image member" % (file_name)
-            raise RuntimeError(msg)
+            raise IOError(msg)
         extract_dir = sh.joinpths(tmp_dir, root_name)
         sh.mkdir(extract_dir)
         LOG.info("Extracting %s to %s", colorizer.quote(file_location), colorizer.quote(extract_dir))
@@ -142,7 +142,7 @@ class Unpacker(object):
             return info
         else:
             msg = "Currently we do not know how to unpack %r" % (file_name)
-            raise NotImplementedError(msg)
+            raise IOError(msg)
 
 
 class Registry(object):
@@ -275,7 +275,7 @@ class Image(object):
     def install(self):
         url_fn = self._extract_url_fn()
         if not url_fn:
-            raise RuntimeError("Can not determine file name from url: %r" % (self.url))
+            raise IOError("Can not determine file name from url: %r" % (self.url))
         with utils.tempdir() as tdir:
             fetch_fn = sh.joinpths(tdir, url_fn)
             down.UrlLibDownloader(self.url, fetch_fn).download()

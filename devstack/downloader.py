@@ -23,7 +23,7 @@ from devstack import colorizer
 from devstack import log as logging
 from devstack import shell as sh
 
-LOG = logging.getLogger("devstack.downloader")
+LOG = logging.getLogger(__name__)
 
 # Git master branch
 GIT_MASTER_BRANCH = "master"

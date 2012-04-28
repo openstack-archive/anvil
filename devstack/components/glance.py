@@ -28,7 +28,7 @@ from devstack.components import keystone
 
 from devstack.image import uploader
 
-LOG = logging.getLogger("devstack.components.glance")
+LOG = logging.getLogger(__name__)
 
 # Config files/sections
 API_CONF = "glance-api.conf"

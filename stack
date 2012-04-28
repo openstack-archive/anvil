@@ -37,7 +37,7 @@ from devstack import shell as sh
 from devstack import utils
 
 
-LOG = logging.getLogger("devstack.stack")
+LOG = logging.getLogger(__name__)
 
 # The grouping of our pretty printing of config
 CFG_GROUPS = {

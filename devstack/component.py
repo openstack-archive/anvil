@@ -26,20 +26,13 @@ from devstack import shell as sh
 from devstack import trace as tr
 from devstack import utils
 
-LOG = logging.getLogger("devstack.component")
-
-# How we actually setup and unsetup python
-PY_INSTALL = ['python', 'setup.py', 'develop']
-PY_UNINSTALL = ['python', 'setup.py', 'develop', '--uninstall']
+LOG = logging.getLogger(__name__)
 
 # Runtime status constants (return by runtime status)
 # TODO: move...
 STATUS_UNKNOWN = "unknown"
 STATUS_STARTED = "started"
 STATUS_STOPPED = "stopped"
-
-# Where symlinks will go
-BASE_LINK_DIR = "/etc"
 
 # Progress bar titles
 UNINSTALL_TITLE = 'Uninstalling'
@@ -101,16 +94,16 @@ class ComponentBase(object):
 
     def _get_params(self):
         return {
-            'COMPONENT_DIR': self.component_dir,
             'APP_DIR': self.app_dir,
+            'COMPONENT_DIR': self.component_dir,
             'CONFIG_DIR': self.cfg_dir,
             'TRACE_DIR': self.trace_dir,
         }
 
     def _get_trace_files(self):
         return {
-            'start': tr.trace_fn(self.trace_dir, "start"),
             'install': tr.trace_fn(self.trace_dir, "install"),
+            'start': tr.trace_fn(self.trace_dir, "start"),
         }
 
     def known_subsystems(self):
@@ -149,12 +142,12 @@ class PkgInstallComponent(ComponentBase):
                 target_directory = sh.joinpths(target_directory, info["subdir"])
             branch = None
             if 'branch' in info:
-                section, key = info['branch']
+                (section, key) = info['branch']
                 branch = self.cfg.get(section, key)
             real_locations.append({
-                'uri': uri,
-                'target': target_directory,
                 'branch': branch,
+                'target': target_directory,
+                'uri': uri,
             })
         return real_locations
 
@@ -201,7 +194,7 @@ class PkgInstallComponent(ComponentBase):
         LOG.debug('Preparing to install packages for %r', self.component_name)
         pkgs = self._get_packages()
         if pkgs:
-            pkg_names = set([p['name'] for p in pkgs])
+            pkg_names = [p['name'] for p in pkgs]
             utils.log_iterable(pkg_names, logger=LOG,
                 header="Setting up %s distribution packages" % (len(pkg_names)))
             with utils.progress_bar(INSTALL_TITLE, len(pkgs)) as p_bar:
@@ -234,7 +227,8 @@ class PkgInstallComponent(ComponentBase):
         return utils.load_template(self.component_name, config_fn)
 
     def _get_link_dir(self):
-        return sh.joinpths(BASE_LINK_DIR, self.component_name)
+        root_link_dir = self.distro.get_command_config('base_link_dir')
+        return sh.joinpths(root_link_dir, self.component_name)
 
     def _get_symlinks(self):
         links = dict()
@@ -271,15 +265,17 @@ class PkgInstallComponent(ComponentBase):
         # order happens. Ie /etc/blah link runs before /etc/blah/blah
         link_srcs = sorted(links.keys())
         link_srcs.reverse()
+        links_made = 0
         for source in link_srcs:
             link = links.get(source)
             try:
                 LOG.info("Symlinking %s to %s.", colorizer.quote(link), colorizer.quote(source))
                 self.tracewriter.dirs_made(*sh.symlink(source, link))
                 self.tracewriter.symlink_made(link)
+                links_made += 1
             except OSError as e:
                 LOG.warn("Symlinking %s to %s failed: %s", colorizer.quote(link), colorizer.quote(source), e)
-        return len(links)
+        return links_made
 
     def configure(self):
         return self._configure_files() + self._configure_symlinks()
@@ -292,8 +288,9 @@ class PythonInstallComponent(PkgInstallComponent):
         self.pip_factory = pip_factory
 
     def _get_python_directories(self):
-        py_dirs = dict()
-        py_dirs[self.component_name] = self.app_dir
+        py_dirs = {
+            self.component_name: self.app_dir,
+        }
         return py_dirs
 
     def _get_pips(self):
@@ -308,7 +305,7 @@ class PythonInstallComponent(PkgInstallComponent):
     def _install_pips(self):
         pips = self._get_pips()
         if pips:
-            pip_names = set([p['name'] for p in pips])
+            pip_names = [p['name'] for p in pips]
             utils.log_iterable(pip_names, logger=LOG,
                 header="Setting up %s python packages" % (len(pip_names)))
             with utils.progress_bar(INSTALL_TITLE, len(pips)) as p_bar:
@@ -337,10 +334,11 @@ class PythonInstallComponent(PkgInstallComponent):
                 real_dirs[name] = wkdir or self.app_dir
             utils.log_iterable(real_dirs.values(), logger=LOG,
                 header="Setting up %s python directories" % (len(real_dirs)))
+            setup_cmd = self.distro.get_command('python', 'setup')
             for (name, working_dir) in real_dirs.items():
                 self.tracewriter.dirs_made(*sh.mkdirslist(working_dir))
                 self.tracewriter.py_installed(name, working_dir)
-                (stdout, stderr) = sh.execute(*PY_INSTALL,
+                (stdout, stderr) = sh.execute(*setup_cmd,
                                                cwd=working_dir,
                                                run_as_root=True)
                 py_trace_name = "%s.%s" % (name, 'python')
@@ -348,7 +346,7 @@ class PythonInstallComponent(PkgInstallComponent):
                                                        py_trace_name), break_if_there=False)
                 # Format or json encoding isn't really needed here since this is
                 # more just for information output/lookup if desired.
-                py_writer.trace("CMD", " ".join(PY_INSTALL))
+                py_writer.trace("CMD", " ".join(setup_cmd))
                 py_writer.trace("STDOUT", stdout)
                 py_writer.trace("STDERR", stderr)
                 self.tracewriter.file_touched(py_writer.filename())
@@ -485,8 +483,9 @@ class PythonUninstallComponent(PkgUninstallComponent):
                 py_listing_dirs.add(where)
             utils.log_iterable(py_listing_dirs, logger=LOG,
                 header="Uninstalling %s python setups" % (len(py_listing_dirs)))
+            unsetup_cmd = self.distro.get_command('python', 'unsetup')
             for where in py_listing_dirs:
-                sh.execute(*PY_UNINSTALL, cwd=where, run_as_root=True)
+                sh.execute(*unsetup_cmd, cwd=where, run_as_root=True)
 
 
 class ProgramRuntime(ComponentBase):

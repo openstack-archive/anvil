@@ -17,7 +17,7 @@
 from devstack import component as comp
 from devstack import log as logging
 
-LOG = logging.getLogger("devstack.components.nova_client")
+LOG = logging.getLogger(__name__)
 
 
 class NovaClientUninstaller(comp.PythonUninstallComponent):

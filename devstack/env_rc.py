@@ -25,7 +25,7 @@ from devstack import utils
 
 from devstack.components import keystone
 
-LOG = logging.getLogger('devstack.env_rc')
+LOG = logging.getLogger(__name__)
 
 # General extraction cfg keys + sections
 CFG_MAKE = {

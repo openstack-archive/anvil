@@ -22,7 +22,7 @@ from devstack import log as logging
 from devstack import shell as sh
 from devstack import utils
 
-LOG = logging.getLogger("devstack.components.swift")
+LOG = logging.getLogger(__name__)
 
 # Swift has alot of config files!
 SWIFT_CONF = 'swift.conf'
