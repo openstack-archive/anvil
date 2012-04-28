@@ -7,6 +7,8 @@ components:
 - keystone-client
 - keystone
 - glance
+# Do this after glance is installed to override the old binary
+- glance-client
 - quantum
 - quantum-client
 - nova-client

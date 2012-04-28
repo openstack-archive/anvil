@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from urlparse import urlunparse
+
 import io
 
 from devstack import cfg
@@ -197,6 +199,15 @@ class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
     def _get_app_options(self, app):
         return APP_OPTIONS.get(app)
 
+    def _get_image_urls(self):
+        uris = self.cfg.getdefaulted('glance', 'image_urls', '').split(",")
+        cleaned_uris = list()
+        for uri in uris:
+            uri = uri.strip()
+            if uri:
+                cleaned_uris.append(uri)
+        return cleaned_uris
+
     def post_start(self):
         comp.PythonRuntime.post_start(self)
         if 'no-load-images' in self.options:
@@ -206,4 +217,25 @@ class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
             # TODO: make this less cheesy - need to wait till glance goes online
             LOG.info("Waiting %s seconds so that glance can start up before image install." % (self.wait_time))
             sh.sleep(self.wait_time)
-            uploader.Service(self.cfg, self.pw_gen).install()
+            upload_cfg = get_shared_params(self.cfg)
+            upload_cfg.update(keystone.get_shared_params(self.cfg, self.pw_gen, 'glance'))
+            uploader.Service(upload_cfg).install(self._get_image_urls())
+
+
+def get_shared_params(config):
+    mp = dict()
+
+    host_ip = config.get('host', 'ip')
+    glance_host = config.getdefaulted('glance', 'glance_host', host_ip)
+    mp['GLANCE_HOST'] = glance_host
+    glance_port = config.getdefaulted('glance', 'glance_port', '9292')
+    mp['GLANCE_PORT'] = glance_port
+    glance_protocol = config.getdefaulted('glance', 'glance_protocol', 'http')
+    mp['GLANCE_PROTOCOL'] = glance_protocol
+
+    # Uri's of the http/https endpoints
+    mp['GLANCE_HOSTPORT'] = urlunparse((glance_protocol,
+                                         "%s:%s" % (glance_host, glance_port),
+                                         "", "", "", ""))
+
+    return mp
