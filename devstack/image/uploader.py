@@ -70,8 +70,10 @@ class Unpacker(object):
         ramdisk_fn = None
         img_fn = None
 
+        LOG.info("Peeking into %s to find its kernel/ramdisk/root images.", colorizer.quote(arc_fn))
+
         def is_kernel(fn):
-            return re.match(r"(.*)-vmlinuz$", fn, re.I) or re.match(r'(.*?)aki-tty/image$', fn, re.I)
+            return re.match(r"(.*)-vmlinuz(.*)$", fn, re.I) or re.match(r'(.*?)aki-tty/image$', fn, re.I)
 
         def is_root(fn):
             return re.match(r"(.*)img$", fn, re.I) or re.match(r'(.*?)ami-tty/image$', fn, re.I)
@@ -200,11 +202,11 @@ class Image(object):
         kernel = location.pop('kernel', None)
         kernel_id = ''
         if kernel:
-            LOG.info('Adding kernel %s to glance.', colorizer.quote(kernel))
             params = dict(self.cfg)
             params.update(dict(kernel))
             kernel_image_name = "%s-vmlinuz" % (image_name)
             self._check_name(kernel_image_name)
+            LOG.info('Adding kernel %s to glance.', colorizer.quote(kernel_image_name))
             params['NAME'] = kernel_image_name
             cmd = {'cmd': IMAGE_ADD}
             with open(params['FILE_NAME'], 'r') as fh:
@@ -219,12 +221,12 @@ class Image(object):
         initrd = location.pop('ramdisk', None)
         initrd_id = ''
         if initrd:
-            LOG.info('Adding ramdisk %s to glance.', colorizer.quote(initrd))
             params = dict(self.cfg)
             params.update(dict(initrd))
             ram_image_name = "%s-initrd" % (image_name)
             params['NAME'] = ram_image_name
             self._check_name(ram_image_name)
+            LOG.info('Adding ramdisk %s to glance.', colorizer.quote(ram_image_name))
             cmd = {'cmd': IMAGE_ADD}
             with open(params['FILE_NAME'], 'r') as fh:
                 res = utils.execute_template(cmd,
@@ -236,7 +238,7 @@ class Image(object):
 
         # Upload the root, we must have one...
         root_image = dict(location)
-        LOG.info('Adding image %s to glance.', colorizer.quote(root_image))
+        LOG.info('Adding image %s to glance.', colorizer.quote(image_name))
         add_cmd = list(IMAGE_ADD)
         params = dict(self.cfg)
         params.update(dict(root_image))
@@ -279,8 +281,8 @@ class Image(object):
             down.UrlLibDownloader(self.url, fetch_fn).download()
             unpack_info = Unpacker().unpack(url_fn, fetch_fn, tdir)
             tgt_image_name = self._generate_img_name(url_fn)
-            self._register(tgt_image_name, unpack_info)
-            return tgt_image_name
+            img_id = self._register(tgt_image_name, unpack_info)
+            return (tgt_image_name, img_id)
 
 
 class Service:
@@ -295,10 +297,9 @@ class Service:
                                 header="Attempting to download+extract+upload %s images" % len(urls))
             for uri in urls:
                 try:
-                    name = Image(uri, self.cfg).install()
-                    if name:
-                        LOG.info("Installed image named %s", colorizer.quote(name))
-                        am_installed += 1
+                    (name, img_id) = Image(uri, self.cfg).install()
+                    LOG.info("Installed image named %s with image id %s.", colorizer.quote(name), colorizer.quote(img_id))
+                    am_installed += 1
                 except (IOError, tarfile.TarError) as e:
                     LOG.exception('Installing %r failed due to: %s', uri, e)
         return am_installed

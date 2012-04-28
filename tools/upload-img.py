@@ -20,6 +20,8 @@ from devstack import settings
 from devstack import shell as sh
 from devstack import utils
 
+from devstack.components import keystone
+from devstack.components import glance
 from devstack.image import uploader
 
 
@@ -43,6 +45,28 @@ def find_config():
     return None
 
 
+def get_config():
+    base_config = cfg.IgnoreMissingConfigParser()
+    stack_config = find_config()
+    if stack_config:
+        base_config.read([stack_config])
+    config = cfg.ProxyConfig()
+    config.add_read_resolver(cfg.EnvResolver())
+    config.add_read_resolver(cfg.ConfigResolver(base_config))
+    pw_gen = passwords.PasswordGenerator(config)
+    upload_cfg = dict()
+    upload_cfg.update(glance.get_shared_params(config))
+    upload_cfg.update(keystone.get_shared_params(config, pw_gen))
+    return upload_cfg
+
+
+def setup_logging(level):
+    if level == 1:
+        logging.setupLogging(logging.INFO)
+    else:
+        logging.setupLogging(logging.DEBUG)
+
+
 if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option("-u", "--uri",
@@ -50,18 +74,19 @@ if __name__ == "__main__":
         dest="uris",
         metavar="URI",
         help=("uri to attempt to upload to glance"))
+    parser.add_option("-v", "--verbose",
+        action="append_const",
+        const=1,
+        dest="verbosity",
+        default=[1],
+        help="increase the verbose level")
     (options, args) = parser.parse_args()
     uris = options.uris or list()
-    uri_sep = ",".join(uris)
-    logging.setupLogging(logging.INFO)
-    base_config = cfg.IgnoreMissingConfigParser()
-    stack_config = find_config()
-    if stack_config:
-        base_config.read([stack_config])
-    base_config.set('img', 'image_urls', uri_sep)
-    config = cfg.ProxyConfig()
-    config.add_read_resolver(cfg.EnvResolver())
-    config.add_read_resolver(cfg.ConfigResolver(base_config))
-    pw_gen = passwords.PasswordGenerator(config)
-    uploader = uploader.Service(config, pw_gen)
-    uploader.install()
+    cleaned_uris = list()
+    for uri in uris:
+        uri = uri.strip()
+        if uri:
+            cleaned_uris.append(uri)
+
+    setup_logging(len(options.verbosity))
+    uploader.Service(get_config()).install(uris)
