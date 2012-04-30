@@ -52,26 +52,25 @@ class DBInstaller(db.DBInstaller):
 class RabbitPackager(apt.AptPackager):
 
     def _remove(self, pkg):
-        #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
-        #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
+        # See: https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
+        # See: https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
         name = pkg['name']
         LOG.debug("Handling special remove of %r" % (name))
         pkg_full = self._format_pkg_name(name, pkg.get("version"))
         cmd = apt.APT_REMOVE + [pkg_full]
         self._execute_apt(cmd)
-        #probably useful to do this
+        # Probably useful to do this (ie purge)
         time.sleep(1)
-        #purge
         cmd = apt.APT_PURGE + [pkg_full]
         self._execute_apt(cmd)
         return True
 
     def _install(self, pkg):
-        #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
-        #https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
+        # See: https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878597
+        # See: https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
         name = pkg['name']
         LOG.debug("Handling special install of %r" % (name))
-        #this seems to be a temporary fix for that bug
+        # This seems to be a temporary fix for that bug...
         with tempfile.TemporaryFile() as f:
             pkg_full = self._format_pkg_name(name, pkg.get("version"))
             cmd = apt.APT_INSTALL + [pkg_full]

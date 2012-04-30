@@ -374,7 +374,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
             config = cfg.IgnoreMissingConfigParser()
             config.readfp(stream)
             config.set('logger_root', 'level', 'DEBUG')
-            config.set('logger_root', 'handlers', "stdout,")
+            config.set('logger_root', 'handlers', "stdout")
             contents = config.stringify(fn)
         return contents
 

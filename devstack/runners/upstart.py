@@ -24,7 +24,7 @@ from devstack import shell as sh
 from devstack import trace as tr
 from devstack import utils
 
-LOG = logging.getLogger("devstack.runners.upstart")
+LOG = logging.getLogger(__name__)
 
 # Trace constants
 UPSTART_TEMPL = "%s.upstart"

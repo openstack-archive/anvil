@@ -209,6 +209,7 @@ class Image(object):
             LOG.info('Adding kernel %s to glance.', colorizer.quote(kernel_image_name))
             params['NAME'] = kernel_image_name
             cmd = {'cmd': IMAGE_ADD}
+            LOG.info("Please wait...")
             with open(params['FILE_NAME'], 'r') as fh:
                 res = utils.execute_template(cmd,
                     params=params, stdin_fh=fh,
@@ -228,6 +229,7 @@ class Image(object):
             self._check_name(ram_image_name)
             LOG.info('Adding ramdisk %s to glance.', colorizer.quote(ram_image_name))
             cmd = {'cmd': IMAGE_ADD}
+            LOG.info("Please wait...")
             with open(params['FILE_NAME'], 'r') as fh:
                 res = utils.execute_template(cmd,
                     params=params, stdin_fh=fh,
@@ -251,6 +253,7 @@ class Image(object):
             add_cmd += ['--property', 'ramdisk_id=%INITRD_ID%']
             params['INITRD_ID'] = initrd_id
         cmd = {'cmd': add_cmd}
+        LOG.info("Please wait...")
         with open(params['FILE_NAME'], 'r') as fh:
             res = utils.execute_template(cmd,
                 params=params, stdin_fh=fh,

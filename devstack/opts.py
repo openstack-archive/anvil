@@ -18,12 +18,9 @@ from optparse import IndentedHelpFormatter
 from optparse import OptionParser, OptionGroup
 
 from devstack import actions
-from devstack import log as logging
 from devstack import version
 
 HELP_WIDTH = 80
-
-LOG = logging.getLogger(__name__)
 
 
 def _format_list(in_list):
