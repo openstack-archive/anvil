@@ -49,7 +49,7 @@ project = u'DEVSTACKpy'
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
-from devstack import version as devstack_version
+from anvil import version as devstack_version
 release = devstack_version.version_string()
 version = devstack_version.canonical_version_string()
 

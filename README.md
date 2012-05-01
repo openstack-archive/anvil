@@ -1,3 +1,3 @@
 # We want more information!
 
-Please check out: <http://readthedocs.org/docs/devstackpy/>
+Please check out: <http://readthedocs.org/docs/anvil/>
