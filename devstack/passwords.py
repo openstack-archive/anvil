@@ -20,7 +20,8 @@ import getpass
 import logging
 import os
 
-LOG = logging.getLogger("devstack.passwords")
+LOG = logging.getLogger(__name__)
+
 PW_SECTION = 'passwords'
 
 

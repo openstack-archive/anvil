@@ -34,7 +34,7 @@ from devstack.components import db
 from devstack.components import keystone
 from devstack.components import rabbit
 
-LOG = logging.getLogger('devstack.components.nova')
+LOG = logging.getLogger(__name__)
 
 # Special generated conf
 API_CONF = 'nova.conf'
@@ -374,7 +374,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
             config = cfg.IgnoreMissingConfigParser()
             config.readfp(stream)
             config.set('logger_root', 'level', 'DEBUG')
-            config.set('logger_root', 'handlers', "stdout,")
+            config.set('logger_root', 'handlers', "stdout")
             contents = config.stringify(fn)
         return contents
 

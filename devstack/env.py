@@ -18,7 +18,8 @@ import os
 
 from devstack import log as logging
 
-LOG = logging.getLogger("devstack.environment")
+
+LOG = logging.getLogger(__name__)
 
 
 def get():

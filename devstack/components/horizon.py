@@ -23,7 +23,7 @@ from devstack import utils
 
 from devstack.components import db
 
-LOG = logging.getLogger("devstack.components.horizon")
+LOG = logging.getLogger(__name__)
 
 # Actual dir names
 ROOT_HORIZON = 'horizon'

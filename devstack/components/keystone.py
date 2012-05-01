@@ -27,7 +27,7 @@ from devstack import utils
 
 from devstack.components import db
 
-LOG = logging.getLogger("devstack.components.keystone")
+LOG = logging.getLogger(__name__)
 
 # This db will be dropped then created
 DB_NAME = "keystone"

@@ -19,7 +19,7 @@ from devstack import log as logging
 from devstack import shell as sh
 from devstack import packager as pack
 
-LOG = logging.getLogger("devstack.pip")
+LOG = logging.getLogger(__name__)
 
 PIP_UNINSTALL_CMD_OPTS = ['-y', '-q']
 PIP_INSTALL_CMD_OPTS = ['-q']

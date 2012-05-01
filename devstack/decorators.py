@@ -22,7 +22,7 @@ from devstack import log as logging
 # Very useful example ones...
 # See: http://wiki.python.org/moin/PythonDecoratorLibrary
 
-LOG = logging.getLogger("devstack.decorators")
+LOG = logging.getLogger(__name__)
 
 
 def log_debug(f):

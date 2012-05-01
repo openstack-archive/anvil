@@ -25,7 +25,7 @@ from devstack import utils
 
 from devstack.components import db
 
-LOG = logging.getLogger("devstack.components.quantum")
+LOG = logging.getLogger(__name__)
 
 # Openvswitch special settings
 VSWITCH_PLUGIN = 'openvswitch'

@@ -28,7 +28,7 @@ from devstack import runner as base
 from devstack import shell as sh
 from devstack import trace as tr
 
-LOG = logging.getLogger("devstack.runners.fork")
+LOG = logging.getLogger(__name__)
 
 # Maximum for the number of available file descriptors (when not found)
 MAXFD = 2048

@@ -20,7 +20,7 @@ from devstack import exceptions as excp
 from devstack import log as logging
 from devstack import shell as sh
 
-LOG = logging.getLogger("devstack.persona")
+LOG = logging.getLogger(__name__)
 
 
 class Persona(object):

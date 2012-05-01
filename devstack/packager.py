@@ -21,7 +21,7 @@ from devstack import importer
 from devstack import log as logging
 from devstack import utils
 
-LOG = logging.getLogger("devstack.packager")
+LOG = logging.getLogger(__name__)
 
 
 class PackageRegistry(object):

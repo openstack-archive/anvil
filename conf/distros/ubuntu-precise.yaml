@@ -43,10 +43,18 @@ commands:
         start: service mysql start
         status: service mysql status
         stop: service mysql stop
+    # Commands used when setting up python projects
+    python:
+        setup: python setup.py develop
+        unsetup: python setup.py develop --uninstall
     pip: pip
     # Used to know where to find nova root wrap
     bin_dir: "/usr/local/bin/"
     sudoers_dir: "/etc/sudoers.d/"
+    # Where component symlinks will go, the component name will become a directory
+    # under this directory where its configuration files will be connected to there
+    # actual location.
+    base_link_dir: "/etc/"
     rabbit-mq:
         start: service rabbitmq-server start
         stop: service rabbitmq-server stop

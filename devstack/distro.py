@@ -28,7 +28,7 @@ from devstack import log as logging
 from devstack import settings
 from devstack import shell as sh
 
-LOG = logging.getLogger('devstack.distro')
+LOG = logging.getLogger(__name__)
 
 
 class Distro(object):

@@ -43,7 +43,6 @@ from devstack import version
 PARAM_SUB_REGEX = re.compile(r"#.*$|%([\w\d]+?)%", re.MULTILINE)
 EXT_COMPONENT = re.compile(r"^\s*([\w-]+)(?:\((.*)\))?\s*$")
 MONTY_PYTHON_TEXT_RE = re.compile("([a-z0-9A-Z\?!.,'\"]+)")
-LOG = logging.getLogger("devstack.util")
 DEF_IP = "127.0.0.1"
 IP_LOOKER = '8.8.8.8'
 DEF_IP_VERSION = settings.IPV4
@@ -68,6 +67,8 @@ COWS['unhappy'] = r'''
         ({eye}{eye})/
         {ear}--{ear}
 '''
+
+LOG = logging.getLogger(__name__)
 
 
 def make_bool(val):

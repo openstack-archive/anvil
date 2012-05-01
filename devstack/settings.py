@@ -24,15 +24,10 @@ PROG_NICE_NAME = "DEVSTACKpy"
 IPV4 = 'IPv4'
 IPV6 = 'IPv6'
 
-# Default subdirs of a components root directory
-COMPONENT_TRACE_DIR = "traces"
-COMPONENT_APP_DIR = "app"
-COMPONENT_CONFIG_DIR = "config"
-
 # RC files generated / used
 RC_FN_TEMPL = "os-%s.rc"
 
-# Where the configs and templates should be at.
+# Where the configs and templates should be at...
 STACK_BIN_DIR = os.path.abspath(os.path.dirname(sys.argv[0]))
 STACK_CONFIG_DIR = os.path.join(STACK_BIN_DIR, "conf")
 STACK_DISTRO_DIR = os.path.join(STACK_CONFIG_DIR, "distros")

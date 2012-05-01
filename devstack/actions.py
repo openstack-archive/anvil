@@ -30,7 +30,7 @@ from devstack import trace as tr
 from devstack import utils
 
 
-LOG = logging.getLogger("devstack.progs.actions")
+LOG = logging.getLogger(__name__)
 
 
 PhaseFunctors = collections.namedtuple('PhaseFunctors', ['start', 'run', 'end'])
@@ -81,15 +81,15 @@ class ActionRunner(object):
 
     def get_component_dirs(self, component):
         component_dir = sh.joinpths(self.root_dir, component)
-        trace_dir = sh.joinpths(component_dir, settings.COMPONENT_TRACE_DIR)
-        app_dir = sh.joinpths(component_dir, settings.COMPONENT_APP_DIR)
-        cfg_dir = sh.joinpths(component_dir, settings.COMPONENT_CONFIG_DIR)
+        trace_dir = sh.joinpths(component_dir, 'traces')
+        app_dir = sh.joinpths(component_dir, 'app')
+        cfg_dir = sh.joinpths(component_dir, 'config')
         return {
-            'component_dir': component_dir,
-            'trace_dir': trace_dir,
             'app_dir': app_dir,
             'cfg_dir': cfg_dir,
+            'component_dir': component_dir,
             'root_dir': self.root_dir,
+            'trace_dir': trace_dir,
         }
 
     def _construct_instances(self, persona):
@@ -108,32 +108,32 @@ class ActionRunner(object):
             cls_kvs = {}
             cls_kvs['runner'] = self
             cls_kvs.update(self.get_component_dirs(c))
-            cls_kvs['subsystem_info'] = my_info.get('subsystems', {})
+            cls_kvs['subsystem_info'] = my_info.get('subsystems') or {}
             cls_kvs['all_instances'] = instances
             cls_kvs['name'] = c
             cls_kvs['keep_old'] = self.keep_old
-            cls_kvs['desired_subsystems'] = desired_subsystems.get(c, set())
-            cls_kvs['options'] = component_opts.get(c, {})
+            cls_kvs['desired_subsystems'] = desired_subsystems.get(c) or set()
+            cls_kvs['options'] = component_opts.get(c) or {}
             cls_kvs['pip_factory'] = pip_factory
             cls_kvs['packager_factory'] = pkg_factory
             # The above is not overrideable...
             for (k, v) in my_info.items():
                 if k not in cls_kvs:
                     cls_kvs[k] = v
+                else:
+                    LOG.warn("You can not override component constructor variable named %s.", colorizer.quote(k))
             instances[c] = cls(**cls_kvs)
         return instances
 
     def _verify_components(self, component_order, instances):
         LOG.info("Verifying that the components are ready to rock-n-roll.")
         for c in component_order:
-            instance = instances[c]
-            instance.verify()
+            instances[c].verify()
 
     def _warm_components(self, component_order, instances):
-        LOG.info("Warming up component configurations")
+        LOG.info("Warming up component configurations.")
         for c in component_order:
-            instance = instances[c]
-            instance.warm_configs()
+            instances[c].warm_configs()
 
     def _skip_phase(self, instance, mark):
         phase_fn = "%s.phases" % (self.NAME)

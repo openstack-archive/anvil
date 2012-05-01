@@ -27,7 +27,8 @@ from devstack import env
 from devstack import exceptions as excp
 from devstack import log as logging
 
-LOG = logging.getLogger("devstack.shell")
+LOG = logging.getLogger(__name__)
+
 ROOT_USER = "root"
 ROOT_GROUP = ROOT_USER
 ROOT_USER_UID = 0

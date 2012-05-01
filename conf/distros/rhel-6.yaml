@@ -42,6 +42,14 @@ commands:
     # Used to know where to find nova root wrap
     bin_dir: "/usr/bin"
     sudoers_dir: "/etc/sudoers.d/"
+    # Commands used when setting up python projects
+    python:
+        setup: python setup.py develop
+        unsetup: python setup.py develop --uninstall
+    # Where component symlinks will go, the component name will become a directory
+    # under this directory where its configuration files will be connected to there
+    # actual location.
+    base_link_dir: "/etc/"
     rabbit-mq:
         change_password: rabbitmqctl change_password guest
         restart: service rabbitmq-server restart

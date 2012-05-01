@@ -20,7 +20,7 @@ from devstack import shell as sh
 
 from devstack.components import nova
 
-LOG = logging.getLogger("devstack.components.novnc")
+LOG = logging.getLogger(__name__)
 
 # Where the application is really
 UTIL_DIR = 'utils'
