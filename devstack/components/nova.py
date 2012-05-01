@@ -592,23 +592,24 @@ class NovaConfConfigurator(object):
         # Do a little check to make sure actually have that interface/s
         public_interface = self._getstr('public_interface')
         vlan_interface = self._getstr('vlan_interface', public_interface)
-        if not utils.is_interface(public_interface):
-            msg = "Public interface %r is not a known interface" % (public_interface)
+        known_interfaces = utils.get_interfaces()
+        if not public_interface in known_interfaces:
+            msg = "Public interface %r is not a known interface (is it one of %s??)" % (public_interface, ", ".join(known_interfaces))
             raise exceptions.ConfigException(msg)
-        if not utils.is_interface(vlan_interface):
-            msg = "VLAN interface %r is not a known interface" % (vlan_interface)
+        if not vlan_interface in known_interfaces:
+            msg = "VLAN interface %r is not a known interface (is it one of %s??)" % (vlan_interface, ", ".join(known_interfaces))
             raise exceptions.ConfigException(msg)
         # Driver specific interface checks
         drive_canon = canon_virt_driver(self._getstr('virt_driver'))
         if drive_canon == 'xenserver':
             xs_flat_ifc = self._getstr('xs_flat_interface', XS_DEF_INTERFACE)
-            if xs_flat_ifc and not utils.is_interface(xs_flat_ifc):
-                msg = "Xenserver flat interface %s is not a known interface" % (xs_flat_ifc)
+            if xs_flat_ifc and not xs_flat_ifc in known_interfaces:
+                msg = "Xenserver flat interface %s is not a known interface (is it one of %s??)" % (xs_flat_ifc, ", ".join(known_interfaces))
                 raise exceptions.ConfigException(msg)
         elif drive_canon == 'libvirt':
             flat_interface = self._getstr('flat_interface')
-            if flat_interface and not utils.is_interface(flat_interface):
-                msg = "Libvirt flat interface %s is not a known interface" % (flat_interface)
+            if flat_interface and not flat_interface in known_interfaces:
+                msg = "Libvirt flat interface %s is not a known interface (is it one of %s??)" % (flat_interface, ", ".join(known_interfaces))
                 raise exceptions.ConfigException(msg)
 
     def configure(self, root_wrapped):
