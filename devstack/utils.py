@@ -304,10 +304,6 @@ def get_host_ip():
     return ip
 
 
-def is_interface(intfc):
-    return intfc in get_interfaces()
-
-
 def get_interfaces():
     interfaces = dict()
     for intfc in netifaces.interfaces():
