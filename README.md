@@ -1,3 +1,3 @@
 # We want more information!
 
-Please check out: <http://readthedocs.org/docs/anvil/>
+Please check out: <http://anvil.readthedocs.org>
