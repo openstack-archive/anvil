@@ -25,8 +25,8 @@ Stable *tags* can also be downloaded:
 
 https://github.com/yahoo/Openstack-DevstackPy/tags.
 
-    **Note:** that for these tags you may have to edit *conf/anvil.ini*
-    to point to stable branch/es for the various *OpenStack* components.
+    **Note:** that for these tags you may have to edit ``conf/anvil.ini``
+    to point to tags other than ``master``
 
 Bugs/Features
 =============
@@ -42,7 +42,7 @@ Feel free to hack but please try to follow the `hacking guidelines`_
 Discussions
 ===========
 
-Please either use `launchpad’s email system`_ or find us on ``irc.freenode.net`` in channel ``#openstack-anvil``
+Please either use `launchpad’s email system`_ or find us on ``irc.freenode.net`` in channel ``#openstack-anvil`` or in the main openstack dev channel ``#openstack-dev``. Feel free to bug us!
 
 .. _apache version 2.0 license: https://github.com/yahoo/Openstack-DevstackPy/blob/master/LICENSE
 .. _github’s issue tracking system: https://github.com/yahoo/Openstack-Devstackpy/issues

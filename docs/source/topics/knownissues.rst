@@ -8,6 +8,8 @@ Ubuntu 11.10 (Oneiric Ocelot)
 
 -  Resetting/cleaning up the network on uninstall doesn’t seem to be
    *100%* correct
+   
+There is a script in ``tools/clear-net-ubuntu.sh`` that might help with this.
 
 RHEL 6.2
 --------
@@ -17,12 +19,8 @@ RHEL 6.2
    code directly but the *numpy* dependency can’t be installed with the
    previous symlink. We are currently just using *pip* to fix this.
 -  Fixing up the network on uninstall doesn’t seem to be 100% correct
--  I (josh) dont really like how we have to edit the *httpd.conf* to use
-   the current sudo user. Without this though it doesn’t seem like
-   *python-wsgi* can access the users libraries that are downloaded and
-   other files can’t be accessed either. This could be solved by having
-   a new user and group and doing what devstack.sh does (but this
-   seems like overkill).
+
+We might need a script like the ``tools/clear-net-ubuntu.sh`` to help in this situation.
 
 Others
 ------
