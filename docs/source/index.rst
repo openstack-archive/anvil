@@ -1,10 +1,10 @@
 .. _index:
 
 =====================
-DEVSTACKpy Documentation
+ANVIL Documentation
 =====================
 
-.. rubric:: Everything about DEVSTACKpy, a set of **python** scripts and utilities to quickly deploy an OpenStack cloud.
+.. rubric:: Everything about ANVIL, a set of **python** scripts and utilities to quickly deploy an OpenStack cloud.
 
 .. toctree::
    :maxdepth: 2

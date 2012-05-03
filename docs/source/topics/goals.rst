@@ -17,6 +17,7 @@ Goals
    they can productively contribute without having to understand every
    part of the system at once.
 -  To make it easy to prototype cross-project features.
+-  To have an installer that works!
 
 
 .. _OpenStack: http://openstack.org/

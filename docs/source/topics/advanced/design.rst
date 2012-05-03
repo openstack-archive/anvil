@@ -5,7 +5,7 @@ Design
 How it works
 ------------
 
-DEVSTACKpy is based along the following system design
+ANVIL is based along the following system design
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -  Having shared components/actions be shared (using object oriented
@@ -18,16 +18,16 @@ DEVSTACKpy is based along the following system design
 Directory structure is the following
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
--  Parent classes located in *devstack/component.py*, it contains the
+-  Parent classes located in *anvil/component.py*, it contains the
    root install/uninstall/start/stop classes
--  Subclasses in *devstack/components/*, it contains the individual
+-  Subclasses in *anvil/components/*, it contains the individual
    install classes for each openstack component
--  Running modes implementations in *devstack/runners/* (ie fork,
+-  Running modes implementations in *anvil/runners/* (ie fork,
    screen, upstart)
--  Packaging implementations in *devstack/packaging/*
--  Image uploading/registry/management (for glance) in *devstack/image/*
--  Shared classes and utils in *devstack/*
--  Main entry point/s in *devstack/progs/*
+-  Packaging implementations in *anvil/packaging/*
+-  Image uploading/registry/management (for glance) in *anvil/image/*
+-  Shared classes and utils in *anvil/*
+-  Main entry point/s in *anvil/progs/*
 -  Other various tools in *tools/*
 -  Configuration in *conf/* (see below)
 
@@ -69,7 +69,7 @@ Functions
 '''''''''
 
 For a install class the following functions are activated (in the
-following order by *devstack/progs/actions.py*):
+following order by *anvil/actions.py*):
 
 ::
 
