@@ -4,11 +4,11 @@ Features
 
 -  Supports more than one distribution.
 
-   -  Currently RHEL 6.2 (with `epel`_), Ubuntu 11.10, Fedora 16
+   -  Currently RHEL 6.2 (with `epel`_), Ubuntu 11.10, Fedora 16, Ubuntu 12.10 (seems to work)
 
 -  Supports dry-run mode (to see what *would* happen)
 -  Supports varying installation *personas*
--  A single ``stack.ini`` file that shows common configuration
+-  A single ``anvil.ini`` file that shows common configuration
 -  Supports install/uninstall/starting/stopping of OpenStack components.
 
    -  In various styles (daemonizing via `forking`_, `screen`_, `upstart`_)

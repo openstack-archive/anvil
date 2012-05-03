@@ -21,7 +21,7 @@ RHEL 6.2
    the current sudo user. Without this though it doesn’t seem like
    *python-wsgi* can access the users libraries that are downloaded and
    other files can’t be accessed either. This could be solved by having
-   a new user and group and doing what devstack v1.0 does (but this
+   a new user and group and doing what devstack.sh does (but this
    seems like overkill).
 
 Others

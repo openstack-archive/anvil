@@ -165,8 +165,7 @@ def establish_passwords(config, args):
 
 def run(args):
     """
-    Starts the execution of devstackpy after
-    args have been parsed and logging has been setup.
+    Starts the execution after args have been parsed and logging has been setup.
 
     Arguments: N/A
     Returns: True for success to run, False for failure to start
@@ -251,7 +250,7 @@ def construct_log_level(verbosity_level, dry_run=False):
 
 def main():
     """
-    Starts the execution of devstack py without
+    Starts the execution of without
     injecting variables into the global namespace. Ensures that
     logging is setup and that sudo access is available and in-use.
 

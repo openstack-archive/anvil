@@ -6,7 +6,7 @@ Adding your own persona
 Your mission...
 =============
 
-So you have decided you want to venture into the bowels of DEVSTACKpy
+So you have decided you want to venture into the bowels of ANVIL
 and want to alter what is installed/started/stopped, the order of what
 is installed/started/stopped, what subsystems are activated (or the
 component options). This wiki will hopefully make that adventure simpler

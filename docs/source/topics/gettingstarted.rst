@@ -48,7 +48,7 @@ configure and get right!**
 
 --------------
 
-DEVSTACKpy will configure the network in a identical manner to version
+ANVIL will configure the network in a identical manner to version
 *1.0*. This means that the default network manager will be the
 *FlatDHCPManager*. The following settings are relevant in configuring
 your network.
@@ -155,17 +155,17 @@ Get git!
 Download
 --------
 
-We’ll grab the latest version of DEVSTACKpy via git:
+We’ll grab the latest version of ANVIL via git:
 
 ::
 
-    $ git clone git://github.com/yahoo/Openstack-DevstackPy.git DevstackPy
+    $ git clone git://github.com/yahoo/Openstack-DevstackPy.git anvil
 
-Now setup the prerequisites needed to run DEVSTACKpy:
+Now setup the prerequisites needed to run:
 
 ::
 
-    $ cd DevstackPy && sudo ./prepare.sh
+    $ cd anvil && sudo ./warmup.sh
 
 Configuration
 -------------
@@ -173,7 +173,7 @@ Configuration
 Apache configuration
 ~~~~~~~~~~~~~~~~~~~~
 
-We need to adjust the configuration of DEVSTACKpy to reflect the above
+We need to adjust the configuration of ANVIL to reflect the above
 user (``iff you created a user``).
 
 Open ``conf/stack.ini``
@@ -211,14 +211,13 @@ Open ``conf/stack.ini``
 Network configuration
 ~~~~~~~~~~~~~~~~~~~~~
 
-We need to adjust the configuration of DEVSTACKpy to reflect our above
-network configuration.
+We need to adjust the configuration of ANVIL to reflect our above network configuration.
 
-Please reference
+Please reference:
+
 http://docs.openstack.org/diablo/openstack-compute/admin/content/configuring-networking-on-the-compute-node.html
 
-If you need to adjust those variables the matching config variables in
-``stack.ini`` are:
+If you need to adjust those variables the matching config variables in ``anvil.ini`` are:
 
 ::
 
@@ -254,11 +253,11 @@ Now install *OpenStacks* components by running the following:
 
 ::
 
-    sudo ./stack -a install -d ~/openstack
+    sudo ./smithy -a install -d ~/openstack
 
 You should see a set of distribution packages and/or pips being
 installed, python setups occurring and configuration files being written
-as DEVSTACKpy figures out how to install your desired components (if you
+as ANVIL figures out how to install your desired components (if you
 desire more informational output add a ``-v`` or a ``-vv`` to that
 command).
 
@@ -270,7 +269,7 @@ Now that you have installed *OpenStack* you can now start your
 
 ::
 
-    sudo ./stack -a start -d ~/openstack
+    sudo ./smithy -a start -d ~/openstack
 
 If you desire more informational output add a ``-v`` or a ``-vv`` to
 that command.
@@ -295,7 +294,7 @@ If you see a login page and can access horizon then:
 Command line tools
 ~~~~~~~~~~~~~~~~~~
 
-In your DEVSTACKpy directory:
+In your ANVIL directory:
 
 ::
 
@@ -349,7 +348,7 @@ the following:
 
 ::
 
-    sudo ./stack -a stop -d ~/openstack
+    sudo ./smithy -a stop -d ~/openstack
 
 You should see a set of stop actions happening and ``stderr`` and
 ``stdout`` and ``pid`` files being removed (if you desire more
@@ -376,7 +375,7 @@ can uninstall them by running the following:
 
 ::
 
-    sudo ./stack -a uninstall -d ~/openstack
+    sudo ./smithy -a uninstall -d ~/openstack
 
 You should see a set of packages, configuration and directories, being
 removed (if you desire more informational output add a ``-v`` or a

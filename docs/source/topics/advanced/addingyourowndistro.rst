@@ -6,7 +6,7 @@ Adding your own distribution
 Your mission...
 =============
 
-So you have decided you want to venture into the bowels of DEVSTACKpy
+So you have decided you want to venture into the bowels of ANVIL
 and want to get support for your latest and greatest distribution. This
 wiki will hopefully make that adventure simpler by listing out the key
 places, files and configs that may have to be adjusted to get that to
