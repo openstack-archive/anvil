@@ -14,6 +14,7 @@ if os.path.exists(os.path.join(possible_topdir,
 
 
 from anvil import cfg
+from anvil import cfg_helpers
 from anvil import log as logging
 from anvil import passwords
 from anvil import settings
@@ -25,30 +26,11 @@ from anvil.components import glance
 from anvil.image import uploader
 
 
-def find_config():
-    """
-    Finds the stack configuration file.
-
-    Arguments:
-        args: command line args
-    Returns: the file location or None if not found
-    """
-
-    locs = []
-    locs.append(settings.CONFIG_LOCATION)
-    locs.append(sh.joinpths("/etc", settings.PROG_NAME, settings.CONFIG_NAME)
-    locs.append(sh.joinpths(os.getcwd(), "../", settings.CONFIG_DIR, settings.CONFIG_NAME))
-    for path in set(locs):
-        if sh.isfile(path):
-            return path
-    return None
-
-
 def get_config():
     base_config = cfg.IgnoreMissingConfigParser()
-    stack_config = find_config()
-    if stack_config:
-        base_config.read([stack_config])
+    config_location = cfg_helpers.find_config()
+    if config_location:
+        base_config.read([config_location])
     config = cfg.ProxyConfig()
     config.add_read_resolver(cfg.EnvResolver())
     config.add_read_resolver(cfg.ConfigResolver(base_config))

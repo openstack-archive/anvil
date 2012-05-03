@@ -14,6 +14,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from anvil import log as logging
+from anvil import settings
+from anvil import shell as sh
+
+LOG = logging.getLogger(__name__)
+
 
 def make_id(section, option):
     joinwhat = []
@@ -22,3 +28,23 @@ def make_id(section, option):
     if option is not None:
         joinwhat.append(str(option))
     return "/".join(joinwhat)
+
+
+def find_config(start_locations=None):
+    """
+    Finds the anvil configuration file.
+
+    Returns: the file location or None if not found
+    """
+
+    locs = []
+    if start_locations:
+        locs.extend(start_locations)
+    locs.append(settings.CONFIG_LOCATION)
+    locs.append(sh.joinpths("/etc", settings.PROG_NAME, settings.CONFIG_NAME))
+    for path in locs:
+        LOG.debug("Looking for configuration in: %r", path)
+        if sh.isfile(path):
+            LOG.debug("Found configuration in: %r", path)
+            return path
+    return None

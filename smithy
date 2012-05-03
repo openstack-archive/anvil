@@ -106,26 +106,6 @@ def setup_root(root_dir):
         sh.mkdir(root_dir)
 
 
-def find_config(args):
-    """
-    Finds the anvil configuration file.
-
-    Arguments:
-        args: command line args
-    Returns: the file location or None if not found
-    """
-
-    locs = []
-    locs.append(settings.CONFIG_LOCATION)
-    locs.append(sh.joinpths("/etc", settings.PROG_NAME, settings.CONFIG_NAME))
-    for path in set(locs):
-        LOG.debug("Looking for anvil configuration in: %r", path)
-        if sh.isfile(path):
-            LOG.debug("Found anvil configuration in: %r", path)
-            return path
-    return None
-
-
 def establish_config(args):
     """
     Creates the stack configuration object using the set of
@@ -137,7 +117,7 @@ def establish_config(args):
     """
 
     base_config = None
-    config_location = find_config(args)
+    config_location = cfg_helpers.find_config()
     if config_location:
         base_config = cfg.IgnoreMissingConfigParser()
         with open(config_location, "r") as fh:

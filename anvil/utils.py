@@ -683,14 +683,12 @@ def goodbye(worked):
     print(msg)
 
 
-def welcome():
-    lower = "| %s |" % (version.version_string())
+def welcome(prog_name=settings.PROG_NAME.upper(), version_text=version.version_string()):
+    lower = "| %s |" % (version_text)
     welcome_header = _get_welcome_stack()
     max_line_len = len(max(welcome_header.splitlines(), key=len))
-    footer = colorizer.color(settings.PROG_NAME.upper(), 'green')
-    footer += ": "
-    footer += colorizer.color(lower, 'blue', bold=True)
-    uncolored_footer = (settings.PROG_NICE_NAME + ": " + lower)
+    footer = colorizer.color(prog_name, 'green') + ": " + colorizer.color(lower, 'blue', bold=True)
+    uncolored_footer = prog_name + ": " + lower
     if max_line_len - len(uncolored_footer) > 0:
         # This format string will center the uncolored text which
         # we will then replace with the color text equivalent.
