@@ -116,10 +116,9 @@ def find_config(args):
     """
 
     locs = []
-    locs.append(settings.STACK_CONFIG_LOCATION)
-    locs.append(sh.joinpths("/etc", "anvil", "conf.ini"))
-    locs.append(sh.joinpths(settings.STACK_CONFIG_DIR, "conf.ini"))
-    for path in locs:
+    locs.append(settings.CONFIG_LOCATION)
+    locs.append(sh.joinpths("/etc", settings.PROG_NAME, settings.CONFIG_NAME))
+    for path in set(locs):
         LOG.debug("Looking for anvil configuration in: %r", path)
         if sh.isfile(path):
             LOG.debug("Found anvil configuration in: %r", path)

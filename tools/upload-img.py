@@ -8,7 +8,7 @@ possible_topdir = os.path.normpath(os.path.join(os.path.abspath(sys.argv[0]),
                                    os.pardir,
                                    os.pardir))
 if os.path.exists(os.path.join(possible_topdir,
-                               'devstack',
+                               'anvil',
                                '__init__.py')):
     sys.path.insert(0, possible_topdir)
 
@@ -35,11 +35,10 @@ def find_config():
     """
 
     locs = []
-    locs.append(settings.STACK_CONFIG_LOCATION)
-    locs.append(sh.joinpths("/etc", "devstack", "stack.ini"))
-    locs.append(sh.joinpths(settings.STACK_CONFIG_DIR, "stack.ini"))
-    locs.append(sh.joinpths("conf", "stack.ini"))
-    for path in locs:
+    locs.append(settings.CONFIG_LOCATION)
+    locs.append(sh.joinpths("/etc", settings.PROG_NAME, settings.CONFIG_NAME)
+    locs.append(sh.joinpths(os.getcwd(), "../", settings.CONFIG_DIR, settings.CONFIG_NAME))
+    for path in set(locs):
         if sh.isfile(path):
             return path
     return None

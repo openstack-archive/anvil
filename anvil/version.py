@@ -14,9 +14,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-DEVSTACK_VERSION = ['2012', '4']
-YEAR, COUNT = DEVSTACK_VERSION
-FINAL = False  # May never be final ;-)
+VERSION = ['2012', '5']
+YEAR, COUNT = VERSION
+FINAL = False  # May never be final ;)
 
 
 def canonical_version_string():

@@ -1,5 +1,5 @@
 ---
-# Fedora 16 configuration for DevstackPy
+# Fedora 16
 name: fedora-16
 distro_pattern: fedora-16
 packager_name: anvil.packaging.yum:YumPackager

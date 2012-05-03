@@ -18,21 +18,23 @@ import os
 import sys
 
 # What this program is called
-PROG_NICE_NAME = "DEVSTACKpy"
+PROG_NAME = 'anvil'
 
 # Ip version constants for network ip detection
 IPV4 = 'IPv4'
 IPV6 = 'IPv6'
 
 # RC files generated / used
-RC_FN_TEMPL = "os-%s.rc"
+RC_FN_TEMPL = "%s.rc"
 
 # Where the configs and templates should be at...
-STACK_BIN_DIR = os.path.abspath(os.path.dirname(sys.argv[0]))
-STACK_CONFIG_DIR = os.path.join(STACK_BIN_DIR, "conf")
-STACK_DISTRO_DIR = os.path.join(STACK_CONFIG_DIR, "distros")
-STACK_TEMPLATE_DIR = os.path.join(STACK_CONFIG_DIR, "templates")
-STACK_CONFIG_LOCATION = os.path.join(STACK_CONFIG_DIR, "conf.ini")
+BIN_DIR = os.path.abspath(os.path.dirname(sys.argv[0]))
+CONFIG_DIR = os.path.join(BIN_DIR, "conf")
+DISTRO_DIR = os.path.join(CONFIG_DIR, "distros")
+TEMPLATE_DIR = os.path.join(CONFIG_DIR, "templates")
+PERSONA_DIR = os.path.join(CONFIG_DIR, "personas")
+CONFIG_NAME = 'anvil.ini'
+CONFIG_LOCATION = os.path.join(CONFIG_DIR, CONFIG_NAME)
 
 
 def gen_rc_filename(root_name):

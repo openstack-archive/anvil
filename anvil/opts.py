@@ -19,6 +19,9 @@ from optparse import OptionParser, OptionGroup
 
 from anvil import actions
 from anvil import version
+from anvil import shell as sh
+from anvil import settings
+
 
 HELP_WIDTH = 80
 
@@ -56,11 +59,12 @@ def parse():
 
     # Install/start/stop/uninstall specific options
     base_group = OptionGroup(parser, "Install & uninstall & start & stop specific options")
+    def_persona = sh.joinpths(settings.PERSONA_DIR, 'devstack.sh.yaml')
     base_group.add_option("-p", "--persona",
         action="store",
         type="string",
         dest="persona_fn",
-        default='conf/personas/devstack.sh.yaml',
+        default=def_persona,
         metavar="FILE",
         help="required persona yaml file to apply (default: %default)")
     base_group.add_option("-a", "--action",

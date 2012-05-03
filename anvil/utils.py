@@ -687,7 +687,7 @@ def welcome():
     lower = "| %s |" % (version.version_string())
     welcome_header = _get_welcome_stack()
     max_line_len = len(max(welcome_header.splitlines(), key=len))
-    footer = colorizer.color(settings.PROG_NICE_NAME, 'green')
+    footer = colorizer.color(settings.PROG_NAME.upper(), 'green')
     footer += ": "
     footer += colorizer.color(lower, 'blue', bold=True)
     uncolored_footer = (settings.PROG_NICE_NAME + ": " + lower)
