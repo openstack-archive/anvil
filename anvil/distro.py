@@ -34,7 +34,7 @@ LOG = logging.getLogger(__name__)
 class Distro(object):
 
     @classmethod
-    def load_all(cls, path=settings.STACK_DISTRO_DIR):
+    def load_all(cls, path=settings.DISTRO_DIR):
         """Returns a list of the known distros."""
         results = []
         input_files = glob.glob(sh.joinpths(path, '*.yaml'))

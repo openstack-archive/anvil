@@ -131,7 +131,7 @@ def get_from_path(items, path, quiet=True):
 
 
 def load_template(component, template_name):
-    templ_pth = sh.joinpths(settings.STACK_TEMPLATE_DIR, component, template_name)
+    templ_pth = sh.joinpths(settings.TEMPLATE_DIR, component, template_name)
     return (templ_pth, sh.load_file(templ_pth))
 
 
