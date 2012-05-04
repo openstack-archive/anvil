@@ -159,7 +159,7 @@ We’ll grab the latest version of ANVIL via git:
 
 ::
 
-    $ git clone git://github.com/yahoo/Openstack-DevstackPy.git anvil
+    $ git clone git://github.com/yahoo/Openstack-Anvil.git anvil
 
 Now setup the prerequisites needed to run:
 
@@ -385,8 +385,7 @@ removed (if you desire more informational output add a ``-v`` or a
 Issues
 ======
 
-Please report issues/bugs to https://launchpad.net/devstackpy. Much
-appreciated!
+Please report issues/bugs to https://launchpad.net/anvil. Much appreciated!
 
 .. _euca2ools: http://open.eucalyptus.com/wiki/Euca2oolsGuide
 .. _PID: http://en.wikipedia.org/wiki/Process_identifier
