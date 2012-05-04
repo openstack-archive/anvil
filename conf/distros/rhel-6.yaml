@@ -2,7 +2,7 @@
 # RedHat Enterprise Linux 6
 name: rhel-6
 distro_pattern: redhat-6(.*)
-packager_name: devstack.packaging.yum:YumPackager
+packager_name: anvil.packaging.yum:YumPackager
 commands:
     apache:
         restart: service httpd restart
@@ -60,9 +60,9 @@ commands:
 components:
     db:
         action_classes:
-            install: devstack.distros.rhel6:DBInstaller
-            running: devstack.components.db:DBRuntime
-            uninstall: devstack.components.db:DBUninstaller
+            install: anvil.distros.rhel6:DBInstaller
+            running: anvil.components.db:DBRuntime
+            uninstall: anvil.components.db:DBUninstaller
         packages:
         -   name: mysql
             removable: true
@@ -72,9 +72,9 @@ components:
             version: 5.1*
     general:
         action_classes:
-            install: devstack.components.pkglist:Installer
-            running: devstack.component:EmptyRuntime
-            uninstall: devstack.components.pkglist:Uninstaller
+            install: anvil.components.pkglist:Installer
+            running: anvil.component:EmptyRuntime
+            uninstall: anvil.components.pkglist:Uninstaller
         packages:
         -   name: coreutils
             removable: false
@@ -166,9 +166,9 @@ components:
             version: 1.1.2
     glance:
         action_classes:
-            install: devstack.components.glance:GlanceInstaller
-            running: devstack.components.glance:GlanceRuntime
-            uninstall: devstack.components.glance:GlanceUninstaller
+            install: anvil.components.glance:GlanceInstaller
+            running: anvil.components.glance:GlanceRuntime
+            uninstall: anvil.components.glance:GlanceUninstaller
         packages:
         -   name: MySQL-python
             removable: true
@@ -210,9 +210,9 @@ components:
             version: 0.2
     glance-client:
         action_classes:
-            install: devstack.components.glance_client:GlanceClientInstaller
-            running: devstack.components.glance_client:GlanceClientRuntime
-            uninstall: devstack.components.glance_client:GlanceClientUninstaller
+            install: anvil.components.glance_client:GlanceClientInstaller
+            running: anvil.components.glance_client:GlanceClientRuntime
+            uninstall: anvil.components.glance_client:GlanceClientUninstaller
         packages:
         -   name: python-argparse
             removable: true
@@ -222,9 +222,9 @@ components:
             version: 0.5*
     horizon:
         action_classes:
-            install: devstack.distros.rhel6:HorizonInstaller
-            running: devstack.components.horizon:HorizonRuntime
-            uninstall: devstack.components.horizon:HorizonUninstaller
+            install: anvil.distros.rhel6:HorizonInstaller
+            running: anvil.components.horizon:HorizonRuntime
+            uninstall: anvil.components.horizon:HorizonUninstaller
         packages:
         -   name: httpd
             removable: true
@@ -244,7 +244,7 @@ components:
         -   name: python-webob1.0
             removable: true
             version: 1.0*
-            packager_name: devstack.distros.rhel6:YumPackagerWithRelinks
+            packager_name: anvil.distros.rhel6:YumPackagerWithRelinks
             packager_options:
                 links:
                     - source: /usr/lib/python2.6/site-packages/WebOb-1.0.8-py2.6.egg/webob/
@@ -283,9 +283,9 @@ components:
             version: 0.7.2
     keystone:
         action_classes:
-            install: devstack.components.keystone:KeystoneInstaller
-            running: devstack.components.keystone:KeystoneRuntime
-            uninstall: devstack.components.keystone:KeystoneUninstaller
+            install: anvil.components.keystone:KeystoneInstaller
+            running: anvil.components.keystone:KeystoneRuntime
+            uninstall: anvil.components.keystone:KeystoneUninstaller
         packages:
         -   name: MySQL-python
             removable: true
@@ -323,7 +323,7 @@ components:
         -   name: python-webob1.0
             removable: true
             version: 1.0*
-            packager_name: devstack.distros.rhel6:YumPackagerWithRelinks
+            packager_name: anvil.distros.rhel6:YumPackagerWithRelinks
             packager_options:
                 links:
                     - source: /usr/lib/python2.6/site-packages/WebOb-1.0.8-py2.6.egg/webob/
@@ -351,9 +351,9 @@ components:
             version: 0.7.2
     keystone-client:
         action_classes:
-            install: devstack.components.keystone_client:KeyStoneClientInstaller
-            running: devstack.components.keystone_client:KeyStoneClientRuntime
-            uninstall: devstack.components.keystone_client:KeyStoneClientUninstaller
+            install: anvil.components.keystone_client:KeyStoneClientInstaller
+            running: anvil.components.keystone_client:KeyStoneClientRuntime
+            uninstall: anvil.components.keystone_client:KeyStoneClientUninstaller
         packages:
         -   name: python-argparse
             removable: true
@@ -363,27 +363,27 @@ components:
             version: 0.5*
     melange:
         action_classes:
-            install: devstack.components.melange:MelangeInstaller
-            running: devstack.components.melange:MelangeRuntime
-            uninstall: devstack.components.melange:MelangeUninstaller
+            install: anvil.components.melange:MelangeInstaller
+            running: anvil.components.melange:MelangeRuntime
+            uninstall: anvil.components.melange:MelangeUninstaller
     no-vnc:
         action_classes:
-            install: devstack.components.novnc:NoVNCInstaller
-            running: devstack.components.novnc:NoVNCRuntime
-            uninstall: devstack.components.novnc:NoVNCUninstaller
+            install: anvil.components.novnc:NoVNCInstaller
+            running: anvil.components.novnc:NoVNCRuntime
+            uninstall: anvil.components.novnc:NoVNCUninstaller
         pips:
         -   name: numpy
             version: '1.5'
     nova:
         action_classes:
-            install: devstack.distros.rhel6:NovaInstaller
-            running: devstack.components.nova:NovaRuntime
-            uninstall: devstack.components.nova:NovaUninstaller
+            install: anvil.distros.rhel6:NovaInstaller
+            running: anvil.components.nova:NovaRuntime
+            uninstall: anvil.components.nova:NovaUninstaller
         packages:
         -   name: python-webob1.0
             removable: true
             version: 1.0*
-            packager_name: devstack.distros.rhel6:YumPackagerWithRelinks
+            packager_name: anvil.distros.rhel6:YumPackagerWithRelinks
             packager_options:
                 links:
                     - source: /usr/lib/python2.6/site-packages/WebOb-1.0.8-py2.6.egg/webob/
@@ -532,9 +532,9 @@ components:
                     version: 1.0*
     nova-client:
         action_classes:
-            install: devstack.components.nova_client:NovaClientInstaller
-            running: devstack.components.nova_client:NovaClientRuntime
-            uninstall: devstack.components.nova_client:NovaClientUninstaller
+            install: anvil.components.nova_client:NovaClientInstaller
+            running: anvil.components.nova_client:NovaClientRuntime
+            uninstall: anvil.components.nova_client:NovaClientUninstaller
         packages:
         -   name: python-argparse
             removable: true
@@ -544,9 +544,9 @@ components:
             version: 0.5*
     quantum:
         action_classes:
-            install: devstack.components.quantum:QuantumInstaller
-            running: devstack.components.quantum:QuantumRuntime
-            uninstall: devstack.components.quantum:QuantumUninstaller
+            install: anvil.components.quantum:QuantumInstaller
+            running: anvil.components.quantum:QuantumRuntime
+            uninstall: anvil.components.quantum:QuantumUninstaller
         packages:
         -   name: libxml2-python
             removable: false
@@ -575,18 +575,18 @@ components:
             version: 0.7.2
     quantum-client:
         action_classes:
-            install: devstack.components.quantum_client:QuantumClientInstaller
-            running: devstack.components.quantum_client:QuantumClientRuntime
-            uninstall: devstack.components.quantum_client:QuantumClientUninstaller
+            install: anvil.components.quantum_client:QuantumClientInstaller
+            running: anvil.components.quantum_client:QuantumClientRuntime
+            uninstall: anvil.components.quantum_client:QuantumClientUninstaller
         packages:
         -   name: python-gflags
             removable: true
             version: 1.4*
     rabbit-mq:
         action_classes:
-            install: devstack.components.rabbit:RabbitInstaller
-            running: devstack.distros.rhel6:RabbitRuntime
-            uninstall: devstack.components.rabbit:RabbitUninstaller
+            install: anvil.components.rabbit:RabbitInstaller
+            running: anvil.distros.rhel6:RabbitRuntime
+            uninstall: anvil.components.rabbit:RabbitUninstaller
         packages:
         -   name: rabbitmq-server
             pre-install:
@@ -606,8 +606,8 @@ components:
             version: 2.6*
     swift:
         action_classes:
-            install: devstack.components.swift:SwiftInstaller
-            running: devstack.components.swift:SwiftRuntime
-            uninstall: devstack.components.swift:SwiftUninstaller
+            install: anvil.components.swift:SwiftInstaller
+            running: anvil.components.swift:SwiftRuntime
+            uninstall: anvil.components.swift:SwiftUninstaller
 ...
 

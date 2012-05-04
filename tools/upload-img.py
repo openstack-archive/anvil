@@ -8,48 +8,29 @@ possible_topdir = os.path.normpath(os.path.join(os.path.abspath(sys.argv[0]),
                                    os.pardir,
                                    os.pardir))
 if os.path.exists(os.path.join(possible_topdir,
-                               'devstack',
+                               'anvil',
                                '__init__.py')):
     sys.path.insert(0, possible_topdir)
 
 
-from devstack import cfg
-from devstack import log as logging
-from devstack import passwords
-from devstack import settings
-from devstack import shell as sh
-from devstack import utils
+from anvil import cfg
+from anvil import cfg_helpers
+from anvil import log as logging
+from anvil import passwords
+from anvil import settings
+from anvil import shell as sh
+from anvil import utils
 
-from devstack.components import keystone
-from devstack.components import glance
-from devstack.image import uploader
-
-
-def find_config():
-    """
-    Finds the stack configuration file.
-
-    Arguments:
-        args: command line args
-    Returns: the file location or None if not found
-    """
-
-    locs = []
-    locs.append(settings.STACK_CONFIG_LOCATION)
-    locs.append(sh.joinpths("/etc", "devstack", "stack.ini"))
-    locs.append(sh.joinpths(settings.STACK_CONFIG_DIR, "stack.ini"))
-    locs.append(sh.joinpths("conf", "stack.ini"))
-    for path in locs:
-        if sh.isfile(path):
-            return path
-    return None
+from anvil.components import keystone
+from anvil.components import glance
+from anvil.image import uploader
 
 
 def get_config():
     base_config = cfg.IgnoreMissingConfigParser()
-    stack_config = find_config()
-    if stack_config:
-        base_config.read([stack_config])
+    config_location = cfg_helpers.find_config()
+    if config_location:
+        base_config.read([config_location])
     config = cfg.ProxyConfig()
     config.add_read_resolver(cfg.EnvResolver())
     config.add_read_resolver(cfg.ConfigResolver(base_config))

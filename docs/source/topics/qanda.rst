@@ -4,25 +4,23 @@
 Questions and Answers
 ===============
 
-Can I use DEVSTACKpy for production?
+Can I use ANVIL for production?
 ------------------------------------
 
-**No.** We mean it. **Really.** DEVSTACKpy makes some implementation
-choices that are not appropriate for production deployments. *We warned
-you!* **No, no no no no no no no no no. No.**
+Up to u! Beware of the sea and the black waters!
 
 How do I get program usage?
 ---------------------------
 
 ::
 
-     $ ./stack --help
+     $ ./smithy --help
 
 How do I run a specific OpenStack milestone?
 --------------------------------------------
 
 OpenStack milestones have tags set in the git repo. Set the appropriate
-setting in the **branch** variables in *conf/stack.ini*.
+setting in the **branch** variables in *conf/anvil.ini*.
 
 **Note:** Swift is on its own release schedule so pick a tag in the
 Swift repo that is just before the milestone release.
@@ -49,7 +47,7 @@ OMG the images take forever to download!
 Sometimes the images that will be uploaded to glance take a long time to
 download and extract and upload.
 
-To adjust this edit *conf/stack.ini* and change the following:
+To adjust this edit *conf/anvil.ini* and change the following:
 
 ::
 

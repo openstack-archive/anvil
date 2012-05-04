@@ -2,10 +2,10 @@
 Important!
 ==========
 
-**Warning:** Be sure to carefully read ``stack`` and any other scripts
+**Warning:** Be sure to carefully read ``smithy`` and any other scripts
 you execute before you run them, as they install software and may alter
 your networking configuration. We strongly recommend that you run
-``stack`` in a clean and disposable virtual machine when you are first
+``smithy`` in a clean and disposable virtual machine when you are first
 getting started.
 
 .. _epel: http://fedoraproject.org/wiki/EPEL

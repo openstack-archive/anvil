@@ -8,21 +8,21 @@ Usage Examples
 Commands
 --------
 
-To get the ``stack`` help display try:
+To get the help display try:
 
 ::
 
-     $ ./stack --help
+     $ ./smithy --help
 
 To examine what installing the basics (nova, horizon, glance, keystone…)
 will do (with installation in ``~/openstack``) try:
 
 ::
 
-     $ sudo ./stack -d ~/openstack -a install --dryrun  
+     $ sudo ./smithy -d ~/openstack -a install --dryrun  
 
 With more information/debugging/auditing output try:
 
 ::
 
-     $ sudo ./stack -d ~/openstack  -a install -vv 
+     $ sudo ./smithy -d ~/openstack  -a install -vv 

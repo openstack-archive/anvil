@@ -1,26 +1,22 @@
-# Contributing to DEVSTACKpy
+# Contributing to Anvil
 
 ## General
 
-DEVSTACKpy is written in python (we should be compatible with ``python >= 2.6``).
+Anvil is written in python (we should be compatible with ``python >= 2.6``).
 
-DEVSTACKpy's official repository is located on GitHub at
-https://github.com/yahoo/Openstack-DevstackPy.git. 
+Anvil's official repository is located on GitHub at: https://github.com/yahoo/Openstack-DevstackPy.git. 
 
-Besides the master branch that tracks the OpenStack ``trunk`` branches will maintained for all
-OpenStack releases starting with Essex (stable/essex).
+Besides the master branch that tracks the OpenStack ``trunk`` branches will maintained for all OpenStack releases starting with Essex (stable/essex).
 
-The primary script in DEVSTACKpy is ``stack``, which performs the bulk of the
-work for DevStack's use cases (it acts as the main program entrypoint).  
+The primary script in Anvil is ``smithy``, which performs the bulk of the work for Anvil's use cases (it acts as the main program entrypoint).  
 
-A number of additional scripts can be found in the ``tools`` directory that may
-be useful for other tasks related to DEVSTACKpy.
+A number of additional scripts can be found in the ``tools`` directory that may or may not be useful to you.
 
 ## Documentation
 
 Please create documentation in the ``docs/`` folder which will be synced with:
 
-http://readthedocs.org/docs/devstackpy/
+http://readthedocs.org/docs/anvil/
 
 This will suffice until a more *official* documentation site can be made.
 
@@ -35,12 +31,6 @@ This will suffice until a more *official* documentation site can be made.
 * Please also attempt to run the yaml validation if you adjust any yaml files in the `conf` directory.
  * ``./run_tests.sh  -y``
 
-## Tests
-
-To run our limited set of tests (WIP) use the following command:
-
-    ./run_tests.sh 
-    
 ## Environment Variables
 
 * The ``OS_*`` environment variables should be the only ones used for all
