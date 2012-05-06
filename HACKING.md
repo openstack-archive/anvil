@@ -4,13 +4,13 @@
 
 Anvil is written in python (we should be compatible with ``python >= 2.6``).
 
-Anvil's official repository is located on GitHub at: https://github.com/yahoo/Openstack-DevstackPy.git. 
+Anvil's official repository is located on GitHub at: https://github.com/yahoo/Openstack-Anvil.git. 
 
-Besides the master branch that tracks the OpenStack ``trunk`` branches will maintained for all OpenStack releases starting with Essex (stable/essex).
+Besides the master branch that tracks the OpenStack ``trunk`` branches will maintained for all OpenStack releases starting with essex (stable/essex).
 
-The primary script in Anvil is ``smithy``, which performs the bulk of the work for Anvil's use cases (it acts as the main program entrypoint).  
+The primary script in anvil is ``smithy``, which performs the bulk of the work for anvil's use cases (it acts as the main program entry-point).  
 
-A number of additional scripts can be found in the ``tools`` directory that may or may not be useful to you.
+A number of additional scripts/goodies can be found in the ``tools`` directory that may or may not be useful to you.
 
 ## Documentation
 
