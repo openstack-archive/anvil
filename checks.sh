@@ -1,31 +1,52 @@
 #!/bin/bash
 
-set -e
 set -u
-set -x
+# set -x
+
+function find_src {
+  files=`find anvil -type f | grep "py\$"`
+  files+=" smithy"
+  echo $files
+}
 
 function run_pep8 {
   echo "Running pep8 ..."
-  SRC_FILES=`find anvil -type f | grep "py\$"`
-  SRC_FILES+=" smithy"
-  PEP_IGNORES="E202,E501"
-  TEE_FN="pep8.log"
-  PEP8_OPTS="--ignore=$PEP_IGNORES --repeat"
-  pep8 ${PEP8_OPTS} ${SRC_FILES} 2>&1 | tee $TEE_FN
-  echo "Successfully ran pep8 ..."
-  echo "Check '$TEE_FN' for a full report."
+  files=$(find_src)
+  ignores="E202,E501"
+  output_filename="pep8.log"
+  opts="--ignore=$ignores --repeat"
+  pep8 ${opts} ${files} 2>&1 > $output_filename
+  if [ "$?" -ne "0" ]; then
+    echo "Some badness was found!"
+  fi
+  echo "Check '$output_filename' for a full report."
 }
 
 function run_pylint {
   echo "Running pylint ..."
-  PYLINT_OPTIONS="--rcfile=pylintrc --output-format=parseable"
-  PYLINT_INCLUDE=`find anvil -type f | grep "py\$"`
-  PYLINT_INCLUDE+=" smithy"
-  TEE_FN="pylint.log"
-  echo "Pylint messages count: "
-  pylint ${PYLINT_OPTIONS} ${PYLINT_INCLUDE} 2>&1 | tee $TEE_FN | grep 'anvil/' | wc -l
-  echo "Successfully ran pylint ..."
-  echo "Check '$TEE_FN' for a full report."
+  opts="--rcfile=pylintrc --output-format=parseable"
+  files=$(find_src)
+  output_filename="pylint.log"
+  pylint ${opts} ${files} 2>&1 > $output_filename
+  if [ "$?" -eq "1" ]; then
+    # pylint --long-help
+    # * 0 if everything went fine
+    # * 1 if a fatal message was issued
+    # * 2 if an error message was issued
+    # * 4 if a warning message was issued
+    # * 8 if a refactor message was issued
+    # * 16 if a convention message was issued
+    # * 32 on usage error
+    echo "A fatal pylint error occurred!"
+  else
+    if [ "$?" -eq "0" ]; then
+      echo "Your code is perfect you code master!"
+    else
+      echo "You are not yet a code master."
+      grep -i "Your code" $output_filename
+    fi
+  fi
+  echo "Check '$output_filename' for a full report."
 }
 
 function validate_yaml {
@@ -33,6 +54,9 @@ function validate_yaml {
     for f in `find conf/ -name *.yaml -type f`; do
         echo "Checking yaml file: $f"
         python tools/validate-yaml.py $f
+        if [ "$?" -ne "0" ]; then
+          echo "File: $f has some badness in it!"
+        fi
     done
 }
 
