@@ -6,7 +6,7 @@ Anvil is written in python (we should be compatible with ``python >= 2.6``).
 
 Anvil's official repository is located on GitHub at: https://github.com/yahoo/Openstack-Anvil.git. 
 
-Besides the master branch that tracks the OpenStack ``trunk`` branches will maintained for all OpenStack releases starting with essex (stable/essex).
+Besides the master branch that tracks the OpenStack ``trunk`` tags will maintained for all OpenStack releases starting with `essex`.
 
 The primary script in anvil is ``smithy``, which performs the bulk of the work for anvil's use cases (it acts as the main program entry-point).  
 
@@ -24,7 +24,7 @@ This will suffice until a more *official* documentation site can be made.
 
 * Please attempt to follow [pep8] for all code submitted.
 * Please also attempt to run [pylint] all code submitted.
-* Please also attempt to run the yaml validation if you adjust any yaml files in the `conf` directory.
+* Please also attempt to run the [yaml] validation if you adjust any [yaml] files in the `conf` directory.
 
 Use: ``./checks.sh`` to aid in running the 3 checks listed.
 
@@ -61,6 +61,7 @@ Documentation should all be written in [markdown] or [rst]. Although github does
 
 
 [CLI Auth]: http://wiki.openstack.org/CLIAuth
+[yaml]: http://en.wikipedia.org/wiki/YAML
 [pep8]: http://www.python.org/dev/peps/pep-0008/
 [pylint]: http://pypi.python.org/pypi/pylint
 [markdown]: http://daringfireball.net/projects/markdown/
