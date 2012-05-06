@@ -1,6 +1,8 @@
 #!/bin/bash
 
-set -eu
+set -e
+set -u
+sex -x
 
 function run_pep8 {
   echo "Running pep8 ..."
@@ -10,13 +12,8 @@ function run_pep8 {
   TEE_FN="pep8.log"
   PEP8_OPTS="--ignore=$PEP_IGNORES --repeat"
   pep8 ${PEP8_OPTS} ${SRC_FILES} 2>&1 | tee $TEE_FN
-  if [ "$?" -ne "0" ]; then
-      echo "Sorry, cannot run pep8 ..."
-      exit 1
-  else
-      echo "Successfully ran pep8 ..."
-      echo "Check '$TEE_FN' for a full report."
-  fi
+  echo "Successfully ran pep8 ..."
+  echo "Check '$TEE_FN' for a full report."
 }
 
 function run_pylint {
@@ -27,20 +24,15 @@ function run_pylint {
   TEE_FN="pylint.log"
   echo "Pylint messages count: "
   pylint ${PYLINT_OPTIONS} ${PYLINT_INCLUDE} 2>&1 | tee $TEE_FN | grep 'anvil/' | wc -l
-  if [ "$?" -ne "0" ]; then
-      echo "Sorry, cannot run pylint ..."
-      exit 1
-  else
-      echo "Successfully ran pylint ..."
-      echo "Check '$TEE_FN' for a full report."
-  fi
+  echo "Successfully ran pylint ..."
+  echo "Check '$TEE_FN' for a full report."
 }
 
 function validate_yaml {
     echo "Validating YAML files..."
     for f in `find conf/ -name *.yaml -type f`; do
         echo "Checking yaml file: $f"
-        tools/validate-yaml.py $f
+        python tools/validate-yaml.py $f
     done
 }
 
