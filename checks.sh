@@ -2,13 +2,6 @@
 
 set -eu
 
-function usage {
-  echo "Usage: $0 [OPTION]..."
-  echo "Run anvils checking suite(s)"
-  echo ""
-  exit
-}
-
 function run_pep8 {
   echo "Running pep8 ..."
   SRC_FILES=`find anvil -type f | grep "py\$"`
@@ -28,7 +21,7 @@ function run_pep8 {
 
 function run_pylint {
   echo "Running pylint ..."
-  PYLINT_OPTIONS="--rcfile=tests/pylintrc --output-format=parseable"
+  PYLINT_OPTIONS="--rcfile=pylintrc --output-format=parseable"
   PYLINT_INCLUDE=`find anvil -type f | grep "py\$"`
   PYLINT_INCLUDE+=" smithy"
   TEE_FN="pylint.log"
