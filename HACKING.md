@@ -23,18 +23,14 @@ This will suffice until a more *official* documentation site can be made.
 ## Style
 
 * Please attempt to follow [pep8] for all code submitted.
- * ``./run_tests.sh  -p``
-
 * Please also attempt to run [pylint] all code submitted.
- * ``./run_tests.sh  -l``
-
 * Please also attempt to run the yaml validation if you adjust any yaml files in the `conf` directory.
- * ``./run_tests.sh  -y``
+
+Use: ``./checks.sh``
 
 ## Environment Variables
 
-* The ``OS_*`` environment variables should be the only ones used for all
-  authentication to OpenStack clients as documented in the [CLI Auth] wiki page.
+* The ``OS_*`` environment variables should be the only ones used for all authentication to OpenStack clients as documented in the [CLI Auth] wiki page.
   
 ## Documentation
 
