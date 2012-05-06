@@ -2,7 +2,7 @@
 
 set -e
 set -u
-sex -x
+set -x
 
 function run_pep8 {
   echo "Running pep8 ..."
