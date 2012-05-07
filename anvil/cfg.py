@@ -92,11 +92,12 @@ class IgnoreMissingConfigParser(iniparse.RawConfigParser):
 
 class ProxyConfig(object):
 
-    def __init__(self, cache_enabled=True):
+    def __init__(self):
         self.read_resolvers = []
         self.set_resolvers = []
-        self.cache_enabled = cache_enabled
-        self.cache = dict()
+        self.opts_cache = dict()
+        self.opts_read = dict()
+        self.opts_set = dict()
 
     def add_read_resolver(self, resolver):
         self.read_resolvers.append(resolver)
@@ -106,11 +107,9 @@ class ProxyConfig(object):
 
     def get(self, section, option):
         # Try the cache first
-        cache_key = None
-        if self.cache_enabled:
-            cache_key = cfg_helpers.make_id(section, option)
-            if cache_key in self.cache:
-                return self.cache[cache_key]
+        cache_key = cfg_helpers.make_id(section, option)
+        if cache_key in self.opts_cache:
+            return self.opts_cache[cache_key]
         # Check the resolvers
         val = None
         for resolver in self.read_resolvers:
@@ -119,8 +118,11 @@ class ProxyConfig(object):
             if val is not None:
                 LOG.debug("Found value %r for %r using resolver %s", cfg_helpers.make_id(section, option), val, resolver)
                 break
-        if self.cache_enabled:
-            self.cache[cache_key] = val
+        # Store in cache and store as read...
+        self.opts_cache[cache_key] = val
+        if section not in self.opts_read:
+            self.opts_read[section] = set()
+        self.opts_read[section].add(option)
         return val
 
     def getdefaulted(self, section, option, default_value=''):
@@ -148,9 +150,12 @@ class ProxyConfig(object):
         for resolver in self.set_resolvers:
             LOG.debug("Setting %r to %s using resolver %s", cfg_helpers.make_id(section, option), value, resolver)
             resolver.set(section, option, value)
-        if self.cache_enabled:
-            cache_key = cfg_helpers.make_id(section, option)
-            self.cache[cache_key] = value
+        cache_key = cfg_helpers.make_id(section, option)
+        self.opts_cache[cache_key] = value
+        if section not in self.opts_set:
+            self.opts_set[section] = set()
+        self.opts_set[section].add(option)
+        return value
 
 
 class ConfigResolver(object):

@@ -43,7 +43,7 @@ def pprint(cfg_cache, group_by, order_by):
         partitions[name] = dict()
 
     # Now put the config cached values into there partitions
-    for (k, v) in self.cache.items():
+    for (k, v) in cfg_cache.items():
         for name in order_by:
             entries = partitions[name]
             if k.startswith(name):
@@ -53,10 +53,13 @@ def pprint(cfg_cache, group_by, order_by):
     # Now print them..
     for name in order_by:
         nice_name = group_by.get(name, "???")
-        LOG.info(nice_name + ":")
+        if not nice_name.endswith(":"):
+            nice_name = nice_name + ":"
         entries = partitions.get(name)
         if entries:
-            map_print(entries)
+            LOG.info(nice_name)
+            if entries:
+                map_print(entries)
 
 
 def make_id(section, option):

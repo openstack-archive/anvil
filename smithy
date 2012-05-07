@@ -37,25 +37,7 @@ from anvil import shell as sh
 from anvil import utils
 
 
-LOG = logging.getLogger(__name__)
-
-# The grouping of our pretty printing of config
-CFG_GROUPS = {
-    cfg_helpers.make_id('db', None): 'Database:',
-    cfg_helpers.make_id('git', None): 'Git:',
-    cfg_helpers.make_id('glance', None): 'Glance:',
-    cfg_helpers.make_id('horizon', None): 'Horizon:',
-    cfg_helpers.make_id('keystone', None): 'Keystone:',
-    cfg_helpers.make_id('nova', None): 'Nova:',
-    cfg_helpers.make_id('passwords', None): 'Passwords:',
-    cfg_helpers.make_id('rabbit', None): 'Rabbit-mq:',
-    # Catch all
-    cfg_helpers.make_id(None, None): 'Misc:',
-}
-
-# The order in which we will pretty print our config cache
-CFG_ORDERING = sorted(CFG_GROUPS.keys())
-CFG_ORDERING.reverse()
+LOG = logging.getLogger()
 
 # Which rc files we will attempt to load
 RC_FILES = [
@@ -219,9 +201,15 @@ def run(args):
     pretty_time = utils.format_time(end_time - start_time)
     LOG.info("It took %s seconds or %s minutes to complete action %s.",
         colorizer.quote(pretty_time['seconds']), colorizer.quote(pretty_time['minutes']), colorizer.quote(action))
-    LOG.info("After action %s your settings which were created or read are:", colorizer.quote(action))
 
-    cfg_helpers.pprint(config.cache, CFG_GROUPS, CFG_ORDERING)
+    LOG.info("After action %s your settings which were read are:", colorizer.quote(action))
+    cfg_groups = dict()
+    for c in config.opts_read.keys():
+        cfg_id = cfg_helpers.make_id(c, None)
+        cfg_groups[cfg_id] = colorizer.quote(c.capitalize(), underline=True)
+    # Now print and order/group by our selection here
+    cfg_ordering = sorted(cfg_groups.keys())
+    cfg_helpers.pprint(config.opts_cache, cfg_groups, cfg_ordering)
     return True
 
 

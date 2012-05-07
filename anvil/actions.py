@@ -230,6 +230,7 @@ class ActionRunner(object):
         self._verify_components(component_order, instances)
         self._warm_components(component_order, instances)
         self._run(persona, component_order, instances)
+        return component_order
 
 
 class InstallRunner(ActionRunner):
