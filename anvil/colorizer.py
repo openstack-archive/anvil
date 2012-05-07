@@ -27,14 +27,14 @@ def is_terminal():
     return sys.stdout.isatty()
 
 
-def quote(data, quote_color='green'):
+def quote(data, quote_color='green', **kargs):
     if not is_terminal():
         return "'%s'" % (data)
     else:
         text = str(data)
         if len(text) == 0:
             text = "''"
-        return color(text, quote_color)
+        return color(text, quote_color, **kargs)
 
 
 def format(data, params):

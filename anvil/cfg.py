@@ -92,11 +92,12 @@ class IgnoreMissingConfigParser(iniparse.RawConfigParser):
 
 class ProxyConfig(object):
 
-    def __init__(self, cache_enabled=True):
+    def __init__(self):
         self.read_resolvers = []
         self.set_resolvers = []
-        self.cache_enabled = cache_enabled
-        self.cache = dict()
+        self.opts_cache = dict()
+        self.opts_read = dict()
+        self.opts_set = dict()
 
     def add_read_resolver(self, resolver):
         self.read_resolvers.append(resolver)
@@ -106,11 +107,9 @@ class ProxyConfig(object):
 
     def get(self, section, option):
         # Try the cache first
-        cache_key = None
-        if self.cache_enabled:
-            cache_key = cfg_helpers.make_id(section, option)
-            if cache_key in self.cache:
-                return self.cache[cache_key]
+        cache_key = cfg_helpers.make_id(section, option)
+        if cache_key in self.opts_cache:
+            return self.opts_cache[cache_key]
         # Check the resolvers
         val = None
         for resolver in self.read_resolvers:
@@ -119,8 +118,11 @@ class ProxyConfig(object):
             if val is not None:
                 LOG.debug("Found value %r for %r using resolver %s", cfg_helpers.make_id(section, option), val, resolver)
                 break
-        if self.cache_enabled:
-            self.cache[cache_key] = val
+        # Store in cache and store as read...
+        self.opts_cache[cache_key] = val
+        if section not in self.opts_read:
+            self.opts_read[section] = set()
+        self.opts_read[section].add(option)
         return val
 
     def getdefaulted(self, section, option, default_value=''):
@@ -144,57 +146,16 @@ class ProxyConfig(object):
     def getboolean(self, section, option):
         return utils.make_bool(self.getdefaulted(section, option))
 
-    def pprint(self, group_by, order_by):
-        """
-        Dumps the given config key value cache in the
-        order that stack is defined to group that cache
-        in a nice and pretty manner.
-
-        Arguments:
-            config_cache: map of items to group and then pretty print
-        """
-        if not self.cache_enabled:
-            return
-
-        LOG.debug("Grouping by %s", group_by.keys())
-        LOG.debug("Ordering by %s", order_by)
-
-        def item_format(key, value):
-            return "\t%s=%s" % (str(key), str(value))
-
-        def map_print(mp):
-            for key in sorted(mp.keys()):
-                value = mp.get(key)
-                LOG.info(item_format(key, value))
-
-        # First partition into our groups
-        partitions = dict()
-        for name in group_by.keys():
-            partitions[name] = dict()
-
-        # Now put the config cached values into there partitions
-        for (k, v) in self.cache.items():
-            for name in order_by:
-                entries = partitions[name]
-                if k.startswith(name):
-                    entries[k] = v
-                    break
-
-        # Now print them..
-        for name in order_by:
-            nice_name = group_by.get(name, "???")
-            LOG.info(nice_name + ":")
-            entries = partitions.get(name)
-            if entries:
-                map_print(entries)
-
     def set(self, section, option, value):
         for resolver in self.set_resolvers:
             LOG.debug("Setting %r to %s using resolver %s", cfg_helpers.make_id(section, option), value, resolver)
             resolver.set(section, option, value)
-        if self.cache_enabled:
-            cache_key = cfg_helpers.make_id(section, option)
-            self.cache[cache_key] = value
+        cache_key = cfg_helpers.make_id(section, option)
+        self.opts_cache[cache_key] = value
+        if section not in self.opts_set:
+            self.opts_set[section] = set()
+        self.opts_set[section].add(option)
+        return value
 
 
 class ConfigResolver(object):
