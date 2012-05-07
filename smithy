@@ -41,10 +41,16 @@ LOG = logging.getLogger(__name__)
 
 # The grouping of our pretty printing of config
 CFG_GROUPS = {
-    cfg_helpers.make_id('passwords', None): 'Passwords',
-    cfg_helpers.make_id('db', None): 'Database info',
+    cfg_helpers.make_id('db', None): 'Database:',
+    cfg_helpers.make_id('git', None): 'Git:',
+    cfg_helpers.make_id('glance', None): 'Glance:',
+    cfg_helpers.make_id('horizon', None): 'Horizon:',
+    cfg_helpers.make_id('keystone', None): 'Keystone:',
+    cfg_helpers.make_id('nova', None): 'Nova:',
+    cfg_helpers.make_id('passwords', None): 'Passwords:',
+    cfg_helpers.make_id('rabbit', None): 'Rabbit-mq:',
     # Catch all
-    cfg_helpers.make_id(None, None): 'Misc configs',
+    cfg_helpers.make_id(None, None): 'Misc:',
 }
 
 # The order in which we will pretty print our config cache
@@ -215,7 +221,7 @@ def run(args):
         colorizer.quote(pretty_time['seconds']), colorizer.quote(pretty_time['minutes']), colorizer.quote(action))
     LOG.info("After action %s your settings which were created or read are:", colorizer.quote(action))
 
-    config.pprint(CFG_GROUPS, CFG_ORDERING)
+    cfg_helpers.pprint(config.cache, CFG_GROUPS, CFG_ORDERING)
     return True
 
 

@@ -144,50 +144,6 @@ class ProxyConfig(object):
     def getboolean(self, section, option):
         return utils.make_bool(self.getdefaulted(section, option))
 
-    def pprint(self, group_by, order_by):
-        """
-        Dumps the given config key value cache in the
-        order that stack is defined to group that cache
-        in a nice and pretty manner.
-
-        Arguments:
-            config_cache: map of items to group and then pretty print
-        """
-        if not self.cache_enabled:
-            return
-
-        LOG.debug("Grouping by %s", group_by.keys())
-        LOG.debug("Ordering by %s", order_by)
-
-        def item_format(key, value):
-            return "\t%s=%s" % (str(key), str(value))
-
-        def map_print(mp):
-            for key in sorted(mp.keys()):
-                value = mp.get(key)
-                LOG.info(item_format(key, value))
-
-        # First partition into our groups
-        partitions = dict()
-        for name in group_by.keys():
-            partitions[name] = dict()
-
-        # Now put the config cached values into there partitions
-        for (k, v) in self.cache.items():
-            for name in order_by:
-                entries = partitions[name]
-                if k.startswith(name):
-                    entries[k] = v
-                    break
-
-        # Now print them..
-        for name in order_by:
-            nice_name = group_by.get(name, "???")
-            LOG.info(nice_name + ":")
-            entries = partitions.get(name)
-            if entries:
-                map_print(entries)
-
     def set(self, section, option, value):
         for resolver in self.set_resolvers:
             LOG.debug("Setting %r to %s using resolver %s", cfg_helpers.make_id(section, option), value, resolver)
