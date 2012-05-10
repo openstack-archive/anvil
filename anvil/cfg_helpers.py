@@ -18,6 +18,7 @@ from anvil import log as logging
 from anvil import settings
 from anvil import shell as sh
 
+PW_SECTION = 'passwords'
 LOG = logging.getLogger(__name__)
 
 
@@ -77,15 +78,15 @@ def find_config(start_locations=None):
 
     Returns: the file location or None if not found
     """
-
     locs = []
     if start_locations:
         locs.extend(start_locations)
+    real_paths = []
     locs.append(settings.CONFIG_LOCATION)
     locs.append(sh.joinpths("/etc", settings.PROG_NAME, settings.CONFIG_NAME))
     for path in locs:
         LOG.debug("Looking for configuration in: %r", path)
         if sh.isfile(path):
             LOG.debug("Found configuration in: %r", path)
-            return path
-    return None
+            real_paths.append(path)
+    return real_paths

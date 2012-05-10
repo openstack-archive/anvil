@@ -23,10 +23,10 @@ import yaml
 from anvil import cfg
 from anvil import colorizer
 from anvil import component as comp
+from anvil import importer
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
-from anvil import importer
 
 from anvil.components import db
 
@@ -46,7 +46,8 @@ ROOT_CONF = "keystone.conf"
 ROOT_SOURCE_FN = "keystone.conf.sample"
 LOGGING_CONF = "logging.conf"
 LOGGING_SOURCE_FN = 'logging.conf.sample'
-CONFIGS = [ROOT_CONF, LOGGING_CONF]
+POLICY_JSON = 'policy.json'
+CONFIGS = [ROOT_CONF, LOGGING_CONF, POLICY_JSON]
 
 # Sync db command
 SYNC_DB_CMD = [sh.joinpths('%BIN_DIR%', 'keystone-manage'),
@@ -104,8 +105,8 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         return list(CONFIGS)
 
     def _setup_db(self):
-        db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
-        db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME, utf8=True)
+        db.drop_db(self.cfg, self.distro, DB_NAME)
+        db.create_db(self.cfg, self.distro, DB_NAME, utf8=True)
 
     def _get_source_config(self, config_fn):
         real_fn = config_fn
@@ -125,18 +126,26 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             contents = config.stringify(fn)
         return contents
 
+    def _config_param_replace(self, config_fn, contents, parameters):
+        if config_fn in [ROOT_CONF, LOGGING_CONF]:
+            # We handle these ourselves
+            return contents
+        else:
+            return comp.PythonInstallComponent._config_param_replace(self, config_fn, contents, parameters)
+
     def _config_adjust_root(self, contents, fn):
-        params = get_shared_params(self.cfg, self.pw_gen)
+        params = get_shared_params(self.cfg)
         with io.BytesIO(contents) as stream:
             config = cfg.IgnoreMissingConfigParser()
             config.readfp(stream)
-            config.set('DEFAULT', 'admin_token', params['SERVICE_TOKEN'])
-            config.set('DEFAULT', 'admin_port', params['KEYSTONE_AUTH_PORT'])
+            config.set('DEFAULT', 'admin_token', params['service_token'])
+            config.set('DEFAULT', 'admin_port', params['endpoints']['admin']['port'])
+            config.set('DEFAULT', 'public_port', params['endpoints']['public']['port'])
             config.set('DEFAULT', 'verbose', True)
             config.set('DEFAULT', 'debug', True)
             config.set('catalog', 'driver', 'keystone.catalog.backends.sql.Catalog')
             config.remove_option('DEFAULT', 'log_config')
-            config.set('sql', 'connection', db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME, utf8=True))
+            config.set('sql', 'connection', db.fetch_dbdsn(self.cfg, DB_NAME, utf8=True))
             config.set('ec2', 'driver', "keystone.contrib.ec2.backends.sql.Ec2")
             config.set('filter:s3_extension', 'paste.filter_factory', "keystone.contrib.s3:S3Extension.factory")
             config.set('pipeline:admin_api', 'pipeline', ('token_auth admin_token_auth xml_body '
@@ -153,17 +162,14 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             return contents
 
     def warm_configs(self):
-        get_shared_params(self.cfg, self.pw_gen)
+        get_shared_params(self.cfg)
 
     def _get_param_map(self, config_fn):
         # These be used to fill in the configuration/cmds +
         # params with actual values
         mp = comp.PythonInstallComponent._get_param_map(self, config_fn)
-        mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
-        mp['DEST'] = self.app_dir
         mp['BIN_DIR'] = self.bin_dir
         mp['CONFIG_FILE'] = sh.joinpths(self.cfg_dir, ROOT_CONF)
-        mp.update(get_shared_params(self.cfg, self.pw_gen))
         return mp
 
 
@@ -183,7 +189,7 @@ class KeystoneRuntime(comp.PythonRuntime):
             LOG.debug("Initializing with %s", self.init_what)
             # Late load since its using a client lib that is only avail after install...
             init_cls = importer.import_entry_point('anvil.helpers.initializers:Keystone')
-            initer = init_cls(self)
+            initer = init_cls(self.cfg)
             initer.initialize(**self.init_what)
             # Touching this makes sure that we don't init again
             # TODO add trace
@@ -203,58 +209,72 @@ class KeystoneRuntime(comp.PythonRuntime):
         return APP_OPTIONS.get(app)
 
 
-def get_shared_params(config, pw_gen,
-                     service_user_name=None, service_tenant_name='service'):
+def get_shared_params(cfg, service_user=None):
 
     mp = dict()
-    host_ip = config.get('host', 'ip')
 
-    mp['SERVICE_TENANT_NAME'] = service_tenant_name
-    if service_user_name:
-        mp['SERVICE_USERNAME'] = str(service_user_name)
+    # Tenants and users
+    mp['tenants'] = ['admin', 'service', 'demo']
+    mp['users'] = ['admin', 'demo']
 
-    mp['ADMIN_USER_NAME'] = 'admin'
-    mp['ADMIN_TENANT_NAME'] = mp['ADMIN_USER_NAME']
-    mp['DEMO_TENANT_NAME'] = 'demo'
-    mp['DEMO_USER_NAME'] = mp['DEMO_TENANT_NAME']
+    mp['demo_tenant'] = 'demo'
+    mp['demo_user'] = 'demo'
+
+    mp['admin_tenant'] = 'admin'
+    mp['admin_user'] = 'admin'
+
+    mp['service_tenant'] = 'service'
+    if service_user:
+        mp['users'].append(service_user)
+        mp['service_user'] = service_user
 
     # Tokens and passwords
-    mp['SERVICE_TOKEN'] = pw_gen.get_password(
+    mp['service_token'] = cfg.get_password(
         "service_token",
         'the service admin token',
         )
-    mp['ADMIN_PASSWORD'] = pw_gen.get_password(
+    mp['admin_password'] = cfg.get_password(
         'horizon_keystone_admin',
         'the horizon and keystone admin',
         length=20,
         )
-    mp['SERVICE_PASSWORD'] = pw_gen.get_password(
+    mp['service_password'] = cfg.get_password(
         'service_password',
         'service authentication',
         )
 
-    # Components of the auth endpoint
-    keystone_auth_host = config.getdefaulted('keystone', 'keystone_auth_host', host_ip)
-    mp['KEYSTONE_AUTH_HOST'] = keystone_auth_host
-    keystone_auth_port = config.getdefaulted('keystone', 'keystone_auth_port', '35357')
-    mp['KEYSTONE_AUTH_PORT'] = keystone_auth_port
-    keystone_auth_proto = config.getdefaulted('keystone', 'keystone_auth_protocol', 'http')
-    mp['KEYSTONE_AUTH_PROTOCOL'] = keystone_auth_proto
+    host_ip = cfg.get('host', 'ip')
 
-    # Components of the service endpoint
-    keystone_service_host = config.getdefaulted('keystone', 'keystone_service_host', host_ip)
-    mp['KEYSTONE_SERVICE_HOST'] = keystone_service_host
-    keystone_service_port = config.getdefaulted('keystone', 'keystone_service_port', '5000')
-    mp['KEYSTONE_SERVICE_PORT'] = keystone_service_port
-    keystone_service_proto = config.getdefaulted('keystone', 'keystone_service_protocol', 'http')
-    mp['KEYSTONE_SERVICE_PROTOCOL'] = keystone_service_proto
+    # Components of the admin endpoint
+    keystone_auth_host = cfg.getdefaulted('keystone', 'keystone_auth_host', host_ip)
+    keystone_auth_port = cfg.getdefaulted('keystone', 'keystone_auth_port', '35357')
+    keystone_auth_proto = cfg.getdefaulted('keystone', 'keystone_auth_protocol', 'http')
+    keystone_auth_uri = utils.make_url(keystone_auth_proto,
+                            keystone_auth_host, keystone_auth_port, path="v2.0")
 
-    # Uri's of the http/https endpoints
-    mp['AUTH_ENDPOINT'] = urlunparse((keystone_auth_proto,
-                                         "%s:%s" % (keystone_auth_host, keystone_auth_port),
-                                         "v2.0", "", "", ""))
-    mp['SERVICE_ENDPOINT'] = urlunparse((keystone_service_proto,
-                                         "%s:%s" % (keystone_service_host, keystone_service_port),
-                                         "v2.0", "", "", ""))
+    # Components of the public+internal endpoint
+    keystone_service_host = cfg.getdefaulted('keystone', 'keystone_service_host', host_ip)
+    keystone_service_port = cfg.getdefaulted('keystone', 'keystone_service_port', '5000')
+    keystone_service_proto = cfg.getdefaulted('keystone', 'keystone_service_protocol', 'http')
+    keystone_service_uri = utils.make_url(keystone_service_proto,
+                            keystone_service_host, keystone_service_port, path="v2.0")
+
+    mp['endpoints'] = {
+        'admin': {
+            'uri': keystone_auth_uri,
+            'port': keystone_auth_port,
+            'protocol': keystone_auth_proto,
+            'host': keystone_auth_host,
+        },
+        'public': {
+            'uri': keystone_service_uri,
+            'port': keystone_service_port,
+            'protocol': keystone_service_proto,
+            'host': keystone_service_host,
+        },
+    }
+    mp['endpoints']['internal'] = dict(mp['endpoints']['public'])
+
+    LOG.debug("Keystone shared params: %s", mp)
 
     return mp

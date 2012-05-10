@@ -30,24 +30,26 @@ LOG = logging.getLogger(__name__)
 
 class Keystone(object):
 
-    def __init__(self, owner):
-        self.owner = weakref.proxy(owner)
+    def __init__(self, cfg):
         self.replacements = dict()
-        self.replacements.update(keystone.get_shared_params(self.owner.cfg, self.owner.pw_gen))
-        self.replacements.update(glance.get_shared_params(self.owner.cfg))
-        self.replacements['SERVICE_HOST'] = owner.cfg.get('host', 'ip')
-        self.client = key_client.Client(token=self.replacements['SERVICE_TOKEN'],
-                                        endpoint=self.replacements['AUTH_ENDPOINT'])
+        self.replacements['keystone'] = keystone.get_shared_params(cfg)
+        self.replacements['glance'] = glance.get_shared_params(cfg)
+        self.replacements['SERVICE_HOST'] = cfg.get('host', 'ip')
+        self.client = key_client.Client(token=self.replacements['keystone']['service_token'],
+            endpoint=self.replacements['keystone']['endpoints']['admin']['uri'])
 
     def _do_replace(self, text):
         return utils.param_replace(text, self.replacements, ignore_missing=True)
 
     def _create_tenants(self, tenants):
         tenants_made = dict()
-        for (name, desc) in tenants.items():
+        for entry in tenants:
+            name = entry['name']
+            if name in tenants_made:
+                raise RuntimeError("Already created tenant %s" % (name))
             tenant = {
                 'tenant_name': name,
-                'description': desc,
+                'description': entry['description'],
                 'enabled': True,
             }
             LOG.debug("Creating tenant %s", tenant)
@@ -56,9 +58,12 @@ class Keystone(object):
 
     def _create_users(self, users, tenants):
         created = dict()
-        for (name, info) in users.items():
-            password = self._do_replace(info['password'])
-            email = info.get('email', "none@none.com")
+        for entry in users:
+            name = entry['name']
+            if name in created:
+                raise RuntimeError("Already created user %s" % (name))
+            password = self._do_replace(entry['password'])
+            email = entry.get('email', "none@none.com")
             user = {
                 'name': name,
                 'password': password,
@@ -71,15 +76,28 @@ class Keystone(object):
     def _create_roles(self, roles):
         roles_made = dict()
         for role in roles:
+            if role in roles_made:
+                raise RuntimeError("Already created role %s" % (role))
             LOG.debug("Creating role %s", role)
             roles_made[role] = self.client.roles.create(role)
         return roles_made
 
     def _connect_roles(self, users, roles_made, tenants_made, users_made):
-        for name, info in users.items():
+        roles_attached = set()
+        for info in users:
+            name = info['name']
+            if name in roles_attached:
+                raise RuntimeError("Already attached roles to user %s" % (name))
+            roles_attached.add(name)
             user = users_made[name]
             for role_entry in info['roles']:
                 (role_name, sep, tenant_name) = role_entry.partition(":")
+                if not role_name or not tenant_name:
+                    raise RuntimeError("Role or tenant name missing for user %s" % (name))
+                if not role_name in roles_made:
+                    LOG.warn("Role %s not previously created for user %s", role_name, name)
+                if not tenant_name in tenants_made:
+                    LOG.warn("Tenant %s not previously created for user %s", tenant_name, name)
                 user_role = {
                     'user': user,
                     'role': roles_made[role_name],
@@ -90,7 +108,10 @@ class Keystone(object):
 
     def _create_services(self, services):
         created_services = dict()
-        for (name, info) in services.items():
+        for info in services:
+            name = info['name']
+            if name in created_services:
+                raise RuntimeError("Already created service %s" % (name))
             service = {
                 'name': name,
                 'service_type': info['type'],

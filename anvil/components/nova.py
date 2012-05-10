@@ -286,7 +286,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         if driver_canon == 'xenserver':
             warm_pws.append(('xenapi_connection', 'the Xen API connection'))
         for pw_key, pw_prompt in warm_pws:
-            self.pw_gen.get_password(pw_key, pw_prompt)
+            self.cfg.get_password(pw_key, pw_prompt)
 
     def _setup_network_initer(self):
         LOG.info("Configuring nova network initializer template: %s", colorizer.quote(NET_INIT_CONF))
@@ -327,8 +327,8 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         self.tracewriter.file_touched(tgt_fn)
 
     def _setup_db(self):
-        db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
-        db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
+        db.drop_db(self.cfg, self.distro, DB_NAME)
+        db.create_db(self.cfg, self.distro, DB_NAME)
 
     def _generate_nova_conf(self, root_wrapped):
         conf_fn = self._get_target_config_name(API_CONF)
@@ -352,20 +352,23 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         return (fn, sh.load_file(fn))
 
     def _config_adjust_paste(self, contents, fn):
-        params = keystone.get_shared_params(self.cfg, self.pw_gen, 'nova')
+        params = keystone.get_shared_params(self.cfg, 'nova')
         with io.BytesIO(contents) as stream:
             config = cfg.IgnoreMissingConfigParser()
             config.readfp(stream)
-            config.set('filter:authtoken', 'auth_host', params['KEYSTONE_AUTH_HOST'])
-            config.set('filter:authtoken', 'auth_port', params['KEYSTONE_AUTH_PORT'])
-            config.set('filter:authtoken', 'auth_protocol', params['KEYSTONE_AUTH_PROTOCOL'])
-            config.set('filter:authtoken', 'auth_uri', params['SERVICE_ENDPOINT'])
-            config.set('filter:authtoken', 'admin_tenant_name', params['SERVICE_TENANT_NAME'])
-            config.set('filter:authtoken', 'admin_user', params['SERVICE_USERNAME'])
-            config.set('filter:authtoken', 'admin_password', params['SERVICE_PASSWORD'])
-            config.set('filter:authtoken', 'service_host', params['KEYSTONE_SERVICE_HOST'])
-            config.set('filter:authtoken', 'service_port', params['KEYSTONE_SERVICE_PORT'])
-            config.set('filter:authtoken', 'service_protocol', params['KEYSTONE_SERVICE_PROTOCOL'])
+            config.set('filter:authtoken', 'service_host', params['endpoints']['internal']['host'])
+            config.set('filter:authtoken', 'service_port', params['endpoints']['internal']['port'])
+            config.set('filter:authtoken', 'service_protocol', params['endpoints']['internal']['protocol'])
+            config.set('filter:authtoken', 'service_uri', params['endpoints']['internal']['uri'])
+
+            config.set('filter:authtoken', 'admin_tenant_name', params['service_tenant'])
+            config.set('filter:authtoken', 'admin_user', params['service_tenant'])
+            config.set('filter:authtoken', 'admin_password', params['admin_password'])
+
+            config.set('filter:authtoken', 'auth_host', params['endpoints']['admin']['host'])
+            config.set('filter:authtoken', 'auth_port', params['endpoints']['admin']['port'])
+            config.set('filter:authtoken', 'auth_protocol', params['endpoints']['admin']['protocol'])
+            config.set('filter:authtoken', 'auth_uri', params['endpoints']['admin']['uri'])
             contents = config.stringify(fn)
         return contents
 
@@ -385,6 +388,13 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
             return self._config_adjust_logging(contents, name)
         else:
             return contents
+
+    def _config_param_replace(self, config_fn, contents, parameters):
+        if config_fn in [PASTE_CONF, LOGGING_CONF, API_CONF]:
+            # We handle these ourselves
+            return contents
+        else:
+            return comp.PythonInstallComponent._config_param_replace(self, config_fn, contents, parameters)
 
     def _get_param_map(self, config_fn):
         mp = comp.PythonInstallComponent._get_param_map(self, config_fn)
@@ -569,7 +579,6 @@ class NovaConfConfigurator(object):
     def __init__(self, installer):
         self.installer = weakref.proxy(installer)
         self.cfg = installer.cfg
-        self.pw_gen = installer.pw_gen
         self.instances = installer.instances
         self.component_dir = installer.component_dir
         self.app_dir = installer.app_dir
@@ -663,7 +672,7 @@ class NovaConfConfigurator(object):
         nova_conf.add('my_ip', hostip)
 
         # Setup your sql connection
-        nova_conf.add('sql_connection', db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME))
+        nova_conf.add('sql_connection', db.fetch_dbdsn(self.cfg, DB_NAME))
 
         # Configure anything libvirt related?
         virt_driver = canon_virt_driver(self._getstr('virt_driver'))

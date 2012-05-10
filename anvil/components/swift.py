@@ -109,7 +109,7 @@ class SwiftInstaller(comp.PythonInstallComponent):
 
     def warm_configs(self):
         for (pw_key, prompt) in WARMUP_PWS:
-            self.pw_gen.get_password(pw_key, prompt)
+            self.cfg.get_password(pw_key, prompt)
 
     def _get_param_map(self, config_fn):
         return {

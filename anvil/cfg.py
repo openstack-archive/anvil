@@ -98,12 +98,31 @@ class ProxyConfig(object):
         self.opts_cache = dict()
         self.opts_read = dict()
         self.opts_set = dict()
+        self.pw_resolvers = []
+
+    def add_password_resolver(self, resolver):
+        self.pw_resolvers.append(resolver)
 
     def add_read_resolver(self, resolver):
         self.read_resolvers.append(resolver)
 
     def add_set_resolver(self, resolver):
         self.set_resolvers.append(resolver)
+
+    def get_password(self, option, prompt_text='', length=8, **kwargs):
+        password = ''
+        for resolver in self.pw_resolvers:
+            LOG.debug("Looking up password for %s using instance %s", option, resolver)
+            found_password = resolver.get_password(option,
+                                                prompt_text=prompt_text,
+                                                length=length, **kwargs)
+            if found_password is not None and len(found_password):
+                password = found_password
+                break
+        if len(password) == 0:
+            LOG.warn("Password provided for %r is empty", option)
+        self.set(cfg_helpers.PW_SECTION, option, password)
+        return password
 
     def get(self, section, option):
         # Try the cache first
@@ -114,12 +133,15 @@ class ProxyConfig(object):
         val = None
         for resolver in self.read_resolvers:
             LOG.debug("Looking for %r using resolver %s", cfg_helpers.make_id(section, option), resolver)
-            val = resolver.get(section, option)
-            if val is not None:
-                LOG.debug("Found value %r for %r using resolver %s", cfg_helpers.make_id(section, option), val, resolver)
+            found_val = resolver.get(section, option)
+            if found_val is not None:
+                LOG.debug("Found value %r for section %r using resolver %s", found_val, cfg_helpers.make_id(section, option), resolver)
+                val = found_val
                 break
-        # Store in cache and store as read...
-        self.opts_cache[cache_key] = val
+        # Store in cache if we found something
+        if val is not None:
+            self.opts_cache[cache_key] = val
+        # Mark as read
         if section not in self.opts_read:
             self.opts_read[section] = set()
         self.opts_read[section].add(option)

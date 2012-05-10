@@ -176,7 +176,7 @@ Apache configuration
 We need to adjust the configuration of ANVIL to reflect the above
 user (``iff you created a user``).
 
-Open ``conf/stack.ini``
+Open ``conf/anvil.ini``
 
 **Change section:**
 

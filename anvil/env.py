@@ -31,7 +31,7 @@ def set(key, value):
     # See: from http://docs.python.org/library/os.html
     # Calling putenv() directly does not change os.environ, so it's better to modify os.environ.
     if key is not None:
-        LOG.audit("Setting environment key %r to value %r" % (str(key), str(value)))
+        # LOG.audit("Setting environment key %r to value %r" % (str(key), str(value)))
         os.environ[str(key)] = str(value)
 
 
@@ -39,11 +39,12 @@ def get_key(key, default_value=None):
     if not key:
         return default_value
     key = str(key)
-    LOG.debug("Looking up environment variable %r" % (key))
+    # LOG.debug("Looking up environment variable %r" % (key))
     value = get().get(key)
     if value is None:
-        LOG.debug("Could not find anything in environment variable %r" % (key))
+        # LOG.debug("Could not find anything in environment variable %r" % (key))
         value = default_value
     else:
-        LOG.audit("Found %r in environment variable %r" % (value, key))
+        pass
+        # LOG.audit("Found %r in environment variable %r" % (value, key))
     return value

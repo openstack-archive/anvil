@@ -20,9 +20,9 @@ import getpass
 import logging
 import os
 
-LOG = logging.getLogger(__name__)
+from anvil import cfg_helpers 
 
-PW_SECTION = 'passwords'
+LOG = logging.getLogger(__name__)
 
 
 class InputPassword(object):
@@ -60,7 +60,7 @@ class ConfigPassword(object):
         self.cfg = cfg
 
     def get_password(self, option, **kargs):
-        return self.cfg.get(PW_SECTION, option)
+        return self.cfg.get(cfg_helpers.PW_SECTION, option)
 
 
 class RandomPassword(object):
@@ -77,42 +77,3 @@ class RandomPassword(object):
 
     def get_password(self, option, **kargs):
         return self.generate_random(int(kargs.get('length', 8)))
-
-
-class PasswordGenerator(object):
-
-    def __init__(self, cfg, prompt_user=True):
-        self.cfg = cfg
-        self.lookups = []
-        self.lookups.append(ConfigPassword(cfg))
-        if prompt_user:
-            self.lookups.append(InputPassword(cfg))
-        self.lookups.append(RandomPassword(cfg))
-
-    def extract(self, option):
-        return self.cfg.get(PW_SECTION, option)
-
-    def _set_through(self, option, value):
-        self.cfg.set(PW_SECTION, option, value)
-
-    def get_password(self, option, prompt_text='', length=8):
-        """Returns a password identified by the configuration location."""
-
-        LOG.debug('Looking for password for %r using prompt %r', option, prompt_text)
-
-        # Activate our lookup chain
-        password = ''
-        for lookup in self.lookups:
-            LOG.debug("Looking up password using instance %s", lookup)
-            password = lookup.get_password(option, prompt_text=prompt_text, length=length)
-            if password is not None and len(password):
-                break
-
-        # Update via set through to the config
-        self._set_through(option, password)
-
-        # Just warn if its empty (oh well...)
-        if len(password) == 0:
-            LOG.warn("Password provided for %r is empty", option)
-
-        return password

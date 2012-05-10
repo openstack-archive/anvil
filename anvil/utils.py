@@ -25,6 +25,8 @@ import socket
 import tempfile
 
 import distutils.version
+from urlparse import urlunparse
+
 import netifaces
 import progressbar
 
@@ -40,7 +42,7 @@ from anvil import version
 # token to be subbed. The replacer will check which it got and
 # act accordingly. Note that we need the MULTILINE flag
 # for the comment checks to work in a string containing newlines
-PARAM_SUB_REGEX = re.compile(r"#.*$|%([\w\d]+?)%", re.MULTILINE)
+PARAM_SUB_REGEX = re.compile(r"#(.*)$|%([\w\d/\.]+?)%", re.MULTILINE)
 EXT_COMPONENT = re.compile(r"^\s*([\w-]+)(?:\((.*)\))?\s*$")
 MONTY_PYTHON_TEXT_RE = re.compile("([a-z0-9A-Z\?!.,'\"]+)")
 DEF_IP = "127.0.0.1"
@@ -93,6 +95,27 @@ def add_header(fn, contents):
     if contents:
         lines.append(contents)
     return joinlinesep(*lines)
+
+
+def make_url(scheme, host, port=None,
+                path='', params='', query='', fragment=''):
+
+    pieces = []
+    pieces.append(scheme or '')
+
+    netloc = ''
+    if host:
+        netloc = str(host)
+    if port is not None:
+        netloc += ":%s" % (port)
+
+    pieces.append(netloc or '')
+    pieces.append(path or '')
+    pieces.append(params or '')
+    pieces.append(query or '')
+    pieces.append(fragment or '')
+
+    return urlunparse(pieces)
 
 
 def get_from_path(items, path, quiet=True):
@@ -350,18 +373,14 @@ def param_replace_list(values, replacements, ignore_missing=False):
 def find_params(text):
     params_found = set()
     if not text:
-        return params_found
+        text = ''
 
     def finder(match):
-        org_txt = match.group(0)
-        # Check if it's a comment, if so just return what it was and ignore
-        # any tokens that were there
-        if org_txt.startswith("#"):
-            return org_txt
-        param_name = match.group(1)
-        if param_name not in params_found:
+        param_name = match.group(2)
+        if param_name and param_name not in params_found:
             params_found.add(param_name)
-        return org_txt
+        # Just finding, not modifying...
+        return match.group(0)
 
     PARAM_SUB_REGEX.sub(finder, text)
     return params_found
@@ -373,7 +392,7 @@ def param_replace(text, replacements, ignore_missing=False):
         replacements = dict()
 
     if not text:
-        return ""
+        text = ""
 
     if ignore_missing:
         LOG.debug("Performing parameter replacements (ignoring missing) on text %r" % (text))
@@ -386,25 +405,23 @@ def param_replace(text, replacements, ignore_missing=False):
 
     def replacer(match):
         org_txt = match.group(0)
-        param_name = match.group(1)
-        # Check if it's a comment,
-        # if so just return what it was and ignore
-        # any tokens that were there
-        if org_txt.startswith('#'):
+        # Its a comment, leave it be
+        if match.group(1):
             return org_txt
-        replacer = replacements.get(param_name)
+        param_name = match.group(2) 
+        # Find the replacement, if we can
+        replacer = get_from_path(replacements, param_name)
         if replacer is None and ignore_missing:
             replacer = org_txt
         elif replacer is None and not ignore_missing:
-            msg = "No replacement found for parameter %r" % (org_txt)
+            msg = "No replacement found for parameter %r in %r" % (param_name, org_txt)
             raise excp.NoReplacementException(msg)
         else:
-            replacer = str(replacer)
-            LOG.debug("Replacing %r with %r" % (org_txt, replacer))
-        return replacer
+            LOG.debug("Replacing %r with %r in %r", param_name, replacer, org_txt)
+        return str(replacer)
 
     replaced_text = PARAM_SUB_REGEX.sub(replacer, text)
-    LOG.debug("Replacement/s resulted in text %r" % (replaced_text))
+    LOG.debug("Replacement/s resulted in text %r", replaced_text)
     return replaced_text
 
 
