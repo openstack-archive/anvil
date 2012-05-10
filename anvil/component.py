@@ -442,7 +442,10 @@ class PkgUninstallComponent(ComponentBase):
                 utils.log_iterable(dirs_made, logger=LOG,
                     header="Removing %s created directories" % (len(dirs_made)))
                 for dir_name in dirs_made:
-                    sh.deldir(dir_name, run_as_root=True)
+                    if sh.isdir(dir_name):
+                        sh.deldir(dir_name, run_as_root=True)
+                    else:
+                        LOG.warn("No directory found at %s - skipping", colorizer.quote(dir_name, quote_color='red'))
 
 
 class PythonUninstallComponent(PkgUninstallComponent):
@@ -485,7 +488,10 @@ class PythonUninstallComponent(PkgUninstallComponent):
                 header="Uninstalling %s python setups" % (len(py_listing_dirs)))
             unsetup_cmd = self.distro.get_command('python', 'unsetup')
             for where in py_listing_dirs:
-                sh.execute(*unsetup_cmd, cwd=where, run_as_root=True)
+                if sh.isdir(where):
+                    sh.execute(*unsetup_cmd, cwd=where, run_as_root=True)
+                else:
+                    LOG.warn("No python directory found at %s - skipping", colorizer.quote(where, quote_color='red'))
 
 
 class ProgramRuntime(ComponentBase):
@@ -509,6 +515,12 @@ class ProgramRuntime(ComponentBase):
         pass
 
     def post_start(self):
+        pass
+
+    def post_stop(self, apps_started):
+        pass
+
+    def pre_stop(self, apps_started):
         pass
 
     def _fetch_run_type(self):
@@ -579,6 +591,7 @@ class ProgramRuntime(ComponentBase):
 
     def stop(self):
         apps_started = self.tracereader.apps_started()
+        self.pre_stop(apps_started)
         to_kill = self._locate_killers(apps_started)
         for (app_name, killer) in to_kill:
             killer.stop(app_name)
@@ -588,6 +601,7 @@ class ProgramRuntime(ComponentBase):
             for (app_name, killer) in to_kill:
                 LOG.debug("Unconfiguring %r after successful stopping", app_name)
                 killer.unconfigure()
+        self.post_stop(apps_started)
         return len(to_kill)
 
     def status(self):

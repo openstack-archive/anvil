@@ -20,13 +20,12 @@ import io
 
 from anvil import cfg
 from anvil import component as comp
+from anvil import importer
 from anvil import log as logging
 from anvil import shell as sh
 
 from anvil.components import db
 from anvil.components import keystone
-
-from anvil.image import uploader
 
 LOG = logging.getLogger(__name__)
 
@@ -136,9 +135,6 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
             config.set('filter:authtoken', 'admin_tenant_name', params['SERVICE_TENANT_NAME'])
             config.set('filter:authtoken', 'admin_user', params['SERVICE_USERNAME'])
             config.set('filter:authtoken', 'admin_password', params['SERVICE_PASSWORD'])
-            config.set('filter:authtoken', 'service_host', params['KEYSTONE_SERVICE_HOST'])
-            config.set('filter:authtoken', 'service_port', params['KEYSTONE_SERVICE_PORT'])
-            config.set('filter:authtoken', 'service_protocol', params['KEYSTONE_SERVICE_PROTOCOL'])
             contents = config.stringify(fn)
         return contents
 
@@ -186,6 +182,11 @@ class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
         self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
+        self.uploader = None
+        if 'no-load-images' not in self.options:
+            # Late load so its not always needed....
+            uploader_cls = importer.import_entry_point('anvil.helpers.uploader:Service')
+            self.uploader = uploader_cls(self)
 
     def _get_apps_to_start(self):
         apps = list()
@@ -201,25 +202,15 @@ class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
 
     def _get_image_urls(self):
         uris = self.cfg.getdefaulted('glance', 'image_urls', '').split(",")
-        cleaned_uris = list()
-        for uri in uris:
-            uri = uri.strip()
-            if uri:
-                cleaned_uris.append(uri)
-        return cleaned_uris
+        return [u.strip() for u in uris if len(u.strip())]
 
     def post_start(self):
         comp.PythonRuntime.post_start(self)
-        if 'no-load-images' in self.options:
-            pass
-        else:
+        if self.uploader:
             # Install any images that need activating...
-            # TODO: make this less cheesy - need to wait till glance goes online
             LOG.info("Waiting %s seconds so that glance can start up before image install." % (self.wait_time))
             sh.sleep(self.wait_time)
-            upload_cfg = get_shared_params(self.cfg)
-            upload_cfg.update(keystone.get_shared_params(self.cfg, self.pw_gen, 'glance'))
-            uploader.Service(upload_cfg).install(self._get_image_urls())
+            self.uploader.install(self._get_image_urls())
 
 
 def get_shared_params(config):

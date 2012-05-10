@@ -180,6 +180,13 @@ components:
             running: anvil.components.glance:GlanceRuntime
             uninstall: anvil.components.glance:GlanceUninstaller
         packages:
+        # These 2 seem needed for .venv building
+        -   name: libxslt1-dev
+            removable: true
+            version: 1.1*
+        -   name: libxml2-dev
+            removable: true
+            version: 2.7*
         -   name: python-eventlet
             removable: true
             version: 0.9*

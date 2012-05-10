@@ -17,6 +17,10 @@
 
 import sys
 
+from anvil import log as logging
+
+LOG = logging.getLogger(__name__)
+
 
 def partition(fullname):
     """
@@ -34,22 +38,23 @@ def import_entry_point(fullname):
     """
     (module_name, classname) = partition(fullname)
     try:
+        LOG.debug("Importing module: %s", module_name)
         module = __import__(module_name)
         for submodule in module_name.split('.')[1:]:
             module = getattr(module, submodule)
         cls = getattr(module, classname)
-    except (ImportError, AttributeError) as err:
+        LOG.debug("Importing class under that module: %s", classname)
+    except (ImportError, AttributeError, ValueError) as err:
         raise RuntimeError('Could not load entry point %s: %s' %
                            (fullname, err))
     return cls
 
 
-def import_module(module_name, quiet=True):
+def import_module(module_name):
     try:
         __import__(module_name)
+        LOG.debug("Importing module: %s", module_name)
         return sys.modules.get(module_name, None)
-    except ImportError:
-        if quiet:
-            return None
-        else:
-            raise
+    except ImportError as err:
+        raise RuntimeError('Could not load module %s: %s' %
+                           (module_name, err))

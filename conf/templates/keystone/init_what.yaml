@@ -1,0 +1,150 @@
+---
+endpoints:
+    # Swift endpoint
+    # TODO - make this fully parameterized
+-   admin_url: http://%SERVICE_HOST%:8080/v1/AUTH_%(tenant_id)s
+    internal_url: http://%SERVICE_HOST%:8080/
+    public_url: http://%SERVICE_HOST%:8080/v1/AUTH_%(tenant_id)s
+    region: RegionOne
+    service: swift
+    # Nova ec2/api endpoint
+    # TODO - make this fully parameterized
+-   admin_url: http://%SERVICE_HOST%:8773/services/Admin
+    internal_url: http://%SERVICE_HOST%:8773/services/Cloud
+    public_url: http://%SERVICE_HOST%:8773/services/Cloud
+    region: RegionOne
+    service: ec2
+    # Glance endpoint
+    # TODO - make this fully parameterized
+-   admin_url: http://%SERVICE_HOST%:9292
+    internal_url: http://%SERVICE_HOST%:9292
+    public_url: http://%SERVICE_HOST%:9292
+    region: RegionOne
+    service: glance
+    # Nova volume endpoint
+    # TODO - make this fully parameterized
+-   admin_url: http://%SERVICE_HOST%:8776/v1/%(tenant_id)s
+    internal_url: http://%SERVICE_HOST%:8776/v1/%(tenant_id)s
+    public_url: http://%SERVICE_HOST%:8776/v1/%(tenant_id)s
+    region: RegionOne
+    service: volume
+    # Nova s3 endpoint
+    # TODO - make this fully parameterized
+-   admin_url: http://%SERVICE_HOST%:3333
+    internal_url: http://%SERVICE_HOST%:3333
+    public_url: http://%SERVICE_HOST%:3333
+    region: RegionOne
+    service: s3
+    # Keystone endpoint
+    # TODO - make this fully parameterized
+-   admin_url: http://%SERVICE_HOST%:$(admin_port)s/v2.0
+    internal_url: http://%SERVICE_HOST%:$(public_port)s/v2.0
+    public_url: http://%SERVICE_HOST%:$(public_port)s/v2.0
+    region: RegionOne
+    service: keystone
+    # Nova api endpoint
+    # TODO - make this fully parameterized
+-   admin_url: http://%SERVICE_HOST%:8774/v2/%(tenant_id)s
+    internal_url: http://%SERVICE_HOST%:8774/v2/%(tenant_id)s
+    public_url: http://%SERVICE_HOST%:8774/v2/%(tenant_id)s
+    region: RegionOne
+    service: nova
+roles:
+- admin
+- anotherrole
+- KeystoneAdmin
+- KeystoneServiceAdmin
+- Member
+- ResellerAdmin
+services:
+    ec2:
+        description: EC2 Compatibility Layer
+        type: ec2
+    glance:
+        description: Glance Image Service
+        type: image
+    keystone:
+        description: Keystone Identity Service
+        type: identity
+    nova:
+        description: Nova Compute Service
+        type: compute
+    swift:
+        description: Object Storage Service
+        type: object-store
+    s3:
+        description: S3 Service
+        type: s3
+    volume:
+        description: Nova Volume Service
+        type: volume
+tenants:
+    admin: Admin tenant
+    demo: Demo tenant
+    service: Service tenant
+users:
+    demo:
+        email: demo@example.com
+        password: '%ADMIN_PASSWORD%'
+        roles:
+        # Role => Tenant
+          - anotherrole:demo
+          - Member:demo
+        tenants:
+          - demo
+    admin:
+        email: admin@example.com
+        password: '%ADMIN_PASSWORD%'
+        roles:
+        # Role => Tenant
+        - admin:admin
+        - admin:demo
+        - KeystoneAdmin:admin
+        - KeystoneServiceAdmin:admin
+        tenants:
+        - admin
+        - service
+        - demo
+    ec2:
+        email: ec2@example.com
+        password: '%SERVICE_PASSWORD%'
+        roles:
+        # Role => Tenant
+        - admin:service
+        tenants:
+        - service
+    glance:
+        email: glance@example.com
+        password: '%SERVICE_PASSWORD%'
+        roles:
+        # Role => Tenant
+        - admin:service
+        tenants:
+        - service
+    nova:
+        email: nova@example.com
+        password: '%SERVICE_PASSWORD%'
+        roles:
+        # Role => Tenant
+        - admin:service
+        - ResellerAdmin:service
+        tenants:
+        - service
+    quantum:
+        email: quantum@example.com
+        password: '%SERVICE_PASSWORD%'
+        roles:
+        # Role => Tenant
+        - admin:service
+        tenants:
+        - service
+    swift:
+        email: swift@example.com
+        password: '%SERVICE_PASSWORD%'
+        roles:
+        # Role => Tenant
+        - admin:service
+        tenants:
+        - service
+...
+
