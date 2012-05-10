@@ -23,7 +23,14 @@ from anvil import utils
 
 from anvil.components import keystone
 from anvil.components import glance
-from anvil.image import uploader
+
+from anvil.helpers import uploader
+
+
+class CfgProxy:
+    def __init__(self, cfg, pw_gen):
+        self.cfg = cfg
+        self.pw_gen = pw_gen
 
 
 def get_config():
@@ -35,10 +42,7 @@ def get_config():
     config.add_read_resolver(cfg.EnvResolver())
     config.add_read_resolver(cfg.ConfigResolver(base_config))
     pw_gen = passwords.PasswordGenerator(config)
-    upload_cfg = dict()
-    upload_cfg.update(glance.get_shared_params(config))
-    upload_cfg.update(keystone.get_shared_params(config, pw_gen))
-    return upload_cfg
+    return CfgProxy(config, pw_gen)
 
 
 def setup_logging(level):
@@ -70,4 +74,6 @@ if __name__ == "__main__":
             cleaned_uris.append(uri)
 
     setup_logging(len(options.verbosity))
-    uploader.Service(get_config()).install(uris)
+
+    cfg = get_config()
+    uploader.Service(cfg).install(uris)
