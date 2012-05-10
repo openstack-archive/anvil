@@ -41,7 +41,7 @@ class Keystone(object):
 
     def _do_replace(self, text):
         return utils.param_replace(text, self.replacements, ignore_missing=True)
-        
+
     def _create_tenants(self, tenants):
         tenants_made = dict()
         for (name, desc) in tenants.items():
@@ -74,7 +74,7 @@ class Keystone(object):
             LOG.debug("Creating role %s", role)
             roles_made[role] = self.client.roles.create(role)
         return roles_made
-    
+
     def _connect_roles(self, users, roles_made, tenants_made, users_made):
         for name, info in users.items():
             user = users_made[name]
