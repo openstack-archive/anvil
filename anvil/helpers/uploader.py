@@ -19,6 +19,7 @@ import os
 import re
 import tarfile
 import urlparse
+import weakref
 
 from anvil import colorizer
 from anvil import downloader as down
@@ -26,14 +27,18 @@ from anvil import log
 from anvil import shell as sh
 from anvil import utils
 
+from anvil.components import glance
+from anvil.components import keystone
+
 LOG = log.getLogger(__name__)
 
 # Glance client commands
 IMAGE_ADD = ['glance',
              '--os-image-url', '%GLANCE_HOSTPORT%',
-             '--os-username', '%DEMO_USER_NAME%',
-             '--os-tenant-name', '%DEMO_TENANT_NAME%',
+             '--os-username', '%ADMIN_USER_NAME%',
+             '--os-tenant-name', '%ADMIN_TENANT_NAME%',
              '--os-auth-url', '%SERVICE_ENDPOINT%',
+             '--os-password', '%ADMIN_PASSWORD%',
              'image-create',
              '--name', '%NAME%',
              '--public',
@@ -42,9 +47,10 @@ IMAGE_ADD = ['glance',
 
 IMAGE_LIST = ['glance',
              '--os-image-url', '%GLANCE_HOSTPORT%',
-             '--os-username', '%DEMO_USER_NAME%',
-             '--os-tenant-name', '%DEMO_TENANT_NAME%',
+             '--os-username', '%ADMIN_USER_NAME%',
+             '--os-tenant-name', '%ADMIN_TENANT_NAME%',
              '--os-auth-url', '%SERVICE_ENDPOINT%',
+             '--os-password', '%ADMIN_PASSWORD%',
              'image-list']
 
 # Extensions that tarfile knows how to work with
@@ -289,18 +295,21 @@ class Image(object):
 
 
 class Service:
-    def __init__(self, cfg):
-        self.cfg = cfg
+    def __init__(self, owner):
+        self.owner = weakref.proxy(owner)
 
     def install(self, urls):
         # Install them in glance
         am_installed = 0
+        config = dict()
+        config.update(glance.get_shared_params(self.owner.cfg))
+        config.update(keystone.get_shared_params(self.owner.cfg, self.owner.pw_gen))
         if urls:
             utils.log_iterable(urls, logger=LOG,
                                 header="Attempting to download+extract+upload %s images" % len(urls))
             for uri in urls:
                 try:
-                    (name, img_id) = Image(uri, self.cfg).install()
+                    (name, img_id) = Image(uri, config).install()
                     LOG.info("Installed image named %s with image id %s.", colorizer.quote(name), colorizer.quote(img_id))
                     am_installed += 1
                 except (IOError, tarfile.TarError) as e:

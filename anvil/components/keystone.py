@@ -18,12 +18,15 @@ import io
 
 from urlparse import urlunparse
 
+import yaml
+
 from anvil import cfg
 from anvil import colorizer
 from anvil import component as comp
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
+from anvil import importer
 
 from anvil.components import db
 
@@ -35,20 +38,15 @@ DB_NAME = "keystone"
 # Subdirs of the git checkout
 BIN_DIR = "bin"
 
+# This yaml file controls keystone initialization
+INIT_WHAT_FN = 'init_what.yaml'
+
 # Simple confs
 ROOT_CONF = "keystone.conf"
 ROOT_SOURCE_FN = "keystone.conf.sample"
-CATALOG_CONF = 'default_catalog.templates'
 LOGGING_CONF = "logging.conf"
 LOGGING_SOURCE_FN = 'logging.conf.sample'
-CONFIGS = [ROOT_CONF, CATALOG_CONF, LOGGING_CONF]
-
-# This is a special conf/init script
-MANAGE_DATA_CONF = 'keystone_init.sh'
-MANAGE_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
-MANAGE_ADMIN_USER = 'admin'
-MANAGE_DEMO_USER = 'demo'
-MANGER_SERVICE_TENANT = 'service'
+CONFIGS = [ROOT_CONF, LOGGING_CONF]
 
 # Sync db command
 SYNC_DB_CMD = [sh.joinpths('%BIN_DIR%', 'keystone-manage'),
@@ -68,22 +66,6 @@ APP_OPTIONS = {
                 "--debug", '-v',
                 '--log-config=%s' % (sh.joinpths('%CONFIG_DIR%', LOGGING_CONF))],
 }
-
-
-# Swift template additions
-# TODO: get rid of these
-SWIFT_TEMPL_ADDS = ['catalog.RegionOne.object_store.publicURL = http://%SERVICE_HOST%:8080/v1/AUTH_$(tenant_id)s',
-                    'catalog.RegionOne.object_store.publicURL = http://%SERVICE_HOST%:8080/v1/AUTH_$(tenant_id)s',
-                    'catalog.RegionOne.object_store.adminURL = http://%SERVICE_HOST%:8080/',
-                    'catalog.RegionOne.object_store.internalURL = http://%SERVICE_HOST%:8080/v1/AUTH_$(tenant_id)s',
-                    "catalog.RegionOne.object_store.name = Swift Service"]
-
-# Quantum template additions
-# TODO: get rid of these
-QUANTUM_TEMPL_ADDS = ['catalog.RegionOne.network.publicURL = http://%SERVICE_HOST%:9696/',
-                      'catalog.RegionOne.network.adminURL = http://%SERVICE_HOST%:9696/',
-                      'catalog.RegionOne.network.internalURL = http://%SERVICE_HOST%:9696/',
-                      "catalog.RegionOne.network.name = Quantum Service"]
 
 
 class KeystoneUninstaller(comp.PythonUninstallComponent):
@@ -108,7 +90,6 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         comp.PythonInstallComponent.post_install(self)
         self._setup_db()
         self._sync_db()
-        self._setup_initer()
 
     def known_options(self):
         return set(['swift', 'quantum'])
@@ -126,28 +107,14 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
         db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME, utf8=True)
 
-    def _setup_initer(self):
-        LOG.info("Configuring keystone initializer template: %s", colorizer.quote(MANAGE_DATA_CONF))
-        (_, contents) = utils.load_template(self.component_name, MANAGE_DATA_CONF)
-        mp = self._get_param_map(MANAGE_DATA_CONF)
-        contents = utils.param_replace(contents, mp, True)
-        # FIXME, stop placing in checkout dir...
-        tgt_fn = sh.joinpths(self.bin_dir, MANAGE_DATA_CONF)
-        sh.write_file(tgt_fn, contents)
-        sh.chmod(tgt_fn, 0755)
-        self.tracewriter.file_touched(tgt_fn)
-
     def _get_source_config(self, config_fn):
-        if config_fn == CATALOG_CONF:
-            return comp.PythonInstallComponent._get_source_config(self, config_fn)
-        else:
-            real_fn = config_fn
-            if config_fn == LOGGING_CONF:
-                real_fn = LOGGING_SOURCE_FN
-            elif config_fn == ROOT_CONF:
-                real_fn = ROOT_SOURCE_FN
-            fn = sh.joinpths(self.app_dir, 'etc', real_fn)
-            return (fn, sh.load_file(fn))
+        real_fn = config_fn
+        if config_fn == LOGGING_CONF:
+            real_fn = LOGGING_SOURCE_FN
+        elif config_fn == ROOT_CONF:
+            real_fn = ROOT_SOURCE_FN
+        fn = sh.joinpths(self.app_dir, 'etc', real_fn)
+        return (fn, sh.load_file(fn))
 
     def _config_adjust_logging(self, contents, fn):
         with io.BytesIO(contents) as stream:
@@ -167,10 +134,9 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             config.set('DEFAULT', 'admin_port', params['KEYSTONE_AUTH_PORT'])
             config.set('DEFAULT', 'verbose', True)
             config.set('DEFAULT', 'debug', True)
+            config.set('catalog', 'driver', 'keystone.catalog.backends.sql.Catalog')
             config.remove_option('DEFAULT', 'log_config')
             config.set('sql', 'connection', db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME, utf8=True))
-            config.set('catalog', 'template_file', sh.joinpths(self.cfg_dir, CATALOG_CONF))
-            config.set('catalog', 'driver', "keystone.catalog.backends.templated.TemplatedCatalog")
             config.set('ec2', 'driver', "keystone.contrib.ec2.backends.sql.Ec2")
             config.set('filter:s3_extension', 'paste.filter_factory', "keystone.contrib.s3:S3Extension.factory")
             config.set('pipeline:admin_api', 'pipeline', ('token_auth admin_token_auth xml_body '
@@ -178,30 +144,9 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             contents = config.stringify(fn)
         return contents
 
-    def _config_adjust_catalog(self, contents, fn):
-        nlines = list()
-        if 'swift' in self.options:
-            mp = dict()
-            mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
-            nlines.append("# Swift additions")
-            nlines.extend(utils.param_replace_list(SWIFT_TEMPL_ADDS, mp))
-            nlines.append("")
-        if 'quantum' in self.options:
-            mp = dict()
-            mp['SERVICE_HOST'] = self.cfg.get('host', 'ip')
-            nlines.append("# Quantum additions")
-            nlines.extend(utils.param_replace_list(QUANTUM_TEMPL_ADDS, mp))
-            nlines.append("")
-        if nlines:
-            nlines.insert(0, contents)
-            contents = utils.add_header(fn, utils.joinlinesep(*nlines))
-        return contents
-
     def _config_adjust(self, contents, name):
         if name == ROOT_CONF:
             return self._config_adjust_root(contents, name)
-        elif name == CATALOG_CONF:
-            return self._config_adjust_catalog(contents, name)
         elif name == LOGGING_CONF:
             return self._config_adjust_logging(contents, name)
         else:
@@ -227,22 +172,23 @@ class KeystoneRuntime(comp.PythonRuntime):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
         self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
+        self.init_fn = sh.joinpths(self.trace_dir, 'was-inited')
+        self.init_what = yaml.load(utils.load_template(self.component_name, INIT_WHAT_FN)[1])
 
     def post_start(self):
-        tgt_fn = sh.joinpths(self.bin_dir, MANAGE_DATA_CONF)
-        if sh.is_executable(tgt_fn):
-            # If its still there, run it
-            # these environment additions are important
-            # in that they eventually affect how this script runs
+        if not sh.isfile(self.init_fn):
             LOG.info("Waiting %s seconds so that keystone can start up before running first time init." % (self.wait_time))
             sh.sleep(self.wait_time)
-            env = dict()
-            env['ENABLED_SERVICES'] = ",".join(self.instances.keys())
-            env['BIN_DIR'] = self.bin_dir
-            setup_cmd = MANAGE_CMD_ROOT + [tgt_fn]
-            LOG.info("Running %s command to initialize keystone.", colorizer.quote(" ".join(setup_cmd)))
-            sh.execute(*setup_cmd, env_overrides=env, run_as_root=False)
-            utils.mark_unexecute_file(tgt_fn, env)
+            LOG.info("Running client commands to initialize keystone.")
+            LOG.debug("Initializing with %s", self.init_what)
+            # Late load since its using a client lib that is only avail after install...
+            init_cls = importer.import_entry_point('anvil.helpers.initializers:Keystone')
+            initer = init_cls(self)
+            initer.initialize(**self.init_what)
+            # Touching this makes sure that we don't init again
+            # TODO add trace
+            sh.touch_file(self.init_fn)
+            LOG.info("If you wish to re-run initialization, delete %s", colorizer.quote(self.init_fn))
 
     def _get_apps_to_start(self):
         apps = list()
@@ -257,18 +203,20 @@ class KeystoneRuntime(comp.PythonRuntime):
         return APP_OPTIONS.get(app)
 
 
-def get_shared_params(config, pw_gen, service_user_name=None):
+def get_shared_params(config, pw_gen,
+                     service_user_name=None, service_tenant_name='service'):
+
     mp = dict()
     host_ip = config.get('host', 'ip')
 
-    # These match what is in keystone_init.sh
-    mp['SERVICE_TENANT_NAME'] = MANGER_SERVICE_TENANT
+    mp['SERVICE_TENANT_NAME'] = service_tenant_name
     if service_user_name:
         mp['SERVICE_USERNAME'] = str(service_user_name)
-    mp['ADMIN_USER_NAME'] = MANAGE_ADMIN_USER
-    mp['DEMO_USER_NAME'] = MANAGE_DEMO_USER
+
+    mp['ADMIN_USER_NAME'] = 'admin'
     mp['ADMIN_TENANT_NAME'] = mp['ADMIN_USER_NAME']
-    mp['DEMO_TENANT_NAME'] = mp['DEMO_USER_NAME']
+    mp['DEMO_TENANT_NAME'] = 'demo'
+    mp['DEMO_USER_NAME'] = mp['DEMO_TENANT_NAME']
 
     # Tokens and passwords
     mp['SERVICE_TOKEN'] = pw_gen.get_password(

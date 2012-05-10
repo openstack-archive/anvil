@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import random as rand
 import re
 import sys
 
@@ -25,6 +26,16 @@ COLORS = termcolor.COLORS.keys()
 
 def is_terminal():
     return sys.stdout.isatty()
+
+
+def random_color(data):
+    if not is_terminal():
+        return data
+    new_data = list()
+    for d in data:
+        c = color(d, color=rand.choice(COLORS))
+        new_data.append(c)
+    return ''.join(new_data)
 
 
 def quote(data, quote_color='green', **kargs):
