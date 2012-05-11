@@ -17,6 +17,7 @@
 from urlparse import urlunparse
 import re
 
+from anvil import cfg_helpers
 from anvil import date
 from anvil import env
 from anvil import log as logging
@@ -35,11 +36,11 @@ CFG_MAKE = {
 
 # PW sections
 PASSWORDS_MAKES = {
-    'ADMIN_PASSWORD': ('passwords', 'horizon_keystone_admin'),
-    'SERVICE_PASSWORD': ('passwords', 'service_password'),
-    'RABBIT_PASSWORD': ('passwords', 'rabbit'),
-    'SERVICE_TOKEN': ('passwords', 'service_token'),
-    'MYSQL_PASSWORD': ('passwords', 'sql'),
+    'ADMIN_PASSWORD': (cfg_helpers.PW_SECTION, 'horizon_keystone_admin'),
+    'SERVICE_PASSWORD': (cfg_helpers.PW_SECTION, 'service_password'),
+    'RABBIT_PASSWORD': (cfg_helpers.PW_SECTION, 'rabbit'),
+    'SERVICE_TOKEN': (cfg_helpers.PW_SECTION, 'service_token'),
+    'MYSQL_PASSWORD': (cfg_helpers.PW_SECTION, 'sql'),
 }
 
 # Install root output name and env variable name
@@ -49,7 +50,7 @@ INSTALL_ROOT = 'INSTALL_ROOT'
 EC2_PORT = 8773
 S3_PORT = 3333
 
-# How we know if a line is an export or if it isn't (simpe edition)
+# How we know if a line is an export or if it isn't (simple edition)
 EXP_PAT = re.compile("^\s*export\s+(.*?)=(.*?)$", re.IGNORECASE)
 
 # How we unquote a string (simple edition)

@@ -19,7 +19,6 @@ import os
 import re
 import tarfile
 import urlparse
-import weakref
 
 from anvil import colorizer
 from anvil import downloader as down

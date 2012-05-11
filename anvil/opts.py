@@ -18,10 +18,10 @@ from optparse import IndentedHelpFormatter
 from optparse import OptionParser, OptionGroup
 
 from anvil import actions
-from anvil import version
-from anvil import shell as sh
+from anvil import cfg_helpers
 from anvil import settings
-
+from anvil import shell as sh
+from anvil import version
 
 HELP_WIDTH = 80
 
@@ -33,7 +33,8 @@ def _format_list(in_list):
 
 def parse():
 
-    version_str = "%prog v" + version.version_string()
+    prog_name = settings.PROG_NAME
+    version_str = "%s v%s" % (prog_name, version.version_string())
     help_formatter = IndentedHelpFormatter(width=HELP_WIDTH)
     parser = OptionParser(version=version_str, formatter=help_formatter)
 
@@ -56,6 +57,15 @@ def parse():
         default=False,
         help=("perform ACTION but do not actually run any of the commands"
               " that would normally complete ACTION: (default: %default)"))
+    search_locations = cfg_helpers.get_config_locations()
+    opt_help = "configuration file ("
+    opt_help += "will be searched for in [%s] if not provided)" % (", ".join(search_locations))
+    parser.add_option("-c", "--config",
+        action="store",
+        dest="config_fn",
+        type="string",
+        metavar="FILE",
+        help=opt_help)
 
     # Install/start/stop/uninstall specific options
     base_group = OptionGroup(parser, "Install & uninstall & start & stop specific options")
@@ -114,6 +124,7 @@ def parse():
     output['force'] = not options.force
     output['keep_old'] = options.keep_old
     output['extras'] = args
+    output['config_fn'] = options.config_fn
     output['persona_fn'] = options.persona_fn
     output['verbosity'] = len(options.verbosity)
     output['cli_overrides'] = options.cli_overrides or list()

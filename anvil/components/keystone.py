@@ -16,8 +16,6 @@
 
 import io
 
-from urlparse import urlunparse
-
 import yaml
 
 from anvil import cfg
