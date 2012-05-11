@@ -27,22 +27,17 @@ from anvil.components import glance
 from anvil.helpers import uploader
 
 
-class CfgProxy:
-    def __init__(self, cfg, pw_gen):
-        self.cfg = cfg
-        self.pw_gen = pw_gen
-
-
 def get_config():
-    base_config = cfg.IgnoreMissingConfigParser()
-    config_location = cfg_helpers.find_config()
-    if config_location:
-        base_config.read([config_location])
+
     config = cfg.ProxyConfig()
     config.add_read_resolver(cfg.EnvResolver())
-    config.add_read_resolver(cfg.ConfigResolver(base_config))
-    pw_gen = passwords.PasswordGenerator(config)
-    return (config, pw_gen)
+    config.add_read_resolver(cfg.ConfigResolver(cfg.IgnoreMissingConfigParser(fns=cfg_helpers.find_config())))
+
+    config.add_password_resolver(passwords.ConfigPassword(config))
+    config.add_password_resolver(passwords.InputPassword(config))
+    config.add_password_resolver(passwords.RandomPassword(config))
+
+    return config
 
 
 def setup_logging(level):
@@ -74,5 +69,6 @@ if __name__ == "__main__":
             cleaned_uris.append(uri)
 
     setup_logging(len(options.verbosity))
-    cfg, pw_gen = get_config()
-    uploader.Service(cfg, pw_gen).install(uris)
+    utils.welcome(prog_name="Image uploader tool")
+    cfg = get_config()
+    uploader.Service(cfg).install(uris)
