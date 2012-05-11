@@ -20,7 +20,7 @@ import getpass
 import logging
 import os
 
-from anvil import cfg_helpers 
+from anvil import cfg_helpers
 
 LOG = logging.getLogger(__name__)
 
