@@ -76,7 +76,7 @@ def find_config(start_locations=None):
     """
     Finds the anvil configuration file.
 
-    Returns: the file location or None if not found
+    Returns: the file locations or None if not found
     """
     locs = []
     if start_locations:
