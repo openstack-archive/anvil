@@ -356,19 +356,17 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         with io.BytesIO(contents) as stream:
             config = cfg.IgnoreMissingConfigParser()
             config.readfp(stream)
-            config.set('filter:authtoken', 'service_host', params['endpoints']['internal']['host'])
-            config.set('filter:authtoken', 'service_port', params['endpoints']['internal']['port'])
-            config.set('filter:authtoken', 'service_protocol', params['endpoints']['internal']['protocol'])
-            config.set('filter:authtoken', 'service_uri', params['endpoints']['internal']['uri'])
-
-            config.set('filter:authtoken', 'admin_tenant_name', params['service_tenant'])
-            config.set('filter:authtoken', 'admin_user', params['service_tenant'])
-            config.set('filter:authtoken', 'admin_password', params['admin_password'])
-
             config.set('filter:authtoken', 'auth_host', params['endpoints']['admin']['host'])
             config.set('filter:authtoken', 'auth_port', params['endpoints']['admin']['port'])
             config.set('filter:authtoken', 'auth_protocol', params['endpoints']['admin']['protocol'])
-            config.set('filter:authtoken', 'auth_uri', params['endpoints']['admin']['uri'])
+
+            config.set('filter:authtoken', 'service_host', params['endpoints']['internal']['host'])
+            config.set('filter:authtoken', 'service_port', params['endpoints']['internal']['port'])
+            config.set('filter:authtoken', 'service_protocol', params['endpoints']['internal']['protocol'])
+
+            config.set('filter:authtoken', 'admin_tenant_name', params['service_tenant'])
+            config.set('filter:authtoken', 'admin_user', params['service_user'])
+            config.set('filter:authtoken', 'admin_password', params['service_password'])
             contents = config.stringify(fn)
         return contents
 
