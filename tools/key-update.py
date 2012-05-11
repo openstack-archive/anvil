@@ -19,7 +19,7 @@ from anvil import cfg_helpers
 from anvil import passwords
 from anvil import utils
 
-from anvil.helpers import initializers as inits
+from anvil.helpers import keystone
 
 import yaml
 
@@ -28,7 +28,8 @@ def get_config():
 
     config = cfg.ProxyConfig()
     config.add_read_resolver(cfg.EnvResolver())
-    config.add_read_resolver(cfg.ConfigResolver(cfg.IgnoreMissingConfigParser(fns=cfg_helpers.find_config())))
+    fns = cfg_helpers.find_config([os.path.join(possible_topdir, 'conf', 'anvil.ini')])
+    config.add_read_resolver(cfg.ConfigResolver(cfg.IgnoreMissingConfigParser(fns=fns)))
 
     config.add_password_resolver(passwords.ConfigPassword(config))
     config.add_password_resolver(passwords.InputPassword(config))
@@ -69,5 +70,5 @@ if __name__ == "__main__":
 
     setup_logging(len(options.verbosity))
     utils.welcome(prog_name="Keystone updater/init tool")
-    initer = inits.Keystone(get_config())
+    initer = keystone.Initializer(get_config())
     initer.initialize(**data)

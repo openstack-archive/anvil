@@ -17,21 +17,17 @@ from anvil import cfg
 from anvil import cfg_helpers
 from anvil import log as logging
 from anvil import passwords
-from anvil import settings
-from anvil import shell as sh
 from anvil import utils
 
-from anvil.components import keystone
-from anvil.components import glance
-
-from anvil.helpers import uploader
+from anvil.helpers import glance
 
 
 def get_config():
 
     config = cfg.ProxyConfig()
     config.add_read_resolver(cfg.EnvResolver())
-    config.add_read_resolver(cfg.ConfigResolver(cfg.IgnoreMissingConfigParser(fns=cfg_helpers.find_config())))
+    fns = cfg_helpers.find_config([os.path.join(possible_topdir, 'conf', 'anvil.ini')])
+    config.add_read_resolver(cfg.ConfigResolver(cfg.IgnoreMissingConfigParser(fns=fns)))
 
     config.add_password_resolver(passwords.ConfigPassword(config))
     config.add_password_resolver(passwords.InputPassword(config))
@@ -71,4 +67,4 @@ if __name__ == "__main__":
     setup_logging(len(options.verbosity))
     utils.welcome(prog_name="Image uploader tool")
     cfg = get_config()
-    uploader.Service(cfg).install(uris)
+    glance.UploadService(cfg).install(uris)

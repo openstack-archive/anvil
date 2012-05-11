@@ -23,12 +23,14 @@ from anvil import utils
 from anvil.components import glance
 from anvil.components import keystone
 
+from anvil import colorizer
+
 from keystoneclient.v2_0 import client as key_client
 
 LOG = logging.getLogger(__name__)
 
 
-class Keystone(object):
+class Initializer(object):
 
     def __init__(self, cfg):
         self.replacements = dict()
@@ -44,9 +46,9 @@ class Keystone(object):
     def _create_tenants(self, tenants):
         tenants_made = dict()
         for entry in tenants:
-            name = entry['name']
+            name = self._do_replace(entry['name'])
             if name in tenants_made:
-                raise RuntimeError("Already created tenant %s" % (name))
+                LOG.warn("Already created tenant %s", colorizer.quote(name))
             tenant = {
                 'tenant_name': name,
                 'description': entry['description'],
@@ -59,11 +61,11 @@ class Keystone(object):
     def _create_users(self, users, tenants):
         created = dict()
         for entry in users:
-            name = entry['name']
+            name = self._do_replace(entry['name'])
             if name in created:
-                raise RuntimeError("Already created user %s" % (name))
+                LOG.warn("Already created user %s", colorizer.quote(name))
             password = self._do_replace(entry['password'])
-            email = entry.get('email', "none@none.com")
+            email = entry['email']
             user = {
                 'name': name,
                 'password': password,
@@ -75,9 +77,10 @@ class Keystone(object):
 
     def _create_roles(self, roles):
         roles_made = dict()
-        for role in roles:
+        for r in roles:
+            role = self._do_replace(r)
             if role in roles_made:
-                raise RuntimeError("Already created role %s" % (role))
+                LOG.warn("Already created role %s", colorizer.quote(role))
             LOG.debug("Creating role %s", role)
             roles_made[role] = self.client.roles.create(role)
         return roles_made
@@ -85,19 +88,22 @@ class Keystone(object):
     def _connect_roles(self, users, roles_made, tenants_made, users_made):
         roles_attached = set()
         for info in users:
-            name = info['name']
+            name = self._do_replace(info['name'])
             if name in roles_attached:
-                raise RuntimeError("Already attached roles to user %s" % (name))
+                LOG.warn("Already attached roles to user %s", colorizer.quote(name))
             roles_attached.add(name)
             user = users_made[name]
             for role_entry in info['roles']:
-                (role_name, sep, tenant_name) = role_entry.partition(":")
+                # Role:Tenant
+                (r, sep, t) = role_entry.partition(":")
+                role_name = self._do_replace(r)
+                tenant_name = self._do_replace(t)
                 if not role_name or not tenant_name:
                     raise RuntimeError("Role or tenant name missing for user %s" % (name))
                 if not role_name in roles_made:
-                    LOG.warn("Role %s not previously created for user %s", role_name, name)
+                    raise RuntimeError("Role %s not previously created for user %s" % (role_name, name))
                 if not tenant_name in tenants_made:
-                    LOG.warn("Tenant %s not previously created for user %s", tenant_name, name)
+                    raise RuntimeError("Tenant %s not previously created for user %s" % (tenant_name, name))
                 user_role = {
                     'user': user,
                     'role': roles_made[role_name],
@@ -109,9 +115,9 @@ class Keystone(object):
     def _create_services(self, services):
         created_services = dict()
         for info in services:
-            name = info['name']
+            name = self._do_replace(info['name'])
             if name in created_services:
-                raise RuntimeError("Already created service %s" % (name))
+                LOG.warn("Already created service %s", colorizer.quote(name))
             service = {
                 'name': name,
                 'service_type': info['type'],
@@ -123,7 +129,10 @@ class Keystone(object):
 
     def _create_endpoints(self, endpoints, services):
         for entry in endpoints:
-            service = services[entry['service']]
+            name = entry['service']
+            if name not in services:
+                raise RuntimeError("Endpoint %s not attached to a previously created service" % (name))
+            service = services[name]
             endpoint = {
                 'region': entry['region'],
                 'publicurl': self._do_replace(entry['public_url']),

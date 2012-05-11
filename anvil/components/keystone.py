@@ -185,10 +185,10 @@ class KeystoneRuntime(comp.PythonRuntime):
         if not sh.isfile(self.init_fn):
             LOG.info("Waiting %s seconds so that keystone can start up before running first time init." % (self.wait_time))
             sh.sleep(self.wait_time)
-            LOG.info("Running client commands to initialize keystone.")
+            LOG.info("Running commands to initialize keystone.")
             LOG.debug("Initializing with %s", self.init_what)
             # Late load since its using a client lib that is only avail after install...
-            init_cls = importer.import_entry_point('anvil.helpers.initializers:Keystone')
+            init_cls = importer.import_entry_point('anvil.helpers.keystone:Initializer')
             initer = init_cls(self.cfg)
             initer.initialize(**self.init_what)
             # Touching this makes sure that we don't init again
@@ -238,6 +238,7 @@ def get_shared_params(cfg, service_user=None):
         'the horizon and keystone admin',
         length=20,
         )
+    mp['demo_password'] = mp['admin_password']
     mp['service_password'] = cfg.get_password(
         'service_password',
         'service authentication',

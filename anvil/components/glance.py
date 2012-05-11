@@ -201,11 +201,9 @@ class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
         self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
-        self.uploader = None
-        if 'no-load-images' not in self.options:
-            # Late load so its not always needed....
-            uploader_cls = importer.import_entry_point('anvil.helpers.uploader:Service')
-            self.uploader = uploader_cls(self.cfg)
+        self.do_upload = True
+        if 'no-load-images' in self.options:
+            self.do_upload = False
 
     def _get_apps_to_start(self):
         apps = list()
@@ -225,11 +223,14 @@ class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
 
     def post_start(self):
         comp.PythonRuntime.post_start(self)
-        if self.uploader:
+        if self.do_upload:
             # Install any images that need activating...
             LOG.info("Waiting %s seconds so that glance can start up before image install." % (self.wait_time))
             sh.sleep(self.wait_time)
-            self.uploader.install(self._get_image_urls())
+            # Late load since its using a client lib/s that is only avail after install...
+            uploader_cls = importer.import_entry_point('anvil.helpers.glance:UploadService')
+            uploader = uploader_cls(self.cfg)
+            uploader.install(self._get_image_urls())
 
 
 def get_shared_params(cfg):
