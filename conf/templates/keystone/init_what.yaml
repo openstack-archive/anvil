@@ -10,6 +10,11 @@ endpoints:
     public_url: http://%SERVICE_HOST%:8773/services/Cloud
     region: RegionOne
     service: ec2
+-   admin_url: http://%SERVICE_HOST%:9696/
+    internal_url: http://%SERVICE_HOST%:9696/
+    public_url: http://%SERVICE_HOST%:9696/
+    region: RegionOne
+    service: network
 -   admin_url: http://%SERVICE_HOST%:9292
     internal_url: http://%SERVICE_HOST%:9292
     public_url: http://%SERVICE_HOST%:9292
@@ -40,7 +45,12 @@ roles:
 - anotherrole
 - KeystoneAdmin
 - KeystoneServiceAdmin
+# The Member role is used by Horizon and Swift so we need to keep it.
 - Member
+# Nova needs ResellerAdmin role to download images when accessing
+# swift through the s3 api. The admin role in swift allows a user
+# to act as an admin for their tenant, but ResellerAdmin is needed
+# for a user to act as any tenant.
 - ResellerAdmin
 services:
 -   description: EC2 Compatibility Layer
@@ -64,6 +74,9 @@ services:
 -   description: Nova Volume Service
     name: volume
     type: volume
+-   description: Quantum Service
+    name: network
+    type: network
 tenants:
 -   description: Admin tenant
     name: admin

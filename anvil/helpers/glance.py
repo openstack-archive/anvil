@@ -163,16 +163,6 @@ class Image(object):
         self.registry = Registry(client)
         self.url = url
 
-    def _extract_id(self, output):
-        if not output:
-            return None
-        for line in output.splitlines():
-            if line.startswith("| id"):
-                pieces = line.split("|")
-                if len(pieces) >= 3:
-                    return pieces[2].strip()
-        return None
-
     def _check_name(self, name):
         LOG.info("Checking if image %s already exists already in glance.", colorizer.quote(name))
         if name in self.registry:
@@ -275,7 +265,7 @@ class UploadService:
                                            token=self._get_token())
             except (gexceptions.ClientException,
                     kexceptions.ClientException) as e:
-                LOG.exception('Failed fetching need clients for image calls due to: %s', e)
+                LOG.exception('Failed fetching needed clients for image calls due to: %s', e)
                 return am_installed
             utils.log_iterable(urls, logger=LOG,
                                 header="Attempting to download+extract+upload %s images" % len(urls))
