@@ -14,28 +14,21 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
+from anvil import colorizer
+from anvil import importer
 from anvil import log as logging
 from anvil import utils
-
-from anvil.components import glance
-from anvil.components import keystone
-
-from anvil import colorizer
-
-from keystoneclient.v2_0 import client as key_client
 
 LOG = logging.getLogger(__name__)
 
 
 class Initializer(object):
 
-    def __init__(self, cfg):
-        self.replacements = dict()
-        self.replacements['keystone'] = keystone.get_shared_params(cfg)
-        self.replacements['glance'] = glance.get_shared_params(cfg)
-        self.replacements['SERVICE_HOST'] = cfg.get('host', 'ip')
-        self.client = key_client.Client(token=self.replacements['keystone']['service_token'],
+    def __init__(self, replacements):
+        self.replacements = replacements
+        # Late load since its using a client lib that is only avail after install...
+        client_cls = importer.import_entry_point("keystoneclient.v2_0.client:Client")
+        self.client = client_cls(token=self.replacements['keystone']['service_token'],
             endpoint=self.replacements['keystone']['endpoints']['admin']['uri'])
 
     def _do_replace(self, text):
@@ -148,3 +141,76 @@ class Initializer(object):
         self._connect_roles(users, created_roles, created_tenants, created_users)
         services_made = self._create_services(services)
         self._create_endpoints(endpoints, services_made)
+
+
+def get_shared_params(cfg, service_user=None):
+
+    mp = dict()
+
+    # Tenants and users
+    mp['tenants'] = ['admin', 'service', 'demo']
+    mp['users'] = ['admin', 'demo']
+
+    mp['demo_tenant'] = 'demo'
+    mp['demo_user'] = 'demo'
+
+    mp['admin_tenant'] = 'admin'
+    mp['admin_user'] = 'admin'
+
+    mp['service_tenant'] = 'service'
+    if service_user:
+        mp['users'].append(service_user)
+        mp['service_user'] = service_user
+
+    # Tokens and passwords
+    mp['service_token'] = cfg.get_password(
+        "service_token",
+        'the service admin token',
+        )
+    mp['admin_password'] = cfg.get_password(
+        'horizon_keystone_admin',
+        'the horizon and keystone admin',
+        length=20,
+        )
+    mp['demo_password'] = mp['admin_password']
+    mp['service_password'] = cfg.get_password(
+        'service_password',
+        'service authentication',
+        )
+
+    host_ip = cfg.get('host', 'ip')
+    mp['service_host'] = host_ip
+
+    # Components of the admin endpoint
+    keystone_auth_host = cfg.getdefaulted('keystone', 'keystone_auth_host', host_ip)
+    keystone_auth_port = cfg.getdefaulted('keystone', 'keystone_auth_port', '35357')
+    keystone_auth_proto = cfg.getdefaulted('keystone', 'keystone_auth_protocol', 'http')
+    keystone_auth_uri = utils.make_url(keystone_auth_proto,
+                            keystone_auth_host, keystone_auth_port, path="v2.0")
+
+    # Components of the public+internal endpoint
+    keystone_service_host = cfg.getdefaulted('keystone', 'keystone_service_host', host_ip)
+    keystone_service_port = cfg.getdefaulted('keystone', 'keystone_service_port', '5000')
+    keystone_service_proto = cfg.getdefaulted('keystone', 'keystone_service_protocol', 'http')
+    keystone_service_uri = utils.make_url(keystone_service_proto,
+                            keystone_service_host, keystone_service_port, path="v2.0")
+
+    mp['endpoints'] = {
+        'admin': {
+            'uri': keystone_auth_uri,
+            'port': keystone_auth_port,
+            'protocol': keystone_auth_proto,
+            'host': keystone_auth_host,
+        },
+        'public': {
+            'uri': keystone_service_uri,
+            'port': keystone_service_port,
+            'protocol': keystone_service_proto,
+            'host': keystone_service_host,
+        },
+    }
+    mp['endpoints']['internal'] = dict(mp['endpoints']['public'])
+
+    LOG.debug("Keystone shared params: %s", mp)
+
+    return mp

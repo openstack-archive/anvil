@@ -22,18 +22,10 @@ import urlparse
 
 from anvil import colorizer
 from anvil import downloader as down
+from anvil import importer
 from anvil import log
 from anvil import shell as sh
 from anvil import utils
-
-from anvil.components import glance
-from anvil.components import keystone
-
-from glanceclient.v1 import client as gclient_v1
-from glanceclient.common import exceptions as gexceptions
-
-from keystoneclient.v2_0 import client as kclient_v2
-from keystoneclient import exceptions as kexceptions
 
 LOG = log.getLogger(__name__)
 
@@ -243,12 +235,13 @@ class Image(object):
 
 
 class UploadService:
-    def __init__(self, cfg):
-        self.cfg = cfg
 
-    def _get_token(self):
+    def __init__(self, params):
+        self.params = params
+
+    def _get_token(self, kclient_v2):
         LOG.info("Getting your keystone token so that image uploads may proceed.")
-        params = keystone.get_shared_params(self.cfg)
+        params = self.params['keystone']
         client = kclient_v2.Client(username=params['demo_user'],
             password=params['demo_password'],
             tenant_name=params['demo_tenant'],
@@ -257,12 +250,20 @@ class UploadService:
 
     def install(self, urls):
         am_installed = 0
+        try:
+            gclient_v1 = importer.import_module('glanceclient.v1.client')
+            gexceptions = importer.import_module('glanceclient.common.exceptions')
+            kclient_v2 = importer.import_module('keystoneclient.v2_0.client')
+            kexceptions = importer.import_module('keystoneclient.exceptions')
+        except RuntimeError as e:
+            LOG.exeception("Failed at importing required client modules: %s", e)
+            return am_installed
         if urls:
             try:
-                params = glance.get_shared_params(self.cfg)
+                params = self.params['glance']
                 client = gclient_v1.Client(endpoint=params['endpoints']['public']['uri'],
-                                           token=self._get_token())
-            except (gexceptions.ClientException,
+                                           token=self._get_token(kclient_v2))
+            except (RuntimeError, gexceptions.ClientException,
                     kexceptions.ClientException) as e:
                 LOG.exception('Failed fetching needed clients for image calls due to: %s', e)
                 return am_installed
@@ -279,3 +280,38 @@ class UploadService:
                         kexceptions.ClientException) as e:
                     LOG.exception('Installing %r failed due to: %s', url, e)
         return am_installed
+
+
+def get_shared_params(cfg):
+    mp = dict()
+
+    host_ip = cfg.get('host', 'ip')
+    mp['service_host'] = host_ip
+
+    glance_host = cfg.getdefaulted('glance', 'glance_host', host_ip)
+    glance_port = cfg.getdefaulted('glance', 'glance_port', '9292')
+    glance_protocol = cfg.getdefaulted('glance', 'glance_protocol', 'http')
+
+    # Registry should be on the same host
+    glance_registry_port = cfg.getdefaulted('glance', 'glance_registry_port', '9191')
+
+    # Uri's of the http/https endpoints
+    mp['endpoints'] = {
+        'admin': {
+            'uri': utils.make_url(glance_protocol, glance_host, glance_port),
+            'port': glance_port,
+            'host': glance_host,
+            'protocol': glance_protocol,
+        },
+        'registry': {
+            'uri': utils.make_url(glance_protocol, glance_host, glance_registry_port),
+            'port': glance_registry_port,
+            'host': glance_host,
+            'protocol': glance_protocol,
+        }
+    }
+    mp['endpoints']['internal'] = dict(mp['endpoints']['admin'])
+    mp['endpoints']['public'] = dict(mp['endpoints']['admin'])
+
+    LOG.debug("Glance shared params: %s", mp)
+    return mp

@@ -22,6 +22,8 @@ from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
 
+from anvil.helpers import rabbit as rhelper
+
 LOG = logging.getLogger(__name__)
 
 # Default password (guest)
@@ -30,8 +32,8 @@ RESET_BASE_PW = ''
 # Config keys we warm up so u won't be prompted later
 WARMUP_PWS = ['rabbit']
 
-# Partial of rabbit user prompt
-PW_USER_PROMPT = 'the rabbit user'
+# Copies from helpers
+PW_USER_PROMPT = rhelper.PW_USER_PROMPT
 
 
 class RabbitUninstaller(comp.PkgUninstallComponent):

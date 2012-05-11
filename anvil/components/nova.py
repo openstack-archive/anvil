@@ -25,19 +25,18 @@ from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
 
-from anvil.components import db
-from anvil.components import keystone
-from anvil.components import rabbit
-
-from anvil.helpers import nova as helpers
+from anvil.helpers import db as dbhelper
+from anvil.helpers import keystone as khelper
+from anvil.helpers import nova as nhelper
+from anvil.helpers import rabbit as rhelper
 
 LOG = logging.getLogger(__name__)
 
 # Copies from helpers
-API_CONF = helpers.API_CONF
-DEF_VOL_PREFIX = helpers.DEF_VOL_PREFIX
-DEF_INSTANCE_PREFIX = helpers.DEF_INSTANCE_PREFIX
-DB_NAME = helpers.DB_NAME
+API_CONF = nhelper.API_CONF
+DEF_VOL_PREFIX = nhelper.DEF_VOL_PREFIX
+DEF_INSTANCE_PREFIX = nhelper.DEF_INSTANCE_PREFIX
+DB_NAME = nhelper.DB_NAME
 
 # How we reference some config files (in applications)
 CFG_FILE_OPT = '--config-file'
@@ -108,7 +107,7 @@ CLEANER_DATA_CONF = 'nova-clean.sh'
 CLEANER_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
 
 # Config keys we warm up so u won't be prompted later
-WARMUP_PWS = [('rabbit', rabbit.PW_USER_PROMPT)]
+WARMUP_PWS = [('rabbit', rhelper.PW_USER_PROMPT)]
 
 
 class NovaMixin(object):
@@ -155,7 +154,7 @@ class NovaUninstaller(NovaMixin, comp.PythonUninstallComponent):
             sh.execute(*cmd, run_as_root=True, env_overrides=env)
 
     def _clear_libvirt_domains(self):
-        virt_driver = helpers.canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
+        virt_driver = nhelper.canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
         if virt_driver == 'libvirt':
             inst_prefix = self.cfg.getdefaulted('nova', 'instance_name_prefix', DEF_INSTANCE_PREFIX)
             libvirt_type = lv.canon_libvirt_type(self.cfg.get('nova', 'libvirt_type'))
@@ -174,8 +173,8 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         self.root_wrap_bin = sh.joinpths(self.distro.get_command_config('bin_dir'), 'nova-rootwrap')
         self.volume_maker = None
         if self.volumes_enabled:
-            self.volume_maker = helpers.VolumeConfigurator(self)
-        self.conf_maker = helpers.ConfConfigurator(self)
+            self.volume_maker = nhelper.VolumeConfigurator(self)
+        self.conf_maker = nhelper.ConfConfigurator(self)
 
     def _get_symlinks(self):
         links = comp.PythonInstallComponent._get_symlinks(self)
@@ -191,7 +190,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
 
     def warm_configs(self):
         warm_pws = list(WARMUP_PWS)
-        driver_canon = helpers.canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
+        driver_canon = nhelper.canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
         if driver_canon == 'xenserver':
             warm_pws.append(('xenapi_connection', 'the Xen API connection'))
         for pw_key, pw_prompt in warm_pws:
@@ -236,8 +235,8 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         self.tracewriter.file_touched(tgt_fn)
 
     def _setup_db(self):
-        db.drop_db(self.cfg, self.distro, DB_NAME)
-        db.create_db(self.cfg, self.distro, DB_NAME)
+        dbhelper.drop_db(self.cfg, self.distro, DB_NAME)
+        dbhelper.create_db(self.cfg, self.distro, DB_NAME)
 
     def _generate_nova_conf(self, root_wrapped):
         conf_fn = self._get_target_config_name(API_CONF)
@@ -255,7 +254,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         return (fn, sh.load_file(fn))
 
     def _config_adjust_paste(self, contents, fn):
-        params = keystone.get_shared_params(self.cfg, 'nova')
+        params = khelper.get_shared_params(self.cfg, 'nova')
         with io.BytesIO(contents) as stream:
             config = cfg.IgnoreMissingConfigParser()
             config.readfp(stream)
@@ -373,7 +372,7 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
     def pre_start(self):
         # Let the parent class do its thing
         comp.PythonRuntime.pre_start(self)
-        virt_driver = helpers.canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
+        virt_driver = nhelper.canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
         if virt_driver == 'libvirt':
             # FIXME: The configuration for the virtualization-type
             # should come from the persona.

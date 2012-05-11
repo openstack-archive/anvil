@@ -21,7 +21,7 @@ from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
 
-from anvil.components import db
+from anvil.helpers import db as dbhelper
 
 LOG = logging.getLogger(__name__)
 
@@ -129,8 +129,8 @@ class HorizonInstaller(comp.PythonInstallComponent):
         sh.execute(*DB_SYNC_CMD, cwd=self.app_dir)
 
     def _setup_db(self):
-        db.drop_db(self.cfg, self.distro, DB_NAME)
-        db.create_db(self.cfg, self.distro, DB_NAME, utf8=True)
+        dbhelper.drop_db(self.cfg, self.distro, DB_NAME)
+        dbhelper.create_db(self.cfg, self.distro, DB_NAME, utf8=True)
 
     def pre_install(self):
         comp.PythonInstallComponent.pre_install(self)
@@ -169,7 +169,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
             mp['OPENSTACK_HOST'] = self.cfg.get('host', 'ip')
             mp['DB_NAME'] = DB_NAME
             mp['DB_USER'] = self.cfg.getdefaulted('db', 'sql_user', 'root')
-            mp['DB_PASSWORD'] = self.cfg.get_password('sql', db.PASSWORD_PROMPT)
+            mp['DB_PASSWORD'] = self.cfg.get_password('sql', dbhelper.PASSWORD_PROMPT)
             mp['DB_HOST'] = self.cfg.get("db", "sql_host")
             mp['DB_PORT'] = self.cfg.get("db", "port")
         return mp

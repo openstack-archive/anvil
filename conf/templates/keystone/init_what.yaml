@@ -1,43 +1,43 @@
 ---
 endpoints:
--   admin_url: http://%SERVICE_HOST%:8080/v1/AUTH_%(tenant_id)s
-    internal_url: http://%SERVICE_HOST%:8080/
-    public_url: http://%SERVICE_HOST%:8080/v1/AUTH_%(tenant_id)s
+-   admin_url: http://%swift.service_host%:8080/v1/AUTH_%(tenant_id)s
+    internal_url: http://%swift.service_host%:8080/
+    public_url: http://%swift.service_host%:8080/v1/AUTH_%(tenant_id)s
     region: RegionOne
     service: swift
--   admin_url: http://%SERVICE_HOST%:8773/services/Admin
-    internal_url: http://%SERVICE_HOST%:8773/services/Cloud
-    public_url: http://%SERVICE_HOST%:8773/services/Cloud
+-   admin_url: http://%nova.service_host%:8773/services/Admin
+    internal_url: http://%nova.service_host%:8773/services/Cloud
+    public_url: http://%nova.service_host%:8773/services/Cloud
     region: RegionOne
     service: ec2
--   admin_url: http://%SERVICE_HOST%:9696/
-    internal_url: http://%SERVICE_HOST%:9696/
-    public_url: http://%SERVICE_HOST%:9696/
+-   admin_url: http://%quantum.service_host%:9696/
+    internal_url: http://%quantum.service_host%:9696/
+    public_url: http://%quantum.service_host%:9696/
     region: RegionOne
     service: network
--   admin_url: http://%SERVICE_HOST%:9292
-    internal_url: http://%SERVICE_HOST%:9292
-    public_url: http://%SERVICE_HOST%:9292
+-   admin_url: http://%glance.service_host%:9292
+    internal_url: http://%glance.service_host%:9292
+    public_url: http://%glance.service_host%:9292
     region: RegionOne
     service: glance
--   admin_url: http://%SERVICE_HOST%:8776/v1/%(tenant_id)s
-    internal_url: http://%SERVICE_HOST%:8776/v1/%(tenant_id)s
-    public_url: http://%SERVICE_HOST%:8776/v1/%(tenant_id)s
+-   admin_url: http://%nova.service_host%:8776/v1/%(tenant_id)s
+    internal_url: http://%nova.service_host%:8776/v1/%(tenant_id)s
+    public_url: http://%nova.service_host%:8776/v1/%(tenant_id)s
     region: RegionOne
     service: volume
--   admin_url: http://%SERVICE_HOST%:3333
-    internal_url: http://%SERVICE_HOST%:3333
-    public_url: http://%SERVICE_HOST%:3333
+-   admin_url: http://%nova.service_host%:3333
+    internal_url: http://%nova.service_host%:3333
+    public_url: http://%nova.service_host%:3333
     region: RegionOne
     service: s3
--   admin_url: http://%SERVICE_HOST%:$(admin_port)s/v2.0
-    internal_url: http://%SERVICE_HOST%:$(public_port)s/v2.0
-    public_url: http://%SERVICE_HOST%:$(public_port)s/v2.0
+-   admin_url: http://%keystone.service_host%:$(admin_port)s/v2.0
+    internal_url: http://%keystone.service_host%:$(public_port)s/v2.0
+    public_url: http://%keystone.service_host%:$(public_port)s/v2.0
     region: RegionOne
     service: keystone
--   admin_url: http://%SERVICE_HOST%:8774/v2/%(tenant_id)s
-    internal_url: http://%SERVICE_HOST%:8774/v2/%(tenant_id)s
-    public_url: http://%SERVICE_HOST%:8774/v2/%(tenant_id)s
+-   admin_url: http://%nova.service_host%:8774/v2/%(tenant_id)s
+    internal_url: http://%nova.service_host%:8774/v2/%(tenant_id)s
+    public_url: http://%nova.service_host%:8774/v2/%(tenant_id)s
     region: RegionOne
     service: nova
 roles:
@@ -87,7 +87,7 @@ tenants:
 users:
 -   email: demo@example.com
     name: demo
-    password: '%keystone/admin_password%'
+    password: '%keystone.admin_password%'
     roles:
     - anotherrole:demo
     - Member:demo
@@ -95,7 +95,7 @@ users:
     - demo
 -   email: admin@example.com
     name: admin
-    password: '%keystone/admin_password%'
+    password: '%keystone.admin_password%'
     roles:
     - admin:admin
     - admin:demo
@@ -107,21 +107,21 @@ users:
     - demo
 -   email: ec2@example.com
     name: ec2
-    password: '%keystone/service_password%'
+    password: '%keystone.service_password%'
     roles:
     - admin:service
     tenants:
     - service
 -   email: glance@example.com
     name: glance
-    password: '%keystone/service_password%'
+    password: '%keystone.service_password%'
     roles:
     - admin:service
     tenants:
     - service
 -   email: nova@example.com
     name: nova
-    password: '%keystone/service_password%'
+    password: '%keystone.service_password%'
     roles:
     - admin:service
     - ResellerAdmin:service
@@ -129,14 +129,14 @@ users:
     - service
 -   email: quantum@example.com
     name: quantum
-    password: '%keystone/service_password%'
+    password: '%keystone.service_password%'
     roles:
     - admin:service
     tenants:
     - service
 -   email: swift@example.com
     name: swift
-    password: '%keystone/service_password%'
+    password: '%keystone.service_password%'
     roles:
     - admin:service
     tenants:

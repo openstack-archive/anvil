@@ -18,13 +18,13 @@ import io
 
 from anvil import cfg
 from anvil import component as comp
-from anvil import importer
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
 
-from anvil.components import db
-from anvil.components import keystone
+from anvil.helpers import db as dbhelper
+from anvil.helpers import glance as ghelper
+from anvil.helpers import keystone as khelper
 
 LOG = logging.getLogger(__name__)
 
@@ -99,8 +99,8 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
         self._setup_db()
 
     def _setup_db(self):
-        db.drop_db(self.cfg, self.distro, DB_NAME)
-        db.create_db(self.cfg, self.distro, DB_NAME, utf8=True)
+        dbhelper.drop_db(self.cfg, self.distro, DB_NAME)
+        dbhelper.create_db(self.cfg, self.distro, DB_NAME, utf8=True)
 
     def _get_source_config(self, config_fn):
         real_fn = config_fn
@@ -110,7 +110,7 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
         return (fn, sh.load_file(fn))
 
     def _config_adjust_registry(self, contents, fn):
-        params = get_shared_params(self.cfg)
+        params = ghelper.get_shared_params(self.cfg)
         with io.BytesIO(contents) as stream:
             config = cfg.IgnoreMissingConfigParser()
             config.readfp(stream)
@@ -119,13 +119,13 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
             config.set('DEFAULT', 'bind_port', params['endpoints']['registry']['port'])
             config.remove_option('DEFAULT', 'log_file')
             config.set('DEFAULT', 'sql_connection',
-                                db.fetch_dbdsn(self.cfg, DB_NAME, utf8=True))
+                                dbhelper.fetch_dbdsn(self.cfg, DB_NAME, utf8=True))
             config.set('paste_deploy', 'flavor', 'keystone')
             return config.stringify(fn)
         return contents
 
     def _config_adjust_paste(self, contents, fn):
-        params = keystone.get_shared_params(self.cfg, 'glance')
+        params = khelper.get_shared_params(self.cfg, 'glance')
         with io.BytesIO(contents) as stream:
             config = cfg.IgnoreMissingConfigParser()
             config.readfp(stream)
@@ -144,7 +144,7 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
         return contents
 
     def _config_adjust_api(self, contents, fn):
-        params = get_shared_params(self.cfg)
+        params = ghelper.get_shared_params(self.cfg)
         with io.BytesIO(contents) as stream:
             config = cfg.IgnoreMissingConfigParser()
             config.readfp(stream)
@@ -227,40 +227,7 @@ class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
             # Install any images that need activating...
             LOG.info("Waiting %s seconds so that glance can start up before image install." % (self.wait_time))
             sh.sleep(self.wait_time)
-            # Late load since its using a client lib/s that is only avail after install...
-            uploader_cls = importer.import_entry_point('anvil.helpers.glance:UploadService')
-            uploader = uploader_cls(self.cfg)
-            uploader.install(self._get_image_urls())
-
-
-def get_shared_params(cfg):
-    mp = dict()
-
-    host_ip = cfg.get('host', 'ip')
-    glance_host = cfg.getdefaulted('glance', 'glance_host', host_ip)
-    glance_port = cfg.getdefaulted('glance', 'glance_port', '9292')
-    glance_protocol = cfg.getdefaulted('glance', 'glance_protocol', 'http')
-
-    # Registry should be on the same host
-    glance_registry_port = cfg.getdefaulted('glance', 'glance_registry_port', '9191')
-
-    # Uri's of the http/https endpoints
-    mp['endpoints'] = {
-        'admin': {
-            'uri': utils.make_url(glance_protocol, glance_host, glance_port),
-            'port': glance_port,
-            'host': glance_host,
-            'protocol': glance_protocol,
-        },
-        'registry': {
-            'uri': utils.make_url(glance_protocol, glance_host, glance_registry_port),
-            'port': glance_registry_port,
-            'host': glance_host,
-            'protocol': glance_protocol,
-        }
-    }
-    mp['endpoints']['internal'] = dict(mp['endpoints']['admin'])
-    mp['endpoints']['public'] = dict(mp['endpoints']['admin'])
-
-    LOG.debug("Glance shared params: %s", mp)
-    return mp
+            params = {}
+            params['glance'] = ghelper.get_shared_params(self.cfg)
+            params['keystone'] = khelper.get_shared_params(self.cfg, 'glance')
+            ghelper.UploadService(params).install(self._get_image_urls())

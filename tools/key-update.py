@@ -19,7 +19,7 @@ from anvil import cfg_helpers
 from anvil import passwords
 from anvil import utils
 
-from anvil.helpers import keystone
+from anvil.helpers import keystone as khelper
 
 import yaml
 
@@ -71,5 +71,5 @@ if __name__ == "__main__":
 
     setup_logging(len(options.verbosity))
     utils.welcome(prog_name="Keystone updater/init tool")
-    initer = keystone.Initializer(get_config())
-    initer.initialize(**data)
+    params = khelper.get_shared_params(get_config())
+    khelper.Initializer(params).initialize(**data)

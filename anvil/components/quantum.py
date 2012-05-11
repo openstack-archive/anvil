@@ -23,7 +23,7 @@ from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
 
-from anvil.components import db
+from anvil.helpers import db as dbhelper
 
 LOG = logging.getLogger(__name__)
 
@@ -106,7 +106,7 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
             with io.BytesIO(contents) as stream:
                 config = cfg.IgnoreMissingConfigParser()
                 config.readfp(stream)
-                config.set("database", "sql_connection", db.fetch_dbdsn(self.cfg, DB_NAME, utf8=True))
+                config.set("database", "sql_connection", dbhelper.fetch_dbdsn(self.cfg, DB_NAME, utf8=True))
                 contents = config.stringify(config_fn)
             return contents
         else:
@@ -136,11 +136,11 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
         self._setup_bridge()
 
     def _setup_db(self):
-        if not self.q_vswitch_service or \
-                'no-ovs-db-init' in self.options:
+        if not self.q_vswitch_service or 'no-ovs-db-init' in self.options:
             return
-        db.drop_db(self.cfg, self.distro, DB_NAME)
-        db.create_db(self.cfg, self.distro, DB_NAME, utf8=True)
+        else:
+            dbhelper.drop_db(self.cfg, self.distro, DB_NAME)
+            dbhelper.create_db(self.cfg, self.distro, DB_NAME, utf8=True)
 
     def _get_source_config(self, config_fn):
         if config_fn == PLUGIN_CONF:
