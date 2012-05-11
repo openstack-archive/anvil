@@ -285,7 +285,7 @@ system auto-generate one for you you will need to check the final output
 of the above install and pick up the password that was generated which
 should be displayed at key ``passwords/horizon_keystone_admin``. You can
 also later find this authentication information in the generated
-``os-core.rc`` file.
+``core.rc`` file.
 
 If you see a login page and can access horizon then:
 
@@ -298,7 +298,7 @@ In your ANVIL directory:
 
 ::
 
-    source os-core.rc
+    source core.rc
 
 This should set up the environment variables you need to run OpenStack
 CLI tools:
