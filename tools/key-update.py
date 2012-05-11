@@ -19,7 +19,7 @@ from anvil import cfg_helpers
 from anvil import passwords
 from anvil import utils
 
-from anvil.helpers import initializers
+from anvil.helpers import initializers as inits
 
 import yaml
 
@@ -63,11 +63,11 @@ if __name__ == "__main__":
     if not options.yaml_fn:
         parser.error("File option required")
 
-    yaml_data = None
+    data = None
     with open(options.yaml_fn, "r") as fh:
-        yaml_data = yaml.load(fh)
+        data = yaml.load(fh)
 
     setup_logging(len(options.verbosity))
-    utils.welcome(prog_name="Keystone updater tool")
-    cfg = get_config()
-    
+    utils.welcome(prog_name="Keystone updater/init tool")
+    initer = inits.Keystone(get_config())
+    initer.initialize(**data)
