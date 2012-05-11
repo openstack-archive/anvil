@@ -191,6 +191,7 @@ def run(args):
     LOG.info("In root directory: %s", colorizer.quote(root_dir))
 
     start_time = time.time()
+    sh.copy(persona_fn, sh.joinpths(root_dir, sh.basename(persona_fn)))
     runner.run(persona_inst)
     end_time = time.time()
 

@@ -584,6 +584,13 @@ def unlink(path, ignore_errors=True, run_as_root=False):
                 pass
 
 
+def copy(src, dst):
+    LOG.audit("Copying: %r => %r" % (src, dst))
+    if not DRYRUN_MODE:
+        shutil.copy(src, dst)
+    return dst
+
+
 def move(src, dst):
     LOG.audit("Moving: %r => %r" % (src, dst))
     if not DRYRUN_MODE:
