@@ -97,38 +97,30 @@ def setup_root(root_dir):
 def establish_config(args):
     """
     Creates the stack configuration object using the set of
-    desired configuration resolvers to be used and returns
+    desired configuration resolvers+password resolvers to be used and returns
     the wrapper that knows how to activate those resolvers.
 
     Arguments:
         args: command line args
     """
 
-    base_config = None
-    config_location = cfg_helpers.find_config()
-    if config_location:
-        base_config = cfg.IgnoreMissingConfigParser()
-        with open(config_location, "r") as fh:
-            base_config.readfp(fh)
-    proxy_config = cfg.ProxyConfig()
-    proxy_config.add_read_resolver(cfg.CliResolver.create(args['cli_overrides']))
-    proxy_config.add_read_resolver(cfg.EnvResolver())
-    if base_config:
-        cfg_resolver = cfg.ConfigResolver(base_config)
-        proxy_config.add_read_resolver(cfg_resolver)
-        proxy_config.add_set_resolver(cfg_resolver)
-    utils.log_iterable(utils.get_class_names(proxy_config.read_resolvers),
+    config = cfg.ProxyConfig()
+    config.add_read_resolver(cfg.CliResolver.create(args['cli_overrides']))
+    config.add_read_resolver(cfg.EnvResolver())
+    config.add_read_resolver(cfg.ConfigResolver(cfg.IgnoreMissingConfigParser(fns=cfg_helpers.find_config())))
+    utils.log_iterable(utils.get_class_names(config.read_resolvers),
         header="Config lookup will use the following resolvers:",
         logger=LOG)
-    return proxy_config
 
-
-def establish_passwords(config, args):
-    pw_gen = passwords.PasswordGenerator(config, args.get('prompt_for_passwords', True))
-    utils.log_iterable(utils.get_class_names(pw_gen.lookups),
+    config.add_password_resolver(passwords.ConfigPassword(config))
+    if args.get('prompt_for_passwords', True):
+        config.add_password_resolver(passwords.InputPassword(config))
+    config.add_password_resolver(passwords.RandomPassword(config))
+    utils.log_iterable(utils.get_class_names(config.pw_resolvers),
         header="Password finding will use the following lookups:",
         logger=LOG)
-    return pw_gen
+
+    return config
 
 
 def run(args):
@@ -180,12 +172,10 @@ def run(args):
     dist = distro.Distro.get_current()
     persona_inst = load_verify_persona(persona_fn, dist)
     config = establish_config(args)
-    pw_gen = establish_passwords(config, args)
 
     runner_factory = actions.get_runner_factory(action)
     runner = runner_factory(dist,
                             config,
-                            pw_gen,
                             root_dir=root_dir,
                             **args)
 

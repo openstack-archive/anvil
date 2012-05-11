@@ -32,26 +32,23 @@ from anvil.components import keystone
 
 LOG = log.getLogger(__name__)
 
+# Common opts used by all cmds
+COMMON_OPTS = [
+    '--os-image-url', '%glance/endpoints/public/uri%',
+    '--os-username', '%keystone/demo_user%',
+    '--os-tenant-name', '%keystone/demo_tenant%',
+    '--os-auth-url', '%keystone/endpoints/public/uri%',
+    '--os-password', '%keystone/admin_password%',
+]
+
 # Glance client commands
-IMAGE_ADD = ['glance',
-             '--os-image-url', '%GLANCE_HOSTPORT%',
-             '--os-username', '%ADMIN_USER_NAME%',
-             '--os-tenant-name', '%ADMIN_TENANT_NAME%',
-             '--os-auth-url', '%SERVICE_ENDPOINT%',
-             '--os-password', '%ADMIN_PASSWORD%',
-             'image-create',
+IMAGE_ADD = ['glance'] + COMMON_OPTS + ['image-create',
              '--name', '%NAME%',
              '--public',
              '--container-format', '%CONTAINER_FORMAT%',
              '--disk-format', '%DISK_FORMAT%']
 
-IMAGE_LIST = ['glance',
-             '--os-image-url', '%GLANCE_HOSTPORT%',
-             '--os-username', '%ADMIN_USER_NAME%',
-             '--os-tenant-name', '%ADMIN_TENANT_NAME%',
-             '--os-auth-url', '%SERVICE_ENDPOINT%',
-             '--os-password', '%ADMIN_PASSWORD%',
-             'image-list']
+IMAGE_LIST = ['glance'] + COMMON_OPTS + ['image-list']
 
 # Extensions that tarfile knows how to work with
 TAR_EXTS = ['.tgz', '.gzip', '.gz', '.bz2', '.tar']
@@ -295,15 +292,15 @@ class Image(object):
 
 
 class Service:
-    def __init__(self, owner):
-        self.owner = weakref.proxy(owner)
+    def __init__(self, cfg):
+        self.cfg = cfg
 
     def install(self, urls):
         # Install them in glance
         am_installed = 0
         config = dict()
-        config.update(glance.get_shared_params(self.owner.cfg))
-        config.update(keystone.get_shared_params(self.owner.cfg, self.owner.pw_gen))
+        config['glance'] = glance.get_shared_params(self.cfg)
+        config['keystone'] = keystone.get_shared_params(self.cfg)
         if urls:
             utils.log_iterable(urls, logger=LOG,
                                 header="Attempting to download+extract+upload %s images" % len(urls))

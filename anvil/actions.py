@@ -43,12 +43,10 @@ class ActionRunner(object):
     def __init__(self,
                  distro,
                  cfg,
-                 pw_gen,
                  root_dir,
                  **kargs):
         self.distro = distro
         self.cfg = cfg
-        self.pw_gen = pw_gen
         self.keep_old = kargs.get('keep_old', False)
         self.force = kargs.get('force', False)
         self.root_dir = root_dir
@@ -212,7 +210,6 @@ class ActionRunner(object):
                 header="Processing prerequisite action %s requested by" % colorizer.quote(preq_cls_name))
             prereq_instance = preq_cls(self.distro,
                                     self.cfg,
-                                    self.pw_gen,
                                     keep_old=self.keep_old,
                                     force=self.force,
                                     root_dir=self.root_dir,
@@ -242,7 +239,7 @@ class InstallRunner(ActionRunner):
 
     def _write_rc_file(self):
         fn = sh.abspth(settings.gen_rc_filename('core'))
-        writer = env_rc.RcWriter(self.cfg, self.pw_gen, self.root_dir)
+        writer = env_rc.RcWriter(self.cfg, self.root_dir)
         if not sh.isfile(fn):
             LOG.info("Generating a file at %s that will contain your environment settings.", colorizer.quote(fn))
             writer.write(fn)

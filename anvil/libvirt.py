@@ -68,8 +68,7 @@ class Virsh(object):
         else:
             return _DEAD
 
-    def _destroy_domain(self, conn, dom_name):
-        libvirt = importer.import_module('libvirt')
+    def _destroy_domain(self, libvirt, conn, dom_name):
         try:
             dom = conn.lookupByName(dom_name)
             LOG.debug("Destroying domain (%r) (id=%s) running %r" % (dom_name, dom.ID(), dom.OSType()))
@@ -99,7 +98,11 @@ class Virsh(object):
         utils.execute_template(*cmds, params=mp)
 
     def clear_domains(self, virt_type, inst_prefix):
-        libvirt = importer.import_module('libvirt')
+        libvirt = None
+        try:
+            libvirt = importer.import_module('libvirt')
+        except RuntimeError as e:
+            pass
         if not libvirt:
             LOG.warn("Could not clear out libvirt domains, libvirt not available for python.")
             return
@@ -130,6 +133,6 @@ class Virsh(object):
                         utils.log_iterable(kill_domains, logger=LOG,
                             header="Found %s old domains to destroy" % (len(kill_domains)))
                         for domain in sorted(kill_domains):
-                            self._destroy_domain(ch, domain)
+                            self._destroy_domain(libvirt, ch, domain)
                 except libvirt.libvirtError, e:
                     LOG.warn("Could not clear out libvirt domains due to: %s", e)

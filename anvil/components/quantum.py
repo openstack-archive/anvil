@@ -106,7 +106,7 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
             with io.BytesIO(contents) as stream:
                 config = cfg.IgnoreMissingConfigParser()
                 config.readfp(stream)
-                config.set("database", "sql_connection", db.fetch_dbdsn(self.cfg, self.pw_gen, DB_NAME, utf8=True))
+                config.set("database", "sql_connection", db.fetch_dbdsn(self.cfg, DB_NAME, utf8=True))
                 contents = config.stringify(config_fn)
             return contents
         else:
@@ -139,8 +139,8 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
         if not self.q_vswitch_service or \
                 'no-ovs-db-init' in self.options:
             return
-        db.drop_db(self.cfg, self.pw_gen, self.distro, DB_NAME)
-        db.create_db(self.cfg, self.pw_gen, self.distro, DB_NAME, utf8=True)
+        db.drop_db(self.cfg, self.distro, DB_NAME)
+        db.create_db(self.cfg, self.distro, DB_NAME, utf8=True)
 
     def _get_source_config(self, config_fn):
         if config_fn == PLUGIN_CONF:

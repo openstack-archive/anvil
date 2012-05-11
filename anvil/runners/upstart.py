@@ -83,7 +83,7 @@ class UpstartRunner(base.Runner):
         params['COMPONENT_START_EVENT'] = self.component_name + START_EVENT_SUFFIX
         params['COMPONENT_STOP_EVENT'] = self.component_name + STOP_EVENT_SUFFIX
         params['PROGRAM_NAME'] = app_pth
-        params['AUTHOR'] = settings.PROG_NICE_NAME
+        params['AUTHOR'] = settings.PROG_NAME
         if program_args:
             escaped_args = list()
             for opt in program_args:

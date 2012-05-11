@@ -33,13 +33,13 @@ CFG_MAKE = {
     'HOST_IP': ('host', 'ip'),
 }
 
-# General password keys
+# PW sections
 PASSWORDS_MAKES = {
-    'ADMIN_PASSWORD': 'horizon_keystone_admin',
-    'SERVICE_PASSWORD': 'service_password',
-    'RABBIT_PASSWORD': 'rabbit',
-    'SERVICE_TOKEN': 'service_token',
-    'MYSQL_PASSWORD': 'sql',
+    'ADMIN_PASSWORD': ('passwords', 'horizon_keystone_admin'),
+    'SERVICE_PASSWORD': ('passwords', 'service_password'),
+    'RABBIT_PASSWORD': ('passwords', 'rabbit'),
+    'SERVICE_TOKEN': ('passwords', 'service_token'),
+    'MYSQL_PASSWORD': ('passwords', 'sql'),
 }
 
 # Install root output name and env variable name
@@ -66,9 +66,8 @@ EXTERN_INCLUDES = ['localrc', 'eucarc']
 
 
 class RcWriter(object):
-    def __init__(self, cfg, pw_gen, root_dir):
+    def __init__(self, cfg, root_dir):
         self.cfg = cfg
-        self.pw_gen = pw_gen
         self.root_dir = root_dir
 
     def _make_export(self, export_name, value):
@@ -102,18 +101,19 @@ class RcWriter(object):
         lines.append("")
         return lines
 
-    def _get_password_envs(self):
-        to_set = dict()
-        for (out_name, key) in PASSWORDS_MAKES.items():
-            to_set[out_name] = self.pw_gen.extract(key)
-        return to_set
-
     def _get_general_envs(self):
         to_set = dict()
         for (out_name, cfg_data) in CFG_MAKE.items():
             (section, key) = (cfg_data)
             to_set[out_name] = self.cfg.get(section, key)
         to_set[INSTALL_ROOT] = self.root_dir
+        return to_set
+
+    def _get_password_envs(self):
+        to_set = dict()
+        for (out_name, cfg_data) in PASSWORDS_MAKES.items():
+            (section, key) = (cfg_data)
+            to_set[out_name] = self.cfg.get(section, key)
         return to_set
 
     def _generate_passwords(self):
@@ -187,21 +187,16 @@ class RcWriter(object):
         sh.write_file(fn, contents)
 
     def _get_os_envs(self):
-        key_params = keystone.get_shared_params(self.cfg, self.pw_gen)
+        params = keystone.get_shared_params(self.cfg)
         to_set = dict()
-        to_set['OS_PASSWORD'] = key_params['ADMIN_PASSWORD']
-        to_set['OS_TENANT_NAME'] = key_params['DEMO_TENANT_NAME']
-        to_set['OS_USERNAME'] = key_params['DEMO_USER_NAME']
-        # This seems named weirdly the OS_AUTH_URL is the keystone SERVICE_ENDPOINT endpoint
-        # Todo: describe more why this is the case...
-        to_set['OS_AUTH_URL'] = key_params['SERVICE_ENDPOINT']
+        to_set['OS_PASSWORD'] = params['admin_password']
+        to_set['OS_TENANT_NAME'] = params['demo_tenant']
+        to_set['OS_USERNAME'] = params['demo_user']
+        to_set['OS_AUTH_URL'] = params['endpoints']['public']
         return to_set
 
     def _get_misc_envs(self):
         to_set = dict()
-        # https://bugs.launchpad.net/keystone/+bug/962600
-        # key_params = keystone.get_shared_params(self.cfg, self.pw_gen)
-        # to_set.update(key_params)
         return to_set
 
     def _generate_misc_env(self):

@@ -42,7 +42,7 @@ def get_config():
     config.add_read_resolver(cfg.EnvResolver())
     config.add_read_resolver(cfg.ConfigResolver(base_config))
     pw_gen = passwords.PasswordGenerator(config)
-    return CfgProxy(config, pw_gen)
+    return (config, pw_gen)
 
 
 def setup_logging(level):
@@ -74,6 +74,5 @@ if __name__ == "__main__":
             cleaned_uris.append(uri)
 
     setup_logging(len(options.verbosity))
-
-    cfg = get_config()
-    uploader.Service(cfg).install(uris)
+    cfg, pw_gen = get_config()
+    uploader.Service(cfg, pw_gen).install(uris)

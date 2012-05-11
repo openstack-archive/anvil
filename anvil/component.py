@@ -66,7 +66,6 @@ class ComponentBase(object):
 
         # Parts of the global runner context that we use
         self.cfg = runner.cfg
-        self.pw_gen = runner.pw_gen
         self.distro = runner.distro
 
         # Required component directories
