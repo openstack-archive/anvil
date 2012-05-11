@@ -26,7 +26,8 @@ def get_config():
 
     config = cfg.ProxyConfig()
     config.add_read_resolver(cfg.EnvResolver())
-    config.add_read_resolver(cfg.ConfigResolver(cfg.IgnoreMissingConfigParser(fns=cfg_helpers.find_config())))
+    fns = cfg_helpers.find_config([os.path.join(possible_topdir, 'conf', 'anvil.ini')])
+    config.add_read_resolver(cfg.ConfigResolver(cfg.IgnoreMissingConfigParser(fns=fns)))
 
     config.add_password_resolver(passwords.ConfigPassword(config))
     config.add_password_resolver(passwords.InputPassword(config))
