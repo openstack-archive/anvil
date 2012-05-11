@@ -163,16 +163,6 @@ class Image(object):
         self.registry = Registry(client)
         self.url = url
 
-    def _extract_id(self, output):
-        if not output:
-            return None
-        for line in output.splitlines():
-            if line.startswith("| id"):
-                pieces = line.split("|")
-                if len(pieces) >= 3:
-                    return pieces[2].strip()
-        return None
-
     def _check_name(self, name):
         LOG.info("Checking if image %s already exists already in glance.", colorizer.quote(name))
         if name in self.registry:
