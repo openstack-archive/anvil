@@ -265,7 +265,7 @@ class UploadService:
                                            token=self._get_token())
             except (gexceptions.ClientException,
                     kexceptions.ClientException) as e:
-                LOG.exception('Failed fetching need clients for image calls due to: %s', e)
+                LOG.exception('Failed fetching needed clients for image calls due to: %s', e)
                 return am_installed
             utils.log_iterable(urls, logger=LOG,
                                 header="Attempting to download+extract+upload %s images" % len(urls))
