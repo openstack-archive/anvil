@@ -16,7 +16,6 @@
 
 import re
 
-from anvil import colorizer
 from anvil import component as comp
 from anvil import log as logging
 from anvil import shell as sh

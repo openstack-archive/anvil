@@ -15,8 +15,6 @@
 #    under the License.
 
 
-import weakref
-
 from anvil import log as logging
 from anvil import utils
 

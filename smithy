@@ -107,7 +107,13 @@ def establish_config(args):
     config = cfg.ProxyConfig()
     config.add_read_resolver(cfg.CliResolver.create(args['cli_overrides']))
     config.add_read_resolver(cfg.EnvResolver())
-    config.add_read_resolver(cfg.ConfigResolver(cfg.IgnoreMissingConfigParser(fns=cfg_helpers.find_config())))
+    start_configs = []
+    if args['config_fn']:
+        start_configs.append(args['config_fn'])
+    else:
+        start_configs.extend(cfg_helpers.get_config_locations())
+    real_configs = cfg_helpers.find_config(start_configs)
+    config.add_read_resolver(cfg.ConfigResolver(cfg.IgnoreMissingConfigParser(fns=real_configs)))
     utils.log_iterable(utils.get_class_names(config.read_resolvers),
         header="Config lookup will use the following resolvers:",
         logger=LOG)
@@ -192,14 +198,17 @@ def run(args):
     LOG.info("It took %s seconds or %s minutes to complete action %s.",
         colorizer.quote(pretty_time['seconds']), colorizer.quote(pretty_time['minutes']), colorizer.quote(action))
 
-    LOG.info("After action %s your settings which were read are:", colorizer.quote(action))
+    LOG.info("After action %s your settings which were read/set are:", colorizer.quote(action))
     cfg_groups = dict()
-    for c in config.opts_read.keys():
+    read_set_keys = (config.opts_read.keys() + config.opts_set.keys())
+    for c in read_set_keys:
         cfg_id = cfg_helpers.make_id(c, None)
         cfg_groups[cfg_id] = colorizer.quote(c.capitalize(), underline=True)
+
     # Now print and order/group by our selection here
     cfg_ordering = sorted(cfg_groups.keys())
     cfg_helpers.pprint(config.opts_cache, cfg_groups, cfg_ordering)
+
     return True
 
 

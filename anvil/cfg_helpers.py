@@ -72,19 +72,23 @@ def make_id(section, option):
     return "/".join(joinwhat)
 
 
-def find_config(start_locations=None):
-    """
-    Finds the anvil configuration file.
-
-    Returns: the file locations or None if not found
-    """
+def get_config_locations(start_locations=None):
     locs = []
     if start_locations:
         locs.extend(start_locations)
-    real_paths = []
     locs.append(settings.CONFIG_LOCATION)
     locs.append(sh.joinpths("/etc", settings.PROG_NAME, settings.CONFIG_NAME))
-    for path in locs:
+    return locs
+
+
+def find_config(locations=None):
+    """
+    Finds the potential anvil configuration files.
+    """
+    if not locations:
+        locations = get_config_locations()
+    real_paths = []
+    for path in locations:
         LOG.debug("Looking for configuration in: %r", path)
         if sh.isfile(path):
             LOG.debug("Found configuration in: %r", path)

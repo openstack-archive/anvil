@@ -32,6 +32,8 @@ from anvil.components import rabbit
 
 from anvil.packaging import yum
 
+from anvil.helpers import nova as nhelper
+
 LOG = logging.getLogger(__name__)
 
 # See: http://wiki.libvirt.org/page/SSHPolicyKitSetup
@@ -145,7 +147,7 @@ class NovaInstaller(nova.NovaInstaller):
 
     def configure(self):
         configs_made = nova.NovaInstaller.configure(self)
-        driver_canon = nova.canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
+        driver_canon = nhelper.canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
         if driver_canon == 'libvirt':
             (fn, contents) = self._get_policy(self._get_policy_users())
             dirs_made = list()
