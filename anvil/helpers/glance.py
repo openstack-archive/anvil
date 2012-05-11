@@ -30,25 +30,13 @@ from anvil import utils
 from anvil.components import glance
 from anvil.components import keystone
 
+from glanceclient.v1 import client as gclient_v1
+from glanceclient.common import exceptions as gexceptions
+
+from keystoneclient.v2_0 import client as kclient_v2
+from keystoneclient import exceptions as kexceptions
+
 LOG = log.getLogger(__name__)
-
-# Common opts used by all cmds
-COMMON_OPTS = [
-    '--os-image-url', '%glance/endpoints/public/uri%',
-    '--os-username', '%keystone/demo_user%',
-    '--os-tenant-name', '%keystone/demo_tenant%',
-    '--os-auth-url', '%keystone/endpoints/public/uri%',
-    '--os-password', '%keystone/admin_password%',
-]
-
-# Glance client commands
-IMAGE_ADD = ['glance'] + COMMON_OPTS + ['image-create',
-             '--name', '%NAME%',
-             '--public',
-             '--container-format', '%CONTAINER_FORMAT%',
-             '--disk-format', '%DISK_FORMAT%']
-
-IMAGE_LIST = ['glance'] + COMMON_OPTS + ['image-list']
 
 # Extensions that tarfile knows how to work with
 TAR_EXTS = ['.tgz', '.gzip', '.gz', '.bz2', '.tar']
@@ -114,19 +102,19 @@ class Unpacker(object):
         info = dict()
         if kernel_fn:
             info['kernel'] = {
-                'FILE_NAME': sh.joinpths(extract_dir, kernel_fn),
-                'DISK_FORMAT': 'aki',
-                'CONTAINER_FORMAT': 'aki',
+                'file_name': sh.joinpths(extract_dir, kernel_fn),
+                'disk_format': 'aki',
+                'container_format': 'aki',
             }
         if ramdisk_fn:
             info['ramdisk'] = {
-                'FILE_NAME': sh.joinpths(extract_dir, ramdisk_fn),
-                'DISK_FORMAT': 'ari',
-                'CONTAINER_FORMAT': 'ari',
+                'file_name': sh.joinpths(extract_dir, ramdisk_fn),
+                'disk_format': 'ari',
+                'container_format': 'ari',
             }
-        info['FILE_NAME'] = sh.joinpths(extract_dir, root_img_fn)
-        info['DISK_FORMAT'] = 'ami'
-        info['CONTAINER_FORMAT'] = 'ami'
+        info['file_name'] = sh.joinpths(extract_dir, root_img_fn)
+        info['disk_format'] = 'ami'
+        info['container_format'] = 'ami'
         return info
 
     def unpack(self, file_name, file_location, tmp_dir):
@@ -136,12 +124,12 @@ class Unpacker(object):
             return self._unpack_tar(file_name, file_location, tmp_dir)
         elif fn_ext in ['.img', '.qcow2']:
             info = dict()
-            info['FILE_NAME'] = file_location
+            info['file_name'] = file_location
             if fn_ext == '.img':
-                info['DISK_FORMAT'] = 'raw'
+                info['disk_format'] = 'raw'
             else:
-                info['DISK_FORMAT'] = 'qcow2'
-            info['CONTAINER_FORMAT'] = 'bare'
+                info['disk_format'] = 'qcow2'
+            info['container_format'] = 'bare'
             return info
         else:
             msg = "Currently we do not know how to unpack %r" % (file_name)
@@ -149,24 +137,15 @@ class Unpacker(object):
 
 
 class Registry(object):
-    def __init__(self, cfg):
-        self.cfg = cfg
+    def __init__(self, client):
+        self.client = client
 
     def _extract_names(self):
         names = dict()
-        params = dict(self.cfg)
-        cmd = {'cmd': IMAGE_LIST}
-        res = utils.execute_template(cmd, params=params)
-        if res:
-            (stdout, _) = res[0]
-            for line in stdout.splitlines():
-                if line.startswith("|"):
-                    pieces = line.split("|")
-                    if len(pieces) >= 3:
-                        name = pieces[2].strip()
-                        image_id = pieces[1].strip()
-                        if name and image_id:
-                            names[name] = image_id
+        images = self.client.images.list()
+        for image in images:
+            name = image.name
+            names[name] = image.id
         return names
 
     def __contains__(self, name):
@@ -179,10 +158,10 @@ class Registry(object):
 
 class Image(object):
 
-    def __init__(self, url, cfg):
+    def __init__(self, client, url):
+        self.client = client
+        self.registry = Registry(client)
         self.url = url
-        self.cfg = cfg
-        self.registry = Registry(cfg)
 
     def _extract_id(self, output):
         if not output:
@@ -205,66 +184,49 @@ class Image(object):
         kernel = location.pop('kernel', None)
         kernel_id = ''
         if kernel:
-            params = dict(self.cfg)
-            params.update(dict(kernel))
             kernel_image_name = "%s-vmlinuz" % (image_name)
             self._check_name(kernel_image_name)
             LOG.info('Adding kernel %s to glance.', colorizer.quote(kernel_image_name))
-            params['NAME'] = kernel_image_name
-            cmd = {'cmd': IMAGE_ADD}
-            LOG.info("Please wait...")
-            with open(params['FILE_NAME'], 'r') as fh:
-                res = utils.execute_template(cmd,
-                    params=params, stdin_fh=fh,
-                    close_stdin=True)
-            if res:
-                (stdout, _) = res[0]
-                kernel_id = self._extract_id(stdout)
+            LOG.info("Please wait installing...")
+            with open(kernel['file_name'], 'r') as fh:
+                resource = self.client.images.create(data=fh,
+                    container_format=kernel['container_format'],
+                    disk_format=kernel['disk_format'],
+                    name=kernel_image_name)
+                kernel_id = resource.id
 
         # Upload the ramdisk, if we have one
         initrd = location.pop('ramdisk', None)
         initrd_id = ''
         if initrd:
-            params = dict(self.cfg)
-            params.update(dict(initrd))
             ram_image_name = "%s-initrd" % (image_name)
-            params['NAME'] = ram_image_name
             self._check_name(ram_image_name)
             LOG.info('Adding ramdisk %s to glance.', colorizer.quote(ram_image_name))
-            cmd = {'cmd': IMAGE_ADD}
-            LOG.info("Please wait...")
-            with open(params['FILE_NAME'], 'r') as fh:
-                res = utils.execute_template(cmd,
-                    params=params, stdin_fh=fh,
-                    close_stdin=True)
-            if res:
-                (stdout, _) = res[0]
-                initrd_id = self._extract_id(stdout)
+            LOG.info("Please wait installing...")
+            with open(initrd['file_name'], 'r') as fh:
+                resource = self.client.images.create(data=fh,
+                    container_format=initrd['container_format'],
+                    disk_format=initrd['disk_format'],
+                    name=ram_image_name)
+                initrd_id = resource.id
 
         # Upload the root, we must have one...
-        root_image = dict(location)
         LOG.info('Adding image %s to glance.', colorizer.quote(image_name))
-        add_cmd = list(IMAGE_ADD)
-        params = dict(self.cfg)
-        params.update(dict(root_image))
         self._check_name(image_name)
-        params['NAME'] = image_name
-        if kernel_id:
-            add_cmd += ['--property', 'kernel_id=%KERNEL_ID%']
-            params['KERNEL_ID'] = kernel_id
-        if initrd_id:
-            add_cmd += ['--property', 'ramdisk_id=%INITRD_ID%']
-            params['INITRD_ID'] = initrd_id
-        cmd = {'cmd': add_cmd}
-        LOG.info("Please wait...")
-        with open(params['FILE_NAME'], 'r') as fh:
-            res = utils.execute_template(cmd,
-                params=params, stdin_fh=fh,
-                close_stdin=True)
-        img_id = ''
-        if res:
-            (stdout, _) = res[0]
-            img_id = self._extract_id(stdout)
+        args = dict()
+        args['name'] = image_name
+        if kernel_id or initrd_id:
+            args['properties'] = dict()
+            if kernel_id:
+                args['properties']['kernel_id'] = kernel_id
+            if initrd_id:
+                args['properties']['ramdisk_id'] = initrd_id
+        args['container_format'] = location['container_format']
+        args['disk_format'] = location['disk_format']
+        LOG.info("Please wait installing...")
+        with open(location['file_name'], 'r') as fh:
+            resource = self.client.images.create(data=fh, **args)
+            img_id = resource.id
 
         return img_id
 
@@ -291,24 +253,40 @@ class Image(object):
             return (tgt_image_name, img_id)
 
 
-class Service:
+class UploadService:
     def __init__(self, cfg):
         self.cfg = cfg
 
+    def _get_token(self):
+        LOG.info("Getting your keystone token so that image uploads may proceed.")
+        params = keystone.get_shared_params(self.cfg)
+        client = kclient_v2.Client(username=params['demo_user'],
+            password=params['demo_password'],
+            tenant_name=params['demo_tenant'],
+            auth_url=params['endpoints']['public']['uri'])
+        return client.auth_token
+
     def install(self, urls):
-        # Install them in glance
         am_installed = 0
-        config = dict()
-        config['glance'] = glance.get_shared_params(self.cfg)
-        config['keystone'] = keystone.get_shared_params(self.cfg)
         if urls:
+            try:
+                params = glance.get_shared_params(self.cfg)
+                client = gclient_v1.Client(endpoint=params['endpoints']['public']['uri'],
+                                           token=self._get_token())
+            except (gexceptions.ClientException,
+                    kexceptions.ClientException) as e:
+                LOG.exception('Failed fetching need clients for image calls due to: %s', e)
+                return am_installed
             utils.log_iterable(urls, logger=LOG,
                                 header="Attempting to download+extract+upload %s images" % len(urls))
-            for uri in urls:
+            for url in urls:
                 try:
-                    (name, img_id) = Image(uri, config).install()
+                    (name, img_id) = Image(client, url).install()
                     LOG.info("Installed image named %s with image id %s.", colorizer.quote(name), colorizer.quote(img_id))
                     am_installed += 1
-                except (IOError, tarfile.TarError) as e:
-                    LOG.exception('Installing %r failed due to: %s', uri, e)
+                except (IOError,
+                        tarfile.TarError,
+                        gexceptions.ClientException,
+                        kexceptions.ClientException) as e:
+                    LOG.exception('Installing %r failed due to: %s', url, e)
         return am_installed
