@@ -120,12 +120,12 @@ def make_url(scheme, host, port=None,
 
 def get_from_path(items, path, quiet=True):
 
+    LOG.debug("Looking up %r in %s" % (path, items))
+
     (first_token, sep, remainder) = path.partition('/')
 
     if len(path) == 0:
         return items
-
-    LOG.debug("Looking up %r in %s" % (path, items))
 
     if len(first_token) == 0:
         if not quiet:
@@ -377,7 +377,7 @@ def find_params(text):
 
     def finder(match):
         param_name = match.group(2)
-        if param_name and param_name not in params_found:
+        if param_name is not None and param_name not in params_found:
             params_found.add(param_name)
         # Just finding, not modifying...
         return match.group(0)
@@ -406,9 +406,9 @@ def param_replace(text, replacements, ignore_missing=False):
     def replacer(match):
         org_txt = match.group(0)
         # Its a comment, leave it be
-        if match.group(1):
+        if match.group(1) is not None:
             return org_txt
-        param_name = match.group(2) 
+        param_name = match.group(2)
         # Find the replacement, if we can
         replacer = get_from_path(replacements, param_name)
         if replacer is None and ignore_missing:
