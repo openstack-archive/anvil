@@ -124,6 +124,13 @@ def canon_virt_driver(virt_driver):
     return virt_driver
 
 
+def get_shared_params(cfg):
+    mp = dict()
+    host_ip = cfg.get('host', 'ip')
+    mp['service_host'] = host_ip
+    return mp
+
+
 # This will configure nova volumes which in a developer box
 # is a volume group (lvm) that are backed by a loopback file
 class VolumeConfigurator(object):

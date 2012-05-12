@@ -24,7 +24,7 @@ from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
 
-from anvil.components import keystone
+from anvil.helpers import keystone as khelper
 
 LOG = logging.getLogger(__name__)
 
@@ -188,7 +188,7 @@ class RcWriter(object):
         sh.write_file(fn, contents)
 
     def _get_os_envs(self):
-        params = keystone.get_shared_params(self.cfg)
+        params = khelper.get_shared_params(self.cfg)
         to_set = dict()
         to_set['OS_PASSWORD'] = params['admin_password']
         to_set['OS_TENANT_NAME'] = params['demo_tenant']

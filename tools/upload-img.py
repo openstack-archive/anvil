@@ -19,7 +19,8 @@ from anvil import log as logging
 from anvil import passwords
 from anvil import utils
 
-from anvil.helpers import glance
+from anvil.helpers import glance as ghelper
+from anvil.helpers import keystone as khelper
 
 
 def get_config():
@@ -68,4 +69,7 @@ if __name__ == "__main__":
     setup_logging(len(options.verbosity))
     utils.welcome(prog_name="Image uploader tool")
     cfg = get_config()
-    glance.UploadService(cfg).install(uris)
+    params = {}
+    params['glance'] = ghelper.get_shared_params(cfg)
+    params['keystone'] = khelper.get_shared_params(cfg)
+    glance.UploadService(params).install(uris)

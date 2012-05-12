@@ -122,7 +122,7 @@ def get_from_path(items, path, quiet=True):
 
     LOG.debug("Looking up %r in %s" % (path, items))
 
-    (first_token, sep, remainder) = path.partition('/')
+    (first_token, sep, remainder) = path.partition('.')
 
     if len(path) == 0:
         return items

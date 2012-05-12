@@ -23,7 +23,7 @@ from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
 
-from anvil.components import db
+from anvil.helpers import db as dbhelper
 
 LOG = logging.getLogger(__name__)
 
@@ -76,8 +76,8 @@ class MelangeInstaller(comp.PythonInstallComponent):
         return places
 
     def _setup_db(self):
-        db.drop_db(self.cfg, self.distro, DB_NAME)
-        db.create_db(self.cfg, self.distro, DB_NAME, utf8=True)
+        dbhelper.drop_db(self.cfg, self.distro, DB_NAME)
+        dbhelper.create_db(self.cfg, self.distro, DB_NAME, utf8=True)
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
@@ -102,7 +102,7 @@ class MelangeInstaller(comp.PythonInstallComponent):
             with io.BytesIO(contents) as stream:
                 config = cfg.IgnoreMissingConfigParser()
                 config.readfp(stream)
-                config.set('DEFAULT', 'sql_connection', db.fetch_dbdsn(self.cfg, DB_NAME, utf8=True))
+                config.set('DEFAULT', 'sql_connection', dbhelper.fetch_dbdsn(self.cfg, DB_NAME, utf8=True))
                 config.set('DEFAULT', 'verbose', True)
                 config.set('DEFAULT', 'debug', True)
                 contents = config.stringify(config_fn)
