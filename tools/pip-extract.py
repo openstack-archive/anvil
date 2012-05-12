@@ -19,7 +19,8 @@ if __name__ == '__main__':
         line = line.strip()
         if not line or line.startswith("#"):
             continue
-        if re.match(r"\w(.*)", line):
+        mtch = re.match(r"^[a-zA-Z_].*", line)
+        if mtch:
             entries.add(line)
 
     versions = dict()
