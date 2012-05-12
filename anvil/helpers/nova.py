@@ -24,8 +24,7 @@ from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
 
-from anvil.components import db
-
+from anvil.helpers import db as dbhelper
 
 LOG = logging.getLogger(__name__)
 
@@ -308,7 +307,7 @@ class ConfConfigurator(object):
         nova_conf.add('my_ip', hostip)
 
         # Setup your sql connection
-        nova_conf.add('sql_connection', db.fetch_dbdsn(self.cfg, DB_NAME))
+        nova_conf.add('sql_connection', dbhelper.fetch_dbdsn(self.cfg, DB_NAME))
 
         # Configure anything libvirt related?
         virt_driver = canon_virt_driver(self._getstr('virt_driver'))
