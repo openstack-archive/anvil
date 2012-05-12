@@ -586,6 +586,24 @@ components:
         -   name: python-prettytable
             removable: true
             version: 0.5*
+    openstack-client:
+        action_classes:
+            install: anvil.components.openstack_client:OpenStackClientInstaller
+            running: anvil.components.openstack_client:OpenStackClientRuntime
+            uninstall: anvil.components.openstack_client:OpenStackClientUninstaller
+        packages:
+        -   name: python-httplib2
+            removable: true
+            version: 0.7*
+        -   name: python-prettytable
+            removable: true
+            version: 0.5*
+        -   name: python-argparse
+            removable: true
+            version: 1.1*
+        pips:
+        -   name: cliff
+            version: 0.4
     quantum:
         action_classes:
             install: anvil.components.quantum:QuantumInstaller
