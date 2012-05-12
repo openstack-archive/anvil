@@ -14,13 +14,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-VERSION = ['2012', '5']
-YEAR, COUNT = VERSION
+VERSION = ['2012', '5', '11']
 FINAL = False  # May never be final ;)
 
 
 def canonical_version_string():
-    return '.'.join([YEAR, COUNT])
+    return '.'.join(VERSION)
 
 
 def version_string():
