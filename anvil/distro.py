@@ -143,5 +143,5 @@ class Distro(object):
                 del component_info['action_classes']
             return (cls, component_info)
         except KeyError:
-            raise RuntimeError('No class configured to %s %s on %s' %
+            raise RuntimeError('No class configured to %r %r on %r' %
                                (action, name, self.name))
