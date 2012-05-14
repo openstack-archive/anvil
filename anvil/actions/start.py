@@ -26,7 +26,7 @@ LOG = log.getLogger(__name__)
 
 
 class StartAction(base.Action):
-    NAME = 'start'
+    NAME = 'running'
 
     def _run(self, persona, component_order, instances):
         self._run_phase(

@@ -26,7 +26,7 @@ LOG = log.getLogger(__name__)
 
 
 class StopAction(base.Action):
-    NAME = 'stop'
+    NAME = 'running'
 
     def _order_components(self, components):
         components = super(StopAction, self)._order_components(components)
