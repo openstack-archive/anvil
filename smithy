@@ -16,6 +16,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import os
 import sys
 import time
 import traceback as tb
@@ -129,6 +130,18 @@ def establish_config(args):
     return config
 
 
+def backup_persona(install_dir, action, persona_fn):
+    (name, ext) = os.path.splitext(os.path.basename(persona_fn))
+    ext = ext.lstrip(".")
+    if ext:
+        new_name = "%s.%s.%s" % (name, action, ext)
+    else:
+        new_name = "%s.%s" % (name, action)
+    new_path = sh.joinpths(install_dir, new_name)
+    sh.copy(persona_fn, new_path)
+    return new_path
+
+
 def run(args):
     """
     Starts the execution after args have been parsed and logging has been setup.
@@ -189,9 +202,11 @@ def run(args):
                 colorizer.quote(action), colorizer.quote(date.rcf8222date()), colorizer.quote(dist.name))
     LOG.info("Using persona: %s", colorizer.quote(persona_fn))
     LOG.info("In root directory: %s", colorizer.quote(root_dir))
+    persona_bk_fn = backup_persona(root_dir, action, persona_fn)
+    if persona_bk_fn:
+        LOG.info("Backed up persona %s to %s so that you can reference it later.", persona_fn, persona_bk_fn)
 
     start_time = time.time()
-    sh.copy(persona_fn, sh.joinpths(root_dir, sh.basename(persona_fn)))
     runner.run(persona_inst)
     end_time = time.time()
 
