@@ -35,7 +35,7 @@ APP_OPTIONS = {
 
 class NoVNCMixin(object):
     def known_options(self):
-        return set(['nova'])
+        return set(['nova_component'])
 
     def _get_download_locations(self):
         places = list()
@@ -74,8 +74,8 @@ class NoVNCRuntime(NoVNCMixin, comp.ProgramRuntime):
 
     def _get_param_map(self, app_name):
         root_params = comp.ProgramRuntime._get_param_map(self, app_name)
-        if app_name == VNC_PROXY_APP and 'nova' in self.options:
-            nova_name = self.options['nova']
+        if app_name == VNC_PROXY_APP and 'nova_component' in self.options:
+            nova_name = self.options['nova_component']
             if nova_name in self.instances:
                 # FIXME: Have to reach into the nova conf (puke)
                 nova_runtime = self.instances[nova_name]

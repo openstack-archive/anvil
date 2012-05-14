@@ -72,6 +72,28 @@ def create_db(cfg, distro, dbname, utf8=False):
         raise NotImplementedError(msg)
 
 
+def grant_permissions(cfg, distro, user, restart_func=None):
+    """
+    Grant permissions on the database.
+    """
+    dbtype = cfg.get("db", "type")
+    dbactions = distro.get_command_config(dbtype, quiet=True)
+    if dbactions:
+        grant_cmd = distro.get_command(dbtype, 'grant_all')
+        if grant_cmd:
+            if restart_func:
+                LOG.info("Ensuring the database is started")
+                restart_func()
+            params = {
+                'PASSWORD': cfg.get_password("sql", PASSWORD_PROMPT),
+                'USER': user,
+            }
+            cmds = [{'cmd': grant_cmd}]
+            LOG.info("Giving user %s full control of all databases.", colorizer.quote(user))
+            utils.execute_template(*cmds, params=params)
+    return
+
+
 def fetch_dbdsn(cfg, dbname, utf8=False):
     """Return the database connection string, including password."""
     user = cfg.get("db", "sql_user")
