@@ -256,7 +256,7 @@ class UploadService:
             kclient_v2 = importer.import_module('keystoneclient.v2_0.client')
             kexceptions = importer.import_module('keystoneclient.exceptions')
         except RuntimeError as e:
-            LOG.exeception("Failed at importing required client modules: %s", e)
+            LOG.exception("Failed at importing required client modules: %s", e)
             return am_installed
         if urls:
             try:
