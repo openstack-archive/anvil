@@ -72,4 +72,4 @@ if __name__ == "__main__":
     params = {}
     params['glance'] = ghelper.get_shared_params(cfg)
     params['keystone'] = khelper.get_shared_params(cfg)
-    glance.UploadService(params).install(uris)
+    ghelper.UploadService(params).install(uris)
