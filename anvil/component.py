@@ -135,7 +135,10 @@ class PkgInstallComponent(ComponentBase):
         real_locations = list()
         for info in self._get_download_locations():
             section, key = info["uri"]
-            uri = self.cfg.get(section, key)
+            uri = self.cfg.getdefaulted(section, key).strip()
+            if uri:
+                raise ValueError(("Could not find uri in config to download "
+                                   "from at section %s for option %s") % (section, key))
             target_directory = self.app_dir
             if 'subdir' in info:
                 target_directory = sh.joinpths(target_directory, info["subdir"])

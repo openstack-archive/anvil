@@ -20,12 +20,12 @@ if [[ `cat /etc/issue | grep -i "ubuntu"` ]] ; then
     echo "Installing pypi packages: $PIPS"
     $PIP install netifaces termcolor --upgrade
 elif [[ `cat /etc/issue | grep -i "red hat enterprise.*release.*6.*"` ]] ; then
-    EPEL_RPM="epel-release-6-5.noarch.rpm"
+    EPEL_RPM="epel-release-6-6.noarch.rpm"
     PKGS="gcc git pylint python python-netifaces python-pep8 python-pip python-progressbar PyYAML"
-    PIPS="termcolor iniparse==0.4"
+    PIPS="termcolor iniparse"
     PIP="pip-python -q"
     YUM="yum install -q -y"
-    WGET="wget -q"
+    WGET="wget"
     # Now do it!
     echo "Preparing ANVIL for RHEL 6"
     echo "Fetching and installing EPEL rpm: $EPEL_RPM"
