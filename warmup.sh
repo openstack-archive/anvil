@@ -20,19 +20,28 @@ if [[ `cat /etc/issue | grep -i "ubuntu"` ]] ; then
     echo "Installing pypi packages: $PIPS"
     $PIP install netifaces termcolor --upgrade
 elif [[ `cat /etc/issue | grep -i "red hat enterprise.*release.*6.*"` ]] ; then
-    EPEL_RPM="epel-release-6-5.noarch.rpm"
+    EPEL_RPM="epel-release-6-6.noarch.rpm"
     PKGS="gcc git pylint python python-netifaces python-pep8 python-pip python-progressbar PyYAML"
-    PIPS="termcolor iniparse==0.4"
+    PIPS="termcolor iniparse"
     PIP="pip-python -q"
     YUM="yum install -q -y"
     WGET="wget -q"
     # Now do it!
     echo "Preparing ANVIL for RHEL 6"
-    echo "Fetching and installing EPEL rpm: $EPEL_RPM"
+    echo "Fetching epel rpm: $EPEL_RPM"
     TMP_DIR=`mktemp -d`
-    $WGET http://download.fedoraproject.org/pub/epel/6/i386/$EPEL_RPM -O $TMP_DIR/$EPEL_RPM
+    URI="http://download.fedoraproject.org/pub/epel/6/i386/$EPEL_RPM -O $TMP_DIR/$EPEL_RPM"
+    $WGET $URI
+    if [ "$?" -ne "0" ]; then
+        echo "Sorry, stopping since download from $URI failed."
+        exit 1
+    fi
+    echo "Installing $TMP_DIR/$EPEL_RPM"
     $YUM install $TMP_DIR/$EPEL_RPM
-    rm -rf $TMP_DIR
+    if [ "$?" -ne "0" ]; then
+        echo "Sorry, stopping since install of $TMP_DIR/$EPEL_RPM failed."
+        exit 1
+    fi
     echo "Installing packages: $PKGS"
     $YUM install $PKGS
     echo "Installing pypi packages: $PIPS"
