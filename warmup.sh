@@ -42,7 +42,6 @@ elif [[ `cat /etc/issue | grep -i "red hat enterprise.*release.*6.*"` ]] ; then
         echo "Sorry, stopping since install of $TMP_DIR/$EPEL_RPM failed."
         exit 1
     fi
-    rm -rf $TMP_DIR
     echo "Installing packages: $PKGS"
     $YUM install $PKGS
     echo "Installing pypi packages: $PIPS"
