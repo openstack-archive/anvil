@@ -115,6 +115,10 @@ to reboot.
 
      $ sudo reboot
 
+Also to avoid qemu errors please follow the solution @ https://bugs.launchpad.net/anvil/+bug/985786
+which will ensure that the ``qemu`` user can write to your instances directory. If needed edit ``anvil.ini``
+and also adjust the ``instances_path`` option (under the ``nova`` section).
+
 **For Ubuntu:**
 
 You are off the hook.
