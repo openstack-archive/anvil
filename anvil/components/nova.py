@@ -56,7 +56,7 @@ NET_INIT_CMD_ROOT = [sh.joinpths("/", "bin", 'bash')]
 
 # This makes the database be in sync with nova
 DB_SYNC_CMD = [
-    {'cmd': ['%BIN_DIR%/nova-manage', CFG_FILE_OPT, '%CFG_FILE%', 'db', 'sync']},
+    {'cmd': ['%BIN_DIR%/nova-manage', CFG_FILE_OPT, '%CFG_FILE%', 'db', 'sync'], 'run_as_root': True},
 ]
 
 # NCPU, NVOL, NAPI ... are here as possible subsystems of nova
