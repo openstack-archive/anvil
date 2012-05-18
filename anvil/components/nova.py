@@ -354,7 +354,7 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
             env['ENABLED_SERVICES'] = ",".join(self.options)
             setup_cmd = NET_INIT_CMD_ROOT + [tgt_fn]
             LOG.info("Running %s command to initialize nova's network.", colorizer.quote(" ".join(setup_cmd)))
-            sh.execute(*setup_cmd, env_overrides=env, run_as_root=False)
+            sh.execute(*setup_cmd, env_overrides=env, run_as_root=True)
             utils.mark_unexecute_file(tgt_fn, env)
 
     def post_start(self):
