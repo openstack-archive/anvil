@@ -136,7 +136,7 @@ class PkgInstallComponent(ComponentBase):
         for info in self._get_download_locations():
             section, key = info["uri"]
             uri = self.cfg.getdefaulted(section, key).strip()
-            if uri:
+            if not uri:
                 raise ValueError(("Could not find uri in config to download "
                                    "from at section %s for option %s") % (section, key))
             target_directory = self.app_dir
