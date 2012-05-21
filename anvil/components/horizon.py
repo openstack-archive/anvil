@@ -135,6 +135,16 @@ class HorizonInstaller(comp.PythonInstallComponent):
     def pre_install(self):
         comp.PythonInstallComponent.pre_install(self)
         self.tracewriter.dirs_made(*sh.mkdirslist(self.log_dir))
+        if self.cfg.getboolean('horizon', 'eliminate_pip_gits'):
+            fn = sh.joinpths(self.app_dir, 'tools', 'pip-requires')
+            if sh.isfile(fn):
+                new_lines = []
+                for line in sh.load_file(fn).splitlines():
+                    if line.find("git://") != -1:
+                        new_lines.append("# %s" % (line))
+                    else:
+                        new_lines.append(line)
+                sh.write_file(fn, "\n".join(new_lines))
 
     def _config_fixups(self):
         pass
