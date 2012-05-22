@@ -44,6 +44,25 @@ NAME_CLEANUPS = [
 NAME_CLEANUPS.sort()
 NAME_CLEANUPS.reverse()
 
+# Used to match various file names with what could be a kernel image
+KERNEL_CHECKS = [
+    re.compile(r"(.*)vmlinuz(.*)$", re.I),
+    re.compile(r'(.*?)aki-tty/image$', re.I),
+]
+
+# Used to match various file names with what could be a root image
+ROOT_CHECKS = [
+    re.compile(r"(.*)img$", re.I),
+    re.compile(r'(.*?)aki-tty/image$', re.I),
+]
+
+# Used to match various file names with what could be a ram disk image
+RAMDISK_CHECKS = [
+    re.compile(r"(.*)-initrd$", re.I),
+    re.compile(r"(.*)initramfs(.*)$", re.I),
+    re.compile(r'(.*?)ari-tty/image$', re.I),
+]
+
 
 class Unpacker(object):
 
@@ -54,25 +73,22 @@ class Unpacker(object):
 
         LOG.info("Peeking into %s to find its kernel/ramdisk/root images.", colorizer.quote(arc_fn))
 
-        def is_kernel(fn):
-            return re.match(r"(.*)-vmlinuz(.*)$", fn, re.I) or re.match(r'(.*?)aki-tty/image$', fn, re.I)
-
-        def is_root(fn):
-            return re.match(r"(.*)img$", fn, re.I) or re.match(r'(.*?)ami-tty/image$', fn, re.I)
-
-        def is_ramdisk(fn):
-            return re.match(r"(.*)-initrd$", fn, re.I) or re.match(r'(.*?)ari-tty/image$', fn, re.I)
+        def pat_checker(fn, patterns):
+            for pat in patterns:
+                if pat.match(fn):
+                    return True
+            return False
 
         with contextlib.closing(tarfile.open(arc_fn, 'r')) as tfh:
             for tmemb in tfh.getmembers():
                 fn = tmemb.name
-                if is_kernel(fn):
+                if pat_checker(fn, KERNEL_CHECKS):
                     kernel_fn = fn
                     LOG.debug("Found kernel: %r" % (fn))
-                elif is_ramdisk(fn):
+                elif pat_checker(fn, RAMDISK_CHECKS):
                     ramdisk_fn = fn
                     LOG.debug("Found ram disk: %r" % (fn))
-                elif is_root(fn):
+                elif pat_checker(fn, ROOT_CHECKS):
                     img_fn = fn
                     LOG.debug("Found root image: %r" % (fn))
                 else:

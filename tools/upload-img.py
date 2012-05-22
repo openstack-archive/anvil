@@ -58,13 +58,12 @@ if __name__ == "__main__":
         dest="verbosity",
         default=[1],
         help="increase the verbose level")
+
     (options, args) = parser.parse_args()
     uris = options.uris or list()
-    cleaned_uris = list()
-    for uri in uris:
-        uri = uri.strip()
-        if uri:
-            cleaned_uris.append(uri)
+    cleaned_uris = [x.strip() for x in uris if len(x.strip())]
+    if not cleaned_uris:
+        parser.error("No uris provided, sorry not gonna do it!")
 
     setup_logging(len(options.verbosity))
     utils.welcome(prog_name="Image uploader tool")
