@@ -117,32 +117,34 @@ class Unpacker(object):
             msg = "Image %r has no root image member" % (file_name)
             raise IOError(msg)
         extract_dir = sh.mkdir(sh.joinpths(tmp_dir, root_name))
-        LOG.info("Extracting pieces of %s to %s.", colorizer.quote(file_location), colorizer.quote(extract_dir))
+        kernel_real_fn = None
+        root_real_fn = None
+        ramdisk_real_fn = None
         with contextlib.closing(tarfile.open(file_location, 'r')) as tfh:
             for m in tfh.getmembers():
                 if m.name == root_img_fn:
-                    root_img_fn = os.path.join(extract_dir, os.path.basename(root_img_fn))
-                    self._unpack_tar_member(tfh, m, root_img_fn)
+                    root_real_fn = os.path.join(extract_dir, os.path.basename(root_img_fn))
+                    self._unpack_tar_member(tfh, m, root_real_fn)
                 elif ramdisk_fn and m.name == ramdisk_fn:
-                    ramdisk_fn = os.path.join(extract_dir, os.path.basename(ramdisk_fn))
-                    self._unpack_tar_member(tfh, m, ramdisk_fn)
+                    ramdisk_real_fn = os.path.join(extract_dir, os.path.basename(ramdisk_fn))
+                    self._unpack_tar_member(tfh, m, ramdisk_real_fn)
                 elif kernel_fn and m.name == kernel_fn:
-                    kernel_fn = os.path.join(extract_dir, os.path.basename(kernel_fn))
-                    self._unpack_tar_member(tfh, m, kernel_fn)
+                    kernel_real_fn = os.path.join(extract_dir, os.path.basename(kernel_fn))
+                    self._unpack_tar_member(tfh, m, kernel_real_fn)
         info = dict()
-        if kernel_fn:
+        if kernel_real_fn:
             info['kernel'] = {
-                'file_name': kernel_fn,
+                'file_name': kernel_real_fn,
                 'disk_format': 'aki',
                 'container_format': 'aki',
             }
-        if ramdisk_fn:
+        if ramdisk_real_fn:
             info['ramdisk'] = {
-                'file_name': ramdisk_fn,
+                'file_name': ramdisk_real_fn,
                 'disk_format': 'ari',
                 'container_format': 'ari',
             }
-        info['file_name'] = root_img_fn
+        info['file_name'] = root_real_fn
         info['disk_format'] = 'ami'
         info['container_format'] = 'ami'
         return info
