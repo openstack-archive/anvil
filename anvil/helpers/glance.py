@@ -81,6 +81,8 @@ class Unpacker(object):
 
         with contextlib.closing(tarfile.open(arc_fn, 'r')) as tfh:
             for tmemb in tfh.getmembers():
+                if not tmemb.isfile():
+                    continue
                 fn = tmemb.name
                 if pat_checker(fn, KERNEL_CHECKS):
                     kernel_fn = fn
@@ -93,7 +95,20 @@ class Unpacker(object):
                     LOG.debug("Found root image: %r" % (fn))
                 else:
                     LOG.debug("Unknown member %r - skipping" % (fn))
+
         return (img_fn, ramdisk_fn, kernel_fn)
+
+    def _unpack_tar_member(self, tarhandle, member, output_location):
+        LOG.info("Extracting %s to %s.", colorizer.quote(member.name), colorizer.quote(output_location))
+        bytes_written = 0
+        with contextlib.closing(tarhandle.extractfile(member)) as mfh:
+            with open(output_location, "wb") as ofh:
+                blob = mfh.read(8192)
+                while blob != '':
+                    ofh.write(blob)
+                    bytes_written += len(blob)
+                    blob = mfh.read(8192)
+        return bytes_written
 
     def _unpack_tar(self, file_name, file_location, tmp_dir):
         (root_name, _) = os.path.splitext(file_name)
@@ -101,25 +116,35 @@ class Unpacker(object):
         if not root_img_fn:
             msg = "Image %r has no root image member" % (file_name)
             raise IOError(msg)
-        extract_dir = sh.joinpths(tmp_dir, root_name)
-        sh.mkdir(extract_dir)
-        LOG.info("Extracting %s to %s", colorizer.quote(file_location), colorizer.quote(extract_dir))
+        extract_dir = sh.mkdir(sh.joinpths(tmp_dir, root_name))
+        kernel_real_fn = None
+        root_real_fn = None
+        ramdisk_real_fn = None
         with contextlib.closing(tarfile.open(file_location, 'r')) as tfh:
-            tfh.extractall(extract_dir)
+            for m in tfh.getmembers():
+                if m.name == root_img_fn:
+                    root_real_fn = os.path.join(extract_dir, os.path.basename(root_img_fn))
+                    self._unpack_tar_member(tfh, m, root_real_fn)
+                elif ramdisk_fn and m.name == ramdisk_fn:
+                    ramdisk_real_fn = os.path.join(extract_dir, os.path.basename(ramdisk_fn))
+                    self._unpack_tar_member(tfh, m, ramdisk_real_fn)
+                elif kernel_fn and m.name == kernel_fn:
+                    kernel_real_fn = os.path.join(extract_dir, os.path.basename(kernel_fn))
+                    self._unpack_tar_member(tfh, m, kernel_real_fn)
         info = dict()
-        if kernel_fn:
+        if kernel_real_fn:
             info['kernel'] = {
-                'file_name': sh.joinpths(extract_dir, kernel_fn),
+                'file_name': kernel_real_fn,
                 'disk_format': 'aki',
                 'container_format': 'aki',
             }
-        if ramdisk_fn:
+        if ramdisk_real_fn:
             info['ramdisk'] = {
-                'file_name': sh.joinpths(extract_dir, ramdisk_fn),
+                'file_name': ramdisk_real_fn,
                 'disk_format': 'ari',
                 'container_format': 'ari',
             }
-        info['file_name'] = sh.joinpths(extract_dir, root_img_fn)
+        info['file_name'] = root_real_fn
         info['disk_format'] = 'ami'
         info['container_format'] = 'ami'
         return info

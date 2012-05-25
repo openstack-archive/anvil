@@ -425,6 +425,7 @@ def mkdir(path, recurse=True):
             LOG.audit("Creating directory %r" % (path))
             if not DRYRUN_MODE:
                 os.mkdir(path)
+    return path
 
 
 def deldir(path, run_as_root=False):

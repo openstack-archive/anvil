@@ -204,7 +204,8 @@ def run(args):
     LOG.info("In root directory: %s", colorizer.quote(root_dir))
     persona_bk_fn = backup_persona(root_dir, action, persona_fn)
     if persona_bk_fn:
-        LOG.info("Backed up persona %s to %s so that you can reference it later.", persona_fn, persona_bk_fn)
+        LOG.info("Backed up persona %s to %s so that you can reference it later.",
+                colorizer.quote(persona_fn),  colorizer.quote(persona_bk_fn))
 
     start_time = time.time()
     runner.run(persona_inst)
