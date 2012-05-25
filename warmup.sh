@@ -28,17 +28,21 @@ elif [[ `cat /etc/issue | grep -i "red hat enterprise.*release.*6.*"` ]] ; then
     WGET="wget -q"
     # Now do it!
     echo "Preparing ANVIL for RHEL 6"
-    echo "Fetching epel rpm: $EPEL_RPM"
+    URI="http://download.fedoraproject.org/pub/epel/6/i386/$EPEL_RPM"
+    echo "Fetching epel rpm: $EPEL_RPM from $URI"
     TMP_DIR=`mktemp -d`
-    URI="http://download.fedoraproject.org/pub/epel/6/i386/$EPEL_RPM -O $TMP_DIR/$EPEL_RPM"
-    $WGET $URI
+    $WGET $URI -O $TMP_DIR/$EPEL_RPM
     if [ "$?" -ne "0" ]; then
         echo "Sorry, stopping since download from $URI failed."
         exit 1
     fi
     echo "Installing $TMP_DIR/$EPEL_RPM"
-    $YUM install $TMP_DIR/$EPEL_RPM
-    if [ "$?" -ne "0" ]; then
+    OUT=$($YUM install $TMP_DIR/$EPEL_RPM 2>&1)
+    if [[ "$OUT" =~ "Nothing to do" ]]
+    then
+        echo "It appears $EPEL_RPM is already installed."
+    elif [ "$?" -ne "0" ]
+    then
         echo "Sorry, stopping since install of $TMP_DIR/$EPEL_RPM failed."
         exit 1
     fi
