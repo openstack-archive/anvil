@@ -38,7 +38,7 @@ Networking
 Since networking can affect how your cloud runs please check out this
 link:
 
-http://docs.openstack.org/diablo/openstack-compute/admin/content/configuring-networking-on-the-compute-node.html
+http://docs.openstack.org/trunk/openstack-compute/admin/content/configuring-networking-on-the-compute-node.html
 
 Check out the root article and the sub-chapters there to understand more
 of what these settings mean.
