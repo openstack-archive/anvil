@@ -326,7 +326,7 @@ class ConfConfigurator(object):
 
         # Auth will be using keystone
         nova_conf.add('auth_strategy', 'keystone')
-        
+
         # Don't always force images to raw
         if not self._getbool('force_raw_images'):
             nova_conf.add('force_raw_images', False)

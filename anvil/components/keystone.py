@@ -21,6 +21,7 @@ import yaml
 from anvil import cfg
 from anvil import colorizer
 from anvil import component as comp
+from anvil import date
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
@@ -42,6 +43,9 @@ BIN_DIR = "bin"
 
 # This yaml file controls keystone initialization
 INIT_WHAT_FN = 'init_what.yaml'
+
+# Existence of this file signifies that initialization ran
+INIT_WHAT_HAPPENED = "keystone.inited.ran"
 
 # Simple confs
 ROOT_CONF = "keystone.conf"
@@ -180,7 +184,7 @@ class KeystoneRuntime(comp.PythonRuntime):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
         self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
-        self.init_fn = sh.joinpths(self.trace_dir, 'was-inited')
+        self.init_fn = sh.joinpths(self.trace_dir, INIT_WHAT_HAPPENED)
         self.init_what = yaml.load(utils.load_template(self.component_name, INIT_WHAT_FN)[1])
 
     def post_start(self):
@@ -197,8 +201,8 @@ class KeystoneRuntime(comp.PythonRuntime):
             init_cfg['swift'] = shelper.get_shared_params(self.cfg)
             khelper.Initializer(init_cfg).initialize(**self.init_what)
             # Touching this makes sure that we don't init again
-            # TODO add trace
-            sh.touch_file(self.init_fn)
+            inited_contents = 'Ran on %s' % (date.rcf8222date())
+            sh.write_file(self.init_fn, inited_contents)
             LOG.info("If you wish to re-run initialization, delete %s", colorizer.quote(self.init_fn))
 
     def _get_apps_to_start(self):
