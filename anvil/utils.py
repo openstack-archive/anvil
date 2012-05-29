@@ -304,7 +304,7 @@ def get_host_ip():
         ip = addr
     except socket.error:
         pass
-    # Ettempt to find it
+    # Attempt to find it
     if not ip:
         interfaces = get_interfaces()
         for (_, net_info) in interfaces.items():

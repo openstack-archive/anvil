@@ -250,6 +250,10 @@ If you need to adjust those variables the matching config variables in ``anvil.i
     test_floating_range = ${TEST_FLOATING_RANGE:-192.168.253.0/29}
 
 
+If you are using a ``FlatManager`` and RH/Fedora then you might want read and follow:
+
+http://www.techotopia.com/index.php/Creating_an_RHEL_5_KVM_Networked_Bridge_Interface
+    
 Installing
 ----------
 
