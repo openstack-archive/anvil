@@ -32,7 +32,7 @@ OUT=$(yum install -y -q install $TMP_DIR/$EPEL_RPM 2>&1)
 if [[ "$OUT" =~ "Nothing to do" ]]
 then
     echo "It appears $EPEL_RPM is already installed."
-elif [ "$OUT" =~ "Nothing to do" ]
+elif [[ "$OUT" =~ "Already installed" ]]
 then
     echo "Installed!"
 elif [ "$?" -ne "0" ]
