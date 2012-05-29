@@ -106,8 +106,12 @@ def make_url(scheme, host, port=None,
     netloc = ''
     if host:
         netloc = str(host)
+
+    port_i = None
     if port is not None:
-        netloc += ":%s" % (port)
+        port_i = int(port)
+    if port_i is not None:
+        netloc += ":" + "%s" % (port_i)
 
     pieces.append(netloc or '')
     pieces.append(path or '')
@@ -194,17 +198,6 @@ def to_bytes(text):
     else:
         byte_val = int(text)
     return byte_val
-
-
-def mark_unexecute_file(fn, kvs, comment_start='#'):
-    add_lines = list()
-    add_lines.append('')
-    add_lines.append(comment_start + ' Ran on %s by %s' % (date.rcf8222date(), sh.getuser()))
-    add_lines.append(comment_start + ' With data:')
-    for (k, v) in kvs.items():
-        add_lines.append(comment_start + ' %s => %s' % (k, v))
-    sh.append_file(fn, joinlinesep(*add_lines))
-    sh.chmod(fn, 0644)
 
 
 def log_iterable(to_log, header=None, logger=None, do_color=True):

@@ -165,11 +165,11 @@ We’ll grab the latest version of ANVIL via git:
 
     $ git clone git://github.com/yahoo/Openstack-Anvil.git anvil
 
-Now setup the prerequisites needed to run:
+Now setup the prerequisites needed to run (select the appropriate shell script for your distro):
 
 ::
 
-    $ cd anvil && sudo ./warmup.sh
+    $ cd anvil/warmup && sudo ./$DISTRO.sh
 
 Configuration
 -------------
