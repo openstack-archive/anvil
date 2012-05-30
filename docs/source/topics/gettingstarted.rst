@@ -119,6 +119,14 @@ Also to avoid qemu errors please follow the solution @ https://bugs.launchpad.ne
 which will ensure that the ``qemu`` user can write to your instances directory. If needed edit ``anvil.ini``
 and also adjust the ``instances_path`` option (under the ``nova`` section).
 
+This can be typically solved by running the following (and then updating ``anvil.ini``):
+
+::
+
+    $ sudo mkdir -pv /home/openstack
+    $ sudo chmod -R a+rwx /home/openstack
+
+
 **For Ubuntu:**
 
 You are off the hook.

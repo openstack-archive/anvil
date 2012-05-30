@@ -56,8 +56,8 @@ DB_SYNC_CMD = [
     {'cmd': ['%BIN_DIR%/nova-manage', '--config-file', '%CFG_FILE%', 'db', 'sync'], 'run_as_root': True},
 ]
 
-# Used to create a small network when initializating nova
-SMALL_NET_CMD = [
+# Used to create a fixed network when initializating nova
+FIXED_NET_CMDS = [
     {
         'cmd': ['%BIN_DIR%/nova-manage', '--config-file', '%CFG_FILE%',
                 'network', 'create', 'private', '%FIXED_RANGE%', '1', '%FIXED_NETWORK_SIZE%'],
@@ -65,7 +65,7 @@ SMALL_NET_CMD = [
     },
 ]
 
-# Small floating network + test floating pool
+# Used to create a floating network + test floating pool
 FLOATING_NET_CMDS = [
     {
         'cmd': ['%BIN_DIR%/nova-manage', '--config-file', '%CFG_FILE%', 'floating', 'create', '%FLOATING_RANGE%'],
@@ -349,22 +349,26 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
             cmds = []
             mp['CFG_FILE'] = sh.joinpths(self.cfg_dir, API_CONF)
             mp['BIN_DIR'] = self.bin_dir
-            mp['FIXED_NETWORK_SIZE'] = self.cfg.getdefaulted('nova', 'fixed_network_size', '256')
-            mp['FIXED_RANGE'] = self.cfg.getdefaulted('nova', 'fixed_range', '10.0.0.0/24')
-            # Create a small network
-            cmds.extend(SMALL_NET_CMD)
+            if self.cfg.getboolean('nova', 'enable_fixed'):
+                # Create a fixed network
+                mp['FIXED_NETWORK_SIZE'] = self.cfg.getdefaulted('nova', 'fixed_network_size', '256')
+                mp['FIXED_RANGE'] = self.cfg.getdefaulted('nova', 'fixed_range', '10.0.0.0/24')
+                cmds.extend(FIXED_NET_CMDS)
             if 'quantum' not in self.options:
-                # Create a floating network + test floating pool
-                cmds.extend(FLOATING_NET_CMDS)
-                mp['FLOATING_RANGE'] = self.cfg.getdefaulted('nova', 'floating_range', '172.24.4.224/28')
-                mp['TEST_FLOATING_RANGE'] = self.cfg.getdefaulted('nova', 'test_floating_range', '192.168.253.0/29')
-                mp['TEST_FLOATING_POOL'] = self.cfg.getdefaulted('nova', 'test_floating_pool', 'test')
+                if self.cfg.getboolean('nova', 'enable_floating'):
+                    # Create a floating network + test floating pool
+                    cmds.extend(FLOATING_NET_CMDS)
+                    mp['FLOATING_RANGE'] = self.cfg.getdefaulted('nova', 'floating_range', '172.24.4.224/28')
+                    mp['TEST_FLOATING_RANGE'] = self.cfg.getdefaulted('nova', 'test_floating_range', '192.168.253.0/29')
+                    mp['TEST_FLOATING_POOL'] = self.cfg.getdefaulted('nova', 'test_floating_pool', 'test')
             else:
                 LOG.info("Not creating floating IPs (not supported by quantum server)")
                 LOG.info("Waiting %s seconds so that quantum can start up before running first time init." % (self.wait_time))
                 sh.sleep(self.wait_time)
-            utils.execute_template(*cmds, params=mp)
-             # Touching this makes sure that we don't init again
+            # Anything to run??
+            if cmds:
+                utils.execute_template(*cmds, params=mp)
+            # Touching this makes sure that we don't init again
             inited_contents = 'Ran on %s' % (date.rcf8222date())
             sh.write_file(ran_fn, inited_contents)
             LOG.info("If you wish to re-run initialization, delete %s", colorizer.quote(ran_fn))
