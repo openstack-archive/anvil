@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+
 import os
 import weakref
 
@@ -535,7 +536,7 @@ class ConfConfigurator(object):
 # This class represents the data/format of the nova config file
 class Conf(object):
     def __init__(self, name):
-        self.backing = dict()
+        self.backing = cfg.BuiltinConfigParser()
         self.name = name
 
     def add(self, key, value, *values):
@@ -548,9 +549,8 @@ class Conf(object):
             real_value = ",".join(str_values)
         else:
             real_value = str(value)
-        self.backing[real_key] = real_value
+        self.backing.set('DEFAULT', real_key, real_value)
         LOG.debug("Added nova conf key %r with value %r" % (real_key, real_value))
 
     def generate(self):
-        backing = cfg.IgnoreMissingConfigParser(defaults=dict(self.backing))
-        return backing.stringify(fn=self.name)
+        return self.backing.stringify(fn=self.name)
