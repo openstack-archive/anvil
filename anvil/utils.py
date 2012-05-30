@@ -79,7 +79,7 @@ def make_bool(val):
     sval = str(val).lower().strip()
     if sval in ['true', '1', 'on', 'yes', 't']:
         return True
-    if sval in ['0', 'false', 'off', 'no', 'f']:
+    if sval in ['0', 'false', 'off', 'no', 'f', '']:
         return False
     raise TypeError("Unable to convert %s to a boolean" % (val))
 
