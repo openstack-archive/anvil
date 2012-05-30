@@ -37,8 +37,8 @@ class PhaseRecorder(object):
         contents['when'] = date.rcf8222date()
         yield phasename
         LOG.debug("Marking the completion of phase %r in file %r", phasename, self.fn)
-        lines = utils.joinlinesep([json.dumps(contents), ''])
-        sh.append_file(self.fn, lines)
+        lines = [json.dumps(contents), '']
+        sh.append_file(self.fn, utils.joinlinesep(*lines))
 
     def has_ran(self, phasename):
         phases = self.list_phases()
