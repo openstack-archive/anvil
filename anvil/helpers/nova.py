@@ -535,7 +535,7 @@ class ConfConfigurator(object):
 # This class represents the data/format of the nova config file
 class Conf(object):
     def __init__(self, name):
-        self.backing = cfg.IgnoreMissingConfigParser()
+        self.backing = dict()
         self.name = name
 
     def add(self, key, value, *values):
@@ -548,8 +548,9 @@ class Conf(object):
             real_value = ",".join(str_values)
         else:
             real_value = str(value)
-        self.backing.set('DEFAULT', real_key, real_value)
+        self.backing[real_key] = real_value
         LOG.debug("Added nova conf key %r with value %r" % (real_key, real_value))
 
     def generate(self):
-        return self.backing.stringify(fn=self.name)
+        backing = cfg.IgnoreMissingConfigParser(defaults=dict(self.backing))
+        return backing.stringify(fn=self.name)

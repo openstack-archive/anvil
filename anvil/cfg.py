@@ -37,8 +37,8 @@ class IgnoreMissingConfigParser(iniparse.RawConfigParser):
     DEF_BOOLEAN = False
     DEF_BASE = None
 
-    def __init__(self, cs=True, fns=None):
-        iniparse.RawConfigParser.__init__(self)
+    def __init__(self, cs=True, fns=None, defaults=None):
+        iniparse.RawConfigParser.__init__(self, defaults=defaults)
         if cs:
             # Make option names case sensitive
             # See: http://docs.python.org/library/configparser.html#ConfigParser.RawConfigParser.optionxform
@@ -58,7 +58,7 @@ class IgnoreMissingConfigParser(iniparse.RawConfigParser):
         return value
 
     def set(self, section, option, value):
-        if not self.has_section(section) and section.lower() != 'default':
+        if not self.has_section(section):
             self.add_section(section)
         iniparse.RawConfigParser.set(self, section, option, value)
 
