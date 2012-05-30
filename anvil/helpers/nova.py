@@ -115,9 +115,6 @@ VG_LVREMOVE_CMD = [
      'run_as_root': True}
 ]
 
-# Nova conf default section
-NV_CONF_DEF_SECTION = "[DEFAULT]"
-
 
 def canon_virt_driver(virt_driver):
     if not virt_driver:
@@ -296,10 +293,7 @@ class ConfConfigurator(object):
         nova_conf.add('compute_scheduler_driver', self._getstr('scheduler', DEF_SCHEDULER))
 
         # Rate limit the api??
-        if self._getbool('api_rate_limit'):
-            nova_conf.add('api_rate_limit', str(True))
-        else:
-            nova_conf.add('api_rate_limit', str(False))
+        nova_conf.add('api_rate_limit', self._getbool('api_rate_limit'))
 
         # Setup any network settings
         self._configure_network_settings(nova_conf)
@@ -333,8 +327,7 @@ class ConfConfigurator(object):
         nova_conf.add('auth_strategy', 'keystone')
 
         # Don't always force images to raw
-        if not self._getbool('force_raw_images'):
-            nova_conf.add('force_raw_images', False)
+        nova_conf.add('force_raw_images', self._getbool('force_raw_images'))
 
         # Vnc settings setup
         self._configure_vnc(nova_conf)

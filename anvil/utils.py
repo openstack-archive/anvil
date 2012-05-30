@@ -74,14 +74,14 @@ LOG = logging.getLogger(__name__)
 
 
 def make_bool(val):
-    if not val:
-        return False
     if type(val) is bool:
         return val
     sval = str(val).lower().strip()
     if sval in ['true', '1', 'on', 'yes', 't']:
         return True
-    return False
+    if sval in ['0', 'false', 'off', 'no', 'f']:
+        return False
+    raise TypeError("Unable to convert %s to a boolean" % (val))
 
 
 def add_header(fn, contents):
