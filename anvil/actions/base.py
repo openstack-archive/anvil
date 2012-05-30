@@ -16,12 +16,14 @@
 
 import abc
 import collections
+import glob
 
 from anvil import colorizer
 from anvil import date
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import packager
+from anvil import phase
 from anvil import pip
 from anvil import shell as sh
 from anvil import trace as tr
@@ -114,57 +116,27 @@ class Action(object):
         for c in component_order:
             instances[c].warm_configs()
 
-    def _skip_phase(self, instance, mark):
-        phase_fn = "%s.phases" % (self.NAME)
-        trace_fn = tr.trace_fn(self.root_dir, phase_fn)
-        name = instance.component_name
-        LOG.debug("Checking if we already completed phase %r by looking in %r for component %s", mark, trace_fn, name)
-        skipable = False
-        try:
-            reader = tr.TraceReader(trace_fn)
-            marks = reader.marks_made()
-            for mark_found in marks:
-                if mark == mark_found.get('id') and name == mark_found.get('name'):
-                    skipable = True
-                    LOG.debug("Completed phase %r on for component %s: %s", mark, mark_found.get('name'), mark_found.get('when'))
-                    break
-        except excp.NoTraceException:
-            pass
-        return skipable
-
-    def _mark_phase(self, instance, mark):
-        phase_fn = "%s.phases" % (self.NAME)
-        trace_fn = tr.trace_fn(self.root_dir, phase_fn)
-        name = instance.component_name
-        writer = tr.TraceWriter(trace_fn, break_if_there=False)
-        LOG.debug("Marking we completed phase %r in file %r for component %s", mark, trace_fn, name)
-        details = {
-            'id': mark,
-            'when': date.rcf8222date(),
-            'name': name,
-        }
-        writer.mark(details)
-
     def _run_phase(self, functors, component_order, instances, phase_name):
         """
         Run a given 'functor' across all of the components, in order.
         """
         component_results = dict()
+        phase_recorder = phase.PhaseRecorder(sh.joinpths(self.root_dir, "%s.%s.phases" % (self.NAME, phase_name.lower())))
         for c in component_order:
             instance = instances[c]
-            if self._skip_phase(instance, phase_name):
-                LOG.debug("Skipping phase named %r for component %r", phase_name, c)
+            if phase_recorder.has_ran(instance.component_name):
+                LOG.debug("Skipping phase named %r for component %r since it already happened.", phase_name, c)
             else:
                 try:
-                    if functors.start:
-                        functors.start(instance)
-                    result = None
-                    if functors.run:
-                        result = functors.run(instance)
-                    if functors.end:
-                        functors.end(instance, result)
-                    component_results[instance] = result
-                    self._mark_phase(instance, phase_name)
+                    with phase_recorder.mark(instance.component_name):
+                        if functors.start:
+                            functors.start(instance)
+                        result = None
+                        if functors.run:
+                            result = functors.run(instance)
+                        if functors.end:
+                            functors.end(instance, result)
+                        component_results[instance] = result
                 except (excp.NoTraceException) as e:
                     if self.force:
                         LOG.debug("Skipping exception: %s" % (e))
@@ -174,8 +146,10 @@ class Action(object):
 
     def _delete_phase_files(self, names):
         phase_dir = self.root_dir
-        for name in names:
-            sh.unlink(tr.trace_fn(phase_dir, "%s.phases" % (name)))
+        for n in names:
+            for fn in glob.glob("%s/%s.*.phases" % (phase_dir, n)):
+                if sh.isfile(fn):
+                    sh.unlink(fn)
 
     def run(self, persona):
         instances = self._construct_instances(persona)

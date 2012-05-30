@@ -31,7 +31,6 @@ CFG_WRITING_FILE = "CFG_WRITING_FILE"
 DIR_MADE = "DIR_MADE"
 DOWNLOADED = "DOWNLOADED"
 FILE_TOUCHED = "FILE_TOUCHED"
-MARK_MADE = "MARK_MADE"
 PIP_INSTALL = 'PIP_INSTALL'
 PKG_INSTALL = "PKG_INSTALL"
 PYTHON_INSTALL = "PYTHON_INSTALL"
@@ -57,12 +56,6 @@ class TraceWriter(object):
 
     def filename(self):
         return self.trace_fn
-
-    def mark(self, details):
-        self._start()
-        what = dict()
-        what['details'] = details
-        self.trace(MARK_MADE, json.dumps(what))
 
     def _start(self):
         if self.started:
@@ -191,16 +184,6 @@ class TraceReader(object):
                 if type(entry) is dict:
                     locations.append((entry.get('target'), entry.get('uri')))
         return locations
-
-    def marks_made(self):
-        lines = self.read()
-        marks = list()
-        for (cmd, action) in lines:
-            if cmd == MARK_MADE and len(action):
-                entry = json.loads(action)
-                if type(entry) is dict:
-                    marks.append(entry.get('details'))
-        return marks
 
     def _sort_paths(self, pths):
         # Ensure in correct order (ie /tmp is before /)
