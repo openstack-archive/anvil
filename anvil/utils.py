@@ -81,7 +81,7 @@ def make_bool(val):
         return True
     if sval in ['0', 'false', 'off', 'no', 'f', '']:
         return False
-    raise TypeError("Unable to convert %s to a boolean" % (val))
+    raise TypeError("Unable to convert %r to a boolean" % (val))
 
 
 def add_header(fn, contents):
