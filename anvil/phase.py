@@ -55,7 +55,7 @@ class PhaseRecorder(object):
             line = line.strip()
             if line:
                 data = json.loads(line)
-                if not isdict(data):
+                if not isinstance(data, dict):
                     raise TypeError("Unknown phase entry in %s on line %s" % (self.fn, line_num))
                 if 'name' in data:
                     phases.add(data['name'])
