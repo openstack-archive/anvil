@@ -17,6 +17,7 @@
 import os
 import weakref
 
+from anvil import cfg
 from anvil import date
 from anvil import exceptions
 from anvil import libvirt as lv
@@ -35,8 +36,12 @@ API_CONF = 'nova.conf'
 DB_NAME = 'nova'
 
 # Network class/driver/manager templs
+
+# These are only used if quantum is active
 QUANTUM_MANAGER = 'nova.network.quantum.manager.QuantumManager'
 QUANTUM_IPAM_LIB = 'nova.network.quantum.melange_ipam_lib'
+
+# Used to locate the network/firewall classes
 NET_MANAGER_TEMPLATE = 'nova.network.manager.%s'
 FIRE_MANAGER_TEMPLATE = 'nova.virt.libvirt.firewall.%s'
 
@@ -258,7 +263,7 @@ class ConfConfigurator(object):
     def configure(self, root_wrapped):
 
         # Everything built goes in here
-        nova_conf = Conf()
+        nova_conf = Conf(API_CONF)
 
         # Used more than once so we calculate it ahead of time
         hostip = self.cfg.get('host', 'ip')
@@ -443,6 +448,7 @@ class ConfConfigurator(object):
 
         nova_conf.add('vncserver_proxyclient_address', vncserver_proxyclient_address)
 
+    # Fixes up your nova volumes
     def _configure_vols(self, nova_conf):
         nova_conf.add('volume_group', self._getstr('volume_group'))
         vol_name_tpl = self._getstr('volume_name_prefix') + self._getstr('volume_name_postfix')
@@ -486,11 +492,28 @@ class ConfConfigurator(object):
         # This forces dnsmasq to update its leases table when an instance is terminated.
         nova_conf.add('force_dhcp_release', True)
 
+        # Special virt driver network settings
+        drive_canon = canon_virt_driver(self._getstr('virt_driver'))
+        if drive_canon == 'xenserver':
+            nova_conf.add('noflat_injected', True)
+            nova_conf.add('flat_network_bridge', self._getstr('xs_flat_network_bridge', XS_DEF_BRIDGE))
+            xs_flat_ifc = self._getstr('xs_flat_interface', XS_DEF_INTERFACE)
+            if xs_flat_ifc:
+                nova_conf.add('flat_interface', xs_flat_ifc)
+        else:
+            nova_conf.add('flat_network_bridge', self._getstr('flat_network_bridge', DEF_FLAT_VIRT_BRIDGE))
+            nova_conf.add('flat_injected', self._getbool('flat_injected'))
+            flat_interface = self._getstr('flat_interface')
+            if flat_interface:
+                nova_conf.add('flat_interface', flat_interface)
+
+    # Enables multihost (??)
     def _configure_multihost(self, nova_conf):
         if self._getbool('multi_host'):
             nova_conf.add('multi_host', True)
             nova_conf.add('send_arp_for_ha', True)
 
+    # Ensures the place where instances will be is useable
     def _configure_instances_path(self, instances_path, nova_conf):
         nova_conf.add('instances_path', instances_path)
         LOG.debug("Attempting to create instance directory: %r", instances_path)
@@ -509,6 +532,7 @@ class ConfConfigurator(object):
                     # Need to be able to go into that directory
                     sh.chmod(p, os.stat(p).st_mode | 0755)
 
+    # Any special libvirt configurations go here
     def _configure_libvirt(self, virt_type, nova_conf):
         if virt_type == 'lxc':
             #TODO need to add some goodies here
@@ -524,24 +548,16 @@ class ConfConfigurator(object):
             nova_conf.add('xenapi_connection_url', self._getstr('xa_connection_url', XA_DEF_CONNECTION_URL))
             nova_conf.add('xenapi_connection_username', self._getstr('xa_connection_username', XA_DEF_USER))
             nova_conf.add('xenapi_connection_password', self.cfg.get("passwords", "xenapi_connection"))
-            nova_conf.add('noflat_injected', True)
             nova_conf.add('firewall_driver', FIRE_MANAGER_TEMPLATE % (self._getstr('xs_firewall_driver', DEF_FIREWALL_DRIVER)))
-            nova_conf.add('flat_network_bridge', self._getstr('xs_flat_network_bridge', XS_DEF_BRIDGE))
-            xs_flat_ifc = self._getstr('xs_flat_interface', XS_DEF_INTERFACE)
-            if xs_flat_ifc:
-                nova_conf.add('flat_interface', xs_flat_ifc)
         elif drive_canon == 'libvirt':
             nova_conf.add('firewall_driver', FIRE_MANAGER_TEMPLATE % (self._getstr('libvirt_firewall_driver', DEF_FIREWALL_DRIVER)))
-            nova_conf.add('flat_network_bridge', self._getstr('flat_network_bridge', DEF_FLAT_VIRT_BRIDGE))
-            flat_interface = self._getstr('flat_interface')
-            if flat_interface:
-                nova_conf.add('flat_interface', flat_interface)
 
 
 # This class represents the data/format of the nova config file
 class Conf(object):
-    def __init__(self):
-        self.lines = list()
+    def __init__(self, name):
+        self.backing = cfg.IgnoreMissingConfigParser()
+        self.name = name
 
     def add(self, key, value, *values):
         if not key:
@@ -553,36 +569,8 @@ class Conf(object):
             real_value = ",".join(str_values)
         else:
             real_value = str(value)
-        self.lines.append({'key': real_key, 'value': real_value})
+        self.backing.set('DEFAULT', real_key, real_value)
         LOG.debug("Added nova conf key %r with value %r" % (real_key, real_value))
 
-    def _form_entry(self, key, value, params=None):
-        real_value = utils.param_replace(str(value), params)
-        entry = "%s=%s" % (key, real_value)
-        return entry
-
-    def _generate_header(self):
-        lines = list()
-        lines.append("# Generated on %s by (%s)" % (date.rcf8222date(), sh.getuser()))
-        lines.append("")
-        lines.append(NV_CONF_DEF_SECTION)
-        lines.append("")
-        return lines
-
-    def _generate_footer(self):
-        return list()
-
-    def generate(self, param_dict=None):
-        lines = list()
-        lines.extend(self._generate_header())
-        lines.extend(sorted(self._generate_lines(param_dict)))
-        lines.extend(self._generate_footer())
-        return utils.joinlinesep(*lines)
-
-    def _generate_lines(self, params=None):
-        lines = list()
-        for line_entry in self.lines:
-            key = line_entry.get('key')
-            value = line_entry.get('value')
-            lines.append(self._form_entry(key, value, params))
-        return lines
+    def generate(self):
+        return self.backing.stringify(fn=self.name)
