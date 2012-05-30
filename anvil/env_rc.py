@@ -223,7 +223,6 @@ class RcWriter(object):
 
     def _get_euca_envs(self):
         to_set = dict()
-        to_set['EUCALYPTUS_CERT'] = self.cfg.get('extern', 'nova_cert_fn')
         return to_set
 
     def _generate_euca_env(self):
@@ -236,7 +235,6 @@ class RcWriter(object):
     def _get_nova_envs(self):
         to_set = dict()
         to_set['NOVA_VERSION'] = self.cfg.get('nova', 'nova_version')
-        to_set['NOVA_CERT'] = self.cfg.get('extern', 'nova_cert_fn')
         return to_set
 
     def _generate_nova_env(self):
