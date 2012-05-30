@@ -26,7 +26,6 @@ from anvil import packager
 from anvil import phase
 from anvil import pip
 from anvil import shell as sh
-from anvil import trace as tr
 from anvil import utils
 
 LOG = logging.getLogger(__name__)
