@@ -177,7 +177,7 @@ Now setup the prerequisites needed to run (select the appropriate shell script f
 
 ::
 
-    $ cd anvil/warmup && sudo ./$DISTRO.sh
+    $ cd anvil/warmups && sudo ./$DISTRO.sh
 
 Configuration
 -------------
