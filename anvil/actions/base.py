@@ -144,9 +144,9 @@ class Action(object):
         return component_results
 
     def _delete_phase_files(self, names):
-        phase_dir = self.root_dir
         for n in names:
-            for fn in glob.glob("%s/%s.*.phases" % (phase_dir, n)):
+            phases_path = sh.joinpths(self.root_dir, '%s.*.phases' % (n))
+            for fn in glob.glob(phases_path):
                 if sh.isfile(fn):
                     sh.unlink(fn)
 
