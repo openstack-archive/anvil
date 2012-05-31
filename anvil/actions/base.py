@@ -18,6 +18,7 @@ import abc
 import collections
 import glob
 
+from anvil import actions
 from anvil import colorizer
 from anvil import date
 from anvil import exceptions as excp
@@ -36,7 +37,6 @@ PhaseFunctors = collections.namedtuple('PhaseFunctors', ['start', 'run', 'end'])
 
 class Action(object):
     __meta__ = abc.ABCMeta
-    NAME = None
 
     def __init__(self, distro, cfg, root_dir, **kargs):
         self.distro = distro
@@ -44,6 +44,10 @@ class Action(object):
         self.keep_old = kargs.get('keep_old', False)
         self.force = kargs.get('force', False)
         self.root_dir = root_dir
+
+    @staticmethod
+    def get_name():
+        return None
 
     @abc.abstractmethod
     def _run(self, persona, component_order, instances):
@@ -83,7 +87,7 @@ class Action(object):
         pip_factory = packager.PackagerFactory(self.distro, pip.Packager)
         pkg_factory = packager.PackagerFactory(self.distro, self.distro.get_default_package_manager_cls())
         for c in components:
-            (cls, my_info) = self.distro.extract_component(c, self.NAME)
+            (cls, my_info) = self.distro.extract_component(c, self.get_name())
             LOG.debug("Constructing class %s" % (cls))
             cls_kvs = {}
             cls_kvs['runner'] = self
@@ -120,7 +124,8 @@ class Action(object):
         Run a given 'functor' across all of the components, in order.
         """
         component_results = dict()
-        phase_recorder = phase.PhaseRecorder(sh.joinpths(self.root_dir, "%s.%s.phases" % (self.NAME, phase_name.lower())))
+        phase_fn =  "%s.%s.phases" % (actions.get_name_for_action(self.__class__), phase_name.lower())
+        phase_recorder = phase.PhaseRecorder(sh.joinpths(self.root_dir, phase_fn))
         for c in component_order:
             instance = instances[c]
             if phase_recorder.has_ran(instance.component_name):
@@ -153,7 +158,7 @@ class Action(object):
     def run(self, persona):
         instances = self._construct_instances(persona)
         component_order = self._order_components(persona.wanted_components)
-        LOG.info("Processing components for action %s.", colorizer.quote(self.NAME or "???"))
+        LOG.info("Processing components for action %s.", colorizer.quote(self.get_name()))
         utils.log_iterable(component_order,
                         header="Activating in the following order",
                         logger=LOG)

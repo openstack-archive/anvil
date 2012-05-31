@@ -26,7 +26,10 @@ LOG = log.getLogger(__name__)
 
 
 class StartAction(base.Action):
-    NAME = 'running'
+
+    @staticmethod
+    def get_name():
+        return 'running'
 
     def _run(self, persona, component_order, instances):
         self._run_phase(
@@ -69,3 +72,5 @@ class StartAction(base.Action):
             instances,
             "Post-start",
             )
+        # Knock off anything connected to stopping
+        self._delete_phase_files(['stop'])

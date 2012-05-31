@@ -27,6 +27,12 @@ _NAMES_TO_RUNNER = {
     'stop': stop.StopAction,
 }
 
+_RUNNER_TO_NAMES = dict((v, k) for (k, v) in _NAMES_TO_RUNNER.items())
+
+
+def get_name_for_action(cls):
+    return _RUNNER_TO_NAMES.get(cls)
+
 
 def get_action_names():
     """
