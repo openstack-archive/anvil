@@ -28,8 +28,12 @@ LOG = log.getLogger(__name__)
 class StartAction(base.Action):
 
     @staticmethod
-    def get_name():
+    def get_lookup_name():
         return 'running'
+
+    @staticmethod
+    def get_action_name():
+        return 'start'
 
     def _run(self, persona, component_order, instances):
         self._run_phase(

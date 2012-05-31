@@ -18,7 +18,6 @@ import abc
 import collections
 import glob
 
-from anvil import actions
 from anvil import colorizer
 from anvil import date
 from anvil import exceptions as excp
@@ -46,7 +45,11 @@ class Action(object):
         self.root_dir = root_dir
 
     @staticmethod
-    def get_name():
+    def get_lookup_name():
+        return None
+
+    @staticmethod
+    def get_action_name():
         return None
 
     @abc.abstractmethod
@@ -87,7 +90,7 @@ class Action(object):
         pip_factory = packager.PackagerFactory(self.distro, pip.Packager)
         pkg_factory = packager.PackagerFactory(self.distro, self.distro.get_default_package_manager_cls())
         for c in components:
-            (cls, my_info) = self.distro.extract_component(c, self.get_name())
+            (cls, my_info) = self.distro.extract_component(c, self.get_lookup_name())
             LOG.debug("Constructing class %s" % (cls))
             cls_kvs = {}
             cls_kvs['runner'] = self
@@ -124,7 +127,7 @@ class Action(object):
         Run a given 'functor' across all of the components, in order.
         """
         component_results = dict()
-        phase_fn =  "%s.%s.phases" % (actions.get_name_for_action(self.__class__), phase_name.lower())
+        phase_fn =  "%s.%s.phases" % (self.get_action_name(), phase_name.lower())
         phase_recorder = phase.PhaseRecorder(sh.joinpths(self.root_dir, phase_fn))
         for c in component_order:
             instance = instances[c]
@@ -158,7 +161,7 @@ class Action(object):
     def run(self, persona):
         instances = self._construct_instances(persona)
         component_order = self._order_components(persona.wanted_components)
-        LOG.info("Processing components for action %s.", colorizer.quote(self.get_name()))
+        LOG.info("Processing components for action %s.", colorizer.quote(self.get_action_name()))
         utils.log_iterable(component_order,
                         header="Activating in the following order",
                         logger=LOG)

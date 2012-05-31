@@ -28,7 +28,11 @@ LOG = log.getLogger(__name__)
 class UninstallAction(base.Action):
 
     @staticmethod
-    def get_name():
+    def get_lookup_name():
+        return 'uninstall'
+
+    @staticmethod
+    def get_action_name():
         return 'uninstall'
 
     def _order_components(self, components):

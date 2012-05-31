@@ -27,8 +27,12 @@ LOG = log.getLogger(__name__)
 class StopAction(base.Action):
 
     @staticmethod
-    def get_name():
+    def get_lookup_name():
         return 'running'
+
+    @staticmethod
+    def get_action_name():
+        return 'stop'
 
     def _order_components(self, components):
         components = super(StopAction, self)._order_components(components)

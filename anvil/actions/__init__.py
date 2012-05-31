@@ -20,18 +20,11 @@ from anvil.actions import stop
 from anvil.actions import uninstall
 
 
-_NAMES_TO_RUNNER = {
-    'install': install.InstallAction,
-    'uninstall': uninstall.UninstallAction,
-    'start': start.StartAction,
-    'stop': stop.StopAction,
-}
-
-_RUNNER_TO_NAMES = dict((v, k) for (k, v) in _NAMES_TO_RUNNER.items())
-
-
-def get_name_for_action(cls):
-    return _RUNNER_TO_NAMES.get(cls)
+_NAMES_TO_RUNNER = dict()
+_NAMES_TO_RUNNER[install.InstallAction.get_action_name()] = install.InstallAction
+_NAMES_TO_RUNNER[install.UninstallAction.get_action_name()] = uninstall.UninstallAction
+_NAMES_TO_RUNNER[start.StartAction.get_action_name()] = start.StartAction
+_NAMES_TO_RUNNER[stop.StopAction.get_action_name()] = stop.StopAction
 
 
 def get_action_names():

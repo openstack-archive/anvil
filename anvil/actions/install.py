@@ -32,7 +32,11 @@ LOG = log.getLogger(__name__)
 class InstallAction(base.Action):
 
     @staticmethod
-    def get_name():
+    def get_lookup_name():
+        return 'install'
+
+    @staticmethod
+    def get_action_name():
         return 'install'
 
     def _write_rc_file(self):
