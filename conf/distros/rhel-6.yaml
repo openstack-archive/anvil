@@ -562,7 +562,6 @@ components:
             version: 1.2*
         pips:
         -   name: cliff
-            version: 0.6
     quantum:
         action_classes:
             install: anvil.components.quantum:QuantumInstaller

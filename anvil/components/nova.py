@@ -245,7 +245,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
 
     def _generate_nova_conf(self, root_wrapped):
         conf_fn = self._get_target_config_name(API_CONF)
-        LOG.info("Generating dynamic content for nova: %s", colorizer.quote(conf_fn))
+        LOG.info("Generating dynamic content for nova: %s.", colorizer.quote(conf_fn))
         nova_conf_contents = self.conf_maker.configure(root_wrapped)
         self.tracewriter.dirs_made(*sh.mkdirslist(sh.dirname(conf_fn)))
         self.tracewriter.cfg_file_written(sh.write_file(conf_fn, nova_conf_contents))

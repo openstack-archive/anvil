@@ -19,6 +19,8 @@ import re
 
 import iniparse
 
+import ConfigParser
+
 from anvil import cfg_helpers
 from anvil import env
 from anvil import exceptions as excp
@@ -31,14 +33,28 @@ SUB_MATCH = re.compile(r"(?:\$\(([\w\d]+):([\w\d]+))\)")
 LOG = logging.getLogger(__name__)
 
 
-class IgnoreMissingConfigParser(iniparse.RawConfigParser):
+class StringiferMixin(object):
+    def stringify(self, fn=None):
+        contents = ''
+        with io.BytesIO() as outputstream:
+            self.write(outputstream)
+            outputstream.flush()
+            contents = utils.add_header(fn, outputstream.getvalue())
+        return contents
+
+
+class BuiltinConfigParser(ConfigParser.RawConfigParser, StringiferMixin):
+    pass
+
+
+class IgnoreMissingConfigParser(iniparse.RawConfigParser, StringiferMixin):
     DEF_INT = 0
     DEF_FLOAT = 0.0
     DEF_BOOLEAN = False
     DEF_BASE = None
 
-    def __init__(self, cs=True, fns=None):
-        iniparse.RawConfigParser.__init__(self)
+    def __init__(self, cs=True, fns=None, defaults=None):
+        iniparse.RawConfigParser.__init__(self, defaults=defaults)
         if cs:
             # Make option names case sensitive
             # See: http://docs.python.org/library/configparser.html#ConfigParser.RawConfigParser.optionxform
@@ -60,6 +76,8 @@ class IgnoreMissingConfigParser(iniparse.RawConfigParser):
     def set(self, section, option, value):
         if not self.has_section(section) and section.lower() != 'default':
             self.add_section(section)
+        # Something seems borked if the section is the default section...
+        # And that section did not exist previously...
         iniparse.RawConfigParser.set(self, section, option, value)
 
     def remove_option(self, section, option):
@@ -80,14 +98,6 @@ class IgnoreMissingConfigParser(iniparse.RawConfigParser):
         if not self.has_option(section, option):
             return self.DEF_INT
         return iniparse.RawConfigParser.getint(self, section, option)
-
-    def stringify(self, fn=None):
-        contents = ''
-        with io.BytesIO() as outputstream:
-            self.write(outputstream)
-            outputstream.flush()
-            contents = utils.add_header(fn, outputstream.getvalue())
-        return contents
 
 
 class ProxyConfig(object):
