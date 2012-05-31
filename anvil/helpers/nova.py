@@ -19,7 +19,6 @@ import os
 import weakref
 
 from anvil import cfg
-from anvil import date
 from anvil import exceptions
 from anvil import libvirt as lv
 from anvil import log as logging
@@ -126,10 +125,42 @@ def canon_virt_driver(virt_driver):
     return virt_driver
 
 
-def get_shared_params(cfg):
+def get_shared_params(cfgobj):
     mp = dict()
-    host_ip = cfg.get('host', 'ip')
+
+    host_ip = cfgobj.get('host', 'ip')
     mp['service_host'] = host_ip
+    nova_host = cfgobj.getdefaulted('nova', 'nova_host', host_ip)
+    nova_protocol = cfgobj.getdefaulted('nova', 'nova_protocol', 'http')
+
+    # Uri's of the various nova endpoints
+    mp['endpoints'] = {
+        'ec2': {
+            'uri': utils.make_url(nova_protocol, nova_host, 8773, "services/Admin"),
+            'port': 8773,
+            'host': host_ip,
+            'protocol': nova_protocol,
+        },
+        'volume': {
+            'uri': utils.make_url(nova_protocol, host_ip, 8776, "v1"),
+            'port': 8776,
+            'host': host_ip,
+            'protocol': nova_protocol,
+        },
+        's3': {
+            'uri': utils.make_url('http', host_ip, 3333),
+            'port': 3333,
+            'host': host_ip,
+            'protocol': nova_protocol,
+        },
+        'api': {
+            'uri': utils.make_url('http', host_ip, 8774, "v2"),
+            'port': 8774,
+            'host': host_ip,
+            'protocol': nova_protocol,
+        },
+    }
+
     return mp
 
 

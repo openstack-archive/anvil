@@ -28,7 +28,7 @@ HELP_WIDTH = 80
 
 def _format_list(in_list):
     sorted_list = sorted(in_list)
-    return  "[" + ", ".join(sorted_list) + "]"
+    return "[" + ", ".join(sorted_list) + "]"
 
 
 def parse():

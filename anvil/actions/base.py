@@ -19,7 +19,6 @@ import collections
 import glob
 
 from anvil import colorizer
-from anvil import date
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import packager
@@ -127,7 +126,7 @@ class Action(object):
         Run a given 'functor' across all of the components, in order.
         """
         component_results = dict()
-        phase_fn =  "%s.%s.phases" % (self.get_action_name(), phase_name.lower())
+        phase_fn = "%s.%s.phases" % (self.get_action_name(), phase_name.lower())
         phase_recorder = phase.PhaseRecorder(sh.joinpths(self.root_dir, phase_fn))
         for c in component_order:
             instance = instances[c]
