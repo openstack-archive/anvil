@@ -13,7 +13,7 @@ echo "Preparing ANVIL for Fedora"
 # Install the needed yum packages
 PKGS="gcc git pylint python python-netifaces python-pep8 python-pip python-progressbar PyYAML python-iniparse"
 echo "Installing packages: $PKGS"
-yum install -q -y install $PKGS
+yum -q -y install $PKGS
 
 # Install the needed pypi packages
 PIPS="termcolor"
