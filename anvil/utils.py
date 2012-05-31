@@ -29,6 +29,7 @@ from urlparse import urlunparse
 
 import netifaces
 import progressbar
+import yaml
 
 from anvil import colorizer
 from anvil import date
@@ -360,6 +361,8 @@ def param_replace_list(values, replacements, ignore_missing=False):
     for v in values:
         if v is not None:
             new_values.append(param_replace(str(v), replacements, ignore_missing))
+        else:
+            new_values.append(v)
     return new_values
 
 
@@ -377,6 +380,36 @@ def find_params(text):
 
     PARAM_SUB_REGEX.sub(finder, text)
     return params_found
+
+
+def prettify_yaml(obj):
+    formatted = yaml.dump(obj,
+                    line_break="\n",
+                    indent=4,
+                    explicit_start=True,
+                    explicit_end=True,
+                    default_flow_style=False,
+                    )
+    return formatted
+    
+    
+def param_replace_deep(root, replacements, ignore_missing=False):
+    if isinstance(root, list):
+        return param_replace_list(root, replacements, ignore_missing)
+    elif isinstance(root, basestring):
+        return param_replace(root, replacements, ignore_missing)
+    elif isinstance(root, dict):
+        mapped_dict = {}
+        for (k, v) in root.items():
+            mapped_dict[k] = param_replace_deep(v, replacements, ignore_missing)
+        return mapped_dict
+    elif isinstance(root, set):
+        mapped_set = set()
+        for v in root:
+            mapped_set.add(param_replace_deep(v, replacements, ignore_missing))
+        return mapped_set
+    else:
+        return root
 
 
 def param_replace(text, replacements, ignore_missing=False):
