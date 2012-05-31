@@ -22,7 +22,7 @@ from anvil.actions import uninstall
 
 _NAMES_TO_RUNNER = dict()
 _NAMES_TO_RUNNER[install.InstallAction.get_action_name()] = install.InstallAction
-_NAMES_TO_RUNNER[install.UninstallAction.get_action_name()] = uninstall.UninstallAction
+_NAMES_TO_RUNNER[uninstall.UninstallAction.get_action_name()] = uninstall.UninstallAction
 _NAMES_TO_RUNNER[start.StartAction.get_action_name()] = start.StartAction
 _NAMES_TO_RUNNER[stop.StopAction.get_action_name()] = stop.StopAction
 
