@@ -28,14 +28,15 @@ if [ "$?" -ne "0" ]; then
 fi
 
 echo "Installing $TMP_DIR/$EPEL_RPM"
-OUT=$(yum install -y -q install $TMP_DIR/$EPEL_RPM 2>&1)
+OUT=$(yum -y -q install $TMP_DIR/$EPEL_RPM 2>&1)
+OUT_EXITCODE=$?
 if [[ "$OUT" =~ "Nothing to do" ]]
 then
     echo "It appears $EPEL_RPM is already installed."
 elif [[ "$OUT" =~ "Already installed" ]]
 then
     echo "Installed!"
-elif [ "$?" -ne "0" ]
+elif [ "$OUT_EXITCODE" -ne "0" ]
 then
     echo "Sorry, stopping since install of $TMP_DIR/$EPEL_RPM failed."
     exit 1
@@ -44,7 +45,7 @@ fi
 # Install the needed yum packages
 PKGS="gcc git pylint python python-netifaces python-pep8 python-pip python-progressbar PyYAML"
 echo "Installing packages: $PKGS"
-yum install -y -q install $PKGS
+yum -y -q install $PKGS
 
 # Install the needed pypi packages
 PIPS="termcolor iniparse"
