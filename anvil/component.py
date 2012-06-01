@@ -529,13 +529,18 @@ class ProgramRuntime(ComponentBase):
         return self.cfg.getdefaulted("DEFAULT", "run_type", 'anvil.runners.fork:ForkRunner')
 
     def configure(self):
-        # First make a pass and make sure all runtime (e.g. upstart starting)
+        # Anything to configure for starting?
+        apps_to_start = self._get_apps_to_start()
+        am_configured = 0
+        if not apps_to_start:
+            return am_configured
+        # First make a pass and make sure all runtime 
+        # (e.g. upstart starting)
         # config files are in place....
         run_type = self._fetch_run_type()
         cls = importer.import_entry_point(run_type)
         instance = cls(self.cfg, self.component_name, self.trace_dir)
-        tot_am = 0
-        for app_info in self._get_apps_to_start():
+        for app_info in apps_to_start:
             app_name = app_info["name"]
             app_pth = app_info.get("path", app_name)
             app_dir = app_info.get("app_dir", self.app_dir)
@@ -545,16 +550,20 @@ class ProgramRuntime(ComponentBase):
                      app_pth=app_pth, app_dir=app_dir,
                      opts=utils.param_replace_list(self._get_app_options(app_name), self._get_param_map(app_name)))
             LOG.debug("Configured %s files for runner for program %r", cfg_am, app_name)
-            tot_am += cfg_am
-        return tot_am
+            am_configured += cfg_am
+        return am_configured
 
     def start(self):
+        # Anything to start?
+        am_started = 0
+        apps_to_start = self._get_apps_to_start()
+        if not apps_to_start:
+            return am_started
         # Select how we are going to start it
         run_type = self._fetch_run_type()
         cls = importer.import_entry_point(run_type)
         instance = cls(self.cfg, self.component_name, self.trace_dir)
-        am_started = 0
-        for app_info in self._get_apps_to_start():
+        for app_info in apps_to_start:
             app_name = app_info["name"]
             app_pth = app_info.get("path", app_name)
             app_dir = app_info.get("app_dir", self.app_dir)
@@ -579,7 +588,8 @@ class ProgramRuntime(ComponentBase):
                 killcls = importer.import_entry_point(how)
                 LOG.debug("Stopping %r using %r", app_name, how)
             except RuntimeError as e:
-                LOG.warn("Could not load class %s which should be used to stop %s: %s", colorizer.quote(how), colorizer.quote(app_name), e)
+                LOG.warn("Could not load class %s which should be used to stop %s: %s", 
+                         colorizer.quote(how), colorizer.quote(app_name), e)
                 continue
             if killcls in killer_instances:
                 killer = killer_instances[killcls]
@@ -592,19 +602,21 @@ class ProgramRuntime(ComponentBase):
         return to_kill
 
     def stop(self):
+        # Anything to stop??
+        killed_am = 0
         apps_started = self.tracereader.apps_started()
+        if not apps_started:
+            return killed_am
         self.pre_stop(apps_started)
         to_kill = self._locate_killers(apps_started)
         for (app_name, killer) in to_kill:
             killer.stop(app_name)
-        if len(apps_started) == len(to_kill):
-            LOG.debug("Deleting start trace file %r", self.tracereader.filename())
-            sh.unlink(self.tracereader.filename())
-            for (app_name, killer) in to_kill:
-                LOG.debug("Unconfiguring %r after successful stopping", app_name)
-                killer.unconfigure()
+            killer.unconfigure()
+            killed_am += 1
         self.post_stop(apps_started)
-        return len(to_kill)
+        if len(apps_started) == killed_am:
+            sh.unlink(self.tracereader.filename())
+        return killed_am
 
     def status(self):
         return STATUS_UNKNOWN
@@ -618,28 +630,6 @@ class PythonRuntime(ProgramRuntime):
         ProgramRuntime.__init__(self, *args, **kargs)
 
 
-class EmptyRuntime(ComponentBase):
+class EmptyRuntime(ProgramRuntime):
     def __init__(self, *args, **kargs):
-        ComponentBase.__init__(self, *args, **kargs)
-        self.tracereader = tr.TraceReader(self._get_trace_files()['install'])
-
-    def configure(self):
-        return 0
-
-    def pre_start(self):
-        pass
-
-    def post_start(self):
-        pass
-
-    def start(self):
-        return 0
-
-    def stop(self):
-        return 0
-
-    def status(self):
-        return STATUS_UNKNOWN
-
-    def restart(self):
-        return 0
+        ProgramRuntime.__init__(self, *args, **kargs)

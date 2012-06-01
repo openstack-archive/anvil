@@ -124,7 +124,7 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
     def _config_adjust_registry(self, contents, fn):
         params = ghelper.get_shared_params(self.cfg)
         with io.BytesIO(contents) as stream:
-            config = cfg.IgnoreMissingConfigParser()
+            config = cfg.RewritableConfigParser()
             config.readfp(stream)
             config.set('DEFAULT', 'debug', True)
             config.set('DEFAULT', 'verbose', True)
@@ -139,7 +139,7 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
     def _config_adjust_paste(self, contents, fn):
         params = khelper.get_shared_params(self.cfg, 'glance')
         with io.BytesIO(contents) as stream:
-            config = cfg.IgnoreMissingConfigParser()
+            config = cfg.RewritableConfigParser()
             config.readfp(stream)
             config.set('filter:authtoken', 'auth_host', params['endpoints']['admin']['host'])
             config.set('filter:authtoken', 'auth_port', params['endpoints']['admin']['port'])
@@ -158,7 +158,7 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
     def _config_adjust_api(self, contents, fn):
         params = ghelper.get_shared_params(self.cfg)
         with io.BytesIO(contents) as stream:
-            config = cfg.IgnoreMissingConfigParser()
+            config = cfg.RewritableConfigParser()
             config.readfp(stream)
             img_store_dir = self._get_image_dir()
             config.set('DEFAULT', 'debug', True)
@@ -175,7 +175,7 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
 
     def _config_adjust_logging(self, contents, fn):
         with io.BytesIO(contents) as stream:
-            config = cfg.IgnoreMissingConfigParser()
+            config = cfg.RewritableConfigParser()
             config.readfp(stream)
             config.set('logger_root', 'level', 'DEBUG')
             config.set('logger_root', 'handlers', "devel,production")

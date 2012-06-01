@@ -30,7 +30,14 @@ LOG = log.getLogger(__name__)
 
 
 class InstallAction(base.Action):
-    NAME = 'install'
+
+    @staticmethod
+    def get_lookup_name():
+        return 'install'
+
+    @staticmethod
+    def get_action_name():
+        return 'install'
 
     def _write_rc_file(self):
         fn = sh.abspth(settings.gen_rc_filename('core'))
@@ -105,3 +112,5 @@ class InstallAction(base.Action):
             instances,
             "Post-install",
             )
+        # Knock off anything connected to uninstall
+        self._delete_phase_files(['uninstall'])

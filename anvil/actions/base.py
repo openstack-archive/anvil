@@ -16,15 +16,15 @@
 
 import abc
 import collections
+import glob
 
 from anvil import colorizer
-from anvil import date
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import packager
+from anvil import phase
 from anvil import pip
 from anvil import shell as sh
-from anvil import trace as tr
 from anvil import utils
 
 LOG = logging.getLogger(__name__)
@@ -35,7 +35,6 @@ PhaseFunctors = collections.namedtuple('PhaseFunctors', ['start', 'run', 'end'])
 
 class Action(object):
     __meta__ = abc.ABCMeta
-    NAME = None
 
     def __init__(self, distro, cfg, root_dir, **kargs):
         self.distro = distro
@@ -43,6 +42,14 @@ class Action(object):
         self.keep_old = kargs.get('keep_old', False)
         self.force = kargs.get('force', False)
         self.root_dir = root_dir
+
+    @staticmethod
+    def get_lookup_name():
+        return None
+
+    @staticmethod
+    def get_action_name():
+        return None
 
     @abc.abstractmethod
     def _run(self, persona, component_order, instances):
@@ -82,7 +89,7 @@ class Action(object):
         pip_factory = packager.PackagerFactory(self.distro, pip.Packager)
         pkg_factory = packager.PackagerFactory(self.distro, self.distro.get_default_package_manager_cls())
         for c in components:
-            (cls, my_info) = self.distro.extract_component(c, self.NAME)
+            (cls, my_info) = self.distro.extract_component(c, self.get_lookup_name())
             LOG.debug("Constructing class %s" % (cls))
             cls_kvs = {}
             cls_kvs['runner'] = self
@@ -114,57 +121,38 @@ class Action(object):
         for c in component_order:
             instances[c].warm_configs()
 
-    def _skip_phase(self, instance, mark):
-        phase_fn = "%s.phases" % (self.NAME)
-        trace_fn = tr.trace_fn(self.root_dir, phase_fn)
-        name = instance.component_name
-        LOG.debug("Checking if we already completed phase %r by looking in %r for component %s", mark, trace_fn, name)
-        skipable = False
-        try:
-            reader = tr.TraceReader(trace_fn)
-            marks = reader.marks_made()
-            for mark_found in marks:
-                if mark == mark_found.get('id') and name == mark_found.get('name'):
-                    skipable = True
-                    LOG.debug("Completed phase %r on for component %s: %s", mark, mark_found.get('name'), mark_found.get('when'))
-                    break
-        except excp.NoTraceException:
-            pass
-        return skipable
-
-    def _mark_phase(self, instance, mark):
-        phase_fn = "%s.phases" % (self.NAME)
-        trace_fn = tr.trace_fn(self.root_dir, phase_fn)
-        name = instance.component_name
-        writer = tr.TraceWriter(trace_fn, break_if_there=False)
-        LOG.debug("Marking we completed phase %r in file %r for component %s", mark, trace_fn, name)
-        details = {
-            'id': mark,
-            'when': date.rcf8222date(),
-            'name': name,
-        }
-        writer.mark(details)
-
     def _run_phase(self, functors, component_order, instances, phase_name):
         """
         Run a given 'functor' across all of the components, in order.
         """
         component_results = dict()
+        phase_recorder = None
+        if phase_name:
+            phase_fn = "%s.%s.phases" % (self.get_action_name(), phase_name.lower())
+            phase_recorder = phase.PhaseRecorder(sh.joinpths(self.root_dir, phase_fn))
         for c in component_order:
             instance = instances[c]
-            if self._skip_phase(instance, phase_name):
-                LOG.debug("Skipping phase named %r for component %r", phase_name, c)
+            if phase_recorder and phase_recorder.has_ran(instance.component_name):
+                LOG.debug("Skipping phase named %r for component %r since it already happened.", phase_name, c)
             else:
                 try:
-                    if functors.start:
-                        functors.start(instance)
                     result = None
-                    if functors.run:
-                        result = functors.run(instance)
-                    if functors.end:
-                        functors.end(instance, result)
+                    if phase_recorder:
+                        with phase_recorder.mark(instance.component_name):
+                            if functors.start:
+                                functors.start(instance)
+                            if functors.run:
+                                result = functors.run(instance)
+                            if functors.end:
+                                functors.end(instance, result)
+                    else:
+                        if functors.start:
+                            functors.start(instance)
+                        if functors.run:
+                            result = functors.run(instance)
+                        if functors.end:
+                            functors.end(instance, result)
                     component_results[instance] = result
-                    self._mark_phase(instance, phase_name)
                 except (excp.NoTraceException) as e:
                     if self.force:
                         LOG.debug("Skipping exception: %s" % (e))
@@ -173,14 +161,16 @@ class Action(object):
         return component_results
 
     def _delete_phase_files(self, names):
-        phase_dir = self.root_dir
-        for name in names:
-            sh.unlink(tr.trace_fn(phase_dir, "%s.phases" % (name)))
+        for n in names:
+            phases_path = sh.joinpths(self.root_dir, '%s.*.phases' % (n))
+            for fn in glob.glob(phases_path):
+                if sh.isfile(fn):
+                    sh.unlink(fn)
 
     def run(self, persona):
         instances = self._construct_instances(persona)
         component_order = self._order_components(persona.wanted_components)
-        LOG.info("Processing components for action %s.", colorizer.quote(self.NAME or "???"))
+        LOG.info("Processing components for action %s.", colorizer.quote(self.get_action_name()))
         utils.log_iterable(component_order,
                         header="Activating in the following order",
                         logger=LOG)

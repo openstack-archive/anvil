@@ -1,45 +1,45 @@
 ---
 endpoints:
--   admin_url: http://%swift.service_host%:8080/v1/AUTH_%(tenant_id)s
-    internal_url: http://%swift.service_host%:8080/
-    public_url: http://%swift.service_host%:8080/v1/AUTH_%(tenant_id)s
+-   service: swift
+    admin_url: "%swift.endpoints.admin.uri%/v1/AUTH_%(tenant_id)s"
+    internal_url: "%swift.endpoints.internal.uri%"
+    public_url: "%swift.endpoints.public.uri%/v1/AUTH_%(tenant_id)s"
     region: RegionOne
-    service: swift
--   admin_url: http://%nova.service_host%:8773/services/Admin
-    internal_url: http://%nova.service_host%:8773/services/Cloud
-    public_url: http://%nova.service_host%:8773/services/Cloud
+-   service: ec2
+    admin_url: "%nova.endpoints.ec2_admin.uri%"
+    internal_url: "%nova.endpoints.ec2_cloud.uri%"
+    public_url: "%nova.endpoints.ec2_cloud.uri%"
     region: RegionOne
-    service: ec2
--   admin_url: http://%quantum.service_host%:9696/
-    internal_url: http://%quantum.service_host%:9696/
-    public_url: http://%quantum.service_host%:9696/
+-   service: network
+    admin_url: "%quantum.endpoints.admin.uri%"
+    internal_url: "%quantum.endpoints.internal.uri%"
+    public_url: "%quantum.endpoints.public.uri%"
     region: RegionOne
-    service: network
--   admin_url: http://%glance.service_host%:9292
-    internal_url: http://%glance.service_host%:9292
-    public_url: http://%glance.service_host%:9292
+-   service: glance
+    admin_url: "%glance.endpoints.admin.uri%"
+    internal_url: "%glance.endpoints.internal.uri%"
+    public_url: "%glance.endpoints.public.uri%"
     region: RegionOne
-    service: glance
--   admin_url: http://%nova.service_host%:8776/v1/%(tenant_id)s
-    internal_url: http://%nova.service_host%:8776/v1/%(tenant_id)s
-    public_url: http://%nova.service_host%:8776/v1/%(tenant_id)s
+-   service: volume
+    admin_url: "%nova.endpoints.volume.uri%/%(tenant_id)s"
+    internal_url: "%nova.endpoints.volume.uri%/%(tenant_id)s"
+    public_url: "%nova.endpoints.volume.uri%/%(tenant_id)s"
     region: RegionOne
-    service: volume
--   admin_url: http://%nova.service_host%:3333
-    internal_url: http://%nova.service_host%:3333
-    public_url: http://%nova.service_host%:3333
+-   service: s3
+    admin_url: "%nova.endpoints.s3.uri%"
+    internal_url: "%nova.endpoints.s3.uri%"
+    public_url: "%nova.endpoints.s3.uri%"
     region: RegionOne
-    service: s3
--   admin_url: http://%keystone.service_host%:$(admin_port)s/v2.0
-    internal_url: http://%keystone.service_host%:$(public_port)s/v2.0
-    public_url: http://%keystone.service_host%:$(public_port)s/v2.0
+-   service: keystone
+    admin_url: "%keystone.endpoints.admin_templated.uri%"
+    internal_url: "%keystone.endpoints.internal_templated.uri%"
+    public_url: "%keystone.endpoints.public_templated.uri%"
     region: RegionOne
-    service: keystone
--   admin_url: http://%nova.service_host%:8774/v2/%(tenant_id)s
-    internal_url: http://%nova.service_host%:8774/v2/%(tenant_id)s
-    public_url: http://%nova.service_host%:8774/v2/%(tenant_id)s
+-   service: nova
+    admin_url: "%nova.endpoints.api.uri%/%(tenant_id)s"
+    internal_url: "%nova.endpoints.api.uri%/%(tenant_id)s"
+    public_url: "%nova.endpoints.api.uri%/%(tenant_id)s"
     region: RegionOne
-    service: nova
 roles:
 - admin
 - anotherrole

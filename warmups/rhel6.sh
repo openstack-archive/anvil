@@ -43,7 +43,7 @@ then
 fi
 
 # Install the needed yum packages
-PKGS="gcc git pylint python python-netifaces python-pep8 python-pip python-progressbar PyYAML"
+PKGS="gcc git pylint python python-netifaces python-pep8 python-pip python-progressbar PyYAML python-ordereddict"
 echo "Installing packages: $PKGS"
 yum -y -q install $PKGS
 

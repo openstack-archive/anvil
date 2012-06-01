@@ -24,20 +24,17 @@ LOG = logging.getLogger(__name__)
 
 class Initializer(object):
 
-    def __init__(self, replacements):
-        self.replacements = replacements
+    def __init__(self, cfg):
         # Late load since its using a client lib that is only avail after install...
+        self.cfg = cfg
         client_cls = importer.import_entry_point("keystoneclient.v2_0.client:Client")
-        self.client = client_cls(token=self.replacements['keystone']['service_token'],
-            endpoint=self.replacements['keystone']['endpoints']['admin']['uri'])
-
-    def _do_replace(self, text):
-        return utils.param_replace(text, self.replacements, ignore_missing=True)
+        self.client = client_cls(token=self.cfg['service_token'],
+            endpoint=self.cfg['endpoints']['admin']['uri'])
 
     def _create_tenants(self, tenants):
         tenants_made = dict()
         for entry in tenants:
-            name = self._do_replace(entry['name'])
+            name = entry['name']
             if name in tenants_made:
                 LOG.warn("Already created tenant %s", colorizer.quote(name))
             tenant = {
@@ -52,10 +49,10 @@ class Initializer(object):
     def _create_users(self, users, tenants):
         created = dict()
         for entry in users:
-            name = self._do_replace(entry['name'])
+            name = entry['name']
             if name in created:
                 LOG.warn("Already created user %s", colorizer.quote(name))
-            password = self._do_replace(entry['password'])
+            password = entry['password']
             email = entry['email']
             user = {
                 'name': name,
@@ -69,7 +66,7 @@ class Initializer(object):
     def _create_roles(self, roles):
         roles_made = dict()
         for r in roles:
-            role = self._do_replace(r)
+            role = r
             if role in roles_made:
                 LOG.warn("Already created role %s", colorizer.quote(role))
             LOG.debug("Creating role %s", role)
@@ -79,7 +76,7 @@ class Initializer(object):
     def _connect_roles(self, users, roles_made, tenants_made, users_made):
         roles_attached = set()
         for info in users:
-            name = self._do_replace(info['name'])
+            name = info['name']
             if name in roles_attached:
                 LOG.warn("Already attached roles to user %s", colorizer.quote(name))
             roles_attached.add(name)
@@ -87,8 +84,8 @@ class Initializer(object):
             for role_entry in info['roles']:
                 # Role:Tenant
                 (r, sep, t) = role_entry.partition(":")
-                role_name = self._do_replace(r)
-                tenant_name = self._do_replace(t)
+                role_name = r
+                tenant_name = t
                 if not role_name or not tenant_name:
                     raise RuntimeError("Role or tenant name missing for user %s" % (name))
                 if not role_name in roles_made:
@@ -106,7 +103,7 @@ class Initializer(object):
     def _create_services(self, services):
         created_services = dict()
         for info in services:
-            name = self._do_replace(info['name'])
+            name = info['name']
             if name in created_services:
                 LOG.warn("Already created service %s", colorizer.quote(name))
             service = {
@@ -126,9 +123,9 @@ class Initializer(object):
             service = services[name]
             endpoint = {
                 'region': entry['region'],
-                'publicurl': self._do_replace(entry['public_url']),
-                'adminurl': self._do_replace(entry['admin_url']),
-                'internalurl': self._do_replace(entry['internal_url']),
+                'publicurl': entry['public_url'],
+                'adminurl': entry['admin_url'],
+                'internalurl': entry['internal_url'],
                 'service_id': service.id,
             }
             LOG.debug("Creating endpoint %s", endpoint)
@@ -202,15 +199,27 @@ def get_shared_params(cfg, service_user=None):
             'protocol': keystone_auth_proto,
             'host': keystone_auth_host,
         },
+        'admin_templated': {
+            'uri': utils.make_url(keystone_auth_proto,
+                            keystone_auth_host, port='$(admin_port)s', path="v2.0"),
+            'protocol': keystone_auth_proto,
+            'host': keystone_auth_host,
+        },
         'public': {
             'uri': keystone_service_uri,
             'port': keystone_service_port,
             'protocol': keystone_service_proto,
             'host': keystone_service_host,
         },
+        'public_templated': {
+            'uri': utils.make_url(keystone_service_proto,
+                            keystone_service_host, port='$(public_port)s', path="v2.0"),
+            'protocol': keystone_service_proto,
+            'host': keystone_service_host,
+        },
     }
     mp['endpoints']['internal'] = dict(mp['endpoints']['public'])
+    mp['endpoints']['internal_templated'] = dict(mp['endpoints']['public_templated'])
 
     LOG.debug("Keystone shared params: %s", mp)
-
     return mp

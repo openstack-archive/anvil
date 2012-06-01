@@ -24,7 +24,7 @@ from anvil.actions.base import PhaseFunctors
 LOG = log.getLogger(__name__)
 
 
-class StopAction(base.Action):
+class StatusAction(base.Action):
 
     @staticmethod
     def get_lookup_name():
@@ -32,23 +32,22 @@ class StopAction(base.Action):
 
     @staticmethod
     def get_action_name():
-        return 'stop'
+        return 'status'
 
-    def _order_components(self, components):
-        components = super(StopAction, self)._order_components(components)
-        components.reverse()
-        return components
+    def _fetch_status(self, component):
+        return component.status()
+
+    def _print_status(self, component, status):
+        LOG.info("Status of %s is %s.", colorizer.quote(component.component_name), colorizer.quote(str(status)))
 
     def _run(self, persona, component_order, instances):
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Stopping %s.', colorizer.quote(i.component_name)),
-                run=lambda i: i.stop(),
-                end=lambda i, result: LOG.info("Stopped %s items.", colorizer.quote(result)),
+                start=None,
+                run=self._fetch_status,
+                end=self._print_status,
             ),
             component_order,
             instances,
-            "Stopped"
+            None,
             )
-        # Knock off and phase files that are connected to starting
-        self._delete_phase_files(['start'])

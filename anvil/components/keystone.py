@@ -14,8 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import copy
 import io
-
 import yaml
 
 from anvil import cfg
@@ -45,7 +45,7 @@ BIN_DIR = "bin"
 INIT_WHAT_FN = 'init_what.yaml'
 
 # Existence of this file signifies that initialization ran
-INIT_WHAT_HAPPENED = "keystone.inited.ran"
+INIT_WHAT_HAPPENED = "keystone.inited.yaml"
 
 # Simple confs
 ROOT_CONF = "keystone.conf"
@@ -125,7 +125,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
     def _config_adjust_logging(self, contents, fn):
         with io.BytesIO(contents) as stream:
-            config = cfg.IgnoreMissingConfigParser()
+            config = cfg.RewritableConfigParser()
             config.readfp(stream)
             config.set('logger_root', 'level', 'DEBUG')
             config.set('logger_root', 'handlers', "devel,production")
@@ -142,7 +142,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
     def _config_adjust_root(self, contents, fn):
         params = khelper.get_shared_params(self.cfg)
         with io.BytesIO(contents) as stream:
-            config = cfg.IgnoreMissingConfigParser()
+            config = cfg.RewritableConfigParser()
             config.readfp(stream)
             config.set('DEFAULT', 'admin_token', params['service_token'])
             config.set('DEFAULT', 'admin_port', params['endpoints']['admin']['port'])
@@ -193,16 +193,16 @@ class KeystoneRuntime(comp.PythonRuntime):
             sh.sleep(self.wait_time)
             LOG.info("Running commands to initialize keystone.")
             LOG.debug("Initializing with %s", self.init_what)
-            init_cfg = dict()
-            init_cfg['glance'] = ghelper.get_shared_params(self.cfg)
-            init_cfg['keystone'] = khelper.get_shared_params(self.cfg)
-            init_cfg['nova'] = nhelper.get_shared_params(self.cfg)
-            init_cfg['quantum'] = qhelper.get_shared_params(self.cfg)
-            init_cfg['swift'] = shelper.get_shared_params(self.cfg)
-            khelper.Initializer(init_cfg).initialize(**self.init_what)
-            # Touching this makes sure that we don't init again
-            inited_contents = 'Ran on %s' % (date.rcf8222date())
-            sh.write_file(self.init_fn, inited_contents)
+            initial_cfg = dict()
+            initial_cfg['glance'] = ghelper.get_shared_params(self.cfg)
+            initial_cfg['keystone'] = khelper.get_shared_params(self.cfg)
+            initial_cfg['nova'] = nhelper.get_shared_params(self.cfg)
+            initial_cfg['quantum'] = qhelper.get_shared_params(self.cfg)
+            initial_cfg['swift'] = shelper.get_shared_params(self.cfg)
+            init_what = utils.param_replace_deep(copy.deepcopy(self.init_what), initial_cfg)
+            khelper.Initializer(initial_cfg['keystone']).initialize(**init_what)
+            # Writing this makes sure that we don't init again
+            sh.write_file(self.init_fn, utils.prettify_yaml(init_what))
             LOG.info("If you wish to re-run initialization, delete %s", colorizer.quote(self.init_fn))
 
     def _get_apps_to_start(self):

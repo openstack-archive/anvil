@@ -26,7 +26,14 @@ LOG = log.getLogger(__name__)
 
 
 class UninstallAction(base.Action):
-    NAME = 'uninstall'
+
+    @staticmethod
+    def get_lookup_name():
+        return 'uninstall'
+
+    @staticmethod
+    def get_action_name():
+        return 'uninstall'
 
     def _order_components(self, components):
         components = super(UninstallAction, self)._order_components(components)
@@ -74,4 +81,5 @@ class UninstallAction(base.Action):
             instances,
             "Post-uninstall",
             )
-        self._delete_phase_files(set([self.NAME, install.InstallAction.NAME]))
+        # Knock off and phase files that are connected to installing
+        self._delete_phase_files(['install'])

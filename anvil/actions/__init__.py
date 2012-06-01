@@ -16,16 +16,19 @@
 
 from anvil.actions import install
 from anvil.actions import start
+from anvil.actions import status
 from anvil.actions import stop
 from anvil.actions import uninstall
 
 
 _NAMES_TO_RUNNER = {
-    'install': install.InstallAction,
-    'uninstall': uninstall.UninstallAction,
-    'start': start.StartAction,
-    'stop': stop.StopAction,
+    install.InstallAction.get_action_name(): install.InstallAction,
+    start.StartAction.get_action_name(): start.StartAction,
+    status.StatusAction.get_action_name(): status.StatusAction,
+    stop.StopAction.get_action_name(): stop.StopAction,
+    uninstall.UninstallAction.get_action_name(): uninstall.UninstallAction,
 }
+_RUNNER_TO_NAMES = dict((v,k) for k, v in _NAMES_TO_RUNNER.items())
 
 
 def get_action_names():
@@ -35,7 +38,7 @@ def get_action_names():
     return sorted(_NAMES_TO_RUNNER.keys())
 
 
-def get_runner_factory(action):
+def get_action_class(action):
     """
     Given an action name, look up the factory for that action runner.
     """

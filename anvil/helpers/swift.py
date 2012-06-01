@@ -16,6 +16,7 @@
 
 
 from anvil import log
+from anvil import utils
 
 LOG = log.getLogger(__name__)
 
@@ -25,5 +26,21 @@ def get_shared_params(cfg):
 
     host_ip = cfg.get('host', 'ip')
     mp['service_host'] = host_ip
+
+    # Components of the various endpoints
+    swift_host = cfg.getdefaulted('swift', 'swift_host', host_ip)
+    swift_port = cfg.getdefaulted('swift', 'swift_port', '8080')
+    swift_proto = cfg.getdefaulted('swift', 'swift_protocol', 'http')
+    swift_uri = utils.make_url(swift_proto, swift_host, swift_port)
+    mp['endpoints'] = {
+        'admin': {
+            'uri': swift_uri,
+            'port': swift_port,
+            'protocol': swift_proto,
+            'host': swift_host,
+        },
+    }
+    mp['endpoints']['public'] = dict(mp['endpoints']['admin'])
+    mp['endpoints']['internal'] = dict(mp['endpoints']['public'])
 
     return mp

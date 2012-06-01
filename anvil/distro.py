@@ -21,6 +21,7 @@ import re
 import shlex
 
 import yaml
+import copy
 
 from anvil import colorizer
 from anvil import importer
@@ -135,7 +136,7 @@ class Distro(object):
         """Return the class + component info to use for doing the action w/the component."""
         try:
             # Use a copy instead of the original
-            component_info = dict(self._components[name])
+            component_info = copy.deepcopy(self._components[name])
             entry_point = component_info['action_classes'][action]
             cls = importer.import_entry_point(entry_point)
             # Remove action class info

@@ -19,7 +19,6 @@ import os
 import weakref
 
 from anvil import cfg
-from anvil import date
 from anvil import exceptions
 from anvil import libvirt as lv
 from anvil import log as logging
@@ -42,10 +41,6 @@ DB_NAME = 'nova'
 QUANTUM_MANAGER = 'nova.network.quantum.manager.QuantumManager'
 QUANTUM_IPAM_LIB = 'nova.network.quantum.melange_ipam_lib'
 
-# Used to locate the network/firewall classes
-NET_MANAGER_TEMPLATE = 'nova.network.manager.%s'
-FIRE_MANAGER_TEMPLATE = 'nova.virt.libvirt.firewall.%s'
-
 # Sensible defaults
 DEF_IMAGE_SERVICE = 'nova.image.glance.GlanceImageService'
 DEF_SCHEDULER = 'nova.scheduler.filter_scheduler.FilterScheduler'
@@ -53,7 +48,6 @@ DEF_GLANCE_PORT = 9292
 DEF_GLANCE_SERVER = "%s" + ":%s" % (DEF_GLANCE_PORT)
 DEF_INSTANCE_PREFIX = 'instance-'
 DEF_INSTANCE_TEMPL = DEF_INSTANCE_PREFIX + '%08x'
-DEF_FIREWALL_DRIVER = 'IptablesFirewallDriver'
 DEF_FLAT_VIRT_BRIDGE = 'br100'
 DEF_NET_MANAGER = 'FlatDHCPManager'
 DEF_VOL_PREFIX = 'volume-'
@@ -126,10 +120,48 @@ def canon_virt_driver(virt_driver):
     return virt_driver
 
 
-def get_shared_params(cfg):
+def get_shared_params(cfgobj):
     mp = dict()
-    host_ip = cfg.get('host', 'ip')
+
+    host_ip = cfgobj.get('host', 'ip')
     mp['service_host'] = host_ip
+    nova_host = cfgobj.getdefaulted('nova', 'nova_host', host_ip)
+    nova_protocol = cfgobj.getdefaulted('nova', 'nova_protocol', 'http')
+
+    # Uri's of the various nova endpoints
+    mp['endpoints'] = {
+        'ec2_admin': {
+            'uri': utils.make_url(nova_protocol, nova_host, 8773, "services/Admin"),
+            'port': 8773,
+            'host': host_ip,
+            'protocol': nova_protocol,
+        },
+        'ec2_cloud': {
+            'uri': utils.make_url(nova_protocol, nova_host, 8773, "services/Cloud"),
+            'port': 8773,
+            'host': host_ip,
+            'protocol': nova_protocol,
+        },
+        'volume': {
+            'uri': utils.make_url(nova_protocol, host_ip, 8776, "v1"),
+            'port': 8776,
+            'host': host_ip,
+            'protocol': nova_protocol,
+        },
+        's3': {
+            'uri': utils.make_url('http', host_ip, 3333),
+            'port': 3333,
+            'host': host_ip,
+            'protocol': nova_protocol,
+        },
+        'api': {
+            'uri': utils.make_url('http', host_ip, 8774, "v2"),
+            'port': 8774,
+            'host': host_ip,
+            'protocol': nova_protocol,
+        },
+    }
+
     return mp
 
 
@@ -453,7 +485,7 @@ class ConfConfigurator(object):
                 nova_conf.add('melange_host', self.cfg.getdefaulted('melange', 'm_host', hostip))
                 nova_conf.add('melange_port', self.cfg.getdefaulted('melange', 'm_port', '9898'))
         else:
-            nova_conf.add('network_manager', NET_MANAGER_TEMPLATE % (self._getstr('network_manager', DEF_NET_MANAGER)))
+            nova_conf.add('network_manager', self._getstr('network_manager'))
 
         # Configs dhcp bridge stuff???
         # TODO: why is this the same as the nova.conf?
@@ -528,9 +560,11 @@ class ConfConfigurator(object):
             nova_conf.add('xenapi_connection_url', self._getstr('xa_connection_url', XA_DEF_CONNECTION_URL))
             nova_conf.add('xenapi_connection_username', self._getstr('xa_connection_username', XA_DEF_USER))
             nova_conf.add('xenapi_connection_password', self.cfg.get("passwords", "xenapi_connection"))
-            nova_conf.add('firewall_driver', FIRE_MANAGER_TEMPLATE % (self._getstr('xs_firewall_driver', DEF_FIREWALL_DRIVER)))
+            nova_conf.add('firewall_driver', self._getstr('xs_firewall_driver'))
         elif drive_canon == 'libvirt':
-            nova_conf.add('firewall_driver', FIRE_MANAGER_TEMPLATE % (self._getstr('libvirt_firewall_driver', DEF_FIREWALL_DRIVER)))
+            nova_conf.add('firewall_driver', self._getstr('libvirt_firewall_driver'))
+        else:
+            nova_conf.add('firewall_driver', self._getstr('basic_firewall_driver'))
 
 
 # This class represents the data/format of the nova config file

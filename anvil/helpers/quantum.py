@@ -16,6 +16,7 @@
 
 
 from anvil import log
+from anvil import utils
 
 LOG = log.getLogger(__name__)
 
@@ -25,5 +26,21 @@ def get_shared_params(cfg):
 
     host_ip = cfg.get('host', 'ip')
     mp['service_host'] = host_ip
+
+    # Components of the various endpoints
+    quantum_host = cfg.getdefaulted('quantum', 'quantum_host', host_ip)
+    quantum_port = cfg.getdefaulted('quantum', 'quantum_port', '9696')
+    quantum_proto = cfg.getdefaulted('quantum', 'quantum_protocol', 'http')
+    quantum_uri = utils.make_url(quantum_proto, quantum_host, quantum_port)
+    mp['endpoints'] = {
+        'admin': {
+            'uri': quantum_uri,
+            'port': quantum_port,
+            'protocol': quantum_proto,
+            'host': quantum_host,
+        },
+    }
+    mp['endpoints']['public'] = dict(mp['endpoints']['admin'])
+    mp['endpoints']['internal'] = dict(mp['endpoints']['public'])
 
     return mp

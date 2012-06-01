@@ -28,7 +28,7 @@ HELP_WIDTH = 80
 
 def _format_list(in_list):
     sorted_list = sorted(in_list)
-    return  "[" + ", ".join(sorted_list) + "]"
+    return "[" + ", ".join(sorted_list) + "]"
 
 
 def parse():
@@ -57,9 +57,7 @@ def parse():
         default=False,
         help=("perform ACTION but do not actually run any of the commands"
               " that would normally complete ACTION: (default: %default)"))
-    search_locations = cfg_helpers.get_config_locations()
-    opt_help = "configuration file ("
-    opt_help += "will be searched for in [%s] if not provided)" % (", ".join(search_locations))
+    opt_help = "configuration file (will be searched for if not provided)"
     parser.add_option("-c", "--config",
         action="store",
         dest="config_fn",
@@ -68,7 +66,7 @@ def parse():
         help=opt_help)
 
     # Install/start/stop/uninstall specific options
-    base_group = OptionGroup(parser, "Install & uninstall & start & stop specific options")
+    base_group = OptionGroup(parser, "Action specific options")
     def_persona = sh.joinpths(settings.PERSONA_DIR, 'devstack.sh.yaml')
     base_group.add_option("-p", "--persona",
         action="store",
@@ -76,7 +74,7 @@ def parse():
         dest="persona_fn",
         default=def_persona,
         metavar="FILE",
-        help="required persona yaml file to apply (default: %default)")
+        help="persona yaml file to apply (default: %default)")
     base_group.add_option("-a", "--action",
         action="store",
         type="string",
@@ -88,8 +86,8 @@ def parse():
         type="string",
         dest="dir",
         metavar="DIR",
-        help=("empty root DIR for install or "
-              "DIR with existing components for start/stop/uninstall"))
+        help=("empty root DIR or "
+              "DIR with existing components"))
     base_group.add_option("--no-prompt-passwords",
                           action="store_false",
                           dest="prompt_for_passwords",

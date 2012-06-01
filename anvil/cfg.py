@@ -14,12 +14,27 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+# This one doesn't keep comments but does seem to work better
+import ConfigParser
+from ConfigParser import (DuplicateSectionError, NoSectionError, NoOptionError)
+                  
+import collections
 import io
 import re
 
+# This one keeps comments but has some weirdness with it
 import iniparse
 
-import ConfigParser
+try:
+    # Only exists on 2.7 or greater
+    from collections import OrderedDict
+except ImportError:
+    try:
+        # Try the pypi module
+        from ordereddict import OrderedDict
+    except ImportError:
+        # Not really ordered :-(
+        OrderedDict = dict
 
 from anvil import cfg_helpers
 from anvil import env
@@ -43,16 +58,60 @@ class StringiferMixin(object):
         return contents
 
 
-class BuiltinConfigParser(ConfigParser.RawConfigParser, StringiferMixin):
-    pass
-
-
-class IgnoreMissingConfigParser(iniparse.RawConfigParser, StringiferMixin):
+class IgnoreMissingMixin(object):
     DEF_INT = 0
     DEF_FLOAT = 0.0
     DEF_BOOLEAN = False
     DEF_BASE = None
 
+    def get(self, section, option):
+        value = self.DEF_BASE
+        try:
+            value = super(IgnoreMissingMixin, self).get(section, option)
+        except NoSectionError:
+            pass
+        except NoOptionError:
+            pass
+        return value
+
+    def set(self, section, option, value):
+        if not self.has_section(section) and section.lower() != 'default':
+            self.add_section(section)
+        super(IgnoreMissingMixin, self).set(section, option, value)
+
+    def remove_option(self, section, option):
+        if self.has_option(section, option):
+            super(IgnoreMissingMixin, self).remove_option(section, option)
+
+    def getboolean(self, section, option):
+        if not self.has_option(section, option):
+            return self.DEF_BOOLEAN
+        return super(IgnoreMissingMixin, self).getboolean(section, option)
+
+    def getfloat(self, section, option):
+        if not self.has_option(section, option):
+            return self.DEF_FLOAT
+        return super(IgnoreMissingMixin, self).getfloat(section, option)
+
+    def getint(self, section, option):
+        if not self.has_option(section, option):
+            return self.DEF_INT
+        return super(IgnoreMissingMixin, self).getint(section, option)
+
+
+class BuiltinConfigParser(IgnoreMissingMixin, ConfigParser.RawConfigParser, StringiferMixin):
+    def __init__(self, cs=True, fns=None, defaults=None):
+        ConfigParser.RawConfigParser.__init__(self, defaults=defaults, dict_type=OrderedDict)
+        if cs:
+            # Make option names case sensitive
+            # See: http://docs.python.org/library/configparser.html#ConfigParser.RawConfigParser.optionxform
+            self.optionxform = str
+        if fns:
+            for f in fns:
+                self.read(f)
+
+
+class RewritableConfigParser(IgnoreMissingMixin, iniparse.RawConfigParser, StringiferMixin):
     def __init__(self, cs=True, fns=None, defaults=None):
         iniparse.RawConfigParser.__init__(self, defaults=defaults)
         if cs:
@@ -62,42 +121,6 @@ class IgnoreMissingConfigParser(iniparse.RawConfigParser, StringiferMixin):
         if fns:
             for f in fns:
                 self.read(f)
-
-    def get(self, section, option):
-        value = self.DEF_BASE
-        try:
-            value = iniparse.RawConfigParser.get(self, section, option)
-        except iniparse.NoSectionError:
-            pass
-        except iniparse.NoOptionError:
-            pass
-        return value
-
-    def set(self, section, option, value):
-        if not self.has_section(section) and section.lower() != 'default':
-            self.add_section(section)
-        # Something seems borked if the section is the default section...
-        # And that section did not exist previously...
-        iniparse.RawConfigParser.set(self, section, option, value)
-
-    def remove_option(self, section, option):
-        if self.has_option(section, option):
-            iniparse.RawConfigParser.remove_option(self, section, option)
-
-    def getboolean(self, section, option):
-        if not self.has_option(section, option):
-            return self.DEF_BOOLEAN
-        return iniparse.RawConfigParser.getboolean(self, section, option)
-
-    def getfloat(self, section, option):
-        if not self.has_option(section, option):
-            return self.DEF_FLOAT
-        return iniparse.RawConfigParser.getfloat(self, section, option)
-
-    def getint(self, section, option):
-        if not self.has_option(section, option):
-            return self.DEF_INT
-        return iniparse.RawConfigParser.getint(self, section, option)
 
 
 class ProxyConfig(object):
