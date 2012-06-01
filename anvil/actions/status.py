@@ -43,7 +43,7 @@ class StatusAction(base.Action):
     def _run(self, persona, component_order, instances):
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Getting status of %s.', colorizer.quote(i.component_name)),
+                start=None,
                 run=self._fetch_status,
                 end=self._print_status,
             ),
