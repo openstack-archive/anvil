@@ -199,15 +199,27 @@ def get_shared_params(cfg, service_user=None):
             'protocol': keystone_auth_proto,
             'host': keystone_auth_host,
         },
+        'admin_templated': {
+            'uri': utils.make_url(keystone_auth_proto,
+                            keystone_auth_host, port='$(admin_port)s', path="v2.0"),
+            'protocol': keystone_auth_proto,
+            'host': keystone_auth_host,
+        },
         'public': {
             'uri': keystone_service_uri,
             'port': keystone_service_port,
             'protocol': keystone_service_proto,
             'host': keystone_service_host,
         },
+        'public_templated': {
+            'uri': utils.make_url(keystone_service_proto,
+                            keystone_service_host, port='$(public_port)s', path="v2.0"),
+            'protocol': keystone_service_proto,
+            'host': keystone_service_host,
+        },
     }
     mp['endpoints']['internal'] = dict(mp['endpoints']['public'])
+    mp['endpoints']['internal_templated'] = dict(mp['endpoints']['public_templated'])
 
     LOG.debug("Keystone shared params: %s", mp)
-
     return mp

@@ -108,11 +108,8 @@ def make_url(scheme, host, port=None,
     if host:
         netloc = str(host)
 
-    port_i = None
     if port is not None:
-        port_i = int(port)
-    if port_i is not None:
-        netloc += ":" + "%s" % (port_i)
+        netloc += ":" + "%s" % (port)
 
     pieces.append(netloc or '')
     pieces.append(path or '')

@@ -135,8 +135,14 @@ def get_shared_params(cfgobj):
 
     # Uri's of the various nova endpoints
     mp['endpoints'] = {
-        'ec2': {
+        'ec2_admin': {
             'uri': utils.make_url(nova_protocol, nova_host, 8773, "services/Admin"),
+            'port': 8773,
+            'host': host_ip,
+            'protocol': nova_protocol,
+        },
+        'ec2_cloud': {
+            'uri': utils.make_url(nova_protocol, nova_host, 8773, "services/Cloud"),
             'port': 8773,
             'host': host_ip,
             'protocol': nova_protocol,

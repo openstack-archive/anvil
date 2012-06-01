@@ -6,9 +6,9 @@ endpoints:
     public_url: "%swift.endpoints.public.uri%/v1/AUTH_%(tenant_id)s"
     region: RegionOne
 -   service: ec2
-    admin_url: "%nova.endpoints.ec2.uri%"
-    internal_url: "%nova.endpoints.ec2.uri%"
-    public_url: "%nova.endpoints.ec2.uri%"
+    admin_url: "%nova.endpoints.ec2_admin.uri%"
+    internal_url: "%nova.endpoints.ec2_cloud.uri%"
+    public_url: "%nova.endpoints.ec2_cloud.uri%"
     region: RegionOne
 -   service: network
     admin_url: "%quantum.endpoints.admin.uri%"
@@ -31,9 +31,9 @@ endpoints:
     public_url: "%nova.endpoints.s3.uri%"
     region: RegionOne
 -   service: keystone
-    admin_url: "%keystone.endpoints.admin.uri%"
-    internal_url: "%keystone.endpoints.internal.uri%"
-    public_url: "%keystone.endpoints.public.uri%"
+    admin_url: "%keystone.endpoints.admin_templated.uri%"
+    internal_url: "%keystone.endpoints.internal_templated.uri%"
+    public_url: "%keystone.endpoints.public_templated.uri%"
     region: RegionOne
 -   service: nova
     admin_url: "%nova.endpoints.api.uri%/%(tenant_id)s"
