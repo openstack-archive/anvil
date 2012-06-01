@@ -37,6 +37,22 @@ To resolve this the following seems to work:
     sudo apt-get remove --purge $MYSQL_PKGS
 
 
+Libguestfs not syncing
+---------------------
+
+On RHEL 6.2 people have seen files not being synced when the temporary file location is unmounted.
+
+Getting a newer version of libguestfs seems to help. To do this follow the ``README`` at
+http://people.redhat.com/~rjones/libguestfs-RHEL-6.3-preview/. Hopefully this will not be a problem
+on RHEL 6.3.
+
+Then run:
+
+::
+
+     sudo yum -y install libguestfs* guestfs*
+
+
 Horizon dead on start
 ---------------------
 
