@@ -113,7 +113,7 @@ class BuiltinConfigParser(IgnoreMissingMixin, ConfigParser.RawConfigParser, Stri
 
 class RewritableConfigParser(IgnoreMissingMixin, iniparse.RawConfigParser, StringiferMixin):
     def __init__(self, cs=True, fns=None, defaults=None):
-        iniparse.RawConfigParser.__init__(self, defaults=defaults, dict_type=OrderedDict)
+        iniparse.RawConfigParser.__init__(self, defaults=defaults)
         if cs:
             # Make option names case sensitive
             # See: http://docs.python.org/library/configparser.html#ConfigParser.RawConfigParser.optionxform
