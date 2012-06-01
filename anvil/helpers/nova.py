@@ -563,6 +563,8 @@ class ConfConfigurator(object):
             nova_conf.add('firewall_driver', self._getstr('xs_firewall_driver'))
         elif drive_canon == 'libvirt':
             nova_conf.add('firewall_driver', self._getstr('libvirt_firewall_driver'))
+        else:
+            nova_conf.add('firewall_driver', self._getstr('basic_firewall_driver'))
 
 
 # This class represents the data/format of the nova config file
