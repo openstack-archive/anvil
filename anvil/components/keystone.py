@@ -200,7 +200,7 @@ class KeystoneRuntime(comp.PythonRuntime):
             initial_cfg['quantum'] = qhelper.get_shared_params(self.cfg)
             initial_cfg['swift'] = shelper.get_shared_params(self.cfg)
             init_what = utils.param_replace_deep(copy.deepcopy(self.init_what), initial_cfg)
-            khelper.Initializer(initial_cfg).initialize(**self.init_what)
+            khelper.Initializer(initial_cfg['keystone']).initialize(**init_what)
             # Writing this makes sure that we don't init again
             sh.write_file(self.init_fn, utils.prettify_yaml(init_what))
             LOG.info("If you wish to re-run initialization, delete %s", colorizer.quote(self.init_fn))
