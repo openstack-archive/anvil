@@ -395,7 +395,10 @@ def prettify_yaml(obj):
     
 def param_replace_deep(root, replacements, ignore_missing=False):
     if isinstance(root, list):
-        return param_replace_list(root, replacements, ignore_missing)
+        new_list = []
+        for v in root:
+            new_list.append(param_replace_deep(v, replacements, ignore_missing))
+        return new_list
     elif isinstance(root, basestring):
         return param_replace(root, replacements, ignore_missing)
     elif isinstance(root, dict):
