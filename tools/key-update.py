@@ -30,7 +30,7 @@ def get_config():
     config.add_read_resolver(cfg.EnvResolver())
     config_fns = cfg_helpers.get_config_locations([os.path.join(possible_topdir, 'conf', 'anvil.ini')])
     real_fns = cfg_helpers.find_config(config_fns)
-    config.add_read_resolver(cfg.ConfigResolver(cfg.IgnoreMissingConfigParser(fns=real_fns)))
+    config.add_read_resolver(cfg.ConfigResolver(cfg.RewritableConfigParser(fns=real_fns)))
 
     config.add_password_resolver(passwords.ConfigPassword(config))
     config.add_password_resolver(passwords.InputPassword(config))

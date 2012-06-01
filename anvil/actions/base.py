@@ -126,23 +126,33 @@ class Action(object):
         Run a given 'functor' across all of the components, in order.
         """
         component_results = dict()
-        phase_fn = "%s.%s.phases" % (self.get_action_name(), phase_name.lower())
-        phase_recorder = phase.PhaseRecorder(sh.joinpths(self.root_dir, phase_fn))
+        phase_recorder = None
+        if phase_name:
+            phase_fn = "%s.%s.phases" % (self.get_action_name(), phase_name.lower())
+            phase_recorder = phase.PhaseRecorder(sh.joinpths(self.root_dir, phase_fn))
         for c in component_order:
             instance = instances[c]
-            if phase_recorder.has_ran(instance.component_name):
+            if phase_recorder and phase_recorder.has_ran(instance.component_name):
                 LOG.debug("Skipping phase named %r for component %r since it already happened.", phase_name, c)
             else:
                 try:
-                    with phase_recorder.mark(instance.component_name):
+                    result = None
+                    if phase_recorder:
+                        with phase_recorder.mark(instance.component_name):
+                            if functors.start:
+                                functors.start(instance)
+                            if functors.run:
+                                result = functors.run(instance)
+                            if functors.end:
+                                functors.end(instance, result)
+                    else:
                         if functors.start:
                             functors.start(instance)
-                        result = None
                         if functors.run:
                             result = functors.run(instance)
                         if functors.end:
                             functors.end(instance, result)
-                        component_results[instance] = result
+                    component_results[instance] = result
                 except (excp.NoTraceException) as e:
                     if self.force:
                         LOG.debug("Skipping exception: %s" % (e))

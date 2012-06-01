@@ -100,7 +100,7 @@ class MelangeInstaller(comp.PythonInstallComponent):
     def _config_adjust(self, contents, config_fn):
         if config_fn == ROOT_CONF:
             with io.BytesIO(contents) as stream:
-                config = cfg.IgnoreMissingConfigParser()
+                config = cfg.RewritableConfigParser()
                 config.readfp(stream)
                 config.set('DEFAULT', 'sql_connection', dbhelper.fetch_dbdsn(self.cfg, DB_NAME, utf8=True))
                 config.set('DEFAULT', 'verbose', True)

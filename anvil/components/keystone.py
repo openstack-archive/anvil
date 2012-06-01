@@ -125,7 +125,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
     def _config_adjust_logging(self, contents, fn):
         with io.BytesIO(contents) as stream:
-            config = cfg.IgnoreMissingConfigParser()
+            config = cfg.RewritableConfigParser()
             config.readfp(stream)
             config.set('logger_root', 'level', 'DEBUG')
             config.set('logger_root', 'handlers', "devel,production")
@@ -142,7 +142,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
     def _config_adjust_root(self, contents, fn):
         params = khelper.get_shared_params(self.cfg)
         with io.BytesIO(contents) as stream:
-            config = cfg.IgnoreMissingConfigParser()
+            config = cfg.RewritableConfigParser()
             config.readfp(stream)
             config.set('DEFAULT', 'admin_token', params['service_token'])
             config.set('DEFAULT', 'admin_port', params['endpoints']['admin']['port'])

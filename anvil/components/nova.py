@@ -49,7 +49,7 @@ CONFIGS = [PASTE_CONF, POLICY_CONF, LOGGING_CONF]
 ADJUST_CONFIGS = [PASTE_CONF]
 
 # This is a special marker file that when it exists, signifies that nova net was inited
-NET_INITED_FN = 'nova.network.inited.ran'
+NET_INITED_FN = 'nova.network.inited.yaml'
 
 # This makes the database be in sync with nova
 DB_SYNC_CMD = [
@@ -261,7 +261,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
     def _config_adjust_paste(self, contents, fn):
         params = khelper.get_shared_params(self.cfg, 'nova')
         with io.BytesIO(contents) as stream:
-            config = cfg.IgnoreMissingConfigParser()
+            config = cfg.RewritableConfigParser()
             config.readfp(stream)
             config.set('filter:authtoken', 'auth_host', params['endpoints']['admin']['host'])
             config.set('filter:authtoken', 'auth_port', params['endpoints']['admin']['port'])
@@ -279,7 +279,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
 
     def _config_adjust_logging(self, contents, fn):
         with io.BytesIO(contents) as stream:
-            config = cfg.IgnoreMissingConfigParser()
+            config = cfg.RewritableConfigParser()
             config.readfp(stream)
             config.set('logger_root', 'level', 'DEBUG')
             config.set('logger_root', 'handlers', "stdout")
@@ -368,9 +368,12 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
             # Anything to run??
             if cmds:
                 utils.execute_template(*cmds, params=mp)
-            # Touching this makes sure that we don't init again
-            inited_contents = 'Ran on %s' % (date.rcf8222date())
-            sh.write_file(ran_fn, inited_contents)
+            # Writing this makes sure that we don't init again
+            cmd_mp = {
+                'cmds': cmds,
+                'replacements': mp,
+            }
+            sh.write_file(ran_fn, utils.prettify_yaml(cmd_mp))
             LOG.info("If you wish to re-run initialization, delete %s", colorizer.quote(ran_fn))
 
     def post_start(self):

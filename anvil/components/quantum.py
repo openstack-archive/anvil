@@ -96,7 +96,7 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
         if config_fn == PLUGIN_CONF and self.q_vswitch_service:
             # Need to fix the "Quantum plugin provider module"
             with io.BytesIO(contents) as stream:
-                config = cfg.IgnoreMissingConfigParser()
+                config = cfg.RewritableConfigParser()
                 config.readfp(stream)
                 config.set("plugin", "provider", "quantum.plugins.openvswitch.ovs_quantum_plugin.OVSQuantumPlugin")
                 contents = config.stringify(config_fn)
@@ -104,7 +104,7 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
         elif config_fn == AGENT_CONF and self.q_vswitch_agent:
             # Need to adjust the sql connection
             with io.BytesIO(contents) as stream:
-                config = cfg.IgnoreMissingConfigParser()
+                config = cfg.RewritableConfigParser()
                 config.readfp(stream)
                 config.set("database", "sql_connection", dbhelper.fetch_dbdsn(self.cfg, DB_NAME, utf8=True))
                 contents = config.stringify(config_fn)

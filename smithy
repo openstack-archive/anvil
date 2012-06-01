@@ -114,7 +114,7 @@ def establish_config(args):
     else:
         start_configs.extend(cfg_helpers.get_config_locations())
     real_configs = cfg_helpers.find_config(start_configs)
-    config.add_read_resolver(cfg.ConfigResolver(cfg.IgnoreMissingConfigParser(fns=real_configs)))
+    config.add_read_resolver(cfg.ConfigResolver(cfg.RewritableConfigParser(fns=real_configs)))
     utils.log_iterable(utils.get_class_names(config.read_resolvers),
         header="Config lookup will use the following resolvers:",
         logger=LOG)
@@ -192,8 +192,8 @@ def run(args):
     persona_inst = load_verify_persona(persona_fn, dist)
     config = establish_config(args)
 
-    runner_factory = actions.get_runner_factory(action)
-    runner = runner_factory(dist,
+    runner_cls = actions.get_action_class(action)
+    runner = runner_cls(dist,
                             config,
                             root_dir=root_dir,
                             **args)
