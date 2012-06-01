@@ -38,7 +38,7 @@ class StatusAction(base.Action):
         return component.status()
 
     def _print_status(self, component, status):
-        LOG.info("Status of %s is %s", colorizer.quote(i.component_name), colorizer.quote(str(status)))
+        LOG.info("Status of %s is %s", colorizer.quote(component.component_name), colorizer.quote(str(status)))
 
     def _run(self, persona, component_order, instances):
         self._run_phase(
