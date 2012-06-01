@@ -41,10 +41,6 @@ DB_NAME = 'nova'
 QUANTUM_MANAGER = 'nova.network.quantum.manager.QuantumManager'
 QUANTUM_IPAM_LIB = 'nova.network.quantum.melange_ipam_lib'
 
-# Used to locate the network/firewall classes
-NET_MANAGER_TEMPLATE = 'nova.network.manager.%s'
-FIRE_MANAGER_TEMPLATE = 'nova.virt.libvirt.firewall.%s'
-
 # Sensible defaults
 DEF_IMAGE_SERVICE = 'nova.image.glance.GlanceImageService'
 DEF_SCHEDULER = 'nova.scheduler.filter_scheduler.FilterScheduler'
@@ -52,7 +48,6 @@ DEF_GLANCE_PORT = 9292
 DEF_GLANCE_SERVER = "%s" + ":%s" % (DEF_GLANCE_PORT)
 DEF_INSTANCE_PREFIX = 'instance-'
 DEF_INSTANCE_TEMPL = DEF_INSTANCE_PREFIX + '%08x'
-DEF_FIREWALL_DRIVER = 'IptablesFirewallDriver'
 DEF_FLAT_VIRT_BRIDGE = 'br100'
 DEF_NET_MANAGER = 'FlatDHCPManager'
 DEF_VOL_PREFIX = 'volume-'
@@ -490,7 +485,7 @@ class ConfConfigurator(object):
                 nova_conf.add('melange_host', self.cfg.getdefaulted('melange', 'm_host', hostip))
                 nova_conf.add('melange_port', self.cfg.getdefaulted('melange', 'm_port', '9898'))
         else:
-            nova_conf.add('network_manager', NET_MANAGER_TEMPLATE % (self._getstr('network_manager', DEF_NET_MANAGER)))
+            nova_conf.add('network_manager', self._getstr('network_manager'))
 
         # Configs dhcp bridge stuff???
         # TODO: why is this the same as the nova.conf?
@@ -565,9 +560,9 @@ class ConfConfigurator(object):
             nova_conf.add('xenapi_connection_url', self._getstr('xa_connection_url', XA_DEF_CONNECTION_URL))
             nova_conf.add('xenapi_connection_username', self._getstr('xa_connection_username', XA_DEF_USER))
             nova_conf.add('xenapi_connection_password', self.cfg.get("passwords", "xenapi_connection"))
-            nova_conf.add('firewall_driver', FIRE_MANAGER_TEMPLATE % (self._getstr('xs_firewall_driver', DEF_FIREWALL_DRIVER)))
+            nova_conf.add('firewall_driver', self._getstr('xs_firewall_driver'))
         elif drive_canon == 'libvirt':
-            nova_conf.add('firewall_driver', FIRE_MANAGER_TEMPLATE % (self._getstr('libvirt_firewall_driver', DEF_FIREWALL_DRIVER)))
+            nova_conf.add('firewall_driver', self._getstr('libvirt_firewall_driver'))
 
 
 # This class represents the data/format of the nova config file
