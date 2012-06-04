@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import errno
 import fileinput
 import getpass
 import grp
@@ -351,6 +352,20 @@ def _array_begins_with(haystack, needle):
     for i in range(len(haystack)):
         if haystack[i] != needle[i]:
             return False
+    return True
+
+
+def is_running(pid):
+    # Check proc
+    if exists("/proc/%s" % (pid)):
+        return True
+    # Try a slightly more aggressive way...
+    try:
+        os.kill(pid, 0)
+    except OSError as e:
+        if e.errno == errno.EPERM:
+            return True
+        return False
     return True
 
 

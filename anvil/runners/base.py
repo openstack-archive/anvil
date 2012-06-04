@@ -17,6 +17,8 @@
 import abc
 import weakref
 
+from anvil import constants
+
 
 class Runner(object):
     __meta__ = abc.ABCMeta
@@ -41,3 +43,7 @@ class Runner(object):
     def stop(self, app_name):
         # Stops the given app
         pass
+
+    def status(self, app_name):
+        # Attempt to give the status of a app
+        return constants.STATUS_UNKNOWN

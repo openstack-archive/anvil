@@ -22,12 +22,13 @@ import signal
 import sys
 import time
 
+from anvil import constants
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import trace as tr
 
-from anvil.runners import runner
+from anvil.runners import base
 
 LOG = logging.getLogger(__name__)
 
@@ -47,7 +48,7 @@ NAME = "NAME"
 FORK_TEMPL = "%s.fork"
 
 
-class ForkRunner(runner.Runner):
+class ForkRunner(base.Runner):
     def __init__(self, runtime):
         base.Runner.__init__(self, runtime)
 
@@ -73,38 +74,58 @@ class ForkRunner(runner.Runner):
         return (killed, attempts)
 
     def stop(self, app_name):
+        trace_dir = self.runtime.get_option('trace_dir')
+        if not sh.isdir(trace_dir):
+            msg = "No trace directory found from which to stop: %s" % (app_name)
+            raise excp.StopException(msg)
         with sh.Rooted(True):
-            if not sh.isdir(self.trace_dir):
-                msg = "No trace directory found from which to stop %r" % (app_name)
-                raise excp.StopException(msg)
             fn_name = FORK_TEMPL % (app_name)
             (pid_file, stderr_fn, stdout_fn) = self._form_file_names(fn_name)
-            trace_fn = tr.trace_fn(self.trace_dir, fn_name)
-            if sh.isfile(pid_file) and sh.isfile(trace_fn):
-                pid = int(sh.load_file(pid_file).strip())
+            trace_fn = tr.trace_fn(trace_dir, fn_name)
+            if sh.isfile(pid_file):
+                pid = self._extract_pid(pid_file)
                 (killed, attempts) = self._stop_pid(pid)
                 # Trash the files if it worked
                 if killed:
-                    LOG.debug("Killed pid %s after %s attempts" % (pid, attempts))
+                    LOG.debug("Killed pid %s after %s attempts." % (pid, attempts))
                     LOG.debug("Removing pid file %s" % (pid_file))
                     sh.unlink(pid_file)
                     LOG.debug("Removing stderr file %r" % (stderr_fn))
                     sh.unlink(stderr_fn)
                     LOG.debug("Removing stdout file %r" % (stdout_fn))
                     sh.unlink(stdout_fn)
-                    LOG.debug("Removing %r trace file %r" % (app_name, trace_fn))
-                    sh.unlink(trace_fn)
+                    if sh.isfile(trace_fn):
+                        LOG.debug("Removing %r trace file %r" % (app_name, trace_fn))
+                        sh.unlink(trace_fn)
                 else:
                     msg = "Could not stop %r after %s attempts" % (app_name, attempts)
                     raise excp.StopException(msg)
 
+    def _extract_pid(self, filename):
+        return int(sh.load_file(filename).strip())
+
     def status(self, app_name):
-        
+        trace_dir = self.runtime.get_option('trace_dir')
+        if not sh.isdir(trace_dir):
+            msg = "No trace directory found from which to check the status of: %s" % (app_name)
+            raise excp.StatusException(msg)
+        fn_name = FORK_TEMPL % (app_name)
+        (pid_file, stderr_fn, stdout_fn) = self._form_file_names(fn_name)
+        if sh.isfile(pid_file):
+            pid = self._extract_pid(pid_file)
+            if sh.is_running(pid):
+                return constants.STATUS_STARTED
+            else:
+                return constants.STATUS_UNKNOWN
+        else:
+            msg = "No pid file found at %s to check the status of: %s" % (pid_file, app_name)
+            raise excp.StatusException(msg)
 
     def _form_file_names(self, file_name):
-        return (sh.joinpths(self.trace_dir, file_name + ".pid"),
-                sh.joinpths(self.trace_dir, file_name + ".stderr"),
-                sh.joinpths(self.trace_dir, file_name + ".stdout"))
+        trace_dir = self.runtime.get_option('trace_dir')
+        return (sh.joinpths(trace_dir, file_name + ".pid"),
+                sh.joinpths(trace_dir, file_name + ".stderr"),
+                sh.joinpths(trace_dir, file_name + ".stdout"))
 
     def _fork_start(self, program, app_dir, pid_fn, stdout_fn, stderr_fn, *args):
         # First child, not the real program
@@ -157,7 +178,8 @@ class ForkRunner(runner.Runner):
                 os._exit(0)
 
     def _do_trace(self, fn, kvs):
-        run_trace = tr.TraceWriter(tr.trace_fn(self.trace_dir, fn))
+        trace_dir = self.runtime.get_option('trace_dir')
+        run_trace = tr.TraceWriter(tr.trace_fn(trace_dir, fn))
         for (k, v) in kvs.items():
             run_trace.trace(k, v)
         return run_trace.filename()

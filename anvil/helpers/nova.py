@@ -116,6 +116,7 @@ VG_LVREMOVE_CMD = [
      'run_as_root': True}
 ]
 
+
 def canon_mq_type(mq_type):
     if not mq_type:
         return ''
