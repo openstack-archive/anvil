@@ -587,6 +587,7 @@ class ProgramRuntime(ComponentBase):
         # Anything to stop??
         killed_am = 0
         apps_started = self.tracereader.apps_started()
+        print apps_started
         if not apps_started:
             return killed_am
         self.pre_stop(apps_started)

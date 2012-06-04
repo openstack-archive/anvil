@@ -89,7 +89,10 @@ class Action(object):
             cls_kvs['runner'] = self
             cls_kvs['siblings'] = siblings
             # Merge subsystems info with wanted subsystems
-            sub_systems = opts.get('subsystems') or {}
+            sub_systems = {}
+            if opts.get('subsystems'):
+                sub_systems.update(opts.get('subsystems'))
+                del opts['subsystems']
             desired_subs = p_subsystems.get(c) or []
             merged_sub_systems = {}
             for d in desired_subs:
