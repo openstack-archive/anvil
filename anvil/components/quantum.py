@@ -57,10 +57,6 @@ APP_OPTIONS = {
 
 
 class QuantumMixin(object):
-
-    def known_options(self):
-        return set(['no-ovs-db-init', 'no-ovs-bridge-init'])
-
     def known_subsystems(self):
         return set(['openvswitch'])
 
@@ -113,22 +109,22 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
             return comp.PkgInstallComponent._config_adjust(self, contents, config_fn)
 
     def _setup_bridge(self):
-        if not self.q_vswitch_agent or \
-                'no-ovs-bridge-init' in self.options:
+        if not self.q_vswitch_agent or not self.get_option('ovs-bridge-init'):
             return
-        bridge = self.cfg.getdefaulted("quantum", "ovs_bridge", 'br-int')
-        LOG.info("Fixing up ovs bridge named: %s", colorizer.quote(bridge))
-        external_id = self.cfg.getdefaulted("quantum", 'ovs_bridge_external_name', bridge)
-        params = dict()
-        params['OVS_BRIDGE'] = bridge
-        params['OVS_EXTERNAL_ID'] = external_id
-        cmds = list()
-        for cmd_templ in OVS_BRIDGE_CMDS:
-            cmds.append({
-                'cmd': cmd_templ,
-                'run_as_root': True,
-            })
-        utils.execute_template(*cmds, params=params)
+        else:
+            bridge = self.cfg.getdefaulted("quantum", "ovs_bridge", 'br-int')
+            LOG.info("Fixing up ovs bridge named: %s", colorizer.quote(bridge))
+            external_id = self.cfg.getdefaulted("quantum", 'ovs_bridge_external_name', bridge)
+            params = dict()
+            params['OVS_BRIDGE'] = bridge
+            params['OVS_EXTERNAL_ID'] = external_id
+            cmds = list()
+            for cmd_templ in OVS_BRIDGE_CMDS:
+                cmds.append({
+                    'cmd': cmd_templ,
+                    'run_as_root': True,
+                })
+            utils.execute_template(*cmds, params=params)
 
     def post_install(self):
         comp.PkgInstallComponent.post_install(self)
@@ -136,7 +132,7 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
         self._setup_bridge()
 
     def _setup_db(self):
-        if not self.q_vswitch_service or 'no-ovs-db-init' in self.options:
+        if not self.q_vswitch_service or not self.get_option('ovs-bridge-init'):
             return
         else:
             dbhelper.drop_db(self.cfg, self.distro, DB_NAME)
@@ -144,14 +140,14 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
 
     def _get_source_config(self, config_fn):
         if config_fn == PLUGIN_CONF:
-            srcfn = sh.joinpths(self.app_dir, 'etc', config_fn)
-            contents = sh.load_file(srcfn)
-            return (srcfn, contents)
+            src_fn = sh.joinpths(self.get_option('app_dir'), 'etc', config_fn)
+            contents = sh.load_file(src_fn)
+            return (src_fn, contents)
         elif config_fn == AGENT_CONF:
             # WHY U SO BURIED....
-            srcfn = sh.joinpths(self.app_dir, 'etc', 'quantum', 'plugins', 'openvswitch', config_fn)
-            contents = sh.load_file(srcfn)
-            return (srcfn, contents)
+            src_fn = sh.joinpths(self.get_option('app_dir'), 'etc', 'quantum', 'plugins', 'openvswitch', config_fn)
+            contents = sh.load_file(src_fn)
+            return (src_fn, contents)
         else:
             return comp.PkgInstallComponent._get_source_config(self, config_fn)
 
@@ -172,13 +168,13 @@ class QuantumRuntime(QuantumMixin, comp.ProgramRuntime):
         if self.q_vswitch_service:
             app_list.append({
                 'name': APP_Q_SERVER,
-                'path': sh.joinpths(self.app_dir, 'bin', APP_Q_SERVER),
+                'path': sh.joinpths(self.get_option('app_dir'), 'bin', APP_Q_SERVER),
             })
         if self.q_vswitch_agent:
             app_list.append({
                 'name': APP_Q_AGENT,
                 # WHY U SO BURIED....
-                'path': sh.joinpths(self.app_dir, "quantum", "plugins", "openvswitch", 'agent', APP_Q_AGENT)
+                'path': sh.joinpths(self.get_option('app_dir'), "quantum", "plugins", "openvswitch", 'agent', APP_Q_AGENT)
             })
         return app_list
 
@@ -188,7 +184,7 @@ class QuantumRuntime(QuantumMixin, comp.ProgramRuntime):
     def _get_param_map(self, app_name):
         param_dict = comp.ProgramRuntime._get_param_map(self, app_name)
         if app_name == APP_Q_AGENT:
-            param_dict['OVS_CONFIG_FILE'] = sh.joinpths(self.cfg_dir, AGENT_CONF)
+            param_dict['OVS_CONFIG_FILE'] = sh.joinpths(self.get_option('cfg_dir'), AGENT_CONF)
         elif app_name == APP_Q_SERVER:
-            param_dict['QUANTUM_CONFIG_FILE'] = sh.joinpths(self.cfg_dir, QUANTUM_CONF)
+            param_dict['QUANTUM_CONFIG_FILE'] = sh.joinpths(self.get_option('cfg_dir'), QUANTUM_CONF)
         return param_dict

@@ -16,14 +16,11 @@
 
 import abc
 import collections
-import glob
 
 from anvil import colorizer
 from anvil import exceptions as excp
 from anvil import log as logging
-from anvil import packager
 from anvil import phase
-from anvil import pip
 from anvil import shell as sh
 from anvil import utils
 
@@ -45,11 +42,11 @@ class Action(object):
 
     @staticmethod
     def get_lookup_name():
-        return None
+        raise NotImplementedError()
 
     @staticmethod
     def get_action_name():
-        return None
+        raise NotImplementedError()
 
     @abc.abstractmethod
     def _run(self, persona, component_order, instances):
@@ -82,32 +79,46 @@ class Action(object):
         """
         Create component objects for each component in the persona.
         """
-        components = persona.wanted_components
-        desired_subsystems = persona.wanted_subsystems or {}
-        component_opts = persona.component_options or {}
+        p_subsystems = persona.wanted_subsystems or {}
+        p_opts = persona.component_options or {}
         instances = {}
-        pip_factory = packager.PackagerFactory(self.distro, pip.Packager)
-        pkg_factory = packager.PackagerFactory(self.distro, self.distro.get_default_package_manager_cls())
-        for c in components:
-            (cls, my_info) = self.distro.extract_component(c, self.get_lookup_name())
+        for c in persona.wanted_components:
+            ((cls, opts), siblings) = self.distro.extract_component(c, self.get_lookup_name())
             LOG.debug("Constructing class %s" % (cls))
             cls_kvs = {}
             cls_kvs['runner'] = self
-            cls_kvs.update(self.get_component_dirs(c))
-            cls_kvs['subsystem_info'] = my_info.get('subsystems') or {}
-            cls_kvs['all_instances'] = instances
+            cls_kvs['siblings'] = siblings
+            # Merge subsystems info with wanted subsystems
+            sub_systems = {}
+            if opts.get('subsystems'):
+                sub_systems.update(opts.get('subsystems'))
+                del opts['subsystems']
+            desired_subs = p_subsystems.get(c) or []
+            merged_sub_systems = {}
+            for d in desired_subs:
+                if d in sub_systems:
+                    merged_sub_systems[d] = sub_systems[d]
+                else:
+                    merged_sub_systems[d] = {}
+            cls_kvs['subsystems'] = merged_sub_systems
+            cls_kvs['instances'] = instances
             cls_kvs['name'] = c
-            cls_kvs['keep_old'] = self.keep_old
-            cls_kvs['desired_subsystems'] = desired_subsystems.get(c) or set()
-            cls_kvs['options'] = component_opts.get(c) or {}
-            cls_kvs['pip_factory'] = pip_factory
-            cls_kvs['packager_factory'] = pkg_factory
-            # The above is not overrideable...
-            for (k, v) in my_info.items():
+            # Merge options with keep old
+            options = {}
+            options['keep_old'] = self.keep_old
+            options.update(self.get_component_dirs(c))
+            merge_options = p_opts.get(c) or {}
+            options.update(merge_options)
+            # The above is not overrideable... (except for options key)
+            for (k, v) in opts.items():
                 if k not in cls_kvs:
                     cls_kvs[k] = v
+                elif k == 'options':
+                    options.update(v)
                 else:
                     LOG.warn("You can not override component constructor variable named %s.", colorizer.quote(k))
+            cls_kvs['options'] = options
+            LOG.debug("Construction of %r params are %s", c, cls_kvs)
             instances[c] = cls(**cls_kvs)
         return instances
 
@@ -121,31 +132,33 @@ class Action(object):
         for c in component_order:
             instances[c].warm_configs()
 
+    def _get_phase_dir(self, action_name=None):
+        if not action_name:
+            action_name = self.get_action_name()
+        return sh.joinpths(self.root_dir, "phases", action_name)
+
+    def _get_phase_fn(self, phase_name):
+        dirname = self._get_phase_dir()
+        sh.mkdirslist(dirname)
+        return sh.joinpths(dirname, "%s.phases" % (phase_name.lower()))
+
     def _run_phase(self, functors, component_order, instances, phase_name):
         """
         Run a given 'functor' across all of the components, in order.
         """
         component_results = dict()
-        phase_recorder = None
         if phase_name:
-            phase_fn = "%s.%s.phases" % (self.get_action_name(), phase_name.lower())
-            phase_recorder = phase.PhaseRecorder(sh.joinpths(self.root_dir, phase_fn))
+            phase_recorder = phase.PhaseRecorder(self._get_phase_fn(phase_name))
+        else:
+            phase_recorder = phase.NullPhaseRecorder()
         for c in component_order:
             instance = instances[c]
-            if phase_recorder and phase_recorder.has_ran(instance.component_name):
+            if phase_recorder.has_ran(c):
                 LOG.debug("Skipping phase named %r for component %r since it already happened.", phase_name, c)
             else:
                 try:
                     result = None
-                    if phase_recorder:
-                        with phase_recorder.mark(instance.component_name):
-                            if functors.start:
-                                functors.start(instance)
-                            if functors.run:
-                                result = functors.run(instance)
-                            if functors.end:
-                                functors.end(instance, result)
-                    else:
+                    with phase_recorder.mark(c):
                         if functors.start:
                             functors.start(instance)
                         if functors.run:
@@ -160,12 +173,9 @@ class Action(object):
                         raise
         return component_results
 
-    def _delete_phase_files(self, names):
-        for n in names:
-            phases_path = sh.joinpths(self.root_dir, '%s.*.phases' % (n))
-            for fn in glob.glob(phases_path):
-                if sh.isfile(fn):
-                    sh.unlink(fn)
+    def _delete_phase_files(self, action_names):
+        for n in action_names:
+            sh.deldir(self._get_phase_dir(n))
 
     def run(self, persona):
         instances = self._construct_instances(persona)

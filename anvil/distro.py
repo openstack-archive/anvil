@@ -15,13 +15,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import copy
 import glob
 import platform
 import re
 import shlex
 
 import yaml
-import copy
 
 from anvil import colorizer
 from anvil import importer
@@ -137,12 +137,11 @@ class Distro(object):
         try:
             # Use a copy instead of the original
             component_info = copy.deepcopy(self._components[name])
-            entry_point = component_info['action_classes'][action]
+            action_classes = dict(component_info['action_classes'])
+            entry_point = action_classes[action]
+            del action_classes[action]
             cls = importer.import_entry_point(entry_point)
-            # Remove action class info
-            if 'action_classes' in component_info:
-                del component_info['action_classes']
-            return (cls, component_info)
+            return ((cls, component_info), action_classes)
         except KeyError:
             raise RuntimeError('No class configured to %r %r on %r' %
                                (action, name, self.name))

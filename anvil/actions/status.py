@@ -15,6 +15,7 @@
 #    under the License.
 
 from anvil import colorizer
+from anvil import constants
 from anvil import log
 
 from anvil.actions import base
@@ -37,8 +38,25 @@ class StatusAction(base.Action):
     def _fetch_status(self, component):
         return component.status()
 
-    def _print_status(self, component, status):
-        LOG.info("Status of %s is %s.", colorizer.quote(component.component_name), colorizer.quote(str(status)))
+    def _quote_status(self, status):
+        if status == constants.STATUS_UNKNOWN:
+            return colorizer.quote(status, quote_color='yellow')
+        elif status == constants.STATUS_STARTED or status == constants.STATUS_INSTALLED:
+            return colorizer.quote(status, quote_color='green')
+        else:
+            return colorizer.quote(status, quote_color='red')
+
+    def _print_status(self, component, result):
+        if isinstance(result, (dict)):
+            LOG.info("Status of %s is:", colorizer.quote(component.name))
+            for (name, status) in result.items():
+                LOG.info("|-- %s --> %s.", colorizer.quote(name, quote_color='blue'), self._quote_status(status))
+        elif isinstance(result, (list, set)):
+            LOG.info("Status of %s is:", colorizer.quote(component.name))
+            for status in result:
+                LOG.info("|-- %s.", self._quote_status(status))
+        else:
+            LOG.info("Status of %s is %s.", colorizer.quote(component.name), self._quote_status(result))
 
     def _run(self, persona, component_order, instances):
         self._run_phase(

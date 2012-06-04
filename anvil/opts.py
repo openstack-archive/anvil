@@ -18,7 +18,7 @@ from optparse import IndentedHelpFormatter
 from optparse import OptionParser, OptionGroup
 
 from anvil import actions
-from anvil import cfg_helpers
+from anvil import constants
 from anvil import settings
 from anvil import shell as sh
 from anvil import version
@@ -33,7 +33,7 @@ def _format_list(in_list):
 
 def parse():
 
-    prog_name = settings.PROG_NAME
+    prog_name = constants.PROG_NAME
     version_str = "%s v%s" % (prog_name, version.version_string())
     help_formatter = IndentedHelpFormatter(width=HELP_WIDTH)
     parser = OptionParser(version=version_str, formatter=help_formatter)

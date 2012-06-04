@@ -16,13 +16,14 @@
 
 import json
 
+from anvil import constants
 from anvil import date
 from anvil import log as logging
-from anvil import runner as base
-from anvil import settings
 from anvil import shell as sh
 from anvil import trace as tr
 from anvil import utils
+
+from anvil.runners import base
 
 LOG = logging.getLogger(__name__)
 
@@ -47,15 +48,17 @@ EMIT_BASE_CMD = ["/sbin/initctl", "emit"]
 
 
 class UpstartRunner(base.Runner):
-    def __init__(self, cfg, component_name, trace_dir):
-        base.Runner.__init__(self, cfg, component_name, trace_dir)
+    def __init__(self, runtime):
+        base.Runner.__init__(self, runtime)
+        self.cfg = self.runtime.cfg
+        self.name = self.runtime.name
         self.events = set()
 
     def stop(self, app_name):
         fn_name = UPSTART_TEMPL % (app_name)
-        trace_fn = tr.trace_fn(self.trace_dir, fn_name)
+        trace_fn = tr.trace_fn(self.runtime.get_option('trace_dir'), fn_name)
         # Emit the start, keep track and only do one per component name
-        component_event = self.component_name + STOP_EVENT_SUFFIX
+        component_event = self.name + STOP_EVENT_SUFFIX
         if component_event in self.events:
             LOG.debug("Already emitted event: %r" % (component_event))
         else:
@@ -80,10 +83,10 @@ class UpstartRunner(base.Runner):
         params['MADE_DATE'] = date.rcf8222date()
         params['START_EVENT'] = self.cfg.getdefaulted('upstart', 'start_event', 'all_os_start')
         params['STOP_EVENT'] = self.cfg.getdefaulted('upstart', 'stop_event', 'all_os_stop')
-        params['COMPONENT_START_EVENT'] = self.component_name + START_EVENT_SUFFIX
-        params['COMPONENT_STOP_EVENT'] = self.component_name + STOP_EVENT_SUFFIX
+        params['COMPONENT_START_EVENT'] = self.name + START_EVENT_SUFFIX
+        params['COMPONENT_STOP_EVENT'] = self.name + STOP_EVENT_SUFFIX
         params['PROGRAM_NAME'] = app_pth
-        params['AUTHOR'] = settings.PROG_NAME
+        params['AUTHOR'] = constants.PROG_NAME
         if program_args:
             escaped_args = list()
             for opt in program_args:
@@ -111,11 +114,11 @@ class UpstartRunner(base.Runner):
             sh.chmod(cfg_fn, 0666)
 
     def _start(self, app_name, program, program_args):
-        run_trace = tr.TraceWriter(tr.trace_fn(self.trace_dir, UPSTART_TEMPL % (app_name)))
+        run_trace = tr.TraceWriter(tr.trace_fn(self.runtime.get_option('trace_dir'), UPSTART_TEMPL % (app_name)))
         run_trace.trace(NAME, app_name)
         run_trace.trace(ARGS, json.dumps(program_args))
         # Emit the start, keep track and only do one per component name
-        component_event = self.component_name + START_EVENT_SUFFIX
+        component_event = self.name + START_EVENT_SUFFIX
         if component_event in self.events:
             LOG.debug("Already emitted event: %r" % (component_event))
         else:

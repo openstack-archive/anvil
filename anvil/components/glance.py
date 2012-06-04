@@ -66,9 +66,6 @@ BIN_DIR = 'bin'
 
 class GlanceMixin(object):
 
-    def known_options(self):
-        return set(['no-load-images'])
-
     def known_subsystems(self):
         return SUB_TO_APP.keys()
 
@@ -96,7 +93,7 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
     def pre_install(self):
         comp.PythonInstallComponent.pre_install(self)
         if self.cfg.getboolean('glance', 'eliminate_pip_gits'):
-            fn = sh.joinpths(self.app_dir, 'tools', 'pip-requires')
+            fn = sh.joinpths(self.get_option('app_dir'), 'tools', 'pip-requires')
             if sh.isfile(fn):
                 new_lines = []
                 for line in sh.load_file(fn).splitlines():
@@ -118,7 +115,7 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
         real_fn = config_fn
         if config_fn == LOGGING_CONF:
             real_fn = LOGGING_SOURCE_FN
-        fn = sh.joinpths(self.app_dir, 'etc', real_fn)
+        fn = sh.joinpths(self.get_option('app_dir'), 'etc', real_fn)
         return (fn, sh.load_file(fn))
 
     def _config_adjust_registry(self, contents, fn):
@@ -129,9 +126,9 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
             config.set('DEFAULT', 'debug', True)
             config.set('DEFAULT', 'verbose', True)
             config.set('DEFAULT', 'bind_port', params['endpoints']['registry']['port'])
-            config.remove_option('DEFAULT', 'log_file')
             config.set('DEFAULT', 'sql_connection',
                                 dbhelper.fetch_dbdsn(self.cfg, DB_NAME, utf8=True))
+            config.remove_option('DEFAULT', 'log_file')
             config.set('paste_deploy', 'flavor', 'keystone')
             return config.stringify(fn)
         return contents
@@ -160,12 +157,14 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
         with io.BytesIO(contents) as stream:
             config = cfg.RewritableConfigParser()
             config.readfp(stream)
-            img_store_dir = self._get_image_dir()
+            img_store_dir = sh.joinpths(self.get_option('component_dir'), 'images')
             config.set('DEFAULT', 'debug', True)
             config.set('DEFAULT', 'verbose', True)
             config.set('DEFAULT', 'default_store', 'file')
             config.set('DEFAULT', 'filesystem_store_datadir', img_store_dir)
             config.set('DEFAULT', 'bind_port', params['endpoints']['public']['port'])
+            config.set('DEFAULT', 'sql_connection',
+                                dbhelper.fetch_dbdsn(self.cfg, DB_NAME, utf8=True))
             config.remove_option('DEFAULT', 'log_file')
             config.set('paste_deploy', 'flavor', 'keystone')
             LOG.info("Ensuring file system store directory %r exists and is empty." % (img_store_dir))
@@ -203,27 +202,25 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
         else:
             return contents
 
-    def _get_image_dir(self):
-        # This might be changed often so make it a function
-        return sh.joinpths(self.component_dir, 'images')
-
 
 class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
-        self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
+        self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
         self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
-        self.do_upload = True
-        if 'no-load-images' in self.options:
-            self.do_upload = False
+        self.do_upload = self.get_option('load-images')
 
     def _get_apps_to_start(self):
         apps = list()
-        for subsys in self.desired_subsystems:
-            apps.append({
-                'name': SUB_TO_APP[subsys],
-                'path': sh.joinpths(self.bin_dir, SUB_TO_APP[subsys]),
-            })
+        for name, values in self.subsystems.items():
+            if name in SUB_TO_APP:
+                subsys = name
+                apps.append({
+                    'name': SUB_TO_APP[subsys],
+                    'path': sh.joinpths(self.bin_dir, SUB_TO_APP[subsys]),
+                    # This seems needed, to allow for the db syncs to not conflict... (arg)
+                    'sleep_time': 5,
+                })
         return apps
 
     def _get_app_options(self, app):

@@ -3,7 +3,7 @@ components:
 # Order matters here!
 - general
 - db
-- rabbit-mq
+- qpid
 - keystone-client
 - keystone
 - glance
@@ -14,14 +14,14 @@ components:
 - nova-client
 # Super client, so install after other clients
 - openstack-client
-description: Devstack.sh matching component installation.
+description: Devstack.sh matching component installation + qpid!
 options:
     no-vnc:
         # This is the nova component name (we need this to hook into the nova conf...)
         nova-component: nova
     nova:
         no-vnc: true
-        mq: rabbit
+        mq: qpid
         db-sync: true
     glance:
         load-images: true
@@ -39,9 +39,7 @@ subsystems:
     - vol
     - xvnc
 supports:
+# Todo add in others
 - rhel-6
-- ubuntu-oneiric
-- ubuntu-precise
-- fedora-16
 ...
 

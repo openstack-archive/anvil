@@ -14,7 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
 from anvil import colorizer
 from anvil import log
 
@@ -58,7 +57,7 @@ class StartAction(base.Action):
             )
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Starting %s.', i.component_name),
+                start=lambda i: LOG.info('Starting %s.', i.name),
                 run=lambda i: i.start(),
                 end=lambda i, result: LOG.info("Start %s applications", colorizer.quote(result)),
             ),
@@ -68,7 +67,7 @@ class StartAction(base.Action):
             )
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Post-starting %s.', colorizer.quote(i.component_name)),
+                start=lambda i: LOG.info('Post-starting %s.', colorizer.quote(i.name)),
                 run=lambda i: i.post_start(),
                 end=None,
             ),

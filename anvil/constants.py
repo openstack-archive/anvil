@@ -14,16 +14,20 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-VERSION = ['2012', '5', '11']
-FINAL = False  # May never be final ;)
+# Various shared constants...
 
+# How status is reported
+STATUS_INSTALLED = 'installed'
+STATUS_STARTED = "started"
+STATUS_STOPPED = "stopped"
+STATUS_UNKNOWN = "unknown"
 
-def canonical_version_string():
-    return '.'.join(VERSION)
+# What this program is called
+PROG_NAME = 'anvil'
 
+# Ip version constants for network ip detection
+IPV4 = 'IPv4'
+IPV6 = 'IPv6'
 
-def version_string():
-    if FINAL:
-        return canonical_version_string()
-    else:
-        return '%s-dev' % (canonical_version_string())
+# What this programs config is called
+CONFIG_NAME = 'anvil.ini'

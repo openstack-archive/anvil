@@ -29,6 +29,9 @@ from anvil.helpers import db as dbhelper
 
 LOG = logging.getLogger(__name__)
 
+# Paste configuration
+PASTE_CONF = 'nova-api-paste.ini'
+
 # Special generated conf
 API_CONF = 'nova.conf'
 
@@ -72,6 +75,9 @@ QUANTUM_OPENSWITCH_OPS = {
     'quantum_use_dhcp': True,
 }
 
+# Known mq types
+MQ_TYPES = ['rabbit', 'qpid', 'zeromq']
+
 # Xenserver specific defaults
 XS_DEF_INTERFACE = 'eth1'
 XA_CONNECTION_ADDR = '169.254.0.1'
@@ -109,6 +115,12 @@ VG_LVREMOVE_CMD = [
     {'cmd': ['lvremove', '-f', '%VOLUME_GROUP%/%LV%'],
      'run_as_root': True}
 ]
+
+
+def canon_mq_type(mq_type):
+    if not mq_type:
+        return ''
+    return str(mq_type).lower().strip()
 
 
 def canon_virt_driver(virt_driver):
@@ -170,9 +182,8 @@ def get_shared_params(cfgobj):
 class VolumeConfigurator(object):
     def __init__(self, installer):
         self.installer = weakref.proxy(installer)
-        self.cfg = installer.cfg
-        self.app_dir = installer.app_dir
         self.distro = installer.distro
+        self.cfg = self.installer.cfg
 
     def setup_volumes(self):
         self._setup_vol_groups()
@@ -183,7 +194,8 @@ class VolumeConfigurator(object):
     def _setup_vol_groups(self):
         LOG.info("Attempting to setup volume groups for nova volume management.")
         mp = dict()
-        backing_file = self.cfg.getdefaulted('nova', 'volume_backing_file', sh.joinpths(self.app_dir, 'nova-volumes-backing-file'))
+        backing_file = self.cfg.getdefaulted('nova', 'volume_backing_file',
+                       sh.joinpths(self.installer.get_option('app_dir'), 'nova-volumes-backing-file'))
         vol_group = self.cfg.getdefaulted('nova', 'volume_group', 'nova-volumes')
         backing_file_size = utils.to_bytes(self.cfg.getdefaulted('nova', 'volume_backing_file_size', '2052M'))
         mp['VOLUME_GROUP'] = vol_group
@@ -249,16 +261,11 @@ class ConfConfigurator(object):
         self.installer = weakref.proxy(installer)
         self.cfg = installer.cfg
         self.instances = installer.instances
-        self.component_dir = installer.component_dir
-        self.app_dir = installer.app_dir
         self.tracewriter = installer.tracewriter
-        self.paste_conf_fn = installer.paste_conf_fn
+        self.paste_conf_fn = installer._get_target_config_name(PASTE_CONF)
         self.distro = installer.distro
-        self.cfg_dir = installer.cfg_dir
-        self.options = installer.options
         self.xvnc_enabled = installer.xvnc_enabled
         self.volumes_enabled = installer.volumes_enabled
-        self.novnc_enabled = 'no-vnc' in installer.options
 
     def _getbool(self, name):
         return self.cfg.getboolean('nova', name)
@@ -289,11 +296,15 @@ class ConfConfigurator(object):
             if flat_interface and not flat_interface in known_interfaces:
                 msg = "Libvirt flat interface %s is not a known interface (is it one of %s??)" % (flat_interface, ", ".join(known_interfaces))
                 raise exceptions.ConfigException(msg)
+        mq_type = canon_mq_type(self.installer.get_option('mq'))
+        if mq_type not in MQ_TYPES:
+            msg = "Unknown message queue type %s (is it one of %s??)" % (mq_type, ", ".join(MQ_TYPES))
+            raise exceptions.ConfigException(msg)
 
-    def configure(self, root_wrapped):
+    def configure(self, fn=API_CONF, root_wrapped=False):
 
         # Everything built goes in here
-        nova_conf = Conf(API_CONF)
+        nova_conf = Conf(fn)
 
         # Used more than once so we calculate it ahead of time
         hostip = self.cfg.get('host', 'ip')
@@ -361,12 +372,20 @@ class ConfConfigurator(object):
         nova_conf.add('ec2_dmz_host', self._getstr('ec2_dmz_host', hostip))
         nova_conf.add('s3_host', hostip)
 
-        # How is your rabbit setup?
-        nova_conf.add('rabbit_host', self.cfg.getdefaulted('rabbit', 'rabbit_host', hostip))
-        nova_conf.add('rabbit_password', self.cfg.get("passwords", "rabbit"))
+        # How is your mq setup?
+        mq_type = canon_mq_type(self.installer.get_option('mq'))
+        if mq_type == 'rabbit':
+            nova_conf.add('rabbit_host', self.cfg.getdefaulted('rabbit', 'rabbit_host', hostip))
+            nova_conf.add('rabbit_password', self.cfg.get("passwords", "rabbit"))
+            nova_conf.add('rpc_backend', 'nova.rpc.impl_kombu')
+        elif mq_type == 'qpid':
+            nova_conf.add('rpc_backend', 'nova.rpc.impl_qpid')
+        elif mq_type == 'zeromq':
+            # TODO more needed???
+            nova_conf.add('rpc_backend', 'nova.rpc.impl_kombu')
 
         # Where instances will be stored
-        instances_path = self._getstr('instances_path', sh.joinpths(self.component_dir, 'instances'))
+        instances_path = self._getstr('instances_path', sh.joinpths(self.installer.get_option('component_dir'), 'instances'))
         self._configure_instances_path(instances_path, nova_conf)
 
         # Is this a multihost setup?
@@ -439,7 +458,7 @@ class ConfConfigurator(object):
             nova_conf.add('glance_api_servers', glance_api_server)
 
     def _configure_vnc(self, nova_conf):
-        if self.novnc_enabled:
+        if self.installer.get_option('no-vnc'):
             nova_conf.add('novncproxy_base_url', self._getstr('vncproxy_url'))
 
         if self.xvnc_enabled:
@@ -471,7 +490,7 @@ class ConfConfigurator(object):
 
     def _configure_network_settings(self, nova_conf):
         # TODO this might not be right....
-        if 'quantum' in self.options:
+        if self.installer.get_option('quantum'):
             nova_conf.add('network_manager', QUANTUM_MANAGER)
             hostip = self.cfg.get('host', 'ip')
             nova_conf.add('quantum_connection_host', self.cfg.getdefaulted('quantum', 'q_host', hostip))
@@ -479,7 +498,7 @@ class ConfConfigurator(object):
             if self.cfg.get('quantum', 'q_plugin') == 'openvswitch':
                 for (key, value) in QUANTUM_OPENSWITCH_OPS.items():
                     nova_conf.add(key, value)
-            if 'melange' in self.options:
+            if self.installer.get_option('melange'):
                 nova_conf.add('quantum_ipam_lib', QUANTUM_IPAM_LIB)
                 nova_conf.add('use_melange_mac_generation', True)
                 nova_conf.add('melange_host', self.cfg.getdefaulted('melange', 'm_host', hostip))
@@ -489,7 +508,7 @@ class ConfConfigurator(object):
 
         # Configs dhcp bridge stuff???
         # TODO: why is this the same as the nova.conf?
-        nova_conf.add('dhcpbridge_flagfile', sh.joinpths(self.cfg_dir, API_CONF))
+        nova_conf.add('dhcpbridge_flagfile', sh.joinpths(self.installer.get_option('cfg_dir'), API_CONF))
 
         # Network prefix for the IP network that all the projects for future VM guests reside on. Example: 192.168.0.0/12
         nova_conf.add('fixed_range', self._getstr('fixed_range'))
@@ -574,8 +593,6 @@ class Conf(object):
         self.name = name
 
     def add(self, key, value, *values):
-        if not key:
-            raise exceptions.BadParamException("Can not add a empty/none/false key")
         real_key = str(key)
         real_value = ""
         if len(values):

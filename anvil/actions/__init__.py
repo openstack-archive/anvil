@@ -28,7 +28,7 @@ _NAMES_TO_RUNNER = {
     stop.StopAction.get_action_name(): stop.StopAction,
     uninstall.UninstallAction.get_action_name(): uninstall.UninstallAction,
 }
-_RUNNER_TO_NAMES = dict((v,k) for k, v in _NAMES_TO_RUNNER.items())
+_RUNNER_TO_NAMES = dict((v, k) for k, v in _NAMES_TO_RUNNER.items())
 
 
 def get_action_names():

@@ -14,51 +14,45 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import copy
 import re
 import weakref
 
 from anvil import colorizer
+from anvil import constants
 from anvil import downloader as down
 from anvil import exceptions as excp
 from anvil import importer
 from anvil import log as logging
+from anvil import packager
+from anvil import pip
 from anvil import shell as sh
 from anvil import trace as tr
 from anvil import utils
 
 LOG = logging.getLogger(__name__)
 
-# Runtime status constants (return by runtime status)
-# TODO: move...
-STATUS_UNKNOWN = "unknown"
-STATUS_STARTED = "started"
-STATUS_STOPPED = "stopped"
-
-# Progress bar titles
-UNINSTALL_TITLE = 'Uninstalling'
-INSTALL_TITLE = 'Installing'
-
 
 class ComponentBase(object):
     def __init__(self,
-                 desired_subsystems,
-                 subsystem_info,
+                 subsystems,
                  runner,
-                 component_dir,
-                 trace_dir,
-                 app_dir,
-                 cfg_dir,
-                 all_instances,
+                 instances,
                  options,
                  name,
+                 siblings,
                  *args,
                  **kargs):
 
-        self.desired_subsystems = desired_subsystems
-        self.instances = all_instances
-        self.component_name = name
-        self.subsystem_info = subsystem_info
+        self.subsystems = subsystems
+        self.name = name
         self.options = options
+
+        # All the other active instances
+        self.instances = instances
+
+        # All the other class names that can be used alongside this class
+        self.siblings = siblings
 
         # The runner has a reference to us, so use a weakref here to
         # avoid breaking garbage collection.
@@ -68,47 +62,37 @@ class ComponentBase(object):
         self.cfg = runner.cfg
         self.distro = runner.distro
 
-        # Required component directories
-        self.component_dir = component_dir
-        self.trace_dir = trace_dir
-        self.app_dir = app_dir
-        self.cfg_dir = cfg_dir
+    def get_option(self, opt_name, def_val=None):
+        val = self.options.get(opt_name, def_val)
+        LOG.debug("Fetched option %r with value %r for component: %s", opt_name, val, self)
+        return val
 
     def verify(self):
         # Ensure subsystems are known...
         knowns = self.known_subsystems()
-        for s in self.desired_subsystems:
+        for s in self.subsystems:
             if s not in knowns:
-                raise ValueError("Unknown subsystem %r requested for (%s)" % (s, self))
-        for s in self.subsystem_info.keys():
-            if s not in knowns:
-                raise ValueError("Unknown subsystem %r provided for (%s)" % (s, self))
-        known_options = self.known_options()
-        for s in self.options:
-            if s not in known_options:
-                LOG.warning("Unknown option %r provided for (%s)" % (s, self))
+                raise ValueError("Unknown subsystem %r requested for component: %s" % (s, self))
 
     def __str__(self):
-        return "%s: %s" % (self.__class__.__name__, self.component_name)
+        return "%s@%s" % (self.__class__.__name__, self.name)
 
     def _get_params(self):
         return {
-            'APP_DIR': self.app_dir,
-            'COMPONENT_DIR': self.component_dir,
-            'CONFIG_DIR': self.cfg_dir,
-            'TRACE_DIR': self.trace_dir,
+            'APP_DIR': self.get_option('app_dir'),
+            'COMPONENT_DIR': self.get_option('component_dir'),
+            'CONFIG_DIR': self.get_option('cfg_dir'),
+            'TRACE_DIR': self.get_option('trace_dir'),
         }
 
     def _get_trace_files(self):
+        trace_dir = self.get_option('trace_dir')
         return {
-            'install': tr.trace_fn(self.trace_dir, "install"),
-            'start': tr.trace_fn(self.trace_dir, "start"),
+            'install': tr.trace_fn(trace_dir, "install"),
+            'start': tr.trace_fn(trace_dir, "start"),
         }
 
     def known_subsystems(self):
-        return set()
-
-    def known_options(self):
         return set()
 
     def warm_configs(self):
@@ -122,11 +106,11 @@ class ComponentBase(object):
 
 
 class PkgInstallComponent(ComponentBase):
-    def __init__(self, packager_factory, *args, **kargs):
+    def __init__(self, *args, **kargs):
         ComponentBase.__init__(self, *args, **kargs)
         self.tracewriter = tr.TraceWriter(self._get_trace_files()['install'], break_if_there=False)
         self.packages = kargs.get('packages', list())
-        self.packager_factory = packager_factory
+        self.packager_factory = packager.PackagerFactory(self.distro, self.distro.get_default_package_manager_cls())
 
     def _get_download_locations(self):
         return list()
@@ -139,7 +123,7 @@ class PkgInstallComponent(ComponentBase):
             if not uri:
                 raise ValueError(("Could not find uri in config to download "
                                    "from at section %s for option %s") % (section, key))
-            target_directory = self.app_dir
+            target_directory = self.get_option('app_dir')
             if 'subdir' in info:
                 target_directory = sh.joinpths(target_directory, info["subdir"])
             branch = None
@@ -185,26 +169,26 @@ class PkgInstallComponent(ComponentBase):
         return mp
 
     def _get_packages(self):
-        pkg_list = list(self.packages)
-        for name in self.desired_subsystems:
-            if name in self.subsystem_info:
-                LOG.debug("Extending package list with packages for subsystem %r", name)
-                pkg_list.extend(self.subsystem_info[name].get('packages', []))
+        pkg_list = copy.deepcopy(self.packages)
+        for name, values in self.subsystems.items():
+            if 'packages' in values:
+                LOG.debug("Extending package list with packages for subsystem: %r", name)
+                pkg_list.extend(values.get('packages') or [])
         return pkg_list
 
     def install(self):
-        LOG.debug('Preparing to install packages for %r', self.component_name)
+        LOG.debug('Preparing to install packages for: %r', self.name)
         pkgs = self._get_packages()
         if pkgs:
             pkg_names = [p['name'] for p in pkgs]
             utils.log_iterable(pkg_names, logger=LOG,
                 header="Setting up %s distribution packages" % (len(pkg_names)))
-            with utils.progress_bar(INSTALL_TITLE, len(pkgs)) as p_bar:
+            with utils.progress_bar('Installing', len(pkgs)) as p_bar:
                 for (i, p) in enumerate(pkgs):
                     self.tracewriter.package_installed(p)
                     self.packager_factory.get_packager_for(p).install(p)
                     p_bar.update(i + 1)
-        return self.trace_dir
+        return self.get_option('trace_dir')
 
     def pre_install(self):
         pkgs = self._get_packages()
@@ -223,14 +207,14 @@ class PkgInstallComponent(ComponentBase):
         return contents
 
     def _get_target_config_name(self, config_fn):
-        return sh.joinpths(self.cfg_dir, config_fn)
+        cfg_dir = self.get_option('cfg_dir')
+        return sh.joinpths(cfg_dir, config_fn)
 
     def _get_source_config(self, config_fn):
-        return utils.load_template(self.component_name, config_fn)
+        return utils.load_template(self.name, config_fn)
 
     def _get_link_dir(self):
-        root_link_dir = self.distro.get_command_config('base_link_dir')
-        return sh.joinpths(root_link_dir, self.component_name)
+        return sh.joinpths(self.distro.get_command_config('base_link_dir'), self.name)
 
     def _get_symlinks(self):
         links = dict()
@@ -284,24 +268,23 @@ class PkgInstallComponent(ComponentBase):
 
 
 class PythonInstallComponent(PkgInstallComponent):
-    def __init__(self, pip_factory, *args, **kargs):
+    def __init__(self, *args, **kargs):
         PkgInstallComponent.__init__(self, *args, **kargs)
         self.pips = kargs.get('pips', list())
-        self.pip_factory = pip_factory
+        self.pip_factory = packager.PackagerFactory(self.distro, pip.Packager)
 
     def _get_python_directories(self):
         py_dirs = {
-            self.component_name: self.app_dir,
+            self.name: self.get_option('app_dir'),
         }
         return py_dirs
 
     def _get_pips(self):
-        pip_list = list(self.pips)
-        for name in self.desired_subsystems:
-            if name in self.subsystem_info:
-                LOG.debug("Extending pip list with pips for subsystem %r" % (name))
-                subsystem_pips = self.subsystem_info[name].get('pips', list())
-                pip_list.extend(subsystem_pips)
+        pip_list = copy.deepcopy(self.pips)
+        for name, values in self.subsystems.items():
+            if 'pips' in values:
+                LOG.debug("Extending pip list with pips for subsystem: %r" % (name))
+                pip_list.extend(values.get('pips') or [])
         return pip_list
 
     def _install_pips(self):
@@ -310,7 +293,7 @@ class PythonInstallComponent(PkgInstallComponent):
             pip_names = [p['name'] for p in pips]
             utils.log_iterable(pip_names, logger=LOG,
                 header="Setting up %s python packages" % (len(pip_names)))
-            with utils.progress_bar(INSTALL_TITLE, len(pips)) as p_bar:
+            with utils.progress_bar('Installing', len(pips)) as p_bar:
                 for (i, p) in enumerate(pips):
                     self.tracewriter.pip_installed(p)
                     self.pip_factory.get_packager_for(p).install(p)
@@ -333,7 +316,9 @@ class PythonInstallComponent(PkgInstallComponent):
         if py_dirs:
             real_dirs = dict()
             for (name, wkdir) in py_dirs.items():
-                real_dirs[name] = wkdir or self.app_dir
+                real_dirs[name] = wkdir
+                if not real_dirs[name]:
+                    real_dirs[name] = self.get_option('app_dir')
             utils.log_iterable(real_dirs.values(), logger=LOG,
                 header="Setting up %s python directories" % (len(real_dirs)))
             setup_cmd = self.distro.get_command('python', 'setup')
@@ -344,7 +329,7 @@ class PythonInstallComponent(PkgInstallComponent):
                                                cwd=working_dir,
                                                run_as_root=True)
                 py_trace_name = "%s.%s" % (name, 'python')
-                py_writer = tr.TraceWriter(tr.trace_fn(self.trace_dir,
+                py_writer = tr.TraceWriter(tr.trace_fn(self.get_option('trace_dir'),
                                                        py_trace_name), break_if_there=False)
                 # Format or json encoding isn't really needed here since this is
                 # more just for information output/lookup if desired.
@@ -364,11 +349,10 @@ class PythonInstallComponent(PkgInstallComponent):
 
 
 class PkgUninstallComponent(ComponentBase):
-    def __init__(self, packager_factory, *args, **kargs):
+    def __init__(self, *args, **kargs):
         ComponentBase.__init__(self, *args, **kargs)
         self.tracereader = tr.TraceReader(self._get_trace_files()['install'])
-        self.keep_old = kargs.get('keep_old', False)
-        self.packager_factory = packager_factory
+        self.packager_factory = packager.PackagerFactory(self.distro, self.distro.get_default_package_manager_cls())
 
     def unconfigure(self):
         self._unconfigure_files()
@@ -404,7 +388,7 @@ class PkgUninstallComponent(ComponentBase):
         pass
 
     def _uninstall_pkgs(self):
-        if self.keep_old:
+        if self.get_option('keep_old', False):
             LOG.info('Keep-old flag set, not removing any packages.')
         else:
             pkgs = self.tracereader.packages_installed()
@@ -413,7 +397,7 @@ class PkgUninstallComponent(ComponentBase):
                 utils.log_iterable(pkg_names, logger=LOG,
                     header="Potentially removing %s packages" % (len(pkg_names)))
                 which_removed = set()
-                with utils.progress_bar(UNINSTALL_TITLE, len(pkgs), reverse=True) as p_bar:
+                with utils.progress_bar('Uninstalling', len(pkgs), reverse=True) as p_bar:
                     for (i, p) in enumerate(pkgs):
                         if self.packager_factory.get_packager_for(p).remove(p):
                             which_removed.add(p['name'])
@@ -433,7 +417,7 @@ class PkgUninstallComponent(ComponentBase):
         dirs_made = self.tracereader.dirs_made()
         if dirs_made:
             dirs_made = [sh.abspth(d) for d in dirs_made]
-            if self.keep_old:
+            if self.get_option('keep_old', False):
                 download_places = [path_location[0] for path_location in self.tracereader.download_locations()]
                 if download_places:
                     utils.log_iterable(download_places, logger=LOG,
@@ -451,9 +435,9 @@ class PkgUninstallComponent(ComponentBase):
 
 
 class PythonUninstallComponent(PkgUninstallComponent):
-    def __init__(self, pip_factory, *args, **kargs):
+    def __init__(self, *args, **kargs):
         PkgUninstallComponent.__init__(self, *args, **kargs)
-        self.pip_factory = pip_factory
+        self.pip_factory = packager.PackagerFactory(self.distro, pip.Packager)
 
     def uninstall(self):
         self._uninstall_python()
@@ -461,7 +445,7 @@ class PythonUninstallComponent(PkgUninstallComponent):
         PkgUninstallComponent.uninstall(self)
 
     def _uninstall_pips(self):
-        if self.keep_old:
+        if self.get_option('keep_old', False):
             LOG.info('Keep-old flag set, not removing any python packages.')
         else:
             pips = self.tracereader.pips_installed()
@@ -469,7 +453,7 @@ class PythonUninstallComponent(PkgUninstallComponent):
                 pip_names = set([p['name'] for p in pips])
                 utils.log_iterable(pip_names, logger=LOG,
                     header="Uninstalling %s python packages" % (len(pip_names)))
-                with utils.progress_bar(UNINSTALL_TITLE, len(pips), reverse=True) as p_bar:
+                with utils.progress_bar('Uninstalling', len(pips), reverse=True) as p_bar:
                     for (i, p) in enumerate(pips):
                         try:
                             self.pip_factory.get_packager_for(p).remove(p)
@@ -534,19 +518,18 @@ class ProgramRuntime(ComponentBase):
         am_configured = 0
         if not apps_to_start:
             return am_configured
-        # First make a pass and make sure all runtime 
+        # First make a pass and make sure all runtime
         # (e.g. upstart starting)
         # config files are in place....
         run_type = self._fetch_run_type()
-        cls = importer.import_entry_point(run_type)
-        instance = cls(self.cfg, self.component_name, self.trace_dir)
+        configurer = importer.import_entry_point(run_type)(self)
         for app_info in apps_to_start:
             app_name = app_info["name"]
             app_pth = app_info.get("path", app_name)
-            app_dir = app_info.get("app_dir", self.app_dir)
+            app_dir = app_info.get("app_dir", self.get_option('app_dir'))
             # Configure it with the given settings
             LOG.debug("Configuring runner %r for program %r", run_type, app_name)
-            cfg_am = instance.configure(app_name,
+            cfg_am = configurer.configure(app_name,
                      app_pth=app_pth, app_dir=app_dir,
                      opts=utils.param_replace_list(self._get_app_options(app_name), self._get_param_map(app_name)))
             LOG.debug("Configured %s files for runner for program %r", cfg_am, app_name)
@@ -561,45 +544,44 @@ class ProgramRuntime(ComponentBase):
             return am_started
         # Select how we are going to start it
         run_type = self._fetch_run_type()
-        cls = importer.import_entry_point(run_type)
-        instance = cls(self.cfg, self.component_name, self.trace_dir)
+        starter = importer.import_entry_point(run_type)(self)
         for app_info in apps_to_start:
             app_name = app_info["name"]
             app_pth = app_info.get("path", app_name)
-            app_dir = app_info.get("app_dir", self.app_dir)
+            app_dir = app_info.get("app_dir", self.get_option('app_dir'))
             # Adjust the program options now that we have real locations
             program_opts = utils.param_replace_list(self._get_app_options(app_name), self._get_param_map(app_name))
             # Start it with the given settings
             LOG.debug("Starting %r using %r", app_name, run_type)
-            details_fn = instance.start(app_name,
-                app_pth=app_pth, app_dir=app_dir, opts=program_opts)
+            details_fn = starter.start(app_name, app_pth=app_pth, app_dir=app_dir, opts=program_opts)
             LOG.info("Started %s details are in %s", colorizer.quote(app_name), colorizer.quote(details_fn))
             # This trace is used to locate details about what to stop
             self.tracewriter.app_started(app_name, details_fn, run_type)
+            if app_info.get('sleep_time'):
+                LOG.info("%s requested a %s sleep time, please wait...", app_name, app_info.get('sleep_time'))
+                sh.sleep(app_info.get('sleep_time'))
             am_started += 1
         return am_started
 
-    def _locate_killers(self, apps_started):
-        killer_instances = dict()
-        to_kill = list()
+    def _locate_investigators(self, apps_started):
+        investigators = dict()
+        to_investigate = list()
         for (app_name, trace_fn, how) in apps_started:
-            killcls = None
+            inv_cls = None
             try:
-                killcls = importer.import_entry_point(how)
-                LOG.debug("Stopping %r using %r", app_name, how)
+                inv_cls = importer.import_entry_point(how)
             except RuntimeError as e:
-                LOG.warn("Could not load class %s which should be used to stop %s: %s", 
-                         colorizer.quote(how), colorizer.quote(app_name), e)
+                LOG.warn("Could not load class %s which should be used to investigate %s: %s",
+                            colorizer.quote(how), colorizer.quote(app_name), e)
                 continue
-            if killcls in killer_instances:
-                killer = killer_instances[killcls]
+            investigator = None
+            if inv_cls in investigators:
+                investigator = investigators[inv_cls]
             else:
-                killer = killcls(self.cfg,
-                                 self.component_name,
-                                 self.trace_dir)
-                killer_instances[killcls] = killer
-            to_kill.append((app_name, killer))
-        return to_kill
+                investigator = inv_cls(self)
+                investigators[inv_cls] = investigator
+            to_investigate.append((app_name, investigator))
+        return to_investigate
 
     def stop(self):
         # Anything to stop??
@@ -608,18 +590,48 @@ class ProgramRuntime(ComponentBase):
         if not apps_started:
             return killed_am
         self.pre_stop(apps_started)
-        to_kill = self._locate_killers(apps_started)
-        for (app_name, killer) in to_kill:
-            killer.stop(app_name)
-            killer.unconfigure()
+        to_kill = self._locate_investigators(apps_started)
+        for (app_name, handler) in to_kill:
+            handler.stop(app_name)
+            handler.unconfigure()
             killed_am += 1
         self.post_stop(apps_started)
         if len(apps_started) == killed_am:
             sh.unlink(self.tracereader.filename())
         return killed_am
 
+    def _multi_status(self):
+        try:
+            apps_started = self.tracereader.apps_started()
+        except excp.NoTraceException:
+            return None
+        if not apps_started:
+            return None
+        else:
+            to_check = self._locate_investigators(apps_started)
+            results = dict()
+            for (name, handler) in to_check:
+                try:
+                    results[name] = handler.status(name)
+                except AttributeError:
+                    pass  # Not all handlers can implement this..
+            return results
+
+    def _status(self):
+        return constants.STATUS_UNKNOWN
+
     def status(self):
-        return STATUS_UNKNOWN
+        stat = self._multi_status()
+        if not stat:
+            stat = self._status()
+        if not stat or stat == constants.STATUS_UNKNOWN:
+            if self.is_installed():
+                stat = constants.STATUS_INSTALLED
+            elif self.is_started():
+                stat = constants.STATUS_STARTED
+            else:
+                stat = constants.STATUS_UNKNOWN
+        return stat
 
     def restart(self):
         return 0

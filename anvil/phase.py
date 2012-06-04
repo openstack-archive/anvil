@@ -50,14 +50,24 @@ class PhaseRecorder(object):
         phases = set()
         if not sh.isfile(self.fn):
             return phases
-        line_num = 1
-        for line in sh.load_file(self.fn).splitlines():
+        for i, line in enumerate(sh.load_file(self.fn).splitlines()):
             line = line.strip()
             if line:
                 data = json.loads(line)
                 if not isinstance(data, dict):
-                    raise TypeError("Unknown phase entry in %s on line %s" % (self.fn, line_num))
+                    raise TypeError("Unknown phase entry in %s on line %s" % (self.fn, i + 1))
                 if 'name' in data:
                     phases.add(data['name'])
-            line_num += 1
         return phases
+
+
+class NullPhaseRecorder(PhaseRecorder):
+    def __init__(self):
+        PhaseRecorder.__init__(self, None)
+
+    @contextmanager
+    def mark(self, phasename):
+        yield phasename
+
+    def list_phases(self):
+        return set()

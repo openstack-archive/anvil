@@ -14,16 +14,22 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-VERSION = ['2012', '5', '11']
-FINAL = False  # May never be final ;)
+from anvil import component as comp
+from anvil import log as logging
+
+LOG = logging.getLogger(__name__)
 
 
-def canonical_version_string():
-    return '.'.join(VERSION)
+class QpidUninstaller(comp.PkgUninstallComponent):
+    def __init__(self, *args, **kargs):
+        comp.PkgUninstallComponent.__init__(self, *args, **kargs)
 
 
-def version_string():
-    if FINAL:
-        return canonical_version_string()
-    else:
-        return '%s-dev' % (canonical_version_string())
+class QpidInstaller(comp.PkgInstallComponent):
+    def __init__(self, *args, **kargs):
+        comp.PkgInstallComponent.__init__(self, *args, **kargs)
+
+
+class QpidRuntime(comp.EmptyRuntime):
+    def __init__(self, *args, **kargs):
+        comp.EmptyRuntime.__init__(self, *args, **kargs)

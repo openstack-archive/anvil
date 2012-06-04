@@ -15,15 +15,16 @@
 #    under the License.
 
 import abc
+import weakref
+
+from anvil import constants
 
 
 class Runner(object):
     __meta__ = abc.ABCMeta
 
-    def __init__(self, config, component_name, trace_dir):
-        self.cfg = config
-        self.component_name = component_name
-        self.trace_dir = trace_dir
+    def __init__(self, runtime):
+        self.runtime = weakref.proxy(runtime)
 
     def unconfigure(self):
         # Cleans up anything configured by
@@ -42,3 +43,7 @@ class Runner(object):
     def stop(self, app_name):
         # Stops the given app
         pass
+
+    def status(self, app_name):
+        # Attempt to give the status of a app
+        return constants.STATUS_UNKNOWN

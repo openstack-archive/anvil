@@ -17,15 +17,17 @@
 import json
 import re
 import tempfile
+import weakref
 
 from anvil import date
 from anvil import exceptions as excp
 from anvil import log as logging
-from anvil import runner as base
 from anvil import settings
 from anvil import shell as sh
 from anvil import trace as tr
 from anvil import utils
+
+from anvil.runners import base
 
 LOG = logging.getLogger(__name__)
 
@@ -62,13 +64,14 @@ SCREEN_RC = settings.RC_FN_TEMPL % ('screen')
 
 
 class ScreenRunner(base.Runner):
-    def __init__(self, cfg, component_name, trace_dir):
-        base.Runner.__init__(self, cfg, component_name, trace_dir)
+    def __init__(self, runtime):
+        base.Runner.__init__(self, runtime)
+        self.cfg = self.runtime.cfg
         self.socket_dir = sh.joinpths(tempfile.gettempdir(), SCREEN_SOCKET_DIR_NAME)
         self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
 
     def stop(self, app_name):
-        trace_fn = tr.trace_fn(self.trace_dir, SCREEN_TEMPL % (app_name))
+        trace_fn = tr.trace_fn(self.runtime.get_option('trace_dir'), SCREEN_TEMPL % (app_name))
         session_id = self._find_session(app_name, trace_fn)
         self._do_stop(app_name, session_id)
         sh.unlink(trace_fn)
@@ -189,7 +192,7 @@ class ScreenRunner(base.Runner):
                 sh.chmod(d, perm)
 
     def _begin_start(self, name, program, args):
-        run_trace = tr.TraceWriter(tr.trace_fn(self.trace_dir, SCREEN_TEMPL % (name)))
+        run_trace = tr.TraceWriter(tr.trace_fn(self.runtime.get_option('trace_dir'), SCREEN_TEMPL % (name)))
         run_trace.trace(NAME, name)
         run_trace.trace(ARGS, json.dumps(args))
         full_cmd = [program] + list(args)
@@ -219,8 +222,8 @@ class ScreenRunner(base.Runner):
 
 
 class ScreenRcGenerator(object):
-    def __init__(self, sr):
-        self.runner = sr
+    def __init__(self, runner):
+        self.runner = weakref.proxy(runner)
 
     def _generate_help(self, session_name, env_exports):
         lines = list()
