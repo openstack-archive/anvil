@@ -129,9 +129,9 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
             config.set('DEFAULT', 'debug', True)
             config.set('DEFAULT', 'verbose', True)
             config.set('DEFAULT', 'bind_port', params['endpoints']['registry']['port'])
-            config.remove_option('DEFAULT', 'log_file')
             config.set('DEFAULT', 'sql_connection',
                                 dbhelper.fetch_dbdsn(self.cfg, DB_NAME, utf8=True))
+            config.remove_option('DEFAULT', 'log_file')
             config.set('paste_deploy', 'flavor', 'keystone')
             return config.stringify(fn)
         return contents
@@ -166,6 +166,8 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
             config.set('DEFAULT', 'default_store', 'file')
             config.set('DEFAULT', 'filesystem_store_datadir', img_store_dir)
             config.set('DEFAULT', 'bind_port', params['endpoints']['public']['port'])
+            config.set('DEFAULT', 'sql_connection',
+                                dbhelper.fetch_dbdsn(self.cfg, DB_NAME, utf8=True))
             config.remove_option('DEFAULT', 'log_file')
             config.set('paste_deploy', 'flavor', 'keystone')
             LOG.info("Ensuring file system store directory %r exists and is empty." % (img_store_dir))
