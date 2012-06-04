@@ -81,45 +81,48 @@ class ForkRunner(base.Runner):
         with sh.Rooted(True):
             fn_name = FORK_TEMPL % (app_name)
             (pid_file, stderr_fn, stdout_fn) = self._form_file_names(fn_name)
-            trace_fn = tr.trace_fn(trace_dir, fn_name)
-            if sh.isfile(pid_file):
-                pid = self._extract_pid(pid_file)
-                (killed, attempts) = self._stop_pid(pid)
-                # Trash the files if it worked
-                if killed:
-                    LOG.debug("Killed pid %s after %s attempts." % (pid, attempts))
-                    LOG.debug("Removing pid file %s" % (pid_file))
-                    sh.unlink(pid_file)
-                    LOG.debug("Removing stderr file %r" % (stderr_fn))
-                    sh.unlink(stderr_fn)
-                    LOG.debug("Removing stdout file %r" % (stdout_fn))
-                    sh.unlink(stdout_fn)
-                    if sh.isfile(trace_fn):
-                        LOG.debug("Removing %r trace file %r" % (app_name, trace_fn))
-                        sh.unlink(trace_fn)
-                else:
-                    msg = "Could not stop %r after %s attempts" % (app_name, attempts)
-                    raise excp.StopException(msg)
+            pid = self._extract_pid(pid_file)
+            if not pid:
+                msg = "Could not extract a valid pid from %s" % (pid_file)
+                raise excp.StopException(msg)
+            (killed, attempts) = self._stop_pid(pid)
+            # Trash the files if it worked
+            if killed:
+                LOG.debug("Killed pid %s after %s attempts." % (pid, attempts))
+                LOG.debug("Removing pid file %s" % (pid_file))
+                sh.unlink(pid_file)
+                LOG.debug("Removing stderr file %r" % (stderr_fn))
+                sh.unlink(stderr_fn)
+                LOG.debug("Removing stdout file %r" % (stdout_fn))
+                sh.unlink(stdout_fn)
+                trace_fn = tr.trace_fn(trace_dir, fn_name)
+                if sh.isfile(trace_fn):
+                    LOG.debug("Removing %r trace file %r" % (app_name, trace_fn))
+                    sh.unlink(trace_fn)
+            else:
+                msg = "Could not stop %r after %s attempts" % (app_name, attempts)
+                raise excp.StopException(msg)
 
     def _extract_pid(self, filename):
-        return int(sh.load_file(filename).strip())
+        if sh.isfile(pid_file):
+            try:
+                return int(sh.load_file(filename).strip())
+            except ValueError:
+                return None
+        else:
+            return None
 
     def status(self, app_name):
         trace_dir = self.runtime.get_option('trace_dir')
         if not sh.isdir(trace_dir):
-            msg = "No trace directory found from which to check the status of: %s" % (app_name)
-            raise excp.StatusException(msg)
+            return constants.STATUS_UNKNOWN
         fn_name = FORK_TEMPL % (app_name)
         (pid_file, stderr_fn, stdout_fn) = self._form_file_names(fn_name)
-        if sh.isfile(pid_file):
-            pid = self._extract_pid(pid_file)
-            if sh.is_running(pid):
-                return constants.STATUS_STARTED
-            else:
-                return constants.STATUS_UNKNOWN
+        pid = self._extract_pid(pid_file)
+        if pid and sh.is_running(pid):
+            return constants.STATUS_STARTED
         else:
-            msg = "No pid file found at %s to check the status of: %s" % (pid_file, app_name)
-            raise excp.StatusException(msg)
+            return constants.STATUS_UNKNOWN
 
     def _form_file_names(self, file_name):
         trace_dir = self.runtime.get_option('trace_dir')
