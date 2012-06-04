@@ -1,0 +1,50 @@
+---
+components:
+# Order matters here!
+- general
+- db
+- rabbit-mq
+- keystone-client
+- keystone
+- glance
+# Do this after glance is installed to override the old binary
+- glance-client
+- quantum
+- quantum-client
+- nova-client
+- nova
+- no-vnc
+- horizon
+# Super client, so install after other clients
+- openstack-client
+description: Devstack.sh matching component installation + quantum!
+options:
+    no-vnc:
+        # This is the nova component name (we need this to hook into the nova conf...)
+        nova_component: nova
+    nova:
+        # Signal nova we are using no-vnc
+        no-vnc: true
+        # Signal nova we are using quantum
+        quantum: true
+subsystems:
+    glance:
+    - api
+    - reg
+    nova:
+    - api
+    - cauth
+    - cert
+    - cpu
+    - net
+    - sched
+    - vol
+    - xvnc
+    quantum:
+    - openvswitch
+supports:
+- rhel-6
+- ubuntu-oneiric
+- fedora-16
+...
+

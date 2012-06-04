@@ -3,30 +3,27 @@ components:
 # Order matters here!
 - general
 - db
-- rabbit-mq
+- qpid
 - keystone-client
 - keystone
 - glance
 # Do this after glance is installed to override the old binary
 - glance-client
-- quantum
+- nova
 - quantum-client
 - nova-client
-- nova
-- no-vnc
-- horizon
-description: Devstack.sh matching component installation + quantum!
+# Super client, so install after other clients
+- openstack-client
+description: Devstack.sh matching component installation + qpid!
 options:
     no-vnc:
         # This is the nova component name (we need this to hook into the nova conf...)
-        nova: nova
+        nova_component: nova
     nova:
-    - no-vnc
-    # Signal nova we are using quantum
-    - quantum
-    keystone:
-    # Signal keystone we are using quantum
-    - quantum
+        # Signal nova we are using no-vnc
+        no-vnc: true
+        # Which message queue type should go here (rabbit or qpid)
+        mq: qpid
 subsystems:
     glance:
     - api
@@ -40,11 +37,8 @@ subsystems:
     - sched
     - vol
     - xvnc
-    quantum:
-    - openvswitch
 supports:
+# Todo add in others
 - rhel-6
-- ubuntu-oneiric
-- fedora-16
 ...
 
