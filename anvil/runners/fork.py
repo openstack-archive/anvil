@@ -71,7 +71,7 @@ class ForkRunner(base.Runner):
                 raise excp.StopException(msg)
 
     def _extract_pid(self, filename):
-        if sh.isfile(pid_file):
+        if sh.isfile(filename):
             try:
                 return int(sh.load_file(filename).strip())
             except ValueError:
