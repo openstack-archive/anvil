@@ -63,7 +63,7 @@ class PhaseRecorder(object):
 
 class NullPhaseRecorder(PhaseRecorder):
     def __init__(self):
-        PhaseRecorder.__init__(None)
+        PhaseRecorder.__init__(self, None)
 
     @contextmanager
     def mark(self, phasename):
