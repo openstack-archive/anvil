@@ -13,6 +13,7 @@ components:
 - quantum-client
 - nova-client
 - nova
+# Installed after nova since it needs to look for nova configs
 - no-vnc
 - horizon
 # Super client, so install after other clients
@@ -25,6 +26,7 @@ options:
     nova:
         no-vnc: true
         quantum: true
+        mq: rabbit
         db-sync: true
     quantum:
         ovs-bridge-init: true
