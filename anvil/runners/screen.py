@@ -21,11 +21,12 @@ import tempfile
 from anvil import date
 from anvil import exceptions as excp
 from anvil import log as logging
-from anvil import runner as base
 from anvil import settings
 from anvil import shell as sh
 from anvil import trace as tr
 from anvil import utils
+
+from anvil.runners import runner
 
 LOG = logging.getLogger(__name__)
 
@@ -61,9 +62,9 @@ SCREEN_SOCKET_PERM = 0700
 SCREEN_RC = settings.RC_FN_TEMPL % ('screen')
 
 
-class ScreenRunner(base.Runner):
-    def __init__(self, cfg, component_name, trace_dir):
-        base.Runner.__init__(self, cfg, component_name, trace_dir)
+class ScreenRunner(runner.Runner):
+    def __init__(self, runtime):
+        base.Runner.__init__(self, runtime)
         self.socket_dir = sh.joinpths(tempfile.gettempdir(), SCREEN_SOCKET_DIR_NAME)
         self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
 

@@ -19,10 +19,11 @@ import json
 from anvil import constants
 from anvil import date
 from anvil import log as logging
-from anvil import runner as base
 from anvil import shell as sh
 from anvil import trace as tr
 from anvil import utils
+
+from anvil.runners import runner
 
 LOG = logging.getLogger(__name__)
 
@@ -46,9 +47,9 @@ UPSTART_CONF_TMPL = 'upstart.conf'
 EMIT_BASE_CMD = ["/sbin/initctl", "emit"]
 
 
-class UpstartRunner(base.Runner):
-    def __init__(self, cfg, component_name, trace_dir):
-        base.Runner.__init__(self, cfg, component_name, trace_dir)
+class UpstartRunner(runner.Runner):
+    def __init__(self, runtime):
+        base.Runner.__init__(self, runtime)
         self.events = set()
 
     def stop(self, app_name):

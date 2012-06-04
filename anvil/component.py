@@ -522,15 +522,14 @@ class ProgramRuntime(ComponentBase):
         # (e.g. upstart starting)
         # config files are in place....
         run_type = self._fetch_run_type()
-        cls = importer.import_entry_point(run_type)
-        instance = cls(self.cfg, self.name, self.get_option('trace_dir'))
+        configurer = importer.import_entry_point(run_type)(self)
         for app_info in apps_to_start:
             app_name = app_info["name"]
             app_pth = app_info.get("path", app_name)
             app_dir = app_info.get("app_dir", self.get_option('app_dir'))
             # Configure it with the given settings
             LOG.debug("Configuring runner %r for program %r", run_type, app_name)
-            cfg_am = instance.configure(app_name,
+            cfg_am = configurer.configure(app_name,
                      app_pth=app_pth, app_dir=app_dir,
                      opts=utils.param_replace_list(self._get_app_options(app_name), self._get_param_map(app_name)))
             LOG.debug("Configured %s files for runner for program %r", cfg_am, app_name)
@@ -545,8 +544,7 @@ class ProgramRuntime(ComponentBase):
             return am_started
         # Select how we are going to start it
         run_type = self._fetch_run_type()
-        cls = importer.import_entry_point(run_type)
-        instance = cls(self.cfg, self.name, self.get_option('trace_dir'))
+        starter = importer.import_entry_point(run_type)(self)
         for app_info in apps_to_start:
             app_name = app_info["name"]
             app_pth = app_info.get("path", app_name)
@@ -555,8 +553,7 @@ class ProgramRuntime(ComponentBase):
             program_opts = utils.param_replace_list(self._get_app_options(app_name), self._get_param_map(app_name))
             # Start it with the given settings
             LOG.debug("Starting %r using %r", app_name, run_type)
-            details_fn = instance.start(app_name,
-                app_pth=app_pth, app_dir=app_dir, opts=program_opts)
+            details_fn = starter.start(app_name, app_pth=app_pth, app_dir=app_dir, opts=program_opts)
             LOG.info("Started %s details are in %s", colorizer.quote(app_name), colorizer.quote(details_fn))
             # This trace is used to locate details about what to stop
             self.tracewriter.app_started(app_name, details_fn, run_type)
@@ -578,7 +575,7 @@ class ProgramRuntime(ComponentBase):
             if inv_cls in investigators:
                 investigator = investigators[inv_cls]
             else:
-                investigator = inv_cls(self.cfg, self.name, self.get_option('trace_dir'))
+                investigator = inv_cls(self)
                 investigators[inv_cls] = investigator
             to_investigate.append((app_name, investigator))
         return to_investigate

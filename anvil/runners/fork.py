@@ -24,9 +24,10 @@ import time
 
 from anvil import exceptions as excp
 from anvil import log as logging
-from anvil import runner as base
 from anvil import shell as sh
 from anvil import trace as tr
+
+from anvil.runners import runner
 
 LOG = logging.getLogger(__name__)
 
@@ -46,9 +47,9 @@ NAME = "NAME"
 FORK_TEMPL = "%s.fork"
 
 
-class ForkRunner(base.Runner):
-    def __init__(self, cfg, component_name, trace_dir):
-        base.Runner.__init__(self, cfg, component_name, trace_dir)
+class ForkRunner(runner.Runner):
+    def __init__(self, runtime):
+        base.Runner.__init__(self, runtime)
 
     def _stop_pid(self, pid):
         killed = False
@@ -96,6 +97,9 @@ class ForkRunner(base.Runner):
                 else:
                     msg = "Could not stop %r after %s attempts" % (app_name, attempts)
                     raise excp.StopException(msg)
+
+    def status(self, app_name):
+        
 
     def _form_file_names(self, file_name):
         return (sh.joinpths(self.trace_dir, file_name + ".pid"),
