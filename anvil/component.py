@@ -558,7 +558,7 @@ class ProgramRuntime(ComponentBase):
             # This trace is used to locate details about what to stop
             self.tracewriter.app_started(app_name, details_fn, run_type)
             if app_info.get('sleep_time'):
-                LOG.info("%s requested a %s sleep time, please wait...", app_name, app_info.get('sleep_time'))
+                LOG.info("%s requested a %s second sleep time, please wait...", colorizer.quote(app_name), app_info.get('sleep_time'))
                 sh.sleep(app_info.get('sleep_time'))
             am_started += 1
         return am_started
