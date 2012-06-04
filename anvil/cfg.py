@@ -16,9 +16,8 @@
 
 # This one doesn't keep comments but does seem to work better
 import ConfigParser
-from ConfigParser import (DuplicateSectionError, NoSectionError, NoOptionError)
-                  
-import collections
+from ConfigParser import (NoSectionError, NoOptionError)
+
 import io
 import re
 
