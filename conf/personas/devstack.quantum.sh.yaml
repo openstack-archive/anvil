@@ -25,6 +25,7 @@ options:
     nova:
         no-vnc: true
         quantum: true
+        mq: rabbit
         db-sync: true
     quantum:
         ovs-bridge-init: true
