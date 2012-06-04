@@ -12,6 +12,9 @@ components:
 - nova
 - quantum-client
 - nova-client
+# Installed after nova since it needs to look for nova configs
+- no-vnc
+- horizon
 # Super client, so install after other clients
 - openstack-client
 description: Devstack.sh matching component installation.
