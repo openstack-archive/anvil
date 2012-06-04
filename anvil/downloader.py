@@ -15,7 +15,8 @@
 #    under the License.
 
 
-import urllib
+import contextlib
+import urllib2
 
 import progressbar
 
@@ -69,7 +70,7 @@ class UrlLibDownloader(Downloader):
     def __init__(self, uri, store_where, **kargs):
         Downloader.__init__(self, uri, store_where)
         self.quiet = kargs.get('quiet', False)
-        self.p_bar = None
+        self.timeout = kargs.get('timeout', 5)
 
     def _make_bar(self, size):
         widgets = [
@@ -80,24 +81,30 @@ class UrlLibDownloader(Downloader):
         ]
         return progressbar.ProgressBar(widgets=widgets, maxval=size)
 
-    def _report(self, blocks, block_size, total_size):
-        if self.quiet:
-            return
-        byte_down = blocks * block_size
-        if not self.p_bar:
-            self.p_bar = self._make_bar(total_size)
-            self.p_bar.start()
-        if byte_down > self.p_bar.maxval:
-            # This seems to happen, huh???
-            pass
-        else:
-            self.p_bar.update(byte_down)
-
     def download(self):
-        LOG.info('Downloading using urllib: %s to %s.', colorizer.quote(self.uri), colorizer.quote(self.store_where))
+        LOG.info('Downloading using urllib2: %s to %s.', colorizer.quote(self.uri), colorizer.quote(self.store_where))
+        p_bar = None
+        bytes_read = 0
         try:
-            urllib.urlretrieve(self.uri, self.store_where, self._report)
+            with contextlib.closing(urllib2.urlopen(self.uri, timeout=self.timeout)) as conn:
+                with open(self.store_where, 'wb') as ofh:
+                    c_len = conn.headers.get('content-length')
+                    if c_len is not None:
+                        try:
+                            p_bar = self._make_bar(int(c_len))
+                            p_bar.start()
+                        except ValueError:
+                            pass
+                    while True:
+                        data = conn.read(1024)
+                        if data == '':
+                            break
+                        else:
+                            ofh.write(data)
+                            bytes_read += len(data)
+                            if p_bar:
+                                p_bar.update(bytes_read)
+            return bytes_read
         finally:
-            if self.p_bar:
-                self.p_bar.finish()
-                self.p_bar = None
+            if p_bar:
+                p_bar.finish()
