@@ -66,9 +66,6 @@ BIN_DIR = 'bin'
 
 class GlanceMixin(object):
 
-    def known_options(self):
-        return set(['no-load-images'])
-
     def known_subsystems(self):
         return SUB_TO_APP.keys()
 
@@ -211,9 +208,7 @@ class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
         self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
-        self.do_upload = True
-        if 'no-load-images' in self.options:
-            self.do_upload = False
+        self.do_upload = self.get_option('load-images')
 
     def _get_apps_to_start(self):
         apps = list()

@@ -57,10 +57,6 @@ APP_OPTIONS = {
 
 
 class QuantumMixin(object):
-
-    def known_options(self):
-        return set(['no-ovs-db-init', 'no-ovs-bridge-init'])
-
     def known_subsystems(self):
         return set(['openvswitch'])
 
@@ -113,22 +109,22 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
             return comp.PkgInstallComponent._config_adjust(self, contents, config_fn)
 
     def _setup_bridge(self):
-        if not self.q_vswitch_agent or \
-                'no-ovs-bridge-init' in self.options:
+        if not self.q_vswitch_agent or not self.get_option('ovs-bridge-init'):
             return
-        bridge = self.cfg.getdefaulted("quantum", "ovs_bridge", 'br-int')
-        LOG.info("Fixing up ovs bridge named: %s", colorizer.quote(bridge))
-        external_id = self.cfg.getdefaulted("quantum", 'ovs_bridge_external_name', bridge)
-        params = dict()
-        params['OVS_BRIDGE'] = bridge
-        params['OVS_EXTERNAL_ID'] = external_id
-        cmds = list()
-        for cmd_templ in OVS_BRIDGE_CMDS:
-            cmds.append({
-                'cmd': cmd_templ,
-                'run_as_root': True,
-            })
-        utils.execute_template(*cmds, params=params)
+        else:
+            bridge = self.cfg.getdefaulted("quantum", "ovs_bridge", 'br-int')
+            LOG.info("Fixing up ovs bridge named: %s", colorizer.quote(bridge))
+            external_id = self.cfg.getdefaulted("quantum", 'ovs_bridge_external_name', bridge)
+            params = dict()
+            params['OVS_BRIDGE'] = bridge
+            params['OVS_EXTERNAL_ID'] = external_id
+            cmds = list()
+            for cmd_templ in OVS_BRIDGE_CMDS:
+                cmds.append({
+                    'cmd': cmd_templ,
+                    'run_as_root': True,
+                })
+            utils.execute_template(*cmds, params=params)
 
     def post_install(self):
         comp.PkgInstallComponent.post_install(self)
@@ -136,7 +132,7 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
         self._setup_bridge()
 
     def _setup_db(self):
-        if not self.q_vswitch_service or 'no-ovs-db-init' in self.options:
+        if not self.q_vswitch_service or not self.get_option('ovs-bridge-init'):
             return
         else:
             dbhelper.drop_db(self.cfg, self.distro, DB_NAME)

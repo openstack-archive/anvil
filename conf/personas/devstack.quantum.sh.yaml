@@ -21,12 +21,15 @@ description: Devstack.sh matching component installation + quantum!
 options:
     no-vnc:
         # This is the nova component name (we need this to hook into the nova conf...)
-        nova_component: nova
+        nova-component: nova
     nova:
-        # Signal nova we are using no-vnc
         no-vnc: true
-        # Signal nova we are using quantum
         quantum: true
+        db-sync: true
+    quantum:
+        ovs-bridge-init: true
+    glance:
+        load-images: true
 subsystems:
     glance:
     - api

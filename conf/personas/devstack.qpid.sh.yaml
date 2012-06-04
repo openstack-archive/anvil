@@ -18,12 +18,13 @@ description: Devstack.sh matching component installation + qpid!
 options:
     no-vnc:
         # This is the nova component name (we need this to hook into the nova conf...)
-        nova_component: nova
+        nova-component: nova
     nova:
-        # Signal nova we are using no-vnc
         no-vnc: true
-        # Which message queue type should go here (rabbit or qpid)
         mq: qpid
+        db-sync: true
+    glance:
+        load-images: true
 subsystems:
     glance:
     - api

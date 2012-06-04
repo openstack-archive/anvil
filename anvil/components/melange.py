@@ -146,12 +146,9 @@ class MelangeRuntime(comp.PythonRuntime):
         mp['CFG_FILE'] = sh.joinpths(self.get_option('cfg_dir'), ROOT_CONF_REAL_NAME)
         return mp
 
-    def known_options(self):
-        return set(["create-cidr"])
-
     def post_start(self):
         comp.PythonRuntime.post_start(self)
-        if "create-cidr" in self.options:
+        if self.get_option('create-cidr'):
             LOG.info("Waiting %s seconds so that the melange server can start up before cidr range creation." % (self.wait_time))
             sh.sleep(self.wait_time)
             mp = dict()

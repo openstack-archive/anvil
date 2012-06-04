@@ -266,8 +266,6 @@ class ConfConfigurator(object):
         self.distro = installer.distro
         self.xvnc_enabled = installer.xvnc_enabled
         self.volumes_enabled = installer.volumes_enabled
-        self.novnc_enabled = installer.get_option('no-vnc', False)
-        self.novnc_enabled = 'no-vnc' in installer.options
 
     def _getbool(self, name):
         return self.cfg.getboolean('nova', name)
@@ -460,7 +458,7 @@ class ConfConfigurator(object):
             nova_conf.add('glance_api_servers', glance_api_server)
 
     def _configure_vnc(self, nova_conf):
-        if self.novnc_enabled:
+        if self.installer.get_option('no-vnc'):
             nova_conf.add('novncproxy_base_url', self._getstr('vncproxy_url'))
 
         if self.xvnc_enabled:

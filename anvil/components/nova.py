@@ -126,9 +126,6 @@ CLEANER_DATA_CONF = 'nova-clean.sh'
 
 class NovaMixin(object):
 
-    def known_options(self):
-        return set(['no-vnc', 'mq', 'quantum', 'melange', 'no-db-sync'])
-
     def known_subsystems(self):
         return list(SUBSYSTEMS)
 
@@ -223,7 +220,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
         # Extra actions to do nova setup
-        if 'no-db-sync' not in self.options:
+        if self.get_option('db-sync'):
             self._setup_db()
             self._sync_db()
         self._setup_cleaner()
@@ -356,7 +353,7 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
                 mp['FIXED_NETWORK_SIZE'] = self.cfg.getdefaulted('nova', 'fixed_network_size', '256')
                 mp['FIXED_RANGE'] = self.cfg.getdefaulted('nova', 'fixed_range', '10.0.0.0/24')
                 cmds.extend(FIXED_NET_CMDS)
-            if 'quantum' not in self.options:
+            if not self.get_option('quantum'):
                 if self.cfg.getboolean('nova', 'enable_floating'):
                     # Create a floating network + test floating pool
                     cmds.extend(FLOATING_NET_CMDS)
