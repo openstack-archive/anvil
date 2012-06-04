@@ -218,6 +218,8 @@ class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
                 apps.append({
                     'name': SUB_TO_APP[subsys],
                     'path': sh.joinpths(self.bin_dir, SUB_TO_APP[subsys]),
+                    # This seems needed, to allow for the db syncs to not conflict... (arg)
+                    'sleep_time': 5,
                 })
         return apps
 

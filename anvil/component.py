@@ -558,6 +558,8 @@ class ProgramRuntime(ComponentBase):
             # This trace is used to locate details about what to stop
             self.tracewriter.app_started(app_name, details_fn, run_type)
             am_started += 1
+            if app_info.get('sleep_time'):
+                sh.sleep(app_info.get('sleep_time'))
         return am_started
 
     def _locate_investigators(self, apps_started):
