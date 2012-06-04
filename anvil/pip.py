@@ -38,13 +38,16 @@ class Packager(pack.Packager):
     def _install(self, pip):
         root_cmd = self._get_pip_command()
         name_full = self._make_pip_name(pip['name'], pip.get('version'))
-        LOG.audit("Installing python package %r using pip command %s" % (name_full, root_cmd))
         real_cmd = [root_cmd] + ['install'] + PIP_INSTALL_CMD_OPTS
         options = pip.get('options')
         if options:
+            if not isinstance(options, (list, tuple)):
+                options = [options]
             LOG.debug("Using pip options: %s" % (options))
-            real_cmd += [str(options)]
-        real_cmd += [name_full]
+            for opt in options:
+                real_cmd.append("%s" % (opt))
+        LOG.audit("Installing python package %r using pip command %s" % (name_full, real_cmd))
+        real_cmd.append(name_full)
         sh.execute(*real_cmd, run_as_root=True)
 
     def _remove(self, pip):

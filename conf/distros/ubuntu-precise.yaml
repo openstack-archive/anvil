@@ -215,7 +215,7 @@ components:
             version: 0.1*
         pips:
         -   name: jsonschema
-            version: 0.2
+            version: "0.2"
     glance-client:
         action_classes:
             install: anvil.components.glance_client:GlanceClientInstaller

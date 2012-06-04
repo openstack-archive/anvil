@@ -70,12 +70,10 @@ WARMUP_PWS = [('service_token', 'the service admin token'),
 class SwiftUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, *args, **kargs)
-        self.datadir = sh.joinpths(self.app_dir, self.cfg.getdefaulted('swift', 'data_location', 'data'))
-        self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
-        self.logdir = sh.joinpths(self.datadir, LOG_DIR)
 
     def pre_uninstall(self):
-        sh.umount(sh.joinpths(self.datadir, DEVICE_PATH))
+        data_dir = sh.joinpths(self.get_option('app_dir'), self.cfg.getdefaulted('swift', 'data_location', 'data'))
+        sh.umount(sh.joinpths(data_dir, DEVICE_PATH))
         sh.replace_in(RSYNC_CONF_LOC, RSYNC_ON_OFF_RE, 'RSYNC_ENABLE=false', True)
 
     def post_uninstall(self):
@@ -86,14 +84,6 @@ class SwiftUninstaller(comp.PythonUninstallComponent):
 class SwiftInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
-        self.datadir = sh.joinpths(self.app_dir, self.cfg.getdefaulted('swift', 'data_location', 'data'))
-        self.logdir = sh.joinpths(self.datadir, LOG_DIR)
-        self.startmain_file = sh.joinpths(self.bin_dir, SWIFT_STARTMAIN)
-        self.makerings_file = sh.joinpths(self.bin_dir, SWIFT_MAKERINGS)
-        self.fs_dev = sh.joinpths(self.datadir, DEVICE_PATH)
-        self.fs_image = sh.joinpths(self.datadir, SWIFT_IMG)
-        self.auth_server = AUTH_SERVICE
 
     def _get_download_locations(self):
         places = list()
@@ -111,15 +101,18 @@ class SwiftInstaller(comp.PythonInstallComponent):
             self.cfg.get_password(pw_key, prompt)
 
     def _get_param_map(self, config_fn):
+        data_dir = sh.joinpths(self.get_option('app_dir'), self.cfg.getdefaulted('swift', 'data_location', 'data'))
+        cfg_dir = self.get_option('cfg_dir')
+        log_dir = sh.joinpths(data_dir, LOG_DIR)
         return {
             'USER': self.cfg.getdefaulted('swift', 'swift_user', sh.getuser()),
             'GROUP': self.cfg.getdefaulted('swift', 'swift_group', sh.getgroupname()),
-            'SWIFT_DATA_LOCATION': self.datadir,
-            'SWIFT_CONFIG_LOCATION': self.cfg_dir,
+            'SWIFT_DATA_LOCATION': data_dir,
+            'SWIFT_CONFIG_LOCATION': cfg_dir,
             'SERVICE_TOKEN': self.cfg.get('passwords', 'service_token'),
-            'AUTH_SERVER': self.auth_server,
+            'AUTH_SERVER': AUTH_SERVICE,
             'SWIFT_HASH': self.cfg.get('passwords', 'swift_hash'),
-            'SWIFT_LOGDIR': self.logdir,
+            'SWIFT_LOGDIR': log_dir,
             'SWIFT_PARTITION_POWER_SIZE': self.cfg.getdefaulted('swift', 'partition_power_size', '9'),
             # Note: leave these alone, will be adjusted later
             'NODE_PATH': '%NODE_PATH%',
@@ -128,24 +121,28 @@ class SwiftInstaller(comp.PythonInstallComponent):
         }
 
     def _create_data_location(self):
+        data_dir = sh.joinpths(self.get_option('app_dir'), self.cfg.getdefaulted('swift', 'data_location', 'data'))
+        fs_image = sh.joinpths(data_dir, SWIFT_IMG)
+        fs_dev = sh.joinpths(data_dir, DEVICE_PATH)
         loop_size = self.cfg.get('swift', 'loopback_disk_size')
         if not loop_size:
             loop_size = DEF_LOOP_SIZE
         else:
             loop_size = utils.to_bytes(loop_size)
-        sh.create_loopback_file(fname=self.fs_image,
+        sh.create_loopback_file(fname=fs_image,
                                 size=loop_size,
                                 fs_type=FS_TYPE)
-        self.tracewriter.file_touched(self.fs_image)
-        sh.mount_loopback_file(self.fs_image, self.fs_dev, FS_TYPE)
-        sh.chown_r(self.fs_dev, sh.geteuid(), sh.getegid())
+        self.tracewriter.file_touched(fs_image)
+        sh.mount_loopback_file(fs_image, fs_dev, FS_TYPE)
+        sh.chown_r(fs_dev, sh.geteuid(), sh.getegid())
 
     def _create_node_config(self, node_number, port):
+        data_dir = sh.joinpths(self.get_option('app_dir'), self.cfg.getdefaulted('swift', 'data_location', 'data'))
         for t in ['object', 'container', 'account']:
-            src_fn = sh.joinpths(self.cfg_dir, '%s-server.conf' % t)
-            tgt_fn = sh.joinpths(self.cfg_dir, '%s-server/%d.conf' % (t, node_number))
+            src_fn = sh.joinpths(self.get_option('cfg_dir'), '%s-server.conf' % t)
+            tgt_fn = sh.joinpths(self.get_option('cfg_dir'), '%s-server/%d.conf' % (t, node_number))
             adjustments = {
-                           '%NODE_PATH%': sh.joinpths(self.datadir, str(node_number)),
+                           '%NODE_PATH%': sh.joinpths(data_dir, str(node_number)),
                            '%BIND_PORT%': str(port),
                            '%LOG_FACILITY%': str(2 + node_number),
                           }
@@ -154,38 +151,46 @@ class SwiftInstaller(comp.PythonInstallComponent):
 
     def _delete_templates(self):
         for t in ['object', 'container', 'account']:
-            sh.unlink(sh.joinpths(self.cfg_dir, '%s-server.conf' % t))
+            sh.unlink(sh.joinpths(self.get_option('cfg_dir'), '%s-server.conf' % t))
 
     def _create_nodes(self):
+        data_dir = sh.joinpths(self.get_option('app_dir'), self.cfg.getdefaulted('swift', 'data_location', 'data'))
+        fs_dev = sh.joinpths(data_dir, DEVICE_PATH)
         for i in range(1, 5):
-            self.tracewriter.dirs_made(sh.mkdirslist(sh.joinpths(self.fs_dev, '%d/node' % i)))
-            link_tgt = sh.joinpths(self.datadir, str(i))
-            sh.symlink(sh.joinpths(self.fs_dev, str(i)), link_tgt)
+            self.tracewriter.dirs_made(sh.mkdirslist(sh.joinpths(fs_dev, '%d/node' % i)))
+            link_tgt = sh.joinpths(data_dir, str(i))
+            sh.symlink(sh.joinpths(fs_dev, str(i)), link_tgt)
             self.tracewriter.symlink_made(link_tgt)
             start_port = (6010 + (i - 1) * 5)
             self._create_node_config(i, start_port)
         self._delete_templates()
 
     def _turn_on_rsync(self):
-        sh.symlink(sh.joinpths(self.cfg_dir, RSYNC_CONF), RSYNCD_CONF_LOC)
+        sh.symlink(sh.joinpths(self.get_option('cfg_dir'), RSYNC_CONF), RSYNCD_CONF_LOC)
         self.tracewriter.symlink_made(RSYNCD_CONF_LOC)
         sh.replace_in(RSYNC_CONF_LOC, RSYNC_ON_OFF_RE, 'RSYNC_ENABLE=true', True)
 
     def _create_log_dirs(self):
-        self.tracewriter.dirs_made(*sh.mkdirslist(sh.joinpths(self.logdir, 'hourly')))
-        sh.symlink(sh.joinpths(self.cfg_dir, SYSLOG_CONF), SWIFT_RSYNC_LOC)
+        data_dir = sh.joinpths(self.get_option('app_dir'), self.cfg.getdefaulted('swift', 'data_location', 'data'))
+        cfg_dir = self.get_option('cfg_dir')
+        log_dir = sh.joinpths(data_dir, LOG_DIR)
+        self.tracewriter.dirs_made(*sh.mkdirslist(sh.joinpths(log_dir, 'hourly')))
+        sh.symlink(sh.joinpths(cfg_dir, SYSLOG_CONF), SWIFT_RSYNC_LOC)
         self.tracewriter.symlink_made(SWIFT_RSYNC_LOC)
 
     def _setup_binaries(self):
-        sh.move(sh.joinpths(self.cfg_dir, SWIFT_MAKERINGS), self.makerings_file)
-        sh.chmod(self.makerings_file, 0777)
-        self.tracewriter.file_touched(self.makerings_file)
-        sh.move(sh.joinpths(self.cfg_dir, SWIFT_STARTMAIN), self.startmain_file)
-        sh.chmod(self.startmain_file, 0777)
-        self.tracewriter.file_touched(self.startmain_file)
+        startmain_file = sh.joinpths(self.get_option('app_dir'), BIN_DIR, SWIFT_STARTMAIN)
+        makerings_file = sh.joinpths(self.get_option('app_dir'), BIN_DIR, SWIFT_MAKERINGS)
+        sh.move(sh.joinpths(self.get_option('cfg_dir'), SWIFT_MAKERINGS), makerings_file)
+        sh.chmod(makerings_file, 0777)
+        self.tracewriter.file_touched(makerings_file)
+        sh.move(sh.joinpths(self.get_option('cfg_dir'), SWIFT_STARTMAIN), startmain_file)
+        sh.chmod(startmain_file, 0777)
+        self.tracewriter.file_touched(startmain_file)
 
     def _make_rings(self):
-        sh.execute(self.makerings_file, run_as_root=True)
+        makerings_file = sh.joinpths(self.get_option('app_dir'), BIN_DIR, SWIFT_MAKERINGS)
+        sh.execute(makerings_file, run_as_root=True)
 
     def post_install(self):
         self._create_data_location()
@@ -199,20 +204,20 @@ class SwiftInstaller(comp.PythonInstallComponent):
 class SwiftRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
-        self.datadir = sh.joinpths(self.app_dir, self.cfg.getdefaulted('swift', 'data_location', 'data'))
-        self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
-        self.logdir = sh.joinpths(self.datadir, LOG_DIR)
 
     def start(self):
+        bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
         sh.execute(*RSYSLOG_SERVICE_RESTART, run_as_root=True)
         sh.execute(*RSYNC_SERVICE_RESTART, run_as_root=True)
-        swift_start_cmd = [sh.joinpths(self.bin_dir, SWIFT_INIT)] + ['all', 'start']
+        swift_start_cmd = [sh.joinpths(bin_dir, SWIFT_INIT)] + ['all', 'start']
         sh.execute(*swift_start_cmd, run_as_root=True)
 
     def stop(self):
-        swift_stop_cmd = [sh.joinpths(self.bin_dir, SWIFT_INIT)] + ['all', 'stop']
+        bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
+        swift_stop_cmd = [sh.joinpths(bin_dir, SWIFT_INIT)] + ['all', 'stop']
         sh.execute(*swift_stop_cmd, run_as_root=True)
 
     def restart(self):
-        swift_restart_cmd = [sh.joinpths(self.bin_dir, SWIFT_INIT)] + ['all', 'restart']
+        bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
+        swift_restart_cmd = [sh.joinpths(bin_dir, SWIFT_INIT)] + ['all', 'restart']
         sh.execute(*swift_restart_cmd, run_as_root=True)

@@ -68,7 +68,7 @@ class NoVNCRuntime(NoVNCMixin, comp.ProgramRuntime):
         for app_name in APP_OPTIONS.keys():
             apps.append({
                 'name': app_name,
-                'path': sh.joinpths(self.app_dir, UTIL_DIR, app_name),
+                'path': sh.joinpths(self.get_option('app_dir'), UTIL_DIR, app_name),
             })
         return apps
 
@@ -79,7 +79,7 @@ class NoVNCRuntime(NoVNCMixin, comp.ProgramRuntime):
             if nova_name in self.instances:
                 # FIXME: Have to reach into the nova conf (puke)
                 nova_runtime = self.instances[nova_name]
-                root_params['NOVA_CONF'] = sh.joinpths(nova_runtime.cfg_dir, nova.API_CONF)
+                root_params['NOVA_CONF'] = sh.joinpths(nova_runtime.get_option('cfg_dir'), nova.API_CONF)
         return root_params
 
     def _get_app_options(self, app):

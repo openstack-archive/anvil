@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from anvil import constants
 from anvil import log as logging
 from anvil import settings
 from anvil import shell as sh
@@ -77,7 +78,7 @@ def get_config_locations(start_locations=None):
     if start_locations:
         locs.extend(start_locations)
     locs.append(settings.CONFIG_LOCATION)
-    locs.append(sh.joinpths("/etc", settings.PROG_NAME, settings.CONFIG_NAME))
+    locs.append(sh.joinpths("/etc", constants.PROG_NAME, settings.CONFIG_NAME))
     return locs
 
 

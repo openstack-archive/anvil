@@ -10,10 +10,8 @@ components:
 # Do this after glance is installed to override the old binary
 - glance-client
 - nova
-- no-vnc
 - quantum-client
 - nova-client
-- horizon
 # Super client, so install after other clients
 - openstack-client
 description: Devstack.sh matching component installation.
@@ -22,8 +20,10 @@ options:
         # This is the nova component name (we need this to hook into the nova conf...)
         nova_component: nova
     nova:
-    # We are enabling no-vnc (or trying to)
-    - no-vnc
+        # Signal nova we are using no-vnc
+        no-vnc: true
+        # Which message queue type should go here (rabbit or qpid)
+        mq: rabbit
 subsystems:
     glance:
     - api

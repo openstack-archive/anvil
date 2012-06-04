@@ -21,7 +21,6 @@ import yaml
 from anvil import cfg
 from anvil import colorizer
 from anvil import component as comp
-from anvil import date
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
@@ -83,7 +82,7 @@ class KeystoneUninstaller(comp.PythonUninstallComponent):
 class KeystoneInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
+        self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
 
     def _get_download_locations(self):
         places = list()
@@ -98,13 +97,10 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         self._setup_db()
         self._sync_db()
 
-    def known_options(self):
-        return set(['swift', 'quantum'])
-
     def _sync_db(self):
         LOG.info("Syncing keystone to database: %s", colorizer.quote(DB_NAME))
         mp = self._get_param_map(None)
-        cmds = [{'cmd': SYNC_DB_CMD}]
+        cmds = [{'cmd': SYNC_DB_CMD, 'run_as_root': True}]
         utils.execute_template(*cmds, cwd=self.bin_dir, params=mp)
 
     def _get_config_files(self):
@@ -120,7 +116,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             real_fn = LOGGING_SOURCE_FN
         elif config_fn == ROOT_CONF:
             real_fn = ROOT_SOURCE_FN
-        fn = sh.joinpths(self.app_dir, 'etc', real_fn)
+        fn = sh.joinpths(self.get_option('app_dir'), 'etc', real_fn)
         return (fn, sh.load_file(fn))
 
     def _config_adjust_logging(self, contents, fn):
@@ -175,17 +171,18 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         # params with actual values
         mp = comp.PythonInstallComponent._get_param_map(self, config_fn)
         mp['BIN_DIR'] = self.bin_dir
-        mp['CONFIG_FILE'] = sh.joinpths(self.cfg_dir, ROOT_CONF)
+        mp['CONFIG_FILE'] = sh.joinpths(self.get_option('cfg_dir'), ROOT_CONF)
         return mp
 
 
 class KeystoneRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
-        self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
+        self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
         self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
-        self.init_fn = sh.joinpths(self.trace_dir, INIT_WHAT_HAPPENED)
-        self.init_what = yaml.load(utils.load_template(self.component_name, INIT_WHAT_FN)[1])
+        self.init_fn = sh.joinpths(self.get_option('trace_dir'), INIT_WHAT_HAPPENED)
+        (fn, contents) = utils.load_template(self.name, INIT_WHAT_FN)
+        self.init_what = yaml.load(contents)
 
     def post_start(self):
         if not sh.isfile(self.init_fn):

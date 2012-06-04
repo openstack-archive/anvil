@@ -224,7 +224,7 @@ components:
         -   name: iso8601
             version: 0.1.4
         -   name: jsonschema
-            version: 0.2
+            version: "0.2"
     glance-client:
         action_classes:
             install: anvil.components.glance_client:GlanceClientInstaller
@@ -306,7 +306,7 @@ components:
         -   name: django-nose-selenium
             version: 0.7.3
         -   name: pycrypto
-            version: 2.3
+            version: "2.6"
         -   name: python-cloudfiles
             version: 1.7.9.3
     keystone:

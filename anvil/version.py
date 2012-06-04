@@ -26,4 +26,4 @@ def version_string():
     if FINAL:
         return canonical_version_string()
     else:
-        return '%s-dev' % (canonical_version_string(),)
+        return '%s-dev' % (canonical_version_string())

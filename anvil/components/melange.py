@@ -65,7 +65,7 @@ class MelangeUninstaller(comp.PythonUninstallComponent):
 class MelangeInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
+        self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
 
     def _get_download_locations(self):
         places = list()
@@ -90,7 +90,7 @@ class MelangeInstaller(comp.PythonInstallComponent):
 
     def _get_param_map(self, config_fn):
         mp = comp.PythonInstallComponent._get_param_map(self, config_fn)
-        mp['CFG_FILE'] = sh.joinpths(self.cfg_dir, ROOT_CONF_REAL_NAME)
+        mp['CFG_FILE'] = sh.joinpths(self.get_option('cfg_dir'), ROOT_CONF_REAL_NAME)
         mp['BIN_DIR'] = self.bin_dir
         return mp
 
@@ -111,14 +111,14 @@ class MelangeInstaller(comp.PythonInstallComponent):
     def _get_source_config(self, config_fn):
         if config_fn == ROOT_CONF:
             # FIXME, maybe we shouldn't be sucking this from the checkout??
-            fn = sh.joinpths(self.app_dir, 'etc', 'melange', config_fn)
+            fn = sh.joinpths(self.get_option('app_dir'), 'etc', 'melange', config_fn)
             contents = sh.load_file(fn)
             return (fn, contents)
         return comp.PythonInstallComponent._get_source_config(self, config_fn)
 
     def _get_target_config_name(self, config_fn):
         if config_fn == ROOT_CONF:
-            return sh.joinpths(self.cfg_dir, ROOT_CONF_REAL_NAME)
+            return sh.joinpths(self.get_option('cfg_dir'), ROOT_CONF_REAL_NAME)
         else:
             return comp.PythonInstallComponent._get_target_config_name(self, config_fn)
 
@@ -126,7 +126,7 @@ class MelangeInstaller(comp.PythonInstallComponent):
 class MelangeRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
-        self.bin_dir = sh.joinpths(self.app_dir, BIN_DIR)
+        self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
         self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
 
     def _get_apps_to_start(self):
@@ -143,7 +143,7 @@ class MelangeRuntime(comp.PythonRuntime):
 
     def _get_param_map(self, app_name):
         mp = comp.PythonRuntime._get_param_map(self, app_name)
-        mp['CFG_FILE'] = sh.joinpths(self.cfg_dir, ROOT_CONF_REAL_NAME)
+        mp['CFG_FILE'] = sh.joinpths(self.get_option('cfg_dir'), ROOT_CONF_REAL_NAME)
         return mp
 
     def known_options(self):

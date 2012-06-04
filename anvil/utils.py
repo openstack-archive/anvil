@@ -31,6 +31,7 @@ import netifaces
 import progressbar
 import yaml
 
+from anvil import constants
 from anvil import colorizer
 from anvil import date
 from anvil import exceptions as excp
@@ -48,7 +49,7 @@ EXT_COMPONENT = re.compile(r"^\s*([\w-]+)(?:\((.*)\))?\s*$")
 MONTY_PYTHON_TEXT_RE = re.compile("([a-z0-9A-Z\?!.,'\"]+)")
 DEF_IP = "127.0.0.1"
 IP_LOOKER = '8.8.8.8'
-DEF_IP_VERSION = settings.IPV4
+DEF_IP_VERSION = constants.IPV4
 STAR_VERSION = 0
 
 # Thx cowsay
@@ -326,11 +327,11 @@ def get_interfaces():
         ip6 = interface_addresses.get(netifaces.AF_INET6)
         if ip6:
             # Just take the first
-            interface_info[settings.IPV6] = ip6[0]
+            interface_info[constants.IPV6] = ip6[0]
         ip4 = interface_addresses.get(netifaces.AF_INET)
         if ip4:
             # Just take the first
-            interface_info[settings.IPV4] = ip4[0]
+            interface_info[constants.IPV4] = ip4[0]
         # Note: there are others but this is good for now..
         interfaces[intfc] = interface_info
     return interfaces
@@ -388,8 +389,8 @@ def prettify_yaml(obj):
                     default_flow_style=False,
                     )
     return formatted
-    
-    
+
+
 def param_replace_deep(root, replacements, ignore_missing=False):
     if isinstance(root, list):
         new_list = []
@@ -726,7 +727,7 @@ def goodbye(worked):
     print(msg)
 
 
-def welcome(prog_name=settings.PROG_NAME.upper(), version_text=version.version_string()):
+def welcome(prog_name=constants.PROG_NAME.upper(), version_text=version.version_string()):
     lower = "| %s |" % (version_text)
     welcome_header = _get_welcome_stack()
     max_line_len = len(max(welcome_header.splitlines(), key=len))

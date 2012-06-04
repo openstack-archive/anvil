@@ -18,7 +18,6 @@ from anvil import colorizer
 from anvil import log
 
 from anvil.actions import base
-from anvil.actions import install
 
 from anvil.actions.base import PhaseFunctors
 
@@ -43,7 +42,7 @@ class UninstallAction(base.Action):
     def _run(self, persona, component_order, instances):
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Unconfiguring %s.', colorizer.quote(i.component_name)),
+                start=lambda i: LOG.info('Unconfiguring %s.', colorizer.quote(i.name)),
                 run=lambda i: i.unconfigure(),
                 end=None,
             ),
@@ -63,7 +62,7 @@ class UninstallAction(base.Action):
             )
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Uninstalling %s.', colorizer.quote(i.component_name)),
+                start=lambda i: LOG.info('Uninstalling %s.', colorizer.quote(i.name)),
                 run=lambda i: i.uninstall(),
                 end=None,
             ),
@@ -73,7 +72,7 @@ class UninstallAction(base.Action):
             )
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Post-uninstalling %s.', colorizer.quote(i.component_name)),
+                start=lambda i: LOG.info('Post-uninstalling %s.', colorizer.quote(i.name)),
                 run=lambda i: i.post_uninstall(),
                 end=None,
             ),

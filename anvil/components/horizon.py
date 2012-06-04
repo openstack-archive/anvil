@@ -16,10 +16,10 @@
 
 from anvil import colorizer
 from anvil import component as comp
+from anvil import constants
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
-from anvil import utils
 
 from anvil.helpers import db as dbhelper
 
@@ -68,9 +68,7 @@ class HorizonUninstaller(comp.PythonUninstallComponent):
 class HorizonInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.horizon_dir = sh.joinpths(self.app_dir, ROOT_HORIZON)
-        self.dash_dir = sh.joinpths(self.app_dir, ROOT_DASH)
-        self.log_dir = sh.joinpths(self.component_dir, LOGS_DIR)
+        self.log_dir = sh.joinpths(self.get_option('component_dir'), LOGS_DIR)
 
     def _get_download_locations(self):
         places = list()
@@ -111,7 +109,8 @@ class HorizonInstaller(comp.PythonInstallComponent):
     def _get_target_config_name(self, config_name):
         if config_name == HORIZON_PY_CONF:
             # FIXME don't write to checked out locations...
-            return sh.joinpths(self.dash_dir, *HORIZON_PY_CONF_TGT)
+            dash_dir = sh.joinpths(self.get_option('app_dir'), ROOT_DASH)
+            return sh.joinpths(dash_dir, *HORIZON_PY_CONF_TGT)
         else:
             return comp.PythonInstallComponent._get_target_config_name(self, config_name)
 
@@ -120,13 +119,13 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def _setup_blackhole(self):
         # Create an empty directory that apache uses as docroot
-        self.tracewriter.dirs_made(*sh.mkdirslist(sh.joinpths(self.app_dir, BLACKHOLE_DIR)))
+        self.tracewriter.dirs_made(*sh.mkdirslist(sh.joinpths(self.get_option('app_dir'), BLACKHOLE_DIR)))
 
     def _sync_db(self):
         # Initialize the horizon database (it stores sessions and notices shown to users).
         # The user system is external (keystone).
         LOG.info("Syncing horizon to database: %s", colorizer.quote(DB_NAME))
-        sh.execute(*DB_SYNC_CMD, cwd=self.app_dir)
+        sh.execute(*DB_SYNC_CMD, cwd=self.get_option('app_dir'))
 
     def _setup_db(self):
         dbhelper.drop_db(self.cfg, self.distro, DB_NAME)
@@ -136,7 +135,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         comp.PythonInstallComponent.pre_install(self)
         self.tracewriter.dirs_made(*sh.mkdirslist(self.log_dir))
         if self.cfg.getboolean('horizon', 'eliminate_pip_gits'):
-            fn = sh.joinpths(self.app_dir, 'tools', 'pip-requires')
+            fn = sh.joinpths(self.get_option('app_dir'), 'tools', 'pip-requires')
             if sh.isfile(fn):
                 new_lines = []
                 for line in sh.load_file(fn).splitlines():
@@ -154,7 +153,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
         self._setup_db()
         self._sync_db()
         self._setup_blackhole()
-        # Anything to fixup after it was installed??
         self._config_fixups()
 
     def _get_apache_user_group(self):
@@ -172,9 +170,9 @@ class HorizonInstaller(comp.PythonInstallComponent):
             mp['USER'] = user
             mp['ACCESS_LOG'] = sh.joinpths(self.log_dir, APACHE_ACCESS_LOG_FN)
             mp['ERROR_LOG'] = sh.joinpths(self.log_dir, APACHE_ERROR_LOG_FN)
-            mp['HORIZON_DIR'] = self.app_dir
+            mp['HORIZON_DIR'] = self.get_option('app_dir')
             mp['HORIZON_PORT'] = self.cfg.getdefaulted('horizon', 'port', APACHE_DEF_PORT)
-            mp['VPN_DIR'] = sh.joinpths(self.app_dir, "vpn")
+            mp['VPN_DIR'] = sh.joinpths(self.get_option('app_dir'), "vpn")
         else:
             mp['OPENSTACK_HOST'] = self.cfg.get('host', 'ip')
             mp['DB_NAME'] = DB_NAME
@@ -190,57 +188,35 @@ class HorizonRuntime(comp.EmptyRuntime):
         comp.EmptyRuntime.__init__(self, *args, **kargs)
 
     def start(self):
-        curr_status = self.status()
-        if curr_status == comp.STATUS_STARTED:
-            return self.restart()
-        else:
-            cmds = [{
-                    'cmd': self.distro.get_command('apache', 'start'),
-                    'run_as_root': True,
-                    }]
-            utils.execute_template(*cmds,
-                    check_exit_code=True,
-                    params={})
+        if self._status() != constants.STATUS_STARTED:
+            start_cmd = self.distro.get_command('apache', 'start')
+            sh.execute(*start_cmd, run_as_root=True, check_exit_code=True)
             return 1
+        else:
+            return 0
 
     def restart(self):
-        cmds = [{
-            'cmd': self.distro.get_command('apache', 'restart'),
-            'run_as_root': True,
-            }]
-        utils.execute_template(*cmds,
-                                check_exit_code=True,
-                                params={})
+        restart_cmd = self.distro.get_command('apache', 'restart')
+        sh.execute(*restart_cmd, run_as_root=True, check_exit_code=True)
         return 1
 
     def stop(self):
-        curr_status = self.status()
-        if curr_status != comp.STATUS_STOPPED:
-            cmds = [{
-                    'cmd': self.distro.get_command('apache', 'stop'),
-                    'run_as_root': True,
-                    }]
-            utils.execute_template(*cmds,
-                                    check_exit_code=True)
+        if self._status() != constants.STATUS_STOPPED:
+            stop_cmd = self.distro.get_command('apache', 'stop')
+            sh.execute(*stop_cmd, run_as_root=True, check_exit_code=True)
             return 1
-        return 0
+        else:
+            return 0
 
-    def status(self):
-        cmds = [{
-                'cmd': self.distro.get_command('apache', 'status'),
-                'run_as_root': True,
-                }]
-        run_result = utils.execute_template(*cmds,
-                                             check_exit_code=False)
-        if not run_result or not run_result[0]:
-            return comp.STATUS_UNKNOWN
-        (sysout, stderr) = run_result[0]
+    def _status(self):
+        status_cmd = self.distro.get_command('apache', 'status')
+        (sysout, stderr) = sh.execute(*status_cmd, run_as_root=True, check_exit_code=False)
         combined = (str(sysout) + str(stderr)).lower()
         if combined.find("is running") != -1:
-            return comp.STATUS_STARTED
+            return constants.STATUS_STARTED
         elif combined.find("not running") != -1 or \
              combined.find("stopped") != -1 or \
              combined.find('unrecognized') != -1:
-            return comp.STATUS_STOPPED
+            return constants.STATUS_STOPPED
         else:
-            return comp.STATUS_UNKNOWN
+            return constants.STATUS_UNKNOWN

@@ -16,10 +16,10 @@
 
 import json
 
+from anvil import constants
 from anvil import date
 from anvil import log as logging
 from anvil import runner as base
-from anvil import settings
 from anvil import shell as sh
 from anvil import trace as tr
 from anvil import utils
@@ -83,7 +83,7 @@ class UpstartRunner(base.Runner):
         params['COMPONENT_START_EVENT'] = self.component_name + START_EVENT_SUFFIX
         params['COMPONENT_STOP_EVENT'] = self.component_name + STOP_EVENT_SUFFIX
         params['PROGRAM_NAME'] = app_pth
-        params['AUTHOR'] = settings.PROG_NAME
+        params['AUTHOR'] = constants.PROG_NAME
         if program_args:
             escaped_args = list()
             for opt in program_args:

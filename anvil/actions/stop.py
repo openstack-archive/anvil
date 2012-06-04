@@ -42,7 +42,7 @@ class StopAction(base.Action):
     def _run(self, persona, component_order, instances):
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Stopping %s.', colorizer.quote(i.component_name)),
+                start=lambda i: LOG.info('Stopping %s.', colorizer.quote(i.name)),
                 run=lambda i: i.stop(),
                 end=lambda i, result: LOG.info("Stopped %s items.", colorizer.quote(result)),
             ),

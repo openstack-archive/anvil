@@ -14,7 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
 from anvil import colorizer
 from anvil import env_rc
 from anvil import log
@@ -54,7 +53,7 @@ class InstallAction(base.Action):
         self._write_rc_file()
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Downloading %s.', colorizer.quote(i.component_name)),
+                start=lambda i: LOG.info('Downloading %s.', colorizer.quote(i.name)),
                 run=lambda i: i.download(),
                 end=lambda i, result: LOG.info("Performed %s downloads.", result),
             ),
@@ -64,7 +63,7 @@ class InstallAction(base.Action):
             )
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Configuring %s.', colorizer.quote(i.component_name)),
+                start=lambda i: LOG.info('Configuring %s.', colorizer.quote(i.name)),
                 run=lambda i: i.configure(),
                 end=lambda i, result: LOG.info("Configured %s items.", colorizer.quote(result)),
             ),
@@ -84,19 +83,19 @@ class InstallAction(base.Action):
             )
 
         def install_start(instance):
-            subsystems = set(list(instance.desired_subsystems))
+            subsystems = set(list(instance.subsystems))
             if subsystems:
                 utils.log_iterable(subsystems, logger=LOG,
-                    header='Installing %s using subsystems' % colorizer.quote(instance.component_name))
+                    header='Installing %s using subsystems' % colorizer.quote(instance.name))
             else:
-                LOG.info("Installing %s.", colorizer.quote(instance.component_name))
+                LOG.info("Installing %s.", colorizer.quote(instance.name))
 
         self._run_phase(
             PhaseFunctors(
                 start=install_start,
                 run=lambda i: i.install(),
                 end=(lambda i, result: LOG.info("Finished install of %s items - check %s for information on what was done.",
-                        colorizer.quote(i.component_name), colorizer.quote(result))),
+                        colorizer.quote(i.name), colorizer.quote(result))),
             ),
             component_order,
             instances,
@@ -104,7 +103,7 @@ class InstallAction(base.Action):
             )
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Post-installing %s.', colorizer.quote(i.component_name)),
+                start=lambda i: LOG.info('Post-installing %s.', colorizer.quote(i.name)),
                 run=lambda i: i.post_install(),
                 end=None
             ),
