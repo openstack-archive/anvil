@@ -14,13 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import errno
 import json
-import os
-import resource
-import signal
-import sys
-import time
 
 from anvil import constants
 from anvil import exceptions as excp
@@ -32,12 +26,6 @@ from anvil.runners import base
 
 LOG = logging.getLogger(__name__)
 
-# Maximum for the number of available file descriptors (when not found)
-MAXFD = 2048
-
-# How many times we try to kill and how much sleep (seconds) between each try
-MAX_KILL_TRY = 5
-SLEEP_TIME = 1
 
 # Trace constants
 PID_FN = "PID_FN"
@@ -52,27 +40,6 @@ class ForkRunner(base.Runner):
     def __init__(self, runtime):
         base.Runner.__init__(self, runtime)
 
-    def _stop_pid(self, pid):
-        killed = False
-        attempts = 0
-        for _ in range(0, MAX_KILL_TRY):
-            try:
-                LOG.debug("Attempting to kill pid %s" % (pid))
-                attempts += 1
-                os.kill(pid, signal.SIGKILL)
-                LOG.debug("Sleeping for %s seconds before next attempt to "\
-                             "kill pid %s" % (SLEEP_TIME, pid))
-                time.sleep(SLEEP_TIME)
-            except OSError, e:
-                ec = e.errno
-                if ec == errno.ESRCH:
-                    killed = True
-                    break
-                else:
-                    LOG.debug("Sleeping for %s seconds before next attempt to kill pid %s" % (SLEEP_TIME, pid))
-                    time.sleep(SLEEP_TIME)
-        return (killed, attempts)
-
     def stop(self, app_name):
         trace_dir = self.runtime.get_option('trace_dir')
         if not sh.isdir(trace_dir):
@@ -85,7 +52,7 @@ class ForkRunner(base.Runner):
             if not pid:
                 msg = "Could not extract a valid pid from %s" % (pid_file)
                 raise excp.StopException(msg)
-            (killed, attempts) = self._stop_pid(pid)
+            (killed, attempts) = sh.kill(pid)
             # Trash the files if it worked
             if killed:
                 LOG.debug("Killed pid %s after %s attempts." % (pid, attempts))
@@ -116,8 +83,7 @@ class ForkRunner(base.Runner):
         trace_dir = self.runtime.get_option('trace_dir')
         if not sh.isdir(trace_dir):
             return constants.STATUS_UNKNOWN
-        fn_name = FORK_TEMPL % (app_name)
-        (pid_file, stderr_fn, stdout_fn) = self._form_file_names(fn_name)
+        (pid_file, stderr_fn, stdout_fn) = self._form_file_names(FORK_TEMPL % (app_name))
         pid = self._extract_pid(pid_file)
         if pid and sh.is_running(pid):
             return constants.STATUS_STARTED
@@ -129,56 +95,6 @@ class ForkRunner(base.Runner):
         return (sh.joinpths(trace_dir, file_name + ".pid"),
                 sh.joinpths(trace_dir, file_name + ".stderr"),
                 sh.joinpths(trace_dir, file_name + ".stdout"))
-
-    def _fork_start(self, program, app_dir, pid_fn, stdout_fn, stderr_fn, *args):
-        # First child, not the real program
-        pid = os.fork()
-        if pid == 0:
-            # Upon return the calling process shall be the session
-            # leader of this new session,
-            # shall be the process group leader of a new process group,
-            # and shall have no controlling terminal.
-            os.setsid()
-            pid = os.fork()
-            # Fork to get daemon out - this time under init control
-            # and now fully detached (no shell possible)
-            if pid == 0:
-                # Move to where application should be
-                if app_dir:
-                    os.chdir(app_dir)
-                # Close other fds (or try)
-                limits = resource.getrlimit(resource.RLIMIT_NOFILE)
-                mkfd = limits[1]
-                if mkfd == resource.RLIM_INFINITY:
-                    mkfd = MAXFD
-                for fd in range(0, mkfd):
-                    try:
-                        os.close(fd)
-                    except OSError:
-                        #not open, thats ok
-                        pass
-                # Now adjust stderr and stdout
-                if stdout_fn:
-                    stdoh = open(stdout_fn, "w")
-                    os.dup2(stdoh.fileno(), sys.stdout.fileno())
-                if stderr_fn:
-                    stdeh = open(stderr_fn, "w")
-                    os.dup2(stdeh.fileno(), sys.stderr.fileno())
-                # Now exec...
-                # Note: The arguments to the child process should
-                # start with the name of the command being run
-                prog_little = os.path.basename(program)
-                actualargs = [prog_little] + list(args)
-                os.execlp(program, *actualargs)
-            else:
-                # Write out the child pid
-                contents = str(pid) + os.linesep
-                sh.write_file(pid_fn, contents, quiet=True)
-                # Not exit or sys.exit, this is recommended
-                # since it will do the right cleanups that we want
-                # not calling any atexit functions, which would
-                # be bad right now
-                os._exit(0)
 
     def _do_trace(self, fn, kvs):
         trace_dir = self.runtime.get_option('trace_dir')
@@ -198,7 +114,7 @@ class ForkRunner(base.Runner):
         trace_fn = self._do_trace(fn_name, trace_info)
         LOG.debug("Forking %r by running command %r with args (%s)" % (app_name, app_pth, " ".join(args)))
         with sh.Rooted(True):
-            self._fork_start(app_pth, app_wkdir, pid_fn, stdout_fn, stderr_fn, *args)
+            sh.fork(app_pth, app_wkdir, pid_fn, stdout_fn, stderr_fn, *args)
         return trace_fn
 
     def start(self, app_name, app_pth, app_dir, opts):

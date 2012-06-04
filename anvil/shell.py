@@ -20,8 +20,11 @@ import getpass
 import grp
 import os
 import pwd
+import resource
 import shutil
+import signal
 import subprocess
+import sys
 import time
 
 from anvil import env
@@ -355,7 +358,84 @@ def _array_begins_with(haystack, needle):
     return True
 
 
+def kill(pid, max_try=4, wait_time=1, sig=signal.SIGKILL):
+    if not is_running(pid) or DRYRUN_MODE:
+        return (True, 0)
+    killed = False
+    attempts = 0
+    for i in range(0, max_try):
+        try:
+            LOG.debug("Attempting to kill pid %s" % (pid))
+            attempts += 1
+            os.kill(pid, sig)
+            LOG.debug("Sleeping for %s seconds before next attempt to kill pid %s" % (wait_time, pid))
+            sleep(wait_time)
+        except OSError as e:
+            if e.errno == errno.ESRCH:
+                killed = True
+                break
+            else:
+                LOG.debug("Sleeping for %s seconds before next attempt to kill pid %s" % (wait_time, pid))
+                sleep(wait_time)
+    return (killed, attempts)
+
+
+def fork(program, app_dir, pid_fn, stdout_fn, stderr_fn, *args):
+    if DRYRUN_MODE:
+        return
+    # First child, not the real program
+    pid = os.fork()
+    if pid == 0:
+        # Upon return the calling process shall be the session
+        # leader of this new session,
+        # shall be the process group leader of a new process group,
+        # and shall have no controlling terminal.
+        os.setsid()
+        pid = os.fork()
+        # Fork to get daemon out - this time under init control
+        # and now fully detached (no shell possible)
+        if pid == 0:
+            # Move to where application should be
+            if app_dir:
+                os.chdir(app_dir)
+            # Close other fds (or try)
+            (soft, hard) = resource.getrlimit(resource.RLIMIT_NOFILE)
+            mkfd = hard
+            if mkfd == resource.RLIM_INFINITY:
+                mkfd = 2048  # Is this defined anywhere??
+            for fd in range(0, mkfd):
+                try:
+                    os.close(fd)
+                except OSError:
+                    # Not open, thats ok
+                    pass
+            # Now adjust stderr and stdout
+            if stdout_fn:
+                stdoh = open(stdout_fn, "w")
+                os.dup2(stdoh.fileno(), sys.stdout.fileno())
+            if stderr_fn:
+                stdeh = open(stderr_fn, "w")
+                os.dup2(stdeh.fileno(), sys.stderr.fileno())
+            # Now exec...
+            # Note: The arguments to the child process should
+            # start with the name of the command being run
+            prog_little = os.path.basename(program)
+            actualargs = [prog_little] + list(args)
+            os.execlp(program, *actualargs)
+        else:
+            # Write out the child pid
+            contents = "%s\n" % (pid)
+            write_file(pid_fn, contents, quiet=True)
+            # Not exit or sys.exit, this is recommended
+            # since it will do the right cleanups that we want
+            # not calling any atexit functions, which would
+            # be bad right now
+            os._exit(0)
+
+
 def is_running(pid):
+    if DRYRUN_MODE:
+        return True
     # Check proc
     if exists("/proc/%s" % (pid)):
         return True
