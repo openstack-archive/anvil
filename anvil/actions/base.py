@@ -118,7 +118,7 @@ class Action(object):
             cls_kvs = {}
             cls_kvs['runner'] = self
             cls_kvs['siblings'] = self._convert_siblings(siblings)
-            cls_kvs['subsystems'] = self._merge_subsystems(opts.pop('subsystems'), p_subsystems.get(c))
+            cls_kvs['subsystems'] = self._merge_subsystems(opts.pop('subsystems', None), p_subsystems.get(c))
             cls_kvs['instances'] = instances
             cls_kvs['name'] = c
             # Can't override the above
