@@ -18,7 +18,6 @@ from anvil import colorizer
 from anvil import component as comp
 from anvil import constants
 from anvil import exceptions as excp
-from anvil import importer
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
@@ -51,11 +50,10 @@ class DBUninstaller(comp.PkgUninstallComponent):
 
     def __init__(self, *args, **kargs):
         comp.PkgUninstallComponent.__init__(self, *args, **kargs)
-        runtime_cls_name = self.siblings.get('running')
-        if not runtime_cls_name:
+        runtime_cls = self.siblings.get('running')
+        if not runtime_cls:
             self.runtime = DBRuntime(*args, **kargs)
         else:
-            runtime_cls = importer.import_entry_point(runtime_cls_name)
             self.runtime = runtime_cls(*args, **kargs)
 
     def warm_configs(self):
@@ -92,11 +90,10 @@ class DBInstaller(comp.PkgInstallComponent):
 
     def __init__(self, *args, **kargs):
         comp.PkgInstallComponent.__init__(self, *args, **kargs)
-        runtime_cls_name = self.siblings.get('running')
-        if not runtime_cls_name:
+        runtime_cls = self.siblings.get('running')
+        if not runtime_cls:
             self.runtime = DBRuntime(*args, **kargs)
         else:
-            runtime_cls = importer.import_entry_point(runtime_cls_name)
             self.runtime = runtime_cls(*args, **kargs)
 
     def _get_param_map(self, config_fn):

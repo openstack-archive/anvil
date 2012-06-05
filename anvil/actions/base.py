@@ -19,6 +19,7 @@ import collections
 
 from anvil import colorizer
 from anvil import exceptions as excp
+from anvil import importer
 from anvil import log as logging
 from anvil import phase
 from anvil import shell as sh
@@ -75,6 +76,32 @@ class Action(object):
             'trace_dir': trace_dir,
         }
 
+    def _merge_options(self, name, base_opts, component_opts, persona_opts):
+        joined_opts = dict()
+        joined_opts.update(self.get_component_dirs(name))
+        if base_opts:
+            joined_opts.update(base_opts)
+        if component_opts:
+            joined_opts.update(component_opts)
+        if persona_opts:
+            joined_opts.update(persona_opts)
+        return joined_opts
+
+    def _merge_subsystems(self, component_subsys, desired_subsys):
+        joined_subsys = {}
+        if not desired_subsys or not component_subsys:
+            return joined_subsys
+        for subsys in desired_subsys:
+            if subsys in component_subsys:
+                joined_subsys[subsys] = component_subsys[subsys]
+        return joined_subsys
+
+    def _convert_siblings(self, siblings):
+        mp = {}
+        for (action, cls_name) in siblings.items():
+            mp[action] = importer.import_entry_point(cls_name)
+        return mp
+
     def _construct_instances(self, persona):
         """
         Create component objects for each component in the persona.
@@ -82,42 +109,24 @@ class Action(object):
         p_subsystems = persona.wanted_subsystems or {}
         p_opts = persona.component_options or {}
         instances = {}
+        base_options = {
+            'keep_old': self.keep_old,
+        }
         for c in persona.wanted_components:
             ((cls, opts), siblings) = self.distro.extract_component(c, self.get_lookup_name())
             LOG.debug("Constructing class %s" % (cls))
             cls_kvs = {}
             cls_kvs['runner'] = self
-            cls_kvs['siblings'] = siblings
-            # Merge subsystems info with wanted subsystems
-            sub_systems = {}
-            if opts.get('subsystems'):
-                sub_systems.update(opts.get('subsystems'))
-                del opts['subsystems']
-            desired_subs = p_subsystems.get(c) or []
-            merged_sub_systems = {}
-            for d in desired_subs:
-                if d in sub_systems:
-                    merged_sub_systems[d] = sub_systems[d]
-                else:
-                    merged_sub_systems[d] = {}
-            cls_kvs['subsystems'] = merged_sub_systems
+            cls_kvs['siblings'] = self._convert_siblings(siblings)
+            cls_kvs['subsystems'] = self._merge_subsystems(opts.pop('subsystems'), p_subsystems.get(c))
             cls_kvs['instances'] = instances
             cls_kvs['name'] = c
-            # Merge options with keep old
-            options = {}
-            options['keep_old'] = self.keep_old
-            options.update(self.get_component_dirs(c))
-            merge_options = p_opts.get(c) or {}
-            options.update(merge_options)
-            # The above is not overrideable... (except for options key)
+            # Can't override the above
+            component_opts = {}
             for (k, v) in opts.items():
                 if k not in cls_kvs:
-                    cls_kvs[k] = v
-                elif k == 'options':
-                    options.update(v)
-                else:
-                    LOG.warn("You can not override component constructor variable named %s.", colorizer.quote(k))
-            cls_kvs['options'] = options
+                    component_opts[k] = v
+            cls_kvs['options'] = self._merge_options(c, base_options, component_opts, p_opts.get(c))
             LOG.debug("Construction of %r params are %s", c, cls_kvs)
             instances[c] = cls(**cls_kvs)
         return instances

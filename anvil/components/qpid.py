@@ -33,3 +33,5 @@ class QpidInstaller(comp.PkgInstallComponent):
 class QpidRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
         comp.EmptyRuntime.__init__(self, *args, **kargs)
+
+    

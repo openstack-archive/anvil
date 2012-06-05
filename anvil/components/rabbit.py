@@ -19,7 +19,6 @@ from tempfile import TemporaryFile
 from anvil import colorizer
 from anvil import component as comp
 from anvil import constants
-from anvil import importer
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
@@ -41,11 +40,10 @@ PW_USER_PROMPT = rhelper.PW_USER_PROMPT
 class RabbitUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PkgUninstallComponent.__init__(self, *args, **kargs)
-        runtime_cls_name = self.siblings.get('running')
-        if not runtime_cls_name:
+        runtime_cls = self.siblings.get('running')
+        if not runtime_cls:
             self.runtime = RabbitRuntime(*args, **kargs)
         else:
-            runtime_cls = importer.import_entry_point(runtime_cls_name)
             self.runtime = runtime_cls(*args, **kargs)
 
     def pre_uninstall(self):
@@ -62,11 +60,10 @@ class RabbitUninstaller(comp.PkgUninstallComponent):
 class RabbitInstaller(comp.PkgInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PkgInstallComponent.__init__(self, *args, **kargs)
-        runtime_cls_name = self.siblings.get('running')
-        if not runtime_cls_name:
+        runtime_cls = self.siblings.get('running')
+        if not runtime_cls:
             self.runtime = RabbitRuntime(*args, **kargs)
         else:
-            runtime_cls = importer.import_entry_point(runtime_cls_name)
             self.runtime = runtime_cls(*args, **kargs)
 
     def warm_configs(self):
