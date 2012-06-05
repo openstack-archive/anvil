@@ -376,6 +376,8 @@ def setup_logging(vb, format='%(levelname)s: @%(name)s : %(message)s'):
         root_logger.setLevel(logging.DEBUG)
         g_logger = logging.getLogger("glanceclient")
         g_logger.setLevel(logging.DEBUG)
+        k_logger = logging.getLogger("keystoneclient")
+        k_logger.setLevel(logging.DEBUG)
 
 
 def password(prompt):
