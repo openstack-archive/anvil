@@ -103,10 +103,13 @@ def execute(*cmd, **kwargs):
     run_as_root = kwargs.pop('run_as_root', False)
     shell = kwargs.pop('shell', False)
 
+    # Ensure all string args
     execute_cmd = list()
     for c in cmd:
         execute_cmd.append(str(c))
 
+    # From the docs it seems a shell command must be a string??
+    # TODO: this might not really be needed?
     str_cmd = " ".join(execute_cmd)
     if shell:
         execute_cmd = str_cmd.strip()

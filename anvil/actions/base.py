@@ -94,6 +94,8 @@ class Action(object):
         for subsys in desired_subsys:
             if subsys in component_subsys:
                 joined_subsys[subsys] = component_subsys[subsys]
+            else:
+                joined_subsys[subsys] = {}
         return joined_subsys
 
     def _convert_siblings(self, siblings):
