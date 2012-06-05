@@ -50,13 +50,17 @@ commands:
     # under this directory where its configuration files will be connected to there
     # actual location.
     base_link_dir: "/etc/"
+    qpid:
+        status: service qpidd status
+        start: service qpidd start
+        restart: service qpidd restart
+        stop: service qpidd stop
     rabbit-mq:
         change_password: rabbitmqctl change_password guest
         restart: service rabbitmq-server restart
         start: service rabbitmq-server start
         status: service rabbitmq-server status
         stop: service rabbitmq-server stop                 
-        redirect-outs: true
 components:
     db:
         action_classes:
