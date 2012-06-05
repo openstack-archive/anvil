@@ -250,6 +250,7 @@ def isuseable(path, options=os.W_OK | os.R_OK | os.X_OK):
 
 def pipe_in_out(in_fh, out_fh, chunk_size=1024, chunk_cb=None):
     bytes_piped = 0
+    LOG.debug("Transferring the contents of %s to %s in chunks of size %s.", in_fh, out_fh, chunk_size)
     while True:
         data = in_fh.read(chunk_size)
         if data == '':
