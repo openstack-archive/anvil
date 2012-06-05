@@ -100,15 +100,9 @@ class Unpacker(object):
 
     def _unpack_tar_member(self, tarhandle, member, output_location):
         LOG.info("Extracting %s to %s.", colorizer.quote(member.name), colorizer.quote(output_location))
-        bytes_written = 0
         with contextlib.closing(tarhandle.extractfile(member)) as mfh:
             with open(output_location, "wb") as ofh:
-                blob = mfh.read(8192)
-                while blob != '':
-                    ofh.write(blob)
-                    bytes_written += len(blob)
-                    blob = mfh.read(8192)
-        return bytes_written
+                return sh.pipe_in_out(mfh, ofh)
 
     def _unpack_tar(self, file_name, file_location, tmp_dir):
         (root_name, _) = os.path.splitext(file_name)
@@ -268,7 +262,7 @@ class Image(object):
             raise IOError("Can not determine file name from url: %r" % (self.url))
         with utils.tempdir() as tdir:
             fetch_fn = sh.joinpths(tdir, url_fn)
-            down.UrlLibDownloader(self.url, fetch_fn).download()
+            bytes_down = down.UrlLibDownloader(self.url, fetch_fn).download()
             unpack_info = Unpacker().unpack(url_fn, fetch_fn, tdir)
             tgt_image_name = self._generate_img_name(url_fn)
             img_id = self._register(tgt_image_name, unpack_info)

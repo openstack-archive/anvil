@@ -16,6 +16,7 @@
 
 
 import contextlib
+import functools
 import urllib2
 
 import progressbar
@@ -84,27 +85,23 @@ class UrlLibDownloader(Downloader):
     def download(self):
         LOG.info('Downloading using urllib2: %s to %s.', colorizer.quote(self.uri), colorizer.quote(self.store_where))
         p_bar = None
-        bytes_read = 0
+
+        def update_bar(progress_bar, bytes_down):
+            if progress_bar:
+                progress_bar.update(bytes_down)
+
         try:
             with contextlib.closing(urllib2.urlopen(self.uri, timeout=self.timeout)) as conn:
+                c_len = conn.headers.get('content-length')
+                if c_len is not None:
+                    try:
+                        p_bar = self._make_bar(int(c_len))
+                        p_bar.start()
+                    except ValueError:
+                        pass
                 with open(self.store_where, 'wb') as ofh:
-                    c_len = conn.headers.get('content-length')
-                    if c_len is not None:
-                        try:
-                            p_bar = self._make_bar(int(c_len))
-                            p_bar.start()
-                        except ValueError:
-                            pass
-                    while True:
-                        data = conn.read(1024)
-                        if data == '':
-                            break
-                        else:
-                            ofh.write(data)
-                            bytes_read += len(data)
-                            if p_bar:
-                                p_bar.update(bytes_read)
-            return bytes_read
+                    return sh.pipe_in_out(conn, ofh,
+                            chunk_cb=functools.partial(update_bar, p_bar))
         finally:
             if p_bar:
                 p_bar.finish()

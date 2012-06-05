@@ -248,6 +248,20 @@ def isuseable(path, options=os.W_OK | os.R_OK | os.X_OK):
     return os.access(path, options)
 
 
+def pipe_in_out(in_fh, out_fh, chunk_size=1024, chunk_cb=None):
+    bytes_piped = 0
+    while True:
+        data = in_fh.read(chunk_size)
+        if data == '':
+            break
+        else:
+            out_fh.write(data)
+            bytes_piped += len(data)
+            if chunk_cb:
+                chunk_cb(bytes_piped)
+    return bytes_piped
+
+
 def shellquote(text):
     # TODO since there doesn't seem to be a standard lib that actually works use this way...
     do_adjust = False
