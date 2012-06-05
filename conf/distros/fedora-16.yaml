@@ -56,7 +56,6 @@ commands:
         start: service rabbitmq-server start
         status: service rabbitmq-server status
         stop: service rabbitmq-server stop
-        redirect-outs: true
 components:
     db:
         action_classes:

@@ -19,10 +19,8 @@ from tempfile import TemporaryFile
 from anvil import colorizer
 from anvil import component as comp
 from anvil import constants
-from anvil import importer
 from anvil import log as logging
 from anvil import shell as sh
-from anvil import utils
 
 from anvil.helpers import rabbit as rhelper
 
@@ -41,11 +39,10 @@ PW_USER_PROMPT = rhelper.PW_USER_PROMPT
 class RabbitUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PkgUninstallComponent.__init__(self, *args, **kargs)
-        runtime_cls_name = self.siblings.get('running')
-        if not runtime_cls_name:
+        runtime_cls = self.siblings.get('running')
+        if not runtime_cls:
             self.runtime = RabbitRuntime(*args, **kargs)
         else:
-            runtime_cls = importer.import_entry_point(runtime_cls_name)
             self.runtime = runtime_cls(*args, **kargs)
 
     def pre_uninstall(self):
@@ -62,11 +59,10 @@ class RabbitUninstaller(comp.PkgUninstallComponent):
 class RabbitInstaller(comp.PkgInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PkgInstallComponent.__init__(self, *args, **kargs)
-        runtime_cls_name = self.siblings.get('running')
-        if not runtime_cls_name:
+        runtime_cls = self.siblings.get('running')
+        if not runtime_cls:
             self.runtime = RabbitRuntime(*args, **kargs)
         else:
-            runtime_cls = importer.import_entry_point(runtime_cls_name)
             self.runtime = runtime_cls(*args, **kargs)
 
     def warm_configs(self):
@@ -91,7 +87,6 @@ class RabbitRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
         comp.EmptyRuntime.__init__(self, *args, **kargs)
         self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
-        self.redir_out = utils.make_bool(self.distro.get_command_config('rabbit-mq', 'redirect-outs'))
 
     def start(self):
         if self._status() != constants.STATUS_STARTED:
@@ -124,14 +119,10 @@ class RabbitRuntime(comp.EmptyRuntime):
         # See: https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
         #
         # RHEL seems to have this bug also...
-        if self.redir_out:
-            with TemporaryFile() as f:
-                return sh.execute(*cmd, run_as_root=True,
-                            stdout_fh=f, stderr_fh=f,
-                            check_exit_code=check_exit)
-        else:
+        with TemporaryFile() as f:
             return sh.execute(*cmd, run_as_root=True,
-                                check_exit_code=check_exit)
+                        stdout_fh=f, stderr_fh=f,
+                        check_exit_code=check_exit)
 
     def restart(self):
         LOG.info("Restarting rabbit-mq.")

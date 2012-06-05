@@ -109,7 +109,6 @@ class PkgInstallComponent(ComponentBase):
     def __init__(self, *args, **kargs):
         ComponentBase.__init__(self, *args, **kargs)
         self.tracewriter = tr.TraceWriter(self._get_trace_files()['install'], break_if_there=False)
-        self.packages = kargs.get('packages', list())
         self.packager_factory = packager.PackagerFactory(self.distro, self.distro.get_default_package_manager_cls())
 
     def _get_download_locations(self):
@@ -169,7 +168,7 @@ class PkgInstallComponent(ComponentBase):
         return mp
 
     def _get_packages(self):
-        pkg_list = copy.deepcopy(self.packages)
+        pkg_list = self.get_option('packages') or []
         for name, values in self.subsystems.items():
             if 'packages' in values:
                 LOG.debug("Extending package list with packages for subsystem: %r", name)
@@ -270,7 +269,6 @@ class PkgInstallComponent(ComponentBase):
 class PythonInstallComponent(PkgInstallComponent):
     def __init__(self, *args, **kargs):
         PkgInstallComponent.__init__(self, *args, **kargs)
-        self.pips = kargs.get('pips', list())
         self.pip_factory = packager.PackagerFactory(self.distro, pip.Packager)
 
     def _get_python_directories(self):
@@ -280,7 +278,7 @@ class PythonInstallComponent(PkgInstallComponent):
         return py_dirs
 
     def _get_pips(self):
-        pip_list = copy.deepcopy(self.pips)
+        pip_list = self.get_option('pips') or []
         for name, values in self.subsystems.items():
             if 'pips' in values:
                 LOG.debug("Extending pip list with pips for subsystem: %r" % (name))
