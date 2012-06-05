@@ -14,7 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import copy
 import re
 import weakref
 
@@ -323,18 +322,14 @@ class PythonInstallComponent(PkgInstallComponent):
             for (name, working_dir) in real_dirs.items():
                 self.tracewriter.dirs_made(*sh.mkdirslist(working_dir))
                 self.tracewriter.py_installed(name, working_dir)
-                (stdout, stderr) = sh.execute(*setup_cmd,
-                                               cwd=working_dir,
-                                               run_as_root=True)
-                py_trace_name = "%s.%s" % (name, 'python')
-                py_writer = tr.TraceWriter(tr.trace_fn(self.get_option('trace_dir'),
-                                                       py_trace_name), break_if_there=False)
-                # Format or json encoding isn't really needed here since this is
-                # more just for information output/lookup if desired.
-                py_writer.trace("CMD", " ".join(setup_cmd))
-                py_writer.trace("STDOUT", stdout)
-                py_writer.trace("STDERR", stderr)
-                self.tracewriter.file_touched(py_writer.filename())
+                root_fn = sh.joinpths(self.get_option('trace_dir'), "%s.python.setup" % (name))
+                sh.execute(*setup_cmd,
+                           cwd=working_dir,
+                           run_as_root=True,
+                           stderr_fn='%s.stderr' % (root_fn),
+                           stdout_fn='%s.stdout' % (root_fn),
+                           trace_writer=self.tracewriter
+                           )
 
     def _python_install(self):
         self._install_pips()

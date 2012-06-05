@@ -103,10 +103,13 @@ def execute(*cmd, **kwargs):
     run_as_root = kwargs.pop('run_as_root', False)
     shell = kwargs.pop('shell', False)
 
+    # Ensure all string args
     execute_cmd = list()
     for c in cmd:
         execute_cmd.append(str(c))
 
+    # From the docs it seems a shell command must be a string??
+    # TODO: this might not really be needed?
     str_cmd = " ".join(execute_cmd)
     if shell:
         execute_cmd = str_cmd.strip()
@@ -208,16 +211,28 @@ def execute(*cmd, **kwargs):
         stderr = ''
 
     if (not ignore_exit_code) and (rc not in check_exit_code):
-        raise excp.ProcessExecutionError(exit_code=rc, stdout=stdout, \
+        raise excp.ProcessExecutionError(exit_code=rc, stdout=stdout,
                                          stderr=stderr, cmd=str_cmd)
     else:
         # Log it anyway
         if rc not in check_exit_code:
-            LOG.debug("A failure may of just happened when running command %r [%s] (%s, %s)", \
-                str_cmd, rc, stdout.strip(), stderr.strip())
+            LOG.debug("A failure may of just happened when running command %r [%s] (%s, %s)",
+                       str_cmd, rc, stdout, stderr)
         # Log for debugging figuring stuff out
-        LOG.debug("Received stdout: %s" % (stdout.strip()))
-        LOG.debug("Received stderr: %s" % (stderr.strip()))
+        LOG.debug("Received stdout: %s" % (stdout))
+        LOG.debug("Received stderr: %s" % (stderr))
+        # See if a requested storage place was given for stderr/stdout
+        trace_writer = kwargs.get('trace_writer')
+        stdout_fn = kwargs.get('stdout_fn')
+        if stdout_fn:
+            write_file(stdout_fn, stdout)
+            if trace_writer:
+                trace_writer.file_touched(stdout_fn)
+        stderr_fn = kwargs.get('stderr_fn')
+        if stderr_fn:
+            write_file(stderr_fn, stderr)
+            if trace_writer:
+                trace_writer.file_touched(stderr_fn)
         return (stdout, stderr)
 
 

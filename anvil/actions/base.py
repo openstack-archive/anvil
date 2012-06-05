@@ -89,11 +89,15 @@ class Action(object):
 
     def _merge_subsystems(self, component_subsys, desired_subsys):
         joined_subsys = {}
-        if not desired_subsys or not component_subsys:
+        if not component_subsys:
+            component_subsys = dict()
+        if not desired_subsys:
             return joined_subsys
         for subsys in desired_subsys:
             if subsys in component_subsys:
                 joined_subsys[subsys] = component_subsys[subsys]
+            else:
+                joined_subsys[subsys] = {}
         return joined_subsys
 
     def _convert_siblings(self, siblings):
