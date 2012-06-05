@@ -56,7 +56,7 @@ commands:
         restart: service qpidd restart
         stop: service qpidd stop
     rabbit-mq:
-        change_password: rabbitmqctl change_password guest
+        change_password: rabbitmqctl change_password
         restart: service rabbitmq-server restart
         start: service rabbitmq-server start
         status: service rabbitmq-server status

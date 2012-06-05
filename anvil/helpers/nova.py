@@ -358,6 +358,9 @@ class ConfConfigurator(object):
 
         # Don't always force images to raw
         nova_conf.add('force_raw_images', self._getbool('force_raw_images'))
+        
+        # Add a checksum for images fetched to a hypervisor
+        nova_conf.add('checksum_base_images', self._getbool('checksum_base_images'))
 
         # Vnc settings setup
         self._configure_vnc(nova_conf)
@@ -377,6 +380,7 @@ class ConfConfigurator(object):
         if mq_type == 'rabbit':
             nova_conf.add('rabbit_host', self.cfg.getdefaulted('rabbit', 'rabbit_host', hostip))
             nova_conf.add('rabbit_password', self.cfg.get("passwords", "rabbit"))
+            nova_conf.add('rabbit_userid', self.cfg.get('rabbit', 'rabbit_userid'))
             nova_conf.add('rpc_backend', 'nova.rpc.impl_kombu')
         elif mq_type == 'qpid':
             nova_conf.add('rpc_backend', 'nova.rpc.impl_qpid')
