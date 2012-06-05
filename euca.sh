@@ -21,7 +21,7 @@ EC2_RC="euca.rc"
 
 if [ ! -f $RC_DIR/$CORE_RC ];
 then
-    GEN_CMD="stack -a install"
+    GEN_CMD="anvil -a install"
     echo "File '$RC_DIR/$CORE_RC' needed before running '$ME'"
     echo "Please run './$GEN_CMD' to get this file."
     exit 1

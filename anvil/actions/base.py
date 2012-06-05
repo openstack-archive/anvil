@@ -63,7 +63,7 @@ class Action(object):
         # Duplicate the list to avoid problems if it is updated later.
         return list(components)
 
-    def get_component_dirs(self, component):
+    def _get_component_dirs(self, component):
         component_dir = sh.joinpths(self.root_dir, component)
         trace_dir = sh.joinpths(component_dir, 'traces')
         app_dir = sh.joinpths(component_dir, 'app')
@@ -78,7 +78,7 @@ class Action(object):
 
     def _merge_options(self, name, base_opts, component_opts, persona_opts):
         joined_opts = dict()
-        joined_opts.update(self.get_component_dirs(name))
+        joined_opts.update(self._get_component_dirs(name))
         if base_opts:
             joined_opts.update(base_opts)
         if component_opts:
