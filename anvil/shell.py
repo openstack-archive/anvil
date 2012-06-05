@@ -437,16 +437,21 @@ def is_running(pid):
     if DRYRUN_MODE:
         return True
     # Check proc
-    if exists("/proc/%s" % (pid)):
+    proc_fn = joinpths("/proc", str(pid))
+    if exists(proc_fn):
+        LOG.debug("By looking at %s we determined %s is still running.", proc_fn, pid)
         return True
     # Try a slightly more aggressive way...
+    running = True
     try:
         os.kill(pid, 0)
     except OSError as e:
         if e.errno == errno.EPERM:
-            return True
-        return False
-    return True
+            pass
+        else:
+            running = False
+    LOG.debug("By attempting to signal %s we determined it is %s", pid, {True: 'alive', False: 'dead'}[running])
+    return running
 
 
 def mkdirslist(path):
