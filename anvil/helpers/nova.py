@@ -384,6 +384,10 @@ class ConfConfigurator(object):
             nova_conf.add('rpc_backend', 'nova.rpc.impl_kombu')
         elif mq_type == 'qpid':
             nova_conf.add('rpc_backend', 'nova.rpc.impl_qpid')
+            nova_conf.add('qpid_hostname', self.cfg.getdefaulted('qpid', 'qpid_hostname', hostip))
+            qpid_user = self.cfg.get('qpid', 'qpid_username')
+            if qpid_user:
+                nova_conf.add('qpid_username', qpid_user)
         elif mq_type == 'zeromq':
             # TODO more needed???
             nova_conf.add('rpc_backend', 'nova.rpc.impl_kombu')
