@@ -84,34 +84,37 @@ def tempdir(**kwargs):
         shutil.rmtree(tdir)
 
 
+def pipe_in_out(in_fh, out_fh, chunk_size=1024):
+    bytes_piped = 0
+    while True:
+        data = in_fh.read(chunk_size)
+        if data == '':
+            break
+        else:
+            ofh.write(data)
+            bytes_piped += len(data)
+    return bytes_piped
+
+
 class UrlLibDownloader(object):
 
     def __init__(self, uri, store_where, **kargs):
         self.uri = uri
         self.store_where = store_where
-        self.quiet = kargs.get('quiet', False)
         self.timeout = int(kargs.get('timeout', 5))
 
     def download(self):
         print('Downloading using urllib2: %s to %s.' % (self.uri, self.store_where))
-        bytes_read = 0
         with contextlib.closing(urllib2.urlopen(self.uri, timeout=self.timeout)) as conn:
+            c_len = conn.headers.get('content-length')
+            try:
+                c_len = int(c_len)
+            except ValueError:
+                c_len = None
+            if c_len is not None:
+                print("Downloading %s bytes." % (c_len))
             with open(self.store_where, 'wb') as ofh:
-                c_len = conn.headers.get('content-length')
-                try:
-                    c_len = int(c_len)
-                except ValueError:
-                    c_len = None
-                if c_len is not None:
-                    print("Downloading %s bytes." % (c_len))
-                while True:
-                    data = conn.read(DOWNLOAD_CHUNK_SIZE)
-                    if data == '':
-                        break
-                    else:
-                        ofh.write(data)
-                        bytes_read += len(data)
-        return bytes_read
+                return pipe_in_out(conn, ofh, DOWNLOAD_CHUNK_SIZE)
 
 
 class Unpacker(object):
