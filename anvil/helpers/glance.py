@@ -87,7 +87,7 @@ class Unpacker(object):
         ramdisk_fn = None
         img_fn = None
         utils.log_iterable(files, logger=LOG,
-                                header="Looking at %s files from %s to find the kernel/ramdisk/root images" % (len(files), files_location))
+              header="Looking at %s files from %s to find the kernel/ramdisk/root images" % (len(files), colorizer.quote(files_location)))
 
         def pat_checker(fn, patterns):
             for pat in patterns:
