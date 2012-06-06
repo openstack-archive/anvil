@@ -64,20 +64,32 @@ RAMDISK_CHECKS = [
     re.compile(r'(.*?)ari-tty/image$', re.I),
 ]
 
+# Skip files that match these patterns
+SKIP_CHECKS = [
+    re.compile(r"^[.]", re.I),
+]
+
 
 class Unpacker(object):
 
-    def _get_tar_files(self, arc_fn):
-        LOG.info("Peeking into %s to find its kernel/ramdisk/root images.", colorizer.quote(arc_fn))
+    def _get_tar_file_members(self, arc_fn):
+        LOG.info("Finding what exists in %s.", colorizer.quote(arc_fn))
         files = []
         with contextlib.closing(tarfile.open(arc_fn, 'r')) as tfh:
             for tmemb in tfh.getmembers():
                 if not tmemb.isfile():
                     continue
-                files.append(tmemb.name)
+                fn = tmemb.name
+                files.append(fn)
         return files
-        
-    def _find_pieces(self, files):
+
+    def _pat_checker(self, fn, patterns):
+        for pat in patterns:
+            if pat.match(fn):
+                return True
+        return False
+
+    def _find_pieces(self, files, files_location):
         """
         Match files against the patterns in KERNEL_CHECKS,
         RAMDISK_CHECKS, and ROOT_CHECKS to determine which files
@@ -86,21 +98,17 @@ class Unpacker(object):
         kernel_fn = None
         ramdisk_fn = None
         img_fn = None
-
-        def pat_checker(fn, patterns):
-            for pat in patterns:
-                if pat.match(fn):
-                    return True
-            return False
+        utils.log_iterable(files, logger=LOG,
+              header="Looking at %s files from %s to find the kernel/ramdisk/root images" % (len(files), colorizer.quote(files_location)))
 
         for fn in files:
-            if pat_checker(fn, KERNEL_CHECKS):
+            if self._pat_checker(fn, KERNEL_CHECKS):
                 kernel_fn = fn
                 LOG.debug("Found kernel: %r" % (fn))
-            elif pat_checker(fn, RAMDISK_CHECKS):
+            elif self._pat_checker(fn, RAMDISK_CHECKS):
                 ramdisk_fn = fn
                 LOG.debug("Found ram disk: %r" % (fn))
-            elif pat_checker(fn, ROOT_CHECKS):
+            elif self._pat_checker(fn, ROOT_CHECKS):
                 img_fn = fn
                 LOG.debug("Found root image: %r" % (fn))
             else:
@@ -110,15 +118,9 @@ class Unpacker(object):
 
     def _unpack_tar_member(self, tarhandle, member, output_location):
         LOG.info("Extracting %s to %s.", colorizer.quote(member.name), colorizer.quote(output_location))
-        bytes_written = 0
         with contextlib.closing(tarhandle.extractfile(member)) as mfh:
             with open(output_location, "wb") as ofh:
-                blob = mfh.read(8192)
-                while blob != '':
-                    ofh.write(blob)
-                    bytes_written += len(blob)
-                    blob = mfh.read(8192)
-        return bytes_written
+                return sh.pipe_in_out(mfh, ofh)
 
     def _describe(self, root_fn, ramdisk_fn, kernel_fn):
         """
@@ -143,62 +145,92 @@ class Unpacker(object):
         info['container_format'] = 'ami'
         return info
 
+    def _filter_files(self, files):
+        filtered = []
+        for fn in files:
+            if self._pat_checker(fn, SKIP_CHECKS):
+                pass
+            else:
+                filtered.append(fn)
+        return filtered
+
     def _unpack_tar(self, file_name, file_location, tmp_dir):
         (root_name, _) = os.path.splitext(file_name)
-        files = self._get_tar_files(file_location)
-        (root_img_fn, ramdisk_fn, kernel_fn) = self._find_pieces(files)
+        tar_members = self._filter_files(self._get_tar_file_members(file_location))
+        (root_img_fn, ramdisk_fn, kernel_fn) = self._find_pieces(tar_members, file_location)
         if not root_img_fn:
-            msg = "Image %r has no root image member" % (file_name)
+            msg = "Tar file %r has no root image member" % (file_name)
             raise IOError(msg)
-        extract_dir = sh.mkdir(sh.joinpths(tmp_dir, root_name))
         kernel_real_fn = None
         root_real_fn = None
         ramdisk_real_fn = None
+        extract_dir = sh.mkdir(sh.joinpths(tmp_dir, root_name))
+        extract_msg = "Extracting %s as the root image" % (colorizer.quote(root_img_fn))
+        if ramdisk_fn:
+            extract_msg += ", %s as the ramdisk image" % (colorizer.quote(ramdisk_fn))
+        if kernel_fn:
+            extract_msg += ", %s as the kernel image" % (colorizer.quote(kernel_fn))
+        extract_msg += "."
+        LOG.info(extract_msg)
         with contextlib.closing(tarfile.open(file_location, 'r')) as tfh:
             for m in tfh.getmembers():
                 if m.name == root_img_fn:
-                    root_real_fn = os.path.join(extract_dir, os.path.basename(root_img_fn))
+                    root_real_fn = sh.joinpths(extract_dir, sh.basename(root_img_fn))
                     self._unpack_tar_member(tfh, m, root_real_fn)
                 elif ramdisk_fn and m.name == ramdisk_fn:
-                    ramdisk_real_fn = os.path.join(extract_dir, os.path.basename(ramdisk_fn))
+                    ramdisk_real_fn = sh.joinpths(extract_dir, sh.basename(ramdisk_fn))
                     self._unpack_tar_member(tfh, m, ramdisk_real_fn)
                 elif kernel_fn and m.name == kernel_fn:
-                    kernel_real_fn = os.path.join(extract_dir, os.path.basename(kernel_fn))
+                    kernel_real_fn = sh.joinpths(extract_dir, sh.basename(kernel_fn))
                     self._unpack_tar_member(tfh, m, kernel_real_fn)
         return self._describe(root_real_fn, ramdisk_real_fn, kernel_real_fn)
 
-    def _unpack_dir(self, file_location):
+    def _unpack_dir(self, dir_path):
         """
         Pick through a directory to figure out which files are which
         image pieces, and create a dict that describes them.
         """
-        files = os.listdir(file_location)
-        (root_fn, ramdisk_fn, kernel_fn) = [f and os.path.join(file_location, f) for f in self._find_pieces(files)]
-        return self._describe(root_fn, ramdisk_fn, kernel_fn)
-    
-    def unpack(self, file_name, file_location, tmp_dir):
-        if os.path.isdir(file_location):
-            return self._unpack_dir(file_location)
-        
-        (_, fn_ext) = os.path.splitext(file_name)
-        fn_ext = fn_ext.lower()
-        if fn_ext in TAR_EXTS:
-            return self._unpack_tar(file_name, file_location, tmp_dir)
-        elif fn_ext in ['.img', '.qcow2']:
-            info = dict()
-            info['file_name'] = file_location
-            if fn_ext == '.img':
-                info['disk_format'] = 'raw'
-            else:
-                info['disk_format'] = 'qcow2'
-            info['container_format'] = 'bare'
-            return info
-        else:
-            msg = "Currently we do not know how to unpack %r" % (file_name)
+        potential_files = set()
+        for fn in self._filter_files(sh.listdir(dir_path)):
+            full_fn = sh.joinpths(dir_path, fn)
+            if sh.isfile(full_fn):
+                potential_files.add(sh.canon_path(full_fn))
+        (root_fn, ramdisk_fn, kernel_fn) = self._find_pieces(potential_files, dir_path)
+        if not root_fn:
+            msg = "Directory %r has no root image member" % (dir_path)
             raise IOError(msg)
+        find_msg = "Using %s as the root image" % (colorizer.quote(root_fn))
+        if ramdisk_fn:
+            find_msg += ", %s as the ramdisk image" % (colorizer.quote(ramdisk_fn))
+        if kernel_fn:
+            find_msg += ", %s as the kernel image" % (colorizer.quote(kernel_fn))
+        find_msg += "."
+        LOG.info(find_msg)
+        return self._describe(root_fn, ramdisk_fn, kernel_fn)
+
+    def unpack(self, file_name, file_location, tmp_dir):
+        if sh.isdir(file_location):
+            return self._unpack_dir(file_location)
+        elif sh.isfile(file_location):
+            (_, fn_ext) = os.path.splitext(file_name)
+            fn_ext = fn_ext.lower()
+            if fn_ext in TAR_EXTS:
+                return self._unpack_tar(file_name, file_location, tmp_dir)
+            elif fn_ext in ['.img', '.qcow2']:
+                info = dict()
+                info['file_name'] = file_location
+                if fn_ext == '.img':
+                    info['disk_format'] = 'raw'
+                else:
+                    info['disk_format'] = 'qcow2'
+                info['container_format'] = 'bare'
+                return info
+        msg = "Currently we do not know how to unpack %r" % (file_location)
+        raise IOError(msg)
 
 
 class Registry(object):
+
     def __init__(self, client):
         self.client = client
 
@@ -293,19 +325,18 @@ class Image(object):
         return sh.basename(self.parsed_url.path)
 
     def _is_url_local(self):
-        return self.parsed_url.scheme == '' and self.parsed_url.netloc == ''
+        return (sh.exists(self.url) or (self.parsed_url.scheme == '' and self.parsed_url.netloc == ''))
 
     def install(self):
         url_fn = self._extract_url_fn()
         if not url_fn:
             raise IOError("Can not determine file name from url: %r" % (self.url))
         with utils.tempdir() as tdir:
-            if self._is_url_local():
-                unpack_info = Unpacker().unpack(url_fn, self.url, tdir)
+            if not self._is_url_local():
+                (fetched_fn, bytes_down) = down.UrlLibDownloader(self.url, sh.joinpths(tdir, url_fn)).download()
             else:
-                fetch_fn = sh.joinpths(tdir, url_fn)
-                down.UrlLibDownloader(self.url, fetch_fn).download()
-                unpack_info = Unpacker().unpack(url_fn, fetch_fn, tdir)
+                fetched_fn = self.url
+            unpack_info = Unpacker().unpack(url_fn, fetched_fn, tdir)
             tgt_image_name = self._generate_img_name(url_fn)
             img_id = self._register(tgt_image_name, unpack_info)
             return (tgt_image_name, img_id)

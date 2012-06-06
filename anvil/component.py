@@ -113,6 +113,15 @@ class PkgInstallComponent(ComponentBase):
     def _get_download_locations(self):
         return list()
 
+    def _clear_pkg_dups(self, pkg_list):
+        dup_free_list = []
+        names_there = set()
+        for pkg in pkg_list:
+            if pkg['name'] not in names_there:
+                dup_free_list.append(pkg)
+                names_there.add(pkg['name'])
+        return dup_free_list
+
     def _get_real_download_locations(self):
         real_locations = list()
         for info in self._get_download_locations():
@@ -172,7 +181,7 @@ class PkgInstallComponent(ComponentBase):
             if 'packages' in values:
                 LOG.debug("Extending package list with packages for subsystem: %r", name)
                 pkg_list.extend(values.get('packages') or [])
-        return pkg_list
+        return self._clear_pkg_dups(pkg_list)
 
     def install(self):
         LOG.debug('Preparing to install packages for: %r', self.name)
@@ -282,7 +291,7 @@ class PythonInstallComponent(PkgInstallComponent):
             if 'pips' in values:
                 LOG.debug("Extending pip list with pips for subsystem: %r" % (name))
                 pip_list.extend(values.get('pips') or [])
-        return pip_list
+        return self._clear_pkg_dups(pip_list)
 
     def _install_pips(self):
         pips = self._get_pips()

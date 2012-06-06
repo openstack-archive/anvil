@@ -60,7 +60,7 @@ commands:
         stop: service rabbitmq-server stop
         status: service rabbitmq-server status
         restart: service rabbitmq-server restart
-        change_password: rabbitmqctl change_password guest
+        change_password: rabbitmqctl change_password
 components:
     db:
         action_classes:

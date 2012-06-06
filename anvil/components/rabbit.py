@@ -70,12 +70,13 @@ class RabbitInstaller(comp.PkgInstallComponent):
             self.cfg.get_password(pw_key, PW_USER_PROMPT)
 
     def _setup_pw(self):
-        LOG.info("Setting up your rabbit-mq guest password.")
+        user_id = self.cfg.get('rabbit', 'rabbit_userid')
+        LOG.info("Setting up your rabbit-mq %s password.", colorizer.quote(user_id))
         self.runtime.restart()
         passwd = self.cfg.get_password("rabbit", PW_USER_PROMPT)
-        cmd = self.distro.get_command('rabbit-mq', 'change_password') + [passwd]
+        cmd = self.distro.get_command('rabbit-mq', 'change_password') + [user_id, passwd]
         sh.execute(*cmd, run_as_root=True)
-        LOG.info("Restarting so that your rabbit-mq guest password is reflected.")
+        LOG.info("Restarting so that your rabbit-mq password is reflected.")
         self.runtime.restart()
 
     def post_install(self):

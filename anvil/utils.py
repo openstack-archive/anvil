@@ -235,11 +235,11 @@ def progress_bar(name, max_am, reverse=False):
 
 
 @contextlib.contextmanager
-def tempdir():
+def tempdir(**kwargs):
     # This seems like it was only added in python 3.2
     # Make it since its useful...
     # See: http://bugs.python.org/file12970/tempdir.patch
-    tdir = tempfile.mkdtemp()
+    tdir = tempfile.mkdtemp(**kwargs)
     try:
         yield tdir
     finally:
