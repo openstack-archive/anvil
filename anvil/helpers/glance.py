@@ -74,7 +74,10 @@ class Unpacker(object):
             for tmemb in tfh.getmembers():
                 if not tmemb.isfile():
                     continue
-                files.append(tmemb.name)
+                fn = tmemb.name
+                if fn.startswith("."):
+                    continue
+                files.append(fn)
         return files
 
     def _find_pieces(self, files, files_location):
