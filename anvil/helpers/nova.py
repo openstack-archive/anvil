@@ -358,7 +358,7 @@ class ConfConfigurator(object):
 
         # Don't always force images to raw
         nova_conf.add('force_raw_images', self._getbool('force_raw_images'))
-        
+
         # Add a checksum for images fetched to a hypervisor
         nova_conf.add('checksum_base_images', self._getbool('checksum_base_images'))
 

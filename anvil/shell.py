@@ -449,7 +449,7 @@ def fork(program, app_dir, pid_fn, stdout_fn, stderr_fn, *args):
             # Now exec...
             # Note: The arguments to the child process should
             # start with the name of the command being run
-            prog_little = os.path.basename(program)
+            prog_little = basename(program)
             actualargs = [prog_little] + list(args)
             os.execlp(program, *actualargs)
         else:

@@ -100,8 +100,8 @@ class UrlLibDownloader(Downloader):
                     except ValueError:
                         pass
                 with open(self.store_where, 'wb') as ofh:
-                    return sh.pipe_in_out(conn, ofh,
-                            chunk_cb=functools.partial(update_bar, p_bar))
+                    return (store_where, sh.pipe_in_out(conn, ofh,
+                                            chunk_cb=functools.partial(update_bar, p_bar)))
         finally:
             if p_bar:
                 p_bar.finish()
