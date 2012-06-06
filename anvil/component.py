@@ -172,7 +172,14 @@ class PkgInstallComponent(ComponentBase):
             if 'packages' in values:
                 LOG.debug("Extending package list with packages for subsystem: %r", name)
                 pkg_list.extend(values.get('packages') or [])
-        return pkg_list
+        # Eliminate dups
+        dup_free_list = []
+        names_there = set()
+        for pkg in pkg_list:
+            if pkg['name'] not in names_there:
+                dup_free_list.append(pkg)
+                names_there.add(pkg['name'])
+        return dup_free_list
 
     def install(self):
         LOG.debug('Preparing to install packages for: %r', self.name)
@@ -282,7 +289,14 @@ class PythonInstallComponent(PkgInstallComponent):
             if 'pips' in values:
                 LOG.debug("Extending pip list with pips for subsystem: %r" % (name))
                 pip_list.extend(values.get('pips') or [])
-        return pip_list
+        # Eliminate dups
+        dup_free_list = []
+        names_there = set()
+        for pip in pip_list:
+            if pip['name'] not in names_there:
+                dup_free_list.append(pip)
+                names_there.add(pip['name'])
+        return dup_free_list
 
     def _install_pips(self):
         pips = self._get_pips()
