@@ -164,14 +164,8 @@ class Unpacker(object):
         kernel_real_fn = None
         root_real_fn = None
         ramdisk_real_fn = None
+        self._log_pieces_found('archive', root_img_fn, ramdisk_fn, kernel_fn)
         extract_dir = sh.mkdir(sh.joinpths(tmp_dir, root_name))
-        extract_msg = "Extracting %s as the root image" % (colorizer.quote(root_img_fn))
-        if ramdisk_fn:
-            extract_msg += ", %s as the ramdisk image" % (colorizer.quote(ramdisk_fn))
-        if kernel_fn:
-            extract_msg += ", %s as the kernel image" % (colorizer.quote(kernel_fn))
-        extract_msg += "."
-        LOG.info(extract_msg)
         with contextlib.closing(tarfile.open(file_location, 'r')) as tfh:
             for m in tfh.getmembers():
                 if m.name == root_img_fn:
@@ -184,6 +178,18 @@ class Unpacker(object):
                     kernel_real_fn = sh.joinpths(extract_dir, sh.basename(kernel_fn))
                     self._unpack_tar_member(tfh, m, kernel_real_fn)
         return self._describe(root_real_fn, ramdisk_real_fn, kernel_real_fn)
+
+    def _log_pieces_found(self, src_type, root_fn, ramdisk_fn, kernel_fn):
+        pieces = []
+        if root_fn:
+            pieces.append("%s (root image)" % (colorizer.quote(root_fn)))
+        if ramdisk_fn:
+            pieces.append("%s (ramdisk image)" % (colorizer.quote(ramdisk_fn)))
+        if kernel_fn:
+            pieces.append("%s (kernel image)" % (colorizer.quote(kernel_fn)))
+        if pieces:
+            utils.log_iterable(pieces, logger=LOG,
+                                header="Found %s images from a %s" % (len(pieces), src_type))
 
     def _unpack_dir(self, dir_path):
         """
@@ -199,13 +205,7 @@ class Unpacker(object):
         if not root_fn:
             msg = "Directory %r has no root image member" % (dir_path)
             raise IOError(msg)
-        find_msg = "Using %s as the root image" % (colorizer.quote(root_fn))
-        if ramdisk_fn:
-            find_msg += ", %s as the ramdisk image" % (colorizer.quote(ramdisk_fn))
-        if kernel_fn:
-            find_msg += ", %s as the kernel image" % (colorizer.quote(kernel_fn))
-        find_msg += "."
-        LOG.info(find_msg)
+        self._log_pieces_found('directory', root_fn, ramdisk_fn, kernel_fn)
         return self._describe(root_fn, ramdisk_fn, kernel_fn)
 
     def unpack(self, file_name, file_location, tmp_dir):
@@ -334,6 +334,7 @@ class Image(object):
         with utils.tempdir() as tdir:
             if not self._is_url_local():
                 (fetched_fn, bytes_down) = down.UrlLibDownloader(self.url, sh.joinpths(tdir, url_fn)).download()
+                LOG.debug("For url %s we downloaded %s bytes to %s", self.url, bytes_down, fetched_fn)
             else:
                 fetched_fn = self.url
             unpack_info = Unpacker().unpack(url_fn, fetched_fn, tdir)

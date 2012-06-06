@@ -170,6 +170,20 @@ components:
         -   name: wget
             removable: false
             version: 1.12*
+        # These 4 seem need for runtests/venv...
+        -   name: libldap2-dev
+            removable: false
+            version: 2.4*
+        -   name: libxslt1-dev
+            removable: false
+            version: 1.1*
+        -   name: libxml2-dev
+            removable: false
+            version: 2.7*
+        # Huh, gtk??
+        -   name: libgtk2.0-dev
+            removable: false
+            version: 2.2*
         pips:
         -   name: mock
             version: 0.8.0
@@ -179,13 +193,6 @@ components:
             running: anvil.components.glance:GlanceRuntime
             uninstall: anvil.components.glance:GlanceUninstaller
         packages:
-        # These 2 seem needed for .venv building
-        -   name: libxslt1-dev
-            removable: true
-            version: 1.1*
-        -   name: libxml2-dev
-            removable: true
-            version: 2.7*
         -   name: python-eventlet
             removable: true
             version: 0.9*
@@ -314,9 +321,6 @@ components:
             running: anvil.components.keystone:KeystoneRuntime
             uninstall: anvil.components.keystone:KeystoneUninstaller
         packages:
-        -   name: libldap2-dev
-            removable: true
-            version: 2.4*
         -   name: libsasl2-dev
             removable: true
             version: 2.1*
