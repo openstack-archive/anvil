@@ -170,6 +170,7 @@ class Unpacker(object):
             extract_msg += ", %s as the ramdisk image" % (colorizer.quote(ramdisk_fn))
         if kernel_fn:
             extract_msg += ", %s as the kernel image" % (colorizer.quote(kernel_fn))
+        extract_msg += "."
         LOG.info(extract_msg)
         with contextlib.closing(tarfile.open(file_location, 'r')) as tfh:
             for m in tfh.getmembers():
@@ -203,6 +204,7 @@ class Unpacker(object):
             find_msg += ", %s as the ramdisk image" % (colorizer.quote(ramdisk_fn))
         if kernel_fn:
             find_msg += ", %s as the kernel image" % (colorizer.quote(kernel_fn))
+        find_msg += "."
         LOG.info(find_msg)
         return self._describe(root_fn, ramdisk_fn, kernel_fn)
 
