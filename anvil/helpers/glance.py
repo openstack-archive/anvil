@@ -333,9 +333,8 @@ class Image(object):
             raise IOError("Can not determine file name from url: %r" % (self.url))
         with utils.tempdir() as tdir:
             if not self._is_url_local():
-                target_fn = sh.joinpths(tdir, url_fn)
-                (fetched_fn, bytes_down) = down.UrlLibDownloader(self.url, target_fn).download()
-                LOG.debug("For url %s we downloaded %s bytes to %s", self.url, bytes_down, target_fn)
+                (fetched_fn, bytes_down) = down.UrlLibDownloader(self.url, sh.joinpths(tdir, url_fn)).download()
+                LOG.debug("For url %s we downloaded %s bytes to %s", self.url, bytes_down, fetched_fn)
             else:
                 fetched_fn = self.url
             unpack_info = Unpacker().unpack(url_fn, fetched_fn, tdir)
