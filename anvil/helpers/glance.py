@@ -68,6 +68,7 @@ RAMDISK_CHECKS = [
 class Unpacker(object):
 
     def _get_tar_file_members(self, arc_fn):
+        LOG.info("Finding what exists in %s.", colorizer.quote(arc_fn))
         files = []
         with contextlib.closing(tarfile.open(arc_fn, 'r')) as tfh:
             for tmemb in tfh.getmembers():
