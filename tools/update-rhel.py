@@ -20,6 +20,8 @@ import re
 
 # cache this guy cuz he's slow to construct
 yb = yum.YumBase()
+# it seems that, without this, you can have trouble running as non-root
+yb.setCacheDir()
 
 def get_package_version(name):
     global yb
