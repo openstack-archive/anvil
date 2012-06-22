@@ -85,10 +85,10 @@ components:
             version: 8.4*
         -   name: curl
             removable: false
-            version: 7.19.7*
+            version: 7.19*
         -   name: euca2ools
             removable: false
-            version: 1.3.1*
+            version: 1.3*
         -   name: gawk
             removable: false
             version: 3.1*
@@ -103,7 +103,7 @@ components:
             version: 2.7*
         -   name: libxslt-devel
             removable: false
-            version: 1.1.26*
+            version: 1.1*
         -   name: lsof
             removable: false
             version: 4.82*
@@ -112,7 +112,7 @@ components:
             version: 0.22*
         -   name: openssh-server
             removable: false
-            version: 5.3*
+            version: 5.3p1*
         -   name: psmisc
             removable: false
             version: 22.6*
@@ -130,7 +130,7 @@ components:
             version: 2.29*
         -   name: python-mox
             removable: false
-            version: 0.5.3*
+            version: 0.5*
         -   name: python-pep8
             removable: false
             version: 0.6*
@@ -139,19 +139,19 @@ components:
             version: 0.8*
         -   name: python-setuptools
             removable: false
-            version: 0.6.10*
+            version: 0.6*
         -   name: python-unittest2
             removable: false
-            version: 0.5.1*
+            version: 0.5*
         -   name: python-virtualenv
             removable: false
             version: 1.7*
         -   name: screen
             removable: false
-            version: 4.0.3*
+            version: 4.0*
         -   name: sudo
             removable: false
-            version: 1.7.4*
+            version: 1.7*
         -   name: tcpdump
             removable: false
             version: 4.0*
@@ -188,7 +188,7 @@ components:
             version: 0.9*
         -   name: python-greenlet
             removable: true
-            version: 0.3.1*
+            version: 0.3*
         -   name: python-httplib2
             removable: true
             version: 0.7*
@@ -311,7 +311,7 @@ components:
             version: 0.9*
         -   name: python-greenlet
             removable: true
-            version: 0.3.1*
+            version: 0.3*
         -   name: python-lxml
             removable: true
             version: 2.2*
@@ -442,7 +442,7 @@ components:
             version: 1.4*
         -   name: python-greenlet
             removable: true
-            version: 0.3.1*
+            version: 0.3*
         -   name: python-kombu
             removable: true
             version: 1.1*
@@ -504,22 +504,22 @@ components:
                     version: 6.2*
                 -   name: libguestfs
                     removable: true
-                    version: 1.7*
+                    version: 1.16*
                 -   name: libguestfs-mount
                     removable: true
-                    version: 1.7.17*
+                    version: 1.7*
                 -   name: libguestfs-tools
                     removable: true
-                    version: 1.7.17*
+                    version: 1.16*
                 -   name: libvirt
                     removable: true
-                    version: 0.9.4*
+                    version: 0.9*
                 -   name: libvirt-client
                     removable: true
-                    version: 0.9.4*
+                    version: 0.9*
                 -   name: libvirt-python
                     removable: true
-                    version: 0.9.4*
+                    version: 0.9*
                 -   name: lvm2
                     removable: true
                     version: 2.02*
@@ -528,7 +528,7 @@ components:
                     version: 0.12*
                 -   name: qemu-kvm
                     removable: true
-                    version: 2*
+                    version: 0.12*
             vol:
                 packages:
                 -   name: iscsi-initiator-utils
@@ -595,7 +595,7 @@ components:
             version: 1.4*
         -   name: python-greenlet
             removable: true
-            version: 0.3.1*
+            version: 0.3*
         pips:
         -   name: Paste
             version: 1.7.5.1
