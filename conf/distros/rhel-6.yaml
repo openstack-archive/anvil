@@ -230,6 +230,14 @@ components:
             running: anvil.components.horizon:HorizonRuntime
             uninstall: anvil.components.horizon:HorizonUninstaller
         packages:
+        -   name: nodejs-compat-symlinks
+            removable: true
+            version: 1-1*
+            source-rpm: http://nodejs.tchol.org/repocfg/el/nodejs-stable-release.noarch.rpm
+        -   name: npm
+            removable: true
+            version: 1.1*
+            source-rpm: http://nodejs.tchol.org/repocfg/el/nodejs-stable-release.noarch.rpm
         -   name: httpd
             removable: true
             version: 2.2*
