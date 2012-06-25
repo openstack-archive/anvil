@@ -120,7 +120,7 @@ class Virsh(object):
             try:
                 conn = libvirt.open(virt_protocol)
             except libvirt.libvirtError as e:
-                LOG.warn("Could not connect to libvirt using protocol %s due to: %s" % colorizer.quote(virt_protocol), e)
+                LOG.warn("Could not connect to libvirt using protocol %s due to: %s", colorizer.quote(virt_protocol), e)
                 return
             with contextlib.closing(conn) as ch:
                 try:
