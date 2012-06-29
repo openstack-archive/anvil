@@ -48,7 +48,7 @@ INIT_WHAT_HAPPENED = "keystone.inited.yaml"
 
 # Simple confs
 ROOT_CONF = "keystone.conf"
-ROOT_SOURCE_FN = "keystone.conf.sample"
+ROOT_SOURCE_FN = "keystone.conf"
 LOGGING_CONF = "logging.conf"
 LOGGING_SOURCE_FN = 'logging.conf.sample'
 POLICY_JSON = 'policy.json'
