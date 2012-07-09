@@ -429,7 +429,7 @@ components:
             version: 2.1*
         -   name: python-boto
             removable: true
-            version: 2.0*
+            version: 2.5*
         -   name: python-carrot
             removable: true
             version: 0.10*
