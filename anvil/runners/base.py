@@ -26,16 +26,6 @@ class Runner(object):
     def __init__(self, runtime):
         self.runtime = weakref.proxy(runtime)
 
-    def unconfigure(self):
-        # Cleans up anything configured by
-        # this runner for any apps for this component
-        # returns how many files unconfigured
-        return 0
-
-    def configure(self, app_name, app_pth, app_dir, opts):
-        # Returns how many files configured
-        return 0
-
     def start(self, app_name, app_pth, app_dir, opts):
         # Returns a file name that contains what was started
         pass
