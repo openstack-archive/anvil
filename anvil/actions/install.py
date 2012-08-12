@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from anvil import action
 from anvil import colorizer
 from anvil import env_rc
 from anvil import log
@@ -21,14 +22,12 @@ from anvil import settings
 from anvil import shell as sh
 from anvil import utils
 
-from anvil.actions import base
-
-from anvil.actions.base import PhaseFunctors
+from anvil.action import PhaseFunctors
 
 LOG = log.getLogger(__name__)
 
 
-class InstallAction(base.Action):
+class InstallAction(action.Action):
 
     @staticmethod
     def get_lookup_name():

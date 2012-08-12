@@ -70,10 +70,8 @@ components:
         packages:
         -   name: mysql
             removable: true
-            version: 5.1*
         -   name: mysql-server
             removable: true
-            version: 5.1*
     general:
         action_classes:
             install: anvil.components.pkglist:Installer
@@ -82,97 +80,90 @@ components:
         packages:
         -   name: coreutils
             removable: false
-            version: 8.4*
         -   name: curl
             removable: false
-            version: 7.19*
         -   name: euca2ools
             removable: false
-            version: 1.3*
         -   name: gawk
             removable: false
-            version: 3.1*
         -   name: git
             removable: false
-            version: 1.7*
         -   name: iputils
             removable: false
-            version: 20071127*
         -   name: libxml2-devel
             removable: false
-            version: 2.7*
         -   name: libxslt-devel
             removable: false
-            version: 1.1*
         -   name: lsof
             removable: false
-            version: 4.82*
         -   name: mlocate
             removable: false
-            version: 0.22*
         -   name: openssh-server
             removable: false
-            version: 5.3p1*
         -   name: psmisc
             removable: false
-            version: 22.6*
         -   name: pylint
             removable: false
-            version: 0.21*
         -   name: python
             removable: false
-            version: 2.6*
         -   name: python-devel
             removable: false
-            version: 2.6*
         -   name: python-distutils-extra
             removable: false
-            version: 2.29*
         -   name: python-mox
             removable: false
-            version: 0.5*
+        -   name: python-mock
+            removable: false
+        -   name: python-nose
+            removable: false
         -   name: python-pep8
             removable: false
-            version: 0.6*
         -   name: python-pip
             removable: false
-            version: 0.8*
         -   name: python-setuptools
             removable: false
-            version: 0.6*
         -   name: python-unittest2
             removable: false
-            version: 0.5*
         -   name: python-virtualenv
             removable: false
-            version: 1.7*
         -   name: screen
             removable: false
-            version: 4.0*
         -   name: sudo
             removable: false
-            version: 1.7*
         -   name: tcpdump
             removable: false
-            version: 4.0*
         -   name: unzip
             removable: false
-            version: 6.0*
         -   name: wget
             removable: false
-            version: 1.12*
         pips:
         -   name: coverage
-            version: 3.5.1
-        -   name: mock
-            version: 0.8.0
-        -   name: nose
-            version: 1.1.2
+            version: 3.5.2
     glance:
         action_classes:
             install: anvil.components.glance:GlanceInstaller
             running: anvil.components.glance:GlanceRuntime
             uninstall: anvil.components.glance:GlanceUninstaller
+        pip_to_package:
+        -   name: sqlalchemy
+            version: "0.7"
+            package:
+                name: python-sqlalchemy0.7
+                removable: true
+        -   name: pastedeploy
+            package:
+                name: python-paste-deploy1.5
+                removable: true
+        -   name: routes
+            package: 
+                name: python-routes1.12
+                removable: true
+        -   name: iso8601
+            version: "0.1.4"
+            package: 
+                name: python-iso8601
+                version: 0.1.4*
+                removable: true
         packages:
         -   name: MySQL-python
             removable: true
@@ -199,19 +190,13 @@ components:
             removable: true
             version: 0.5*
         pips:
-        -   name: PasteDeploy
-            version: 1.5.0
-        -   name: Routes
-            version: 1.12.3
-        -   name: SQLAlchemy
-            version: 0.7.5
-        -   name: iso8601
-            version: 0.1.4
         -   name: pycrypto
             options: --upgrade
             version: '2.6'
-        -   name: jsonschema
-            version: "0.2"
+        -   name: nose-exclude
+            version: '0.1.8'
+        -   name: distribute
+            version: '0.6.28'
     glance-client:
         action_classes:
             install: anvil.components.glance_client:GlanceClientInstaller

@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import pkg_resources
 import re
 import weakref
 
@@ -28,6 +29,8 @@ from anvil import pip
 from anvil import shell as sh
 from anvil import trace as tr
 from anvil import utils
+
+
 
 LOG = logging.getLogger(__name__)
 
@@ -131,8 +134,6 @@ class PkgInstallComponent(ComponentBase):
                 raise ValueError(("Could not find uri in config to download "
                                    "from at section %s for option %s") % (section, key))
             target_directory = self.get_option('app_dir')
-            if 'subdir' in info:
-                target_directory = sh.joinpths(target_directory, info["subdir"])
             branch = None
             if 'branch' in info:
                 (section, key) = info['branch']
@@ -174,7 +175,7 @@ class PkgInstallComponent(ComponentBase):
         mp = ComponentBase._get_params(self)
         mp['CONFIG_FN'] = config_fn or ''
         return mp
-
+    
     def _get_packages(self):
         pkg_list = self.get_option('packages') or []
         for name, values in self.subsystems.items():
@@ -284,6 +285,68 @@ class PythonInstallComponent(PkgInstallComponent):
             self.name: self.get_option('app_dir'),
         }
         return py_dirs
+
+    def _get_packages(self):
+        pkg_list = PkgInstallComponent._get_packages(self)
+        pkg_list.extend(self._get_mapped_packages())
+        return self._clear_pkg_dups(pkg_list)
+
+    def _get_mapped_packages(self):
+        pip_requires = {}
+        app_directory = self.get_option('app_dir')
+        scan_files = [
+            sh.joinpths(app_directory, 'tools', 'pip-requires'),
+            sh.joinpths(app_directory, 'tools', 'test-requires')
+        ]
+        for fn in scan_files:
+            if sh.isfile(fn):
+                for line in sh.load_file(fn).splitlines():
+                    line = line.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    entry = pkg_resources.Requirement.parse(line)
+                    pip_requires[entry.key.lower()] = {
+                        'requires': entry,
+                        'from': fn,
+                        'full': line,
+                    }
+        add_on_pkgs = []
+        if pip_requires:
+            pip_list  = self._get_pips()
+            pip2_pkg_list = self.get_option('pip_to_package') or []
+            for name, req in pip_requires.items():
+                from_where = req['from']
+                full_info = req['full']
+                requirement = req['requires']
+                LOG.debug("Translating %s to a distribution package or to a pip package", full_info)
+                entry = None
+                from_pip = False
+                for p_info in pip2_pkg_list:
+                    if p_info['name'] == name:
+                        entry = p_info
+                if not entry:
+                    # See if a pip (to be installed) directly satisifies this
+                    for p_info in pip_list:
+                        if p_info['name'] == name:
+                            entry = p_info
+                            from_pip = True
+                    if not entry:
+                        raise excp.DependencyException(("Pip dependency %r"
+                                                        ' (from %r)'
+                                                        ' not translatable'
+                                                        ' to a known pip package'
+                                                        ' or a distribution'
+                                                        ' package!') % (
+                                                        full_info, from_where,
+                                                        ))
+                version_provided = entry.get('version')
+                if version_provided not in requirement:
+                    raise excp.DependencyException("Pip dependency %r"
+                        " (from %r) is not satisfied by the version provided (%r)" %
+                        (full_info, from_where, version_provided))
+                if not from_pip:
+                    add_on_pkgs.append(entry)
+        return add_on_pkgs
 
     def _get_pips(self):
         pip_list = self.get_option('pips') or []
