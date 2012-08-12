@@ -1,7 +1,7 @@
 ---
 components:
 # Order matters here!
-#- general
+- general
 # - db
 # - rabbit-mq
 #- keystone-client

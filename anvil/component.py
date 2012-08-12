@@ -291,6 +291,9 @@ class PythonInstallComponent(PkgInstallComponent):
         pkg_list.extend(self._get_mapped_packages())
         return self._clear_pkg_dups(pkg_list)
 
+    def _filter_mapped_packages(self, mapping):
+        return mapping
+
     def _get_mapped_packages(self):
         pip_requires = {}
         app_directory = self.get_option('app_dir')
@@ -305,47 +308,61 @@ class PythonInstallComponent(PkgInstallComponent):
                     if not line or line.startswith("#"):
                         continue
                     entry = pkg_resources.Requirement.parse(line)
-                    pip_requires[entry.key.lower()] = {
+                    pip_requires[entry.key] = {
                         'requires': entry,
                         'from': fn,
                         'full': line,
                     }
+        pip_requires = self._filter_mapped_packages(pip_requires)
         add_on_pkgs = []
         if pip_requires:
             pip_list  = self._get_pips()
             pip2_pkg_list = self.get_option('pip_to_package') or []
-            for name, req in pip_requires.items():
-                from_where = req['from']
-                full_info = req['full']
-                requirement = req['requires']
-                LOG.debug("Translating %s to a distribution package or to a pip package", full_info)
-                entry = None
-                from_pip = False
-                for p_info in pip2_pkg_list:
-                    if p_info['name'] == name:
-                        entry = p_info
-                if not entry:
+            for (name, req) in pip_requires.items():
+                # Seems like this is a bug in the source lists
+                # (at least in glance) so fix it temporarily
+                name = name.lower()
+                name = name.replace("-", "_")
+                found_entry = None
+                is_from_pip = False
+                for pip_info in pip2_pkg_list:
+                    # Seems like this is a bug in the source lists
+                    # (at least in glance) so fix it temporarily
+                    pip_name = pip_info['name']
+                    pip_name = pip_name.replace("-", "_")
+                    pip_name = pip_name.lower()
+                    if pip_name == name:
+                        found_entry = pip_info
+                        break
+                if not found_entry:
                     # See if a pip (to be installed) directly satisifies this
-                    for p_info in pip_list:
-                        if p_info['name'] == name:
-                            entry = p_info
-                            from_pip = True
-                    if not entry:
+                    for pip_info in pip_list:
+                        # Seems like this is a bug in the source lists
+                        # (at least in glance) so fix it temporarily
+                        pip_name = pip_info['name']
+                        pip_name = pip_name.replace("-", "_")
+                        pip_name = pip_name.lower()
+                        if pip_name == name:
+                            found_entry = pip_info
+                            is_from_pip = True
+                            break
+                    if not found_entry:
                         raise excp.DependencyException(("Pip dependency %r"
                                                         ' (from %r)'
                                                         ' not translatable'
                                                         ' to a known pip package'
                                                         ' or a distribution'
                                                         ' package!') % (
-                                                        full_info, from_where,
+                                                        req['full'], req['from'],
                                                         ))
-                version_provided = entry.get('version')
-                if version_provided not in requirement:
+                version_provided = found_entry.get('version')
+                if version_provided is not None and version_provided not in req['requires']:
                     raise excp.DependencyException("Pip dependency %r"
                         " (from %r) is not satisfied by the version provided (%r)" %
-                        (full_info, from_where, version_provided))
-                if not from_pip:
-                    add_on_pkgs.append(entry)
+                        (req['full'], req['from'], version_provided))
+                if not is_from_pip:
+                    if 'package' in found_entry:
+                        add_on_pkgs.append(found_entry['package'])
         return add_on_pkgs
 
     def _get_pips(self):
@@ -562,44 +579,8 @@ class ProgramRuntime(ComponentBase):
         mp['APP_NAME'] = app_name or ''
         return mp
 
-    def pre_start(self):
-        pass
-
-    def post_start(self):
-        pass
-
-    def post_stop(self, apps_started):
-        pass
-
-    def pre_stop(self, apps_started):
-        pass
-
     def _fetch_run_type(self):
         return self.cfg.getdefaulted("DEFAULT", "run_type", 'anvil.runners.fork:ForkRunner')
-
-    def configure(self):
-        # Anything to configure for starting?
-        apps_to_start = self._get_apps_to_start()
-        am_configured = 0
-        if not apps_to_start:
-            return am_configured
-        # First make a pass and make sure all runtime
-        # (e.g. upstart starting)
-        # config files are in place....
-        run_type = self._fetch_run_type()
-        configurer = importer.import_entry_point(run_type)(self)
-        for app_info in apps_to_start:
-            app_name = app_info["name"]
-            app_pth = app_info.get("path", app_name)
-            app_dir = app_info.get("app_dir", self.get_option('app_dir'))
-            # Configure it with the given settings
-            LOG.debug("Configuring runner %r for program %r", run_type, app_name)
-            cfg_am = configurer.configure(app_name,
-                     app_pth=app_pth, app_dir=app_dir,
-                     opts=utils.param_replace_list(self._get_app_options(app_name), self._get_param_map(app_name)))
-            LOG.debug("Configured %s files for runner for program %r", cfg_am, app_name)
-            am_configured += cfg_am
-        return am_configured
 
     def start(self):
         # Anything to start?
@@ -654,13 +635,11 @@ class ProgramRuntime(ComponentBase):
         apps_started = self.tracereader.apps_started()
         if not apps_started:
             return killed_am
-        self.pre_stop(apps_started)
         to_kill = self._locate_investigators(apps_started)
         for (app_name, handler) in to_kill:
             handler.stop(app_name)
             handler.unconfigure()
             killed_am += 1
-        self.post_stop(apps_started)
         if len(apps_started) == killed_am:
             sh.unlink(self.tracereader.filename())
         return killed_am

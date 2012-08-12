@@ -78,6 +78,7 @@ components:
             running: anvil.component:EmptyRuntime
             uninstall: anvil.components.pkglist:Uninstaller
         packages:
+        # Shared system packages
         -   name: coreutils
             removable: false
         -   name: curl
@@ -102,30 +103,6 @@ components:
             removable: false
         -   name: psmisc
             removable: false
-        -   name: pylint
-            removable: false
-        -   name: python
-            removable: false
-        -   name: python-devel
-            removable: false
-        -   name: python-distutils-extra
-            removable: false
-        -   name: python-mox
-            removable: false
-        -   name: python-mock
-            removable: false
-        -   name: python-nose
-            removable: false
-        -   name: python-pep8
-            removable: false
-        -   name: python-pip
-            removable: false
-        -   name: python-setuptools
-            removable: false
-        -   name: python-unittest2
-            removable: false
-        -   name: python-virtualenv
-            removable: false
         -   name: screen
             removable: false
         -   name: sudo
@@ -135,68 +112,116 @@ components:
         -   name: unzip
             removable: false
         -   name: wget
+            removable: false 
+        # Shared python packages
+        -   name: pylint
             removable: false
-        pips:
-        -   name: coverage
-            version: 3.5.2
+        -   name: python
+            removable: false
+        -   name: python-anyjson
+            removable: false
+        -   name: python-devel
+            removable: false
+        -   name: python-distutils-extra
+            removable: false
+        -   name: python-eventlet
+            removable: false
+        -   name: python-pep8
+            removable: false
+        -   name: python-pip
+            removable: false
+        -   name: python-argparse
+            removable: false
+        -   name: python-greenlet
+            removable: false
+        -   name: python-paste
+            removable: false
+        -   name: python-setuptools
+            removable: false
+        -   name: python-unittest2
+            removable: false
+        -   name: python-virtualenv
+            removable: false
+        -   name: python-webob1.0
+            removable: false
+        -   name: MySQL-python
+            removable: false
+        -   name: python-sqlalchemy0.7
+            removable: false
+        -   name: python-httplib2
+            removable: false
+        -   name: python-iso8601
+            removable: false
+        -   name: python-greenlet
+            removable: false
+        -   name: python-paste-deploy1.5
+            removable: false
+        -   name: python-routes1.12
+            removable: false
+        -   name: python-nose1.1
+            removable: false
     glance:
         action_classes:
             install: anvil.components.glance:GlanceInstaller
             running: anvil.components.glance:GlanceRuntime
             uninstall: anvil.components.glance:GlanceUninstaller
+        # When parsing 'tools/pip-requires' and 
+        # 'tools/test-requires' (if they exist)
+        # the following map will be used to translate names
+        # and versions inside those files into distribution
+        # package names equivalents (if possible)
         pip_to_package:
-        -   name: sqlalchemy
-            version: "0.7"
+        -   name: mox
             package:
-                name: python-sqlalchemy0.7
-                removable: true
-        -   name: pastedeploy
+                name: python-mox
+        -   name: lxml
             package:
-                name: python-paste-deploy1.5
-                removable: true
-        -   name: routes
-            package: 
-                name: python-routes1.12
-                removable: true
+                name: python-lxml
+        -   name: babel
+            package:
+                name: python-babel
+        -   name: pysendfile
+            package:
+                name: pysendfile
+        -   name: kombu
+            package:
+                name: python-kombu # Only needed for notifications?
+        # These packages are already installed in the 'general' section
+        # so this is just here to make sure when we find them that they
+        # are matched and not cause an error to occur
+        -   name: anyjson
+        -   name: argparse
+        -   name: eventlet
+        -   name: greenlet
+        -   name: httplib2
         -   name: iso8601
-            version: "0.1.4"
-            package: 
-                name: python-iso8601
-                version: 0.1.4*
-                removable: true
+        -   name: nose
+        -   name: paste
+        -   name: pastedeploy
+        -   name: pep8
+        -   name: routes
+        -   name: sqlalchemy
+        -   name: webob
         packages:
-        -   name: MySQL-python
-            removable: true
-            version: 1.2*
-        -   name: python-argparse
-            removable: true
-            version: 1.2*
         -   name: python-dateutil
-            removable: true
-            version: 1.4*
-        -   name: python-eventlet
-            removable: true
-            version: 0.9*
-        -   name: python-greenlet
-            removable: true
-            version: 0.3*
-        -   name: python-httplib2
-            removable: true
-            version: 0.7*
         -   name: python-prettytable
-            removable: true
-            version: 0.5*
-        -   name: pyxattr
-            removable: true
-            version: 0.5*
         pips:
+        # Pips that aren't packages yet
+        -   name: boto
+            version: "2.1.1"
+        -   name: coverage
+        -   name: distribute
+        -   name: jsonschema
+        -   name: nose-exclude
+        -   name: openstack.nose_plugin
+        -   name: passlib
         -   name: pycrypto
             options: --upgrade
-            version: '2.6'
-        -   name: nose-exclude
-            version: '0.1.8'
-        -   name: distribute
-            version: '0.6.28'
+        -   name: requests
+        -   name: sphinx
+        -   name: sqlalchemy-migrate
+        -   name: wsgiref
+        -   name: xattr
     glance-client:
         action_classes:
             install: anvil.components.glance_client:GlanceClientInstaller
