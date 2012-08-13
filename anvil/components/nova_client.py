@@ -29,14 +29,6 @@ class NovaClientInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
 
-    def _get_download_locations(self):
-        places = list()
-        places.append({
-            'uri': ("git", "novaclient_repo"),
-            'branch': ("git", "novaclient_branch"),
-        })
-        return places
-
 
 class NovaClientRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):

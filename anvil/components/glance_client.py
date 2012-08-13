@@ -35,14 +35,6 @@ class GlanceClientInstaller(comp.PythonInstallComponent):
             return None
         return line
 
-    def _get_download_locations(self):
-        places = list()
-        places.append({
-            'uri': ("git", "glanceclient_repo"),
-            'branch': ("git", "glanceclient_branch"),
-        })
-        return places
-
 
 class GlanceClientRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):

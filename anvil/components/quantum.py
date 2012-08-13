@@ -31,12 +31,7 @@ LOG = logging.getLogger(__name__)
 VSWITCH_PLUGIN = 'openvswitch'
 
 # Config files (some only modified if running as openvswitch)
-PLUGIN_CONF = "plugins.ini"
 QUANTUM_CONF = 'quantum.conf'
-PLUGIN_LOC = ['etc']
-AGENT_CONF = 'ovs_quantum_plugin.ini'
-AGENT_BIN_LOC = ["quantum", "plugins", "openvswitch", 'agent']
-CONFIG_FILES = [PLUGIN_CONF, AGENT_CONF]
 
 # This db will be dropped and created
 DB_NAME = 'ovs_quantum'
@@ -62,14 +57,6 @@ class QuantumMixin(object):
 
     def _get_config_files(self):
         return list(CONFIG_FILES)
-
-    def _get_download_locations(self):
-        places = list()
-        places.append({
-            'uri': ("git", "quantum_repo"),
-            'branch': ("git", "quantum_branch"),
-        })
-        return places
 
 
 class QuantumUninstaller(QuantumMixin, comp.PkgUninstallComponent):

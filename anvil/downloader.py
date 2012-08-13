@@ -14,21 +14,22 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
 import contextlib
 import functools
+import os
 import urllib2
+
+from urlparse import urlparse
 
 import progressbar
 
 from anvil import colorizer
+from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
+from anvil import utils
 
 LOG = logging.getLogger(__name__)
-
-# Git master branch
-GIT_MASTER_BRANCH = "master"
 
 
 class Downloader(object):
@@ -43,27 +44,31 @@ class Downloader(object):
 
 class GitDownloader(Downloader):
 
-    def __init__(self, distro, uri, store_where, branch):
+    def __init__(self, distro, uri, store_where):
         Downloader.__init__(self, uri, store_where)
-        self.branch = branch
         self.distro = distro
 
     def download(self):
-        dirsmade = list()
-        if sh.isdir(self.store_where):
-            LOG.info("Existing directory located at %s, leaving it alone.", colorizer.quote(self.store_where))
+        branch = None
+        uri = self.uri
+        if uri.find("+") != -1:
+            uri, branch = uri.rsplit("+", 1)
+            branch = branch.strip()
+            uri = uri.strip()
+        if not branch:
+            branch = 'master'
+        if sh.isdir(self.store_where) and sh.isdir(sh.joinpths(self.store_where, '.git')):
+            LOG.info("Existing git directory located at %s, leaving it alone.", colorizer.quote(self.store_where))
         else:
-            LOG.info("Downloading %s to %s.", colorizer.quote(self.uri), colorizer.quote(self.store_where))
-            dirsmade.extend(sh.mkdirslist(self.store_where))
+            LOG.info("Downloading %s (%s) to %s.", colorizer.quote(uri), branch, colorizer.quote(self.store_where))
             cmd = list(self.distro.get_command('git', 'clone'))
-            cmd += [self.uri, self.store_where]
+            cmd += [uri, self.store_where]
             sh.execute(*cmd)
-        if self.branch and self.branch != GIT_MASTER_BRANCH:
-            LOG.info("Adjusting branch to %s.", colorizer.quote(self.branch))
+        if branch.lower() != 'master':
+            LOG.info("Adjusting branch to %s.", colorizer.quote(branch))
             cmd = list(self.distro.get_command('git', 'checkout'))
-            cmd += [self.branch]
+            cmd += [branch]
             sh.execute(*cmd, cwd=self.store_where)
-        return dirsmade
 
 
 class UrlLibDownloader(Downloader):
@@ -105,3 +110,33 @@ class UrlLibDownloader(Downloader):
         finally:
             if p_bar:
                 p_bar.finish()
+
+
+def download(distro, uri, target_dir, **kwargs):
+    puri = urlparse(uri)
+    scheme = puri.scheme.lower()
+    path = puri.path
+    if scheme in ['git'] or path.find('.git') != -1:
+        dirs_made = sh.mkdirslist(target_dir)
+        downloader = GitDownloader(distro, uri, target_dir)
+        downloader.download()
+        return dirs_made
+    if scheme in ['http', 'https']:
+        dirs_made = sh.mkdirslist(target_dir)
+        with utils.tempdir() as tdir:
+            fn = os.path.basename(path)
+            downloader = UrlLibDownloader(uri, sh.joinpths(tdir, fn))
+            downloader.download()
+            if fn.endswith('.tar.gz'):
+                cmd = ['tar', '-xzvf', sh.joinpths(tdir, fn), '-C', target_dir]
+                sh.execute(*cmd)
+            elif fn.endswith('.zip'):
+                # TODO(harlowja) this might not be 100% right...
+                # we might have to move the finished directory...
+                cmd = ['unzip', sh.joinpths(tdir, fn), '-d', target_dir]
+                sh.execute(*cmd)
+            else:
+                raise excp.DownloadException("Unable to extract %s downloaded from %s" % (fn, uri))
+        return dirs_made
+    else:
+        raise excp.DownloadException("Unknown scheme %s, unable to download from %s" % (puri.scheme, uri))

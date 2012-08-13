@@ -19,6 +19,10 @@ class AnvilException(Exception):
     pass
 
 
+class DownloadException(AnvilException):
+    pass
+
+
 class InstallException(AnvilException):
     pass
 

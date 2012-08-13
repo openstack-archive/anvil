@@ -72,14 +72,6 @@ class GlanceMixin(object):
     def _get_config_files(self):
         return list(CONFIGS)
 
-    def _get_download_locations(self):
-        places = list()
-        places.append({
-            'uri': ("git", "glance_repo"),
-            'branch': ("git", "glance_branch"),
-        })
-        return places
-
 
 class GlanceUninstaller(GlanceMixin, comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):

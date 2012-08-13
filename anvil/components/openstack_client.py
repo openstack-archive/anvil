@@ -29,14 +29,14 @@ class OpenStackClientInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
 
-    def _get_download_locations(self):
-        places = list()
-        places.append({
-            'uri': ("git", "openstackclient_repo"),
-            'branch': ("git", "openstackclient_branch"),
-        })
-        return places
-
+    def _filter_pip_requires_line(self, line):
+        if line.lower().find('keystoneclient') != -1:
+            return None
+        if line.lower().find('novaclient') != -1:
+            return None
+        if line.lower().find('glanceclient') != -1:
+            return None
+        return line
 
 class OpenStackClientRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):

@@ -90,15 +90,9 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             return None
         if line.lower().find('http://tarballs.openstack.org') != -1:
             return None
+        if line.lower().find('memcached') != -1:
+            return None
         return line
-
-    def _get_download_locations(self):
-        places = list()
-        places.append({
-            'uri': ("git", "keystone_repo"),
-            'branch': ("git", "keystone_branch"),
-        })
-        return places
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)

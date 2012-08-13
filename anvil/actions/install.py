@@ -54,7 +54,7 @@ class InstallAction(action.Action):
             PhaseFunctors(
                 start=lambda i: LOG.info('Downloading %s.', colorizer.quote(i.name)),
                 run=lambda i: i.download(),
-                end=lambda i, result: LOG.info("Performed %s downloads.", result),
+                end=lambda i, result: LOG.info("Performed %s downloads.", len(result))
             ),
             component_order,
             instances,
@@ -84,17 +84,20 @@ class InstallAction(action.Action):
         def install_start(instance):
             subsystems = set(list(instance.subsystems))
             if subsystems:
-                utils.log_iterable(subsystems, logger=LOG,
+                utils.log_iterable(sorted(subsystems), logger=LOG,
                     header='Installing %s using subsystems' % colorizer.quote(instance.name))
             else:
                 LOG.info("Installing %s.", colorizer.quote(instance.name))
+
+        def install_finish(instance, result):
+             LOG.info("Finished install of %s items - check %s for information on what was done.", 
+                      colorizer.quote(instance.name), colorizer.quote(result))
 
         self._run_phase(
             PhaseFunctors(
                 start=install_start,
                 run=lambda i: i.install(),
-                end=(lambda i, result: LOG.info("Finished install of %s items - check %s for information on what was done.",
-                        colorizer.quote(i.name), colorizer.quote(result))),
+                end=install_finish,
             ),
             component_order,
             instances,

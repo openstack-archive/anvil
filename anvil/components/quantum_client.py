@@ -29,14 +29,6 @@ class QuantumClientInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
 
-    def _get_download_locations(self):
-        places = list()
-        places.append({
-            'uri': ("git", "quantum_client_repo"),
-            'branch': ("git", "quantum_client_branch"),
-        })
-        return places
-
 
 class QuantumClientRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):

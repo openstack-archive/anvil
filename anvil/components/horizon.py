@@ -70,14 +70,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
         self.log_dir = sh.joinpths(self.get_option('component_dir'), LOGS_DIR)
 
-    def _get_download_locations(self):
-        places = list()
-        places.append({
-            'uri': ("git", "horizon_repo"),
-            'branch': ("git", "horizon_branch"),
-        })
-        return places
-
     def verify(self):
         comp.PythonInstallComponent.verify(self)
         self._check_ug()

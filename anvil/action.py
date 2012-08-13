@@ -164,26 +164,39 @@ class Action(object):
             phase_recorder = phase.PhaseRecorder(self._get_phase_fn(phase_name))
         else:
             phase_recorder = phase.NullPhaseRecorder()
+        # Reset all activations
         for c in component_order:
             instance = instances[c]
-            if phase_recorder.has_ran(c):
-                LOG.debug("Skipping phase named %r for component %r since it already happened.", phase_name, c)
-            else:
-                try:
-                    result = None
-                    with phase_recorder.mark(c):
-                        if functors.start:
-                            functors.start(instance)
-                        if functors.run:
-                            result = functors.run(instance)
-                        if functors.end:
-                            functors.end(instance, result)
-                    component_results[instance] = result
-                except (excp.NoTraceException) as e:
-                    if self.force:
-                        LOG.debug("Skipping exception: %s" % (e))
-                    else:
-                        raise
+            instance.activated = False
+        # Run all components which have not been activated
+        try:
+            for c in component_order:
+                instance = instances[c]
+                if phase_recorder.has_ran(c):
+                    LOG.debug("Skipping phase named %r for component %r since it already happened.", phase_name, c)
+                    instance.activated = True
+                else:
+                    try:
+                        result = None
+                        with phase_recorder.mark(c):
+                            if functors.start:
+                                functors.start(instance)
+                            if functors.run:
+                                result = functors.run(instance)
+                            if functors.end:
+                                functors.end(instance, result)
+                        component_results[instance] = result
+                        instance.activated = True
+                    except (excp.NoTraceException) as e:
+                        if self.force:
+                            LOG.debug("Skipping exception: %s" % (e))
+                        else:
+                            raise
+        finally:
+            # Reset all activations
+            for c in component_order:
+                instance = instances[c]
+                instance.activated = False
         return component_results
 
     def _delete_phase_files(self, action_names):

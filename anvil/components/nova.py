@@ -87,8 +87,11 @@ NCERT = "cert"
 NSCHED = "sched"
 NCAUTH = "cauth"
 NXVNC = "xvnc"
+NNOVNC = 'novnc'
 SUBSYSTEMS = [NCPU, NVOL, NAPI,
-    NOBJ, NNET, NCERT, NSCHED, NCAUTH, NXVNC]
+              NOBJ, NNET, NCERT,
+              NSCHED, NCAUTH, NXVNC,
+              NNOVNC]
 
 # What to start
 APP_OPTIONS = {
@@ -131,14 +134,6 @@ class NovaMixin(object):
 
     def _get_config_files(self):
         return list(CONFIGS)
-
-    def _get_download_locations(self):
-        places = list()
-        places.append({
-            'uri': ("git", "nova_repo"),
-            'branch': ("git", "nova_branch"),
-        })
-        return places
 
 
 class NovaUninstaller(NovaMixin, comp.PythonUninstallComponent):
@@ -188,6 +183,13 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         if self.volumes_enabled:
             self.volume_maker = nhelper.VolumeConfigurator(self)
         self.conf_maker = nhelper.ConfConfigurator(self)
+
+    def _filter_pip_requires_line(self, line):
+        if line.lower().find('quantumclient') != -1:
+            return None
+        if line.lower().find('glance') != -1:
+            return None
+        return line
 
     def _get_symlinks(self):
         links = comp.PythonInstallComponent._get_symlinks(self)

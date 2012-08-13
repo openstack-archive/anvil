@@ -29,14 +29,6 @@ class KeyStoneClientInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
 
-    def _get_download_locations(self):
-        places = list()
-        places.append({
-            'uri': ("git", "keystoneclient_repo"),
-            'branch': ("git", "keystoneclient_branch"),
-        })
-        return places
-
 
 class KeyStoneClientRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):

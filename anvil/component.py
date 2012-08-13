@@ -64,10 +64,11 @@ class ComponentBase(object):
         self.cfg = runner.cfg
         self.distro = runner.distro
 
+        # Turned on and off as phases get activated
+        self.activated = False
+
     def get_option(self, opt_name, def_val=None):
-        val = self.options.get(opt_name, def_val)
-        LOG.debug("Fetched option %r with value %r for component: %s", opt_name, val, self)
-        return val
+        return self.options.get(opt_name, def_val)
 
     def verify(self):
         # Ensure subsystems are known...
@@ -101,9 +102,11 @@ class ComponentBase(object):
         pass
 
     def is_started(self):
+        # TODO(harlowja) do a better exhaustive check...
         return tr.TraceReader(self._get_trace_files()['start']).exists()
 
     def is_installed(self):
+        # TODO(harlowja) do a better exhaustive check...
         return tr.TraceReader(self._get_trace_files()['install']).exists()
 
 
@@ -113,8 +116,8 @@ class PkgInstallComponent(ComponentBase):
         self.tracewriter = tr.TraceWriter(self._get_trace_files()['install'], break_if_there=False)
         self.packager_factory = packager.PackagerFactory(self.distro, self.distro.get_default_package_manager_cls())
 
-    def _get_download_locations(self):
-        return list()
+    def _get_download_config(self):
+        return (None, None)
 
     def _clear_pkg_dups(self, pkg_list):
         dup_free_list = []
@@ -125,68 +128,50 @@ class PkgInstallComponent(ComponentBase):
                 names_there.add(pkg['name'])
         return dup_free_list
 
-    def _get_real_download_locations(self):
-        real_locations = list()
-        for info in self._get_download_locations():
-            section, key = info["uri"]
-            uri = self.cfg.getdefaulted(section, key).strip()
-            if not uri:
-                raise ValueError(("Could not find uri in config to download "
-                                   "from at section %s for option %s") % (section, key))
-            target_directory = self.get_option('app_dir')
-            branch = None
-            if 'branch' in info:
-                (section, key) = info['branch']
-                branch = self.cfg.get(section, key)
-            real_locations.append({
-                'branch': branch,
-                'target': target_directory,
-                'uri': uri,
-            })
-        return real_locations
+    def _get_download_location(self):
+        (section, key) = self._get_download_config()
+        if not section or not key:
+            return (None, None)
+        uri = self.cfg.getdefaulted(section, key).strip()
+        if not uri:
+            raise ValueError(("Could not find uri in config to download "
+                               "from at section %s for option %s") % (section, key))
+        return (uri, self.get_option('app_dir'))
 
     def download(self):
-        download_locs = self._get_real_download_locations()
-        uris = [loc['uri'] for loc in download_locs]
-        utils.log_iterable(uris, logger=LOG,
-                header="Downloading from %s uris" % (len(uris)))
-        for info in download_locs:
-            # Extract da download!
-            uri = info['uri']
-            target_loc = info['target']
-            branch = info['branch']
-            # Activate da download!
-            self.tracewriter.download_happened(target_loc, uri)
-            dirs_made = self._do_download(uri, target_loc, branch)
-            # Here we ensure this is always added so that
-            # if a keep old happens then this of course
-            # won't be recreated, but if u uninstall without keeping old
-            # then this won't be deleted this time around
-            # adding it in is harmless and will make sure its removed.
-            if target_loc not in dirs_made:
-                dirs_made.append(target_loc)
+        (from_uri, target_dir) = self._get_download_location()
+        if not from_uri and not target_dir:
+            return []
+        else:
+            uris = [from_uri]
+            utils.log_iterable(uris, logger=LOG,
+                    header="Downloading from %s uris" % (len(uris)))
+            self.tracewriter.download_happened(target_dir, from_uri)
+            dirs_made = down.download(self.distro, from_uri, target_dir)
             self.tracewriter.dirs_made(*dirs_made)
-        return len(download_locs)
-
-    def _do_download(self, uri, target_dir, branch):
-        return down.GitDownloader(self.distro, uri, target_dir, branch).download()
+            return uris
 
     def _get_param_map(self, config_fn):
         mp = ComponentBase._get_params(self)
-        mp['CONFIG_FN'] = config_fn or ''
+        if config_fn:
+            mp['CONFIG_FN'] = config_fn
         return mp
-    
-    def _get_packages(self):
-        pkg_list = self.get_option('packages') or []
+
+    @property
+    def packages(self):
+        pkg_list = self.get_option('packages', [])
+        if not pkg_list:
+            pkg_list = []
         for name, values in self.subsystems.items():
             if 'packages' in values:
                 LOG.debug("Extending package list with packages for subsystem: %r", name)
-                pkg_list.extend(values.get('packages') or [])
-        return self._clear_pkg_dups(pkg_list)
+                pkg_list.extend(values.get('packages'))
+        pkg_list = self._clear_pkg_dups(pkg_list)
+        return pkg_list
 
     def install(self):
         LOG.debug('Preparing to install packages for: %r', self.name)
-        pkgs = self._get_packages()
+        pkgs = self.packages
         if pkgs:
             pkg_names = [p['name'] for p in pkgs]
             utils.log_iterable(pkg_names, logger=LOG,
@@ -199,14 +184,16 @@ class PkgInstallComponent(ComponentBase):
         return self.get_option('trace_dir')
 
     def pre_install(self):
-        pkgs = self._get_packages()
-        for p in pkgs:
-            self.packager_factory.get_packager_for(p).pre_install(p, self._get_param_map(None))
+        pkgs = self.packages
+        if pkgs:
+            for p in pkgs:
+                self.packager_factory.get_packager_for(p).pre_install(p, self._get_param_map(None))
 
     def post_install(self):
-        pkgs = self._get_packages()
-        for p in pkgs:
-            self.packager_factory.get_packager_for(p).post_install(p, self._get_param_map(None))
+        pkgs = self.packages
+        if pkgs:
+            for p in self.packages:
+                self.packager_factory.get_packager_for(p).post_install(p, self._get_param_map(None))
 
     def _get_config_files(self):
         return list()
@@ -284,95 +271,139 @@ class PythonInstallComponent(PkgInstallComponent):
             sh.joinpths(self.get_option('app_dir'), 'tools', 'test-requires')
         ]
 
+    def _get_download_config(self):
+        down_name = self.name.replace("-", "_").lower().strip()
+        return ('download_from', down_name)
+
     def _get_python_directories(self):
-        py_dirs = {
-            self.name: self.get_option('app_dir'),
-        }
+        py_dirs = {}
+        app_dir = self.get_option('app_dir')
+        if sh.isdir(app_dir):
+            py_dirs[self.name] = app_dir
         return py_dirs
 
-    def _get_packages(self):
-        pkg_list = PkgInstallComponent._get_packages(self)
+    @property
+    def packages(self):
+        pkg_list = super(PythonInstallComponent, self).packages
+        if not pkg_list:
+            pkg_list = []
         pkg_list.extend(self._get_mapped_packages())
-        return self._clear_pkg_dups(pkg_list)
+        return pkg_list
+
+    @property
+    def pips_to_packages(self):
+        pip_pkg_list = self.get_option('pip_to_package', [])
+        if not pip_pkg_list:
+            pip_pkg_list = []
+        return pip_pkg_list
+
+    def _match_pip_requires(self, pip_requirement):
+        # Try to find it in anyones pip -> pkg list
+        pip2_pkg_mp = {
+            self.name: self.pips_to_packages,
+        }
+
+        # TODO(harlowja) Is this a bug?? that this is needed?
+        def pip_match(in1, in2):
+            in1 = in1.replace("-", "_")
+            in1 = in1.lower()
+            in2 = in2.replace('-', '_')
+            in2 = in2.lower()
+            return in1 == in2
+
+        for name, component in self.instances.items():
+            if component is self or not component.activated:
+                continue
+            if hasattr(component, 'pips_to_packages'):
+                pip2_pkg_mp[name] = component.pips_to_packages
+
+        pip_name = pip_requirement.project_name
+        pip_found = False
+        pkg_found = None
+        for who, pips_2_pkgs in pip2_pkg_mp.items():
+            for pip_info in pips_2_pkgs:
+                if pip_match(pip_name, pip_info['name']):
+                    version = pip_info.get('version')
+                    if version is None or version in pip_requirement:
+                        # Assume pip installs the right version
+                        # for now, TODO(harlowja), make this better
+                        pip_found = True
+                        pkg_found = pip_info.get('package')
+                        LOG.debug("Matched pip->pkg (%s) from component %s", pip_requirement, who)
+                        break
+            if pip_found:
+                break
+        if pip_found:
+            return (pkg_found, False, True)
+
+        # Ok nobody had it in a pip->pkg mapping
+        # but see if they had it in there pip collection
+        pip_mp = {
+            self.name: list(self.pips),
+        }
+        for name, component in self.instances.items():
+            if not component.activated or component is self:
+                continue
+            if hasattr(component, 'pips'):
+                pip_mp[name] = list(component.pips)
+
+        pip_found = False
+        for who, pips in pip_mp.items():
+            for pip_info in pips:
+                if pip_match(pip_info['name'], pip_name):
+                    version = pip_info.get('version')
+                    if version is None or version in pip_requirement:
+                        # Assume pip installs the right version
+                        # for now, TODO(harlowja), make this better
+                        pip_found = True
+                        LOG.debug("Matched pip (%s) from component %s", pip_requirement, who)
+                        break
+            if pip_found:
+                break
+        if pip_found:
+            return (None, True, True)
+        else:
+            return (None, False, False)
 
     def _get_mapped_packages(self):
-        pip_requires = {}
+        add_on_pkgs = []
         for fn in self.requires_files:
             if sh.isfile(fn):
-                LOG.info("Injected dependencies from %s.", colorizer.quote(fn))
+                LOG.info("Injected & resolving dependencies from %s.", colorizer.quote(fn))
                 for line in sh.load_file(fn).splitlines():
                     line = line.strip()
                     if not line or line.startswith("#"):
                         continue
-                    entry = pkg_resources.Requirement.parse(line)
-                    pip_requires[entry.key] = {
-                        'requires': entry,
-                        'from': fn,
-                        'full': line,
-                    }
-        add_on_pkgs = []
-        if pip_requires:
-            pip_list  = self._get_pips()
-            pip2_pkg_list = self.get_option('pip_to_package') or []
-            for (name, req) in pip_requires.items():
-                # Seems like this is a bug in the source lists
-                # (at least in glance) so fix it temporarily
-                name = name.lower()
-                name = name.replace("-", "_")
-                found_entry = None
-                is_from_pip = False
-                for pip_info in pip2_pkg_list:
-                    # Seems like this is a bug in the source lists
-                    # (at least in glance) so fix it temporarily
-                    pip_name = pip_info['name']
-                    pip_name = pip_name.replace("-", "_")
-                    pip_name = pip_name.lower()
-                    if pip_name == name:
-                        found_entry = pip_info
-                        break
-                if not found_entry:
-                    # See if a pip (to be installed) directly satisifies this
-                    for pip_info in pip_list:
-                        # Seems like this is a bug in the source lists
-                        # (at least in glance) so fix it temporarily
-                        pip_name = pip_info['name']
-                        pip_name = pip_name.replace("-", "_")
-                        pip_name = pip_name.lower()
-                        if pip_name == name:
-                            found_entry = pip_info
-                            is_from_pip = True
-                            break
-                    if not found_entry:
+                    requirement = pkg_resources.Requirement.parse(line)
+                    (pkg_match, from_pip, already_satisfied) = self._match_pip_requires(requirement)
+                    if not pkg_match and not already_satisfied:
                         raise excp.DependencyException(("Pip dependency %r"
                                                         ' (from %r)'
                                                         ' not translatable'
                                                         ' to a known pip package'
                                                         ' or a distribution'
-                                                        ' package!') % (
-                                                        req['full'], req['from'],
-                                                        ))
-                # TODO(harlowja) - handle the version checking better, it
-                # right is pretty crappy and dump...
-                version_provided = found_entry.get('version')
-                if version_provided is not None and version_provided not in req['requires']:
-                    raise excp.DependencyException("Pip dependency %r"
-                        " (from %r) is not satisfied by the version provided (%r)" %
-                        (req['full'], req['from'], version_provided))
-                if not is_from_pip:
-                    if 'package' in found_entry:
-                        add_on_pkgs.append(found_entry['package'])
+                                                        ' package!') % (requirement, fn))
+                    elif already_satisfied:
+                        pass
+                    else:
+                        if not from_pip and pkg_match:
+                            add_on_pkgs.append(pkg_match)
         return add_on_pkgs
 
-    def _get_pips(self):
-        pip_list = self.get_option('pips') or []
-        for name, values in self.subsystems.items():
+    @property
+    def pips(self):
+        pip_list = self.get_option('pips')
+        if not pip_list:
+            pip_list = []
+        for (name, values) in self.subsystems.items():
             if 'pips' in values:
                 LOG.debug("Extending pip list with pips for subsystem: %r" % (name))
-                pip_list.extend(values.get('pips') or [])
-        return self._clear_pkg_dups(pip_list)
+                pip_list.extend(values.get('pips'))
+        pip_list = self._clear_pkg_dups(pip_list)
+        return pip_list
 
     def _install_pips(self):
-        pips = self._get_pips()
+        pips = self.pips
         if pips:
             pip_names = [p['name'] for p in pips]
             utils.log_iterable(pip_names, logger=LOG,
@@ -385,6 +416,7 @@ class PythonInstallComponent(PkgInstallComponent):
 
     def _clean_pip_requires(self):
         # Fixup these files if they exist (sometimes they have junk in them)
+        files = 0
         for fn in self.requires_files:
             if not sh.isfile(fn):
                 continue
@@ -401,20 +433,21 @@ class PythonInstallComponent(PkgInstallComponent):
                     new_lines.append(s_line)
             new_fc = "\n".join(new_lines)
             sh.write_file(fn, "# Cleaned on %s\n\n%s\n" % (date.rcf8222date(), new_fc))
+            files += 1
+        return files
 
     def _filter_pip_requires_line(self, line):
         return line
 
     def pre_install(self):
-        self._clean_pip_requires()
         PkgInstallComponent.pre_install(self)
-        pips = self._get_pips()
+        pips = self.pips
         for p in pips:
             self.pip_factory.get_packager_for(p).pre_install(p, self._get_param_map(None))
 
     def post_install(self):
         PkgInstallComponent.post_install(self)
-        pips = self._get_pips()
+        pips = self.pips
         for p in pips:
             self.pip_factory.get_packager_for(p).post_install(p, self._get_param_map(None))
 
@@ -449,6 +482,11 @@ class PythonInstallComponent(PkgInstallComponent):
         trace_dir = PkgInstallComponent.install(self)
         self._python_install()
         return trace_dir
+
+    def configure(self):
+        am = PkgInstallComponent.configure(self)
+        am += self._clean_pip_requires()
+        return am
 
 
 class PkgUninstallComponent(ComponentBase):
@@ -597,7 +635,8 @@ class ProgramRuntime(ComponentBase):
 
     def _get_param_map(self, app_name):
         mp = ComponentBase._get_params(self)
-        mp['APP_NAME'] = app_name or ''
+        if app_name:
+            mp['APP_NAME'] = app_name
         return mp
 
     def _fetch_run_type(self):
