@@ -264,8 +264,9 @@ components:
         -   name: unittest2
         -   name: webob
         pips:
-        -   name: python-ldap
-            version: "2.3.13"
+        # These seems broke for now
+        # -   name: python-ldap
+        #     version: "2.3.13"
         -   name: pam
             version: '0.1.4'
         -   name: nosexcover

@@ -90,13 +90,10 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
 
-    def _filter_mapped_packages(self, mapping):
-        # Remove swift client...
-        new_mapping = {}
-        for (k, data) in mapping.items():
-            if k.lower().find('swift') == -1:
-                new_mapping[k] = data
-        return new_mapping
+    def _filter_pip_requires_line(self, line):
+        if line.lower().find('swift') != -1:
+            return None
+        return line
 
     def pre_install(self):
         comp.PythonInstallComponent.pre_install(self)

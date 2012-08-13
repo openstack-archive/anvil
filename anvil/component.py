@@ -20,6 +20,7 @@ import weakref
 
 from anvil import colorizer
 from anvil import constants
+from anvil import date
 from anvil import downloader as down
 from anvil import exceptions as excp
 from anvil import importer
@@ -29,7 +30,6 @@ from anvil import pip
 from anvil import shell as sh
 from anvil import trace as tr
 from anvil import utils
-
 
 
 LOG = logging.getLogger(__name__)
@@ -279,6 +279,10 @@ class PythonInstallComponent(PkgInstallComponent):
     def __init__(self, *args, **kargs):
         PkgInstallComponent.__init__(self, *args, **kargs)
         self.pip_factory = packager.PackagerFactory(self.distro, pip.Packager)
+        self.requires_files = [
+            sh.joinpths(self.get_option('app_dir'), 'tools', 'pip-requires'),
+            sh.joinpths(self.get_option('app_dir'), 'tools', 'test-requires')
+        ]
 
     def _get_python_directories(self):
         py_dirs = {
@@ -291,25 +295,14 @@ class PythonInstallComponent(PkgInstallComponent):
         pkg_list.extend(self._get_mapped_packages())
         return self._clear_pkg_dups(pkg_list)
 
-    def _filter_mapped_packages(self, mapping):
-        return mapping
-
     def _get_mapped_packages(self):
         pip_requires = {}
-        app_directory = self.get_option('app_dir')
-        scan_files = [
-            sh.joinpths(app_directory, 'tools', 'pip-requires'),
-            sh.joinpths(app_directory, 'tools', 'test-requires')
-        ]
-        for fn in scan_files:
+        for fn in self.requires_files:
             if sh.isfile(fn):
                 LOG.info("Injected dependencies from %s.", colorizer.quote(fn))
                 for line in sh.load_file(fn).splitlines():
                     line = line.strip()
                     if not line or line.startswith("#"):
-                        continue
-                    if line.find('http://tarballs.openstack.org') != -1:
-                        # WTF
                         continue
                     entry = pkg_resources.Requirement.parse(line)
                     pip_requires[entry.key] = {
@@ -317,7 +310,6 @@ class PythonInstallComponent(PkgInstallComponent):
                         'from': fn,
                         'full': line,
                     }
-        pip_requires = self._filter_mapped_packages(pip_requires)
         add_on_pkgs = []
         if pip_requires:
             pip_list  = self._get_pips()
@@ -391,7 +383,30 @@ class PythonInstallComponent(PkgInstallComponent):
                     self.pip_factory.get_packager_for(p).install(p)
                     p_bar.update(i + 1)
 
+    def _clean_pip_requires(self):
+        # Fixup these files if they exist (sometimes they have junk in them)
+        for fn in self.requires_files:
+            if not sh.isfile(fn):
+                continue
+            new_lines = []
+            for line in sh.load_file(fn).splitlines():
+                s_line = line.strip()
+                if len(s_line) == 0:
+                    new_lines.append("\n")
+                elif s_line.startswith("#"):
+                    new_lines.append(s_line)
+                elif not self._filter_pip_requires_line(s_line):
+                    new_lines.append(("# %s" % (s_line)))
+                else:
+                    new_lines.append(s_line)
+            new_fc = "\n".join(new_lines)
+            sh.write_file(fn, "# Cleaned on %s\n\n%s\n" % (date.rcf8222date(), new_fc))
+
+    def _filter_pip_requires_line(self, line):
+        return line
+
     def pre_install(self):
+        self._clean_pip_requires()
         PkgInstallComponent.pre_install(self)
         pips = self._get_pips()
         for p in pips:

@@ -83,13 +83,14 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
 
-    def _filter_mapped_packages(self, mapping):
-        # Remove keystone client (will be handled by anvil)...
-        new_mapping = {}
-        for (k, data) in mapping.items():
-            if k.lower().find('keystoneclient') == -1:
-                new_mapping[k] = data
-        return new_mapping
+    def _filter_pip_requires_line(self, line):
+        if line.lower().find('keystoneclient') != -1:
+            return None
+        if line.lower().find('ldap') != -1:
+            return None
+        if line.lower().find('http://tarballs.openstack.org') != -1:
+            return None
+        return line
 
     def _get_download_locations(self):
         places = list()

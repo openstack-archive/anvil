@@ -72,7 +72,7 @@ class InstallAction(action.Action):
             )
         self._run_phase(
             PhaseFunctors(
-                start=None,
+                start=lambda i: LOG.info('Preinstalling %s.', colorizer.quote(i.name)),
                 run=lambda i: i.pre_install(),
                 end=None,
             ),
