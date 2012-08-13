@@ -19,9 +19,10 @@
 from anvil import component
 
 
-class Installer(component.PkgInstallComponent):
-    pass
+class Installer(component.PythonInstallComponent):
+    def _get_python_directories(self):
+        return {}
 
 
-class Uninstaller(component.PkgUninstallComponent):
+class Uninstaller(component.PythonUninstallComponent):
     pass
