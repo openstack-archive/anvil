@@ -30,7 +30,6 @@ from anvil.helpers import glance as ghelper
 from anvil.helpers import keystone as khelper
 from anvil.helpers import nova as nhelper
 from anvil.helpers import quantum as qhelper
-from anvil.helpers import swift as shelper
 
 LOG = logging.getLogger(__name__)
 
@@ -83,6 +82,14 @@ class KeystoneInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
+
+    def _filter_mapped_packages(self, mapping):
+        # Remove keystone client (will be handled by anvil)...
+        new_mapping = {}
+        for (k, data) in mapping.items():
+            if k.lower().find('keystoneclient') == -1:
+                new_mapping[k] = data
+        return new_mapping
 
     def _get_download_locations(self):
         places = list()
@@ -195,7 +202,6 @@ class KeystoneRuntime(comp.PythonRuntime):
             initial_cfg['keystone'] = khelper.get_shared_params(self.cfg)
             initial_cfg['nova'] = nhelper.get_shared_params(self.cfg)
             initial_cfg['quantum'] = qhelper.get_shared_params(self.cfg)
-            initial_cfg['swift'] = shelper.get_shared_params(self.cfg)
             init_what = utils.param_replace_deep(copy.deepcopy(self.init_what), initial_cfg)
             khelper.Initializer(initial_cfg['keystone']).initialize(**init_what)
             # Writing this makes sure that we don't init again

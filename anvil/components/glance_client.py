@@ -30,6 +30,14 @@ class GlanceClientInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
 
+    def _filter_mapped_packages(self, mapping):
+        # Remove keystone client (will be handled by anvil)...
+        new_mapping = {}
+        for (k, data) in mapping.items():
+            if k.lower().find('keystoneclient') == -1:
+                new_mapping[k] = data
+        return new_mapping
+
     def _get_download_locations(self):
         places = list()
         places.append({

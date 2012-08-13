@@ -67,7 +67,7 @@ class Packager(object):
                 del(self.registry.removed[name])
 
     def remove(self, pkg):
-        removable = pkg.get('removable', True)
+        removable = pkg.get('removable', False)
         if not removable:
             return False
         name = pkg['name']

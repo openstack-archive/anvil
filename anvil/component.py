@@ -303,9 +303,13 @@ class PythonInstallComponent(PkgInstallComponent):
         ]
         for fn in scan_files:
             if sh.isfile(fn):
+                LOG.info("Injected dependencies from %s.", colorizer.quote(fn))
                 for line in sh.load_file(fn).splitlines():
                     line = line.strip()
                     if not line or line.startswith("#"):
+                        continue
+                    if line.find('http://tarballs.openstack.org') != -1:
+                        # WTF
                         continue
                     entry = pkg_resources.Requirement.parse(line)
                     pip_requires[entry.key] = {
@@ -355,6 +359,8 @@ class PythonInstallComponent(PkgInstallComponent):
                                                         ' package!') % (
                                                         req['full'], req['from'],
                                                         ))
+                # TODO(harlowja) - handle the version checking better, it
+                # right is pretty crappy and dump...
                 version_provided = found_entry.get('version')
                 if version_provided is not None and version_provided not in req['requires']:
                     raise excp.DependencyException("Pip dependency %r"

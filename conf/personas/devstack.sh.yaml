@@ -2,13 +2,13 @@
 components:
 # Order matters here!
 - general
-# - db
+- db
 # - rabbit-mq
-#- keystone-client
-#- keystone
+- keystone-client
+- keystone
 - glance
 # Do this after glance is installed to override the old binary
-#- glance-client
+- glance-client
 #- nova
 #- cinder
 #- quantum-client
