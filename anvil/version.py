@@ -14,7 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-VERSION = ['2012', '5', '11']
+VERSION = ['2012', '8', '12']
 FINAL = False  # May never be final ;)
 
 
