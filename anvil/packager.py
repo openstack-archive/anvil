@@ -15,13 +15,27 @@
 #    under the License.
 
 import abc
+import pkg_resources
 
+from anvil import exceptions as excp
 from anvil import colorizer
 from anvil import importer
 from anvil import log as logging
 from anvil import utils
 
 LOG = logging.getLogger(__name__)
+
+
+class NullVersion(object):
+
+    def __init__(self, name):
+        self.name = name
+
+    def __contains__(self, version):
+        return True
+
+    def __str__(self):
+        return "%s (no version)" % (self.name)
 
 
 class PackageRegistry(object):
@@ -39,22 +53,33 @@ class Packager(object):
         self.distro = distro
         self.registry = registry
 
+    def _parse_version(self, name, version):
+        if version is not None:
+            # This won't work for all package versions
+            # but good enough for now...
+            p_version = pkg_resources.Requirement.parse(version)
+        else:
+            p_version = NullVersion(name)
+        return p_version
+
     def install(self, pkg):
         name = pkg['name']
         version = pkg.get('version')
-        skip_install = False
         if name in self.registry.installed:
+            installed_version = self.registry.installed[name]
+            if version is not None and version not in installed_version:
+                raise excp.InstallException("Version %s previously installed, requested incompatible version %s" % (installed_version, version))
             LOG.debug("Skipping install of %r since it already happened.", name)
-            skip_install = True
-        if not skip_install:
+        else:
             self._install(pkg)
-            LOG.debug("Noting that %r - v(%s) was installed.", name, (version or "??"))
-            self.registry.installed[name] = version
+            p_version = self._parse_version(name, version)
+            LOG.debug("Noting that %s was installed.", name)
+            self.registry.installed[name] = p_version
             if name in self.registry.removed:
                 del(self.registry.removed[name])
 
     def remove(self, pkg):
-        removable = pkg.get('removable', False)
+        removable = pkg.get('removable')
         if not removable:
             return False
         name = pkg['name']

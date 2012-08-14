@@ -246,43 +246,6 @@ def tempdir(**kwargs):
         sh.deldir(tdir)
 
 
-def versionize(input_version, unknown_version="-1.0"):
-    if input_version == None:
-        return distutils.version.LooseVersion(unknown_version)
-    input_version = str(input_version)
-    segments = input_version.split(".")
-    cleaned_segments = list()
-    for piece in segments:
-        piece = piece.strip()
-        if len(piece) == 0:
-            cleaned_segments.append("")
-        else:
-            piece = piece.strip("*")
-            if len(piece) == 0:
-                cleaned_segments.append(STAR_VERSION)
-            else:
-                try:
-                    piece = int(piece)
-                except ValueError:
-                    pass
-                cleaned_segments.append(piece)
-    if not cleaned_segments:
-        return distutils.version.LooseVersion(unknown_version)
-    return distutils.version.LooseVersion(".".join([str(p) for p in cleaned_segments]))
-
-
-def sort_versions(versions, descending=True):
-    if not versions:
-        return list()
-    version_cleaned = list()
-    for v in versions:
-        version_cleaned.append(versionize(v))
-    versions_sorted = sorted(version_cleaned)
-    if not descending:
-        versions_sorted.reverse()
-    return versions_sorted
-
-
 def get_host_ip():
     """
     Returns the actual ip of the local machine.

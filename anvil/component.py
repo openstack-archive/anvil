@@ -297,11 +297,7 @@ class PythonInstallComponent(PkgInstallComponent):
             pip_pkg_list = []
         return pip_pkg_list
 
-    def _match_pip_requires(self, pip_requirement):
-        # Try to find it in anyones pip -> pkg list
-        pip2_pkg_mp = {
-            self.name: self.pips_to_packages,
-        }
+    def _match_pip_requires(self, pip_name):
 
         # TODO(harlowja) Is this a bug?? that this is needed?
         def pip_match(in1, in2):
@@ -311,30 +307,29 @@ class PythonInstallComponent(PkgInstallComponent):
             in2 = in2.lower()
             return in1 == in2
 
+        pip_found = False
+        pkg_found = None
+
+        # Try to find it in anyones pip -> pkg list
+        pip2_pkg_mp = {
+            self.name: self.pips_to_packages,
+        }
         for name, component in self.instances.items():
             if component is self or not component.activated:
                 continue
             if hasattr(component, 'pips_to_packages'):
                 pip2_pkg_mp[name] = component.pips_to_packages
-
-        pip_name = pip_requirement.project_name
-        pip_found = False
-        pkg_found = None
         for who, pips_2_pkgs in pip2_pkg_mp.items():
             for pip_info in pips_2_pkgs:
                 if pip_match(pip_name, pip_info['name']):
-                    version = pip_info.get('version')
-                    if version is None or version in pip_requirement:
-                        # Assume pip installs the right version
-                        # for now, TODO(harlowja), make this better
-                        pip_found = True
-                        pkg_found = pip_info.get('package')
-                        LOG.debug("Matched pip->pkg (%s) from component %s", pip_requirement, who)
-                        break
+                    pip_found = True
+                    pkg_found = pip_info.get('package')
+                    LOG.debug("Matched pip->pkg (%s) from component %s", pip_name, who)
+                    break
             if pip_found:
                 break
         if pip_found:
-            return (pkg_found, False, True)
+            return (pkg_found, False)
 
         # Ok nobody had it in a pip->pkg mapping
         # but see if they had it in there pip collection
@@ -346,24 +341,18 @@ class PythonInstallComponent(PkgInstallComponent):
                 continue
             if hasattr(component, 'pips'):
                 pip_mp[name] = list(component.pips)
-
         pip_found = False
         for who, pips in pip_mp.items():
             for pip_info in pips:
                 if pip_match(pip_info['name'], pip_name):
-                    version = pip_info.get('version')
-                    if version is None or version in pip_requirement:
-                        # Assume pip installs the right version
-                        # for now, TODO(harlowja), make this better
-                        pip_found = True
-                        LOG.debug("Matched pip (%s) from component %s", pip_requirement, who)
-                        break
+                    pip_found = True
+                    LOG.debug("Matched pip (%s) from component %s", pip_name, who)
+                    break
             if pip_found:
                 break
         if pip_found:
-            return (None, True, True)
-        else:
-            return (None, False, False)
+            return (None, True)
+        return (None, False)
 
     def _get_mapped_packages(self):
         add_on_pkgs = []
@@ -375,19 +364,16 @@ class PythonInstallComponent(PkgInstallComponent):
                     if not line or line.startswith("#"):
                         continue
                     requirement = pkg_resources.Requirement.parse(line)
-                    (pkg_match, from_pip, already_satisfied) = self._match_pip_requires(requirement)
-                    if not pkg_match and not already_satisfied:
+                    (pkg_match, from_pip) = self._match_pip_requires(requirement.project_name)
+                    if not pkg_match and not from_pip:
                         raise excp.DependencyException(("Pip dependency %r"
                                                         ' (from %r)'
                                                         ' not translatable'
                                                         ' to a known pip package'
                                                         ' or a distribution'
                                                         ' package!') % (requirement, fn))
-                    elif already_satisfied:
-                        pass
-                    else:
-                        if not from_pip and pkg_match:
-                            add_on_pkgs.append(pkg_match)
+                    elif not from_pip and pkg_match:
+                        add_on_pkgs.append(pkg_match)
         return add_on_pkgs
 
     @property
