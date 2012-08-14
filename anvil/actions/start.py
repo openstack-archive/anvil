@@ -22,6 +22,17 @@ from anvil.action import PhaseFunctors
 
 LOG = log.getLogger(__name__)
 
+# Which phase files we will remove
+# at the completion of the given stage
+KNOCK_OFF_MAP = {
+    'start': [
+        'stopped',
+    ],
+    'post-start': [
+        'stopped',
+    ]
+}
+
 
 class StartAction(action.Action):
 
@@ -34,16 +45,6 @@ class StartAction(action.Action):
         return 'start'
 
     def _run(self, persona, component_order, instances):
-        self._run_phase(
-            PhaseFunctors(
-                start=None,
-                run=lambda i: i.configure(),
-                end=None,
-            ),
-            component_order,
-            instances,
-            "Configure",
-            )
         self._run_phase(
             PhaseFunctors(
                 start=None,
@@ -74,5 +75,6 @@ class StartAction(action.Action):
             instances,
             "Post-start",
             )
-        # Knock off anything connected to stopping
-        self._delete_phase_files(['stop'])
+
+    def _get_opposite_stages(self, phase_name):
+        return ('stop', KNOCK_OFF_MAP.get(phase_name.lower(), []))

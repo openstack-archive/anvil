@@ -23,6 +23,23 @@ from anvil.action import PhaseFunctors
 LOG = log.getLogger(__name__)
 
 
+# Which phase files we will remove
+# at the completion of the given stage
+KNOCK_OFF_MAP = {
+    'uninstall': [
+        'download',
+    ],
+    'unconfigure': [
+        'configure',
+    ],
+    "post-uninstall": [
+        'download', 'configure',
+        'pre-install', 'install',
+        'post-install',
+    ],
+}
+
+
 class UninstallAction(action.Action):
 
     @staticmethod
@@ -79,5 +96,6 @@ class UninstallAction(action.Action):
             instances,
             "Post-uninstall",
             )
-        # Knock off and phase files that are connected to installing
-        self._delete_phase_files(['install'])
+
+    def _get_opposite_stages(self, phase_name):
+        return ('install', KNOCK_OFF_MAP.get(phase_name.lower(), []))

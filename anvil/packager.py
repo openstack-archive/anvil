@@ -80,7 +80,7 @@ class Packager(object):
         version = pkg.get('version')
         if name in self.registry.installed:
             installed_version = self.registry.installed[name]
-            if not self._compare_against_installed(version, installed_version)
+            if not self._compare_against_installed(version, installed_version):
                 raise excp.InstallException(("Version %s previously installed, "
                                              "requested incompatible version %s") % (installed_version, version))
             LOG.debug("Skipping install of %r since it already happened.", name)

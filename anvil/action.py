@@ -151,13 +151,13 @@ class Action(object):
         for c in component_order:
             instances[c].warm_configs()
 
-    def _get_phase_dir(self, action_name=None):
+    def _get_phase_directory(self, action_name=None):
         if not action_name:
             action_name = self.get_action_name()
         return sh.joinpths(self.root_dir, "phases", action_name)
 
-    def _get_phase_fn(self, phase_name):
-        dirname = self._get_phase_dir()
+    def _get_phase_filename(self, phase_name, action_name=None):
+        dirname = self._get_phase_directory(action_name)
         sh.mkdirslist(dirname)
         return sh.joinpths(dirname, "%s.phases" % (phase_name.lower()))
 
@@ -167,7 +167,7 @@ class Action(object):
         """
         component_results = dict()
         if phase_name:
-            phase_recorder = phase.PhaseRecorder(self._get_phase_fn(phase_name))
+            phase_recorder = phase.PhaseRecorder(self._get_phase_filename(phase_name))
         else:
             phase_recorder = phase.NullPhaseRecorder()
         # Reset all activations
@@ -207,8 +207,15 @@ class Action(object):
                 instance.activated = False
         return component_results
 
+    def _get_opposite_stages(self, phase_name):
+        return ('', [])
+
     def _on_completion(self, phase_name, results):
-        pass
+       (action_name, to_destroy) = self._get_opposite_stages(phase_name)
+       for name in to_destroy:
+           fn = self._get_phase_filename(name, action_name)
+           if sh.isfile(fn):
+               sh.unlink(fn)
 
     def run(self, persona):
         instances = self._construct_instances(persona)
