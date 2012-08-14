@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import functools
 import pkg_resources
 import re
 import weakref
@@ -114,7 +115,8 @@ class PkgInstallComponent(ComponentBase):
     def __init__(self, *args, **kargs):
         ComponentBase.__init__(self, *args, **kargs)
         self.tracewriter = tr.TraceWriter(self._get_trace_files()['install'], break_if_there=False)
-        self.packager_factory = packager.PackagerFactory(self.distro, self.distro.get_default_package_manager_cls())
+        self.packager_functor = functools.partial(kargs['packager_functor'], 
+                                                  default_packager_cls=self.distro.get_default_package_manager_cls())
 
     def _get_download_config(self):
         return (None, None)
@@ -179,7 +181,7 @@ class PkgInstallComponent(ComponentBase):
             with utils.progress_bar('Installing', len(pkgs)) as p_bar:
                 for (i, p) in enumerate(pkgs):
                     self.tracewriter.package_installed(p)
-                    self.packager_factory.get_packager_for(p).install(p)
+                    self.packager_functor(p).install(p)
                     p_bar.update(i + 1)
         return self.get_option('trace_dir')
 
@@ -187,13 +189,13 @@ class PkgInstallComponent(ComponentBase):
         pkgs = self.packages
         if pkgs:
             for p in pkgs:
-                self.packager_factory.get_packager_for(p).pre_install(p, self._get_param_map(None))
+                self.packager_functor(p).pre_install(p, self._get_param_map(None))
 
     def post_install(self):
         pkgs = self.packages
         if pkgs:
             for p in self.packages:
-                self.packager_factory.get_packager_for(p).post_install(p, self._get_param_map(None))
+                self.packager_functor(p).post_install(p, self._get_param_map(None))
 
     def _get_config_files(self):
         return list()
@@ -265,7 +267,8 @@ class PkgInstallComponent(ComponentBase):
 class PythonInstallComponent(PkgInstallComponent):
     def __init__(self, *args, **kargs):
         PkgInstallComponent.__init__(self, *args, **kargs)
-        self.pip_factory = packager.PackagerFactory(self.distro, pip.Packager)
+        self.pip_functor = functools.partial(kargs['packager_functor'], 
+                                             default_packager_cls=pip.Packager)
         self.requires_files = [
             sh.joinpths(self.get_option('app_dir'), 'tools', 'pip-requires'),
             sh.joinpths(self.get_option('app_dir'), 'tools', 'test-requires')
@@ -275,7 +278,8 @@ class PythonInstallComponent(PkgInstallComponent):
         down_name = self.name.replace("-", "_").lower().strip()
         return ('download_from', down_name)
 
-    def _get_python_directories(self):
+    @property
+    def python_directories(self):
         py_dirs = {}
         app_dir = self.get_option('app_dir')
         if sh.isdir(app_dir):
@@ -397,7 +401,7 @@ class PythonInstallComponent(PkgInstallComponent):
             with utils.progress_bar('Installing', len(pips)) as p_bar:
                 for (i, p) in enumerate(pips):
                     self.tracewriter.pip_installed(p)
-                    self.pip_factory.get_packager_for(p).install(p)
+                    self.pip_functor(p).install(p)
                     p_bar.update(i + 1)
 
     def _clean_pip_requires(self):
@@ -430,16 +434,16 @@ class PythonInstallComponent(PkgInstallComponent):
         PkgInstallComponent.pre_install(self)
         pips = self.pips
         for p in pips:
-            self.pip_factory.get_packager_for(p).pre_install(p, self._get_param_map(None))
+            self.pip_functor(p).pre_install(p, self._get_param_map(None))
 
     def post_install(self):
         PkgInstallComponent.post_install(self)
         pips = self.pips
         for p in pips:
-            self.pip_factory.get_packager_for(p).post_install(p, self._get_param_map(None))
+            self.pip_functor(p).post_install(p, self._get_param_map(None))
 
     def _install_python_setups(self):
-        py_dirs = self._get_python_directories()
+        py_dirs = self.python_directories
         if py_dirs:
             real_dirs = dict()
             for (name, wkdir) in py_dirs.items():
@@ -480,7 +484,8 @@ class PkgUninstallComponent(ComponentBase):
     def __init__(self, *args, **kargs):
         ComponentBase.__init__(self, *args, **kargs)
         self.tracereader = tr.TraceReader(self._get_trace_files()['install'])
-        self.packager_factory = packager.PackagerFactory(self.distro, self.distro.get_default_package_manager_cls())
+        self.packager_functor = functools.partial(kargs['packager_functor'], 
+                                                  default_packager_cls=self.distro.get_default_package_manager_cls())
 
     def unconfigure(self):
         self._unconfigure_files()
@@ -527,7 +532,7 @@ class PkgUninstallComponent(ComponentBase):
                 which_removed = set()
                 with utils.progress_bar('Uninstalling', len(pkgs), reverse=True) as p_bar:
                     for (i, p) in enumerate(pkgs):
-                        if self.packager_factory.get_packager_for(p).remove(p):
+                        if self.packager_functor(p).remove(p):
                             which_removed.add(p['name'])
                         p_bar.update(i + 1)
                 utils.log_iterable(which_removed, logger=LOG,
@@ -565,7 +570,8 @@ class PkgUninstallComponent(ComponentBase):
 class PythonUninstallComponent(PkgUninstallComponent):
     def __init__(self, *args, **kargs):
         PkgUninstallComponent.__init__(self, *args, **kargs)
-        self.pip_factory = packager.PackagerFactory(self.distro, pip.Packager)
+        self.pip_functor = functools.partial(kargs['packager_functor'], 
+                                             default_packager_cls=pip.Packager)
 
     def uninstall(self):
         self._uninstall_python()
@@ -584,7 +590,7 @@ class PythonUninstallComponent(PkgUninstallComponent):
                 with utils.progress_bar('Uninstalling', len(pips), reverse=True) as p_bar:
                     for (i, p) in enumerate(pips):
                         try:
-                            self.pip_factory.get_packager_for(p).remove(p)
+                            self.pip_functor(p).remove(p)
                         except excp.ProcessExecutionError as e:
                             # NOTE(harlowja): pip seems to die if a pkg isn't there even in quiet mode
                             combined = (str(e.stderr) + str(e.stdout))

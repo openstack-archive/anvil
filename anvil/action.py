@@ -16,11 +16,13 @@
 
 import abc
 import collections
+import functools
 
 from anvil import colorizer
 from anvil import exceptions as excp
 from anvil import importer
 from anvil import log as logging
+from anvil import packager
 from anvil import phase
 from anvil import shell as sh
 from anvil import utils
@@ -125,6 +127,7 @@ class Action(object):
             cls_kvs['subsystems'] = self._merge_subsystems(opts.pop('subsystems', None), p_subsystems.get(c))
             cls_kvs['instances'] = instances
             cls_kvs['name'] = c
+            cls_kvs['packager_functor'] = functools.partial(packager.get_packager, distro=self.distro)
             # Can't override the above
             component_opts = {}
             for (k, v) in opts.items():

@@ -55,7 +55,7 @@ class Packager(object):
 
     def _parse_version(self, name, version):
         if version is not None:
-            # This won't work for all package versions
+            # This won't work for all package versions (ie crazy names)
             # but good enough for now...
             p_version = pkg_resources.Requirement.parse(version)
         else:
@@ -114,36 +114,15 @@ class Packager(object):
         pass
 
 
-class PackagerFactory(object):
-
-    PACKAGER_KEY_NAME = 'packager_name'
-
-    def __init__(self, distro, default_packager_cls):
-        self.default_packager = None
-        self.default_packager_cls = default_packager_cls
-        self.distro = distro
-        self.fetched_packagers = dict()
-        self.registry = PackageRegistry()
-
-    def _construct_pkger(self, cls):
-        return cls(self.distro, self.registry)
-
-    def _get_default_pkgr(self):
-        if not self.default_packager:
-            self.default_packager = self._construct_pkger(self.default_packager_cls)
-            LOG.debug('Loading default package manager %s', self.default_packager_cls)
-        return self.default_packager
-
-    def get_packager_for(self, pkg_info):
-        packager_name = pkg_info.get(self.PACKAGER_KEY_NAME)
-        if not packager_name or not packager_name.strip():
-            packager = self._get_default_pkgr()
-        else:
-            if packager_name in self.fetched_packagers:
-                packager = self.fetched_packagers[packager_name]
-            else:
-                packager_cls = importer.import_entry_point(packager_name)
-                LOG.debug('Loading custom package manager %s for package %r', packager_cls, pkg_info['name'])
-                packager = self._construct_pkger(packager_cls)
-                self.fetched_packagers[packager_name] = packager
-        return packager
+FETCHED_PACKAGERS = {}
+def get_packager(pkg_info, distro, default_packager_cls):
+    packager_name = pkg_info.get('packager_name') or ''
+    packager_name = packager_name.strip()
+    p_cls = default_packager_cls
+    if packager_name:
+        p_cls = importer.import_entry_point(packager_name)
+    if p_cls in FETCHED_PACKAGERS:
+        return FETCHED_PACKAGERS[p_cls]
+    p_instance = p_cls(distro, PackageRegistry())
+    FETCHED_PACKAGERS[p_cls] = p_instance
+    return p_instance
