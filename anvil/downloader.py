@@ -124,7 +124,7 @@ def download(distro, uri, target_dir, **kwargs):
     if scheme in ['http', 'https']:
         dirs_made = []
         with utils.tempdir() as tdir:
-            fn = os.path.basename(path)
+            fn = sh.basename(path)
             downloader = UrlLibDownloader(uri, sh.joinpths(tdir, fn))
             downloader.download()
             if fn.endswith('.tar.gz'):
@@ -141,4 +141,4 @@ def download(distro, uri, target_dir, **kwargs):
                 raise excp.DownloadException("Unable to extract %s downloaded from %s" % (fn, uri))
         return dirs_made
     else:
-        raise excp.DownloadException("Unknown scheme %s, unable to download from %s" % (puri.scheme, uri))
+        raise excp.DownloadException("Unknown scheme %s, unable to download from %s" % (scheme, uri))

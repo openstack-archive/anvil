@@ -44,21 +44,8 @@ class Packager(object):
         version = pkg.get('version')
         skip_install = False
         if name in self.registry.installed:
-            existing_version = self.registry.installed[name]
-            if version == existing_version:
-                LOG.debug("Skipping install of %r since it already happened.", name)
-                skip_install = True
-            else:
-                if existing_version is not None:
-                    if utils.versionize(existing_version) < utils.versionize(version):
-                        LOG.warn(("A request has come in for a 'potentially' newer version of %s v(%s),"
-                            " when v(%s) was previously installed!"), colorizer.quote(name), version, existing_version)
-                    elif utils.versionize(existing_version) > utils.versionize(version):
-                        LOG.warn(("A request has come in for a 'potentially' older version of %s v(%s), "
-                            "when v(%s) was previously installed!"), colorizer.quote(name), version, existing_version)
-                else:
-                    LOG.warn(("A request has come in for a 'potentially' different version of %s v(%s),"
-                        " when a unspecified version was previously installed!"), colorizer.quote(name), version)
+            LOG.debug("Skipping install of %r since it already happened.", name)
+            skip_install = True
         if not skip_install:
             self._install(pkg)
             LOG.debug("Noting that %r - v(%s) was installed.", name, (version or "??"))
