@@ -122,17 +122,19 @@ def download(distro, uri, target_dir, **kwargs):
         downloader.download()
         return dirs_made
     if scheme in ['http', 'https']:
-        dirs_made = sh.mkdirslist(target_dir)
+        dirs_made = []
         with utils.tempdir() as tdir:
             fn = os.path.basename(path)
             downloader = UrlLibDownloader(uri, sh.joinpths(tdir, fn))
             downloader.download()
             if fn.endswith('.tar.gz'):
+                dirs_made = sh.mkdirslist(target_dir)
                 cmd = ['tar', '-xzvf', sh.joinpths(tdir, fn), '-C', target_dir]
                 sh.execute(*cmd)
             elif fn.endswith('.zip'):
                 # TODO(harlowja) this might not be 100% right...
                 # we might have to move the finished directory...
+                dirs_made = sh.mkdirslist(target_dir)
                 cmd = ['unzip', sh.joinpths(tdir, fn), '-d', target_dir]
                 sh.execute(*cmd)
             else:
