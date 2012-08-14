@@ -424,13 +424,14 @@ class PythonInstallComponent(PkgInstallComponent):
             for line in sh.load_file(fn).splitlines():
                 s_line = line.strip()
                 if len(s_line) == 0:
-                    new_lines.append("\n")
+                    continue
                 elif s_line.startswith("#"):
                     new_lines.append(s_line)
                 elif not self._filter_pip_requires_line(s_line):
                     new_lines.append(("# %s" % (s_line)))
                 else:
                     new_lines.append(s_line)
+            sh.move(fn, "%s.orig" % (fn))
             new_fc = "\n".join(new_lines)
             sh.write_file(fn, "# Cleaned on %s\n\n%s\n" % (date.rcf8222date(), new_fc))
             files += 1
