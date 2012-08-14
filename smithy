@@ -40,11 +40,6 @@ from anvil import utils
 
 LOG = logging.getLogger()
 
-# Which rc files we will attempt to load
-RC_FILES = [
-    sh.abspth(settings.gen_rc_filename('core')),
-]
-
 
 def load_rc_files():
     """
@@ -56,7 +51,7 @@ def load_rc_files():
     """
 
     loaded_am = 0
-    for fn in RC_FILES:
+    for fn in [sh.abspth(settings.gen_rc_filename('core'))]:
         try:
             LOG.info("Attempting to load file %s which has your environment settings.", colorizer.quote(fn))
             am_loaded = env_rc.RcReader().load(fn)
@@ -216,7 +211,7 @@ def run(args):
         colorizer.quote(pretty_time['seconds']), colorizer.quote(pretty_time['minutes']), colorizer.quote(action))
 
     LOG.info("After action %s your settings which were read/set are:", colorizer.quote(action))
-    cfg_groups = dict()
+    cfg_groups = {}
     read_set_keys = (config.opts_read.keys() + config.opts_set.keys())
     for c in read_set_keys:
         cfg_id = cfg_helpers.make_id(c, None)

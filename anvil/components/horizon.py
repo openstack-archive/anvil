@@ -106,7 +106,8 @@ class HorizonInstaller(comp.PythonInstallComponent):
         else:
             return comp.PythonInstallComponent._get_target_config_name(self, config_name)
 
-    def _get_config_files(self):
+    @property
+    def config_files(self):
         return list(CONFIGS)
 
     def _setup_blackhole(self):

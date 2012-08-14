@@ -66,10 +66,12 @@ BIN_DIR = 'bin'
 
 class GlanceMixin(object):
 
-    def known_subsystems(self):
+    @property
+    def valid_subsystems(self):
         return SUB_TO_APP.keys()
 
-    def _get_config_files(self):
+    @property
+    def config_files(self):
         return list(CONFIGS)
 
 

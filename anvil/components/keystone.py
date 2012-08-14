@@ -105,7 +105,8 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         cmds = [{'cmd': SYNC_DB_CMD, 'run_as_root': True}]
         utils.execute_template(*cmds, cwd=self.bin_dir, params=mp)
 
-    def _get_config_files(self):
+    @property
+    def config_files(self):
         return list(CONFIGS)
 
     def _setup_db(self):

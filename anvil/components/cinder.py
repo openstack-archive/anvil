@@ -27,7 +27,9 @@ from anvil import utils
 
 
 class CinderMixin(object):
-    def known_subsystems(self):
+
+    @property
+    def valid_subsystems(self):
         return set(['sch', 'api', 'vol'])
 
 

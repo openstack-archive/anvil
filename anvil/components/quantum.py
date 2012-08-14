@@ -52,10 +52,13 @@ APP_OPTIONS = {
 
 
 class QuantumMixin(object):
-    def known_subsystems(self):
-        return set(['openvswitch'])
+    
+    @property
+    def valid_subsystems(self):
+        return ['openvswitch']
 
-    def _get_config_files(self):
+    @property
+    def config_files(self):
         return list(CONFIG_FILES)
 
 

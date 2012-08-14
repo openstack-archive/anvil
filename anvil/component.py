@@ -47,8 +47,13 @@ class ComponentBase(object):
                  *args,
                  **kargs):
 
+        # Subsystems this was requested with
         self.subsystems = subsystems
+        
+        # The component name (from config)
         self.name = name
+        
+        # Any component options
         self.options = options
 
         # All the other active instances
@@ -63,6 +68,8 @@ class ComponentBase(object):
 
         # Parts of the global runner context that we use
         self.cfg = runner.cfg
+        
+        # The distribution 'interaction object'
         self.distro = runner.distro
 
         # Turned on and off as phases get activated
@@ -72,16 +79,17 @@ class ComponentBase(object):
         return self.options.get(opt_name, def_val)
 
     def verify(self):
-        # Ensure subsystems are known...
-        knowns = self.known_subsystems()
+        # Ensure subsystems are 'valid'...
         for s in self.subsystems:
-            if s not in knowns:
+            if s not in self.valid_subsystems:
                 raise ValueError("Unknown subsystem %r requested for component: %s" % (s, self))
 
     def __str__(self):
         return "%s@%s" % (self.__class__.__name__, self.name)
 
-    def _get_params(self):
+    @property
+    def params(self):
+        # Various params that are frequently accessed
         return {
             'APP_DIR': self.get_option('app_dir'),
             'COMPONENT_DIR': self.get_option('component_dir'),
@@ -96,19 +104,15 @@ class ComponentBase(object):
             'start': tr.trace_fn(trace_dir, "start"),
         }
 
-    def known_subsystems(self):
-        return set()
+    @property
+    def valid_subsystems(self):
+        return []
 
     def warm_configs(self):
+        # Before any actions occur you get the chance to 
+        # warmup the configs u might use (ie for prompting for passwords
+        # earlier rather than later
         pass
-
-    def is_started(self):
-        # TODO(harlowja) do a better exhaustive check...
-        return tr.TraceReader(self._get_trace_files()['start']).exists()
-
-    def is_installed(self):
-        # TODO(harlowja) do a better exhaustive check...
-        return tr.TraceReader(self._get_trace_files()['install']).exists()
 
 
 class PkgInstallComponent(ComponentBase):
@@ -121,7 +125,7 @@ class PkgInstallComponent(ComponentBase):
     def _get_download_config(self):
         return (None, None)
 
-    def _clear_pkg_dups(self, pkg_list):
+    def _clear_package_duplicates(self, pkg_list):
         dup_free_list = []
         names_there = set()
         for pkg in pkg_list:
@@ -154,7 +158,7 @@ class PkgInstallComponent(ComponentBase):
             return uris
 
     def _get_param_map(self, config_fn):
-        mp = ComponentBase._get_params(self)
+        mp = dict(self.params)
         if config_fn:
             mp['CONFIG_FN'] = config_fn
         return mp
@@ -168,7 +172,7 @@ class PkgInstallComponent(ComponentBase):
             if 'packages' in values:
                 LOG.debug("Extending package list with packages for subsystem: %r", name)
                 pkg_list.extend(values.get('packages'))
-        pkg_list = self._clear_pkg_dups(pkg_list)
+        pkg_list = self._clear_package_duplicates(pkg_list)
         return pkg_list
 
     def install(self):
@@ -187,44 +191,44 @@ class PkgInstallComponent(ComponentBase):
 
     def pre_install(self):
         pkgs = self.packages
-        if pkgs:
-            for p in pkgs:
-                self.packager_functor(p).pre_install(p, self._get_param_map(None))
+        for p in pkgs:
+            self.packager_functor(p).pre_install(p, self._get_param_map(None))
 
     def post_install(self):
         pkgs = self.packages
-        if pkgs:
-            for p in self.packages:
-                self.packager_functor(p).post_install(p, self._get_param_map(None))
+        for p in self.packages:
+            self.packager_functor(p).post_install(p, self._get_param_map(None))
 
-    def _get_config_files(self):
-        return list()
+    @property
+    def config_files(self):
+        return []
 
     def _config_adjust(self, contents, config_fn):
         return contents
 
     def _get_target_config_name(self, config_fn):
-        cfg_dir = self.get_option('cfg_dir')
-        return sh.joinpths(cfg_dir, config_fn)
+        return sh.joinpths(self.get_option('cfg_dir'), config_fn)
 
     def _get_source_config(self, config_fn):
         return utils.load_template(self.name, config_fn)
 
-    def _get_link_dir(self):
+    @property
+    def link_dir(self):
         return sh.joinpths(self.distro.get_command_config('base_link_dir'), self.name)
 
-    def _get_symlinks(self):
-        links = dict()
-        for fn in self._get_config_files():
+    @property
+    def symlinks(self):
+        links = {}
+        for fn in self.config_files:
             source_fn = self._get_target_config_name(fn)
-            links[source_fn] = sh.joinpths(self._get_link_dir(), fn)
+            links[source_fn] = sh.joinpths(self.link_dir, fn)
         return links
 
     def _config_param_replace(self, config_fn, contents, parameters):
         return utils.param_replace(contents, parameters)
 
     def _configure_files(self):
-        config_fns = self._get_config_files()
+        config_fns = self.config_files
         if config_fns:
             utils.log_iterable(config_fns, logger=LOG,
                 header="Configuring %s files" % (len(config_fns)))
@@ -242,7 +246,9 @@ class PkgInstallComponent(ComponentBase):
         return len(config_fns)
 
     def _configure_symlinks(self):
-        links = self._get_symlinks()
+        links = self.symlinks
+        if not links:
+            return 0
         # This sort happens so that we link in the correct order
         # although it might not matter. Either way. We ensure that the right
         # order happens. Ie /etc/blah link runs before /etc/blah/blah
@@ -250,7 +256,7 @@ class PkgInstallComponent(ComponentBase):
         link_srcs.reverse()
         links_made = 0
         for source in link_srcs:
-            link = links.get(source)
+            link = links[source]
             try:
                 LOG.info("Symlinking %s to %s.", colorizer.quote(link), colorizer.quote(source))
                 self.tracewriter.dirs_made(*sh.symlink(source, link))
@@ -275,6 +281,7 @@ class PythonInstallComponent(PkgInstallComponent):
         ]
 
     def _get_download_config(self):
+        # Cleanup the name, not sure if this is a bug or not??
         down_name = self.name.replace("-", "_").lower().strip()
         return ('download_from', down_name)
 
@@ -356,6 +363,7 @@ class PythonInstallComponent(PkgInstallComponent):
                 break
         if pip_found:
             return (None, True)
+
         return (None, False)
 
     def _get_mapped_packages(self):
@@ -389,7 +397,7 @@ class PythonInstallComponent(PkgInstallComponent):
             if 'pips' in values:
                 LOG.debug("Extending pip list with pips for subsystem: %r" % (name))
                 pip_list.extend(values.get('pips'))
-        pip_list = self._clear_pkg_dups(pip_list)
+        pip_list = self._clear_package_duplicates(pip_list)
         return pip_list
 
     def _install_pips(self):
@@ -432,14 +440,12 @@ class PythonInstallComponent(PkgInstallComponent):
 
     def pre_install(self):
         PkgInstallComponent.pre_install(self)
-        pips = self.pips
-        for p in pips:
+        for p in self.pips:
             self.pip_functor(p).pre_install(p, self._get_param_map(None))
 
     def post_install(self):
         PkgInstallComponent.post_install(self)
-        pips = self.pips
-        for p in pips:
+        for p in self.pips:
             self.pip_functor(p).post_install(p, self._get_param_map(None))
 
     def _install_python_setups(self):
@@ -456,7 +462,8 @@ class PythonInstallComponent(PkgInstallComponent):
             for (name, working_dir) in real_dirs.items():
                 self.tracewriter.dirs_made(*sh.mkdirslist(working_dir))
                 self.tracewriter.py_installed(name, working_dir)
-                root_fn = sh.joinpths(self.get_option('trace_dir'), "%s.python.setup" % (name))
+                root_fn = sh.joinpths(self.get_option('trace_dir'),
+                                      "%s.python.setup" % (name))
                 sh.execute(*setup_cmd,
                            cwd=working_dir,
                            run_as_root=True,
@@ -475,9 +482,9 @@ class PythonInstallComponent(PkgInstallComponent):
         return trace_dir
 
     def configure(self):
-        am = PkgInstallComponent.configure(self)
-        am += self._clean_pip_requires()
-        return am
+        configured_am = PkgInstallComponent.configure(self)
+        configured_am += self._clean_pip_requires()
+        return configured_am
 
 
 class PkgUninstallComponent(ComponentBase):
@@ -627,7 +634,7 @@ class ProgramRuntime(ComponentBase):
         return list()
 
     def _get_param_map(self, app_name):
-        mp = ComponentBase._get_params(self)
+        mp = dict(self.params)
         if app_name:
             mp['APP_NAME'] = app_name
         return mp
@@ -721,13 +728,8 @@ class ProgramRuntime(ComponentBase):
         stat = self._multi_status()
         if not stat:
             stat = self._status()
-        if not stat or stat == constants.STATUS_UNKNOWN:
-            if self.is_installed():
-                stat = constants.STATUS_INSTALLED
-            elif self.is_started():
-                stat = constants.STATUS_STARTED
-            else:
-                stat = constants.STATUS_UNKNOWN
+        if not stat:
+             stat = constants.STATUS_UNKNOWN
         return stat
 
     def restart(self):

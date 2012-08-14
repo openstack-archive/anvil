@@ -129,10 +129,12 @@ CLEANER_DATA_CONF = 'nova-clean.sh'
 
 class NovaMixin(object):
 
-    def known_subsystems(self):
+    @property
+    def valid_subsystems(self):
         return list(SUBSYSTEMS)
 
-    def _get_config_files(self):
+    @property
+    def config_files(self):
         return list(CONFIGS)
 
 
@@ -178,7 +180,6 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
         self.volumes_enabled = NVOL in self.subsystems
         self.xvnc_enabled = NXVNC in self.subsystems
-        self.root_wrap_bin = sh.joinpths(self.distro.get_command_config('bin_dir'), 'nova-rootwrap')
         self.volume_maker = None
         if self.volumes_enabled:
             self.volume_maker = nhelper.VolumeConfigurator(self)
@@ -191,10 +192,11 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
             return None
         return line
 
-    def _get_symlinks(self):
-        links = comp.PythonInstallComponent._get_symlinks(self)
+    @property
+    def symlinks(self):
+        links = super(NovaInstaller, self).symlinks
         source_fn = sh.joinpths(self.get_option('cfg_dir'), API_CONF)
-        links[source_fn] = sh.joinpths(self._get_link_dir(), API_CONF)
+        links[source_fn] = sh.joinpths(self.link_dir, API_CONF)
         return links
 
     def verify(self):
@@ -209,8 +211,6 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         if mq_type == 'rabbit':
             warm_pws.append(['rabbit', rhelper.PW_USER_PROMPT])
         driver_canon = nhelper.canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
-        if driver_canon == 'xenserver':
-            warm_pws.append(['xenapi_connection', 'the Xen API connection'])
         for pw_key, pw_prompt in warm_pws:
             self.cfg.get_password(pw_key, pw_prompt)
 
@@ -309,27 +309,9 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         mp['BIN_DIR'] = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
         return mp
 
-    def _generate_root_wrap(self):
-        if not self.cfg.getboolean('nova', 'do_root_wrap'):
-            return False
-        else:
-            lines = list()
-            lines.append("%s ALL=(root) NOPASSWD: %s" % (sh.getuser(), self.root_wrap_bin))
-            fc = utils.joinlinesep(*lines)
-            root_wrap_fn = sh.joinpths(self.distro.get_command_config('sudoers_dir'), 'nova-rootwrap')
-            self.tracewriter.file_touched(root_wrap_fn)
-            with sh.Rooted(True):
-                sh.write_file(root_wrap_fn, fc)
-                sh.chmod(root_wrap_fn, 0440)
-                sh.chown(root_wrap_fn, sh.getuid(sh.ROOT_USER), sh.getgid(sh.ROOT_GROUP))
-            return True
-
     def configure(self):
         configs_made = comp.PythonInstallComponent.configure(self)
-        root_wrapped = self._generate_root_wrap()
-        if root_wrapped:
-            configs_made += 1
-        self._generate_nova_conf(root_wrapped)
+        self._generate_nova_conf(False)
         configs_made += 1
         return configs_made
 
