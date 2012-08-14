@@ -244,9 +244,6 @@ components:
         packages:
         -   name: MySQL-python
         pip_to_package:
-        -   name: webtest
-            package:
-                name: python-webtest
         -   name: netifaces
             package:
                 name: python-netifaces
@@ -254,6 +251,7 @@ components:
         -   name: pam
             version: '0.1.4'
         -   name: nosexcover
+        -   name: webtest  # This version in package form conflicts with webob1.0
     keystone-client:
         action_classes:
             install: anvil.components.keystone_client:KeyStoneClientInstaller
