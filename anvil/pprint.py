@@ -14,49 +14,94 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-def _pformat(item, line_accum, indent, value_functor=None, key_functor=None):
 
-    def identity_functor(v):
-        return v
 
-    if not value_functor:
-        value_functor = identity_functor
+def center_text(text, fill, max_len):
+    return '{0:{fill}{align}{size}}'.format(text, fill=fill, align="^", size=max_len)
 
-    if not key_functor:
-        key_functor = identity_functor
 
+def _pformat_list(lst):
+    lines = []
+    if not lst:
+        lines.append("+------+")
+        lines.append("'------'")
+        return "\n".join(lines)
+    entries = []
+    max_len = 0
+    for i in lst:
+        entry = _pformat(i)
+        value_lines = entry.split("\n")
+        if len(value_lines) > 1:
+            for v in value_lines:
+                max_len = max(max_len, len(v) + 2)
+        else:
+            max_len = max(max_len, len(entry) + 2)
+        entries.append(entry)
+    lines.append("+%s+" % ("-" * (max_len)))
+    for i in entries:
+        value_lines = i.split("\n")
+        for j in range(0, len(value_lines)):
+            lines.append("|%s|" % (center_text(value_lines[j], ' ', max_len)))
+    lines.append("'%s'" % ("-" * (max_len)))
+    return "\n".join(lines)
+
+
+
+def _pformat_hash(hsh):
+    lines = []
+    if not hsh:
+        lines.append("+-----+-----+")
+        lines.append("'-----+-----'")
+        return "\n".join(lines)
+    # Figure out the lengths to place items in...
+    max_key_len = 0
+    max_value_len = 0
+    entries = []
+    for (k, v) in hsh.items():
+        entry = ("%s" % (_pformat_escape(k)), "%s" % (_pformat(v)))
+        max_key_len = max(max_key_len, len(entry[0]) + 2)
+        value_lines = entry[1].split("\n")
+        for v in value_lines:
+            max_value_len = max(max_value_len, len(v) + 2)
+        entries.append(entry)
+    # Now actually do the placement since we have the lengths
+    lines.append("+%s+%s+" % ("-" * max_key_len, "-" * max_value_len))
+    for (key, value) in entries:
+        value_lines = value.split("\n")
+        lines.append("|%s|%s|" % (center_text(key, ' ', max_key_len),
+                                  center_text(value_lines[0], ' ', max_value_len)))
+        if len(value_lines) > 1:
+            for j in range(1, len(value_lines)):
+                lines.append("|%s|%s|" % (center_text("-", ' ', max_key_len),
+                                          center_text(value_lines[j], ' ', max_value_len)))
+    lines.append("'%s+%s'" % ("-" * max_key_len, "-" * max_value_len))
+    return "\n".join(lines)
+
+
+def _pformat_escape(item):
+    item = _pformat_simple(item)
+    item = item.replace("\n", "\\n")
+    item = item.replace("\t", "\\t")
+    return item
+
+
+def _pformat_simple(item):
+    return "%s" % (item)
+
+
+def _pformat(item):
     if isinstance(item, (list, set, tuple)):
-        indent_string = "-" * (indent)
-        for i in item:
-            if isinstance(i, (list, set, tuple, dict)):
-                line_accum.append("|--%s+" % (indent_string))
-                _pformat(i, line_accum, indent + 2, value_functor, key_functor)
-            else:
-                line_accum.append("|--%s %s" % (indent_string,
-                                                value_functor(i)))
+        return _pformat_list(item)
     elif isinstance(item, (dict)):
-        indent_string = "-" * (indent)
-        for (k, v) in item.items():
-            if isinstance(v, (list, set, tuple, dict)):
-                line_accum.append("|--%s+ %s =>" % (indent_string,
-                                                    key_functor(k)))
-                _pformat(v, line_accum, indent + 2, value_functor, key_functor)
-            else:
-                line_accum.append("|--%s %s => %s" % (indent_string,
-                                                      key_functor(k),
-                                                      value_functor(v)))
+        return _pformat_hash(item)
     else:
-        indent_string = " " * (indent)
-        line_accum.append("%s%s" % (indent_string,
-                                    value_functor(item)))
+        return _pformat_simple(item)
 
 
-def pformat(item, value_functor=None, key_functor=None):
-    line_accum = []
-    _pformat(item, line_accum, 0, value_functor, key_functor)
-    return line_accum
+def pformat(item):
+    lines = _pformat(item)
+    return lines
 
 
-def pprint(item, value_functor=None, key_functor=None):
-    lines = pformat(item, value_functor, key_functor)
-    print("\n".join(lines))
+def pprint(item):
+    print("%s" % (pformat(item)))

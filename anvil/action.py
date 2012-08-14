@@ -112,29 +112,32 @@ class Action(object):
         """
         Create component objects for each component in the persona.
         """
-        p_subsystems = persona.wanted_subsystems or {}
-        p_opts = persona.component_options or {}
+        persona_subsystems = persona.wanted_subsystems or {}
+        persona_opts = persona.component_options or {}
         instances = {}
         base_options = {
             'keep_old': self.keep_old,
         }
         for c in persona.wanted_components:
             ((cls, opts), siblings) = self.distro.extract_component(c, self.get_lookup_name())
-            LOG.debug("Constructing class %s" % (cls))
+            LOG.debug("Constructing component %s (%s)", c, cls)
             cls_kvs = {}
             cls_kvs['runner'] = self
             cls_kvs['siblings'] = self._convert_siblings(siblings)
-            cls_kvs['subsystems'] = self._merge_subsystems(opts.pop('subsystems', None), p_subsystems.get(c))
+            cls_kvs['subsystems'] = self._merge_subsystems(opts.pop('subsystems', None),
+                                                           persona_subsystems.get(c))
             cls_kvs['instances'] = instances
             cls_kvs['name'] = c
-            cls_kvs['packager_functor'] = functools.partial(packager.get_packager, distro=self.distro)
+            cls_kvs['packager_functor'] = functools.partial(packager.get_packager,
+                                                            distro=self.distro)
             # Can't override the above
             component_opts = {}
             for (k, v) in opts.items():
                 if k not in cls_kvs:
                     component_opts[k] = v
-            cls_kvs['options'] = self._merge_options(c, base_options, component_opts, p_opts.get(c))
-            LOG.debug("Construction of %r params are %s", c, cls_kvs)
+            cls_kvs['options'] = self._merge_options(c, base_options, 
+                                                     component_opts, persona_opts.get(c))
+            LOG.debug("Construction of %s params are %s", c, cls_kvs)
             instances[c] = cls(**cls_kvs)
         return instances
 
@@ -178,6 +181,7 @@ class Action(object):
                 if phase_recorder.has_ran(c):
                     LOG.debug("Skipping phase named %r for component %r since it already happened.", phase_name, c)
                     instance.activated = True
+                    component_results[c] = None
                 else:
                     try:
                         result = None
@@ -195,6 +199,7 @@ class Action(object):
                             LOG.debug("Skipping exception: %s" % (e))
                         else:
                             raise
+            self._on_completion(phase_name, component_results)
         finally:
             # Reset all activations
             for c in component_order:
@@ -202,9 +207,8 @@ class Action(object):
                 instance.activated = False
         return component_results
 
-    def _delete_phase_files(self, action_names):
-        for n in action_names:
-            sh.deldir(self._get_phase_dir(n))
+    def _on_completion(self, phase_name, results):
+        pass
 
     def run(self, persona):
         instances = self._construct_instances(persona)

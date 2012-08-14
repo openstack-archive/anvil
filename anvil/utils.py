@@ -31,14 +31,17 @@ import netifaces
 import progressbar
 import yaml
 
-from anvil import constants
 from anvil import colorizer
+from anvil import constants
 from anvil import date
 from anvil import exceptions as excp
 from anvil import log as logging
+from anvil import pprint
 from anvil import settings
 from anvil import shell as sh
 from anvil import version
+
+from anvil.pprint import center_text
 
 # The pattern will match either a comment to the EOL, or a
 # token to be subbed. The replacer will check which it got and
@@ -199,7 +202,7 @@ def to_bytes(text):
     return byte_val
 
 
-def log_iterable(to_log, header=None, logger=None, do_color=True):
+def log_iterable(to_log, header=None, logger=None):
     if not to_log:
         return
     if not logger:
@@ -208,10 +211,9 @@ def log_iterable(to_log, header=None, logger=None, do_color=True):
         if not header.endswith(":"):
             header += ":"
         logger.info(header)
-    for c in to_log:
-        if do_color:
-            c = colorizer.color(c, 'blue')
-        logger.info("|-- %s", c)
+    content = pprint.pformat(to_log)
+    for line in content.splitlines():
+        logger.info(line)
 
 
 @contextlib.contextmanager
@@ -465,9 +467,6 @@ ____ ___  ____ _  _ ____ ___ ____ ____ _  _
 ''')
     return random.choice(possibles).strip("\n\r")
 
-
-def center_text(text, fill, max_len):
-    return '{0:{fill}{align}{size}}'.format(text, fill=fill, align="^", size=max_len)
 
 
 def _welcome_slang():

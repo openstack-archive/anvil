@@ -187,7 +187,6 @@ class PkgInstallComponent(ComponentBase):
                     self.tracewriter.package_installed(p)
                     self.packager_functor(p).install(p)
                     p_bar.update(i + 1)
-        return self.get_option('trace_dir')
 
     def pre_install(self):
         pkgs = self.packages
@@ -281,9 +280,7 @@ class PythonInstallComponent(PkgInstallComponent):
         ]
 
     def _get_download_config(self):
-        # Cleanup the name, not sure if this is a bug or not??
-        down_name = self.name.replace("-", "_").lower().strip()
-        return ('download_from', down_name)
+        return ('download_from', self.name.replace("-", "_").lower().strip())
 
     @property
     def python_directories(self):
@@ -477,9 +474,8 @@ class PythonInstallComponent(PkgInstallComponent):
         self._install_python_setups()
 
     def install(self):
-        trace_dir = PkgInstallComponent.install(self)
+        PkgInstallComponent.install(self)
         self._python_install()
-        return trace_dir
 
     def configure(self):
         configured_am = PkgInstallComponent.configure(self)

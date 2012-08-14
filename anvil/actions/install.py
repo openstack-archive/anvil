@@ -90,8 +90,11 @@ class InstallAction(action.Action):
                 LOG.info("Installing %s.", colorizer.quote(instance.name))
 
         def install_finish(instance, result):
-             LOG.info("Finished install of %s items - check %s for information on what was done.", 
-                      colorizer.quote(instance.name), colorizer.quote(result))
+            if not result:
+                LOG.info("Finished install of %s.", colorizer.quote(instance.name))
+            else:
+                LOG.info("Finished install of %s with result %s.",
+                         colorizer.quote(instance.name), result)
 
         self._run_phase(
             PhaseFunctors(

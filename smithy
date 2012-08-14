@@ -37,6 +37,8 @@ from anvil import settings
 from anvil import shell as sh
 from anvil import utils
 
+from anvil.pprint import center_text
+
 
 LOG = logging.getLogger()
 
@@ -146,7 +148,7 @@ def run(args):
     """
 
     (repeat_string, line_max_len) = utils.welcome()
-    print(utils.center_text("Action Runner", repeat_string, line_max_len))
+    print(center_text("Action Runner", repeat_string, line_max_len))
 
     action = args.pop("action", '').strip().lower()
     if action not in actions.get_action_names():

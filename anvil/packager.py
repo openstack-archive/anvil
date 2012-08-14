@@ -54,7 +54,7 @@ class Packager(object):
         self.registry = registry
 
     def _parse_version(self, name, version):
-        if version is not None:
+        if version:
             # This won't work for all package versions (ie crazy names)
             # but good enough for now...
             p_version = pkg_resources.Requirement.parse(version)
@@ -62,19 +62,32 @@ class Packager(object):
             p_version = NullVersion(name)
         return p_version
 
+    def _compare_against_installed(self, incoming_version, installed_version):
+        if not incoming_version and installed_version:
+            # No incoming version, hopefully whats installed is ok
+            return True
+        if isinstance(installed_version, (NullVersion)):
+            # Assume whats installed will work
+            # (not really the case all the time)
+            return True
+        if not incoming_version in installed_version:
+            # Not in the range of the installed version (bad!)
+            return False
+        return True
+
     def install(self, pkg):
         name = pkg['name']
         version = pkg.get('version')
         if name in self.registry.installed:
             installed_version = self.registry.installed[name]
-            if version is not None and version not in installed_version:
-                raise excp.InstallException("Version %s previously installed, requested incompatible version %s" % (installed_version, version))
+            if not self._compare_against_installed(version, installed_version)
+                raise excp.InstallException(("Version %s previously installed, "
+                                             "requested incompatible version %s") % (installed_version, version))
             LOG.debug("Skipping install of %r since it already happened.", name)
         else:
             self._install(pkg)
-            p_version = self._parse_version(name, version)
             LOG.debug("Noting that %s was installed.", name)
-            self.registry.installed[name] = p_version
+            self.registry.installed[name] = self._parse_version(name, version)
             if name in self.registry.removed:
                 del(self.registry.removed[name])
 
