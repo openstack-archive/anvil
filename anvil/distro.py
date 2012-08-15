@@ -28,6 +28,7 @@ from anvil import importer
 from anvil import log as logging
 from anvil import settings
 from anvil import shell as sh
+from anvil import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -68,7 +69,6 @@ class Distro(object):
         distname = platform.linux_distribution()[0]
         if not distname:
             raise RuntimeError('Unsupported linux (?) platform %r' % plt)
-        LOG.debug('Looking for distro data for %r (%s)', plt, distname)
         for p in cls.load_all():
             if p.supports_distro(plt):
                 LOG.info('Using distro %s for platform %s', colorizer.quote(p.name), colorizer.quote(plt))
@@ -92,8 +92,6 @@ class Distro(object):
         run_over_keys = acutal_keys[0:-1]
         end_key = acutal_keys[-1]
         quiet = kargs.get('quiet', False)
-        LOG.debug("Running over keys (%s)" % (", ".join(run_over_keys)))
-        LOG.debug("End key is (%s)" % (end_key))
         for k in run_over_keys:
             if quiet:
                 root = root.get(k)
@@ -101,12 +99,12 @@ class Distro(object):
                     return None
             else:
                 root = root[k]
+
         end_value = None
         if not quiet:
             end_value = root[end_key]
         else:
             end_value = root.get(end_key)
-        LOG.debug("Retrieved end command config: %s", end_value)
         return end_value
 
     def get_command(self, key, *more_keys, **kargs):
@@ -114,9 +112,10 @@ class Distro(object):
         and splits it to return a list.
         """
         val = self.get_command_config(key, *more_keys, **kargs)
-        ret_val = shlex.split(val) if val else []
-        LOG.debug("Parsed configured command: %s", ret_val)
-        return ret_val
+        if not val:
+            return []
+        else:
+            return shlex.split(val)
 
     def known_component(self, name):
         return name in self._components

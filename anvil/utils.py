@@ -202,6 +202,16 @@ def to_bytes(text):
     return byte_val
 
 
+def log_object(to_log, logger=None, level=logging.INFO):
+    if not to_log:
+        return
+    if not logger:
+        logger = LOG
+    content = pprint.pformat(to_log)
+    for line in content.splitlines():
+        logger.log(level, line)
+
+
 def log_iterable(to_log, header=None, logger=None):
     if not to_log:
         return
@@ -211,9 +221,7 @@ def log_iterable(to_log, header=None, logger=None):
         if not header.endswith(":"):
             header += ":"
         logger.info(header)
-    content = pprint.pformat(to_log)
-    for line in content.splitlines():
-        logger.info(line)
+    log_object(to_log, logger)
 
 
 @contextlib.contextmanager
