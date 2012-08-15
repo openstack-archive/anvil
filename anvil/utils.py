@@ -141,8 +141,6 @@ def make_url(scheme, host, port=None,
 
 def get_from_path(items, path, quiet=True):
 
-    LOG.debug("Looking up %r in %s" % (path, items))
-
     (first_token, sep, remainder) = path.partition('.')
 
     if len(path) == 0:
@@ -160,7 +158,6 @@ def get_from_path(items, path, quiet=True):
         if quiet and not ok_use:
             return None
         else:
-            LOG.debug("Looking up index %s in list %s" % (index, items))
             return get_from_path(items[index], remainder)
     else:
         get_method = getattr(items, 'get', None)
@@ -170,7 +167,6 @@ def get_from_path(items, path, quiet=True):
             else:
                 return None
         else:
-            LOG.debug("Looking up %r in object %s with method %s" % (first_token, items, get_method))
             return get_from_path(get_method(first_token), remainder)
 
 
