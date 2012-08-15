@@ -20,16 +20,16 @@ import yaml
 
 from anvil import cfg
 from anvil import colorizer
-from anvil import component as comp
+from anvil import components as comp
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
 
-from anvil.helpers import db as dbhelper
-from anvil.helpers import glance as ghelper
-from anvil.helpers import keystone as khelper
-from anvil.helpers import nova as nhelper
-from anvil.helpers import quantum as qhelper
+from anvil.components.helpers import db as dbhelper
+from anvil.components.helpers import glance as ghelper
+from anvil.components.helpers import keystone as khelper
+from anvil.components.helpers import nova as nhelper
+from anvil.components.helpers import quantum as qhelper
 
 LOG = logging.getLogger(__name__)
 
@@ -104,6 +104,17 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         mp = self._get_param_map(None)
         cmds = [{'cmd': SYNC_DB_CMD, 'run_as_root': True}]
         utils.execute_template(*cmds, cwd=self.bin_dir, params=mp)
+
+    @property
+    def env_exports(self):
+        params = khelper.get_shared_params(self.cfg)
+        to_set = dict()
+        to_set['OS_PASSWORD'] = params['admin_password']
+        to_set['OS_TENANT_NAME'] = params['demo_tenant']
+        to_set['OS_USERNAME'] = params['demo_user']
+        to_set['OS_AUTH_URL'] = params['endpoints']['public']['uri']
+        to_set['SERVICE_ENDPOINT'] = params['endpoints']['admin']['uri']
+        return to_set
 
     @property
     def config_files(self):

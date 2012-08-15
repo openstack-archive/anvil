@@ -25,7 +25,6 @@ from anvil import actions
 from anvil import cfg
 from anvil import cfg_helpers
 from anvil import colorizer
-from anvil import date
 from anvil import distro
 from anvil import env
 from anvil import env_rc
@@ -41,55 +40,6 @@ from anvil.pprint import center_text
 
 
 LOG = logging.getLogger()
-
-
-def load_rc_files():
-    """
-    Loads the desired set of rc files that smithy will use to
-    pre-populate its environment settings from.
-
-    Arguments: N/A
-    Returns: the number of files loaded
-    """
-
-    loaded_am = 0
-    for fn in [sh.abspth(settings.gen_rc_filename('core'))]:
-        try:
-            LOG.info("Attempting to load file %s which has your environment settings.", colorizer.quote(fn))
-            am_loaded = env_rc.RcReader().load(fn)
-            LOG.info("Loaded %s settings.", colorizer.quote(am_loaded))
-            loaded_am += 1
-        except IOError:
-            LOG.warn('Error reading file located at %s. Skipping loading it.', colorizer.quote(fn))
-    return loaded_am
-
-
-def load_verify_persona(fn, distro_instance):
-    """
-    Loads and verifies the given persona under the given distro.
-
-    Arguments:
-        fn: persona file name/path
-        distro_instance: the distrobution object to use for verification
-    Returns: the persona instance from that file (verified)
-    """
-
-    instance = persona.Persona.load_file(fn)
-    instance.verify(distro_instance)
-    return instance
-
-
-def setup_root(root_dir):
-    """
-    Ensures the root dir is created and setup as desired.
-
-    Arguments:
-        root_dir: the location of the desired root install directory
-    Returns: N/A
-    """
-
-    if not sh.isdir(root_dir):
-        sh.mkdir(root_dir)
 
 
 def establish_config(args):
@@ -151,62 +101,75 @@ def run(args):
     print(center_text("Action Runner", repeat_string, line_max_len))
 
     action = args.pop("action", '').strip().lower()
-    if action not in actions.get_action_names():
+    if action not in actions.names():
         print(colorizer.color("No valid action specified!", "red"))
         return False
 
-    loaded_rcs = False
-    root_dir = args.pop("dir")
+    # Determine + setup the root directory...
+    # If not provided attempt to locate it via the environment control files
+    args_root_dir = args.pop("dir")
+    env_rc.load()
+    root_dir = env.get_key('INSTALL_ROOT')
     if not root_dir:
-        load_rc_files()
-        loaded_rcs = True
-        root_dir = env.get_key(env_rc.INSTALL_ROOT)
-        if not root_dir:
-            root_dir = sh.joinpths(sh.gethomedir(), 'openstack')
+        root_dir = args_root_dir
+    if not root_dir:
+        root_dir = sh.joinpths(sh.gethomedir(), 'openstack')
     root_dir = sh.abspth(root_dir)
-    setup_root(root_dir)
+    sh.mkdir(root_dir)
 
     persona_fn = args.pop('persona_fn')
     if not persona_fn or not sh.isfile(persona_fn):
         print(colorizer.color("No valid persona file name specified!", "red"))
         return False
-    persona_fn = sh.abspth(persona_fn)
 
     # !!
     # Here on out we should be using the logger (and not print)!!
     # !!
 
-    # If we didn't load them before, load them now
-    if not loaded_rcs:
-        load_rc_files()
-        loaded_rcs = True
+    # Stash the dryrun value (if any)
+    if 'dryrun' in args:
+        env.set("ANVIL_DRYRUN", str(args['dryrun']))
 
-    # Stash the dryrun value (if any) into the global configuration
-    sh.set_dryrun(args.get('dryrun', False))
+    # Load the distro
+    dist = distro.load(settings.DISTRO_DIR)
+    
+    # Load + verify the person
+    try:
+        persona_obj = persona.load(persona_fn)
+    except Exception as e:
+        msg = colorizer.color("Error loading persona file specified: ", "red")
+        msg += str(e)
+        print(msg)
+        return False
+    if not persona_obj.verify(dist):
+        print(colorizer.color("Distro %r not supported by this persona file!" % (dist.name), 'red'))
+        return False
 
-    # Params for the runner...
-    dist = distro.Distro.get_current()
-    persona_inst = load_verify_persona(persona_fn, dist)
+    # Get the config reader (which is a combination
+    # of many configs..)
     config = establish_config(args)
 
-    runner_cls = actions.get_action_class(action)
+    # Get the object we will be running with...
+    runner_cls = actions.class_for(action)
     runner = runner_cls(dist,
-                            config,
-                            root_dir=root_dir,
-                            **args)
+                        config,
+                        root_dir=root_dir,
+                        **args)
 
     LOG.info("Starting action %s on %s for distro: %s",
                 colorizer.quote(action), colorizer.quote(utils.rcf8222date()),
                 colorizer.quote(dist.name))
     LOG.info("Using persona: %s", colorizer.quote(persona_fn))
     LOG.info("In root directory: %s", colorizer.quote(root_dir))
+    LOG.debug("Using environment settings:")
+    utils.log_object(env.get(), logger=LOG, level=logging.DEBUG)
     persona_bk_fn = backup_persona(root_dir, action, persona_fn)
     if persona_bk_fn:
         LOG.info("Backed up persona %s to %s so that you can reference it later.",
                 colorizer.quote(persona_fn), colorizer.quote(persona_bk_fn))
 
     start_time = time.time()
-    runner.run(persona_inst)
+    runner.run(persona_obj)
     end_time = time.time()
 
     pretty_time = utils.format_time(end_time - start_time)

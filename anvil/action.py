@@ -120,7 +120,7 @@ class Action(object):
         }
         for c in persona.wanted_components:
             ((cls, opts), siblings) = self.distro.extract_component(c, self.get_lookup_name())
-            LOG.debug("Constructing component %s (%s)", c, cls)
+            LOG.debug("Constructing component %s (%s)", c, utils.obj_name(cls))
             cls_kvs = {}
             cls_kvs['runner'] = self
             cls_kvs['siblings'] = self._convert_siblings(siblings)
@@ -137,7 +137,8 @@ class Action(object):
                     component_opts[k] = v
             cls_kvs['options'] = self._merge_options(c, base_options, 
                                                      component_opts, persona_opts.get(c))
-            LOG.debug("Construction of %s params are %s", c, cls_kvs)
+            LOG.debug("Construction of %s params are:", c)
+            utils.log_object(cls_kvs, logger=LOG, level=logging.DEBUG)
             instances[c] = cls(**cls_kvs)
         return instances
 
@@ -178,7 +179,7 @@ class Action(object):
         try:
             for c in component_order:
                 instance = instances[c]
-                if phase_recorder.has_ran(c):
+                if c in phase_recorder:
                     LOG.debug("Skipping phase named %r for component %r since it already happened.", phase_name, c)
                     instance.activated = True
                     component_results[c] = None

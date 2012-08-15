@@ -14,26 +14,33 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import abc
-import weakref
+from anvil import action
+from anvil import colorizer
+from anvil import log
 
-from anvil import constants
+from anvil.action import PhaseFunctors
+
+LOG = log.getLogger(__name__)
 
 
-class Runner(object):
-    __meta__ = abc.ABCMeta
+class TestsAction(action.Action):
 
-    def __init__(self, runtime):
-        self.runtime = weakref.proxy(runtime)
+    @staticmethod
+    def get_lookup_name():
+        return 'tests'
 
-    def start(self, app_name, app_pth, app_dir, opts):
-        # Returns a file name that contains what was started
-        pass
+    @staticmethod
+    def get_action_name():
+        return 'tests'
 
-    def stop(self, app_name):
-        # Stops the given app
-        pass
-
-    def status(self, app_name):
-        # Attempt to give the status of a app
-        return constants.STATUS_UNKNOWN
+    def _run(self, persona, component_order, instances):
+        self._run_phase(
+            PhaseFunctors(
+                start=None,
+                run=lambda i: i.run_tests(),
+                end=None,
+            ),
+            component_order,
+            instances,
+            None,
+            )

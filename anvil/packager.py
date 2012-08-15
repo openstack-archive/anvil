@@ -128,10 +128,10 @@ class Packager(object):
 
 
 FETCHED_PACKAGERS = {}
-def get_packager(pkg_info, distro, default_packager_cls):
+def get_packager(pkg_info, distro, default_packager_class):
     packager_name = pkg_info.get('packager_name') or ''
     packager_name = packager_name.strip()
-    p_cls = default_packager_cls
+    p_cls = default_packager_class
     if packager_name:
         p_cls = importer.import_entry_point(packager_name)
     if p_cls in FETCHED_PACKAGERS:

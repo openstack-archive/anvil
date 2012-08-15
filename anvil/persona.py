@@ -25,27 +25,6 @@ LOG = logging.getLogger(__name__)
 
 class Persona(object):
 
-    @classmethod
-    def load_file(cls, fn):
-        persona_fn = sh.abspth(fn)
-        LOG.audit("Loading persona from file %r", persona_fn)
-        cls_kvs = None
-        try:
-            with open(persona_fn, "r") as fh:
-                cls_kvs = yaml.load(fh.read())
-        except (IOError, yaml.YAMLError) as err:
-            LOG.warning('Could not load persona definition from %s: %s',
-                             persona_fn, err)
-        instance = None
-        if cls_kvs is not None:
-            try:
-                cls_kvs['source'] = persona_fn
-                instance = cls(**cls_kvs)
-            except Exception as err:
-                LOG.warning('Could not initialize instance %s using parameter map %s: %s',
-                                cls, cls_kvs, err)
-        return instance
-
     def __init__(self, description,
                        supports,
                        components,
@@ -77,9 +56,15 @@ class Persona(object):
         # Some sanity checks against the given distro
         d_name = distro.name
         if d_name not in self.distro_support:
-            msg = "Distro %r not supported" % (d_name)
-            raise excp.ConfigException(msg)
+            return False
         for c in self.wanted_components:
             if not distro.known_component(c):
-                raise RuntimeError("Distro %r does not support component %r" %
-                                        (d_name, c))
+                return False
+        return True
+
+
+def load(fn):
+    cls_kvs = yaml.load(sh.load_file(fn))
+    cls_kvs['source'] = fn
+    instance = Persona(**cls_kvs)
+    return instance

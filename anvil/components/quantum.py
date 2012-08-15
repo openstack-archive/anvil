@@ -18,12 +18,12 @@ import io
 
 from anvil import cfg
 from anvil import colorizer
-from anvil import component as comp
+from anvil import components as comp
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
 
-from anvil.helpers import db as dbhelper
+from anvil.components.helpers import db as dbhelper
 
 LOG = logging.getLogger(__name__)
 

@@ -23,6 +23,7 @@ import random
 import re
 import socket
 import tempfile
+import types
 
 from time import (localtime, strftime)
 
@@ -88,6 +89,15 @@ def make_bool(val):
     if sval in ['0', 'false', 'off', 'no', 'f', '']:
         return False
     raise TypeError("Unable to convert %r to a boolean" % (val))
+
+
+def obj_name(obj):
+    if isinstance(obj, (types.TypeType,
+                        types.ModuleType,
+                        types.FunctionType,
+                        types.LambdaType)):
+        return str(obj.__name__)
+    return obj_name(obj.__class__)
 
 
 def add_header(fn, contents):
@@ -217,7 +227,7 @@ def log_object(to_log, logger=None, level=logging.INFO):
         logger.log(level, line)
 
 
-def log_iterable(to_log, header=None, logger=None):
+def log_iterable(to_log, header=None, logger=None, color='blue'):
     if not to_log:
         return
     if not logger:
@@ -226,7 +236,10 @@ def log_iterable(to_log, header=None, logger=None):
         if not header.endswith(":"):
             header += ":"
         logger.info(header)
-    log_object(to_log, logger)
+    for c in to_log:
+        if color:
+            c = colorizer.color(c, color)
+        logger.info("|-- %s", c)
 
 
 @contextlib.contextmanager

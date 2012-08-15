@@ -133,7 +133,6 @@ class ProxyConfig(object):
     def get_password(self, option, prompt_text='', length=8, **kwargs):
         password = ''
         for resolver in self.pw_resolvers:
-            LOG.debug("Looking up password for %s using instance %s", option, resolver)
             found_password = resolver.get_password(option,
                                                 prompt_text=prompt_text,
                                                 length=length, **kwargs)
@@ -146,6 +145,12 @@ class ProxyConfig(object):
         return password
 
     def get(self, section, option):
+        val = self._get(section, option)
+        LOG.debug("Fetched option %r with value %r.",
+                  cfg_helpers.make_id(section, option), val)
+        return val
+
+    def _get(self, section, option):
         # Try the cache first
         cache_key = cfg_helpers.make_id(section, option)
         if cache_key in self.opts_cache:
@@ -153,10 +158,8 @@ class ProxyConfig(object):
         # Check the resolvers
         val = None
         for resolver in self.read_resolvers:
-            LOG.debug("Looking for %r using resolver %s", cfg_helpers.make_id(section, option), resolver)
             found_val = resolver.get(section, option)
             if found_val is not None:
-                LOG.debug("Found value %r for section %r using resolver %s", found_val, cfg_helpers.make_id(section, option), resolver)
                 val = found_val
                 break
         # Store in cache if we found something
@@ -191,7 +194,6 @@ class ProxyConfig(object):
 
     def set(self, section, option, value):
         for resolver in self.set_resolvers:
-            LOG.debug("Setting %r to %s using resolver %s", cfg_helpers.make_id(section, option), value, resolver)
             resolver.set(section, option, value)
         cache_key = cfg_helpers.make_id(section, option)
         self.opts_cache[cache_key] = value
@@ -215,9 +217,7 @@ class ConfigResolver(object):
     def _resolve_value(self, section, option, value_gotten):
         if not value_gotten:
             if section == 'host' and option == 'ip':
-                LOG.debug("Host ip from configuration/environment was empty, programatically attempting to determine it.")
                 value_gotten = utils.get_host_ip()
-                LOG.debug("Determined your host ip to be: %r" % (value_gotten))
         return value_gotten
 
     def _getdefaulted(self, section, option, default_value):
@@ -238,22 +238,16 @@ class ConfigResolver(object):
             if not def_val and not env_key:
                 msg = "Invalid bash-like value %r" % (value)
                 raise excp.BadParamException(msg)
-            LOG.debug("Looking for that value in environment variable: %r", env_key)
             env_value = env.get_key(env_key)
             if env_value is None:
-                LOG.debug("Extracting value from config provided default value %r" % (def_val))
                 extracted_val = self._resolve_replacements(def_val)
-                LOG.debug("Using config provided default value %r (no environment key)" % (extracted_val))
             else:
                 extracted_val = env_value
-                LOG.debug("Using enviroment provided value %r" % (extracted_val))
         else:
             extracted_val = value
-            LOG.debug("Using raw config provided value %r" % (extracted_val))
         return extracted_val
 
     def _resolve_replacements(self, value):
-        LOG.debug("Performing simple replacement on %r", value)
 
         # Allow for our simple replacement to occur
         def replacer(match):

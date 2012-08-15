@@ -30,6 +30,14 @@ class Packager(pack.Packager):
     def _make_pip_name(self, name, version):
         if version is None:
             return "%s" % (name)
+        found_char = False
+        for c in ['==', '>', "<", '<=', '>=']:
+            if version.find(c) != -1:
+                found_char = True
+                break
+        if found_char:
+            # Version contains its own restrictions
+            return version
         return "%s==%s" % (name, version)
 
     def _get_pip_command(self):

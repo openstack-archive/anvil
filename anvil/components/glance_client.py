@@ -15,7 +15,7 @@
 #    under the License.
 
 
-from anvil import component as comp
+from anvil import components as comp
 from anvil import log as logging
 
 LOG = logging.getLogger(__name__)

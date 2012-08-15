@@ -17,14 +17,13 @@
 from urlparse import urlunparse
 import re
 
+from anvil import colorizer
 from anvil import cfg_helpers
-from anvil import date
 from anvil import env
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
-
-from anvil.helpers import keystone as khelper
+from anvil import settings
 
 LOG = logging.getLogger(__name__)
 
@@ -63,13 +62,17 @@ if [ -f "{fn}" ]; then
     source "{fn}"
 fi
 """
+
+# Attempt to use them from other installs (devstack and such)
 EXTERN_INCLUDES = ['localrc', 'eucarc']
 
 
 class RcWriter(object):
-    def __init__(self, cfg, root_dir):
+
+    def __init__(self, cfg, root_dir, components_ordered):
         self.cfg = cfg
         self.root_dir = root_dir
+        self.components_ordered = components_ordered
 
     def _make_export(self, export_name, value):
         escaped_val = sh.shellquote(value)
@@ -91,8 +94,6 @@ class RcWriter(object):
         to_set['EC2_URL'] = self.cfg.getdefaulted('extern', 'ec2_url', ec2_url_default)
         s3_url_default = urlunparse(('http', "%s:%s" % (ip, S3_PORT), "services/Cloud", '', '', ''))
         to_set['S3_URL'] = self.cfg.getdefaulted('extern', 's3_url', s3_url_default)
-        to_set['EC2_CERT'] = self.cfg.get('extern', 'ec2_cert_fn')
-        to_set['EC2_USER_ID'] = self.cfg.get('extern', 'ec2_user_id')
         return to_set
 
     def _generate_ec2_env(self):
@@ -113,7 +114,7 @@ class RcWriter(object):
     def _get_password_envs(self):
         to_set = dict()
         for (out_name, cfg_data) in PASSWORDS_MAKES.items():
-            (section, key) = (cfg_data)
+            (section, key) = cfg_data
             to_set[out_name] = self.cfg.get(section, key)
         return to_set
 
@@ -138,111 +139,28 @@ class RcWriter(object):
         lines.extend(self._generate_general())
         lines.extend(self._generate_passwords())
         lines.extend(self._generate_ec2_env())
-        lines.extend(self._generate_nova_env())
-        lines.extend(self._generate_os_env())
-        lines.extend(self._generate_euca_env())
         lines.extend(self._generate_extern_inc())
-        lines.extend(self._generate_misc_env())
-        lines.extend(self._generate_aliases())
+        lines.extend(self._generate_components())
         return lines
 
-    def update(self, fn):
-        current_vars = RcReader().extract(fn)
-        possible_vars = dict()
-        possible_vars.update(self._get_general_envs())
-        possible_vars.update(self._get_ec2_envs())
-        possible_vars.update(self._get_password_envs())
-        possible_vars.update(self._get_os_envs())
-        possible_vars.update(self._get_euca_envs())
-        possible_vars.update(self._get_nova_envs())
-        possible_vars.update(self._get_misc_envs())
-        new_vars = dict()
-        updated_vars = dict()
-        for (key, value) in possible_vars.items():
-            if value is not None:
-                if key in current_vars and (current_vars.get(key) != value):
-                    updated_vars[key] = value
-                elif key not in current_vars:
-                    new_vars[key] = value
-        if new_vars or updated_vars:
-            lines = list()
-            lines.append("")
-            lines.append('# Updated on %s' % (utils.rcf8222date()))
-            lines.append("")
-            if new_vars:
-                lines.append('# New stuff')
-                lines.extend(self._make_dict_export(new_vars))
-                lines.append("")
-            if updated_vars:
-                lines.append('# Updated stuff')
-                lines.extend(self._make_dict_export(updated_vars))
-                lines.append("")
-            append_contents = utils.joinlinesep(*lines)
-            sh.append_file(fn, append_contents)
-            return len(new_vars) + len(updated_vars)
-        else:
-            return 0
+    def _generate_components(self):
+        lines = []
+        for (c, component) in self.components_ordered:
+            there_envs = component.env_exports
+            if there_envs:
+                lines.append('# %s stuff' % (c.title().strip()))
+                lines.extend(self._make_dict_export(there_envs))
+                lines.append('')
+        return lines
 
     def write(self, fn):
-        contents = utils.joinlinesep(*self._generate_lines())
-        sh.write_file(fn, contents)
-
-    def _get_os_envs(self):
-        params = khelper.get_shared_params(self.cfg)
-        to_set = dict()
-        to_set['OS_PASSWORD'] = params['admin_password']
-        to_set['OS_TENANT_NAME'] = params['demo_tenant']
-        to_set['OS_USERNAME'] = params['demo_user']
-        to_set['OS_AUTH_URL'] = params['endpoints']['public']['uri']
-        to_set['SERVICE_ENDPOINT'] = params['endpoints']['admin']['uri']
-        return to_set
-
-    def _get_misc_envs(self):
-        to_set = dict()
-        return to_set
-
-    def _generate_misc_env(self):
-        lines = list()
-        lines.append('# Misc stuff')
-        lines.extend(self._make_dict_export(self._get_misc_envs()))
-        lines.append("")
-        return lines
-
-    def _generate_os_env(self):
-        lines = list()
-        lines.append('# Openstack stuff')
-        lines.extend(self._make_dict_export(self._get_os_envs()))
-        lines.append("")
-        return lines
-
-    def _generate_aliases(self):
-        lines = list()
-        lines.append('# Alias stuff')
-        lines.append("")
-        return lines
-
-    def _get_euca_envs(self):
-        to_set = dict()
-        return to_set
-
-    def _generate_euca_env(self):
-        lines = list()
-        lines.append('# Eucalyptus stuff')
-        lines.extend(self._make_dict_export(self._get_euca_envs()))
-        lines.append("")
-        return lines
-
-    def _get_nova_envs(self):
-        to_set = dict()
-        to_set['NOVA_VERSION'] = self.cfg.get('nova', 'nova_version')
-        return to_set
-
-    def _generate_nova_env(self):
-        lines = list()
-        lines.append('# Nova stuff')
-        lines.extend(self._make_dict_export(self._get_nova_envs()))
-        lines.append("")
-        return lines
+        lines = self._generate_lines()
+        if sh.isfile(fn):
+            lines.insert(0, '')
+            lines.insert(0, '# Updated on %s' % (utils.rcf8222date()))
+            lines.insert(0, '')
+        contents = utils.joinlinesep(*lines)
+        sh.append_file(fn, contents)
 
     def _generate_extern_inc(self):
         lines = list()
@@ -256,8 +174,6 @@ class RcWriter(object):
 
 
 class RcReader(object):
-    def __init__(self):
-        pass
 
     def _is_comment(self, line):
         if line.lstrip().startswith("#"):
@@ -265,15 +181,17 @@ class RcReader(object):
         return False
 
     def extract(self, fn):
-        extracted_vars = dict()
         contents = ''
-        LOG.audit("Loading rc file %r" % (fn))
+        LOG.debug("Loading bash resource file %r" % (fn))
         try:
             with open(fn, 'r') as fh:
                 contents = fh.read()
         except IOError as e:
-            LOG.warn("Failed extracting rc file %r due to %s" % (fn, e))
-            return extracted_vars
+            return {}
+        return self._dict_convert(contents)
+
+    def _dict_convert(self, contents):
+        extracted_vars = {}
         for line in contents.splitlines():
             if self._is_comment(line):
                 continue
@@ -292,3 +210,16 @@ class RcReader(object):
         for (key, value) in kvs.items():
             env.set(key, value)
         return len(kvs)
+
+
+def load():
+    loaded_am = 0
+    fns = [
+        settings.gen_rc_filename('core'),
+    ]
+    for fn in fns:
+        LOG.info("Attempting to load file %s which has additional environment settings.", colorizer.quote(fn))
+        am_loaded = RcReader().load(fn)
+        loaded_am += am_loaded
+    LOG.info("Loaded %s settings.", colorizer.quote(loaded_am))
+    return loaded_am

@@ -17,12 +17,12 @@
 from tempfile import TemporaryFile
 
 from anvil import colorizer
-from anvil import component as comp
+from anvil import components as comp
 from anvil import constants
 from anvil import log as logging
 from anvil import shell as sh
 
-from anvil.helpers import rabbit as rhelper
+from anvil.components.helpers import rabbit as rhelper
 
 LOG = logging.getLogger(__name__)
 

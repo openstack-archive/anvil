@@ -17,13 +17,13 @@
 import io
 
 from anvil import cfg
-from anvil import component as comp
+from anvil import components as comp
 from anvil import log as logging
 from anvil import shell as sh
 
-from anvil.helpers import db as dbhelper
-from anvil.helpers import glance as ghelper
-from anvil.helpers import keystone as khelper
+from anvil.components.helpers import db as dbhelper
+from anvil.components.helpers import glance as ghelper
+from anvil.components.helpers import keystone as khelper
 
 LOG = logging.getLogger(__name__)
 

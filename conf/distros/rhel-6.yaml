@@ -1,7 +1,7 @@
 ---
 # RedHat Enterprise Linux 6
 name: rhel-6
-distro_pattern: redhat-6(.*)
+platform_pattern: redhat-6(.*)
 packager_name: anvil.packaging.yum:YumPackager
 commands:
     apache:
@@ -77,7 +77,7 @@ components:
     general:
         action_classes:
             install: anvil.components.pkglist:Installer
-            running: anvil.component:EmptyRuntime
+            running: anvil.components:EmptyRuntime
             uninstall: anvil.components.pkglist:Uninstaller
         packages:
         # Shared system packages

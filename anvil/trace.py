@@ -17,7 +17,6 @@
 import json
 import os
 
-from anvil import date
 from anvil import exceptions as excp
 from anvil import shell as sh
 from anvil import utils

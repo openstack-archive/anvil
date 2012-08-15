@@ -15,8 +15,6 @@
 #    under the License.
 
 from anvil.actions import install
-from anvil.actions import package
-from anvil.actions import run_tests
 from anvil.actions import start
 from anvil.actions import status
 from anvil.actions import stop
@@ -29,20 +27,18 @@ _NAMES_TO_RUNNER = {
     status.StatusAction.get_action_name(): status.StatusAction,
     stop.StopAction.get_action_name(): stop.StopAction,
     uninstall.UninstallAction.get_action_name(): uninstall.UninstallAction,
-    package.PackageAction.get_action_name(): package.PackageAction,
-    run_tests.RunTestsAction.get_action_name(): run_tests.RunTestsAction,
 }
 _RUNNER_TO_NAMES = dict((v, k) for k, v in _NAMES_TO_RUNNER.items())
 
 
-def get_action_names():
+def names():
     """
     Returns a list of the available action names.
     """
     return sorted(_NAMES_TO_RUNNER.keys())
 
 
-def get_action_class(action):
+def class_for(action):
     """
     Given an action name, look up the factory for that action runner.
     """

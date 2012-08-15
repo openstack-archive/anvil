@@ -80,7 +80,7 @@ def parse():
         type="string",
         dest="action",
         metavar="ACTION",
-        help="required action to perform: %s" % (_format_list(actions.get_action_names())))
+        help="required action to perform: %s" % (_format_list(actions.names())))
     base_group.add_option("-d", "--directory",
         action="store",
         type="string",

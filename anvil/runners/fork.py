@@ -19,10 +19,9 @@ import json
 from anvil import constants
 from anvil import exceptions as excp
 from anvil import log as logging
+from anvil import runners as base
 from anvil import shell as sh
 from anvil import trace as tr
-
-from anvil.runners import base
 
 LOG = logging.getLogger(__name__)
 

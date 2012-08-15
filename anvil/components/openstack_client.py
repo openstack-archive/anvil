@@ -14,7 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import component as comp
+from anvil import components as comp
 from anvil import log as logging
 
 LOG = logging.getLogger(__name__)

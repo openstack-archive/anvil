@@ -86,7 +86,10 @@ def _pformat_escape(item):
 
 
 def _pformat_simple(item):
-    return "%s" % (item)
+    item_str = "%s" % (item)
+    if len(item_str) > 32:
+        item_str = item_str[0:32] + "..."
+    return item_str
 
 
 def _pformat(item):

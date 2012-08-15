@@ -13,3 +13,27 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+
+import abc
+import weakref
+
+from anvil import constants
+
+
+class Runner(object):
+    __meta__ = abc.ABCMeta
+
+    def __init__(self, runtime):
+        self.runtime = weakref.proxy(runtime)
+
+    def start(self, app_name, app_pth, app_dir, opts):
+        # Returns a file name that contains what was started
+        pass
+
+    def stop(self, app_name):
+        # Stops the given app
+        pass
+
+    def status(self, app_name):
+        # Attempt to give the status of a app
+        return constants.STATUS_UNKNOWN

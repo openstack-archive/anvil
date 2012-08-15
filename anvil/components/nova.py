@@ -18,17 +18,17 @@ import io
 
 from anvil import cfg
 from anvil import colorizer
-from anvil import component as comp
+from anvil import components as comp
 from anvil import exceptions
 from anvil import libvirt as lv
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
 
-from anvil.helpers import db as dbhelper
-from anvil.helpers import keystone as khelper
-from anvil.helpers import nova as nhelper
-from anvil.helpers import rabbit as rhelper
+from anvil.components.helpers import db as dbhelper
+from anvil.components.helpers import keystone as khelper
+from anvil.components.helpers import nova as nhelper
+from anvil.components.helpers import rabbit as rhelper
 
 LOG = logging.getLogger(__name__)
 
@@ -191,6 +191,12 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         if line.lower().find('glance') != -1:
             return None
         return line
+
+    @property
+    def env_exports(self):
+        to_set = dict()
+        to_set['NOVA_VERSION'] = self.cfg.get('nova', 'nova_version')
+        return to_set
 
     @property
     def symlinks(self):

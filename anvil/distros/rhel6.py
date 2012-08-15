@@ -32,7 +32,7 @@ from anvil.components import rabbit
 
 from anvil.packaging import yum
 
-from anvil.helpers import nova as nhelper
+from anvil.components.helpers import nova as nhelper
 
 LOG = logging.getLogger(__name__)
 

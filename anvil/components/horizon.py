@@ -15,13 +15,13 @@
 #    under the License.
 
 from anvil import colorizer
-from anvil import component as comp
+from anvil import components as comp
 from anvil import constants
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
 
-from anvil.helpers import db as dbhelper
+from anvil.components.helpers import db as dbhelper
 
 LOG = logging.getLogger(__name__)
 

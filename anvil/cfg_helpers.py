@@ -92,6 +92,6 @@ def find_config(locations=None):
     for path in locations:
         LOG.debug("Looking for configuration in: %r", path)
         if sh.isfile(path):
-            LOG.debug("Found configuration in: %r", path)
+            LOG.debug("Found a 'possible' configuration in: %r", path)
             real_paths.append(path)
     return real_paths
