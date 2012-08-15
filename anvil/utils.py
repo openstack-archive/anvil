@@ -24,6 +24,8 @@ import re
 import socket
 import tempfile
 
+from time import (localtime, strftime)
+
 import distutils.version
 from urlparse import urlunparse
 
@@ -33,7 +35,6 @@ import yaml
 
 from anvil import colorizer
 from anvil import constants
-from anvil import date
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import pprint
@@ -94,12 +95,16 @@ def add_header(fn, contents):
     if not fn:
         fn = "???"
     lines.append('# Adjusted source file %s' % (fn.strip()))
-    lines.append("# On %s" % (date.rcf8222date()))
+    lines.append("# On %s" % (rcf8222date()))
     lines.append("# By user %s, group %s" % (sh.getuser(), sh.getgroupname()))
     lines.append("")
     if contents:
         lines.append(contents)
     return joinlinesep(*lines)
+
+
+def rcf8222date():
+    return strftime("%a, %d %b %Y %H:%M:%S", localtime())
 
 
 def make_url(scheme, host, port=None,

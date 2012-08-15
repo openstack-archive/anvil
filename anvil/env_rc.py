@@ -133,7 +133,7 @@ class RcWriter(object):
 
     def _generate_lines(self):
         lines = list()
-        lines.append('# Generated on %s' % (date.rcf8222date()))
+        lines.append('# Generated on %s' % (utils.rcf8222date()))
         lines.append("")
         lines.extend(self._generate_general())
         lines.extend(self._generate_passwords())
@@ -167,7 +167,7 @@ class RcWriter(object):
         if new_vars or updated_vars:
             lines = list()
             lines.append("")
-            lines.append('# Updated on %s' % (date.rcf8222date()))
+            lines.append('# Updated on %s' % (utils.rcf8222date()))
             lines.append("")
             if new_vars:
                 lines.append('# New stuff')

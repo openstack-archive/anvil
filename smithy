@@ -196,7 +196,8 @@ def run(args):
                             **args)
 
     LOG.info("Starting action %s on %s for distro: %s",
-                colorizer.quote(action), colorizer.quote(date.rcf8222date()), colorizer.quote(dist.name))
+                colorizer.quote(action), colorizer.quote(utils.rcf8222date()),
+                colorizer.quote(dist.name))
     LOG.info("Using persona: %s", colorizer.quote(persona_fn))
     LOG.info("In root directory: %s", colorizer.quote(root_dir))
     persona_bk_fn = backup_persona(root_dir, action, persona_fn)
