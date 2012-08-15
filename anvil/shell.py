@@ -57,7 +57,6 @@ class Rooted(object):
 
     def __enter__(self):
         if self.root_mode and not got_root():
-            LOG.debug("Engaging root mode")
             root_mode()
             self.engaged = True
         return self.engaged
@@ -65,7 +64,6 @@ class Rooted(object):
     def __exit__(self, type, value, traceback):
         if self.root_mode and self.engaged:
             user_mode()
-            LOG.debug("Disengaging root mode")
             self.engaged = False
 
 
@@ -202,11 +200,8 @@ def execute(*cmd, **kwargs):
     else:
         # Log it anyway
         if rc not in check_exit_code:
-            LOG.debug("A failure may of just happened when running command %r [%s] (%s, %s)",
-                       str_cmd, rc, stdout, stderr)
-        # Log for debugging figuring stuff out
-        LOG.debug("Received stdout: %s" % (stdout))
-        LOG.debug("Received stderr: %s" % (stderr))
+            LOG.warn("A failure may of just happened when running command %r [%s] (%s, %s)",
+                     str_cmd, rc, stdout, stderr)
         # See if a requested storage place was given for stderr/stdout
         trace_writer = kwargs.get('trace_writer')
         stdout_fn = kwargs.get('stdout_fn')
@@ -516,15 +511,11 @@ def touch_file(fn, die_if_there=True, quiet=False, file_size=0):
     return fn
 
 
-def load_file(fn, quiet=False):
-    if not quiet:
-        LOG.debug("Loading data from file %r", fn)
+def load_file(fn):
     data = ""
     if not is_dry_run():
         with open(fn, "r") as f:
             data = f.read()
-    if not quiet:
-        LOG.debug("Loaded (%d) bytes from file %r", len(data), fn)
     return data
 
 
@@ -733,7 +724,6 @@ def root_mode(quiet=True):
             raise excp.StackException(msg)
     else:
         try:
-            LOG.debug("Escalating permissions to (user=%s, group=%s)" % (root_uid, root_gid))
             os.setreuid(0, root_uid)
             os.setregid(0, root_gid)
         except OSError:
@@ -747,7 +737,6 @@ def user_mode(quiet=True):
     (sudo_uid, sudo_gid) = get_suids()
     if sudo_uid is not None and sudo_gid is not None:
         try:
-            LOG.debug("Dropping permissions to (user=%s, group=%s)" % (sudo_uid, sudo_gid))
             os.setregid(0, sudo_gid)
             os.setreuid(0, sudo_uid)
         except OSError:

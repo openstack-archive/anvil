@@ -54,7 +54,6 @@ class Packager(pack.Packager):
             LOG.debug("Using pip options: %s" % (options))
             for opt in options:
                 real_cmd.append("%s" % (opt))
-        LOG.audit("Installing python package %r using pip command %s" % (name_full, real_cmd))
         real_cmd.append(name_full)
         sh.execute(*real_cmd, run_as_root=True)
 
