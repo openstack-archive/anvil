@@ -190,13 +190,6 @@ def run(args):
     return True
 
 
-def construct_log_level(verbosity_level, dry_run=False):
-    log_level = logging.INFO
-    if verbosity_level >= 2 or dry_run:
-        log_level = logging.DEBUG
-    return log_level
-
-
 def main():
     """
     Starts the execution of without
@@ -211,8 +204,10 @@ def main():
     args = opts.parse()
     prog_name = sys.argv[0]
 
-    # Configure logging
-    log_level = construct_log_level(args['verbosity'], args['dryrun'])
+    # Configure logging levels
+    log_level = logging.INFO
+    if args['verbosity'] >= 2 or args['dryrun']:
+        log_level = logging.DEBUG
     logging.setupLogging(log_level)
 
     LOG.debug("Command line options %s" % (args))
