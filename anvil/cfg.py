@@ -24,17 +24,6 @@ import re
 # This one keeps comments but has some weirdness with it
 import iniparse
 
-try:
-    # Only exists on 2.7 or greater
-    from collections import OrderedDict
-except ImportError:
-    try:
-        # Try the pypi module
-        from ordereddict import OrderedDict
-    except ImportError:
-        # Not really ordered :-(
-        OrderedDict = dict
-
 from anvil import cfg_helpers
 from anvil import env
 from anvil import exceptions as excp
@@ -100,7 +89,7 @@ class IgnoreMissingMixin(object):
 
 class BuiltinConfigParser(IgnoreMissingMixin, ConfigParser.RawConfigParser, StringiferMixin):
     def __init__(self, cs=True, fns=None, defaults=None):
-        ConfigParser.RawConfigParser.__init__(self, defaults=defaults, dict_type=OrderedDict)
+        ConfigParser.RawConfigParser.__init__(self, defaults=defaults)
         if cs:
             # Make option names case sensitive
             # See: http://docs.python.org/library/configparser.html#ConfigParser.RawConfigParser.optionxform
