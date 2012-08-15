@@ -192,10 +192,8 @@ def run(args):
 
 def construct_log_level(verbosity_level, dry_run=False):
     log_level = logging.INFO
-    if verbosity_level >= 3:
+    if verbosity_level >= 2 or dry_run:
         log_level = logging.DEBUG
-    elif verbosity_level == 2 or dry_run:
-        log_level = logging.AUDIT
     return log_level
 
 
