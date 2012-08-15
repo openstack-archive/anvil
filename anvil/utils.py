@@ -418,8 +418,8 @@ def param_replace(text, replacements, ignore_missing=False):
         LOG.debug("Performing parameter replacements (not ignoring missing) on text %r" % (text))
 
     possible_params = find_params(text)
-    LOG.debug("Possible replacements are: %r" % (", ".join(possible_params)))
-    LOG.debug("Given substitutions are: %s" % (replacements))
+    LOG.debug("Given substitutions are: ")
+    log_object(replacements, level=logging.DEBUG)
 
     def replacer(match):
         org_txt = match.group(0)
