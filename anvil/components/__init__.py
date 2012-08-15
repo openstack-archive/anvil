@@ -210,7 +210,7 @@ class PythonInstallComponent(PkgInstallComponent):
     def __init__(self, *args, **kargs):
         PkgInstallComponent.__init__(self, *args, **kargs)
         self.pip_functor = functools.partial(kargs['packager_functor'], 
-                                             default_packager_cls=pip.Packager)
+                                             default_packager_class=pip.Packager)
         self.requires_files = [
             sh.joinpths(self.get_option('app_dir'), 'tools', 'pip-requires'),
             sh.joinpths(self.get_option('app_dir'), 'tools', 'test-requires')
@@ -638,7 +638,7 @@ class PythonUninstallComponent(PkgUninstallComponent):
     def __init__(self, *args, **kargs):
         PkgUninstallComponent.__init__(self, *args, **kargs)
         self.pip_functor = functools.partial(kargs['packager_functor'], 
-                                             default_packager_cls=pip.Packager)
+                                             default_packager_class=pip.Packager)
 
     def uninstall(self):
         self._uninstall_python()
