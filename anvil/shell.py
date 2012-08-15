@@ -469,7 +469,6 @@ def is_running(pid):
 
 
 def mkdirslist(path):
-    LOG.debug("Determining potential paths to create for target path %r" % (path))
     dirs_possible = _explode_form_path(path)
     dirs_made = list()
     for check_path in dirs_possible:
