@@ -151,10 +151,7 @@ def execute(*cmd, **kwargs):
         if user_uid is None or user_gid is None:
             pass
         else:
-            LOG.debug("Running as (user=%s, group=%s)", user_uid, user_gid)
             demoter = demoter_functor(user_uid=user_uid, user_gid=user_gid)
-    else:
-        LOG.debug("Running as (user=%s, group=%s)", ROOT_USER_UID, ROOT_USER_UID)
 
     rc = None
     result = None
