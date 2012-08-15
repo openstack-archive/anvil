@@ -182,8 +182,10 @@ class RcReader(object):
 
     def extract(self, fn):
         contents = ''
-        LOG.debug("Loading bash resource file %r" % (fn))
+        LOG.debug("Loading bash 'style' resource file %r" % (fn))
         try:
+            # Don't use sh here so that we always
+            # read this (even if dry-run)
             with open(fn, 'r') as fh:
                 contents = fh.read()
         except IOError as e:

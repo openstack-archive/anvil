@@ -64,7 +64,11 @@ class Persona(object):
 
 
 def load(fn):
-    cls_kvs = yaml.load(sh.load_file(fn))
+    # Don't use sh here so that we always
+    # read this (even if dry-run)
+    with open(fn, 'r') as fh:
+        contents = fh.read()
+    cls_kvs = yaml.load(contents)
     cls_kvs['source'] = fn
     instance = Persona(**cls_kvs)
     return instance

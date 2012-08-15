@@ -129,8 +129,11 @@ def load(path):
     for fn in input_files:
         LOG.debug("Attempting to load distro definition from %r", fn)
         try:
+            # Don't use sh here so that we always
+            # read this (even if dry-run)
             with open(fn, 'r') as fh:
-                cls_kvs = yaml.load(fh)
+                contents = fh.read()
+                cls_kvs = yaml.load(contents)
                 distro_possibles.append(Distro(**cls_kvs))
         except (IOError, yaml.YAMLError) as err:
             LOG.warning('Could not load distro definition from %r: %s',
