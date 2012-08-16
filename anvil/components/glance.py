@@ -36,7 +36,7 @@ LOGGING_CONF = "logging.conf"
 LOGGING_SOURCE_FN = 'logging.cnf.sample'
 POLICY_JSON = 'policy.json'
 CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF,
-            REG_PASTE_CONF, POLICY_JSON, LOGGING_CONF]
+           REG_PASTE_CONF, POLICY_JSON, LOGGING_CONF]
 
 # Reg, api, scrub are here as possible subsystems
 GAPI = "api"

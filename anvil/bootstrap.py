@@ -60,7 +60,7 @@ def _write_warn(msg):
 
 def _strap_epel():
     exceptions = []
-    fetched = None
+    fetched = False
     _write_msg("Installing EPEL repositories...")
     for u in RH_EPEL_URLS:
         try:
@@ -87,7 +87,7 @@ def _strap_epel():
         except urllib2.URLError as e:
             exceptions.append(e)
     if exceptions and not fetched:
-            raise exceptions[-1]
+        raise exceptions[-1]
 
 
 def _strap_redhat_based(distname):

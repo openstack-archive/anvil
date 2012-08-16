@@ -14,10 +14,6 @@ fi
 set +o errexit
 set -x
 
-# Set up some good defaults
-ENABLED_SERVICES=${ENABLED_SERVICES:-net,vol}
-VOLUME_NAME_PREFIX=${VOLUME_NAME_PREFIX:-volume-}
-
 # Clean off networking
 if [[ "$ENABLED_SERVICES" =~ "net" ]]; then
 
@@ -42,15 +38,6 @@ if [[ "$ENABLED_SERVICES" =~ "net" ]]; then
     
     # Delete nat chains
     iptables -S -v -t nat | sed "s/-c [0-9]* [0-9]* //g" | grep "nova" |  grep "\-N" | sed "s/-N/-X/g" | awk '{print "iptables -t nat",$0}' | bash
-
-fi
-
-# Clean off volumes
-if [[ "$ENABLED_SERVICES" =~ "vol" ]]; then
-
-    # Logout and delete iscsi sessions
-    iscsiadm --mode node | grep $VOLUME_NAME_PREFIX | cut -d " " -f2 | xargs iscsiadm --mode node --logout
-    iscsiadm --mode node | grep $VOLUME_NAME_PREFIX | cut -d " " -f2 | iscsiadm --mode node --op delete
 
 fi
 

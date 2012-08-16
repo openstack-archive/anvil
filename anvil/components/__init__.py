@@ -533,6 +533,12 @@ class ProgramRuntime(component.Component):
     def restart(self):
         return 0
 
+    def post_start(self):
+        pass
+
+    def pre_start(self):
+        pass
+
 
 class PythonRuntime(ProgramRuntime):
     def __init__(self, *args, **kargs):

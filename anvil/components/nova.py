@@ -153,17 +153,14 @@ class NovaUninstaller(NovaMixin, comp.PythonUninstallComponent):
         return subs
 
     def _clean_it(self):
-        # These environment additions are important
-        # in that they eventually affect how this script runs
-        env = dict()
-        env['ENABLED_SERVICES'] = ",".join(self._filter_subsystems())
-        env['BIN_DIR'] = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
-        env['VOLUME_NAME_PREFIX'] = self.cfg.getdefaulted('nova', 'volume_name_prefix', DEF_VOL_PREFIX)
-        cleaner_fn = sh.joinpths(sh.joinpths(self.get_option('app_dir'), BIN_DIR), CLEANER_DATA_CONF)
+        cleaner_fn = sh.joinpths(self.get_option('app_dir'), BIN_DIR, CLEANER_DATA_CONF)
         if sh.isfile(cleaner_fn):
             LOG.info("Cleaning up your system by running nova cleaner script: %s", colorizer.quote(cleaner_fn))
-            cmd = [cleaner_fn]
-            sh.execute(*cmd, run_as_root=True, env_overrides=env)
+            # These environment additions are important
+            # in that they eventually affect how this script runs
+            env = dict()
+            env['ENABLED_SERVICES'] = ",".join(self._filter_subsystems())
+            sh.execute(cleaner_fn, run_as_root=True, env_overrides=env)
 
     def _clear_libvirt_domains(self):
         virt_driver = nhelper.canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
@@ -176,11 +173,6 @@ class NovaUninstaller(NovaMixin, comp.PythonUninstallComponent):
 class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.volumes_enabled = NVOL in self.subsystems
-        self.xvnc_enabled = NXVNC in self.subsystems
-        self.volume_maker = None
-        if self.volumes_enabled:
-            self.volume_maker = nhelper.VolumeConfigurator(self)
         self.conf_maker = nhelper.ConfConfigurator(self)
 
     def _filter_pip_requires_line(self, line):
@@ -200,8 +192,6 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
     def verify(self):
         comp.PythonInstallComponent.verify(self)
         self.conf_maker.verify()
-        if self.volume_maker:
-            self.volume_maker.verify()
 
     def warm_configs(self):
         warm_pws = list()
@@ -224,9 +214,6 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
             self._setup_db()
             self._sync_db()
         self._setup_cleaner()
-        # Check if we need to do the vol subsystem
-        if self.volume_maker:
-            self.volume_maker.setup_volumes()
 
     def _setup_cleaner(self):
         LOG.info("Configuring cleaner template: %s", colorizer.quote(CLEANER_DATA_CONF))
@@ -372,8 +359,6 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
         comp.PythonRuntime.pre_start(self)
         virt_driver = nhelper.canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
         if virt_driver == 'libvirt':
-            # FIXME: The configuration for the virtualization-type
-            # should come from the persona.
             virt_type = lv.canon_libvirt_type(self.cfg.get('nova', 'libvirt_type'))
             LOG.info("Checking that your selected libvirt virtualization type %s is working and running.", colorizer.quote(virt_type))
             try:
