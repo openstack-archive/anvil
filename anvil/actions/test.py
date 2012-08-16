@@ -23,15 +23,15 @@ from anvil.action import PhaseFunctors
 LOG = log.getLogger(__name__)
 
 
-class TestsAction(action.Action):
+class TestAction(action.Action):
 
     @staticmethod
     def get_lookup_name():
-        return 'tests'
+        return 'test'
 
     @staticmethod
     def get_action_name():
-        return 'tests'
+        return 'test'
 
     def _run(self, persona, component_order, instances):
         self._run_phase(

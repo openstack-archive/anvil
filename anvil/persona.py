@@ -38,20 +38,6 @@ class Persona(object):
         self.description = description
         self.component_options = options
 
-    def __str__(self):
-        info = "%s" % (self.description)
-        if self.source:
-            info += " from source %s:" % (self.source)
-        if self.wanted_subsystems:
-            info += " with desired subsystems (%s)" % (self.wanted_subsystems)
-        if self.wanted_components:
-            info += " with desired components (%s)" % (", ".join(self.wanted_components))
-        if self.component_options:
-            info += " with desired component options (%s)" % (", ".join(self.component_options))
-        if self.distro_support:
-            info += " which 'should' work on distros (%s)" % (", ".join(self.distro_support))
-        return info
-
     def verify(self, distro):
         # Some sanity checks against the given distro
         d_name = distro.name

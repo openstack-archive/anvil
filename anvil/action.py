@@ -30,7 +30,11 @@ from anvil import utils
 LOG = logging.getLogger(__name__)
 
 
-PhaseFunctors = collections.namedtuple('PhaseFunctors', ['start', 'run', 'end'])
+class PhaseFunctors(object):
+    def __init__(self, start, run, end):
+        self.start = start
+        self.run = run
+        self.end = end
 
 
 class Action(object):

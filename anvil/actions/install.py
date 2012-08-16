@@ -50,21 +50,14 @@ class InstallAction(action.Action):
     def get_action_name():
         return 'install'
 
-    def _write_rc_file(self, component_order, instances):
-        components_ordered = []
-        for c in component_order:
-            components_ordered.append((c, instances[c]))
-        fn = sh.abspth(settings.gen_rc_filename('core'))
-        writer = env_rc.RcWriter(self.cfg, self.root_dir, components_ordered)
-        if not sh.isfile(fn):
-            LOG.info("Generating a file at %s that will contain your environment settings.", colorizer.quote(fn))
-        else:
-            LOG.info("Updating a file at %s that contains your environment settings.", colorizer.quote(fn))
-        am_upd = writer.write(fn)
-
     def _run(self, persona, component_order, instances):
-        self._write_rc_file(component_order, instances)
-        
+        # Update/write out the 'bash' env exports file
+        (settings_am, out_fns) = env_rc.write(self,
+                                             components=[(c, instances[c]) for c in component_order])
+        utils.log_iterable(out_fns,
+                           header="Wrote out %s environment 'exports' to the following" % (settings_am),
+                           logger=LOG
+                           )
         self._run_phase(
             PhaseFunctors(
                 start=lambda i: LOG.info('Downloading %s.', colorizer.quote(i.name)),

@@ -194,6 +194,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
     def env_exports(self):
         to_set = dict()
         to_set['NOVA_VERSION'] = self.cfg.get('nova', 'nova_version')
+        to_set['COMPUTE_API_VERSION'] = to_set['NOVA_VERSION']
         return to_set
 
     def verify(self):

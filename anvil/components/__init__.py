@@ -417,7 +417,6 @@ class PythonInstallComponent(PkgInstallComponent):
         return configured_am
 
 
-
 class ProgramRuntime(component.Component):
     def __init__(self, *args, **kargs):
         component.Component.__init__(self, *args, **kargs)
@@ -445,6 +444,7 @@ class ProgramRuntime(component.Component):
         apps_to_start = self._get_apps_to_start()
         if not apps_to_start:
             return am_started
+
         # Select how we are going to start it
         run_type = self._fetch_run_type()
         starter = importer.import_entry_point(run_type)(self)
@@ -464,6 +464,7 @@ class ProgramRuntime(component.Component):
                 LOG.info("%s requested a %s second sleep time, please wait...", colorizer.quote(app_name), app_info.get('sleep_time'))
                 sh.sleep(app_info.get('sleep_time'))
             am_started += 1
+
         return am_started
 
     def _locate_investigators(self, apps_started):
@@ -475,7 +476,7 @@ class ProgramRuntime(component.Component):
                 inv_cls = importer.import_entry_point(how)
             except RuntimeError as e:
                 LOG.warn("Could not load class %s which should be used to investigate %s: %s",
-                            colorizer.quote(how), colorizer.quote(app_name), e)
+                         colorizer.quote(how), colorizer.quote(app_name), e)
                 continue
             investigator = None
             if inv_cls in investigators:
@@ -541,7 +542,6 @@ class PythonRuntime(ProgramRuntime):
 class EmptyRuntime(ProgramRuntime):
     def __init__(self, *args, **kargs):
         ProgramRuntime.__init__(self, *args, **kargs)
-        
 
 
 class PkgUninstallComponent(component.Component):

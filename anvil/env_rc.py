@@ -69,15 +69,16 @@ EXTERN_INCLUDES = ['localrc', 'eucarc']
 
 class RcWriter(object):
 
-    def __init__(self, cfg, root_dir, components_ordered):
+    def __init__(self, cfg, root_dir, components):
         self.cfg = cfg
         self.root_dir = root_dir
-        self.components_ordered = components_ordered
+        self.components = components
+        self.lines = None
+        self.created = 0
 
     def _make_export(self, export_name, value):
-        escaped_val = sh.shellquote(value)
-        full_line = "export %s=%s" % (export_name, escaped_val)
-        return full_line
+        self.created += 1
+        return "export %s=%s" % (export_name, sh.shellquote(value))
 
     def _make_dict_export(self, kvs):
         lines = list()
@@ -88,7 +89,7 @@ class RcWriter(object):
         return lines
 
     def _get_ec2_envs(self):
-        to_set = dict()
+        to_set = {}
         ip = self.cfg.get('host', 'ip')
         ec2_url_default = urlunparse(('http', "%s:%s" % (ip, EC2_PORT), "services/Cloud", '', '', ''))
         to_set['EC2_URL'] = self.cfg.getdefaulted('extern', 'ec2_url', ec2_url_default)
@@ -97,14 +98,14 @@ class RcWriter(object):
         return to_set
 
     def _generate_ec2_env(self):
-        lines = list()
+        lines = []
         lines.append('# EC2 and/or S3 stuff')
         lines.extend(self._make_dict_export(self._get_ec2_envs()))
         lines.append("")
         return lines
 
     def _get_general_envs(self):
-        to_set = dict()
+        to_set = {}
         for (out_name, cfg_data) in CFG_MAKE.items():
             (section, key) = (cfg_data)
             to_set[out_name] = self.cfg.get(section, key)
@@ -112,30 +113,28 @@ class RcWriter(object):
         return to_set
 
     def _get_password_envs(self):
-        to_set = dict()
+        to_set = {}
         for (out_name, cfg_data) in PASSWORDS_MAKES.items():
             (section, key) = cfg_data
             to_set[out_name] = self.cfg.get(section, key)
         return to_set
 
     def _generate_passwords(self):
-        lines = list()
+        lines = []
         lines.append('# Password stuff')
         lines.extend(self._make_dict_export(self._get_password_envs()))
         lines.append("")
         return lines
 
     def _generate_general(self):
-        lines = list()
+        lines = []
         lines.append('# General stuff')
         lines.extend(self._make_dict_export(self._get_general_envs()))
         lines.append("")
         return lines
 
     def _generate_lines(self):
-        lines = list()
-        lines.append('# Generated on %s' % (utils.rcf8222date()))
-        lines.append("")
+        lines = []
         lines.extend(self._generate_general())
         lines.extend(self._generate_passwords())
         lines.extend(self._generate_ec2_env())
@@ -145,7 +144,7 @@ class RcWriter(object):
 
     def _generate_components(self):
         lines = []
-        for (c, component) in self.components_ordered:
+        for (c, component) in self.components:
             there_envs = component.env_exports
             if there_envs:
                 lines.append('# %s stuff' % (c.title().strip()))
@@ -154,22 +153,28 @@ class RcWriter(object):
         return lines
 
     def write(self, fn):
-        lines = self._generate_lines()
+        if self.lines is None:
+            self.lines = self._generate_lines()
+        out_lines = list(self.lines)
         if sh.isfile(fn):
-            lines.insert(0, '')
-            lines.insert(0, '# Updated on %s' % (utils.rcf8222date()))
-            lines.insert(0, '')
-        contents = utils.joinlinesep(*lines)
-        sh.append_file(fn, contents)
+            out_lines.insert(0, '')
+            out_lines.insert(0, '# Updated on %s' % (utils.rcf8222date()))
+            out_lines.insert(0, '')
+        else:
+            out_lines.insert(0, '')
+            out_lines.insert(0, '# Created on %s' % (utils.rcf8222date()))
+        # Don't use sh 'lib' here so that we always
+        # read this (even if dry-run)
+        with open(fn, 'a') as fh:
+            fh.write(utils.joinlinesep(*out_lines))
 
     def _generate_extern_inc(self):
-        lines = list()
+        lines = []
         lines.append('# External includes stuff')
         for inc_fn in EXTERN_INCLUDES:
             extern_inc = EXTERN_TPL.format(fn=inc_fn)
             lines.append(extern_inc.strip())
             lines.append('')
-        lines.append("")
         return lines
 
 
@@ -182,7 +187,7 @@ class RcReader(object):
 
     def extract(self, fn):
         contents = ''
-        LOG.debug("Loading bash 'style' resource file %r" % (fn))
+        LOG.debug("Loading bash 'style' resource file %r", fn)
         try:
             # Don't use sh here so that we always
             # read this (even if dry-run)
@@ -191,6 +196,9 @@ class RcReader(object):
         except IOError as e:
             return {}
         return self._dict_convert(contents)
+
+    def _unescape_string(self, text):
+        return text.decode('string_escape').strip()
 
     def _dict_convert(self, contents):
         extracted_vars = {}
@@ -203,7 +211,7 @@ class RcReader(object):
                 value = m.group(2).strip()
                 quoted_mtch = QUOTED_PAT.match(value)
                 if quoted_mtch:
-                    value = quoted_mtch.group(1).decode('string_escape').strip()
+                    value = self._unescape_string(quoted_mtch.group(1))
                 extracted_vars[key] = value
         return extracted_vars
 
@@ -214,14 +222,26 @@ class RcReader(object):
         return len(kvs)
 
 
-def load():
+def load(read_fns=None):
+    if not read_fns:
+        read_fns = [
+            settings.gen_rc_filename('core'),
+        ]
     loaded_am = 0
-    fns = [
-        settings.gen_rc_filename('core'),
-    ]
-    for fn in fns:
-        LOG.info("Attempting to load file %s which has additional environment settings.", colorizer.quote(fn))
+    for fn in read_fns:
         am_loaded = RcReader().load(fn)
         loaded_am += am_loaded
-    LOG.info("Loaded %s settings.", colorizer.quote(loaded_am))
-    return loaded_am
+    return (loaded_am, read_fns)
+
+
+def write(action, write_fns=None, components=None):
+    if not components:
+        components = []
+    if not write_fns:
+        write_fns = [
+            settings.gen_rc_filename('core'),
+        ]
+    writer = RcWriter(action.cfg, action.root_dir, components)
+    for fn in write_fns:
+        writer.write(fn)
+    return (writer.created, write_fns)

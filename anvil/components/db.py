@@ -134,7 +134,7 @@ class DBInstaller(comp.PkgInstallComponent):
                 pwd_cmd = self.distro.get_command(dbtype, 'set_pwd')
                 if pwd_cmd:
                     LOG.info(("Attempting to set your db password"
-                          " just incase it wasn't set previously."))
+                              " just incase it wasn't set previously."))
                     LOG.info("Ensuring your database is started before we operate on it.")
                     self.runtime.restart()
                     params = {
@@ -150,7 +150,8 @@ class DBInstaller(comp.PkgInstallComponent):
 
         # Ensure access granted
         user = self.cfg.getdefaulted("db", "sql_user", 'root')
-        dbhelper.grant_permissions(self.cfg, self.distro, user, restart_func=self.runtime.restart)
+        dbhelper.grant_permissions(self.cfg, self.distro, user, 
+                                   restart_func=self.runtime.restart)
 
 
 class DBRuntime(comp.EmptyRuntime):

@@ -88,7 +88,7 @@ class Component(object):
                 raise ValueError("Unknown subsystem %r requested for component: %s" % (s, self))
 
     def __str__(self):
-        return "%s@%s" % (self.__class__.__name__, self.name)
+        return "%s@%s" % (utils.obj_name(self), self.name)
 
     @property
     def params(self):

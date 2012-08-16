@@ -15,9 +15,11 @@
 #    under the License.
 
 from anvil.actions import install
+from anvil.actions import package
 from anvil.actions import start
 from anvil.actions import status
 from anvil.actions import stop
+from anvil.actions import test
 from anvil.actions import uninstall
 
 
@@ -27,6 +29,8 @@ _NAMES_TO_RUNNER = {
     status.StatusAction.get_action_name(): status.StatusAction,
     stop.StopAction.get_action_name(): stop.StopAction,
     uninstall.UninstallAction.get_action_name(): uninstall.UninstallAction,
+    test.TestAction.get_action_name(): test.TestAction,
+    package.PackageAction.get_action_name(): package.PackageAction,
 }
 _RUNNER_TO_NAMES = dict((v, k) for k, v in _NAMES_TO_RUNNER.items())
 
@@ -35,7 +39,7 @@ def names():
     """
     Returns a list of the available action names.
     """
-    return sorted(_NAMES_TO_RUNNER.keys())
+    return list(sorted(_NAMES_TO_RUNNER.keys()))
 
 
 def class_for(action):
@@ -45,4 +49,4 @@ def class_for(action):
     try:
         return _NAMES_TO_RUNNER[action]
     except KeyError:
-        raise ValueError('Unrecognized action %s' % action)
+        raise RuntimeError('Unrecognized action %s' % action)

@@ -29,15 +29,14 @@ class Packager(pack.Packager):
 
     def _make_pip_name(self, name, version):
         if version is None:
-            return "%s" % (name)
+            return str(name)
         found_char = False
         for c in ['==', '>', "<", '<=', '>=']:
             if version.find(c) != -1:
                 found_char = True
                 break
         if found_char:
-            # Version contains its own restrictions
-            return version
+            return "%s%s" % (name, version)
         return "%s==%s" % (name, version)
 
     def _get_pip_command(self):
@@ -61,6 +60,6 @@ class Packager(pack.Packager):
         root_cmd = self._get_pip_command()
         # Versions don't seem to matter here...
         name = self._make_pip_name(pip['name'], None)
-        LOG.audit("Uninstalling python package %r using pip command %s" % (name, root_cmd))
+        LOG.debug("Uninstalling python package %r using pip command %s" % (name, root_cmd))
         cmd = [root_cmd] + ['uninstall'] + PIP_UNINSTALL_CMD_OPTS + [name]
         sh.execute(*cmd, run_as_root=True)

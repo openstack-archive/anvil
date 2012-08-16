@@ -48,7 +48,7 @@ class RabbitUninstaller(comp.PkgUninstallComponent):
     def pre_uninstall(self):
         try:
             self.runtime.restart()
-            LOG.info("Attempting to reset the rabbit-mq guest password to: %s", colorizer.quote(RESET_BASE_PW))
+            LOG.debug("Attempting to reset the rabbit-mq guest password to: %s", colorizer.quote(RESET_BASE_PW))
             cmd = self.distro.get_command('rabbit-mq', 'change_password') + [RESET_BASE_PW]
             sh.execute(*cmd, run_as_root=True)
         except IOError:

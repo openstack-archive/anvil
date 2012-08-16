@@ -20,13 +20,26 @@ import os
 import sys
 import time
 import traceback as tb
+import platform
+
+from anvil import bootstrap
+from anvil import env
+
+# Check if supported
+if (not bootstrap.is_supported() and 
+    not str(env.get_key('FORCE')).lower().strip() in ['yes', 'on', '1', 'true']):
+    sys.stderr.write("WARNING: this script has not been tested on distribution: %s\n" % (platform.platform()))
+    sys.stderr.write("If you wish to run this script anyway run with FORCE=yes\n")
+    sys.exit(1)
+
+# Bootstrap anvil, call before importing anything else from anvil
+bootstrap.strap()
 
 from anvil import actions
 from anvil import cfg
 from anvil import cfg_helpers
 from anvil import colorizer
 from anvil import distro
-from anvil import env
 from anvil import env_rc
 from anvil import log as logging
 from anvil import opts
@@ -162,7 +175,7 @@ def run(args):
     LOG.info("Using persona: %s", colorizer.quote(persona_fn))
     LOG.info("In root directory: %s", colorizer.quote(root_dir))
     LOG.debug("Using environment settings:")
-    utils.log_object(env.get(), logger=LOG, level=logging.DEBUG)
+    utils.log_object(env.get(), logger=LOG, level=logging.DEBUG,item_max_len=64)
     persona_bk_fn = backup_persona(root_dir, action, persona_fn)
     if persona_bk_fn:
         LOG.info("Backed up persona %s to %s so that you can reference it later.",

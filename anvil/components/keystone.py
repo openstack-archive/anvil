@@ -45,11 +45,9 @@ INIT_WHAT_FN = 'init_what.yaml'
 # Existence of this file signifies that initialization ran
 INIT_WHAT_HAPPENED = "keystone.inited.yaml"
 
-# Simple confs
+# Configuration files keystone expects...
 ROOT_CONF = "keystone.conf"
-ROOT_SOURCE_FN = "keystone.conf.sample"
 LOGGING_CONF = "logging.conf"
-LOGGING_SOURCE_FN = 'logging.conf.sample'
 POLICY_JSON = 'policy.json'
 CONFIGS = [ROOT_CONF, LOGGING_CONF, POLICY_JSON]
 
@@ -127,9 +125,9 @@ class KeystoneInstaller(comp.PythonInstallComponent):
     def _get_source_config(self, config_fn):
         real_fn = config_fn
         if config_fn == LOGGING_CONF:
-            real_fn = LOGGING_SOURCE_FN
+            real_fn = 'logging.conf.sample'
         elif config_fn == ROOT_CONF:
-            real_fn = ROOT_SOURCE_FN
+            real_fn = "keystone.conf.sample"
         fn = sh.joinpths(self.get_option('app_dir'), 'etc', real_fn)
         return (fn, sh.load_file(fn))
 
@@ -163,9 +161,6 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             config.remove_option('DEFAULT', 'log_config')
             config.set('sql', 'connection', dbhelper.fetch_dbdsn(self.cfg, DB_NAME, utf8=True))
             config.set('ec2', 'driver', "keystone.contrib.ec2.backends.sql.Ec2")
-            config.set('filter:s3_extension', 'paste.filter_factory', "keystone.contrib.s3:S3Extension.factory")
-            config.set('pipeline:admin_api', 'pipeline', ('token_auth admin_token_auth xml_body '
-                            'json_body debug ec2_extension s3_extension crud_extension admin_service'))
             contents = config.stringify(fn)
         return contents
 
