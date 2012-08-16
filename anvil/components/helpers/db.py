@@ -82,7 +82,7 @@ def grant_permissions(cfg, distro, user, restart_func=None):
         grant_cmd = distro.get_command(dbtype, 'grant_all')
         if grant_cmd:
             if restart_func:
-                LOG.info("Ensuring the database is started")
+                LOG.info("Ensuring the database is started.")
                 restart_func()
             params = {
                 'PASSWORD': cfg.get_password("sql", PASSWORD_PROMPT),

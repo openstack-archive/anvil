@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+MAX_ITEM_LEN = 32
 
 
 def center_text(text, fill, max_len):
@@ -87,8 +88,8 @@ def _pformat_escape(item):
 
 def _pformat_simple(item):
     item_str = "%s" % (item)
-    if len(item_str) > 32:
-        item_str = item_str[0:32] + "..."
+    if len(item_str) > MAX_ITEM_LEN:
+        item_str = item_str[0:MAX_ITEM_LEN] + "..."
     return item_str
 
 
