@@ -213,12 +213,12 @@ def to_bytes(text):
     return byte_val
 
 
-def log_object(to_log, logger=None, level=logging.INFO):
+def log_object(to_log, logger=None, level=logging.INFO, item_max_len=32):
     if not to_log:
         return
     if not logger:
         logger = LOG
-    content = pprint.pformat(to_log)
+    content = pprint.pformat(to_log, item_max_len)
     for line in content.splitlines():
         logger.log(level, line)
 

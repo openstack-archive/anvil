@@ -14,14 +14,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-MAX_ITEM_LEN = 32
-
 
 def center_text(text, fill, max_len):
     return '{0:{fill}{align}{size}}'.format(text, fill=fill, align="^", size=max_len)
 
 
-def _pformat_list(lst):
+def _pformat_list(lst, item_max_len):
     lines = []
     if not lst:
         lines.append("+------+")
@@ -30,7 +28,7 @@ def _pformat_list(lst):
     entries = []
     max_len = 0
     for i in lst:
-        entry = _pformat(i)
+        entry = pformat(i, item_max_len)
         value_lines = entry.split("\n")
         if len(value_lines) > 1:
             for v in value_lines:
@@ -48,7 +46,7 @@ def _pformat_list(lst):
 
 
 
-def _pformat_hash(hsh):
+def _pformat_hash(hsh, item_max_len):
     lines = []
     if not hsh:
         lines.append("+-----+-----+")
@@ -59,7 +57,7 @@ def _pformat_hash(hsh):
     max_value_len = 0
     entries = []
     for (k, v) in hsh.items():
-        entry = ("%s" % (_pformat_escape(k)), "%s" % (_pformat(v)))
+        entry = ("%s" % (_pformat_escape(k, item_max_len)), "%s" % (pformat(v, item_max_len)))
         max_key_len = max(max_key_len, len(entry[0]) + 2)
         value_lines = entry[1].split("\n")
         for v in value_lines:
@@ -79,33 +77,28 @@ def _pformat_hash(hsh):
     return "\n".join(lines)
 
 
-def _pformat_escape(item):
-    item = _pformat_simple(item)
+def _pformat_escape(item, item_max_len):
+    item = _pformat_simple(item, item_max_len)
     item = item.replace("\n", "\\n")
     item = item.replace("\t", "\\t")
     return item
 
 
-def _pformat_simple(item):
+def _pformat_simple(item, item_max_len):
     item_str = "%s" % (item)
-    if len(item_str) > MAX_ITEM_LEN:
-        item_str = item_str[0:MAX_ITEM_LEN] + "..."
+    if len(item_str) > item_max_len:
+        item_str = item_str[0:item_max_len] + "..."
     return item_str
 
 
-def _pformat(item):
+def pformat(item, item_max_len):
     if isinstance(item, (list, set, tuple)):
-        return _pformat_list(item)
+        return _pformat_list(item, item_max_len)
     elif isinstance(item, (dict)):
-        return _pformat_hash(item)
+        return _pformat_hash(item, item_max_len)
     else:
-        return _pformat_simple(item)
+        return _pformat_simple(item, item_max_len)
 
 
-def pformat(item):
-    lines = _pformat(item)
-    return lines
-
-
-def pprint(item):
-    print("%s" % (pformat(item)))
+def pprint(item, item_max_len):
+    print("%s" % (pformat(item, item_max_len)))

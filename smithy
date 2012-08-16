@@ -176,16 +176,9 @@ def run(args):
     LOG.info("It took %s seconds or %s minutes to complete action %s.",
         colorizer.quote(pretty_time['seconds']), colorizer.quote(pretty_time['minutes']), colorizer.quote(action))
 
-    LOG.info("After action %s your settings which were read/set are:", colorizer.quote(action))
-    cfg_groups = {}
-    read_set_keys = (config.opts_read.keys() + config.opts_set.keys())
-    for c in read_set_keys:
-        cfg_id = cfg_helpers.make_id(c, None)
-        cfg_groups[cfg_id] = colorizer.quote(c.capitalize(), underline=True)
-
-    # Now print and order/group by our selection here
-    cfg_ordering = sorted(cfg_groups.keys())
-    cfg_helpers.pprint(config.opts_cache, cfg_groups, cfg_ordering)
+    if config.opts_cache:
+        LOG.info("After action %s your settings which were applied are:", colorizer.quote(action))
+        utils.log_object(config.opts_cache, item_max_len=80)
 
     return True
 
