@@ -171,13 +171,10 @@ class PkgInstallComponent(component.Component):
             for fn in config_fns:
                 tgt_fn = self._get_target_config_name(fn)
                 self.tracewriter.dirs_made(*sh.mkdirslist(sh.dirname(tgt_fn)))
-                LOG.info("Configuring file %s.", colorizer.quote(fn))
                 (source_fn, contents) = self._get_source_config(fn)
-                LOG.debug("Replacing parameters in file %r", source_fn)
+                LOG.debug("Configuring file %s ---> %s.", (source_fn), (tgt_fn))
                 contents = self._config_param_replace(fn, contents, self._get_param_map(fn))
-                LOG.debug("Applying final adjustments in file %r", source_fn)
                 contents = self._config_adjust(contents, fn)
-                LOG.info("Writing configuration file %s to %s.", colorizer.quote(source_fn), colorizer.quote(tgt_fn))
                 self.tracewriter.cfg_file_written(sh.write_file(tgt_fn, contents))
         return len(config_fns)
 
@@ -194,7 +191,7 @@ class PkgInstallComponent(component.Component):
         for source in link_srcs:
             link = links[source]
             try:
-                LOG.info("Symlinking %s to %s.", colorizer.quote(link), colorizer.quote(source))
+                LOG.debug("Symlinking %s to %s.", (link), (source))
                 self.tracewriter.dirs_made(*sh.symlink(source, link))
                 self.tracewriter.symlink_made(link)
                 links_made += 1
@@ -304,7 +301,7 @@ class PythonInstallComponent(PkgInstallComponent):
         add_on_pkgs = []
         for fn in self.requires_files:
             if sh.isfile(fn):
-                LOG.info("Injected & resolving dependencies from %s.", colorizer.quote(fn))
+                LOG.debug("Injected & resolving dependencies from %s.", colorizer.quote(fn))
                 for line in sh.load_file(fn).splitlines():
                     line = line.strip()
                     if not line or line.startswith("#"):

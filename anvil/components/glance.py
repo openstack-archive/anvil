@@ -156,7 +156,7 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
                                 dbhelper.fetch_dbdsn(self.cfg, DB_NAME, utf8=True))
             config.remove_option('DEFAULT', 'log_file')
             config.set('paste_deploy', 'flavor', 'keystone')
-            LOG.info("Ensuring file system store directory %r exists and is empty." % (img_store_dir))
+            LOG.debug("Ensuring file system store directory %r exists and is empty." % (img_store_dir))
             sh.deldir(img_store_dir)
             self.tracewriter.dirs_made(*sh.mkdirslist(img_store_dir))
             return config.stringify(fn)

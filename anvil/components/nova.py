@@ -40,11 +40,9 @@ DB_NAME = nhelper.DB_NAME
 PASTE_CONF = nhelper.PASTE_CONF
 
 # Normal conf
-PASTE_SOURCE_FN = 'api-paste.ini'
 POLICY_CONF = 'policy.json'
-LOGGING_SOURCE_FN = 'logging_sample.conf'
 LOGGING_CONF = "logging.conf"
-CONFIGS = [PASTE_CONF, POLICY_CONF, LOGGING_CONF]
+CONFIGS = [PASTE_CONF, POLICY_CONF, LOGGING_CONF, API_CONF]
 ADJUST_CONFIGS = [PASTE_CONF]
 
 # This is a special marker file that when it exists, signifies that nova net was inited
@@ -198,13 +196,6 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         to_set['NOVA_VERSION'] = self.cfg.get('nova', 'nova_version')
         return to_set
 
-    @property
-    def symlinks(self):
-        links = super(NovaInstaller, self).symlinks
-        source_fn = sh.joinpths(self.get_option('cfg_dir'), API_CONF)
-        links[source_fn] = sh.joinpths(self.link_dir, API_CONF)
-        return links
-
     def verify(self):
         comp.PythonInstallComponent.verify(self)
         self.conf_maker.verify()
@@ -249,18 +240,18 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         dbhelper.drop_db(self.cfg, self.distro, DB_NAME)
         dbhelper.create_db(self.cfg, self.distro, DB_NAME)
 
-    def _generate_nova_conf(self, root_wrapped):
-        conf_fn = self._get_target_config_name(API_CONF)
-        LOG.info("Generating dynamic content for nova: %s.", colorizer.quote(conf_fn))
-        nova_conf_contents = self.conf_maker.configure(fn=conf_fn, root_wrapped=root_wrapped)
-        self.tracewriter.dirs_made(*sh.mkdirslist(sh.dirname(conf_fn)))
-        self.tracewriter.cfg_file_written(sh.write_file(conf_fn, nova_conf_contents))
+    def _generate_nova_conf(self, fn):
+        LOG.debug("Generating dynamic content for nova: %s.", (fn))
+        nova_conf_contents = self.conf_maker.configure(fn=fn, root_wrapped=False)
+        return nova_conf_contents
 
     def _get_source_config(self, config_fn):
         if config_fn == PASTE_CONF:
-            config_fn = PASTE_SOURCE_FN
+            config_fn = 'api-paste.ini'
         elif config_fn == LOGGING_CONF:
-            config_fn = LOGGING_SOURCE_FN
+            config_fn = 'logging_sample.conf'
+        elif config_fn == API_CONF:
+            config_fn = 'nova.conf.sample'
         fn = sh.joinpths(self.get_option('app_dir'), 'etc', "nova", config_fn)
         return (fn, sh.load_file(fn))
 
@@ -299,6 +290,8 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
             return self._config_adjust_paste(contents, name)
         elif name == LOGGING_CONF:
             return self._config_adjust_logging(contents, name)
+        elif name == API_CONF:
+            return self._generate_nova_conf(name)
         else:
             return contents
 
@@ -314,12 +307,6 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         mp['CFG_FILE'] = sh.joinpths(self.get_option('cfg_dir'), API_CONF)
         mp['BIN_DIR'] = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
         return mp
-
-    def configure(self):
-        configs_made = comp.PythonInstallComponent.configure(self)
-        self._generate_nova_conf(False)
-        configs_made += 1
-        return configs_made
 
 
 class NovaRuntime(NovaMixin, comp.PythonRuntime):
