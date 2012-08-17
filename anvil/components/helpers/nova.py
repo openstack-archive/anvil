@@ -298,6 +298,8 @@ class ConfConfigurator(object):
             nova_conf.add('glance_api_servers', glance_api_server)
 
     def _configure_vnc(self, nova_conf):
+        # All nova-compute workers need to know the vnc configuration options
+        # These settings don't hurt anything if n-xvnc and n-novnc are disabled
         nova_conf.add('novncproxy_base_url', self._getstr('vncproxy_url'))
         nova_conf.add('xvpvncproxy_base_url', self._getstr('xvpvncproxy_url'))
         nova_conf.add('vncserver_listen', self._getstr('vncserver_listen', '127.0.0.1'))
@@ -379,6 +381,7 @@ class ConfConfigurator(object):
             # TODO(harlowja) need to add some goodies here
             pass
         nova_conf.add('libvirt_type', virt_type)
+        nova_conf.add('libvirt_cpu_mode', 'none')
 
     # Configures any virt driver settings
     def _configure_virt_driver(self, nova_conf):
