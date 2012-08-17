@@ -116,6 +116,12 @@ class Action(object):
             my_siblings[action] = cls(**kvs)
         return my_siblings
 
+    def _get_sibling_options(self, name, base_opts):
+        opts = {}
+        opts.update(base_opts)
+        opts.update(self._get_component_dirs(name))
+        return opts
+
     def _construct_instances(self, persona):
         """
         Create component objects for each component in the persona.
@@ -123,6 +129,9 @@ class Action(object):
         persona_subsystems = persona.wanted_subsystems or {}
         persona_opts = persona.component_options or {}
         instances = {}
+        base_opts = {
+            'keep_old': self.keep_old,
+        }
         for c in persona.wanted_components:
             ((cls, distro_opts), siblings) = self.distro.extract_component(c, self.get_lookup_name())
             LOG.debug("Constructing component %r (%s)", c, utils.obj_name(cls))
@@ -136,7 +145,7 @@ class Action(object):
             kvs['instances'] = {}
             kvs['subsystems'] = {}
             kvs['siblings'] = {}
-            kvs['options'] = {'keep_old': self.keep_old}
+            kvs['options'] = self._get_sibling_options(c, base_opts)
             LOG.debug("Constructing %s siblings:", c)
             utils.log_object(siblings, logger=LOG, level=logging.DEBUG)
             LOG.debug("Using params:")
@@ -144,7 +153,7 @@ class Action(object):
             siblings = self._construct_siblings(siblings, dict(kvs))
             # Now inject the full options
             kvs['instances'] = instances
-            kvs['options'] = self._merge_options(c, kvs, {'keep_old': self.keep_old},
+            kvs['options'] = self._merge_options(c, kvs, base_opts,
                                                  distro_opts, (persona_opts.get(c) or {}))
             kvs['subsystems'] = self._merge_subsystems((distro_opts.pop('subsystems', None) or {}),
                                                        (persona_subsystems.get(c) or {}))
