@@ -57,6 +57,11 @@ STATUS_INSTALLED = 'installed'
 STATUS_STARTED = "started"
 STATUS_STOPPED = "stopped"
 STATUS_UNKNOWN = "unknown"
+class ProgramStatus(object):
+    def __init__(self, status, name=None, details=''):
+        self.name = name
+        self.status = status
+        self.details = details
 
 
 #### 
@@ -461,100 +466,89 @@ class ProgramRuntime(component.Component):
             mp['APP_NAME'] = app_name
         return mp
 
-    def _fetch_run_type(self):
-        return self.cfg.getdefaulted("DEFAULT", "run_type", 'anvil.runners.fork:ForkRunner')
-
     def start(self):
         # Anything to start?
         am_started = 0
-        apps_to_start = self.apps_to_start
-        if not apps_to_start:
-            return am_started
-
         # Select how we are going to start it
-        run_type = self._fetch_run_type()
-        starter = importer.import_entry_point(run_type)(self)
-        for app_info in apps_to_start:
-            app_name = app_info["name"]
-            app_pth = app_info.get("path", app_name)
-            app_dir = app_info.get("app_dir", self.get_option('app_dir'))
-            # Adjust the program options now that we have real locations
-            program_opts = utils.param_replace_list(self.app_options(app_name), self.app_params(app_name))
-            # Start it with the given settings
-            LOG.debug("Starting %r using %r", app_name, run_type)
-            details_fn = starter.start(app_name, app_pth=app_pth, app_dir=app_dir, opts=program_opts)
-            LOG.info("Started %s details are in %s", colorizer.quote(app_name), colorizer.quote(details_fn))
-            # This trace is used to locate details about what to stop
-            self.tracewriter.app_started(app_name, details_fn, run_type)
-            if app_info.get('sleep_time'):
-                LOG.info("%s requested a %s second sleep time, please wait...", colorizer.quote(app_name), app_info.get('sleep_time'))
-                sh.sleep(app_info.get('sleep_time'))
-            am_started += 1
-
+        run_type = self.cfg.getdefaulted("DEFAULT", "run_type", 'anvil.runners.fork:ForkRunner')
+        starter_cls = importer.import_entry_point(run_type)
+        starter = starter_cls(self)
+        for i, app_info in enumerate(self.apps_to_start):
+            self._start_app(app_info, start)
+            am_started = i + 1
+            self._post_app_start(app_info)
         return am_started
 
+    def _start_app(self, app_info, run_type, starter):
+        app_name = app_info["name"]
+        app_pth = app_info.get("path", app_name)
+        app_dir = app_info.get("app_dir", self.get_option('app_dir'))
+        program_opts = utils.param_replace_list(self.app_options(app_name), self.app_params(app_name))
+        LOG.debug("Starting %r using %r", app_name, starter)
+        details_fn = starter.start(app_name, app_pth=app_pth, app_dir=app_dir, opts=program_opts)
+        LOG.info("Started sub-program %s.", colorizer.quote(app_name))
+        # This trace is used to locate details about what/how to stop
+        self.tracewriter.app_started(app_name, details_fn, run_type)
+
+    def _post_app_start(self, app_info):
+        if 'sleep_time' in app_info:
+            LOG.info("%s requested a %s second sleep time, please wait...", colorizer.quote(app_name), app_info.get('sleep_time'))
+            sh.sleep(float(app_info.get('sleep_time')))
+
     def _locate_investigators(self, apps_started):
-        investigators = dict()
-        to_investigate = list()
-        for (app_name, trace_fn, how) in apps_started:
+        investigator_created = {}
+        to_investigate = []
+        for (app_name, trace_fn, run_type) in apps_started:
             inv_cls = None
             try:
-                inv_cls = importer.import_entry_point(how)
+                inv_cls = importer.import_entry_point(run_type)
             except RuntimeError as e:
                 LOG.warn("Could not load class %s which should be used to investigate %s: %s",
                          colorizer.quote(how), colorizer.quote(app_name), e)
                 continue
             investigator = None
-            if inv_cls in investigators:
-                investigator = investigators[inv_cls]
+            if inv_cls in investigator_created:
+                investigator = investigator_created[inv_cls]
             else:
                 investigator = inv_cls(self)
-                investigators[inv_cls] = investigator
+                investigator_created[inv_cls] = investigator
             to_investigate.append((app_name, investigator))
         return to_investigate
 
     def stop(self):
         # Anything to stop??
         killed_am = 0
-        apps_started = self.tracereader.apps_started()
+        apps_started = 0
+        try:
+            apps_started = self.tracereader.apps_started()
+        except excp.NoTraceException:
+            pass
         if not apps_started:
             return killed_am
         to_kill = self._locate_investigators(apps_started)
         for (app_name, handler) in to_kill:
             handler.stop(app_name)
-            handler.unconfigure()
             killed_am += 1
         if len(apps_started) == killed_am:
             sh.unlink(self.tracereader.filename())
         return killed_am
 
-    def _multi_status(self):
+    def status(self):
+        statii = []
+        apps_started = None
         try:
             apps_started = self.tracereader.apps_started()
         except excp.NoTraceException:
-            return None
+            pass
         if not apps_started:
-            return None
-        else:
-            to_check = self._locate_investigators(apps_started)
-            results = dict()
-            for (name, handler) in to_check:
-                try:
-                    results[name] = handler.status(name)
-                except AttributeError:
-                    pass  # Not all handlers can implement this..
-            return results
-
-    def _status(self):
-        return STATUS_UNKNOWN
-
-    def status(self):
-        stat = self._multi_status()
-        if not stat:
-            stat = self._status()
-        if not stat:
-             stat = STATUS_UNKNOWN
-        return stat
+            return statii
+        to_check = self._locate_investigators(apps_started)
+        for (name, handler) in to_check:
+            (status, details) = handler.status(name)
+            statii.append(ProgramStatus(name=name,
+                                        status=status,
+                                        details=details))
+        return statii
 
     def restart(self):
         return 0

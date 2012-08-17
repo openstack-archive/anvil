@@ -25,13 +25,10 @@ Stable *tags* can also be downloaded:
 
 https://github.com/yahoo/Openstack-Anvil/tags
 
-    **Note:** that for these tags you may have to edit ``conf/anvil.ini``
-    to point to tags other than ``master``
-
 Bugs/Features
 =============
 
-Please use `github’s issue tracking system`_ or `launchpad’s issue tracking system`_ to report or follow bugs or to discuss features and get support.
+Please use `launchpad’s issue tracking system`_ to report or follow bugs or to discuss features and get support.
 
 Hacking
 =============
@@ -42,9 +39,8 @@ Feel free to hack but please try to follow the `hacking guidelines`_
 Discussions
 ===========
 
-Please either use launchpad’s email system or find us on ``irc.freenode.net`` in channel ``#openstack-anvil`` or in the main openstack dev channel ``#openstack-dev``. Feel free to bug us!
+Please use launchpad’s blueprint/bug system for contacting us about bugs or new features (or submit them!). Much appreciated!
 
 .. _apache version 2.0 license: https://github.com/yahoo/Openstack-Anvil/blob/master/LICENSE
-.. _github’s issue tracking system: https://github.com/yahoo/Openstack-Anvil/issues
 .. _launchpad’s issue tracking system: http://launchpad.net/anvil
 .. _hacking guidelines: https://github.com/yahoo/Openstack-Anvil/blob/master/HACKING.md

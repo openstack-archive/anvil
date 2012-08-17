@@ -41,13 +41,13 @@ class PhaseFunctors(object):
 class Action(object):
     __meta__ = abc.ABCMeta
 
-    def __init__(self, distro, cfg, root_dir, name, **kargs):
+    def __init__(self, distro, cfg, root_dir, name, **kwargs):
         self.distro = distro
         self.cfg = cfg
-        self.keep_old = kargs.get('keep_old', False)
-        self.force = kargs.get('force', False)
         self.root_dir = root_dir
         self.name = name
+        self.keep_old = kwargs.get('keep_old', False)
+        self.force = kwargs.get('force', False)
 
     @property
     def lookup_name(self):

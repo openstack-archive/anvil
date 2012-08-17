@@ -212,6 +212,18 @@ def to_bytes(text):
     return byte_val
 
 
+def truncate_text(text, max_len, from_bottom=False):
+    if len(text) < max_len:
+        return text
+    if not from_bottom:
+        return (text[0:max_len] + "...")
+    else:
+        text = text[::-1]
+        text = truncate_text(text, max_len)
+        text = text[::-1]
+        return text
+
+
 def log_object(to_log, logger=None, level=logging.INFO, item_max_len=64):
     if not to_log:
         return

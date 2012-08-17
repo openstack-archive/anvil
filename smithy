@@ -230,7 +230,10 @@ def run(args):
     if config.opts_cache:
         LOG.info("After action %s your settings which were applied are:", colorizer.quote(action))
         table = OrderedDict()
-        for section in sorted(list((config.opts_read + config.opts_set).keys())):
+        all_read_set = {}
+        all_read_set.update(config.opts_read)
+        all_read_set.update(config.opts_set)
+        for section in sorted(list(all_read_set.keys())):
             options = set()
             if section in config.opts_read:
                 options.update(list(config.opts_read[section]))
@@ -238,8 +241,7 @@ def run(args):
                 options.update(list(config.opts_set[section]))
             option_values = {}
             for option in options:
-                cache_key = cfg.make_id(section, option)
-                option_values[cache_key] = config.opts_cache[cache_key]
+                option_values[option] = config.opts_cache[cfg.make_id(section, option)]
             table[section] = option_values
         utils.log_object(table, item_max_len=80)
 

@@ -2,11 +2,13 @@
 Important!
 ==========
 
-**Warning:** Be sure to carefully read ``smithy`` and any other scripts
+
+Warning!
+==========
+
+Be sure to carefully read ``smithy`` and any other scripts
 you execute before you run them, as they install software and may alter
-your networking configuration. We strongly recommend that you run
-``smithy`` in a clean and disposable virtual machine when you are first
-getting started.
+your networking configuration.
 
 .. _epel: http://fedoraproject.org/wiki/EPEL
 .. _forking: http://users.telenet.be/bartl/classicperl/fork/all.html

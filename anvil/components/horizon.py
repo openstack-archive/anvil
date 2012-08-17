@@ -194,7 +194,7 @@ class HorizonRuntime(comp.EmptyRuntime):
         comp.EmptyRuntime.__init__(self, *args, **kargs)
 
     def start(self):
-        if self._status() != comp.STATUS_STARTED:
+        if self.status()[0].status != comp.STATUS_STARTED:
             start_cmd = self.distro.get_command('apache', 'start')
             sh.execute(*start_cmd, run_as_root=True, check_exit_code=True)
             return 1
@@ -207,22 +207,25 @@ class HorizonRuntime(comp.EmptyRuntime):
         return 1
 
     def stop(self):
-        if self._status() != comp.STATUS_STOPPED:
+        if self.status()[0].status != comp.STATUS_STOPPED:
             stop_cmd = self.distro.get_command('apache', 'stop')
             sh.execute(*stop_cmd, run_as_root=True, check_exit_code=True)
             return 1
         else:
             return 0
 
-    def _status(self):
+    def status(self):
         status_cmd = self.distro.get_command('apache', 'status')
         (sysout, stderr) = sh.execute(*status_cmd, run_as_root=True, check_exit_code=False)
-        combined = (str(sysout) + str(stderr)).lower()
+        combined = (sysout + stderr).lower()
+        st = comp.STATUS_UNKNOWN
         if combined.find("is running") != -1:
-            return comp.STATUS_STARTED
+            st = comp.STATUS_STARTED
         elif combined.find("not running") != -1 or \
              combined.find("stopped") != -1 or \
              combined.find('unrecognized') != -1:
-            return comp.STATUS_STOPPED
-        else:
-            return comp.STATUS_UNKNOWN
+            st = comp.STATUS_STOPPED
+        return [
+            comp.ProgramStatus(status=st,
+                               details=(sysout + stderr).strip()),
+        ]

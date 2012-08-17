@@ -81,27 +81,30 @@ class RabbitRuntime(comp.EmptyRuntime):
         self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
 
     def start(self):
-        if self._status() != comp.STATUS_STARTED:
+        if self.status()[0].status != comp.STATUS_STARTED:
             self._run_cmd(self.distro.get_command('rabbit-mq', 'start'))
             return 1
         else:
             return 0
 
-    def _status(self):
+    def status(self):
         # This has got to be the worst status output.
         #
         # I have ever seen (its like a weird mix json+crap)
         status_cmd = self.distro.get_command('rabbit-mq', 'status')
         (sysout, stderr) = sh.execute(*status_cmd, check_exit_code=False, run_as_root=True)
-        combined = (str(sysout) + str(stderr)).lower()
+        st = comp.STATUS_UNKNOWN
+        combined = (sysout + stderr).lower()
         if combined.find('nodedown') != -1 or \
            combined.find("unable to connect to node") != -1 or \
            combined.find('unrecognized') != -1:
-            return comp.STATUS_STOPPED
+            st = comp.STATUS_STOPPED
         elif combined.find('running_applications') != -1:
-            return comp.STATUS_STARTED
-        else:
-            return comp.STATUS_UNKNOWN
+            st = comp.STATUS_STARTED
+        return [
+            comp.ProgramStatus(status=st,
+                               details=(sysout + stderr).strip()),
+        ]
 
     def _run_cmd(self, cmd, check_exit=True):
         # This seems to fix one of the bugs with rabbit mq starting and stopping
@@ -124,8 +127,8 @@ class RabbitRuntime(comp.EmptyRuntime):
         return 1
 
     def stop(self):
-        if self._status() != comp.STATUS_STOPPED:
-            self._run_cmd(self.distro.get_command('rabbit-mq', 'stop'))
+        if self.status()[0].status != comp.STATUS_STOPPED:
+            self._run_cmd(self.distro.get_command('rabbitmq-server', 'stop'))
             return 1
         else:
             return 0

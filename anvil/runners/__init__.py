@@ -36,5 +36,5 @@ class Runner(object):
         pass
 
     def status(self, app_name):
-        # Attempt to give the status of a app
-        return STATUS_UNKNOWN
+        # Attempt to give the status of a app + details
+        return (STATUS_UNKNOWN, '')

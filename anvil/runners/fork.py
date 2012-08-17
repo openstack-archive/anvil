@@ -83,13 +83,15 @@ class ForkRunner(base.Runner):
     def status(self, app_name):
         trace_dir = self.runtime.get_option('trace_dir')
         if not sh.isdir(trace_dir):
-            return STATUS_UNKNOWN
+            return (STATUS_UNKNOWN, '')
         (pid_file, stderr_fn, stdout_fn) = self._form_file_names(FORK_TEMPL % (app_name))
         pid = self._extract_pid(pid_file)
+        stderr = sh.load_file(stderr_fn)
+        stdout = sh.load_file(stderr_fn)
         if pid and sh.is_running(pid):
-            return STATUS_STARTED
+            return (STATUS_STARTED, (stdout + stderr).strip())
         else:
-            return STATUS_UNKNOWN
+            return (STATUS_UNKNOWN, (stdout + stderr).strip())
 
     def _form_file_names(self, file_name):
         trace_dir = self.runtime.get_option('trace_dir')

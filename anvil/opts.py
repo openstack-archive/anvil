@@ -107,7 +107,17 @@ def parse():
         default=False)
     parser.add_option_group(un_group)
 
-    # Extract only what we care about
+    status_group = OptionGroup(parser, "Status specific options")
+    status_group.add_option('-s', "--show",
+        action="store_true",
+        dest="show_full",
+        help="show the stderr/stdout log files if applicable when showing status (default: %default)",
+        default=False)
+    parser.add_option_group(status_group)
+
+    # Extract only what we care about, these will be passed
+    # to the constructor of actions as arguments 
+    # so don't adjust the naming wily nilly...
     (options, args) = parser.parse_args()
     output = {}
     output['dir'] = (options.dir or "")
@@ -121,5 +131,6 @@ def parse():
     output['verbosity'] = len(options.verbosity)
     output['cli_overrides'] = (options.cli_overrides or [])
     output['prompt_for_passwords'] = options.prompt_for_passwords
+    output['show_full'] = options.show_full
 
     return output

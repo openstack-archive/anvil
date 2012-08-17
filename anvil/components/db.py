@@ -151,16 +151,16 @@ class DBRuntime(comp.EmptyRuntime):
         self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
 
     def _get_run_actions(self, act, exception_cls):
-        dbtype = self.cfg.get("db", "type")
-        distro_options = self.distro.get_command_config(dbtype)
+        db_type = self.cfg.get("db", "type")
+        distro_options = self.distro.get_command_config(db_type)
         if distro_options is None:
-            raise NotImplementedError(BASE_ERROR % (act, dbtype))
-        return self.distro.get_command(dbtype, act)
+            raise NotImplementedError(BASE_ERROR % (act, db_type))
+        return self.distro.get_command(db_type, act)
 
     def start(self):
-        if self._status() != comp.STATUS_STARTED:
-            startcmd = self._get_run_actions('start', excp.StartException)
-            sh.execute(*startcmd, run_as_root=True, check_exit_code=True)
+        if self.status()[0].status != comp.STATUS_STARTED:
+            start_cmd = self._get_run_actions('start', excp.StartException)
+            sh.execute(*start_cmd, run_as_root=True, check_exit_code=True)
             LOG.info("Please wait %s seconds while it starts up." % self.wait_time)
             sh.sleep(self.wait_time)
             return 1
@@ -168,29 +168,33 @@ class DBRuntime(comp.EmptyRuntime):
             return 0
 
     def stop(self):
-        if self._status() != comp.STATUS_STOPPED:
-            stopcmd = self._get_run_actions('stop', excp.StopException)
-            sh.execute(*stopcmd, run_as_root=True, check_exit_code=True)
+        if self.status()[0].status != comp.STATUS_STOPPED:
+            stop_cmd = self._get_run_actions('stop', excp.StopException)
+            sh.execute(*stop_cmd, run_as_root=True, check_exit_code=True)
             return 1
         else:
             return 0
 
     def restart(self):
         LOG.info("Restarting your database.")
-        restartcmd = self._get_run_actions('restart', excp.RestartException)
-        sh.execute(*restartcmd, run_as_root=True, check_exit_code=True)
-        LOG.info("Please wait %s seconds while it restarts." % self.wait_time)
+        restart_cmd = self._get_run_actions('restart', excp.RestartException)
+        sh.execute(*restart_cmd, run_as_root=True, check_exit_code=True)
+        LOG.info("Please wait %s seconds while it restarts.", self.wait_time)
         sh.sleep(self.wait_time)
         return 1
 
-    def _status(self):
-        statuscmd = self._get_run_actions('status', excp.StatusException)
-        (sysout, stderr) = sh.execute(*statuscmd, run_as_root=True, check_exit_code=False)
-        combined = (str(sysout) + str(stderr)).lower()
+    def status(self):
+        status_cmd = self._get_run_actions('status', excp.StatusException)
+        (sysout, stderr) = sh.execute(*status_cmd, run_as_root=True, check_exit_code=False)
+        combined = (sysout + stderr).lower()
+        st = comp.STATUS_UNKNOWN
         if combined.find("running") != -1:
-            return comp.STATUS_STARTED
+            st = comp.STATUS_STARTED
         elif combined.find("stop") != -1 or \
              combined.find('unrecognized') != -1:
-            return comp.STATUS_STOPPED
-        else:
-            return comp.STATUS_UNKNOWN
+            st = comp.STATUS_STOPPED
+        return [
+            comp.ProgramStatus(name=self.cfg.get("db", "type"),
+                               status=st,
+                               details=(sysout + stderr).strip()),
+        ]

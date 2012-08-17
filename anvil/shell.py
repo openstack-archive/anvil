@@ -197,8 +197,8 @@ def execute(*cmd, **kwargs):
     else:
         # Log it anyway
         if rc not in check_exit_code:
-            LOG.warn("A failure may of just happened when running command %r [%s] (%s, %s)",
-                     str_cmd, rc, stdout, stderr)
+            LOG.debug("A failure may of just happened when running command %r [%s] (%s, %s)",
+                      str_cmd, rc, stdout, stderr)
         # See if a requested storage place was given for stderr/stdout
         trace_writer = kwargs.get('trace_writer')
         stdout_fn = kwargs.get('stdout_fn')

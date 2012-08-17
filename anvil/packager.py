@@ -57,7 +57,11 @@ class Packager(object):
         if version:
             # This won't work for all package versions (ie crazy names)
             # but good enough for now...
-            p_version = pkg_resources.Requirement.parse(version)
+            if contains_version_check(version):
+                full_name = "%s%s" %(name, version)
+            else:
+                full_name = "%s==%s" %(name, version)
+            p_version = pkg_resources.Requirement.parse(full_name)
         else:
             p_version = NullVersion(name)
         return p_version
@@ -139,3 +143,10 @@ def get_packager(pkg_info, distro, default_packager_class):
     p_instance = p_cls(distro, PackageRegistry())
     FETCHED_PACKAGERS[p_cls] = p_instance
     return p_instance
+
+
+def contains_version_check(version):
+    for c in ['==', '>', "<", '<=', '>=']:
+        if version.find(c) != -1:
+            return True
+    return False

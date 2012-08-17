@@ -30,14 +30,10 @@ class Packager(pack.Packager):
     def _make_pip_name(self, name, version):
         if version is None:
             return str(name)
-        found_char = False
-        for c in ['==', '>', "<", '<=', '>=']:
-            if version.find(c) != -1:
-                found_char = True
-                break
-        if found_char:
+        if pack.contains_version_check(version):
             return "%s%s" % (name, version)
-        return "%s==%s" % (name, version)
+        else:
+            return "%s==%s" % (name, version)
 
     def _get_pip_command(self):
         return self.distro.get_command_config('pip')

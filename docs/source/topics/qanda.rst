@@ -4,11 +4,6 @@
 Questions and Answers
 ===============
 
-Can I use ANVIL for production?
-------------------------------------
-
-Up to u! Beware of the sea and the black waters!
-
 How do I get program usage?
 ---------------------------
 
@@ -19,29 +14,11 @@ How do I get program usage?
 How do I run a specific OpenStack milestone?
 --------------------------------------------
 
-OpenStack milestones have tags set in the git repo. Set the appropriate
-setting in the **branch** variables in *conf/anvil.ini*.
+OpenStack milestones have tags set in the git repo. Anvil also has the same
+tags so please checkout the corresponding tag for anvil to match the OpenStack
+milestone you wish to use.
 
-**Note:** Swift is on its own release schedule so pick a tag in the
-Swift repo that is just before the milestone release.
-
-For example:
-
-::
-
-    # Quantum client git repo
-    quantum_client_repo = git://github.com/openstack/python-quantumclient.git
-    quantum_client_branch = essex-3
-
-    # Melange service
-    melange_repo = git://github.com/openstack/melange.git
-    melange_branch = essex-3
-
-    # Python melange client library
-    melangeclient_repo = git://github.com/openstack/python-melangeclient.git
-    melangeclient_branch = essex-3
-
-OMG the images take forever to download!
+`OMG` the images take forever to download!
 ----------------------------------------
 
 Sometimes the images that will be uploaded to glance take a long time to
