@@ -96,10 +96,10 @@ class DBInstaller(comp.PkgInstallComponent):
         else:
             self.runtime = runtime_cls(*args, **kargs)
 
-    def _get_param_map(self, config_fn):
+    def config_params(self, config_fn):
         # This dictionary will be used for parameter replacement
         # In pre-install and post-install sections
-        mp = comp.PkgInstallComponent._get_param_map(self, config_fn)
+        mp = comp.PkgInstallComponent.config_params(self, config_fn)
         adds = {
             'PASSWORD': self.cfg.get_password("sql", PASSWORD_PROMPT),
             'BOOT_START': ("%s" % (True)).lower(),

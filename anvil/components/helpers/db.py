@@ -123,7 +123,6 @@ def fetch_dbdsn(cfg, dbname, utf8=False):
     if dbname:
         dsn += "/" + str(dbname)
         if utf8:
-            # WHY U NOT SET EVERYWHERE...
             dsn += "?charset=utf8"
     else:
         dsn += "/"

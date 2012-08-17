@@ -33,7 +33,9 @@ if (not bootstrap.is_supported() and
     sys.exit(1)
 
 # Bootstrap anvil, call before importing anything else from anvil
-bootstrap.strap()
+if bootstrap.strap():
+    sys.stderr.write("Please re-run %s\n" % (sys.argv[0]))
+    sys.exit(0)
 
 from anvil import actions
 from anvil import cfg
@@ -50,6 +52,8 @@ from anvil import shell as sh
 from anvil import utils
 
 from anvil.pprint import center_text
+
+from ordereddict import OrderedDict
 
 
 LOG = logging.getLogger()
@@ -191,7 +195,22 @@ def run(args):
 
     if config.opts_cache:
         LOG.info("After action %s your settings which were applied are:", colorizer.quote(action))
-        utils.log_object(config.opts_cache, item_max_len=80)
+        table = OrderedDict()
+        for s in sorted(list((config.opts_read + config.opts_set).keys())):
+            options = set()
+            if s in config.opts_read:
+                options.update(list(config.opts_read[s]))
+            if s in config.opts_set:
+                options.update(list(config.opts_set[s]))
+            option_values = {}
+            for o in options:
+                cache_key = cfg_helpers.make_id(section, option)
+                option_values[cache_key] = config.opts_cache[cache_key]
+            table[s] = option_values
+        utils.log_object(table, item_max_len=80)
+
+    LOG.debug("Final environment settings:")
+    utils.log_object(env.get(), logger=LOG, level=logging.DEBUG,item_max_len=64)
 
     return True
 

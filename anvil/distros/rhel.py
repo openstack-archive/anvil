@@ -15,7 +15,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""Platform-specific logic for RedHat Enterprise Linux v6 components.
+"""
+Platform-specific logic for RedHat Enterprise Linux components.
 """
 
 import re
@@ -135,9 +136,7 @@ class RabbitRuntime(rabbit.RabbitRuntime):
 class NovaInstaller(nova.NovaInstaller):
 
     def _get_policy(self, ident_users):
-        fn = LIBVIRT_POLICY_FN
-        contents = LIBVIRT_POLICY_CONTENTS.format(idents=(";".join(ident_users)))
-        return (fn, contents)
+        return (LIBVIRT_POLICY_FN, LIBVIRT_POLICY_CONTENTS.format(idents=(";".join(ident_users))))
 
     def _get_policy_users(self):
         ident_users = set()
@@ -152,7 +151,7 @@ class NovaInstaller(nova.NovaInstaller):
             (fn, contents) = self._get_policy(self._get_policy_users())
             dirs_made = list()
             with sh.Rooted(True):
-                # TODO check if this dir is restricted before assuming it isn't?
+                # TODO(harlowja) check if this dir is restricted before assuming it isn't?
                 dirs_made.extend(sh.mkdirslist(sh.dirname(fn)))
                 sh.write_file(fn, contents)
             self.tracewriter.cfg_file_written(fn)

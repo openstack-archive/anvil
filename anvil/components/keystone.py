@@ -36,9 +36,6 @@ LOG = logging.getLogger(__name__)
 # This db will be dropped then created
 DB_NAME = "keystone"
 
-# Subdirs of the git checkout
-BIN_DIR = "bin"
-
 # This yaml file controls keystone initialization
 INIT_WHAT_FN = 'init_what.yaml'
 
@@ -53,7 +50,7 @@ CONFIGS = [ROOT_CONF, LOGGING_CONF, POLICY_JSON]
 
 # Sync db command
 SYNC_DB_CMD = [sh.joinpths('%BIN_DIR%', 'keystone-manage'),
-                '--config-file=%s' % (sh.joinpths('%CONFIG_DIR%', ROOT_CONF)),
+                '--config-file=%CONFIG_FILE%',
                 '--debug', '-v',
                 # Available commands:
                 # db_sync: Sync the database.
@@ -79,7 +76,7 @@ class KeystoneUninstaller(comp.PythonUninstallComponent):
 class KeystoneInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
+        self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
 
     def _filter_pip_requires_line(self, line):
         if line.lower().find('keystoneclient') != -1:
@@ -99,9 +96,8 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
     def _sync_db(self):
         LOG.info("Syncing keystone to database: %s", colorizer.quote(DB_NAME))
-        mp = self._get_param_map(None)
         cmds = [{'cmd': SYNC_DB_CMD, 'run_as_root': True}]
-        utils.execute_template(*cmds, cwd=self.bin_dir, params=mp)
+        utils.execute_template(*cmds, cwd=self.bin_dir, params=self.config_params(None))
 
     @property
     def env_exports(self):
@@ -122,7 +118,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         dbhelper.drop_db(self.cfg, self.distro, DB_NAME)
         dbhelper.create_db(self.cfg, self.distro, DB_NAME, utf8=True)
 
-    def _get_source_config(self, config_fn):
+    def source_config(self, config_fn):
         real_fn = config_fn
         if config_fn == LOGGING_CONF:
             real_fn = 'logging.conf.sample'
@@ -175,10 +171,9 @@ class KeystoneInstaller(comp.PythonInstallComponent):
     def warm_configs(self):
         khelper.get_shared_params(self.cfg)
 
-    def _get_param_map(self, config_fn):
-        # These be used to fill in the configuration/cmds +
-        # params with actual values
-        mp = comp.PythonInstallComponent._get_param_map(self, config_fn)
+    def config_params(self, config_fn):
+        # These be used to fill in the configuration params
+        mp = comp.PythonInstallComponent.config_params(self, config_fn)
         mp['BIN_DIR'] = self.bin_dir
         mp['CONFIG_FILE'] = sh.joinpths(self.get_option('cfg_dir'), ROOT_CONF)
         return mp
@@ -190,28 +185,29 @@ class KeystoneRuntime(comp.PythonRuntime):
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
         self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
         self.init_fn = sh.joinpths(self.get_option('trace_dir'), INIT_WHAT_HAPPENED)
-        (fn, contents) = utils.load_template(self.name, INIT_WHAT_FN)
-        self.init_what = yaml.load(contents)
 
     def post_start(self):
-        if not sh.isfile(self.init_fn):
+        if not sh.isfile(self.init_fn) and self.get_option('do-init'):
             LOG.info("Waiting %s seconds so that keystone can start up before running first time init." % (self.wait_time))
             sh.sleep(self.wait_time)
             LOG.info("Running commands to initialize keystone.")
             LOG.debug("Initializing with %s", self.init_what)
-            initial_cfg = dict()
-            initial_cfg['glance'] = ghelper.get_shared_params(self.cfg)
-            initial_cfg['keystone'] = khelper.get_shared_params(self.cfg)
-            initial_cfg['nova'] = nhelper.get_shared_params(self.cfg)
-            initial_cfg['quantum'] = qhelper.get_shared_params(self.cfg)
-            init_what = utils.param_replace_deep(copy.deepcopy(self.init_what), initial_cfg)
+            cfg = {
+                'glance': ghelper.get_shared_params(self.cfg),
+                'keystone': khelper.get_shared_params(self.cfg),
+                'nova': nhelper.get_shared_params(self.cfg),
+                'quantum': qhelper.get_shared_params(self.cfg),
+            }
+            (_fn, contents) = utils.load_template(self.name, INIT_WHAT_FN)
+            init_what = utils.param_replace_deep(copy.deepcopy(yaml.load(contents)), cfg)
             khelper.Initializer(initial_cfg['keystone']).initialize(**init_what)
             # Writing this makes sure that we don't init again
             sh.write_file(self.init_fn, utils.prettify_yaml(init_what))
             LOG.info("If you wish to re-run initialization, delete %s", colorizer.quote(self.init_fn))
 
-    def _get_apps_to_start(self):
-        apps = list()
+    @property
+    def apps_to_start(self):
+        apps = []
         for app_name in APP_OPTIONS.keys():
             apps.append({
                 'name': app_name,
@@ -219,5 +215,5 @@ class KeystoneRuntime(comp.PythonRuntime):
             })
         return apps
 
-    def _get_app_options(self, app):
+    def app_options(self, app):
         return APP_OPTIONS.get(app)

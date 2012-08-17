@@ -34,8 +34,6 @@ LOG = logging.getLogger(__name__)
 
 # Copies from helpers
 API_CONF = nhelper.API_CONF
-DEF_VOL_PREFIX = nhelper.DEF_VOL_PREFIX
-DEF_INSTANCE_PREFIX = nhelper.DEF_INSTANCE_PREFIX
 DB_NAME = nhelper.DB_NAME
 PASTE_CONF = nhelper.PASTE_CONF
 
@@ -165,7 +163,7 @@ class NovaUninstaller(NovaMixin, comp.PythonUninstallComponent):
     def _clear_libvirt_domains(self):
         virt_driver = nhelper.canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
         if virt_driver == 'libvirt':
-            inst_prefix = self.cfg.getdefaulted('nova', 'instance_name_prefix', DEF_INSTANCE_PREFIX)
+            inst_prefix = self.cfg.getdefaulted('nova', 'instance_name_prefix', 'instance-')
             libvirt_type = lv.canon_libvirt_type(self.cfg.get('nova', 'libvirt_type'))
             self.virsh.clear_domains(libvirt_type, inst_prefix)
 
@@ -204,8 +202,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
 
     def _sync_db(self):
         LOG.info("Syncing nova to database named: %s", colorizer.quote(DB_NAME))
-        mp = self._get_param_map(None)
-        utils.execute_template(*DB_SYNC_CMD, params=mp)
+        utils.execute_template(*DB_SYNC_CMD, params=self.config_params(None))
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
@@ -230,10 +227,9 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
 
     def _generate_nova_conf(self, fn):
         LOG.debug("Generating dynamic content for nova: %s.", (fn))
-        nova_conf_contents = self.conf_maker.configure(fn=fn, root_wrapped=False)
-        return nova_conf_contents
+        return self.conf_maker.generate(fn)
 
-    def _get_source_config(self, config_fn):
+    def source_config(self, config_fn):
         if config_fn == PASTE_CONF:
             config_fn = 'api-paste.ini'
         elif config_fn == LOGGING_CONF:
@@ -290,8 +286,8 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         else:
             return comp.PythonInstallComponent._config_param_replace(self, config_fn, contents, parameters)
 
-    def _get_param_map(self, config_fn):
-        mp = comp.PythonInstallComponent._get_param_map(self, config_fn)
+    def config_params(self, config_fn):
+        mp = comp.PythonInstallComponent.config_params(self, config_fn)
         mp['CFG_FILE'] = sh.joinpths(self.get_option('cfg_dir'), API_CONF)
         mp['BIN_DIR'] = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
         return mp
@@ -302,11 +298,10 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
         self.virsh = lv.Virsh(self.cfg, self.distro)
-        self.net_enabled = NNET in self.subsystems
 
     def _do_network_init(self):
         ran_fn = sh.joinpths(self.get_option('trace_dir'), NET_INITED_FN)
-        if not sh.isfile(ran_fn) and self.net_enabled:
+        if not sh.isfile(ran_fn) and self.get_option('do-network-init'):
             LOG.info("Creating your nova network to be used with instances.")
             # Figure out the commands to run
             mp = {}
@@ -318,17 +313,12 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
                 mp['FIXED_NETWORK_SIZE'] = self.cfg.getdefaulted('nova', 'fixed_network_size', '256')
                 mp['FIXED_RANGE'] = self.cfg.getdefaulted('nova', 'fixed_range', '10.0.0.0/24')
                 cmds.extend(FIXED_NET_CMDS)
-            if not self.get_option('quantum'):
-                if self.cfg.getboolean('nova', 'enable_floating'):
-                    # Create a floating network + test floating pool
-                    cmds.extend(FLOATING_NET_CMDS)
-                    mp['FLOATING_RANGE'] = self.cfg.getdefaulted('nova', 'floating_range', '172.24.4.224/28')
-                    mp['TEST_FLOATING_RANGE'] = self.cfg.getdefaulted('nova', 'test_floating_range', '192.168.253.0/29')
-                    mp['TEST_FLOATING_POOL'] = self.cfg.getdefaulted('nova', 'test_floating_pool', 'test')
-            else:
-                LOG.info("Not creating floating IPs (not supported by quantum server)")
-                LOG.info("Waiting %s seconds so that quantum can start up before running first time init." % (self.wait_time))
-                sh.sleep(self.wait_time)
+            if self.cfg.getboolean('nova', 'enable_floating'):
+                # Create a floating network + test floating pool
+                cmds.extend(FLOATING_NET_CMDS)
+                mp['FLOATING_RANGE'] = self.cfg.getdefaulted('nova', 'floating_range', '172.24.4.224/28')
+                mp['TEST_FLOATING_RANGE'] = self.cfg.getdefaulted('nova', 'test_floating_range', '192.168.253.0/29')
+                mp['TEST_FLOATING_POOL'] = self.cfg.getdefaulted('nova', 'test_floating_pool', 'test')
             # Anything to run??
             if cmds:
                 utils.execute_template(*cmds, params=mp)
@@ -338,19 +328,19 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
                 'replacements': mp,
             }
             sh.write_file(ran_fn, utils.prettify_yaml(cmd_mp))
-            LOG.info("If you wish to re-run initialization, delete %s", colorizer.quote(ran_fn))
+            LOG.info("If you wish to re-run network initialization, delete %s", colorizer.quote(ran_fn))
 
     def post_start(self):
         self._do_network_init()
 
-    def _get_apps_to_start(self):
-        apps = list()
+    @property
+    def apps_to_start(self):
+        apps = []
         for name, values in self.subsystems.items():
             if name in SUB_COMPONENT_NAME_MAP:
-                subsys = name
                 apps.append({
-                    'name': SUB_COMPONENT_NAME_MAP[subsys],
-                    'path': sh.joinpths(sh.joinpths(self.get_option('app_dir'), BIN_DIR), SUB_COMPONENT_NAME_MAP[subsys]),
+                    'name': SUB_COMPONENT_NAME_MAP[name],
+                    'path': sh.joinpths(self.get_option('app_dir'), BIN_DIR, SUB_COMPONENT_NAME_MAP[name]),
                 })
         return apps
 
@@ -371,10 +361,10 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
                         (virt_type, lv.DEF_VIRT_TYPE, e))
                 raise exceptions.StartException(msg)
 
-    def _get_param_map(self, app_name):
-        params = comp.PythonRuntime._get_param_map(self, app_name)
+    def app_params(self, app_name):
+        params = comp.PythonRuntime.app_params(self, app_name)
         params['CFG_FILE'] = sh.joinpths(self.get_option('cfg_dir'), API_CONF)
         return params
 
-    def _get_app_options(self, app):
+    def app_options(self, app):
         return APP_OPTIONS.get(app)

@@ -128,7 +128,7 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
             dbhelper.drop_db(self.cfg, self.distro, DB_NAME)
             dbhelper.create_db(self.cfg, self.distro, DB_NAME, utf8=True)
 
-    def _get_source_config(self, config_fn):
+    def source_config(self, config_fn):
         if config_fn == PLUGIN_CONF:
             src_fn = sh.joinpths(self.get_option('app_dir'), 'etc', config_fn)
             contents = sh.load_file(src_fn)
@@ -153,8 +153,9 @@ class QuantumRuntime(QuantumMixin, comp.ProgramRuntime):
             self.q_vswitch_agent = True
             self.q_vswitch_service = True
 
-    def _get_apps_to_start(self):
-        app_list = comp.ProgramRuntime._get_apps_to_start(self)
+    @property
+    def apps_to_start(self):
+        app_list = []
         if self.q_vswitch_service:
             app_list.append({
                 'name': APP_Q_SERVER,
@@ -168,11 +169,11 @@ class QuantumRuntime(QuantumMixin, comp.ProgramRuntime):
             })
         return app_list
 
-    def _get_app_options(self, app_name):
+    def app_options(self, app_name):
         return APP_OPTIONS.get(app_name)
 
-    def _get_param_map(self, app_name):
-        param_dict = comp.ProgramRuntime._get_param_map(self, app_name)
+    def app_params(self, app_name):
+        param_dict = comp.ProgramRuntime.app_params(self, app_name)
         if app_name == APP_Q_AGENT:
             param_dict['OVS_CONFIG_FILE'] = sh.joinpths(self.get_option('cfg_dir'), AGENT_CONF)
         elif app_name == APP_Q_SERVER:

@@ -53,9 +53,6 @@ APACHE_DEF_PORT = 80
 # Users which apache may not like starting as..
 BAD_APACHE_USERS = ['root']
 
-# Apache logs will go here
-LOGS_DIR = "logs"
-
 # This db will be dropped and created
 DB_NAME = 'horizon'
 
@@ -68,7 +65,7 @@ class HorizonUninstaller(comp.PythonUninstallComponent):
 class HorizonInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.log_dir = sh.joinpths(self.get_option('component_dir'), LOGS_DIR)
+        self.log_dir = sh.joinpths(self.get_option('component_dir'), 'logs')
 
     def verify(self):
         comp.PythonInstallComponent.verify(self)
@@ -80,7 +77,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
             'apache', 'settings', 'conf-link-target',
             quiet=True)
         if link_tgt:
-            src = self._get_target_config_name(HORIZON_APACHE_CONF)
+            src = self.target_config(HORIZON_APACHE_CONF)
             links[src] = link_tgt
         return links
 
@@ -98,13 +95,13 @@ class HorizonInstaller(comp.PythonInstallComponent):
                     % (user, group))
             raise excp.ConfigException(msg)
 
-    def _get_target_config_name(self, config_name):
+    def target_config(self, config_name):
         if config_name == HORIZON_PY_CONF:
             # FIXME don't write to checked out locations...
             dash_dir = sh.joinpths(self.get_option('app_dir'), ROOT_DASH)
             return sh.joinpths(dash_dir, *HORIZON_PY_CONF_TGT)
         else:
-            return comp.PythonInstallComponent._get_target_config_name(self, config_name)
+            return comp.PythonInstallComponent.target_config(self, config_name)
 
     @property
     def config_files(self):
@@ -153,10 +150,10 @@ class HorizonInstaller(comp.PythonInstallComponent):
         group = self.cfg.getdefaulted('horizon', 'apache_group', sh.getgroupname())
         return (user, group)
 
-    def _get_param_map(self, config_fn):
+    def config_params(self, config_fn):
         # This dict will be used to fill in the configuration
         # params with actual values
-        mp = comp.PythonInstallComponent._get_param_map(self, config_fn)
+        mp = comp.PythonInstallComponent.config_params(self, config_fn)
         if config_fn == HORIZON_APACHE_CONF:
             (user, group) = self._get_apache_user_group()
             mp['GROUP'] = group

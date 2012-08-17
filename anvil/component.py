@@ -100,7 +100,8 @@ class Component(object):
             'TRACE_DIR': self.get_option('trace_dir'),
         }
 
-    def _get_trace_files(self):
+    @property
+    def trace_files(self):
         trace_dir = self.get_option('trace_dir')
         return {
             'install': tr.trace_fn(trace_dir, "install"),

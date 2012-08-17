@@ -27,7 +27,7 @@ COLORS = termcolor.COLORS.keys()
 
 
 def color_enabled():
-    if env.get_key('NO_COLOR'):
+    if str(env.get_key('LOG_COLOR')).strip().lower() in ['false', 'no', '0', 'off']:
         return False
     if not sys.stdout.isatty():
         return False

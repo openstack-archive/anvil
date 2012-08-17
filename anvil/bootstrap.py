@@ -94,7 +94,8 @@ def _strap_redhat_based(distname):
     if distname in ['redhat', 'centos']:
         _strap_epel()
         pkgs = ['gcc', 'git', 'pylint', 'python', 'python-netifaces', 
-                'python-pep8', 'python-pip', 'python-progressbar', 'PyYAML']
+                'python-pep8', 'python-pip', 'python-progressbar', 'PyYAML',
+                'python-ordereddict']
         pips = ['termcolor', 'iniparse']
     else:
         pkgs = ['gcc', 'git', 'pylint', 'python', 'python-netifaces', 
@@ -139,7 +140,7 @@ def is_supported():
 
 def strap():
     if os.path.isfile(BOOT_STRAP_FN):
-        return
+        return False
     _write_msg("Bootstrapping anvil...")
     _write_msg("Please wait...")
     (distname, _version, _id) = platform.linux_distribution(full_distribution_name=False)
@@ -156,3 +157,4 @@ def strap():
         _write_msg("Bootstrapped anvil for linux distribution %s..." % (distname))
         with open(BOOT_STRAP_FN, 'w') as fh:
             fh.write("1\n")
+    return True

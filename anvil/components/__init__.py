@@ -52,10 +52,14 @@ from anvil import utils
 LOG = logging.getLogger(__name__)
 
 
+#### 
+#### INSTALL CLASSES
+####
+
 class PkgInstallComponent(component.Component):
     def __init__(self, *args, **kargs):
         component.Component.__init__(self, *args, **kargs)
-        self.tracewriter = tr.TraceWriter(self._get_trace_files()['install'], break_if_there=False)
+        self.tracewriter = tr.TraceWriter(self.trace_files['install'], break_if_there=False)
         self.packager_functor = functools.partial(kargs['packager_functor'], 
                                                   default_packager_class=self.distro.package_manager_class)
 
@@ -94,7 +98,7 @@ class PkgInstallComponent(component.Component):
             self.tracewriter.dirs_made(*dirs_made)
             return uris
 
-    def _get_param_map(self, config_fn):
+    def config_params(self, config_fn):
         mp = dict(self.params)
         if config_fn:
             mp['CONFIG_FN'] = config_fn
@@ -128,12 +132,12 @@ class PkgInstallComponent(component.Component):
     def pre_install(self):
         pkgs = self.packages
         for p in pkgs:
-            self.packager_functor(p).pre_install(p, self._get_param_map(None))
+            self.packager_functor(p).pre_install(p, self.params)
 
     def post_install(self):
         pkgs = self.packages
         for p in self.packages:
-            self.packager_functor(p).post_install(p, self._get_param_map(None))
+            self.packager_functor(p).post_install(p, self.params)
 
     @property
     def config_files(self):
@@ -142,10 +146,10 @@ class PkgInstallComponent(component.Component):
     def _config_adjust(self, contents, config_fn):
         return contents
 
-    def _get_target_config_name(self, config_fn):
+    def target_config(self, config_fn):
         return sh.joinpths(self.get_option('cfg_dir'), config_fn)
 
-    def _get_source_config(self, config_fn):
+    def source_config(self, config_fn):
         return utils.load_template(self.name, config_fn)
 
     @property
@@ -156,7 +160,7 @@ class PkgInstallComponent(component.Component):
     def symlinks(self):
         links = {}
         for fn in self.config_files:
-            source_fn = self._get_target_config_name(fn)
+            source_fn = self.target_config(fn)
             links[source_fn] = sh.joinpths(self.link_dir, fn)
         return links
 
@@ -169,11 +173,11 @@ class PkgInstallComponent(component.Component):
             utils.log_iterable(config_fns, logger=LOG,
                 header="Configuring %s files" % (len(config_fns)))
             for fn in config_fns:
-                tgt_fn = self._get_target_config_name(fn)
+                tgt_fn = self.target_config(fn)
                 self.tracewriter.dirs_made(*sh.mkdirslist(sh.dirname(tgt_fn)))
-                (source_fn, contents) = self._get_source_config(fn)
+                (source_fn, contents) = self.source_config(fn)
                 LOG.debug("Configuring file %s ---> %s.", (source_fn), (tgt_fn))
-                contents = self._config_param_replace(fn, contents, self._get_param_map(fn))
+                contents = self._config_param_replace(fn, contents, self.config_params(fn))
                 contents = self._config_adjust(contents, fn)
                 self.tracewriter.cfg_file_written(sh.write_file(tgt_fn, contents))
         return len(config_fns)
@@ -188,6 +192,12 @@ class PkgInstallComponent(component.Component):
         link_srcs = sorted(links.keys())
         link_srcs.reverse()
         links_made = 0
+        link_nice = []
+        for source in link_srcs:
+            link = links[source]
+            link_nice.append("%s => %s" % (link, source))
+        utils.log_iterable(link_nice, logger=LOG,
+                           header="Creating %s sym-links" % (len(link_nice)))
         for source in link_srcs:
             link = links[source]
             try:
@@ -345,26 +355,30 @@ class PythonInstallComponent(PkgInstallComponent):
 
     def _clean_pip_requires(self):
         # Fixup these files if they exist (sometimes they have junk in them)
-        files = 0
+        req_fns = []
         for fn in self.requires_files:
             if not sh.isfile(fn):
                 continue
-            new_lines = []
-            for line in sh.load_file(fn).splitlines():
-                s_line = line.strip()
-                if len(s_line) == 0:
-                    continue
-                elif s_line.startswith("#"):
-                    new_lines.append(s_line)
-                elif not self._filter_pip_requires_line(s_line):
-                    new_lines.append(("# %s" % (s_line)))
-                else:
-                    new_lines.append(s_line)
-            sh.move(fn, "%s.orig" % (fn))
-            new_fc = "\n".join(new_lines)
-            sh.write_file(fn, "# Cleaned on %s\n\n%s\n" % (utils.rcf8222date(), new_fc))
-            files += 1
-        return files
+            req_fns.append(fn)
+        if req_fns:
+            utils.log_iterable(req_fns, logger=LOG,
+                header="Adjusting %s pip 'requires' files" % (len(req_fns)))
+            for fn in req_fns:
+                new_lines = []
+                for line in sh.load_file(fn).splitlines():
+                    s_line = line.strip()
+                    if len(s_line) == 0:
+                        continue
+                    elif s_line.startswith("#"):
+                        new_lines.append(s_line)
+                    elif not self._filter_pip_requires_line(s_line):
+                        new_lines.append(("# %s" % (s_line)))
+                    else:
+                        new_lines.append(s_line)
+                sh.move(fn, "%s.orig" % (fn))
+                new_fc = "\n".join(new_lines)
+                sh.write_file(fn, "# Cleaned on %s\n\n%s\n" % (utils.rcf8222date(), new_fc))
+        return len(req_fns)
 
     def _filter_pip_requires_line(self, line):
         return line
@@ -372,12 +386,12 @@ class PythonInstallComponent(PkgInstallComponent):
     def pre_install(self):
         PkgInstallComponent.pre_install(self)
         for p in self.pips:
-            self.pip_functor(p).pre_install(p, self._get_param_map(None))
+            self.pip_functor(p).pre_install(p, self.params)
 
     def post_install(self):
         PkgInstallComponent.post_install(self)
         for p in self.pips:
-            self.pip_functor(p).post_install(p, self._get_param_map(None))
+            self.pip_functor(p).post_install(p, self.params)
 
     def _install_python_setups(self):
         py_dirs = self.python_directories
@@ -417,19 +431,24 @@ class PythonInstallComponent(PkgInstallComponent):
         return configured_am
 
 
+#### 
+#### RUNTIME CLASSES
+####
+
 class ProgramRuntime(component.Component):
     def __init__(self, *args, **kargs):
         component.Component.__init__(self, *args, **kargs)
-        self.tracewriter = tr.TraceWriter(self._get_trace_files()['start'], break_if_there=True)
-        self.tracereader = tr.TraceReader(self._get_trace_files()['start'])
+        self.tracewriter = tr.TraceWriter(self.trace_files['start'], break_if_there=True)
+        self.tracereader = tr.TraceReader(self.trace_files['start'])
 
-    def _get_apps_to_start(self):
-        return list()
+    @property
+    def apps_to_start(self):
+        return []
 
-    def _get_app_options(self, app_name):
-        return list()
+    def app_options(self, app_name):
+        return []
 
-    def _get_param_map(self, app_name):
+    def app_params(self, app_name):
         mp = dict(self.params)
         if app_name:
             mp['APP_NAME'] = app_name
@@ -441,7 +460,7 @@ class ProgramRuntime(component.Component):
     def start(self):
         # Anything to start?
         am_started = 0
-        apps_to_start = self._get_apps_to_start()
+        apps_to_start = self.apps_to_start
         if not apps_to_start:
             return am_started
 
@@ -453,7 +472,7 @@ class ProgramRuntime(component.Component):
             app_pth = app_info.get("path", app_name)
             app_dir = app_info.get("app_dir", self.get_option('app_dir'))
             # Adjust the program options now that we have real locations
-            program_opts = utils.param_replace_list(self._get_app_options(app_name), self._get_param_map(app_name))
+            program_opts = utils.param_replace_list(self.app_options(app_name), self.app_params(app_name))
             # Start it with the given settings
             LOG.debug("Starting %r using %r", app_name, run_type)
             details_fn = starter.start(app_name, app_pth=app_pth, app_dir=app_dir, opts=program_opts)
@@ -550,10 +569,14 @@ class EmptyRuntime(ProgramRuntime):
         ProgramRuntime.__init__(self, *args, **kargs)
 
 
+#### 
+#### UNINSTALL CLASSES
+####
+
 class PkgUninstallComponent(component.Component):
     def __init__(self, *args, **kargs):
         component.Component.__init__(self, *args, **kargs)
-        self.tracereader = tr.TraceReader(self._get_trace_files()['install'])
+        self.tracereader = tr.TraceReader(self.trace_files['install'])
         self.packager_functor = functools.partial(kargs['packager_functor'], 
                                                   default_packager_class=self.distro.package_manager_class)
 

@@ -33,7 +33,6 @@ REG_CONF = "glance-registry.conf"
 API_PASTE_CONF = 'glance-api-paste.ini'
 REG_PASTE_CONF = 'glance-registry-paste.ini'
 LOGGING_CONF = "logging.conf"
-LOGGING_SOURCE_FN = 'logging.cnf.sample'
 POLICY_JSON = 'policy.json'
 CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF,
            REG_PASTE_CONF, POLICY_JSON, LOGGING_CONF]
@@ -59,9 +58,6 @@ SUB_TO_APP = {
     GREG: 'glance-registry',
     GSCR: 'glance-scrubber',
 }
-
-# Subdirs of the downloaded (we are overriding the original)
-BIN_DIR = 'bin'
 
 
 class GlanceMixin(object):
@@ -100,10 +96,10 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
         dbhelper.drop_db(self.cfg, self.distro, DB_NAME)
         dbhelper.create_db(self.cfg, self.distro, DB_NAME, utf8=True)
 
-    def _get_source_config(self, config_fn):
+    def source_config(self, config_fn):
         real_fn = config_fn
         if config_fn == LOGGING_CONF:
-            real_fn = LOGGING_SOURCE_FN
+            real_fn = 'logging.cnf.sample'
         fn = sh.joinpths(self.get_option('app_dir'), 'etc', real_fn)
         return (fn, sh.load_file(fn))
 
@@ -172,7 +168,6 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
 
     def _config_param_replace(self, config_fn, contents, parameters):
         if config_fn in [REG_CONF, REG_PASTE_CONF, API_CONF, API_PASTE_CONF, LOGGING_CONF]:
-            # We handle these ourselves
             return contents
         else:
             return comp.PythonInstallComponent._config_param_replace(self, config_fn, contents, parameters)
@@ -195,11 +190,11 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
 class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
-        self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
+        self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
         self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
-        self.do_upload = self.get_option('load-images')
 
-    def _get_apps_to_start(self):
+    @property
+    def apps_to_start(self):
         apps = list()
         for name, values in self.subsystems.items():
             if name in SUB_TO_APP:
@@ -212,7 +207,7 @@ class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
                 })
         return apps
 
-    def _get_app_options(self, app):
+    def app_options(self, app):
         return APP_OPTIONS.get(app)
 
     def _get_image_urls(self):
@@ -221,7 +216,7 @@ class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
 
     def post_start(self):
         comp.PythonRuntime.post_start(self)
-        if self.do_upload:
+        if self.get_option('load-images'):
             # Install any images that need activating...
             LOG.info("Waiting %s seconds so that glance can start up before image install." % (self.wait_time))
             sh.sleep(self.wait_time)

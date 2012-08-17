@@ -15,7 +15,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""Platform-specific logic for Ubunutu Oneiric components.
+"""
+Platform-specific logic for Ubunutu components.
 """
 
 import tempfile

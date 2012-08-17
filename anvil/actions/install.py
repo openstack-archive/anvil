@@ -72,7 +72,7 @@ class InstallAction(action.Action):
             PhaseFunctors(
                 start=lambda i: LOG.info('Configuring %s.', colorizer.quote(i.name)),
                 run=lambda i: i.configure(),
-                end=lambda i, result: LOG.info("Configured %s items.", colorizer.quote(result)),
+                end=None,
             ),
             component_order,
             instances,
