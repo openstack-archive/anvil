@@ -64,6 +64,7 @@ def _strap_epel():
     _write_msg("Installing EPEL repositories...")
     for u in RH_EPEL_URLS:
         try:
+            _write_msg("Scraping %s for the EPEL release rpm filename." % (u))
             with contextlib.closing(urllib2.urlopen(u, timeout=URL_TIMEOUT)) as uh:
                 rel = re.search("epel-release(.*?)[.]rpm", uh.read(), re.I)
             if rel:
