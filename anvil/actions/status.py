@@ -28,13 +28,9 @@ from anvil.components import (STATUS_INSTALLED, STATUS_STARTED,
 
 class StatusAction(action.Action):
 
-    @staticmethod
-    def get_lookup_name():
+    @property
+    def lookup_name(self):
         return 'running'
-
-    @staticmethod
-    def get_action_name():
-        return 'status'
 
     def _fetch_status(self, component):
         return component.status()

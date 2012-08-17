@@ -42,12 +42,8 @@ KNOCK_OFF_MAP = {
 
 class InstallAction(action.Action):
 
-    @staticmethod
-    def get_lookup_name():
-        return 'install'
-
-    @staticmethod
-    def get_action_name():
+    @property
+    def lookup_name(self):
         return 'install'
 
     def _run(self, persona, component_order, instances):

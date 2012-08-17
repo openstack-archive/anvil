@@ -34,13 +34,9 @@ KNOCK_OFF_MAP = {
 
 class StopAction(action.Action):
 
-    @staticmethod
-    def get_lookup_name():
+    @property
+    def lookup_name(self):
         return 'running'
-
-    @staticmethod
-    def get_action_name():
-        return 'stop'
 
     def _order_components(self, components):
         components = super(StopAction, self)._order_components(components)

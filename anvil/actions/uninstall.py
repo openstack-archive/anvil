@@ -42,12 +42,8 @@ KNOCK_OFF_MAP = {
 
 class UninstallAction(action.Action):
 
-    @staticmethod
-    def get_lookup_name():
-        return 'uninstall'
-
-    @staticmethod
-    def get_action_name():
+    @property
+    def lookup_name(self):
         return 'uninstall'
 
     def _order_components(self, components):

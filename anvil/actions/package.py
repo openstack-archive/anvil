@@ -25,12 +25,8 @@ LOG = log.getLogger(__name__)
 
 class PackageAction(action.Action):
 
-    @staticmethod
-    def get_lookup_name():
-        return 'package'
-
-    @staticmethod
-    def get_action_name():
+    @property
+    def lookup_name(self):
         return 'package'
 
     def _run(self, persona, component_order, instances):

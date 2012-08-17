@@ -36,13 +36,9 @@ KNOCK_OFF_MAP = {
 
 class StartAction(action.Action):
 
-    @staticmethod
-    def get_lookup_name():
+    @property
+    def lookup_name(self):
         return 'running'
-
-    @staticmethod
-    def get_action_name():
-        return 'start'
 
     def _run(self, persona, component_order, instances):
         self._run_phase(

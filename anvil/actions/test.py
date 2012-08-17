@@ -25,12 +25,8 @@ LOG = log.getLogger(__name__)
 
 class TestAction(action.Action):
 
-    @staticmethod
-    def get_lookup_name():
-        return 'test'
-
-    @staticmethod
-    def get_action_name():
+    @property
+    def lookup_name(self):
         return 'test'
 
     def _run(self, persona, component_order, instances):

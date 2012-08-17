@@ -48,12 +48,8 @@ class Action(object):
         self.force = kargs.get('force', False)
         self.root_dir = root_dir
 
-    @staticmethod
-    def get_lookup_name():
-        raise NotImplementedError()
-
-    @staticmethod
-    def get_action_name():
+    @property
+    def lookup_name(self):
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -133,7 +129,7 @@ class Action(object):
             'keep_old': self.keep_old,
         }
         for c in persona.wanted_components:
-            ((cls, distro_opts), siblings) = self.distro.extract_component(c, self.get_lookup_name())
+            ((cls, distro_opts), siblings) = self.distro.extract_component(c, self.lookup_name)
             LOG.debug("Constructing component %r (%s)", c, utils.obj_name(cls))
             kvs = {}
             kvs['runner'] = self
