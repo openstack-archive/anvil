@@ -17,21 +17,25 @@
 from anvil import components as comp
 
 
-class GlanceClientUninstaller(comp.PythonUninstallComponent):
+class CinderClientUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, *args, **kargs)
 
 
-class GlanceClientInstaller(comp.PythonInstallComponent):
+class CinderClientInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
 
     def _filter_pip_requires_line(self, line):
         if line.lower().find('keystoneclient') != -1:
             return None
+        if line.lower().find('novaclient') != -1:
+            return None
+        if line.lower().find('glanceclient') != -1:
+            return None
         return line
 
 
-class GlanceClientRuntime(comp.EmptyRuntime):
+class CinderClientRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
         comp.EmptyRuntime.__init__(self, *args, **kargs)

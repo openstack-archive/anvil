@@ -15,12 +15,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
 from anvil import components as comp
 
 
 class Installer(comp.PythonInstallComponent):
-
     @property
     def packages(self):
         pkg_list = super(Installer, self).packages

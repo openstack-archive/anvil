@@ -15,9 +15,6 @@
 #    under the License.
 
 from anvil import components as comp
-from anvil import log as logging
-
-LOG = logging.getLogger(__name__)
 
 
 class KeyStoneClientUninstaller(comp.PythonUninstallComponent):
