@@ -138,6 +138,9 @@ components:
         -   name: mox
             package:
                 name: python-mox
+        -   name: netaddr
+            package:
+                name: python-netaddr
         -   name: nose
             package:
                 name: python-nose1.1
@@ -240,7 +243,10 @@ components:
         -   name: django
             version: ">=1.4"
         -   name: django-compressor
+        -   name: django-nose
         -   name: django-openstack-auth
+        -   name: nosexcover
+        -   name: selenium
     keystone:
         action_classes:
             install: anvil.components.keystone:KeystoneInstaller
@@ -282,9 +288,6 @@ components:
         -   name: amqplib
             package:
                 name: python-amqplib
-        -   name: netaddr
-            package:
-                name: python-netaddr
         -   name: suds
             package: 
                 name: python-suds
