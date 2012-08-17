@@ -39,11 +39,7 @@ PW_USER_PROMPT = rhelper.PW_USER_PROMPT
 class RabbitUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PkgUninstallComponent.__init__(self, *args, **kargs)
-        runtime_cls = self.siblings.get('running')
-        if not runtime_cls:
-            self.runtime = RabbitRuntime(*args, **kargs)
-        else:
-            self.runtime = runtime_cls(*args, **kargs)
+        self.runtime = self.siblings.get('running')
 
     def pre_uninstall(self):
         try:
@@ -59,11 +55,7 @@ class RabbitUninstaller(comp.PkgUninstallComponent):
 class RabbitInstaller(comp.PkgInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PkgInstallComponent.__init__(self, *args, **kargs)
-        runtime_cls = self.siblings.get('running')
-        if not runtime_cls:
-            self.runtime = RabbitRuntime(*args, **kargs)
-        else:
-            self.runtime = runtime_cls(*args, **kargs)
+        self.runtime = self.siblings.get('running')
 
     def warm_configs(self):
         for pw_key in WARMUP_PWS:

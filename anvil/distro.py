@@ -94,7 +94,7 @@ class Distro(object):
         try:
             # Use a copy instead of the original
             component_info = copy.deepcopy(self._components[name])
-            action_classes = dict(component_info['action_classes'])
+            action_classes = component_info['action_classes']
             entry_point = action_classes[action]
             del action_classes[action]
             cls = importer.import_entry_point(entry_point)

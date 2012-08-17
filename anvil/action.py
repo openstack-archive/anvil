@@ -16,6 +16,7 @@
 
 import abc
 import collections
+import copy
 import functools
 
 from anvil import colorizer
@@ -82,21 +83,23 @@ class Action(object):
             'trace_dir': trace_dir,
         }
 
-    def _merge_options(self, name, base_opts, component_opts, persona_opts):
-        joined_opts = dict()
-        joined_opts.update(self._get_component_dirs(name))
+    def _merge_options(self, name, override_opts, base_opts, component_opts, persona_opts):
+        opts = {}
+        opts.update(self._get_component_dirs(name))
         if base_opts:
-            joined_opts.update(base_opts)
+            opts.update(base_opts)
         if component_opts:
-            joined_opts.update(component_opts)
+            opts.update(component_opts)
         if persona_opts:
-            joined_opts.update(persona_opts)
-        return joined_opts
+            opts.update(persona_opts)
+        if override_opts:
+            opts.update(override_opts)
+        return opts
 
     def _merge_subsystems(self, component_subsys, desired_subsys):
         joined_subsys = {}
         if not component_subsys:
-            component_subsys = dict()
+            component_subsys = {}
         if not desired_subsys:
             return joined_subsys
         for subsys in desired_subsys:
@@ -106,11 +109,12 @@ class Action(object):
                 joined_subsys[subsys] = {}
         return joined_subsys
 
-    def _convert_siblings(self, siblings):
-        mp = {}
+    def _construct_siblings(self, siblings, kvs):
+        siblings = {}
         for (action, cls_name) in siblings.items():
-            mp[action] = importer.import_entry_point(cls_name)
-        return mp
+            cls = importer.import_entry_point(cls_name)
+            siblings[action] = cls(**kvs)
+        return siblings
 
     def _construct_instances(self, persona):
         """
@@ -119,31 +123,34 @@ class Action(object):
         persona_subsystems = persona.wanted_subsystems or {}
         persona_opts = persona.component_options or {}
         instances = {}
-        base_options = {
-            'keep_old': self.keep_old,
-        }
         for c in persona.wanted_components:
-            ((cls, opts), siblings) = self.distro.extract_component(c, self.get_lookup_name())
-            LOG.debug("Constructing component %s (%s)", c, utils.obj_name(cls))
-            cls_kvs = {}
-            cls_kvs['runner'] = self
-            cls_kvs['siblings'] = self._convert_siblings(siblings)
-            cls_kvs['subsystems'] = self._merge_subsystems(opts.pop('subsystems', None),
-                                                           persona_subsystems.get(c))
-            cls_kvs['instances'] = instances
-            cls_kvs['name'] = c
-            cls_kvs['packager_functor'] = functools.partial(packager.get_packager,
-                                                            distro=self.distro)
-            # Can't override the above
-            component_opts = {}
-            for (k, v) in opts.items():
-                if k not in cls_kvs:
-                    component_opts[k] = v
-            cls_kvs['options'] = self._merge_options(c, base_options, 
-                                                     component_opts, persona_opts.get(c))
-            LOG.debug("Construction of %s params are:", c)
-            utils.log_object(cls_kvs, logger=LOG, level=logging.DEBUG)
-            instances[c] = cls(**cls_kvs)
+            ((cls, distro_opts), siblings) = self.distro.extract_component(c, self.get_lookup_name())
+            LOG.debug("Constructing component %r (%s)", c, utils.obj_name(cls))
+            kvs = {}
+            kvs['runner'] = self
+            kvs['name'] = c
+            kvs['packager_functor'] = functools.partial(packager.get_packager,
+                                                        distro=self.distro)
+            # First create its siblings with a 'minimal' set of options
+            # This is done, so that they will work in a minimal state
+            kvs['instances'] = {}
+            kvs['subsystems'] = {}
+            kvs['siblings'] = {}
+            kvs['options'] = {'keep_old': self.keep_old}
+            LOG.debug("Constructing %s siblings:", c)
+            utils.log_object(siblings, logger=LOG, level=logging.DEBUG)
+            LOG.debug("Using params:")
+            utils.log_object(kvs, logger=LOG, level=logging.DEBUG)
+            kvs['siblings'] = self._construct_siblings(siblings, dict(kvs))
+            # Now inject the full options
+            kvs['instances'] = instances
+            kvs['options'] = self._merge_options(c, kvs, {'keep_old': self.keep_old},
+                                                 distro_opts, (persona_opts.get(c) or {}))
+            kvs['subsystems'] = self._merge_subsystems((distro_opts.pop('subsystems', None) or {}),
+                                                       (persona_subsystems.get(c) or {}))
+            LOG.debug("Construction of %r params are:", c)
+            utils.log_object(kvs, logger=LOG, level=logging.DEBUG)
+            instances[c] = cls(**kvs)
         return instances
 
     def _verify_components(self, component_order, instances):

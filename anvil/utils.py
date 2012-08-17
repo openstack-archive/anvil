@@ -213,7 +213,7 @@ def to_bytes(text):
     return byte_val
 
 
-def log_object(to_log, logger=None, level=logging.INFO, item_max_len=32):
+def log_object(to_log, logger=None, level=logging.INFO, item_max_len=64):
     if not to_log:
         return
     if not logger:

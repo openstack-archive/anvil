@@ -50,11 +50,7 @@ class DBUninstaller(comp.PkgUninstallComponent):
 
     def __init__(self, *args, **kargs):
         comp.PkgUninstallComponent.__init__(self, *args, **kargs)
-        runtime_cls = self.siblings.get('running')
-        if not runtime_cls:
-            self.runtime = DBRuntime(*args, **kargs)
-        else:
-            self.runtime = runtime_cls(*args, **kargs)
+        self.runtime = self.siblings.get('running')
 
     def warm_configs(self):
         for key, prompt in WARMUP_PWS:
@@ -90,11 +86,7 @@ class DBInstaller(comp.PkgInstallComponent):
 
     def __init__(self, *args, **kargs):
         comp.PkgInstallComponent.__init__(self, *args, **kargs)
-        runtime_cls = self.siblings.get('running')
-        if not runtime_cls:
-            self.runtime = DBRuntime(*args, **kargs)
-        else:
-            self.runtime = runtime_cls(*args, **kargs)
+        self.runtime = self.siblings.get('running')
 
     def config_params(self, config_fn):
         # This dictionary will be used for parameter replacement
