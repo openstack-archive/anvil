@@ -26,15 +26,6 @@ class CinderClientInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
 
-    def _filter_pip_requires_line(self, line):
-        if line.lower().find('keystoneclient') != -1:
-            return None
-        if line.lower().find('novaclient') != -1:
-            return None
-        if line.lower().find('glanceclient') != -1:
-            return None
-        return line
-
 
 class CinderClientRuntime(comp.EmptyRuntime):
     def __init__(self, *args, **kargs):
