@@ -110,11 +110,11 @@ class Action(object):
         return joined_subsys
 
     def _construct_siblings(self, siblings, kvs):
-        siblings = {}
+        my_siblings = {}
         for (action, cls_name) in siblings.items():
             cls = importer.import_entry_point(cls_name)
-            siblings[action] = cls(**kvs)
-        return siblings
+            my_siblings[action] = cls(**kvs)
+        return my_siblings
 
     def _construct_instances(self, persona):
         """
@@ -141,13 +141,14 @@ class Action(object):
             utils.log_object(siblings, logger=LOG, level=logging.DEBUG)
             LOG.debug("Using params:")
             utils.log_object(kvs, logger=LOG, level=logging.DEBUG)
-            kvs['siblings'] = self._construct_siblings(siblings, dict(kvs))
+            siblings = self._construct_siblings(siblings, dict(kvs))
             # Now inject the full options
             kvs['instances'] = instances
             kvs['options'] = self._merge_options(c, kvs, {'keep_old': self.keep_old},
                                                  distro_opts, (persona_opts.get(c) or {}))
             kvs['subsystems'] = self._merge_subsystems((distro_opts.pop('subsystems', None) or {}),
                                                        (persona_subsystems.get(c) or {}))
+            kvs['siblings'] = siblings
             LOG.debug("Construction of %r params are:", c)
             utils.log_object(kvs, logger=LOG, level=logging.DEBUG)
             instances[c] = cls(**kvs)
