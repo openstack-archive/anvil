@@ -22,8 +22,17 @@ import time
 import traceback as tb
 import platform
 
+# These are safe to import without bringing in non-core
+# python dependencies...
 from anvil import bootstrap
 from anvil import env
+
+
+def what_ran():
+    prog_name = sys.argv[0]
+    rest_args = sys.argv[1:]
+    return (prog_name, " ".join(rest_args))
+
 
 # Check if supported
 if (not bootstrap.is_supported() and 
@@ -34,7 +43,7 @@ if (not bootstrap.is_supported() and
 
 # Bootstrap anvil, call before importing anything else from anvil
 if bootstrap.strap():
-    sys.stderr.write("Please re-run %s\n" % (sys.argv[0]))
+    sys.stderr.write("Please re-run %r so that changes are reflected.\n" % (" ".join(what_ran())))
     sys.exit(0)
 
 from anvil import actions
@@ -247,10 +256,10 @@ def main():
     Arguments: N/A
     Returns: 1 for success, 0 for failure
     """
-
+    (prog_name, rest_args) = what_ran()
+    
     # Do this first so people can see the help message...
     args = opts.parse()
-    prog_name = sys.argv[0]
 
     # Configure logging levels
     log_level = logging.INFO
@@ -263,11 +272,9 @@ def main():
 
     # Will need root to setup openstack
     if not sh.got_root():
-        rest_args = sys.argv[1:]
         print("This program requires a user with sudo access.")
-        msg = "Perhaps you should try %s %s" % \
-                (colorizer.color("sudo %s" % (prog_name), "red", True), " ".join(rest_args))
-        print(msg)
+        print("Perhaps you should try %s %s" % 
+              (colorizer.color("sudo %s" % (prog_name), "red", True), " ".join(rest_args)))
         return 1
 
     try:
@@ -275,9 +282,9 @@ def main():
         sh.user_mode(quiet=False)
         started_ok = run(args)
         if not started_ok:
-            me = colorizer.color(prog_name, "red", True)
-            me += " " + colorizer.color('--help', 'red')
-            print("Perhaps you should try %s" % (me))
+            help_me = colorizer.color(prog_name, "red", True)
+            help_me += " " + colorizer.color('--help', 'red')
+            print("Perhaps you should try %s" % (help_me))
             return 1
         else:
             utils.goodbye(True)
