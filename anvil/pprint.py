@@ -85,9 +85,14 @@ def _pformat_escape(item, item_max_len):
 
 
 def _pformat_simple(item, item_max_len):
+    if item_max_len is None or item_max_len < 0:
+        return  "%s" % (item)
+    if item_max_len == 0:
+        return ''
     item_str = "%s" % (item)
     if len(item_str) > item_max_len:
-        item_str = item_str[0:item_max_len] + "..."
+        # TODO(harlowja) use utf8 ellipse or '...'??
+        item_str = item_str[0:item_max_len] + "…"
     return item_str
 
 
