@@ -1,4 +1,5 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
+# -*- coding: utf-8 -*-
 
 #    Copyright (C) 2012 Yahoo! Inc. All Rights Reserved.
 #
@@ -92,7 +93,7 @@ def _pformat_simple(item, item_max_len):
     item_str = "%s" % (item)
     if len(item_str) > item_max_len:
         # TODO(harlowja) use utf8 ellipse or '...'??
-        item_str = item_str[0:item_max_len] + "…"
+        item_str = item_str[0:item_max_len] + u"…"
     return item_str
 
 
