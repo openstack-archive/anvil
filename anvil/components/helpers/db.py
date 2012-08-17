@@ -49,18 +49,16 @@ def drop_db(cfg, distro, dbname):
         raise NotImplementedError(msg)
 
 
-def create_db(cfg, distro, dbname, utf8=False):
+def create_db(cfg, distro, dbname, charset='utf8'):
     dbtype = cfg.get("db", "type")
-    if not utf8:
-        createcmd = distro.get_command(dbtype, 'create_db', silent=True)
-    else:
-        createcmd = distro.get_command(dbtype, 'create_db_utf8', silent=True)
+    createcmd = distro.get_command(dbtype, 'create_db', silent=True)
     if createcmd:
-        LOG.info('Creating %s database: %s', colorizer.quote(dbtype), colorizer.quote(dbname))
+        LOG.info('Creating %s database: %s (%s)', colorizer.quote(dbtype), colorizer.quote(dbname), charset)
         params = dict()
         params['PASSWORD'] = cfg.get_password("sql", PASSWORD_PROMPT)
         params['USER'] = cfg.getdefaulted("db", "sql_user", 'root')
         params['DB'] = dbname
+        params['CHARACTER_SET'] = charset
         cmds = list()
         cmds.append({
             'cmd': createcmd,

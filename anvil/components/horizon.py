@@ -117,7 +117,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def _setup_db(self):
         dbhelper.drop_db(self.cfg, self.distro, DB_NAME)
-        dbhelper.create_db(self.cfg, self.distro, DB_NAME, utf8=True)
+        dbhelper.create_db(self.cfg, self.distro, DB_NAME)
 
     def pre_install(self):
         comp.PythonInstallComponent.pre_install(self)

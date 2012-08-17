@@ -29,7 +29,6 @@ from anvil.components.helpers import db as dbhelper
 from anvil.components.helpers import glance as ghelper
 from anvil.components.helpers import keystone as khelper
 from anvil.components.helpers import nova as nhelper
-from anvil.components.helpers import quantum as qhelper
 
 LOG = logging.getLogger(__name__)
 
@@ -116,7 +115,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
     def _setup_db(self):
         dbhelper.drop_db(self.cfg, self.distro, DB_NAME)
-        dbhelper.create_db(self.cfg, self.distro, DB_NAME, utf8=True)
+        dbhelper.create_db(self.cfg, self.distro, DB_NAME)
 
     def source_config(self, config_fn):
         real_fn = config_fn
@@ -197,7 +196,6 @@ class KeystoneRuntime(comp.PythonRuntime):
                 'glance': ghelper.get_shared_params(self.cfg),
                 'keystone': khelper.get_shared_params(self.cfg),
                 'nova': nhelper.get_shared_params(self.cfg),
-                'quantum': qhelper.get_shared_params(self.cfg),
             }
             init_what = utils.param_replace_deep(copy.deepcopy(yaml.load(contents)), cfg)
             khelper.Initializer(cfg['keystone']).initialize(**init_what)

@@ -223,7 +223,10 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
 
     def _setup_db(self):
         dbhelper.drop_db(self.cfg, self.distro, DB_NAME)
-        dbhelper.create_db(self.cfg, self.distro, DB_NAME)
+        # Explicitly use latin1: to avoid lp#829209, nova expects the database to
+        # use latin1 by default, and then upgrades the database to utf8 (see the
+        # 082_essex.py in nova)
+        dbhelper.create_db(self.cfg, self.distro, DB_NAME, charset='latin1')
 
     def _generate_nova_conf(self, fn):
         LOG.debug("Generating dynamic content for nova: %s.", (fn))

@@ -94,7 +94,7 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
 
     def _setup_db(self):
         dbhelper.drop_db(self.cfg, self.distro, DB_NAME)
-        dbhelper.create_db(self.cfg, self.distro, DB_NAME, utf8=True)
+        dbhelper.create_db(self.cfg, self.distro, DB_NAME)
 
     def source_config(self, config_fn):
         real_fn = config_fn
