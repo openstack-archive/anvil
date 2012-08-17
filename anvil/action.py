@@ -41,12 +41,13 @@ class PhaseFunctors(object):
 class Action(object):
     __meta__ = abc.ABCMeta
 
-    def __init__(self, distro, cfg, root_dir, **kargs):
+    def __init__(self, distro, cfg, root_dir, name, **kargs):
         self.distro = distro
         self.cfg = cfg
         self.keep_old = kargs.get('keep_old', False)
         self.force = kargs.get('force', False)
         self.root_dir = root_dir
+        self.name = name
 
     @property
     def lookup_name(self):
@@ -169,15 +170,16 @@ class Action(object):
         for c in component_order:
             instances[c].warm_configs()
 
-    def _get_phase_directory(self, action_name=None):
-        if not action_name:
-            action_name = self.get_action_name()
-        return sh.joinpths(self.root_dir, "phases", action_name)
+    def _get_phase_directory(self, name=None):
+        if not name:
+            name = self.name
+        return sh.joinpths(self.root_dir, "phases", name)
 
-    def _get_phase_filename(self, phase_name, action_name=None):
-        dirname = self._get_phase_directory(action_name)
-        sh.mkdirslist(dirname)
-        return sh.joinpths(dirname, "%s.phases" % (phase_name.lower()))
+    def _get_phase_filename(self, phase_name, base_name=None):
+        dir_path = self._get_phase_directory(base_name)
+        if not sh.isdir(dir_path):
+            sh.mkdirslist(dir_path)
+        return sh.joinpths(dir_path, "%s.phases" % (phase_name.lower()))
 
     def _run_phase(self, functors, component_order, instances, phase_name):
         """
@@ -229,19 +231,19 @@ class Action(object):
         return ('', [])
 
     def _on_completion(self, phase_name, results):
-       (action_name, to_destroy) = self._get_opposite_stages(phase_name)
+       (base_name, to_destroy) = self._get_opposite_stages(phase_name)
        for name in to_destroy:
-           fn = self._get_phase_filename(name, action_name)
+           fn = self._get_phase_filename(name, base_name)
            if sh.isfile(fn):
                sh.unlink(fn)
 
     def run(self, persona):
         instances = self._construct_instances(persona)
         component_order = self._order_components(persona.wanted_components)
-        LOG.info("Processing components for action %s.", colorizer.quote(self.get_action_name()))
+        LOG.info("Processing components for action %s.", colorizer.quote(self.name))
         utils.log_iterable(component_order,
-                        header="Activating in the following order",
-                        logger=LOG)
+                           header="Activating in the following order",
+                           logger=LOG)
         self._verify_components(component_order, instances)
         self._warm_components(component_order, instances)
         self._run(persona, component_order, instances)

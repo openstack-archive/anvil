@@ -204,6 +204,7 @@ def run(args):
     runner = runner_cls(dist,
                         config,
                         root_dir=root_dir,
+                        name=action,
                         **args)
 
     LOG.info("Starting action %s on %s for distro: %s",
