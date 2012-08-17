@@ -19,7 +19,7 @@ import functools
 import os
 import urllib2
 
-from urlparse import urlparse
+from urlparse import (urlparse, parse_qs)
 
 import progressbar
 
@@ -33,7 +33,6 @@ LOG = logging.getLogger(__name__)
 
 
 class Downloader(object):
-
     def __init__(self, uri, store_where):
         self.uri = uri
         self.store_where = store_where
@@ -43,17 +42,23 @@ class Downloader(object):
 
 
 class GitDownloader(Downloader):
-
     def __init__(self, distro, uri, store_where):
         Downloader.__init__(self, uri, store_where)
         self.distro = distro
 
     def download(self):
         branch = None
+        tag = None
         uri = self.uri
-        if uri.find("+") != -1:
-            uri, branch = uri.rsplit("+", 1)
-            branch = branch.strip()
+        if uri.find("?") != -1:
+            # If we use urlparser here it doesn't seem to work right??
+            # TODO(harlowja), why??
+            (uri, params) = uri.split("?", 1)
+            params = parse_qs(params)
+            if 'branch' in params:
+                branch = params['branch'][0].strip()
+            if 'tag' in params:
+                tag = params['tag'][0].strip()
             uri = uri.strip()
         if not branch:
             branch = 'master'
@@ -64,15 +69,26 @@ class GitDownloader(Downloader):
             cmd = list(self.distro.get_command('git', 'clone'))
             cmd += [uri, self.store_where]
             sh.execute(*cmd)
-        if branch.lower() != 'master':
-            LOG.info("Adjusting branch to %s.", colorizer.quote(branch))
+        if branch or tag:
+            checkout_what = []
+            if tag:
+                # Avoid 'detached HEAD state' message by moving to a 
+                # $tag-anvil branch for that tag
+                checkout_what = [tag, '-b', "%s-%s" % (tag, 'anvil')]
+                LOG.info("Adjusting to tag %s.", colorizer.quote(tag))
+            else:
+                if branch.lower() == 'master':
+                    checkout_what = ['master']
+                else:
+                    # Set it up to track the remote branch correctly
+                    checkout_what = ['--track', '-b', branch, 'origin/%s' % (branch)]
+                LOG.info("Adjusting branch to %s.", colorizer.quote(branch))
             cmd = list(self.distro.get_command('git', 'checkout'))
-            cmd += [branch]
+            cmd += checkout_what
             sh.execute(*cmd, cwd=self.store_where)
 
 
 class UrlLibDownloader(Downloader):
-
     def __init__(self, uri, store_where, **kargs):
         Downloader.__init__(self, uri, store_where)
         self.quiet = kargs.get('quiet', False)
