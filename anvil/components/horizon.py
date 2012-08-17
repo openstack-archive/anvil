@@ -66,6 +66,21 @@ class HorizonInstaller(comp.PythonInstallComponent):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
         self.log_dir = sh.joinpths(self.get_option('component_dir'), 'logs')
 
+    def _filter_pip_requires_line(self, line):
+        if line.lower().find('novaclient') != -1:
+            return None
+        if line.lower().find('quantumclient') != -1:
+            return None
+        if line.lower().find('swiftclient') != -1:
+            return None
+        if line.lower().find('keystoneclient') != -1:
+            return None
+        if line.lower().find('glanceclient') != -1:
+            return None
+        if line.lower().find('cinderclient') != -1:
+            return None
+        return line
+
     def verify(self):
         comp.PythonInstallComponent.verify(self)
         self._check_ug()

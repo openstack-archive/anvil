@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License..
 
+import contextlib
 import os
 import platform
 import random
@@ -23,7 +24,10 @@ import sys
 import tempfile
 import time
 import urllib2
-import contextlib
+
+# These are safe to import without bringing in non-core
+# python dependencies...
+from anvil import version
 
 BOOT_STRAP_FN = os.path.join(os.path.expanduser("~"), ".anvil_strapped")
 RH_EPEL_URLS = [
@@ -56,6 +60,25 @@ def _write_msg(msg):
 
 def _write_warn(msg):
     _write_msg("WARNING: %s" % (msg))
+
+
+def _strap_nodejs(repo_fn="/etc/yum.repos.d/epel-nodejs.repo"):
+    _write_msg("Making node.js installable by yum by creating %s" % (repo_fn))
+
+    # For now this will work until it shows up in epel
+    node_js_repo = '''# Place this file in your /etc/yum.repos.d/ directory
+
+[epel-nodejs]
+name=node.js stack in development: runtime and several npm packages
+baseurl=http://repos.fedorapeople.org/repos/lkundrak/nodejs/epel-6/$basearch/
+enabled=1
+skip_if_unavailable=1
+gpgcheck=0
+'''
+
+    if not os.path.isfile(repo_fn):
+        with open(repo_fn, 'w') as fh:
+            fh.write(js_repo)
 
 
 def _strap_epel():
@@ -94,6 +117,7 @@ def _strap_epel():
 def _strap_redhat_based(distname):
     if distname in ['redhat', 'centos']:
         _strap_epel()
+        _strap_nodejs()
         pkgs = ['gcc', 'git', 'pylint', 'python', 'python-netifaces', 
                 'python-pep8', 'python-pip', 'python-progressbar', 'PyYAML',
                 'python-ordereddict']
@@ -139,8 +163,19 @@ def is_supported():
     return False
 
 
+def _is_strapped():
+    if not os.path.isfile(BOOT_STRAP_FN):
+        return False
+    booted_ver = ''
+    with open(BOOT_STRAP_FN, 'r') as fh:
+        booted_ver = fh.read()
+    if booted_ver.strip().lower() == version.version_string().lower():
+        return True
+    return False
+
+
 def strap():
-    if os.path.isfile(BOOT_STRAP_FN):
+    if _is_strapped():
         return False
     _write_msg("Bootstrapping anvil...")
     _write_msg("Please wait...")
@@ -157,5 +192,5 @@ def strap():
         strap_functor(distname)
         _write_msg("Bootstrapped anvil for linux distribution %s..." % (distname))
         with open(BOOT_STRAP_FN, 'w') as fh:
-            fh.write("1\n")
+            fh.write("%s\n" % (version.version_string()))
     return True

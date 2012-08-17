@@ -126,6 +126,9 @@ components:
         -   name: iso8601
             package:
                 name: python-iso8601
+        -   name: lockfile
+            package:
+                name: python-lockfile
         -   name: lxml
             package:
                 name: python-lxml
@@ -175,7 +178,7 @@ components:
         -   name: openstack.nose_plugin
         -   name: passlib
         -   name: prettytable
-            version: "0.6" # This is not right, 0.6 and 0.6.1 are needed??
+            version: ">=0.6" # This is not right, 0.6 and 0.6.1 are needed??
         -   name: pycrypto
             options: --upgrade
         -   name: requests
@@ -205,7 +208,7 @@ components:
         pips:
         # Pips that aren't packages yet (and not in the 'general' section)
         -   name: boto
-            version: "2.1.1"
+            version: "==2.1.1"
         -   name: wsgiref
         -   name: xattr
         -   name: jsonschema
@@ -218,19 +221,26 @@ components:
         -   name: nosexcover
         -   name: setuptools-git
         -   name: warlock
-            version: "0.1.0"
+            version: "==0.1.0"
     horizon:
         action_classes:
             install: anvil.distros.rhel:HorizonInstaller
             running: anvil.components.horizon:HorizonRuntime
             uninstall: anvil.components.horizon:HorizonUninstaller
+        pip_to_package:
+        -   name: pytz
+            package:
+                name: pytz
         packages:
-        -   name: nodejs-compat-symlinks
-            source-rpm: http://nodejs.tchol.org/repocfg/el/nodejs-stable-release.noarch.rpm
-        -   name: npm
-            source-rpm: http://nodejs.tchol.org/repocfg/el/nodejs-stable-release.noarch.rpm
         -   name: httpd
         -   name: mod_wsgi
+        -   name: nodejs
+        -   name: nodejs-npm
+        pips:
+        -   name: django
+            version: ">=1.4"
+        -   name: django-compressor
+        -   name: django-openstack-auth
     keystone:
         action_classes:
             install: anvil.components.keystone:KeystoneInstaller
@@ -244,7 +254,7 @@ components:
                 name: python-netifaces
         pips:
         -   name: pam
-            version: '0.1.4'
+            version: '==0.1.4'
         -   name: nosexcover
         -   name: webtest  # This version in package form conflicts with webob1.0
     keystone-client:
@@ -284,9 +294,6 @@ components:
         -   name: feedparser
             package:
                 name: python-feedparser
-        -   name: lockfile
-            package:
-                name: python-lockfile
         pips:
         -   name: Cheetah
             version: "2.4.4"
@@ -329,16 +336,6 @@ components:
             uninstall: anvil.components.openstack_client:OpenStackClientUninstaller
         pips:
         -   name: cliff
-    quantum:
-        action_classes:
-            install: anvil.components.quantum:QuantumInstaller
-            running: anvil.components.quantum:QuantumRuntime
-            uninstall: anvil.components.quantum:QuantumUninstaller
-    quantum-client:
-        action_classes:
-            install: anvil.components.quantum_client:QuantumClientInstaller
-            running: anvil.components.quantum_client:QuantumClientRuntime
-            uninstall: anvil.components.quantum_client:QuantumClientUninstaller
     rabbit-mq:
         action_classes:
             install: anvil.components.rabbit:RabbitInstaller
