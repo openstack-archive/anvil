@@ -316,10 +316,10 @@ class ConfConfigurator(object):
 
     def _configure_quantum(self, nova_conf):
         # TODO(harlowja) fixup for folsom
-        nova_conf.add('network_api_class', 'nova.network.quantumv2.api.API')
+        pass
 
     def _configure_network_settings(self, nova_conf):
-        if self.installer.get_option('quantum'):
+        if self.installer.get_option('quantum-enabled'):
             self._configure_quantum(nova_conf)
         else:
             nova_conf.add('network_manager', self._getstr('network_manager'))
@@ -357,23 +357,10 @@ class ConfConfigurator(object):
     # Ensures the place where instances will be is useable
     def _configure_instances_path(self, instances_path, nova_conf):
         nova_conf.add('instances_path', instances_path)
-
         LOG.debug("Attempting to create instance directory: %r", instances_path)
         self.tracewriter.dirs_made(*sh.mkdirslist(instances_path))
         LOG.debug("Adjusting permissions of instance directory: %r", instances_path)
         sh.chmod(instances_path, 0777)
-        instance_parent = sh.dirname(instances_path)
-        LOG.debug("Adjusting permissions of instance directory parent: %r", instance_parent)
-
-        # In cases where you are using kvm + qemu
-        # On certain distros (ie RHEL) this user needs to be able
-        # To enter the parents of the instance path, if this is in /home/BLAH/ then
-        # Without enabling the whole path, this user can't write there. This helps fix that...
-        with sh.Rooted(True):
-            for p in sh.explode_path(instance_parent):
-                if not os.access(p, os.X_OK) and sh.isdir(p):
-                    # Need to be able to go into that directory
-                    sh.chmod(p, os.stat(p).st_mode | 0755)
 
     # Any special libvirt configurations go here
     def _configure_libvirt(self, virt_type, nova_conf):

@@ -63,12 +63,11 @@ def parse():
 
     # Install/start/stop/uninstall specific options
     base_group = OptionGroup(parser, "Action specific options")
-    def_persona = sh.joinpths(settings.PERSONA_DIR, 'devstack.sh.yaml')
     base_group.add_option("-p", "--persona",
         action="store",
         type="string",
         dest="persona_fn",
-        default=def_persona,
+        default=sh.joinpths(settings.PERSONA_DIR, 'basic.yaml'),
         metavar="FILE",
         help="persona yaml file to apply (default: %default)")
     base_group.add_option("-a", "--action",
@@ -88,8 +87,7 @@ def parse():
                           action="store_false",
                           dest="prompt_for_passwords",
                           default=True,
-                          help="do not prompt the user for passwords",
-                          )
+                          help="do not prompt the user for passwords")
     parser.add_option_group(base_group)
 
     # Uninstall and stop options
@@ -111,17 +109,17 @@ def parse():
 
     # Extract only what we care about
     (options, args) = parser.parse_args()
-    output = dict()
-    output['dir'] = options.dir or ""
-    output['dryrun'] = options.dryrun or False
-    output['action'] = options.action or ""
+    output = {}
+    output['dir'] = (options.dir or "")
+    output['dryrun'] = (options.dryrun or False)
+    output['action'] = (options.action or "")
     output['force'] = not options.force
     output['keep_old'] = options.keep_old
     output['extras'] = args
     output['config_fn'] = options.config_fn
     output['persona_fn'] = options.persona_fn
     output['verbosity'] = len(options.verbosity)
-    output['cli_overrides'] = options.cli_overrides or list()
+    output['cli_overrides'] = (options.cli_overrides or [])
     output['prompt_for_passwords'] = options.prompt_for_passwords
 
     return output

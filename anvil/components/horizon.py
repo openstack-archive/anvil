@@ -107,7 +107,8 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def _setup_blackhole(self):
         # Create an empty directory that apache uses as docroot
-        self.tracewriter.dirs_made(*sh.mkdirslist(sh.joinpths(self.get_option('app_dir'), BLACKHOLE_DIR)))
+        black_hole_dir = sh.joinpths(self.get_option('app_dir'), BLACKHOLE_DIR)
+        self.tracewriter.dirs_made(*sh.mkdirslist(black_hole_dir))
 
     def _sync_db(self):
         # Initialize the horizon database (it stores sessions and notices shown to users).
@@ -138,9 +139,11 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
-        self._setup_db()
-        self._sync_db()
-        self._setup_blackhole()
+        if self.get_option('db-sync'):
+            self._setup_db()
+            self._sync_db()
+        if self.get_option('make-blackhole'):
+            self._setup_blackhole()
         self._config_fixups()
 
     def _get_apache_user_group(self):

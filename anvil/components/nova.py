@@ -301,16 +301,20 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
         self.virsh = lv.Virsh(self.cfg, self.distro)
+        self.config_path = sh.joinpths(self.get_option('cfg_dir'), API_CONF)
+        self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
+        self.net_init_fn = sh.joinpths(self.get_option('trace_dir'), NET_INITED_FN)
 
     def _do_network_init(self):
-        ran_fn = sh.joinpths(self.get_option('trace_dir'), NET_INITED_FN)
+        ran_fn = self.net_init_fn
         if not sh.isfile(ran_fn) and self.get_option('do-network-init'):
-            LOG.info("Creating your nova network to be used with instances.")
             # Figure out the commands to run
-            mp = {}
             cmds = []
-            mp['CFG_FILE'] = sh.joinpths(self.get_option('cfg_dir'), API_CONF)
-            mp['BIN_DIR'] = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
+            mp = {
+                'CFG_FILE': self.config_path,
+                'BIN_DIR': self.bin_dir
+            }
+            mp['BIN_DIR'] = self.bin_dir
             if self.cfg.getboolean('nova', 'enable_fixed'):
                 # Create a fixed network
                 mp['FIXED_NETWORK_SIZE'] = self.cfg.getdefaulted('nova', 'fixed_network_size', '256')
@@ -324,6 +328,7 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
                 mp['TEST_FLOATING_POOL'] = self.cfg.getdefaulted('nova', 'test_floating_pool', 'test')
             # Anything to run??
             if cmds:
+                LOG.info("Creating your nova network to be used with instances.")
                 utils.execute_template(*cmds, params=mp)
             # Writing this makes sure that we don't init again
             cmd_mp = {
@@ -366,7 +371,7 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
 
     def app_params(self, app_name):
         params = comp.PythonRuntime.app_params(self, app_name)
-        params['CFG_FILE'] = sh.joinpths(self.get_option('cfg_dir'), API_CONF)
+        params['CFG_FILE'] = self.config_path
         return params
 
     def app_options(self, app):

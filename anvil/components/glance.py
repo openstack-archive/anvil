@@ -90,7 +90,8 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
-        self._setup_db()
+        if self.get_option('db-sync'):
+            self._setup_db()
 
     def _setup_db(self):
         dbhelper.drop_db(self.cfg, self.distro, DB_NAME)

@@ -136,7 +136,7 @@ class RabbitRuntime(rabbit.RabbitRuntime):
 class NovaInstaller(nova.NovaInstaller):
 
     def _get_policy(self, ident_users):
-        return (LIBVIRT_POLICY_FN, LIBVIRT_POLICY_CONTENTS.format(idents=(";".join(ident_users))))
+        return LIBVIRT_POLICY_CONTENTS.format(idents=(";".join(ident_users)))
 
     def _get_policy_users(self):
         ident_users = set()
@@ -148,15 +148,16 @@ class NovaInstaller(nova.NovaInstaller):
         configs_made = nova.NovaInstaller.configure(self)
         driver_canon = nhelper.canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
         if driver_canon == 'libvirt':
-            (fn, contents) = self._get_policy(self._get_policy_users())
-            dirs_made = list()
-            with sh.Rooted(True):
-                # TODO(harlowja) check if this dir is restricted before assuming it isn't?
-                dirs_made.extend(sh.mkdirslist(sh.dirname(fn)))
-                sh.write_file(fn, contents)
-            self.tracewriter.cfg_file_written(fn)
-            self.tracewriter.dirs_made(*dirs_made)
-            configs_made += 1
+            # Create a libvirtd user group
+            if not sh.group_exists('libvirtd'):
+                cmd = ['groupadd', 'libvirtd']
+                sh.execute(*cmd, run_as_root=True)
+            if not sh.isfile(LIBVIRT_POLICY_FN):
+                contents =  self._get_policy(self._get_policy_users())
+                with sh.Rooted(True):
+                    sh.mkdirslist(sh.dirname(LIBVIRT_POLICY_FN))
+                    sh.write_file(LIBVIRT_POLICY_FN, contents)
+                configs_made += 1
         return configs_made
 
 

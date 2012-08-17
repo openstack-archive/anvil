@@ -90,8 +90,9 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
-        self._setup_db()
-        self._sync_db()
+        if self.get_option('db-sync'):
+            self._setup_db()
+            self._sync_db()
 
     def _sync_db(self):
         LOG.info("Syncing keystone to database: %s", colorizer.quote(DB_NAME))

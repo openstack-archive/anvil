@@ -293,9 +293,6 @@ components:
         -   name: python-daemon
             version: "1.5.5"
         subsystems:
-            no-vnc:
-                packages:
-                -   name: novnc
             cpu:
                 packages:
                 -   name: iscsi-initiator-utils
@@ -318,6 +315,13 @@ components:
             install: anvil.components.nova_client:NovaClientInstaller
             running: anvil.components.nova_client:NovaClientRuntime
             uninstall: anvil.components.nova_client:NovaClientUninstaller
+    no-vnc:
+        action_classes:
+            install: anvil.components.novnc:NoVNCInstaller
+            running: anvil.components.novnc:NoVNCRuntime
+            uninstall: anvil.components.novnc:NoVNCUninstaller
+        packages:
+        -   name: python-websockify
     openstack-client:
         action_classes:
             install: anvil.components.openstack_client:OpenStackClientInstaller
