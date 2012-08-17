@@ -16,12 +16,14 @@
 
 from anvil import action
 from anvil import colorizer
-from anvil import constants
 from anvil import log
 
 from anvil.action import PhaseFunctors
 
 LOG = log.getLogger(__name__)
+
+from anvil.components import (STATUS_INSTALLED, STATUS_STARTED,
+                              STATUS_STOPPED, STATUS_UNKNOWN)
 
 
 class StatusAction(action.Action):
@@ -38,9 +40,9 @@ class StatusAction(action.Action):
         return component.status()
 
     def _quote_status(self, status):
-        if status == constants.STATUS_UNKNOWN:
+        if status == STATUS_UNKNOWN:
             return colorizer.quote(status, quote_color='yellow')
-        elif status == constants.STATUS_STARTED or status == constants.STATUS_INSTALLED:
+        elif status == STATUS_STARTED or status == STATUS_INSTALLED:
             return colorizer.quote(status, quote_color='green')
         else:
             return colorizer.quote(status, quote_color='red')

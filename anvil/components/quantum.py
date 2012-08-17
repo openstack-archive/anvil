@@ -63,11 +63,13 @@ class QuantumMixin(object):
 
 
 class QuantumUninstaller(QuantumMixin, comp.PkgUninstallComponent):
+
     def __init__(self, *args, **kargs):
         comp.PkgUninstallComponent.__init__(self, *args, **kargs)
 
 
 class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
+ 
     def __init__(self, *args, **kargs):
         comp.PkgInstallComponent.__init__(self, *args, **kargs)
         self.q_vswitch_agent = False
@@ -139,7 +141,7 @@ class QuantumInstaller(QuantumMixin, comp.PkgInstallComponent):
             contents = sh.load_file(src_fn)
             return (src_fn, contents)
         else:
-            return comp.PkgInstallComponent._get_source_config(self, config_fn)
+            return comp.PkgInstallComponent.source_config(self, config_fn)
 
 
 class QuantumRuntime(QuantumMixin, comp.ProgramRuntime):

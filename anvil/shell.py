@@ -718,7 +718,7 @@ def root_mode(quiet=True):
         if quiet:
             LOG.warn(msg)
         else:
-            raise excp.StackException(msg)
+            raise excp.AnvilException(msg)
     else:
         try:
             os.setreuid(0, root_uid)
@@ -746,7 +746,7 @@ def user_mode(quiet=True):
         if quiet:
             LOG.warn(msg)
         else:
-            raise excp.StackException(msg)
+            raise excp.AnvilException(msg)
 
 
 def is_executable(fn):

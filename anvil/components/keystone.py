@@ -182,7 +182,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 class KeystoneRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
-        self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
+        self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
         self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
         self.init_fn = sh.joinpths(self.get_option('trace_dir'), INIT_WHAT_HAPPENED)
 
@@ -191,16 +191,16 @@ class KeystoneRuntime(comp.PythonRuntime):
             LOG.info("Waiting %s seconds so that keystone can start up before running first time init." % (self.wait_time))
             sh.sleep(self.wait_time)
             LOG.info("Running commands to initialize keystone.")
-            LOG.debug("Initializing with %s", self.init_what)
+            (fn, contents) = utils.load_template(self.name, INIT_WHAT_FN)
+            LOG.debug("Initializing with contents of %s", fn)
             cfg = {
                 'glance': ghelper.get_shared_params(self.cfg),
                 'keystone': khelper.get_shared_params(self.cfg),
                 'nova': nhelper.get_shared_params(self.cfg),
                 'quantum': qhelper.get_shared_params(self.cfg),
             }
-            (_fn, contents) = utils.load_template(self.name, INIT_WHAT_FN)
             init_what = utils.param_replace_deep(copy.deepcopy(yaml.load(contents)), cfg)
-            khelper.Initializer(initial_cfg['keystone']).initialize(**init_what)
+            khelper.Initializer(cfg['keystone']).initialize(**init_what)
             # Writing this makes sure that we don't init again
             sh.write_file(self.init_fn, utils.prettify_yaml(init_what))
             LOG.info("If you wish to re-run initialization, delete %s", colorizer.quote(self.init_fn))

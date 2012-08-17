@@ -20,7 +20,6 @@ import re
 import weakref
 
 from anvil import colorizer
-from anvil import constants
 from anvil import downloader as down
 from anvil import exceptions as excp
 from anvil import importer

@@ -69,7 +69,7 @@ def _strap_epel():
             if rel:
                 with tempfile.NamedTemporaryFile(suffix=".rpm") as th:
                     du = "%s/%s" % (u, rel.group(0).strip())
-                    _write_msg("Installing EPEL release from url: %s" % (du))
+                    _write_msg("Trying EPEL release rpm from url: %s" % (du))
                     with contextlib.closing(urllib2.urlopen(du, timeout=URL_TIMEOUT)) as uh:
                         th.write(uh.read())
                         th.flush()

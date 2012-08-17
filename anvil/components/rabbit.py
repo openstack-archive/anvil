@@ -18,7 +18,6 @@ from tempfile import TemporaryFile
 
 from anvil import colorizer
 from anvil import components as comp
-from anvil import constants
 from anvil import log as logging
 from anvil import shell as sh
 
@@ -82,7 +81,7 @@ class RabbitRuntime(comp.EmptyRuntime):
         self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
 
     def start(self):
-        if self._status() != constants.STATUS_STARTED:
+        if self._status() != comp.STATUS_STARTED:
             self._run_cmd(self.distro.get_command('rabbit-mq', 'start'))
             return 1
         else:
@@ -98,11 +97,11 @@ class RabbitRuntime(comp.EmptyRuntime):
         if combined.find('nodedown') != -1 or \
            combined.find("unable to connect to node") != -1 or \
            combined.find('unrecognized') != -1:
-            return constants.STATUS_STOPPED
+            return comp.STATUS_STOPPED
         elif combined.find('running_applications') != -1:
-            return constants.STATUS_STARTED
+            return comp.STATUS_STARTED
         else:
-            return constants.STATUS_UNKNOWN
+            return comp.STATUS_UNKNOWN
 
     def _run_cmd(self, cmd, check_exit=True):
         # This seems to fix one of the bugs with rabbit mq starting and stopping
@@ -125,7 +124,7 @@ class RabbitRuntime(comp.EmptyRuntime):
         return 1
 
     def stop(self):
-        if self._status() != constants.STATUS_STOPPED:
+        if self._status() != comp.STATUS_STOPPED:
             self._run_cmd(self.distro.get_command('rabbit-mq', 'stop'))
             return 1
         else:

@@ -17,7 +17,8 @@
 import abc
 import weakref
 
-from anvil import constants
+from anvil.components import (STATUS_INSTALLED, STATUS_STARTED,
+                              STATUS_STOPPED, STATUS_UNKNOWN)
 
 
 class Runner(object):
@@ -36,4 +37,4 @@ class Runner(object):
 
     def status(self, app_name):
         # Attempt to give the status of a app
-        return constants.STATUS_UNKNOWN
+        return STATUS_UNKNOWN

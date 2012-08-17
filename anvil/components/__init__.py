@@ -38,7 +38,6 @@ import weakref
 
 from anvil import colorizer
 from anvil import component
-from anvil import constants
 from anvil import downloader as down
 from anvil import exceptions as excp
 from anvil import importer
@@ -50,6 +49,14 @@ from anvil import trace as tr
 from anvil import utils
 
 LOG = logging.getLogger(__name__)
+
+#### 
+#### STATUS CONSTANTS
+####
+STATUS_INSTALLED = 'installed'
+STATUS_STARTED = "started"
+STATUS_STOPPED = "stopped"
+STATUS_UNKNOWN = "unknown"
 
 
 #### 
@@ -136,7 +143,7 @@ class PkgInstallComponent(component.Component):
 
     def post_install(self):
         pkgs = self.packages
-        for p in self.packages:
+        for p in pkgs:
             self.packager_functor(p).post_install(p, self.params)
 
     @property
@@ -539,14 +546,14 @@ class ProgramRuntime(component.Component):
             return results
 
     def _status(self):
-        return constants.STATUS_UNKNOWN
+        return STATUS_UNKNOWN
 
     def status(self):
         stat = self._multi_status()
         if not stat:
             stat = self._status()
         if not stat:
-             stat = constants.STATUS_UNKNOWN
+             stat = STATUS_UNKNOWN
         return stat
 
     def restart(self):

@@ -16,7 +16,6 @@
 
 from anvil import colorizer
 from anvil import components as comp
-from anvil import constants
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
@@ -71,11 +70,10 @@ class HorizonInstaller(comp.PythonInstallComponent):
         comp.PythonInstallComponent.verify(self)
         self._check_ug()
 
-    def _get_symlinks(self):
-        links = comp.PythonInstallComponent._get_symlinks(self)
-        link_tgt = self.distro.get_command_config(
-            'apache', 'settings', 'conf-link-target',
-            quiet=True)
+    @property
+    def symlinks(self):
+        links = super(HorizonInstaller, self).symlinks
+        link_tgt = self.distro.get_command_config('apache', 'settings', 'conf-link-target', quiet=True)
         if link_tgt:
             src = self.target_config(HORIZON_APACHE_CONF)
             links[src] = link_tgt
@@ -178,7 +176,7 @@ class HorizonRuntime(comp.EmptyRuntime):
         comp.EmptyRuntime.__init__(self, *args, **kargs)
 
     def start(self):
-        if self._status() != constants.STATUS_STARTED:
+        if self._status() != comp.STATUS_STARTED:
             start_cmd = self.distro.get_command('apache', 'start')
             sh.execute(*start_cmd, run_as_root=True, check_exit_code=True)
             return 1
@@ -191,7 +189,7 @@ class HorizonRuntime(comp.EmptyRuntime):
         return 1
 
     def stop(self):
-        if self._status() != constants.STATUS_STOPPED:
+        if self._status() != comp.STATUS_STOPPED:
             stop_cmd = self.distro.get_command('apache', 'stop')
             sh.execute(*stop_cmd, run_as_root=True, check_exit_code=True)
             return 1
@@ -203,10 +201,10 @@ class HorizonRuntime(comp.EmptyRuntime):
         (sysout, stderr) = sh.execute(*status_cmd, run_as_root=True, check_exit_code=False)
         combined = (str(sysout) + str(stderr)).lower()
         if combined.find("is running") != -1:
-            return constants.STATUS_STARTED
+            return comp.STATUS_STARTED
         elif combined.find("not running") != -1 or \
              combined.find("stopped") != -1 or \
              combined.find('unrecognized') != -1:
-            return constants.STATUS_STOPPED
+            return comp.STATUS_STOPPED
         else:
-            return constants.STATUS_UNKNOWN
+            return comp.STATUS_UNKNOWN

@@ -115,8 +115,8 @@ def _match_distro(distros):
         raise excp.ConfigException('No distro matched for platform %r' % plt)
     else:
         LOG.info('Matched distro %s for platform %s',
-                 colorizer.quote(d.name), colorizer.quote(plt))
-        return d
+                 colorizer.quote(distro_matched.name), colorizer.quote(plt))
+        return distro_matched
 
 
 def load(path):
@@ -136,6 +136,5 @@ def load(path):
                 cls_kvs = yaml.load(contents)
                 distro_possibles.append(Distro(**cls_kvs))
         except (IOError, yaml.YAMLError) as err:
-            LOG.warning('Could not load distro definition from %r: %s',
-                        filename, err)
+            LOG.warning('Could not load distro definition from %r: %s', fn, err)
     return _match_distro(distro_possibles)

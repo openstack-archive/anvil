@@ -17,13 +17,13 @@
 from urlparse import urlunparse
 import re
 
+from anvil import cfg
 from anvil import colorizer
-from anvil import cfg_helpers
 from anvil import env
 from anvil import log as logging
+from anvil import settings
 from anvil import shell as sh
 from anvil import utils
-from anvil import settings
 
 LOG = logging.getLogger(__name__)
 
@@ -35,11 +35,11 @@ CFG_MAKE = {
 
 # PW sections
 PASSWORDS_MAKES = {
-    'ADMIN_PASSWORD': (cfg_helpers.PW_SECTION, 'horizon_keystone_admin'),
-    'SERVICE_PASSWORD': (cfg_helpers.PW_SECTION, 'service_password'),
-    'RABBIT_PASSWORD': (cfg_helpers.PW_SECTION, 'rabbit'),
-    'SERVICE_TOKEN': (cfg_helpers.PW_SECTION, 'service_token'),
-    'MYSQL_PASSWORD': (cfg_helpers.PW_SECTION, 'sql'),
+    'ADMIN_PASSWORD': (cfg.PW_SECTION, 'horizon_keystone_admin'),
+    'SERVICE_PASSWORD': (cfg.PW_SECTION, 'service_password'),
+    'RABBIT_PASSWORD': (cfg.PW_SECTION, 'rabbit'),
+    'SERVICE_TOKEN': (cfg.PW_SECTION, 'service_token'),
+    'MYSQL_PASSWORD': (cfg.PW_SECTION, 'sql'),
 }
 
 # Install root output name and env variable name

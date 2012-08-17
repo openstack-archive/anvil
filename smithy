@@ -39,7 +39,6 @@ if bootstrap.strap():
 
 from anvil import actions
 from anvil import cfg
-from anvil import cfg_helpers
 from anvil import colorizer
 from anvil import distro
 from anvil import env_rc
@@ -59,6 +58,30 @@ from ordereddict import OrderedDict
 LOG = logging.getLogger()
 
 
+def get_config_locations(start_locations=None):
+    locs = []
+    if start_locations:
+        locs.extend(start_locations)
+    locs.append(settings.CONFIG_LOCATION)
+    locs.append(sh.joinpths("/etc", 'anvil', 'anvil.ini'))
+    return locs
+
+
+def find_config(locations=None):
+    """
+    Finds the potential anvil configuration files.
+    """
+    if not locations:
+        locations = get_config_locations()
+    real_paths = []
+    for path in locations:
+        LOG.debug("Looking for configuration in: %r", path)
+        if sh.isfile(path):
+            LOG.debug("Found a 'possible' configuration in: %r", path)
+            real_paths.append(path)
+    return real_paths
+
+
 def establish_config(args):
     """
     Creates the stack configuration object using the set of
@@ -73,11 +96,11 @@ def establish_config(args):
     config.add_read_resolver(cfg.CliResolver.create(args['cli_overrides']))
     config.add_read_resolver(cfg.EnvResolver())
     start_configs = []
-    if args['config_fn']:
+    if 'config_fn' in args and args['config_fn']:
         start_configs.append(args['config_fn'])
     else:
-        start_configs.extend(cfg_helpers.get_config_locations())
-    real_configs = cfg_helpers.find_config(start_configs)
+        start_configs.extend(get_config_locations())
+    real_configs = find_config(start_configs)
     config.add_read_resolver(cfg.ConfigResolver(cfg.RewritableConfigParser(fns=real_configs)))
     utils.log_iterable(utils.get_class_names(config.read_resolvers),
         header="Config lookup will use the following resolvers:",
@@ -174,16 +197,16 @@ def run(args):
                         **args)
 
     LOG.info("Starting action %s on %s for distro: %s",
-                colorizer.quote(action), colorizer.quote(utils.rcf8222date()),
-                colorizer.quote(dist.name))
+             colorizer.quote(action), colorizer.quote(utils.rcf8222date()),
+             colorizer.quote(dist.name))
     LOG.info("Using persona: %s", colorizer.quote(persona_fn))
     LOG.info("In root directory: %s", colorizer.quote(root_dir))
     LOG.debug("Using environment settings:")
-    utils.log_object(env.get(), logger=LOG, level=logging.DEBUG,item_max_len=64)
+    utils.log_object(env.get(), logger=LOG, level=logging.DEBUG, item_max_len=64)
     persona_bk_fn = backup_persona(root_dir, action, persona_fn)
     if persona_bk_fn:
         LOG.info("Backed up persona %s to %s so that you can reference it later.",
-                colorizer.quote(persona_fn), colorizer.quote(persona_bk_fn))
+                 colorizer.quote(persona_fn), colorizer.quote(persona_bk_fn))
 
     start_time = time.time()
     runner.run(persona_obj)
@@ -191,26 +214,26 @@ def run(args):
 
     pretty_time = utils.format_time(end_time - start_time)
     LOG.info("It took %s seconds or %s minutes to complete action %s.",
-        colorizer.quote(pretty_time['seconds']), colorizer.quote(pretty_time['minutes']), colorizer.quote(action))
+             colorizer.quote(pretty_time['seconds']), colorizer.quote(pretty_time['minutes']), colorizer.quote(action))
 
     if config.opts_cache:
         LOG.info("After action %s your settings which were applied are:", colorizer.quote(action))
         table = OrderedDict()
-        for s in sorted(list((config.opts_read + config.opts_set).keys())):
+        for section in sorted(list((config.opts_read + config.opts_set).keys())):
             options = set()
-            if s in config.opts_read:
-                options.update(list(config.opts_read[s]))
-            if s in config.opts_set:
-                options.update(list(config.opts_set[s]))
+            if section in config.opts_read:
+                options.update(list(config.opts_read[section]))
+            if section in config.opts_set:
+                options.update(list(config.opts_set[section]))
             option_values = {}
-            for o in options:
-                cache_key = cfg_helpers.make_id(section, option)
+            for option in options:
+                cache_key = cfg.make_id(section, option)
                 option_values[cache_key] = config.opts_cache[cache_key]
-            table[s] = option_values
+            table[section] = option_values
         utils.log_object(table, item_max_len=80)
 
     LOG.debug("Final environment settings:")
-    utils.log_object(env.get(), logger=LOG, level=logging.DEBUG,item_max_len=64)
+    utils.log_object(env.get(), logger=LOG, level=logging.DEBUG, item_max_len=64)
 
     return True
 

@@ -16,7 +16,6 @@
 
 from anvil import colorizer
 from anvil import components as comp
-from anvil import constants
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
@@ -159,7 +158,7 @@ class DBRuntime(comp.EmptyRuntime):
         return self.distro.get_command(dbtype, act)
 
     def start(self):
-        if self._status() != constants.STATUS_STARTED:
+        if self._status() != comp.STATUS_STARTED:
             startcmd = self._get_run_actions('start', excp.StartException)
             sh.execute(*startcmd, run_as_root=True, check_exit_code=True)
             LOG.info("Please wait %s seconds while it starts up." % self.wait_time)
@@ -169,7 +168,7 @@ class DBRuntime(comp.EmptyRuntime):
             return 0
 
     def stop(self):
-        if self._status() != constants.STATUS_STOPPED:
+        if self._status() != comp.STATUS_STOPPED:
             stopcmd = self._get_run_actions('stop', excp.StopException)
             sh.execute(*stopcmd, run_as_root=True, check_exit_code=True)
             return 1
@@ -189,9 +188,9 @@ class DBRuntime(comp.EmptyRuntime):
         (sysout, stderr) = sh.execute(*statuscmd, run_as_root=True, check_exit_code=False)
         combined = (str(sysout) + str(stderr)).lower()
         if combined.find("running") != -1:
-            return constants.STATUS_STARTED
+            return comp.STATUS_STARTED
         elif combined.find("stop") != -1 or \
              combined.find('unrecognized') != -1:
-            return constants.STATUS_STOPPED
+            return comp.STATUS_STOPPED
         else:
-            return constants.STATUS_UNKNOWN
+            return comp.STATUS_UNKNOWN

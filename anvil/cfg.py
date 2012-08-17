@@ -24,7 +24,6 @@ import re
 # This one keeps comments but has some weirdness with it
 import iniparse
 
-from anvil import cfg_helpers
 from anvil import env
 from anvil import exceptions as excp
 from anvil import log as logging
@@ -32,6 +31,7 @@ from anvil import utils
 
 ENV_PAT = re.compile(r"^\s*\$\{([\w\d]+):\-(.*)\}\s*$")
 SUB_MATCH = re.compile(r"(?:\$\(([\w\d]+):([\w\d]+))\)")
+PW_SECTION = 'passwords'
 
 LOG = logging.getLogger(__name__)
 
@@ -141,18 +141,18 @@ class ProxyConfig(object):
                 break
         if len(password) == 0:
             LOG.warn("Password provided for %r is empty", option)
-        self.set(cfg_helpers.PW_SECTION, option, password)
+        self.set(PW_SECTION, option, password)
         return password
 
     def get(self, section, option):
         val = self._get(section, option)
         LOG.debug("Fetched option %r with value %r.",
-                  cfg_helpers.make_id(section, option), val)
+                  make_id(section, option), val)
         return val
 
     def _get(self, section, option):
         # Try the cache first
-        cache_key = cfg_helpers.make_id(section, option)
+        cache_key = make_id(section, option)
         if cache_key in self.opts_cache:
             return self.opts_cache[cache_key]
         # Check the resolvers
@@ -195,7 +195,7 @@ class ProxyConfig(object):
     def set(self, section, option, value):
         for resolver in self.set_resolvers:
             resolver.set(section, option, value)
-        cache_key = cfg_helpers.make_id(section, option)
+        cache_key = make_id(section, option)
         self.opts_cache[cache_key] = value
         if section not in self.opts_set:
             self.opts_set[section] = set()
@@ -265,7 +265,7 @@ class CliResolver(object):
         self.cli_args = cli_args
 
     def get(self, section, option):
-        return self.cli_args.get(cfg_helpers.make_id(section, option))
+        return self.cli_args.get(make_id(section, option))
 
     @classmethod
     def create(cls, cli_args):
@@ -284,7 +284,7 @@ class CliResolver(object):
                 if not option:
                     LOG.warn("Badly formatted cli option - no option name: %r", c)
                 else:
-                    parsed_args[cfg_helpers.make_id(section, option)] = split_up[2]
+                    parsed_args[make_id(section, option)] = split_up[2]
         return cls(parsed_args)
 
 
@@ -294,7 +294,18 @@ class EnvResolver(object):
         pass
 
     def _form_key(self, section, option):
-        return cfg_helpers.make_id(section, option)
+        return make_id(section, option)
 
     def get(self, section, option):
         return env.get_key(self._form_key(section, option))
+
+
+def make_id(section, option):
+    joinwhat = []
+    if section:
+        joinwhat.append(str(section))
+    if option:
+        joinwhat.append(str(option))
+    return "/".join(joinwhat)
+    
+ 
