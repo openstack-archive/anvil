@@ -270,8 +270,8 @@ def main():
     logging.setupLogging(log_level)
 
     LOG.debug("Command line options:")
-    utils.log_object(args, item_max_len=80)
-    LOG.debug("Log level is: %s" % (log_level))
+    utils.log_object(args, item_max_len=64, logger=LOG, level=logging.DEBUG)
+    LOG.debug("Log level is: %s" % (logging.getLevelName(log_level)))
 
     # Will need root to setup openstack
     if not sh.got_root():

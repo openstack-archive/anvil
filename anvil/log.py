@@ -46,6 +46,9 @@ exception = logging.exception
 critical = logging.critical
 log = logging.log
 
+# Nice translator
+getLevelName = logging.getLevelName
+
 # Classes
 root = logging.root
 Formatter = logging.Formatter
