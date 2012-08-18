@@ -35,7 +35,6 @@ KNOCK_OFF_MAP = {
 
 
 class StartAction(action.Action):
-
     @property
     def lookup_name(self):
         return 'running'

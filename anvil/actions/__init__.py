@@ -25,12 +25,12 @@ from anvil.actions import uninstall
 
 _NAMES_TO_RUNNER = {
     'install': install.InstallAction,
+    'package': package.PackageAction,
     'start': start.StartAction,
     'status': status.StatusAction,
     'stop': stop.StopAction,
-    'uninstall': uninstall.UninstallAction,
     'test': test.TestAction,
-    'package': package.PackageAction,
+    'uninstall': uninstall.UninstallAction,
 }
 _RUNNER_TO_NAMES = dict((v, k) for k, v in _NAMES_TO_RUNNER.items())
 

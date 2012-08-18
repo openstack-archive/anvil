@@ -33,7 +33,6 @@ KNOCK_OFF_MAP = {
 }
 
 class StopAction(action.Action):
-
     @property
     def lookup_name(self):
         return 'running'

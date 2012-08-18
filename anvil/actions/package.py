@@ -24,7 +24,6 @@ LOG = log.getLogger(__name__)
 
 
 class PackageAction(action.Action):
-
     @property
     def lookup_name(self):
         return 'package'

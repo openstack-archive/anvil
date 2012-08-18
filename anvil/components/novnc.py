@@ -37,7 +37,8 @@ class NoVNCUninstaller(comp.PythonUninstallComponent):
 
 
 class NoVNCInstaller(comp.PythonInstallComponent):
-    def _get_python_directories(self):
+    @property
+    def python_directories(self):
         return {}
 
 

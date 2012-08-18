@@ -41,7 +41,6 @@ KNOCK_OFF_MAP = {
 
 
 class UninstallAction(action.Action):
-
     @property
     def lookup_name(self):
         return 'uninstall'

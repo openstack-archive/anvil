@@ -24,7 +24,6 @@ LOG = log.getLogger(__name__)
 
 
 class TestAction(action.Action):
-
     @property
     def lookup_name(self):
         return 'test'
