@@ -144,12 +144,22 @@ components:
         -   name: nose
             package:
                 name: python-nose1.1
+                packager_name: anvil.distros.rhel:YumPackagerWithRelinks
+                packager_options:
+                    links:
+                        - source: "/usr/lib/python2.6/site-packages/nose-1*-py2.6.egg/nose"
+                          target: "/usr/lib/python2.6/site-packages/nose"
         -   name: paste
             package:
                 name: python-paste
         -   name: pastedeploy
             package:
                 name: python-paste-deploy1.5
+                packager_name: anvil.distros.rhel:YumPackagerWithRelinks
+                packager_options:
+                    links:
+                        - source: "/usr/lib/python2.6/site-packages/PasteDeploy-1.5*-py2.6.egg/paste/deploy"
+                          target: "/usr/lib/python2.6/site-packages/paste/deploy"
         -   name: pep8
             package:
                 name: python-pep8
@@ -159,12 +169,22 @@ components:
         -   name: routes
             package:
                 name: python-routes1.12
+                packager_name: anvil.distros.rhel:YumPackagerWithRelinks
+                packager_options:
+                    links:
+                        - source: "/usr/lib/python2.6/site-packages/Routes-1.*-py2.6.egg/routes"
+                          target: "/usr/lib/python2.6/site-packages/routes"
         -   name: simplejson
             package:
                 name: python-simplejson
         -   name: sqlalchemy
             package:
                 name: python-sqlalchemy0.7
+                packager_name: anvil.distros.rhel:YumPackagerWithRelinks
+                packager_options:
+                    links:
+                        - source: "/usr/lib64/python2.6/site-packages/SQLAlchemy-0.*.egg/sqlalchemy"
+                          target: "/usr/lib/python2.6/site-packages/sqlalchemy"
         -   name: unittest2
             package:
                 name: python-unittest2
@@ -174,6 +194,14 @@ components:
         -   name: webob
             package:
                 name: python-webob1.0
+                # Need to relink it so that it will work without modifications
+                # Since new packages in rhel must never use the same names
+                # as previous ones (this overrides that)
+                packager_name: anvil.distros.rhel:YumPackagerWithRelinks
+                packager_options:
+                    links:
+                        - source: "/usr/lib/python2.6/site-packages/WebOb-*-py2.6.egg/webob/"
+                          target: "/usr/lib/python2.6/site-packages/webob"
         pips:
         # Pips that aren't packages yet (or versions aren't right...)
         -   name: coverage

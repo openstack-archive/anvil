@@ -19,6 +19,7 @@
 Platform-specific logic for RedHat Enterprise Linux components.
 """
 
+import glob
 import re
 
 from anvil import colorizer
@@ -166,28 +167,29 @@ class YumPackagerWithRelinks(yum.YumPackager):
     def _remove(self, pkg):
         response = yum.YumPackager._remove(self, pkg)
         if response:
-            options = pkg.get('packager_options', {})
-            links = options.get('links', [])
+            options = pkg.get('packager_options') or {}
+            links = options.get('links') or []
             for entry in links:
-                src = entry['source']
-                tgt = entry['target']
-                if sh.islink(tgt):
-                    sh.unlink(tgt)
+                if sh.islink(entry['target']):
+                    sh.unlink(entry['target'])
         return response
 
     def _install(self, pkg):
         yum.YumPackager._install(self, pkg)
-        options = pkg.get('packager_options', {})
-        links = options.get('links', [])
+        options = pkg.get('packager_options') or {}
+        links = options.get('links') or []
         for entry in links:
-            src = entry['source']
-            tgt = entry['target']
+            tgt = entry.get('target')
+            src = entry.get('source')
+            if not tgt or not src:
+                continue
+            src = glob.glob(src)
+            if len(src) == 0:
+                continue
+            elif len(src) != 1:
+                raise RuntimeError("Unable to link multiple sources %s to a single location %s" % (src, tgt))
+            else:
+                src = src[0]
             if not sh.islink(tgt):
-                # This is actually a feature, EPEL must not conflict
-                # with RHEL, so X pkg installs newer version in
-                # parallel.
-                #
-                # This of course doesn't work when running from git
-                # like anvil does....
                 sh.symlink(src, tgt)
         return True
