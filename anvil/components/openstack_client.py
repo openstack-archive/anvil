@@ -35,5 +35,5 @@ class OpenStackClientInstaller(comp.PythonInstallComponent):
         return line
 
 
-class OpenStackClientRuntime(comp.ProgramRuntime):
+class OpenStackClientRuntime(comp.EmptyRuntime):
     pass

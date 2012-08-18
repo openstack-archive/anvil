@@ -25,5 +25,5 @@ class KeyStoneClientInstaller(comp.PythonInstallComponent):
     pass
 
 
-class KeyStoneClientRuntime(comp.ProgramRuntime):
+class KeyStoneClientRuntime(comp.EmptyRuntime):
     pass

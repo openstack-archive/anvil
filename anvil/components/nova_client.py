@@ -25,5 +25,5 @@ class NovaClientInstaller(comp.PythonInstallComponent):
     pass
 
 
-class NovaClientRuntime(comp.ProgramRuntime):
+class NovaClientRuntime(comp.EmptyRuntime):
     pass

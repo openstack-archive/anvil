@@ -470,6 +470,9 @@ class ProgramRuntime(component.Component):
     def pre_start(self):
         pass
 
+    def status(self):
+        return []
+
 
 class EmptyRuntime(ProgramRuntime):
     pass

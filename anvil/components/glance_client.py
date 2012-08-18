@@ -28,5 +28,5 @@ class GlanceClientInstaller(comp.PythonInstallComponent):
         return line
 
 
-class GlanceClientRuntime(comp.ProgramRuntime):
+class GlanceClientRuntime(comp.EmptyRuntime):
     pass
