@@ -78,7 +78,7 @@ gpgcheck=0
 
     if not os.path.isfile(repo_fn):
         with open(repo_fn, 'w') as fh:
-            fh.write(js_repo)
+            fh.write(node_js_repo)
 
 
 def _strap_epel():
