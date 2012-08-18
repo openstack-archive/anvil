@@ -41,7 +41,7 @@ class NoVNCInstaller(comp.PythonInstallComponent):
         return {}
 
 
-class NoVNCRuntime(comp.ProgramRuntime):
+class NoVNCRuntime(comp.PythonRuntime):
     @property
     def apps_to_start(self):
         apps = []

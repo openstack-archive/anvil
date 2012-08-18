@@ -448,11 +448,6 @@ class PythonInstallComponent(PkgInstallComponent):
 ####
 
 class ProgramRuntime(component.Component):
-    def __init__(self, *args, **kargs):
-        component.Component.__init__(self, *args, **kargs)
-        self.tracewriter = tr.TraceWriter(self.trace_files['start'], break_if_there=True)
-        self.tracereader = tr.TraceReader(self.trace_files['start'])
-
     @property
     def apps_to_start(self):
         return []
@@ -465,6 +460,26 @@ class ProgramRuntime(component.Component):
         if app_name:
             mp['APP_NAME'] = app_name
         return mp
+
+    def restart(self):
+        return 0
+
+    def post_start(self):
+        pass
+
+    def pre_start(self):
+        pass
+
+
+class EmptyRuntime(ProgramRuntime):
+    pass
+
+
+class PythonRuntime(ProgramRuntime):
+    def __init__(self, *args, **kargs):
+        ProgramRuntime.__init__(self, *args, **kargs)
+        self.tracewriter = tr.TraceWriter(self.trace_files['start'], break_if_there=True)
+        self.tracereader = tr.TraceReader(self.trace_files['start'])
 
     def start(self):
         # Anything to start?
@@ -549,25 +564,6 @@ class ProgramRuntime(component.Component):
                                         status=status,
                                         details=details))
         return statii
-
-    def restart(self):
-        return 0
-
-    def post_start(self):
-        pass
-
-    def pre_start(self):
-        pass
-
-
-class PythonRuntime(ProgramRuntime):
-    def __init__(self, *args, **kargs):
-        ProgramRuntime.__init__(self, *args, **kargs)
-
-
-class EmptyRuntime(ProgramRuntime):
-    def __init__(self, *args, **kargs):
-        ProgramRuntime.__init__(self, *args, **kargs)
 
 
 #### 

@@ -145,9 +145,9 @@ class DBInstaller(comp.PkgInstallComponent):
                                    restart_func=self.runtime.restart)
 
 
-class DBRuntime(comp.EmptyRuntime):
+class DBRuntime(comp.ProgramRuntime):
     def __init__(self, *args, **kargs):
-        comp.EmptyRuntime.__init__(self, *args, **kargs)
+        comp.ProgramRuntime.__init__(self, *args, **kargs)
         self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
 
     def _get_run_actions(self, act, exception_cls):

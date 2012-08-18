@@ -21,14 +21,10 @@ LOG = logging.getLogger(__name__)
 
 
 class OpenStackClientUninstaller(comp.PythonUninstallComponent):
-    def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
+    pass
 
 
 class OpenStackClientInstaller(comp.PythonInstallComponent):
-    def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, *args, **kargs)
-
     def _filter_pip_requires_line(self, line):
         if line.lower().find('keystoneclient') != -1:
             return None
@@ -38,6 +34,6 @@ class OpenStackClientInstaller(comp.PythonInstallComponent):
             return None
         return line
 
-class OpenStackClientRuntime(comp.EmptyRuntime):
-    def __init__(self, *args, **kargs):
-        comp.EmptyRuntime.__init__(self, *args, **kargs)
+
+class OpenStackClientRuntime(comp.ProgramRuntime):
+    pass

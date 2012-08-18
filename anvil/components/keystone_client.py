@@ -18,15 +18,12 @@ from anvil import components as comp
 
 
 class KeyStoneClientUninstaller(comp.PythonUninstallComponent):
-    def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
+    pass
 
 
 class KeyStoneClientInstaller(comp.PythonInstallComponent):
-    def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, *args, **kargs)
+    pass
 
 
-class KeyStoneClientRuntime(comp.EmptyRuntime):
-    def __init__(self, *args, **kargs):
-        comp.EmptyRuntime.__init__(self, *args, **kargs)
+class KeyStoneClientRuntime(comp.ProgramRuntime):
+    pass

@@ -189,10 +189,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         return mp
 
 
-class HorizonRuntime(comp.EmptyRuntime):
-    def __init__(self, *args, **kargs):
-        comp.EmptyRuntime.__init__(self, *args, **kargs)
-
+class HorizonRuntime(comp.ProgramRuntime):
     def start(self):
         if self.status()[0].status != comp.STATUS_STARTED:
             start_cmd = self.distro.get_command('apache', 'start')

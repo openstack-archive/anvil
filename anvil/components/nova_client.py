@@ -18,15 +18,12 @@ from anvil import components as comp
 
 
 class NovaClientUninstaller(comp.PythonUninstallComponent):
-    def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
+    pass
 
 
 class NovaClientInstaller(comp.PythonInstallComponent):
-    def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, *args, **kargs)
+    pass
 
 
-class NovaClientRuntime(comp.EmptyRuntime):
-    def __init__(self, *args, **kargs):
-        comp.EmptyRuntime.__init__(self, *args, **kargs)
+class NovaClientRuntime(comp.ProgramRuntime):
+    pass
