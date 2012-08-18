@@ -39,14 +39,13 @@ class Persona(object):
         self.component_options = options
 
     def verify(self, distro):
-        # Some sanity checks against the given distro
+        # Some sanity checks against the given distro/persona
         d_name = distro.name
         if d_name not in self.distro_support:
-            return False
+            raise RuntimeError("Persona does not support the loaded distro")
         for c in self.wanted_components:
             if not distro.known_component(c):
-                return False
-        return True
+                raise RuntimeError("Persona provided component %s but its not supported by the loaded distro" % (c))
 
 
 def load(fn):

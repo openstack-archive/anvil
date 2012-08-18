@@ -4,17 +4,20 @@ components:
 - general
 - db
 - rabbit-mq
-- keystone-client
 - keystone
+- keystone-client
 - glance
-# Do this after glance is installed to override the old binary
 - glance-client
+- no-vnc
 - nova
 - nova-client
+# These seem needed for horizon (even if not used?)
+- cinder-client
+- quantum-client
+- swift-client
 - horizon
 # Super client, so install after other clients
 - openstack-client
-- no-vnc
 description: Devstack.sh matching component installation.
 options:
     no-vnc:

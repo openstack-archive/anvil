@@ -52,15 +52,11 @@ commands:
         status: service rabbitmq-server status
         stop: service rabbitmq-server stop                 
 components:
-    cinder:
+    cinder-client:
         action_classes:
-            install: anvil.components.cinder:CinderInstaller
-            running: anvil.components.cinder:CinderRuntime
-            uninstall: anvil.components.cinder:CinderUninstaller
-        pip_to_package:
-        -   name: MySQL-python
-            package:
-                name: MySQL-python
+            install: anvil.components.cinder_client:CinderClientInstaller
+            running: anvil.components.cinder_client:CinderClientRuntime
+            uninstall: anvil.components.cinder_client:CinderClientUninstaller
     db:
         action_classes:
             install: anvil.distros.rhel:DBInstaller
@@ -367,6 +363,17 @@ components:
             uninstall: anvil.components.openstack_client:OpenStackClientUninstaller
         pips:
         -   name: cliff
+    quantum-client:
+        action_classes:
+            install: anvil.components.quantum_client:QuantumClientInstaller
+            running: anvil.components.quantum_client:QuantumClientRuntime
+            uninstall: anvil.components.quantum_client:QuantumClientUninstaller
+        pip_to_package:
+        -   name: pyparsing
+            package:
+                name: pyparsing
+        pips:
+        -   name: cliff
     rabbit-mq:
         action_classes:
             install: anvil.components.rabbit:RabbitInstaller
@@ -387,5 +394,10 @@ components:
                 - 'off'
                 ignore_failure: true
                 run_as_root: true
+    swift-client:
+        action_classes:
+            install: anvil.components.swift_client:SwiftClientInstaller
+            running: anvil.components.swift_client:SwiftClientRuntime
+            uninstall: anvil.components.swift_client:SwiftClientUninstaller
 ...
 

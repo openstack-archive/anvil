@@ -152,8 +152,7 @@ def run(args):
 
     action = args.pop("action", '').strip().lower()
     if action not in actions.names():
-        print(colorizer.color("No valid action specified!", "red"))
-        return False
+        raise RuntimeError("Invalid action name %r specified!" % (action))
 
     # Determine + setup the root directory...
     # If not provided attempt to locate it via the environment control files
@@ -168,9 +167,10 @@ def run(args):
     sh.mkdir(root_dir)
 
     persona_fn = args.pop('persona_fn')
-    if not persona_fn or not sh.isfile(persona_fn):
-        print(colorizer.color("No valid persona file name specified!", "red"))
-        return False
+    if not persona_fn:
+        raise RuntimeError("No persona file name specified!")
+    if not sh.isfile(persona_fn):
+        raise RuntimeError("Invalid persona file %r specified!" % (persona_fn))
 
     # !!
     # Here on out we should be using the logger (and not print)!!
@@ -186,14 +186,9 @@ def run(args):
     # Load + verify the person
     try:
         persona_obj = persona.load(persona_fn)
+        persona_obj.verify(dist)
     except Exception as e:
-        msg = colorizer.color("Error loading persona file specified: ", "red")
-        msg += str(e)
-        print(msg)
-        return False
-    if not persona_obj.verify(dist):
-        print(colorizer.color("Distro %r not supported by this persona file!" % (dist.name), 'red'))
-        return False
+        raise RuntimeError("Error loading persona file: %s due to %s" % (person_fn, e))
 
     # Get the config reader (which is a combination
     # of many configs..)
@@ -248,8 +243,6 @@ def run(args):
     LOG.debug("Final environment settings:")
     utils.log_object(env.get(), logger=LOG, level=logging.DEBUG, item_max_len=64)
 
-    return True
-
 
 def main():
     """
@@ -282,20 +275,7 @@ def main():
               (colorizer.color("sudo %s" % (prog_name), "red", True), " ".join(rest_args)))
         return 1
 
-    try:
-        # Drop to usermode
-        sh.user_mode(quiet=False)
-        started_ok = run(args)
-        if not started_ok:
-            help_me = colorizer.color(prog_name, "red", True)
-            help_me += " " + colorizer.color('--help', 'red')
-            print("Perhaps you should try %s" % (help_me))
-            return 1
-        else:
-            utils.goodbye(True)
-            return 0
-    except Exception:
-        utils.goodbye(False)
+    def traceback_fn():
         traceback = None
         if log_level < logging.INFO:
             # See: http://docs.python.org/library/traceback.html
@@ -303,6 +283,16 @@ def main():
             traceback = sys.exc_traceback
         tb.print_exception(sys.exc_type, sys.exc_value,
                 traceback, file=sys.stdout)
+
+    try:
+        # Drop to usermode
+        sh.user_mode(quiet=False)
+        run(args)
+        utils.goodbye(True)
+        return 0
+    except Exception:
+        utils.goodbye(False)
+        traceback_fn()
         return 1
 
 

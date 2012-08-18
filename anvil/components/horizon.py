@@ -39,7 +39,7 @@ HORIZON_APACHE_CONF = '000-default'
 CONFIGS = [HORIZON_PY_CONF, HORIZON_APACHE_CONF]
 
 # DB sync that needs to happen for horizon
-DB_SYNC_CMD = ['python', 'manage.py', 'syncdb']
+DB_SYNC_CMD = ['python', 'manage.py', 'syncdb', '--noinput']
 
 # Special apache directory (TODO describe more about this)
 BLACKHOLE_DIR = '.blackhole'
