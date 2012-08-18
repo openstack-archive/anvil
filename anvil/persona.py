@@ -25,18 +25,12 @@ LOG = logging.getLogger(__name__)
 
 class Persona(object):
 
-    def __init__(self, description,
-                       supports,
-                       components,
-                       subsystems,
-                       options,
-                       **kargs):
-        self.distro_support = supports
-        self.wanted_components = components
-        self.source = kargs.get('source')  # May not always be there (ie if from a stream...)
-        self.wanted_subsystems = subsystems
-        self.description = description
-        self.component_options = options
+    def __init__(self, supports, components, **kargs):
+        self.distro_support = supports or []
+        self.wanted_components = components or []
+        self.source = kargs.get('source')
+        self.wanted_subsystems = kargs.get('subsystems') or {}
+        self.component_options = kargs.get('options') or {}
 
     def verify(self, distro):
         # Some sanity checks against the given distro/persona
