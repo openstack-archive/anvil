@@ -1,0 +1,37 @@
+---
+components:
+# Order matters here!
+- general
+- db
+- rabbit-mq
+- keystone
+- keystone-client
+- glance
+- glance-client
+- nova
+- nova-client
+# Super client, so install after other clients
+- openstack-client
+options:
+    nova:
+        db-sync: true
+        do-network-init: true
+        mq: rabbit
+    glance:
+        db-sync: true
+        load-images: true
+    keystone:
+        db-sync: true
+subsystems:
+    glance:
+    - api
+    - reg
+    nova:
+    - api
+    - cpu
+    - net
+    - sched
+supports:
+- rhel-6
+...
+

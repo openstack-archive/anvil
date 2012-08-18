@@ -1,0 +1,19 @@
+---
+components:
+# Order matters here!
+- general
+- keystone-client
+- glance
+- glance-client
+options:
+    glance:
+        db-sync: false
+        load-images: true
+subsystems:
+    glance:
+    - api
+    - reg
+supports:
+- rhel-6
+...
+

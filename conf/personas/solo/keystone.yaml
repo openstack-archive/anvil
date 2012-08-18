@@ -1,0 +1,13 @@
+---
+components:
+# Order matters here!
+- general
+- keystone
+- keystone-client
+options:
+    keystone:
+        db-sync: false
+supports:
+- rhel-6
+...
+
