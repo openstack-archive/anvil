@@ -421,6 +421,4 @@ def get_shared_params(cfg):
     }
     mp['endpoints']['internal'] = dict(mp['endpoints']['admin'])
     mp['endpoints']['public'] = dict(mp['endpoints']['admin'])
-
-    LOG.debug("Glance shared params: %s", mp)
     return mp

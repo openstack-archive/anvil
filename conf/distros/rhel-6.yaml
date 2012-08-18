@@ -1,7 +1,7 @@
 ---
 # RedHat Enterprise Linux 6
 name: rhel-6
-distro_pattern: redhat-6(.*)
+platform_pattern: redhat-6(.*)
 packager_name: anvil.packaging.yum:YumPackager
 commands:
     apache:
@@ -22,9 +22,7 @@ commands:
     mysql:
         # NOTE: we aren't stopping any sql injection...
         create_db: mysql --user=%USER% --password=%PASSWORD% -e 
-          "CREATE DATABASE %DB%;"
-        create_db_utf8: mysql --user=%USER% --password=%PASSWORD% -e 
-          "CREATE DATABASE %DB% CHARACTER SET utf8;"
+          "CREATE DATABASE %DB% CHARACTER SET %CHARACTER_SET%;"
         drop_db: mysql --user=%USER% --password=%PASSWORD% -e 
           "DROP DATABASE IF EXISTS %DB%;"
         grant_all: mysql --user=%USER% --password=%PASSWORD% -e 
@@ -39,9 +37,6 @@ commands:
         status: service mysqld status
         stop: service mysqld stop
     pip: pip-python
-    # Used to know where to find nova root wrap
-    bin_dir: "/usr/bin"
-    sudoers_dir: "/etc/sudoers.d/"
     # Commands used when setting up python projects
     python:
         setup: python setup.py develop
@@ -50,11 +45,6 @@ commands:
     # under this directory where its configuration files will be connected to there
     # actual location.
     base_link_dir: "/etc/"
-    qpid:
-        status: service qpidd status
-        start: service qpidd start
-        restart: service qpidd restart
-        stop: service qpidd stop
     rabbit-mq:
         change_password: rabbitmqctl change_password
         restart: service rabbitmq-server restart
@@ -62,237 +52,225 @@ commands:
         status: service rabbitmq-server status
         stop: service rabbitmq-server stop                 
 components:
+    cinder-client:
+        action_classes:
+            install: anvil.components.cinder_client:CinderClientInstaller
+            running: anvil.components.cinder_client:CinderClientRuntime
+            uninstall: anvil.components.cinder_client:CinderClientUninstaller
     db:
         action_classes:
-            install: anvil.distros.rhel6:DBInstaller
+            install: anvil.distros.rhel:DBInstaller
             running: anvil.components.db:DBRuntime
             uninstall: anvil.components.db:DBUninstaller
         packages:
         -   name: mysql
-            removable: true
-            version: 5.1*
         -   name: mysql-server
-            removable: true
-            version: 5.1*
     general:
         action_classes:
             install: anvil.components.pkglist:Installer
-            running: anvil.component:EmptyRuntime
+            running: anvil.components:EmptyRuntime
             uninstall: anvil.components.pkglist:Uninstaller
         packages:
+        # Shared system packages
         -   name: coreutils
-            removable: false
-            version: 8.4*
         -   name: curl
-            removable: false
-            version: 7.19*
         -   name: euca2ools
-            removable: false
-            version: 1.3*
         -   name: gawk
-            removable: false
-            version: 3.1*
         -   name: git
-            removable: false
-            version: 1.7*
         -   name: iputils
-            removable: false
-            version: 20071127*
         -   name: libxml2-devel
-            removable: false
-            version: 2.7*
         -   name: libxslt-devel
-            removable: false
-            version: 1.1*
         -   name: lsof
-            removable: false
-            version: 4.82*
         -   name: mlocate
-            removable: false
-            version: 0.22*
         -   name: openssh-server
-            removable: false
-            version: 5.3p1*
         -   name: psmisc
-            removable: false
-            version: 22.6*
-        -   name: pylint
-            removable: false
-            version: 0.21*
-        -   name: python
-            removable: false
-            version: 2.6*
-        -   name: python-devel
-            removable: false
-            version: 2.6*
-        -   name: python-distutils-extra
-            removable: false
-            version: 2.29*
-        -   name: python-mox
-            removable: false
-            version: 0.5*
-        -   name: python-pep8
-            removable: false
-            version: 0.6*
-        -   name: python-pip
-            removable: false
-            version: 0.8*
-        -   name: python-setuptools
-            removable: false
-            version: 0.6*
-        -   name: python-unittest2
-            removable: false
-            version: 0.5*
-        -   name: python-virtualenv
-            removable: false
-            version: 1.7*
         -   name: screen
-            removable: false
-            version: 4.0*
         -   name: sudo
-            removable: false
-            version: 1.7*
         -   name: tcpdump
-            removable: false
-            version: 4.0*
         -   name: unzip
-            removable: false
-            version: 6.0*
         -   name: wget
-            removable: false
-            version: 1.12*
-        pips:
-        -   name: coverage
-            version: 3.5.1
+        # Shared python packages
+        -   name: python
+        -   name: python-devel
+        -   name: python-distutils-extra
+        -   name: python-setuptools
+        pip_to_package:
+        # Shared pypi packages + there package information.
+        # Packages is what is really used for installation (the pypi name
+        # is just for matching since the general section is not python code).
+        -   name: pylint 
+            package:
+                name: pylint
+        -   name: anyjson
+            package:
+                name: python-anyjson
+        -   name: argparse 
+            package:
+                name: python-argparse
+        -   name: babel
+            package:
+                name: python-babel
+        -   name: eventlet
+            package:
+                name: python-eventlet
+        -   name: greenlet
+            package:
+                name: python-greenlet
+        -   name: httplib2
+            package:
+                name: python-httplib2
+        -   name: iso8601
+            package:
+                name: python-iso8601
+        -   name: lockfile
+            package:
+                name: python-lockfile
+        -   name: lxml
+            package:
+                name: python-lxml
         -   name: mock
-            version: 0.8.0
+            package:
+                name: python-mock
+        -   name: mox
+            package:
+                name: python-mox
+        -   name: netaddr
+            package:
+                name: python-netaddr
         -   name: nose
-            version: 1.1.2
+            package:
+                name: python-nose1.1
+                packager_name: anvil.distros.rhel:YumPackagerWithRelinks
+                packager_options:
+                    links:
+                        - source: "/usr/lib/python2.6/site-packages/nose-1*-py2.6.egg/nose"
+                          target: "/usr/lib/python2.6/site-packages/nose"
+        -   name: paste
+            package:
+                name: python-paste
+        -   name: pastedeploy
+            package:
+                name: python-paste-deploy1.5
+                packager_name: anvil.distros.rhel:YumPackagerWithRelinks
+                packager_options:
+                    links:
+                        - source: "/usr/lib/python2.6/site-packages/PasteDeploy-1.5*-py2.6.egg/paste/deploy"
+                          target: "/usr/lib/python2.6/site-packages/paste/deploy"
+        -   name: pep8
+            package:
+                name: python-pep8
+        -   name: pip
+            package:
+                name: python-pip
+        -   name: routes
+            package:
+                name: python-routes1.12
+                packager_name: anvil.distros.rhel:YumPackagerWithRelinks
+                packager_options:
+                    links:
+                        - source: "/usr/lib/python2.6/site-packages/Routes-1.*-py2.6.egg/routes"
+                          target: "/usr/lib/python2.6/site-packages/routes"
+        -   name: simplejson
+            package:
+                name: python-simplejson
+        -   name: sqlalchemy
+            package:
+                name: python-sqlalchemy0.7
+                packager_name: anvil.distros.rhel:YumPackagerWithRelinks
+                packager_options:
+                    links:
+                        - source: "/usr/lib64/python2.6/site-packages/SQLAlchemy-0.*.egg/sqlalchemy"
+                          target: "/usr/lib/python2.6/site-packages/sqlalchemy"
+        -   name: unittest2
+            package:
+                name: python-unittest2
+        -   name: virtualenv
+            package:
+                name: python-virtualenv
+        -   name: webob
+            package:
+                name: python-webob1.0
+                # Need to relink it so that it will work without modifications
+                # Since new packages in rhel must never use the same names
+                # as previous ones (this overrides that)
+                packager_name: anvil.distros.rhel:YumPackagerWithRelinks
+                packager_options:
+                    links:
+                        - source: "/usr/lib/python2.6/site-packages/WebOb-*-py2.6.egg/webob/"
+                          target: "/usr/lib/python2.6/site-packages/webob"
+        pips:
+        # Pips that aren't packages yet (or versions aren't right...)
+        -   name: coverage
+        -   name: nose-exclude
+        -   name: openstack.nose_plugin
+        -   name: passlib
+        -   name: prettytable
+            version: ">=0.6" # This is not right, 0.6 and 0.6.1 are needed??
+        -   name: pycrypto
+            options: --upgrade
+        -   name: requests
+        -   name: sphinx
+        -   name: sqlalchemy-migrate
+        -   name: distribute
     glance:
         action_classes:
             install: anvil.components.glance:GlanceInstaller
             running: anvil.components.glance:GlanceRuntime
             uninstall: anvil.components.glance:GlanceUninstaller
+        # When parsing 'tools/pip-requires' and 
+        # 'tools/test-requires' (if they exist)
+        # the following map will be used to translate names
+        # and versions inside those files into distribution
+        # package names equivalents (if possible)
+        pip_to_package:
+        -   name: pysendfile
+            package:
+                name: pysendfile
+        -   name: kombu
+            package:
+                # Only needed for notifications???
+                name: python-kombu
         packages:
         -   name: MySQL-python
-            removable: true
-            version: 1.2*
-        -   name: python-argparse
-            removable: true
-            version: 1.2*
-        -   name: python-dateutil
-            removable: true
-            version: 1.4*
-        -   name: python-eventlet
-            removable: true
-            version: 0.9*
-        -   name: python-greenlet
-            removable: true
-            version: 0.3*
-        -   name: python-httplib2
-            removable: true
-            version: 0.7*
-        -   name: python-prettytable
-            removable: true
-            version: 0.5*
-        -   name: pyxattr
-            removable: true
-            version: 0.5*
         pips:
-        -   name: PasteDeploy
-            version: 1.5.0
-        -   name: Routes
-            version: 1.12.3
-        -   name: SQLAlchemy
-            version: 0.7.5
-        -   name: iso8601
-            version: 0.1.4
-        -   name: pycrypto
-            options: --upgrade
-            version: '2.6'
+        # Pips that aren't packages yet (and not in the 'general' section)
+        -   name: boto
+            version: "==2.1.1"
+        -   name: wsgiref
+        -   name: xattr
         -   name: jsonschema
-            version: "0.2"
     glance-client:
         action_classes:
             install: anvil.components.glance_client:GlanceClientInstaller
             running: anvil.components.glance_client:GlanceClientRuntime
             uninstall: anvil.components.glance_client:GlanceClientUninstaller
-        packages:
-        -   name: python-argparse
-            removable: true
-            version: 1.2*
-        -   name: python-prettytable
-            removable: true
-            version: 0.5*
+        pips:
+        -   name: nosexcover
+        -   name: setuptools-git
+        -   name: warlock
+            version: "==0.1.0"
     horizon:
         action_classes:
-            install: anvil.distros.rhel6:HorizonInstaller
+            install: anvil.distros.rhel:HorizonInstaller
             running: anvil.components.horizon:HorizonRuntime
             uninstall: anvil.components.horizon:HorizonUninstaller
+        pip_to_package:
+        -   name: pytz
+            package:
+                name: pytz
         packages:
-        -   name: nodejs-compat-symlinks
-            removable: true
-            version: 1-1*
-            source-rpm: http://nodejs.tchol.org/repocfg/el/nodejs-stable-release.noarch.rpm
-        -   name: npm
-            removable: true
-            version: 1.1*
-            source-rpm: http://nodejs.tchol.org/repocfg/el/nodejs-stable-release.noarch.rpm
         -   name: httpd
-            removable: true
-            version: 2.2*
         -   name: mod_wsgi
-            removable: true
-            version: 3.2*
-        -   name: python-dateutil
-            removable: true
-            version: 1.4*
-        -   name: python-eventlet
-            removable: true
-            version: 0.9*
-        -   name: python-kombu
-            removable: true
-            version: 1.1*
-        -   name: python-webob1.0
-            removable: true
-            version: 1.0*
-            packager_name: anvil.distros.rhel6:YumPackagerWithRelinks
-            packager_options:
-                links:
-                    - source: /usr/lib/python2.6/site-packages/WebOb-1.0.8-py2.6.egg/webob/
-                      target: /usr/lib/python2.6/site-packages/webob
+        -   name: nodejs
+        -   name: nodejs-npm
         pips:
-        -   name: CherryPy
-            version: 3.2.2
-        -   name: Paste
-            version: 1.7.5.1
-        -   name: PasteDeploy
-            version: '1.5'
-        -   name: PasteScript
-            version: 1.7.5
-        -   name: Routes
-            version: 1.12.3
-        -   name: SQLAlchemy
-            version: 0.7.5
         -   name: django
-            version: "1.4"
-        -   name: django-mailer
-            version: 0.1.0
+            version: ">=1.4"
+        -   name: django-compressor
         -   name: django-nose
-            version: 0.1.3
-        -   name: django-nose-selenium
-            version: 0.7.3
-        -   name: django-registration
-            version: '0.7'
-        -   name: django-staticfiles
-            version: 1.1.2
-        -   name: pycrypto
-            options: --upgrade
-            version: '2.6'
-        -   name: python-cloudfiles
-            version: 1.7.9.3
-        -   name: sqlalchemy-migrate
-            version: 0.7.2
+        -   name: django-openstack-auth
+        -   name: nosexcover
+        -   name: selenium
     keystone:
         action_classes:
             install: anvil.components.keystone:KeystoneInstaller
@@ -300,336 +278,106 @@ components:
             uninstall: anvil.components.keystone:KeystoneUninstaller
         packages:
         -   name: MySQL-python
-            removable: true
-            version: 1.2*
-        -   name: cyrus-sasl-lib
-            removable: false
-            version: 2.1*
-        -   name: openldap
-            removable: false
-            version: 2.4*
-        -   name: openldap-devel
-            removable: true
-            version: 2.4*
-        -   name: python-argparse
-            removable: true
-            version: 1.2*
-        -   name: python-eventlet
-            removable: true
-            version: 0.9*
-        -   name: python-greenlet
-            removable: true
-            version: 0.3*
-        -   name: python-lxml
-            removable: true
-            version: 2.2*
-        -   name: python-passlib
-            removable: true
-            version: 1.5*
-        -   name: python-prettytable
-            removable: true
-            version: 0.5*
-        -   name: python-sqlite2
-            removable: true
-            version: 2.3*
-        -   name: python-webob1.0
-            removable: true
-            version: 1.0*
-            packager_name: anvil.distros.rhel6:YumPackagerWithRelinks
-            packager_options:
-                links:
-                    - source: /usr/lib/python2.6/site-packages/WebOb-1.0.8-py2.6.egg/webob/
-                      target: /usr/lib/python2.6/site-packages/webob
-        -   name: sqlite
-            removable: false
-            version: 3.6*
+        pip_to_package:
+        -   name: netifaces
+            package:
+                name: python-netifaces
         pips:
-        -   name: Paste
-            version: 1.7.5.1
-        -   name: PasteDeploy
-            version: '1.5'
-        -   name: PasteScript
-            version: 1.7.5
-        -   name: Routes
-            version: 1.12.3
-        -   name: SQLAlchemy
-            version: 0.7.5
-        -   name: py-bcrypt
-            version: '0.2'
-        -   name: pycrypto
-            options: --upgrade
-            version: '2.6'
-        -   name: sqlalchemy-migrate
-            version: 0.7.2
+        -   name: pam
+            version: '==0.1.4'
+        -   name: nosexcover
+        -   name: webtest  # This version in package form conflicts with webob1.0
     keystone-client:
         action_classes:
             install: anvil.components.keystone_client:KeyStoneClientInstaller
             running: anvil.components.keystone_client:KeyStoneClientRuntime
             uninstall: anvil.components.keystone_client:KeyStoneClientUninstaller
-        packages:
-        -   name: python-argparse
-            removable: true
-            version: 1.2*
-        -   name: python-prettytable
-            removable: true
-            version: 0.5*
-    melange:
-        action_classes:
-            install: anvil.components.melange:MelangeInstaller
-            running: anvil.components.melange:MelangeRuntime
-            uninstall: anvil.components.melange:MelangeUninstaller
-    no-vnc:
-        action_classes:
-            install: anvil.components.novnc:NoVNCInstaller
-            running: anvil.components.novnc:NoVNCRuntime
-            uninstall: anvil.components.novnc:NoVNCUninstaller
-        pips:
-        -   name: numpy
-            version: '1.5'
     nova:
         action_classes:
-            install: anvil.distros.rhel6:NovaInstaller
+            install: anvil.distros.rhel:NovaInstaller
             running: anvil.components.nova:NovaRuntime
             uninstall: anvil.components.nova:NovaUninstaller
         packages:
-        -   name: python-webob1.0
-            removable: true
-            version: 1.0*
-            packager_name: anvil.distros.rhel6:YumPackagerWithRelinks
-            packager_options:
-                links:
-                    - source: /usr/lib/python2.6/site-packages/WebOb-1.0.8-py2.6.egg/webob/
-                      target: /usr/lib/python2.6/site-packages/webob
         -   name: MySQL-python
-            removable: true
-            version: 1.2*
-        -   name: fuse
-            removable: true
-            version: 2.8*
         -   name: dnsmasq
-            removable: false
-            version: 2.48*
         -   name: ebtables
-            removable: false
-            version: 2.0*
+        -   name: fuse
         -   name: iptables
-            removable: false
-            version: 1.4*
         -   name: iputils
-            removable: false
-            version: 20071127*
         -   name: kpartx
-            removable: false
-            version: 0.4*
-        -   name: libxml2-python
-            removable: false
-            version: 2.7*
         -   name: parted
-            removable: false
-            version: 2.1*
-        -   name: python-boto
-            removable: true
-            version: 2.5*
-        -   name: python-carrot
-            removable: true
-            version: 0.10*
-        -   name: python-cheetah
-            removable: true
-            version: 2.4*
-        -   name: python-crypto
-            removable: false
-            version: 2.0*
-        -   name: python-eventlet
-            removable: true
-            version: 0.9*
-        -   name: python-feedparser
-            removable: true
-            version: 5.0*
-        -   name: python-gflags
-            removable: true
-            version: 1.4*
-        -   name: python-greenlet
-            removable: true
-            version: 0.3*
-        -   name: python-kombu
-            removable: true
-            version: 1.1*
-        -   name: python-lockfile
-            removable: true
-            version: 0.8*
-        -   name: python-lxml
-            removable: true
-            version: 2.2*
-        -   name: python-netaddr
-            removable: true
-            version: 0.7*
-        -   name: python-suds
-            removable: true
-            version: 0.4*
-        -   name: pyxattr
-            removable: true
-            version: 0.5*
-        -   name: socat
-            removable: true
-            version: 1.7*
         -   name: sqlite
-            removable: false
-            version: 3.6*
         -   name: vconfig
-            removable: true
-            version: 1.9*
+        pip_to_package:
+        -   name: amqplib
+            package:
+                name: python-amqplib
+        -   name: suds
+            package: 
+                name: python-suds
+        -   name: paramiko
+            package:
+                name: python-paramiko
+        -   name: feedparser
+            package:
+                name: python-feedparser
         pips:
-        -   name: Paste
-            version: 1.7.5.1
-        -   name: PasteDeploy
-            version: '1.5'
-        -   name: PasteScript
-            version: 1.7.5
-        -   name: Routes
-            version: 1.12.3
-        -   name: SQLAlchemy
-            version: 0.7.5
-        -   name: Tempita
-            options: --upgrade
-            version: 0.5dev
-        -   name: iso8601
-            version: 0.1.4
-        -   name: pycrypto
-            options: --upgrade
-            version: '2.6'
-        -   name: sqlalchemy-migrate
-            version: 0.7.2
+        -   name: Cheetah
+            version: "2.4.4"
+        -   name: python-daemon
+            version: "1.5.5"
         subsystems:
-            api:
-                packages:
-                -   name: python-dateutil
-                    removable: false
-                    version: 1.4*
             cpu:
                 packages:
                 -   name: iscsi-initiator-utils
-                    removable: true
-                    version: 6.2*
                 -   name: libguestfs
-                    removable: true
-                    version: 1.16*
                 -   name: libguestfs-mount
-                    removable: true
-                    version: 1.7*
                 -   name: libguestfs-tools
-                    removable: true
-                    version: 1.16*
                 -   name: libvirt
-                    removable: true
-                    version: 0.9*
                 -   name: libvirt-client
-                    removable: true
-                    version: 0.9*
                 -   name: libvirt-python
-                    removable: true
-                    version: 0.9*
                 -   name: lvm2
-                    removable: true
-                    version: 2.02*
                 -   name: qemu-img
-                    removable: true
-                    version: 0.12*
                 -   name: qemu-kvm
-                    removable: true
-                    version: 0.12*
             vol:
                 packages:
                 -   name: iscsi-initiator-utils
-                    removable: true
-                    version: 6.2*
                 -   name: lvm2
-                    removable: true
-                    version: 2.02*
                 -   name: scsi-target-utils
-                    removable: true
-                    version: 1.0*
     nova-client:
         action_classes:
             install: anvil.components.nova_client:NovaClientInstaller
             running: anvil.components.nova_client:NovaClientRuntime
             uninstall: anvil.components.nova_client:NovaClientUninstaller
+    no-vnc:
+        action_classes:
+            install: anvil.components.novnc:NoVNCInstaller
+            running: anvil.components.novnc:NoVNCRuntime
+            uninstall: anvil.components.novnc:NoVNCUninstaller
         packages:
-        -   name: python-argparse
-            removable: true
-            version: 1.2*
-        -   name: python-prettytable
-            removable: true
-            version: 0.5*
+        -   name: python-websockify
     openstack-client:
         action_classes:
             install: anvil.components.openstack_client:OpenStackClientInstaller
             running: anvil.components.openstack_client:OpenStackClientRuntime
             uninstall: anvil.components.openstack_client:OpenStackClientUninstaller
-        packages:
-        -   name: python-httplib2
-            removable: true
-            version: 0.7*
-        -   name: python-prettytable
-            removable: true
-            version: 0.5*
-        -   name: python-argparse
-            removable: true
-            version: 1.2*
         pips:
         -   name: cliff
-    qpid:
-        action_classes:
-            install: anvil.components.qpid:QpidInstaller
-            running: anvil.components.qpid:QpidRuntime
-            uninstall: anvil.components.qpid:QpidUninstaller
-        packages:
-        -   name: qpid-cpp-server
-            removable: false
-            version: 0.14*
-    quantum:
-        action_classes:
-            install: anvil.components.quantum:QuantumInstaller
-            running: anvil.components.quantum:QuantumRuntime
-            uninstall: anvil.components.quantum:QuantumUninstaller
-        packages:
-        -   name: libxml2-python
-            removable: false
-            version: 2.7*
-        -   name: python-eventlet
-            removable: true
-            version: 0.9*
-        -   name: python-gflags
-            removable: true
-            version: 1.4*
-        -   name: python-greenlet
-            removable: true
-            version: 0.3*
-        pips:
-        -   name: Paste
-            version: 1.7.5.1
-        -   name: PasteDeploy
-            version: '1.5'
-        -   name: PasteScript
-            version: 1.7.5
-        -   name: Routes
-            version: 1.12.3
-        -   name: SQLAlchemy
-            version: 0.7.5
-        -   name: sqlalchemy-migrate
-            version: 0.7.2
     quantum-client:
         action_classes:
             install: anvil.components.quantum_client:QuantumClientInstaller
             running: anvil.components.quantum_client:QuantumClientRuntime
             uninstall: anvil.components.quantum_client:QuantumClientUninstaller
-        packages:
-        -   name: python-gflags
-            removable: true
-            version: 1.4*
+        pip_to_package:
+        -   name: pyparsing
+            package:
+                name: pyparsing
+        pips:
+        -   name: cliff
     rabbit-mq:
         action_classes:
             install: anvil.components.rabbit:RabbitInstaller
-            running: anvil.distros.rhel6:RabbitRuntime
+            running: anvil.distros.rhel:RabbitRuntime
             uninstall: anvil.components.rabbit:RabbitUninstaller
         packages:
         -   name: rabbitmq-server
@@ -646,12 +394,10 @@ components:
                 - 'off'
                 ignore_failure: true
                 run_as_root: true
-            removable: true
-            version: 2.6*
-    swift:
+    swift-client:
         action_classes:
-            install: anvil.components.swift:SwiftInstaller
-            running: anvil.components.swift:SwiftRuntime
-            uninstall: anvil.components.swift:SwiftUninstaller
+            install: anvil.components.swift_client:SwiftClientInstaller
+            running: anvil.components.swift_client:SwiftClientRuntime
+            uninstall: anvil.components.swift_client:SwiftClientUninstaller
 ...
 

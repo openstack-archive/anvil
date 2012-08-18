@@ -14,24 +14,35 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from anvil import action
 from anvil import colorizer
 from anvil import log
 
-from anvil.actions import base
-
-from anvil.actions.base import PhaseFunctors
+from anvil.action import PhaseFunctors
 
 LOG = log.getLogger(__name__)
 
 
-class UninstallAction(base.Action):
+# Which phase files we will remove
+# at the completion of the given stage
+KNOCK_OFF_MAP = {
+    'uninstall': [
+        'download',
+    ],
+    'unconfigure': [
+        'configure',
+    ],
+    "post-uninstall": [
+        'download', 'configure',
+        'pre-install', 'install',
+        'post-install',
+    ],
+}
 
-    @staticmethod
-    def get_lookup_name():
-        return 'uninstall'
 
-    @staticmethod
-    def get_action_name():
+class UninstallAction(action.Action):
+    @property
+    def lookup_name(self):
         return 'uninstall'
 
     def _order_components(self, components):
@@ -80,5 +91,6 @@ class UninstallAction(base.Action):
             instances,
             "Post-uninstall",
             )
-        # Knock off and phase files that are connected to installing
-        self._delete_phase_files(['install'])
+
+    def _get_opposite_stages(self, phase_name):
+        return ('install', KNOCK_OFF_MAP.get(phase_name.lower(), []))

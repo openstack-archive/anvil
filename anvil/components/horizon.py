@@ -15,13 +15,12 @@
 #    under the License.
 
 from anvil import colorizer
-from anvil import component as comp
-from anvil import constants
+from anvil import components as comp
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
 
-from anvil.helpers import db as dbhelper
+from anvil.components.helpers import db as dbhelper
 
 LOG = logging.getLogger(__name__)
 
@@ -40,7 +39,7 @@ HORIZON_APACHE_CONF = '000-default'
 CONFIGS = [HORIZON_PY_CONF, HORIZON_APACHE_CONF]
 
 # DB sync that needs to happen for horizon
-DB_SYNC_CMD = ['python', 'manage.py', 'syncdb']
+DB_SYNC_CMD = ['python', 'manage.py', 'syncdb', '--noinput']
 
 # Special apache directory (TODO describe more about this)
 BLACKHOLE_DIR = '.blackhole'
@@ -52,9 +51,6 @@ APACHE_DEF_PORT = 80
 
 # Users which apache may not like starting as..
 BAD_APACHE_USERS = ['root']
-
-# Apache logs will go here
-LOGS_DIR = "logs"
 
 # This db will be dropped and created
 DB_NAME = 'horizon'
@@ -68,27 +64,33 @@ class HorizonUninstaller(comp.PythonUninstallComponent):
 class HorizonInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.log_dir = sh.joinpths(self.get_option('component_dir'), LOGS_DIR)
+        self.log_dir = sh.joinpths(self.get_option('component_dir'), 'logs')
 
-    def _get_download_locations(self):
-        places = list()
-        places.append({
-            'uri': ("git", "horizon_repo"),
-            'branch': ("git", "horizon_branch"),
-        })
-        return places
+    def _filter_pip_requires_line(self, line):
+        if line.lower().find('novaclient') != -1:
+            return None
+        if line.lower().find('quantumclient') != -1:
+            return None
+        if line.lower().find('swiftclient') != -1:
+            return None
+        if line.lower().find('keystoneclient') != -1:
+            return None
+        if line.lower().find('glanceclient') != -1:
+            return None
+        if line.lower().find('cinderclient') != -1:
+            return None
+        return line
 
     def verify(self):
         comp.PythonInstallComponent.verify(self)
         self._check_ug()
 
-    def _get_symlinks(self):
-        links = comp.PythonInstallComponent._get_symlinks(self)
-        link_tgt = self.distro.get_command_config(
-            'apache', 'settings', 'conf-link-target',
-            quiet=True)
+    @property
+    def symlinks(self):
+        links = super(HorizonInstaller, self).symlinks
+        link_tgt = self.distro.get_command_config('apache', 'settings', 'conf-link-target', quiet=True)
         if link_tgt:
-            src = self._get_target_config_name(HORIZON_APACHE_CONF)
+            src = self.target_config(HORIZON_APACHE_CONF)
             links[src] = link_tgt
         return links
 
@@ -106,20 +108,22 @@ class HorizonInstaller(comp.PythonInstallComponent):
                     % (user, group))
             raise excp.ConfigException(msg)
 
-    def _get_target_config_name(self, config_name):
+    def target_config(self, config_name):
         if config_name == HORIZON_PY_CONF:
             # FIXME don't write to checked out locations...
             dash_dir = sh.joinpths(self.get_option('app_dir'), ROOT_DASH)
             return sh.joinpths(dash_dir, *HORIZON_PY_CONF_TGT)
         else:
-            return comp.PythonInstallComponent._get_target_config_name(self, config_name)
+            return comp.PythonInstallComponent.target_config(self, config_name)
 
-    def _get_config_files(self):
+    @property
+    def config_files(self):
         return list(CONFIGS)
 
     def _setup_blackhole(self):
         # Create an empty directory that apache uses as docroot
-        self.tracewriter.dirs_made(*sh.mkdirslist(sh.joinpths(self.get_option('app_dir'), BLACKHOLE_DIR)))
+        black_hole_dir = sh.joinpths(self.get_option('app_dir'), BLACKHOLE_DIR)
+        self.tracewriter.dirs_made(*sh.mkdirslist(black_hole_dir))
 
     def _sync_db(self):
         # Initialize the horizon database (it stores sessions and notices shown to users).
@@ -129,7 +133,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def _setup_db(self):
         dbhelper.drop_db(self.cfg, self.distro, DB_NAME)
-        dbhelper.create_db(self.cfg, self.distro, DB_NAME, utf8=True)
+        dbhelper.create_db(self.cfg, self.distro, DB_NAME)
 
     def pre_install(self):
         comp.PythonInstallComponent.pre_install(self)
@@ -150,9 +154,11 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
-        self._setup_db()
-        self._sync_db()
-        self._setup_blackhole()
+        if self.get_option('db-sync'):
+            self._setup_db()
+            self._sync_db()
+        if self.get_option('make-blackhole'):
+            self._setup_blackhole()
         self._config_fixups()
 
     def _get_apache_user_group(self):
@@ -160,10 +166,10 @@ class HorizonInstaller(comp.PythonInstallComponent):
         group = self.cfg.getdefaulted('horizon', 'apache_group', sh.getgroupname())
         return (user, group)
 
-    def _get_param_map(self, config_fn):
+    def config_params(self, config_fn):
         # This dict will be used to fill in the configuration
         # params with actual values
-        mp = comp.PythonInstallComponent._get_param_map(self, config_fn)
+        mp = comp.PythonInstallComponent.config_params(self, config_fn)
         if config_fn == HORIZON_APACHE_CONF:
             (user, group) = self._get_apache_user_group()
             mp['GROUP'] = group
@@ -183,12 +189,9 @@ class HorizonInstaller(comp.PythonInstallComponent):
         return mp
 
 
-class HorizonRuntime(comp.EmptyRuntime):
-    def __init__(self, *args, **kargs):
-        comp.EmptyRuntime.__init__(self, *args, **kargs)
-
+class HorizonRuntime(comp.ProgramRuntime):
     def start(self):
-        if self._status() != constants.STATUS_STARTED:
+        if self.status()[0].status != comp.STATUS_STARTED:
             start_cmd = self.distro.get_command('apache', 'start')
             sh.execute(*start_cmd, run_as_root=True, check_exit_code=True)
             return 1
@@ -201,22 +204,25 @@ class HorizonRuntime(comp.EmptyRuntime):
         return 1
 
     def stop(self):
-        if self._status() != constants.STATUS_STOPPED:
+        if self.status()[0].status != comp.STATUS_STOPPED:
             stop_cmd = self.distro.get_command('apache', 'stop')
             sh.execute(*stop_cmd, run_as_root=True, check_exit_code=True)
             return 1
         else:
             return 0
 
-    def _status(self):
+    def status(self):
         status_cmd = self.distro.get_command('apache', 'status')
         (sysout, stderr) = sh.execute(*status_cmd, run_as_root=True, check_exit_code=False)
-        combined = (str(sysout) + str(stderr)).lower()
+        combined = (sysout + stderr).lower()
+        st = comp.STATUS_UNKNOWN
         if combined.find("is running") != -1:
-            return constants.STATUS_STARTED
+            st = comp.STATUS_STARTED
         elif combined.find("not running") != -1 or \
              combined.find("stopped") != -1 or \
              combined.find('unrecognized') != -1:
-            return constants.STATUS_STOPPED
-        else:
-            return constants.STATUS_UNKNOWN
+            st = comp.STATUS_STOPPED
+        return [
+            comp.ProgramStatus(status=st,
+                               details=(sysout + stderr).strip()),
+        ]

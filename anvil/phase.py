@@ -14,7 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import date
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
@@ -34,13 +33,13 @@ class PhaseRecorder(object):
     def mark(self, phasename):
         contents = dict()
         contents['name'] = phasename
-        contents['when'] = date.rcf8222date()
+        contents['when'] = utils.rcf8222date()
         yield phasename
         LOG.debug("Marking the completion of phase %r in file %r", phasename, self.fn)
         lines = [json.dumps(contents), '']
         sh.append_file(self.fn, utils.joinlinesep(*lines))
 
-    def has_ran(self, phasename):
+    def __contains__(self, phasename):
         phases = self.list_phases()
         if phasename in phases:
             return True

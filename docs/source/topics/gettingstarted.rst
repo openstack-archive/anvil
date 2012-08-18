@@ -16,18 +16,9 @@ Prerequisites
 Linux
 -----
 
-One of the tested Linux distributions (RHEL 6.2, Ubuntu 11.10, Fedora
-16)
+One of the tested Linux distributions (RHEL 6.2+ until further updated)
 
-You can get Ubuntu 11.10 (**64-bit** is preferred) from
-http://releases.ubuntu.com/11.10/
-
-You can get RHEL 6.2 (**64-bit** is preferred) from
-http://rhn.redhat.com/.
-
-You can get Fedora 16 (**64-bit** is preferred) from
-https://fedoraproject.org/get-fedora, so don’t worry if you do not have
-a RHN subscription.
+You can get RHEL 6.2+ (**64-bit** is preferred) from http://rhn.redhat.com/.
 
 Networking
 ----------
@@ -84,13 +75,11 @@ Installation
 Pre-setup
 ---------
 
-Since RHEL/Fedora requires a `tty`_ to perform ``sudo`` commands we need
+Since RHEL requires a `tty`_ to perform ``sudo`` commands we need
 to disable this so ``sudo`` can run without a `tty`_. This seems needed
 since nova and other components attempt to do ``sudo`` commands. This
-isn’t possible in RHEL/Fedora unless you disable this (since those
+isn’t possible in RHEL unless you disable this (since those
 instances won’t have a `tty`_ ).
-
-**For RHEL and Fedora 16:**
 
 ::
 
@@ -127,37 +116,9 @@ This can be typically solved by running the following (and then updating ``anvil
     $ sudo chmod -R a+rwx /home/openstack
 
 
-**For Ubuntu:**
-
-You are off the hook.
-
-Users
------
-
-We need to add a admin user so that horizon can run under `apache`_.
-
-**For Ubuntu:**
-
-::
-
-    $ apt-get install sudo -y
-    $ sudo adduser horizon
-    $ sudo adduser horizon admin
-
-**For RHEL/Fedora 16:**
-
-You are off the hook as long as your user has ``sudo`` access.
 
 Get git!
 --------
-
-**For Ubuntu:**
-
-::
-
-    $ sudo apt-get install git -y
-
-**For RHEL/Fedora 16:**
 
 ::
 
@@ -173,52 +134,9 @@ We’ll grab the latest version of ANVIL via git:
 
     $ git clone git://github.com/yahoo/Openstack-Anvil.git anvil
 
-Now setup the prerequisites needed to run (select the appropriate shell script for your distro):
-
-::
-
-    $ cd anvil/warmups && sudo ./$DISTRO.sh
-
 Configuration
 -------------
 
-Apache configuration
-~~~~~~~~~~~~~~~~~~~~
-
-We need to adjust the configuration of ANVIL to reflect the above
-user (``iff you created a user``).
-
-Open ``conf/anvil.ini``
-
-**Change section:**
-
-::
-
-    [horizon]
-
-    # What user will apache be serving from.
-    #
-    # Root will typically not work (for apache on most distros)
-    # sudo adduser <username> then sudo adduser <username> admin will be what you want to set this up (in ubuntu)
-    # I typically use user "horizon" for ubuntu and the runtime user (who will have sudo access) for RHEL.
-    #
-    # NOTE: If blank the currently executing user will be used.
-    apache_user = ${APACHE_USER:-}
-
-**To:**
-
-::
-
-    [horizon]
-
-    # What user will apache be serving from.
-    #
-    # Root will typically not work (for apache on most distros)
-    # sudo adduser <username> then sudo adduser <username> admin will be what you want to set this up (in ubuntu)
-    # I typically use user "horizon" for ubuntu and the runtime user (who will have sudo access) for RHEL.
-    #
-    # NOTE: If blank the currently executing user will be used.
-    apache_user = ${APACHE_USER:-horizon}
 
 Network configuration
 ~~~~~~~~~~~~~~~~~~~~~
@@ -269,7 +187,7 @@ Now install *OpenStacks* components by running the following:
 
 ::
 
-    sudo ./smithy -a install -d ~/openstack
+    sudo ./smithy -a install
 
 You should see a set of distribution packages and/or pips being
 installed, python setups occurring and configuration files being written
@@ -285,7 +203,7 @@ Now that you have installed *OpenStack* you can now start your
 
 ::
 
-    sudo ./smithy -a start -d ~/openstack
+    sudo ./smithy -a start
 
 If you desire more informational output add a ``-v`` or a ``-vv`` to
 that command.
@@ -332,29 +250,28 @@ EC2 apis run the following to get your EC2 certs:
 
 ::
 
-    euca.sh $OS_USERNAME $OS_TENANT_NAME
+    ./euca.sh $OS_USERNAME $OS_TENANT_NAME
 
 It broke?
 ~~~~~~~~~
 
-*Otherwise* you may have to look at the output of what was started. To
-accomplish this you may have to log at the ``stderr`` and ``stdout``
-that is being generated from the running *OpenStack* process (by default
-they are forked as daemons). For this information check the output of
-the start command for a line like
-``Check * for traces of what happened``. This is usually a good starting
-point, to check out those files contents and then look up the files that
-contain the applications `PID`_ and ``stderr`` and ``stdout``.
+First run the following to check the status of each component.
 
-If the install section had warning messages or exceptions were thrown
-there, that may also be the problem. Sometimes running the uninstall
-section below will clean this up, your mileage may vary though.
+::
 
-Another tip is to edit run with more verbose logging by running with the
-following ``-v`` option or the ``-vv`` option. This may give you more
-insights by showing you what was executed/installed/configured
-(uninstall & start by installing again to get the additional logging
-output).
+    sudo ./smithy -a status
+
+If you do not see all green status then you should run the following and see
+if any of the ``stderr`` and ``stdout`` files will give you more information
+about what is occuring
+
+::
+
+    sudo ./smithy -a status --show
+    
+This will dump out those files (truncated to not be to verbose) so that anything
+peculaliar can be seen. If nothing can be then go to the installation directory (typically ``~/openstack``)
+and check the ``traces`` directory of each component and check if anything looks fishy.
 
 Stopping
 --------
@@ -364,7 +281,7 @@ the following:
 
 ::
 
-    sudo ./smithy -a stop -d ~/openstack
+    sudo ./smithy -a stop
 
 You should see a set of stop actions happening and ``stderr`` and
 ``stdout`` and ``pid`` files being removed (if you desire more
@@ -391,7 +308,7 @@ can uninstall them by running the following:
 
 ::
 
-    sudo ./smithy -a uninstall -d ~/openstack
+    sudo ./smithy -a uninstall
 
 You should see a set of packages, configuration and directories, being
 removed (if you desire more informational output add a ``-v`` or a

@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from anvil import env
+
 import random as rand
 import re
 import sys
@@ -24,12 +26,16 @@ import termcolor
 COLORS = termcolor.COLORS.keys()
 
 
-def is_terminal():
-    return sys.stdout.isatty()
+def color_enabled():
+    if str(env.get_key('LOG_COLOR')).strip().lower() in ['false', 'no', '0', 'off']:
+        return False
+    if not sys.stdout.isatty():
+        return False
+    return True
 
 
 def random_color(data):
-    if not is_terminal():
+    if not color_enabled():
         return data
     new_data = list()
     for d in data:
@@ -39,7 +45,7 @@ def random_color(data):
 
 
 def quote(data, quote_color='green', **kargs):
-    if not is_terminal():
+    if not color_enabled():
         return "'%s'" % (data)
     else:
         text = str(data)
@@ -67,7 +73,7 @@ def color(data, color, bold=False, underline=False, blink=False):
         text_attrs.append('underline')
     if blink:
         text_attrs.append('blink')
-    if is_terminal() and color in COLORS:
+    if color_enabled() and color in COLORS:
         return termcolor.colored(text, color, attrs=text_attrs)
     else:
         return text

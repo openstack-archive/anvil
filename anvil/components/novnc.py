@@ -14,13 +14,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import component as comp
+from anvil import cfg
+from anvil import colorizer
+from anvil import components as comp
 from anvil import log as logging
 from anvil import shell as sh
-
-from anvil.components import nova
-
-LOG = logging.getLogger(__name__)
+from anvil import utils
 
 # Where the application is really
 UTIL_DIR = 'utils'
@@ -29,39 +28,24 @@ VNC_PROXY_APP = 'nova-novncproxy'
 APP_OPTIONS = {
     # This reaches into the nova configuration file
     # TODO can we stop that?
-    VNC_PROXY_APP: ['--flagfile', '%NOVA_CONF%', '--web', '.'],
+    VNC_PROXY_APP: ['--config-file', '%NOVA_CONF%', '--web', '.'],
 }
 
 
-class NoVNCMixin(object):
-    def _get_download_locations(self):
-        places = list()
-        places.append({
-            'uri': ("git", "novnc_repo"),
-            'branch': ("git", "novnc_branch"),
-        })
-        return places
+class NoVNCUninstaller(comp.PythonUninstallComponent):
+    pass
 
 
-class NoVNCUninstaller(NoVNCMixin, comp.PythonUninstallComponent):
-    def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
+class NoVNCInstaller(comp.PythonInstallComponent):
+    @property
+    def python_directories(self):
+        return {}
 
 
-class NoVNCInstaller(NoVNCMixin, comp.PythonInstallComponent):
-    def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, *args, **kargs)
-
-    def _get_python_directories(self):
-        return dict()
-
-
-class NoVNCRuntime(NoVNCMixin, comp.ProgramRuntime):
-    def __init__(self, *args, **kargs):
-        comp.ProgramRuntime.__init__(self, *args, **kargs)
-
-    def _get_apps_to_start(self):
-        apps = list()
+class NoVNCRuntime(comp.PythonRuntime):
+    @property
+    def apps_to_start(self):
+        apps = []
         for app_name in APP_OPTIONS.keys():
             apps.append({
                 'name': app_name,
@@ -69,14 +53,17 @@ class NoVNCRuntime(NoVNCMixin, comp.ProgramRuntime):
             })
         return apps
 
-    def _get_param_map(self, app_name):
-        root_params = comp.ProgramRuntime._get_param_map(self, app_name)
-        nova_comp = self.get_option('nova-component')
-        if nova_comp and app_name == VNC_PROXY_APP and nova_comp in self.instances:
-            # FIXME: Have to reach into the nova conf (puke)
-            nova_runtime = self.instances[nova_comp]
-            root_params['NOVA_CONF'] = sh.joinpths(nova_runtime.get_option('cfg_dir'), nova.API_CONF)
-        return root_params
+    def app_params(self, app_name):
+        params = comp.ProgramRuntime.app_params(self, app_name)
+        nova_comp_name = self.get_option('nova-component')
+        if app_name == VNC_PROXY_APP:
+            if nova_comp_name in self.instances:
+                # FIXME(harlowja): Have to reach into the nova component to get the config path (puke)
+                nova_runtime = self.instances[nova_comp_name]
+                params['NOVA_CONF'] = nova_runtime.config_path
+            else:
+                raise RuntimeError("NoVNC can not be started without the location of the nova configuration file")
+        return params
 
-    def _get_app_options(self, app):
+    def app_options(self, app):
         return APP_OPTIONS.get(app)

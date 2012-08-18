@@ -15,14 +15,13 @@
 #    under the License.
 
 from anvil import colorizer
-from anvil import component as comp
-from anvil import constants
+from anvil import components as comp
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
 
-from anvil.helpers import db as dbhelper
+from anvil.components.helpers import db as dbhelper
 
 import abc
 
@@ -50,11 +49,7 @@ class DBUninstaller(comp.PkgUninstallComponent):
 
     def __init__(self, *args, **kargs):
         comp.PkgUninstallComponent.__init__(self, *args, **kargs)
-        runtime_cls = self.siblings.get('running')
-        if not runtime_cls:
-            self.runtime = DBRuntime(*args, **kargs)
-        else:
-            self.runtime = runtime_cls(*args, **kargs)
+        self.runtime = self.siblings.get('running')
 
     def warm_configs(self):
         for key, prompt in WARMUP_PWS:
@@ -90,16 +85,12 @@ class DBInstaller(comp.PkgInstallComponent):
 
     def __init__(self, *args, **kargs):
         comp.PkgInstallComponent.__init__(self, *args, **kargs)
-        runtime_cls = self.siblings.get('running')
-        if not runtime_cls:
-            self.runtime = DBRuntime(*args, **kargs)
-        else:
-            self.runtime = runtime_cls(*args, **kargs)
+        self.runtime = self.siblings.get('running')
 
-    def _get_param_map(self, config_fn):
+    def config_params(self, config_fn):
         # This dictionary will be used for parameter replacement
         # In pre-install and post-install sections
-        mp = comp.PkgInstallComponent._get_param_map(self, config_fn)
+        mp = comp.PkgInstallComponent.config_params(self, config_fn)
         adds = {
             'PASSWORD': self.cfg.get_password("sql", PASSWORD_PROMPT),
             'BOOT_START': ("%s" % (True)).lower(),
@@ -134,7 +125,7 @@ class DBInstaller(comp.PkgInstallComponent):
                 pwd_cmd = self.distro.get_command(dbtype, 'set_pwd')
                 if pwd_cmd:
                     LOG.info(("Attempting to set your db password"
-                          " just incase it wasn't set previously."))
+                              " just incase it wasn't set previously."))
                     LOG.info("Ensuring your database is started before we operate on it.")
                     self.runtime.restart()
                     params = {
@@ -150,25 +141,26 @@ class DBInstaller(comp.PkgInstallComponent):
 
         # Ensure access granted
         user = self.cfg.getdefaulted("db", "sql_user", 'root')
-        dbhelper.grant_permissions(self.cfg, self.distro, user, restart_func=self.runtime.restart)
+        dbhelper.grant_permissions(self.cfg, self.distro, user, 
+                                   restart_func=self.runtime.restart)
 
 
-class DBRuntime(comp.EmptyRuntime):
+class DBRuntime(comp.ProgramRuntime):
     def __init__(self, *args, **kargs):
-        comp.EmptyRuntime.__init__(self, *args, **kargs)
+        comp.ProgramRuntime.__init__(self, *args, **kargs)
         self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
 
     def _get_run_actions(self, act, exception_cls):
-        dbtype = self.cfg.get("db", "type")
-        distro_options = self.distro.get_command_config(dbtype)
+        db_type = self.cfg.get("db", "type")
+        distro_options = self.distro.get_command_config(db_type)
         if distro_options is None:
-            raise NotImplementedError(BASE_ERROR % (act, dbtype))
-        return self.distro.get_command(dbtype, act)
+            raise NotImplementedError(BASE_ERROR % (act, db_type))
+        return self.distro.get_command(db_type, act)
 
     def start(self):
-        if self._status() != constants.STATUS_STARTED:
-            startcmd = self._get_run_actions('start', excp.StartException)
-            sh.execute(*startcmd, run_as_root=True, check_exit_code=True)
+        if self.status()[0].status != comp.STATUS_STARTED:
+            start_cmd = self._get_run_actions('start', excp.StartException)
+            sh.execute(*start_cmd, run_as_root=True, check_exit_code=True)
             LOG.info("Please wait %s seconds while it starts up." % self.wait_time)
             sh.sleep(self.wait_time)
             return 1
@@ -176,29 +168,33 @@ class DBRuntime(comp.EmptyRuntime):
             return 0
 
     def stop(self):
-        if self._status() != constants.STATUS_STOPPED:
-            stopcmd = self._get_run_actions('stop', excp.StopException)
-            sh.execute(*stopcmd, run_as_root=True, check_exit_code=True)
+        if self.status()[0].status != comp.STATUS_STOPPED:
+            stop_cmd = self._get_run_actions('stop', excp.StopException)
+            sh.execute(*stop_cmd, run_as_root=True, check_exit_code=True)
             return 1
         else:
             return 0
 
     def restart(self):
         LOG.info("Restarting your database.")
-        restartcmd = self._get_run_actions('restart', excp.RestartException)
-        sh.execute(*restartcmd, run_as_root=True, check_exit_code=True)
-        LOG.info("Please wait %s seconds while it restarts." % self.wait_time)
+        restart_cmd = self._get_run_actions('restart', excp.RestartException)
+        sh.execute(*restart_cmd, run_as_root=True, check_exit_code=True)
+        LOG.info("Please wait %s seconds while it restarts.", self.wait_time)
         sh.sleep(self.wait_time)
         return 1
 
-    def _status(self):
-        statuscmd = self._get_run_actions('status', excp.StatusException)
-        (sysout, stderr) = sh.execute(*statuscmd, run_as_root=True, check_exit_code=False)
-        combined = (str(sysout) + str(stderr)).lower()
+    def status(self):
+        status_cmd = self._get_run_actions('status', excp.StatusException)
+        (sysout, stderr) = sh.execute(*status_cmd, run_as_root=True, check_exit_code=False)
+        combined = (sysout + stderr).lower()
+        st = comp.STATUS_UNKNOWN
         if combined.find("running") != -1:
-            return constants.STATUS_STARTED
+            st = comp.STATUS_STARTED
         elif combined.find("stop") != -1 or \
              combined.find('unrecognized') != -1:
-            return constants.STATUS_STOPPED
-        else:
-            return constants.STATUS_UNKNOWN
+            st = comp.STATUS_STOPPED
+        return [
+            comp.ProgramStatus(name=self.cfg.get("db", "type"),
+                               status=st,
+                               details=(sysout + stderr).strip()),
+        ]

@@ -17,8 +17,6 @@
 import os
 import sys
 
-from anvil import constants
-
 # RC files generated / used
 RC_FN_TEMPL = "%s.rc"
 
@@ -28,8 +26,7 @@ CONFIG_DIR = os.path.join(BIN_DIR, "conf")
 DISTRO_DIR = os.path.join(CONFIG_DIR, "distros")
 TEMPLATE_DIR = os.path.join(CONFIG_DIR, "templates")
 PERSONA_DIR = os.path.join(CONFIG_DIR, "personas")
-CONFIG_NAME = constants.CONFIG_NAME
-CONFIG_LOCATION = os.path.join(CONFIG_DIR, CONFIG_NAME)
+CONFIG_LOCATION = os.path.join(CONFIG_DIR, 'anvil.ini')
 
 
 def gen_rc_filename(root_name):

@@ -37,7 +37,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = anvil_settings.PROG_NAME.upper()
+project = 'ANVIL'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

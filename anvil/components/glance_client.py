@@ -14,31 +14,19 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
-from anvil import component as comp
-from anvil import log as logging
-
-LOG = logging.getLogger(__name__)
+from anvil import components as comp
 
 
 class GlanceClientUninstaller(comp.PythonUninstallComponent):
-    def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
+    pass
 
 
 class GlanceClientInstaller(comp.PythonInstallComponent):
-    def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, *args, **kargs)
-
-    def _get_download_locations(self):
-        places = list()
-        places.append({
-            'uri': ("git", "glanceclient_repo"),
-            'branch': ("git", "glanceclient_branch"),
-        })
-        return places
+    def _filter_pip_requires_line(self, line):
+        if line.lower().find('keystoneclient') != -1:
+            return None
+        return line
 
 
 class GlanceClientRuntime(comp.EmptyRuntime):
-    def __init__(self, *args, **kargs):
-        comp.EmptyRuntime.__init__(self, *args, **kargs)
+    pass

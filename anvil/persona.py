@@ -25,27 +25,6 @@ LOG = logging.getLogger(__name__)
 
 class Persona(object):
 
-    @classmethod
-    def load_file(cls, fn):
-        persona_fn = sh.abspth(fn)
-        LOG.audit("Loading persona from file %r", persona_fn)
-        cls_kvs = None
-        try:
-            with open(persona_fn, "r") as fh:
-                cls_kvs = yaml.load(fh.read())
-        except (IOError, yaml.YAMLError) as err:
-            LOG.warning('Could not load persona definition from %s: %s',
-                             persona_fn, err)
-        instance = None
-        if cls_kvs is not None:
-            try:
-                cls_kvs['source'] = persona_fn
-                instance = cls(**cls_kvs)
-            except Exception as err:
-                LOG.warning('Could not initialize instance %s using parameter map %s: %s',
-                                cls, cls_kvs, err)
-        return instance
-
     def __init__(self, description,
                        supports,
                        components,
@@ -59,27 +38,22 @@ class Persona(object):
         self.description = description
         self.component_options = options
 
-    def __str__(self):
-        info = "%s" % (self.description)
-        if self.source:
-            info += " from source %s:" % (self.source)
-        if self.wanted_subsystems:
-            info += " with desired subsystems (%s)" % (self.wanted_subsystems)
-        if self.wanted_components:
-            info += " with desired components (%s)" % (", ".join(self.wanted_components))
-        if self.component_options:
-            info += " with desired component options (%s)" % (", ".join(self.component_options))
-        if self.distro_support:
-            info += " which 'should' work on distros (%s)" % (", ".join(self.distro_support))
-        return info
-
     def verify(self, distro):
-        # Some sanity checks against the given distro
+        # Some sanity checks against the given distro/persona
         d_name = distro.name
         if d_name not in self.distro_support:
-            msg = "Distro %r not supported" % (d_name)
-            raise excp.ConfigException(msg)
+            raise RuntimeError("Persona does not support the loaded distro")
         for c in self.wanted_components:
             if not distro.known_component(c):
-                raise RuntimeError("Distro %r does not support component %r" %
-                                        (d_name, c))
+                raise RuntimeError("Persona provided component %s but its not supported by the loaded distro" % (c))
+
+
+def load(fn):
+    # Don't use sh here so that we always
+    # read this (even if dry-run)
+    with open(fn, 'r') as fh:
+        contents = fh.read()
+    cls_kvs = yaml.load(contents)
+    cls_kvs['source'] = fn
+    instance = Persona(**cls_kvs)
+    return instance

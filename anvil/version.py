@@ -14,12 +14,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-VERSION = ['2012', '5', '11']
+ANVIL_VERSION = ['2012', '2', None]
+YEAR, COUNT, REVISION = ANVIL_VERSION
 FINAL = False  # May never be final ;)
 
 
 def canonical_version_string():
-    return '.'.join(VERSION)
+    return '.'.join(filter(None, ANVIL_VERSION))
 
 
 def version_string():

@@ -17,14 +17,13 @@
 from urlparse import urlunparse
 import re
 
-from anvil import cfg_helpers
-from anvil import date
+from anvil import cfg
+from anvil import colorizer
 from anvil import env
 from anvil import log as logging
+from anvil import settings
 from anvil import shell as sh
 from anvil import utils
-
-from anvil.helpers import keystone as khelper
 
 LOG = logging.getLogger(__name__)
 
@@ -36,11 +35,11 @@ CFG_MAKE = {
 
 # PW sections
 PASSWORDS_MAKES = {
-    'ADMIN_PASSWORD': (cfg_helpers.PW_SECTION, 'horizon_keystone_admin'),
-    'SERVICE_PASSWORD': (cfg_helpers.PW_SECTION, 'service_password'),
-    'RABBIT_PASSWORD': (cfg_helpers.PW_SECTION, 'rabbit'),
-    'SERVICE_TOKEN': (cfg_helpers.PW_SECTION, 'service_token'),
-    'MYSQL_PASSWORD': (cfg_helpers.PW_SECTION, 'sql'),
+    'ADMIN_PASSWORD': (cfg.PW_SECTION, 'horizon_keystone_admin'),
+    'SERVICE_PASSWORD': (cfg.PW_SECTION, 'service_password'),
+    'RABBIT_PASSWORD': (cfg.PW_SECTION, 'rabbit'),
+    'SERVICE_TOKEN': (cfg.PW_SECTION, 'service_token'),
+    'MYSQL_PASSWORD': (cfg.PW_SECTION, 'sql'),
 }
 
 # Install root output name and env variable name
@@ -63,18 +62,23 @@ if [ -f "{fn}" ]; then
     source "{fn}"
 fi
 """
+
+# Attempt to use them from other installs (devstack and such)
 EXTERN_INCLUDES = ['localrc', 'eucarc']
 
 
 class RcWriter(object):
-    def __init__(self, cfg, root_dir):
+
+    def __init__(self, cfg, root_dir, components):
         self.cfg = cfg
         self.root_dir = root_dir
+        self.components = components
+        self.lines = None
+        self.created = 0
 
     def _make_export(self, export_name, value):
-        escaped_val = sh.shellquote(value)
-        full_line = "export %s=%s" % (export_name, escaped_val)
-        return full_line
+        self.created += 1
+        return "export %s=%s" % (export_name, sh.shellquote(value))
 
     def _make_dict_export(self, kvs):
         lines = list()
@@ -85,25 +89,23 @@ class RcWriter(object):
         return lines
 
     def _get_ec2_envs(self):
-        to_set = dict()
+        to_set = {}
         ip = self.cfg.get('host', 'ip')
         ec2_url_default = urlunparse(('http', "%s:%s" % (ip, EC2_PORT), "services/Cloud", '', '', ''))
         to_set['EC2_URL'] = self.cfg.getdefaulted('extern', 'ec2_url', ec2_url_default)
         s3_url_default = urlunparse(('http', "%s:%s" % (ip, S3_PORT), "services/Cloud", '', '', ''))
         to_set['S3_URL'] = self.cfg.getdefaulted('extern', 's3_url', s3_url_default)
-        to_set['EC2_CERT'] = self.cfg.get('extern', 'ec2_cert_fn')
-        to_set['EC2_USER_ID'] = self.cfg.get('extern', 'ec2_user_id')
         return to_set
 
     def _generate_ec2_env(self):
-        lines = list()
+        lines = []
         lines.append('# EC2 and/or S3 stuff')
         lines.extend(self._make_dict_export(self._get_ec2_envs()))
         lines.append("")
         return lines
 
     def _get_general_envs(self):
-        to_set = dict()
+        to_set = {}
         for (out_name, cfg_data) in CFG_MAKE.items():
             (section, key) = (cfg_data)
             to_set[out_name] = self.cfg.get(section, key)
@@ -111,153 +113,72 @@ class RcWriter(object):
         return to_set
 
     def _get_password_envs(self):
-        to_set = dict()
+        to_set = {}
         for (out_name, cfg_data) in PASSWORDS_MAKES.items():
-            (section, key) = (cfg_data)
+            (section, key) = cfg_data
             to_set[out_name] = self.cfg.get(section, key)
         return to_set
 
     def _generate_passwords(self):
-        lines = list()
+        lines = []
         lines.append('# Password stuff')
         lines.extend(self._make_dict_export(self._get_password_envs()))
         lines.append("")
         return lines
 
     def _generate_general(self):
-        lines = list()
+        lines = []
         lines.append('# General stuff')
         lines.extend(self._make_dict_export(self._get_general_envs()))
         lines.append("")
         return lines
 
     def _generate_lines(self):
-        lines = list()
-        lines.append('# Generated on %s' % (date.rcf8222date()))
-        lines.append("")
+        lines = []
         lines.extend(self._generate_general())
         lines.extend(self._generate_passwords())
         lines.extend(self._generate_ec2_env())
-        lines.extend(self._generate_nova_env())
-        lines.extend(self._generate_os_env())
-        lines.extend(self._generate_euca_env())
         lines.extend(self._generate_extern_inc())
-        lines.extend(self._generate_misc_env())
-        lines.extend(self._generate_aliases())
+        lines.extend(self._generate_components())
         return lines
 
-    def update(self, fn):
-        current_vars = RcReader().extract(fn)
-        possible_vars = dict()
-        possible_vars.update(self._get_general_envs())
-        possible_vars.update(self._get_ec2_envs())
-        possible_vars.update(self._get_password_envs())
-        possible_vars.update(self._get_os_envs())
-        possible_vars.update(self._get_euca_envs())
-        possible_vars.update(self._get_nova_envs())
-        possible_vars.update(self._get_misc_envs())
-        new_vars = dict()
-        updated_vars = dict()
-        for (key, value) in possible_vars.items():
-            if value is not None:
-                if key in current_vars and (current_vars.get(key) != value):
-                    updated_vars[key] = value
-                elif key not in current_vars:
-                    new_vars[key] = value
-        if new_vars or updated_vars:
-            lines = list()
-            lines.append("")
-            lines.append('# Updated on %s' % (date.rcf8222date()))
-            lines.append("")
-            if new_vars:
-                lines.append('# New stuff')
-                lines.extend(self._make_dict_export(new_vars))
-                lines.append("")
-            if updated_vars:
-                lines.append('# Updated stuff')
-                lines.extend(self._make_dict_export(updated_vars))
-                lines.append("")
-            append_contents = utils.joinlinesep(*lines)
-            sh.append_file(fn, append_contents)
-            return len(new_vars) + len(updated_vars)
-        else:
-            return 0
+    def _generate_components(self):
+        lines = []
+        for (c, component) in self.components:
+            there_envs = component.env_exports
+            if there_envs:
+                lines.append('# %s stuff' % (c.title().strip()))
+                lines.extend(self._make_dict_export(there_envs))
+                lines.append('')
+        return lines
 
     def write(self, fn):
-        contents = utils.joinlinesep(*self._generate_lines())
-        sh.write_file(fn, contents)
-
-    def _get_os_envs(self):
-        params = khelper.get_shared_params(self.cfg)
-        to_set = dict()
-        to_set['OS_PASSWORD'] = params['admin_password']
-        to_set['OS_TENANT_NAME'] = params['demo_tenant']
-        to_set['OS_USERNAME'] = params['demo_user']
-        to_set['OS_AUTH_URL'] = params['endpoints']['public']['uri']
-        to_set['SERVICE_ENDPOINT'] = params['endpoints']['admin']['uri']
-        return to_set
-
-    def _get_misc_envs(self):
-        to_set = dict()
-        return to_set
-
-    def _generate_misc_env(self):
-        lines = list()
-        lines.append('# Misc stuff')
-        lines.extend(self._make_dict_export(self._get_misc_envs()))
-        lines.append("")
-        return lines
-
-    def _generate_os_env(self):
-        lines = list()
-        lines.append('# Openstack stuff')
-        lines.extend(self._make_dict_export(self._get_os_envs()))
-        lines.append("")
-        return lines
-
-    def _generate_aliases(self):
-        lines = list()
-        lines.append('# Alias stuff')
-        lines.append("")
-        return lines
-
-    def _get_euca_envs(self):
-        to_set = dict()
-        return to_set
-
-    def _generate_euca_env(self):
-        lines = list()
-        lines.append('# Eucalyptus stuff')
-        lines.extend(self._make_dict_export(self._get_euca_envs()))
-        lines.append("")
-        return lines
-
-    def _get_nova_envs(self):
-        to_set = dict()
-        to_set['NOVA_VERSION'] = self.cfg.get('nova', 'nova_version')
-        return to_set
-
-    def _generate_nova_env(self):
-        lines = list()
-        lines.append('# Nova stuff')
-        lines.extend(self._make_dict_export(self._get_nova_envs()))
-        lines.append("")
-        return lines
+        if self.lines is None:
+            self.lines = self._generate_lines()
+        out_lines = list(self.lines)
+        if sh.isfile(fn):
+            out_lines.insert(0, '')
+            out_lines.insert(0, '# Updated on %s' % (utils.rcf8222date()))
+            out_lines.insert(0, '')
+        else:
+            out_lines.insert(0, '')
+            out_lines.insert(0, '# Created on %s' % (utils.rcf8222date()))
+        # Don't use sh 'lib' here so that we always
+        # read this (even if dry-run)
+        with open(fn, 'a') as fh:
+            fh.write(utils.joinlinesep(*out_lines))
 
     def _generate_extern_inc(self):
-        lines = list()
+        lines = []
         lines.append('# External includes stuff')
         for inc_fn in EXTERN_INCLUDES:
             extern_inc = EXTERN_TPL.format(fn=inc_fn)
             lines.append(extern_inc.strip())
             lines.append('')
-        lines.append("")
         return lines
 
 
 class RcReader(object):
-    def __init__(self):
-        pass
 
     def _is_comment(self, line):
         if line.lstrip().startswith("#"):
@@ -265,15 +186,22 @@ class RcReader(object):
         return False
 
     def extract(self, fn):
-        extracted_vars = dict()
         contents = ''
-        LOG.audit("Loading rc file %r" % (fn))
+        LOG.debug("Loading bash 'style' resource file %r", fn)
         try:
+            # Don't use sh here so that we always
+            # read this (even if dry-run)
             with open(fn, 'r') as fh:
                 contents = fh.read()
         except IOError as e:
-            LOG.warn("Failed extracting rc file %r due to %s" % (fn, e))
-            return extracted_vars
+            return {}
+        return self._dict_convert(contents)
+
+    def _unescape_string(self, text):
+        return text.decode('string_escape').strip()
+
+    def _dict_convert(self, contents):
+        extracted_vars = {}
         for line in contents.splitlines():
             if self._is_comment(line):
                 continue
@@ -283,7 +211,7 @@ class RcReader(object):
                 value = m.group(2).strip()
                 quoted_mtch = QUOTED_PAT.match(value)
                 if quoted_mtch:
-                    value = quoted_mtch.group(1).decode('string_escape').strip()
+                    value = self._unescape_string(quoted_mtch.group(1))
                 extracted_vars[key] = value
         return extracted_vars
 
@@ -292,3 +220,28 @@ class RcReader(object):
         for (key, value) in kvs.items():
             env.set(key, value)
         return len(kvs)
+
+
+def load(read_fns=None):
+    if not read_fns:
+        read_fns = [
+            settings.gen_rc_filename('core'),
+        ]
+    loaded_am = 0
+    for fn in read_fns:
+        am_loaded = RcReader().load(fn)
+        loaded_am += am_loaded
+    return (loaded_am, read_fns)
+
+
+def write(action, write_fns=None, components=None):
+    if not components:
+        components = []
+    if not write_fns:
+        write_fns = [
+            settings.gen_rc_filename('core'),
+        ]
+    writer = RcWriter(action.cfg, action.root_dir, components)
+    for fn in write_fns:
+        writer.write(fn)
+    return (writer.created, write_fns)

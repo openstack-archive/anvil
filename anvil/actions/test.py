@@ -14,8 +14,28 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from time import (localtime, strftime)
+from anvil import action
+from anvil import colorizer
+from anvil import log
+
+from anvil.action import PhaseFunctors
+
+LOG = log.getLogger(__name__)
 
 
-def rcf8222date():
-    return strftime("%a, %d %b %Y %H:%M:%S", localtime())
+class TestAction(action.Action):
+    @property
+    def lookup_name(self):
+        return 'test'
+
+    def _run(self, persona, component_order, instances):
+        self._run_phase(
+            PhaseFunctors(
+                start=None,
+                run=lambda i: i.run_tests(),
+                end=None,
+            ),
+            component_order,
+            instances,
+            None,
+            )

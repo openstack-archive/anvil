@@ -15,9 +15,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-"""Platform-specific logic for RedHat Enterprise Linux v6 components.
+"""
+Platform-specific logic for RedHat Enterprise Linux components.
 """
 
+import glob
 import re
 
 from anvil import colorizer
@@ -32,7 +34,7 @@ from anvil.components import rabbit
 
 from anvil.packaging import yum
 
-from anvil.helpers import nova as nhelper
+from anvil.components.helpers import nova as nhelper
 
 LOG = logging.getLogger(__name__)
 
@@ -135,9 +137,7 @@ class RabbitRuntime(rabbit.RabbitRuntime):
 class NovaInstaller(nova.NovaInstaller):
 
     def _get_policy(self, ident_users):
-        fn = LIBVIRT_POLICY_FN
-        contents = LIBVIRT_POLICY_CONTENTS.format(idents=(";".join(ident_users)))
-        return (fn, contents)
+        return LIBVIRT_POLICY_CONTENTS.format(idents=(";".join(ident_users)))
 
     def _get_policy_users(self):
         ident_users = set()
@@ -149,15 +149,16 @@ class NovaInstaller(nova.NovaInstaller):
         configs_made = nova.NovaInstaller.configure(self)
         driver_canon = nhelper.canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
         if driver_canon == 'libvirt':
-            (fn, contents) = self._get_policy(self._get_policy_users())
-            dirs_made = list()
-            with sh.Rooted(True):
-                # TODO check if this dir is restricted before assuming it isn't?
-                dirs_made.extend(sh.mkdirslist(sh.dirname(fn)))
-                sh.write_file(fn, contents)
-            self.tracewriter.cfg_file_written(fn)
-            self.tracewriter.dirs_made(*dirs_made)
-            configs_made += 1
+            # Create a libvirtd user group
+            if not sh.group_exists('libvirtd'):
+                cmd = ['groupadd', 'libvirtd']
+                sh.execute(*cmd, run_as_root=True)
+            if not sh.isfile(LIBVIRT_POLICY_FN):
+                contents =  self._get_policy(self._get_policy_users())
+                with sh.Rooted(True):
+                    sh.mkdirslist(sh.dirname(LIBVIRT_POLICY_FN))
+                    sh.write_file(LIBVIRT_POLICY_FN, contents)
+                configs_made += 1
         return configs_made
 
 
@@ -166,28 +167,29 @@ class YumPackagerWithRelinks(yum.YumPackager):
     def _remove(self, pkg):
         response = yum.YumPackager._remove(self, pkg)
         if response:
-            options = pkg.get('packager_options', {})
-            links = options.get('links', [])
+            options = pkg.get('packager_options') or {}
+            links = options.get('links') or []
             for entry in links:
-                src = entry['source']
-                tgt = entry['target']
-                if sh.islink(tgt):
-                    sh.unlink(tgt)
+                if sh.islink(entry['target']):
+                    sh.unlink(entry['target'])
         return response
 
     def _install(self, pkg):
         yum.YumPackager._install(self, pkg)
-        options = pkg.get('packager_options', {})
-        links = options.get('links', [])
+        options = pkg.get('packager_options') or {}
+        links = options.get('links') or []
         for entry in links:
-            src = entry['source']
-            tgt = entry['target']
+            tgt = entry.get('target')
+            src = entry.get('source')
+            if not tgt or not src:
+                continue
+            src = glob.glob(src)
+            if len(src) == 0:
+                continue
+            elif len(src) != 1:
+                raise RuntimeError("Unable to link multiple sources %s to a single location %s" % (src, tgt))
+            else:
+                src = src[0]
             if not sh.islink(tgt):
-                # This is actually a feature, EPEL must not conflict
-                # with RHEL, so X pkg installs newer version in
-                # parallel.
-                #
-                # This of course doesn't work when running from git
-                # like anvil does....
                 sh.symlink(src, tgt)
         return True

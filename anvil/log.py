@@ -36,12 +36,6 @@ INFO = logging.INFO
 DEBUG = logging.DEBUG
 NOTSET = logging.NOTSET
 
-# Our new audit level
-# See: http://docs.python.org/howto/logging.html#logging-levels
-logging.AUDIT = logging.DEBUG + 1
-logging.addLevelName(logging.AUDIT, 'AUDIT')
-AUDIT = logging.AUDIT
-
 # Methods
 debug = logging.debug
 info = logging.info
@@ -51,6 +45,9 @@ error = logging.error
 exception = logging.exception
 critical = logging.critical
 log = logging.log
+
+# Nice translator
+getLevelName = logging.getLevelName
 
 # Classes
 root = logging.root
@@ -70,7 +67,6 @@ class TermFormatter(logging.Formatter):
         logging.WARNING: 'yellow',
         logging.ERROR: 'red',
         logging.CRITICAL: 'red',
-        logging.AUDIT: 'green',
     }
     MSG_COLORS = {
         logging.CRITICAL: 'red',
@@ -105,9 +101,6 @@ class TermAdapter(logging.LoggerAdapter):
 
     def __init__(self, logger):
         logging.LoggerAdapter.__init__(self, logger, dict())
-
-    def audit(self, msg, *args, **kwargs):
-        self.log(logging.AUDIT, msg, *args, **kwargs)
 
 
 def setupLogging(log_level, format='%(levelname)s: @%(name)s : %(message)s'):

@@ -14,20 +14,19 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-# Various shared constants...
+from anvil import components as comp
 
-# How status is reported
-STATUS_INSTALLED = 'installed'
-STATUS_STARTED = "started"
-STATUS_STOPPED = "stopped"
-STATUS_UNKNOWN = "unknown"
 
-# What this program is called
-PROG_NAME = 'anvil'
+class SwiftClientUninstaller(comp.PythonUninstallComponent):
+    pass
 
-# Ip version constants for network ip detection
-IPV4 = 'IPv4'
-IPV6 = 'IPv6'
 
-# What this programs config is called
-CONFIG_NAME = 'anvil.ini'
+class SwiftClientInstaller(comp.PythonInstallComponent):
+    def _filter_pip_requires_line(self, line):
+        if line.lower().find('keystoneclient') != -1:
+            return None
+        return line
+
+
+class SwiftClientRuntime(comp.EmptyRuntime):
+    pass

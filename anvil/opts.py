@@ -18,12 +18,9 @@ from optparse import IndentedHelpFormatter
 from optparse import OptionParser, OptionGroup
 
 from anvil import actions
-from anvil import constants
 from anvil import settings
 from anvil import shell as sh
 from anvil import version
-
-HELP_WIDTH = 80
 
 
 def _format_list(in_list):
@@ -33,9 +30,8 @@ def _format_list(in_list):
 
 def parse():
 
-    prog_name = constants.PROG_NAME
-    version_str = "%s v%s" % (prog_name, version.version_string())
-    help_formatter = IndentedHelpFormatter(width=HELP_WIDTH)
+    version_str = "%s v%s" % ('anvil', version.version_string())
+    help_formatter = IndentedHelpFormatter(width=80)
     parser = OptionParser(version=version_str, formatter=help_formatter)
 
     # Root options
@@ -67,12 +63,11 @@ def parse():
 
     # Install/start/stop/uninstall specific options
     base_group = OptionGroup(parser, "Action specific options")
-    def_persona = sh.joinpths(settings.PERSONA_DIR, 'devstack.sh.yaml')
     base_group.add_option("-p", "--persona",
         action="store",
         type="string",
         dest="persona_fn",
-        default=def_persona,
+        default=sh.joinpths(settings.PERSONA_DIR, 'basic.yaml'),
         metavar="FILE",
         help="persona yaml file to apply (default: %default)")
     base_group.add_option("-a", "--action",
@@ -80,7 +75,7 @@ def parse():
         type="string",
         dest="action",
         metavar="ACTION",
-        help="required action to perform: %s" % (_format_list(actions.get_action_names())))
+        help="required action to perform: %s" % (_format_list(actions.names())))
     base_group.add_option("-d", "--directory",
         action="store",
         type="string",
@@ -92,8 +87,7 @@ def parse():
                           action="store_false",
                           dest="prompt_for_passwords",
                           default=True,
-                          help="do not prompt the user for passwords",
-                          )
+                          help="do not prompt the user for passwords")
     parser.add_option_group(base_group)
 
     # Uninstall and stop options
@@ -113,19 +107,30 @@ def parse():
         default=False)
     parser.add_option_group(un_group)
 
-    # Extract only what we care about
+    status_group = OptionGroup(parser, "Status specific options")
+    status_group.add_option('-s', "--show",
+        action="store_true",
+        dest="show_full",
+        help="show the stderr/stdout log files if applicable when showing status (default: %default)",
+        default=False)
+    parser.add_option_group(status_group)
+
+    # Extract only what we care about, these will be passed
+    # to the constructor of actions as arguments 
+    # so don't adjust the naming wily nilly...
     (options, args) = parser.parse_args()
-    output = dict()
-    output['dir'] = options.dir or ""
-    output['dryrun'] = options.dryrun or False
-    output['action'] = options.action or ""
+    output = {}
+    output['dir'] = (options.dir or "")
+    output['dryrun'] = (options.dryrun or False)
+    output['action'] = (options.action or "")
     output['force'] = not options.force
     output['keep_old'] = options.keep_old
     output['extras'] = args
     output['config_fn'] = options.config_fn
     output['persona_fn'] = options.persona_fn
     output['verbosity'] = len(options.verbosity)
-    output['cli_overrides'] = options.cli_overrides or list()
+    output['cli_overrides'] = (options.cli_overrides or [])
     output['prompt_for_passwords'] = options.prompt_for_passwords
+    output['show_full'] = options.show_full
 
     return output

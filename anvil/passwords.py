@@ -20,7 +20,7 @@ import getpass
 import logging
 import os
 
-from anvil import cfg_helpers
+from anvil import cfg 
 
 LOG = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ class ConfigPassword(object):
         self.cfg = cfg
 
     def get_password(self, option, **kargs):
-        return self.cfg.get(cfg_helpers.PW_SECTION, option)
+        return self.cfg.get(cfg.PW_SECTION, option)
 
 
 class RandomPassword(object):

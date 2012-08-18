@@ -23,6 +23,9 @@ import random
 import re
 import socket
 import tempfile
+import types
+
+from time import (localtime, strftime)
 
 import distutils.version
 from urlparse import urlunparse
@@ -31,14 +34,15 @@ import netifaces
 import progressbar
 import yaml
 
-from anvil import constants
 from anvil import colorizer
-from anvil import date
 from anvil import exceptions as excp
 from anvil import log as logging
+from anvil import pprint
 from anvil import settings
 from anvil import shell as sh
 from anvil import version
+
+from anvil.pprint import center_text
 
 # The pattern will match either a comment to the EOL, or a
 # token to be subbed. The replacer will check which it got and
@@ -49,7 +53,7 @@ EXT_COMPONENT = re.compile(r"^\s*([\w-]+)(?:\((.*)\))?\s*$")
 MONTY_PYTHON_TEXT_RE = re.compile("([a-z0-9A-Z\?!.,'\"]+)")
 DEF_IP = "127.0.0.1"
 IP_LOOKER = '8.8.8.8'
-DEF_IP_VERSION = constants.IPV4
+DEF_IP_VERSION = 'IPv4'
 STAR_VERSION = 0
 
 # Thx cowsay
@@ -86,17 +90,30 @@ def make_bool(val):
     raise TypeError("Unable to convert %r to a boolean" % (val))
 
 
+def obj_name(obj):
+    if isinstance(obj, (types.TypeType,
+                        types.ModuleType,
+                        types.FunctionType,
+                        types.LambdaType)):
+        return str(obj.__name__)
+    return obj_name(obj.__class__)
+
+
 def add_header(fn, contents):
     lines = list()
     if not fn:
         fn = "???"
     lines.append('# Adjusted source file %s' % (fn.strip()))
-    lines.append("# On %s" % (date.rcf8222date()))
+    lines.append("# On %s" % (rcf8222date()))
     lines.append("# By user %s, group %s" % (sh.getuser(), sh.getgroupname()))
     lines.append("")
     if contents:
         lines.append(contents)
     return joinlinesep(*lines)
+
+
+def rcf8222date():
+    return strftime("%a, %d %b %Y %H:%M:%S", localtime())
 
 
 def make_url(scheme, host, port=None,
@@ -123,8 +140,6 @@ def make_url(scheme, host, port=None,
 
 def get_from_path(items, path, quiet=True):
 
-    LOG.debug("Looking up %r in %s" % (path, items))
-
     (first_token, sep, remainder) = path.partition('.')
 
     if len(path) == 0:
@@ -142,7 +157,6 @@ def get_from_path(items, path, quiet=True):
         if quiet and not ok_use:
             return None
         else:
-            LOG.debug("Looking up index %s in list %s" % (index, items))
             return get_from_path(items[index], remainder)
     else:
         get_method = getattr(items, 'get', None)
@@ -152,7 +166,6 @@ def get_from_path(items, path, quiet=True):
             else:
                 return None
         else:
-            LOG.debug("Looking up %r in object %s with method %s" % (first_token, items, get_method))
             return get_from_path(get_method(first_token), remainder)
 
 
@@ -199,7 +212,29 @@ def to_bytes(text):
     return byte_val
 
 
-def log_iterable(to_log, header=None, logger=None, do_color=True):
+def truncate_text(text, max_len, from_bottom=False):
+    if len(text) < max_len:
+        return text
+    if not from_bottom:
+        return (text[0:max_len] + "...")
+    else:
+        text = text[::-1]
+        text = truncate_text(text, max_len)
+        text = text[::-1]
+        return text
+
+
+def log_object(to_log, logger=None, level=logging.INFO, item_max_len=64):
+    if not to_log:
+        return
+    if not logger:
+        logger = LOG
+    content = pprint.pformat(to_log, item_max_len)
+    for line in content.splitlines():
+        logger.log(level, line)
+
+
+def log_iterable(to_log, header=None, logger=None, color='blue'):
     if not to_log:
         return
     if not logger:
@@ -209,8 +244,8 @@ def log_iterable(to_log, header=None, logger=None, do_color=True):
             header += ":"
         logger.info(header)
     for c in to_log:
-        if do_color:
-            c = colorizer.color(c, 'blue')
+        if color:
+            c = colorizer.color(c, color)
         logger.info("|-- %s", c)
 
 
@@ -244,43 +279,6 @@ def tempdir(**kwargs):
         yield tdir
     finally:
         sh.deldir(tdir)
-
-
-def versionize(input_version, unknown_version="-1.0"):
-    if input_version == None:
-        return distutils.version.LooseVersion(unknown_version)
-    input_version = str(input_version)
-    segments = input_version.split(".")
-    cleaned_segments = list()
-    for piece in segments:
-        piece = piece.strip()
-        if len(piece) == 0:
-            cleaned_segments.append("")
-        else:
-            piece = piece.strip("*")
-            if len(piece) == 0:
-                cleaned_segments.append(STAR_VERSION)
-            else:
-                try:
-                    piece = int(piece)
-                except ValueError:
-                    pass
-                cleaned_segments.append(piece)
-    if not cleaned_segments:
-        return distutils.version.LooseVersion(unknown_version)
-    return distutils.version.LooseVersion(".".join([str(p) for p in cleaned_segments]))
-
-
-def sort_versions(versions, descending=True):
-    if not versions:
-        return list()
-    version_cleaned = list()
-    for v in versions:
-        version_cleaned.append(versionize(v))
-    versions_sorted = sorted(version_cleaned)
-    if not descending:
-        versions_sorted.reverse()
-    return versions_sorted
 
 
 def get_host_ip():
@@ -327,11 +325,11 @@ def get_interfaces():
         ip6 = interface_addresses.get(netifaces.AF_INET6)
         if ip6:
             # Just take the first
-            interface_info[constants.IPV6] = ip6[0]
+            interface_info['IPv6'] = ip6[0]
         ip4 = interface_addresses.get(netifaces.AF_INET)
         if ip4:
             # Just take the first
-            interface_info[constants.IPV4] = ip4[0]
+            interface_info['IPv4'] = ip4[0]
         # Note: there are others but this is good for now..
         interfaces[intfc] = interface_info
     return interfaces
@@ -427,8 +425,8 @@ def param_replace(text, replacements, ignore_missing=False):
         LOG.debug("Performing parameter replacements (not ignoring missing) on text %r" % (text))
 
     possible_params = find_params(text)
-    LOG.debug("Possible replacements are: %r" % (", ".join(possible_params)))
-    LOG.debug("Given substitutions are: %s" % (replacements))
+    LOG.debug("Given substitutions are: ")
+    log_object(replacements, level=logging.DEBUG)
 
     def replacer(match):
         org_txt = match.group(0)
@@ -502,9 +500,6 @@ ____ ___  ____ _  _ ____ ___ ____ ____ _  _
 ''')
     return random.choice(possibles).strip("\n\r")
 
-
-def center_text(text, fill, max_len):
-    return '{0:{fill}{align}{size}}'.format(text, fill=fill, align="^", size=max_len)
 
 
 def _welcome_slang():
@@ -727,7 +722,7 @@ def goodbye(worked):
     print(msg)
 
 
-def welcome(prog_name=constants.PROG_NAME.upper(), version_text=version.version_string()):
+def welcome(prog_name='Anvil', version_text=version.version_string()):
     lower = "| %s |" % (version_text)
     welcome_header = _get_welcome_stack()
     max_line_len = len(max(welcome_header.splitlines(), key=len))

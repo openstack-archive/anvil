@@ -42,7 +42,6 @@ class Initializer(object):
                 'description': entry['description'],
                 'enabled': True,
             }
-            LOG.debug("Creating tenant %s", tenant)
             tenants_made[name] = self.client.tenants.create(**tenant)
         return tenants_made
 
@@ -59,7 +58,6 @@ class Initializer(object):
                 'password': password,
                 'email': email,
             }
-            LOG.debug("Creating user %s", user)
             created[name] = self.client.users.create(**user)
         return created
 
@@ -69,7 +67,6 @@ class Initializer(object):
             role = r
             if role in roles_made:
                 LOG.warn("Already created role %s", colorizer.quote(role))
-            LOG.debug("Creating role %s", role)
             roles_made[role] = self.client.roles.create(role)
         return roles_made
 
@@ -97,7 +94,6 @@ class Initializer(object):
                     'role': roles_made[role_name],
                     'tenant': tenants_made[tenant_name],
                 }
-                LOG.debug("Creating user role %s", user_role)
                 self.client.roles.add_user_role(**user_role)
 
     def _create_services(self, services):
@@ -111,7 +107,6 @@ class Initializer(object):
                 'service_type': info['type'],
                 'description': info.get('description') or ''
             }
-            LOG.debug("Creating service %s", service)
             created_services[name] = self.client.services.create(**service)
         return created_services
 
@@ -128,7 +123,6 @@ class Initializer(object):
                 'internalurl': entry['internal_url'],
                 'service_id': service.id,
             }
-            LOG.debug("Creating endpoint %s", endpoint)
             self.client.endpoints.create(**endpoint)
 
     def initialize(self, users, tenants, roles, services, endpoints):
@@ -221,5 +215,4 @@ def get_shared_params(cfg, service_user=None):
     mp['endpoints']['internal'] = dict(mp['endpoints']['public'])
     mp['endpoints']['internal_templated'] = dict(mp['endpoints']['public_templated'])
 
-    LOG.debug("Keystone shared params: %s", mp)
     return mp

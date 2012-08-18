@@ -17,9 +17,9 @@
 import json
 import os
 
-from anvil import date
 from anvil import exceptions as excp
 from anvil import shell as sh
+from anvil import utils
 
 # Trace per line output format and file extension formats
 TRACE_FMT = ("%s - %s" + os.linesep)
@@ -50,7 +50,7 @@ class TraceWriter(object):
 
     def trace(self, cmd, action=None):
         if action is None:
-            action = date.rcf8222date()
+            action = ''
         if cmd is not None:
             sh.append_file(self.trace_fn, TRACE_FMT % (cmd, action))
 

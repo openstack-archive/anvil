@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
@@ -20,14 +21,36 @@ import os
 import sys
 import time
 import traceback as tb
+import platform
+
+# These are safe to import without bringing in non-core
+# python dependencies...
+from anvil import bootstrap
+from anvil import env
+
+
+def what_ran():
+    prog_name = sys.argv[0]
+    rest_args = sys.argv[1:]
+    return (prog_name, " ".join(rest_args))
+
+
+# Check if supported
+if (not bootstrap.is_supported() and 
+    not str(env.get_key('FORCE')).lower().strip() in ['yes', 'on', '1', 'true']):
+    sys.stderr.write("WARNING: this script has not been tested on distribution: %s\n" % (platform.platform()))
+    sys.stderr.write("If you wish to run this script anyway run with FORCE=yes\n")
+    sys.exit(1)
+
+# Bootstrap anvil, call before importing anything else from anvil
+if bootstrap.strap():
+    sys.stderr.write("Please re-run %r so that changes are reflected.\n" % (" ".join(what_ran())))
+    sys.exit(0)
 
 from anvil import actions
 from anvil import cfg
-from anvil import cfg_helpers
 from anvil import colorizer
-from anvil import date
 from anvil import distro
-from anvil import env
 from anvil import env_rc
 from anvil import log as logging
 from anvil import opts
@@ -37,62 +60,36 @@ from anvil import settings
 from anvil import shell as sh
 from anvil import utils
 
+from anvil.pprint import center_text
+
+from ordereddict import OrderedDict
+
 
 LOG = logging.getLogger()
 
-# Which rc files we will attempt to load
-RC_FILES = [
-    sh.abspth(settings.gen_rc_filename('core')),
-]
+
+def get_config_locations(start_locations=None):
+    locs = []
+    if start_locations:
+        locs.extend(start_locations)
+    locs.append(settings.CONFIG_LOCATION)
+    locs.append(sh.joinpths("/etc", 'anvil', 'anvil.ini'))
+    return locs
 
 
-def load_rc_files():
+def find_config(locations=None):
     """
-    Loads the desired set of rc files that smithy will use to
-    pre-populate its environment settings from.
-
-    Arguments: N/A
-    Returns: the number of files loaded
+    Finds the potential anvil configuration files.
     """
-
-    loaded_am = 0
-    for fn in RC_FILES:
-        try:
-            LOG.info("Attempting to load file %s which has your environment settings.", colorizer.quote(fn))
-            am_loaded = env_rc.RcReader().load(fn)
-            LOG.info("Loaded %s settings.", colorizer.quote(am_loaded))
-            loaded_am += 1
-        except IOError:
-            LOG.warn('Error reading file located at %s. Skipping loading it.', colorizer.quote(fn))
-    return loaded_am
-
-
-def load_verify_persona(fn, distro_instance):
-    """
-    Loads and verifies the given persona under the given distro.
-
-    Arguments:
-        fn: persona file name/path
-        distro_instance: the distrobution object to use for verification
-    Returns: the persona instance from that file (verified)
-    """
-
-    instance = persona.Persona.load_file(fn)
-    instance.verify(distro_instance)
-    return instance
-
-
-def setup_root(root_dir):
-    """
-    Ensures the root dir is created and setup as desired.
-
-    Arguments:
-        root_dir: the location of the desired root install directory
-    Returns: N/A
-    """
-
-    if not sh.isdir(root_dir):
-        sh.mkdir(root_dir)
+    if not locations:
+        locations = get_config_locations()
+    real_paths = []
+    for path in locations:
+        LOG.debug("Looking for configuration in: %r", path)
+        if sh.isfile(path):
+            LOG.debug("Found a 'possible' configuration in: %r", path)
+            real_paths.append(path)
+    return real_paths
 
 
 def establish_config(args):
@@ -109,11 +106,11 @@ def establish_config(args):
     config.add_read_resolver(cfg.CliResolver.create(args['cli_overrides']))
     config.add_read_resolver(cfg.EnvResolver())
     start_configs = []
-    if args['config_fn']:
+    if 'config_fn' in args and args['config_fn']:
         start_configs.append(args['config_fn'])
     else:
-        start_configs.extend(cfg_helpers.get_config_locations())
-    real_configs = cfg_helpers.find_config(start_configs)
+        start_configs.extend(get_config_locations())
+    real_configs = find_config(start_configs)
     config.add_read_resolver(cfg.ConfigResolver(cfg.RewritableConfigParser(fns=real_configs)))
     utils.log_iterable(utils.get_class_names(config.read_resolvers),
         header="Config lookup will use the following resolvers:",
@@ -151,91 +148,100 @@ def run(args):
     """
 
     (repeat_string, line_max_len) = utils.welcome()
-    print(utils.center_text("Action Runner", repeat_string, line_max_len))
+    print(center_text("Action Runner", repeat_string, line_max_len))
 
     action = args.pop("action", '').strip().lower()
-    if action not in actions.get_action_names():
-        print(colorizer.color("No valid action specified!", "red"))
-        return False
+    if action not in actions.names():
+        raise RuntimeError("Invalid action name %r specified!" % (action))
 
-    loaded_rcs = False
-    root_dir = args.pop("dir")
+    # Determine + setup the root directory...
+    # If not provided attempt to locate it via the environment control files
+    args_root_dir = args.pop("dir")
+    env_rc.load()
+    root_dir = env.get_key('INSTALL_ROOT')
     if not root_dir:
-        load_rc_files()
-        loaded_rcs = True
-        root_dir = env.get_key(env_rc.INSTALL_ROOT)
-        if not root_dir:
-            root_dir = sh.joinpths(sh.gethomedir(), 'openstack')
+        root_dir = args_root_dir
+    if not root_dir:
+        root_dir = sh.joinpths(sh.gethomedir(), 'openstack')
     root_dir = sh.abspth(root_dir)
-    setup_root(root_dir)
+    sh.mkdir(root_dir)
 
     persona_fn = args.pop('persona_fn')
-    if not persona_fn or not sh.isfile(persona_fn):
-        print(colorizer.color("No valid persona file name specified!", "red"))
-        return False
-    persona_fn = sh.abspth(persona_fn)
+    if not persona_fn:
+        raise RuntimeError("No persona file name specified!")
+    if not sh.isfile(persona_fn):
+        raise RuntimeError("Invalid persona file %r specified!" % (persona_fn))
 
     # !!
     # Here on out we should be using the logger (and not print)!!
     # !!
 
-    # If we didn't load them before, load them now
-    if not loaded_rcs:
-        load_rc_files()
-        loaded_rcs = True
+    # Stash the dryrun value (if any)
+    if 'dryrun' in args:
+        env.set("ANVIL_DRYRUN", str(args['dryrun']))
 
-    # Stash the dryrun value (if any) into the global configuration
-    sh.set_dryrun(args.get('dryrun', False))
+    # Load the distro
+    dist = distro.load(settings.DISTRO_DIR)
+    
+    # Load + verify the person
+    try:
+        persona_obj = persona.load(persona_fn)
+        persona_obj.verify(dist)
+    except Exception as e:
+        raise RuntimeError("Error loading persona file: %s due to %s" % (person_fn, e))
 
-    # Params for the runner...
-    dist = distro.Distro.get_current()
-    persona_inst = load_verify_persona(persona_fn, dist)
+    # Get the config reader (which is a combination
+    # of many configs..)
     config = establish_config(args)
 
-    runner_cls = actions.get_action_class(action)
+    # Get the object we will be running with...
+    runner_cls = actions.class_for(action)
     runner = runner_cls(dist,
-                            config,
-                            root_dir=root_dir,
-                            **args)
+                        config,
+                        root_dir=root_dir,
+                        name=action,
+                        **args)
 
     LOG.info("Starting action %s on %s for distro: %s",
-                colorizer.quote(action), colorizer.quote(date.rcf8222date()), colorizer.quote(dist.name))
+             colorizer.quote(action), colorizer.quote(utils.rcf8222date()),
+             colorizer.quote(dist.name))
     LOG.info("Using persona: %s", colorizer.quote(persona_fn))
     LOG.info("In root directory: %s", colorizer.quote(root_dir))
+    LOG.debug("Using environment settings:")
+    utils.log_object(env.get(), logger=LOG, level=logging.DEBUG, item_max_len=64)
     persona_bk_fn = backup_persona(root_dir, action, persona_fn)
     if persona_bk_fn:
         LOG.info("Backed up persona %s to %s so that you can reference it later.",
-                colorizer.quote(persona_fn), colorizer.quote(persona_bk_fn))
+                 colorizer.quote(persona_fn), colorizer.quote(persona_bk_fn))
 
     start_time = time.time()
-    runner.run(persona_inst)
+    runner.run(persona_obj)
     end_time = time.time()
 
     pretty_time = utils.format_time(end_time - start_time)
     LOG.info("It took %s seconds or %s minutes to complete action %s.",
-        colorizer.quote(pretty_time['seconds']), colorizer.quote(pretty_time['minutes']), colorizer.quote(action))
+             colorizer.quote(pretty_time['seconds']), colorizer.quote(pretty_time['minutes']), colorizer.quote(action))
 
-    LOG.info("After action %s your settings which were read/set are:", colorizer.quote(action))
-    cfg_groups = dict()
-    read_set_keys = (config.opts_read.keys() + config.opts_set.keys())
-    for c in read_set_keys:
-        cfg_id = cfg_helpers.make_id(c, None)
-        cfg_groups[cfg_id] = colorizer.quote(c.capitalize(), underline=True)
+    if config.opts_cache:
+        LOG.info("After action %s your settings which were applied are:", colorizer.quote(action))
+        table = OrderedDict()
+        all_read_set = {}
+        all_read_set.update(config.opts_read)
+        all_read_set.update(config.opts_set)
+        for section in sorted(list(all_read_set.keys())):
+            options = set()
+            if section in config.opts_read:
+                options.update(list(config.opts_read[section]))
+            if section in config.opts_set:
+                options.update(list(config.opts_set[section]))
+            option_values = {}
+            for option in options:
+                option_values[option] = config.opts_cache[cfg.make_id(section, option)]
+            table[section] = option_values
+        utils.log_object(table, item_max_len=80)
 
-    # Now print and order/group by our selection here
-    cfg_ordering = sorted(cfg_groups.keys())
-    cfg_helpers.pprint(config.opts_cache, cfg_groups, cfg_ordering)
-
-    return True
-
-
-def construct_log_level(verbosity_level, dry_run=False):
-    log_level = logging.INFO
-    if verbosity_level >= 3:
-        log_level = logging.DEBUG
-    elif verbosity_level == 2 or dry_run:
-        log_level = logging.AUDIT
-    return log_level
+    LOG.debug("Final environment settings:")
+    utils.log_object(env.get(), logger=LOG, level=logging.DEBUG, item_max_len=64)
 
 
 def main():
@@ -247,41 +253,29 @@ def main():
     Arguments: N/A
     Returns: 1 for success, 0 for failure
     """
-
+    (prog_name, rest_args) = what_ran()
+    
     # Do this first so people can see the help message...
     args = opts.parse()
-    prog_name = sys.argv[0]
 
-    # Configure logging
-    log_level = construct_log_level(args['verbosity'], args['dryrun'])
+    # Configure logging levels
+    log_level = logging.INFO
+    if args['verbosity'] >= 2 or args['dryrun']:
+        log_level = logging.DEBUG
     logging.setupLogging(log_level)
 
-    LOG.debug("Command line options %s" % (args))
-    LOG.debug("Log level is: %s" % (log_level))
+    LOG.debug("Command line options:")
+    utils.log_object(args, item_max_len=64, logger=LOG, level=logging.DEBUG)
+    LOG.debug("Log level is: %s" % (logging.getLevelName(log_level)))
 
     # Will need root to setup openstack
     if not sh.got_root():
-        rest_args = sys.argv[1:]
         print("This program requires a user with sudo access.")
-        msg = "Perhaps you should try %s %s" % \
-                (colorizer.color("sudo %s" % (prog_name), "red", True), " ".join(rest_args))
-        print(msg)
+        print("Perhaps you should try %s %s" % 
+              (colorizer.color("sudo %s" % (prog_name), "red", True), " ".join(rest_args)))
         return 1
 
-    try:
-        # Drop to usermode
-        sh.user_mode(quiet=False)
-        started_ok = run(args)
-        if not started_ok:
-            me = colorizer.color(prog_name, "red", True)
-            me += " " + colorizer.color('--help', 'red')
-            print("Perhaps you should try %s" % (me))
-            return 1
-        else:
-            utils.goodbye(True)
-            return 0
-    except Exception:
-        utils.goodbye(False)
+    def traceback_fn():
         traceback = None
         if log_level < logging.INFO:
             # See: http://docs.python.org/library/traceback.html
@@ -289,6 +283,16 @@ def main():
             traceback = sys.exc_traceback
         tb.print_exception(sys.exc_type, sys.exc_value,
                 traceback, file=sys.stdout)
+
+    try:
+        # Drop to usermode
+        sh.user_mode(quiet=False)
+        run(args)
+        utils.goodbye(True)
+        return 0
+    except Exception:
+        utils.goodbye(False)
+        traceback_fn()
         return 1
 
 

@@ -14,22 +14,28 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import functools
-import pprint
+from anvil import action
+from anvil import colorizer
+from anvil import log
 
-from anvil import log as logging
+from anvil.action import PhaseFunctors
 
-# Very useful example ones...
-# See: http://wiki.python.org/moin/PythonDecoratorLibrary
-
-LOG = logging.getLogger(__name__)
+LOG = log.getLogger(__name__)
 
 
-def log_debug(f):
-    @functools.wraps(f)
-    def wrapper(*args, **kargs):
-        LOG.debug('%s(%s, %s) ->', f.func_name, str(args), str(kargs))
-        rv = f(*args, **kargs)
-        LOG.debug("<- %s" % (pprint.pformat(rv, indent=2)))
-        return rv
-    return wrapper
+class PackageAction(action.Action):
+    @property
+    def lookup_name(self):
+        return 'package'
+
+    def _run(self, persona, component_order, instances):
+        self._run_phase(
+            PhaseFunctors(
+                start=None,
+                run=lambda i: i.package(),
+                end=None,
+            ),
+            component_order,
+            instances,
+            None,
+            )

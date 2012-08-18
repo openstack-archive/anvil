@@ -17,12 +17,11 @@
 from tempfile import TemporaryFile
 
 from anvil import colorizer
-from anvil import component as comp
-from anvil import constants
+from anvil import components as comp
 from anvil import log as logging
 from anvil import shell as sh
 
-from anvil.helpers import rabbit as rhelper
+from anvil.components.helpers import rabbit as rhelper
 
 LOG = logging.getLogger(__name__)
 
@@ -39,16 +38,12 @@ PW_USER_PROMPT = rhelper.PW_USER_PROMPT
 class RabbitUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PkgUninstallComponent.__init__(self, *args, **kargs)
-        runtime_cls = self.siblings.get('running')
-        if not runtime_cls:
-            self.runtime = RabbitRuntime(*args, **kargs)
-        else:
-            self.runtime = runtime_cls(*args, **kargs)
+        self.runtime = self.siblings.get('running')
 
     def pre_uninstall(self):
         try:
             self.runtime.restart()
-            LOG.info("Attempting to reset the rabbit-mq guest password to: %s", colorizer.quote(RESET_BASE_PW))
+            LOG.debug("Attempting to reset the rabbit-mq guest password to: %s", colorizer.quote(RESET_BASE_PW))
             cmd = self.distro.get_command('rabbit-mq', 'change_password') + [RESET_BASE_PW]
             sh.execute(*cmd, run_as_root=True)
         except IOError:
@@ -59,11 +54,7 @@ class RabbitUninstaller(comp.PkgUninstallComponent):
 class RabbitInstaller(comp.PkgInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PkgInstallComponent.__init__(self, *args, **kargs)
-        runtime_cls = self.siblings.get('running')
-        if not runtime_cls:
-            self.runtime = RabbitRuntime(*args, **kargs)
-        else:
-            self.runtime = runtime_cls(*args, **kargs)
+        self.runtime = self.siblings.get('running')
 
     def warm_configs(self):
         for pw_key in WARMUP_PWS:
@@ -84,33 +75,36 @@ class RabbitInstaller(comp.PkgInstallComponent):
         self._setup_pw()
 
 
-class RabbitRuntime(comp.EmptyRuntime):
+class RabbitRuntime(comp.ProgramRuntime):
     def __init__(self, *args, **kargs):
-        comp.EmptyRuntime.__init__(self, *args, **kargs)
+        comp.ProgramRuntime.__init__(self, *args, **kargs)
         self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
 
     def start(self):
-        if self._status() != constants.STATUS_STARTED:
+        if self.status()[0].status != comp.STATUS_STARTED:
             self._run_cmd(self.distro.get_command('rabbit-mq', 'start'))
             return 1
         else:
             return 0
 
-    def _status(self):
+    def status(self):
         # This has got to be the worst status output.
         #
         # I have ever seen (its like a weird mix json+crap)
         status_cmd = self.distro.get_command('rabbit-mq', 'status')
         (sysout, stderr) = sh.execute(*status_cmd, check_exit_code=False, run_as_root=True)
-        combined = (str(sysout) + str(stderr)).lower()
+        st = comp.STATUS_UNKNOWN
+        combined = (sysout + stderr).lower()
         if combined.find('nodedown') != -1 or \
            combined.find("unable to connect to node") != -1 or \
            combined.find('unrecognized') != -1:
-            return constants.STATUS_STOPPED
+            st = comp.STATUS_STOPPED
         elif combined.find('running_applications') != -1:
-            return constants.STATUS_STARTED
-        else:
-            return constants.STATUS_UNKNOWN
+            st = comp.STATUS_STARTED
+        return [
+            comp.ProgramStatus(status=st,
+                               details=(sysout + stderr).strip()),
+        ]
 
     def _run_cmd(self, cmd, check_exit=True):
         # This seems to fix one of the bugs with rabbit mq starting and stopping
@@ -133,8 +127,8 @@ class RabbitRuntime(comp.EmptyRuntime):
         return 1
 
     def stop(self):
-        if self._status() != constants.STATUS_STOPPED:
-            self._run_cmd(self.distro.get_command('rabbit-mq', 'stop'))
+        if self.status()[0].status != comp.STATUS_STOPPED:
+            self._run_cmd(self.distro.get_command('rabbitmq-server', 'stop'))
             return 1
         else:
             return 0

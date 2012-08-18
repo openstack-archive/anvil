@@ -17,13 +17,13 @@
 import io
 
 from anvil import cfg
-from anvil import component as comp
+from anvil import components as comp
 from anvil import log as logging
 from anvil import shell as sh
 
-from anvil.helpers import db as dbhelper
-from anvil.helpers import glance as ghelper
-from anvil.helpers import keystone as khelper
+from anvil.components.helpers import db as dbhelper
+from anvil.components.helpers import glance as ghelper
+from anvil.components.helpers import keystone as khelper
 
 LOG = logging.getLogger(__name__)
 
@@ -33,10 +33,9 @@ REG_CONF = "glance-registry.conf"
 API_PASTE_CONF = 'glance-api-paste.ini'
 REG_PASTE_CONF = 'glance-registry-paste.ini'
 LOGGING_CONF = "logging.conf"
-LOGGING_SOURCE_FN = 'logging.cnf.sample'
 POLICY_JSON = 'policy.json'
 CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF,
-            REG_PASTE_CONF, POLICY_JSON, LOGGING_CONF]
+           REG_PASTE_CONF, POLICY_JSON, LOGGING_CONF]
 
 # Reg, api, scrub are here as possible subsystems
 GAPI = "api"
@@ -60,25 +59,16 @@ SUB_TO_APP = {
     GSCR: 'glance-scrubber',
 }
 
-# Subdirs of the downloaded (we are overriding the original)
-BIN_DIR = 'bin'
-
 
 class GlanceMixin(object):
 
-    def known_subsystems(self):
+    @property
+    def valid_subsystems(self):
         return SUB_TO_APP.keys()
 
-    def _get_config_files(self):
+    @property
+    def config_files(self):
         return list(CONFIGS)
-
-    def _get_download_locations(self):
-        places = list()
-        places.append({
-            'uri': ("git", "glance_repo"),
-            'branch': ("git", "glance_branch"),
-        })
-        return places
 
 
 class GlanceUninstaller(GlanceMixin, comp.PythonUninstallComponent):
@@ -90,31 +80,27 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
 
+    def _filter_pip_requires_line(self, line):
+        if line.lower().find('swift') != -1:
+            return None
+        return line
+
     def pre_install(self):
         comp.PythonInstallComponent.pre_install(self)
-        if self.cfg.getboolean('glance', 'eliminate_pip_gits'):
-            fn = sh.joinpths(self.get_option('app_dir'), 'tools', 'pip-requires')
-            if sh.isfile(fn):
-                new_lines = []
-                for line in sh.load_file(fn).splitlines():
-                    if line.find("git://") != -1:
-                        new_lines.append("# %s" % (line))
-                    else:
-                        new_lines.append(line)
-                sh.write_file(fn, "\n".join(new_lines))
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
-        self._setup_db()
+        if self.get_option('db-sync'):
+            self._setup_db()
 
     def _setup_db(self):
         dbhelper.drop_db(self.cfg, self.distro, DB_NAME)
-        dbhelper.create_db(self.cfg, self.distro, DB_NAME, utf8=True)
+        dbhelper.create_db(self.cfg, self.distro, DB_NAME)
 
-    def _get_source_config(self, config_fn):
+    def source_config(self, config_fn):
         real_fn = config_fn
         if config_fn == LOGGING_CONF:
-            real_fn = LOGGING_SOURCE_FN
+            real_fn = 'logging.cnf.sample'
         fn = sh.joinpths(self.get_option('app_dir'), 'etc', real_fn)
         return (fn, sh.load_file(fn))
 
@@ -167,7 +153,7 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
                                 dbhelper.fetch_dbdsn(self.cfg, DB_NAME, utf8=True))
             config.remove_option('DEFAULT', 'log_file')
             config.set('paste_deploy', 'flavor', 'keystone')
-            LOG.info("Ensuring file system store directory %r exists and is empty." % (img_store_dir))
+            LOG.debug("Ensuring file system store directory %r exists and is empty." % (img_store_dir))
             sh.deldir(img_store_dir)
             self.tracewriter.dirs_made(*sh.mkdirslist(img_store_dir))
             return config.stringify(fn)
@@ -183,7 +169,6 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
 
     def _config_param_replace(self, config_fn, contents, parameters):
         if config_fn in [REG_CONF, REG_PASTE_CONF, API_CONF, API_PASTE_CONF, LOGGING_CONF]:
-            # We handle these ourselves
             return contents
         else:
             return comp.PythonInstallComponent._config_param_replace(self, config_fn, contents, parameters)
@@ -206,11 +191,11 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
 class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
-        self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
+        self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
         self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
-        self.do_upload = self.get_option('load-images')
 
-    def _get_apps_to_start(self):
+    @property
+    def apps_to_start(self):
         apps = list()
         for name, values in self.subsystems.items():
             if name in SUB_TO_APP:
@@ -223,7 +208,7 @@ class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
                 })
         return apps
 
-    def _get_app_options(self, app):
+    def app_options(self, app):
         return APP_OPTIONS.get(app)
 
     def _get_image_urls(self):
@@ -232,7 +217,7 @@ class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
 
     def post_start(self):
         comp.PythonRuntime.post_start(self)
-        if self.do_upload:
+        if self.get_option('load-images'):
             # Install any images that need activating...
             LOG.info("Waiting %s seconds so that glance can start up before image install." % (self.wait_time))
             sh.sleep(self.wait_time)

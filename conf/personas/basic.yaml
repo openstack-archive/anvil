@@ -4,16 +4,17 @@ components:
 - general
 - db
 - rabbit-mq
-- keystone-client
 - keystone
+- keystone-client
 - glance
-# Do this after glance is installed to override the old binary
 - glance-client
-- nova
-- quantum-client
-- nova-client
-# Installed after nova since it needs to look for nova configs
 - no-vnc
+- nova
+- nova-client
+# These seem needed for horizon (even if not used?)
+- cinder-client
+- quantum-client
+- swift-client
 - horizon
 # Super client, so install after other clients
 - openstack-client
@@ -23,11 +24,17 @@ options:
         # This is the nova component name (we need this to hook into the nova conf...)
         nova-component: nova
     nova:
-        no-vnc: true
-        mq: rabbit
         db-sync: true
+        do-network-init: true
+        mq: rabbit
     glance:
+        db-sync: true
         load-images: true
+    keystone:
+        db-sync: true
+    horizon:
+        db-sync: true
+        make-blackhole: true
 subsystems:
     glance:
     - api
@@ -39,12 +46,9 @@ subsystems:
     - cpu
     - net
     - sched
-    - vol
     - xvnc
+    - novnc
 supports:
 - rhel-6
-- ubuntu-oneiric
-- ubuntu-precise
-- fedora-16
 ...
 

@@ -14,30 +14,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import component as comp
-from anvil import log as logging
-
-LOG = logging.getLogger(__name__)
+from anvil import components as comp
 
 
 class QuantumClientUninstaller(comp.PythonUninstallComponent):
-    def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
+    pass
 
 
 class QuantumClientInstaller(comp.PythonInstallComponent):
-    def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, *args, **kargs)
-
-    def _get_download_locations(self):
-        places = list()
-        places.append({
-            'uri': ("git", "quantum_client_repo"),
-            'branch': ("git", "quantum_client_branch"),
-        })
-        return places
+    pass
 
 
 class QuantumClientRuntime(comp.EmptyRuntime):
-    def __init__(self, *args, **kargs):
-        comp.EmptyRuntime.__init__(self, *args, **kargs)
+    pass

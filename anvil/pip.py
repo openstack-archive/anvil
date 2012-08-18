@@ -29,8 +29,11 @@ class Packager(pack.Packager):
 
     def _make_pip_name(self, name, version):
         if version is None:
-            return "%s" % (name)
-        return "%s==%s" % (name, version)
+            return str(name)
+        if pack.contains_version_check(version):
+            return "%s%s" % (name, version)
+        else:
+            return "%s==%s" % (name, version)
 
     def _get_pip_command(self):
         return self.distro.get_command_config('pip')
@@ -46,7 +49,6 @@ class Packager(pack.Packager):
             LOG.debug("Using pip options: %s" % (options))
             for opt in options:
                 real_cmd.append("%s" % (opt))
-        LOG.audit("Installing python package %r using pip command %s" % (name_full, real_cmd))
         real_cmd.append(name_full)
         sh.execute(*real_cmd, run_as_root=True)
 
@@ -54,6 +56,6 @@ class Packager(pack.Packager):
         root_cmd = self._get_pip_command()
         # Versions don't seem to matter here...
         name = self._make_pip_name(pip['name'], None)
-        LOG.audit("Uninstalling python package %r using pip command %s" % (name, root_cmd))
+        LOG.debug("Uninstalling python package %r using pip command %s" % (name, root_cmd))
         cmd = [root_cmd] + ['uninstall'] + PIP_UNINSTALL_CMD_OPTS + [name]
         sh.execute(*cmd, run_as_root=True)

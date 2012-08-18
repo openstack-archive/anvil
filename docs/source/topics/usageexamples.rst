@@ -21,8 +21,8 @@ will do (with installation in ``~/openstack``) try:
 
      $ sudo ./smithy -d ~/openstack -a install --dryrun  
 
-With more information/debugging/auditing output try:
+With more information via debug statements output try:
 
 ::
 
-     $ sudo ./smithy -d ~/openstack  -a install -vv 
+     $ sudo ./smithy -d ~/openstack  -a install -v
