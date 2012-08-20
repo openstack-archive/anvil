@@ -76,7 +76,7 @@ class PkgInstallComponent(component.Component):
                                                   default_packager_class=self.distro.package_manager_class)
 
     def _get_download_config(self):
-        return (None, None)
+        return None
 
     def _clear_package_duplicates(self, pkg_list):
         dup_free_list = []
@@ -88,13 +88,13 @@ class PkgInstallComponent(component.Component):
         return dup_free_list
 
     def _get_download_location(self):
-        (section, key) = self._get_download_config()
-        if not section or not key:
-            return (None, None)
-        uri = self.cfg.getdefaulted(section, key).strip()
+        key = self._get_download_config()
+        if not key:
+            return None
+        uri = self.get_option(key, '').strip()
         if not uri:
             raise ValueError(("Could not find uri in config to download "
-                               "from at section %s for option %s") % (section, key))
+                              "from at section %s for option %s") % (section, key))
         return (uri, self.get_option('app_dir'))
 
     def download(self):
@@ -166,7 +166,8 @@ class PkgInstallComponent(component.Component):
 
     @property
     def link_dir(self):
-        return sh.joinpths(self.distro.get_command_config('base_link_dir'), self.name)
+        link_dir_base = self.distro.get_command_config('base_link_dir')
+        return sh.joinpths(link_dir_base, self.name)
 
     @property
     def symlinks(self):
@@ -236,7 +237,7 @@ class PythonInstallComponent(PkgInstallComponent):
         ]
 
     def _get_download_config(self):
-        return ('download_from', self.name.replace("-", "_").lower().strip())
+        return 'get_from'
 
     @property
     def python_directories(self):
@@ -488,7 +489,7 @@ class PythonRuntime(ProgramRuntime):
         # Anything to start?
         am_started = 0
         # Select how we are going to start it
-        run_type = self.cfg.getdefaulted("DEFAULT", "run_type", 'anvil.runners.fork:ForkRunner')
+        run_type = self.get_option("run_type", 'anvil.runners.fork:ForkRunner')
         starter_cls = importer.import_entry_point(run_type)
         starter = starter_cls(self)
         for i, app_info in enumerate(self.apps_to_start):

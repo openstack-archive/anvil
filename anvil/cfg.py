@@ -24,14 +24,15 @@ import re
 # This one keeps comments but has some weirdness with it
 import iniparse
 
+import yaml
+
 from anvil import env
 from anvil import exceptions as excp
 from anvil import log as logging
+from anvil import shell as sh
 from anvil import utils
 
-ENV_PAT = re.compile(r"^\s*\$\{([\w\d]+):\-(.*)\}\s*$")
-SUB_MATCH = re.compile(r"(?:\$\(([\w\d]+):([\w\d]+))\)")
-PW_SECTION = 'passwords'
+INTERP_PAT = r"\s*\$\(([\w\d]+):([\w\d]+)\)\s*"
 
 LOG = logging.getLogger(__name__)
 
@@ -111,201 +112,74 @@ class RewritableConfigParser(IgnoreMissingMixin, iniparse.RawConfigParser, Strin
                 self.read(f)
 
 
-class ProxyConfig(object):
+class YamlInterpolator(object):
+    def __init__(self, base):
+        self.in_progress = {}
+        self.interpolated = {}
+        self.base = base
 
-    def __init__(self):
-        self.read_resolvers = []
-        self.set_resolvers = []
-        self.opts_cache = dict()
-        self.opts_read = dict()
-        self.opts_set = dict()
-        self.pw_resolvers = []
+    def _interpolate_iterable(self, what):
+        n_what = []
+        for v in what:
+            n_what.append(self._interpolate(v))
+        return n_what
 
-    def add_password_resolver(self, resolver):
-        self.pw_resolvers.append(resolver)
+    def _interpolate_dictionary(self, what):
+        n_what = {}
+        for (k, v) in what.iteritems():
+            n_what[k] = self._interpolate(v)
+        return n_what
 
-    def add_read_resolver(self, resolver):
-        self.read_resolvers.append(resolver)
-
-    def add_set_resolver(self, resolver):
-        self.set_resolvers.append(resolver)
-
-    def get_password(self, option, prompt_text='', length=8, **kwargs):
-        password = ''
-        for resolver in self.pw_resolvers:
-            found_password = resolver.get_password(option,
-                                                prompt_text=prompt_text,
-                                                length=length, **kwargs)
-            if found_password is not None and len(found_password):
-                password = found_password
-                break
-        if len(password) == 0:
-            LOG.warn("Password provided for %r is empty", option)
-        self.set(PW_SECTION, option, password)
-        return password
-
-    def get(self, section, option):
-        val = self._get(section, option)
-        LOG.debug("Fetched option %r with value %r.",
-                  make_id(section, option), val)
-        return val
-
-    def _get(self, section, option):
-        # Try the cache first
-        cache_key = make_id(section, option)
-        if cache_key in self.opts_cache:
-            return self.opts_cache[cache_key]
-        # Check the resolvers
-        val = None
-        for resolver in self.read_resolvers:
-            found_val = resolver.get(section, option)
-            if found_val is not None:
-                val = found_val
-                break
-        # Store in cache if we found something
-        if val is not None:
-            self.opts_cache[cache_key] = val
-        # Mark as read
-        if section not in self.opts_read:
-            self.opts_read[section] = set()
-        self.opts_read[section].add(option)
-        return val
-
-    def getdefaulted(self, section, option, default_value=''):
-        val = self.get(section, option)
-        if not val or not val.strip():
-            return default_value
-        return val
-
-    def getfloat(self, section, option):
-        try:
-            return float(self.get(section, option))
-        except ValueError:
-            return None
-
-    def getint(self, section, option):
-        try:
-            return int(self.get(section, option))
-        except ValueError:
-            return None
-
-    def getboolean(self, section, option):
-        return utils.make_bool(self.getdefaulted(section, option))
-
-    def set(self, section, option, value):
-        for resolver in self.set_resolvers:
-            resolver.set(section, option, value)
-        cache_key = make_id(section, option)
-        self.opts_cache[cache_key] = value
-        if section not in self.opts_set:
-            self.opts_set[section] = set()
-        self.opts_set[section].add(option)
-        return value
-
-
-class ConfigResolver(object):
-
-    def __init__(self, backing):
-        self.backing = backing
-
-    def get(self, section, option):
-        return self._resolve_value(section, option, self._get_bashed(section, option))
-
-    def set(self, section, option, value):
-        self.backing.set(section, option, value)
-
-    def _resolve_value(self, section, option, value_gotten):
-        if not value_gotten:
-            if section == 'host' and option == 'ip':
-                value_gotten = utils.get_host_ip()
-        return value_gotten
-
-    def _getdefaulted(self, section, option, default_value):
-        val = self.get(section, option)
-        if not val or not val.strip():
-            return default_value
-        return val
-
-    def _get_bashed(self, section, option):
-        value = self.backing.get(section, option)
-        if value is None:
-            return value
-        extracted_val = ''
-        mtch = ENV_PAT.match(value)
-        if mtch:
-            env_key = mtch.group(1).strip()
-            def_val = mtch.group(2).strip()
-            if not def_val and not env_key:
-                msg = "Invalid bash-like value %r" % (value)
-                raise excp.BadParamException(msg)
-            env_value = env.get_key(env_key)
-            if env_value is None:
-                extracted_val = self._resolve_replacements(def_val)
-            else:
-                extracted_val = env_value
-        else:
-            extracted_val = value
-        return extracted_val
-
-    def _resolve_replacements(self, value):
-
-        # Allow for our simple replacement to occur
-        def replacer(match):
-            section = match.group(1)
-            option = match.group(2)
-            # We use the default fetcher here so that we don't try to put in None values...
-            return self._getdefaulted(section, option, '')
-
-        return SUB_MATCH.sub(replacer, value)
-
-
-class CliResolver(object):
-
-    def __init__(self, cli_args):
-        self.cli_args = cli_args
-
-    def get(self, section, option):
-        return self.cli_args.get(make_id(section, option))
-
-    @classmethod
-    def create(cls, cli_args):
-        parsed_args = dict()
-        for c in cli_args:
-            if not c:
-                continue
-            split_up = c.split("/")
-            if len(split_up) != 3:
-                LOG.warn("Incorrectly formatted cli option: %r", c)
-            else:
-                section = (split_up[0]).strip()
-                if not section or section.lower() == 'default':
-                    section = 'DEFAULT'
-                option = split_up[1].strip()
-                if not option:
-                    LOG.warn("Badly formatted cli option - no option name: %r", c)
-                else:
-                    parsed_args[make_id(section, option)] = split_up[2]
-        return cls(parsed_args)
-
-
-class EnvResolver(object):
-
-    def __init__(self):
-        pass
-
-    def _form_key(self, section, option):
-        return make_id(section, option)
-
-    def get(self, section, option):
-        return env.get_key(self._form_key(section, option))
-
-
-def make_id(section, option):
-    joinwhat = []
-    if section:
-        joinwhat.append(str(section))
-    if option:
-        joinwhat.append(str(option))
-    return "/".join(joinwhat)
+    def _interpolate(self, v):
+        n_v = v
+        if v and isinstance(v, (basestring, str)):
+            n_v = self._interpolate_string(v)
+        elif isinstance(v, dict):
+            n_v = self._interpolate_dictionary(v)
+        elif isinstance(v, (list, set, tuple)):
+            n_v = self._interpolate_iterable(v)
+        return n_v
     
- 
+    def _interpolate_string(self, what):
+        if not re.search(INTERP_PAT, what):
+            return what
+
+        def replacer(match):
+            who = match.group(1).strip()
+            key = match.group(2).strip()
+            special_val = self._interpolate_special(who, key)
+            if special_val is not None:
+                return str(special_val)
+            if who in self.interpolated:
+                return str(self.interpolated[who][key])
+            if who in self.in_progress:
+                return str(self.in_progress[who][key])
+            contents = self.extract(who)
+            return str(contents[key])
+
+        return re.sub(INTERP_PAT, replacer, what)
+
+    def _interpolate_special(self, who, key):
+        if key == 'ip' and who == 'auto':
+            return utils.get_host_ip()
+        if key == 'user' and who == 'auto':
+            return sh.getuser()
+        if who == 'auto':
+            raise KeyError("Unknown auto key type %s" % (key))
+        return None
+
+    def extract(self, root):
+        if root in self.interpolated:
+            return self.interpolated[root]
+        pth = sh.joinpths(self.base, "%s.yaml" % (root))
+        if not sh.isfile(pth):
+            return {}
+        self.in_progress[root] = yaml.load(sh.load_file(pth))
+        interped = self._interpolate(self.in_progress[root])
+        del(self.in_progress[root])
+        self.interpolated[root] = interped
+        # Do a final run over the interpolated to pick up any stragglers
+        # that were recursively 'included' (but not filled in)
+        for (troot, contents) in self.interpolated.items():
+            self.interpolated[troot] = self._interpolate(contents)
+        return self.interpolated[root]

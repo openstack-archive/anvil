@@ -116,6 +116,13 @@ def rcf8222date():
     return strftime("%a, %d %b %Y %H:%M:%S", localtime())
 
 
+def merge_dicts(*dicts):
+    merged = {}
+    for mp in dicts:
+        merged.update(mp)
+    return merged
+
+
 def make_url(scheme, host, port=None,
                 path='', params='', query='', fragment=''):
 

@@ -391,18 +391,14 @@ class UploadService:
         return am_installed
 
 
-def get_shared_params(cfg):
-    mp = dict()
+def get_shared_params(ip, api_port=9292, protocol='http', reg_port=9191, **kwargs):
+    mp = {}
+    mp['service_host'] = ip
 
-    host_ip = cfg.get('host', 'ip')
-    mp['service_host'] = host_ip
-
-    glance_host = cfg.getdefaulted('glance', 'glance_host', host_ip)
-    glance_port = cfg.getdefaulted('glance', 'glance_port', '9292')
-    glance_protocol = cfg.getdefaulted('glance', 'glance_protocol', 'http')
-
-    # Registry should be on the same host
-    glance_registry_port = cfg.getdefaulted('glance', 'glance_registry_port', '9191')
+    glance_host = ip
+    glance_port = api_port
+    glance_protocol = protocol
+    glance_registry_port = reg_port
 
     # Uri's of the http/https endpoints
     mp['endpoints'] = {

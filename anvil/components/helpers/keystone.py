@@ -24,12 +24,10 @@ LOG = logging.getLogger(__name__)
 
 class Initializer(object):
 
-    def __init__(self, cfg):
+    def __init__(self, service_token, admin_uri):
         # Late load since its using a client lib that is only avail after install...
-        self.cfg = cfg
         client_cls = importer.import_entry_point("keystoneclient.v2_0.client:Client")
-        self.client = client_cls(token=self.cfg['service_token'],
-            endpoint=self.cfg['endpoints']['admin']['uri'])
+        self.client = client_cls(token=service_token, endpoint=admin_uri)
 
     def _create_tenants(self, tenants):
         tenants_made = dict()
@@ -134,9 +132,30 @@ class Initializer(object):
         self._create_endpoints(endpoints, services_made)
 
 
-def get_shared_params(cfg, service_user=None):
+def get_shared_passwords(component):
+    mp = {}
+    mp['service_token'] = component.get_password(
+        "service_token",
+        'the service admin token',
+        )
+    mp['admin_password'] = component.get_password(
+        'horizon_keystone_admin',
+        'the horizon and keystone admin',
+        length=20,
+        )
+    mp['demo_password'] = mp['admin_password']
+    mp['service_password'] = component.get_password(
+        'service_password',
+        'service authentication',
+        )
+    return mp
 
-    mp = dict()
+
+def get_shared_params(ip, service_token, admin_password, demo_password, service_password,
+                      auth_host, auth_port, auth_proto, service_host, service_port, service_proto,
+                      **kwargs):
+
+    mp = {}
 
     # Tenants and users
     mp['tenants'] = ['admin', 'service', 'demo']
@@ -149,42 +168,32 @@ def get_shared_params(cfg, service_user=None):
     mp['admin_user'] = 'admin'
 
     mp['service_tenant'] = 'service'
-    if service_user:
-        mp['users'].append(service_user)
-        mp['service_user'] = service_user
+    if 'service_user' in kwargs:
+        mp['users'].append(kwargs['service_user'])
+        mp['service_user'] = kwargs['service_user']
 
     # Tokens and passwords
-    mp['service_token'] = cfg.get_password(
-        "service_token",
-        'the service admin token',
-        )
-    mp['admin_password'] = cfg.get_password(
-        'horizon_keystone_admin',
-        'the horizon and keystone admin',
-        length=20,
-        )
-    mp['demo_password'] = mp['admin_password']
-    mp['service_password'] = cfg.get_password(
-        'service_password',
-        'service authentication',
-        )
+    mp['service_token'] = service_token
+    mp['admin_password'] = admin_password
+    mp['demo_password'] = demo_password
+    mp['service_password'] = service_password
 
-    host_ip = cfg.get('host', 'ip')
+    host_ip = ip
     mp['service_host'] = host_ip
 
     # Components of the admin endpoint
-    keystone_auth_host = cfg.getdefaulted('keystone', 'keystone_auth_host', host_ip)
-    keystone_auth_port = cfg.getdefaulted('keystone', 'keystone_auth_port', '35357')
-    keystone_auth_proto = cfg.getdefaulted('keystone', 'keystone_auth_protocol', 'http')
+    keystone_auth_host = auth_host
+    keystone_auth_port = auth_port
+    keystone_auth_proto = auth_proto
     keystone_auth_uri = utils.make_url(keystone_auth_proto,
-                            keystone_auth_host, keystone_auth_port, path="v2.0")
+                                       keystone_auth_host, keystone_auth_port, path="v2.0")
 
     # Components of the public+internal endpoint
-    keystone_service_host = cfg.getdefaulted('keystone', 'keystone_service_host', host_ip)
-    keystone_service_port = cfg.getdefaulted('keystone', 'keystone_service_port', '5000')
-    keystone_service_proto = cfg.getdefaulted('keystone', 'keystone_service_protocol', 'http')
+    keystone_service_host = service_host
+    keystone_service_port = service_port
+    keystone_service_proto = service_proto
     keystone_service_uri = utils.make_url(keystone_service_proto,
-                            keystone_service_host, keystone_service_port, path="v2.0")
+                                          keystone_service_host, keystone_service_port, path="v2.0")
 
     mp['endpoints'] = {
         'admin': {

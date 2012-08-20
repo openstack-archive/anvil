@@ -16,7 +16,6 @@
 
 from anvil import action
 from anvil import colorizer
-from anvil import env_rc
 from anvil import log
 from anvil import settings
 from anvil import shell as sh
@@ -46,13 +45,6 @@ class InstallAction(action.Action):
         return 'install'
 
     def _run(self, persona, component_order, instances):
-        # Update/write out the 'bash' env exports file
-        (settings_am, out_fns) = env_rc.write(self,
-                                             components=[(c, instances[c]) for c in component_order])
-        utils.log_iterable(out_fns,
-                           header="Wrote out %s environment 'exports' to the following" % (settings_am),
-                           logger=LOG
-                           )
         self._run_phase(
             PhaseFunctors(
                 start=lambda i: LOG.info('Downloading %s.', colorizer.quote(i.name)),

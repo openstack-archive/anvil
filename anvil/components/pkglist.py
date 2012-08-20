@@ -34,7 +34,7 @@ class Installer(comp.PythonInstallComponent):
         return {}
 
     def _get_download_config(self):
-        return (None, None)
+        return None
 
 
 class Uninstaller(comp.PythonUninstallComponent):

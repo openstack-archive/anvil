@@ -101,8 +101,9 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
     @property
     def env_exports(self):
-        params = khelper.get_shared_params(self.cfg)
-        to_set = dict()
+        params = khelper.get_shared_params(**utils.merge_dicts(self.options,
+                                                               khelper.get_shared_passwords(self)))
+        to_set = {}
         to_set['OS_PASSWORD'] = params['admin_password']
         to_set['OS_TENANT_NAME'] = params['demo_tenant']
         to_set['OS_USERNAME'] = params['demo_user']
@@ -115,8 +116,17 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         return list(CONFIGS)
 
     def _setup_db(self):
-        dbhelper.drop_db(self.cfg, self.distro, DB_NAME)
-        dbhelper.create_db(self.cfg, self.distro, DB_NAME)
+        dbhelper.drop_db(distro=self.distro,
+                         dbtype=self.get_option('db.type'),
+                         dbname=DB_NAME,
+                         **utils.merge_dicts(self.get_option('db'),
+                                             dbhelper.get_shared_passwords(self)))
+        dbhelper.create_db(distro=self.distro,
+                           dbtype=self.get_option('db.type'),
+                           dbname=DB_NAME,
+                           **utils.merge_dicts(self.get_option('db'),
+                                               dbhelper.get_shared_passwords(self)))
+
 
     def source_config(self, config_fn):
         real_fn = config_fn
@@ -144,7 +154,8 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             return comp.PythonInstallComponent._config_param_replace(self, config_fn, contents, parameters)
 
     def _config_adjust_root(self, contents, fn):
-        params = khelper.get_shared_params(self.cfg)
+        params = khelper.get_shared_params(**utils.merge_dicts(self.options,
+                                                               khelper.get_shared_passwords(self)))
         with io.BytesIO(contents) as stream:
             config = cfg.RewritableConfigParser()
             config.readfp(stream)
@@ -155,7 +166,11 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             config.set('DEFAULT', 'debug', True)
             config.set('catalog', 'driver', 'keystone.catalog.backends.sql.Catalog')
             config.remove_option('DEFAULT', 'log_config')
-            config.set('sql', 'connection', dbhelper.fetch_dbdsn(self.cfg, DB_NAME, utf8=True))
+            config.set('sql', 'connection', dbhelper.fetch_dbdsn(dbname=DB_NAME,
+                                                                 utf8=True,
+                                                                 dbtype=self.get_option('db.type'),
+                                                                 **utils.merge_dicts(self.get_option('db'),
+                                                                                     dbhelper.get_shared_passwords(self))))
             config.set('ec2', 'driver', "keystone.contrib.ec2.backends.sql.Ec2")
             contents = config.stringify(fn)
         return contents
@@ -169,7 +184,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             return contents
 
     def warm_configs(self):
-        khelper.get_shared_params(self.cfg)
+        khelper.get_shared_passwords(self)
 
     def config_params(self, config_fn):
         # These be used to fill in the configuration params
@@ -183,7 +198,7 @@ class KeystoneRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
-        self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
+        self.wait_time = max(int(self.get_option('service_wait_seconds')), 1)
         self.init_fn = sh.joinpths(self.get_option('trace_dir'), INIT_WHAT_HAPPENED)
 
     def post_start(self):
@@ -193,13 +208,15 @@ class KeystoneRuntime(comp.PythonRuntime):
             LOG.info("Running commands to initialize keystone.")
             (fn, contents) = utils.load_template(self.name, INIT_WHAT_FN)
             LOG.debug("Initializing with contents of %s", fn)
-            cfg = {
-                'glance': ghelper.get_shared_params(self.cfg),
-                'keystone': khelper.get_shared_params(self.cfg),
-                'nova': nhelper.get_shared_params(self.cfg),
-            }
+            cfg = {}
+            cfg['keystone'] = khelper.get_shared_params(**utils.merge_dicts(self.options, khelper.get_shared_passwords(self)))
+            cfg['glance'] = ghelper.get_shared_params(ip=self.get_option('ip'),
+                                                      **self.get_option('glance'))
+            cfg['nova'] = nhelper.get_shared_params(ip=self.get_option('ip'),
+                                                    **self.get_option('nova'))
             init_what = utils.param_replace_deep(copy.deepcopy(yaml.load(contents)), cfg)
-            khelper.Initializer(cfg['keystone']).initialize(**init_what)
+            khelper.Initializer(cfg['keystone']['service_token'],
+                                cfg['keystone']['endpoints']['admin']['uri']).initialize(**init_what)
             # Writing this makes sure that we don't init again
             sh.write_file(self.init_fn, utils.prettify_yaml(init_what))
             LOG.info("If you wish to re-run initialization, delete %s", colorizer.quote(self.init_fn))

@@ -19,6 +19,7 @@ from anvil import components as comp
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
+from anvil import utils
 
 from anvil.components.helpers import db as dbhelper
 
@@ -132,22 +133,20 @@ class HorizonInstaller(comp.PythonInstallComponent):
         sh.execute(*DB_SYNC_CMD, cwd=self.get_option('app_dir'))
 
     def _setup_db(self):
-        dbhelper.drop_db(self.cfg, self.distro, DB_NAME)
-        dbhelper.create_db(self.cfg, self.distro, DB_NAME)
+        dbhelper.drop_db(distro=self.distro,
+                         dbtype=self.get_option('db.type'),
+                         dbname=DB_NAME,
+                         **utils.merge_dicts(self.get_option('db'),
+                                             dbhelper.get_shared_passwords(self)))
+        dbhelper.create_db(distro=self.distro,
+                           dbtype=self.get_option('db.type'),
+                           dbname=DB_NAME,
+                           **utils.merge_dicts(self.get_option('db'),
+                                               dbhelper.get_shared_passwords(self)))
 
     def pre_install(self):
         comp.PythonInstallComponent.pre_install(self)
         self.tracewriter.dirs_made(*sh.mkdirslist(self.log_dir))
-        if self.cfg.getboolean('horizon', 'eliminate_pip_gits'):
-            fn = sh.joinpths(self.get_option('app_dir'), 'tools', 'pip-requires')
-            if sh.isfile(fn):
-                new_lines = []
-                for line in sh.load_file(fn).splitlines():
-                    if line.find("git://") != -1:
-                        new_lines.append("# %s" % (line))
-                    else:
-                        new_lines.append(line)
-                sh.write_file(fn, "\n".join(new_lines))
 
     def _config_fixups(self):
         pass
@@ -162,9 +161,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         self._config_fixups()
 
     def _get_apache_user_group(self):
-        user = self.cfg.getdefaulted('horizon', 'apache_user', sh.getuser())
-        group = self.cfg.getdefaulted('horizon', 'apache_group', sh.getgroupname())
-        return (user, group)
+        return (self.get_option('apache_user'), self.get_option('apache_group'))
 
     def config_params(self, config_fn):
         # This dict will be used to fill in the configuration
@@ -177,15 +174,15 @@ class HorizonInstaller(comp.PythonInstallComponent):
             mp['ACCESS_LOG'] = sh.joinpths(self.log_dir, APACHE_ACCESS_LOG_FN)
             mp['ERROR_LOG'] = sh.joinpths(self.log_dir, APACHE_ERROR_LOG_FN)
             mp['HORIZON_DIR'] = self.get_option('app_dir')
-            mp['HORIZON_PORT'] = self.cfg.getdefaulted('horizon', 'port', APACHE_DEF_PORT)
+            mp['HORIZON_PORT'] = self.get_option('port', APACHE_DEF_PORT)
             mp['VPN_DIR'] = sh.joinpths(self.get_option('app_dir'), "vpn")
         else:
-            mp['OPENSTACK_HOST'] = self.cfg.get('host', 'ip')
+            mp['OPENSTACK_HOST'] = self.get_option('ip')
             mp['DB_NAME'] = DB_NAME
-            mp['DB_USER'] = self.cfg.getdefaulted('db', 'sql_user', 'root')
-            mp['DB_PASSWORD'] = self.cfg.get_password('sql', dbhelper.PASSWORD_PROMPT)
-            mp['DB_HOST'] = self.cfg.get("db", "sql_host")
-            mp['DB_PORT'] = self.cfg.get("db", "port")
+            mp['DB_USER'] = self.get_option('db.user')
+            mp['DB_PASSWORD'] = dbhelper.get_shared_passwords(self)
+            mp['DB_HOST'] = self.get_option("db.host")
+            mp['DB_PORT'] = self.get_option("db.port")
         return mp
 
 

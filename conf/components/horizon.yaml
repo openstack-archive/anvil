@@ -1,0 +1,25 @@
+# Settings for component horizon
+---
+# Where we download this from...
+get_from: "git://github.com/openstack/horizon.git?branch=master"
+
+# This is the group of the user (adjust as needed)
+apache_group: "$(auto:user)"
+
+# What user will apache be serving from.
+#
+# Root will typically not work (for apache on most distros)
+# sudo adduser <username> then sudo adduser <username> admin will be what you want to set this up (in ubuntu)
+# I typically use user "horizon" for ubuntu and the runtime user (who will have sudo access) for RHEL.
+apache_user: "$(auto:user)"
+
+# Port horizon should run on
+port: 80
+
+# Needed for setting up your database
+db:
+  type: "$(db:type)"
+  user: "$(db:user)"
+  host: "$(db:host)"
+  port: "$(db:port)"
+...

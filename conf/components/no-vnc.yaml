@@ -1,0 +1,7 @@
+# Settings for component no-vnc
+---
+
+# Where we download this from...
+get_from: "git://github.com/kanaka/noVNC.git?branch=master"
+
+...

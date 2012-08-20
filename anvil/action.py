@@ -19,14 +19,18 @@ import collections
 import copy
 import functools
 
+from anvil import cfg
 from anvil import colorizer
 from anvil import exceptions as excp
 from anvil import importer
 from anvil import log as logging
 from anvil import packager
+from anvil import passwords as pw
 from anvil import phase
+from anvil import settings
 from anvil import shell as sh
 from anvil import utils
+
 
 LOG = logging.getLogger(__name__)
 
@@ -41,12 +45,15 @@ class PhaseFunctors(object):
 class Action(object):
     __meta__ = abc.ABCMeta
 
-    def __init__(self, distro, cfg, root_dir, name, **kwargs):
+    def __init__(self, name, distro, root_dir, **kwargs):
         self.distro = distro
-        self.cfg = cfg
         self.root_dir = root_dir
         self.name = name
-        self.keep_old = kwargs.get('keep_old', False)
+        self.interpolator = cfg.YamlInterpolator(settings.COMPONENT_CONF_DIR)
+        self.passwords = pw.ProxyPassword()
+        if kwargs.get('prompt_for_passwords'):
+            self.passwords.resolvers.append(pw.InputPassword())
+        self.passwords.resolvers.append(pw.RandomPassword())
         self.force = kwargs.get('force', False)
 
     @property
@@ -80,7 +87,7 @@ class Action(object):
             'trace_dir': trace_dir,
         }
 
-    def _merge_options(self, name, override_opts, base_opts, component_opts, persona_opts):
+    def _merge_options(self, name, base_opts, component_opts, persona_opts):
         opts = {}
         opts.update(self._get_component_dirs(name))
         if base_opts:
@@ -89,8 +96,6 @@ class Action(object):
             opts.update(component_opts)
         if persona_opts:
             opts.update(persona_opts)
-        if override_opts:
-            opts.update(override_opts)
         return opts
 
     def _merge_subsystems(self, component_subsys, desired_subsys):
@@ -119,6 +124,12 @@ class Action(object):
         opts.update(self._get_component_dirs(name))
         return opts
 
+    def _get_interp_options(self, name):
+        base = {}
+        for c in ['general', name]:
+            base.update(self.interpolator.extract(c))
+        return base
+
     def _construct_instances(self, persona):
         """
         Create component objects for each component in the persona.
@@ -126,14 +137,10 @@ class Action(object):
         persona_subsystems = persona.wanted_subsystems or {}
         persona_opts = persona.component_options or {}
         instances = {}
-        base_opts = {
-            'keep_old': self.keep_old,
-        }
         for c in persona.wanted_components:
             ((cls, distro_opts), siblings) = self.distro.extract_component(c, self.lookup_name)
             LOG.debug("Constructing component %r (%s)", c, utils.obj_name(cls))
             kvs = {}
-            kvs['runner'] = self
             kvs['name'] = c
             kvs['packager_functor'] = functools.partial(packager.get_packager,
                                                         distro=self.distro)
@@ -142,7 +149,9 @@ class Action(object):
             kvs['instances'] = {}
             kvs['subsystems'] = {}
             kvs['siblings'] = {}
-            kvs['options'] = self._get_sibling_options(c, base_opts)
+            kvs['passwords'] = self.passwords
+            kvs['distro'] = self.distro
+            kvs['options'] = self._get_sibling_options(c, self._get_interp_options(c))
             LOG.debug("Constructing %s siblings:", c)
             utils.log_object(siblings, logger=LOG, level=logging.DEBUG)
             LOG.debug("Using params:")
@@ -150,7 +159,7 @@ class Action(object):
             siblings = self._construct_siblings(siblings, dict(kvs))
             # Now inject the full options
             kvs['instances'] = instances
-            kvs['options'] = self._merge_options(c, kvs, base_opts,
+            kvs['options'] = self._merge_options(c, self._get_interp_options(c),
                                                  distro_opts, (persona_opts.get(c) or {}))
             kvs['subsystems'] = self._merge_subsystems((distro_opts.pop('subsystems', None) or {}),
                                                        (persona_subsystems.get(c) or {}))

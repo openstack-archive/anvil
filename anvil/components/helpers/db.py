@@ -29,14 +29,19 @@ BASE_ERROR = 'Currently we do not know how to %r for database type %r'
 PASSWORD_PROMPT = 'the database user'
 
 
-def drop_db(cfg, distro, dbname):
-    dbtype = cfg.get("db", "type")
+def get_shared_passwords(component):
+    mp = {}
+    mp['pw'] = component.get_password('sql', PASSWORD_PROMPT)
+    return mp
+
+
+def drop_db(distro, dbtype, user, pw, dbname, **kwargs):
     dropcmd = distro.get_command(dbtype, 'drop_db', silent=True)
     if dropcmd:
         LOG.info('Dropping %s database: %s', colorizer.quote(dbtype), colorizer.quote(dbname))
         params = dict()
-        params['PASSWORD'] = cfg.get_password("sql", PASSWORD_PROMPT)
-        params['USER'] = cfg.getdefaulted("db", "sql_user", 'root')
+        params['PASSWORD'] = pw
+        params['USER'] = user
         params['DB'] = dbname
         cmds = list()
         cmds.append({
@@ -49,14 +54,14 @@ def drop_db(cfg, distro, dbname):
         raise NotImplementedError(msg)
 
 
-def create_db(cfg, distro, dbname, charset='utf8'):
-    dbtype = cfg.get("db", "type")
+def create_db(distro, dbtype, user, pw, dbname, **kwargs):
     createcmd = distro.get_command(dbtype, 'create_db', silent=True)
     if createcmd:
+        charset = kwargs.get('charset', 'utf8')
         LOG.info('Creating %s database: %s (%s)', colorizer.quote(dbtype), colorizer.quote(dbname), charset)
         params = dict()
-        params['PASSWORD'] = cfg.get_password("sql", PASSWORD_PROMPT)
-        params['USER'] = cfg.getdefaulted("db", "sql_user", 'root')
+        params['PASSWORD'] = pw
+        params['USER'] = user
         params['DB'] = dbname
         params['CHARACTER_SET'] = charset
         cmds = list()
@@ -70,11 +75,10 @@ def create_db(cfg, distro, dbname, charset='utf8'):
         raise NotImplementedError(msg)
 
 
-def grant_permissions(cfg, distro, user, restart_func=None):
+def grant_permissions(dbtype, distro, user, pw, restart_func=None):
     """
     Grant permissions on the database.
     """
-    dbtype = cfg.get("db", "type")
     dbactions = distro.get_command_config(dbtype, quiet=True)
     if dbactions:
         grant_cmd = distro.get_command(dbtype, 'grant_all')
@@ -83,7 +87,7 @@ def grant_permissions(cfg, distro, user, restart_func=None):
                 LOG.info("Ensuring the database is started.")
                 restart_func()
             params = {
-                'PASSWORD': cfg.get_password("sql", PASSWORD_PROMPT),
+                'PASSWORD': pw,
                 'USER': user,
             }
             cmds = [{'cmd': grant_cmd}]
@@ -92,19 +96,15 @@ def grant_permissions(cfg, distro, user, restart_func=None):
     return
 
 
-def fetch_dbdsn(cfg, dbname, utf8=False):
+def fetch_dbdsn(dbtype, user, host, port, pw, dbname, **kwargs):
     """Return the database connection string, including password."""
-    user = cfg.get("db", "sql_user")
-    host = cfg.get("db", "sql_host")
-    port = cfg.get("db", "port")
-    pw = cfg.get_password("sql", PASSWORD_PROMPT)
     # Form the dsn (from components we have...)
     # dsn = "<driver>://<username>:<password>@<host>:<port>/<database>"
     # See: http://en.wikipedia.org/wiki/Data_Source_Name
     if not host:
         msg = "Unable to fetch a database dsn - no sql host found"
         raise excp.BadParamException(msg)
-    driver = cfg.get("db", "type")
+    driver = dbtype
     if not driver:
         msg = "Unable to fetch a database dsn - no db driver type found"
         raise excp.BadParamException(msg)
@@ -120,7 +120,7 @@ def fetch_dbdsn(cfg, dbname, utf8=False):
         dsn += ":" + str(port)
     if dbname:
         dsn += "/" + str(dbname)
-        if utf8:
+        if kwargs.get('utf8'):
             dsn += "?charset=utf8"
     else:
         dsn += "/"

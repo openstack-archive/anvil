@@ -51,7 +51,6 @@ from anvil import actions
 from anvil import cfg
 from anvil import colorizer
 from anvil import distro
-from anvil import env_rc
 from anvil import log as logging
 from anvil import opts
 from anvil import passwords
@@ -66,65 +65,6 @@ from ordereddict import OrderedDict
 
 
 LOG = logging.getLogger()
-
-
-def get_config_locations(start_locations=None):
-    locs = []
-    if start_locations:
-        locs.extend(start_locations)
-    locs.append(settings.CONFIG_LOCATION)
-    locs.append(sh.joinpths("/etc", 'anvil', 'anvil.ini'))
-    return locs
-
-
-def find_config(locations=None):
-    """
-    Finds the potential anvil configuration files.
-    """
-    if not locations:
-        locations = get_config_locations()
-    real_paths = []
-    for path in locations:
-        LOG.debug("Looking for configuration in: %r", path)
-        if sh.isfile(path):
-            LOG.debug("Found a 'possible' configuration in: %r", path)
-            real_paths.append(path)
-    return real_paths
-
-
-def establish_config(args):
-    """
-    Creates the stack configuration object using the set of
-    desired configuration resolvers+password resolvers to be used and returns
-    the wrapper that knows how to activate those resolvers.
-
-    Arguments:
-        args: command line args
-    """
-
-    config = cfg.ProxyConfig()
-    config.add_read_resolver(cfg.CliResolver.create(args['cli_overrides']))
-    config.add_read_resolver(cfg.EnvResolver())
-    start_configs = []
-    if 'config_fn' in args and args['config_fn']:
-        start_configs.append(args['config_fn'])
-    else:
-        start_configs.extend(get_config_locations())
-    real_configs = find_config(start_configs)
-    config.add_read_resolver(cfg.ConfigResolver(cfg.RewritableConfigParser(fns=real_configs)))
-    utils.log_iterable(utils.get_class_names(config.read_resolvers),
-        header="Config lookup will use the following resolvers:",
-        logger=LOG)
-
-    config.add_password_resolver(passwords.ConfigPassword(config))
-    if args.get('prompt_for_passwords', True):
-        config.add_password_resolver(passwords.InputPassword(config))
-    config.add_password_resolver(passwords.RandomPassword(config))
-    utils.log_iterable(utils.get_class_names(config.pw_resolvers),
-        header="Password finding will use the following lookups:",
-        logger=LOG)
-
-    return config
 
 
 def backup_persona(install_dir, action, persona_fn):
@@ -157,7 +97,6 @@ def run(args):
     # Determine + setup the root directory...
     # If not provided attempt to locate it via the environment control files
     args_root_dir = args.pop("dir")
-    env_rc.load()
     root_dir = env.get_key('INSTALL_ROOT')
     if not root_dir:
         root_dir = args_root_dir
@@ -190,14 +129,9 @@ def run(args):
     except Exception as e:
         raise RuntimeError("Error loading persona file: %s due to %s" % (person_fn, e))
 
-    # Get the config reader (which is a combination
-    # of many configs..)
-    config = establish_config(args)
-
     # Get the object we will be running with...
     runner_cls = actions.class_for(action)
-    runner = runner_cls(dist,
-                        config,
+    runner = runner_cls(distro=dist,
                         root_dir=root_dir,
                         name=action,
                         **args)
@@ -221,24 +155,6 @@ def run(args):
     pretty_time = utils.format_time(end_time - start_time)
     LOG.info("It took %s seconds or %s minutes to complete action %s.",
              colorizer.quote(pretty_time['seconds']), colorizer.quote(pretty_time['minutes']), colorizer.quote(action))
-
-    if config.opts_cache:
-        LOG.info("After action %s your settings which were applied are:", colorizer.quote(action))
-        table = OrderedDict()
-        all_read_set = {}
-        all_read_set.update(config.opts_read)
-        all_read_set.update(config.opts_set)
-        for section in sorted(list(all_read_set.keys())):
-            options = set()
-            if section in config.opts_read:
-                options.update(list(config.opts_read[section]))
-            if section in config.opts_set:
-                options.update(list(config.opts_set[section]))
-            option_values = {}
-            for option in options:
-                option_values[option] = config.opts_cache[cfg.make_id(section, option)]
-            table[section] = option_values
-        utils.log_object(table, item_max_len=80)
 
     LOG.debug("Final environment settings:")
     utils.log_object(env.get(), logger=LOG, level=logging.DEBUG, item_max_len=64)
