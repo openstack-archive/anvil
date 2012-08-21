@@ -90,7 +90,7 @@ class PkgInstallComponent(component.Component):
     def _get_download_location(self):
         key = self._get_download_config()
         if not key:
-            return None
+            return (None, None)
         uri = self.get_option(key, '').strip()
         if not uri:
             raise ValueError(("Could not find uri in config to download "
@@ -616,21 +616,18 @@ class PkgUninstallComponent(component.Component):
         pass
 
     def _uninstall_pkgs(self):
-        if self.get_option('keep_old', False):
-            LOG.info('Keep-old flag set, not removing any packages.')
-        else:
-            pkgs = self.tracereader.packages_installed()
-            if pkgs:
-                pkg_names = set([p['name'] for p in pkgs])
-                utils.log_iterable(pkg_names, logger=LOG,
-                    header="Potentially removing %s packages" % (len(pkg_names)))
-                which_removed = set()
-                with utils.progress_bar('Uninstalling', len(pkgs), reverse=True) as p_bar:
-                    for (i, p) in enumerate(pkgs):
-                        if self.packager_functor(p).remove(p):
-                            which_removed.add(p['name'])
-                        p_bar.update(i + 1)
-                utils.log_iterable(which_removed, logger=LOG,
+        pkgs = self.tracereader.packages_installed()
+        if pkgs:
+            pkg_names = set([p['name'] for p in pkgs])
+            utils.log_iterable(pkg_names, logger=LOG,
+                header="Potentially removing %s packages" % (len(pkg_names)))
+            which_removed = set()
+            with utils.progress_bar('Uninstalling', len(pkgs), reverse=True) as p_bar:
+                for (i, p) in enumerate(pkgs):
+                    if self.packager_functor(p).remove(p):
+                        which_removed.add(p['name'])
+                    p_bar.update(i + 1)
+            utils.log_iterable(which_removed, logger=LOG,
                     header="Actually removed %s packages" % (len(which_removed)))
 
     def _uninstall_touched_files(self):
@@ -645,13 +642,12 @@ class PkgUninstallComponent(component.Component):
         dirs_made = self.tracereader.dirs_made()
         if dirs_made:
             dirs_made = [sh.abspth(d) for d in dirs_made]
-            if self.get_option('keep_old', False):
-                download_places = [path_location[0] for path_location in self.tracereader.download_locations()]
-                if download_places:
-                    utils.log_iterable(download_places, logger=LOG,
-                        header="Keeping %s download directories (and there children directories)" % (len(download_places)))
-                    for download_place in download_places:
-                        dirs_made = sh.remove_parents(download_place, dirs_made)
+            download_places = [path_location[0] for path_location in self.tracereader.download_locations()]
+            if download_places:
+                utils.log_iterable(download_places, logger=LOG,
+                    header="Keeping %s download directories (and there children directories)" % (len(download_places)))
+                for download_place in download_places:
+                    dirs_made = sh.remove_parents(download_place, dirs_made)
             if dirs_made:
                 utils.log_iterable(dirs_made, logger=LOG,
                     header="Removing %s created directories" % (len(dirs_made)))
@@ -674,24 +670,21 @@ class PythonUninstallComponent(PkgUninstallComponent):
         PkgUninstallComponent.uninstall(self)
 
     def _uninstall_pips(self):
-        if self.get_option('keep_old', False):
-            LOG.info('Keep-old flag set, not removing any python packages.')
-        else:
-            pips = self.tracereader.pips_installed()
-            if pips:
-                pip_names = set([p['name'] for p in pips])
-                utils.log_iterable(pip_names, logger=LOG,
-                    header="Uninstalling %s python packages" % (len(pip_names)))
-                with utils.progress_bar('Uninstalling', len(pips), reverse=True) as p_bar:
-                    for (i, p) in enumerate(pips):
-                        try:
-                            self.pip_functor(p).remove(p)
-                        except excp.ProcessExecutionError as e:
-                            # NOTE(harlowja): pip seems to die if a pkg isn't there even in quiet mode
-                            combined = (str(e.stderr) + str(e.stdout))
-                            if not re.search(r"not\s+installed", combined, re.I):
-                                raise
-                        p_bar.update(i + 1)
+        pips = self.tracereader.pips_installed()
+        if pips:
+            pip_names = set([p['name'] for p in pips])
+            utils.log_iterable(pip_names, logger=LOG,
+                header="Uninstalling %s python packages" % (len(pip_names)))
+            with utils.progress_bar('Uninstalling', len(pips), reverse=True) as p_bar:
+                for (i, p) in enumerate(pips):
+                    try:
+                        self.pip_functor(p).remove(p)
+                    except excp.ProcessExecutionError as e:
+                        # NOTE(harlowja): pip seems to die if a pkg isn't there even in quiet mode
+                        combined = (str(e.stderr) + str(e.stdout))
+                        if not re.search(r"not\s+installed", combined, re.I):
+                            raise
+                    p_bar.update(i + 1)
 
     def _uninstall_python(self):
         py_listing = self.tracereader.py_listing()

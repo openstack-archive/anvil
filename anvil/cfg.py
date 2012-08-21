@@ -112,32 +112,63 @@ class RewritableConfigParser(IgnoreMissingMixin, iniparse.RawConfigParser, Strin
                 self.read(f)
 
 
+class EnvLookupDict(dict):
+    def __init__(self,*args, **kwargs):
+        dict.__init__(self, *args, **kwargs)
+        self.env_prefix = kwargs.get('env_prefix')
+        if self.env_prefix is not None:
+            self.env_prefix = str(self.env_prefix).upper().replace("-", "_").strip()
+
+    def _lookup_env_key(self, key):
+        if self.env_prefix is not None and key:
+            env_key = self.env_prefix
+            env_key += str(key).upper().replace("-", "_").strip()
+            env_val = env.get_key(env_key)
+            if env_val is not None:
+                return str(env_val)
+        return None
+
+    def __getitem__(self, key):
+        env_value = self._lookup_env_key(key)
+        if env_value is not None:
+            return env_value
+        return dict.__getitem__(self, key)
+
+    def get(self, key):
+        env_value = self._lookup_env_key(key)
+        if env_value is not None:
+            return env_value
+        return dict.get(self, key)
+
+
 class YamlInterpolator(object):
     def __init__(self, base):
         self.in_progress = {}
         self.interpolated = {}
         self.base = base
 
-    def _interpolate_iterable(self, what):
+    def _interpolate_iterable(self, what, path):
         n_what = []
         for v in what:
-            n_what.append(self._interpolate(v))
+            n_what.append(self._interpolate(v, path))
         return n_what
 
-    def _interpolate_dictionary(self, what):
-        n_what = {}
+    def _interpolate_dictionary(self, what, path):
+        n_what = EnvLookupDict(env_prefix="_".join(path))
         for (k, v) in what.iteritems():
-            n_what[k] = self._interpolate(v)
+            path.append(k)
+            n_what[k] = self._interpolate(v, path)
+            path.pop()
         return n_what
 
-    def _interpolate(self, v):
+    def _interpolate(self, v, path):
         n_v = v
         if v and isinstance(v, (basestring, str)):
             n_v = self._interpolate_string(v)
         elif isinstance(v, dict):
-            n_v = self._interpolate_dictionary(v)
+            n_v = self._interpolate_dictionary(v, path)
         elif isinstance(v, (list, set, tuple)):
-            n_v = self._interpolate_iterable(v)
+            n_v = self._interpolate_iterable(v, path)
         return n_v
     
     def _interpolate_string(self, what):
@@ -175,11 +206,11 @@ class YamlInterpolator(object):
         if not sh.isfile(pth):
             return {}
         self.in_progress[root] = yaml.load(sh.load_file(pth))
-        interped = self._interpolate(self.in_progress[root])
+        interped = self._interpolate(self.in_progress[root], path=["%s_" % (root)])
         del(self.in_progress[root])
         self.interpolated[root] = interped
         # Do a final run over the interpolated to pick up any stragglers
         # that were recursively 'included' (but not filled in)
-        for (troot, contents) in self.interpolated.items():
-            self.interpolated[troot] = self._interpolate(contents)
+        for (tmp_root, contents) in self.interpolated.items():
+            self.interpolated[tmp_root] = self._interpolate(contents, path=["%s_" % (tmp_root)])
         return self.interpolated[root]

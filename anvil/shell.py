@@ -33,11 +33,6 @@ from anvil import log as logging
 
 LOG = logging.getLogger(__name__)
 
-ROOT_USER = "root"
-ROOT_GROUP = ROOT_USER
-ROOT_USER_UID = 0
-SUDO_UID = 'SUDO_UID'
-SUDO_GID = 'SUDO_GID'
 SHELL_QUOTE_REPLACERS = {
     "\"": "\\\"",
     "(": "\\(",
@@ -280,10 +275,10 @@ def joinpths(*paths):
 
 
 def get_suids():
-    uid = env.get_key(SUDO_UID)
+    uid = env.get_key('SUDO_UID')
     if uid is not None:
         uid = int(uid)
-    gid = env.get_key(SUDO_GID)
+    gid = env.get_key('SUDO_GID')
     if gid is not None:
         gid = int(gid)
     return (uid, gid)
@@ -707,14 +702,14 @@ def chmod(fname, mode):
 
 
 def got_root():
-    return os.geteuid() == ROOT_USER_UID
+    return (os.geteuid() == 0)
 
 
 def root_mode(quiet=True):
-    root_uid = getuid(ROOT_USER)
-    root_gid = getgid(ROOT_USER)
+    root_uid = getuid('root')
+    root_gid = getgid('root')
     if root_uid is None or root_gid is None:
-        msg = "Cannot escalate permissions to (user=%s) - does that user exist??" % (ROOT_USER)
+        msg = "Cannot escalate permissions to (user=root) - does that user exist??"
         if quiet:
             LOG.warn(msg)
         else:

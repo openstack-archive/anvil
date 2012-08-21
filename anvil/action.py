@@ -18,9 +18,13 @@ import abc
 import collections
 import copy
 import functools
+import os
+
+from StringIO import StringIO
 
 from anvil import cfg
 from anvil import colorizer
+from anvil import env
 from anvil import exceptions as excp
 from anvil import importer
 from anvil import log as logging
@@ -45,13 +49,29 @@ class PhaseFunctors(object):
 class Action(object):
     __meta__ = abc.ABCMeta
 
-    def __init__(self, name, distro, root_dir, passwords, **kwargs):
+    def __init__(self, name, distro, root_dir, **kwargs):
         self.distro = distro
         self.root_dir = root_dir
         self.name = name
         self.interpolator = cfg.YamlInterpolator(settings.COMPONENT_CONF_DIR)
-        self.passwords = passwords
-        self.force = kwargs.get('force', False)
+        self.passwords = pw.ProxyPassword()
+        self.password_files = [
+            sh.joinpths(root_dir, 'passwords.yaml'),
+        ]
+        self.default_password_file = sh.joinpths(os.getcwd(), 'passwords.yaml')
+        self.password_files.append(self.default_password_file)
+        if kwargs.get('prompt_for_passwords'):
+            self.passwords.resolvers.append(pw.InputPassword())
+        self.passwords.resolvers.append(pw.RandomPassword())
+        self.store_passwords = kwargs.get('store_passwords')
+
+    def _establish_passwords(self):
+        pw_read = []
+        for fn in self.password_files:
+            if sh.isfile(fn):
+                self.passwords.cache.update(utils.load_yaml(fn))
+                pw_read.append(fn)
+        return pw_read
 
     @property
     def lookup_name(self):
@@ -94,6 +114,23 @@ class Action(object):
         if persona_opts:
             opts.update(persona_opts)
         return opts
+
+    def _update_passwords(self):
+        if not self.store_passwords:
+            return []
+        who_update = []
+        for fn in self.password_files:
+            if sh.isfile(fn):
+                contents = utils.load_yaml(fn)
+                contents.update(self.passwords.cache)
+                sh.write_file(fn ,"%s\n" % utils.prettify_yaml(contents))
+                who_update.append(fn)
+        if not who_update:
+            contents = {}
+            contents.update(self.passwords.cache)
+            sh.write_file(self.default_password_file,"%s\n" % utils.prettify_yaml(contents))
+            who_update.append(self.default_password_file)
+        return who_update
 
     def _merge_subsystems(self, component_subsys, desired_subsys):
         joined_subsys = {}
@@ -176,6 +213,53 @@ class Action(object):
         for c in component_order:
             instances[c].warm_configs()
 
+    def _on_start(self, component_order, instances):
+        LOG.debug("Starting environment settings:")
+        utils.log_object(env.get(), logger=LOG, level=logging.DEBUG, item_max_len=64)
+        who_rd = self._establish_passwords()
+        if who_rd:
+            utils.log_iterable(who_rd,
+                               header="Updated cached passwords from %s files" % len(who_rd),
+                               logger=LOG)
+        self._verify_components(component_order, instances)
+        self._warm_components(component_order, instances)
+        who_upd = self._update_passwords()
+        if who_upd:
+            utils.log_iterable(who_upd,
+                               header="Updated %s password files" % len(who_upd),
+                               logger=LOG)
+
+    def _write_exports(self, component_order, instances, filename):
+        entries = []
+        contents = StringIO()
+        for c in component_order:
+            exports = c.env_exports()
+            if exports:
+                contents.write("# Exports for %s\n" % (c))
+                for (k, v) in exports.items():
+                    entry = "export %s=%s\n" % (k, sh.shellquote(str(v)))
+                    entries.append(entry)
+                    contents.write(entry)
+                contents.write("\n")
+        if entries:
+            sh.write_file(filename, contents.getvalue())
+        return entries
+
+    def _on_finish(self, component_order, instances):
+        LOG.info("Finalizing components.")
+        LOG.debug("Final environment settings:")
+        utils.log_object(env.get(), logger=LOG, level=logging.DEBUG, item_max_len=64)
+        export_entries = self._write_exports(component_order, instances, 'core.rc')
+        if export_entries:
+            utils.log_iterable(export_entries,
+                               header="Wrote to core.rc %s exports" % len(export_entries),
+                               logger=LOG)
+        who_upd = self._update_passwords()
+        if who_upd:
+            utils.log_iterable(who_upd,
+                               header="Updated %s password files" % len(who_upd),
+                               logger=LOG)
+
     def _get_phase_directory(self, name=None):
         if not name:
             name = self.name
@@ -221,10 +305,7 @@ class Action(object):
                         component_results[instance] = result
                         instance.activated = True
                     except (excp.NoTraceException) as e:
-                        if self.force:
-                            LOG.debug("Skipping exception: %s" % (e))
-                        else:
-                            raise
+                        pass
             self._on_completion(phase_name, component_results)
         finally:
             # Reset all activations
@@ -250,7 +331,7 @@ class Action(object):
         utils.log_iterable(component_order,
                            header="Activating in the following order",
                            logger=LOG)
-        self._verify_components(component_order, instances)
-        self._warm_components(component_order, instances)
+        self._on_start(component_order, instances)
         self._run(persona, component_order, instances)
+        self._on_finish(component_order, instances)
         return component_order

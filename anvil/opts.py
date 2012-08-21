@@ -31,7 +31,7 @@ def _format_list(in_list):
 def parse():
 
     version_str = "%s v%s" % ('anvil', version.version_string())
-    help_formatter = IndentedHelpFormatter(width=80)
+    help_formatter = IndentedHelpFormatter(width=120)
     parser = OptionParser(version=version_str, formatter=help_formatter)
 
     # Root options
@@ -79,21 +79,8 @@ def parse():
         action="store_false",
         dest="store_passwords",
         default=True,
-        help="do not store the users passwords in a 'passwords.yaml' file")
-    base_group.add_option("-n", "--no-force",
-        action="store_true",
-        dest="force",
-        help="stop the continuation of ACTION if basic errors occur",
-        default=False)
+        help="do not store the users passwords into yaml files")
     parser.add_option_group(base_group)
-
-    un_group = OptionGroup(parser, "Uninstall specific options")
-    un_group.add_option("-k", "--keep-old",
-        action="store_true",
-        dest="keep_old",
-        help="uninstall will keep as much of the old install as it can",
-        default=False)
-    parser.add_option_group(un_group)
 
     status_group = OptionGroup(parser, "Status specific options")
     status_group.add_option('-s', "--show",
@@ -111,8 +98,6 @@ def parse():
     output['dir'] = (options.dir or "")
     output['dryrun'] = (options.dryrun or False)
     output['action'] = (options.action or "")
-    output['force'] = not options.force
-    output['keep_old'] = options.keep_old
     output['extras'] = args
     output['persona_fn'] = options.persona_fn
     output['verbosity'] = len(options.verbosity)

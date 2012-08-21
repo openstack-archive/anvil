@@ -236,8 +236,9 @@ class ConfConfigurator(object):
             nova_conf.add('rpc_backend', 'nova.rpc.impl_kombu')
 
         # Where instances will be stored
-        instances_path = self._getstr('instances_path', 
-                                      sh.joinpths(self.installer.get_option('component_dir'), 'instances'))
+        instances_path = self._getstr('instances_path')
+        if not instances_path:
+            instances_path = sh.joinpths(self.installer.get_option('component_dir'), 'instances')
         self._configure_instances_path(instances_path, nova_conf)
 
         # Is this a multihost setup?
