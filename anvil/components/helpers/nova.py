@@ -26,6 +26,8 @@ from anvil import shell as sh
 from anvil import utils
 
 from anvil.components.helpers import db as dbhelper
+from anvil.components.helpers import rabbit as rbhelper
+
 
 LOG = logging.getLogger(__name__)
 
@@ -228,9 +230,9 @@ class ConfConfigurator(object):
         # How is your message queue setup?
         mq_type = canon_mq_type(self._getstr('mq'))
         if mq_type == 'rabbit':
-            nova_conf.add('rabbit_host', self.cfg.getdefaulted('rabbit', 'rabbit_host', hostip))
-            nova_conf.add('rabbit_password', self.cfg.get("passwords", "rabbit"))
-            nova_conf.add('rabbit_userid', self.cfg.get('rabbit', 'rabbit_userid'))
+            nova_conf.add('rabbit_host', self._getstr('rabbit.host', hostip))
+            nova_conf.add('rabbit_password', rbhelper.get_shared_passwords(self.installer)['pw'])
+            nova_conf.add('rabbit_userid', self._getstr('rabbit.user_id'))
             nova_conf.add('rpc_backend', 'nova.rpc.impl_kombu')
 
         # Where instances will be stored

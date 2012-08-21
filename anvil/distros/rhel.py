@@ -26,7 +26,7 @@ from anvil import colorizer
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
-
+                                             
 from anvil.components import db
 from anvil.components import horizon
 from anvil.components import nova
@@ -147,7 +147,7 @@ class NovaInstaller(nova.NovaInstaller):
 
     def configure(self):
         configs_made = nova.NovaInstaller.configure(self)
-        driver_canon = nhelper.canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
+        driver_canon = nhelper.canon_virt_driver(self.get_option('virt_driver'))
         if driver_canon == 'libvirt':
             # Create a libvirtd user group
             if not sh.group_exists('libvirtd'):

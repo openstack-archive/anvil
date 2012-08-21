@@ -94,7 +94,7 @@ class PkgInstallComponent(component.Component):
         uri = self.get_option(key, '').strip()
         if not uri:
             raise ValueError(("Could not find uri in config to download "
-                              "from at section %s for option %s") % (section, key))
+                              "from option %s") % (key))
         return (uri, self.get_option('app_dir'))
 
     def download(self):
@@ -493,7 +493,7 @@ class PythonRuntime(ProgramRuntime):
         starter_cls = importer.import_entry_point(run_type)
         starter = starter_cls(self)
         for i, app_info in enumerate(self.apps_to_start):
-            self._start_app(app_info, start)
+            self._start_app(app_info, run_type, starter)
             am_started = i + 1
             self._post_app_start(app_info)
         return am_started
@@ -511,7 +511,8 @@ class PythonRuntime(ProgramRuntime):
 
     def _post_app_start(self, app_info):
         if 'sleep_time' in app_info:
-            LOG.info("%s requested a %s second sleep time, please wait...", colorizer.quote(app_name), app_info.get('sleep_time'))
+            LOG.info("%s requested a %s second sleep time, please wait...", 
+                     colorizer.quote(app_info.get('name')), app_info.get('sleep_time'))
             sh.sleep(float(app_info.get('sleep_time')))
 
     def _locate_investigators(self, apps_started):
@@ -523,7 +524,7 @@ class PythonRuntime(ProgramRuntime):
                 inv_cls = importer.import_entry_point(run_type)
             except RuntimeError as e:
                 LOG.warn("Could not load class %s which should be used to investigate %s: %s",
-                         colorizer.quote(how), colorizer.quote(app_name), e)
+                         colorizer.quote(run_type), colorizer.quote(app_name), e)
                 continue
             investigator = None
             if inv_cls in investigator_created:

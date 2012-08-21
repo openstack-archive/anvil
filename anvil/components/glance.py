@@ -20,6 +20,7 @@ from anvil import cfg
 from anvil import components as comp
 from anvil import log as logging
 from anvil import shell as sh
+from anvil import utils
 
 from anvil.components.helpers import db as dbhelper
 from anvil.components.helpers import glance as ghelper
@@ -40,7 +41,6 @@ CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF,
 # Reg, api, scrub are here as possible subsystems
 GAPI = "api"
 GREG = "reg"
-GSCR = 'scrub'
 
 # This db will be dropped and created
 DB_NAME = "glance"
@@ -49,14 +49,12 @@ DB_NAME = "glance"
 APP_OPTIONS = {
     'glance-api': ['--config-file', sh.joinpths('%CONFIG_DIR%', API_CONF)],
     'glance-registry': ['--config-file', sh.joinpths('%CONFIG_DIR%', REG_CONF)],
-    'glance-scrubber': ['--config-file', sh.joinpths('%CONFIG_DIR%', REG_CONF)],
 }
 
 # How the subcompoent small name translates to an actual app
 SUB_TO_APP = {
     GAPI: 'glance-api',
     GREG: 'glance-registry',
-    GSCR: 'glance-scrubber',
 }
 
 
@@ -106,9 +104,10 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
                                                dbhelper.get_shared_passwords(self)))
 
     def source_config(self, config_fn):
-        real_fn = config_fn
         if config_fn == LOGGING_CONF:
             real_fn = 'logging.cnf.sample'
+        else:
+            real_fn = config_fn
         fn = sh.joinpths(self.get_option('app_dir'), 'etc', real_fn)
         return (fn, sh.load_file(fn))
 
@@ -117,8 +116,8 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
         with io.BytesIO(contents) as stream:
             config = cfg.RewritableConfigParser()
             config.readfp(stream)
-            config.set('DEFAULT', 'debug', True)
-            config.set('DEFAULT', 'verbose', True)
+            config.set('DEFAULT', 'debug', self.get_option('verbose', False))
+            config.set('DEFAULT', 'verbose', self.get_option('verbose', False))
             config.set('DEFAULT', 'bind_port', params['endpoints']['registry']['port'])
             config.set('DEFAULT', 'sql_connection', dbhelper.fetch_dbdsn(dbname=DB_NAME,
                                                                          utf8=True,
@@ -158,8 +157,8 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
             config = cfg.RewritableConfigParser()
             config.readfp(stream)
             img_store_dir = sh.joinpths(self.get_option('component_dir'), 'images')
-            config.set('DEFAULT', 'debug', True)
-            config.set('DEFAULT', 'verbose', True)
+            config.set('DEFAULT', 'debug', self.get_option('verbose', False))
+            config.set('DEFAULT', 'verbose', self.get_option('verbose', False))
             config.set('DEFAULT', 'default_store', 'file')
             config.set('DEFAULT', 'filesystem_store_datadir', img_store_dir)
             config.set('DEFAULT', 'bind_port', params['endpoints']['public']['port'])

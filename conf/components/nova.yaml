@@ -136,4 +136,9 @@ keystone:
   service_port: "$(keystone:service_port)"
   service_proto: "$(keystone:service_proto)"
 
+# Rabbit mq hookins
+rabbit:
+  user_id: "$(rabbit-mq:user_id)"
+  host: "$(rabbit-mq:host)"
+
 ...
