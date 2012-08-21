@@ -53,7 +53,7 @@ from anvil import colorizer
 from anvil import distro
 from anvil import log as logging
 from anvil import opts
-from anvil import passwords
+from anvil import passwords as pw
 from anvil import persona
 from anvil import settings
 from anvil import shell as sh
@@ -62,6 +62,8 @@ from anvil import utils
 from anvil.pprint import center_text
 
 from ordereddict import OrderedDict
+
+import yaml
 
 
 LOG = logging.getLogger()
@@ -77,6 +79,17 @@ def backup_persona(install_dir, action, persona_fn):
     new_path = sh.joinpths(install_dir, new_name)
     sh.copy(persona_fn, new_path)
     return new_path
+
+
+def load_passwords(args):
+   pw_cache = {}
+   if sh.isfile("passwords.yaml"):
+       pw_cache.update(yaml.load(sh.load_file('passwords.yaml')))
+   passwords_lookup = pw.ProxyPassword(pw_cache)
+   if args.get('prompt_for_passwords'):
+       passwords_lookup.resolvers.append(pw.InputPassword())
+   passwords_lookup.resolvers.append(pw.RandomPassword())
+   return passwords_lookup
 
 
 def run(args):
@@ -129,11 +142,17 @@ def run(args):
     except Exception as e:
         raise RuntimeError("Error loading persona file: %s due to %s" % (person_fn, e))
 
+    try:
+        password_lookup = load_passwords(args)
+    except Exception as e:
+        raise RuntimeError("Error establishing password inputs due to %s" % (e))
+
     # Get the object we will be running with...
     runner_cls = actions.class_for(action)
     runner = runner_cls(distro=dist,
                         root_dir=root_dir,
                         name=action,
+                        passwords=password_lookup,
                         **args)
 
     LOG.info("Starting action %s on %s for distro: %s",
@@ -158,6 +177,16 @@ def run(args):
 
     LOG.debug("Final environment settings:")
     utils.log_object(env.get(), logger=LOG, level=logging.DEBUG, item_max_len=64)
+
+    if args.get('store_passwords'):
+        pw_used = {}
+        if sh.isfile('passwords.yaml'):
+            old_pw = yaml.load(sh.load_file('passwords.yaml'))
+            pw_used.update(old_pw)
+            pw_used.update(passwords.cache)
+        else:
+            pw_used.update(passwords.cache)
+        sh.write_file('passwords.yaml', utils.prettify_yaml(pw_used))
 
 
 def main():

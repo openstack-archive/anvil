@@ -188,9 +188,10 @@ def strap():
         strap_functor = _strap_deb_based
     if not strap_functor:
         _write_warn('Anvil does not know how to bootstrap on platform: %s' % (platform.platform()))
+        return False
     else:
         strap_functor(distname)
         _write_msg("Bootstrapped anvil for linux distribution %s..." % (distname))
         with open(BOOT_STRAP_FN, 'w') as fh:
             fh.write("%s\n" % (version.version_string()))
-    return True
+        return True

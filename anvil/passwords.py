@@ -27,7 +27,7 @@ LOG = logging.getLogger(__name__)
 
 class ProxyPassword(object):
     def __init__(self, cache=None):
-        if not cache:
+        if cache is None:
             self.cache = {}
         else:
             self.cache = cache

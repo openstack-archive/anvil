@@ -45,15 +45,12 @@ class PhaseFunctors(object):
 class Action(object):
     __meta__ = abc.ABCMeta
 
-    def __init__(self, name, distro, root_dir, **kwargs):
+    def __init__(self, name, distro, root_dir, passwords, **kwargs):
         self.distro = distro
         self.root_dir = root_dir
         self.name = name
         self.interpolator = cfg.YamlInterpolator(settings.COMPONENT_CONF_DIR)
-        self.passwords = pw.ProxyPassword()
-        if kwargs.get('prompt_for_passwords'):
-            self.passwords.resolvers.append(pw.InputPassword())
-        self.passwords.resolvers.append(pw.RandomPassword())
+        self.passwords = passwords
         self.force = kwargs.get('force', False)
 
     @property
