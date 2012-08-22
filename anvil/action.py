@@ -180,13 +180,13 @@ class Action(object):
         persona_subsystems = persona.wanted_subsystems or {}
         persona_opts = persona.component_options or {}
         instances = {}
+        package_registries = {}
         for c in persona.wanted_components:
             ((cls, distro_opts), siblings) = self.distro.extract_component(c, self.lookup_name)
             LOG.debug("Constructing component %r (%s)", c, utils.obj_name(cls))
             kvs = {}
             kvs['name'] = c
-            kvs['packager_functor'] = functools.partial(packager.get_packager,
-                                                        distro=self.distro)
+            kvs['package_registries'] = package_registries
             # First create its siblings with a 'minimal' set of options
             # This is done, so that they will work in a minimal state
             kvs['instances'] = {}
