@@ -1,6 +1,6 @@
 ---
 # Ubuntu 11.10+
-distro_pattern: Ubuntu(.*)
+platform_pattern: Ubuntu(.*)
 name: ubuntu
 packager_name: devstack.packaging.apt:AptPackager
 commands:
