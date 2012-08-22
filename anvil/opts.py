@@ -32,7 +32,8 @@ def parse():
 
     version_str = "%s v%s" % ('anvil', version.version_string())
     help_formatter = IndentedHelpFormatter(width=120)
-    parser = OptionParser(version=version_str, formatter=help_formatter)
+    parser = OptionParser(version=version_str, formatter=help_formatter,
+                          prog='smithy')
 
     # Root options
     parser.add_option("-v", "--verbose",

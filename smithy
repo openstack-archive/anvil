@@ -8,7 +8,6 @@ fi
 shopt -s nocasematch
 
 ARGS="$@"
-PROGRAM="bin/smithy"
 VER=$(python -c "from anvil import version; print version.version_string()")
 PWD=`pwd`
 BOOT_FN=".anvil_bootstrapped"
@@ -20,7 +19,6 @@ if [ -n "$SUDO_USER" ]; then
     fi
 fi
 BOOT_FILES="${BOOT_FILES} ${HOME}/$BOOT_FN"
-
 
 has_bootstrapped()
 {
@@ -92,7 +90,8 @@ load_rc_files()
 run_smithy()
 {
     load_rc_files
-    exec $PROGRAM $ARGS
+    PYTHON=`which python`
+    exec $PYTHON anvil $ARGS
 }
 
 has_bootstrapped

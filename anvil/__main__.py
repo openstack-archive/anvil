@@ -23,17 +23,15 @@ import sys
 import time
 import traceback as tb
 
-possible_topdir = os.path.normpath(os.path.join(os.path.abspath(
-        sys.argv[0]), os.pardir, os.pardir))
-if os.path.exists(os.path.join(possible_topdir, "anvil", "__init__.py")):
-    sys.path.insert(0, possible_topdir)
-
+sys.path.insert(0, os.path.join(os.path.abspath(os.pardir)))
+sys.path.insert(0, os.path.abspath(os.getcwd()))
 
 from anvil import actions
 from anvil import cfg
 from anvil import colorizer
 from anvil import distro
 from anvil import env
+from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import opts
 from anvil import passwords as pw
@@ -48,12 +46,6 @@ from anvil.pprint import center_text
 LOG = logging.getLogger()
 
 
-def what_ran():
-    prog_name = sys.argv[0]
-    rest_args = sys.argv[1:]
-    return (prog_name, " ".join(rest_args))
-
-
 def run(args):
     """
     Starts the execution after args have been parsed and logging has been setup.
@@ -62,12 +54,9 @@ def run(args):
     Returns: True for success to run, False for failure to start
     """
 
-    (repeat_string, line_max_len) = utils.welcome()
-    print(center_text("Action Runner", repeat_string, line_max_len))
-
     action = args.pop("action", '').strip().lower()
     if action not in actions.names():
-        raise RuntimeError("Invalid action name %r specified!" % (action))
+        raise excp.OptionException("Invalid action name %r specified!" % (action))
 
     # Determine + setup the root directory...
     # If not provided attempt to locate it via the environment control files
@@ -82,9 +71,9 @@ def run(args):
 
     persona_fn = args.pop('persona_fn')
     if not persona_fn:
-        raise RuntimeError("No persona file name specified!")
+        raise excp.OptionException("No persona file name specified!")
     if not sh.isfile(persona_fn):
-        raise RuntimeError("Invalid persona file %r specified!" % (persona_fn))
+        raise excp.OptionException("Invalid persona file %r specified!" % (persona_fn))
 
     # !!
     # Here on out we should be using the logger (and not print)!!
@@ -102,7 +91,7 @@ def run(args):
         persona_obj = persona.load(persona_fn)
         persona_obj.verify(dist)
     except Exception as e:
-        raise RuntimeError("Error loading persona file: %s due to %s" % (person_fn, e))
+        raise excp.OptionException("Error loading persona file: %s due to %s" % (person_fn, e))
 
     # Get the object we will be running with...
     runner_cls = actions.class_for(action)
@@ -110,6 +99,9 @@ def run(args):
                         root_dir=root_dir,
                         name=action,
                         **args)
+
+    (repeat_string, line_max_len) = utils.welcome()
+    print(center_text("Action Runner", repeat_string, line_max_len))
 
     LOG.info("Starting action %s on %s for distro: %s",
              colorizer.quote(action), colorizer.quote(utils.rcf8222date()),
@@ -125,9 +117,6 @@ def run(args):
     LOG.info("It took %s seconds or %s minutes to complete action %s.",
              colorizer.quote(pretty_time['seconds']), colorizer.quote(pretty_time['minutes']), colorizer.quote(action))
 
-    LOG.debug("Final environment settings:")
-    utils.log_object(env.get(), logger=LOG, level=logging.DEBUG, item_max_len=64)
-
 
 def main():
     """
@@ -138,7 +127,6 @@ def main():
     Arguments: N/A
     Returns: 1 for success, 0 for failure
     """
-    (prog_name, rest_args) = what_ran()
     
     # Do this first so people can see the help message...
     args = opts.parse()
@@ -153,12 +141,12 @@ def main():
     utils.log_object(args, item_max_len=64, logger=LOG, level=logging.DEBUG)
     LOG.debug("Log level is: %s" % (logging.getLevelName(log_level)))
 
-    # Will need root to setup openstack
-    if not sh.got_root():
-        print("This program requires a user with sudo access.")
-        print("Perhaps you should try %s %s" % 
-              (colorizer.color("sudo %s" % (prog_name), "red", True), " ".join(rest_args)))
-        return 1
+    def clean_exc(exc):
+        msg = str(exc).strip()
+        if msg.endswith(".") or msg.endswith("!"):
+            return msg
+        else:
+            return msg + "."
 
     def traceback_fn():
         traceback = None
@@ -172,9 +160,19 @@ def main():
     try:
         # Drop to usermode
         sh.user_mode(quiet=False)
+    except excp.AnvilException as e:
+        print(clean_exc(e))
+        print("This program should be running via %s, is it not?" % (colorizer.quote('sudo', quote_color='red')))
+        return 1
+
+    try:
         run(args)
         utils.goodbye(True)
         return 0
+    except excp.OptionException as e:
+        print(clean_exc(e))
+        print("Perhaps you should try %s" % (colorizer.quote('--help', quote_color='red')))
+        return 1
     except Exception:
         utils.goodbye(False)
         traceback_fn()
