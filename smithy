@@ -100,7 +100,7 @@ if [ $? -eq 0 ]; then
     run_smithy
 fi
 
-TYPE=$(lsb_release -d)
+TYPE=$(lsb_release -d | cut  -f 2)
 if [[ "$TYPE" =~ "Red Hat Enterprise Linux Server" ]]; then
     RH_VER=$(lsb_release -r | cut  -f 2)
     BC_OK=$(echo "$RH_VER < 6" | bc)
@@ -119,11 +119,11 @@ if [[ "$TYPE" =~ "Red Hat Enterprise Linux Server" ]]; then
         exit 1
     fi
 else
-    echo "Anvil has not been tested on distribution $TYPE."
+    echo "Anvil has not been tested on distribution '$TYPE'"
     if [[ "$FORCE" == "yes" ]]; then
         run_smithy
     else
-        echo "To run anyway set FORCE=yes"
+        echo "To run anyway set FORCE=yes and rerun."
         exit 1
     fi
 fi

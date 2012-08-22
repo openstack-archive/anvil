@@ -71,7 +71,10 @@ class Action(object):
             if sh.isfile(fn):
                 self.passwords.cache.update(utils.load_yaml(fn))
                 pw_read.append(fn)
-        return pw_read
+        if pw_read:
+            utils.log_iterable(pw_read,
+                               header="Updated passwords to be used from %s files" % len(pw_read),
+                               logger=LOG)
 
     @property
     def lookup_name(self):
@@ -117,20 +120,26 @@ class Action(object):
 
     def _update_passwords(self):
         if not self.store_passwords:
-            return []
+            return
+        if not self.passwords.cache:
+            return
         who_update = []
         for fn in self.password_files:
             if sh.isfile(fn):
                 contents = utils.load_yaml(fn)
                 contents.update(self.passwords.cache)
-                sh.write_file(fn ,"%s\n" % utils.prettify_yaml(contents))
+                sh.write_file(fn, "# Updated on %s\n%s\n" % (utils.rcf8222date(), utils.prettify_yaml(contents)))
                 who_update.append(fn)
         if not who_update:
             contents = {}
             contents.update(self.passwords.cache)
-            sh.write_file(self.default_password_file,"%s\n" % utils.prettify_yaml(contents))
+            sh.write_file(self.default_password_file,
+                          "# Updated on %s\n%s\n" % (utils.rcf8222date(), utils.prettify_yaml(contents)))
             who_update.append(self.default_password_file)
-        return who_update
+        if who_update:
+            utils.log_iterable(who_update,
+                               header="Updated/created %s password files" % len(who_update),
+                               logger=LOG)
 
     def _merge_subsystems(self, component_subsys, desired_subsys):
         joined_subsys = {}
@@ -214,20 +223,13 @@ class Action(object):
             instances[c].warm_configs()
 
     def _on_start(self, component_order, instances):
+        LOG.info("Booting up your components.")
         LOG.debug("Starting environment settings:")
         utils.log_object(env.get(), logger=LOG, level=logging.DEBUG, item_max_len=64)
-        who_rd = self._establish_passwords()
-        if who_rd:
-            utils.log_iterable(who_rd,
-                               header="Updated cached passwords from %s files" % len(who_rd),
-                               logger=LOG)
+        self._establish_passwords()
         self._verify_components(component_order, instances)
         self._warm_components(component_order, instances)
-        who_upd = self._update_passwords()
-        if who_upd:
-            utils.log_iterable(who_upd,
-                               header="Updated %s password files" % len(who_upd),
-                               logger=LOG)
+        self._update_passwords()
 
     def _write_exports(self, component_order, instances, filename):
         entries = []
@@ -243,22 +245,16 @@ class Action(object):
                 contents.write("\n")
         if entries:
             sh.write_file(filename, contents.getvalue())
-        return entries
+            utils.log_iterable(entries,
+                               header="Wrote to %s %s exports" % (filename, len(entries)),
+                               logger=LOG)
 
     def _on_finish(self, component_order, instances):
-        LOG.info("Finalizing components.")
+        LOG.info("Tearing down your components.")
         LOG.debug("Final environment settings:")
         utils.log_object(env.get(), logger=LOG, level=logging.DEBUG, item_max_len=64)
-        export_entries = self._write_exports(component_order, instances, 'core.rc')
-        if export_entries:
-            utils.log_iterable(export_entries,
-                               header="Wrote to core.rc %s exports" % len(export_entries),
-                               logger=LOG)
-        who_upd = self._update_passwords()
-        if who_upd:
-            utils.log_iterable(who_upd,
-                               header="Updated %s password files" % len(who_upd),
-                               logger=LOG)
+        self._write_exports(component_order, instances, 'core.rc')
+        self._update_passwords()
 
     def _get_phase_directory(self, name=None):
         if not name:
