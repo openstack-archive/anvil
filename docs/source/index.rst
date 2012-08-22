@@ -4,7 +4,7 @@
 ANVIL Documentation
 =====================
 
-.. rubric:: Everything about ANVIL, a set of **python** scripts and utilities to quickly deploy an OpenStack cloud.
+.. rubric:: Everything about ANVIL, a set of **python** scripts and utilities to turn raw openstack into a hammer!
 
 
 ----
