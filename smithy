@@ -78,6 +78,24 @@ EOF
     return 0
 }
 
+bootstrap_ub()
+{
+    echo "Bootstrapping Ubuntu: $1"
+    echo "Please wait..."
+    echo "Installing needed distribution dependencies:"
+    apt-get install -y gcc git pep8 pylint python python-dev python-iniparse python-pip python-progressbar python-yaml
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+    echo "Installing needed pypi dependencies:"
+    pip install -U -I netifaces termcolor
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+    return 0
+    
+}
+
 load_rc_files()
 {
     for i in `ls *.rc 2>/dev/null`; do
@@ -94,6 +112,16 @@ run_smithy()
     exec $PYTHON anvil $ARGS
 }
 
+puke()
+{
+    if [[ "$FORCE" == "yes" ]]; then
+        run_smithy
+    else
+        echo "To run anyway set FORCE=yes and rerun."
+        exit 1
+    fi
+}
+
 has_bootstrapped
 if [ $? -eq 0 ]; then
     run_smithy
@@ -105,7 +133,7 @@ if [[ "$TYPE" =~ "Red Hat Enterprise Linux Server" ]]; then
     BC_OK=$(echo "$RH_VER < 6" | bc)
     if [ "$BC_OK" == "1" ]; then
         echo "This script must be ran on RHEL 6.0+ and not RHEL $RH_VER."
-        exit 1
+        puke
     fi
     bootstrap_rh $RH_VER
     if [ $? -eq 0 ]; then
@@ -117,14 +145,26 @@ if [[ "$TYPE" =~ "Red Hat Enterprise Linux Server" ]]; then
         echo "Bootstrapping RHEL $RH_VER failed."
         exit 1
     fi
-else
-    echo "Anvil has not been tested on distribution '$TYPE'"
-    if [[ "$FORCE" == "yes" ]]; then
+elif [[ "$TYPE" =~ "Ubuntu" ]]; then
+    UB_VER=$(lsb_release -r | cut  -f 2)
+    BC_OK=$(echo "$UB_VER < 11.10" | bc)
+    if [ "$BC_OK" == "1" ]; then
+        echo "This script must be ran on Ubuntu 11.10+ and not Ubuntu $UB_VER."
+        puke
+    fi
+    bootstrap_ub $UB_VER
+    if [ $? -eq 0 ]; then
+        for i in $BOOT_FILES; do
+            echo "$VER" > $i
+        done
         run_smithy
     else
-        echo "To run anyway set FORCE=yes and rerun."
+        echo "Bootstrapping Ubuntu $UB_VER failed."
         exit 1
     fi
+else
+    echo "Anvil has not been tested on distribution '$TYPE'"
+    puke
 fi
 
 
