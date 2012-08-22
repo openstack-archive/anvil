@@ -20,7 +20,6 @@ from anvil import cfg
 from anvil import colorizer
 from anvil import components as comp
 from anvil import exceptions
-from anvil import libvirt as lv
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
@@ -29,6 +28,7 @@ from anvil.components.helpers import db as dbhelper
 from anvil.components.helpers import keystone as khelper
 from anvil.components.helpers import nova as nhelper
 from anvil.components.helpers import rabbit as rhelper
+from anvil.components.helpers import virt as lv
 
 LOG = logging.getLogger(__name__)
 

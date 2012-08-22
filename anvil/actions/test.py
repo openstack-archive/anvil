@@ -31,7 +31,7 @@ class TestAction(action.Action):
     def _run(self, persona, component_order, instances):
         self._run_phase(
             PhaseFunctors(
-                start=None,
+                start=lambda i: LOG.info('Running tests of component %s.', colorizer.quote(i.name)),
                 run=lambda i: i.run_tests(),
                 end=None,
             ),

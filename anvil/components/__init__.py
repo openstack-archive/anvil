@@ -483,6 +483,9 @@ class ProgramRuntime(component.Component):
     def status(self):
         return []
 
+    def start(self):
+        return 0
+
 
 class EmptyRuntime(ProgramRuntime):
     pass
@@ -674,8 +677,6 @@ class PkgUninstallComponent(component.Component):
 
 
 class PythonUninstallComponent(PkgUninstallComponent):
-    def __init__(self, *args, **kargs):
-        PkgUninstallComponent.__init__(self, *args, **kargs)
 
     def uninstall(self):
         self._uninstall_python()
@@ -716,3 +717,35 @@ class PythonUninstallComponent(PkgUninstallComponent):
                     LOG.warn("No python directory found at %s - skipping", colorizer.quote(where, quote_color='red'))
 
 
+#### 
+#### TESTING CLASSES
+####
+
+
+class EmptyTestingComponent(component.Component):
+    def run_tests(self):
+        return
+
+
+class PythonTestingComponent(component.Component):
+    def _get_test_exclusions(self):
+        return []
+    
+    def run_tests(self):
+        app_dir = self.get_option('app_dir')
+        if not sh.isfile(sh.joinpths(app_dir, 'run_tests.sh')):
+            LOG.warn("Unable to find 'run_tests.sh' in %s, can not run %s tests.", app_dir, self.name)
+            return
+        # See: http://docs.openstack.org/developer/nova/devref/unit_tests.html
+        cmd = [sh.joinpths(app_dir, 'run_tests.sh')]
+        only_tests = self.get_option('tests')
+        if only_tests:
+            cmd.extend(only_tests)
+        if self.get_option('coverage'):
+            # Not all modules currently handle this..
+            cmd += ['--with-coverage', '--cover-package=%s' % (self.name)]
+        cmd += ['-N', '-P', '--nologcapture']
+        exclude_what = self._get_test_exclusions()
+        for e in exclude_what:
+            cmd.append('--exclude=%s' % (e))
+        sh.execute(*cmd, stdout_fh=None, stderr_fh=None, cwd=app_dir)

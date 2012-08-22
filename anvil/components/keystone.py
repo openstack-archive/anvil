@@ -233,3 +233,18 @@ class KeystoneRuntime(comp.PythonRuntime):
 
     def app_options(self, app):
         return APP_OPTIONS.get(app)
+
+
+class KeystoneTester(comp.PythonTestingComponent):
+    def _get_test_exclusions(self):
+        return [
+            # These 2 seem to require swift, not always installed...
+            'test_swift_auth_middleware',
+            'test_s3_token_middleware',
+            # Aren't always installing memcache...
+            'test_backend_memcache',
+            # Oddness: 'unable to access signing dir /root/keystone-signing'
+            'test_nomemcache',
+            # Aren't always installing ldap...
+            'test_backend_ldap',
+        ]

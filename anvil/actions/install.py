@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from StringIO import StringIO
+
 from anvil import action
 from anvil import colorizer
 from anvil import log
@@ -43,6 +45,25 @@ class InstallAction(action.Action):
     @property
     def lookup_name(self):
         return 'install'
+
+    def _write_exports(self, component_order, instances, filename):
+        entries = []
+        contents = StringIO()
+        contents.write("# Exports for action %s\n\n" % (self.name))
+        for c in component_order:
+            exports = instances[c].env_exports
+            if exports:
+                contents.write("# Exports for %s\n" % (c))
+                for (k, v) in exports.items():
+                    export_entry = "export %s=%s" % (k, sh.shellquote(str(v).strip()))
+                    entries.append(export_entry)
+                    contents.write("%s\n" % (export_entry))
+                contents.write("\n")
+        if entries:
+            sh.write_file(filename, contents.getvalue())
+            utils.log_iterable(entries,
+                               header="Wrote to %s %s exports" % (filename, len(entries)),
+                               logger=LOG)
 
     def _run(self, persona, component_order, instances):
         self._run_phase(

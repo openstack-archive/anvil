@@ -32,7 +32,7 @@ from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
 
-INTERP_PAT = r"\s*\$\(([\w\d]+):([\w\d]+)\)\s*"
+INTERP_PAT = r"\s*\$\(([\w\d-]+):([\w\d-]+)\)\s*"
 
 LOG = logging.getLogger(__name__)
 
@@ -112,63 +112,62 @@ class RewritableConfigParser(IgnoreMissingMixin, iniparse.RawConfigParser, Strin
                 self.read(f)
 
 
-class EnvLookupDict(dict):
-    def __init__(self,*args, **kwargs):
-        dict.__init__(self, *args, **kwargs)
-        self.env_prefix = kwargs.get('env_prefix')
-        if self.env_prefix is not None:
-            self.env_prefix = str(self.env_prefix).upper().replace("-", "_").strip()
-
-    def _lookup_env_key(self, key):
-        if self.env_prefix is not None and key:
-            env_key = self.env_prefix
-            env_key += str(key).upper().replace("-", "_").strip()
-            env_val = env.get_key(env_key)
-            if env_val is not None:
-                return str(env_val)
-        return None
-
-    def __getitem__(self, key):
-        env_value = self._lookup_env_key(key)
-        if env_value is not None:
-            return env_value
-        return dict.__getitem__(self, key)
-
-    def get(self, key):
-        env_value = self._lookup_env_key(key)
-        if env_value is not None:
-            return env_value
-        return dict.get(self, key)
-
-
 class YamlInterpolator(object):
     def __init__(self, base):
-        self.in_progress = {}
+        self.included = {}
         self.interpolated = {}
         self.base = base
 
-    def _interpolate_iterable(self, what, path):
+    def _interpolate_iterable(self, what):
+        if isinstance(what, (set)):
+            n_what = set()
+            for v in what:
+                n_what.append(self._interpolate(v))
+            return n_what
+        else:
+            n_what = []
+            for v in what:
+                n_what.append(self._interpolate(v))
+            return n_what
+
+    def _interpolate_dictionary(self, what):
+        n_what = {}
+        for (k, v) in what.iteritems():
+            n_what[k] = self._interpolate(v)
+        return n_what
+
+    def _include_dictionary(self, what):
+        n_what = {}
+        for (k, v) in what.iteritems():
+            n_what[k] = self._do_include(v)
+        return n_what
+
+    def _include_iterable(self, what):
         n_what = []
         for v in what:
-            n_what.append(self._interpolate(v, path))
+            n_what.append(self._do_include(v))
         return n_what
 
-    def _interpolate_dictionary(self, what, path):
-        n_what = EnvLookupDict(env_prefix="_".join(path))
-        for (k, v) in what.iteritems():
-            path.append(k)
-            n_what[k] = self._interpolate(v, path)
-            path.pop()
-        return n_what
+    def _include_iterable(self, what):
+        if isinstance(what, (set)):
+            n_what = set()
+            for v in what:
+                n_what.append(self._do_include(v))
+            return n_what
+        else:
+            n_what = []
+            for v in what:
+                n_what.append(self._do_include(v))
+            return n_what
 
-    def _interpolate(self, v, path):
+    def _interpolate(self, v):
         n_v = v
         if v and isinstance(v, (basestring, str)):
             n_v = self._interpolate_string(v)
         elif isinstance(v, dict):
-            n_v = self._interpolate_dictionary(v, path)
+            n_v = self._interpolate_dictionary(v)
         elif isinstance(v, (list, set, tuple)):
-            n_v = self._interpolate_iterable(v, path)
+            n_v = self._interpolate_iterable(v)
         return n_v
     
     def _interpolate_string(self, what):
@@ -178,19 +177,16 @@ class YamlInterpolator(object):
         def replacer(match):
             who = match.group(1).strip()
             key = match.group(2).strip()
-            special_val = self._interpolate_special(who, key)
-            if special_val is not None:
-                return str(special_val)
-            if who in self.interpolated:
-                return str(self.interpolated[who][key])
-            if who in self.in_progress:
-                return str(self.in_progress[who][key])
-            contents = self.extract(who)
-            return str(contents[key])
+            if self._process_special(who, key):
+                return self._process_special(who, key)
+            if who not in self.interpolated:
+                self.interpolated[who] = self.included[who]
+                self.interpolated[who] = self._interpolate(self.included[who])
+            return str(self.interpolated[who][key])
 
         return re.sub(INTERP_PAT, replacer, what)
 
-    def _interpolate_special(self, who, key):
+    def _process_special(self, who, key):
         if key == 'ip' and who == 'auto':
             return utils.get_host_ip()
         if key == 'user' and who == 'auto':
@@ -199,18 +195,44 @@ class YamlInterpolator(object):
             raise KeyError("Unknown auto key type %s" % (key))
         return None
 
+    def _include_string(self, what):
+        if not re.search(INTERP_PAT, what):
+            return what
+
+        def replacer(match):
+            who = match.group(1).strip()
+            key = match.group(2).strip()
+            if self._process_special(who, key):
+                return self._process_special(who, key)
+            self._process_includes(who)
+            return str(self.included[who][key])
+
+        return re.sub(INTERP_PAT, replacer, what)
+
+    def _do_include(self, v):
+        n_v = v
+        if v and isinstance(v, (basestring, str)):
+            n_v = self._include_string(v)
+        elif isinstance(v, dict):
+            n_v = self._include_dictionary(v)
+        elif isinstance(v, (list, set, tuple)):
+            n_v = self._include_iterable(v)
+        return n_v
+
+    def _process_includes(self, root):
+        if root in self.included:
+            return
+        pth = sh.joinpths(self.base, "%s.yaml" % (root))
+        if not sh.isfile(pth):
+            self.included[root] = {}
+            return
+        self.included[root] = yaml.load(sh.load_file(pth))
+        self.included[root] = self._do_include(self.included[root])
+
     def extract(self, root):
         if root in self.interpolated:
             return self.interpolated[root]
-        pth = sh.joinpths(self.base, "%s.yaml" % (root))
-        if not sh.isfile(pth):
-            return {}
-        self.in_progress[root] = yaml.load(sh.load_file(pth))
-        interped = self._interpolate(self.in_progress[root], path=["%s_" % (root)])
-        del(self.in_progress[root])
-        self.interpolated[root] = interped
-        # Do a final run over the interpolated to pick up any stragglers
-        # that were recursively 'included' (but not filled in)
-        for (tmp_root, contents) in self.interpolated.items():
-            self.interpolated[tmp_root] = self._interpolate(contents, path=["%s_" % (tmp_root)])
+        self._process_includes(root)
+        self.interpolated[root] = self.included[root]
+        self.interpolated[root] = self._interpolate(self.interpolated[root])
         return self.interpolated[root]

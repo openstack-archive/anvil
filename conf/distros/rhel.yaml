@@ -54,11 +54,13 @@ components:
             install: anvil.components.cinder_client:CinderClientInstaller
             running: anvil.components.cinder_client:CinderClientRuntime
             uninstall: anvil.components.cinder_client:CinderClientUninstaller
+            test: anvil.components:PythonTestingComponent
     db:
         action_classes:
             install: anvil.distros.rhel:DBInstaller
             running: anvil.components.db:DBRuntime
             uninstall: anvil.components.db:DBUninstaller
+            test: anvil.components:EmptyTestingComponent
         packages:
         -   name: mysql
         -   name: mysql-server
@@ -67,6 +69,7 @@ components:
             install: anvil.components.pkglist:Installer
             running: anvil.components:EmptyRuntime
             uninstall: anvil.components.pkglist:Uninstaller
+            test: anvil.components:EmptyTestingComponent
         packages:
         # Shared system packages
         -   name: coreutils
@@ -214,6 +217,7 @@ components:
             install: anvil.components.glance:GlanceInstaller
             running: anvil.components.glance:GlanceRuntime
             uninstall: anvil.components.glance:GlanceUninstaller
+            test: anvil.components:PythonTestingComponent
         # When parsing 'tools/pip-requires' and 
         # 'tools/test-requires' (if they exist)
         # the following map will be used to translate names
@@ -241,16 +245,19 @@ components:
             install: anvil.components.glance_client:GlanceClientInstaller
             running: anvil.components.glance_client:GlanceClientRuntime
             uninstall: anvil.components.glance_client:GlanceClientUninstaller
+            test: anvil.components:PythonTestingComponent
         pips:
         -   name: nosexcover
         -   name: setuptools-git
         -   name: warlock
             version: "==0.1.0"
+        -   name: nosehtmloutput
     horizon:
         action_classes:
             install: anvil.distros.rhel:HorizonInstaller
             running: anvil.components.horizon:HorizonRuntime
             uninstall: anvil.components.horizon:HorizonUninstaller
+            test: anvil.components:PythonTestingComponent
         pip_to_package:
         -   name: pytz
             package:
@@ -273,6 +280,7 @@ components:
             install: anvil.components.keystone:KeystoneInstaller
             running: anvil.components.keystone:KeystoneRuntime
             uninstall: anvil.components.keystone:KeystoneUninstaller
+            test: anvil.components.keystone:KeystoneTester
         packages:
         -   name: MySQL-python
         pip_to_package:
@@ -289,11 +297,13 @@ components:
             install: anvil.components.keystone_client:KeyStoneClientInstaller
             running: anvil.components.keystone_client:KeyStoneClientRuntime
             uninstall: anvil.components.keystone_client:KeyStoneClientUninstaller
+            test: anvil.components:PythonTestingComponent
     nova:
         action_classes:
             install: anvil.distros.rhel:NovaInstaller
             running: anvil.components.nova:NovaRuntime
             uninstall: anvil.components.nova:NovaUninstaller
+            test: anvil.components:PythonTestingComponent
         packages:
         -   name: MySQL-python
         -   name: dnsmasq
@@ -346,11 +356,13 @@ components:
             install: anvil.components.nova_client:NovaClientInstaller
             running: anvil.components.nova_client:NovaClientRuntime
             uninstall: anvil.components.nova_client:NovaClientUninstaller
+            test: anvil.components:PythonTestingComponent
     no-vnc:
         action_classes:
             install: anvil.components.novnc:NoVNCInstaller
             running: anvil.components.novnc:NoVNCRuntime
             uninstall: anvil.components.novnc:NoVNCUninstaller
+            test: anvil.components:EmptyTestingComponent
         packages:
         -   name: python-websockify
     openstack-client:
@@ -358,13 +370,19 @@ components:
             install: anvil.components.openstack_client:OpenStackClientInstaller
             running: anvil.components.openstack_client:OpenStackClientRuntime
             uninstall: anvil.components.openstack_client:OpenStackClientUninstaller
+            test: anvil.components:PythonTestingComponent
         pips:
         -   name: cliff
+        pip_to_package:
+        -   name: keyring
+            package:
+                name: python-keyring
     quantum-client:
         action_classes:
             install: anvil.components.quantum_client:QuantumClientInstaller
             running: anvil.components.quantum_client:QuantumClientRuntime
             uninstall: anvil.components.quantum_client:QuantumClientUninstaller
+            test: anvil.components:PythonTestingComponent
         pip_to_package:
         -   name: pyparsing
             package:
@@ -376,6 +394,7 @@ components:
             install: anvil.components.rabbit:RabbitInstaller
             running: anvil.distros.rhel:RabbitRuntime
             uninstall: anvil.components.rabbit:RabbitUninstaller
+            test: anvil.components:EmptyTestingComponent
         packages:
         -   name: rabbitmq-server
             pre-install:
@@ -396,5 +415,6 @@ components:
             install: anvil.components.swift_client:SwiftClientInstaller
             running: anvil.components.swift_client:SwiftClientRuntime
             uninstall: anvil.components.swift_client:SwiftClientUninstaller
+            test: anvil.components:PythonTestingComponent
 ...
 

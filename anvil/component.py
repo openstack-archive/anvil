@@ -76,10 +76,7 @@ class Component(object):
         return {}
 
     def verify(self):
-        # Ensure subsystems are 'valid'...
-        for s in self.subsystems:
-            if s not in self.valid_subsystems:
-                raise ValueError("Unknown subsystem %r requested for component: %s" % (s, self))
+        pass
 
     def __str__(self):
         return "%s@%s" % (utils.obj_name(self), self.name)

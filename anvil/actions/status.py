@@ -28,8 +28,8 @@ from anvil.components import (STATUS_INSTALLED, STATUS_STARTED,
 
 
 class StatusAction(action.Action):
-    def __init__(self, distro, cfg, root_dir, name, **kwargs):
-        action.Action.__init__(self, distro, cfg, root_dir, name, **kwargs)
+    def __init__(self, name, distro, root_dir, **kwargs):
+        action.Action.__init__(self, name, distro, root_dir, **kwargs)
         self.show_full = kwargs.get('show_full')
 
     @property

@@ -20,8 +20,6 @@ import copy
 import functools
 import os
 
-from StringIO import StringIO
-
 from anvil import cfg
 from anvil import colorizer
 from anvil import env
@@ -222,7 +220,7 @@ class Action(object):
         for c in component_order:
             instances[c].warm_configs()
 
-    def _on_start(self, component_order, instances):
+    def _on_start(self, persona, component_order, instances):
         LOG.info("Booting up your components.")
         LOG.debug("Starting environment settings:")
         utils.log_object(env.get(), logger=LOG, level=logging.DEBUG, item_max_len=64)
@@ -232,28 +230,13 @@ class Action(object):
         self._update_passwords()
 
     def _write_exports(self, component_order, instances, filename):
-        entries = []
-        contents = StringIO()
-        for c in component_order:
-            exports = c.env_exports()
-            if exports:
-                contents.write("# Exports for %s\n" % (c))
-                for (k, v) in exports.items():
-                    entry = "export %s=%s\n" % (k, sh.shellquote(str(v)))
-                    entries.append(entry)
-                    contents.write(entry)
-                contents.write("\n")
-        if entries:
-            sh.write_file(filename, contents.getvalue())
-            utils.log_iterable(entries,
-                               header="Wrote to %s %s exports" % (filename, len(entries)),
-                               logger=LOG)
+        pass
 
-    def _on_finish(self, component_order, instances):
+    def _on_finish(self, persona, component_order, instances):
         LOG.info("Tearing down your components.")
         LOG.debug("Final environment settings:")
         utils.log_object(env.get(), logger=LOG, level=logging.DEBUG, item_max_len=64)
-        self._write_exports(component_order, instances, 'core.rc')
+        self._write_exports(component_order, instances, filename="%s.rc" % (self.name))
         self._update_passwords()
 
     def _get_phase_directory(self, name=None):
@@ -327,7 +310,7 @@ class Action(object):
         utils.log_iterable(component_order,
                            header="Activating in the following order",
                            logger=LOG)
-        self._on_start(component_order, instances)
+        self._on_start(persona, component_order, instances)
         self._run(persona, component_order, instances)
-        self._on_finish(component_order, instances)
+        self._on_finish(persona, component_order, instances)
         return component_order

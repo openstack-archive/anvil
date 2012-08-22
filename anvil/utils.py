@@ -326,6 +326,19 @@ def get_host_ip():
     return ip
 
 
+@contextlib.contextmanager
+def chdir(where_to):
+    curr_cd = os.getcwd()
+    if curr_cd == where_to:
+        yield where_to
+    else:
+        try:
+            os.chdir(where_to)
+            yield where_to
+        finally:
+            os.chdir(curr_cd)
+
+
 def get_interfaces():
     interfaces = dict()
     for intfc in netifaces.interfaces():
