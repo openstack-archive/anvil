@@ -236,6 +236,7 @@ class KeystoneRuntime(comp.PythonRuntime):
 
 
 class KeystoneTester(comp.PythonTestingComponent):
+    # TODO(harlowja) these should probably be bugs...
     def _get_test_exclusions(self):
         return [
             # These 2 seem to require swift, not always installed...
