@@ -1,7 +1,7 @@
 ---
-# RedHat Enterprise Linux 6
-name: rhel-6
-platform_pattern: redhat-6(.*)
+# RedHat Enterprise Linux 6.0+
+name: rhel
+platform_pattern: redhat(.*)
 packager_name: anvil.packaging.yum:YumPackager
 commands:
     apache:
@@ -22,17 +22,14 @@ commands:
     mysql:
         # NOTE: we aren't stopping any sql injection...
         create_db: mysql --user=%USER% --password=%PASSWORD% -e 
-          "CREATE DATABASE %DB% CHARACTER SET %CHARACTER_SET%;"
+                   "CREATE DATABASE %DB% CHARACTER SET %CHARACTER_SET%;"
         drop_db: mysql --user=%USER% --password=%PASSWORD% -e 
-          "DROP DATABASE IF EXISTS %DB%;"
+                 "DROP DATABASE IF EXISTS %DB%;"
         grant_all: mysql --user=%USER% --password=%PASSWORD% -e 
-          "GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' IDENTIFIED BY '%PASSWORD%'; 
-           FLUSH PRIVILEGES;"
+                   "GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' IDENTIFIED BY '%PASSWORD%'; FLUSH PRIVILEGES;"
         restart: service mysqld restart
         set_pwd: mysql --user=%USER% --password=%OLD_PASSWORD% -e 
-          "USE mysql; 
-           UPDATE user SET password=PASSWORD('%NEW_PASSWORD%') WHERE User='%USER%';
-           FLUSH PRIVILEGES;"
+                 "USE mysql;  UPDATE user SET password=PASSWORD('%NEW_PASSWORD%') WHERE User='%USER%';  FLUSH PRIVILEGES;"
         start: service mysqld start
         status: service mysqld status
         stop: service mysqld stop
@@ -44,7 +41,7 @@ commands:
     # Where component symlinks will go, the component name will become a directory
     # under this directory where its configuration files will be connected to there
     # actual location.
-    base_link_dir: "/etc/"
+    base_link_dir: /etc
     rabbit-mq:
         change_password: rabbitmqctl change_password
         restart: service rabbitmq-server restart
