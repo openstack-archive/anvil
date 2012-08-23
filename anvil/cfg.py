@@ -122,7 +122,7 @@ class YamlInterpolator(object):
         if isinstance(what, (set)):
             n_what = set()
             for v in what:
-                n_what.append(self._interpolate(v))
+                n_what.add(self._interpolate(v))
             return n_what
         else:
             n_what = []
@@ -143,16 +143,10 @@ class YamlInterpolator(object):
         return n_what
 
     def _include_iterable(self, what):
-        n_what = []
-        for v in what:
-            n_what.append(self._do_include(v))
-        return n_what
-
-    def _include_iterable(self, what):
         if isinstance(what, (set)):
             n_what = set()
             for v in what:
-                n_what.append(self._do_include(v))
+                n_what.add(self._do_include(v))
             return n_what
         else:
             n_what = []
