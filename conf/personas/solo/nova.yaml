@@ -1,0 +1,22 @@
+---
+components:
+# Order matters here!
+- general
+- nova
+- nova-client
+options:
+    nova:
+        db-sync: true
+        do-network-init: true
+        mq: rabbit
+subsystems:
+    nova:
+    - api
+    - cpu
+    - net
+    - sched
+supports:
+- rhel
+- ubuntu
+...
+
