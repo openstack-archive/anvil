@@ -203,23 +203,26 @@ components:
         pips:
         # Pips that aren't packages yet (or versions aren't right...)
         -   name: coverage
+        -   name: distribute
         -   name: nose-exclude
         -   name: openstack.nose_plugin
         -   name: passlib
         -   name: prettytable
             version: ">=0.6" # This is not right, 0.6 and 0.6.1 are needed??
         -   name: pycrypto
-            options: --upgrade
+            options:
+                - "-U"
+                - "-I"
         -   name: requests
         -   name: sphinx
         -   name: sqlalchemy-migrate
-        -   name: distribute
+        -   name: tox
     glance:
         action_classes:
             install: anvil.components.glance:GlanceInstaller
             running: anvil.components.glance:GlanceRuntime
             uninstall: anvil.components.glance:GlanceUninstaller
-            test: anvil.components:PythonTestingComponent
+            test: anvil.components.glance:GlanceTester
         # When parsing 'tools/pip-requires' and 
         # 'tools/test-requires' (if they exist)
         # the following map will be used to translate names

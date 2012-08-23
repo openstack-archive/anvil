@@ -14,11 +14,6 @@ commands:
     git:
         checkout: git checkout
         clone: git clone
-    iscsi:
-        restart: service tgt restart
-        start: service tgt start
-        status: service tgt status
-        stop: service tgt stop
     libvirt:
         restart: service libvirt-bin restart
         status: service libvirt-bin status
@@ -38,7 +33,12 @@ commands:
         start: service mysql start
         status: service mysql status
         stop: service mysql stop
+    # Commands used when setting up python projects
+    python:
+        setup: python setup.py develop
+        unsetup: python setup.py develop --uninstall
     pip: pip
+    base_link_dir: /etc
     rabbit-mq:
         start: service rabbitmq-server start
         stop: service rabbitmq-server stop

@@ -14,8 +14,7 @@ To get the help display try:
 
      $ ./smithy --help
 
-To examine what installing the basics (nova, horizon, glance, keystone…)
-will do (with installation in ``~/openstack``) try:
+To examine what installing the basics (nova, horizon, glance, keystone…) will do (with installation in ``~/openstack``) try:
 
 ::
 

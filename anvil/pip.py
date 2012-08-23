@@ -44,8 +44,8 @@ class Packager(pack.Packager):
         real_cmd = [root_cmd] + ['install'] + PIP_INSTALL_CMD_OPTS
         options = pip.get('options')
         if options:
-            if not isinstance(options, (list, tuple)):
-                options = [options]
+            if not isinstance(options, (list, tuple, set)):
+                options = [str(options)]
             LOG.debug("Using pip options: %s" % (options))
             for opt in options:
                 real_cmd.append("%s" % (opt))
