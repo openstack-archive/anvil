@@ -145,6 +145,8 @@ components:
                     links:
                         - source: "/usr/lib/python2.6/site-packages/nose-1*-py2.6.egg/nose"
                           target: "/usr/lib/python2.6/site-packages/nose"
+                        - source: "/usr/bin/nosetests1.1"
+                          target: "/usr/bin/nosetests"
         -   name: paste
             package:
                 name: python-paste
