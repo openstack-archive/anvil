@@ -28,12 +28,18 @@ class PackageAction(action.Action):
     def lookup_name(self):
         return 'package'
 
+    def _finish_package(self, component, where):
+        if where:
+            LOG.info("Unable to create a package template!")
+        else:
+            LOG.info("Package template created at %s", colorizer.quote(where))
+
     def _run(self, persona, component_order, instances):
         self._run_phase(
             PhaseFunctors(
-                start=None,
+                start=lambda i: LOG.info('Creating a package template for component %s.', colorizer.quote(i.name)),
                 run=lambda i: i.package(),
-                end=None,
+                end=self._finish_package,
             ),
             component_order,
             instances,

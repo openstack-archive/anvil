@@ -244,3 +244,12 @@ class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
                                                            **utils.merge_dicts(self.get_option('keystone'),
                                                                                khelper.get_shared_passwords(self)))
             ghelper.UploadService(params).install(self._get_image_urls())
+
+
+class GlanceTester(comp.PythonTestingComponent):
+    # TODO(harlowja) these should probably be bugs...
+    def _get_test_exclusions(self):
+        return [
+            # These seem to require swift, not always installed...
+            'test_swift_store',
+        ]
