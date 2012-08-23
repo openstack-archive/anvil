@@ -195,7 +195,7 @@ as ANVIL figures out how to install your desired components (if you
 desire more informational output add a ``-v`` or a ``-vv`` to that
 command).
 
-Installing
+Testing
 ----------
 
 Now (if you choose) you can run each *OpenStack* components unit tests by running the following:
