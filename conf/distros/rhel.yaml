@@ -219,7 +219,7 @@ components:
             install: anvil.components.glance:GlanceInstaller
             running: anvil.components.glance:GlanceRuntime
             uninstall: anvil.components.glance:GlanceUninstaller
-            test: anvil.components:PythonTestingComponent
+            test:anvil.components.glance:GlanceTester
         # When parsing 'tools/pip-requires' and 
         # 'tools/test-requires' (if they exist)
         # the following map will be used to translate names
