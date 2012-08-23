@@ -2,7 +2,7 @@
 Features
 ========
 
--  Multi distribution installs via a single tool
+-  Multi distribution support
 -  A set of configuration files (in yaml format) that shows common/component/distribution configurations
 -  Supports the following *actions* on the various of `OpenStack`_ components.
  #. **Installing**: downloading, installing dependencies (`pypi`_ and distribution packaging specifics)
