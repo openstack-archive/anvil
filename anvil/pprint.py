@@ -53,7 +53,7 @@ def _pformat_hash(hsh, item_max_len):
     entries = []
     for (k, v) in hsh.items():
         entry = ("%s" % (_pformat_escape(k, item_max_len)), "%s" % (pformat(v, item_max_len)))
-        max_key_len = max(max_key_len, len(entry[0]) + 2
+        max_key_len = max(max_key_len, len(entry[0]) + 2)
         for v in entry[1].split("\n"):
             max_value_len = max(max_value_len, len(v) + 2)
         entries.append(entry)
