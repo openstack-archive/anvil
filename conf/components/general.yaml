@@ -1,0 +1,12 @@
+# Settings for component general
+---
+# Python component run type to use (defaults to forking)
+run_type: "anvil.runners.fork:ForkRunner"
+
+ip: "$(auto:ip)"
+
+# How many seconds to wait until a service comes online before using it.
+# For example, before uploading to glance we need keystone and glance to be online.
+# Sometimes this takes 5 to 10 seconds to start these up....
+service_wait_seconds: 5
+...

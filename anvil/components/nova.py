@@ -20,7 +20,6 @@ from anvil import cfg
 from anvil import colorizer
 from anvil import components as comp
 from anvil import exceptions
-from anvil import libvirt as lv
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
@@ -29,6 +28,7 @@ from anvil.components.helpers import db as dbhelper
 from anvil.components.helpers import keystone as khelper
 from anvil.components.helpers import nova as nhelper
 from anvil.components.helpers import rabbit as rhelper
+from anvil.components.helpers import virt as lv
 
 LOG = logging.getLogger(__name__)
 
@@ -137,7 +137,8 @@ class NovaMixin(object):
 class NovaUninstaller(NovaMixin, comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, *args, **kargs)
-        self.virsh = lv.Virsh(self.cfg, self.distro)
+        self.virsh = lv.Virsh(int(self.get_option('service_wait_seconds')),
+                              self.distro)
 
     def pre_uninstall(self):
         self._clear_libvirt_domains()
@@ -156,15 +157,16 @@ class NovaUninstaller(NovaMixin, comp.PythonUninstallComponent):
             LOG.info("Cleaning up your system by running nova cleaner script: %s", colorizer.quote(cleaner_fn))
             # These environment additions are important
             # in that they eventually affect how this script runs
-            env = dict()
-            env['ENABLED_SERVICES'] = ",".join(self._filter_subsystems())
+            env = {
+                'ENABLED_SERVICES': ",".join(self._filter_subsystems()),
+            }
             sh.execute(cleaner_fn, run_as_root=True, env_overrides=env)
 
     def _clear_libvirt_domains(self):
-        virt_driver = nhelper.canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
+        virt_driver = nhelper.canon_virt_driver(self.get_option('virt_driver'))
         if virt_driver == 'libvirt':
-            inst_prefix = self.cfg.getdefaulted('nova', 'instance_name_prefix', 'instance-')
-            libvirt_type = lv.canon_libvirt_type(self.cfg.get('nova', 'libvirt_type'))
+            inst_prefix = self.get_option('instance_name_prefix', 'instance-')
+            libvirt_type = lv.canon_libvirt_type(self.get_option('libvirt_type'))
             self.virsh.clear_domains(libvirt_type, inst_prefix)
 
 
@@ -182,9 +184,9 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
 
     @property
     def env_exports(self):
-        to_set = dict()
-        to_set['NOVA_VERSION'] = self.cfg.get('nova', 'nova_version')
-        to_set['COMPUTE_API_VERSION'] = to_set['NOVA_VERSION']
+        to_set = {}
+        to_set['NOVA_VERSION'] = self.get_option('nova_version')
+        to_set['COMPUTE_API_VERSION'] = self.get_option('nova_version')
         return to_set
 
     def verify(self):
@@ -195,10 +197,10 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         warm_pws = list()
         mq_type = nhelper.canon_mq_type(self.get_option('mq'))
         if mq_type == 'rabbit':
-            warm_pws.append(['rabbit', rhelper.PW_USER_PROMPT])
-        driver_canon = nhelper.canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
-        for pw_key, pw_prompt in warm_pws:
-            self.cfg.get_password(pw_key, pw_prompt)
+            rhelper.get_shared_passwords(self)
+        driver_canon = nhelper.canon_virt_driver(self.get_option('virt_driver'))
+        for (pw_key, pw_prompt) in warm_pws:
+            self.get_password(pw_key, pw_prompt)
 
     def _sync_db(self):
         LOG.info("Syncing nova to database named: %s", colorizer.quote(DB_NAME))
@@ -222,11 +224,20 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         self.tracewriter.file_touched(tgt_fn)
 
     def _setup_db(self):
-        dbhelper.drop_db(self.cfg, self.distro, DB_NAME)
+        dbhelper.drop_db(distro=self.distro,
+                         dbtype=self.get_option('db.type'),
+                         dbname=DB_NAME,
+                         **utils.merge_dicts(self.get_option('db'),
+                                             dbhelper.get_shared_passwords(self)))
         # Explicitly use latin1: to avoid lp#829209, nova expects the database to
         # use latin1 by default, and then upgrades the database to utf8 (see the
         # 082_essex.py in nova)
-        dbhelper.create_db(self.cfg, self.distro, DB_NAME, charset='latin1')
+        dbhelper.create_db(distro=self.distro,
+                           dbtype=self.get_option('db.type'),
+                           dbname=DB_NAME,
+                           charset='latin1',
+                           **utils.merge_dicts(self.get_option('db'),
+                                               dbhelper.get_shared_passwords(self)))
 
     def _generate_nova_conf(self, fn):
         LOG.debug("Generating dynamic content for nova: %s.", (fn))
@@ -243,7 +254,11 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         return (fn, sh.load_file(fn))
 
     def _config_adjust_paste(self, contents, fn):
-        params = khelper.get_shared_params(self.cfg, 'nova')
+        params = khelper.get_shared_params(ip=self.get_option('ip'),
+                                           service_user='nova',
+                                           **utils.merge_dicts(self.get_option('keystone'), 
+                                                               khelper.get_shared_passwords(self)))
+        
         with io.BytesIO(contents) as stream:
             config = cfg.RewritableConfigParser()
             config.readfp(stream)
@@ -299,8 +314,8 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
 class NovaRuntime(NovaMixin, comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
-        self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
-        self.virsh = lv.Virsh(self.cfg, self.distro)
+        self.wait_time = max(int(self.get_option('service_wait_seconds')), 1)
+        self.virsh = lv.Virsh(int(self.get_option('service_wait_seconds')), self.distro)
         self.config_path = sh.joinpths(self.get_option('cfg_dir'), API_CONF)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
         self.net_init_fn = sh.joinpths(self.get_option('trace_dir'), NET_INITED_FN)
@@ -315,17 +330,17 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
                 'BIN_DIR': self.bin_dir
             }
             mp['BIN_DIR'] = self.bin_dir
-            if self.cfg.getboolean('nova', 'enable_fixed'):
+            if self.get_option('enable_fixed'):
                 # Create a fixed network
-                mp['FIXED_NETWORK_SIZE'] = self.cfg.getdefaulted('nova', 'fixed_network_size', '256')
-                mp['FIXED_RANGE'] = self.cfg.getdefaulted('nova', 'fixed_range', '10.0.0.0/24')
+                mp['FIXED_NETWORK_SIZE'] = self.get_option('fixed_network_size', '256')
+                mp['FIXED_RANGE'] = self.get_option('fixed_range', '10.0.0.0/24')
                 cmds.extend(FIXED_NET_CMDS)
-            if self.cfg.getboolean('nova', 'enable_floating'):
+            if self.get_option('enable_floating'):
                 # Create a floating network + test floating pool
                 cmds.extend(FLOATING_NET_CMDS)
-                mp['FLOATING_RANGE'] = self.cfg.getdefaulted('nova', 'floating_range', '172.24.4.224/28')
-                mp['TEST_FLOATING_RANGE'] = self.cfg.getdefaulted('nova', 'test_floating_range', '192.168.253.0/29')
-                mp['TEST_FLOATING_POOL'] = self.cfg.getdefaulted('nova', 'test_floating_pool', 'test')
+                mp['FLOATING_RANGE'] = self.get_option('floating_range', '172.24.4.224/28')
+                mp['TEST_FLOATING_RANGE'] = self.get_option('test_floating_range', '192.168.253.0/29')
+                mp['TEST_FLOATING_POOL'] = self.get_option('test_floating_pool', 'test')
             # Anything to run??
             if cmds:
                 LOG.info("Creating your nova network to be used with instances.")
@@ -355,9 +370,9 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
     def pre_start(self):
         # Let the parent class do its thing
         comp.PythonRuntime.pre_start(self)
-        virt_driver = nhelper.canon_virt_driver(self.cfg.get('nova', 'virt_driver'))
+        virt_driver = nhelper.canon_virt_driver(self.get_option('virt_driver'))
         if virt_driver == 'libvirt':
-            virt_type = lv.canon_libvirt_type(self.cfg.get('nova', 'libvirt_type'))
+            virt_type = lv.canon_libvirt_type(self.get_option('libvirt_type'))
             LOG.info("Checking that your selected libvirt virtualization type %s is working and running.", colorizer.quote(virt_type))
             try:
                 self.virsh.check_virt(virt_type)

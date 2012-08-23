@@ -8,6 +8,7 @@ options:
     keystone:
         db-sync: false
 supports:
-- rhel-6
+- rhel
+- ubuntu
 ...
 

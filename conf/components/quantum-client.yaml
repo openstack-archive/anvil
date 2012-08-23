@@ -1,0 +1,6 @@
+# Settings for component quantum-client
+---
+
+get_from: "git://github.com/openstack/python-quantumclient.git?branch=master"
+
+...

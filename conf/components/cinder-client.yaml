@@ -1,0 +1,7 @@
+# Settings for component cinder-client
+---
+
+# Where we download this from...
+get_from: "git://github.com/openstack/python-cinderclient.git?branch=master"
+
+...

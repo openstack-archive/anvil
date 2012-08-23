@@ -28,12 +28,6 @@ LOG = logging.getLogger(__name__)
 # Default password (guest)
 RESET_BASE_PW = ''
 
-# Config keys we warm up so u won't be prompted later
-WARMUP_PWS = ['rabbit']
-
-# Copies from helpers
-PW_USER_PROMPT = rhelper.PW_USER_PROMPT
-
 
 class RabbitUninstaller(comp.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -57,15 +51,14 @@ class RabbitInstaller(comp.PkgInstallComponent):
         self.runtime = self.siblings.get('running')
 
     def warm_configs(self):
-        for pw_key in WARMUP_PWS:
-            self.cfg.get_password(pw_key, PW_USER_PROMPT)
+        rhelper.get_shared_passwords(self)
 
     def _setup_pw(self):
-        user_id = self.cfg.get('rabbit', 'rabbit_userid')
+        user_id = self.get_option('user_id')
         LOG.info("Setting up your rabbit-mq %s password.", colorizer.quote(user_id))
         self.runtime.restart()
-        passwd = self.cfg.get_password("rabbit", PW_USER_PROMPT)
-        cmd = self.distro.get_command('rabbit-mq', 'change_password') + [user_id, passwd]
+        cmd = list(self.distro.get_command('rabbit-mq', 'change_password'))
+        cmd += [user_id, rhelper.get_shared_passwords(self)['pw']]
         sh.execute(*cmd, run_as_root=True)
         LOG.info("Restarting so that your rabbit-mq password is reflected.")
         self.runtime.restart()
@@ -78,7 +71,7 @@ class RabbitInstaller(comp.PkgInstallComponent):
 class RabbitRuntime(comp.ProgramRuntime):
     def __init__(self, *args, **kargs):
         comp.ProgramRuntime.__init__(self, *args, **kargs)
-        self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
+        self.wait_time = max(int(self.get_option('service_wait_seconds')), 1)
 
     def start(self):
         if self.status()[0].status != comp.STATUS_STARTED:

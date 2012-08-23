@@ -31,8 +31,9 @@ def _format_list(in_list):
 def parse():
 
     version_str = "%s v%s" % ('anvil', version.version_string())
-    help_formatter = IndentedHelpFormatter(width=80)
-    parser = OptionParser(version=version_str, formatter=help_formatter)
+    help_formatter = IndentedHelpFormatter(width=120)
+    parser = OptionParser(version=version_str, formatter=help_formatter,
+                          prog='smithy')
 
     # Root options
     parser.add_option("-v", "--verbose",
@@ -41,25 +42,12 @@ def parse():
         dest="verbosity",
         default=[1],
         help="increase the verbose level")
-    parser.add_option("-o", "--override",
-        action="append",
-        dest="cli_overrides",
-        metavar="OPTION",
-        help=("override configuration values (format SECTION/OPTION/VALUE, note "
-                "if section is empty 'DEFAULT' is assumed)"))
     parser.add_option("--dryrun",
         action="store_true",
         dest="dryrun",
         default=False,
         help=("perform ACTION but do not actually run any of the commands"
-              " that would normally complete ACTION: (default: %default)"))
-    opt_help = "configuration file (will be searched for if not provided)"
-    parser.add_option("-c", "--config",
-        action="store",
-        dest="config_fn",
-        type="string",
-        metavar="FILE",
-        help=opt_help)
+              " that would normally complete ACTION)"))
 
     # Install/start/stop/uninstall specific options
     base_group = OptionGroup(parser, "Action specific options")
@@ -88,30 +76,18 @@ def parse():
                           dest="prompt_for_passwords",
                           default=True,
                           help="do not prompt the user for passwords")
+    base_group.add_option("--no-store-passwords",
+        action="store_false",
+        dest="store_passwords",
+        default=True,
+        help="do not store the users passwords into yaml files")
     parser.add_option_group(base_group)
-
-    # Uninstall and stop options
-    stop_un_group = OptionGroup(parser, "Uninstall & stop specific options")
-    stop_un_group.add_option("-n", "--no-force",
-        action="store_true",
-        dest="force",
-        help="stop the continuation of ACTION if basic errors occur (default: %default)",
-        default=False)
-    parser.add_option_group(stop_un_group)
-
-    un_group = OptionGroup(parser, "Uninstall specific options")
-    un_group.add_option("-k", "--keep-old",
-        action="store_true",
-        dest="keep_old",
-        help="uninstall will keep as much of the old install as it can (default: %default)",
-        default=False)
-    parser.add_option_group(un_group)
 
     status_group = OptionGroup(parser, "Status specific options")
     status_group.add_option('-s', "--show",
         action="store_true",
         dest="show_full",
-        help="show the stderr/stdout log files if applicable when showing status (default: %default)",
+        help="show details if applicable when showing status",
         default=False)
     parser.add_option_group(status_group)
 
@@ -123,14 +99,11 @@ def parse():
     output['dir'] = (options.dir or "")
     output['dryrun'] = (options.dryrun or False)
     output['action'] = (options.action or "")
-    output['force'] = not options.force
-    output['keep_old'] = options.keep_old
     output['extras'] = args
-    output['config_fn'] = options.config_fn
     output['persona_fn'] = options.persona_fn
     output['verbosity'] = len(options.verbosity)
-    output['cli_overrides'] = (options.cli_overrides or [])
     output['prompt_for_passwords'] = options.prompt_for_passwords
     output['show_full'] = options.show_full
+    output['store_passwords'] = options.store_passwords
 
     return output

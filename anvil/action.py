@@ -18,15 +18,21 @@ import abc
 import collections
 import copy
 import functools
+import os
 
+from anvil import cfg
 from anvil import colorizer
+from anvil import env
 from anvil import exceptions as excp
 from anvil import importer
 from anvil import log as logging
 from anvil import packager
+from anvil import passwords as pw
 from anvil import phase
+from anvil import settings
 from anvil import shell as sh
 from anvil import utils
+
 
 LOG = logging.getLogger(__name__)
 
@@ -41,13 +47,32 @@ class PhaseFunctors(object):
 class Action(object):
     __meta__ = abc.ABCMeta
 
-    def __init__(self, distro, cfg, root_dir, name, **kwargs):
+    def __init__(self, name, distro, root_dir, **kwargs):
         self.distro = distro
-        self.cfg = cfg
         self.root_dir = root_dir
         self.name = name
-        self.keep_old = kwargs.get('keep_old', False)
-        self.force = kwargs.get('force', False)
+        self.interpolator = cfg.YamlInterpolator(settings.COMPONENT_CONF_DIR)
+        self.passwords = pw.ProxyPassword()
+        self.password_files = [
+            sh.joinpths(root_dir, 'passwords.yaml'),
+        ]
+        self.default_password_file = sh.joinpths(os.getcwd(), 'passwords.yaml')
+        self.password_files.append(self.default_password_file)
+        if kwargs.get('prompt_for_passwords'):
+            self.passwords.resolvers.append(pw.InputPassword())
+        self.passwords.resolvers.append(pw.RandomPassword())
+        self.store_passwords = kwargs.get('store_passwords')
+
+    def _establish_passwords(self):
+        pw_read = []
+        for fn in self.password_files:
+            if sh.isfile(fn):
+                self.passwords.cache.update(utils.load_yaml(fn))
+                pw_read.append(fn)
+        if pw_read:
+            utils.log_iterable(pw_read,
+                               header="Updated passwords to be used from %s files" % len(pw_read),
+                               logger=LOG)
 
     @property
     def lookup_name(self):
@@ -80,7 +105,7 @@ class Action(object):
             'trace_dir': trace_dir,
         }
 
-    def _merge_options(self, name, override_opts, base_opts, component_opts, persona_opts):
+    def _merge_options(self, name, base_opts, component_opts, persona_opts):
         opts = {}
         opts.update(self._get_component_dirs(name))
         if base_opts:
@@ -89,9 +114,30 @@ class Action(object):
             opts.update(component_opts)
         if persona_opts:
             opts.update(persona_opts)
-        if override_opts:
-            opts.update(override_opts)
         return opts
+
+    def _update_passwords(self):
+        if not self.store_passwords:
+            return
+        if not self.passwords.cache:
+            return
+        who_update = []
+        for fn in self.password_files:
+            if sh.isfile(fn):
+                contents = utils.load_yaml(fn)
+                contents.update(self.passwords.cache)
+                sh.write_file(fn, "# Updated on %s\n%s\n" % (utils.rcf8222date(), utils.prettify_yaml(contents)))
+                who_update.append(fn)
+        if not who_update:
+            contents = {}
+            contents.update(self.passwords.cache)
+            sh.write_file(self.default_password_file,
+                          "# Updated on %s\n%s\n" % (utils.rcf8222date(), utils.prettify_yaml(contents)))
+            who_update.append(self.default_password_file)
+        if who_update:
+            utils.log_iterable(who_update,
+                               header="Updated/created %s password files" % len(who_update),
+                               logger=LOG)
 
     def _merge_subsystems(self, component_subsys, desired_subsys):
         joined_subsys = {}
@@ -119,6 +165,12 @@ class Action(object):
         opts.update(self._get_component_dirs(name))
         return opts
 
+    def _get_interp_options(self, name):
+        base = {}
+        for c in ['general', name]:
+            base.update(self.interpolator.extract(c))
+        return base
+
     def _construct_instances(self, persona):
         """
         Create component objects for each component in the persona.
@@ -126,23 +178,21 @@ class Action(object):
         persona_subsystems = persona.wanted_subsystems or {}
         persona_opts = persona.component_options or {}
         instances = {}
-        base_opts = {
-            'keep_old': self.keep_old,
-        }
+        package_registries = {}
         for c in persona.wanted_components:
             ((cls, distro_opts), siblings) = self.distro.extract_component(c, self.lookup_name)
             LOG.debug("Constructing component %r (%s)", c, utils.obj_name(cls))
             kvs = {}
-            kvs['runner'] = self
             kvs['name'] = c
-            kvs['packager_functor'] = functools.partial(packager.get_packager,
-                                                        distro=self.distro)
+            kvs['package_registries'] = package_registries
             # First create its siblings with a 'minimal' set of options
             # This is done, so that they will work in a minimal state
             kvs['instances'] = {}
             kvs['subsystems'] = {}
             kvs['siblings'] = {}
-            kvs['options'] = self._get_sibling_options(c, base_opts)
+            kvs['passwords'] = self.passwords
+            kvs['distro'] = self.distro
+            kvs['options'] = self._get_sibling_options(c, self._get_interp_options(c))
             LOG.debug("Constructing %s siblings:", c)
             utils.log_object(siblings, logger=LOG, level=logging.DEBUG)
             LOG.debug("Using params:")
@@ -150,7 +200,7 @@ class Action(object):
             siblings = self._construct_siblings(siblings, dict(kvs))
             # Now inject the full options
             kvs['instances'] = instances
-            kvs['options'] = self._merge_options(c, kvs, base_opts,
+            kvs['options'] = self._merge_options(c, self._get_interp_options(c),
                                                  distro_opts, (persona_opts.get(c) or {}))
             kvs['subsystems'] = self._merge_subsystems((distro_opts.pop('subsystems', None) or {}),
                                                        (persona_subsystems.get(c) or {}))
@@ -169,6 +219,25 @@ class Action(object):
         LOG.info("Warming up component configurations.")
         for c in component_order:
             instances[c].warm_configs()
+
+    def _on_start(self, persona, component_order, instances):
+        LOG.info("Booting up your components.")
+        LOG.debug("Starting environment settings:")
+        utils.log_object(env.get(), logger=LOG, level=logging.DEBUG, item_max_len=64)
+        self._establish_passwords()
+        self._verify_components(component_order, instances)
+        self._warm_components(component_order, instances)
+        self._update_passwords()
+
+    def _write_exports(self, component_order, instances, filename):
+        pass
+
+    def _on_finish(self, persona, component_order, instances):
+        LOG.info("Tearing down your components.")
+        LOG.debug("Final environment settings:")
+        utils.log_object(env.get(), logger=LOG, level=logging.DEBUG, item_max_len=64)
+        self._write_exports(component_order, instances, filename="%s.rc" % (self.name))
+        self._update_passwords()
 
     def _get_phase_directory(self, name=None):
         if not name:
@@ -215,10 +284,7 @@ class Action(object):
                         component_results[instance] = result
                         instance.activated = True
                     except (excp.NoTraceException) as e:
-                        if self.force:
-                            LOG.debug("Skipping exception: %s" % (e))
-                        else:
-                            raise
+                        pass
             self._on_completion(phase_name, component_results)
         finally:
             # Reset all activations
@@ -244,7 +310,7 @@ class Action(object):
         utils.log_iterable(component_order,
                            header="Activating in the following order",
                            logger=LOG)
-        self._verify_components(component_order, instances)
-        self._warm_components(component_order, instances)
+        self._on_start(persona, component_order, instances)
         self._run(persona, component_order, instances)
+        self._on_finish(persona, component_order, instances)
         return component_order

@@ -96,7 +96,7 @@ def _pformat_simple(item, item_max_len):
     return item_str
 
 
-def pformat(item, item_max_len):
+def pformat(item, item_max_len=None):
     if isinstance(item, (list, set, tuple)):
         return _pformat_list(item, item_max_len)
     elif isinstance(item, (dict)):
@@ -105,5 +105,5 @@ def pformat(item, item_max_len):
         return _pformat_simple(item, item_max_len)
 
 
-def pprint(item, item_max_len):
+def pprint(item, item_max_len=None):
     print("%s" % (pformat(item, item_max_len)))

@@ -40,10 +40,6 @@ SQL_RESET_PW_LINKS = [
 # Copies from helper
 BASE_ERROR = dbhelper.BASE_ERROR
 
-# PW keys we warm up so u won't be prompted later
-PASSWORD_PROMPT = dbhelper.PASSWORD_PROMPT
-WARMUP_PWS = [('sql', PASSWORD_PROMPT)]
-
 
 class DBUninstaller(comp.PkgUninstallComponent):
 
@@ -52,11 +48,10 @@ class DBUninstaller(comp.PkgUninstallComponent):
         self.runtime = self.siblings.get('running')
 
     def warm_configs(self):
-        for key, prompt in WARMUP_PWS:
-            self.cfg.get_password(key, prompt)
+        dbhelper.get_shared_passwords(self)
 
     def pre_uninstall(self):
-        dbtype = self.cfg.get("db", "type")
+        dbtype = self.get_option("type")
         dbactions = self.distro.get_command_config(dbtype, quiet=True)
         try:
             if dbactions:
@@ -67,10 +62,10 @@ class DBUninstaller(comp.PkgUninstallComponent):
                     LOG.info("Ensuring your database is started before we operate on it.")
                     self.runtime.restart()
                     params = {
-                        'OLD_PASSWORD': self.cfg.get_password('sql', PASSWORD_PROMPT),
+                        'OLD_PASSWORD': dbhelper.get_shared_passwords(self)['pw'],
                         'NEW_PASSWORD': RESET_BASE_PW,
-                        'USER': self.cfg.getdefaulted("db", "sql_user", 'root'),
-                        }
+                        'USER': self.get_option("user", 'root'),
+                    }
                     cmds = [{'cmd': pwd_cmd}]
                     utils.execute_template(*cmds, params=params)
         except IOError:
@@ -91,19 +86,17 @@ class DBInstaller(comp.PkgInstallComponent):
         # This dictionary will be used for parameter replacement
         # In pre-install and post-install sections
         mp = comp.PkgInstallComponent.config_params(self, config_fn)
-        adds = {
-            'PASSWORD': self.cfg.get_password("sql", PASSWORD_PROMPT),
-            'BOOT_START': ("%s" % (True)).lower(),
-            'USER': self.cfg.getdefaulted("db", "sql_user", 'root'),
-            'SERVICE_HOST': self.cfg.get('host', 'ip'),
-            'HOST_IP': self.cfg.get('host', 'ip'),
-        }
-        mp.update(adds)
+        mp.update({
+            'PASSWORD': dbhelper.get_shared_passwords(self)['pw'],
+            'BOOT_START': "true",
+            'USER': self.get_option("user", 'root'),
+            'SERVICE_HOST': self.get_option('ip'),
+            'HOST_IP': self.get_option('ip'),
+        })
         return mp
 
     def warm_configs(self):
-        for key, prompt in WARMUP_PWS:
-            self.cfg.get_password(key, prompt)
+        dbhelper.get_shared_passwords(self)
 
     @abc.abstractmethod
     def _configure_db_confs(self):
@@ -116,7 +109,7 @@ class DBInstaller(comp.PkgInstallComponent):
         self._configure_db_confs()
 
         # Extra actions to ensure we are granted access
-        dbtype = self.cfg.get("db", "type")
+        dbtype = self.get_option("type")
         dbactions = self.distro.get_command_config(dbtype, quiet=True)
 
         # Set your password
@@ -129,10 +122,10 @@ class DBInstaller(comp.PkgInstallComponent):
                     LOG.info("Ensuring your database is started before we operate on it.")
                     self.runtime.restart()
                     params = {
-                        'NEW_PASSWORD': self.cfg.get_password("sql", PASSWORD_PROMPT),
-                        'USER': self.cfg.getdefaulted("db", "sql_user", 'root'),
+                        'NEW_PASSWORD': dbhelper.get_shared_passwords(self)['pw'],
+                        'USER': self.get_option("user", 'root'),
                         'OLD_PASSWORD': RESET_BASE_PW,
-                        }
+                    }
                     cmds = [{'cmd': pwd_cmd}]
                     utils.execute_template(*cmds, params=params)
         except IOError:
@@ -140,18 +133,20 @@ class DBInstaller(comp.PkgInstallComponent):
                        "set by a previous process."))
 
         # Ensure access granted
-        user = self.cfg.getdefaulted("db", "sql_user", 'root')
-        dbhelper.grant_permissions(self.cfg, self.distro, user, 
-                                   restart_func=self.runtime.restart)
+        dbhelper.grant_permissions(dbtype,
+                                   distro=self.distro,
+                                   user=self.get_option("user", 'root'),
+                                   restart_func=self.runtime.restart,
+                                   **dbhelper.get_shared_passwords(self))
 
 
 class DBRuntime(comp.ProgramRuntime):
     def __init__(self, *args, **kargs):
         comp.ProgramRuntime.__init__(self, *args, **kargs)
-        self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
+        self.wait_time = max(int(self.get_option('service_wait_seconds')), 1)
 
     def _get_run_actions(self, act, exception_cls):
-        db_type = self.cfg.get("db", "type")
+        db_type = self.get_option("type")
         distro_options = self.distro.get_command_config(db_type)
         if distro_options is None:
             raise NotImplementedError(BASE_ERROR % (act, db_type))
@@ -194,7 +189,7 @@ class DBRuntime(comp.ProgramRuntime):
              combined.find('unrecognized') != -1:
             st = comp.STATUS_STOPPED
         return [
-            comp.ProgramStatus(name=self.cfg.get("db", "type"),
+            comp.ProgramStatus(name=self.get_option("type"),
                                status=st,
                                details=(sysout + stderr).strip()),
         ]

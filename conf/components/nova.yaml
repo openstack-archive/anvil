@@ -1,0 +1,144 @@
+# Settings for component nova
+---
+
+# Where we download this from...
+get_from: "git://github.com/openstack/nova.git?branch=master"
+
+# Host and ports for the different nova services
+api_host: "$(auto:ip)"
+api_port: 8774
+s3_host: "$(auto:ip)"
+s3_port: 3333
+volume_host: "$(auto:ip)"
+volume_port: 8776
+ec2_host: "$(auto:ip)"
+ec2_port: 8773
+ec2_admin_host: "$(auto:ip)"
+ec2_admin_port: 8773
+protocol: http
+
+# Very useful to read over the following
+#
+# http://docs.openstack.org/trunk/openstack-compute/admin/content/configuring-networking-on-the-compute-node.html
+# https://github.com/openstack/nova/blob/master/etc/nova/nova.conf.sample
+
+# Set api_rate_limit = 0 (or blank) to turn OFF rate limiting
+api_rate_limit: False
+
+# The internal ip of the ec2 api server
+ec2_dmz_host: "$(auto:ip)"
+
+# A fixed network will be created for you (unless disabled)
+enable_fixed: True
+fixed_network_size: 256
+fixed_range: "10.0.0.0/24"
+
+# Used however you want - ensure you know nova's conf file format if you use this!
+extra_flags: ""
+
+# DHCP Warning: If your flat interface device uses DHCP, there will be a hiccup while the network 
+# is moved from the flat interface to the flat network bridge. This will happen when you launch 
+# your first instance. Upon launch you will lose all connectivity to the node, and the vm launch will probably fail.
+#
+# If you are running on a single node and don't need to access the VMs from devices other than 
+# that node, you can set the flat interface to the same value as FLAT_NETWORK_BRIDGE.
+# This will stop the network hiccup from occurring.
+
+# If using a flat manager (not dhcp) then you probably want this on
+flat_injected: False
+flat_interface: eth0
+flat_network_bridge: br100
+
+# A floating network will be created for you (unless disabled)
+enable_floating: True
+floating_range: "172.24.4.224/28"
+test_floating_pool: test
+test_floating_range: "192.168.253.0/29"
+
+# Force backing images to raw format?
+force_raw_images: True
+checksum_base_images: True
+glance_server: "$(glance:host):$(glance:api_port)"
+img_service: nova.image.glance.GlanceImageService
+
+# How instances will be named and where
+instance_name_postfix: "%08x"
+instance_name_prefix: "instance-"
+
+# Defaults to $NOVA_DIR/instances if empty
+instances_path: ''
+
+# This decides which firewall driver to use:
+# The default here should work with linux + iptables + libvirt special sauce...
+libvirt_firewall_driver: nova.virt.libvirt.firewall.IptablesFirewallDriver
+
+# Only useful if above virt_driver is "libvirt"
+# Types known (qemu, kvm, xen, uml, lxc)
+# Defaults to qemu (the most compatible) if unknown (or blank).
+libvirt_type: "qemu"
+
+# This is just a firewall based on iptables, for non-libvirt usage
+basic_firewall_driver: nova.virt.firewall.IptablesFirewallDriver
+
+# Multi-host is a mode where each compute node runs its own network node. 
+# This allows network operations and routing for a VM to occur on the server 
+# that is running the VM - removing a SPOF and bandwidth bottleneck.
+multi_host: False
+
+# Which network manager and which interface should be used
+network_manager: nova.network.manager.FlatDHCPManager
+
+# Interface for public IP addresses
+public_interface: eth0
+
+# Currently novaclient needs you to specify the *compute api* version.
+nova_version: "1.1"
+
+# Which scheduler will nova be running with?
+# Nova supports pluggable schedulers. FilterScheduler should work in most cases.
+scheduler:  nova.scheduler.filter_scheduler.FilterScheduler
+
+# Should nova be in verbose mode?
+verbose: True
+
+# Virtualization settings
+# Drivers known (libvirt, xensever, vmware, baremetal)
+# Defaults to libvirt (the most compatible) if unknown.
+virt_driver: libvirt
+vlan_interface: $(nova:public_interface)
+
+# Vnc server settings
+vncproxy_url: "http://$(auto:ip):6080/vnc_auto.html"
+vncserver_listen: 127.0.0.1
+vncserver_proxyclient_address: ""
+xvpvncproxy_url: "http://$(auto:ip):6081/console"
+
+# Not currently working (to be replaced by cinder)
+volume_backing_file: ""
+volume_backing_file_size: 2052M
+volume_group: nova-volumes
+volume_name_postfix: "%08x"
+volume_name_prefix: "volume-"
+
+# Needed for setting up your database
+db:
+  type: "$(db:type)"
+  user: "$(db:user)"
+  host: "$(db:host)"
+  port: "$(db:port)"
+
+# Interactions with keystone are via the following settings
+keystone:
+  auth_host: "$(keystone:auth_host)"
+  auth_port: "$(keystone:auth_port)"
+  auth_proto: "$(keystone:auth_proto)"
+  service_host: "$(keystone:service_host)"
+  service_port: "$(keystone:service_port)"
+  service_proto: "$(keystone:service_proto)"
+
+# Rabbit mq hookins
+rabbit:
+  user_id: "$(rabbit-mq:user_id)"
+  host: "$(rabbit-mq:host)"
+
+...

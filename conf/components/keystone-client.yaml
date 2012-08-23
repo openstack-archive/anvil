@@ -1,0 +1,7 @@
+# Settings for component keystone-client
+---
+
+# Where we download this from...
+get_from: "git://github.com/openstack/python-keystoneclient.git?branch=master"
+
+...

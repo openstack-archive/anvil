@@ -72,11 +72,10 @@ class PkgInstallComponent(component.Component):
     def __init__(self, *args, **kargs):
         component.Component.__init__(self, *args, **kargs)
         self.tracewriter = tr.TraceWriter(self.trace_files['install'], break_if_there=False)
-        self.packager_functor = functools.partial(kargs['packager_functor'], 
-                                                  default_packager_class=self.distro.package_manager_class)
+        self.package_registries = kargs.get('package_registries', {})
 
     def _get_download_config(self):
-        return (None, None)
+        return None
 
     def _clear_package_duplicates(self, pkg_list):
         dup_free_list = []
@@ -88,13 +87,13 @@ class PkgInstallComponent(component.Component):
         return dup_free_list
 
     def _get_download_location(self):
-        (section, key) = self._get_download_config()
-        if not section or not key:
+        key = self._get_download_config()
+        if not key:
             return (None, None)
-        uri = self.cfg.getdefaulted(section, key).strip()
+        uri = self.get_option(key, '').strip()
         if not uri:
             raise ValueError(("Could not find uri in config to download "
-                               "from at section %s for option %s") % (section, key))
+                              "from option %s") % (key))
         return (uri, self.get_option('app_dir'))
 
     def download(self):
@@ -128,6 +127,12 @@ class PkgInstallComponent(component.Component):
         pkg_list = self._clear_package_duplicates(pkg_list)
         return pkg_list
 
+    def _make_packager(self, name, pkg_info, default_cls):
+        if name not in self.package_registries:
+            self.package_registries[name] = packager.Registry()
+        cls = packager.get_packager_class(pkg_info, default_cls)
+        return cls(self.distro, self.package_registries[name])
+
     def install(self):
         LOG.debug('Preparing to install packages for: %r', self.name)
         pkgs = self.packages
@@ -137,19 +142,22 @@ class PkgInstallComponent(component.Component):
                 header="Setting up %s distribution packages" % (len(pkg_names)))
             with utils.progress_bar('Installing', len(pkgs)) as p_bar:
                 for (i, p) in enumerate(pkgs):
+                    installer = self._make_packager('distro', p, self.distro.package_manager_class)
                     self.tracewriter.package_installed(p)
-                    self.packager_functor(p).install(p)
+                    installer.install(p)
                     p_bar.update(i + 1)
 
     def pre_install(self):
         pkgs = self.packages
         for p in pkgs:
-            self.packager_functor(p).pre_install(p, self.params)
+            installer = self._make_packager('distro', p, self.distro.package_manager_class)
+            installer.pre_install(p, self.params)
 
     def post_install(self):
         pkgs = self.packages
         for p in pkgs:
-            self.packager_functor(p).post_install(p, self.params)
+            installer = self._make_packager('distro', p, self.distro.package_manager_class)
+            installer.post_install(p, self.params)
 
     @property
     def config_files(self):
@@ -166,7 +174,8 @@ class PkgInstallComponent(component.Component):
 
     @property
     def link_dir(self):
-        return sh.joinpths(self.distro.get_command_config('base_link_dir'), self.name)
+        link_dir_base = self.distro.get_command_config('base_link_dir')
+        return sh.joinpths(link_dir_base, self.name)
 
     @property
     def symlinks(self):
@@ -228,15 +237,13 @@ class PkgInstallComponent(component.Component):
 class PythonInstallComponent(PkgInstallComponent):
     def __init__(self, *args, **kargs):
         PkgInstallComponent.__init__(self, *args, **kargs)
-        self.pip_functor = functools.partial(kargs['packager_functor'], 
-                                             default_packager_class=pip.Packager)
         self.requires_files = [
             sh.joinpths(self.get_option('app_dir'), 'tools', 'pip-requires'),
             sh.joinpths(self.get_option('app_dir'), 'tools', 'test-requires')
         ]
 
     def _get_download_config(self):
-        return ('download_from', self.name.replace("-", "_").lower().strip())
+        return 'get_from'
 
     @property
     def python_directories(self):
@@ -362,7 +369,8 @@ class PythonInstallComponent(PkgInstallComponent):
             with utils.progress_bar('Installing', len(pips)) as p_bar:
                 for (i, p) in enumerate(pips):
                     self.tracewriter.pip_installed(p)
-                    self.pip_functor(p).install(p)
+                    installer = self._make_packager('pip', p, pip.Packager)
+                    installer.install(p)
                     p_bar.update(i + 1)
 
     def _clean_pip_requires(self):
@@ -398,12 +406,14 @@ class PythonInstallComponent(PkgInstallComponent):
     def pre_install(self):
         PkgInstallComponent.pre_install(self)
         for p in self.pips:
-            self.pip_functor(p).pre_install(p, self.params)
+            installer = self._make_packager('pip', p, pip.Packager)
+            installer.pre_install(p, self.params)
 
     def post_install(self):
         PkgInstallComponent.post_install(self)
         for p in self.pips:
-            self.pip_functor(p).post_install(p, self.params)
+            installer = self._make_packager('pip', p, pip.Packager)
+            installer.post_install(p, self.params)
 
     def _install_python_setups(self):
         py_dirs = self.python_directories
@@ -473,6 +483,9 @@ class ProgramRuntime(component.Component):
     def status(self):
         return []
 
+    def start(self):
+        return 0
+
 
 class EmptyRuntime(ProgramRuntime):
     pass
@@ -488,11 +501,11 @@ class PythonRuntime(ProgramRuntime):
         # Anything to start?
         am_started = 0
         # Select how we are going to start it
-        run_type = self.cfg.getdefaulted("DEFAULT", "run_type", 'anvil.runners.fork:ForkRunner')
+        run_type = self.get_option("run_type", 'anvil.runners.fork:ForkRunner')
         starter_cls = importer.import_entry_point(run_type)
         starter = starter_cls(self)
         for i, app_info in enumerate(self.apps_to_start):
-            self._start_app(app_info, start)
+            self._start_app(app_info, run_type, starter)
             am_started = i + 1
             self._post_app_start(app_info)
         return am_started
@@ -510,7 +523,8 @@ class PythonRuntime(ProgramRuntime):
 
     def _post_app_start(self, app_info):
         if 'sleep_time' in app_info:
-            LOG.info("%s requested a %s second sleep time, please wait...", colorizer.quote(app_name), app_info.get('sleep_time'))
+            LOG.info("%s requested a %s second sleep time, please wait...", 
+                     colorizer.quote(app_info.get('name')), app_info.get('sleep_time'))
             sh.sleep(float(app_info.get('sleep_time')))
 
     def _locate_investigators(self, apps_started):
@@ -522,7 +536,7 @@ class PythonRuntime(ProgramRuntime):
                 inv_cls = importer.import_entry_point(run_type)
             except RuntimeError as e:
                 LOG.warn("Could not load class %s which should be used to investigate %s: %s",
-                         colorizer.quote(how), colorizer.quote(app_name), e)
+                         colorizer.quote(run_type), colorizer.quote(app_name), e)
                 continue
             investigator = None
             if inv_cls in investigator_created:
@@ -577,8 +591,13 @@ class PkgUninstallComponent(component.Component):
     def __init__(self, *args, **kargs):
         component.Component.__init__(self, *args, **kargs)
         self.tracereader = tr.TraceReader(self.trace_files['install'])
-        self.packager_functor = functools.partial(kargs['packager_functor'], 
-                                                  default_packager_class=self.distro.package_manager_class)
+        self.package_registries = kargs.get('package_registries', {})
+
+    def _make_packager(self, name, pkg_info, default_cls):
+        if name not in self.package_registries:
+            self.package_registries[name] = packager.Registry()
+        cls = packager.get_packager_class(pkg_info, default_cls)
+        return cls(self.distro, self.package_registries[name])
 
     def unconfigure(self):
         self._unconfigure_files()
@@ -614,21 +633,19 @@ class PkgUninstallComponent(component.Component):
         pass
 
     def _uninstall_pkgs(self):
-        if self.get_option('keep_old', False):
-            LOG.info('Keep-old flag set, not removing any packages.')
-        else:
-            pkgs = self.tracereader.packages_installed()
-            if pkgs:
-                pkg_names = set([p['name'] for p in pkgs])
-                utils.log_iterable(pkg_names, logger=LOG,
-                    header="Potentially removing %s packages" % (len(pkg_names)))
-                which_removed = set()
-                with utils.progress_bar('Uninstalling', len(pkgs), reverse=True) as p_bar:
-                    for (i, p) in enumerate(pkgs):
-                        if self.packager_functor(p).remove(p):
-                            which_removed.add(p['name'])
-                        p_bar.update(i + 1)
-                utils.log_iterable(which_removed, logger=LOG,
+        pkgs = self.tracereader.packages_installed()
+        if pkgs:
+            pkg_names = set([p['name'] for p in pkgs])
+            utils.log_iterable(pkg_names, logger=LOG,
+                header="Potentially removing %s packages" % (len(pkg_names)))
+            which_removed = set()
+            with utils.progress_bar('Uninstalling', len(pkgs), reverse=True) as p_bar:
+                for (i, p) in enumerate(pkgs):
+                    uninstaller = self._make_packager('distro', p, self.distro.package_manager_class)
+                    if uninstaller.remove(p):
+                        which_removed.add(p['name'])
+                    p_bar.update(i + 1)
+            utils.log_iterable(which_removed, logger=LOG,
                     header="Actually removed %s packages" % (len(which_removed)))
 
     def _uninstall_touched_files(self):
@@ -643,13 +660,12 @@ class PkgUninstallComponent(component.Component):
         dirs_made = self.tracereader.dirs_made()
         if dirs_made:
             dirs_made = [sh.abspth(d) for d in dirs_made]
-            if self.get_option('keep_old', False):
-                download_places = [path_location[0] for path_location in self.tracereader.download_locations()]
-                if download_places:
-                    utils.log_iterable(download_places, logger=LOG,
-                        header="Keeping %s download directories (and there children directories)" % (len(download_places)))
-                    for download_place in download_places:
-                        dirs_made = sh.remove_parents(download_place, dirs_made)
+            download_places = [path_location[0] for path_location in self.tracereader.download_locations()]
+            if download_places:
+                utils.log_iterable(download_places, logger=LOG,
+                    header="Keeping %s download directories (and there children directories)" % (len(download_places)))
+                for download_place in download_places:
+                    dirs_made = sh.remove_parents(download_place, dirs_made)
             if dirs_made:
                 utils.log_iterable(dirs_made, logger=LOG,
                     header="Removing %s created directories" % (len(dirs_made)))
@@ -661,10 +677,6 @@ class PkgUninstallComponent(component.Component):
 
 
 class PythonUninstallComponent(PkgUninstallComponent):
-    def __init__(self, *args, **kargs):
-        PkgUninstallComponent.__init__(self, *args, **kargs)
-        self.pip_functor = functools.partial(kargs['packager_functor'], 
-                                             default_packager_class=pip.Packager)
 
     def uninstall(self):
         self._uninstall_python()
@@ -672,24 +684,22 @@ class PythonUninstallComponent(PkgUninstallComponent):
         PkgUninstallComponent.uninstall(self)
 
     def _uninstall_pips(self):
-        if self.get_option('keep_old', False):
-            LOG.info('Keep-old flag set, not removing any python packages.')
-        else:
-            pips = self.tracereader.pips_installed()
-            if pips:
-                pip_names = set([p['name'] for p in pips])
-                utils.log_iterable(pip_names, logger=LOG,
-                    header="Uninstalling %s python packages" % (len(pip_names)))
-                with utils.progress_bar('Uninstalling', len(pips), reverse=True) as p_bar:
-                    for (i, p) in enumerate(pips):
-                        try:
-                            self.pip_functor(p).remove(p)
-                        except excp.ProcessExecutionError as e:
-                            # NOTE(harlowja): pip seems to die if a pkg isn't there even in quiet mode
-                            combined = (str(e.stderr) + str(e.stdout))
-                            if not re.search(r"not\s+installed", combined, re.I):
-                                raise
-                        p_bar.update(i + 1)
+        pips = self.tracereader.pips_installed()
+        if pips:
+            pip_names = set([p['name'] for p in pips])
+            utils.log_iterable(pip_names, logger=LOG,
+                header="Uninstalling %s python packages" % (len(pip_names)))
+            with utils.progress_bar('Uninstalling', len(pips), reverse=True) as p_bar:
+                for (i, p) in enumerate(pips):
+                    try:
+                        uninstaller = self._make_packager('pip', p, pip.Packager)
+                        uninstaller.remove(p)
+                    except excp.ProcessExecutionError as e:
+                        # NOTE(harlowja): pip seems to die if a pkg isn't there even in quiet mode
+                        combined = (str(e.stderr) + str(e.stdout))
+                        if not re.search(r"not\s+installed", combined, re.I):
+                            raise
+                    p_bar.update(i + 1)
 
     def _uninstall_python(self):
         py_listing = self.tracereader.py_listing()
@@ -707,3 +717,35 @@ class PythonUninstallComponent(PkgUninstallComponent):
                     LOG.warn("No python directory found at %s - skipping", colorizer.quote(where, quote_color='red'))
 
 
+#### 
+#### TESTING CLASSES
+####
+
+
+class EmptyTestingComponent(component.Component):
+    def run_tests(self):
+        return
+
+
+class PythonTestingComponent(component.Component):
+    def _get_test_exclusions(self):
+        return []
+    
+    def run_tests(self):
+        app_dir = self.get_option('app_dir')
+        if not sh.isfile(sh.joinpths(app_dir, 'run_tests.sh')):
+            LOG.warn("Unable to find 'run_tests.sh' in %s, can not run %s tests.", app_dir, self.name)
+            return
+        # See: http://docs.openstack.org/developer/nova/devref/unit_tests.html
+        cmd = [sh.joinpths(app_dir, 'run_tests.sh')]
+        only_tests = self.get_option('tests')
+        if only_tests:
+            cmd.extend(only_tests)
+        if self.get_option('coverage'):
+            # Not all modules currently handle this..
+            cmd += ['--with-coverage', '--cover-package=%s' % (self.name)]
+        cmd += ['-N', '-P', '--nologcapture']
+        exclude_what = self._get_test_exclusions()
+        for e in exclude_what:
+            cmd.append('--exclude=%s' % (e))
+        sh.execute(*cmd, stdout_fh=None, stderr_fh=None, cwd=app_dir)

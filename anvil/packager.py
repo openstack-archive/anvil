@@ -38,7 +38,7 @@ class NullVersion(object):
         return "%s (no version)" % (self.name)
 
 
-class PackageRegistry(object):
+class Registry(object):
 
     def __init__(self):
         self.installed = dict()
@@ -57,7 +57,7 @@ class Packager(object):
         if version:
             # This won't work for all package versions (ie crazy names)
             # but good enough for now...
-            if contains_version_check(version):
+            if self._contains_version_check(version):
                 full_name = "%s%s" %(name, version)
             else:
                 full_name = "%s==%s" %(name, version)
@@ -124,29 +124,23 @@ class Packager(object):
 
     @abc.abstractmethod
     def _remove(self, pkg):
-        pass
+        raise NotImplementedError()
 
     @abc.abstractmethod
     def _install(self, pkg):
-        pass
+        raise NotImplementedError()
+
+    def _contains_version_check(self, version):
+        for c in ['==', '>', "<", '<=', '>=']:
+            if version.find(c) != -1:
+                return True
+        return False
 
 
-FETCHED_PACKAGERS = {}
-def get_packager(pkg_info, distro, default_packager_class):
-    packager_name = pkg_info.get('packager_name') or ''
+def get_packager_class(package_info, default_packager_class=None):
+    packager_name = package_info.get('packager_name') or ''
     packager_name = packager_name.strip()
-    p_cls = default_packager_class
-    if packager_name:
-        p_cls = importer.import_entry_point(packager_name)
-    if p_cls in FETCHED_PACKAGERS:
-        return FETCHED_PACKAGERS[p_cls]
-    p_instance = p_cls(distro, PackageRegistry())
-    FETCHED_PACKAGERS[p_cls] = p_instance
-    return p_instance
-
-
-def contains_version_check(version):
-    for c in ['==', '>', "<", '<=', '>=']:
-        if version.find(c) != -1:
-            return True
-    return False
+    if not packager_name:
+        return default_packager_class
+    packager_class = importer.import_entry_point(packager_name)
+    return packager_class

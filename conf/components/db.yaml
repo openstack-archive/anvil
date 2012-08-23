@@ -1,0 +1,8 @@
+# Settings for component db
+---
+# Where you db is located at and how to access it.
+host: localhost
+port: 3306
+type: mysql
+user: root
+...

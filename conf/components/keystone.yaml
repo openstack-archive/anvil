@@ -1,0 +1,28 @@
+# Settings for component keystone
+---
+# Where we download this from...
+get_from: "git://github.com/openstack/keystone.git?branch=master"
+
+# Where is the keystone auth host at?
+auth_host: "$(auto:ip)"
+auth_port: 35357
+auth_proto: http
+
+# Where is the keystone service host at?
+service_host: "$(auto:ip)"
+service_port: 5000
+service_proto: http
+
+# Needed for setting up your database
+db:
+  type: "$(db:type)"
+  user: "$(db:user)"
+  host: "$(db:host)"
+  port: "$(db:port)"
+  
+# Needed when running to setup the right roles/endpoints...
+glance:
+  api_port: "$(glance:api_port)"
+  protocol: "$(glance:protocol)"
+  reg_port: "$(glance:reg_port)"
+...

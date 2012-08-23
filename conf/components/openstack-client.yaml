@@ -1,0 +1,6 @@
+# Settings for component openstack-client
+---
+
+get_from: "git://github.com/openstack/python-openstackclient.git?branch=master"
+
+...

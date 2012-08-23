@@ -20,12 +20,14 @@ import weakref
 
 from anvil import cfg
 from anvil import exceptions
-from anvil import libvirt as lv
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
 
 from anvil.components.helpers import db as dbhelper
+from anvil.components.helpers import rabbit as rbhelper
+from anvil.components.helpers import virt as lv
+
 
 LOG = logging.getLogger(__name__)
 
@@ -64,45 +66,46 @@ def canon_virt_driver(virt_driver):
     return virt_driver
 
 
-def get_shared_params(cfgobj):
-    mp = dict()
-
-    host_ip = cfgobj.get('host', 'ip')
-    mp['service_host'] = host_ip
-    nova_host = cfgobj.getdefaulted('nova', 'nova_host', host_ip)
-    nova_protocol = cfgobj.getdefaulted('nova', 'nova_protocol', 'http')
+def get_shared_params(ip, protocol,
+                      api_host, api_port,
+                      s3_host, s3_port,
+                      volume_host, volume_port,
+                      ec2_host, ec2_port,
+                      ec2_admin_host, ec2_admin_port):
+    mp = {}
+    mp['service_host'] = ip
 
     # Uri's of the various nova endpoints
     mp['endpoints'] = {
         'ec2_admin': {
-            'uri': utils.make_url(nova_protocol, nova_host, 8773, "services/Admin"),
-            'port': 8773,
-            'host': host_ip,
-            'protocol': nova_protocol,
+            'uri': utils.make_url(protocol, ec2_admin_host, ec2_admin_port, "services/Admin"),
+            'port': ec2_admin_port,
+            'host': ec2_admin_host,
+            'protocol': protocol,
         },
         'ec2_cloud': {
-            'uri': utils.make_url(nova_protocol, nova_host, 8773, "services/Cloud"),
-            'port': 8773,
-            'host': host_ip,
-            'protocol': nova_protocol,
+            'uri': utils.make_url(protocol, ec2_host, ec2_port, "services/Cloud"),
+            'port': ec2_port,
+            'host': ec2_host,
+            'protocol': protocol,
         },
         'volume': {
-            'uri': utils.make_url(nova_protocol, host_ip, 8776, "v1"),
-            'port': 8776,
-            'host': host_ip,
-            'protocol': nova_protocol,
+            'uri': utils.make_url(protocol, volume_host, volume_port, "v1"),
+            'port': volume_port,
+            'host': volume_host,
+            'protocol': protocol,
         },
         's3': {
-            'uri': utils.make_url('http', host_ip, 3333),
-            'port': 3333,
-            'host': host_ip,
-            'protocol': nova_protocol,
+            'uri': utils.make_url(protocol, s3_host, s3_port),
+            'port': s3_port,
+            'host': s3_host,
+            'protocol': protocol,
         },
         'api': {
-            'uri': utils.make_url('http', host_ip, 8774, "v2"),
-            'port': 8774,
-            'host': host_ip,
-            'protocol': nova_protocol,
+            'uri': utils.make_url(protocol, api_host, api_port, "v2"),
+            'port': api_port,
+            'host': api_host,
+            'protocol': protocol,
         },
     }
 
@@ -117,16 +120,12 @@ class ConfConfigurator(object):
 
     def __init__(self, installer):
         self.installer = weakref.proxy(installer)
-        self.cfg = installer.cfg
-        self.instances = installer.instances
-        self.tracewriter = installer.tracewriter
-        self.distro = installer.distro
 
     def _getbool(self, name):
-        return self.cfg.getboolean('nova', name)
+        return bool(self.installer.get_option(name))
 
     def _getstr(self, name, default=''):
-        return self.cfg.getdefaulted('nova', name, default)
+        return str(self.installer.get_option(name, default))
 
     def verify(self):
         # Do a little check to make sure actually have that interface/s
@@ -157,7 +156,7 @@ class ConfConfigurator(object):
         nova_conf = Conf(fn)
 
         # Used more than once so we calculate it ahead of time
-        hostip = self.cfg.get('host', 'ip')
+        hostip = self._getstr('ip')
 
         if self._getbool('verbose'):
             nova_conf.add('verbose', True)
@@ -181,8 +180,14 @@ class ConfConfigurator(object):
         # The ip of where we are running
         nova_conf.add('my_ip', hostip)
 
+        dbdsn = dbhelper.fetch_dbdsn(dbname=DB_NAME,
+                                     utf8=True,
+                                     dbtype=self._getstr('db.type'),
+                                     **utils.merge_dicts(self.installer.get_option('db'),
+                                                         dbhelper.get_shared_passwords(self.installer)))
+
         # Setup your sql connection
-        nova_conf.add('sql_connection', dbhelper.fetch_dbdsn(self.cfg, DB_NAME))
+        nova_conf.add('sql_connection', dbdsn)
 
         # Configure anything libvirt related?
         virt_driver = canon_virt_driver(self._getstr('virt_driver'))
@@ -223,16 +228,17 @@ class ConfConfigurator(object):
         nova_conf.add('s3_host', hostip)
 
         # How is your message queue setup?
-        mq_type = canon_mq_type(self.installer.get_option('mq'))
+        mq_type = canon_mq_type(self._getstr('mq'))
         if mq_type == 'rabbit':
-            nova_conf.add('rabbit_host', self.cfg.getdefaulted('rabbit', 'rabbit_host', hostip))
-            nova_conf.add('rabbit_password', self.cfg.get("passwords", "rabbit"))
-            nova_conf.add('rabbit_userid', self.cfg.get('rabbit', 'rabbit_userid'))
+            nova_conf.add('rabbit_host', self._getstr('rabbit.host', hostip))
+            nova_conf.add('rabbit_password', rbhelper.get_shared_passwords(self.installer)['pw'])
+            nova_conf.add('rabbit_userid', self._getstr('rabbit.user_id'))
             nova_conf.add('rpc_backend', 'nova.rpc.impl_kombu')
 
         # Where instances will be stored
-        instances_path = self._getstr('instances_path', 
-                                      sh.joinpths(self.installer.get_option('component_dir'), 'instances'))
+        instances_path = self._getstr('instances_path')
+        if not instances_path:
+            instances_path = sh.joinpths(self.installer.get_option('component_dir'), 'instances')
         self._configure_instances_path(instances_path, nova_conf)
 
         # Is this a multihost setup?
@@ -358,7 +364,7 @@ class ConfConfigurator(object):
     def _configure_instances_path(self, instances_path, nova_conf):
         nova_conf.add('instances_path', instances_path)
         LOG.debug("Attempting to create instance directory: %r", instances_path)
-        self.tracewriter.dirs_made(*sh.mkdirslist(instances_path))
+        self.installer.tracewriter.dirs_made(*sh.mkdirslist(instances_path))
         LOG.debug("Adjusting permissions of instance directory: %r", instances_path)
         sh.chmod(instances_path, 0777)
 

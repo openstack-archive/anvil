@@ -35,6 +35,7 @@ import progressbar
 import yaml
 
 from anvil import colorizer
+from anvil import env
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import pprint
@@ -51,10 +52,6 @@ from anvil.pprint import center_text
 PARAM_SUB_REGEX = re.compile(r"#(.*)$|%([\w\d/\.]+?)%", re.MULTILINE)
 EXT_COMPONENT = re.compile(r"^\s*([\w-]+)(?:\((.*)\))?\s*$")
 MONTY_PYTHON_TEXT_RE = re.compile("([a-z0-9A-Z\?!.,'\"]+)")
-DEF_IP = "127.0.0.1"
-IP_LOOKER = '8.8.8.8'
-DEF_IP_VERSION = 'IPv4'
-STAR_VERSION = 0
 
 # Thx cowsay
 # See: http://www.nog.net/~tony/warez/cowsay.shtml
@@ -99,6 +96,11 @@ def obj_name(obj):
     return obj_name(obj.__class__)
 
 
+def load_yaml(fn):
+    contents = sh.load_file(fn)
+    return yaml.safe_load(contents)
+
+
 def add_header(fn, contents):
     lines = list()
     if not fn:
@@ -114,6 +116,13 @@ def add_header(fn, contents):
 
 def rcf8222date():
     return strftime("%a, %d %b %Y %H:%M:%S", localtime())
+
+
+def merge_dicts(*dicts):
+    merged = {}
+    for mp in dicts:
+        merged.update(mp)
+    return merged
 
 
 def make_url(scheme, host, port=None,
@@ -295,7 +304,7 @@ def get_host_ip():
     ip = None
     try:
         csock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        csock.connect((IP_LOOKER, 80))
+        csock.connect(('8.8.8.8', 80))
         (addr, _) = csock.getsockname()
         csock.close()
         ip = addr
@@ -305,7 +314,7 @@ def get_host_ip():
     if not ip:
         interfaces = get_interfaces()
         for (_, net_info) in interfaces.items():
-            ip_info = net_info.get(DEF_IP_VERSION)
+            ip_info = net_info.get('IPv4')
             if ip_info:
                 a_ip = ip_info.get('addr')
                 if a_ip:
@@ -313,8 +322,21 @@ def get_host_ip():
                     break
     # Just return a localhost version then
     if not ip:
-        ip = DEF_IP
+        ip = "127.0.0.1"
     return ip
+
+
+@contextlib.contextmanager
+def chdir(where_to):
+    curr_cd = os.getcwd()
+    if curr_cd == where_to:
+        yield where_to
+    else:
+        try:
+            os.chdir(where_to)
+            yield where_to
+        finally:
+            os.chdir(curr_cd)
 
 
 def get_interfaces():

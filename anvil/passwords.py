@@ -25,10 +25,39 @@ from anvil import cfg
 LOG = logging.getLogger(__name__)
 
 
-class InputPassword(object):
-    def __init__(self, cfg):
-        self.cfg = cfg
+class ProxyPassword(object):
+    def __init__(self, cache=None):
+        if cache is None:
+            self.cache = {}
+        else:
+            self.cache = cache
+        self.resolvers = []
 
+    def _valid_password(self, pw):
+        if pw is None:
+            return False
+        if len(pw) > 0:
+            return True
+        return False
+
+    def get_password(self, option, prompt_text='', length=8, **kwargs):
+        if option in self.cache:
+            return self.cache[option]
+        password = ''
+        for resolver in self.resolvers:
+            found_password = resolver.get_password(option,
+                                                   prompt_text=prompt_text,
+                                                   length=length, **kwargs)
+            if self._valid_password(found_password):
+                password = found_password
+                break
+        if len(password) == 0:
+            LOG.warn("Password provided for %r is empty", option)
+        self.cache[option] = password
+        return password
+
+
+class InputPassword(object):
     def _valid_password(self, pw):
         cleaned_pw = pw.strip()
         if len(cleaned_pw) == 0:
@@ -55,18 +84,7 @@ class InputPassword(object):
         return self._prompt_user(kargs.get('prompt_text', '??'))
 
 
-class ConfigPassword(object):
-    def __init__(self, cfg):
-        self.cfg = cfg
-
-    def get_password(self, option, **kargs):
-        return self.cfg.get(cfg.PW_SECTION, option)
-
-
 class RandomPassword(object):
-    def __init__(self, cfg):
-        self.cfg = cfg
-
     def generate_random(self, length):
         """Returns a randomly generated password of the specified length."""
         LOG.debug("Generating a pseudo-random password of %d characters",

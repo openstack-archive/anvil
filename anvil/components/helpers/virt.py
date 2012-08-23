@@ -54,10 +54,9 @@ def canon_libvirt_type(virt_type):
 
 class Virsh(object):
 
-    def __init__(self, config, distro):
-        self.cfg = config
+    def __init__(self, service_wait, distro):
         self.distro = distro
-        self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
+        self.wait_time = max(int(service_wait), 1)
 
     def _service_status(self):
         cmd = self.distro.get_command('libvirt', 'status')

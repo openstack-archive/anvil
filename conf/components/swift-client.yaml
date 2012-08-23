@@ -1,0 +1,6 @@
+# Settings for component swift-client
+---
+
+get_from: "git://github.com/openstack/python-swiftclient.git?branch=master"
+
+...

@@ -1,7 +1,7 @@
 ---
-# RedHat Enterprise Linux 6
-name: rhel-6
-platform_pattern: redhat-6(.*)
+# RedHat Enterprise Linux 6.0+
+name: rhel
+platform_pattern: redhat(.*)
 packager_name: anvil.packaging.yum:YumPackager
 commands:
     apache:
@@ -22,17 +22,14 @@ commands:
     mysql:
         # NOTE: we aren't stopping any sql injection...
         create_db: mysql --user=%USER% --password=%PASSWORD% -e 
-          "CREATE DATABASE %DB% CHARACTER SET %CHARACTER_SET%;"
+                   "CREATE DATABASE %DB% CHARACTER SET %CHARACTER_SET%;"
         drop_db: mysql --user=%USER% --password=%PASSWORD% -e 
-          "DROP DATABASE IF EXISTS %DB%;"
+                 "DROP DATABASE IF EXISTS %DB%;"
         grant_all: mysql --user=%USER% --password=%PASSWORD% -e 
-          "GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' IDENTIFIED BY '%PASSWORD%'; 
-           FLUSH PRIVILEGES;"
+                   "GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' IDENTIFIED BY '%PASSWORD%'; FLUSH PRIVILEGES;"
         restart: service mysqld restart
         set_pwd: mysql --user=%USER% --password=%OLD_PASSWORD% -e 
-          "USE mysql; 
-           UPDATE user SET password=PASSWORD('%NEW_PASSWORD%') WHERE User='%USER%';
-           FLUSH PRIVILEGES;"
+                 "USE mysql;  UPDATE user SET password=PASSWORD('%NEW_PASSWORD%') WHERE User='%USER%';  FLUSH PRIVILEGES;"
         start: service mysqld start
         status: service mysqld status
         stop: service mysqld stop
@@ -44,7 +41,7 @@ commands:
     # Where component symlinks will go, the component name will become a directory
     # under this directory where its configuration files will be connected to there
     # actual location.
-    base_link_dir: "/etc/"
+    base_link_dir: /etc
     rabbit-mq:
         change_password: rabbitmqctl change_password
         restart: service rabbitmq-server restart
@@ -57,11 +54,13 @@ components:
             install: anvil.components.cinder_client:CinderClientInstaller
             running: anvil.components.cinder_client:CinderClientRuntime
             uninstall: anvil.components.cinder_client:CinderClientUninstaller
+            test: anvil.components:PythonTestingComponent
     db:
         action_classes:
             install: anvil.distros.rhel:DBInstaller
             running: anvil.components.db:DBRuntime
             uninstall: anvil.components.db:DBUninstaller
+            test: anvil.components:EmptyTestingComponent
         packages:
         -   name: mysql
         -   name: mysql-server
@@ -70,6 +69,7 @@ components:
             install: anvil.components.pkglist:Installer
             running: anvil.components:EmptyRuntime
             uninstall: anvil.components.pkglist:Uninstaller
+            test: anvil.components:EmptyTestingComponent
         packages:
         # Shared system packages
         -   name: coreutils
@@ -145,6 +145,8 @@ components:
                     links:
                         - source: "/usr/lib/python2.6/site-packages/nose-1*-py2.6.egg/nose"
                           target: "/usr/lib/python2.6/site-packages/nose"
+                        - source: "/usr/bin/nosetests1.1"
+                          target: "/usr/bin/nosetests"
         -   name: paste
             package:
                 name: python-paste
@@ -217,6 +219,7 @@ components:
             install: anvil.components.glance:GlanceInstaller
             running: anvil.components.glance:GlanceRuntime
             uninstall: anvil.components.glance:GlanceUninstaller
+            test: anvil.components:PythonTestingComponent
         # When parsing 'tools/pip-requires' and 
         # 'tools/test-requires' (if they exist)
         # the following map will be used to translate names
@@ -244,16 +247,19 @@ components:
             install: anvil.components.glance_client:GlanceClientInstaller
             running: anvil.components.glance_client:GlanceClientRuntime
             uninstall: anvil.components.glance_client:GlanceClientUninstaller
+            test: anvil.components:PythonTestingComponent
         pips:
         -   name: nosexcover
         -   name: setuptools-git
         -   name: warlock
             version: "==0.1.0"
+        -   name: nosehtmloutput
     horizon:
         action_classes:
             install: anvil.distros.rhel:HorizonInstaller
             running: anvil.components.horizon:HorizonRuntime
             uninstall: anvil.components.horizon:HorizonUninstaller
+            test: anvil.components:PythonTestingComponent
         pip_to_package:
         -   name: pytz
             package:
@@ -276,6 +282,7 @@ components:
             install: anvil.components.keystone:KeystoneInstaller
             running: anvil.components.keystone:KeystoneRuntime
             uninstall: anvil.components.keystone:KeystoneUninstaller
+            test: anvil.components.keystone:KeystoneTester
         packages:
         -   name: MySQL-python
         pip_to_package:
@@ -292,11 +299,13 @@ components:
             install: anvil.components.keystone_client:KeyStoneClientInstaller
             running: anvil.components.keystone_client:KeyStoneClientRuntime
             uninstall: anvil.components.keystone_client:KeyStoneClientUninstaller
+            test: anvil.components:PythonTestingComponent
     nova:
         action_classes:
             install: anvil.distros.rhel:NovaInstaller
             running: anvil.components.nova:NovaRuntime
             uninstall: anvil.components.nova:NovaUninstaller
+            test: anvil.components:PythonTestingComponent
         packages:
         -   name: MySQL-python
         -   name: dnsmasq
@@ -349,11 +358,13 @@ components:
             install: anvil.components.nova_client:NovaClientInstaller
             running: anvil.components.nova_client:NovaClientRuntime
             uninstall: anvil.components.nova_client:NovaClientUninstaller
+            test: anvil.components:PythonTestingComponent
     no-vnc:
         action_classes:
             install: anvil.components.novnc:NoVNCInstaller
             running: anvil.components.novnc:NoVNCRuntime
             uninstall: anvil.components.novnc:NoVNCUninstaller
+            test: anvil.components:EmptyTestingComponent
         packages:
         -   name: python-websockify
     openstack-client:
@@ -361,13 +372,19 @@ components:
             install: anvil.components.openstack_client:OpenStackClientInstaller
             running: anvil.components.openstack_client:OpenStackClientRuntime
             uninstall: anvil.components.openstack_client:OpenStackClientUninstaller
+            test: anvil.components:PythonTestingComponent
         pips:
         -   name: cliff
+        pip_to_package:
+        -   name: keyring
+            package:
+                name: python-keyring
     quantum-client:
         action_classes:
             install: anvil.components.quantum_client:QuantumClientInstaller
             running: anvil.components.quantum_client:QuantumClientRuntime
             uninstall: anvil.components.quantum_client:QuantumClientUninstaller
+            test: anvil.components:PythonTestingComponent
         pip_to_package:
         -   name: pyparsing
             package:
@@ -379,6 +396,7 @@ components:
             install: anvil.components.rabbit:RabbitInstaller
             running: anvil.distros.rhel:RabbitRuntime
             uninstall: anvil.components.rabbit:RabbitUninstaller
+            test: anvil.components:EmptyTestingComponent
         packages:
         -   name: rabbitmq-server
             pre-install:
@@ -399,5 +417,6 @@ components:
             install: anvil.components.swift_client:SwiftClientInstaller
             running: anvil.components.swift_client:SwiftClientRuntime
             uninstall: anvil.components.swift_client:SwiftClientUninstaller
+            test: anvil.components:PythonTestingComponent
 ...
 

@@ -35,15 +35,7 @@ LOG = logging.getLogger(__name__)
 
 
 class Component(object):
-    def __init__(self,
-                 subsystems,
-                 runner,
-                 instances,
-                 options,
-                 name,
-                 siblings,
-                 *args,
-                 **kargs):
+    def __init__(self, name, subsystems, instances, options, siblings,  distro, passwords, **kwargs):
 
         # Subsystems this was requested with
         self.subsystems = subsystems
@@ -60,31 +52,31 @@ class Component(object):
         # All the other class names that can be used alongside this class
         self.siblings = siblings
 
-        # The runner has a reference to us, so use a weakref here to
-        # avoid breaking garbage collection.
-        self.runner = weakref.proxy(runner)
-
-        # Parts of the global runner context that we use
-        self.cfg = runner.cfg
-        
         # The distribution 'interaction object'
-        self.distro = runner.distro
+        self.distro = distro
 
         # Turned on and off as phases get activated
         self.activated = False
 
-    def get_option(self, opt_name, def_val=None):
-        return self.options.get(opt_name, def_val)
+        # How we get any passwords we need
+        self.passwords = passwords
+
+    def get_password(self, option, prompt_text, **kwargs):
+        return self.passwords.get_password(option, prompt_text, **kwargs)
+
+    def get_option(self, option, default_value=None):
+        option_value = utils.get_from_path(self.options, option)
+        if option_value is None:
+            return default_value
+        else:
+            return option_value
 
     @property
     def env_exports(self):
         return {}
 
     def verify(self):
-        # Ensure subsystems are 'valid'...
-        for s in self.subsystems:
-            if s not in self.valid_subsystems:
-                raise ValueError("Unknown subsystem %r requested for component: %s" % (s, self))
+        pass
 
     def __str__(self):
         return "%s@%s" % (utils.obj_name(self), self.name)

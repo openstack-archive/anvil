@@ -32,6 +32,7 @@ subsystems:
     - net
     - sched
 supports:
-- rhel-6
+- rhel
+- ubuntu
 ...
 

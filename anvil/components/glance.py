@@ -20,6 +20,7 @@ from anvil import cfg
 from anvil import components as comp
 from anvil import log as logging
 from anvil import shell as sh
+from anvil import utils
 
 from anvil.components.helpers import db as dbhelper
 from anvil.components.helpers import glance as ghelper
@@ -40,7 +41,6 @@ CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF,
 # Reg, api, scrub are here as possible subsystems
 GAPI = "api"
 GREG = "reg"
-GSCR = 'scrub'
 
 # This db will be dropped and created
 DB_NAME = "glance"
@@ -49,14 +49,12 @@ DB_NAME = "glance"
 APP_OPTIONS = {
     'glance-api': ['--config-file', sh.joinpths('%CONFIG_DIR%', API_CONF)],
     'glance-registry': ['--config-file', sh.joinpths('%CONFIG_DIR%', REG_CONF)],
-    'glance-scrubber': ['--config-file', sh.joinpths('%CONFIG_DIR%', REG_CONF)],
 }
 
 # How the subcompoent small name translates to an actual app
 SUB_TO_APP = {
     GAPI: 'glance-api',
     GREG: 'glance-registry',
-    GSCR: 'glance-scrubber',
 }
 
 
@@ -94,33 +92,48 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
             self._setup_db()
 
     def _setup_db(self):
-        dbhelper.drop_db(self.cfg, self.distro, DB_NAME)
-        dbhelper.create_db(self.cfg, self.distro, DB_NAME)
+        dbhelper.drop_db(distro=self.distro,
+                         dbtype=self.get_option('db.type'),
+                         dbname=DB_NAME,
+                         **utils.merge_dicts(self.get_option('db'),
+                                             dbhelper.get_shared_passwords(self)))
+        dbhelper.create_db(distro=self.distro,
+                           dbtype=self.get_option('db.type'),
+                           dbname=DB_NAME,
+                           **utils.merge_dicts(self.get_option('db'),
+                                               dbhelper.get_shared_passwords(self)))
 
     def source_config(self, config_fn):
-        real_fn = config_fn
         if config_fn == LOGGING_CONF:
             real_fn = 'logging.cnf.sample'
+        else:
+            real_fn = config_fn
         fn = sh.joinpths(self.get_option('app_dir'), 'etc', real_fn)
         return (fn, sh.load_file(fn))
 
     def _config_adjust_registry(self, contents, fn):
-        params = ghelper.get_shared_params(self.cfg)
+        params = ghelper.get_shared_params(**self.options)
         with io.BytesIO(contents) as stream:
             config = cfg.RewritableConfigParser()
             config.readfp(stream)
-            config.set('DEFAULT', 'debug', True)
-            config.set('DEFAULT', 'verbose', True)
+            config.set('DEFAULT', 'debug', self.get_option('verbose', False))
+            config.set('DEFAULT', 'verbose', self.get_option('verbose', False))
             config.set('DEFAULT', 'bind_port', params['endpoints']['registry']['port'])
-            config.set('DEFAULT', 'sql_connection',
-                                dbhelper.fetch_dbdsn(self.cfg, DB_NAME, utf8=True))
+            config.set('DEFAULT', 'sql_connection', dbhelper.fetch_dbdsn(dbname=DB_NAME,
+                                                                         utf8=True,
+                                                                         dbtype=self.get_option('db.type'),
+                                                                         **utils.merge_dicts(self.get_option('db'),
+                                                                                             dbhelper.get_shared_passwords(self))))
             config.remove_option('DEFAULT', 'log_file')
-            config.set('paste_deploy', 'flavor', 'keystone')
+            config.set('paste_deploy', 'flavor', self.get_option('paste_flavor'))
             return config.stringify(fn)
         return contents
 
     def _config_adjust_paste(self, contents, fn):
-        params = khelper.get_shared_params(self.cfg, 'glance')
+        params = khelper.get_shared_params(ip=self.get_option('ip'),
+                                           service_user='glance',
+                                           **utils.merge_dicts(self.get_option('keystone'), 
+                                                               khelper.get_shared_passwords(self)))
         with io.BytesIO(contents) as stream:
             config = cfg.RewritableConfigParser()
             config.readfp(stream)
@@ -139,20 +152,23 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
         return contents
 
     def _config_adjust_api(self, contents, fn):
-        params = ghelper.get_shared_params(self.cfg)
+        params = ghelper.get_shared_params(**self.options)
         with io.BytesIO(contents) as stream:
             config = cfg.RewritableConfigParser()
             config.readfp(stream)
             img_store_dir = sh.joinpths(self.get_option('component_dir'), 'images')
-            config.set('DEFAULT', 'debug', True)
-            config.set('DEFAULT', 'verbose', True)
+            config.set('DEFAULT', 'debug', self.get_option('verbose', False))
+            config.set('DEFAULT', 'verbose', self.get_option('verbose', False))
             config.set('DEFAULT', 'default_store', 'file')
             config.set('DEFAULT', 'filesystem_store_datadir', img_store_dir)
             config.set('DEFAULT', 'bind_port', params['endpoints']['public']['port'])
-            config.set('DEFAULT', 'sql_connection',
-                                dbhelper.fetch_dbdsn(self.cfg, DB_NAME, utf8=True))
+            config.set('DEFAULT', 'sql_connection', dbhelper.fetch_dbdsn(dbname=DB_NAME,
+                                                                         utf8=True,
+                                                                         dbtype=self.get_option('db.type'),
+                                                                         **utils.merge_dicts(self.get_option('db'), 
+                                                                                             dbhelper.get_shared_passwords(self))))
             config.remove_option('DEFAULT', 'log_file')
-            config.set('paste_deploy', 'flavor', 'keystone')
+            config.set('paste_deploy', 'flavor', self.get_option('paste_flavor'))
             LOG.debug("Ensuring file system store directory %r exists and is empty." % (img_store_dir))
             sh.deldir(img_store_dir)
             self.tracewriter.dirs_made(*sh.mkdirslist(img_store_dir))
@@ -192,7 +208,7 @@ class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
-        self.wait_time = max(self.cfg.getint('DEFAULT', 'service_wait_seconds'), 1)
+        self.wait_time = max(int(self.get_option('service_wait_seconds')), 1)
 
     @property
     def apps_to_start(self):
@@ -212,7 +228,7 @@ class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
         return APP_OPTIONS.get(app)
 
     def _get_image_urls(self):
-        uris = self.cfg.getdefaulted('glance', 'image_urls', '').split(",")
+        uris = self.get_option('image_urls', [])
         return [u.strip() for u in uris if len(u.strip())]
 
     def post_start(self):
@@ -222,6 +238,9 @@ class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
             LOG.info("Waiting %s seconds so that glance can start up before image install." % (self.wait_time))
             sh.sleep(self.wait_time)
             params = {}
-            params['glance'] = ghelper.get_shared_params(self.cfg)
-            params['keystone'] = khelper.get_shared_params(self.cfg, 'glance')
+            params['glance'] = ghelper.get_shared_params(**self.options)
+            params['keystone'] = khelper.get_shared_params(ip=self.get_option('ip'),
+                                                           service_user='glance',
+                                                           **utils.merge_dicts(self.get_option('keystone'),
+                                                                               khelper.get_shared_passwords(self)))
             ghelper.UploadService(params).install(self._get_image_urls())
