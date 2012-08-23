@@ -29,7 +29,7 @@ class PackageAction(action.Action):
         return 'package'
 
     def _finish_package(self, component, where):
-        if where:
+        if not where:
             LOG.info("Unable to create a package template!")
         else:
             LOG.info("Package template created at %s", colorizer.quote(where))

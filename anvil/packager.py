@@ -123,6 +123,10 @@ class Packager(object):
             utils.execute_template(*cmds, params=params)
 
     @abc.abstractmethod
+    def create_package_template(self, component):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
     def _remove(self, pkg):
         raise NotImplementedError()
 

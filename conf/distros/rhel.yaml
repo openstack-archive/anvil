@@ -250,7 +250,7 @@ components:
             install: anvil.components.glance_client:GlanceClientInstaller
             running: anvil.components.glance_client:GlanceClientRuntime
             uninstall: anvil.components.glance_client:GlanceClientUninstaller
-            test: anvil.components:PythonTestingComponent
+            test: anvil.components.glance_client:GlanceClientTester
         pips:
         -   name: nosexcover
         -   name: setuptools-git
