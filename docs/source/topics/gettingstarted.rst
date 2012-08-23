@@ -105,10 +105,10 @@ to reboot.
      $ sudo reboot
 
 Also to avoid qemu errors please follow the solution @ https://bugs.launchpad.net/anvil/+bug/985786
-which will ensure that the ``qemu`` user can write to your instances directory. If needed edit ``anvil.ini``
-and also adjust the ``instances_path`` option (under the ``nova`` section).
+which will ensure that the ``qemu`` user can write to your instances directory. If needed edit ``conf/components/nova.yaml``
+and also adjust the ``instances_path`` option.
 
-This can be typically solved by running the following (and then updating ``anvil.ini``):
+This can be typically solved by running the following (and then updating the ``instances_path`` option)
 
 ::
 
@@ -147,7 +147,7 @@ Please reference:
 
 http://docs.openstack.org/diablo/openstack-compute/admin/content/configuring-networking-on-the-compute-node.html
 
-If you need to adjust those variables the matching config variables in ``anvil.ini`` are:
+If you need to adjust those variables the matching config variables in ``conf/components/nova.yaml`` are:
 
 ::
 
@@ -195,6 +195,17 @@ as ANVIL figures out how to install your desired components (if you
 desire more informational output add a ``-v`` or a ``-vv`` to that
 command).
 
+Installing
+----------
+
+Now (if you choose) you can run each *OpenStack* components unit tests by running the following:
+
+::
+
+    sudo ./smithy -a test
+
+You should see a set of unit tests being ran (ideally with zero failures).
+
 Starting
 --------
 
@@ -219,7 +230,7 @@ system auto-generate one for you you will need to check the final output
 of the above install and pick up the password that was generated which
 should be displayed at key ``passwords/horizon_keystone_admin``. You can
 also later find this authentication information in the generated
-``core.rc`` file.
+``passwords.yaml`` file.
 
 If you see a login page and can access horizon then:
 
@@ -232,7 +243,7 @@ In your ANVIL directory:
 
 ::
 
-    source core.rc
+    source install.rc
 
 This should set up the environment variables you need to run OpenStack
 CLI tools:
