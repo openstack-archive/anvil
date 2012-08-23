@@ -25,4 +25,17 @@ glance:
   api_port: "$(glance:api_port)"
   protocol: "$(glance:protocol)"
   reg_port: "$(glance:reg_port)"
+  
+nova: 
+  api_host: "$(nova:api_host)"
+  api_port: "$(nova:api_port)"
+  s3_host: "$(nova:s3_host)"
+  s3_port: "$(nova:s3_port)"
+  volume_host: "$(nova:volume_host)"
+  volume_port: "$(nova:volume_port)"
+  ec2_host: "$(nova:ec2_host)"
+  ec2_port: "$(nova:ec2_port)"
+  ec2_admin_host: "$(nova:ec2_admin_host)"
+  ec2_admin_port: "$(nova:ec2_admin_port)"
+  protocol: "$(nova:protocol)"
 ...
