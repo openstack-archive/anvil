@@ -244,10 +244,17 @@ def log_object(to_log, logger=None, level=logging.INFO, item_max_len=64):
 
 
 def log_iterable(to_log, header=None, logger=None, color='blue'):
-    if not to_log:
-        return
     if not logger:
         logger = LOG
+    if not to_log:
+        if not header:
+            return
+        if header.endswith(":"):
+            header = header[0:-1]
+        if not header.endswith("."):
+            header = header + "."
+        logger.info(header)
+        return
     if header:
         if not header.endswith(":"):
             header += ":"
