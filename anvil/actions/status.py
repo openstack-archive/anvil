@@ -50,28 +50,30 @@ class StatusAction(action.Action):
     def _print_status(self, component, result):
         if not result:
             LOG.info("Status of %s is %s.", colorizer.quote(component.name), self._quote_status(STATUS_UNKNOWN))
-        elif len(result) == 1:
+            return
+
+        def details_printer(entry, spacing):
+            det = utils.truncate_text(entry.details, max_len=8192, from_bottom=True)
+            for line in det.splitlines():
+                line = line.replace("\t", "\\t")
+                line = line.replace("\r", "\\r")
+                line = utils.truncate_text(line, max_len=120)
+                LOG.info("%s>> %s", (" " * spacing), line)
+
+        if len(result) == 1:
             s = result[0]
             if s.name and s.name != component.name:
                 LOG.info("Status of %s (%s) is %s.", colorizer.quote(component.name), s.name, self._quote_status(s.status))
             else:
                 LOG.info("Status of %s is %s.", colorizer.quote(component.name), self._quote_status(s.status))
             if self.show_full and s.details:
-                det = utils.truncate_text(s.details, max_len=8192, from_bottom=True)
-                for line in det.splitlines():
-                    line = line.replace("\t", "\\t")
-                    line = line.replace("\r", "\\r")
-                    LOG.info("%s>> %s", " " * 2, line)
+                details_printer(s, 2)
         else:
             LOG.info("Status of %s is:", colorizer.quote(component.name))
             for s in result:
                 LOG.info("|-- %s is %s.", s.name, self._quote_status(s.status))
                 if self.show_full and s.details:
-                    det = utils.truncate_text(s.details, max_len=8192, from_bottom=True)
-                    for line in det.splitlines():
-                        line = line.replace("\t", "\\t")
-                        line = line.replace("\r", "\\r")
-                        LOG.info("%s>> %s", " " * 4, line)
+                    details_printer(s, 4)
 
     def _run(self, persona, component_order, instances):
         self._run_phase(
