@@ -78,7 +78,7 @@ class Initializer(object):
             user = users_made[name]
             for role_entry in info['roles']:
                 # Role:Tenant
-                (r, sep, t) = role_entry.partition(":")
+                (r, _sep, t) = role_entry.partition(":")
                 role_name = r
                 tenant_name = t
                 if not role_name or not tenant_name:

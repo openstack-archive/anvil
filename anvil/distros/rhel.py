@@ -39,7 +39,7 @@ from anvil.components.helpers import nova as nhelper
 LOG = logging.getLogger(__name__)
 
 # See: http://wiki.libvirt.org/page/SSHPolicyKitSetup
-# FIXME: take from distro config??
+# FIXME(harlowja) take from distro config??
 LIBVIRT_POLICY_FN = "/etc/polkit-1/localauthority/50-local.d/50-libvirt-access.pkla"
 LIBVIRT_POLICY_CONTENTS = """
 [libvirt Management Access]
@@ -58,7 +58,7 @@ class DBInstaller(db.DBInstaller):
         LOG.info("Fixing up %s mysql configs.", colorizer.quote(self.distro.name))
         fc = sh.load_file('/etc/my.cnf')
         lines = fc.splitlines()
-        new_lines = list()
+        new_lines = []
         for line in lines:
             if line.startswith('skip-grant-tables'):
                 line = '#' + line

@@ -85,10 +85,12 @@ def parse():
 
     status_group = OptionGroup(parser, "Status specific options")
     status_group.add_option('-s', "--show",
-        action="store_true",
-        dest="show_full",
-        help="show details if applicable when showing status",
-        default=False)
+        action="store",
+        dest="show_amount",
+        metavar="BYTES",
+        type="int",
+        default=0,
+        help="show SIZE bytes 'details' (if applicable) when show component status (default: %default)")
     parser.add_option_group(status_group)
 
     # Extract only what we care about, these will be passed
@@ -103,7 +105,7 @@ def parse():
     output['persona_fn'] = options.persona_fn
     output['verbosity'] = len(options.verbosity)
     output['prompt_for_passwords'] = options.prompt_for_passwords
-    output['show_full'] = options.show_full
+    output['show_amount'] = max(0, options.show_amount)
     output['store_passwords'] = options.store_passwords
 
     return output

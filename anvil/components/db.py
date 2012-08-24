@@ -31,12 +31,6 @@ LOG = logging.getLogger(__name__)
 # always reset it when u uninstall the db
 RESET_BASE_PW = ''
 
-# Links about how to reset if we fail to set the PW
-SQL_RESET_PW_LINKS = [
-    'https://help.ubuntu.com/community/MysqlPasswordReset',
-    'http://dev.mysql.com/doc/refman/5.0/en/resetting-permissions.html',
-]
-
 # Copies from helper
 BASE_ERROR = dbhelper.BASE_ERROR
 
@@ -71,8 +65,6 @@ class DBUninstaller(comp.PkgUninstallComponent):
         except IOError:
             LOG.warn(("Could not reset the database password. You might have to manually "
                       "reset the password to %s before the next install"), colorizer.quote(RESET_BASE_PW))
-            utils.log_iterable(SQL_RESET_PW_LINKS, logger=LOG,
-                                header="To aid in this check out:")
 
 
 class DBInstaller(comp.PkgInstallComponent):
@@ -143,7 +135,7 @@ class DBInstaller(comp.PkgInstallComponent):
 class DBRuntime(comp.ProgramRuntime):
     def __init__(self, *args, **kargs):
         comp.ProgramRuntime.__init__(self, *args, **kargs)
-        self.wait_time = max(int(self.get_option('service_wait_seconds')), 1)
+        self.wait_time = self.get_int_option('service_wait_seconds')
 
     def _get_run_actions(self, act, exception_cls):
         db_type = self.get_option("type")

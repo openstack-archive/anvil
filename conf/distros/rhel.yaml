@@ -175,20 +175,12 @@ components:
         -   name: simplejson
             package:
                 name: python-simplejson
-        -   name: sqlalchemy
-            package:
-                name: python-sqlalchemy0.7
-                packager_name: anvil.distros.rhel:YumPackagerWithRelinks
-                packager_options:
-                    links:
-                        - source: "/usr/lib64/python2.6/site-packages/SQLAlchemy-0.*.egg/sqlalchemy"
-                          target: "/usr/lib/python2.6/site-packages/sqlalchemy"
         -   name: unittest2
             package:
                 name: python-unittest2
         -   name: virtualenv
             package:
-                name: python-virtualenv
+                name: python-virtualenv # Not really needed since anvil doesn't use venvs...
         -   name: webob
             package:
                 name: python-webob1.0
@@ -210,13 +202,16 @@ components:
         -   name: prettytable
             version: ">=0.6" # This is not right, 0.6 and 0.6.1 are needed??
         -   name: pycrypto
-            options:
+            options: # Force it to upgrade/reinstall
                 - "-U"
                 - "-I"
         -   name: requests
         -   name: sphinx
+        -   name: sqlalchemy # Need this or nova pukes with 'Did not recognize type 'BIGINT' of column 'bw_in''
+            options: # Force it to upgrade/reinstall
+                - "-U"
+                - "-I"
         -   name: sqlalchemy-migrate
-        -   name: tox
     glance:
         action_classes:
             install: anvil.components.glance:GlanceInstaller
@@ -308,7 +303,7 @@ components:
             install: anvil.distros.rhel:NovaInstaller
             running: anvil.components.nova:NovaRuntime
             uninstall: anvil.components.nova:NovaUninstaller
-            test: anvil.components:PythonTestingComponent
+            test: anvil.components.nova:NovaTester
         packages:
         -   name: MySQL-python
         -   name: dnsmasq
@@ -375,7 +370,7 @@ components:
             install: anvil.components.openstack_client:OpenStackClientInstaller
             running: anvil.components.openstack_client:OpenStackClientRuntime
             uninstall: anvil.components.openstack_client:OpenStackClientUninstaller
-            test: anvil.components:PythonTestingComponent
+            test: anvil.components.openstack_client:OpenStackClientTester
         pips:
         -   name: cliff
         pip_to_package:

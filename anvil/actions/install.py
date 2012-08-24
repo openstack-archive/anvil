@@ -19,7 +19,6 @@ from StringIO import StringIO
 from anvil import action
 from anvil import colorizer
 from anvil import log
-from anvil import settings
 from anvil import shell as sh
 from anvil import utils
 

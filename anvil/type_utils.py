@@ -14,24 +14,26 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import components as comp
+import types
 
 
-class GlanceClientUninstaller(comp.PythonUninstallComponent):
-    pass
-
-
-class GlanceClientInstaller(comp.PythonInstallComponent):
-    def _filter_pip_requires_line(self, line):
-        if line.lower().find('keystoneclient') != -1:
-            return None
-        return line
-
-
-class GlanceClientRuntime(comp.EmptyRuntime):
-    pass
-
-
-class GlanceClientTester(comp.PythonTestingComponent):
-    def _use_run_tests(self):
+def make_bool(val):
+    if isinstance(val, bool):
+        return val
+    if isinstance(val, types.NoneType):
+        return False        
+    sval = str(val).lower().strip()
+    if sval in ['true', '1', 'on', 'yes', 't']:
+        return True
+    if sval in ['0', 'false', 'off', 'no', 'f', '', 'none']:
         return False
+    raise TypeError("Unable to convert %r to a boolean" % (val))
+
+
+def obj_name(obj):
+    if isinstance(obj, (types.TypeType,
+                        types.ModuleType,
+                        types.FunctionType,
+                        types.LambdaType)):
+        return str(obj.__name__)
+    return obj_name(obj.__class__)

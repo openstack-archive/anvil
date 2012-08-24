@@ -16,7 +16,6 @@
 
 import contextlib
 import functools
-import os
 import urllib2
 
 from urlparse import (urlparse, parse_qs)

@@ -208,17 +208,16 @@ class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
-        self.wait_time = max(int(self.get_option('service_wait_seconds')), 1)
+        self.wait_time = self.get_int_option('service_wait_seconds')
 
     @property
     def apps_to_start(self):
-        apps = list()
-        for name, values in self.subsystems.items():
+        apps = []
+        for (name, _values) in self.subsystems.items():
             if name in SUB_TO_APP:
-                subsys = name
                 apps.append({
-                    'name': SUB_TO_APP[subsys],
-                    'path': sh.joinpths(self.bin_dir, SUB_TO_APP[subsys]),
+                    'name': SUB_TO_APP[name],
+                    'path': sh.joinpths(self.bin_dir, SUB_TO_APP[name]),
                     # This seems needed, to allow for the db syncs to not conflict... (arg)
                     'sleep_time': 5,
                 })

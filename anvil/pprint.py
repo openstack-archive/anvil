@@ -28,19 +28,14 @@ def _pformat_list(lst, item_max_len):
     entries = []
     max_len = 0
     for i in lst:
-        entry = pformat(i, item_max_len)
-        value_lines = entry.split("\n")
-        if len(value_lines) > 1:
-            for v in value_lines:
-                max_len = max(max_len, len(v) + 2)
-        else:
-            max_len = max(max_len, len(entry) + 2)
-        entries.append(entry)
+        e = pformat(i, item_max_len)
+        for v in e.split("\n"):
+            max_len = max(max_len, len(v) + 2)
+        entries.append(e)
     lines.append("+%s+" % ("-" * (max_len)))
-    for i in entries:
-        value_lines = i.split("\n")
-        for j in range(0, len(value_lines)):
-            lines.append("|%s|" % (center_text(value_lines[j], ' ', max_len)))
+    for e in entries:
+        for line in e.split("\n"):
+            lines.append("|%s|" % (center_text(line, ' ', max_len)))
     lines.append("'%s'" % ("-" * (max_len)))
     return "\n".join(lines)
 
@@ -59,8 +54,7 @@ def _pformat_hash(hsh, item_max_len):
     for (k, v) in hsh.items():
         entry = ("%s" % (_pformat_escape(k, item_max_len)), "%s" % (pformat(v, item_max_len)))
         max_key_len = max(max_key_len, len(entry[0]) + 2)
-        value_lines = entry[1].split("\n")
-        for v in value_lines:
+        for v in entry[1].split("\n"):
             max_value_len = max(max_value_len, len(v) + 2)
         entries.append(entry)
     # Now actually do the placement since we have the lengths

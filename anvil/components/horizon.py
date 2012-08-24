@@ -42,7 +42,8 @@ CONFIGS = [HORIZON_PY_CONF, HORIZON_APACHE_CONF]
 # DB sync that needs to happen for horizon
 DB_SYNC_CMD = ['python', 'manage.py', 'syncdb', '--noinput']
 
-# Special apache directory (TODO describe more about this)
+# Special apache directory 
+# TODO(harlowja) describe more about this
 BLACKHOLE_DIR = '.blackhole'
 
 # Other apache settings
@@ -111,7 +112,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def target_config(self, config_name):
         if config_name == HORIZON_PY_CONF:
-            # FIXME don't write to checked out locations...
+            # FIXME(harlowja) don't write to checked out locations...
             dash_dir = sh.joinpths(self.get_option('app_dir'), ROOT_DASH)
             return sh.joinpths(dash_dir, *HORIZON_PY_CONF_TGT)
         else:
@@ -174,7 +175,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
             mp['ACCESS_LOG'] = sh.joinpths(self.log_dir, APACHE_ACCESS_LOG_FN)
             mp['ERROR_LOG'] = sh.joinpths(self.log_dir, APACHE_ERROR_LOG_FN)
             mp['HORIZON_DIR'] = self.get_option('app_dir')
-            mp['HORIZON_PORT'] = self.get_option('port', APACHE_DEF_PORT)
+            mp['HORIZON_PORT'] = self.get_int_option('port', APACHE_DEF_PORT)
             mp['VPN_DIR'] = sh.joinpths(self.get_option('app_dir'), "vpn")
         else:
             mp['OPENSTACK_HOST'] = self.get_option('ip')

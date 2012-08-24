@@ -58,9 +58,9 @@ class Packager(object):
             # This won't work for all package versions (ie crazy names)
             # but good enough for now...
             if self._contains_version_check(version):
-                full_name = "%s%s" %(name, version)
+                full_name = "%s%s" % (name, version)
             else:
-                full_name = "%s==%s" %(name, version)
+                full_name = "%s==%s" % (name, version)
             p_version = pkg_resources.Requirement.parse(full_name)
         else:
             p_version = NullVersion(name)

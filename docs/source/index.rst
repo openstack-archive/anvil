@@ -19,4 +19,5 @@ ANVIL Documentation
    topics/qanda
    topics/knownissues
    topics/bugshugscode
-   
+   topics/examples
+

@@ -26,11 +26,18 @@ LOG = log.getLogger(__name__)
 from anvil.components import (STATUS_INSTALLED, STATUS_STARTED,
                               STATUS_STOPPED, STATUS_UNKNOWN)
 
+STATUS_COLOR_MAP = {
+    STATUS_INSTALLED: 'green',
+    STATUS_STARTED: 'green',
+    STATUS_UNKNOWN: 'yellow',
+    STATUS_STOPPED: 'red',
+}
+
 
 class StatusAction(action.Action):
     def __init__(self, name, distro, root_dir, **kwargs):
         action.Action.__init__(self, name, distro, root_dir, **kwargs)
-        self.show_full = kwargs.get('show_full')
+        self.show_amount = kwargs.get('show_amount')
 
     @property
     def lookup_name(self):
@@ -40,38 +47,35 @@ class StatusAction(action.Action):
         return component.status()
 
     def _quote_status(self, status):
-        if status == STATUS_UNKNOWN:
-            return colorizer.quote(status, quote_color='yellow')
-        elif status == STATUS_STARTED or status == STATUS_INSTALLED:
-            return colorizer.quote(status, quote_color='green')
-        else:
-            return colorizer.quote(status, quote_color='red')
+        return colorizer.quote(status, quote_color=STATUS_COLOR_MAP.get(status, 'red'))
 
     def _print_status(self, component, result):
         if not result:
             LOG.info("Status of %s is %s.", colorizer.quote(component.name), self._quote_status(STATUS_UNKNOWN))
-        elif len(result) == 1:
+            return
+
+        def details_printer(entry, spacing, max_len):
+            det = utils.truncate_text(entry.details, max_len=max_len, from_bottom=True)
+            for line in det.splitlines():
+                line = line.replace("\t", "\\t")
+                line = line.replace("\r", "\\r")
+                line = utils.truncate_text(line, max_len=120)
+                LOG.info("%s>> %s", (" " * spacing), line)
+
+        if len(result) == 1:
             s = result[0]
             if s.name and s.name != component.name:
                 LOG.info("Status of %s (%s) is %s.", colorizer.quote(component.name), s.name, self._quote_status(s.status))
             else:
                 LOG.info("Status of %s is %s.", colorizer.quote(component.name), self._quote_status(s.status))
-            if self.show_full and s.details:
-                det = utils.truncate_text(s.details, max_len=8192, from_bottom=True)
-                for line in det.splitlines():
-                    line = line.replace("\t", "\\t")
-                    line = line.replace("\r", "\\r")
-                    LOG.info("%s>> %s", " " * 2, line)
+            if self.show_amount > 0 and s.details:
+                details_printer(s, 2, self.show_amount)
         else:
             LOG.info("Status of %s is:", colorizer.quote(component.name))
             for s in result:
                 LOG.info("|-- %s is %s.", s.name, self._quote_status(s.status))
-                if self.show_full and s.details:
-                    det = utils.truncate_text(s.details, max_len=8192, from_bottom=True)
-                    for line in det.splitlines():
-                        line = line.replace("\t", "\\t")
-                        line = line.replace("\r", "\\r")
-                        LOG.info("%s>> %s", " " * 4, line)
+                if self.show_amount > 0 and s.details:
+                    details_printer(s, 4, self.show_amount)
 
     def _run(self, persona, component_order, instances):
         self._run_phase(

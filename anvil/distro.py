@@ -15,7 +15,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import os
 import copy
 import glob
 import platform
@@ -25,11 +24,10 @@ import shlex
 import yaml
 
 from anvil import colorizer
+from anvil import exceptions as excp
 from anvil import importer
 from anvil import log as logging
 from anvil import shell as sh
-from anvil import utils
-from anvil import exceptions as excp
 
 LOG = logging.getLogger(__name__)
 
@@ -133,7 +131,7 @@ def load(path):
             # read this (even if dry-run)
             with open(fn, 'r') as fh:
                 contents = fh.read()
-                cls_kvs = yaml.load(contents)
+                cls_kvs = yaml.safe_load(contents)
                 distro_possibles.append(Distro(**cls_kvs))
         except (IOError, yaml.YAMLError) as err:
             LOG.warning('Could not load distro definition from %r: %s', fn, err)

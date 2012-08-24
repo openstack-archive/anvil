@@ -146,7 +146,7 @@ class NovaUninstaller(NovaMixin, comp.PythonUninstallComponent):
 
     def _filter_subsystems(self):
         subs = set()
-        for name, values in self.subsystems.items():
+        for (name, _values) in self.subsystems.items():
             if name in SUB_COMPONENT_NAME_MAP:
                 subs.add(name)
         return subs
@@ -194,13 +194,9 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         self.conf_maker.verify()
 
     def warm_configs(self):
-        warm_pws = list()
-        mq_type = nhelper.canon_mq_type(self.get_option('mq'))
+        mq_type = nhelper.canon_mq_type(self.get_option('mq-type'))
         if mq_type == 'rabbit':
             rhelper.get_shared_passwords(self)
-        driver_canon = nhelper.canon_virt_driver(self.get_option('virt_driver'))
-        for (pw_key, pw_prompt) in warm_pws:
-            self.get_password(pw_key, pw_prompt)
 
     def _sync_db(self):
         LOG.info("Syncing nova to database named: %s", colorizer.quote(DB_NAME))
@@ -216,12 +212,12 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
 
     def _setup_cleaner(self):
         LOG.info("Configuring cleaner template: %s", colorizer.quote(CLEANER_DATA_CONF))
-        (noop_fn, contents) = utils.load_template(self.name, CLEANER_DATA_CONF)
-        # FIXME, stop placing in checkout dir...
-        tgt_fn = sh.joinpths(sh.joinpths(self.get_option('app_dir'), BIN_DIR), CLEANER_DATA_CONF)
-        sh.write_file(tgt_fn, contents)
-        sh.chmod(tgt_fn, 0755)
-        self.tracewriter.file_touched(tgt_fn)
+        (_fn, contents) = utils.load_template(self.name, CLEANER_DATA_CONF)
+        # FIXME(harlowja), stop placing in checkout dir...
+        cleaner_fn = sh.joinpths(sh.joinpths(self.get_option('app_dir'), BIN_DIR), CLEANER_DATA_CONF)
+        sh.write_file(cleaner_fn, contents)
+        sh.chmod(cleaner_fn, 0755)
+        self.tracewriter.file_touched(cleaner_fn)
 
     def _setup_db(self):
         dbhelper.drop_db(distro=self.distro,
@@ -314,8 +310,8 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
 class NovaRuntime(NovaMixin, comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
-        self.wait_time = max(int(self.get_option('service_wait_seconds')), 1)
-        self.virsh = lv.Virsh(int(self.get_option('service_wait_seconds')), self.distro)
+        self.wait_time = self.get_int_option('service_wait_seconds')
+        self.virsh = lv.Virsh(self.wait_time, self.distro)
         self.config_path = sh.joinpths(self.get_option('cfg_dir'), API_CONF)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
         self.net_init_fn = sh.joinpths(self.get_option('trace_dir'), NET_INITED_FN)
@@ -359,7 +355,7 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
     @property
     def apps_to_start(self):
         apps = []
-        for name, values in self.subsystems.items():
+        for (name, _values) in self.subsystems.items():
             if name in SUB_COMPONENT_NAME_MAP:
                 apps.append({
                     'name': SUB_COMPONENT_NAME_MAP[name],
@@ -391,3 +387,11 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
 
     def app_options(self, app):
         return APP_OPTIONS.get(app)
+
+
+class NovaTester(comp.PythonTestingComponent):
+    def _get_test_exclusions(self):
+        return [
+            # Disable since quantumclient is not always installed.
+            'test_quantumv2',
+        ]

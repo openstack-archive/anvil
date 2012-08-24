@@ -15,9 +15,6 @@
 #    under the License..
 
 import abc
-import collections
-import copy
-import functools
 import os
 
 from anvil import cfg
@@ -26,13 +23,12 @@ from anvil import env
 from anvil import exceptions as excp
 from anvil import importer
 from anvil import log as logging
-from anvil import packager
 from anvil import passwords as pw
 from anvil import phase
 from anvil import settings
 from anvil import shell as sh
+from anvil import type_utils as tu
 from anvil import utils
-
 
 LOG = logging.getLogger(__name__)
 
@@ -74,6 +70,7 @@ class Action(object):
                                header="Updated passwords to be used from %s files" % len(pw_read),
                                logger=LOG)
 
+    @abc.abstractmethod
     @property
     def lookup_name(self):
         raise NotImplementedError()
@@ -85,6 +82,7 @@ class Action(object):
         Subclasses are expected to override this method to
         do something useful.
         """
+        raise NotImplementedError()
 
     def _order_components(self, components):
         """Returns the components in the order they should be processed.
@@ -124,20 +122,20 @@ class Action(object):
         who_update = []
         for fn in self.password_files:
             if sh.isfile(fn):
-                contents = utils.load_yaml(fn)
-                contents.update(self.passwords.cache)
-                sh.write_file(fn, "# Updated on %s\n%s\n" % (utils.rcf8222date(), utils.prettify_yaml(contents)))
                 who_update.append(fn)
         if not who_update:
-            contents = {}
-            contents.update(self.passwords.cache)
-            sh.write_file(self.default_password_file,
-                          "# Updated on %s\n%s\n" % (utils.rcf8222date(), utils.prettify_yaml(contents)))
             who_update.append(self.default_password_file)
-        if who_update:
-            utils.log_iterable(who_update,
-                               header="Updated/created %s password files" % len(who_update),
-                               logger=LOG)
+        for fn in who_update:
+            if sh.isfile(fn):
+                contents = utils.load_yaml(fn)
+            else:
+                contents = {}
+            contents.update(self.passwords.cache)
+            sh.write_file(fn, utils.add_header(fn, utils.prettify_yaml(contents)))
+            who_update.append(fn)
+        utils.log_iterable(who_update,
+                           header="Updated/created %s password files" % len(who_update),
+                           logger=LOG)
 
     def _merge_subsystems(self, component_subsys, desired_subsys):
         joined_subsys = {}
@@ -181,7 +179,7 @@ class Action(object):
         package_registries = {}
         for c in persona.wanted_components:
             ((cls, distro_opts), siblings) = self.distro.extract_component(c, self.lookup_name)
-            LOG.debug("Constructing component %r (%s)", c, utils.obj_name(cls))
+            LOG.debug("Constructing component %r (%s)", c, tu.obj_name(cls))
             kvs = {}
             kvs['name'] = c
             kvs['package_registries'] = package_registries
@@ -230,6 +228,7 @@ class Action(object):
         self._update_passwords()
 
     def _write_exports(self, component_order, instances, filename):
+        # TODO(harlowja) perhaps remove this since its only used in a subclass...
         pass
 
     def _on_finish(self, persona, component_order, instances):
@@ -283,7 +282,7 @@ class Action(object):
                                 functors.end(instance, result)
                         component_results[instance] = result
                         instance.activated = True
-                    except (excp.NoTraceException) as e:
+                    except excp.NoTraceException:
                         pass
             self._on_completion(phase_name, component_results)
         finally:
@@ -297,11 +296,11 @@ class Action(object):
         return ('', [])
 
     def _on_completion(self, phase_name, results):
-       (base_name, to_destroy) = self._get_opposite_stages(phase_name)
-       for name in to_destroy:
-           fn = self._get_phase_filename(name, base_name)
-           if sh.isfile(fn):
-               sh.unlink(fn)
+        (base_name, to_destroy) = self._get_opposite_stages(phase_name)
+        for name in to_destroy:
+            fn = self._get_phase_filename(name, base_name)
+            if sh.isfile(fn):
+                sh.unlink(fn)
 
     def run(self, persona):
         instances = self._construct_instances(persona)

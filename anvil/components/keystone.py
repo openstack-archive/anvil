@@ -14,9 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import copy
 import io
-import yaml
 
 from anvil import cfg
 from anvil import colorizer
@@ -198,7 +196,7 @@ class KeystoneRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
-        self.wait_time = max(int(self.get_option('service_wait_seconds')), 1)
+        self.wait_time = self.get_int_option('service_wait_seconds')
         self.init_fn = sh.joinpths(self.get_option('trace_dir'), INIT_WHAT_HAPPENED)
 
     def post_start(self):
@@ -206,15 +204,15 @@ class KeystoneRuntime(comp.PythonRuntime):
             LOG.info("Waiting %s seconds so that keystone can start up before running first time init." % (self.wait_time))
             sh.sleep(self.wait_time)
             LOG.info("Running commands to initialize keystone.")
-            (fn, contents) = utils.load_template(self.name, INIT_WHAT_FN)
+            (fn, _contents) = utils.load_template(self.name, INIT_WHAT_FN)
             LOG.debug("Initializing with contents of %s", fn)
-            cfg = {}
-            cfg['keystone'] = khelper.get_shared_params(**utils.merge_dicts(self.options, khelper.get_shared_passwords(self)))
-            cfg['glance'] = ghelper.get_shared_params(ip=self.get_option('ip'),
-                                                      **self.get_option('glance'))
-            cfg['nova'] = nhelper.get_shared_params(ip=self.get_option('ip'),
-                                                    **self.get_option('nova'))
-            init_what = utils.param_replace_deep(copy.deepcopy(yaml.load(contents)), cfg)
+            start_cfg = {}
+            start_cfg['keystone'] = khelper.get_shared_params(**utils.merge_dicts(self.options, khelper.get_shared_passwords(self)))
+            start_cfg['glance'] = ghelper.get_shared_params(ip=self.get_option('ip'),
+                                                            **self.get_option('glance'))
+            start_cfg['nova'] = nhelper.get_shared_params(ip=self.get_option('ip'),
+                                                          **self.get_option('nova'))
+            init_what = utils.param_replace_deep(utils.load_yaml(fn), start_cfg)
             khelper.Initializer(cfg['keystone']['service_token'],
                                 cfg['keystone']['endpoints']['admin']['uri']).initialize(**init_what)
             # Writing this makes sure that we don't init again
