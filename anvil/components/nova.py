@@ -123,18 +123,7 @@ BIN_DIR = 'bin'
 CLEANER_DATA_CONF = 'nova-clean.sh'
 
 
-class NovaMixin(object):
-
-    @property
-    def valid_subsystems(self):
-        return list(SUBSYSTEMS)
-
-    @property
-    def config_files(self):
-        return list(CONFIGS)
-
-
-class NovaUninstaller(NovaMixin, comp.PythonUninstallComponent):
+class NovaUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, *args, **kargs)
         self.virsh = lv.Virsh(int(self.get_option('service_wait_seconds')),
@@ -170,10 +159,14 @@ class NovaUninstaller(NovaMixin, comp.PythonUninstallComponent):
             self.virsh.clear_domains(libvirt_type, inst_prefix)
 
 
-class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
+class NovaInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
         self.conf_maker = nhelper.ConfConfigurator(self)
+
+    @property
+    def config_files(self):
+        return list(CONFIGS)
 
     def _filter_pip_requires_line(self, line):
         if line.lower().find('quantumclient') != -1:
@@ -307,7 +300,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
         return mp
 
 
-class NovaRuntime(NovaMixin, comp.PythonRuntime):
+class NovaRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.wait_time = self.get_int_option('service_wait_seconds')
