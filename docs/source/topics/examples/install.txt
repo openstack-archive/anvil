@@ -5,7 +5,8 @@ Description:	Red Hat Enterprise Linux Server release 6.2 (Santiago)
 Release:	6.2
 Codename:	Santiago
 $ sudo ./smithy  --version
-anvil v2012.2-dev$  sudo ./smithy -a install
+anvil v2012.2-dev
+$  sudo ./smithy -a install
 INFO: @anvil.distro : Matched distro rhel for platform Linux-2.6.32-220.4.2.el6.YAHOO.20120217.x86_64-x86_64-with-redhat-6.2-Santiago
   ___  ____  _____ _   _ ____ _____  _    ____ _  __
  / _ \|  _ \| ____| \ | / ___|_   _|/ \  / ___| |/ /
