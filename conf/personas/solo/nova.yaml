@@ -8,7 +8,7 @@ options:
     nova:
         db-sync: true
         do-network-init: true
-        mq: rabbit
+        mq-type: rabbit
 subsystems:
     nova:
     - api

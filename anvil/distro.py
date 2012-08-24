@@ -15,7 +15,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import os
 import copy
 import glob
 import platform
@@ -29,7 +28,6 @@ from anvil import exceptions as excp
 from anvil import importer
 from anvil import log as logging
 from anvil import shell as sh
-from anvil import utils
 
 LOG = logging.getLogger(__name__)
 

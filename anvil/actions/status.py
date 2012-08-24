@@ -26,6 +26,13 @@ LOG = log.getLogger(__name__)
 from anvil.components import (STATUS_INSTALLED, STATUS_STARTED,
                               STATUS_STOPPED, STATUS_UNKNOWN)
 
+STATUS_COLOR_MAP = {
+    STATUS_INSTALLED: 'green',
+    STATUS_STARTED: 'green',
+    STATUS_UNKNOWN: 'yellow',
+    STATUS_STOPPED: 'red',
+}
+
 
 class StatusAction(action.Action):
     def __init__(self, name, distro, root_dir, **kwargs):
@@ -40,12 +47,7 @@ class StatusAction(action.Action):
         return component.status()
 
     def _quote_status(self, status):
-        if status == STATUS_UNKNOWN:
-            return colorizer.quote(status, quote_color='yellow')
-        elif status == STATUS_STARTED or status == STATUS_INSTALLED:
-            return colorizer.quote(status, quote_color='green')
-        else:
-            return colorizer.quote(status, quote_color='red')
+        return colorizer.quote(status, quote_color=STATUS_COLOR_MAP.get(status, 'red'))
 
     def _print_status(self, component, result):
         if not result:

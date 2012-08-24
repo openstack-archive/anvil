@@ -286,12 +286,12 @@ class PythonInstallComponent(PkgInstallComponent):
         pip2_pkg_mp = {
             self.name: self.pips_to_packages,
         }
-        for name, component in self.instances.items():
-            if component is self or not component.activated:
+        for (name, c) in self.instances.items():
+            if c is self or not c.activated:
                 continue
-            if hasattr(component, 'pips_to_packages'):
-                pip2_pkg_mp[name] = component.pips_to_packages
-        for who, pips_2_pkgs in pip2_pkg_mp.items():
+            if hasattr(c, 'pips_to_packages'):
+                pip2_pkg_mp[name] = c.pips_to_packages
+        for (who, pips_2_pkgs) in pip2_pkg_mp.items():
             for pip_info in pips_2_pkgs:
                 if pip_match(pip_name, pip_info['name']):
                     pip_found = True
@@ -308,13 +308,13 @@ class PythonInstallComponent(PkgInstallComponent):
         pip_mp = {
             self.name: list(self.pips),
         }
-        for name, component in self.instances.items():
-            if not component.activated or component is self:
+        for (name, c) in self.instances.items():
+            if not c.activated or c is self:
                 continue
-            if hasattr(component, 'pips'):
-                pip_mp[name] = list(component.pips)
+            if hasattr(c, 'pips'):
+                pip_mp[name] = list(c.pips)
         pip_found = False
-        for who, pips in pip_mp.items():
+        for (who, pips) in pip_mp.items():
             for pip_info in pips:
                 if pip_match(pip_info['name'], pip_name):
                     pip_found = True
@@ -531,7 +531,7 @@ class PythonRuntime(ProgramRuntime):
     def _locate_investigators(self, apps_started):
         investigator_created = {}
         to_investigate = []
-        for (app_name, trace_fn, run_type) in apps_started:
+        for (app_name, _trace_fn, run_type) in apps_started:
             inv_cls = None
             try:
                 inv_cls = importer.import_entry_point(run_type)
@@ -706,7 +706,7 @@ class PythonUninstallComponent(PkgUninstallComponent):
         py_listing = self.tracereader.py_listing()
         if py_listing:
             py_listing_dirs = set()
-            for (name, where) in py_listing:
+            for (_name, where) in py_listing:
                 py_listing_dirs.add(where)
             utils.log_iterable(py_listing_dirs, logger=LOG,
                 header="Uninstalling %s python setups" % (len(py_listing_dirs)))

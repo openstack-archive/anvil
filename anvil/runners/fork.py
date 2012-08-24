@@ -22,8 +22,7 @@ from anvil import runners as base
 from anvil import shell as sh
 from anvil import trace as tr
 
-from anvil.components import (STATUS_INSTALLED, STATUS_STARTED,
-                              STATUS_STOPPED, STATUS_UNKNOWN)
+from anvil.components import (STATUS_STARTED, STATUS_UNKNOWN)
 
 LOG = logging.getLogger(__name__)
 
@@ -38,9 +37,6 @@ FORK_TEMPL = "%s.fork"
 
 
 class ForkRunner(base.Runner):
-    def __init__(self, runtime):
-        base.Runner.__init__(self, runtime)
-
     def stop(self, app_name):
         trace_dir = self.runtime.get_option('trace_dir')
         if not sh.isdir(trace_dir):
@@ -86,8 +82,16 @@ class ForkRunner(base.Runner):
             return (STATUS_UNKNOWN, '')
         (pid_file, stderr_fn, stdout_fn) = self._form_file_names(FORK_TEMPL % (app_name))
         pid = self._extract_pid(pid_file)
-        stderr = sh.load_file(stderr_fn)
-        stdout = sh.load_file(stderr_fn)
+        stderr = ''
+        try:
+            stderr = sh.load_file(stderr_fn)
+        except IOError:
+            pass
+        stdout = ''
+        try:
+            stdout = sh.load_file(stdout_fn)
+        except IOError:
+            pass
         if pid and sh.is_running(pid):
             return (STATUS_STARTED, (stdout + stderr).strip())
         else:

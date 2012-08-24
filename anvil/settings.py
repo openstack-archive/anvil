@@ -15,7 +15,7 @@
 #    under the License.
 
 import os
-import sys
+
 
 # Where the configs and templates should be at...
 CONFIG_DIR = 'conf'

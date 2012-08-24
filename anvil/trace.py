@@ -19,7 +19,6 @@ import os
 
 from anvil import exceptions as excp
 from anvil import shell as sh
-from anvil import utils
 
 # Trace per line output format and file extension formats
 TRACE_FMT = ("%s - %s" + os.linesep)

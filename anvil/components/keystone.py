@@ -14,7 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import copy
 import io
 
 from anvil import cfg
@@ -207,13 +206,13 @@ class KeystoneRuntime(comp.PythonRuntime):
             LOG.info("Running commands to initialize keystone.")
             (fn, _contents) = utils.load_template(self.name, INIT_WHAT_FN)
             LOG.debug("Initializing with contents of %s", fn)
-            cfg = {}
-            cfg['keystone'] = khelper.get_shared_params(**utils.merge_dicts(self.options, khelper.get_shared_passwords(self)))
-            cfg['glance'] = ghelper.get_shared_params(ip=self.get_option('ip'),
-                                                      **self.get_option('glance'))
-            cfg['nova'] = nhelper.get_shared_params(ip=self.get_option('ip'),
-                                                    **self.get_option('nova'))
-            init_what = utils.param_replace_deep(utils.load_yaml(fn), cfg)
+            start_cfg = {}
+            start_cfg['keystone'] = khelper.get_shared_params(**utils.merge_dicts(self.options, khelper.get_shared_passwords(self)))
+            start_cfg['glance'] = ghelper.get_shared_params(ip=self.get_option('ip'),
+                                                            **self.get_option('glance'))
+            start_cfg['nova'] = nhelper.get_shared_params(ip=self.get_option('ip'),
+                                                          **self.get_option('nova'))
+            init_what = utils.param_replace_deep(utils.load_yaml(fn), start_cfg)
             khelper.Initializer(cfg['keystone']['service_token'],
                                 cfg['keystone']['endpoints']['admin']['uri']).initialize(**init_what)
             # Writing this makes sure that we don't init again

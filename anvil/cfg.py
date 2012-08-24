@@ -24,8 +24,6 @@ import re
 # This one keeps comments but has some weirdness with it
 import iniparse
 
-from anvil import env
-from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils

@@ -17,10 +17,9 @@
 
 import binascii
 import getpass
-import logging
 import os
 
-from anvil import cfg 
+from anvil import log as logging
 
 LOG = logging.getLogger(__name__)
 

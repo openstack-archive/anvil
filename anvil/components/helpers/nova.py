@@ -14,8 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
-import os
 import weakref
 
 from anvil import cfg
@@ -43,8 +41,9 @@ DB_NAME = 'nova'
 # Virt drivers map -> to there connection name
 VIRT_DRIVER_CON_MAP = {
     'libvirt': 'libvirt',
-    'xen', 'xen',
-    'xenserver', 'xen',
+    'xenserver': 'xenapi',
+    'vmware': 'vmwareapi',
+    'baremetal': 'baremetal',
 }
 
 # Message queue types to there internal 'canoncalized' name
@@ -62,8 +61,10 @@ def canon_mq_type(mq_type):
 
 
 def canon_virt_driver(virt_driver):
-    virt_driver = str(virt_driver).strip().lower()
-    return VIRT_DRIVER_CON_MAP.get(virt_driver, 'libvirt')
+    virt_driver = virt_driver.strip().lower()
+    if not (virt_driver in VIRT_DRIVER_CON_MAP):
+        return 'libvirt'
+    return virt_driver
 
 
 def get_shared_params(ip, protocol,
@@ -219,7 +220,7 @@ class ConfConfigurator(object):
         nova_conf.add('s3_host', hostip)
 
         # How is your message queue setup?
-        mq_type = canon_mq_type(self.installer.get_option('mq'))
+        mq_type = canon_mq_type(self.installer.get_option('mq-type'))
         if mq_type == 'rabbit':
             nova_conf.add('rabbit_host', self.installer.get_option('rabbit.host', hostip))
             nova_conf.add('rabbit_password', rbhelper.get_shared_passwords(self.installer)['pw'])
@@ -365,6 +366,7 @@ class ConfConfigurator(object):
             # TODO(harlowja) need to add some goodies here
             pass
         nova_conf.add('libvirt_type', virt_type)
+        # https://blueprints.launchpad.net/nova/+spec/libvirt-xml-cpu-model
         nova_conf.add('libvirt_cpu_mode', 'none')
 
     # Configures any virt driver settings

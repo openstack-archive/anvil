@@ -14,12 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import cfg
-from anvil import colorizer
 from anvil import components as comp
-from anvil import log as logging
 from anvil import shell as sh
-from anvil import utils
 
 # Where the application is really
 UTIL_DIR = 'utils'
@@ -27,7 +23,7 @@ UTIL_DIR = 'utils'
 VNC_PROXY_APP = 'nova-novncproxy'
 APP_OPTIONS = {
     # This reaches into the nova configuration file
-    # TODO can we stop that?
+    # TODO(harlowja) can we stop that?
     VNC_PROXY_APP: ['--config-file', '%NOVA_CONF%', '--web', '.'],
 }
 

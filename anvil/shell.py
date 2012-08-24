@@ -15,7 +15,6 @@
 #    under the License.
 
 import errno
-import fileinput
 import getpass
 import grp
 import os
@@ -30,6 +29,7 @@ import time
 from anvil import env
 from anvil import exceptions as excp
 from anvil import log as logging
+from anvil import type_utils as tu
 
 LOG = logging.getLogger(__name__)
 
@@ -64,11 +64,7 @@ def is_dry_run():
     dry_v = env.get_key('ANVIL_DRYRUN')
     if not dry_v:
         return False
-    # TODO(harlowja) these checks are duplicated in utils, rework that...
-    dry_v = str(dry_v).lower().strip()
-    if dry_v in ['0', 'false', 'off', 'no', 'f', '', 'none']:
-        return False
-    return True
+    return tu.make_bool(dry_v)
 
 
 def execute(*cmd, **kwargs):
@@ -94,7 +90,7 @@ def execute(*cmd, **kwargs):
         execute_cmd.append(str(c))
 
     # From the docs it seems a shell command must be a string??
-    # TODO: this might not really be needed?
+    # TODO(harlowja) this might not really be needed?
     str_cmd = " ".join(execute_cmd)
     if shell:
         execute_cmd = str_cmd.strip()
@@ -356,7 +352,7 @@ def kill(pid, max_try=4, wait_time=1, sig=signal.SIGKILL):
         return (True, 0)
     killed = False
     attempts = 0
-    for i in range(0, max_try):
+    for _i in range(0, max_try):
         try:
             LOG.debug("Attempting to kill pid %s" % (pid))
             attempts += 1
@@ -392,7 +388,7 @@ def fork(program, app_dir, pid_fn, stdout_fn, stderr_fn, *args):
             if app_dir:
                 os.chdir(app_dir)
             # Close other fds (or try)
-            (soft, hard) = resource.getrlimit(resource.RLIMIT_NOFILE)
+            (_soft, hard) = resource.getrlimit(resource.RLIMIT_NOFILE)
             mkfd = hard
             if mkfd == resource.RLIM_INFINITY:
                 mkfd = 2048  # Is this defined anywhere??
@@ -589,7 +585,7 @@ def group_exists(grpname):
 
 
 def getuser():
-    (uid, gid) = get_suids()
+    (uid, _gid) = get_suids()
     if uid is None:
         return getpass.getuser()
     return pwd.getpwuid(uid).pw_name
@@ -611,20 +607,10 @@ def getgid(groupname):
 
 
 def getgroupname():
-    (uid, gid) = get_suids()
+    (_uid, gid) = get_suids()
     if gid is None:
         gid = os.getgid()
     return grp.getgrgid(gid).gr_name
-
-
-def umount(dev_name, ignore_errors=True):
-    try:
-        execute('umount', dev_name, run_as_root=True)
-    except excp.ProcessExecutionError:
-        if not ignore_errors:
-            raise
-        else:
-            pass
 
 
 def unlink(path, ignore_errors=True, run_as_root=False):

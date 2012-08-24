@@ -212,13 +212,12 @@ class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
 
     @property
     def apps_to_start(self):
-        apps = list()
-        for name, values in self.subsystems.items():
+        apps = []
+        for (name, _values) in self.subsystems.items():
             if name in SUB_TO_APP:
-                subsys = name
                 apps.append({
-                    'name': SUB_TO_APP[subsys],
-                    'path': sh.joinpths(self.bin_dir, SUB_TO_APP[subsys]),
+                    'name': SUB_TO_APP[name],
+                    'path': sh.joinpths(self.bin_dir, SUB_TO_APP[name]),
                     # This seems needed, to allow for the db syncs to not conflict... (arg)
                     'sleep_time': 5,
                 })

@@ -14,20 +14,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import functools
-import pkg_resources
-import re
-import weakref
-
-from anvil import colorizer
-from anvil import downloader as down
-from anvil import exceptions as excp
-from anvil import importer
 from anvil import log as logging
-from anvil import packager
-from anvil import pip
-from anvil import shell as sh
 from anvil import trace as tr
+from anvil import type_utils as tu
 from anvil import utils
 
 
@@ -72,7 +61,7 @@ class Component(object):
             return option_value
 
     def get_bool_option(self, option, default_value=False):
-        return utils.make_bool(self.get_option(option, default_value))
+        return tu.make_bool(self.get_option(option, default_value))
 
     def get_int_option(self, option, default_value=0):
         return int(self.get_option(option, default_value))
@@ -85,7 +74,7 @@ class Component(object):
         pass
 
     def __str__(self):
-        return "%s@%s" % (utils.obj_name(self), self.name)
+        return "%s@%s" % (tu.obj_name(self), self.name)
 
     @property
     def params(self):

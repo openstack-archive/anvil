@@ -14,13 +14,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import os
-
-from anvil import downloader
 from anvil import log as logging
 from anvil import packager as pack
 from anvil import shell as sh
-from anvil import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -56,20 +52,6 @@ class YumPackager(pack.Packager):
 
     def _install_special(self, name, info):
         return False
-
-    def _remove_src_rpm(self, rpm):
-        filename = sh.basename(rpm)
-        if not filename:
-            LOG.error("Cannot determine file name from rpm: %r", rpm)
-            return False
-        (package, ext) = os.path.splitext(filename)
-        if not package:
-            LOG.error("Cannot determine package name from rpm: %r", rpm)
-            return False
-
-        cmd = YUM_REMOVE + [package]
-        self._execute_yum(cmd)
-        return True
 
     def _install(self, pkg):
         name = pkg['name']

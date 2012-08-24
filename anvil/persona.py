@@ -16,9 +16,7 @@
 
 import yaml
 
-from anvil import exceptions as excp
 from anvil import log as logging
-from anvil import shell as sh
 
 LOG = logging.getLogger(__name__)
 

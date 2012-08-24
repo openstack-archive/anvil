@@ -23,11 +23,9 @@ import random
 import re
 import socket
 import tempfile
-import types
 
 from time import (localtime, strftime)
 
-import distutils.version
 from urlparse import urlunparse
 
 import netifaces
@@ -35,7 +33,6 @@ import progressbar
 import yaml
 
 from anvil import colorizer
-from anvil import env
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import pprint
@@ -50,7 +47,7 @@ from anvil.pprint import center_text
 # act accordingly. Note that we need the MULTILINE flag
 # for the comment checks to work in a string containing newlines
 PARAM_SUB_REGEX = re.compile(r"#(.*)$|%([\w\d/\.]+?)%", re.MULTILINE)
-EXT_COMPONENT = re.compile(r"^\s*([\w-]+)(?:\((.*)\))?\s*$")
+
 MONTY_PYTHON_TEXT_RE = re.compile("([a-z0-9A-Z\?!.,'\"]+)")
 
 # Thx cowsay
@@ -74,28 +71,6 @@ COWS['unhappy'] = r'''
 '''
 
 LOG = logging.getLogger(__name__)
-
-
-def make_bool(val):
-    if isinstance(val, bool):
-        return val
-    if isinstance(val, types.NoneType):
-        return False        
-    sval = str(val).lower().strip()
-    if sval in ['true', '1', 'on', 'yes', 't']:
-        return True
-    if sval in ['0', 'false', 'off', 'no', 'f', '', 'none']:
-        return False
-    raise TypeError("Unable to convert %r to a boolean" % (val))
-
-
-def obj_name(obj):
-    if isinstance(obj, (types.TypeType,
-                        types.ModuleType,
-                        types.FunctionType,
-                        types.LambdaType)):
-        return str(obj.__name__)
-    return obj_name(obj.__class__)
 
 
 def load_yaml(fn):
@@ -126,8 +101,7 @@ def merge_dicts(*dicts):
     return merged
 
 
-def make_url(scheme, host, port=None,
-                path='', params='', query='', fragment=''):
+def make_url(scheme, host, port=None, path='', params='', query='', fragment=''):
 
     pieces = []
     pieces.append(scheme or '')
@@ -145,12 +119,12 @@ def make_url(scheme, host, port=None,
     pieces.append(query or '')
     pieces.append(fragment or '')
 
-    return urlunparse(pieces)
+    return urlunparse([str(p) for p in pieces])
 
 
 def get_from_path(items, path, quiet=True):
 
-    (first_token, sep, remainder) = path.partition('.')
+    (first_token, _sep, remainder) = path.partition('.')
 
     if len(path) == 0:
         return items
@@ -392,22 +366,6 @@ def param_replace_list(values, replacements, ignore_missing=False):
     return new_values
 
 
-def find_params(text):
-    params_found = set()
-    if not text:
-        text = ''
-
-    def finder(match):
-        param_name = match.group(2)
-        if param_name is not None and param_name not in params_found:
-            params_found.add(param_name)
-        # Just finding, not modifying...
-        return match.group(0)
-
-    PARAM_SUB_REGEX.sub(finder, text)
-    return params_found
-
-
 def prettify_yaml(obj):
     formatted = yaml.dump(obj,
                     line_break="\n",
@@ -420,19 +378,19 @@ def prettify_yaml(obj):
 
 
 def param_replace_deep(root, replacements, ignore_missing=False):
-    if isinstance(root, list):
+    if isinstance(root, (list, tuple)):
         new_list = []
         for v in root:
             new_list.append(param_replace_deep(v, replacements, ignore_missing))
         return new_list
-    elif isinstance(root, basestring):
+    elif isinstance(root, (basestring, str)):
         return param_replace(root, replacements, ignore_missing)
-    elif isinstance(root, dict):
+    elif isinstance(root, (dict)):
         mapped_dict = {}
         for (k, v) in root.items():
             mapped_dict[k] = param_replace_deep(v, replacements, ignore_missing)
         return mapped_dict
-    elif isinstance(root, set):
+    elif isinstance(root, (set)):
         mapped_set = set()
         for v in root:
             mapped_set.add(param_replace_deep(v, replacements, ignore_missing))
@@ -444,26 +402,21 @@ def param_replace_deep(root, replacements, ignore_missing=False):
 def param_replace(text, replacements, ignore_missing=False):
 
     if not replacements:
-        replacements = dict()
+        replacements = {}
 
     if not text:
         text = ""
 
-    if ignore_missing:
-        LOG.debug("Performing parameter replacements (ignoring missing) on text %r" % (text))
-    else:
-        LOG.debug("Performing parameter replacements (not ignoring missing) on text %r" % (text))
-
-    possible_params = find_params(text)
-    LOG.debug("Given substitutions are: ")
-    log_object(replacements, level=logging.DEBUG)
+    LOG.debug("Performing parameter replacements (ignoring missing=%s) on text %r", ignore_missing, text)
 
     def replacer(match):
         org_txt = match.group(0)
+
         # Its a comment, leave it be
         if match.group(1) is not None:
             return org_txt
         param_name = match.group(2)
+
         # Find the replacement, if we can
         replacer = get_from_path(replacements, param_name)
         if replacer is None and ignore_missing:
@@ -471,12 +424,12 @@ def param_replace(text, replacements, ignore_missing=False):
         elif replacer is None and not ignore_missing:
             msg = "No replacement found for parameter %r in %r" % (param_name, org_txt)
             raise excp.NoReplacementException(msg)
-        else:
-            LOG.debug("Replacing %r with %r in %r", param_name, replacer, org_txt)
         return str(replacer)
 
     replaced_text = PARAM_SUB_REGEX.sub(replacer, text)
+
     LOG.debug("Replacement/s resulted in text %r", replaced_text)
+
     return replaced_text
 
 

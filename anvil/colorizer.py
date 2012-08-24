@@ -14,34 +14,22 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import env
-
-import random as rand
-import re
 import sys
 
 import termcolor
 
+from anvil import env
+from anvil import type_utils as tu
 
 COLORS = termcolor.COLORS.keys()
 
 
 def color_enabled():
-    if str(env.get_key('LOG_COLOR')).strip().lower() in ['false', 'no', '0', 'off']:
+    if 'LOG_COLOR' in env.get() and not tu.make_bool(env.get_key('LOG_COLOR')):
         return False
     if not sys.stdout.isatty():
         return False
     return True
-
-
-def random_color(data):
-    if not color_enabled():
-        return data
-    new_data = list()
-    for d in data:
-        c = color(d, color=rand.choice(COLORS))
-        new_data.append(c)
-    return ''.join(new_data)
 
 
 def quote(data, quote_color='green', **kargs):
@@ -54,17 +42,7 @@ def quote(data, quote_color='green', **kargs):
         return color(text, quote_color, **kargs)
 
 
-def format(data, params):
-    text = str(data)
-
-    def replacer(match):
-        param_name = match.group(1)
-        return color(params[param_name], color=match.group(2).strip())
-
-    return re.sub(r"\{([\w\d]+):(.*)\}", replacer, text)
-
-
-def color(data, color, bold=False, underline=False, blink=False):
+def color(data, color_to_be, bold=False, underline=False, blink=False):
     text = str(data)
     text_attrs = list()
     if bold:
@@ -73,7 +51,7 @@ def color(data, color, bold=False, underline=False, blink=False):
         text_attrs.append('underline')
     if blink:
         text_attrs.append('blink')
-    if color_enabled() and color in COLORS:
-        return termcolor.colored(text, color, attrs=text_attrs)
+    if color_enabled() and color_to_be in COLORS:
+        return termcolor.colored(text, color_to_be, attrs=text_attrs)
     else:
         return text

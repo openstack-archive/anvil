@@ -25,7 +25,7 @@ options:
     nova:
         db-sync: true
         do-network-init: true
-        mq: rabbit
+        mq-type: rabbit
     glance:
         db-sync: true
         load-images: true

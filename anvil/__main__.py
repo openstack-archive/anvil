@@ -18,7 +18,6 @@
 #    under the License.
 
 import os
-import platform
 import sys
 import time
 import traceback as tb
@@ -27,14 +26,12 @@ sys.path.insert(0, os.path.join(os.path.abspath(os.pardir)))
 sys.path.insert(0, os.path.abspath(os.getcwd()))
 
 from anvil import actions
-from anvil import cfg
 from anvil import colorizer
 from anvil import distro
 from anvil import env
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import opts
-from anvil import passwords as pw
 from anvil import persona
 from anvil import settings
 from anvil import shell as sh
@@ -91,7 +88,7 @@ def run(args):
         persona_obj = persona.load(persona_fn)
         persona_obj.verify(dist)
     except Exception as e:
-        raise excp.OptionException("Error loading persona file: %s due to %s" % (person_fn, e))
+        raise excp.OptionException("Error loading persona file: %s due to %s" % (persona_fn, e))
 
     # Get the object we will be running with...
     runner_cls = actions.class_for(action)
