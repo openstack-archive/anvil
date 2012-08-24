@@ -70,7 +70,7 @@ class Action(object):
                                header="Updated passwords to be used from %s files" % len(pw_read),
                                logger=LOG)
 
-    @abc.abstractmethod
+    @abc.abstractproperty
     @property
     def lookup_name(self):
         raise NotImplementedError()
