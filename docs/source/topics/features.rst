@@ -5,8 +5,8 @@ Features
 -  Multi distribution installs via a single tool
 -  A set of configuration files (in yaml format) that shows common/component/distribution configurations
 -  Supports the following *actions* on the various of `OpenStack`_ components.
- #. **Installing**: downloading, installing dependencies (`pypi`_ and distribution packaging specifics)
-    and configuring component files and symlinks
+ #. **Installing**: downloading, installing dependencies (`pypi`_ and apt/yum packaging specifics), establishing the 
+    needed configuration  files, symlinks, adjustments, tweaks (and so on...)
  #. **Starting**: starting of the components sub-programs with
     the needed configuration via the common `daemon`_ model (with a ``pid``, ``stderr`` and ``stdout`` file set)
  #. **Stopping**: stopping of the previously started components 
