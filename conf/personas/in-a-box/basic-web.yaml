@@ -31,6 +31,7 @@ options:
         load-images: true
     keystone:
         db-sync: true
+        do-init: true
     horizon:
         db-sync: true
         make-blackhole: true
