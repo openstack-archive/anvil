@@ -15,11 +15,12 @@
 #    under the License.
 
 from optparse import IndentedHelpFormatter
-from optparse import OptionParser, OptionGroup
+from optparse import (OptionParser, OptionGroup, OptionValueError)
 
 from anvil import actions
 from anvil import settings
 from anvil import shell as sh
+from anvil import utils
 from anvil import version
 
 
@@ -27,6 +28,13 @@ def _format_list(in_list):
     sorted_list = sorted(in_list)
     return "[" + ", ".join(sorted_list) + "]"
 
+
+def _size_cb(option, opt_str, value, parser):
+    try:
+        parser.values.show_amount = utils.to_bytes(value)
+    except (TypeError, ValueError) as e:
+        raise OptionValueError("Invalid value for %s due to %s" % (opt_str, e))
+        
 
 def parse():
 
@@ -85,12 +93,12 @@ def parse():
 
     status_group = OptionGroup(parser, "Status specific options")
     status_group.add_option('-s', "--show",
-        action="store",
+        action="callback",
         dest="show_amount",
-        metavar="BYTES",
-        type="int",
-        default=0,
-        help="show SIZE bytes 'details' (if applicable) when show component status (default: %default)")
+        type='string',
+        metavar="SIZE",
+        callback=_size_cb,
+        help="show SIZE 'details' (if applicable) when showing component status")
     parser.add_option_group(status_group)
 
     # Extract only what we care about, these will be passed
