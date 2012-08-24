@@ -124,20 +124,20 @@ class Action(object):
         who_update = []
         for fn in self.password_files:
             if sh.isfile(fn):
-                contents = utils.load_yaml(fn)
-                contents.update(self.passwords.cache)
-                sh.write_file(fn, "# Updated on %s\n%s\n" % (utils.rcf8222date(), utils.prettify_yaml(contents)))
                 who_update.append(fn)
         if not who_update:
-            contents = {}
-            contents.update(self.passwords.cache)
-            sh.write_file(self.default_password_file,
-                          "# Updated on %s\n%s\n" % (utils.rcf8222date(), utils.prettify_yaml(contents)))
             who_update.append(self.default_password_file)
-        if who_update:
-            utils.log_iterable(who_update,
-                               header="Updated/created %s password files" % len(who_update),
-                               logger=LOG)
+        for fn in who_update:
+            if sh.isfile(fn):
+                contents = utils.load_yaml(fn)
+            else:
+                contents = {}
+            contents.update(self.passwords.cache)
+            sh.write_file(fn, utils.add_header(fn, utils.prettify_yaml(contents)))
+            who_update.append(fn)
+        utils.log_iterable(who_update,
+                           header="Updated/created %s password files" % len(who_update),
+                           logger=LOG)
 
     def _merge_subsystems(self, component_subsys, desired_subsys):
         joined_subsys = {}
