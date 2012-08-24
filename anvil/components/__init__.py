@@ -30,7 +30,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-
 import functools
 import pkg_resources
 import re
@@ -73,7 +72,7 @@ class PkgInstallComponent(component.Component):
     def __init__(self, *args, **kargs):
         component.Component.__init__(self, *args, **kargs)
         self.tracewriter = tr.TraceWriter(self.trace_files['install'], break_if_there=False)
-        self.package_registries = kargs.get('package_registries', {})
+        self.package_registries = kargs.get('package_registries') or {}
 
     def _get_download_config(self):
         return None
@@ -783,3 +782,18 @@ class PythonTestingComponent(component.Component):
         cmd = self._get_test_command()
         env = self._get_env()
         sh.execute(*cmd, stdout_fh=None, stderr_fh=None, cwd=app_dir, env_overrides=env)
+
+
+#### 
+#### PACKAGING CLASSES
+####
+
+class EmptyPackagingComponent(component.Component):
+    def package(self):
+        return None
+
+
+class DistroPackagingComponent(component.Component):
+    def package(self):
+        distro_packager = self.distro.package_manager_class(self.distro, packager.Registry())
+        return distro_packager.package(self)
