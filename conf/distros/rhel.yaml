@@ -303,7 +303,7 @@ components:
             install: anvil.distros.rhel:NovaInstaller
             running: anvil.components.nova:NovaRuntime
             uninstall: anvil.components.nova:NovaUninstaller
-            test: anvil.components:PythonTestingComponent
+            test: anvil.components.nova:NovaTester
         packages:
         -   name: MySQL-python
         -   name: dnsmasq
@@ -370,7 +370,7 @@ components:
             install: anvil.components.openstack_client:OpenStackClientInstaller
             running: anvil.components.openstack_client:OpenStackClientRuntime
             uninstall: anvil.components.openstack_client:OpenStackClientUninstaller
-            test: anvil.components:PythonTestingComponent
+            test: anvil.components.openstack_client:OpenStackClientTester
         pips:
         -   name: cliff
         pip_to_package:

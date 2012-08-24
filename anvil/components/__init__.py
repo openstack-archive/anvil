@@ -36,6 +36,7 @@ import pkg_resources
 import re
 import weakref
 
+from anvil import cfg
 from anvil import colorizer
 from anvil import component
 from anvil import downloader as down
@@ -731,21 +732,54 @@ class PythonTestingComponent(component.Component):
     def _get_test_exclusions(self):
         return []
     
+    def _use_run_tests(self):
+        return True
+    
+    def _get_test_command(self):
+        # See: http://docs.openstack.org/developer/nova/devref/unit_tests.html
+        # And: http://wiki.openstack.org/ProjectTestingInterface
+        app_dir = self.get_option('app_dir')
+        if sh.isfile(sh.joinpths(app_dir, 'run_tests.sh')) and self._use_run_tests():
+            cmd = [sh.joinpths(app_dir, 'run_tests.sh'), '-N', '-P']
+        else:
+            # Assume tox is being used, which we can't use directly
+            # since anvil doesn't really do venv stuff (its meant to avoid those...)
+            cmd = ['nosetests']
+        # See: $ man nosetests
+        cmd.append('--nologcapture')
+        for e in self._get_test_exclusions():
+            cmd.append('--exclude=%s' % (e))
+        return cmd
+
+    def _get_env(self):
+        env_addons = {}
+        app_dir = self.get_option('app_dir')
+        tox_fn = sh.joinpths(app_dir, 'tox.ini')
+        if sh.isfile(tox_fn):
+            try:
+                tox_cfg = cfg.BuiltinConfigParser(fns=[tox_fn])
+                env_values = tox_cfg.get('testenv', 'setenv') or ''
+                for env_line in env_values.splitlines():
+                    env_line = env_line.strip()
+                    env_line = env_line.split("#")[0].strip()
+                    if not env_line:
+                        continue
+                    env_entry = env_line.split('=', 1)
+                    if len(env_entry) == 2:
+                        (name, value) = env_entry
+                        name = name.strip()
+                        value = value.strip()
+                        if name.lower() != 'virtual_env':
+                            env_addons[name] = value
+            except IOError:
+                pass
+        return env_addons
+
     def run_tests(self):
         app_dir = self.get_option('app_dir')
-        if not sh.isfile(sh.joinpths(app_dir, 'run_tests.sh')):
-            LOG.warn("Unable to find 'run_tests.sh' in %s, can not run %s tests.", app_dir, self.name)
+        if not sh.isdir(app_dir):
+            LOG.warn("Unable to find application directory at %s, can not run %s tests.", app_dir, self.name)
             return
-        # See: http://docs.openstack.org/developer/nova/devref/unit_tests.html
-        cmd = [sh.joinpths(app_dir, 'run_tests.sh')]
-        only_tests = self.get_option('tests')
-        if only_tests:
-            cmd.extend(only_tests)
-        if self.get_option('coverage'):
-            # Not all modules currently handle this..
-            cmd += ['--with-coverage', '--cover-package=%s' % (self.name)]
-        cmd += ['-N', '-P', '--nologcapture']
-        exclude_what = self._get_test_exclusions()
-        for e in exclude_what:
-            cmd.append('--exclude=%s' % (e))
-        sh.execute(*cmd, stdout_fh=None, stderr_fh=None, cwd=app_dir)
+        cmd = self._get_test_command()
+        env = self._get_env()
+        sh.execute(*cmd, stdout_fh=None, stderr_fh=None, cwd=app_dir, env_overrides=env)

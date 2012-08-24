@@ -33,8 +33,5 @@ class GlanceClientRuntime(comp.EmptyRuntime):
 
 
 class GlanceClientTester(comp.PythonTestingComponent):
-    def run_tests(self):
-        # Tox tries to setup a venv, we don't need that...
-        app_dir = self.get_option('app_dir')
-        cmd = ['nosetests']
-        sh.execute(*cmd, stdout_fh=None, stderr_fh=None, cwd=app_dir)
+    def _use_run_tests(self):
+        return False

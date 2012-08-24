@@ -391,3 +391,11 @@ class NovaRuntime(NovaMixin, comp.PythonRuntime):
 
     def app_options(self, app):
         return APP_OPTIONS.get(app)
+
+
+class NovaTester(comp.PythonTestingComponent):
+    def _get_test_exclusions(self):
+        return [
+            # Disable since quantumclient is not always installed.
+            'test_quantumv2',
+        ]
