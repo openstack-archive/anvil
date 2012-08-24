@@ -30,7 +30,7 @@ from anvil.components import (STATUS_INSTALLED, STATUS_STARTED,
 class StatusAction(action.Action):
     def __init__(self, name, distro, root_dir, **kwargs):
         action.Action.__init__(self, name, distro, root_dir, **kwargs)
-        self.show_full = kwargs.get('show_full')
+        self.show_amount = kwargs.get('show_amount')
 
     @property
     def lookup_name(self):
@@ -52,8 +52,8 @@ class StatusAction(action.Action):
             LOG.info("Status of %s is %s.", colorizer.quote(component.name), self._quote_status(STATUS_UNKNOWN))
             return
 
-        def details_printer(entry, spacing):
-            det = utils.truncate_text(entry.details, max_len=8192, from_bottom=True)
+        def details_printer(entry, spacing, max_len):
+            det = utils.truncate_text(entry.details, max_len=max_len, from_bottom=True)
             for line in det.splitlines():
                 line = line.replace("\t", "\\t")
                 line = line.replace("\r", "\\r")
@@ -66,14 +66,14 @@ class StatusAction(action.Action):
                 LOG.info("Status of %s (%s) is %s.", colorizer.quote(component.name), s.name, self._quote_status(s.status))
             else:
                 LOG.info("Status of %s is %s.", colorizer.quote(component.name), self._quote_status(s.status))
-            if self.show_full and s.details:
-                details_printer(s, 2)
+            if self.show_amount > 0 and s.details:
+                details_printer(s, 2, self.show_amount)
         else:
             LOG.info("Status of %s is:", colorizer.quote(component.name))
             for s in result:
                 LOG.info("|-- %s is %s.", s.name, self._quote_status(s.status))
-                if self.show_full and s.details:
-                    details_printer(s, 4)
+                if self.show_amount > 0 and s.details:
+                    details_printer(s, 4, self.show_amount)
 
     def _run(self, persona, component_order, instances):
         self._run_phase(
