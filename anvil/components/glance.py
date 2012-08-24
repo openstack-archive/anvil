@@ -208,7 +208,7 @@ class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
-        self.wait_time = max(int(self.get_option('service_wait_seconds')), 1)
+        self.wait_time = self.get_int_option('service_wait_seconds')
 
     @property
     def apps_to_start(self):

@@ -71,6 +71,12 @@ class Component(object):
         else:
             return option_value
 
+    def get_bool_option(self, option, default_value=False):
+        return utils.make_bool(self.get_option(option, default_value))
+
+    def get_int_option(self, option, default_value=0):
+        return int(self.get_option(option, default_value))
+
     @property
     def env_exports(self):
         return {}
@@ -106,5 +112,5 @@ class Component(object):
     def warm_configs(self):
         # Before any actions occur you get the chance to 
         # warmup the configs u might use (ie for prompting for passwords
-        # earlier rather than later
+        # earlier rather than later)
         pass

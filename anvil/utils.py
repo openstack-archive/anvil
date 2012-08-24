@@ -77,12 +77,14 @@ LOG = logging.getLogger(__name__)
 
 
 def make_bool(val):
-    if type(val) is bool:
+    if isinstance(val, bool):
         return val
+    if isinstance(val, types.NoneType):
+        return False        
     sval = str(val).lower().strip()
     if sval in ['true', '1', 'on', 'yes', 't']:
         return True
-    if sval in ['0', 'false', 'off', 'no', 'f', '']:
+    if sval in ['0', 'false', 'off', 'no', 'f', '', 'none']:
         return False
     raise TypeError("Unable to convert %r to a boolean" % (val))
 
@@ -97,8 +99,7 @@ def obj_name(obj):
 
 
 def load_yaml(fn):
-    contents = sh.load_file(fn)
-    return yaml.safe_load(contents)
+    return yaml.safe_load(sh.load_file(fn))
 
 
 def add_header(fn, contents):

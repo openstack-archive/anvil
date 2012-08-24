@@ -24,8 +24,6 @@ import re
 # This one keeps comments but has some weirdness with it
 import iniparse
 
-import yaml
-
 from anvil import env
 from anvil import exceptions as excp
 from anvil import log as logging
@@ -220,7 +218,7 @@ class YamlInterpolator(object):
         if not sh.isfile(pth):
             self.included[root] = {}
             return
-        self.included[root] = yaml.load(sh.load_file(pth))
+        self.included[root] = utils.load_yaml(pth)
         self.included[root] = self._do_include(self.included[root])
 
     def extract(self, root):

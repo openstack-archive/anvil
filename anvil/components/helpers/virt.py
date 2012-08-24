@@ -43,20 +43,15 @@ DEF_VIRT_TYPE = 'qemu'
 
 
 def canon_libvirt_type(virt_type):
-    if not virt_type:
-        return DEF_VIRT_TYPE
-    virt_type = virt_type.lower().strip()
-    if not (virt_type in LIBVIRT_PROTOCOL_MAP):
-        return DEF_VIRT_TYPE
-    else:
-        return virt_type
+    virt_type = str(virt_type).lower().strip()
+    return LIBVIRT_PROTOCOL_MAP.get(virt_type, DEF_VIRT_TYPE)
 
 
 class Virsh(object):
 
     def __init__(self, service_wait, distro):
         self.distro = distro
-        self.wait_time = max(int(service_wait), 1)
+        self.wait_time = service_wait
 
     def _service_status(self):
         cmd = self.distro.get_command('libvirt', 'status')

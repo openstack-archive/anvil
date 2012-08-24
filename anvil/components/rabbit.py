@@ -71,7 +71,7 @@ class RabbitInstaller(comp.PkgInstallComponent):
 class RabbitRuntime(comp.ProgramRuntime):
     def __init__(self, *args, **kargs):
         comp.ProgramRuntime.__init__(self, *args, **kargs)
-        self.wait_time = max(int(self.get_option('service_wait_seconds')), 1)
+        self.wait_time = self.get_int_option('service_wait_seconds')
 
     def start(self):
         if self.status()[0].status != comp.STATUS_STARTED:

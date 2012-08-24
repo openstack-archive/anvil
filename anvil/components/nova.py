@@ -195,7 +195,7 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
 
     def warm_configs(self):
         warm_pws = list()
-        mq_type = nhelper.canon_mq_type(self.get_option('mq'))
+        mq_type = nhelper.canon_mq_type(self.get_option('mq-type'))
         if mq_type == 'rabbit':
             rhelper.get_shared_passwords(self)
         driver_canon = nhelper.canon_virt_driver(self.get_option('virt_driver'))
@@ -314,8 +314,8 @@ class NovaInstaller(NovaMixin, comp.PythonInstallComponent):
 class NovaRuntime(NovaMixin, comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
-        self.wait_time = max(int(self.get_option('service_wait_seconds')), 1)
-        self.virsh = lv.Virsh(int(self.get_option('service_wait_seconds')), self.distro)
+        self.wait_time = self.get_int_option('service_wait_seconds')
+        self.virsh = lv.Virsh(self.wait_time, self.distro)
         self.config_path = sh.joinpths(self.get_option('cfg_dir'), API_CONF)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
         self.net_init_fn = sh.joinpths(self.get_option('trace_dir'), NET_INITED_FN)
