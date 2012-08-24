@@ -125,6 +125,7 @@ class Action(object):
                 who_update.append(fn)
         if not who_update:
             who_update.append(self.default_password_file)
+        who_done = []
         for fn in who_update:
             if sh.isfile(fn):
                 contents = utils.load_yaml(fn)
@@ -132,9 +133,9 @@ class Action(object):
                 contents = {}
             contents.update(self.passwords.cache)
             sh.write_file(fn, utils.add_header(fn, utils.prettify_yaml(contents)))
-            who_update.append(fn)
-        utils.log_iterable(who_update,
-                           header="Updated/created %s password files" % len(who_update),
+            who_done.append(fn)
+        utils.log_iterable(who_done,
+                           header="Updated/created %s password files" % len(who_done),
                            logger=LOG)
 
     def _merge_subsystems(self, component_subsys, desired_subsys):
