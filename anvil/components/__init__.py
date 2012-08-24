@@ -288,7 +288,7 @@ class PythonInstallComponent(PkgInstallComponent):
         for (name, c) in self.instances.items():
             if c is self or not c.activated:
                 continue
-            if hasattr(c, 'pips_to_packages'):
+            if isinstance(c, (PythonInstallComponent)):
                 pip2_pkg_mp[name] = c.pips_to_packages
         for (who, pips_2_pkgs) in pip2_pkg_mp.items():
             for pip_info in pips_2_pkgs:
@@ -310,7 +310,7 @@ class PythonInstallComponent(PkgInstallComponent):
         for (name, c) in self.instances.items():
             if not c.activated or c is self:
                 continue
-            if hasattr(c, 'pips'):
+            if isinstance(c, (PythonInstallComponent)):
                 pip_mp[name] = list(c.pips)
         pip_found = False
         for (who, pips) in pip_mp.items():
@@ -791,9 +791,3 @@ class PythonTestingComponent(component.Component):
 class EmptyPackagingComponent(component.Component):
     def package(self):
         return None
-
-
-class DistroPackagingComponent(component.Component):
-    def package(self):
-        distro_packager = self.distro.package_manager_class(self.distro, packager.Registry())
-        return distro_packager.package(self)

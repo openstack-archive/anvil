@@ -22,6 +22,7 @@ import pwd
 import resource
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -203,6 +204,13 @@ def abspth(path):
     if path == "~":
         path = gethomedir()
     return os.path.abspath(path)
+
+
+def hostname():
+    try:
+        return socket.gethostname()
+    except:
+        return None
 
 
 def isuseable(path, options=os.W_OK | os.R_OK | os.X_OK):

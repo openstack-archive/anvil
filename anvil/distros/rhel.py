@@ -19,11 +19,18 @@
 Platform-specific logic for RedHat Enterprise Linux components.
 """
 
+import contextlib
 import glob
+import os
 import re
+import shutil
+
+from Cheetah.Template import Template
 
 from anvil import colorizer
+from anvil import component as comp
 from anvil import log as logging
+from anvil import packager as pack
 from anvil import shell as sh
 from anvil import utils
                                              
@@ -184,12 +191,117 @@ class YumPackagerWithRelinks(yum.YumPackager):
             if not tgt or not src:
                 continue
             src = glob.glob(src)
-            if len(src) == 0:
-                continue
-            elif len(src) != 1:
-                raise RuntimeError("Unable to link multiple sources %s to a single location %s" % (src, tgt))
-            else:
-                src = src[0]
-            if not sh.islink(tgt):
-                sh.symlink(src, tgt)
+            tgt = glob.glob(tgt)
+            if len(src) != len(tgt):
+                raise RuntimeError("Unable to link %s sources to %s locations" % (len(src), len(tgt)))
+            for i in range(len(src)):
+                i_src = src[i]
+                i_tgt = tgt[i]
+                if not sh.islink(i_tgt):
+                    sh.symlink(i_src, i_tgt)
         return True
+
+
+class RpmPackagingComponent(comp.Component):
+    def __init__(self, *args, **kargs):
+        comp.Component.__init__(self, *args, **kargs)
+        self.package_dir = sh.joinpths(self.get_option('component_dir'), 'package')
+        self.build_paths = {}
+        for name in ['SOURCES', 'SPECS', 'SRPMS', 'RPMS', 'BUILD']:
+            # Remove any old packaging directories...
+            sh.deldir(sh.joinpths(self.package_dir, name), True)
+            self.build_paths[name] = sh.mkdir(sh.joinpths(self.package_dir, name))
+
+    def _requirements(self):
+        return {
+            'install': self._install_requirements(),
+            'build': self._build_requirements(),
+        }
+
+    @property
+    def details(self):
+        return {
+            'summary': 'Package build of %s on %s' % (self.name, utils.rcf8222date()),
+            'name': self.name,
+            'version': 0,
+            'release': 1,
+            'packager': "%s <%s@%s>" % (sh.getuser(), sh.getuser(), sh.hostname()),
+            'description': '',
+            'changelog': '',
+            'license': 'Apache License, Version 2.0',
+        }
+
+    def _build_details(self):
+        return {
+            'arch': 'noarch',
+        }
+
+    def _gather_files(self):
+        source_fn = self._make_source_archive()
+        sources = []
+        if source_fn:
+            sources.append(source_fn)
+        return {
+            'sources': sources,
+            'files': [],
+            'directories': [],
+            'docs': [],
+        }
+
+    def _defines(self):
+        define_what = []
+        define_what.append("_topdir %s" % (self.package_dir))
+        return define_what
+
+    def _make_source_archive(self):
+        return None
+
+    def _make_fn(self, ext):
+        your_fn = "%s-%s-%s.%s" % (self.details['name'], 
+                                   self.details['version'],
+                                   self.details['release'], ext)
+        return your_fn
+
+    def _create_package(self):
+        params = {
+            'files': self._gather_files(),
+            'requires': self._requirements(),
+            'defines': self._defines(),
+            'build': self._build_details(),
+            'who': sh.getuser(),
+            'date': utils.rcf8222date(),
+            'details': self.details,
+        }
+        (_fn, content) = utils.load_template('packaging', 'spec.tmpl')
+        spec_fn = sh.joinpths(self.build_paths['SPECS'], self._make_fn("spec"))
+        LOG.debug("Creating spec file %s with params:", spec_fn)
+        utils.log_object(params, logger=LOG, level=logging.DEBUG)
+        sh.write_file(spec_fn, Template(content, searchList=[params]).respond())
+
+    def _build_requirements(self):
+        return []
+
+    def _install_requirements(self):
+        i_sibling = self.siblings.get('install')
+        if not i_sibling:
+            return []
+        requirements = []
+        for p in i_sibling.packages:
+            if 'version' in p:
+                if pack.contains_version_check(p['version']):
+                    # This seems to mean only this version...
+                    real_version = p['version'].replace('==', '=')
+                    requirements.append("%s %s" % (p['name'], real_version))
+                else:
+                    requirements.append("%s = %s" % (p['name'], p['version']))
+            else:
+                requirements.append("%s" % (p['name']))
+        return requirements
+
+    def package(self):
+        app_dir = self.get_option('app_dir')
+        if not sh.isdir(app_dir):
+            LOG.warn("Unable to find application directory at %s, can not run create a %s package out of that!", app_dir, self.name)
+            return
+        self._create_package()
+        return self.package_dir 

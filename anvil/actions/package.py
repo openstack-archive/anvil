@@ -30,16 +30,16 @@ class PackageAction(action.Action):
 
     def _finish_package(self, component, where):
         if not where:
-            LOG.info("Component %s can not create a package archive.",
+            LOG.info("Component %s can not create a package.",
                      colorizer.quote(component.name))
         else:
-            LOG.info("Package archive created at %s for component %s.",
+            LOG.info("Package created at %s for component %s.",
                      colorizer.quote(where), colorizer.quote(component.name))
 
     def _run(self, persona, component_order, instances):
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Creating a package archive for component %s.', colorizer.quote(i.name)),
+                start=lambda i: LOG.info('Creating a package for component %s.', colorizer.quote(i.name)),
                 run=lambda i: i.package(),
                 end=self._finish_package,
             ),

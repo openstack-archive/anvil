@@ -30,7 +30,7 @@ class Packager(pack.Packager):
     def _make_pip_name(self, name, version):
         if version is None:
             return str(name)
-        if self._contains_version_check(version):
+        if pack.contains_version_check(version):
             return "%s%s" % (name, version)
         else:
             return "%s==%s" % (name, version)

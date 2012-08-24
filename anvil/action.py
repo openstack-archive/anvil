@@ -103,15 +103,12 @@ class Action(object):
             'trace_dir': trace_dir,
         }
 
-    def _merge_options(self, name, base_opts, component_opts, persona_opts):
+    def _merge_options(self, name, distro_opts, component_opts, persona_opts):
         opts = {}
         opts.update(self._get_component_dirs(name))
-        if base_opts:
-            opts.update(base_opts)
-        if component_opts:
-            opts.update(component_opts)
-        if persona_opts:
-            opts.update(persona_opts)
+        opts.update(distro_opts)
+        opts.update(component_opts)
+        opts.update(persona_opts)
         return opts
 
     def _update_passwords(self):
@@ -151,18 +148,22 @@ class Action(object):
                 joined_subsys[subsys] = {}
         return joined_subsys
 
-    def _construct_siblings(self, siblings, kvs):
-        my_siblings = {}
+    def _construct_siblings(self, name, siblings, kvs, sibling_instances):
+        there_siblings = {}
         for (action, cls_name) in siblings.items():
+            if action not in sibling_instances:
+                sibling_instances[action] = {}
             cls = importer.import_entry_point(cls_name)
-            my_siblings[action] = cls(**kvs)
-        return my_siblings
-
-    def _get_sibling_options(self, name, base_opts):
-        opts = {}
-        opts.update(base_opts)
-        opts.update(self._get_component_dirs(name))
-        return opts
+            kvs['instances'] = sibling_instances[action]
+            LOG.debug("Construction of sibling component %r (%r) params are:", name, action)
+            utils.log_object(kvs, logger=LOG, level=logging.DEBUG)
+            a_sibling = cls(**kvs)
+            # Update the sibling we are returning and the corresponding
+            # siblings for that action (so that the sibling can have the
+            # correct 'sibling' instances associated with it, if it needs those...)
+            there_siblings[action] = a_sibling
+            sibling_instances[action][name] = a_sibling
+        return there_siblings
 
     def _get_interp_options(self, name):
         base = {}
@@ -178,6 +179,7 @@ class Action(object):
         persona_opts = persona.component_options or {}
         instances = {}
         package_registries = {}
+        sibling_instances = {}
         for c in persona.wanted_components:
             ((cls, distro_opts), siblings) = self.distro.extract_component(c, self.lookup_name)
             LOG.debug("Constructing component %r (%s)", c, tu.obj_name(cls))
@@ -185,22 +187,20 @@ class Action(object):
             kvs['name'] = c
             kvs['package_registries'] = package_registries
             # First create its siblings with a 'minimal' set of options
-            # This is done, so that they will work in a minimal state
-            kvs['instances'] = {}
+            # This is done, so that they will work in a minimal state, they do not
+            # get access to the persona options since those are action specific (or could be),
+            # if this is not useful, we can give them full access, unsure if its worse or better...
             kvs['subsystems'] = {}
             kvs['siblings'] = {}
             kvs['passwords'] = self.passwords
             kvs['distro'] = self.distro
-            kvs['options'] = self._get_sibling_options(c, self._get_interp_options(c))
-            LOG.debug("Constructing %s siblings:", c)
-            utils.log_object(siblings, logger=LOG, level=logging.DEBUG)
-            LOG.debug("Using params:")
-            utils.log_object(kvs, logger=LOG, level=logging.DEBUG)
-            siblings = self._construct_siblings(siblings, dict(kvs))
+            kvs['options'] = self._merge_options(c, self._get_interp_options(c), distro_opts, {})
+            LOG.debug("Constructing %r siblings...", c)
+            siblings = self._construct_siblings(c, siblings, dict(kvs), sibling_instances)
             # Now inject the full options
             kvs['instances'] = instances
-            kvs['options'] = self._merge_options(c, self._get_interp_options(c),
-                                                 distro_opts, (persona_opts.get(c) or {}))
+            kvs['options'] = self._merge_options(c, self._get_interp_options(c), distro_opts,
+                                                (persona_opts.get(c) or {}))
             kvs['subsystems'] = self._merge_subsystems((distro_opts.pop('subsystems', None) or {}),
                                                        (persona_subsystems.get(c) or {}))
             kvs['siblings'] = siblings
@@ -259,38 +259,39 @@ class Action(object):
             phase_recorder = phase.PhaseRecorder(self._get_phase_filename(phase_name))
         else:
             phase_recorder = phase.NullPhaseRecorder()
+
+        def change_activate(instance, on_off):
+            # Activate/deactivate them and there siblings (if any)
+            instance.activated = on_off
+            for (_name, sibling_instance) in instance.siblings.items():
+                sibling_instance.activated = on_off
+
         # Reset all activations
         for c in component_order:
+            change_activate(instances[c], False)
+
+        # Run all components which have not been ran previously (due to phase tracking)
+        for c in component_order:
             instance = instances[c]
-            instance.activated = False
-        # Run all components which have not been activated
-        try:
-            for c in component_order:
-                instance = instances[c]
-                if c in phase_recorder:
-                    LOG.debug("Skipping phase named %r for component %r since it already happened.", phase_name, c)
-                    instance.activated = True
-                    component_results[c] = None
-                else:
-                    try:
-                        result = None
-                        with phase_recorder.mark(c):
-                            if functors.start:
-                                functors.start(instance)
-                            if functors.run:
-                                result = functors.run(instance)
-                            if functors.end:
-                                functors.end(instance, result)
-                        component_results[instance] = result
-                        instance.activated = True
-                    except excp.NoTraceException:
-                        pass
-            self._on_completion(phase_name, component_results)
-        finally:
-            # Reset all activations
-            for c in component_order:
-                instance = instances[c]
-                instance.activated = False
+            if c in phase_recorder:
+                LOG.debug("Skipping phase named %r for component %r since it already happened.", phase_name, c)
+                change_activate(instance, True)
+                component_results[c] = None
+            else:
+                try:
+                    result = None
+                    with phase_recorder.mark(c):
+                        if functors.start:
+                            functors.start(instance)
+                        if functors.run:
+                            result = functors.run(instance)
+                        if functors.end:
+                            functors.end(instance, result)
+                    component_results[instance] = result
+                    change_activate(instance, True)
+                except excp.NoTraceException:
+                    pass
+        self._on_completion(phase_name, component_results)
         return component_results
 
     def _get_opposite_stages(self, phase_name):
