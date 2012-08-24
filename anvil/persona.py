@@ -45,7 +45,7 @@ def load(fn):
     # read this (even if dry-run)
     with open(fn, 'r') as fh:
         contents = fh.read()
-    cls_kvs = yaml.load(contents)
+    cls_kvs = yaml.safe_load(contents)
     cls_kvs['source'] = fn
     instance = Persona(**cls_kvs)
     return instance
