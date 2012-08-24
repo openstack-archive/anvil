@@ -45,11 +45,10 @@ def parse():
 
     # Root options
     parser.add_option("-v", "--verbose",
-        action="append_const",
-        const=1,
-        dest="verbosity",
-        default=[1],
-        help="increase the verbose level")
+        action="store_true",
+        dest="verbose",
+        default=False,
+        help="make the output logging verbose")
     parser.add_option("--dryrun",
         action="store_true",
         dest="dryrun",
@@ -111,7 +110,7 @@ def parse():
     output['action'] = (options.action or "")
     output['extras'] = args
     output['persona_fn'] = options.persona_fn
-    output['verbosity'] = len(options.verbosity)
+    output['verbose'] = options.verbose
     output['prompt_for_passwords'] = options.prompt_for_passwords
     output['show_amount'] = max(0, options.show_amount)
     output['store_passwords'] = options.store_passwords

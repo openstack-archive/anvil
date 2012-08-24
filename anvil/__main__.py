@@ -132,7 +132,7 @@ def main():
 
     # Configure logging levels
     log_level = logging.INFO
-    if args['verbosity'] >= 2 or args['dryrun']:
+    if args['verbose'] or args['dryrun']:
         log_level = logging.DEBUG
     logging.setupLogging(log_level)
 
