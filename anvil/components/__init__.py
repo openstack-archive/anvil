@@ -72,7 +72,7 @@ class PkgInstallComponent(component.Component):
     def __init__(self, *args, **kargs):
         component.Component.__init__(self, *args, **kargs)
         self.tracewriter = tr.TraceWriter(self.trace_files['install'], break_if_there=False)
-        self.package_registries = kargs.get('package_registries') or {}
+        self.package_registries = kargs.get('package_registries', {})
 
     def _get_download_config(self):
         return None
