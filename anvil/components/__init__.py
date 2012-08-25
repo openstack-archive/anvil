@@ -340,17 +340,6 @@ class PythonInstallComponent(PkgInstallComponent):
             add_on_pkgs.append(pkg_info)
         return add_on_pkgs
 
-    def _get_mapped_pips(self):
-        add_on_pips = []
-        all_pips = []
-        for fn in self.requires_files:
-            all_pips.extend(self._extract_pip_requires(fn))
-        for (_requirement, (pkg_info, from_pip)) in all_pips:
-            if not from_pip or not pkg_info:
-                continue
-            add_on_pips.append(pkg_info)
-        return add_on_pips
-
     @property
     def pips(self):
         pip_list = self.get_option('pips')
@@ -360,7 +349,6 @@ class PythonInstallComponent(PkgInstallComponent):
             if 'pips' in values:
                 LOG.debug("Extending pip list with pips for subsystem: %r" % (name))
                 pip_list.extend(values.get('pips'))
-        pip_list.extend(self._get_mapped_pips())
         pip_list = self._clear_package_duplicates(pip_list)
         return pip_list
 
