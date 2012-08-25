@@ -320,7 +320,7 @@ class PythonInstallComponent(PkgInstallComponent):
                 if pip_match(pip_info['name'], pip_name):
                     pip_found = True
                     pip_who = pip_info
-                    LOG.debug("Matched pip (%s) from component %s", pip_name, who)
+                    LOG.debug("Matched pip %r from other component %r", pip_name, who)
                     break
             if pip_found:
                 break
