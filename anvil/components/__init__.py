@@ -239,8 +239,9 @@ class PythonInstallComponent(PkgInstallComponent):
         PkgInstallComponent.__init__(self, *args, **kargs)
         self.requires_files = [
             sh.joinpths(self.get_option('app_dir'), 'tools', 'pip-requires'),
-            sh.joinpths(self.get_option('app_dir'), 'tools', 'test-requires')
         ]
+        if self.get_bool_option('use_tests_requires', True):
+            self.requires_files.append(sh.joinpths(self.get_option('app_dir'), 'tools', 'test-requires'))
 
     def _get_download_config(self):
         return 'get_from'
@@ -313,40 +314,42 @@ class PythonInstallComponent(PkgInstallComponent):
             if isinstance(c, (PythonInstallComponent)):
                 pip_mp[name] = list(c.pips)
         pip_found = False
+        pip_who = None
         for (who, pips) in pip_mp.items():
             for pip_info in pips:
                 if pip_match(pip_info['name'], pip_name):
                     pip_found = True
+                    pip_who = pip_info
                     LOG.debug("Matched pip (%s) from component %s", pip_name, who)
                     break
             if pip_found:
                 break
         if pip_found:
-            return (None, True)
+            return (pip_who, True)
 
         return (None, False)
 
     def _get_mapped_packages(self):
         add_on_pkgs = []
+        all_pips = []
         for fn in self.requires_files:
-            if sh.isfile(fn):
-                LOG.debug("Injected & resolving dependencies from %s.", colorizer.quote(fn))
-                for line in sh.load_file(fn).splitlines():
-                    line = line.strip()
-                    if not line or line.startswith("#"):
-                        continue
-                    requirement = pkg_resources.Requirement.parse(line)
-                    (pkg_match, from_pip) = self._match_pip_requires(requirement.project_name)
-                    if not pkg_match and not from_pip:
-                        raise excp.DependencyException(("Pip dependency %r"
-                                                        ' (from %r)'
-                                                        ' not translatable'
-                                                        ' to a known pip package'
-                                                        ' or a distribution'
-                                                        ' package!') % (requirement, fn))
-                    elif not from_pip and pkg_match:
-                        add_on_pkgs.append(pkg_match)
+            all_pips.extend(self._extract_pip_requires(fn))
+        for (_requirement, (pkg_info, from_pip)) in all_pips:
+            if from_pip or not pkg_info:
+                continue
+            add_on_pkgs.append(pkg_info)
         return add_on_pkgs
+
+    def _get_mapped_pips(self):
+        add_on_pips = []
+        all_pips = []
+        for fn in self.requires_files:
+            all_pips.extend(self._extract_pip_requires(fn))
+        for (_requirement, (pkg_info, from_pip)) in all_pips:
+            if not from_pip or not pkg_info:
+                continue
+            add_on_pips.append(pkg_info)
+        return add_on_pips
 
     @property
     def pips(self):
@@ -357,6 +360,7 @@ class PythonInstallComponent(PkgInstallComponent):
             if 'pips' in values:
                 LOG.debug("Extending pip list with pips for subsystem: %r" % (name))
                 pip_list.extend(values.get('pips'))
+        pip_list.extend(self._get_mapped_pips())
         pip_list = self._clear_package_duplicates(pip_list)
         return pip_list
 
@@ -374,7 +378,7 @@ class PythonInstallComponent(PkgInstallComponent):
                     p_bar.update(i + 1)
 
     def _clean_pip_requires(self):
-        # Fixup these files if they exist (sometimes they have junk in them)
+        # Fixup these files if they exist (sometimes they have 'junk' in them)
         req_fns = []
         for fn in self.requires_files:
             if not sh.isfile(fn):
@@ -443,7 +447,35 @@ class PythonInstallComponent(PkgInstallComponent):
         self._install_pips()
         self._install_python_setups()
 
+    def _extract_pip_requires(self, fn):
+        if not sh.isfile(fn):
+            return []
+        LOG.debug("Resolving dependencies from %s.", colorizer.quote(fn))
+        pips_needed = []
+        for line in sh.load_file(fn).splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            pips_needed.append(pkg_resources.Requirement.parse(line))
+        if not pips_needed:
+            return
+        matchings = []
+        for requirement in pips_needed:
+            matchings.append([requirement, self._match_pip_requires(requirement.project_name)])
+        return matchings
+
+    def _verify_pip_requires(self):
+        all_pips = []
+        for fn in self.requires_files:
+            all_pips.extend(self._extract_pip_requires(fn))
+        for (requirement, (pkg_info, _from_pip)) in all_pips:
+            if not pkg_info:
+                raise excp.DependencyException(("Pip dependency %r is not translatable to a listed"
+                                                " (from this or previously activated components) pip package"
+                                                ' or a pip->package mapping!') % (requirement))
+
     def install(self):
+        self._verify_pip_requires()
         PkgInstallComponent.install(self)
         self._python_install()
 

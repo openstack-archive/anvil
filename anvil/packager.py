@@ -41,8 +41,8 @@ class NullVersion(object):
 class Registry(object):
 
     def __init__(self):
-        self.installed = dict()
-        self.removed = dict()
+        self.installed = {}
+        self.removed = {}
 
 
 class Packager(object):
@@ -121,10 +121,6 @@ class Packager(object):
         if cmds:
             LOG.info("Running post-install commands for package %s.", colorizer.quote(pkg['name']))
             utils.execute_template(*cmds, params=params)
-
-    @abc.abstractmethod
-    def create_package_template(self, component):
-        raise NotImplementedError()
 
     @abc.abstractmethod
     def _remove(self, pkg):

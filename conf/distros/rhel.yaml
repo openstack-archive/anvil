@@ -62,7 +62,7 @@ components:
             running: anvil.components.db:DBRuntime
             uninstall: anvil.components.db:DBUninstaller
             test: anvil.components:EmptyTestingComponent
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:DependencyPackager
         packages:
         -   name: mysql
         -   name: mysql-server
@@ -72,7 +72,7 @@ components:
             running: anvil.components:EmptyRuntime
             uninstall: anvil.components.pkglist:Uninstaller
             test: anvil.components:EmptyTestingComponent
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:DependencyPackager
         packages:
         # Shared system packages
         -   name: coreutils

@@ -202,7 +202,7 @@ class YumPackagerWithRelinks(yum.YumPackager):
         return True
 
 
-class RpmPackagingComponent(comp.Component):
+class DependencyPackager(comp.Component):
     def __init__(self, *args, **kargs):
         comp.Component.__init__(self, *args, **kargs)
         self.package_dir = sh.joinpths(self.get_option('component_dir'), 'package')
@@ -299,9 +299,16 @@ class RpmPackagingComponent(comp.Component):
         return requirements
 
     def package(self):
-        app_dir = self.get_option('app_dir')
-        if not sh.isdir(app_dir):
-            LOG.warn("Unable to find application directory at %s, can not run create a %s package out of that!", app_dir, self.name)
-            return
         self._create_package()
         return self.package_dir 
+
+
+class PythonPackager(DependencyPackager):
+    def _build_requirements(self):
+        return [
+            'python',
+            'python-devel',
+            'gcc',
+            'python-setuptools',
+        ]
+    
