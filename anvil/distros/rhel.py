@@ -192,6 +192,8 @@ class YumPackagerWithRelinks(yum.YumPackager):
                 continue
             src = glob.glob(src)
             tgt = glob.glob(tgt)
+            if not tgt:
+                tgt = [entry.get('target')]
             if len(src) != len(tgt):
                 raise RuntimeError("Unable to link %s sources to %s locations" % (len(src), len(tgt)))
             for i in range(len(src)):

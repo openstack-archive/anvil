@@ -71,11 +71,11 @@ LOG = logging.getLogger(__name__)
 def expand_template(contents, params):
     if not params:
         params = {}
-    return Template(contents, searchList=[params]).respond()
+    return Template(str(contents), searchList=[params]).respond()
 
 
 def load_yaml(fn):
-    return yaml.safe_load(sh.load_file(fn))
+    return load_yaml_text(sh.load_file(fn))
 
 
 def load_yaml_text(text):
@@ -162,13 +162,13 @@ def execute_template(cmd, *cmds, **kargs):
         run_what_tpl = info["cmd"]
         if not isinstance(run_what_tpl, (list, tuple, set)):
             run_what_tpl = [run_what_tpl]
-        run_what = [expand_template(str(c), params) for c in run_what_tpl]
+        run_what = [expand_template(c, params) for c in run_what_tpl]
         stdin = None
         stdin_tpl = info.get('stdin')
         if stdin_tpl:
             if not isinstance(stdin_tpl, (list, tuple, set)):
                 stdin_tpl = [stdin_tpl]
-            stdin = [expand_template(str(c), params) for c in stdin_tpl]
+            stdin = [expand_template(c, params) for c in stdin_tpl]
             stdin = "\n".join(stdin)
         result = sh.execute(*run_what,
                             run_as_root=info.get('run_as_root', False),
@@ -322,9 +322,9 @@ def chdir(where_to):
 
 
 def get_interfaces():
-    interfaces = dict()
+    interfaces = {}
     for intfc in netifaces.interfaces():
-        interface_info = dict()
+        interface_info = {}
         interface_addresses = netifaces.ifaddresses(intfc)
         ip6 = interface_addresses.get(netifaces.AF_INET6)
         if ip6:
@@ -348,10 +348,6 @@ def format_time(secs):
 
 def joinlinesep(*pieces):
     return os.linesep.join(pieces)
-
-
-def get_class_names(objects):
-    return map((lambda i: i.__class__.__name__), objects)
 
 
 def prettify_yaml(obj):

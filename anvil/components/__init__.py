@@ -553,7 +553,7 @@ class PythonRuntime(ProgramRuntime):
         app_dir = app_info.get("app_dir", self.get_option('app_dir'))
         app_options = self.app_options(app_name)
         app_params = self.app_params(app_name)
-        program_opts = [utils.expand_template(str(c), app_params) for c in app_options]
+        program_opts = [utils.expand_template(c, app_params) for c in app_options]
         LOG.debug("Starting %r using %r", app_name, starter)
         details_fn = starter.start(app_name, app_pth=app_pth, app_dir=app_dir, opts=program_opts)
         LOG.info("Started sub-program %s.", colorizer.quote(app_name))
