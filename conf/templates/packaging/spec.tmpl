@@ -1,0 +1,93 @@
+#* 
+   This is a cheetah template for building a basic rpm spec file that can then
+   later be used with the rpmbuild command.
+   
+   See: http://www.rpm.org/max-rpm/
+        http://fedoraproject.org/wiki/How_to_create_an_RPM_package
+        http://fedoraproject.org/wiki/Packaging:Guidelines
+        ... (many others)
+*#
+#for $d in $defines
+%define ${d}
+#end for
+# 
+# Spec file for $details.name auto-generated on ${date} by ${who}
+#
+
+#    Copyright (C) 2012 Yahoo! Inc. All Rights Reserved.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+
+Name: $details.name
+Summary: $details.summary
+Version: $details.version
+Release: $details.release%{?dist}
+#set $s_len = len($files.sources)
+#for $i in $range(0, $s_len)
+Source${i}: $files.sources[$i]
+#end for
+BuildRoot: %{_tmppath}/%{name}-%{version}-build
+License: $details.license
+#if $build.has_key('arch')
+BuildArch: $build.arch
+#end if
+#if $requires.build
+# Build requirements
+#for $i in $requires.build
+BuildRequires: ${i}
+#end for
+#end if
+
+#if $requires.install
+# Install requirements
+#for $i in $requires.install
+Requires: ${i}
+#end for
+#end if
+
+%description
+#if $details.description
+$details.description
+#else
+$details.summary
+#end if
+
+%prep
+#if $build.has_key('setup')
+%setup $build.setup
+#end if
+#if $build.has_key('action')
+%build
+$build.action
+#end if
+
+%install
+rm -rf %{buildroot}
+
+%clean
+rm -rf %{buildroot}
+
+%files
+%defattr(-,root,root,-)
+#for $f in $files.files
+${f}
+#end for
+#for $d in $files.docs
+%doc ${d}
+#end for
+#for $d in $files.directories
+%dir ${d}
+#end for
+
+%changelog
+$details.changelog

@@ -30,14 +30,16 @@ class PackageAction(action.Action):
 
     def _finish_package(self, component, where):
         if not where:
-            LOG.info("Unable to create a package template!")
+            LOG.info("Component %s can not create a package.",
+                     colorizer.quote(component.name))
         else:
-            LOG.info("Package template created at %s", colorizer.quote(where))
+            LOG.info("Package created at %s for component %s.",
+                     colorizer.quote(where), colorizer.quote(component.name))
 
     def _run(self, persona, component_order, instances):
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Creating a package template for component %s.', colorizer.quote(i.name)),
+                start=lambda i: LOG.info('Creating a package for component %s.', colorizer.quote(i.name)),
                 run=lambda i: i.package(),
                 end=self._finish_package,
             ),

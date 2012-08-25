@@ -58,25 +58,15 @@ SUB_TO_APP = {
 }
 
 
-class GlanceMixin(object):
-
-    @property
-    def valid_subsystems(self):
-        return SUB_TO_APP.keys()
-
-    @property
-    def config_files(self):
-        return list(CONFIGS)
-
-
-class GlanceUninstaller(GlanceMixin, comp.PythonUninstallComponent):
+class GlanceUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, *args, **kargs)
 
 
-class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
-    def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, *args, **kargs)
+class GlanceInstaller(comp.PythonInstallComponent):
+    @property
+    def config_files(self):
+        return list(CONFIGS)
 
     def _filter_pip_requires_line(self, line):
         if line.lower().find('swift') != -1:
@@ -204,7 +194,7 @@ class GlanceInstaller(GlanceMixin, comp.PythonInstallComponent):
             return contents
 
 
-class GlanceRuntime(GlanceMixin, comp.PythonRuntime):
+class GlanceRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')

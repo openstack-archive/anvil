@@ -50,6 +50,8 @@ def run(args):
     Arguments: N/A
     Returns: True for success to run, False for failure to start
     """
+    LOG.debug("CLI arguments are:")
+    utils.log_object(args, logger=LOG, level=logging.DEBUG, item_max_len=128)
 
     action = args.pop("action", '').strip().lower()
     if action not in actions.names():
@@ -130,12 +132,10 @@ def main():
 
     # Configure logging levels
     log_level = logging.INFO
-    if args['verbosity'] >= 2 or args['dryrun']:
+    if args['verbose'] or args['dryrun']:
         log_level = logging.DEBUG
     logging.setupLogging(log_level)
 
-    LOG.debug("Command line options:")
-    utils.log_object(args, item_max_len=64, logger=LOG, level=logging.DEBUG)
     LOG.debug("Log level is: %s" % (logging.getLevelName(log_level)))
 
     def clean_exc(exc):

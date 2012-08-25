@@ -15,11 +15,12 @@
 #    under the License.
 
 from optparse import IndentedHelpFormatter
-from optparse import OptionParser, OptionGroup
+from optparse import (OptionParser, OptionGroup, OptionValueError)
 
 from anvil import actions
 from anvil import settings
 from anvil import shell as sh
+from anvil import utils
 from anvil import version
 
 
@@ -27,6 +28,13 @@ def _format_list(in_list):
     sorted_list = sorted(in_list)
     return "[" + ", ".join(sorted_list) + "]"
 
+
+def _size_cb(option, opt_str, value, parser):
+    try:
+        parser.values.show_amount = utils.to_bytes(value)
+    except (TypeError, ValueError) as e:
+        raise OptionValueError("Invalid value for %s due to %s" % (opt_str, e))
+        
 
 def parse():
 
@@ -37,11 +45,10 @@ def parse():
 
     # Root options
     parser.add_option("-v", "--verbose",
-        action="append_const",
-        const=1,
-        dest="verbosity",
-        default=[1],
-        help="increase the verbose level")
+        action="store_true",
+        dest="verbose",
+        default=False,
+        help="make the output logging verbose")
     parser.add_option("--dryrun",
         action="store_true",
         dest="dryrun",
@@ -85,12 +92,12 @@ def parse():
 
     status_group = OptionGroup(parser, "Status specific options")
     status_group.add_option('-s', "--show",
-        action="store",
+        action="callback",
         dest="show_amount",
-        metavar="BYTES",
-        type="int",
-        default=0,
-        help="show SIZE bytes 'details' (if applicable) when show component status (default: %default)")
+        type='string',
+        metavar="SIZE",
+        callback=_size_cb,
+        help="show SIZE 'details' (if applicable) when showing component status")
     parser.add_option_group(status_group)
 
     # Extract only what we care about, these will be passed
@@ -103,7 +110,7 @@ def parse():
     output['action'] = (options.action or "")
     output['extras'] = args
     output['persona_fn'] = options.persona_fn
-    output['verbosity'] = len(options.verbosity)
+    output['verbose'] = options.verbose
     output['prompt_for_passwords'] = options.prompt_for_passwords
     output['show_amount'] = max(0, options.show_amount)
     output['store_passwords'] = options.store_passwords

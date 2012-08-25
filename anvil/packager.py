@@ -57,7 +57,7 @@ class Packager(object):
         if version:
             # This won't work for all package versions (ie crazy names)
             # but good enough for now...
-            if self._contains_version_check(version):
+            if contains_version_check(version):
                 full_name = "%s%s" % (name, version)
             else:
                 full_name = "%s==%s" % (name, version)
@@ -134,11 +134,12 @@ class Packager(object):
     def _install(self, pkg):
         raise NotImplementedError()
 
-    def _contains_version_check(self, version):
-        for c in ['==', '>', "<", '<=', '>=']:
-            if version.find(c) != -1:
-                return True
-        return False
+
+def contains_version_check(version):
+    for c in ['=', '>', "<"]:
+        if version.find(c) != -1:
+            return True
+    return False
 
 
 def get_packager_class(package_info, default_packager_class=None):

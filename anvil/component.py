@@ -94,10 +94,6 @@ class Component(object):
             'start': tr.trace_fn(trace_dir, "start"),
         }
 
-    @property
-    def valid_subsystems(self):
-        return []
-
     def warm_configs(self):
         # Before any actions occur you get the chance to 
         # warmup the configs u might use (ie for prompting for passwords
