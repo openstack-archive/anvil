@@ -78,17 +78,17 @@ class GlanceInstaller(comp.PythonInstallComponent):
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
-        if self.get_option('db-sync'):
+        if self.get_bool_option('db-sync'):
             self._setup_db()
 
     def _setup_db(self):
         dbhelper.drop_db(distro=self.distro,
-                         dbtype=self.get_option('db.type'),
+                         dbtype=self.get_option('db', 'type'),
                          dbname=DB_NAME,
                          **utils.merge_dicts(self.get_option('db'),
                                              dbhelper.get_shared_passwords(self)))
         dbhelper.create_db(distro=self.distro,
-                           dbtype=self.get_option('db.type'),
+                           dbtype=self.get_option('db', 'type'),
                            dbname=DB_NAME,
                            **utils.merge_dicts(self.get_option('db'),
                                                dbhelper.get_shared_passwords(self)))
@@ -106,12 +106,12 @@ class GlanceInstaller(comp.PythonInstallComponent):
         with io.BytesIO(contents) as stream:
             config = cfg.RewritableConfigParser()
             config.readfp(stream)
-            config.set('DEFAULT', 'debug', self.get_option('verbose', False))
-            config.set('DEFAULT', 'verbose', self.get_option('verbose', False))
+            config.set('DEFAULT', 'debug', self.get_bool_option('verbose'))
+            config.set('DEFAULT', 'verbose', self.get_bool_option('verbose'))
             config.set('DEFAULT', 'bind_port', params['endpoints']['registry']['port'])
             config.set('DEFAULT', 'sql_connection', dbhelper.fetch_dbdsn(dbname=DB_NAME,
                                                                          utf8=True,
-                                                                         dbtype=self.get_option('db.type'),
+                                                                         dbtype=self.get_option('db', 'type'),
                                                                          **utils.merge_dicts(self.get_option('db'),
                                                                                              dbhelper.get_shared_passwords(self))))
             config.remove_option('DEFAULT', 'log_file')
@@ -147,14 +147,14 @@ class GlanceInstaller(comp.PythonInstallComponent):
             config = cfg.RewritableConfigParser()
             config.readfp(stream)
             img_store_dir = sh.joinpths(self.get_option('component_dir'), 'images')
-            config.set('DEFAULT', 'debug', self.get_option('verbose', False))
-            config.set('DEFAULT', 'verbose', self.get_option('verbose', False))
+            config.set('DEFAULT', 'debug', self.get_bool_option('verbose',))
+            config.set('DEFAULT', 'verbose', self.get_bool_option('verbose'))
             config.set('DEFAULT', 'default_store', 'file')
             config.set('DEFAULT', 'filesystem_store_datadir', img_store_dir)
             config.set('DEFAULT', 'bind_port', params['endpoints']['public']['port'])
             config.set('DEFAULT', 'sql_connection', dbhelper.fetch_dbdsn(dbname=DB_NAME,
                                                                          utf8=True,
-                                                                         dbtype=self.get_option('db.type'),
+                                                                         dbtype=self.get_option('db', 'type'),
                                                                          **utils.merge_dicts(self.get_option('db'), 
                                                                                              dbhelper.get_shared_passwords(self))))
             config.remove_option('DEFAULT', 'log_file')
@@ -217,12 +217,12 @@ class GlanceRuntime(comp.PythonRuntime):
         return APP_OPTIONS.get(app)
 
     def _get_image_urls(self):
-        uris = self.get_option('image_urls', [])
+        uris = self.get_option('image_urls', default_value=[])
         return [u.strip() for u in uris if len(u.strip())]
 
     def post_start(self):
         comp.PythonRuntime.post_start(self)
-        if self.get_option('load-images'):
+        if self.get_bool_option('load-images'):
             # Install any images that need activating...
             LOG.info("Waiting %s seconds so that glance can start up before image install." % (self.wait_time))
             sh.sleep(self.wait_time)

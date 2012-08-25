@@ -35,21 +35,11 @@ DASH_NAME = 'dashboard'
 
 # Config files messed with
 HORIZON_PY_CONF = "horizon_settings.py"
-HORIZON_PY_CONF_TGT = ['local', 'local_settings.py']
 HORIZON_APACHE_CONF = '000-default'
 CONFIGS = [HORIZON_PY_CONF, HORIZON_APACHE_CONF]
 
 # DB sync that needs to happen for horizon
 DB_SYNC_CMD = ['python', 'manage.py', 'syncdb', '--noinput']
-
-# Special apache directory 
-# TODO(harlowja) describe more about this
-BLACKHOLE_DIR = '.blackhole'
-
-# Other apache settings
-APACHE_ERROR_LOG_FN = "error.log"
-APACHE_ACCESS_LOG_FN = "access.log"
-APACHE_DEF_PORT = 80
 
 # Users which apache may not like starting as..
 BAD_APACHE_USERS = ['root']
@@ -91,9 +81,8 @@ class HorizonInstaller(comp.PythonInstallComponent):
     def symlinks(self):
         links = super(HorizonInstaller, self).symlinks
         link_tgt = self.distro.get_command_config('apache', 'settings', 'conf-link-target', quiet=True)
-        if link_tgt:
-            src = self.target_config(HORIZON_APACHE_CONF)
-            links[src] = link_tgt
+        src = self.target_config(HORIZON_APACHE_CONF)
+        links[src] = link_tgt
         return links
 
     def _check_ug(self):
@@ -114,7 +103,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         if config_name == HORIZON_PY_CONF:
             # FIXME(harlowja) don't write to checked out locations...
             dash_dir = sh.joinpths(self.get_option('app_dir'), ROOT_DASH)
-            return sh.joinpths(dash_dir, *HORIZON_PY_CONF_TGT)
+            return sh.joinpths(dash_dir, 'local', 'local_settings.py')
         else:
             return comp.PythonInstallComponent.target_config(self, config_name)
 
@@ -124,7 +113,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def _setup_blackhole(self):
         # Create an empty directory that apache uses as docroot
-        black_hole_dir = sh.joinpths(self.get_option('app_dir'), BLACKHOLE_DIR)
+        black_hole_dir = sh.joinpths(self.get_option('app_dir'), '.blackhole')
         self.tracewriter.dirs_made(*sh.mkdirslist(black_hole_dir))
 
     def _sync_db(self):
@@ -135,12 +124,12 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def _setup_db(self):
         dbhelper.drop_db(distro=self.distro,
-                         dbtype=self.get_option('db.type'),
+                         dbtype=self.get_option('db', 'type'),
                          dbname=DB_NAME,
                          **utils.merge_dicts(self.get_option('db'),
                                              dbhelper.get_shared_passwords(self)))
         dbhelper.create_db(distro=self.distro,
-                           dbtype=self.get_option('db.type'),
+                           dbtype=self.get_option('db', 'type'),
                            dbname=DB_NAME,
                            **utils.merge_dicts(self.get_option('db'),
                                                dbhelper.get_shared_passwords(self)))
@@ -154,10 +143,10 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
-        if self.get_option('db-sync'):
+        if self.get_bool_option('db-sync'):
             self._setup_db()
             self._sync_db()
-        if self.get_option('make-blackhole'):
+        if self.get_bool_option('make-blackhole'):
             self._setup_blackhole()
         self._config_fixups()
 
@@ -172,18 +161,16 @@ class HorizonInstaller(comp.PythonInstallComponent):
             (user, group) = self._get_apache_user_group()
             mp['GROUP'] = group
             mp['USER'] = user
-            mp['ACCESS_LOG'] = sh.joinpths(self.log_dir, APACHE_ACCESS_LOG_FN)
-            mp['ERROR_LOG'] = sh.joinpths(self.log_dir, APACHE_ERROR_LOG_FN)
             mp['HORIZON_DIR'] = self.get_option('app_dir')
-            mp['HORIZON_PORT'] = self.get_int_option('port', APACHE_DEF_PORT)
-            mp['VPN_DIR'] = sh.joinpths(self.get_option('app_dir'), "vpn")
+            mp['HORIZON_PORT'] = self.get_int_option('port', default_value=80)
+            mp['APACHE_NAME'] = self.distro.get_command_config('apache', 'name')
         else:
             mp['OPENSTACK_HOST'] = self.get_option('ip')
             mp['DB_NAME'] = DB_NAME
-            mp['DB_USER'] = self.get_option('db.user')
+            mp['DB_USER'] = self.get_option('db', 'user')
             mp['DB_PASSWORD'] = dbhelper.get_shared_passwords(self)
-            mp['DB_HOST'] = self.get_option("db.host")
-            mp['DB_PORT'] = self.get_option("db.port")
+            mp['DB_HOST'] = self.get_option("db", "host")
+            mp['DB_PORT'] = self.get_option("db", "port")
         return mp
 
 

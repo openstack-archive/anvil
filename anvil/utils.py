@@ -32,8 +32,9 @@ import netifaces
 import progressbar
 import yaml
 
+from Cheetah.Template import Template
+
 from anvil import colorizer
-from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import pprint
 from anvil import settings
@@ -41,12 +42,6 @@ from anvil import shell as sh
 from anvil import version
 
 from anvil.pprint import center_text
-
-# The pattern will match either a comment to the EOL, or a
-# token to be subbed. The replacer will check which it got and
-# act accordingly. Note that we need the MULTILINE flag
-# for the comment checks to work in a string containing newlines
-PARAM_SUB_REGEX = re.compile(r"#(.*)$|%([\w\d/\.]+?)%", re.MULTILINE)
 
 MONTY_PYTHON_TEXT_RE = re.compile("([a-z0-9A-Z\?!.,'\"]+)")
 
@@ -73,12 +68,22 @@ COWS['unhappy'] = r'''
 LOG = logging.getLogger(__name__)
 
 
+def expand_template(contents, params):
+    if not params:
+        params = {}
+    return Template(contents, searchList=[params]).respond()
+
+
 def load_yaml(fn):
     return yaml.safe_load(sh.load_file(fn))
 
 
+def load_yaml_text(text):
+    return yaml.safe_load(text)
+
+
 def add_header(fn, contents):
-    lines = list()
+    lines = []
     if not fn:
         fn = "???"
     lines.append('# Adjusted source file %s' % (fn.strip()))
@@ -122,26 +127,18 @@ def make_url(scheme, host, port=None, path='', params='', query='', fragment='')
     return urlunparse([str(p) for p in pieces])
 
 
-def get_from_path(items, path, quiet=True):
-
-    (first_token, _sep, remainder) = path.partition('.')
-
+def get_deep(items, path, quiet=True):
     if len(path) == 0:
         return items
 
-    if len(first_token) == 0:
-        if not quiet:
-            raise RuntimeError("Invalid first token found in %s" % (path))
-        else:
-            return None
-
-    if isinstance(items, list):
-        index = int(first_token)
-        ok_use = (index < len(items) and index >= 0)
-        if quiet and not ok_use:
+    head = path[0]
+    remainder = path[1:]
+    if isinstance(items, (list, tuple)):
+        index = int(head)
+        if quiet and not (index < len(items) and index >= 0):
             return None
         else:
-            return get_from_path(items[index], remainder)
+            return get_deep(items[index], remainder)
     else:
         get_method = getattr(items, 'get', None)
         if not get_method:
@@ -150,7 +147,7 @@ def get_from_path(items, path, quiet=True):
             else:
                 return None
         else:
-            return get_from_path(get_method(first_token), remainder)
+            return get_deep(get_method(head), remainder)
 
 
 def load_template(component, template_name):
@@ -158,25 +155,28 @@ def load_template(component, template_name):
     return (templ_pth, sh.load_file(templ_pth))
 
 
-def execute_template(*cmds, **kargs):
-    params_replacements = kargs.pop('params', None)
-    ignore_missing = kargs.pop('ignore_missing', False)
-    cmd_results = list()
-    for cmdinfo in cmds:
-        cmd_to_run_templ = cmdinfo["cmd"]
-        cmd_to_run = param_replace_list(cmd_to_run_templ, params_replacements, ignore_missing)
-        stdin_templ = cmdinfo.get('stdin')
+def execute_template(cmd, *cmds, **kargs):
+    params = kargs.pop('params', None) or {}
+    results = []
+    for info in [cmd] + list(cmds):
+        run_what_tpl = info["cmd"]
+        if not isinstance(run_what_tpl, (list, tuple, set)):
+            run_what_tpl = [run_what_tpl]
+        run_what = [expand_template(str(c), params) for c in run_what_tpl]
         stdin = None
-        if stdin_templ:
-            stdin_full = param_replace_list(stdin_templ, params_replacements, ignore_missing)
-            stdin = joinlinesep(*stdin_full)
-        exec_result = sh.execute(*cmd_to_run,
-                                 run_as_root=cmdinfo.get('run_as_root', False),
-                                 process_input=stdin,
-                                 ignore_exit_code=cmdinfo.get('ignore_failure', False),
-                                 **kargs)
-        cmd_results.append(exec_result)
-    return cmd_results
+        stdin_tpl = info.get('stdin')
+        if stdin_tpl:
+            if not isinstance(stdin_tpl, (list, tuple, set)):
+                stdin_tpl = [stdin_tpl]
+            stdin = [expand_template(str(c), params) for c in stdin_tpl]
+            stdin = "\n".join(stdin)
+        result = sh.execute(*run_what,
+                            run_as_root=info.get('run_as_root', False),
+                            process_input=stdin,
+                            ignore_exit_code=info.get('ignore_failure', False),
+                            **kargs)
+        results.append(result)
+    return results
 
 
 def to_bytes(text):
@@ -354,18 +354,6 @@ def get_class_names(objects):
     return map((lambda i: i.__class__.__name__), objects)
 
 
-def param_replace_list(values, replacements, ignore_missing=False):
-    new_values = list()
-    if not values:
-        return new_values
-    for v in values:
-        if v is not None:
-            new_values.append(param_replace(str(v), replacements, ignore_missing))
-        else:
-            new_values.append(v)
-    return new_values
-
-
 def prettify_yaml(obj):
     formatted = yaml.dump(obj,
                     line_break="\n",
@@ -377,64 +365,8 @@ def prettify_yaml(obj):
     return formatted
 
 
-def param_replace_deep(root, replacements, ignore_missing=False):
-    if isinstance(root, (list, tuple)):
-        new_list = []
-        for v in root:
-            new_list.append(param_replace_deep(v, replacements, ignore_missing))
-        return new_list
-    elif isinstance(root, (basestring, str)):
-        return param_replace(root, replacements, ignore_missing)
-    elif isinstance(root, (dict)):
-        mapped_dict = {}
-        for (k, v) in root.items():
-            mapped_dict[k] = param_replace_deep(v, replacements, ignore_missing)
-        return mapped_dict
-    elif isinstance(root, (set)):
-        mapped_set = set()
-        for v in root:
-            mapped_set.add(param_replace_deep(v, replacements, ignore_missing))
-        return mapped_set
-    else:
-        return root
-
-
-def param_replace(text, replacements, ignore_missing=False):
-
-    if not replacements:
-        replacements = {}
-
-    if not text:
-        text = ""
-
-    LOG.debug("Performing parameter replacements (ignoring missing=%s) on text %r", ignore_missing, text)
-
-    def replacer(match):
-        org_txt = match.group(0)
-
-        # Its a comment, leave it be
-        if match.group(1) is not None:
-            return org_txt
-        param_name = match.group(2)
-
-        # Find the replacement, if we can
-        replacer = get_from_path(replacements, param_name)
-        if replacer is None and ignore_missing:
-            replacer = org_txt
-        elif replacer is None and not ignore_missing:
-            msg = "No replacement found for parameter %r in %r" % (param_name, org_txt)
-            raise excp.NoReplacementException(msg)
-        return str(replacer)
-
-    replaced_text = PARAM_SUB_REGEX.sub(replacer, text)
-
-    LOG.debug("Replacement/s resulted in text %r", replaced_text)
-
-    return replaced_text
-
-
 def _get_welcome_stack():
-    possibles = list()
+    possibles = []
     # Thank you figlet ;)
     # See: http://www.figlet.org/
     possibles.append(r'''
@@ -503,7 +435,7 @@ def _color_blob(text, text_color):
 def _goodbye_header(worked):
     # Cowsay headers
     # See: http://www.nog.net/~tony/warez/cowsay.shtml
-    potentials_oks = list()
+    potentials_oks = []
     potentials_oks.append(r'''
  ___________
 / You shine \
@@ -545,7 +477,7 @@ def _goodbye_header(worked):
  __________
 < Success! >
  ----------''')
-    potentials_fails = list()
+    potentials_fails = []
     potentials_fails.append(r'''
  __________
 < Failure! >

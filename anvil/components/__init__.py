@@ -90,7 +90,7 @@ class PkgInstallComponent(component.Component):
         key = self._get_download_config()
         if not key:
             return (None, None)
-        uri = self.get_option(key, '').strip()
+        uri = self.get_option(key, default_value='').strip()
         if not uri:
             raise ValueError(("Could not find uri in config to download "
                               "from option %s") % (key))
@@ -117,7 +117,7 @@ class PkgInstallComponent(component.Component):
 
     @property
     def packages(self):
-        pkg_list = self.get_option('packages', [])
+        pkg_list = self.get_option('packages', default_value=[])
         if not pkg_list:
             pkg_list = []
         for name, values in self.subsystems.items():
@@ -186,7 +186,7 @@ class PkgInstallComponent(component.Component):
         return links
 
     def _config_param_replace(self, config_fn, contents, parameters):
-        return utils.param_replace(contents, parameters)
+        return utils.expand_template(contents, parameters)
 
     def _configure_files(self):
         config_fns = self.config_files
@@ -240,7 +240,7 @@ class PythonInstallComponent(PkgInstallComponent):
         self.requires_files = [
             sh.joinpths(self.get_option('app_dir'), 'tools', 'pip-requires'),
         ]
-        if self.get_bool_option('use_tests_requires', True):
+        if self.get_bool_option('use_tests_requires', default_value=True):
             self.requires_files.append(sh.joinpths(self.get_option('app_dir'), 'tools', 'test-requires'))
 
     def _get_download_config(self):
@@ -264,7 +264,7 @@ class PythonInstallComponent(PkgInstallComponent):
 
     @property
     def pips_to_packages(self):
-        pip_pkg_list = self.get_option('pip_to_package', [])
+        pip_pkg_list = self.get_option('pip_to_package', default_value=[])
         if not pip_pkg_list:
             pip_pkg_list = []
         return pip_pkg_list
@@ -352,7 +352,7 @@ class PythonInstallComponent(PkgInstallComponent):
         return add_on_pips
 
     def _base_pips(self):
-        pip_list = self.get_option('pips')
+        pip_list = self.get_option('pips', default_value=[])
         if not pip_list:
             pip_list = []
         for (name, values) in self.subsystems.items():
@@ -538,7 +538,7 @@ class PythonRuntime(ProgramRuntime):
         # Anything to start?
         am_started = 0
         # Select how we are going to start it
-        run_type = self.get_option("run_type", 'anvil.runners.fork:ForkRunner')
+        run_type = self.get_option("run_type", default_value='anvil.runners.fork:ForkRunner')
         starter_cls = importer.import_entry_point(run_type)
         starter = starter_cls(self)
         for i, app_info in enumerate(self.apps_to_start):
@@ -551,7 +551,9 @@ class PythonRuntime(ProgramRuntime):
         app_name = app_info["name"]
         app_pth = app_info.get("path", app_name)
         app_dir = app_info.get("app_dir", self.get_option('app_dir'))
-        program_opts = utils.param_replace_list(self.app_options(app_name), self.app_params(app_name))
+        app_options = self.app_options(app_name)
+        app_params = self.app_params(app_name)
+        program_opts = [utils.expand_template(str(c), app_params) for c in app_options]
         LOG.debug("Starting %r using %r", app_name, starter)
         details_fn = starter.start(app_name, app_pth=app_pth, app_dir=app_dir, opts=program_opts)
         LOG.info("Started sub-program %s.", colorizer.quote(app_name))
@@ -562,7 +564,7 @@ class PythonRuntime(ProgramRuntime):
         if 'sleep_time' in app_info:
             LOG.info("%s requested a %s second sleep time, please wait...", 
                      colorizer.quote(app_info.get('name')), app_info.get('sleep_time'))
-            sh.sleep(float(app_info.get('sleep_time')))
+            sh.sleep(int(app_info.get('sleep_time')))
 
     def _locate_investigators(self, apps_started):
         investigator_created = {}

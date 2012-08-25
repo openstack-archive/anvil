@@ -209,7 +209,7 @@ def abspth(path):
 def hostname():
     try:
         return socket.gethostname()
-    except:
+    except socket.error:
         return None
 
 

@@ -46,8 +46,8 @@ POLICY_JSON = 'policy.json'
 CONFIGS = [ROOT_CONF, LOGGING_CONF, POLICY_JSON]
 
 # Sync db command
-SYNC_DB_CMD = [sh.joinpths('%BIN_DIR%', 'keystone-manage'),
-                '--config-file=%CONFIG_FILE%',
+SYNC_DB_CMD = [sh.joinpths('$BIN_DIR', 'keystone-manage'),
+                '--config-file=$CONFIG_FILE',
                 '--debug', '-v',
                 # Available commands:
                 # db_sync: Sync the database.
@@ -59,9 +59,9 @@ SYNC_DB_CMD = [sh.joinpths('%BIN_DIR%', 'keystone-manage'),
 # What to start
 APP_NAME = 'keystone-all'
 APP_OPTIONS = {
-    APP_NAME: ['--config-file=%s' % (sh.joinpths('%CONFIG_DIR%', ROOT_CONF)),
+    APP_NAME: ['--config-file=%s' % (sh.joinpths('$CONFIG_DIR', ROOT_CONF)),
                 "--debug", '-v',
-                '--log-config=%s' % (sh.joinpths('%CONFIG_DIR%', LOGGING_CONF))],
+                '--log-config=%s' % (sh.joinpths('$CONFIG_DIR', LOGGING_CONF))],
 }
 
 
@@ -88,7 +88,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
-        if self.get_option('db-sync'):
+        if self.get_bool_option('db-sync'):
             self._setup_db()
             self._sync_db()
 
@@ -115,12 +115,12 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
     def _setup_db(self):
         dbhelper.drop_db(distro=self.distro,
-                         dbtype=self.get_option('db.type'),
+                         dbtype=self.get_option('db', 'type'),
                          dbname=DB_NAME,
                          **utils.merge_dicts(self.get_option('db'),
                                              dbhelper.get_shared_passwords(self)))
         dbhelper.create_db(distro=self.distro,
-                           dbtype=self.get_option('db.type'),
+                           dbtype=self.get_option('db', 'type'),
                            dbname=DB_NAME,
                            **utils.merge_dicts(self.get_option('db'),
                                                dbhelper.get_shared_passwords(self)))
@@ -166,7 +166,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             config.remove_option('DEFAULT', 'log_config')
             config.set('sql', 'connection', dbhelper.fetch_dbdsn(dbname=DB_NAME,
                                                                  utf8=True,
-                                                                 dbtype=self.get_option('db.type'),
+                                                                 dbtype=self.get_option('db', 'type'),
                                                                  **utils.merge_dicts(self.get_option('db'),
                                                                                      dbhelper.get_shared_passwords(self))))
             config.set('ec2', 'driver', "keystone.contrib.ec2.backends.sql.Ec2")
@@ -200,21 +200,21 @@ class KeystoneRuntime(comp.PythonRuntime):
         self.init_fn = sh.joinpths(self.get_option('trace_dir'), INIT_WHAT_HAPPENED)
 
     def post_start(self):
-        if not sh.isfile(self.init_fn) and self.get_option('do-init'):
+        if not sh.isfile(self.init_fn) and self.get_bool_option('do-init'):
             LOG.info("Waiting %s seconds so that keystone can start up before running first time init." % (self.wait_time))
             sh.sleep(self.wait_time)
             LOG.info("Running commands to initialize keystone.")
             (fn, _contents) = utils.load_template(self.name, INIT_WHAT_FN)
             LOG.debug("Initializing with contents of %s", fn)
-            start_cfg = {}
-            start_cfg['keystone'] = khelper.get_shared_params(**utils.merge_dicts(self.options, khelper.get_shared_passwords(self)))
-            start_cfg['glance'] = ghelper.get_shared_params(ip=self.get_option('ip'),
+            params = {}
+            params['keystone'] = khelper.get_shared_params(**utils.merge_dicts(self.options, khelper.get_shared_passwords(self)))
+            params['glance'] = ghelper.get_shared_params(ip=self.get_option('ip'),
                                                             **self.get_option('glance'))
-            start_cfg['nova'] = nhelper.get_shared_params(ip=self.get_option('ip'),
+            params['nova'] = nhelper.get_shared_params(ip=self.get_option('ip'),
                                                           **self.get_option('nova'))
-            init_what = utils.param_replace_deep(utils.load_yaml(fn), start_cfg)
-            khelper.Initializer(cfg['keystone']['service_token'],
-                                cfg['keystone']['endpoints']['admin']['uri']).initialize(**init_what)
+            init_what = utils.load_yaml_text(utils.expand_template(sh.load_file(fn), params))
+            khelper.Initializer(params['keystone']['service_token'],
+                                params['keystone']['endpoints']['admin']['uri']).initialize(**init_what)
             # Writing this makes sure that we don't init again
             sh.write_file(self.init_fn, utils.prettify_yaml(init_what))
             LOG.info("If you wish to re-run initialization, delete %s", colorizer.quote(self.init_fn))

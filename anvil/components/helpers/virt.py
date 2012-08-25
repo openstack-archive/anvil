@@ -81,14 +81,14 @@ class Virsh(object):
     def check_virt(self, virt_type):
         virt_protocol = LIBVIRT_PROTOCOL_MAP.get(virt_type)
         self.restart_service()
-        cmds = list()
-        cmds.append({
+        cmds = [{
             'cmd': self.distro.get_command('libvirt', 'verify'),
             'run_as_root': True,
-        })
-        mp = dict()
-        mp['VIRT_PROTOCOL'] = virt_protocol
-        mp['VIRT_TYPE'] = virt_type
+        }]
+        mp = {
+            'VIRT_PROTOCOL': virt_protocol,
+            'VIRT_TYPE': virt_type,
+        }
         utils.execute_template(*cmds, params=mp)
 
     def clear_domains(self, virt_type, inst_prefix):

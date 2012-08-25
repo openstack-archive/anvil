@@ -19,13 +19,8 @@
 Platform-specific logic for RedHat Enterprise Linux components.
 """
 
-import contextlib
 import glob
-import os
 import re
-import shutil
-
-from Cheetah.Template import Template
 
 from anvil import colorizer
 from anvil import component as comp
@@ -51,7 +46,7 @@ LOG = logging.getLogger(__name__)
 LIBVIRT_POLICY_FN = "/etc/polkit-1/localauthority/50-local.d/50-libvirt-access.pkla"
 LIBVIRT_POLICY_CONTENTS = """
 [libvirt Management Access]
-Identity={idents}
+Identity=${idents}
 Action=org.libvirt.unix.manage
 ResultAny=yes
 ResultInactive=yes
@@ -145,12 +140,16 @@ class RabbitRuntime(rabbit.RabbitRuntime):
 class NovaInstaller(nova.NovaInstaller):
 
     def _get_policy(self, ident_users):
-        return LIBVIRT_POLICY_CONTENTS.format(idents=(";".join(ident_users)))
+        return utils.expand_template(LIBVIRT_POLICY_CONTENTS,
+                                     params={
+                                         'idents': (";".join(ident_users)),
+                                     })
 
     def _get_policy_users(self):
-        ident_users = set()
-        ident_users.add(DEF_IDENT)
-        ident_users.add('unix-user:%s' % (sh.getuser()))
+        ident_users = [
+            DEF_IDENT,
+            'unix-user:%s' % (sh.getuser()),
+        ]
         return ident_users
 
     def configure(self):
@@ -281,7 +280,7 @@ class DependencyPackager(comp.Component):
         spec_fn = sh.joinpths(self.build_paths['SPECS'], self._make_fn("spec"))
         LOG.debug("Creating spec file %s with params:", spec_fn)
         utils.log_object(params, logger=LOG, level=logging.DEBUG)
-        sh.write_file(spec_fn, Template(content, searchList=[params]).respond())
+        sh.write_file(spec_fn, utils.expand_template(content, params))
 
     def _build_requirements(self):
         return []
