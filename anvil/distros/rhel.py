@@ -308,7 +308,10 @@ class PythonPackager(DependencyPackager):
         return [
             'python',
             'python-devel',
-            'gcc',
+            'gcc', # Often used for building c python modules, should not be harmful...
             'python-setuptools',
         ]
-    
+
+    def package(self):
+        pass
+            

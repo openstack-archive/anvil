@@ -25,6 +25,8 @@ from anvil import utils
 
 LOG = logging.getLogger(__name__)
 
+VERSION_CHARS = ['=', '>', "<"]
+
 
 class NullVersion(object):
 
@@ -74,6 +76,11 @@ class Packager(object):
             # Assume whats installed will work
             # (not really the case all the time)
             return True
+        if contains_version_check(incoming_version):
+            cleaned_version = incoming_version
+            for c in VERSION_CHARS:
+                cleaned_version = cleaned_version.replace(c, '')
+            return self._compare_against_installed(cleaned_version.strip(), installed_version)
         if not incoming_version in installed_version:
             # Not in the range of the installed version (bad!)
             return False
@@ -132,7 +139,7 @@ class Packager(object):
 
 
 def contains_version_check(version):
-    for c in ['=', '>', "<"]:
+    for c in VERSION_CHARS:
         if version.find(c) != -1:
             return True
     return False

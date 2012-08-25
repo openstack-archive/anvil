@@ -47,6 +47,10 @@ class StartException(AnvilException):
     pass
 
 
+class PackageException(AnvilException):
+    pass
+
+
 class StopException(AnvilException):
     pass
 
