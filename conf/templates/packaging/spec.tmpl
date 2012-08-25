@@ -42,13 +42,14 @@ License: $details.license
 BuildArch: $build.arch
 #end if
 #if $requires.build
+
 # Build requirements
 #for $i in $requires.build
 BuildRequires: ${i}
 #end for
 #end if
-
 #if $requires.install
+
 # Install requirements
 #for $i in $requires.install
 Requires: ${i}

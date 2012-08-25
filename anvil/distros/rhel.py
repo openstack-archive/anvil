@@ -29,6 +29,7 @@ from Cheetah.Template import Template
 
 from anvil import colorizer
 from anvil import component as comp
+from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import packager as pack
 from anvil import shell as sh
@@ -211,6 +212,7 @@ class DependencyPackager(comp.Component):
             # Remove any old packaging directories...
             sh.deldir(sh.joinpths(self.package_dir, name), True)
             self.build_paths[name] = sh.mkdir(sh.joinpths(self.package_dir, name))
+        self._cached_details = None
 
     def _requirements(self):
         return {
@@ -220,7 +222,9 @@ class DependencyPackager(comp.Component):
 
     @property
     def details(self):
-        return {
+        if self._cached_details is not None:
+            return self._cached_details
+        self._cached_details = {
             'summary': 'Package build of %s on %s' % (self.name, utils.rcf8222date()),
             'name': self.name,
             'version': 0,
@@ -230,6 +234,7 @@ class DependencyPackager(comp.Component):
             'changelog': '',
             'license': 'Apache License, Version 2.0',
         }
+        return self._cached_details
 
     def _build_details(self):
         return {
@@ -304,6 +309,10 @@ class DependencyPackager(comp.Component):
 
 
 class PythonPackager(DependencyPackager):
+    def __init__(self, *args, **kargs):
+        DependencyPackager.__init__(self, *args, **kargs)
+        self._details_adjusted = False
+        
     def _build_requirements(self):
         return [
             'python',
@@ -312,6 +321,39 @@ class PythonPackager(DependencyPackager):
             'python-setuptools',
         ]
 
+    @property
+    def details(self):
+        base = super(PythonPackager, self).details
+        if self._details_adjusted:
+            return base
+        app_dir = self.get_option('app_dir')
+        if not sh.isfile(sh.joinpths(app_dir, 'setup.py')):
+            return base
+        base_setup_cmd = ['python', sh.joinpths(app_dir, 'setup.py')]
+        replacements = {
+            'version': '--version',
+            'description': '--description',
+            'license': '--license',
+            'name': '--name',
+        }
+        for (key, opt) in replacements.items():
+            cmd = base_setup_cmd + [opt]
+            # Root seems to be needed??
+            (stdout, _stderr) = sh.execute(*cmd, run_as_root=True, cwd=app_dir)
+            stdout = stdout.strip()
+            if stdout:
+                base[key] = stdout
+        self._details_adjusted = True
+        return base
+
     def package(self):
-        pass
-            
+        i_sibling = self.siblings.get('install')
+        pips = []
+        if i_sibling:
+            pips.extend(i_sibling.pips)
+        if pips:
+            for pip_info in pips:
+                LOG.warn("Unable to package pip %s dependency in an rpm.", colorizer.quote(pip_info['name']))
+        if not sh.isdir(self.get_option('app_dir')):
+            raise excp.PackageException("Can not package component %s with an application directory" % (self.name))
+        return DependencyPackager.package(self)
