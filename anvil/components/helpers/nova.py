@@ -244,11 +244,13 @@ class ConfConfigurator(object):
 
     def _get_extra(self, key):
         extras = self.installer.get_option(key)
-        cleaned_lines = list()
-        extra_lines = extras.splitlines()
+        if not extras:
+            return []
+        cleaned_lines = []
+        extra_lines = str(extras).splitlines()
         for line in extra_lines:
             cleaned_line = line.strip()
-            if len(cleaned_line):
+            if cleaned_line:
                 cleaned_lines.append(cleaned_line)
         return cleaned_lines
 

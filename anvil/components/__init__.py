@@ -475,6 +475,7 @@ class PythonInstallComponent(PkgInstallComponent):
                                                 ' or a pip->package mapping!') % (requirement))
 
     def install(self):
+        # TODO(harlowja) can we move this to the preinstall phase instead of just before install??
         self._verify_pip_requires()
         PkgInstallComponent.install(self)
         self._python_install()
