@@ -355,5 +355,5 @@ class PythonPackager(DependencyPackager):
             for pip_info in pips:
                 LOG.warn("Unable to package pip %s dependency in an rpm.", colorizer.quote(pip_info['name']))
         if not sh.isdir(self.get_option('app_dir')):
-            raise excp.PackageException("Can not package component %s with an application directory" % (self.name))
+            raise excp.PackageException("Can not package component %s without an application directory" % (self.name))
         return DependencyPackager.package(self)
