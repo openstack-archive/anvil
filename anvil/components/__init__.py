@@ -296,7 +296,7 @@ class PythonInstallComponent(PkgInstallComponent):
                 if pip_match(pip_name, pip_info['name']):
                     pip_found = True
                     pkg_found = pip_info.get('package')
-                    LOG.debug("Matched pip->pkg (%s) from component %s", pip_name, who)
+                    LOG.debug("Matched pip->pkg %r from component %r", pip_name, who)
                     break
             if pip_found:
                 break
@@ -306,13 +306,13 @@ class PythonInstallComponent(PkgInstallComponent):
         # Ok nobody had it in a pip->pkg mapping
         # but see if they had it in there pip collection
         pip_mp = {
-            self.name: list(self._base_pips()),
+            self.name: self._base_pips(),
         }
         for (name, c) in self.instances.items():
             if not c.activated or c is self:
                 continue
             if isinstance(c, (PythonInstallComponent)):
-                pip_mp[name] = list(c._base_pips())
+                pip_mp[name] = c._base_pips()
         pip_found = False
         pip_who = None
         for (who, pips) in pip_mp.items():
@@ -476,7 +476,7 @@ class PythonInstallComponent(PkgInstallComponent):
             all_pips.extend(self._extract_pip_requires(fn))
         for (requirement, (pkg_info, _from_pip)) in all_pips:
             if not pkg_info:
-                raise excp.DependencyException(("Pip dependency %r is not translatable to a listed"
+                raise excp.DependencyException(("Pip dependency '%s' is not translatable to a listed"
                                                 " (from this or previously activated components) pip package"
                                                 ' or a pip->package mapping!') % (requirement))
 

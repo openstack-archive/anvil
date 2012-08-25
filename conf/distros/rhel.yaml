@@ -200,6 +200,7 @@ components:
         -   name: coverage
         -   name: distribute
         -   name: nose-exclude
+        -   name: nosehtmloutput
         -   name: openstack.nose_plugin
         -   name: passlib
         -   name: prettytable
@@ -256,7 +257,6 @@ components:
         -   name: setuptools-git
         -   name: warlock
             version: "==0.1.0"
-        -   name: nosehtmloutput
     horizon:
         action_classes:
             install: anvil.distros.rhel:HorizonInstaller
