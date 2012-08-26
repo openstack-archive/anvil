@@ -14,28 +14,66 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from pkg_resources import Requirement
 
-from anvil import log as logging
-from anvil import packager as pack
-from anvil import utils
+from anvil import shell as sh
 
-import pip
-from pip.util import get_installed_distributions
+FREEZE_CMD = ['pip-python', 'freeze', '--local']
 
-LOG = logging.getLogger(__name__)
+# Cache of whats installed - 'uncached' as needed
+_installed_cache = None
 
 
-def make_registry():
-    installations = {}
-    for dist in get_installed_distributions(local_only=True):
-        freq = pip.FrozenRequirement.from_dist(dist, [])
-        if freq.req and freq.name:
-            name = freq.name.lower()
-            installations[name] = freq.req
-    # TODO(harlowja) use the pip version/requirement to enhance this...
-    reg = pack.Registry()
-    for (name, _req) in installations.items():
-        reg.installed[name] = pack.NullVersion(name)
-    LOG.debug("Identified %s packages already installed by pip", len(reg.installed))
-    utils.log_object(reg.installed, logger=LOG, level=logging.DEBUG)
-    return reg
+def uncache():
+    global _installed_cache
+    _installed_cache = None
+
+
+def _list_installed():
+    (stdout, _stderr) = sh.execute(*FREEZE_CMD)
+    installed = []
+    for line in stdout.splitlines():
+        line = line.strip()
+        if not line or line.startswith('#'):
+            continue
+        # Don't take editables either...
+        if line.startswith('-e'):
+            continue
+        # We need to adjust the == that freeze produces
+        # to instead have <= so that later when we ask
+        # if a version matches it will say yes it does and
+        # not just for exactly the same version
+        if line.find('==') != -1:
+            line = line.replace('==', '<=')
+        try:
+            installed.append(Requirement.parse(line))
+        except ValueError:
+            pass
+    return installed
+
+
+def is_installed(name):
+    whats_there = get_installed()
+    for req in whats_there:
+        if not (name.lower() == req.project_name.lower()):
+            continue
+        return True
+    return False
+
+
+def get_installed():
+    global _installed_cache
+    if _installed_cache is None:
+        _installed_cache = _list_installed()
+    return _installed_cache
+
+
+def is_adequate_installed(name, version):
+    whats_there = get_installed()
+    for req in whats_there:
+        if not (name.lower() == req.project_name.lower()):
+            continue
+        if not version:
+            return True
+        return version in req
+    return False

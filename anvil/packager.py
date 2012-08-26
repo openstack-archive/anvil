@@ -24,80 +24,39 @@ from anvil import utils
 
 LOG = logging.getLogger(__name__)
 
-VERSION_CHARS = ['=', '>', "<"]
+# Install comparison constants
+DO_INSTALL = 1
+ADEQUATE_INSTALLED = 2
 
-
-class NullVersion(object):
-    def __init__(self, name):
-        self.name = name
-
-    def __contains__(self, version):
-        return True
-
-    def __str__(self):
-        return "%s (unknown version)" % (self.name)
-
-
-class Registry(object):
-    def __init__(self):
-        self.installed = {}
-        self.removed = {}
+# Removal status constants
+REMOVED_OK = 1
+NOT_EXISTENT = 2
 
 
 class Packager(object):
     __meta__ = abc.ABCMeta
 
-    def __init__(self, distro, registry=None):
+    def __init__(self, distro):
         self.distro = distro
-        if not registry:
-            registry = Registry()
-        self.registry = registry
 
-    def _parse_version(self, name, version):
-        return NullVersion(name)
-
-    def _compare_against_installed(self, incoming_version, installed_version):
-        if not incoming_version and installed_version:
-            # No incoming version, hopefully whats installed is ok
-            return True
-        if isinstance(installed_version, (NullVersion)):
-            # Assume whats installed will work
-            # (not really the case all the time)
-            return True
-        if not incoming_version in installed_version:
-            # Not in the range of the installed version (bad!)
-            return False
-        return True
+    def _compare_against_installed(self, pkg):
+        return DO_INSTALL
 
     def install(self, pkg):
-        name = pkg['name']
-        version = pkg.get('version')
-        if name in self.registry.installed:
-            installed_version = self.registry.installed[name]
-            if not self._compare_against_installed(version, installed_version):
-                raise excp.InstallException(("Version %s previously installed, "
-                                             "requested incompatible version %s") % (installed_version, version))
-            LOG.debug("Skipping install of %r since it already happened.", name)
-        else:
+        install_check = self._compare_against_installed(pkg)
+        if install_check == DO_INSTALL:
             self._install(pkg)
-            LOG.debug("Noting that %s was installed.", name)
-            self.registry.installed[name] = self._parse_version(name, version)
-            if name in self.registry.removed:
-                del(self.registry.removed[name])
+            LOG.debug("Installed %s", pkg)
+        elif install_check == ADEQUATE_INSTALLED:
+            LOG.debug("Skipping install of %r since a newer/same version is already happened.", pkg['name'])
 
     def remove(self, pkg):
         removable = pkg.get('removable')
         if not removable:
             return False
-        name = pkg['name']
-        if name in self.registry.removed:
-            LOG.debug("Skipping removal of %r since it already happened.", name)
-        else:
-            self._remove(pkg)
-            LOG.debug("Noting that %r was removed.", name)
-            self.registry.removed[name] = True
-            if name in self.registry.installed:
-                del(self.registry.installed[name])
+        rst = self._remove(pkg)
+        if rst == NOT_EXISTENT:
+            LOG.debug("Removal of %r did not occur since it already happened or did not exist to remove.", pkg['name'])
         return True
 
     def pre_install(self, pkg, params=None):
@@ -121,11 +80,7 @@ class Packager(object):
         raise NotImplementedError()
 
 
-def contains_version_check(version):
-    for c in VERSION_CHARS:
-        if version.find(c) != -1:
-            return True
-    return False
+
 
 
 def get_packager_class(package_info, default_packager_class=None):

@@ -293,12 +293,7 @@ class DependencyPackager(comp.Component):
         requirements = []
         for p in i_sibling.packages:
             if 'version' in p:
-                if pack.contains_version_check(p['version']):
-                    # This seems to mean only this version...
-                    real_version = p['version'].replace('==', '=')
-                    requirements.append("%s %s" % (p['name'], real_version))
-                else:
-                    requirements.append("%s = %s" % (p['name'], p['version']))
+                requirements.append("%s = %s" % (p['name'], p['version']))
             else:
                 requirements.append("%s" % (p['name']))
         return requirements

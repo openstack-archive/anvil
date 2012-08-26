@@ -14,11 +14,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import pkg_resources
-
 from anvil import log as logging
-from anvil import shell as sh
 from anvil import packager as pack
+from anvil import shell as sh
+from anvil import utils
 
 from anvil.packaging.helpers import pip_helper
 
@@ -26,55 +25,50 @@ LOG = logging.getLogger(__name__)
 
 PIP_UNINSTALL_CMD_OPTS = ['-y', '-q']
 PIP_INSTALL_CMD_OPTS = ['-q']
+NAMED_VERSION_TEMPL = "%s == %s"
 
 
 class Packager(pack.Packager):
-    PIP_REGISTRY = pip_helper.make_registry()
-
-    def __init__(self, distro):
-        pack.Packager.__init__(self, distro, Packager.PIP_REGISTRY)
 
     def _make_pip_name(self, name, version):
-        if version is None:
+        if not version:
             return str(name)
-        if pack.contains_version_check(version):
-            return "%s%s" % (name, version)
         else:
-            return "%s==%s" % (name, version)
-
-    def _parse_version(self, name, version):
-        if version:
-            # This should work for all pip packages
-            if pack.contains_version_check(version):
-                full_name = "%s%s" % (name, version)
-            else:
-                full_name = "%s==%s" % (name, version)
-            p_version = pkg_resources.Requirement.parse(full_name)
-        else:
-            p_version = pack.Packager._parse_version(self, name, version)
-        return p_version
+            return NAMED_VERSION_TEMPL % (name, version)
 
     def _get_pip_command(self):
         return self.distro.get_command_config('pip')
 
+    def _compare_against_installed(self, pkg):
+        name = pkg['name']
+        version = pkg.get('version')
+        if pip_helper.is_adequate_installed(name, version):
+            return pack.ADEQUATE_INSTALLED
+        else:
+            return pack.DO_INSTALL
+
+    def _execute_pip(self, cmd):
+        pip_cmd = self._get_pip_command()
+        pip_cmd = pip_cmd + cmd
+        with utils.callback_on_ok(pip_helper.uncache):
+            sh.execute(*pip_cmd, run_as_root=True)
+
     def _install(self, pip):
-        root_cmd = self._get_pip_command()
-        name_full = self._make_pip_name(pip['name'], pip.get('version'))
-        real_cmd = [root_cmd] + ['install'] + PIP_INSTALL_CMD_OPTS
+        cmd = ['install'] + PIP_INSTALL_CMD_OPTS
         options = pip.get('options')
         if options:
             if not isinstance(options, (list, tuple, set)):
                 options = [str(options)]
-            LOG.debug("Using pip options: %s" % (options))
             for opt in options:
-                real_cmd.append("%s" % (opt))
-        real_cmd.append(name_full)
-        sh.execute(*real_cmd, run_as_root=True)
+                cmd.append(str(opt))
+        cmd.append(self._make_pip_name(pip['name'], pip.get('version')))
+        self._execute_pip(cmd)
 
     def _remove(self, pip):
-        root_cmd = self._get_pip_command()
         # Versions don't seem to matter here...
         name = self._make_pip_name(pip['name'], None)
-        LOG.debug("Uninstalling python package %r using pip command %s" % (name, root_cmd))
-        cmd = [root_cmd] + ['uninstall'] + PIP_UNINSTALL_CMD_OPTS + [name]
-        sh.execute(*cmd, run_as_root=True)
+        if not pip_helper.is_installed(name):
+            return pack.NOT_EXISTENT
+        cmd = ['uninstall'] + PIP_UNINSTALL_CMD_OPTS + [name]
+        self._execute_pip(cmd)
+        return pack.REMOVED_OK

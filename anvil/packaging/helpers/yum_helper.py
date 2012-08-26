@@ -14,22 +14,42 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import log as logging
-from anvil import packager as pack
-from anvil import utils
-
+# See http://yum.baseurl.org/api/yum-3.2.26/yum-module.html
 from yum import YumBase
+from yum.packages import PackageObject
 
-LOG = logging.getLogger(__name__)
+# Cache of yumbase object - 'uncached' as needed
+_yum_base = None
 
 
-def make_registry():
-    reg = pack.Registry()
-    yb = YumBase()
-    yb.conf.cache = False
-    for p in yb.rpmdb.returnPackages():
-        # TODO(harlowja) use the rpm version comparision to enhance this...
-        reg.installed[p.name] = pack.NullVersion(p.name)
-    LOG.debug("Identified %s packages already installed by yum", len(reg.installed))
-    utils.log_object(reg.installed, logger=LOG, level=logging.DEBUG)
-    return reg
+def uncache():
+    global _yum_base
+    _yum_base = None
+
+
+def _make_yum_base():
+    global _yum_base
+    if _yum_base is None:
+        _yum_base = YumBase()
+        _yum_base.conf.cache = False
+    return _yum_base
+
+
+def is_installed(name, version):
+    yb = _make_yum_base()
+    return yb.rpmdb.contains(name=name, ver=version)
+
+
+def is_adequate_installed(name, version):
+    yb = _make_yum_base()
+    whats_there = yb.rpmdb.searchNames(names=[name])
+    if not whats_there:
+        return False
+    fake_pkg = PackageObject()
+    fake_pkg.name = name
+    if version:
+        fake_pkg.version = str(version)
+    for p in whats_there:
+        if p.verGE(fake_pkg):
+            return True
+    return False

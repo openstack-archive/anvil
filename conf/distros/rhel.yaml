@@ -205,7 +205,7 @@ components:
         -   name: openstack.nose_plugin
         -   name: passlib
         -   name: prettytable
-            version: ">=0.6" # This is not right, 0.6 and 0.6.1 are needed??
+            version: "0.6" # This is not right, 0.6 and 0.6.1 are needed??
         -   name: pycrypto
             options: # Force it to upgrade/reinstall
                 - "-U"
@@ -242,7 +242,7 @@ components:
         pips:
         # Pips that aren't packages yet (and not in the 'general' section)
         -   name: boto
-            version: "==2.1.1"
+            version: "2.1.1"
         -   name: wsgiref
         -   name: xattr
         -   name: jsonschema
@@ -257,7 +257,7 @@ components:
         -   name: nosexcover
         -   name: setuptools-git
         -   name: warlock
-            version: "==0.1.0"
+            version: "0.1.0"
     horizon:
         action_classes:
             install: anvil.distros.rhel:HorizonInstaller
@@ -276,7 +276,7 @@ components:
         -   name: nodejs-npm
         pips:
         -   name: django
-            version: ">=1.4"
+            version: "1.4"
         -   name: django-compressor
         -   name: django-nose
         -   name: django-openstack-auth
@@ -297,7 +297,7 @@ components:
                 name: python-netifaces
         pips:
         -   name: pam
-            version: '==0.1.4'
+            version: '0.1.4'
         -   name: nosexcover
         -   name: webtest  # This version in package form conflicts with webob1.0
     keystone-client:

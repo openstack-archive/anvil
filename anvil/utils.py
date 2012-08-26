@@ -262,6 +262,12 @@ def log_iterable(to_log, header=None, logger=None, color='blue'):
 
 
 @contextlib.contextmanager
+def callback_on_ok(cb, *args, **kwargs):
+    yield None
+    cb(*args, **kwargs)
+
+
+@contextlib.contextmanager
 def progress_bar(name, max_am, reverse=False):
     widgets = list()
     widgets.append('%s: ' % (name))

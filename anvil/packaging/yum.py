@@ -17,39 +17,39 @@
 from anvil import log as logging
 from anvil import packager as pack
 from anvil import shell as sh
+from anvil import utils
 
 from anvil.packaging.helpers import yum_helper
 
 LOG = logging.getLogger(__name__)
 
-# Root yum command
 YUM_CMD = ['yum']
-
-# Tolerant is enabled since we might already have it installed/erased
 YUM_INSTALL = ["install", "-y", "-t"]
 YUM_REMOVE = ['erase', '-y', "-t"]
-
-YUM_LIST_INSTALLED = ['list', 'installed', '-q']
-
-# Yum separates its pkg names and versions with a dash
-VERSION_TEMPL = "%s-%s"
+NAMED_VERSION_TEMPL = "%s-%s"
 
 
 class YumPackager(pack.Packager):
-    YUM_REGISTRY = yum_helper.make_registry()
-
-    def __init__(self, distro):
-        pack.Packager.__init__(self, distro, YumPackager.YUM_REGISTRY)
 
     def _format_pkg_name(self, name, version):
         if version:
-            return VERSION_TEMPL % (name, version)
+            return NAMED_VERSION_TEMPL % (name, version)
         else:
-            return name
+            return str(name)
+
+    def _compare_against_installed(self, pkg):
+        name = pkg['name']
+        version = pkg.get('version')
+        if yum_helper.is_installed(name, version) or \
+           yum_helper.is_adequate_installed(name, version):
+            return pack.ADEQUATE_INSTALLED
+        else:
+            return pack.DO_INSTALL
 
     def _execute_yum(self, cmd, **kargs):
-        full_cmd = YUM_CMD + cmd
-        return sh.execute(*full_cmd, run_as_root=True, check_exit_code=True, **kargs)
+        yum_cmd = YUM_CMD + cmd
+        with utils.callback_on_ok(yum_helper.uncache):
+            return sh.execute(*yum_cmd, run_as_root=True, check_exit_code=True, **kargs)
 
     def _remove_special(self, name, info):
         return False
@@ -62,15 +62,15 @@ class YumPackager(pack.Packager):
         if self._install_special(name, pkg):
             return
         else:
-            pkg_full = self._format_pkg_name(name, pkg.get("version"))
-            cmd = YUM_INSTALL + [pkg_full]
+            cmd = YUM_INSTALL + [self._format_pkg_name(name, pkg.get("version"))]
             self._execute_yum(cmd)
 
     def _remove(self, pkg):
         name = pkg['name']
+        if not yum_helper.is_installed(name, version=None):
+            return pack.NOT_EXISTENT
         if self._remove_special(name, pkg):
-            return True
-        pkg_full = self._format_pkg_name(name, pkg.get("version"))
-        cmd = YUM_REMOVE + [pkg_full]
+            return pack.REMOVED_OK
+        cmd = YUM_REMOVE + [self._format_pkg_name(name, pkg.get("version"))]
         self._execute_yum(cmd)
-        return True
+        return pack.REMOVED_OK
