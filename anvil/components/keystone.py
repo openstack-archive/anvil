@@ -212,7 +212,9 @@ class KeystoneRuntime(comp.PythonRuntime):
                                                             **self.get_option('glance'))
             params['nova'] = nhelper.get_shared_params(ip=self.get_option('ip'),
                                                           **self.get_option('nova'))
-            init_what = utils.load_yaml_text(utils.expand_template(sh.load_file(fn), params))
+            init_what = utils.load_yaml(sh.load_file(fn))
+            
+            init_what = utils.expand_template_deep(init_what, params)
             khelper.Initializer(params['keystone']['service_token'],
                                 params['keystone']['endpoints']['admin']['uri']).initialize(**init_what)
             # Writing this makes sure that we don't init again

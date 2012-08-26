@@ -74,6 +74,27 @@ def expand_template(contents, params):
     return Template(str(contents), searchList=[params]).respond()
 
 
+def expand_template_deep(root, params):
+    if isinstance(root, (basestring, str)):
+        return expand_template(root, params)
+    if isinstance(root, (list, tuple)):
+        n_list = []
+        for i in root:
+            n_list.append(expand_template_deep(i, params))
+        return n_list
+    if isinstance(root, (dict)):
+        n_dict = {}
+        for (k, v) in root.items():
+            n_dict[k] = expand_template_deep(v, params)
+        return n_dict
+    if isinstance(root, (set)):
+        n_set = set()
+        for v in root:
+            n_set.add(expand_template_deep(v, params))
+        return n_set
+    return root
+
+
 def load_yaml(fn):
     return load_yaml_text(sh.load_file(fn))
 

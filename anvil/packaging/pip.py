@@ -19,6 +19,8 @@ from anvil import log as logging
 from anvil import shell as sh
 from anvil import packager as pack
 
+from anvil.packaging.helpers import pip_helper
+
 LOG = logging.getLogger(__name__)
 
 PIP_UNINSTALL_CMD_OPTS = ['-y', '-q']
@@ -26,6 +28,10 @@ PIP_INSTALL_CMD_OPTS = ['-q']
 
 
 class Packager(pack.Packager):
+    PIP_REGISTRY = pip_helper.make_registry()
+
+    def __init__(self, distro):
+        pack.Packager.__init__(self, distro, Packager.PIP_REGISTRY)
 
     def _make_pip_name(self, name, version):
         if version is None:
@@ -34,6 +40,18 @@ class Packager(pack.Packager):
             return "%s%s" % (name, version)
         else:
             return "%s==%s" % (name, version)
+
+    def _parse_version(self, name, version):
+        if version:
+            # This should work for all pip packages
+            if contains_version_check(version):
+                full_name = "%s%s" % (name, version)
+            else:
+                full_name = "%s==%s" % (name, version)
+            p_version = pkg_resources.Requirement.parse(full_name)
+        else:
+            p_version = pack.Packager._parse_version(self, name, version)
+        return p_version
 
     def _get_pip_command(self):
         return self.distro.get_command_config('pip')

@@ -18,6 +18,8 @@ from anvil import log as logging
 from anvil import packager as pack
 from anvil import shell as sh
 
+from anvil.packaging.helpers import yum_helper
+
 LOG = logging.getLogger(__name__)
 
 # Root yum command
@@ -34,6 +36,10 @@ VERSION_TEMPL = "%s-%s"
 
 
 class YumPackager(pack.Packager):
+    YUM_REGISTRY = yum_helper.make_registry()
+
+    def __init__(self, distro):
+        pack.Packager.__init__(self, distro, YumPackager.YUM_REGISTRY)
 
     def _format_pkg_name(self, name, version):
         if version:
@@ -43,9 +49,7 @@ class YumPackager(pack.Packager):
 
     def _execute_yum(self, cmd, **kargs):
         full_cmd = YUM_CMD + cmd
-        return sh.execute(*full_cmd, run_as_root=True,
-            check_exit_code=True,
-            **kargs)
+        return sh.execute(*full_cmd, run_as_root=True, check_exit_code=True, **kargs)
 
     def _remove_special(self, name, info):
         return False

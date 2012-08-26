@@ -1,5 +1,6 @@
 ##
-## This is a cheetah/yaml template!
+## This is a yaml template (with cheetah template 
+## strings that will be filled in)...
 ##
 ---
 endpoints:

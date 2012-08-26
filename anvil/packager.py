@@ -15,7 +15,6 @@
 #    under the License.
 
 import abc
-import pkg_resources
 
 from anvil import exceptions as excp
 from anvil import colorizer
@@ -29,7 +28,6 @@ VERSION_CHARS = ['=', '>', "<"]
 
 
 class NullVersion(object):
-
     def __init__(self, name):
         self.name = name
 
@@ -37,36 +35,26 @@ class NullVersion(object):
         return True
 
     def __str__(self):
-        return "%s (no version)" % (self.name)
+        return "%s (unknown version)" % (self.name)
 
 
 class Registry(object):
-
     def __init__(self):
         self.installed = {}
         self.removed = {}
 
 
 class Packager(object):
-
     __meta__ = abc.ABCMeta
 
-    def __init__(self, distro, registry):
+    def __init__(self, distro, registry=None):
         self.distro = distro
+        if not registry:
+            registry = Registry()
         self.registry = registry
 
     def _parse_version(self, name, version):
-        if version:
-            # This won't work for all package versions (ie crazy names)
-            # but good enough for now...
-            if contains_version_check(version):
-                full_name = "%s%s" % (name, version)
-            else:
-                full_name = "%s==%s" % (name, version)
-            p_version = pkg_resources.Requirement.parse(full_name)
-        else:
-            p_version = NullVersion(name)
-        return p_version
+        return NullVersion(name)
 
     def _compare_against_installed(self, incoming_version, installed_version):
         if not incoming_version and installed_version:
@@ -76,11 +64,6 @@ class Packager(object):
             # Assume whats installed will work
             # (not really the case all the time)
             return True
-        if contains_version_check(incoming_version):
-            cleaned_version = incoming_version
-            for c in VERSION_CHARS:
-                cleaned_version = cleaned_version.replace(c, '')
-            return self._compare_against_installed(cleaned_version.strip(), installed_version)
         if not incoming_version in installed_version:
             # Not in the range of the installed version (bad!)
             return False
@@ -150,5 +133,4 @@ def get_packager_class(package_info, default_packager_class=None):
     packager_name = packager_name.strip()
     if not packager_name:
         return default_packager_class
-    packager_class = importer.import_entry_point(packager_name)
-    return packager_class
+    return importer.import_entry_point(packager_name)
