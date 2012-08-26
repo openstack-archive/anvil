@@ -16,7 +16,6 @@
 
 import abc
 
-from anvil import exceptions as excp
 from anvil import colorizer
 from anvil import importer
 from anvil import log as logging

@@ -177,4 +177,11 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    rc = main()
+    # Switch back to root mode for anything
+    # that needs to run in that mode for cleanups and etc...
+    try:
+        sh.root_mode(quiet=False)
+    except excp.AnvilException:
+        pass
+    sys.exit(rc)

@@ -42,6 +42,10 @@ class Packager(pack.Packager):
     def _compare_against_installed(self, pkg):
         name = pkg['name']
         version = pkg.get('version')
+        # Anything with options always gets installed
+        options = pkg.get('options')
+        if options:
+            return pack.DO_INSTALL
         if pip_helper.is_adequate_installed(name, version):
             return pack.ADEQUATE_INSTALLED
         else:
@@ -49,6 +53,8 @@ class Packager(pack.Packager):
 
     def _execute_pip(self, cmd):
         pip_cmd = self._get_pip_command()
+        if not isinstance(pip_cmd, (list, tuple)):
+            pip_cmd = [pip_cmd]
         pip_cmd = pip_cmd + cmd
         with utils.callback_on_ok(pip_helper.uncache):
             sh.execute(*pip_cmd, run_as_root=True)

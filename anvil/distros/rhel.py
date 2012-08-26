@@ -173,7 +173,7 @@ class YumPackagerWithRelinks(yum.YumPackager):
 
     def _remove(self, pkg):
         response = yum.YumPackager._remove(self, pkg)
-        if response:
+        if response != pack.NOT_EXISTENT:
             options = pkg.get('packager_options') or {}
             links = options.get('links') or []
             for entry in links:

@@ -17,7 +17,6 @@
 from anvil import log as logging
 from anvil import packager as pack
 from anvil import shell as sh
-from anvil import utils
 
 from anvil.packaging.helpers import yum_helper
 

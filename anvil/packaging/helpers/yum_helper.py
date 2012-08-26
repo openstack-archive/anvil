@@ -16,23 +16,12 @@
 
 from anvil import shell as sh
 
-import atexit
-
 # See http://yum.baseurl.org/api/yum-3.2.26/yum-module.html
 from yum import YumBase
 from yum.packages import PackageObject
 
 # Cache of yumbase object
 _yum_base = None
-
-
-def _ensure_closed():
-    global _yum_base
-    if _yum_base:
-        # Seems like it needs to close stuff correctly...
-        with sh.Rooted(True):
-            del _yum_base
-            _yum_base = None
 
 
 def _make_yum_base():
@@ -63,6 +52,3 @@ def is_adequate_installed(name, version):
             if p.verGE(fake_pkg):
                 return True
         return False
-
-
-atexit.register(_ensure_closed)
