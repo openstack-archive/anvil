@@ -48,8 +48,7 @@ class YumPackager(pack.Packager):
 
     def _execute_yum(self, cmd, **kargs):
         yum_cmd = YUM_CMD + cmd
-        with utils.callback_on_ok(yum_helper.uncache):
-            return sh.execute(*yum_cmd, run_as_root=True, check_exit_code=True, **kargs)
+        return sh.execute(*yum_cmd, run_as_root=True, check_exit_code=True, **kargs)
 
     def _remove_special(self, name, info):
         return False
