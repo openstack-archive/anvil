@@ -27,28 +27,39 @@ _yum_base = None
 def _make_yum_base():
     global _yum_base
     if _yum_base is None:
+        # This seems needed...
+        # otherwise 'cannot open Packages database in /var/lib/rpm' starts to happen
         with sh.Rooted(True):
             _yum_base = YumBase()
+            _yum_base.setCacheDir(force=True)
     return _yum_base
 
 
 def is_installed(name, version):
+    yb = _make_yum_base()
+    # This seems needed...
+    # otherwise 'cannot open Packages database in /var/lib/rpm' starts to happen
     with sh.Rooted(True):
-        yb = _make_yum_base()
         return yb.rpmdb.contains(name=name, ver=version)
 
 
 def is_adequate_installed(name, version):
+    # This seems needed...
+    # otherwise 'cannot open Packages database in /var/lib/rpm' starts to happen
     with sh.Rooted(True):
         yb = _make_yum_base()
-        whats_there = yb.rpmdb.searchNames(names=[name])
-        if not whats_there:
-            return False
-        fake_pkg = PackageObject()
-        fake_pkg.name = name
-        if version:
-            fake_pkg.version = str(version)
-        for p in whats_there:
-            if p.verGE(fake_pkg):
-                return True
+        pkg_obj = yb.doPackageLists(pkgnarrow='installed',
+                                    ignore_case=True, patterns=[name])
+    whats_installed = pkg_obj.installed
+    if not whats_installed:
         return False
+    # Compare whats installed to a fake package that will
+    # represent what might be installed...
+    fake_pkg = PackageObject()
+    fake_pkg.name = name
+    if version:
+        fake_pkg.version = str(version)
+    for installed_pkg in whats_installed:
+        if installed_pkg.verGE(fake_pkg):
+            return True
+    return False
