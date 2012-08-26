@@ -56,8 +56,11 @@ class Packager(pack.Packager):
         if not isinstance(pip_cmd, (list, tuple)):
             pip_cmd = [pip_cmd]
         pip_cmd = pip_cmd + cmd
-        with utils.callback_on_ok(pip_helper.uncache):
+        try:
             sh.execute(*pip_cmd, run_as_root=True)
+        finally:
+            # The known packages installed is probably not consistent anymore so uncache it
+            pip_helper.uncache()
 
     def _install(self, pip):
         cmd = ['install'] + PIP_INSTALL_CMD_OPTS
