@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from anvil import shell as sh
+
 # See http://yum.baseurl.org/api/yum-3.2.26/yum-module.html
 from yum import YumBase
 from yum.packages import PackageObject
@@ -24,7 +26,11 @@ _yum_base = None
 
 def uncache():
     global _yum_base
-    _yum_base = None
+    if _yum_base:
+        with sh.Rooted(True):
+            # Seems like it needs to close stuff correctly...
+            del _yum_base
+            _yum_base = None
 
 
 def _make_yum_base():
@@ -36,20 +42,22 @@ def _make_yum_base():
 
 
 def is_installed(name, version):
-    yb = _make_yum_base()
-    return yb.rpmdb.contains(name=name, ver=version)
+    with sh.Rooted(True):
+        yb = _make_yum_base()
+        return yb.rpmdb.contains(name=name, ver=version)
 
 
 def is_adequate_installed(name, version):
-    yb = _make_yum_base()
-    whats_there = yb.rpmdb.searchNames(names=[name])
-    if not whats_there:
+    with sh.Rooted(True):
+        yb = _make_yum_base()
+        whats_there = yb.rpmdb.searchNames(names=[name])
+        if not whats_there:
+            return False
+        fake_pkg = PackageObject()
+        fake_pkg.name = name
+        if version:
+            fake_pkg.version = str(version)
+        for p in whats_there:
+            if p.verGE(fake_pkg):
+                return True
         return False
-    fake_pkg = PackageObject()
-    fake_pkg.name = name
-    if version:
-        fake_pkg.version = str(version)
-    for p in whats_there:
-        if p.verGE(fake_pkg):
-            return True
-    return False

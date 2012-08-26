@@ -200,7 +200,6 @@ class YumPackagerWithRelinks(yum.YumPackager):
                 i_tgt = tgt[i]
                 if not sh.islink(i_tgt):
                     sh.symlink(i_src, i_tgt)
-        return True
 
 
 class DependencyPackager(comp.Component):
