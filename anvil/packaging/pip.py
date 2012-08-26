@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import pkg_resources
 
 from anvil import log as logging
 from anvil import shell as sh
@@ -44,7 +45,7 @@ class Packager(pack.Packager):
     def _parse_version(self, name, version):
         if version:
             # This should work for all pip packages
-            if contains_version_check(version):
+            if pack.contains_version_check(version):
                 full_name = "%s%s" % (name, version)
             else:
                 full_name = "%s==%s" % (name, version)
