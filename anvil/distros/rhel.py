@@ -219,21 +219,37 @@ class DependencyPackager(comp.Component):
             'build': self._build_requirements(),
         }
 
+    def _description(self):
+        return ''
+
     @property
     def details(self):
         if self._cached_details is not None:
             return self._cached_details
         self._cached_details = {
-            'summary': 'Package build of %s on %s' % (self.name, utils.rcf8222date()),
             'name': self.name,
             'version': 0,
             'release': 1,
             'packager': "%s <%s@%s>" % (sh.getuser(), sh.getuser(), sh.hostname()),
-            'description': '',
             'changelog': '',
             'license': 'Apache License, Version 2.0',
             'automatic_dependencies': True,
+            'vendor': None,
         }
+        # RPM apparently rejects descriptions with blank lines (even between content)
+        descr = self._description()
+        descr_lines = []
+        for line in descr.splitlines():
+            sline = line.strip()
+            if not sline:
+                continue
+            else:
+                descr_lines.append(line)
+        self._cached_details['description'] = "\n".join(descr_lines)
+        self._cached_details['summary'] = "\n".join(descr_lines[0:1])
+        if not self._cached_details['summary']:
+            summary = 'Package build of %s on %s' % (self.name, utils.rcf8222date())
+            self._cached_details['summary'] = summary
         return self._cached_details
 
     def _build_details(self):
@@ -271,10 +287,18 @@ class DependencyPackager(comp.Component):
                                    self.details['release'], ext)
         return your_fn
 
+    def _obsoletes(self):
+        return []
+
+    def _conflicts(self):
+        return []
+
     def _create_package(self):
         params = {
             'files': self._gather_files(),
             'requires': self._requirements(),
+            'obsoletes': self._obsoletes(),
+            'conflicts': self._conflicts(),
             'defines': self._defines(),
             'undefines': self._undefines(),
             'build': self._build_details(),
@@ -324,7 +348,15 @@ class PythonPackager(DependencyPackager):
     def _undefines(self):
         to_undefine = DependencyPackager._undefines(self)
         to_undefine.append('__check_files')
-        
+        return to_undefine
+
+    def _description(self):
+        app_dir = self.get_option('app_dir')
+        if not sh.isfile(sh.joinpths(app_dir, 'setup.py')):
+            return DependencyPackager._description(self)
+        describe_cmd = ['python', sh.joinpths(app_dir, 'setup.py'), '--description']
+        (stdout, _stderr) = sh.execute(*describe_cmd, run_as_root=True, cwd=app_dir)
+        return stdout.strip()
 
     @property
     def details(self):
@@ -333,17 +365,17 @@ class PythonPackager(DependencyPackager):
             return base
         app_dir = self.get_option('app_dir')
         if not sh.isfile(sh.joinpths(app_dir, 'setup.py')):
+            self._details_adjusted = True
             return base
         base_setup_cmd = ['python', sh.joinpths(app_dir, 'setup.py')]
         replacements = {
             'version': '--version',
-            'description': '--description',
             'license': '--license',
             'name': '--name',
+            'vendor': '--author',
         }
         for (key, opt) in replacements.items():
             cmd = base_setup_cmd + [opt]
-            # Root seems to be needed??
             (stdout, _stderr) = sh.execute(*cmd, run_as_root=True, cwd=app_dir)
             stdout = stdout.strip()
             if stdout:

@@ -10,6 +10,9 @@
 #for $d in $defines
 %define ${d}
 #end for
+#for $d in $undefines
+#%undefine ${d}
+#end for
 # 
 # Spec file for $details.name auto-generated on ${date} by ${who}
 #
@@ -32,6 +35,9 @@ Name: $details.name
 Summary: $details.summary
 Version: $details.version
 Release: $details.release%{?dist}
+#if $details.vendor
+Vendor: $details.vendor
+#end if
 #set $s_len = len($files.sources)
 #for $i in $range(0, $s_len)
 Source${i}: $files.sources[$i]
@@ -45,6 +51,20 @@ BuildArch: $build.arch
 AutoReqProv: yes
 #else
 AutoReqProv: no
+#end if
+#if $conflicts
+
+# Packages we conflict with
+#for $i in $conflicts
+Conflicts: ${i}
+#end for
+#end if
+#if $obsoletes
+
+# Packages we obsolete
+#for $i in $obsoletes
+Obsoletes: ${i}
+#end for
 #end if
 #if $requires.build
 
