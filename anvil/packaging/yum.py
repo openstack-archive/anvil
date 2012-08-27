@@ -36,14 +36,8 @@ class YumPackager(pack.Packager):
         else:
             return str(name)
 
-    def _compare_against_installed(self, pkg):
-        name = pkg['name']
-        version = pkg.get('version')
-        if yum_helper.is_installed(name, version) or \
-           yum_helper.is_adequate_installed(name, version):
-            return pack.ADEQUATE_INSTALLED
-        else:
-            return pack.DO_INSTALL
+    def _anything_there(self, pkg):
+        return yum_helper.is_adequate_installed(pkg['name'], pkg.get('version'))
 
     def _execute_yum(self, cmd, **kargs):
         yum_cmd = YUM_CMD + cmd
@@ -66,9 +60,8 @@ class YumPackager(pack.Packager):
     def _remove(self, pkg):
         name = pkg['name']
         if not yum_helper.is_installed(name, version=None):
-            return pack.NOT_EXISTENT
+            return
         if self._remove_special(name, pkg):
-            return pack.REMOVED_OK
+            return
         cmd = YUM_REMOVE + [self._format_pkg_name(name, pkg.get("version"))]
         self._execute_yum(cmd)
-        return pack.REMOVED_OK

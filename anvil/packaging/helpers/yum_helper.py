@@ -52,7 +52,7 @@ def is_adequate_installed(name, version):
                                     ignore_case=True, patterns=[name])
     whats_installed = pkg_obj.installed
     if not whats_installed:
-        return False
+        return None
     # Compare whats installed to a fake package that will
     # represent what might be installed...
     fake_pkg = PackageObject()
@@ -61,5 +61,5 @@ def is_adequate_installed(name, version):
         fake_pkg.version = str(version)
     for installed_pkg in whats_installed:
         if installed_pkg.verGE(fake_pkg):
-            return True
-    return False
+            return installed_pkg
+    return None

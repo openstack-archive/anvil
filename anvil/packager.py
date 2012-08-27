@@ -23,14 +23,6 @@ from anvil import utils
 
 LOG = logging.getLogger(__name__)
 
-# Install comparison constants
-DO_INSTALL = 1
-ADEQUATE_INSTALLED = 2
-
-# Removal status constants
-REMOVED_OK = 1
-NOT_EXISTENT = 2
-
 
 class Packager(object):
     __meta__ = abc.ABCMeta
@@ -38,24 +30,22 @@ class Packager(object):
     def __init__(self, distro):
         self.distro = distro
 
-    def _compare_against_installed(self, pkg):
-        return DO_INSTALL
+    def _anything_there(self, pkg):
+        return None
 
     def install(self, pkg):
-        install_check = self._compare_against_installed(pkg)
-        if install_check == DO_INSTALL:
+        installed_already = self._anything_there(pkg)
+        if not installed_already:
             self._install(pkg)
             LOG.debug("Installed %s", pkg)
-        elif install_check == ADEQUATE_INSTALLED:
-            LOG.debug("Skipping install of %r since a newer/same version is already happened.", pkg['name'])
+        else:
+            LOG.debug("Skipping install of %r since %s is already there.", pkg['name'], installed_already)
 
     def remove(self, pkg):
         removable = pkg.get('removable')
         if not removable:
             return False
-        rst = self._remove(pkg)
-        if rst == NOT_EXISTENT:
-            LOG.debug("Removal of %r did not occur since it already happened or did not exist to remove.", pkg['name'])
+        self._remove(pkg)
         return True
 
     def pre_install(self, pkg, params=None):
@@ -77,9 +67,6 @@ class Packager(object):
     @abc.abstractmethod
     def _install(self, pkg):
         raise NotImplementedError()
-
-
-
 
 
 def get_packager_class(package_info, default_packager_class=None):

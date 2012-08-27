@@ -26,7 +26,6 @@ from anvil import colorizer
 from anvil import component as comp
 from anvil import exceptions as excp
 from anvil import log as logging
-from anvil import packager as pack
 from anvil import shell as sh
 from anvil import utils
                                              
@@ -172,14 +171,12 @@ class NovaInstaller(nova.NovaInstaller):
 class YumPackagerWithRelinks(yum.YumPackager):
 
     def _remove(self, pkg):
-        response = yum.YumPackager._remove(self, pkg)
-        if response != pack.NOT_EXISTENT:
-            options = pkg.get('packager_options') or {}
-            links = options.get('links') or []
-            for entry in links:
-                if sh.islink(entry['target']):
-                    sh.unlink(entry['target'])
-        return response
+        yum.YumPackager._remove(self, pkg)
+        options = pkg.get('packager_options') or {}
+        links = options.get('links') or []
+        for entry in links:
+            if sh.islink(entry['target']):
+                sh.unlink(entry['target'])
 
     def _install(self, pkg):
         yum.YumPackager._install(self, pkg)
@@ -344,6 +341,9 @@ class PythonPackager(DependencyPackager):
             'gcc', # Often used for building c python modules, should not be harmful...
             'python-setuptools',
         ]
+
+    def _make_source_archive(self):
+        return None
 
     def _undefines(self):
         to_undefine = DependencyPackager._undefines(self)

@@ -18,7 +18,7 @@ from pkg_resources import Requirement
 
 from anvil import shell as sh
 
-FREEZE_CMD = ['pip-python', 'freeze', '--local']
+FREEZE_CMD = ['freeze', '--local']
 
 # Cache of whats installed - 'uncached' as needed
 _installed_cache = None
@@ -29,8 +29,9 @@ def uncache():
     _installed_cache = None
 
 
-def _list_installed():
-    (stdout, _stderr) = sh.execute(*FREEZE_CMD)
+def _list_installed(pip_how):
+    cmd = [pip_how] + FREEZE_CMD
+    (stdout, _stderr) = sh.execute(*cmd)
     installed = []
     for line in stdout.splitlines():
         line = line.strip()
@@ -52,8 +53,8 @@ def _list_installed():
     return installed
 
 
-def is_installed(name):
-    whats_there = get_installed()
+def is_installed(pip_how, name):
+    whats_there = get_installed(pip_how)
     for req in whats_there:
         if not (name.lower() == req.project_name.lower()):
             continue
@@ -61,19 +62,20 @@ def is_installed(name):
     return False
 
 
-def get_installed():
+def get_installed(pip_how):
     global _installed_cache
     if _installed_cache is None:
-        _installed_cache = _list_installed()
+        _installed_cache = _list_installed(pip_how)
     return _installed_cache
 
 
-def is_adequate_installed(name, version):
-    whats_there = get_installed()
+def is_adequate_installed(pip_how, name, version):
+    whats_there = get_installed(pip_how)
     for req in whats_there:
         if not (name.lower() == req.project_name.lower()):
             continue
         if not version:
-            return True
-        return version in req
-    return False
+            return req
+        if version in req:
+            return req
+    return None

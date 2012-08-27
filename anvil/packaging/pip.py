@@ -17,7 +17,6 @@
 from anvil import log as logging
 from anvil import packager as pack
 from anvil import shell as sh
-from anvil import utils
 
 from anvil.packaging.helpers import pip_helper
 
@@ -39,17 +38,12 @@ class Packager(pack.Packager):
     def _get_pip_command(self):
         return self.distro.get_command_config('pip')
 
-    def _compare_against_installed(self, pkg):
-        name = pkg['name']
-        version = pkg.get('version')
+    def _anything_there(self, pkg):
         # Anything with options always gets installed
-        options = pkg.get('options')
-        if options:
-            return pack.DO_INSTALL
-        if pip_helper.is_adequate_installed(name, version):
-            return pack.ADEQUATE_INSTALLED
-        else:
-            return pack.DO_INSTALL
+        if 'options' in pkg:
+            return None
+        return pip_helper.is_adequate_installed(self._get_pip_command(),
+                                                pkg['name'], pkg.get('version'))
 
     def _execute_pip(self, cmd):
         pip_cmd = self._get_pip_command()
@@ -76,8 +70,7 @@ class Packager(pack.Packager):
     def _remove(self, pip):
         # Versions don't seem to matter here...
         name = self._make_pip_name(pip['name'], None)
-        if not pip_helper.is_installed(name):
-            return pack.NOT_EXISTENT
+        if not pip_helper.is_installed(self._get_pip_command(), name):
+            return
         cmd = ['uninstall'] + PIP_UNINSTALL_CMD_OPTS + [name]
         self._execute_pip(cmd)
-        return pack.REMOVED_OK
