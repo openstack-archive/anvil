@@ -31,13 +31,15 @@
 #    under the License.
 
 import functools
-import pkg_resources
 import re
 import weakref
+
+from pkg_resources import Requirement
 
 from anvil import cfg
 from anvil import colorizer
 from anvil import component
+from anvil import decorators
 from anvil import downloader as down
 from anvil import exceptions as excp
 from anvil import importer
@@ -455,6 +457,7 @@ class PythonInstallComponent(PkgInstallComponent):
         self._install_pips()
         self._install_python_setups()
 
+    @decorators.memoized
     def _extract_pip_requires(self, fn):
         if not sh.isfile(fn):
             return []
@@ -464,9 +467,9 @@ class PythonInstallComponent(PkgInstallComponent):
             line = line.strip()
             if not line or line.startswith("#"):
                 continue
-            pips_needed.append(pkg_resources.Requirement.parse(line))
+            pips_needed.append(Requirement.parse(line))
         if not pips_needed:
-            return
+            return []
         matchings = []
         for requirement in pips_needed:
             matchings.append([requirement, self._match_pip_requires(requirement.project_name)])

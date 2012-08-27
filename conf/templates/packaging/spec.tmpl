@@ -41,6 +41,11 @@ License: $details.license
 #if $build.has_key('arch')
 BuildArch: $build.arch
 #end if
+#if $details.automatic_dependencies
+AutoReqProv: yes
+#else
+AutoReqProv: no
+#end if
 #if $requires.build
 
 # Build requirements

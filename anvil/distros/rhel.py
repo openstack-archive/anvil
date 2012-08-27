@@ -232,6 +232,7 @@ class DependencyPackager(comp.Component):
             'description': '',
             'changelog': '',
             'license': 'Apache License, Version 2.0',
+            'automatic_dependencies': True,
         }
         return self._cached_details
 
@@ -257,6 +258,10 @@ class DependencyPackager(comp.Component):
         define_what.append("_topdir %s" % (self.package_dir))
         return define_what
 
+    def _undefines(self):
+        undefine_what = []
+        return undefine_what
+
     def _make_source_archive(self):
         return None
 
@@ -271,6 +276,7 @@ class DependencyPackager(comp.Component):
             'files': self._gather_files(),
             'requires': self._requirements(),
             'defines': self._defines(),
+            'undefines': self._undefines(),
             'build': self._build_details(),
             'who': sh.getuser(),
             'date': utils.rcf8222date(),
@@ -314,6 +320,11 @@ class PythonPackager(DependencyPackager):
             'gcc', # Often used for building c python modules, should not be harmful...
             'python-setuptools',
         ]
+
+    def _undefines(self):
+        to_undefine = DependencyPackager._undefines(self)
+        to_undefine.append('__check_files')
+        
 
     @property
     def details(self):
