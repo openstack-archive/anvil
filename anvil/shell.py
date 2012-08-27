@@ -210,7 +210,7 @@ def hostname():
     try:
         return socket.gethostname()
     except socket.error:
-        return None
+        return 'localhost'
 
 
 def isuseable(path, options=os.W_OK | os.R_OK | os.X_OK):
@@ -638,6 +638,13 @@ def copy(src, dst):
     LOG.debug("Copying: %r => %r" % (src, dst))
     if not is_dry_run():
         shutil.copy(src, dst)
+    return dst
+
+
+def copytree(src, dst):
+    LOG.debug("Copying full tree: %r => %r" % (src, dst))
+    if not is_dry_run():
+        shutil.copytree(src, dst)
     return dst
 
 

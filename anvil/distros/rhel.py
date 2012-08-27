@@ -35,6 +35,7 @@ from anvil.components import nova
 from anvil.components import rabbit
 
 from anvil.packaging import yum
+from anvil.packaging.helpers import changelog
 
 from anvil.components.helpers import nova as nhelper
 
@@ -52,6 +53,11 @@ ResultInactive=yes
 ResultActive=yes
 """
 DEF_IDENT = 'unix-group:libvirtd'
+
+
+def tar_it(to_where, what, wkdir):
+    tar_cmd = ['tar', '-cvzf', to_where, what]
+    return sh.execute(*tar_cmd, cwd=wkdir)
 
 
 class DBInstaller(db.DBInstaller):
@@ -204,10 +210,10 @@ class DependencyPackager(comp.Component):
         comp.Component.__init__(self, *args, **kargs)
         self.package_dir = sh.joinpths(self.get_option('component_dir'), 'package')
         self.build_paths = {}
-        for name in ['SOURCES', 'SPECS', 'SRPMS', 'RPMS', 'BUILD']:
+        for name in ['sources', 'specs', 'srpms', 'rpms', 'build']:
             # Remove any old packaging directories...
-            sh.deldir(sh.joinpths(self.package_dir, name), True)
-            self.build_paths[name] = sh.mkdir(sh.joinpths(self.package_dir, name))
+            sh.deldir(sh.joinpths(self.package_dir, name.upper()), True)
+            self.build_paths[name] = sh.mkdir(sh.joinpths(self.package_dir, name.upper()))
         self._cached_details = None
 
     def _requirements(self):
@@ -216,9 +222,6 @@ class DependencyPackager(comp.Component):
             'build': self._build_requirements(),
         }
 
-    def _description(self):
-        return ''
-
     @property
     def details(self):
         if self._cached_details is not None:
@@ -226,27 +229,16 @@ class DependencyPackager(comp.Component):
         self._cached_details = {
             'name': self.name,
             'version': 0,
-            'release': 1,
+            'release': self.get_int_option('release', default_value=1),
             'packager': "%s <%s@%s>" % (sh.getuser(), sh.getuser(), sh.hostname()),
             'changelog': '',
             'license': 'Apache License, Version 2.0',
             'automatic_dependencies': True,
             'vendor': None,
+            'url': '',
+            'description': '',
+            'summary': 'Package build of %s on %s' % (self.name, utils.rcf8222date()),
         }
-        # RPM apparently rejects descriptions with blank lines (even between content)
-        descr = self._description()
-        descr_lines = []
-        for line in descr.splitlines():
-            sline = line.strip()
-            if not sline:
-                continue
-            else:
-                descr_lines.append(line)
-        self._cached_details['description'] = "\n".join(descr_lines)
-        self._cached_details['summary'] = "\n".join(descr_lines[0:1])
-        if not self._cached_details['summary']:
-            summary = 'Package build of %s on %s' % (self.name, utils.rcf8222date())
-            self._cached_details['summary'] = summary
         return self._cached_details
 
     def _build_details(self):
@@ -291,8 +283,9 @@ class DependencyPackager(comp.Component):
         return []
 
     def _create_package(self):
+        files = self._gather_files()
         params = {
-            'files': self._gather_files(),
+            'files': files,
             'requires': self._requirements(),
             'obsoletes': self._obsoletes(),
             'conflicts': self._conflicts(),
@@ -304,10 +297,14 @@ class DependencyPackager(comp.Component):
             'details': self.details,
         }
         (_fn, content) = utils.load_template('packaging', 'spec.tmpl')
-        spec_fn = sh.joinpths(self.build_paths['SPECS'], self._make_fn("spec"))
+        spec_base = self._make_fn("spec")
+        spec_fn = sh.joinpths(self.build_paths['specs'], spec_base)
         LOG.debug("Creating spec file %s with params:", spec_fn)
+        files['sources'].append("%s.tar.gz" % (spec_base))
         utils.log_object(params, logger=LOG, level=logging.DEBUG)
         sh.write_file(spec_fn, utils.expand_template(content, params))
+        tar_it(sh.joinpths(self.build_paths['sources'], "%s.tar.gz" % (spec_base)),
+               spec_base, wkdir=self.build_paths['specs'])
 
     def _build_requirements(self):
         return []
@@ -332,7 +329,8 @@ class DependencyPackager(comp.Component):
 class PythonPackager(DependencyPackager):
     def __init__(self, *args, **kargs):
         DependencyPackager.__init__(self, *args, **kargs)
-        self._details_adjusted = False
+        self._extended_details = None
+        self._setup_fn = sh.joinpths(self.get_option('app_dir'), 'setup.py')
         
     def _build_requirements(self):
         return [
@@ -342,46 +340,95 @@ class PythonPackager(DependencyPackager):
             'python-setuptools',
         ]
 
-    def _make_source_archive(self):
-        return None
+    def _build_changelog(self):
+        try:
+            ch = changelog.RpmChangeLog(self.get_option('app_dir'))
+            return ch.formatLog()
+        except (excp.AnvilException, IOError):
+            return ''
 
     def _undefines(self):
-        to_undefine = DependencyPackager._undefines(self)
-        to_undefine.append('__check_files')
-        return to_undefine
+        undefine_what = DependencyPackager._undefines(self)
+        if self.get_bool_option('ignore_missing'):
+            undefine_what.append('__check_files')
+        return undefine_what
+
+    def _gather_files(self):
+        files = DependencyPackager._gather_files(self)
+        files['directories'].append("%{python_sitelib}/" + (self.details['name']))
+        files['files'].append("%{python_sitelib}/" + (self.details['name']))
+        files['files'].append("%{python_sitelib}/" + "%s-*.egg-info/" % (self.details['name']))
+        files['files'].append("%{_bindir}/")
+        return files
+
+    def _build_details(self):
+        # See: http://www.rpm.org/max-rpm/s1-rpm-inside-macros.html
+        b_dets = DependencyPackager._build_details(self)
+        b_dets['setup'] = '-q -n %{name}-%{version}'
+        b_dets['action'] = '%{__python} setup.py build'
+        b_dets['install_how'] = '%{__python} setup.py install --prefix=%{_prefix} --root=%{buildroot}'
+        return b_dets
+
+    def verify(self):
+        if not sh.isfile(self._setup_fn):
+            raise excp.PackageException(("Can not package %s since python"
+                                         " setup file at %s is missing") % (self.name, self._setup_fn))
+
+    def _make_source_archive(self):
+        with utils.tempdir() as td:
+            arch_base_name = "%s-%s" % (self.details['name'], self.details['version'])
+            sh.copytree(self.get_option('app_dir'), sh.joinpths(td, arch_base_name))
+            arch_tmp_fn = sh.joinpths(td, "%s.tar.gz" % (arch_base_name))
+            tar_it(arch_tmp_fn, arch_base_name, td)
+            sh.move(arch_tmp_fn, self.build_paths['sources'])
+        return "%s.tar.gz" % (arch_base_name)
 
     def _description(self):
-        app_dir = self.get_option('app_dir')
-        if not sh.isfile(sh.joinpths(app_dir, 'setup.py')):
-            return DependencyPackager._description(self)
-        describe_cmd = ['python', sh.joinpths(app_dir, 'setup.py'), '--description']
-        (stdout, _stderr) = sh.execute(*describe_cmd, run_as_root=True, cwd=app_dir)
-        return stdout.strip()
+        describe_cmd = ['python', self._setup_fn, '--description']
+        (stdout, _stderr) = sh.execute(*describe_cmd, run_as_root=True, cwd=self.get_option('app_dir'))
+        stdout = stdout.strip()
+        if stdout:
+            # RPM apparently rejects descriptions with blank lines (even between content)
+            descr_lines = []
+            for line in stdout.splitlines():
+                sline = line.strip()
+                if not sline:
+                    continue
+                else:
+                    descr_lines.append(line)
+            return descr_lines
+        return []
 
     @property
     def details(self):
         base = super(PythonPackager, self).details
-        if self._details_adjusted:
-            return base
-        app_dir = self.get_option('app_dir')
-        if not sh.isfile(sh.joinpths(app_dir, 'setup.py')):
-            self._details_adjusted = True
-            return base
-        base_setup_cmd = ['python', sh.joinpths(app_dir, 'setup.py')]
-        replacements = {
-            'version': '--version',
-            'license': '--license',
-            'name': '--name',
-            'vendor': '--author',
-        }
-        for (key, opt) in replacements.items():
-            cmd = base_setup_cmd + [opt]
-            (stdout, _stderr) = sh.execute(*cmd, run_as_root=True, cwd=app_dir)
-            stdout = stdout.strip()
-            if stdout:
-                base[key] = stdout
-        self._details_adjusted = True
-        return base
+        if self._extended_details is None:
+            ext_dets = {
+                'automatic_dependencies': False,
+            }
+            setup_cmd = ['python', self._setup_fn]
+            replacements = {
+                'version': '--version',
+                'license': '--license',
+                'name': '--name',
+                'vendor': '--author',
+                'url': '--url',
+            }
+            for (key, opt) in replacements.items():
+                cmd = setup_cmd + [opt]
+                (stdout, _stderr) = sh.execute(*cmd, run_as_root=True, cwd=self.get_option('app_dir'))
+                stdout = stdout.strip()
+                if stdout:
+                    ext_dets[key] = stdout
+            description = self._description()
+            if description:
+                ext_dets['description'] = "\n".join(description)
+                ext_dets['summary'] = utils.truncate_text("\n".join(description[0:1]), 50)
+            ext_dets['changelog'] = self._build_changelog()
+            self._extended_details = ext_dets
+        extended_dets = dict(base)
+        extended_dets.update(self._extended_details)
+        return extended_dets
 
     def package(self):
         i_sibling = self.siblings.get('install')
@@ -391,6 +438,4 @@ class PythonPackager(DependencyPackager):
         if pips:
             for pip_info in pips:
                 LOG.warn("Unable to package pip %s dependency in an rpm.", colorizer.quote(pip_info['name']))
-        if not sh.isdir(self.get_option('app_dir')):
-            raise excp.PackageException("Can not package component %s without an application directory" % (self.name))
         return DependencyPackager.package(self)

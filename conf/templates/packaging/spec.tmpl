@@ -11,7 +11,7 @@
 %define ${d}
 #end for
 #for $d in $undefines
-#%undefine ${d}
+%undefine ${d}
 #end for
 # 
 # Spec file for $details.name auto-generated on ${date} by ${who}
@@ -35,6 +35,10 @@ Name: $details.name
 Summary: $details.summary
 Version: $details.version
 Release: $details.release%{?dist}
+Packager: $details.packager
+#if $details.url
+URL: $details.url
+#end if
 #if $details.vendor
 Vendor: $details.vendor
 #end if
@@ -89,19 +93,20 @@ $details.summary
 #end if
 
 %prep
+
 #if $build.has_key('setup')
 %setup $build.setup
 #end if
+
 #if $build.has_key('action')
 %build
 $build.action
 #end if
 
 %install
-rm -rf %{buildroot}
-
-%clean
-rm -rf %{buildroot}
+#if $build.has_key('install_how')
+$build.install_how
+#end if
 
 %files
 %defattr(-,root,root,-)

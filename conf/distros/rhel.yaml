@@ -56,7 +56,7 @@ components:
             running: anvil.components.cinder_client:CinderClientRuntime
             uninstall: anvil.components.cinder_client:CinderClientUninstaller
             test: anvil.components:PythonTestingComponent
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:PythonPackager
     db:
         action_classes:
             install: anvil.distros.rhel:DBInstaller
@@ -223,7 +223,7 @@ components:
             running: anvil.components.glance:GlanceRuntime
             uninstall: anvil.components.glance:GlanceUninstaller
             test: anvil.components.glance:GlanceTester
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:PythonPackager
         # When parsing 'tools/pip-requires' and 
         # 'tools/test-requires' (if they exist)
         # the following map will be used to translate names
@@ -252,7 +252,7 @@ components:
             running: anvil.components.glance_client:GlanceClientRuntime
             uninstall: anvil.components.glance_client:GlanceClientUninstaller
             test: anvil.components.glance_client:GlanceClientTester
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:PythonPackager
         pips:
         -   name: nosexcover
         -   name: setuptools-git
@@ -264,7 +264,7 @@ components:
             running: anvil.components.horizon:HorizonRuntime
             uninstall: anvil.components.horizon:HorizonUninstaller
             test: anvil.components:PythonTestingComponent
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:PythonPackager
         pip_to_package:
         -   name: pytz
             package:
@@ -288,7 +288,7 @@ components:
             running: anvil.components.keystone:KeystoneRuntime
             uninstall: anvil.components.keystone:KeystoneUninstaller
             test: anvil.components.keystone:KeystoneTester
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:PythonPackager
         packages:
         -   name: MySQL-python
         pip_to_package:
@@ -306,14 +306,14 @@ components:
             running: anvil.components.keystone_client:KeyStoneClientRuntime
             uninstall: anvil.components.keystone_client:KeyStoneClientUninstaller
             test: anvil.components:PythonTestingComponent
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:PythonPackager
     nova:
         action_classes:
             install: anvil.distros.rhel:NovaInstaller
             running: anvil.components.nova:NovaRuntime
             uninstall: anvil.components.nova:NovaUninstaller
             test: anvil.components.nova:NovaTester
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:PythonPackager
         packages:
         -   name: MySQL-python
         -   name: dnsmasq
@@ -367,7 +367,7 @@ components:
             running: anvil.components.nova_client:NovaClientRuntime
             uninstall: anvil.components.nova_client:NovaClientUninstaller
             test: anvil.components:PythonTestingComponent
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:PythonPackager
     no-vnc:
         action_classes:
             install: anvil.components.novnc:NoVNCInstaller
@@ -383,7 +383,7 @@ components:
             running: anvil.components.openstack_client:OpenStackClientRuntime
             uninstall: anvil.components.openstack_client:OpenStackClientUninstaller
             test: anvil.components.openstack_client:OpenStackClientTester
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:PythonPackager
         pips:
         -   name: cliff
         pip_to_package:
@@ -396,7 +396,7 @@ components:
             running: anvil.components.quantum_client:QuantumClientRuntime
             uninstall: anvil.components.quantum_client:QuantumClientUninstaller
             test: anvil.components:PythonTestingComponent
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:PythonPackager
         pip_to_package:
         -   name: pyparsing
             package:
@@ -409,7 +409,7 @@ components:
             running: anvil.distros.rhel:RabbitRuntime
             uninstall: anvil.components.rabbit:RabbitUninstaller
             test: anvil.components:EmptyTestingComponent
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:DependencyPackager
         packages:
         -   name: rabbitmq-server
             pre-install:
@@ -431,6 +431,6 @@ components:
             running: anvil.components.swift_client:SwiftClientRuntime
             uninstall: anvil.components.swift_client:SwiftClientUninstaller
             test: anvil.components:PythonTestingComponent
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:PythonPackager
 ...
 
