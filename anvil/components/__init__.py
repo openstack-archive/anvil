@@ -528,6 +528,9 @@ class ProgramRuntime(component.Component):
     def start(self):
         return 0
 
+    def stop(self):
+        return 0
+
 
 class EmptyRuntime(ProgramRuntime):
     pass
