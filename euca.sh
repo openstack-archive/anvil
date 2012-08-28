@@ -16,12 +16,12 @@ fi
 
 # Find the other rc files
 RC_DIR=$(cd $(dirname "$BASH_SOURCE") && pwd)
-CORE_RC="core.rc"
+CORE_RC="install.rc"
 EC2_RC="euca.rc"
 
 if [ ! -f $RC_DIR/$CORE_RC ];
 then
-    GEN_CMD="anvil -a install"
+    GEN_CMD="smithy -a install"
     echo "File '$RC_DIR/$CORE_RC' needed before running '$ME'"
     echo "Please run './$GEN_CMD' to get this file."
     exit 1
