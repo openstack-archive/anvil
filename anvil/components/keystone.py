@@ -199,6 +199,19 @@ class KeystoneRuntime(comp.PythonRuntime):
         self.wait_time = self.get_int_option('service_wait_seconds')
         self.init_fn = sh.joinpths(self.get_option('trace_dir'), INIT_WHAT_HAPPENED)
 
+
+    def _filter_init(self, init_what):
+        endpoints = init_what['endpoints']
+        adjusted_endpoints = []
+        # TODO(harlowja) make this better and based off of config...
+        for endpoint in endpoints:
+            if endpoint['service'] in ['swift', 'network']:
+                continue
+            else:
+                adjusted_endpoints.append(endpoint)
+        init_what['endpoints'] = adjusted_endpoints
+        return init_what
+
     def post_start(self):
         if not sh.isfile(self.init_fn) and self.get_bool_option('do-init'):
             LOG.info("Waiting %s seconds so that keystone can start up before running first time init." % (self.wait_time))
@@ -212,7 +225,8 @@ class KeystoneRuntime(comp.PythonRuntime):
                                                             **self.get_option('glance'))
             params['nova'] = nhelper.get_shared_params(ip=self.get_option('ip'),
                                                           **self.get_option('nova'))
-            init_what = utils.expand_template_deep(utils.load_yaml_text(contents), params)
+            init_what = utils.load_yaml_text(contents)
+            init_what = utils.expand_template_deep(self._filter_init(init_what), params)
             khelper.Initializer(params['keystone']['service_token'],
                                 params['keystone']['endpoints']['admin']['uri']).initialize(**init_what)
             # Writing this makes sure that we don't init again
