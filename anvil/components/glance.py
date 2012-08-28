@@ -57,13 +57,24 @@ SUB_TO_APP = {
     GREG: 'glance-registry',
 }
 
+# Sync db command
+SYNC_DB_CMD = [sh.joinpths('$BIN_DIR', 'glance-manage'),
+                '--debug', '-v',
+                # Available commands:
+                'db_sync']
+
 
 class GlanceUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, *args, **kargs)
+        self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
 
 
 class GlanceInstaller(comp.PythonInstallComponent):
+    def __init__(self, *args, **kargs):
+        comp.PythonInstallComponent.__init__(self, *args, **kargs)
+        self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
+
     @property
     def config_files(self):
         return list(CONFIGS)
@@ -80,6 +91,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
         comp.PythonInstallComponent.post_install(self)
         if self.get_bool_option('db-sync'):
             self._setup_db()
+            self._sync_db()
 
     def _setup_db(self):
         dbhelper.drop_db(distro=self.distro,
@@ -92,6 +104,11 @@ class GlanceInstaller(comp.PythonInstallComponent):
                            dbname=DB_NAME,
                            **utils.merge_dicts(self.get_option('db'),
                                                dbhelper.get_shared_passwords(self)))
+
+    def _sync_db(self):
+        LOG.info("Syncing glance to database: %s", colorizer.quote(DB_NAME))
+        cmds = [{'cmd': SYNC_DB_CMD, 'run_as_root': True}]
+        utils.execute_template(*cmds, cwd=self.bin_dir, params=self.config_params(None))
 
     def source_config(self, config_fn):
         if config_fn == LOGGING_CONF:
@@ -131,9 +148,8 @@ class GlanceInstaller(comp.PythonInstallComponent):
             config.set('filter:authtoken', 'auth_port', params['endpoints']['admin']['port'])
             config.set('filter:authtoken', 'auth_protocol', params['endpoints']['admin']['protocol'])
 
-            config.set('filter:authtoken', 'service_host', params['endpoints']['internal']['host'])
-            config.set('filter:authtoken', 'service_port', params['endpoints']['internal']['port'])
-            config.set('filter:authtoken', 'service_protocol', params['endpoints']['internal']['protocol'])
+            # This uses the public uri not the admin one...
+            config.set('filter:authtoken', 'auth_uri', params['endpoints']['public']['uri'])
 
             config.set('filter:authtoken', 'admin_tenant_name', params['service_tenant'])
             config.set('filter:authtoken', 'admin_user', params['service_user'])
@@ -193,6 +209,12 @@ class GlanceInstaller(comp.PythonInstallComponent):
         else:
             return contents
 
+    def config_params(self, config_fn):
+        # These be used to fill in the configuration params
+        mp = comp.PythonInstallComponent.config_params(self, config_fn)
+        mp['BIN_DIR'] = self.bin_dir
+        return mp
+
 
 class GlanceRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
@@ -207,8 +229,6 @@ class GlanceRuntime(comp.PythonRuntime):
                 apps.append({
                     'name': SUB_TO_APP[name],
                     'path': sh.joinpths(self.bin_dir, SUB_TO_APP[name]),
-                    # This seems needed, to allow for the db syncs to not conflict... (arg)
-                    'sleep_time': 5,
                 })
         return apps
 
