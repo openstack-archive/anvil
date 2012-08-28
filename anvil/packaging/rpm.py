@@ -14,10 +14,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from anvil import colorizer
 from anvil import component as comp
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
+from anvil import trace as tr
 from anvil import utils
 
 from anvil.packaging.helpers import changelog
@@ -28,13 +30,23 @@ LOG = logging.getLogger(__name__)
 class DependencyPackager(comp.Component):
     def __init__(self, *args, **kargs):
         comp.Component.__init__(self, *args, **kargs)
+        trace_fn = tr.trace_filename(self.get_option('trace_dir'), 'created')
+        self.tracewriter = tr.TraceWriter(trace_fn, break_if_there=False)
         self.package_dir = sh.joinpths(self.get_option('component_dir'), 'package')
-        self.build_paths = {}
-        for name in ['sources', 'specs', 'srpms', 'rpms', 'build']:
-            # Remove any old packaging directories...
-            sh.deldir(sh.joinpths(self.package_dir, name.upper()), True)
-            self.build_paths[name] = sh.mkdir(sh.joinpths(self.package_dir, name.upper()))
-        self._cached_details = None
+        self._build_paths = None
+
+    @property
+    def build_paths(self):
+        if self._build_paths is None:
+            bpaths = {}
+            for name in ['sources', 'specs', 'srpms', 'rpms', 'build']:
+                final_path = sh.joinpths(self.package_dir, name.upper())
+                bpaths[name] = final_path
+                if sh.isdir(final_path):
+                    sh.deldir(final_path, True)
+                self.tracewriter.dirs_made(*sh.mkdirslist(final_path))
+            self._build_paths = bpaths
+        return dict(self._build_paths)
 
     def _requirements(self):
         return {

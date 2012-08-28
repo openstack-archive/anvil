@@ -82,7 +82,7 @@ class Virsh(object):
     def wait_active(self):
         # TODO(harlowja) fix this by using the component wait active...
         started = False
-        for i in range(0, self.wait_attempts):
+        for _i in range(0, self.wait_attempts):
             (st, output) = self._service_status()
             if st != _ALIVE:
                 LOG.info("Please wait %s seconds until libvirt is started.", self.wait_time)

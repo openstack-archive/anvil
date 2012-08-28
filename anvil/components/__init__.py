@@ -82,7 +82,8 @@ def make_packager(package, distro, default_class):
 class PkgInstallComponent(component.Component):
     def __init__(self, *args, **kargs):
         component.Component.__init__(self, *args, **kargs)
-        self.tracewriter = tr.TraceWriter(self.trace_files['install'], break_if_there=False)
+        trace_fn = tr.trace_filename(self.get_option('trace_dir'), 'created')
+        self.tracewriter = tr.TraceWriter(trace_fn, break_if_there=False)
 
     def _get_download_config(self):
         return None
@@ -432,7 +433,7 @@ class PythonInstallComponent(PkgInstallComponent):
     def _install_python_setups(self):
         py_dirs = self.python_directories
         if py_dirs:
-            real_dirs = dict()
+            real_dirs = {}
             for (name, wkdir) in py_dirs.items():
                 real_dirs[name] = wkdir
                 if not real_dirs[name]:
@@ -443,15 +444,11 @@ class PythonInstallComponent(PkgInstallComponent):
             for (name, working_dir) in real_dirs.items():
                 self.tracewriter.dirs_made(*sh.mkdirslist(working_dir))
                 self.tracewriter.py_installed(name, working_dir)
-                root_fn = sh.joinpths(self.get_option('trace_dir'),
-                                      "%s.python.setup" % (name))
-                sh.execute(*setup_cmd,
-                           cwd=working_dir,
-                           run_as_root=True,
+                root_fn = sh.joinpths(self.get_option('trace_dir'), "%s.python.setup" % (name))
+                sh.execute(*setup_cmd, cwd=working_dir, run_as_root=True,
                            stderr_fn='%s.stderr' % (root_fn),
                            stdout_fn='%s.stdout' % (root_fn),
-                           trace_writer=self.tracewriter
-                           )
+                           trace_writer=self.tracewriter)
 
     def _python_install(self):
         self._install_pips()
@@ -565,17 +562,20 @@ class EmptyRuntime(ProgramRuntime):
 class PythonRuntime(ProgramRuntime):
     def __init__(self, *args, **kargs):
         ProgramRuntime.__init__(self, *args, **kargs)
-        self.tracewriter = tr.TraceWriter(self.trace_files['start'], break_if_there=True)
-        self.tracereader = tr.TraceReader(self.trace_files['start'])
+        trace_fn = tr.trace_filename(self.get_option('trace_dir'), 'start')
+        self.tracewriter = tr.TraceWriter(trace_fn, break_if_there=True)
+        self.tracereader = tr.TraceReader(trace_fn)
 
     def start(self):
         # Select how we are going to start it
         run_type = self.get_option("run_type", default_value='anvil.runners.fork:ForkRunner')
         starter = importer.construct_entry_point(run_type, self)
-        for (i, app_info) in enumerate(self.apps_to_start):
+        am_started = 0
+        for app_info in self.apps_to_start:
             self._start_app(app_info, run_type, starter)
             self._post_app_start(app_info)
-        return i + 1
+            am_started += 1
+        return am_started
 
     def _start_app(self, app_info, run_type, starter):
         app_name = app_info["name"]
@@ -655,7 +655,8 @@ class PythonRuntime(ProgramRuntime):
 class PkgUninstallComponent(component.Component):
     def __init__(self, *args, **kargs):
         component.Component.__init__(self, *args, **kargs)
-        self.tracereader = tr.TraceReader(self.trace_files['install'])
+        trace_fn = tr.trace_filename(self.get_option('trace_dir'), 'created')
+        self.tracereader = tr.TraceReader(trace_fn)
 
     def unconfigure(self):
         self._unconfigure_files()
