@@ -6,6 +6,5 @@ Basics
    :maxdepth: 2
 
    gettingstarted
-   usageexamples
    solvedproblems
    

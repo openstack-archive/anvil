@@ -14,9 +14,10 @@ How do I get program usage?
 How do I run a specific OpenStack milestone?
 --------------------------------------------
 
-OpenStack milestones have tags set in the git repo. Anvil also has the same
-tags so please checkout the corresponding tag for anvil to match the OpenStack
-milestone you wish to use.
+Anvil has the same tag names as OpenStack releases so to
+run against a specific milestone of OpenStack just checkout the
+same tag in anvil and run the same actions as
+you would have ran previously. 
 
 `OMG` the images take forever to download!
 ----------------------------------------
