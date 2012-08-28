@@ -10,15 +10,17 @@ shopt -s nocasematch
 ARGS="$@"
 VER=$(python -c "from anvil import version; print version.version_string()")
 PWD=`pwd`
-BOOT_FN=".anvil_bootstrapped"
-BOOT_FILES="${PWD}/$BOOT_FN"
-if [ -n "$SUDO_USER" ]; then
-    USER_HOME=$(getent passwd $SUDO_USER | cut -d: -f6)
-    if [ -n "$USER_HOME" ]; then
-        BOOT_FILES="${BOOT_FILES} ${USER_HOME}/$BOOT_FN"
+if [ -z "$BOOT_FILES" ]; then
+    BOOT_FN=".anvil_bootstrapped"
+    BOOT_FILES="${PWD}/$BOOT_FN"
+    if [ -n "$SUDO_USER" ]; then
+        USER_HOME=$(getent passwd $SUDO_USER | cut -d: -f6)
+        if [ -n "$USER_HOME" ]; then
+            BOOT_FILES="${BOOT_FILES} ${USER_HOME}/$BOOT_FN"
+        fi
     fi
+    BOOT_FILES="${BOOT_FILES} ${HOME}/$BOOT_FN"
 fi
-BOOT_FILES="${BOOT_FILES} ${HOME}/$BOOT_FN"
 
 has_bootstrapped()
 {
