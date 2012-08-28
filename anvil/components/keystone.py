@@ -204,7 +204,7 @@ class KeystoneRuntime(comp.PythonRuntime):
             LOG.info("Waiting %s seconds so that keystone can start up before running first time init." % (self.wait_time))
             sh.sleep(self.wait_time)
             LOG.info("Running commands to initialize keystone.")
-            (fn, _contents) = utils.load_template(self.name, INIT_WHAT_FN)
+            (fn, contents) = utils.load_template(self.name, INIT_WHAT_FN)
             LOG.debug("Initializing with contents of %s", fn)
             params = {}
             params['keystone'] = khelper.get_shared_params(**utils.merge_dicts(self.options, khelper.get_shared_passwords(self)))
@@ -212,9 +212,7 @@ class KeystoneRuntime(comp.PythonRuntime):
                                                             **self.get_option('glance'))
             params['nova'] = nhelper.get_shared_params(ip=self.get_option('ip'),
                                                           **self.get_option('nova'))
-            init_what = utils.load_yaml(sh.load_file(fn))
-            
-            init_what = utils.expand_template_deep(init_what, params)
+            init_what = utils.expand_template_deep(utils.load_yaml_text(contents), params)
             khelper.Initializer(params['keystone']['service_token'],
                                 params['keystone']['endpoints']['admin']['uri']).initialize(**init_what)
             # Writing this makes sure that we don't init again
