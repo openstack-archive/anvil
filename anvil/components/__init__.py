@@ -703,16 +703,16 @@ class PkgUninstallComponent(component.Component):
         if pkgs:
             pkg_names = set([p['name'] for p in pkgs])
             utils.log_iterable(pkg_names, logger=LOG,
-                header="Potentially removing %s packages" % (len(pkg_names)))
-            which_removed = set()
+                header="Potentially removing %s distribution packages" % (len(pkg_names)))
+            which_removed = []
             with utils.progress_bar('Uninstalling', len(pkgs), reverse=True) as p_bar:
                 for (i, p) in enumerate(pkgs):
                     uninstaller = make_packager(p, self.distro, self.distro.package_manager_class)
                     if uninstaller.remove(p):
-                        which_removed.add(p['name'])
+                        which_removed.append(p['name'])
                     p_bar.update(i + 1)
             utils.log_iterable(which_removed, logger=LOG,
-                    header="Actually removed %s packages" % (len(which_removed)))
+                    header="Actually removed %s distribution packages" % (len(which_removed)))
 
     def _uninstall_touched_files(self):
         files_touched = self.tracereader.files_touched()
@@ -752,20 +752,24 @@ class PythonUninstallComponent(PkgUninstallComponent):
     def _uninstall_pips(self):
         pips = self.tracereader.pips_installed()
         if pips:
-            pip_names = set([p['name'] for p in pips])
+            pip_names = [p['name'] for p in pips]
             utils.log_iterable(pip_names, logger=LOG,
-                header="Uninstalling %s python packages" % (len(pip_names)))
+                header="Potentially removing %s python packages" % (len(pip_names)))
+            which_removed = []
             with utils.progress_bar('Uninstalling', len(pips), reverse=True) as p_bar:
                 for (i, p) in enumerate(pips):
                     try:
                         uninstaller = make_packager(p, self.distro, pip.Packager)
-                        uninstaller.remove(p)
+                        if uninstaller.remove(p):
+                            which_removed.append(p['name'])
                     except excp.ProcessExecutionError as e:
                         # NOTE(harlowja): pip seems to die if a pkg isn't there even in quiet mode
                         combined = (str(e.stderr) + str(e.stdout))
                         if not re.search(r"not\s+installed", combined, re.I):
                             raise
                     p_bar.update(i + 1)
+            utils.log_iterable(which_removed, logger=LOG,
+                    header="Actually removed %s python packages" % (len(which_removed)))
 
     def _uninstall_python(self):
         py_listing = self.tracereader.py_listing()
