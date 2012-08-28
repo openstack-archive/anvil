@@ -26,8 +26,8 @@ class Initializer(object):
 
     def __init__(self, service_token, admin_uri):
         # Late load since its using a client lib that is only avail after install...
-        client_cls = importer.import_entry_point("keystoneclient.v2_0.client:Client")
-        self.client = client_cls(token=service_token, endpoint=admin_uri)
+        self.client = importer.construct_entry_point("keystoneclient.v2_0.client:Client",
+                                                    token=service_token, endpoint=admin_uri)
 
     def _create_tenants(self, tenants):
         tenants_made = dict()

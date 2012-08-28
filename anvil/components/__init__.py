@@ -569,17 +569,13 @@ class PythonRuntime(ProgramRuntime):
         self.tracereader = tr.TraceReader(self.trace_files['start'])
 
     def start(self):
-        # Anything to start?
-        am_started = 0
         # Select how we are going to start it
         run_type = self.get_option("run_type", default_value='anvil.runners.fork:ForkRunner')
-        starter_cls = importer.import_entry_point(run_type)
-        starter = starter_cls(self)
-        for i, app_info in enumerate(self.apps_to_start):
+        starter = importer.construct_entry_point(run_type, self)
+        for (i, app_info) in enumerate(self.apps_to_start):
             self._start_app(app_info, run_type, starter)
-            am_started = i + 1
             self._post_app_start(app_info)
-        return am_started
+        return i + 1
 
     def _start_app(self, app_info, run_type, starter):
         app_name = app_info["name"]
@@ -604,19 +600,15 @@ class PythonRuntime(ProgramRuntime):
         investigator_created = {}
         to_investigate = []
         for (app_name, _trace_fn, run_type) in apps_started:
-            inv_cls = None
-            try:
-                inv_cls = importer.import_entry_point(run_type)
-            except RuntimeError as e:
-                LOG.warn("Could not load class %s which should be used to investigate %s: %s",
-                         colorizer.quote(run_type), colorizer.quote(app_name), e)
-                continue
-            investigator = None
-            if inv_cls in investigator_created:
-                investigator = investigator_created[inv_cls]
-            else:
-                investigator = inv_cls(self)
-                investigator_created[inv_cls] = investigator
+            investigator = investigator_created.get(run_type)
+            if investigator is None:
+                try:
+                    investigator = importer.construct_entry_point(run_type, self)
+                    investigator_created[run_type] = investigator
+                except RuntimeError as e:
+                    LOG.warn("Could not load class %s which should be used to investigate %s: %s",
+                             colorizer.quote(run_type), colorizer.quote(app_name), e)
+                    continue
             to_investigate.append((app_name, investigator))
         return to_investigate
 
