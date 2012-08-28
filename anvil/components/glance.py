@@ -47,8 +47,8 @@ DB_NAME = "glance"
 
 # What applications to start
 APP_OPTIONS = {
-    'glance-api': ['--config-file', sh.joinpths('%CONFIG_DIR%', API_CONF)],
-    'glance-registry': ['--config-file', sh.joinpths('%CONFIG_DIR%', REG_CONF)],
+    'glance-api': ['--config-file', sh.joinpths('$CONFIG_DIR', API_CONF)],
+    'glance-registry': ['--config-file', sh.joinpths('$CONFIG_DIR', REG_CONF)],
 }
 
 # How the subcompoent small name translates to an actual app
