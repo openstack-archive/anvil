@@ -531,6 +531,32 @@ class ProgramRuntime(component.Component):
     def stop(self):
         return 0
 
+    def wait_active(self, between_wait=1, max_attempts=5):
+        rt_name = self.name
+        num_started = len(self.apps_to_start)
+        if not num_started:
+            raise excp.StartException("No %r programs started, can not wait for them to become active..." % (rt_name))
+
+        def waiter(try_num):
+            LOG.info("Waiting %s seconds for component %s programs to start.", between_wait, colorizer.quote(rt_name))
+            LOG.info("Please wait...")
+            sh.sleep(between_wait)
+
+        for i in range(0, max_attempts):
+            statii = self.status()
+            if len(statii) == num_started:
+                not_worked = []
+                for p_status in statii:
+                    if p_status.status != STATUS_STARTED:
+                        not_worked.append(p_status)
+                if len(not_worked) == 0:
+                    return
+            waiter(i + 1)
+
+        tot_time = max(0, between_wait * max_attempts)
+        raise excp.StartException("Failed waiting %s seconds for component %r programs to become active..."
+                                  % (tot_time, rt_name))
+
 
 class EmptyRuntime(ProgramRuntime):
     pass

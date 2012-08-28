@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# This script cleans up the system as part of a nova uninstall
+# This script cleans up the system iptables/services as part of a nova uninstall
 #
 # It is best effort!
 # 

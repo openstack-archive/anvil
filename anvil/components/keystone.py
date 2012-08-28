@@ -196,7 +196,6 @@ class KeystoneRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
-        self.wait_time = self.get_int_option('service_wait_seconds')
         self.init_fn = sh.joinpths(self.get_option('trace_dir'), INIT_WHAT_HAPPENED)
 
 
@@ -214,8 +213,7 @@ class KeystoneRuntime(comp.PythonRuntime):
 
     def post_start(self):
         if not sh.isfile(self.init_fn) and self.get_bool_option('do-init'):
-            LOG.info("Waiting %s seconds so that keystone can start up before running first time init." % (self.wait_time))
-            sh.sleep(self.wait_time)
+            self.wait_active()
             LOG.info("Running commands to initialize keystone.")
             (fn, contents) = utils.load_template(self.name, INIT_WHAT_FN)
             LOG.debug("Initializing with contents of %s", fn)

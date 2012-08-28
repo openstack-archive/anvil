@@ -198,7 +198,6 @@ class GlanceRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
-        self.wait_time = self.get_int_option('service_wait_seconds')
 
     @property
     def apps_to_start(self):
@@ -224,8 +223,7 @@ class GlanceRuntime(comp.PythonRuntime):
         comp.PythonRuntime.post_start(self)
         if self.get_bool_option('load-images'):
             # Install any images that need activating...
-            LOG.info("Waiting %s seconds so that glance can start up before image install." % (self.wait_time))
-            sh.sleep(self.wait_time)
+            self.wait_active()
             params = {}
             params['glance'] = ghelper.get_shared_params(**self.options)
             params['keystone'] = khelper.get_shared_params(ip=self.get_option('ip'),
