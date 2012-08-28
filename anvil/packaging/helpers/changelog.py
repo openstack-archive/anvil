@@ -61,7 +61,9 @@ class GitChangeLog(object):
         return self.date_buckets
 
     def _get_log(self):
-        log_cmd = ['git', 'log', '--pretty=oneline', '-n%s' % (self.max_history)]
+        log_cmd = ['git', 'log', '--pretty=oneline']
+        if self.max_history > 0:
+            log_cmd += ['-n%s' % (self.max_history)]
         (sysout, _stderr) = sh.execute(*log_cmd, cwd=self.wkdir)
         lines = filter(self._filter_logs, sysout.strip('\n').splitlines())
 
@@ -116,7 +118,7 @@ class RpmChangeLog(GitChangeLog):
                 if len(sublines) > 1:
                     for subline in sublines[1:]:
                         lines.append("  %s" % subline)
-        # Replace utf8 with ? just incase
+        # Replace utf8 oddities with ? just incase
         contents = "\n".join(lines)
         contents = contents.decode('utf8').encode('ascii', 'replace')
         return contents
