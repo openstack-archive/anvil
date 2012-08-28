@@ -38,10 +38,7 @@ Features
 -  Written in **python** so it matches the style of other `OpenStack`_ components.
 -  **Code decoupling** (thus encouraging re-use by others)
 
-   * Components/actions are isolated as individual classes (and so on). This 
-     decouples component installation from the action and decoupling of the 
-     commands/packages/pips the component will use to install itself from the
-     component...
+   * Components/actions are isolated as individual classes (and so on).
    * Supports installation *personas* that define what is to be installed, thus
      decoupling the 'what' from the 'how'.
 
