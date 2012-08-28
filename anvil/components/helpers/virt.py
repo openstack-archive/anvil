@@ -44,7 +44,10 @@ DEF_VIRT_TYPE = 'qemu'
 
 def canon_libvirt_type(virt_type):
     virt_type = str(virt_type).lower().strip()
-    return LIBVIRT_PROTOCOL_MAP.get(virt_type, DEF_VIRT_TYPE)
+    if virt_type not in LIBVIRT_PROTOCOL_MAP:
+        return DEF_VIRT_TYPE
+    else:
+        return virt_type
 
 
 class Virsh(object):
