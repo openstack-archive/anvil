@@ -36,10 +36,14 @@ class RabbitUninstaller(comp.PkgUninstallComponent):
 
     def pre_uninstall(self):
         try:
-            self.runtime.restart()
             LOG.debug("Attempting to reset the rabbit-mq guest password to: %s", colorizer.quote(RESET_BASE_PW))
+            self.runtime.start()
+            self.runtime.wait_active()
             cmd = self.distro.get_command('rabbit-mq', 'change_password') + [RESET_BASE_PW]
             sh.execute(*cmd, run_as_root=True)
+            LOG.info("Restarting so that your rabbit-mq password is reflected.")
+            self.runtime.restart()
+            self.runtime.wait_active()
         except IOError:
             LOG.warn(("Could not reset the rabbit-mq password. You might have to manually "
                       "reset the password to %s before the next install"), colorizer.quote(RESET_BASE_PW))
@@ -56,12 +60,14 @@ class RabbitInstaller(comp.PkgInstallComponent):
     def _setup_pw(self):
         user_id = self.get_option('user_id')
         LOG.info("Setting up your rabbit-mq %s password.", colorizer.quote(user_id))
-        self.runtime.restart()
+        self.runtime.start()
+        self.runtime.wait_active()
         cmd = list(self.distro.get_command('rabbit-mq', 'change_password'))
         cmd += [user_id, rhelper.get_shared_passwords(self)['pw']]
         sh.execute(*cmd, run_as_root=True)
         LOG.info("Restarting so that your rabbit-mq password is reflected.")
         self.runtime.restart()
+        self.runtime.wait_active()
 
     def post_install(self):
         comp.PkgInstallComponent.post_install(self)
@@ -79,6 +85,10 @@ class RabbitRuntime(comp.ProgramRuntime):
             return 1
         else:
             return 0
+
+    @property
+    def apps_to_start(self):
+        return ['rabbit-mq']
 
     def status(self):
         # This has got to be the worst status output.
@@ -113,10 +123,7 @@ class RabbitRuntime(comp.ProgramRuntime):
                         check_exit_code=check_exit)
 
     def restart(self):
-        LOG.info("Restarting rabbit-mq.")
         self._run_cmd(self.distro.get_command('rabbit-mq', 'restart'))
-        LOG.info("Please wait %s seconds while it starts up." % (self.wait_time))
-        sh.sleep(self.wait_time)
         return 1
 
     def stop(self):
