@@ -689,8 +689,6 @@ class PkgUninstallComponent(component.Component):
         self._uninstall_pkgs()
         self._uninstall_touched_files()
         self._uninstall_dirs()
-        LOG.debug("Deleting install trace file %r", self.tracereader.filename())
-        sh.unlink(self.tracereader.filename())
 
     def post_uninstall(self):
         pass
@@ -718,28 +716,18 @@ class PkgUninstallComponent(component.Component):
         files_touched = self.tracereader.files_touched()
         if files_touched:
             utils.log_iterable(files_touched, logger=LOG,
-                header="Removing %s touched files" % (len(files_touched)))
+                header="Removing %s miscellaneous files" % (len(files_touched)))
             for fn in files_touched:
                 sh.unlink(fn, run_as_root=True)
 
     def _uninstall_dirs(self):
         dirs_made = self.tracereader.dirs_made()
-        if dirs_made:
-            dirs_made = [sh.abspth(d) for d in dirs_made]
-            download_places = [path_location[0] for path_location in self.tracereader.download_locations()]
-            if download_places:
-                utils.log_iterable(download_places, logger=LOG,
-                    header="Keeping %s download directories (and there children directories)" % (len(download_places)))
-                for download_place in download_places:
-                    dirs_made = sh.remove_parents(download_place, dirs_made)
-            if dirs_made:
-                utils.log_iterable(dirs_made, logger=LOG,
-                    header="Removing %s created directories" % (len(dirs_made)))
-                for dir_name in dirs_made:
-                    if sh.isdir(dir_name):
-                        sh.deldir(dir_name, run_as_root=True)
-                    else:
-                        LOG.warn("No directory found at %s - skipping", colorizer.quote(dir_name, quote_color='red'))
+        dirs_alive = filter(sh.isdir, [sh.abspth(d) for d in dirs_made])
+        if dirs_alive:
+            utils.log_iterable(dirs_alive, logger=LOG,
+                header="Removing %s created directories" % (len(dirs_alive)))
+            for dir_name in dirs_alive:
+                sh.deldir(dir_name, run_as_root=True)
 
 
 class PythonUninstallComponent(PkgUninstallComponent):
