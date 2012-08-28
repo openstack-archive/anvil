@@ -54,7 +54,8 @@ class DBUninstaller(comp.PkgUninstallComponent):
                 pwd_cmd = self.distro.get_command(dbtype, 'set_pwd')
                 if pwd_cmd:
                     LOG.info("Ensuring your database is started before we operate on it.")
-                    self.runtime.restart()
+                    self.runtime.start()
+                    self.runtime.wait_active()
                     params = {
                         'OLD_PASSWORD': dbhelper.get_shared_passwords(self)['pw'],
                         'NEW_PASSWORD': RESET_BASE_PW,
@@ -112,7 +113,8 @@ class DBInstaller(comp.PkgInstallComponent):
                     LOG.info(("Attempting to set your db password"
                               " just incase it wasn't set previously."))
                     LOG.info("Ensuring your database is started before we operate on it.")
-                    self.runtime.restart()
+                    self.runtime.start()
+                    self.runtime.wait_active()
                     params = {
                         'NEW_PASSWORD': dbhelper.get_shared_passwords(self)['pw'],
                         'USER': self.get_option("user", default_value='root'),
@@ -135,7 +137,6 @@ class DBInstaller(comp.PkgInstallComponent):
 class DBRuntime(comp.ProgramRuntime):
     def __init__(self, *args, **kargs):
         comp.ProgramRuntime.__init__(self, *args, **kargs)
-        self.wait_time = self.get_int_option('service_wait_seconds')
 
     def _get_run_actions(self, act, exception_cls):
         db_type = self.get_option("type")
@@ -144,12 +145,15 @@ class DBRuntime(comp.ProgramRuntime):
             raise NotImplementedError(BASE_ERROR % (act, db_type))
         return self.distro.get_command(db_type, act)
 
+    @property
+    def apps_to_start(self):
+        db_type = self.get_option("type")
+        return [db_type]
+
     def start(self):
         if self.status()[0].status != comp.STATUS_STARTED:
             start_cmd = self._get_run_actions('start', excp.StartException)
             sh.execute(*start_cmd, run_as_root=True, check_exit_code=True)
-            LOG.info("Please wait %s seconds while it starts up." % self.wait_time)
-            sh.sleep(self.wait_time)
             return 1
         else:
             return 0
@@ -166,8 +170,6 @@ class DBRuntime(comp.ProgramRuntime):
         LOG.info("Restarting your database.")
         restart_cmd = self._get_run_actions('restart', excp.RestartException)
         sh.execute(*restart_cmd, run_as_root=True, check_exit_code=True)
-        LOG.info("Please wait %s seconds while it restarts.", self.wait_time)
-        sh.sleep(self.wait_time)
         return 1
 
     def status(self):

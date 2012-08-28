@@ -15,7 +15,6 @@
 #    under the License.
 
 from anvil import log as logging
-from anvil import trace as tr
 from anvil import type_utils as tu
 from anvil import utils
 
@@ -87,14 +86,6 @@ class Component(object):
             'COMPONENT_DIR': self.get_option('component_dir'),
             'CONFIG_DIR': self.get_option('cfg_dir'),
             'TRACE_DIR': self.get_option('trace_dir'),
-        }
-
-    @property
-    def trace_files(self):
-        trace_dir = self.get_option('trace_dir')
-        return {
-            'install': tr.trace_fn(trace_dir, "install"),
-            'start': tr.trace_fn(trace_dir, "start"),
         }
 
     def warm_configs(self):

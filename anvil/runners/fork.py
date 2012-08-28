@@ -59,7 +59,7 @@ class ForkRunner(base.Runner):
                 sh.unlink(stderr_fn)
                 LOG.debug("Removing stdout file %r" % (stdout_fn))
                 sh.unlink(stdout_fn)
-                trace_fn = tr.trace_fn(trace_dir, fn_name)
+                trace_fn = tr.trace_filename(trace_dir, fn_name)
                 if sh.isfile(trace_fn):
                     LOG.debug("Removing %r trace file %r" % (app_name, trace_fn))
                     sh.unlink(trace_fn)
@@ -105,7 +105,7 @@ class ForkRunner(base.Runner):
 
     def _do_trace(self, fn, kvs):
         trace_dir = self.runtime.get_option('trace_dir')
-        run_trace = tr.TraceWriter(tr.trace_fn(trace_dir, fn))
+        run_trace = tr.TraceWriter(tr.trace_filename(trace_dir, fn))
         for (k, v) in kvs.items():
             run_trace.trace(k, v)
         return run_trace.filename()

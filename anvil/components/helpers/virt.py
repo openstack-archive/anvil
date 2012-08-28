@@ -44,7 +44,10 @@ DEF_VIRT_TYPE = 'qemu'
 
 def canon_libvirt_type(virt_type):
     virt_type = str(virt_type).lower().strip()
-    return LIBVIRT_PROTOCOL_MAP.get(virt_type, DEF_VIRT_TYPE)
+    if virt_type not in LIBVIRT_PROTOCOL_MAP:
+        return DEF_VIRT_TYPE
+    else:
+        return virt_type
 
 
 class Virsh(object):
@@ -52,15 +55,16 @@ class Virsh(object):
     def __init__(self, service_wait, distro):
         self.distro = distro
         self.wait_time = service_wait
+        self.wait_attempts = 5
 
     def _service_status(self):
         cmd = self.distro.get_command('libvirt', 'status')
         (stdout, stderr) = sh.execute(*cmd, run_as_root=True, check_exit_code=False)
-        combined = (stdout + stderr).lower()
-        if combined.find("running") != -1 or combined.find('start') != -1:
-            return _ALIVE
+        combined = (stdout + stderr)
+        if combined.lower().find("running") != -1 or combined.lower().find('start') != -1:
+            return (_ALIVE, combined)
         else:
-            return _DEAD
+            return (_DEAD, combined)
 
     def _destroy_domain(self, libvirt, conn, dom_name):
         try:
@@ -72,15 +76,26 @@ class Virsh(object):
             LOG.warn("Could not clear out libvirt domain %s due to: %s", colorizer.quote(dom_name), e)
 
     def restart_service(self):
-        if self._service_status() != _ALIVE:
-            cmd = self.distro.get_command('libvirt', 'restart')
-            sh.execute(*cmd, run_as_root=True)
-            LOG.info("Restarting the libvirt service, please wait %s seconds until its started." % (self.wait_time))
-            sh.sleep(self.wait_time)
+        cmd = self.distro.get_command('libvirt', 'restart')
+        sh.execute(*cmd, run_as_root=True)
+
+    def wait_active(self):
+        # TODO(harlowja) fix this by using the component wait active...
+        started = False
+        for _i in range(0, self.wait_attempts):
+            (st, output) = self._service_status()
+            if st != _ALIVE:
+                LOG.info("Please wait %s seconds until libvirt is started.", self.wait_time)
+                sh.sleep(self.wait_time)
+            else:
+                started = True
+        if not started:
+            raise excp.StartException("Unable to start the libvirt daemon due to: %s" % (output))
 
     def check_virt(self, virt_type):
         virt_protocol = LIBVIRT_PROTOCOL_MAP.get(virt_type)
         self.restart_service()
+        self.wait_active()
         cmds = [{
             'cmd': self.distro.get_command('libvirt', 'verify'),
             'run_as_root': True,
@@ -108,8 +123,9 @@ class Virsh(object):
             LOG.info("Attempting to clear out leftover libvirt domains using protocol: %s", colorizer.quote(virt_protocol))
             try:
                 self.restart_service()
-            except excp.ProcessExecutionError as e:
-                LOG.warn("Could not restart libvirt due to: %s" % (e))
+                self.wait_active()
+            except (excp.StartException, IOError) as e:
+                LOG.warn("Could not restart the libvirt daemon due to: %s", e)
                 return
             try:
                 conn = libvirt.open(virt_protocol)

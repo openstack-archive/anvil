@@ -22,6 +22,11 @@ from anvil import log as logging
 LOG = logging.getLogger(__name__)
 
 
+def construct_entry_point(fullname, *args, **kwargs):
+    cls = import_entry_point(fullname)
+    return cls(*args, **kwargs)
+
+
 def partition(fullname):
     """
     The name should be in dotted.path:ClassName syntax.

@@ -82,7 +82,8 @@ def make_packager(package, distro, default_class):
 class PkgInstallComponent(component.Component):
     def __init__(self, *args, **kargs):
         component.Component.__init__(self, *args, **kargs)
-        self.tracewriter = tr.TraceWriter(self.trace_files['install'], break_if_there=False)
+        trace_fn = tr.trace_filename(self.get_option('trace_dir'), 'created')
+        self.tracewriter = tr.TraceWriter(trace_fn, break_if_there=False)
 
     def _get_download_config(self):
         return None
@@ -432,7 +433,7 @@ class PythonInstallComponent(PkgInstallComponent):
     def _install_python_setups(self):
         py_dirs = self.python_directories
         if py_dirs:
-            real_dirs = dict()
+            real_dirs = {}
             for (name, wkdir) in py_dirs.items():
                 real_dirs[name] = wkdir
                 if not real_dirs[name]:
@@ -443,15 +444,11 @@ class PythonInstallComponent(PkgInstallComponent):
             for (name, working_dir) in real_dirs.items():
                 self.tracewriter.dirs_made(*sh.mkdirslist(working_dir))
                 self.tracewriter.py_installed(name, working_dir)
-                root_fn = sh.joinpths(self.get_option('trace_dir'),
-                                      "%s.python.setup" % (name))
-                sh.execute(*setup_cmd,
-                           cwd=working_dir,
-                           run_as_root=True,
+                root_fn = sh.joinpths(self.get_option('trace_dir'), "%s.python.setup" % (name))
+                sh.execute(*setup_cmd, cwd=working_dir, run_as_root=True,
                            stderr_fn='%s.stderr' % (root_fn),
                            stdout_fn='%s.stdout' % (root_fn),
-                           trace_writer=self.tracewriter
-                           )
+                           trace_writer=self.tracewriter)
 
     def _python_install(self):
         self._install_pips()
@@ -531,6 +528,32 @@ class ProgramRuntime(component.Component):
     def stop(self):
         return 0
 
+    def wait_active(self, between_wait=1, max_attempts=5):
+        rt_name = self.name
+        num_started = len(self.apps_to_start)
+        if not num_started:
+            raise excp.StartException("No %r programs started, can not wait for them to become active..." % (rt_name))
+
+        def waiter(try_num):
+            LOG.info("Waiting %s seconds for component %s programs to start.", between_wait, colorizer.quote(rt_name))
+            LOG.info("Please wait...")
+            sh.sleep(between_wait)
+
+        for i in range(0, max_attempts):
+            statii = self.status()
+            if len(statii) == num_started:
+                not_worked = []
+                for p_status in statii:
+                    if p_status.status != STATUS_STARTED:
+                        not_worked.append(p_status)
+                if len(not_worked) == 0:
+                    return
+            waiter(i + 1)
+
+        tot_time = max(0, between_wait * max_attempts)
+        raise excp.StartException("Failed waiting %s seconds for component %r programs to become active..."
+                                  % (tot_time, rt_name))
+
 
 class EmptyRuntime(ProgramRuntime):
     pass
@@ -539,20 +562,19 @@ class EmptyRuntime(ProgramRuntime):
 class PythonRuntime(ProgramRuntime):
     def __init__(self, *args, **kargs):
         ProgramRuntime.__init__(self, *args, **kargs)
-        self.tracewriter = tr.TraceWriter(self.trace_files['start'], break_if_there=True)
-        self.tracereader = tr.TraceReader(self.trace_files['start'])
+        trace_fn = tr.trace_filename(self.get_option('trace_dir'), 'start')
+        self.tracewriter = tr.TraceWriter(trace_fn, break_if_there=True)
+        self.tracereader = tr.TraceReader(trace_fn)
 
     def start(self):
-        # Anything to start?
-        am_started = 0
         # Select how we are going to start it
         run_type = self.get_option("run_type", default_value='anvil.runners.fork:ForkRunner')
-        starter_cls = importer.import_entry_point(run_type)
-        starter = starter_cls(self)
-        for i, app_info in enumerate(self.apps_to_start):
+        starter = importer.construct_entry_point(run_type, self)
+        am_started = 0
+        for app_info in self.apps_to_start:
             self._start_app(app_info, run_type, starter)
-            am_started = i + 1
             self._post_app_start(app_info)
+            am_started += 1
         return am_started
 
     def _start_app(self, app_info, run_type, starter):
@@ -578,19 +600,15 @@ class PythonRuntime(ProgramRuntime):
         investigator_created = {}
         to_investigate = []
         for (app_name, _trace_fn, run_type) in apps_started:
-            inv_cls = None
-            try:
-                inv_cls = importer.import_entry_point(run_type)
-            except RuntimeError as e:
-                LOG.warn("Could not load class %s which should be used to investigate %s: %s",
-                         colorizer.quote(run_type), colorizer.quote(app_name), e)
-                continue
-            investigator = None
-            if inv_cls in investigator_created:
-                investigator = investigator_created[inv_cls]
-            else:
-                investigator = inv_cls(self)
-                investigator_created[inv_cls] = investigator
+            investigator = investigator_created.get(run_type)
+            if investigator is None:
+                try:
+                    investigator = importer.construct_entry_point(run_type, self)
+                    investigator_created[run_type] = investigator
+                except RuntimeError as e:
+                    LOG.warn("Could not load class %s which should be used to investigate %s: %s",
+                             colorizer.quote(run_type), colorizer.quote(app_name), e)
+                    continue
             to_investigate.append((app_name, investigator))
         return to_investigate
 
@@ -637,7 +655,8 @@ class PythonRuntime(ProgramRuntime):
 class PkgUninstallComponent(component.Component):
     def __init__(self, *args, **kargs):
         component.Component.__init__(self, *args, **kargs)
-        self.tracereader = tr.TraceReader(self.trace_files['install'])
+        trace_fn = tr.trace_filename(self.get_option('trace_dir'), 'created')
+        self.tracereader = tr.TraceReader(trace_fn)
 
     def unconfigure(self):
         self._unconfigure_files()
@@ -663,8 +682,6 @@ class PkgUninstallComponent(component.Component):
         self._uninstall_pkgs()
         self._uninstall_touched_files()
         self._uninstall_dirs()
-        LOG.debug("Deleting install trace file %r", self.tracereader.filename())
-        sh.unlink(self.tracereader.filename())
 
     def post_uninstall(self):
         pass
@@ -677,43 +694,33 @@ class PkgUninstallComponent(component.Component):
         if pkgs:
             pkg_names = set([p['name'] for p in pkgs])
             utils.log_iterable(pkg_names, logger=LOG,
-                header="Potentially removing %s packages" % (len(pkg_names)))
-            which_removed = set()
+                header="Potentially removing %s distribution packages" % (len(pkg_names)))
+            which_removed = []
             with utils.progress_bar('Uninstalling', len(pkgs), reverse=True) as p_bar:
                 for (i, p) in enumerate(pkgs):
                     uninstaller = make_packager(p, self.distro, self.distro.package_manager_class)
                     if uninstaller.remove(p):
-                        which_removed.add(p['name'])
+                        which_removed.append(p['name'])
                     p_bar.update(i + 1)
             utils.log_iterable(which_removed, logger=LOG,
-                    header="Actually removed %s packages" % (len(which_removed)))
+                    header="Actually removed %s distribution packages" % (len(which_removed)))
 
     def _uninstall_touched_files(self):
         files_touched = self.tracereader.files_touched()
         if files_touched:
             utils.log_iterable(files_touched, logger=LOG,
-                header="Removing %s touched files" % (len(files_touched)))
+                header="Removing %s miscellaneous files" % (len(files_touched)))
             for fn in files_touched:
                 sh.unlink(fn, run_as_root=True)
 
     def _uninstall_dirs(self):
         dirs_made = self.tracereader.dirs_made()
-        if dirs_made:
-            dirs_made = [sh.abspth(d) for d in dirs_made]
-            download_places = [path_location[0] for path_location in self.tracereader.download_locations()]
-            if download_places:
-                utils.log_iterable(download_places, logger=LOG,
-                    header="Keeping %s download directories (and there children directories)" % (len(download_places)))
-                for download_place in download_places:
-                    dirs_made = sh.remove_parents(download_place, dirs_made)
-            if dirs_made:
-                utils.log_iterable(dirs_made, logger=LOG,
-                    header="Removing %s created directories" % (len(dirs_made)))
-                for dir_name in dirs_made:
-                    if sh.isdir(dir_name):
-                        sh.deldir(dir_name, run_as_root=True)
-                    else:
-                        LOG.warn("No directory found at %s - skipping", colorizer.quote(dir_name, quote_color='red'))
+        dirs_alive = filter(sh.isdir, [sh.abspth(d) for d in dirs_made])
+        if dirs_alive:
+            utils.log_iterable(dirs_alive, logger=LOG,
+                header="Removing %s created directories" % (len(dirs_alive)))
+            for dir_name in dirs_alive:
+                sh.deldir(dir_name, run_as_root=True)
 
 
 class PythonUninstallComponent(PkgUninstallComponent):
@@ -726,20 +733,24 @@ class PythonUninstallComponent(PkgUninstallComponent):
     def _uninstall_pips(self):
         pips = self.tracereader.pips_installed()
         if pips:
-            pip_names = set([p['name'] for p in pips])
+            pip_names = [p['name'] for p in pips]
             utils.log_iterable(pip_names, logger=LOG,
-                header="Uninstalling %s python packages" % (len(pip_names)))
+                header="Potentially removing %s python packages" % (len(pip_names)))
+            which_removed = []
             with utils.progress_bar('Uninstalling', len(pips), reverse=True) as p_bar:
                 for (i, p) in enumerate(pips):
                     try:
                         uninstaller = make_packager(p, self.distro, pip.Packager)
-                        uninstaller.remove(p)
+                        if uninstaller.remove(p):
+                            which_removed.append(p['name'])
                     except excp.ProcessExecutionError as e:
                         # NOTE(harlowja): pip seems to die if a pkg isn't there even in quiet mode
                         combined = (str(e.stderr) + str(e.stdout))
                         if not re.search(r"not\s+installed", combined, re.I):
                             raise
                     p_bar.update(i + 1)
+            utils.log_iterable(which_removed, logger=LOG,
+                    header="Actually removed %s python packages" % (len(which_removed)))
 
     def _uninstall_python(self):
         py_listing = self.tracereader.py_listing()

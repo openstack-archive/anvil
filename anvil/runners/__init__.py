@@ -17,8 +17,7 @@
 import abc
 import weakref
 
-from anvil.components import (STATUS_INSTALLED, STATUS_STARTED,
-                              STATUS_STOPPED, STATUS_UNKNOWN)
+from anvil.components import STATUS_UNKNOWN
 
 
 class Runner(object):
