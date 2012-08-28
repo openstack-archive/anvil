@@ -92,15 +92,15 @@ SUBSYSTEMS = [NCPU, NVOL, NAPI,
 # What to start
 APP_OPTIONS = {
     #these are currently the core components/applications
-    'nova-api': ['--config-file', '%CFG_FILE%'],
-    'nova-compute': ['--config-file', '%CFG_FILE%'],
-    'nova-volume': ['--config-file', '%CFG_FILE%'],
-    'nova-network': ['--config-file', '%CFG_FILE%'],
-    'nova-scheduler': ['--config-file', '%CFG_FILE%'],
-    'nova-cert': ['--config-file', '%CFG_FILE%'],
-    'nova-objectstore': ['--config-file', '%CFG_FILE%'],
-    'nova-consoleauth': ['--config-file', '%CFG_FILE%'],
-    'nova-xvpvncproxy': ['--config-file', '%CFG_FILE%'],
+    'nova-api': ['--config-file', '$CFG_FILE'],
+    'nova-compute': ['--config-file', '$CFG_FILE'],
+    'nova-volume': ['--config-file', '$CFG_FILE'],
+    'nova-network': ['--config-file', '$CFG_FILE'],
+    'nova-scheduler': ['--config-file', '$CFG_FILE'],
+    'nova-cert': ['--config-file', '$CFG_FILE'],
+    'nova-objectstore': ['--config-file', '$CFG_FILE'],
+    'nova-consoleauth': ['--config-file', '$CFG_FILE'],
+    'nova-xvpvncproxy': ['--config-file', '$CFG_FILE'],
 }
 
 # Sub component names to actual app names (matching previous dict)

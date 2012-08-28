@@ -121,7 +121,7 @@ class RabbitRuntime(comp.ProgramRuntime):
 
     def stop(self):
         if self.status()[0].status != comp.STATUS_STOPPED:
-            self._run_cmd(self.distro.get_command('rabbitmq-server', 'stop'))
+            self._run_cmd(self.distro.get_command('rabbit-mq', 'stop'))
             return 1
         else:
             return 0

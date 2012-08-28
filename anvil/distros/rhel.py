@@ -343,13 +343,13 @@ class PythonPackager(DependencyPackager):
     def _build_changelog(self):
         try:
             ch = changelog.RpmChangeLog(self.get_option('app_dir'))
-            return ch.formatLog()
+            return ch.format_log()
         except (excp.AnvilException, IOError):
             return ''
 
     def _undefines(self):
         undefine_what = DependencyPackager._undefines(self)
-        if self.get_bool_option('ignore_missing'):
+        if self.get_bool_option('ignore-missing'):
             undefine_what.append('__check_files')
         return undefine_what
 

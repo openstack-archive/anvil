@@ -21,6 +21,8 @@ from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
 
+import re
+
 from anvil.components.helpers import db as dbhelper
 
 LOG = logging.getLogger(__name__)
@@ -59,17 +61,10 @@ class HorizonInstaller(comp.PythonInstallComponent):
         self.log_dir = sh.joinpths(self.get_option('component_dir'), 'logs')
 
     def _filter_pip_requires_line(self, line):
-        if line.lower().find('novaclient') != -1:
-            return None
-        if line.lower().find('quantumclient') != -1:
-            return None
-        if line.lower().find('swiftclient') != -1:
-            return None
-        if line.lower().find('keystoneclient') != -1:
-            return None
-        if line.lower().find('glanceclient') != -1:
-            return None
-        if line.lower().find('cinderclient') != -1:
+        # Knock off all nova, quantum, swift, keystone, cinder
+        # clients since anvil will be making sure those are installed
+        # instead of asking pip to do it...
+        if re.match(r'[n|q|s|k|g|c][\w]+client', line, re.I):
             return None
         return line
 
