@@ -90,6 +90,9 @@ def parse():
         help="do not store the users passwords into yaml files")
     parser.add_option_group(base_group)
 
+    suffixes = ("Known suffixes 'K' (kilobyte, 1024),"
+                " 'M' (megabyte, 1024k), 'G' (gigabyte, 1024M)"
+                " are supported, 'B' is the default and is ignored.")
     status_group = OptionGroup(parser, "Status specific options")
     status_group.add_option('-s', "--show",
         action="callback",
@@ -97,7 +100,7 @@ def parse():
         type='string',
         metavar="SIZE",
         callback=_size_cb,
-        help="show SIZE 'details' (if applicable) when showing component status")
+        help="show SIZE 'details' when showing component status. " + suffixes)
     parser.add_option_group(status_group)
 
     # Extract only what we care about, these will be passed
