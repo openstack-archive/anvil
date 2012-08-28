@@ -23,6 +23,7 @@ import random
 import re
 import socket
 import tempfile
+import urllib2
 
 from time import (localtime, strftime)
 
@@ -101,6 +102,39 @@ def load_yaml(fn):
 
 def load_yaml_text(text):
     return yaml.safe_load(text)
+
+
+def wait_for_url(url, max_attempts=3, wait_between=5):
+    excps = []
+    LOG.info("Waiting for %s to become active (max_attempts=%s, seconds_between=%s)", 
+             colorizer.quote(url), max_attempts, wait_between)
+
+    def waiter():
+        LOG.info("Sleeping for %s seconds, %s is still not active.", wait_between, colorizer.quote(url))
+        sh.sleep(wait_between)
+
+    def success(attempts):
+        LOG.info("%s became active after %s attempts!", colorizer.quote(url), attempts)
+
+    for i in range(0, max_attempts):
+        try:
+            with contextlib.closing(urllib2.urlopen(urllib2.Request(url))) as req:
+                req.read()
+                success(i + 1)
+                return
+        except urllib2.HTTPError as e:
+            if e.code in xrange(200, 499):
+                # Should be ok, at least its responding...
+                success(i + 1)
+                return
+            else:
+                excps.append(e)
+                waiter()
+        except IOError as e:
+            excps.append(e)
+            waiter()
+    if excps:
+        raise excps[-1]
 
 
 def add_header(fn, contents):

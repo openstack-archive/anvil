@@ -1,1 +1,483 @@
-
+$ sudo ./smithy -a uninstall
+INFO: @anvil.distro : Matched distro rhel for platform Linux-2.6.32-220.4.2.el6.YAHOO.20120217.x86_64-x86_64-with-redhat-6.2-Santiago
+____ ___  ____ _  _ ____ ___ ____ ____ _  _
+|  | |__] |___ |\ | [__   |  |__| |    |_/
+|__| |    |___ | \| ___]  |  |  | |___ | \_
+           Anvil: | 2012.2-dev |           
+And now for something completely different!
+---------------Action Runner---------------
+INFO: @anvil : Starting action uninstall on Tue, 28 Aug 2012 23:29:53 for distro: rhel
+INFO: @anvil : Using persona: conf/personas/in-a-box/basic.yaml
+INFO: @anvil : In root directory: /home/harlowja/openstack
+INFO: @anvil.action : Processing components for action uninstall.
+INFO: @anvil.action : Activating in the following order:
+INFO: @anvil.action : |-- openstack-client
+INFO: @anvil.action : |-- nova-client
+INFO: @anvil.action : |-- nova
+INFO: @anvil.action : |-- glance-client
+INFO: @anvil.action : |-- glance
+INFO: @anvil.action : |-- keystone-client
+INFO: @anvil.action : |-- keystone
+INFO: @anvil.action : |-- rabbit-mq
+INFO: @anvil.action : |-- db
+INFO: @anvil.action : |-- general
+INFO: @anvil.action : Booting up your components.
+INFO: @anvil.action : Updated passwords to be used from 1 files:
+INFO: @anvil.action : |-- /home/harlowja/anvil/passwords.yaml
+INFO: @anvil.action : Verifying that the components are ready to rock-n-roll.
+INFO: @anvil.action : Warming up component configurations.
+INFO: @anvil.action : Updated/created 1 password files:
+INFO: @anvil.action : |-- /home/harlowja/anvil/passwords.yaml
+INFO: @anvil.actions.uninstall : Unconfiguring openstack-client.
+INFO: @anvil.actions.uninstall : Unconfiguring nova-client.
+INFO: @anvil.actions.uninstall : Unconfiguring nova.
+INFO: @anvil.components : Removing 4 configuration files:
+INFO: @anvil.components : |-- /home/harlowja/openstack/nova/config/logging.conf
+INFO: @anvil.components : |-- /home/harlowja/openstack/nova/config/nova-api-paste.ini
+INFO: @anvil.components : |-- /home/harlowja/openstack/nova/config/nova.conf
+INFO: @anvil.components : |-- /home/harlowja/openstack/nova/config/policy.json
+INFO: @anvil.components : Removing 4 symlink files:
+INFO: @anvil.components : |-- /etc/nova/policy.json
+INFO: @anvil.components : |-- /etc/nova/nova.conf
+INFO: @anvil.components : |-- /etc/nova/nova-api-paste.ini
+INFO: @anvil.components : |-- /etc/nova/logging.conf
+INFO: @anvil.actions.uninstall : Unconfiguring glance-client.
+INFO: @anvil.actions.uninstall : Unconfiguring glance.
+INFO: @anvil.components : Removing 6 configuration files:
+INFO: @anvil.components : |-- /home/harlowja/openstack/glance/config/glance-api-paste.ini
+INFO: @anvil.components : |-- /home/harlowja/openstack/glance/config/glance-api.conf
+INFO: @anvil.components : |-- /home/harlowja/openstack/glance/config/glance-registry-paste.ini
+INFO: @anvil.components : |-- /home/harlowja/openstack/glance/config/glance-registry.conf
+INFO: @anvil.components : |-- /home/harlowja/openstack/glance/config/logging.conf
+INFO: @anvil.components : |-- /home/harlowja/openstack/glance/config/policy.json
+INFO: @anvil.components : Removing 6 symlink files:
+INFO: @anvil.components : |-- /etc/glance/policy.json
+INFO: @anvil.components : |-- /etc/glance/logging.conf
+INFO: @anvil.components : |-- /etc/glance/glance-registry.conf
+INFO: @anvil.components : |-- /etc/glance/glance-registry-paste.ini
+INFO: @anvil.components : |-- /etc/glance/glance-api.conf
+INFO: @anvil.components : |-- /etc/glance/glance-api-paste.ini
+INFO: @anvil.actions.uninstall : Unconfiguring keystone-client.
+INFO: @anvil.actions.uninstall : Unconfiguring keystone.
+INFO: @anvil.components : Removing 3 configuration files:
+INFO: @anvil.components : |-- /home/harlowja/openstack/keystone/config/keystone.conf
+INFO: @anvil.components : |-- /home/harlowja/openstack/keystone/config/logging.conf
+INFO: @anvil.components : |-- /home/harlowja/openstack/keystone/config/policy.json
+INFO: @anvil.components : Removing 3 symlink files:
+INFO: @anvil.components : |-- /etc/keystone/policy.json
+INFO: @anvil.components : |-- /etc/keystone/logging.conf
+INFO: @anvil.components : |-- /etc/keystone/keystone.conf
+INFO: @anvil.actions.uninstall : Unconfiguring rabbit-mq.
+INFO: @anvil.actions.uninstall : Unconfiguring db.
+INFO: @anvil.actions.uninstall : Unconfiguring general.
+INFO: @anvil.components.helpers.virt : Attempting to clear out leftover libvirt domains using protocol: qemu:///system
+INFO: @anvil.components.nova : Cleaning up your system by running nova cleaner script: /home/harlowja/openstack/nova/app/bin/nova-clean.sh
+WARNING: @anvil.components.rabbit : Could not reset the rabbit-mq password. You might have to manually reset the password to '' before the next install
+INFO: @anvil.components.db : Attempting to reset your db password to '' so that we can set it the next time you install.
+INFO: @anvil.components.db : Ensuring your database is started before we operate on it.
+INFO: @anvil.actions.uninstall : Uninstalling openstack-client.
+INFO: @anvil.components : Uninstalling 1 python setups:
+INFO: @anvil.components : |-- /home/harlowja/openstack/openstack-client/app
+INFO: @anvil.components : Potentially removing 10 python packages:
+INFO: @anvil.components : |-- cliff
+INFO: @anvil.components : |-- prettytable
+INFO: @anvil.components : |-- pycrypto
+INFO: @anvil.components : |-- distribute
+INFO: @anvil.components : |-- coverage
+INFO: @anvil.components : |-- nose-exclude
+INFO: @anvil.components : |-- nosexcover
+INFO: @anvil.components : |-- openstack.nose_plugin
+INFO: @anvil.components : |-- nosehtmloutput
+INFO: @anvil.components : |-- sphinx
+Uninstalling: 100% |#########################################################################################################################################################| Time: 0:00:00
+INFO: @anvil.components : Actually removed 0 python packages.
+INFO: @anvil.components : Potentially removing 9 distribution packages:
+INFO: @anvil.components : |-- python-unittest2
+INFO: @anvil.components : |-- python-mock
+INFO: @anvil.components : |-- python-mox
+INFO: @anvil.components : |-- python-keyring
+INFO: @anvil.components : |-- python-simplejson
+INFO: @anvil.components : |-- python-argparse
+INFO: @anvil.components : |-- python-nose1.1
+INFO: @anvil.components : |-- python-httplib2
+INFO: @anvil.components : |-- python-pep8
+Uninstalling: 100% |#########################################################################################################################################################| Time: 0:00:00
+INFO: @anvil.components : Actually removed 0 distribution packages.
+INFO: @anvil.components : Removing 2 miscellaneous files:
+INFO: @anvil.components : |-- /home/harlowja/openstack/openstack-client/traces/openstack-client.python.setup.stdout
+INFO: @anvil.components : |-- /home/harlowja/openstack/openstack-client/traces/openstack-client.python.setup.stderr
+INFO: @anvil.components : Removing 3 created directories:
+INFO: @anvil.components : |-- /home/harlowja/openstack/openstack-client/traces
+INFO: @anvil.components : |-- /home/harlowja/openstack/openstack-client/app
+INFO: @anvil.components : |-- /home/harlowja/openstack/openstack-client
+INFO: @anvil.actions.uninstall : Uninstalling nova-client.
+INFO: @anvil.components : Uninstalling 1 python setups:
+INFO: @anvil.components : |-- /home/harlowja/openstack/nova-client/app
+INFO: @anvil.components : Potentially removing 7 python packages:
+INFO: @anvil.components : |-- prettytable
+INFO: @anvil.components : |-- distribute
+INFO: @anvil.components : |-- nose-exclude
+INFO: @anvil.components : |-- nosexcover
+INFO: @anvil.components : |-- openstack.nose_plugin
+INFO: @anvil.components : |-- nosehtmloutput
+INFO: @anvil.components : |-- sphinx
+Uninstalling: 100% |#########################################################################################################################################################| Time: 0:00:00
+INFO: @anvil.components : Actually removed 0 python packages.
+INFO: @anvil.components : Potentially removing 7 distribution packages:
+INFO: @anvil.components : |-- python-unittest2
+INFO: @anvil.components : |-- python-mock
+INFO: @anvil.components : |-- python-httplib2
+INFO: @anvil.components : |-- python-simplejson
+INFO: @anvil.components : |-- python-argparse
+INFO: @anvil.components : |-- python-nose1.1
+INFO: @anvil.components : |-- python-pep8
+Uninstalling: 100% |#########################################################################################################################################################| Time: 0:00:00
+INFO: @anvil.components : Actually removed 0 distribution packages.
+INFO: @anvil.components : Removing 2 miscellaneous files:
+INFO: @anvil.components : |-- /home/harlowja/openstack/nova-client/traces/nova-client.python.setup.stdout
+INFO: @anvil.components : |-- /home/harlowja/openstack/nova-client/traces/nova-client.python.setup.stderr
+INFO: @anvil.components : Removing 3 created directories:
+INFO: @anvil.components : |-- /home/harlowja/openstack/nova-client/traces
+INFO: @anvil.components : |-- /home/harlowja/openstack/nova-client/app
+INFO: @anvil.components : |-- /home/harlowja/openstack/nova-client
+INFO: @anvil.actions.uninstall : Uninstalling nova.
+INFO: @anvil.components : Uninstalling 1 python setups:
+INFO: @anvil.components : |-- /home/harlowja/openstack/nova/app
+INFO: @anvil.components : Potentially removing 11 python packages:
+INFO: @anvil.components : |-- Cheetah
+INFO: @anvil.components : |-- python-daemon
+INFO: @anvil.components : |-- sqlalchemy
+INFO: @anvil.components : |-- boto
+INFO: @anvil.components : |-- sqlalchemy-migrate
+INFO: @anvil.components : |-- setuptools-git
+INFO: @anvil.components : |-- distribute
+INFO: @anvil.components : |-- coverage
+INFO: @anvil.components : |-- openstack.nose_plugin
+INFO: @anvil.components : |-- nosehtmloutput
+INFO: @anvil.components : |-- sphinx
+Uninstalling: 100% |#########################################################################################################################################################| Time: 0:00:00
+INFO: @anvil.components : Actually removed 0 python packages.
+INFO: @anvil.components : Potentially removing 41 distribution packages:
+INFO: @anvil.components : |-- parted
+INFO: @anvil.components : |-- vconfig
+INFO: @anvil.components : |-- python-amqplib
+INFO: @anvil.components : |-- lvm2
+INFO: @anvil.components : |-- iputils
+INFO: @anvil.components : |-- qemu-kvm
+INFO: @anvil.components : |-- sqlite
+INFO: @anvil.components : |-- python-eventlet
+INFO: @anvil.components : |-- python-paste
+INFO: @anvil.components : |-- MySQL-python
+INFO: @anvil.components : |-- python-lxml
+INFO: @anvil.components : |-- libguestfs-tools
+INFO: @anvil.components : |-- python-paramiko
+INFO: @anvil.components : |-- python-kombu
+INFO: @anvil.components : |-- python-mox
+INFO: @anvil.components : |-- libguestfs
+INFO: @anvil.components : |-- iscsi-initiator-utils
+INFO: @anvil.components : |-- kpartx
+INFO: @anvil.components : |-- libvirt-python
+INFO: @anvil.components : |-- iptables
+INFO: @anvil.components : |-- ebtables
+INFO: @anvil.components : |-- python-greenlet
+INFO: @anvil.components : |-- libguestfs-mount
+INFO: @anvil.components : |-- pylint
+INFO: @anvil.components : |-- libvirt-client
+INFO: @anvil.components : |-- libvirt
+INFO: @anvil.components : |-- python-paste-deploy1.5
+INFO: @anvil.components : |-- python-httplib2
+INFO: @anvil.components : |-- qemu-img
+INFO: @anvil.components : |-- fuse
+INFO: @anvil.components : |-- python-anyjson
+INFO: @anvil.components : |-- python-feedparser
+INFO: @anvil.components : |-- python-webob1.0
+INFO: @anvil.components : |-- python-netaddr
+INFO: @anvil.components : |-- python-suds
+INFO: @anvil.components : |-- python-babel
+INFO: @anvil.components : |-- python-nose1.1
+INFO: @anvil.components : |-- dnsmasq
+INFO: @anvil.components : |-- python-pep8
+INFO: @anvil.components : |-- python-iso8601
+INFO: @anvil.components : |-- python-routes1.12
+Uninstalling: 100% |#########################################################################################################################################################| Time: 0:00:00
+INFO: @anvil.components : Actually removed 0 distribution packages.
+INFO: @anvil.components : Removing 3 miscellaneous files:
+INFO: @anvil.components : |-- /home/harlowja/openstack/nova/traces/nova.python.setup.stdout
+INFO: @anvil.components : |-- /home/harlowja/openstack/nova/traces/nova.python.setup.stderr
+INFO: @anvil.components : |-- /home/harlowja/openstack/nova/app/bin/nova-clean.sh
+INFO: @anvil.components : Removing 5 created directories:
+INFO: @anvil.components : |-- /home/harlowja/openstack/nova/traces
+INFO: @anvil.components : |-- /home/harlowja/openstack/nova/instances
+INFO: @anvil.components : |-- /home/harlowja/openstack/nova/config
+INFO: @anvil.components : |-- /home/harlowja/openstack/nova/app
+INFO: @anvil.components : |-- /home/harlowja/openstack/nova
+INFO: @anvil.actions.uninstall : Uninstalling glance-client.
+INFO: @anvil.components : Uninstalling 1 python setups:
+INFO: @anvil.components : |-- /home/harlowja/openstack/glance-client/app
+INFO: @anvil.components : Potentially removing 9 python packages:
+INFO: @anvil.components : |-- nosexcover
+INFO: @anvil.components : |-- setuptools-git
+INFO: @anvil.components : |-- warlock
+INFO: @anvil.components : |-- prettytable
+INFO: @anvil.components : |-- distribute
+INFO: @anvil.components : |-- nose-exclude
+INFO: @anvil.components : |-- openstack.nose_plugin
+INFO: @anvil.components : |-- nosehtmloutput
+INFO: @anvil.components : |-- sphinx
+Uninstalling: 100% |#########################################################################################################################################################| Time: 0:00:00
+INFO: @anvil.components : Actually removed 0 python packages.
+INFO: @anvil.components : Potentially removing 4 distribution packages:
+INFO: @anvil.components : |-- python-argparse
+INFO: @anvil.components : |-- python-nose1.1
+INFO: @anvil.components : |-- python-pep8
+INFO: @anvil.components : |-- python-mox
+Uninstalling: 100% |#########################################################################################################################################################| Time: 0:00:00
+INFO: @anvil.components : Actually removed 0 distribution packages.
+INFO: @anvil.components : Removing 2 miscellaneous files:
+INFO: @anvil.components : |-- /home/harlowja/openstack/glance-client/traces/glance-client.python.setup.stdout
+INFO: @anvil.components : |-- /home/harlowja/openstack/glance-client/traces/glance-client.python.setup.stderr
+INFO: @anvil.components : Removing 3 created directories:
+INFO: @anvil.components : |-- /home/harlowja/openstack/glance-client/traces
+INFO: @anvil.components : |-- /home/harlowja/openstack/glance-client/app
+INFO: @anvil.components : |-- /home/harlowja/openstack/glance-client
+INFO: @anvil.actions.uninstall : Uninstalling glance.
+INFO: @anvil.components : Uninstalling 1 python setups:
+INFO: @anvil.components : |-- /home/harlowja/openstack/glance/app
+INFO: @anvil.components : Potentially removing 15 python packages:
+INFO: @anvil.components : |-- boto
+INFO: @anvil.components : |-- wsgiref
+INFO: @anvil.components : |-- xattr
+INFO: @anvil.components : |-- jsonschema
+INFO: @anvil.components : |-- sqlalchemy
+INFO: @anvil.components : |-- sqlalchemy-migrate
+INFO: @anvil.components : |-- pycrypto
+INFO: @anvil.components : |-- passlib
+INFO: @anvil.components : |-- distribute
+INFO: @anvil.components : |-- coverage
+INFO: @anvil.components : |-- nose-exclude
+INFO: @anvil.components : |-- openstack.nose_plugin
+INFO: @anvil.components : |-- nosehtmloutput
+INFO: @anvil.components : |-- sphinx
+INFO: @anvil.components : |-- requests
+Uninstalling: 100% |#########################################################################################################################################################| Time: 0:00:00
+INFO: @anvil.components : Actually removed 0 python packages.
+INFO: @anvil.components : Potentially removing 18 distribution packages:
+INFO: @anvil.components : |-- python-webob1.0
+INFO: @anvil.components : |-- python-lxml
+INFO: @anvil.components : |-- python-greenlet
+INFO: @anvil.components : |-- python-kombu
+INFO: @anvil.components : |-- python-httplib2
+INFO: @anvil.components : |-- python-mox
+INFO: @anvil.components : |-- python-babel
+INFO: @anvil.components : |-- python-eventlet
+INFO: @anvil.components : |-- python-paste-deploy1.5
+INFO: @anvil.components : |-- python-argparse
+INFO: @anvil.components : |-- python-nose1.1
+INFO: @anvil.components : |-- pysendfile
+INFO: @anvil.components : |-- python-paste
+INFO: @anvil.components : |-- MySQL-python
+INFO: @anvil.components : |-- python-anyjson
+INFO: @anvil.components : |-- python-pep8
+INFO: @anvil.components : |-- python-iso8601
+INFO: @anvil.components : |-- python-routes1.12
+Uninstalling: 100% |#########################################################################################################################################################| Time: 0:00:00
+INFO: @anvil.components : Actually removed 0 distribution packages.
+INFO: @anvil.components : Removing 2 miscellaneous files:
+INFO: @anvil.components : |-- /home/harlowja/openstack/glance/traces/glance.python.setup.stdout
+INFO: @anvil.components : |-- /home/harlowja/openstack/glance/traces/glance.python.setup.stderr
+INFO: @anvil.components : Removing 5 created directories:
+INFO: @anvil.components : |-- /home/harlowja/openstack/glance/traces
+INFO: @anvil.components : |-- /home/harlowja/openstack/glance/images
+INFO: @anvil.components : |-- /home/harlowja/openstack/glance/config
+INFO: @anvil.components : |-- /home/harlowja/openstack/glance/app
+INFO: @anvil.components : |-- /home/harlowja/openstack/glance
+INFO: @anvil.actions.uninstall : Uninstalling keystone-client.
+INFO: @anvil.components : Uninstalling 1 python setups:
+INFO: @anvil.components : |-- /home/harlowja/openstack/keystone-client/app
+INFO: @anvil.components : Potentially removing 7 python packages:
+INFO: @anvil.components : |-- prettytable
+INFO: @anvil.components : |-- distribute
+INFO: @anvil.components : |-- coverage
+INFO: @anvil.components : |-- nose-exclude
+INFO: @anvil.components : |-- openstack.nose_plugin
+INFO: @anvil.components : |-- nosehtmloutput
+INFO: @anvil.components : |-- sphinx
+Uninstalling: 100% |#########################################################################################################################################################| Time: 0:00:00
+INFO: @anvil.components : Actually removed 0 python packages.
+INFO: @anvil.components : Potentially removing 8 distribution packages:
+INFO: @anvil.components : |-- python-unittest2
+INFO: @anvil.components : |-- python-mock
+INFO: @anvil.components : |-- python-mox
+INFO: @anvil.components : |-- python-simplejson
+INFO: @anvil.components : |-- python-argparse
+INFO: @anvil.components : |-- python-nose1.1
+INFO: @anvil.components : |-- python-httplib2
+INFO: @anvil.components : |-- python-pep8
+Uninstalling: 100% |#########################################################################################################################################################| Time: 0:00:00
+INFO: @anvil.components : Actually removed 0 distribution packages.
+INFO: @anvil.components : Removing 2 miscellaneous files:
+INFO: @anvil.components : |-- /home/harlowja/openstack/keystone-client/traces/keystone-client.python.setup.stdout
+INFO: @anvil.components : |-- /home/harlowja/openstack/keystone-client/traces/keystone-client.python.setup.stderr
+INFO: @anvil.components : Removing 3 created directories:
+INFO: @anvil.components : |-- /home/harlowja/openstack/keystone-client/traces
+INFO: @anvil.components : |-- /home/harlowja/openstack/keystone-client/app
+INFO: @anvil.components : |-- /home/harlowja/openstack/keystone-client
+INFO: @anvil.actions.uninstall : Uninstalling keystone.
+INFO: @anvil.components : Uninstalling 1 python setups:
+INFO: @anvil.components : |-- /home/harlowja/openstack/keystone/app
+INFO: @anvil.components : Potentially removing 11 python packages:
+INFO: @anvil.components : |-- pam
+INFO: @anvil.components : |-- nosexcover
+INFO: @anvil.components : |-- webtest
+INFO: @anvil.components : |-- sqlalchemy
+INFO: @anvil.components : |-- sqlalchemy-migrate
+INFO: @anvil.components : |-- passlib
+INFO: @anvil.components : |-- coverage
+INFO: @anvil.components : |-- openstack.nose_plugin
+INFO: @anvil.components : |-- nosehtmloutput
+INFO: @anvil.components : |-- sphinx
+INFO: @anvil.components : |-- distribute
+Uninstalling: 100% |#########################################################################################################################################################| Time: 0:00:00
+INFO: @anvil.components : Actually removed 0 python packages.
+INFO: @anvil.components : Potentially removing 17 distribution packages:
+INFO: @anvil.components : |-- python-webob1.0
+INFO: @anvil.components : |-- python-iso8601
+INFO: @anvil.components : |-- python-greenlet
+INFO: @anvil.components : |-- python-mox
+INFO: @anvil.components : |-- python-netifaces
+INFO: @anvil.components : |-- pylint
+INFO: @anvil.components : |-- python-babel
+INFO: @anvil.components : |-- python-eventlet
+INFO: @anvil.components : |-- python-paste-deploy1.5
+INFO: @anvil.components : |-- python-unittest2
+INFO: @anvil.components : |-- python-nose1.1
+INFO: @anvil.components : |-- python-paste
+INFO: @anvil.components : |-- MySQL-python
+INFO: @anvil.components : |-- python-httplib2
+INFO: @anvil.components : |-- python-pep8
+INFO: @anvil.components : |-- python-lxml
+INFO: @anvil.components : |-- python-routes1.12
+Uninstalling: 100% |#########################################################################################################################################################| Time: 0:00:00
+INFO: @anvil.components : Actually removed 0 distribution packages.
+INFO: @anvil.components : Removing 2 miscellaneous files:
+INFO: @anvil.components : |-- /home/harlowja/openstack/keystone/traces/keystone.python.setup.stdout
+INFO: @anvil.components : |-- /home/harlowja/openstack/keystone/traces/keystone.python.setup.stderr
+INFO: @anvil.components : Removing 4 created directories:
+INFO: @anvil.components : |-- /home/harlowja/openstack/keystone/traces
+INFO: @anvil.components : |-- /home/harlowja/openstack/keystone/config
+INFO: @anvil.components : |-- /home/harlowja/openstack/keystone/app
+INFO: @anvil.components : |-- /home/harlowja/openstack/keystone
+INFO: @anvil.actions.uninstall : Uninstalling rabbit-mq.
+INFO: @anvil.components : Potentially removing 1 distribution packages:
+INFO: @anvil.components : |-- rabbitmq-server
+Uninstalling: 100% |#########################################################################################################################################################| Time: 0:00:00
+INFO: @anvil.components : Actually removed 0 distribution packages.
+INFO: @anvil.components : Removing 2 created directories:
+INFO: @anvil.components : |-- /home/harlowja/openstack/rabbit-mq/traces
+INFO: @anvil.components : |-- /home/harlowja/openstack/rabbit-mq
+INFO: @anvil.actions.uninstall : Uninstalling db.
+INFO: @anvil.components : Potentially removing 2 distribution packages:
+INFO: @anvil.components : |-- mysql-server
+INFO: @anvil.components : |-- mysql
+Uninstalling: 100% |#########################################################################################################################################################| Time: 0:00:00
+INFO: @anvil.components : Actually removed 0 distribution packages.
+INFO: @anvil.components : Removing 2 created directories:
+INFO: @anvil.components : |-- /home/harlowja/openstack/db/traces
+INFO: @anvil.components : |-- /home/harlowja/openstack/db
+INFO: @anvil.actions.uninstall : Uninstalling general.
+INFO: @anvil.components : Potentially removing 12 python packages:
+INFO: @anvil.components : |-- coverage
+INFO: @anvil.components : |-- distribute
+INFO: @anvil.components : |-- nose-exclude
+INFO: @anvil.components : |-- nosehtmloutput
+INFO: @anvil.components : |-- openstack.nose_plugin
+INFO: @anvil.components : |-- passlib
+INFO: @anvil.components : |-- prettytable
+INFO: @anvil.components : |-- pycrypto
+INFO: @anvil.components : |-- requests
+INFO: @anvil.components : |-- sphinx
+INFO: @anvil.components : |-- sqlalchemy
+INFO: @anvil.components : |-- sqlalchemy-migrate
+Uninstalling: 100% |#########################################################################################################################################################| Time: 0:00:00
+INFO: @anvil.components : Actually removed 0 python packages.
+INFO: @anvil.components : Potentially removing 45 distribution packages:
+INFO: @anvil.components : |-- iputils
+INFO: @anvil.components : |-- sudo
+INFO: @anvil.components : |-- mlocate
+INFO: @anvil.components : |-- python-mock
+INFO: @anvil.components : |-- python-eventlet
+INFO: @anvil.components : |-- python-unittest2
+INFO: @anvil.components : |-- python-paste
+INFO: @anvil.components : |-- curl
+INFO: @anvil.components : |-- python-lxml
+INFO: @anvil.components : |-- git
+INFO: @anvil.components : |-- coreutils
+INFO: @anvil.components : |-- python-devel
+INFO: @anvil.components : |-- python
+INFO: @anvil.components : |-- python-argparse
+INFO: @anvil.components : |-- python-virtualenv
+INFO: @anvil.components : |-- tcpdump
+INFO: @anvil.components : |-- python-distutils-extra
+INFO: @anvil.components : |-- python-setuptools
+INFO: @anvil.components : |-- unzip
+INFO: @anvil.components : |-- python-greenlet
+INFO: @anvil.components : |-- openssh-server
+INFO: @anvil.components : |-- screen
+INFO: @anvil.components : |-- pylint
+INFO: @anvil.components : |-- gawk
+INFO: @anvil.components : |-- python-paste-deploy1.5
+INFO: @anvil.components : |-- python-httplib2
+INFO: @anvil.components : |-- python-lockfile
+INFO: @anvil.components : |-- python-simplejson
+INFO: @anvil.components : |-- python-anyjson
+INFO: @anvil.components : |-- wget
+INFO: @anvil.components : |-- libxslt-devel
+INFO: @anvil.components : |-- dnsmasq-utils
+INFO: @anvil.components : |-- python-webob1.0
+INFO: @anvil.components : |-- euca2ools
+INFO: @anvil.components : |-- python-netaddr
+INFO: @anvil.components : |-- python-pip
+INFO: @anvil.components : |-- python-routes1.12
+INFO: @anvil.components : |-- libxml2-devel
+INFO: @anvil.components : |-- python-mox
+INFO: @anvil.components : |-- python-babel
+INFO: @anvil.components : |-- psmisc
+INFO: @anvil.components : |-- python-nose1.1
+INFO: @anvil.components : |-- python-pep8
+INFO: @anvil.components : |-- python-iso8601
+INFO: @anvil.components : |-- lsof
+Uninstalling: 100% |#########################################################################################################################################################| Time: 0:00:00
+INFO: @anvil.components : Actually removed 0 distribution packages.
+INFO: @anvil.components : Removing 2 created directories:
+INFO: @anvil.components : |-- /home/harlowja/openstack/general/traces
+INFO: @anvil.components : |-- /home/harlowja/openstack/general
+INFO: @anvil.actions.uninstall : Post-uninstalling openstack-client.
+INFO: @anvil.actions.uninstall : Post-uninstalling nova-client.
+INFO: @anvil.actions.uninstall : Post-uninstalling nova.
+INFO: @anvil.actions.uninstall : Post-uninstalling glance-client.
+INFO: @anvil.actions.uninstall : Post-uninstalling glance.
+INFO: @anvil.actions.uninstall : Post-uninstalling keystone-client.
+INFO: @anvil.actions.uninstall : Post-uninstalling keystone.
+INFO: @anvil.actions.uninstall : Post-uninstalling rabbit-mq.
+INFO: @anvil.actions.uninstall : Post-uninstalling db.
+INFO: @anvil.actions.uninstall : Post-uninstalling general.
+INFO: @anvil.action : Tearing down your components.
+INFO: @anvil.action : Updated/created 1 password files:
+INFO: @anvil.action : |-- /home/harlowja/anvil/passwords.yaml
+INFO: @anvil : It took 10.271 seconds or 0.17 minutes to complete action uninstall.
+ ___________
+/ You shine \
+| out like  |
+| a shaft   |
+| of gold   |
+| when all  |
+| around is |
+\ dark.     /
+ -----------
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
+$ ls ~/openstack/
+phases

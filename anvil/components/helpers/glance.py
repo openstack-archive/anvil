@@ -343,7 +343,7 @@ class Image(object):
             return (tgt_image_name, img_id)
 
 
-class UploadService:
+class UploadService(object):
 
     def __init__(self, params):
         self.params = params
@@ -369,11 +369,15 @@ class UploadService:
             return am_installed
         if urls:
             try:
+                # Ensure all services ok
+                for n in ['glance', 'keystone']:
+                    params = self.params[n]
+                    utils.wait_for_url(params['endpoints']['public']['uri'])
                 params = self.params['glance']
                 client = gclient_v1.Client(endpoint=params['endpoints']['public']['uri'],
                                            token=self._get_token(kclient_v2))
             except (RuntimeError, gexceptions.ClientException,
-                    kexceptions.ClientException) as e:
+                    kexceptions.ClientException, IOError) as e:
                 LOG.exception('Failed fetching needed clients for image calls due to: %s', e)
                 return am_installed
             utils.log_iterable(urls, logger=LOG,

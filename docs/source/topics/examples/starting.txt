@@ -1,1 +1,108 @@
+$ sudo ./smithy -a start
+INFO: @anvil.distro : Matched distro rhel for platform Linux-2.6.32-220.4.2.el6.YAHOO.20120217.x86_64-x86_64-with-redhat-6.2-Santiago
+____ ___  ____ _  _ ____ ___ ____ ____ _  _
+|  | |__] |___ |\ | [__   |  |__| |    |_/
+|__| |    |___ | \| ___]  |  |  | |___ | \_
+           Anvil: | 2012.2-dev |           
+And now for something completely different!
+---------------Action Runner---------------
+INFO: @anvil : Starting action start on Tue, 28 Aug 2012 23:28:30 for distro: rhel
+INFO: @anvil : Using persona: conf/personas/in-a-box/basic.yaml
+INFO: @anvil : In root directory: /home/harlowja/openstack
+INFO: @anvil.action : Processing components for action start.
+INFO: @anvil.action : Activating in the following order:
+INFO: @anvil.action : |-- general
+INFO: @anvil.action : |-- db
+INFO: @anvil.action : |-- rabbit-mq
+INFO: @anvil.action : |-- keystone
+INFO: @anvil.action : |-- keystone-client
+INFO: @anvil.action : |-- glance
+INFO: @anvil.action : |-- glance-client
+INFO: @anvil.action : |-- nova
+INFO: @anvil.action : |-- nova-client
+INFO: @anvil.action : |-- openstack-client
+INFO: @anvil.action : Booting up your components.
+INFO: @anvil.action : Updated passwords to be used from 1 files:
+INFO: @anvil.action : |-- /home/harlowja/anvil/passwords.yaml
+INFO: @anvil.action : Verifying that the components are ready to rock-n-roll.
+INFO: @anvil.action : Warming up component configurations.
+INFO: @anvil.action : Updated/created 1 password files:
+INFO: @anvil.action : |-- /home/harlowja/anvil/passwords.yaml
+INFO: @anvil.components.nova : Checking that your selected libvirt virtualization type qemu is working and running.
+INFO: @anvil.components.nova : Libvirt virtualization type qemu seems to be working and running.
+INFO: @anvil.actions.start : Starting general.
+INFO: @anvil.actions.start : Start 0 applications
+INFO: @anvil.actions.start : Starting db.
+INFO: @anvil.actions.start : Start 1 applications
+INFO: @anvil.actions.start : Starting rabbit-mq.
+INFO: @anvil.actions.start : Start 1 applications
+INFO: @anvil.actions.start : Starting keystone.
+INFO: @anvil.components : Started sub-program keystone-all.
+INFO: @anvil.actions.start : Start 1 applications
+INFO: @anvil.actions.start : Starting keystone-client.
+INFO: @anvil.actions.start : Start 0 applications
+INFO: @anvil.actions.start : Starting glance.
+INFO: @anvil.components : Started sub-program glance-api.
+INFO: @anvil.components : Started sub-program glance-registry.
+INFO: @anvil.actions.start : Start 2 applications
+INFO: @anvil.actions.start : Starting glance-client.
+INFO: @anvil.actions.start : Start 0 applications
+INFO: @anvil.actions.start : Starting nova.
+INFO: @anvil.components : Started sub-program nova-network.
+INFO: @anvil.components : Started sub-program nova-api.
+INFO: @anvil.components : Started sub-program nova-scheduler.
+INFO: @anvil.components : Started sub-program nova-compute.
+INFO: @anvil.actions.start : Start 4 applications
+INFO: @anvil.actions.start : Starting nova-client.
+INFO: @anvil.actions.start : Start 0 applications
+INFO: @anvil.actions.start : Starting openstack-client.
+INFO: @anvil.actions.start : Start 0 applications
+INFO: @anvil.actions.start : Post-starting general.
+INFO: @anvil.actions.start : Post-starting db.
+INFO: @anvil.actions.start : Post-starting rabbit-mq.
+INFO: @anvil.actions.start : Post-starting keystone.
+INFO: @anvil.actions.start : Post-starting keystone-client.
+INFO: @anvil.actions.start : Post-starting glance.
+INFO: @anvil.utils : Waiting for http://172.21.102.12:9292 to become active (max_attempts=3, seconds_between=5)
+INFO: @anvil.utils : Sleeping for 5 seconds, http://172.21.102.12:9292 is still not active.
+INFO: @anvil.utils : http://172.21.102.12:9292 became active after 2 attempts!
+INFO: @anvil.utils : Waiting for http://172.21.102.12:5000/v2.0 to become active (max_attempts=3, seconds_between=5)
+INFO: @anvil.utils : http://172.21.102.12:5000/v2.0 became active after 1 attempts!
+INFO: @anvil.components.helpers.glance : Getting your keystone token so that image uploads may proceed.
+INFO: @anvil.components.helpers.glance : Attempting to download+extract+upload 1 images:
+INFO: @anvil.components.helpers.glance : |-- https://launchpad.net/cirros/trunk/0.3.0/+download/cirros-0.3.0-x86_64-disk.img
+INFO: @anvil.downloader : Downloading using urllib2: https://launchpad.net/cirros/trunk/0.3.0/+download/cirros-0.3.0-x86_64-disk.img to /tmp/tmpcPxQsz/cirros-0.3.0-x86_64-disk.img.
+Fetching: 100% |#################################################################################################################################################| Time: 0:00:03   2.89 MB/s
+INFO: @anvil.components.helpers.glance : Adding image cirros-0.3.0-x86_64-disk to glance.
+INFO: @anvil.components.helpers.glance : Checking if image cirros-0.3.0-x86_64-disk already exists already in glance.
+ERROR: @anvil.components.helpers.glance : Installing 'https://launchpad.net/cirros/trunk/0.3.0/+download/cirros-0.3.0-x86_64-disk.img' failed due to: Image named cirros-0.3.0-x86_64-disk already exists.
+Traceback (most recent call last):
+  File "/home/harlowja/anvil/anvil/components/helpers/glance.py", line 387, in install
+    (name, img_id) = Image(client, url).install()
+  File "/home/harlowja/anvil/anvil/components/helpers/glance.py", line 342, in install
+    img_id = self._register(tgt_image_name, unpack_info)
+  File "/home/harlowja/anvil/anvil/components/helpers/glance.py", line 300, in _register
+    self._check_name(image_name)
+  File "/home/harlowja/anvil/anvil/components/helpers/glance.py", line 264, in _check_name
+    raise IOError("Image named %s already exists." % (name))
+IOError: Image named cirros-0.3.0-x86_64-disk already exists.
+INFO: @anvil.actions.start : Post-starting glance-client.
+INFO: @anvil.actions.start : Post-starting nova.
+INFO: @anvil.actions.start : Post-starting nova-client.
+INFO: @anvil.actions.start : Post-starting openstack-client.
+INFO: @anvil.action : Tearing down your components.
+INFO: @anvil.action : Updated/created 1 password files:
+INFO: @anvil.action : |-- /home/harlowja/anvil/passwords.yaml
+INFO: @anvil : It took 16.318 seconds or 0.27 minutes to complete action start.
+ ____________________
+/ Australia!         \
+| Australia!         |
+| Australia!         |
+\ We love you, amen. /
+ --------------------
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||
 
