@@ -54,7 +54,7 @@ class DBUninstaller(comp.PkgUninstallComponent):
                 pwd_cmd = self.distro.get_command(dbtype, 'set_pwd')
                 if pwd_cmd:
                     LOG.info("Ensuring your database is started before we operate on it.")
-                    self.runtime.restart()
+                    self.runtime.start()
                     self.runtime.wait_active()
                     params = {
                         'OLD_PASSWORD': dbhelper.get_shared_passwords(self)['pw'],
@@ -113,7 +113,7 @@ class DBInstaller(comp.PkgInstallComponent):
                     LOG.info(("Attempting to set your db password"
                               " just incase it wasn't set previously."))
                     LOG.info("Ensuring your database is started before we operate on it.")
-                    self.runtime.restart()
+                    self.runtime.start()
                     self.runtime.wait_active()
                     params = {
                         'NEW_PASSWORD': dbhelper.get_shared_passwords(self)['pw'],
