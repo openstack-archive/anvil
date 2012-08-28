@@ -1,0 +1,288 @@
+%define _topdir /home/harlowja/openstack/nova/package
+# Spec file for nova auto-generated on Mon, 27 Aug 2012 23:49:28 by harlowja
+
+#    Copyright (C) 2012 Yahoo! Inc. All Rights Reserved.
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#         http://www.apache.org/licenses/LICENSE-2.0
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+
+Name: nova
+Summary: cloud computing fabric controller
+Version: 2012.2
+Release: 1%{?dist}
+Packager: harlowja <harlowja@followsave.corp.yahoo.com>
+URL: http://www.openstack.org/
+Vendor: OpenStack
+Source0: nova-2012.2.tar.gz
+Source1: nova-2012.2-1.spec.tar.gz
+BuildRoot: %{_tmppath}/%{name}-%{version}-build
+License: UNKNOWN
+BuildArch: noarch
+AutoReqProv: no
+
+# Build requirements
+BuildRequires: python
+BuildRequires: python-devel
+BuildRequires: gcc
+BuildRequires: python-setuptools
+
+# Install requirements
+Requires: MySQL-python
+Requires: dnsmasq
+Requires: ebtables
+Requires: fuse
+Requires: iptables
+Requires: iputils
+Requires: kpartx
+Requires: parted
+Requires: sqlite
+Requires: vconfig
+Requires: python-amqplib
+Requires: python-anyjson
+Requires: python-eventlet
+Requires: python-kombu
+Requires: python-lxml
+Requires: python-routes1.12
+Requires: python-webob1.0
+Requires: python-greenlet
+Requires: python-paste-deploy1.5
+Requires: python-paste
+Requires: python-netaddr
+Requires: python-suds
+Requires: python-paramiko
+Requires: python-babel
+Requires: python-iso8601
+Requires: python-httplib2
+Requires: python-mox
+Requires: python-nose1.1
+Requires: python-pep8
+Requires: pylint
+Requires: python-feedparser
+
+%description
+cloud computing fabric controller
+
+%prep
+
+%setup -q -n %{name}-%{version}
+
+%build
+%{__python} setup.py build
+
+%install
+%{__python} setup.py install --prefix=%{_prefix} --root=%{buildroot}
+
+%files
+%defattr(-,root,root,-)
+%{python_sitelib}/nova
+%{python_sitelib}/nova-*.egg-info/
+%{_bindir}/
+%dir %{python_sitelib}/nova
+
+%changelog
+* Mon Aug 27 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "request_spec['instance_uuids'] as list in resize"
+* Mon Aug 27 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Add lintstack error checker based on pylint"
+* Mon Aug 27 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Remove unused flags"
+* Mon Aug 27 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Fix column variable typo"
+* Mon Aug 27 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Move ensure_tree to utils"
+* Mon Aug 27 2012 Yun Mao <yunmao@gmail.com>
+- Fix column variable typo
+* Mon Aug 27 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Fix typo in call in cinder.API unreserve_volume"
+* Mon Aug 27 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Remove test_keypair_create_quota_limit()"
+* Mon Aug 27 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Add nosehtmloutput as a test dependency."
+* Mon Aug 27 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Make instance_update_and_get_original() atomic"
+* Mon Aug 27 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Fix deallocate_fixed_ip() call by unifying signature"
+* Mon Aug 27 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Remove unused permitted_instance_types"
+* Mon Aug 27 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Fix path to example extension implementation"
+* Sun Aug 26 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Update .mailmap"
+* Sun Aug 26 2012 Michael Still <mikal@stillhq.com>
+- Move ensure_tree to utils
+* Sat Aug 25 2012 Zhongyue Luo <zhongyue.nah@intel.com>
+- Update .mailmap
+* Sat Aug 25 2012 Tom Fifield <fifieldt@unimelb.edu.au>
+- Fix path to example extension implementation
+* Sat Aug 25 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Add missing import webob.exc"
+* Sat Aug 25 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Remove duplicated test_migrate_disk_and_power_off()"
+* Sat Aug 25 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Remove duplicated method VM_migrate_send"
+* Sat Aug 25 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Fix broken SimpleScheduler.schedule_run_instance()"
+* Sat Aug 25 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Add missing user_id in revoke_certs_by_user_and_project()"
+* Sat Aug 25 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Rename class_name to project_id"
+* Sat Aug 25 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Use the compute_rpcapi instance not the module"
+* Sat Aug 25 2012 Yaguang Tang <heut2008@gmail.com>
+- Make pre block migration create correct disk files.
+* Sat Aug 25 2012 Yaguang Tang <heut2008@gmail.com>
+- Remove unused and old methods in hyperv and powervm driver.
+* Fri Aug 24 2012 Clay Gerrard <clay.gerrard@gmail.com>
+- request_spec['instance_uuids'] as list in resize
+* Fri Aug 24 2012 Yun Mao <yunmao@gmail.com>
+- Define default mode and device_id_string in Mount
+* Fri Aug 24 2012 Yun Mao <yunmao@gmail.com>
+- Remove test_keypair_create_quota_limit()
+* Fri Aug 24 2012 Yun Mao <yunmao@gmail.com>
+- Remove duplicated test_migrate_disk_and_power_off()
+* Fri Aug 24 2012 Yun Mao <yunmao@gmail.com>
+- Add missing import webob.exc
+* Fri Aug 24 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Add missing context argument to start_transfer calls"
+* Fri Aug 24 2012 Maru Newby <mnewby@internap.com>
+- Fix broken SimpleScheduler.schedule_run_instance()
+* Fri Aug 24 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Make pre block migration create correct disk files."
+* Fri Aug 24 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Remove unused and old methods in hyperv and powervm driver."
+* Fri Aug 24 2012 Yun Mao <yunmao@gmail.com>
+- Add missing user_id in revoke_certs_by_user_and_project()
+* Fri Aug 24 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Trap iscsiadm error"
+* Fri Aug 24 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Check volume status before detaching."
+* Fri Aug 24 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Simplify network create logic"
+* Fri Aug 24 2012 Yun Mao <yunmao@gmail.com>
+- Rename class_name to project_id
+* Fri Aug 24 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Clean up network create exception handling"
+* Fri Aug 24 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Ensure hairpin_mode is set whenever vifs is added to bridge."
+* Fri Aug 24 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Returns hypervisor_hostname in xml of extension"
+* Fri Aug 24 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Adds integration testing for api samples"
+* Fri Aug 24 2012 Yun Mao <yunmao@gmail.com>
+- Use the compute_rpcapi instance not the module
+* Fri Aug 24 2012 Yun Mao <yunmao@gmail.com>
+- Remove duplicated method VM_migrate_send
+* Fri Aug 24 2012 Yun Mao <yunmao@gmail.com>
+- Add missing context argument to start_transfer calls
+* Fri Aug 24 2012 Jim Fehlig <jfehlig@suse.com>
+- Remove unused permitted_instance_types
+* Fri Aug 24 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Adding indexes to frequently joined database columns."
+* Fri Aug 24 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Return actual availability zones"
+* Fri Aug 24 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Check association when removing floating ip."
+* Fri Aug 24 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Remove test_instance_update_with_instance_id test"
+* Fri Aug 24 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Ensure log formats are quoted in sample conf"
+* Fri Aug 24 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Don't include hostname and IP in generated sample conf"
+* Fri Aug 24 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Add two prereq pkgs to nova devref env guide"
+* Fri Aug 24 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "XCP-XAPI version fix"
+* Fri Aug 24 2012 Chuck Short <zulcss@ubuntu.com>
+- Trap iscsiadm error
+* Fri Aug 24 2012 Chuck Short <zulcss@ubuntu.com>
+- Check volume status before detaching.
+* Fri Aug 24 2012 Mark McLoughlin <markmc@redhat.com>
+- Simplify network create logic
+* Fri Aug 24 2012 Mark McLoughlin <markmc@redhat.com>
+- Clean up network create exception handling
+* Fri Aug 24 2012 Yaguang Tang <heut2008@gmail.com>
+- Ensure hairpin_mode is set whenever vifs is added to bridge.
+* Fri Aug 24 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Implement network creation in compute API"
+* Thu Aug 23 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Remove unused instance id-to-uuid function"
+* Thu Aug 23 2012 Yun Mao <yunmao@gmail.com>
+- Fix deallocate_fixed_ip() call by unifying signature
+* Thu Aug 23 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Allow generate_sample.sh to be run from toplevel dir"
+* Thu Aug 23 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Let admin list instances in vm_states.DELETED"
+* Thu Aug 23 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Re-work the handling of firewall_driver default"
+* Thu Aug 23 2012 Yun Mao <yunmao@gmail.com>
+- Make instance_update_and_get_original() atomic
+* Thu Aug 23 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Provide a hint for missing EC2 image ids"
+* Thu Aug 23 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Allows libvirt to set a serial number for a volume"
+* Thu Aug 23 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Include CommonConfigOpts options in sample config"
+* Thu Aug 23 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Re-generate nova.conf.sample"
+* Thu Aug 23 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Ignoring *.sw[op] files"
+* Thu Aug 23 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "continue deleting instance even if quantum port delete fails"
+* Thu Aug 23 2012 Yun Mao <yunmao@gmail.com>
+- Remove test_instance_update_with_instance_id test
+* Thu Aug 23 2012 Mark McLoughlin <markmc@redhat.com>
+- Remove unused instance id-to-uuid function
+* Thu Aug 23 2012 Mark McLoughlin <markmc@redhat.com>
+- Re-work the handling of firewall_driver default
+* Thu Aug 23 2012 Mark McLoughlin <markmc@redhat.com>
+- Include CommonConfigOpts options in sample config
+* Thu Aug 23 2012 Mark McLoughlin <markmc@redhat.com>
+- Re-generate nova.conf.sample
+* Thu Aug 23 2012 Mark McLoughlin <markmc@redhat.com>
+- Ensure log formats are quoted in sample conf
+* Thu Aug 23 2012 Mark McLoughlin <markmc@redhat.com>
+- Don't include hostname and IP in generated sample conf
+* Thu Aug 23 2012 Mark McLoughlin <markmc@redhat.com>
+- Allow generate_sample.sh to be run from toplevel dir
+* Thu Aug 23 2012 Michael Still <mikal@stillhq.com>
+- Return actual availability zones
+* Thu Aug 23 2012 Michael Still <mikal@stillhq.com>
+- Provide a hint for missing EC2 image ids
+* Thu Aug 23 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Update sqlite to use PoolEvents for regexp."
+* Thu Aug 23 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "add availability_zone to openstack metadata"
+* Thu Aug 23 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Adds support for serial to libvirt config disks."
+* Thu Aug 23 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Typo fix: existant => existent"
+* Thu Aug 23 2012 Tom Fifield <fifieldt@unimelb.edu.au>
+- Add two prereq pkgs to nova devref env guide
+* Wed Aug 22 2012 Joe Gordon <jogo@cloudscaling.com>
+- Remove unused flags
+* Wed Aug 22 2012 Rafi Khardalian <rafi@metacloud.com>
+- Re-define libvirt domain on "not found" exception
+* Wed Aug 22 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Fix hyperv Cfgs: StrOpt to IntOpt"
+* Wed Aug 22 2012 Jenkins <jenkins@review.openstack.org>
+- Merge "Remove unused _create_network_filters()"
+* Tue Aug 21 2012 Lianhao Lu <lianhao.lu@intel.com>
+- Check association when removing floating ip.
+* Mon Aug 20 2012 Vishvananda Ishaya <vishvananda@gmail.com>
+- Returns hypervisor_hostname in xml of extension
+* Thu Aug 16 2012 Jian Wen <wenjianhn@gmail.com>
+- Let admin list instances in vm_states.DELETED
+* Wed Aug 15 2012 Yun Mao <yunmao@gmail.com>
+- Add lintstack error checker based on pylint
+* Mon Aug 13 2012 unicell <unicell@gmail.com>
+- Implement project specific flavors API
+* Sun Aug 12 2012 Vishvananda Ishaya <vishvananda@gmail.com>
+- Adds integration testing for api samples
+* Tue Aug 07 2012 Justin Shepherd <jshepher@rackspace.com>
+- Adding indexes to frequently joined database columns.

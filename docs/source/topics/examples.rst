@@ -83,6 +83,14 @@ Packaging
    :language: none
    :linenos:
 
+::
+
+    $ cat /home/harlowja/openstack/nova/package/SPECS/nova-2012.2-1.spec 
+
+.. literalinclude:: examples/packaging-result.txt
+   :language: none
+   :linenos:
+
 
 Uninstalling
 ---------------------------
