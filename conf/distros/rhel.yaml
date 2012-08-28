@@ -78,6 +78,7 @@ components:
         # Shared system packages
         -   name: coreutils
         -   name: curl
+        -   name: dnsmasq-utils
         -   name: euca2ools
         -   name: gawk
         -   name: git

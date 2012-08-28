@@ -13,6 +13,17 @@ Made to be as simple as possible, but not to simple.
 Prerequisites
 =============
 
+RTFM
+----
+
+Read the great documentation for developers/admins at
+
+- http://docs.openstack.org/developer/
+- http://docs.openstack.org/
+
+This will vastly help you understand what the
+configurations and options do when anvil configures them.
+
 Linux
 -----
 
@@ -26,48 +37,31 @@ Networking
 **Important!**
 --------------
 
-Since networking can affect how your cloud runs please check out this
-link:
+Since networking can affect how your cloud runs please check out this link:
 
 http://docs.openstack.org/trunk/openstack-compute/admin/content/configuring-networking-on-the-compute-node.html
 
 Check out the root article and the sub-chapters there to understand more
 of what these settings mean.
 
-**This is typically one of the hardest aspects of *OpenStack* to
-configure and get right!**
+**This is typically one of the hardest aspects of OpenStack to configure and get right!**
 
 --------------
 
-ANVIL will configure the network in a identical manner to version
-*1.0*. This means that the default network manager will be the
-*FlatDHCPManager*. The following settings are relevant in configuring
-your network.
+The following settings in ``conf/components/nova.yaml``  are an example of settings that will
+affect the configuration of your compute nodes network.
 
 ::
 
-     flat_network_bridge = ${FLAT_NETWORK_BRIDGE:-br100}
-     flat_interface = ${FLAT_INTERFACE:-eth0}
-     public_interface = ${PUBLIC_INTERFACE:-eth0}
+     flat_network_bridge: br100
+     flat_interface: eth0
+     public_interface: eth0
+     fixed_range: 10.0.0.0/24
+     fixed_network_size: 256
+     floating_range: 172.24.4.224/28
+     test_floating_pool: test
+     test_floating_range: 192.168.253.0/29
 
-The above settings will affect exactly which network interface is used
-as the *source* interface which will be used as a network *bridge*.
-
-::
-
-    fixed_range = ${NOVA_FIXED_RANGE:-10.0.0.0/24}
-    fixed_network_size = ${NOVA_FIXED_NETWORK_SIZE:-256} 
-    floating_range = ${FLOATING_RANGE:-172.24.4.224/28}
-    test_floating_pool = ${TEST_FLOATING_POOL:-test}
-    test_floating_range = ${TEST_FLOATING_RANGE:-192.168.253.0/29}
-
-The above settings will determine exactly how nova when running assigns
-IP addresses. By default a single network is created using
-*fixed\_range* with a network size specified by *fixed\_network\_size*.
-Note the size here is *256* which is the number of addresses in the
-*10.0.0.0/24* subnet (*32 - 24* bits is 8 bits or 256 addresses). The
-floating pool is similar to fixed addresses (**TODO** describe this
-more).
 
 Installation
 ============
@@ -79,7 +73,7 @@ Since RHEL requires a `tty`_ to perform ``sudo`` commands we need
 to disable this so ``sudo`` can run without a `tty`_. This seems needed
 since nova and other components attempt to do ``sudo`` commands. This
 isn’t possible in RHEL unless you disable this (since those
-instances won’t have a `tty`_ ).
+instances won’t have a `tty`_).
 
 ::
 
@@ -115,6 +109,14 @@ This can be typically solved by running the following (and then updating the ``i
     $ sudo mkdir -pv /home/openstack
     $ sudo chmod -R a+rwx /home/openstack
 
+Also as documented at http://docs.openstack.org/essex/openstack-compute/admin/content/qemu.html#fixes-rhel-qemu
+please run the following (after installation).
+
+::
+
+    $ setsebool -P virt_use_execmem on
+    $ sudo ln -s /usr/libexec/qemu-kvm /usr/bin/qemu-system-x86_64
+    $ sudo service libvirtd restart
 
 
 Get git!
@@ -137,46 +139,12 @@ We’ll grab the latest version of ANVIL via git:
 Configuration
 -------------
 
+Any configuration to be updated should now be done.
 
-Network configuration
-~~~~~~~~~~~~~~~~~~~~~
+Please edit the corresponding files in ``conf/components/`` or ``conf/components/personas``
+to fit your desired configuration of nova/glance and the other OpenStack components.
 
-We need to adjust the configuration of ANVIL to reflect our above network configuration.
-
-Please reference:
-
-http://docs.openstack.org/diablo/openstack-compute/admin/content/configuring-networking-on-the-compute-node.html
-
-If you need to adjust those variables the matching config variables in ``conf/components/nova.yaml`` are:
-
-::
-
-    # Network settings
-    # Very useful to read over:
-    # http://docs.openstack.org/cactus/openstack-compute/admin/content/configuring-networking-on-the-compute-node.html
-    fixed_range = ${NOVA_FIXED_RANGE:-10.0.0.0/24}
-    fixed_network_size = ${NOVA_FIXED_NETWORK_SIZE:-256}
-    network_manager = ${NET_MAN:-FlatDHCPManager}
-    public_interface = ${PUBLIC_INTERFACE:-eth0}
-
-    # DHCP Warning: If your flat interface device uses DHCP, there will be a hiccup while the network 
-    # is moved from the flat interface to the flat network bridge. This will happen when you launch 
-    # your first instance. Upon launch you will lose all connectivity to the node, and the vm launch will probably fail.
-    #
-    # If you are running on a single node and don't need to access the VMs from devices other than 
-    # that node, you can set the flat interface to the same value as FLAT_NETWORK_BRIDGE. This will stop the network hiccup from occurring.
-    flat_interface = ${FLAT_INTERFACE:-eth0}
-    vlan_interface = ${VLAN_INTERFACE:-$(nova:public_interface)}
-    flat_network_bridge = ${FLAT_NETWORK_BRIDGE:-br100}
-
-    # Test floating pool and range are used for testing. 
-    # They are defined here until the admin APIs can replace nova-manage
-    floating_range = ${FLOATING_RANGE:-172.24.4.224/28}
-    test_floating_pool = ${TEST_FLOATING_POOL:-test}
-    test_floating_range = ${TEST_FLOATING_RANGE:-192.168.253.0/29}
-
-
-If you are using a ``FlatManager`` and RH/Fedora then you might want read and follow:
+If you are using a ``FlatManager`` and RH/Fedora then you might want to read and follow:
 
 http://www.techotopia.com/index.php/Creating_an_RHEL_5_KVM_Networked_Bridge_Interface
     
@@ -192,7 +160,7 @@ Now install *OpenStacks* components by running the following:
 You should see a set of distribution packages and/or pips being
 installed, python setups occurring and configuration files being written
 as ANVIL figures out how to install your desired components (if you
-desire more informational output add a ``-v`` or a ``-vv`` to that
+desire more informational output add a ``-v``to that
 command).
 
 Testing
@@ -216,8 +184,6 @@ Now that you have installed *OpenStack* you can now start your
 
     sudo ./smithy -a start
 
-If you desire more informational output add a ``-v`` or a ``-vv`` to
-that command.
 
 Check horizon
 ~~~~~~~~~~~~~
