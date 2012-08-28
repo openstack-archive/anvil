@@ -125,7 +125,7 @@ class ConfConfigurator(object):
     def verify(self):
         # Do a little check to make sure actually have that interface/s
         public_interface = self.installer.get_option('public_interface')
-        vlan_interface = self.installer.get_option('vlan_interface', public_interface)
+        vlan_interface = self.installer.get_option('vlan_interface', default_value=public_interface)
         known_interfaces = utils.get_interfaces()
         if not public_interface in known_interfaces:
             msg = "Public interface %r is not a known interface (is it one of %s??)" % (public_interface, ", ".join(known_interfaces))
@@ -156,7 +156,7 @@ class ConfConfigurator(object):
 
         # Which scheduler do u want?
         nova_conf.add('compute_scheduler_driver',
-                      self.installer.get_option('scheduler', 'nova.scheduler.filter_scheduler.FilterScheduler'))
+                      self.installer.get_option('scheduler', default_value='nova.scheduler.filter_scheduler.FilterScheduler'))
 
         # Rate limit the api??
         nova_conf.add('api_rate_limit', self.installer.get_bool_option('api_rate_limit'))
@@ -171,13 +171,12 @@ class ConfConfigurator(object):
         # The ip of where we are running
         nova_conf.add('my_ip', hostip)
 
+        # Setup your sql connection
         dbdsn = dbhelper.fetch_dbdsn(dbname=DB_NAME,
                                      utf8=True,
-                                     dbtype=self.installer.get_option('db.type'),
+                                     dbtype=self.installer.get_option('db', 'type'),
                                      **utils.merge_dicts(self.installer.get_option('db'),
                                                          dbhelper.get_shared_passwords(self.installer)))
-
-        # Setup your sql connection
         nova_conf.add('sql_connection', dbdsn)
 
         # Configure anything libvirt related?
@@ -216,15 +215,15 @@ class ConfConfigurator(object):
         self._configure_image_service(nova_conf, hostip)
 
         # Configs for ec2 / s3 stuff
-        nova_conf.add('ec2_dmz_host', self.installer.get_option('ec2_dmz_host', hostip))
+        nova_conf.add('ec2_dmz_host', self.installer.get_option('ec2_dmz_host', default_value=hostip))
         nova_conf.add('s3_host', hostip)
 
         # How is your message queue setup?
         mq_type = canon_mq_type(self.installer.get_option('mq-type'))
         if mq_type == 'rabbit':
-            nova_conf.add('rabbit_host', self.installer.get_option('rabbit.host', hostip))
+            nova_conf.add('rabbit_host', self.installer.get_option('rabbit', 'host', default_value=hostip))
             nova_conf.add('rabbit_password', rbhelper.get_shared_passwords(self.installer)['pw'])
-            nova_conf.add('rabbit_userid', self.installer.get_option('rabbit.user_id'))
+            nova_conf.add('rabbit_userid', self.installer.get_option('rabbit', 'user_id'))
             nova_conf.add('rpc_backend', 'nova.rpc.impl_kombu')
 
         # Where instances will be stored
@@ -244,11 +243,13 @@ class ConfConfigurator(object):
 
     def _get_extra(self, key):
         extras = self.installer.get_option(key)
-        cleaned_lines = list()
-        extra_lines = extras.splitlines()
+        if not extras:
+            return []
+        cleaned_lines = []
+        extra_lines = str(extras).splitlines()
         for line in extra_lines:
             cleaned_line = line.strip()
-            if len(cleaned_line):
+            if cleaned_line:
                 cleaned_lines.append(cleaned_line)
         return cleaned_lines
 
@@ -287,12 +288,12 @@ class ConfConfigurator(object):
 
     def _configure_image_service(self, nova_conf, hostip):
         # What image service we will u be using sir?
-        img_service = self.installer.get_option('img_service', 'nova.image.glance.GlanceImageService')
+        img_service = self.installer.get_option('img_service', default_value='nova.image.glance.GlanceImageService')
         nova_conf.add('image_service', img_service)
 
         # If glance then where is it?
         if img_service.lower().find("glance") != -1:
-            glance_api_server = self.installer.get_option('glance_server', ("%s:9292" % (hostip)))
+            glance_api_server = self.installer.get_option('glance_server', default_value=("%s:9292" % (hostip)))
             nova_conf.add('glance_api_servers', glance_api_server)
 
     def _configure_vnc(self, nova_conf):
@@ -300,8 +301,8 @@ class ConfConfigurator(object):
         # These settings don't hurt anything if n-xvnc and n-novnc are disabled
         nova_conf.add('novncproxy_base_url', self.installer.get_option('vncproxy_url'))
         nova_conf.add('xvpvncproxy_base_url', self.installer.get_option('xvpvncproxy_url'))
-        nova_conf.add('vncserver_listen', self.installer.get_option('vncserver_listen', '127.0.0.1'))
-        nova_conf.add('vncserver_proxyclient_address', self.installer.get_option('vncserver_proxyclient_address', '127.0.0.1'))
+        nova_conf.add('vncserver_listen', self.installer.get_option('vncserver_listen', default_value='127.0.0.1'))
+        nova_conf.add('vncserver_proxyclient_address', self.installer.get_option('vncserver_proxyclient_address', default_value='127.0.0.1'))
 
     # Fixes up your nova volumes
     def _configure_vols(self, nova_conf):
@@ -317,7 +318,7 @@ class ConfConfigurator(object):
         pass
 
     def _configure_network_settings(self, nova_conf):
-        if self.installer.get_option('quantum-enabled'):
+        if self.installer.get_bool_option('quantum-enabled'):
             self._configure_quantum(nova_conf)
         else:
             nova_conf.add('network_manager', self.installer.get_option('network_manager'))
@@ -332,7 +333,7 @@ class ConfConfigurator(object):
         # The value for vlan_interface may default to the the current value
         # of public_interface. We'll grab the value and keep it handy.
         public_interface = self.installer.get_option('public_interface')
-        vlan_interface = self.installer.get_option('vlan_interface', public_interface)
+        vlan_interface = self.installer.get_option('vlan_interface', default_value=public_interface)
         nova_conf.add('public_interface', public_interface)
         nova_conf.add('vlan_interface', vlan_interface)
 
@@ -340,7 +341,7 @@ class ConfConfigurator(object):
         nova_conf.add('force_dhcp_release', True)
 
         # Special virt driver network settings
-        nova_conf.add('flat_network_bridge', self.installer.get_option('flat_network_bridge', 'br100'))
+        nova_conf.add('flat_network_bridge', self.installer.get_option('flat_network_bridge', default_value='br100'))
         nova_conf.add('flat_injected', self.installer.get_bool_option('flat_injected'))
         flat_interface = self.installer.get_option('flat_interface')
         if flat_interface:

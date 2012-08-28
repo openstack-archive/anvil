@@ -10,6 +10,9 @@
 #for $d in $defines
 %define ${d}
 #end for
+#for $d in $undefines
+%undefine ${d}
+#end for
 # 
 # Spec file for $details.name auto-generated on ${date} by ${who}
 #
@@ -32,6 +35,13 @@ Name: $details.name
 Summary: $details.summary
 Version: $details.version
 Release: $details.release%{?dist}
+Packager: $details.packager
+#if $details.url
+URL: $details.url
+#end if
+#if $details.vendor
+Vendor: $details.vendor
+#end if
 #set $s_len = len($files.sources)
 #for $i in $range(0, $s_len)
 Source${i}: $files.sources[$i]
@@ -41,14 +51,34 @@ License: $details.license
 #if $build.has_key('arch')
 BuildArch: $build.arch
 #end if
+#if $details.automatic_dependencies
+AutoReqProv: yes
+#else
+AutoReqProv: no
+#end if
+#if $conflicts
+
+# Packages we conflict with
+#for $i in $conflicts
+Conflicts: ${i}
+#end for
+#end if
+#if $obsoletes
+
+# Packages we obsolete
+#for $i in $obsoletes
+Obsoletes: ${i}
+#end for
+#end if
 #if $requires.build
+
 # Build requirements
 #for $i in $requires.build
 BuildRequires: ${i}
 #end for
 #end if
-
 #if $requires.install
+
 # Install requirements
 #for $i in $requires.install
 Requires: ${i}
@@ -63,19 +93,20 @@ $details.summary
 #end if
 
 %prep
+
 #if $build.has_key('setup')
 %setup $build.setup
 #end if
+
 #if $build.has_key('action')
 %build
 $build.action
 #end if
 
 %install
-rm -rf %{buildroot}
-
-%clean
-rm -rf %{buildroot}
+#if $build.has_key('install_how')
+$build.install_how
+#end if
 
 %files
 %defattr(-,root,root,-)

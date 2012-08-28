@@ -25,7 +25,6 @@ LOG = logging.getLogger(__name__)
 
 class Component(object):
     def __init__(self, name, subsystems, instances, options, siblings,  distro, passwords, **kwargs):
-
         # Subsystems this was requested with
         self.subsystems = subsystems
         
@@ -53,18 +52,22 @@ class Component(object):
     def get_password(self, option, prompt_text, **kwargs):
         return self.passwords.get_password(option, prompt_text, **kwargs)
 
-    def get_option(self, option, default_value=None):
-        option_value = utils.get_from_path(self.options, option)
+    def get_option(self, option, *options, **kwargs):
+        option_value = utils.get_deep(self.options, [option] + list(options))
         if option_value is None:
-            return default_value
+            return kwargs.get('default_value')
         else:
             return option_value
 
-    def get_bool_option(self, option, default_value=False):
-        return tu.make_bool(self.get_option(option, default_value))
+    def get_bool_option(self, option, *options, **kwargs):
+        if 'default_value' not in kwargs:
+            kwargs['default_value'] = False
+        return tu.make_bool(self.get_option(option, *options, **kwargs))
 
-    def get_int_option(self, option, default_value=0):
-        return int(self.get_option(option, default_value))
+    def get_int_option(self, option, *options, **kwargs):
+        if 'default_value' not in kwargs:
+            kwargs['default_value'] = 0
+        return int(self.get_option(option, *options, **kwargs))
 
     @property
     def env_exports(self):

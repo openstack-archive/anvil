@@ -65,8 +65,9 @@ EOF
         return 1
     fi
     echo "Installing needed distribution dependencies:"
-    yum install -y -q gcc git pylint python python-netifaces python-pep8 python-cheetah \
-                      python-pip python-progressbar PyYAML python-ordereddict 2>&1
+    pkgs="gcc git pylint python python-netifaces python-pep8 python-cheetah"
+    pkgs="$pkgs python-pip python-progressbar PyYAML python-ordereddict python-iso8601"
+    yum install -y $pkgs 2>&1
     if [ $? -ne 0 ]; then
         return 1
     fi
@@ -83,8 +84,9 @@ bootstrap_ub()
     echo "Bootstrapping Ubuntu: $1"
     echo "Please wait..."
     echo "Installing needed distribution dependencies:"
-    apt-get install -y gcc git pep8 pylint python python-dev \
-                       python-iniparse python-pip python-progressbar python-yaml python-cheetah
+    pkgs="gcc git pep8 pylint python python-dev python-iniparse"
+    pkgs="$pkgs python-pip python-progressbar python-yaml python-cheetah python-iso8601"
+    apt-get install -y $pkgs
     if [ $? -ne 0 ]; then
         return 1
     fi

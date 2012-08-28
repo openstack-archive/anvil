@@ -31,22 +31,25 @@
 #    under the License.
 
 import functools
-import pkg_resources
 import re
 import weakref
+
+from pkg_resources import Requirement
 
 from anvil import cfg
 from anvil import colorizer
 from anvil import component
+from anvil import decorators
 from anvil import downloader as down
 from anvil import exceptions as excp
 from anvil import importer
 from anvil import log as logging
 from anvil import packager
-from anvil import pip
 from anvil import shell as sh
 from anvil import trace as tr
 from anvil import utils
+
+from anvil.packaging import pip
 
 LOG = logging.getLogger(__name__)
 
@@ -63,6 +66,14 @@ class ProgramStatus(object):
         self.status = status
         self.details = details
 
+####
+#### Utils...
+####
+
+def make_packager(package, distro, default_class):
+    cls = packager.get_packager_class(package, default_class)
+    return cls(distro)
+
 
 #### 
 #### INSTALL CLASSES
@@ -72,7 +83,6 @@ class PkgInstallComponent(component.Component):
     def __init__(self, *args, **kargs):
         component.Component.__init__(self, *args, **kargs)
         self.tracewriter = tr.TraceWriter(self.trace_files['install'], break_if_there=False)
-        self.package_registries = kargs.get('package_registries') or {}
 
     def _get_download_config(self):
         return None
@@ -90,7 +100,7 @@ class PkgInstallComponent(component.Component):
         key = self._get_download_config()
         if not key:
             return (None, None)
-        uri = self.get_option(key, '').strip()
+        uri = self.get_option(key, default_value='').strip()
         if not uri:
             raise ValueError(("Could not find uri in config to download "
                               "from option %s") % (key))
@@ -117,7 +127,7 @@ class PkgInstallComponent(component.Component):
 
     @property
     def packages(self):
-        pkg_list = self.get_option('packages', [])
+        pkg_list = self.get_option('packages', default_value=[])
         if not pkg_list:
             pkg_list = []
         for name, values in self.subsystems.items():
@@ -126,12 +136,6 @@ class PkgInstallComponent(component.Component):
                 pkg_list.extend(values.get('packages'))
         pkg_list = self._clear_package_duplicates(pkg_list)
         return pkg_list
-
-    def _make_packager(self, name, pkg_info, default_cls):
-        if name not in self.package_registries:
-            self.package_registries[name] = packager.Registry()
-        cls = packager.get_packager_class(pkg_info, default_cls)
-        return cls(self.distro, self.package_registries[name])
 
     def install(self):
         LOG.debug('Preparing to install packages for: %r', self.name)
@@ -142,7 +146,7 @@ class PkgInstallComponent(component.Component):
                 header="Setting up %s distribution packages" % (len(pkg_names)))
             with utils.progress_bar('Installing', len(pkgs)) as p_bar:
                 for (i, p) in enumerate(pkgs):
-                    installer = self._make_packager('distro', p, self.distro.package_manager_class)
+                    installer = make_packager(p, self.distro, self.distro.package_manager_class)
                     self.tracewriter.package_installed(p)
                     installer.install(p)
                     p_bar.update(i + 1)
@@ -150,13 +154,13 @@ class PkgInstallComponent(component.Component):
     def pre_install(self):
         pkgs = self.packages
         for p in pkgs:
-            installer = self._make_packager('distro', p, self.distro.package_manager_class)
+            installer = make_packager(p, self.distro, self.distro.package_manager_class)
             installer.pre_install(p, self.params)
 
     def post_install(self):
         pkgs = self.packages
         for p in pkgs:
-            installer = self._make_packager('distro', p, self.distro.package_manager_class)
+            installer = make_packager(p, self.distro, self.distro.package_manager_class)
             installer.post_install(p, self.params)
 
     @property
@@ -186,7 +190,7 @@ class PkgInstallComponent(component.Component):
         return links
 
     def _config_param_replace(self, config_fn, contents, parameters):
-        return utils.param_replace(contents, parameters)
+        return utils.expand_template(contents, parameters)
 
     def _configure_files(self):
         config_fns = self.config_files
@@ -239,8 +243,9 @@ class PythonInstallComponent(PkgInstallComponent):
         PkgInstallComponent.__init__(self, *args, **kargs)
         self.requires_files = [
             sh.joinpths(self.get_option('app_dir'), 'tools', 'pip-requires'),
-            sh.joinpths(self.get_option('app_dir'), 'tools', 'test-requires')
         ]
+        if self.get_bool_option('use_tests_requires', default_value=True):
+            self.requires_files.append(sh.joinpths(self.get_option('app_dir'), 'tools', 'test-requires'))
 
     def _get_download_config(self):
         return 'get_from'
@@ -263,7 +268,7 @@ class PythonInstallComponent(PkgInstallComponent):
 
     @property
     def pips_to_packages(self):
-        pip_pkg_list = self.get_option('pip_to_package', [])
+        pip_pkg_list = self.get_option('pip_to_package', default_value=[])
         if not pip_pkg_list:
             pip_pkg_list = []
         return pip_pkg_list
@@ -295,7 +300,7 @@ class PythonInstallComponent(PkgInstallComponent):
                 if pip_match(pip_name, pip_info['name']):
                     pip_found = True
                     pkg_found = pip_info.get('package')
-                    LOG.debug("Matched pip->pkg (%s) from component %s", pip_name, who)
+                    LOG.debug("Matched pip->pkg %r from component %r", pip_name, who)
                     break
             if pip_found:
                 break
@@ -305,58 +310,66 @@ class PythonInstallComponent(PkgInstallComponent):
         # Ok nobody had it in a pip->pkg mapping
         # but see if they had it in there pip collection
         pip_mp = {
-            self.name: list(self.pips),
+            self.name: self._base_pips(),
         }
         for (name, c) in self.instances.items():
             if not c.activated or c is self:
                 continue
             if isinstance(c, (PythonInstallComponent)):
-                pip_mp[name] = list(c.pips)
+                pip_mp[name] = c._base_pips()
         pip_found = False
+        pip_who = None
         for (who, pips) in pip_mp.items():
             for pip_info in pips:
                 if pip_match(pip_info['name'], pip_name):
                     pip_found = True
-                    LOG.debug("Matched pip (%s) from component %s", pip_name, who)
+                    pip_who = pip_info
+                    LOG.debug("Matched pip %r from other component %r", pip_name, who)
                     break
             if pip_found:
                 break
         if pip_found:
-            return (None, True)
+            return (pip_who, True)
 
         return (None, False)
 
     def _get_mapped_packages(self):
         add_on_pkgs = []
+        all_pips = []
         for fn in self.requires_files:
-            if sh.isfile(fn):
-                LOG.debug("Injected & resolving dependencies from %s.", colorizer.quote(fn))
-                for line in sh.load_file(fn).splitlines():
-                    line = line.strip()
-                    if not line or line.startswith("#"):
-                        continue
-                    requirement = pkg_resources.Requirement.parse(line)
-                    (pkg_match, from_pip) = self._match_pip_requires(requirement.project_name)
-                    if not pkg_match and not from_pip:
-                        raise excp.DependencyException(("Pip dependency %r"
-                                                        ' (from %r)'
-                                                        ' not translatable'
-                                                        ' to a known pip package'
-                                                        ' or a distribution'
-                                                        ' package!') % (requirement, fn))
-                    elif not from_pip and pkg_match:
-                        add_on_pkgs.append(pkg_match)
+            all_pips.extend(self._extract_pip_requires(fn))
+        for (_requirement, (pkg_info, from_pip)) in all_pips:
+            if from_pip or not pkg_info:
+                continue
+            add_on_pkgs.append(pkg_info)
         return add_on_pkgs
 
-    @property
-    def pips(self):
-        pip_list = self.get_option('pips')
+    def _get_mapped_pips(self):
+        add_on_pips = []
+        all_pips = []
+        for fn in self.requires_files:
+            all_pips.extend(self._extract_pip_requires(fn))
+        for (_requirement, (pkg_info, from_pip)) in all_pips:
+            if not from_pip or not pkg_info:
+                continue
+            add_on_pips.append(pkg_info)
+        return add_on_pips
+
+    def _base_pips(self):
+        pip_list = self.get_option('pips', default_value=[])
         if not pip_list:
             pip_list = []
         for (name, values) in self.subsystems.items():
             if 'pips' in values:
                 LOG.debug("Extending pip list with pips for subsystem: %r" % (name))
                 pip_list.extend(values.get('pips'))
+        pip_list = self._clear_package_duplicates(pip_list)
+        return pip_list
+
+    @property
+    def pips(self):
+        pip_list = self._base_pips()
+        pip_list.extend(self._get_mapped_pips())
         pip_list = self._clear_package_duplicates(pip_list)
         return pip_list
 
@@ -369,12 +382,12 @@ class PythonInstallComponent(PkgInstallComponent):
             with utils.progress_bar('Installing', len(pips)) as p_bar:
                 for (i, p) in enumerate(pips):
                     self.tracewriter.pip_installed(p)
-                    installer = self._make_packager('pip', p, pip.Packager)
+                    installer = make_packager(p, self.distro, pip.Packager)
                     installer.install(p)
                     p_bar.update(i + 1)
 
     def _clean_pip_requires(self):
-        # Fixup these files if they exist (sometimes they have junk in them)
+        # Fixup these files if they exist (sometimes they have 'junk' in them)
         req_fns = []
         for fn in self.requires_files:
             if not sh.isfile(fn):
@@ -404,15 +417,16 @@ class PythonInstallComponent(PkgInstallComponent):
         return line
 
     def pre_install(self):
+        self._verify_pip_requires()
         PkgInstallComponent.pre_install(self)
         for p in self.pips:
-            installer = self._make_packager('pip', p, pip.Packager)
+            installer = make_packager(p, self.distro, pip.Packager)
             installer.pre_install(p, self.params)
 
     def post_install(self):
         PkgInstallComponent.post_install(self)
         for p in self.pips:
-            installer = self._make_packager('pip', p, pip.Packager)
+            installer = make_packager(p, self.distro, pip.Packager)
             installer.post_install(p, self.params)
 
     def _install_python_setups(self):
@@ -442,6 +456,34 @@ class PythonInstallComponent(PkgInstallComponent):
     def _python_install(self):
         self._install_pips()
         self._install_python_setups()
+
+    @decorators.memoized
+    def _extract_pip_requires(self, fn):
+        if not sh.isfile(fn):
+            return []
+        LOG.debug("Resolving dependencies from %s.", colorizer.quote(fn))
+        pips_needed = []
+        for line in sh.load_file(fn).splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            pips_needed.append(Requirement.parse(line))
+        if not pips_needed:
+            return []
+        matchings = []
+        for requirement in pips_needed:
+            matchings.append([requirement, self._match_pip_requires(requirement.project_name)])
+        return matchings
+
+    def _verify_pip_requires(self):
+        all_pips = []
+        for fn in self.requires_files:
+            all_pips.extend(self._extract_pip_requires(fn))
+        for (requirement, (pkg_info, _from_pip)) in all_pips:
+            if not pkg_info:
+                raise excp.DependencyException(("Pip dependency '%s' is not translatable to a listed"
+                                                " (from this or previously activated components) pip package"
+                                                ' or a pip->package mapping!') % (requirement))
 
     def install(self):
         PkgInstallComponent.install(self)
@@ -501,7 +543,7 @@ class PythonRuntime(ProgramRuntime):
         # Anything to start?
         am_started = 0
         # Select how we are going to start it
-        run_type = self.get_option("run_type", 'anvil.runners.fork:ForkRunner')
+        run_type = self.get_option("run_type", default_value='anvil.runners.fork:ForkRunner')
         starter_cls = importer.import_entry_point(run_type)
         starter = starter_cls(self)
         for i, app_info in enumerate(self.apps_to_start):
@@ -514,7 +556,9 @@ class PythonRuntime(ProgramRuntime):
         app_name = app_info["name"]
         app_pth = app_info.get("path", app_name)
         app_dir = app_info.get("app_dir", self.get_option('app_dir'))
-        program_opts = utils.param_replace_list(self.app_options(app_name), self.app_params(app_name))
+        app_options = self.app_options(app_name)
+        app_params = self.app_params(app_name)
+        program_opts = [utils.expand_template(c, app_params) for c in app_options]
         LOG.debug("Starting %r using %r", app_name, starter)
         details_fn = starter.start(app_name, app_pth=app_pth, app_dir=app_dir, opts=program_opts)
         LOG.info("Started sub-program %s.", colorizer.quote(app_name))
@@ -525,7 +569,7 @@ class PythonRuntime(ProgramRuntime):
         if 'sleep_time' in app_info:
             LOG.info("%s requested a %s second sleep time, please wait...", 
                      colorizer.quote(app_info.get('name')), app_info.get('sleep_time'))
-            sh.sleep(float(app_info.get('sleep_time')))
+            sh.sleep(int(app_info.get('sleep_time')))
 
     def _locate_investigators(self, apps_started):
         investigator_created = {}
@@ -591,13 +635,6 @@ class PkgUninstallComponent(component.Component):
     def __init__(self, *args, **kargs):
         component.Component.__init__(self, *args, **kargs)
         self.tracereader = tr.TraceReader(self.trace_files['install'])
-        self.package_registries = kargs.get('package_registries', {})
-
-    def _make_packager(self, name, pkg_info, default_cls):
-        if name not in self.package_registries:
-            self.package_registries[name] = packager.Registry()
-        cls = packager.get_packager_class(pkg_info, default_cls)
-        return cls(self.distro, self.package_registries[name])
 
     def unconfigure(self):
         self._unconfigure_files()
@@ -641,7 +678,7 @@ class PkgUninstallComponent(component.Component):
             which_removed = set()
             with utils.progress_bar('Uninstalling', len(pkgs), reverse=True) as p_bar:
                 for (i, p) in enumerate(pkgs):
-                    uninstaller = self._make_packager('distro', p, self.distro.package_manager_class)
+                    uninstaller = make_packager(p, self.distro, self.distro.package_manager_class)
                     if uninstaller.remove(p):
                         which_removed.add(p['name'])
                     p_bar.update(i + 1)
@@ -692,7 +729,7 @@ class PythonUninstallComponent(PkgUninstallComponent):
             with utils.progress_bar('Uninstalling', len(pips), reverse=True) as p_bar:
                 for (i, p) in enumerate(pips):
                     try:
-                        uninstaller = self._make_packager('pip', p, pip.Packager)
+                        uninstaller = make_packager(p, self.distro, pip.Packager)
                         uninstaller.remove(p)
                     except excp.ProcessExecutionError as e:
                         # NOTE(harlowja): pip seems to die if a pkg isn't there even in quiet mode

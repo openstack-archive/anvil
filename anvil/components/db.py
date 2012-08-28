@@ -58,7 +58,7 @@ class DBUninstaller(comp.PkgUninstallComponent):
                     params = {
                         'OLD_PASSWORD': dbhelper.get_shared_passwords(self)['pw'],
                         'NEW_PASSWORD': RESET_BASE_PW,
-                        'USER': self.get_option("user", 'root'),
+                        'USER': self.get_option("user", default_value='root'),
                     }
                     cmds = [{'cmd': pwd_cmd}]
                     utils.execute_template(*cmds, params=params)
@@ -81,7 +81,7 @@ class DBInstaller(comp.PkgInstallComponent):
         mp.update({
             'PASSWORD': dbhelper.get_shared_passwords(self)['pw'],
             'BOOT_START': "true",
-            'USER': self.get_option("user", 'root'),
+            'USER': self.get_option("user", default_value='root'),
             'SERVICE_HOST': self.get_option('ip'),
             'HOST_IP': self.get_option('ip'),
         })
@@ -115,7 +115,7 @@ class DBInstaller(comp.PkgInstallComponent):
                     self.runtime.restart()
                     params = {
                         'NEW_PASSWORD': dbhelper.get_shared_passwords(self)['pw'],
-                        'USER': self.get_option("user", 'root'),
+                        'USER': self.get_option("user", default_value='root'),
                         'OLD_PASSWORD': RESET_BASE_PW,
                     }
                     cmds = [{'cmd': pwd_cmd}]
@@ -127,7 +127,7 @@ class DBInstaller(comp.PkgInstallComponent):
         # Ensure access granted
         dbhelper.grant_permissions(dbtype,
                                    distro=self.distro,
-                                   user=self.get_option("user", 'root'),
+                                   user=self.get_option("user", default_value='root'),
                                    restart_func=self.runtime.restart,
                                    **dbhelper.get_shared_passwords(self))
 

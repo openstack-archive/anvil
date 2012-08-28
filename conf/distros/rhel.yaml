@@ -5,9 +5,10 @@ platform_pattern: redhat(.*)
 packager_name: anvil.packaging.yum:YumPackager
 commands:
     apache:
+        name: httpd
         restart: service httpd restart
         settings:
-            conf-link-target: /etc/httpd/conf.d/wsgi-horizon-000-default.conf
+            conf-link-target: /etc/httpd/conf.d/horizon.conf
         start: service httpd start
         status: service httpd status
         stop: service httpd stop
@@ -18,18 +19,18 @@ commands:
         restart: service libvirtd restart
         status: service libvirtd status
         # This is just used to check that libvirt will work with a given protocol
-        verify: virsh -c %VIRT_PROTOCOL% uri
+        verify: virsh -c $VIRT_PROTOCOL uri
     mysql:
         # NOTE: we aren't stopping any sql injection...
-        create_db: mysql --user=%USER% --password=%PASSWORD% -e 
-                   "CREATE DATABASE %DB% CHARACTER SET %CHARACTER_SET%;"
-        drop_db: mysql --user=%USER% --password=%PASSWORD% -e 
-                 "DROP DATABASE IF EXISTS %DB%;"
-        grant_all: mysql --user=%USER% --password=%PASSWORD% -e 
-                   "GRANT ALL PRIVILEGES ON *.* TO '%USER%'@'%' IDENTIFIED BY '%PASSWORD%'; FLUSH PRIVILEGES;"
+        create_db: mysql --user=$USER --password=$PASSWORD -e 
+                   "CREATE DATABASE $DB CHARACTER SET $CHARACTER_SET;"
+        drop_db: mysql --user=$USER --password=$PASSWORD -e 
+                 "DROP DATABASE IF EXISTS $DB;"
+        grant_all: mysql --user=$USER --password=$PASSWORD -e 
+                   "GRANT ALL PRIVILEGES ON *.* TO '$USER'@'%' IDENTIFIED BY '$PASSWORD'; FLUSH PRIVILEGES;"
         restart: service mysqld restart
-        set_pwd: mysql --user=%USER% --password=%OLD_PASSWORD% -e 
-                 "USE mysql;  UPDATE user SET password=PASSWORD('%NEW_PASSWORD%') WHERE User='%USER%';  FLUSH PRIVILEGES;"
+        set_pwd: mysql --user=$USER --password=$OLD_PASSWORD -e 
+                 "USE mysql; UPDATE user SET password=PASSWORD('$NEW_PASSWORD') WHERE User='$USER';  FLUSH PRIVILEGES;"
         start: service mysqld start
         status: service mysqld status
         stop: service mysqld stop
@@ -55,14 +56,14 @@ components:
             running: anvil.components.cinder_client:CinderClientRuntime
             uninstall: anvil.components.cinder_client:CinderClientUninstaller
             test: anvil.components:PythonTestingComponent
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:PythonPackager
     db:
         action_classes:
             install: anvil.distros.rhel:DBInstaller
             running: anvil.components.db:DBRuntime
             uninstall: anvil.components.db:DBUninstaller
             test: anvil.components:EmptyTestingComponent
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:DependencyPackager
         packages:
         -   name: mysql
         -   name: mysql-server
@@ -72,7 +73,7 @@ components:
             running: anvil.components:EmptyRuntime
             uninstall: anvil.components.pkglist:Uninstaller
             test: anvil.components:EmptyTestingComponent
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:DependencyPackager
         packages:
         # Shared system packages
         -   name: coreutils
@@ -200,10 +201,11 @@ components:
         -   name: coverage
         -   name: distribute
         -   name: nose-exclude
+        -   name: nosehtmloutput
         -   name: openstack.nose_plugin
         -   name: passlib
         -   name: prettytable
-            version: ">=0.6" # This is not right, 0.6 and 0.6.1 are needed??
+            version: "0.6" # This is not right, 0.6 and 0.6.1 are needed??
         -   name: pycrypto
             options: # Force it to upgrade/reinstall
                 - "-U"
@@ -221,7 +223,7 @@ components:
             running: anvil.components.glance:GlanceRuntime
             uninstall: anvil.components.glance:GlanceUninstaller
             test: anvil.components.glance:GlanceTester
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:PythonPackager
         # When parsing 'tools/pip-requires' and 
         # 'tools/test-requires' (if they exist)
         # the following map will be used to translate names
@@ -240,7 +242,7 @@ components:
         pips:
         # Pips that aren't packages yet (and not in the 'general' section)
         -   name: boto
-            version: "==2.1.1"
+            version: "2.1.1"
         -   name: wsgiref
         -   name: xattr
         -   name: jsonschema
@@ -250,20 +252,19 @@ components:
             running: anvil.components.glance_client:GlanceClientRuntime
             uninstall: anvil.components.glance_client:GlanceClientUninstaller
             test: anvil.components.glance_client:GlanceClientTester
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:PythonPackager
         pips:
         -   name: nosexcover
         -   name: setuptools-git
         -   name: warlock
-            version: "==0.1.0"
-        -   name: nosehtmloutput
+            version: "0.1.0"
     horizon:
         action_classes:
             install: anvil.distros.rhel:HorizonInstaller
             running: anvil.components.horizon:HorizonRuntime
             uninstall: anvil.components.horizon:HorizonUninstaller
             test: anvil.components:PythonTestingComponent
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:PythonPackager
         pip_to_package:
         -   name: pytz
             package:
@@ -275,7 +276,7 @@ components:
         -   name: nodejs-npm
         pips:
         -   name: django
-            version: ">=1.4"
+            version: "1.4"
         -   name: django-compressor
         -   name: django-nose
         -   name: django-openstack-auth
@@ -287,7 +288,7 @@ components:
             running: anvil.components.keystone:KeystoneRuntime
             uninstall: anvil.components.keystone:KeystoneUninstaller
             test: anvil.components.keystone:KeystoneTester
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:PythonPackager
         packages:
         -   name: MySQL-python
         pip_to_package:
@@ -296,7 +297,7 @@ components:
                 name: python-netifaces
         pips:
         -   name: pam
-            version: '==0.1.4'
+            version: '0.1.4'
         -   name: nosexcover
         -   name: webtest  # This version in package form conflicts with webob1.0
     keystone-client:
@@ -305,14 +306,14 @@ components:
             running: anvil.components.keystone_client:KeyStoneClientRuntime
             uninstall: anvil.components.keystone_client:KeyStoneClientUninstaller
             test: anvil.components:PythonTestingComponent
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:PythonPackager
     nova:
         action_classes:
             install: anvil.distros.rhel:NovaInstaller
             running: anvil.components.nova:NovaRuntime
             uninstall: anvil.components.nova:NovaUninstaller
             test: anvil.components.nova:NovaTester
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:PythonPackager
         packages:
         -   name: MySQL-python
         -   name: dnsmasq
@@ -366,7 +367,7 @@ components:
             running: anvil.components.nova_client:NovaClientRuntime
             uninstall: anvil.components.nova_client:NovaClientUninstaller
             test: anvil.components:PythonTestingComponent
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:PythonPackager
     no-vnc:
         action_classes:
             install: anvil.components.novnc:NoVNCInstaller
@@ -382,7 +383,7 @@ components:
             running: anvil.components.openstack_client:OpenStackClientRuntime
             uninstall: anvil.components.openstack_client:OpenStackClientUninstaller
             test: anvil.components.openstack_client:OpenStackClientTester
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:PythonPackager
         pips:
         -   name: cliff
         pip_to_package:
@@ -395,7 +396,7 @@ components:
             running: anvil.components.quantum_client:QuantumClientRuntime
             uninstall: anvil.components.quantum_client:QuantumClientUninstaller
             test: anvil.components:PythonTestingComponent
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:PythonPackager
         pip_to_package:
         -   name: pyparsing
             package:
@@ -408,7 +409,7 @@ components:
             running: anvil.distros.rhel:RabbitRuntime
             uninstall: anvil.components.rabbit:RabbitUninstaller
             test: anvil.components:EmptyTestingComponent
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:DependencyPackager
         packages:
         -   name: rabbitmq-server
             pre-install:
@@ -430,6 +431,6 @@ components:
             running: anvil.components.swift_client:SwiftClientRuntime
             uninstall: anvil.components.swift_client:SwiftClientUninstaller
             test: anvil.components:PythonTestingComponent
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.distros.rhel:PythonPackager
 ...
 

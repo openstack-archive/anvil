@@ -1,44 +1,48 @@
+##
+## This is a yaml template (with cheetah template 
+## strings that will be filled in)...
+##
 ---
 endpoints:
 -   service: swift
-    admin_url: "%swift.endpoints.admin.uri%/v1/AUTH_%(tenant_id)s"
-    internal_url: "%swift.endpoints.internal.uri%"
-    public_url: "%swift.endpoints.public.uri%/v1/AUTH_%(tenant_id)s"
+    admin_url: "${swift.endpoints.admin.uri}/v1/AUTH_%(tenant_id)s"
+    internal_url: "$swift.endpoints.internal.uri"
+    public_url: "${swift.endpoints.public.uri}/v1/AUTH_%(tenant_id)s"
     region: RegionOne
 -   service: ec2
-    admin_url: "%nova.endpoints.ec2_admin.uri%"
-    internal_url: "%nova.endpoints.ec2_cloud.uri%"
-    public_url: "%nova.endpoints.ec2_cloud.uri%"
+    admin_url: "$nova.endpoints.ec2_admin.uri"
+    internal_url: "$nova.endpoints.ec2_cloud.uri"
+    public_url: "$nova.endpoints.ec2_cloud.uri"
     region: RegionOne
 -   service: network
-    admin_url: "%quantum.endpoints.admin.uri%"
-    internal_url: "%quantum.endpoints.internal.uri%"
-    public_url: "%quantum.endpoints.public.uri%"
+    admin_url: "$quantum.endpoints.admin.uri"
+    internal_url: "$quantum.endpoints.internal.uri"
+    public_url: "$quantum.endpoints.public.uri"
     region: RegionOne
 -   service: glance
-    admin_url: "%glance.endpoints.admin.uri%"
-    internal_url: "%glance.endpoints.internal.uri%"
-    public_url: "%glance.endpoints.public.uri%"
+    admin_url: "$glance.endpoints.admin.uri"
+    internal_url: "$glance.endpoints.internal.uri"
+    public_url: "$glance.endpoints.public.uri"
     region: RegionOne
 -   service: volume
-    admin_url: "%nova.endpoints.volume.uri%/%(tenant_id)s"
-    internal_url: "%nova.endpoints.volume.uri%/%(tenant_id)s"
-    public_url: "%nova.endpoints.volume.uri%/%(tenant_id)s"
+    admin_url: "${nova.endpoints.volume.uri}/%(tenant_id)s"
+    internal_url: "${nova.endpoints.volume.uri}/%(tenant_id)s"
+    public_url: "${nova.endpoints.volume.uri}/%(tenant_id)s"
     region: RegionOne
 -   service: s3
-    admin_url: "%nova.endpoints.s3.uri%"
-    internal_url: "%nova.endpoints.s3.uri%"
-    public_url: "%nova.endpoints.s3.uri%"
+    admin_url: "$nova.endpoints.s3.uri"
+    internal_url: "$nova.endpoints.s3.uri"
+    public_url: "$nova.endpoints.s3.uri"
     region: RegionOne
 -   service: keystone
-    admin_url: "%keystone.endpoints.admin_templated.uri%"
-    internal_url: "%keystone.endpoints.internal_templated.uri%"
-    public_url: "%keystone.endpoints.public_templated.uri%"
+    admin_url: "$keystone.endpoints.admin_templated.uri"
+    internal_url: "$keystone.endpoints.internal_templated.uri"
+    public_url: "$keystone.endpoints.public_templated.uri"
     region: RegionOne
 -   service: nova
-    admin_url: "%nova.endpoints.api.uri%/%(tenant_id)s"
-    internal_url: "%nova.endpoints.api.uri%/%(tenant_id)s"
-    public_url: "%nova.endpoints.api.uri%/%(tenant_id)s"
+    admin_url: "${nova.endpoints.api.uri}/%(tenant_id)s"
+    internal_url: "${nova.endpoints.api.uri}/%(tenant_id)s"
+    public_url: "${nova.endpoints.api.uri}/%(tenant_id)s"
     region: RegionOne
 roles:
 - admin
@@ -87,7 +91,7 @@ tenants:
 users:
 -   email: demo@example.com
     name: demo
-    password: '%keystone.admin_password%'
+    password: '$keystone.admin_password'
     roles:
     - anotherrole:demo
     - Member:demo
@@ -95,7 +99,7 @@ users:
     - demo
 -   email: admin@example.com
     name: admin
-    password: '%keystone.admin_password%'
+    password: '$keystone.admin_password'
     roles:
     - admin:admin
     - admin:demo
@@ -107,21 +111,21 @@ users:
     - demo
 -   email: ec2@example.com
     name: ec2
-    password: '%keystone.service_password%'
+    password: '$keystone.service_password'
     roles:
     - admin:service
     tenants:
     - service
 -   email: glance@example.com
     name: glance
-    password: '%keystone.service_password%'
+    password: '$keystone.service_password'
     roles:
     - admin:service
     tenants:
     - service
 -   email: nova@example.com
     name: nova
-    password: '%keystone.service_password%'
+    password: '$keystone.service_password'
     roles:
     - admin:service
     - ResellerAdmin:service
@@ -129,14 +133,14 @@ users:
     - service
 -   email: quantum@example.com
     name: quantum
-    password: '%keystone.service_password%'
+    password: '$keystone.service_password'
     roles:
     - admin:service
     tenants:
     - service
 -   email: swift@example.com
     name: swift
-    password: '%keystone.service_password%'
+    password: '$keystone.service_password'
     roles:
     - admin:service
     tenants:

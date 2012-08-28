@@ -19,18 +19,13 @@
 Platform-specific logic for RedHat Enterprise Linux components.
 """
 
-import contextlib
 import glob
-import os
 import re
-import shutil
-
-from Cheetah.Template import Template
 
 from anvil import colorizer
 from anvil import component as comp
+from anvil import exceptions as excp
 from anvil import log as logging
-from anvil import packager as pack
 from anvil import shell as sh
 from anvil import utils
                                              
@@ -40,6 +35,7 @@ from anvil.components import nova
 from anvil.components import rabbit
 
 from anvil.packaging import yum
+from anvil.packaging.helpers import changelog
 
 from anvil.components.helpers import nova as nhelper
 
@@ -50,13 +46,18 @@ LOG = logging.getLogger(__name__)
 LIBVIRT_POLICY_FN = "/etc/polkit-1/localauthority/50-local.d/50-libvirt-access.pkla"
 LIBVIRT_POLICY_CONTENTS = """
 [libvirt Management Access]
-Identity={idents}
+Identity=${idents}
 Action=org.libvirt.unix.manage
 ResultAny=yes
 ResultInactive=yes
 ResultActive=yes
 """
 DEF_IDENT = 'unix-group:libvirtd'
+
+
+def tar_it(to_where, what, wkdir):
+    tar_cmd = ['tar', '-cvzf', to_where, what]
+    return sh.execute(*tar_cmd, cwd=wkdir)
 
 
 class DBInstaller(db.DBInstaller):
@@ -144,12 +145,16 @@ class RabbitRuntime(rabbit.RabbitRuntime):
 class NovaInstaller(nova.NovaInstaller):
 
     def _get_policy(self, ident_users):
-        return LIBVIRT_POLICY_CONTENTS.format(idents=(";".join(ident_users)))
+        return utils.expand_template(LIBVIRT_POLICY_CONTENTS,
+                                     params={
+                                         'idents': (";".join(ident_users)),
+                                     })
 
     def _get_policy_users(self):
-        ident_users = set()
-        ident_users.add(DEF_IDENT)
-        ident_users.add('unix-user:%s' % (sh.getuser()))
+        ident_users = [
+            DEF_IDENT,
+            'unix-user:%s' % (sh.getuser()),
+        ]
         return ident_users
 
     def configure(self):
@@ -172,14 +177,12 @@ class NovaInstaller(nova.NovaInstaller):
 class YumPackagerWithRelinks(yum.YumPackager):
 
     def _remove(self, pkg):
-        response = yum.YumPackager._remove(self, pkg)
-        if response:
-            options = pkg.get('packager_options') or {}
-            links = options.get('links') or []
-            for entry in links:
-                if sh.islink(entry['target']):
-                    sh.unlink(entry['target'])
-        return response
+        yum.YumPackager._remove(self, pkg)
+        options = pkg.get('packager_options') or {}
+        links = options.get('links') or []
+        for entry in links:
+            if sh.islink(entry['target']):
+                sh.unlink(entry['target'])
 
     def _install(self, pkg):
         yum.YumPackager._install(self, pkg)
@@ -191,7 +194,8 @@ class YumPackagerWithRelinks(yum.YumPackager):
             if not tgt or not src:
                 continue
             src = glob.glob(src)
-            tgt = glob.glob(tgt)
+            if not isinstance(tgt, (list, tuple)):
+                tgt = [tgt]
             if len(src) != len(tgt):
                 raise RuntimeError("Unable to link %s sources to %s locations" % (len(src), len(tgt)))
             for i in range(len(src)):
@@ -199,18 +203,18 @@ class YumPackagerWithRelinks(yum.YumPackager):
                 i_tgt = tgt[i]
                 if not sh.islink(i_tgt):
                     sh.symlink(i_src, i_tgt)
-        return True
 
 
-class RpmPackagingComponent(comp.Component):
+class DependencyPackager(comp.Component):
     def __init__(self, *args, **kargs):
         comp.Component.__init__(self, *args, **kargs)
         self.package_dir = sh.joinpths(self.get_option('component_dir'), 'package')
         self.build_paths = {}
-        for name in ['SOURCES', 'SPECS', 'SRPMS', 'RPMS', 'BUILD']:
+        for name in ['sources', 'specs', 'srpms', 'rpms', 'build']:
             # Remove any old packaging directories...
-            sh.deldir(sh.joinpths(self.package_dir, name), True)
-            self.build_paths[name] = sh.mkdir(sh.joinpths(self.package_dir, name))
+            sh.deldir(sh.joinpths(self.package_dir, name.upper()), True)
+            self.build_paths[name] = sh.mkdir(sh.joinpths(self.package_dir, name.upper()))
+        self._cached_details = None
 
     def _requirements(self):
         return {
@@ -220,16 +224,22 @@ class RpmPackagingComponent(comp.Component):
 
     @property
     def details(self):
-        return {
-            'summary': 'Package build of %s on %s' % (self.name, utils.rcf8222date()),
+        if self._cached_details is not None:
+            return self._cached_details
+        self._cached_details = {
             'name': self.name,
             'version': 0,
-            'release': 1,
+            'release': self.get_int_option('release', default_value=1),
             'packager': "%s <%s@%s>" % (sh.getuser(), sh.getuser(), sh.hostname()),
-            'description': '',
             'changelog': '',
             'license': 'Apache License, Version 2.0',
+            'automatic_dependencies': True,
+            'vendor': None,
+            'url': '',
+            'description': '',
+            'summary': 'Package build of %s on %s' % (self.name, utils.rcf8222date()),
         }
+        return self._cached_details
 
     def _build_details(self):
         return {
@@ -253,6 +263,10 @@ class RpmPackagingComponent(comp.Component):
         define_what.append("_topdir %s" % (self.package_dir))
         return define_what
 
+    def _undefines(self):
+        undefine_what = []
+        return undefine_what
+
     def _make_source_archive(self):
         return None
 
@@ -262,21 +276,35 @@ class RpmPackagingComponent(comp.Component):
                                    self.details['release'], ext)
         return your_fn
 
+    def _obsoletes(self):
+        return []
+
+    def _conflicts(self):
+        return []
+
     def _create_package(self):
+        files = self._gather_files()
         params = {
-            'files': self._gather_files(),
+            'files': files,
             'requires': self._requirements(),
+            'obsoletes': self._obsoletes(),
+            'conflicts': self._conflicts(),
             'defines': self._defines(),
+            'undefines': self._undefines(),
             'build': self._build_details(),
             'who': sh.getuser(),
             'date': utils.rcf8222date(),
             'details': self.details,
         }
         (_fn, content) = utils.load_template('packaging', 'spec.tmpl')
-        spec_fn = sh.joinpths(self.build_paths['SPECS'], self._make_fn("spec"))
+        spec_base = self._make_fn("spec")
+        spec_fn = sh.joinpths(self.build_paths['specs'], spec_base)
         LOG.debug("Creating spec file %s with params:", spec_fn)
+        files['sources'].append("%s.tar.gz" % (spec_base))
         utils.log_object(params, logger=LOG, level=logging.DEBUG)
-        sh.write_file(spec_fn, Template(content, searchList=[params]).respond())
+        sh.write_file(spec_fn, utils.expand_template(content, params))
+        tar_it(sh.joinpths(self.build_paths['sources'], "%s.tar.gz" % (spec_base)),
+               spec_base, wkdir=self.build_paths['specs'])
 
     def _build_requirements(self):
         return []
@@ -288,20 +316,126 @@ class RpmPackagingComponent(comp.Component):
         requirements = []
         for p in i_sibling.packages:
             if 'version' in p:
-                if pack.contains_version_check(p['version']):
-                    # This seems to mean only this version...
-                    real_version = p['version'].replace('==', '=')
-                    requirements.append("%s %s" % (p['name'], real_version))
-                else:
-                    requirements.append("%s = %s" % (p['name'], p['version']))
+                requirements.append("%s = %s" % (p['name'], p['version']))
             else:
                 requirements.append("%s" % (p['name']))
         return requirements
 
     def package(self):
-        app_dir = self.get_option('app_dir')
-        if not sh.isdir(app_dir):
-            LOG.warn("Unable to find application directory at %s, can not run create a %s package out of that!", app_dir, self.name)
-            return
         self._create_package()
         return self.package_dir 
+
+
+class PythonPackager(DependencyPackager):
+    def __init__(self, *args, **kargs):
+        DependencyPackager.__init__(self, *args, **kargs)
+        self._extended_details = None
+        self._setup_fn = sh.joinpths(self.get_option('app_dir'), 'setup.py')
+        
+    def _build_requirements(self):
+        return [
+            'python',
+            'python-devel',
+            'gcc', # Often used for building c python modules, should not be harmful...
+            'python-setuptools',
+        ]
+
+    def _build_changelog(self):
+        try:
+            ch = changelog.RpmChangeLog(self.get_option('app_dir'))
+            return ch.formatLog()
+        except (excp.AnvilException, IOError):
+            return ''
+
+    def _undefines(self):
+        undefine_what = DependencyPackager._undefines(self)
+        if self.get_bool_option('ignore_missing'):
+            undefine_what.append('__check_files')
+        return undefine_what
+
+    def _gather_files(self):
+        files = DependencyPackager._gather_files(self)
+        files['directories'].append("%{python_sitelib}/" + (self.details['name']))
+        files['files'].append("%{python_sitelib}/" + (self.details['name']))
+        files['files'].append("%{python_sitelib}/" + "%s-*.egg-info/" % (self.details['name']))
+        files['files'].append("%{_bindir}/")
+        return files
+
+    def _build_details(self):
+        # See: http://www.rpm.org/max-rpm/s1-rpm-inside-macros.html
+        b_dets = DependencyPackager._build_details(self)
+        b_dets['setup'] = '-q -n %{name}-%{version}'
+        b_dets['action'] = '%{__python} setup.py build'
+        b_dets['install_how'] = '%{__python} setup.py install --prefix=%{_prefix} --root=%{buildroot}'
+        return b_dets
+
+    def verify(self):
+        if not sh.isfile(self._setup_fn):
+            raise excp.PackageException(("Can not package %s since python"
+                                         " setup file at %s is missing") % (self.name, self._setup_fn))
+
+    def _make_source_archive(self):
+        with utils.tempdir() as td:
+            arch_base_name = "%s-%s" % (self.details['name'], self.details['version'])
+            sh.copytree(self.get_option('app_dir'), sh.joinpths(td, arch_base_name))
+            arch_tmp_fn = sh.joinpths(td, "%s.tar.gz" % (arch_base_name))
+            tar_it(arch_tmp_fn, arch_base_name, td)
+            sh.move(arch_tmp_fn, self.build_paths['sources'])
+        return "%s.tar.gz" % (arch_base_name)
+
+    def _description(self):
+        describe_cmd = ['python', self._setup_fn, '--description']
+        (stdout, _stderr) = sh.execute(*describe_cmd, run_as_root=True, cwd=self.get_option('app_dir'))
+        stdout = stdout.strip()
+        if stdout:
+            # RPM apparently rejects descriptions with blank lines (even between content)
+            descr_lines = []
+            for line in stdout.splitlines():
+                sline = line.strip()
+                if not sline:
+                    continue
+                else:
+                    descr_lines.append(line)
+            return descr_lines
+        return []
+
+    @property
+    def details(self):
+        base = super(PythonPackager, self).details
+        if self._extended_details is None:
+            ext_dets = {
+                'automatic_dependencies': False,
+            }
+            setup_cmd = ['python', self._setup_fn]
+            replacements = {
+                'version': '--version',
+                'license': '--license',
+                'name': '--name',
+                'vendor': '--author',
+                'url': '--url',
+            }
+            for (key, opt) in replacements.items():
+                cmd = setup_cmd + [opt]
+                (stdout, _stderr) = sh.execute(*cmd, run_as_root=True, cwd=self.get_option('app_dir'))
+                stdout = stdout.strip()
+                if stdout:
+                    ext_dets[key] = stdout
+            description = self._description()
+            if description:
+                ext_dets['description'] = "\n".join(description)
+                ext_dets['summary'] = utils.truncate_text("\n".join(description[0:1]), 50)
+            ext_dets['changelog'] = self._build_changelog()
+            self._extended_details = ext_dets
+        extended_dets = dict(base)
+        extended_dets.update(self._extended_details)
+        return extended_dets
+
+    def package(self):
+        i_sibling = self.siblings.get('install')
+        pips = []
+        if i_sibling:
+            pips.extend(i_sibling.pips)
+        if pips:
+            for pip_info in pips:
+                LOG.warn("Unable to package pip %s dependency in an rpm.", colorizer.quote(pip_info['name']))
+        return DependencyPackager.package(self)

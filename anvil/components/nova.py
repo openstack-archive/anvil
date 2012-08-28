@@ -48,14 +48,14 @@ NET_INITED_FN = 'nova.network.inited.yaml'
 
 # This makes the database be in sync with nova
 DB_SYNC_CMD = [
-    {'cmd': ['%BIN_DIR%/nova-manage', '--config-file', '%CFG_FILE%', 'db', 'sync'], 'run_as_root': True},
+    {'cmd': ['$BIN_DIR/nova-manage', '--config-file', '$CFG_FILE', 'db', 'sync'], 'run_as_root': True},
 ]
 
 # Used to create a fixed network when initializating nova
 FIXED_NET_CMDS = [
     {
-        'cmd': ['%BIN_DIR%/nova-manage', '--config-file', '%CFG_FILE%',
-                'network', 'create', 'private', '%FIXED_RANGE%', '1', '%FIXED_NETWORK_SIZE%'],
+        'cmd': ['$BIN_DIR/nova-manage', '--config-file', '$CFG_FILE',
+                'network', 'create', 'private', '$FIXED_RANGE', '1', '$FIXED_NETWORK_SIZE'],
         'run_as_root': True,
     },
 ]
@@ -63,12 +63,12 @@ FIXED_NET_CMDS = [
 # Used to create a floating network + test floating pool
 FLOATING_NET_CMDS = [
     {
-        'cmd': ['%BIN_DIR%/nova-manage', '--config-file', '%CFG_FILE%', 'floating', 'create', '%FLOATING_RANGE%'],
+        'cmd': ['$BIN_DIR/nova-manage', '--config-file', '$CFG_FILE', 'floating', 'create', '$FLOATING_RANGE'],
         'run_as_root': True,
     },
     {
-        'cmd': ['%BIN_DIR%/nova-manage', '--config-file', '%CFG_FILE%',
-                'floating', 'create', '--ip_range=%TEST_FLOATING_RANGE%', '--pool=%TEST_FLOATING_POOL%'],
+        'cmd': ['$BIN_DIR/nova-manage', '--config-file', '$CFG_FILE',
+                'floating', 'create', '--ip_range=$TEST_FLOATING_RANGE', '--pool=$TEST_FLOATING_POOL'],
         'run_as_root': True,
     },
 ]
@@ -126,8 +126,7 @@ CLEANER_DATA_CONF = 'nova-clean.sh'
 class NovaUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, *args, **kargs)
-        self.virsh = lv.Virsh(int(self.get_option('service_wait_seconds')),
-                              self.distro)
+        self.virsh = lv.Virsh(self.get_int_option('service_wait_seconds'), self.distro)
 
     def pre_uninstall(self):
         self._clear_libvirt_domains()
@@ -198,7 +197,7 @@ class NovaInstaller(comp.PythonInstallComponent):
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
         # Extra actions to do nova setup
-        if self.get_option('db-sync'):
+        if self.get_bool_option('db-sync'):
             self._setup_db()
             self._sync_db()
         self._setup_cleaner()
@@ -214,7 +213,7 @@ class NovaInstaller(comp.PythonInstallComponent):
 
     def _setup_db(self):
         dbhelper.drop_db(distro=self.distro,
-                         dbtype=self.get_option('db.type'),
+                         dbtype=self.get_option('db', 'type'),
                          dbname=DB_NAME,
                          **utils.merge_dicts(self.get_option('db'),
                                              dbhelper.get_shared_passwords(self)))
@@ -222,7 +221,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         # use latin1 by default, and then upgrades the database to utf8 (see the
         # 082_essex.py in nova)
         dbhelper.create_db(distro=self.distro,
-                           dbtype=self.get_option('db.type'),
+                           dbtype=self.get_option('db', 'type'),
                            dbname=DB_NAME,
                            charset='latin1',
                            **utils.merge_dicts(self.get_option('db'),
@@ -311,7 +310,7 @@ class NovaRuntime(comp.PythonRuntime):
 
     def _do_network_init(self):
         ran_fn = self.net_init_fn
-        if not sh.isfile(ran_fn) and self.get_option('do-network-init'):
+        if not sh.isfile(ran_fn) and self.get_bool_option('do-network-init'):
             # Figure out the commands to run
             cmds = []
             mp = {
@@ -319,17 +318,17 @@ class NovaRuntime(comp.PythonRuntime):
                 'BIN_DIR': self.bin_dir
             }
             mp['BIN_DIR'] = self.bin_dir
-            if self.get_option('enable_fixed'):
+            if self.get_bool_option('enable_fixed'):
                 # Create a fixed network
-                mp['FIXED_NETWORK_SIZE'] = self.get_option('fixed_network_size', '256')
-                mp['FIXED_RANGE'] = self.get_option('fixed_range', '10.0.0.0/24')
+                mp['FIXED_NETWORK_SIZE'] = self.get_option('fixed_network_size', default_value='256')
+                mp['FIXED_RANGE'] = self.get_option('fixed_range', default_value='10.0.0.0/24')
                 cmds.extend(FIXED_NET_CMDS)
-            if self.get_option('enable_floating'):
+            if self.get_bool_option('enable_floating'):
                 # Create a floating network + test floating pool
                 cmds.extend(FLOATING_NET_CMDS)
-                mp['FLOATING_RANGE'] = self.get_option('floating_range', '172.24.4.224/28')
-                mp['TEST_FLOATING_RANGE'] = self.get_option('test_floating_range', '192.168.253.0/29')
-                mp['TEST_FLOATING_POOL'] = self.get_option('test_floating_pool', 'test')
+                mp['FLOATING_RANGE'] = self.get_option('floating_range', default_value='172.24.4.224/28')
+                mp['TEST_FLOATING_RANGE'] = self.get_option('test_floating_range', default_value='192.168.253.0/29')
+                mp['TEST_FLOATING_POOL'] = self.get_option('test_floating_pool', default_value='test')
             # Anything to run??
             if cmds:
                 LOG.info("Creating your nova network to be used with instances.")
