@@ -1,11 +1,3 @@
-$ lsb_release -a
-LSB Version:	:core-4.0-amd64:core-4.0-noarch:graphics-4.0-amd64:graphics-4.0-noarch:printing-4.0-amd64:printing-4.0-noarch
-Distributor ID:	RedHatEnterpriseServer
-Description:	Red Hat Enterprise Linux Server release 6.2 (Santiago)
-Release:	6.2
-Codename:	Santiago
-$ sudo ./smithy  --version
-anvil v2012.2-dev
 $ sudo ./smithy -a package  
 INFO: @anvil.distro : Matched distro rhel for platform Linux-2.6.32-220.4.2.el6.YAHOO.20120217.x86_64-x86_64-with-redhat-6.2-Santiago
    _   ___  ___  _  __  ___ _____  _    __  _
