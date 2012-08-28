@@ -46,6 +46,7 @@ class GitChangeLog(object):
             ret = ret[0]
         else:
             ret = filter(lambda x: x != '', ret)
+            ret = "\n".join(ret)
         return ret
 
     def _filter_logs(self, line):
