@@ -135,7 +135,6 @@ class DBInstaller(comp.PkgInstallComponent):
 class DBRuntime(comp.ProgramRuntime):
     def __init__(self, *args, **kargs):
         comp.ProgramRuntime.__init__(self, *args, **kargs)
-        self.wait_time = self.get_int_option('service_wait_seconds')
 
     def _get_run_actions(self, act, exception_cls):
         db_type = self.get_option("type")
@@ -148,8 +147,7 @@ class DBRuntime(comp.ProgramRuntime):
         if self.status()[0].status != comp.STATUS_STARTED:
             start_cmd = self._get_run_actions('start', excp.StartException)
             sh.execute(*start_cmd, run_as_root=True, check_exit_code=True)
-            LOG.info("Please wait %s seconds while it starts up." % self.wait_time)
-            sh.sleep(self.wait_time)
+            self.wait_active()
             return 1
         else:
             return 0
@@ -166,8 +164,7 @@ class DBRuntime(comp.ProgramRuntime):
         LOG.info("Restarting your database.")
         restart_cmd = self._get_run_actions('restart', excp.RestartException)
         sh.execute(*restart_cmd, run_as_root=True, check_exit_code=True)
-        LOG.info("Please wait %s seconds while it restarts.", self.wait_time)
-        sh.sleep(self.wait_time)
+        self.wait_active()
         return 1
 
     def status(self):
