@@ -143,11 +143,15 @@ class DBRuntime(comp.ProgramRuntime):
             raise NotImplementedError(BASE_ERROR % (act, db_type))
         return self.distro.get_command(db_type, act)
 
+    @property
+    def apps_to_start(self):
+        db_type = self.get_option("type")
+        return [db_type]
+
     def start(self):
         if self.status()[0].status != comp.STATUS_STARTED:
             start_cmd = self._get_run_actions('start', excp.StartException)
             sh.execute(*start_cmd, run_as_root=True, check_exit_code=True)
-            self.wait_active()
             return 1
         else:
             return 0
@@ -164,7 +168,6 @@ class DBRuntime(comp.ProgramRuntime):
         LOG.info("Restarting your database.")
         restart_cmd = self._get_run_actions('restart', excp.RestartException)
         sh.execute(*restart_cmd, run_as_root=True, check_exit_code=True)
-        self.wait_active()
         return 1
 
     def status(self):
