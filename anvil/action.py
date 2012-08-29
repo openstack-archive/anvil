@@ -58,6 +58,7 @@ class Action(object):
             self.passwords.resolvers.append(pw.InputPassword())
         self.passwords.resolvers.append(pw.RandomPassword())
         self.store_passwords = kwargs.get('store_passwords')
+        self.kwargs = kwargs
 
     def _establish_passwords(self):
         pw_read = []
@@ -148,16 +149,17 @@ class Action(object):
                 joined_subsys[subsys] = {}
         return joined_subsys
 
-    def _construct_siblings(self, name, siblings, kvs, sibling_instances):
+    def _construct_siblings(self, name, siblings, params, sibling_instances):
         there_siblings = {}
         for (action, cls_name) in siblings.items():
             if action not in sibling_instances:
                 sibling_instances[action] = {}
             cls = importer.import_entry_point(cls_name)
-            kvs['instances'] = sibling_instances[action]
+            sibling_params = utils.merge_dicts(params, self.kwargs, preserve=True)
+            sibling_params['instances'] = sibling_instances[action]
             LOG.debug("Construction of sibling component %r (%r) params are:", name, action)
-            utils.log_object(kvs, logger=LOG, level=logging.DEBUG)
-            a_sibling = cls(**kvs)
+            utils.log_object(sibling_params, logger=LOG, level=logging.DEBUG)
+            a_sibling = cls(**sibling_params)
             # Update the sibling we are returning and the corresponding
             # siblings for that action (so that the sibling can have the
             # correct 'sibling' instances associated with it, if it needs those...)
@@ -182,29 +184,30 @@ class Action(object):
         for c in persona.wanted_components:
             ((cls, distro_opts), siblings) = self.distro.extract_component(c, self.lookup_name)
             LOG.debug("Constructing component %r (%s)", c, tu.obj_name(cls))
-            kvs = {}
-            kvs['name'] = c
+            instance_params = {}
+            instance_params['name'] = c
             # First create its siblings with a 'minimal' set of options
             # This is done, so that they will work in a minimal state, they do not
             # get access to the persona options since those are action specific (or could be),
             # if this is not useful, we can give them full access, unsure if its worse or better...
-            kvs['subsystems'] = {}
-            kvs['siblings'] = {}
-            kvs['passwords'] = self.passwords
-            kvs['distro'] = self.distro
-            kvs['options'] = self._merge_options(c, self._get_interp_options(c), distro_opts, {})
+            instance_params['subsystems'] = {}
+            instance_params['siblings'] = {}
+            instance_params['passwords'] = self.passwords
+            instance_params['distro'] = self.distro
+            instance_params['options'] = self._merge_options(c, self._get_interp_options(c), distro_opts, {})
             LOG.debug("Constructing %r siblings...", c)
-            siblings = self._construct_siblings(c, siblings, dict(kvs), sibling_instances)
+            siblings = self._construct_siblings(c, siblings, instance_params, sibling_instances)
             # Now inject the full options
-            kvs['instances'] = instances
-            kvs['options'] = self._merge_options(c, self._get_interp_options(c), distro_opts,
-                                                (persona_opts.get(c) or {}))
-            kvs['subsystems'] = self._merge_subsystems((distro_opts.pop('subsystems', None) or {}),
-                                                       (persona_subsystems.get(c) or {}))
-            kvs['siblings'] = siblings
+            instance_params['instances'] = instances
+            instance_params['options'] = self._merge_options(c, self._get_interp_options(c), distro_opts,
+                                                            (persona_opts.get(c) or {}))
+            instance_params['subsystems'] = self._merge_subsystems((distro_opts.pop('subsystems', None) or {}),
+                                                                   (persona_subsystems.get(c) or {}))
+            instance_params['siblings'] = siblings
+            instance_params = utils.merge_dicts(instance_params, self.kwargs, preserve=True)
             LOG.debug("Construction of %r params are:", c)
-            utils.log_object(kvs, logger=LOG, level=logging.DEBUG)
-            instances[c] = cls(**kvs)
+            utils.log_object(instance_params, logger=LOG, level=logging.DEBUG)
+            instances[c] = cls(**instance_params)
         return instances
 
     def _verify_components(self, component_order, instances):

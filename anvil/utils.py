@@ -163,10 +163,14 @@ def iso8601():
     return datetime.now().isoformat()
 
 
-def merge_dicts(*dicts):
+def merge_dicts(*dicts, **kwargs):
     merged = {}
     for mp in dicts:
-        merged.update(mp)
+        for (k, v) in mp.items():
+            if kwargs.get('preserve') and k in merged:
+                continue
+            else:
+                merged[k] = v
     return merged
 
 
