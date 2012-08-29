@@ -123,7 +123,7 @@ def wait_for_url(url, max_attempts=3, wait_between=5):
                 success(i + 1)
                 return
         except urllib2.HTTPError as e:
-            if e.code in xrange(200, 499):
+            if e.code in xrange(200, 499) or e.code in [501]:
                 # Should be ok, at least its responding...
                 success(i + 1)
                 return
