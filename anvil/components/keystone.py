@@ -219,10 +219,14 @@ class KeystoneRuntime(comp.PythonRuntime):
             LOG.debug("Initializing with contents of %s", fn)
             params = {}
             params['keystone'] = khelper.get_shared_params(**utils.merge_dicts(self.options, khelper.get_shared_passwords(self)))
-            params['glance'] = ghelper.get_shared_params(ip=self.get_option('ip'),
-                                                            **self.get_option('glance'))
-            params['nova'] = nhelper.get_shared_params(ip=self.get_option('ip'),
-                                                          **self.get_option('nova'))
+            params['glance'] = ghelper.get_shared_params(ip=self.get_option('ip'), **self.get_option('glance'))
+            params['nova'] = nhelper.get_shared_params(ip=self.get_option('ip'), **self.get_option('nova'))
+            wait_urls = [
+                params['keystone']['endpoints']['admin']['uri'],
+                params['keystone']['endpoints']['public']['uri'],
+            ]
+            for url in wait_urls:
+                utils.wait_for_url(url)
             init_what = utils.load_yaml_text(contents)
             init_what = utils.expand_template_deep(self._filter_init(init_what), params)
             khelper.Initializer(params['keystone']['service_token'],
