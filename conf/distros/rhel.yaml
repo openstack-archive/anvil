@@ -7,8 +7,6 @@ commands:
     apache:
         name: httpd
         restart: service httpd restart
-        settings:
-            conf-link-target: /etc/httpd/conf.d/horizon.conf
         start: service httpd start
         status: service httpd status
         stop: service httpd stop

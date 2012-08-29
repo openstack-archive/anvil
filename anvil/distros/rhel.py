@@ -54,37 +54,32 @@ DEF_IDENT = 'unix-group:libvirtd'
 
 class DBInstaller(db.DBInstaller):
 
+    MYSQL_CONF = '/etc/my.cnf'
+
     def _configure_db_confs(self):
         LOG.info("Fixing up %s mysql configs.", colorizer.quote(self.distro.name))
-        fc = sh.load_file('/etc/my.cnf')
-        lines = fc.splitlines()
         new_lines = []
-        for line in lines:
+        for line in sh.load_file(DBInstaller.MYSQL_CONF).splitlines():
             if line.startswith('skip-grant-tables'):
-                line = '#' + line
-            new_lines.append(line)
-        fc = utils.joinlinesep(*new_lines)
+                new_lines.append('#' + line)
+            elif line.startswith('bind-address'):
+                new_lines.append('#' + line)
+                new_lines.append('bind-address = 0.0.0.0')
+            else:
+                new_lines.append(line)
         with sh.Rooted(True):
-            sh.write_file('/etc/my.cnf', fc)
+            sh.write_file_and_backup(DBInstaller.MYSQL_CONF, utils.joinlinesep(*new_lines))
 
 
 class HorizonInstaller(horizon.HorizonInstaller):
 
-    def _config_fix_wsgi(self):
-        # This is recorded so it gets cleaned up during uninstall
-        self.tracewriter.file_touched("/etc/httpd/conf.d/wsgi-socket-prefix.conf")
-        LOG.info("Fixing up: %s", colorizer.quote("/etc/httpd/conf.d/wsgi-socket-prefix.conf"))
-        contents = "WSGISocketPrefix %s" % (sh.joinpths(self.log_dir, "wsgi-socket"))
-        with sh.Rooted(True):
-            # The name seems to need to come after wsgi.conf (so thats what we are doing)
-            sh.write_file("/etc/httpd/conf.d/wsgi-socket-prefix.conf", contents)
+    HTTPD_CONF = '/etc/httpd/conf/httpd.conf'
 
     def _config_fix_httpd(self):
-        LOG.info("Fixing up: %s", colorizer.quote('/etc/httpd/conf/httpd.conf'))
+        LOG.info("Fixing up: %s", colorizer.quote(HorizonInstaller.HTTPD_CONF))
         (user, group) = self._get_apache_user_group()
-        old_lines = sh.load_file('/etc/httpd/conf/httpd.conf').splitlines()
-        new_lines = list()
-        for line in old_lines:
+        new_lines = []
+        for line in sh.load_file(HorizonInstaller.HTTPD_CONF).splitlines():
             # Directives in the configuration files are case-insensitive,
             # but arguments to directives are often case sensitive...
             # NOTE(harlowja): we aren't handling multi-line fixups...
@@ -95,13 +90,25 @@ class HorizonInstaller(horizon.HorizonInstaller):
             if re.match("^\s*Listen\s+(.*)$", line, re.I):
                 line = "Listen 0.0.0.0:80"
             new_lines.append(line)
-        contents = utils.joinlinesep(*new_lines)
         with sh.Rooted(True):
-            sh.write_file('/etc/httpd/conf/httpd.conf', contents)
+            sh.write_file_and_backup(HorizonInstaller.HTTPD_CONF, utils.joinlinesep(*new_lines))
 
     def _config_fixups(self):
-        self._config_fix_wsgi()
         self._config_fix_httpd()
+
+    def post_install(self):
+        horizon.HorizonInstaller.post_install(self)
+        self._config_fixups()
+
+    @property
+    def symlinks(self):
+        links = super(HorizonInstaller, self).symlinks
+        links[self.target_config(horizon.HORIZON_APACHE_CONF)].append(sh.joinpths('/etc/',
+                                                              self.distro.get_command_config('apache', 'name'),
+                                                              'conf.d',
+                                                              horizon.HORIZON_APACHE_CONF))
+        return links
+
 
 
 class RabbitRuntime(rabbit.RabbitRuntime):

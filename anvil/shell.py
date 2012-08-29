@@ -250,6 +250,10 @@ def shellquote(text):
     return text
 
 
+def fileperms(path):
+    return (os.stat(path).st_mode & 0777)
+
+
 def listdir(path):
     return os.listdir(path)
 
@@ -653,6 +657,23 @@ def move(src, dst):
     if not is_dry_run():
         shutil.move(src, dst)
     return dst
+
+
+def write_file_and_backup(path, contents, bk_ext='org'):
+    perms = None
+    backup_path = None
+    if isfile(path):
+        perms = fileperms(path)
+        backup_path = "%s.%s" % (path, bk_ext)
+        if not isfile(backup_path):
+            LOG.debug("Backing up %s => %s", path, backup_path)
+            move(path, backup_path)
+        else:
+            LOG.debug("Leaving original backup of %s at %s", path, backup_path)
+    write_file(path, contents)
+    if perms is not None:
+        chmod(path, perms)
+    return backup_path
 
 
 def chmod(fname, mode):
