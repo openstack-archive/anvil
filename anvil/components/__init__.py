@@ -829,7 +829,7 @@ class PythonTestingComponent(component.Component):
         app_dir = self.get_option('app_dir')
         if not sh.isdir(app_dir):
             LOG.warn("Unable to find application directory at %s, can not run %s tests.", 
-                     colorizer.quote(app_dir, quote_color='red'), self.name)
+                     colorizer.quote(app_dir), colorizer.quote(self.name))
             return
         cmd = self._get_test_command()
         env = self._get_env()
