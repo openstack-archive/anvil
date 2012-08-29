@@ -411,7 +411,7 @@ class PythonInstallComponent(PkgInstallComponent):
                         new_lines.append(s_line)
                 sh.move(fn, "%s.orig" % (fn))
                 new_fc = "\n".join(new_lines)
-                sh.write_file(fn, "# Cleaned on %s\n\n%s\n" % (utils.rcf8222date(), new_fc))
+                sh.write_file(fn, "# Cleaned on %s\n\n%s\n" % (utils.iso8601(), new_fc))
         return len(req_fns)
 
     def _filter_pip_requires_line(self, line):

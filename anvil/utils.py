@@ -25,7 +25,7 @@ import socket
 import tempfile
 import urllib2
 
-from time import (localtime, strftime)
+from datetime import datetime
 
 from urlparse import urlunparse
 
@@ -142,7 +142,7 @@ def add_header(fn, contents):
     if not fn:
         fn = "???"
     lines.append('# Adjusted source file %s' % (fn.strip()))
-    lines.append("# On %s" % (rcf8222date()))
+    lines.append("# On %s" % (iso8601()))
     lines.append("# By user %s, group %s" % (sh.getuser(), sh.getgroupname()))
     lines.append("")
     if contents:
@@ -150,8 +150,8 @@ def add_header(fn, contents):
     return joinlinesep(*lines)
 
 
-def rcf8222date():
-    return strftime("%a, %d %b %Y %H:%M:%S", localtime())
+def iso8601():
+    return datetime.now().isoformat()
 
 
 def merge_dicts(*dicts):

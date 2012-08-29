@@ -103,7 +103,7 @@ def run(args):
     print(center_text("Action Runner", repeat_string, line_max_len))
 
     LOG.info("Starting action %s on %s for distro: %s",
-             colorizer.quote(action), colorizer.quote(utils.rcf8222date()),
+             colorizer.quote(action), colorizer.quote(utils.iso8601()),
              colorizer.quote(dist.name))
     LOG.info("Using persona: %s", colorizer.quote(persona_fn))
     LOG.info("In root directory: %s", colorizer.quote(root_dir))

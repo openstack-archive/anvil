@@ -33,7 +33,7 @@ class PhaseRecorder(object):
     def mark(self, phasename):
         contents = dict()
         contents['name'] = phasename
-        contents['when'] = utils.rcf8222date()
+        contents['when'] = utils.iso8601()
         yield phasename
         LOG.debug("Marking the completion of phase %r in file %r", phasename, self.fn)
         lines = [json.dumps(contents), '']
