@@ -106,7 +106,7 @@ def load_yaml_text(text):
 
 def wait_for_url(url, max_attempts=3, wait_between=5):
     excps = []
-    LOG.info("Waiting for %s to become active (max_attempts=%s, seconds_between=%s)", 
+    LOG.info("Waiting for url %s to become active (max_attempts=%s, seconds_between=%s)",
              colorizer.quote(url), max_attempts, wait_between)
 
     def waiter():
@@ -114,7 +114,7 @@ def wait_for_url(url, max_attempts=3, wait_between=5):
         sh.sleep(wait_between)
 
     def success(attempts):
-        LOG.info("%s became active after %s attempts!", colorizer.quote(url), attempts)
+        LOG.info("Url %s became active after %s attempts!", colorizer.quote(url), attempts)
 
     for i in range(0, max_attempts):
         try:

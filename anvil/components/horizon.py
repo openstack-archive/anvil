@@ -64,7 +64,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         # Knock off all nova, quantum, swift, keystone, cinder
         # clients since anvil will be making sure those are installed
         # instead of asking pip to do it...
-        if re.match(r'[n|q|s|k|g|c][\w]+client', line, re.I):
+        if re.search(r'([n|q|s|k|g|c]\w+client)', line, re.I):
             return None
         return line
 
