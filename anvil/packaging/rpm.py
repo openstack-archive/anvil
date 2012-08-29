@@ -34,6 +34,7 @@ class DependencyPackager(comp.Component):
         self.tracewriter = tr.TraceWriter(trace_fn, break_if_there=False)
         self.package_dir = sh.joinpths(self.get_option('component_dir'), 'package')
         self._build_paths = None
+        self._cached_details = None
 
     @property
     def build_paths(self):
