@@ -75,9 +75,14 @@ class HorizonInstaller(comp.PythonInstallComponent):
     @property
     def symlinks(self):
         links = super(HorizonInstaller, self).symlinks
-        link_tgt = self.distro.get_command_config('apache', 'settings', 'conf-link-target', quiet=True)
+        tgt = self.distro.get_command_config('apache', 'settings', 'conf-link-target', quiet=True)
+        if not tgt:
+            return links
         src = self.target_config(HORIZON_APACHE_CONF)
-        links[src] = link_tgt
+        if src in links:
+            links[src].append(tgt)
+        else:
+            links[src] = [tgt]
         return links
 
     def _check_ug(self):
