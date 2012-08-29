@@ -69,7 +69,7 @@ class DependencyPackager(comp.Component):
             'vendor': None,
             'url': '',
             'description': '',
-            'summary': 'Package build of %s on %s' % (self.name, utils.rcf8222date()),
+            'summary': 'Package build of %s on %s' % (self.name, utils.iso8601()),
         }
         return self._cached_details
 
@@ -125,7 +125,7 @@ class DependencyPackager(comp.Component):
             'undefines': self._undefines(),
             'build': self._build_details(),
             'who': sh.getuser(),
-            'date': utils.rcf8222date(),
+            'date': utils.iso8601(),
             'details': self.details,
         }
         (_fn, content) = utils.load_template('packaging', 'spec.tmpl')
