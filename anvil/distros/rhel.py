@@ -103,12 +103,13 @@ class HorizonInstaller(horizon.HorizonInstaller):
     @property
     def symlinks(self):
         links = super(HorizonInstaller, self).symlinks
-        links[self.target_config(horizon.HORIZON_APACHE_CONF)].append(sh.joinpths('/etc/',
-                                                              self.distro.get_command_config('apache', 'name'),
-                                                              'conf.d',
-                                                              horizon.HORIZON_APACHE_CONF))
+        apache_conf_tgt = self.target_config(horizon.HORIZON_APACHE_CONF)
+        if apache_conf_tgt not in links:
+            links[apache_conf_tgt] = []
+        links[apache_conf_tgt].append(sh.joinpths('/etc/',
+                                                  self.distro.get_command_config('apache', 'name'),
+                                                  'conf.d', horizon.HORIZON_APACHE_CONF))
         return links
-
 
 
 class RabbitRuntime(rabbit.RabbitRuntime):
@@ -124,7 +125,7 @@ class RabbitRuntime(rabbit.RabbitRuntime):
         # See: http://lists.rabbitmq.com/pipermail/rabbitmq-discuss/2011-March/011916.html
         # This seems like a bug, since we are just using service init and service restart...
         # And not trying to run this service directly...
-        base_dir = sh.joinpths("/", 'var', 'log', 'rabbitmq')
+        base_dir = sh.joinpths("/var/log", 'rabbitmq')
         if sh.isdir(base_dir):
             with sh.Rooted(True):
                 # Seems like we need root perms to list that directory...
