@@ -20,6 +20,7 @@ from anvil import colorizer
 from anvil import components as comp
 from anvil import log as logging
 from anvil import shell as sh
+from anvil import utils
 
 from anvil.components.helpers import rabbit as rhelper
 
@@ -98,9 +99,7 @@ class RabbitRuntime(comp.ProgramRuntime):
         (sysout, stderr) = sh.execute(*status_cmd, check_exit_code=False, run_as_root=True)
         st = comp.STATUS_UNKNOWN
         combined = (sysout + stderr).lower()
-        if combined.find('nodedown') != -1 or \
-           combined.find("unable to connect to node") != -1 or \
-           combined.find('unrecognized') != -1:
+        if utils.has_any(combined, 'nodedown', "unable to connect to node", 'unrecognized'):
             st = comp.STATUS_STOPPED
         elif combined.find('running_applications') != -1:
             st = comp.STATUS_STARTED

@@ -96,12 +96,21 @@ def expand_template_deep(root, params):
     return root
 
 
-def load_yaml(fn):
-    return load_yaml_text(sh.load_file(fn))
+def load_yaml(path):
+    return load_yaml_text(sh.load_file(path))
 
 
 def load_yaml_text(text):
     return yaml.safe_load(text)
+
+
+def has_any(text, *look_for):
+    if not look_for:
+        return False
+    for v in look_for:
+        if text.find(v) != -1:
+            return True
+    return False
 
 
 def wait_for_url(url, max_attempts=3, wait_between=5):
