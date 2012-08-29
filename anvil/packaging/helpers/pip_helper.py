@@ -53,26 +53,24 @@ def _list_installed(pip_how):
     return installed
 
 
-def is_installed(pip_how, name):
-    whats_there = get_installed(pip_how)
-    for req in whats_there:
-        if not (name.lower() == req.project_name.lower()):
-            continue
-        return True
-    return False
-
-
-def get_installed(pip_how):
+def _whats_installed(pip_how):
     global _installed_cache
     if _installed_cache is None:
         _installed_cache = _list_installed(pip_how)
     return _installed_cache
 
 
-def is_adequate_installed(pip_how, name, version):
-    whats_there = get_installed(pip_how)
+def is_installed(pip_how, name, version=None):
+    if get_installed(pip_how, name, version):
+        return True
+    return False
+
+
+def get_installed(pip_how, name, version=None):
+    name_lc = name.lower()
+    whats_there = _whats_installed(pip_how)
     for req in whats_there:
-        if not (name.lower() == req.project_name.lower()):
+        if not (name_lc == req.key):
             continue
         if not version:
             return req
