@@ -187,7 +187,7 @@ class PkgInstallComponent(component.Component):
         links = {}
         for fn in self.config_files:
             source_fn = self.target_config(fn)
-            links[source_fn] = sh.joinpths(self.link_dir, fn)
+            links[source_fn] = [sh.joinpths(self.link_dir, fn)]
         return links
 
     def _config_param_replace(self, config_fn, contents, parameters):
@@ -217,22 +217,24 @@ class PkgInstallComponent(component.Component):
         # order happens. Ie /etc/blah link runs before /etc/blah/blah
         link_srcs = sorted(links.keys())
         link_srcs.reverse()
-        links_made = 0
         link_nice = []
         for source in link_srcs:
-            link = links[source]
-            link_nice.append("%s => %s" % (link, source))
+            links_to_be = links[source]
+            for link in links_to_be:
+                link_nice.append("%s => %s" % (link, source))
         utils.log_iterable(link_nice, logger=LOG,
                            header="Creating %s sym-links" % (len(link_nice)))
+        links_made = 0
         for source in link_srcs:
-            link = links[source]
-            try:
-                LOG.debug("Symlinking %s to %s.", (link), (source))
-                self.tracewriter.dirs_made(*sh.symlink(source, link))
-                self.tracewriter.symlink_made(link)
-                links_made += 1
-            except OSError as e:
-                LOG.warn("Symlinking %s to %s failed: %s", colorizer.quote(link), colorizer.quote(source), e)
+            links_to_be = links[source]
+            for link in links_to_be:
+                try:
+                    LOG.debug("Symlinking %s to %s.", link, source)
+                    self.tracewriter.dirs_made(*sh.symlink(source, link))
+                    self.tracewriter.symlink_made(link)
+                    links_made += 1
+                except (IOError, OSError) as e:
+                    LOG.warn("Symlinking %s to %s failed: %s", colorizer.quote(link), colorizer.quote(source), e)
         return links_made
 
     def configure(self):
