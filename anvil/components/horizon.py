@@ -163,7 +163,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
             mp['OPENSTACK_HOST'] = self.get_option('ip')
             mp['DB_NAME'] = DB_NAME
             mp['DB_USER'] = self.get_option('db', 'user')
-            mp['DB_PASSWORD'] = dbhelper.get_shared_passwords(self)
+            mp['DB_PASSWORD'] = dbhelper.get_shared_passwords(self)['pw']
             mp['DB_HOST'] = self.get_option("db", "host")
             mp['DB_PORT'] = self.get_option("db", "port")
         return mp
