@@ -14,6 +14,5 @@ options:
         make-blackhole: true
 supports:
 - rhel
-- ubuntu
 ...
 

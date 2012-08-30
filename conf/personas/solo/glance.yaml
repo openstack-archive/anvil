@@ -15,6 +15,5 @@ subsystems:
     - reg
 supports:
 - rhel
-- ubuntu
 ...
 

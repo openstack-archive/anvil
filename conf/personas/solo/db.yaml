@@ -5,6 +5,5 @@ components:
 - db
 supports:
 - rhel
-- ubuntu
 ...
 
