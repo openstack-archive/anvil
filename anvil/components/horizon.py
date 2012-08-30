@@ -122,6 +122,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
             with sh.Rooted(True):
                 if clear:
                     sh.unlink(fn, True)
+                sh.mkdir(sh.basename(fn))
                 sh.touch_file(fn, die_if_there=False)
                 sh.chmod(fn, 0666)
             self.tracewriter.file_touched(fn)
