@@ -75,28 +75,47 @@ components:
         packages:
         # Shared system packages
         -   name: coreutils
+            removable: false
         -   name: curl
+            removable: false
         -   name: dnsmasq-utils
+            removable: false
         -   name: euca2ools
         -   name: gawk
+            removable: false
         -   name: git
+            removable: false
         -   name: iputils
+            removable: false
         -   name: libxml2-devel
+            removable: false
         -   name: libxslt-devel
+            removable: false
         -   name: lsof
+            removable: false
         -   name: mlocate
+            removable: false
         -   name: openssh-server
+            removable: false
         -   name: psmisc
-        -   name: screen
+            removable: false
         -   name: sudo
+            removable: false
         -   name: tcpdump
+            removable: false
         -   name: unzip
+            removable: false
         -   name: wget
+            removable: false
         # Shared python packages
         -   name: python
+            removable: false
         -   name: python-devel
+            removable: false
         -   name: python-distutils-extra
+            removable: false
         -   name: python-setuptools
+            removable: false
         pip_to_package:
         # Shared pypi packages + there package information.
         # Packages is what is really used for installation (the pypi name
@@ -104,12 +123,14 @@ components:
         -   name: pylint 
             package:
                 name: pylint
+                removable: false
         -   name: anyjson
             package:
                 name: python-anyjson
         -   name: argparse 
             package:
                 name: python-argparse
+                removable: false
         -   name: babel
             package:
                 name: python-babel
@@ -122,6 +143,7 @@ components:
         -   name: httplib2
             package:
                 name: python-httplib2
+                removable: false
         -   name: iso8601
             package:
                 name: python-iso8601
@@ -131,6 +153,7 @@ components:
         -   name: lxml
             package:
                 name: python-lxml
+                removable: false
         -   name: mock
             package:
                 name: python-mock
@@ -164,9 +187,11 @@ components:
         -   name: pep8
             package:
                 name: python-pep8
+                removable: false
         -   name: pip
             package:
                 name: python-pip
+                removable: false
         -   name: routes
             package:
                 name: python-routes1.12
@@ -181,9 +206,7 @@ components:
         -   name: unittest2
             package:
                 name: python-unittest2
-        -   name: virtualenv
-            package:
-                name: python-virtualenv # Not really needed since anvil doesn't use venvs...
+                removable: false
         -   name: webob
             package:
                 name: python-webob1.0
@@ -199,6 +222,7 @@ components:
         # Pips that aren't packages yet (or versions aren't right...)
         -   name: coverage
         -   name: distribute
+            removable: false
         -   name: nose-exclude
         -   name: nosehtmloutput
         -   name: openstack.nose_plugin
@@ -208,6 +232,7 @@ components:
         -   name: pycrypto
             options: # Force it to upgrade
                 - "-U"
+            removable: false
         -   name: requests
         -   name: sphinx
         -   name: sqlalchemy # Need this or nova pukes with 'Did not recognize type 'BIGINT' of column 'bw_in''
@@ -314,14 +339,23 @@ components:
         packages:
         -   name: MySQL-python
         -   name: dnsmasq
+            removable: false
         -   name: ebtables
+            removable: false
         -   name: fuse
+            removable: false
         -   name: iptables
+            removable: false
         -   name: iputils
+            removable: false
         -   name: kpartx
+            removable: false
         -   name: parted
+            removable: false
         -   name: sqlite
+            removable: false
         -   name: vconfig
+            removable: false
         pip_to_package:
         -   name: amqplib
             package:
@@ -344,20 +378,33 @@ components:
             cpu:
                 packages:
                 -   name: iscsi-initiator-utils
+                    removable: false
                 -   name: libguestfs
+                    removable: false
                 -   name: libguestfs-mount
+                    removable: false
                 -   name: libguestfs-tools
+                    removable: false
                 -   name: libvirt
+                    removable: false
                 -   name: libvirt-client
+                    removable: false
                 -   name: libvirt-python
+                    removable: false
                 -   name: lvm2
+                    removable: false
                 -   name: qemu-img
+                    removable: false
                 -   name: qemu-kvm
+                    removable: false
             vol:
                 packages:
                 -   name: iscsi-initiator-utils
+                    removable: false
                 -   name: lvm2
+                    removable: false
                 -   name: scsi-target-utils
+                    removable: false
     nova-client:
         action_classes:
             install: anvil.components.nova_client:NovaClientInstaller
@@ -396,8 +443,10 @@ components:
             package: anvil.packaging.rpm:PythonPackager
         pips:
         -   name: cliff
-        -   name: pyparsing # This seems to cause conflicts with
-                            # the yum version that comes installed so use the pip version
+        # This seems to cause conflicts with
+        # the yum version that comes installed so use the pip version
+        -   name: pyparsing 
+            removable: false
     rabbit-mq:
         action_classes:
             install: anvil.components.rabbit:RabbitInstaller

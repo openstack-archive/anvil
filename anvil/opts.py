@@ -92,7 +92,7 @@ def parse():
 
     suffixes = ("Known suffixes 'K' (kilobyte, 1024),"
                 " 'M' (megabyte, 1024k), 'G' (gigabyte, 1024M)"
-                " are supported, 'B' is the default and is ignored.")
+                " are supported, 'B' is the default and is ignored")
     status_group = OptionGroup(parser, "Status specific options")
     status_group.add_option('-s', "--show",
         action="callback",
@@ -111,6 +111,14 @@ def parse():
         help="when packaging attempt to use the versions that are installed for the components dependencies")
     parser.add_option_group(pkg_group)
 
+    uninstall_group = OptionGroup(parser, "Uninstall specific options")
+    uninstall_group.add_option("--purge",
+        action="store_true",
+        dest="purge_packages",
+        default=False,
+        help=("assume when a package is not marked as removable that it can be removed (default: %default)"))
+    parser.add_option_group(uninstall_group)
+
     # Extract only what we care about, these will be passed
     # to the constructor of actions as arguments 
     # so don't adjust the naming wily nilly...
@@ -126,5 +134,6 @@ def parse():
     output['show_amount'] = max(0, options.show_amount)
     output['store_passwords'] = options.store_passwords
     output['match_installed'] = options.match_installed
+    output['purge_packages'] = options.purge_packages
 
     return output
