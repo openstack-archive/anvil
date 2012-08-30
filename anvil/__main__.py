@@ -151,7 +151,6 @@ def store_current_settings(settings):
         (uid, gid) = sh.get_suids()
         sh.chown_r(base_dir, uid, gid)
     except Exception as e:
-        print e
         pass
 
 
