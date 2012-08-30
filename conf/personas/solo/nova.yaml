@@ -17,6 +17,5 @@ subsystems:
     - sched
 supports:
 - rhel
-- ubuntu
 ...
 

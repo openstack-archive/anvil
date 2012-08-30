@@ -2,7 +2,6 @@
 Features
 ========
 
--  Multi distribution *actions* via a single tool
 -  A set of configuration files (in yaml format) that shows common/component/distribution configurations
 -  Supports the following *actions* on the various `OpenStack`_ components.
 

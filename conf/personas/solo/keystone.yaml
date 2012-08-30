@@ -9,6 +9,5 @@ options:
         db-sync: false
 supports:
 - rhel
-- ubuntu
 ...
 

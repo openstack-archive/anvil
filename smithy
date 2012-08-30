@@ -81,26 +81,6 @@ EOF
     return 0
 }
 
-bootstrap_ub()
-{
-    echo "Bootstrapping Ubuntu: $1"
-    echo "Please wait..."
-    echo "Installing needed distribution dependencies:"
-    pkgs="gcc git pep8 pylint python python-dev python-iniparse"
-    pkgs="$pkgs python-pip python-progressbar python-yaml python-cheetah python-iso8601"
-    apt-get install -y $pkgs
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-    echo "Installing needed pypi dependencies:"
-    pip install -U -I netifaces termcolor
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-    return 0
-    
-}
-
 load_rc_files()
 {
     for i in `ls *.rc 2>/dev/null`; do
@@ -148,23 +128,6 @@ if [[ "$TYPE" =~ "Red Hat Enterprise Linux Server" ]]; then
         run_smithy
     else
         echo "Bootstrapping RHEL $RH_VER failed."
-        exit 1
-    fi
-elif [[ "$TYPE" =~ "Ubuntu" ]]; then
-    UB_VER=$(lsb_release -r | cut  -f 2)
-    BC_OK=$(echo "$UB_VER < 11.10" | bc)
-    if [ "$BC_OK" == "1" ]; then
-        echo "This script must be ran on Ubuntu 11.10+ and not Ubuntu $UB_VER."
-        puke
-    fi
-    bootstrap_ub $UB_VER
-    if [ $? -eq 0 ]; then
-        for i in $BOOT_FILES; do
-            echo "$VER" > $i
-        done
-        run_smithy
-    else
-        echo "Bootstrapping Ubuntu $UB_VER failed."
         exit 1
     fi
 else

@@ -50,6 +50,5 @@ subsystems:
     - novnc
 supports:
 - rhel
-- ubuntu
 ...
 
