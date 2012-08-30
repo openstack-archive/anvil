@@ -45,14 +45,16 @@ class GitChangeLog(object):
         if len(ret) == 1:
             ret = ret[0]
         else:
-            ret = filter(lambda x: x != '', ret)
+            ret = filter(lambda x: x.strip() != '', ret)
             ret = "\n".join(ret)
         return ret
 
     def _filter_logs(self, line):
         if not line.strip():
             return False
-        if (line.find('l10n: ') != 41 and line.find('Merge commit') != 41 and line.find('Merge branch') != 41):
+        # Look for things after the commit hash
+        line = line[41:]
+        if (line.find('l10n: ') != 0 and line.find('Merge commit') != 0 and line.find('Merge branch') != 0):
             return True
         return False
 
@@ -73,8 +75,9 @@ class GitChangeLog(object):
         for line in lines:
             fields = line.split(' ')
             commit = fields[0]
-
-            # http://opensource.apple.com/source/Git/Git-26/src/git-htmldocs/pretty-formats.txt
+            # See: http://opensource.apple.com/source/Git/Git-26/src/git-htmldocs/pretty-formats.txt
+            #
+            # TODO(harlowja): can we stop making so many freaking external calls and join these?
             summary = self._get_commit_detail(commit, "%s")
             date = self._get_commit_detail(commit, "%ai")
             author_email = self._get_commit_detail(commit, "%aE")

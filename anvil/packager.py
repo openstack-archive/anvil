@@ -19,6 +19,7 @@ import abc
 from anvil import colorizer
 from anvil import importer
 from anvil import log as logging
+from anvil import type_utils
 from anvil import utils
 
 LOG = logging.getLogger(__name__)
@@ -27,11 +28,13 @@ LOG = logging.getLogger(__name__)
 class Packager(object):
     __meta__ = abc.ABCMeta
 
-    def __init__(self, distro):
+    def __init__(self, distro, remove_default=False):
         self.distro = distro
+        self.remove_default = remove_default
 
+    @abc.abstractmethod
     def _anything_there(self, pkg):
-        return None
+        raise NotImplementedError()
 
     def install(self, pkg):
         installed_already = self._anything_there(pkg)
@@ -42,8 +45,10 @@ class Packager(object):
             LOG.debug("Skipping install of %r since %s is already there.", pkg['name'], installed_already)
 
     def remove(self, pkg):
-        removable = pkg.get('removable')
-        if not removable:
+        should_remove = self.remove_default
+        if 'removable' in pkg:
+            should_remove = type_utils.make_bool(pkg['removable'])
+        if not should_remove:
             return False
         self._remove(pkg)
         return True
