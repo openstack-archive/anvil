@@ -36,7 +36,7 @@ def _size_cb(option, opt_str, value, parser):
         raise OptionValueError("Invalid value for %s due to %s" % (opt_str, e))
         
 
-def parse():
+def parse(previous_settings=None):
 
     version_str = "%s v%s" % ('anvil', version.version_string())
     help_formatter = IndentedHelpFormatter(width=120)
@@ -122,18 +122,19 @@ def parse():
     # Extract only what we care about, these will be passed
     # to the constructor of actions as arguments 
     # so don't adjust the naming wily nilly...
-    (options, args) = parser.parse_args()
-    output = {}
-    output['dir'] = (options.dir or "")
-    output['dryrun'] = (options.dryrun or False)
-    output['action'] = (options.action or "")
-    output['extras'] = args
-    output['persona_fn'] = options.persona_fn
-    output['verbose'] = options.verbose
-    output['prompt_for_passwords'] = options.prompt_for_passwords
-    output['show_amount'] = max(0, options.show_amount)
-    output['store_passwords'] = options.store_passwords
-    output['match_installed'] = options.match_installed
-    output['purge_packages'] = options.purge_packages
+    if previous_settings:
+        parser.set_defaults(**previous_settings)
 
-    return output
+    (options, args) = parser.parse_args()
+    values = {}
+    values['dir'] = (options.dir or "")
+    values['dryrun'] = (options.dryrun or False)
+    values['action'] = (options.action or "")
+    values['persona_fn'] = options.persona_fn
+    values['verbose'] = options.verbose
+    values['prompt_for_passwords'] = options.prompt_for_passwords
+    values['show_amount'] = max(0, options.show_amount)
+    values['store_passwords'] = options.store_passwords
+    values['match_installed'] = options.match_installed
+    values['purge_packages'] = options.purge_packages
+    return values

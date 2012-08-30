@@ -41,6 +41,7 @@ from anvil.pprint import center_text
 
 
 LOG = logging.getLogger()
+SETTINGS_FN = "/etc/anvil/settings.yaml"
 
 
 def run(args):
@@ -53,6 +54,8 @@ def run(args):
     LOG.debug("CLI arguments are:")
     utils.log_object(args, logger=LOG, level=logging.DEBUG, item_max_len=128)
 
+    # Keep the old args around so we have the full set to write out
+    saved_args = dict(args)
     action = args.pop("action", '').strip().lower()
     if action not in actions.names():
         raise excp.OptionException("Invalid action name %r specified!" % (action))
@@ -102,6 +105,9 @@ def run(args):
     (repeat_string, line_max_len) = utils.welcome()
     print(center_text("Action Runner", repeat_string, line_max_len))
 
+    # Now that the settings are known to work, store them for next run
+    store_current_settings(saved_args)
+
     LOG.info("Starting action %s on %s for distro: %s",
              colorizer.quote(action), colorizer.quote(utils.iso8601()),
              colorizer.quote(dist.name))
@@ -117,6 +123,38 @@ def run(args):
              colorizer.quote(pretty_time['seconds']), colorizer.quote(pretty_time['minutes']), colorizer.quote(action))
 
 
+def load_previous_settings():
+    settings_prev = None
+    if sh.isfile(SETTINGS_FN):
+        try:
+            # Don't use sh here so that we always
+            # read this (even if dry-run)    
+            with open(SETTINGS_FN, 'r') as fh:
+                settings_prev = utils.load_yaml_text(fh.read())
+        except Exception:
+            pass
+    return settings_prev
+
+
+def store_current_settings(settings):
+    base_dir = sh.dirname(SETTINGS_FN)
+    if not sh.isdir(base_dir):
+        # Don't use sh here so that we always
+        # read this (even if dry-run)    
+        os.makedirs(base_dir)
+    try:
+        with sh.Rooted(True):
+            with open(SETTINGS_FN, 'w') as fh:
+                fh.write("# Anvil last used settings\n")
+                fh.write(utils.add_header(SETTINGS_FN, utils.prettify_yaml(settings)))
+                fh.flush()
+        (uid, gid) = sh.get_suids()
+        sh.chown_r(base_dir, uid, gid)
+    except Exception as e:
+        print e
+        pass
+
+
 def main():
     """
     Starts the execution of without
@@ -128,7 +166,7 @@ def main():
     """
     
     # Do this first so people can see the help message...
-    args = opts.parse()
+    args = opts.parse(load_previous_settings())
 
     # Configure logging levels
     log_level = logging.INFO
