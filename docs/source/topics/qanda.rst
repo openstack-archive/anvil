@@ -4,13 +4,6 @@
 Questions and Answers
 ===============
 
-How do I get program usage?
----------------------------
-
-::
-
-     $ ./smithy --help
-
 How do I cause the anvil dependencies to be reinstalled?
 --------------------------------------------
 
