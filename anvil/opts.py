@@ -54,7 +54,7 @@ def parse():
         dest="dryrun",
         default=False,
         help=("perform ACTION but do not actually run any of the commands"
-              " that would normally complete ACTION)"))
+              " that would normally complete ACTION"))
 
     # Install/start/stop/uninstall specific options
     base_group = OptionGroup(parser, "Action specific options")
@@ -103,6 +103,14 @@ def parse():
         help="show SIZE 'details' when showing component status. " + suffixes)
     parser.add_option_group(status_group)
 
+    pkg_group = OptionGroup(parser, "Packaging specific options")
+    pkg_group.add_option('-m', "--match-installed",
+        action="store_true",
+        dest="match_installed",
+        default=False,
+        help="when packaging attempt to use the versions that are installed for the components dependencies")
+    parser.add_option_group(pkg_group)
+
     # Extract only what we care about, these will be passed
     # to the constructor of actions as arguments 
     # so don't adjust the naming wily nilly...
@@ -117,5 +125,6 @@ def parse():
     output['prompt_for_passwords'] = options.prompt_for_passwords
     output['show_amount'] = max(0, options.show_amount)
     output['store_passwords'] = options.store_passwords
+    output['match_installed'] = options.match_installed
 
     return output

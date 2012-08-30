@@ -42,8 +42,8 @@ class Packager(pack.Packager):
         # Anything with options always gets installed
         if 'options' in pkg:
             return None
-        return pip_helper.is_adequate_installed(self._get_pip_command(),
-                                                pkg['name'], pkg.get('version'))
+        return pip_helper.get_installed(self._get_pip_command(),
+                                        pkg['name'], pkg.get('version'))
 
     def _execute_pip(self, cmd):
         pip_cmd = self._get_pip_command()

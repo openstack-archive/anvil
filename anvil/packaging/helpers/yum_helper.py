@@ -35,15 +35,14 @@ def _make_yum_base():
     return _yum_base
 
 
-def is_installed(name, version):
-    yb = _make_yum_base()
-    # This seems needed...
-    # otherwise 'cannot open Packages database in /var/lib/rpm' starts to happen
-    with sh.Rooted(True):
-        return yb.rpmdb.contains(name=name, ver=version)
+def is_installed(name, version=None):
+    if get_installed(name, version):
+        return True
+    else:
+        return False
 
 
-def is_adequate_installed(name, version):
+def get_installed(name, version=None):
     # This seems needed...
     # otherwise 'cannot open Packages database in /var/lib/rpm' starts to happen
     with sh.Rooted(True):

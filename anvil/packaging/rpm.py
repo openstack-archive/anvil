@@ -14,15 +14,19 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import copy
+
 from anvil import colorizer
 from anvil import component as comp
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import trace as tr
+from anvil import type_utils as tu
 from anvil import utils
 
 from anvil.packaging.helpers import changelog
+from anvil.packaging.helpers import yum_helper
 
 LOG = logging.getLogger(__name__)
 
@@ -33,8 +37,9 @@ class DependencyPackager(comp.Component):
         trace_fn = tr.trace_filename(self.get_option('trace_dir'), 'created')
         self.tracewriter = tr.TraceWriter(trace_fn, break_if_there=False)
         self.package_dir = sh.joinpths(self.get_option('component_dir'), 'package')
+        self.match_installed = tu.make_bool(kargs.get('match_installed'))
         self._build_paths = None
-        self._cached_details = None
+        self._details = None
 
     @property
     def build_paths(self):
@@ -55,11 +60,21 @@ class DependencyPackager(comp.Component):
             'build': self._build_requirements(),
         }
 
+    def _match_version_installed(self, yum_pkg):
+        if not self.match_installed:
+            return yum_pkg
+        installed_pkg = yum_helper.get_installed(yum_pkg['name'])
+        if not installed_pkg:
+            return yum_pkg
+        pkg_new = copy.deepcopy(yum_pkg)
+        pkg_new['version'] = installed_pkg.printVer()
+        return pkg_new
+
     @property
     def details(self):
-        if self._cached_details is not None:
-            return self._cached_details
-        self._cached_details = {
+        if self._details is not None:
+            return self._details
+        self._details = {
             'name': self.name,
             'version': 0,
             'release': self.get_int_option('release', default_value=1),
@@ -72,7 +87,7 @@ class DependencyPackager(comp.Component):
             'description': '',
             'summary': 'Package build of %s on %s' % (self.name, utils.iso8601()),
         }
-        return self._cached_details
+        return self._details
 
     def _build_details(self):
         return {
@@ -148,6 +163,7 @@ class DependencyPackager(comp.Component):
             return []
         requirements = []
         for p in i_sibling.packages:
+            p = self._match_version_installed(p)
             if 'version' in p:
                 requirements.append("%s = %s" % (p['name'], p['version']))
             else:

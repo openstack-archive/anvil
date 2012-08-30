@@ -37,7 +37,7 @@ class YumPackager(pack.Packager):
             return str(name)
 
     def _anything_there(self, pkg):
-        return yum_helper.is_adequate_installed(pkg['name'], pkg.get('version'))
+        return yum_helper.get_installed(pkg['name'], pkg.get('version'))
 
     def _execute_yum(self, cmd, **kargs):
         yum_cmd = YUM_CMD + cmd

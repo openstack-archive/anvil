@@ -206,15 +206,13 @@ components:
         -   name: prettytable
             version: "0.6" # This is not right, 0.6 and 0.6.1 are needed??
         -   name: pycrypto
-            options: # Force it to upgrade/reinstall
+            options: # Force it to upgrade
                 - "-U"
-                - "-I"
         -   name: requests
         -   name: sphinx
         -   name: sqlalchemy # Need this or nova pukes with 'Did not recognize type 'BIGINT' of column 'bw_in''
-            options: # Force it to upgrade/reinstall
+            options: # Force it to upgrade
                 - "-U"
-                - "-I"
         -   name: sqlalchemy-migrate
     glance:
         action_classes:

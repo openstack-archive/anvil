@@ -179,8 +179,7 @@ class DBRuntime(comp.ProgramRuntime):
         st = comp.STATUS_UNKNOWN
         if combined.find("running") != -1:
             st = comp.STATUS_STARTED
-        elif combined.find("stop") != -1 or \
-             combined.find('unrecognized') != -1:
+        elif utils.has_any(combined, 'stop', 'unrecognized'):
             st = comp.STATUS_STOPPED
         return [
             comp.ProgramStatus(name=self.get_option("type"),

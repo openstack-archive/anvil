@@ -214,9 +214,7 @@ class HorizonRuntime(comp.ProgramRuntime):
         st = comp.STATUS_UNKNOWN
         if combined.find("is running") != -1:
             st = comp.STATUS_STARTED
-        elif combined.find("not running") != -1 or \
-             combined.find("stopped") != -1 or \
-             combined.find('unrecognized') != -1:
+        elif utils.has_any(combined, 'stopped', 'unrecognized', 'not running'):
             st = comp.STATUS_STOPPED
         return [
             comp.ProgramStatus(status=st,
