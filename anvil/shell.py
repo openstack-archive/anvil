@@ -296,7 +296,7 @@ def chown_r(path, uid, gid, run_as_root=True):
     changed = 0
     with Rooted(run_as_root):
         if isdir(path):
-            for root, dirs, files in os.walk(path):
+            for (root, dirs, files) in os.walk(path):
                 changed += chown(root, uid, gid)
                 for d in dirs:
                     dir_pth = joinpths(root, d)

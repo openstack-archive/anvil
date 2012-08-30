@@ -146,11 +146,14 @@ def wait_for_url(url, max_attempts=3, wait_between=5):
         raise excps[-1]
 
 
-def add_header(fn, contents):
+def add_header(fn, contents, adjusted=True):
     lines = []
     if not fn:
         fn = "???"
-    lines.append('# Adjusted source file %s' % (fn.strip()))
+    if adjusted:
+        lines.append('# Adjusted source file %s' % (fn.strip()))
+    else:
+        lines.append('# Created source file %s' % (fn.strip()))
     lines.append("# On %s" % (iso8601()))
     lines.append("# By user %s, group %s" % (sh.getuser(), sh.getgroupname()))
     lines.append("")
