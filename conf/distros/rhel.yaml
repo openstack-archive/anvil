@@ -394,12 +394,10 @@ components:
             uninstall: anvil.components.quantum_client:QuantumClientUninstaller
             test: anvil.components:PythonTestingComponent
             package: anvil.packaging.rpm:PythonPackager
-        pip_to_package:
-        -   name: pyparsing
-            package:
-                name: pyparsing
         pips:
         -   name: cliff
+        -   name: pyparsing # This seems to cause conflicts with
+                            # the yum version that comes installed so use the pip version
     rabbit-mq:
         action_classes:
             install: anvil.components.rabbit:RabbitInstaller
