@@ -9,8 +9,9 @@ apache_group: "$(auto:user)"
 # What user will apache be serving from.
 #
 # Root will typically not work (for apache on most distros)
-# sudo adduser <username> then sudo adduser <username> admin will be what you want to set this up (in ubuntu)
-# I typically use user "horizon" for ubuntu and the runtime user (who will have sudo access) for RHEL.
+# sudo adduser <username> then sudo adduser <username> admin will be what you want to set this up
+#
+# It will default to the running user if not provided...
 apache_user: "$(auto:user)"
 
 # Port horizon should run on
