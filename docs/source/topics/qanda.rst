@@ -38,13 +38,33 @@ run against a specific milestone of OpenStack just checkout the
 same tag in anvil and run the same actions as
 you would have ran previously. 
 
+An example of this, lets adjust nova to use the ``stable/essex`` branch.
+
+- Open ``conf/components/nova.yaml`` in your favorite editor
+- Locate the line that starts with ``get_from:`` and either change
+  it to a new github location
+
+::
+
+    # Where we download this from...
+    get_from: "git://github.com/openstack/nova.git?branch=stable/essex"
+
+    
+- The special keywords here are ``branch=``
+  and ``tag=`` which are ways for anvil to parse out which branch/tag
+  you desire. 
+
+  - **Note:** this is not git official syntax
+  - **Note:** tag overrides branch (so you can't really include both)
+
+     
 `OMG` the images take forever to download!
 ----------------------------------------
 
 Sometimes the images that will be uploaded to glance take a long time to
 download and extract and upload.
 
-To adjust this edit *conf/components/glance.yaml* and change the following:
+To adjust this edit ``conf/components/glance.yaml`` and change the following:
 
 ::
 
