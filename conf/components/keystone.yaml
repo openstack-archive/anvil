@@ -38,4 +38,10 @@ nova:
   ec2_admin_host: "$(nova:ec2_admin_host)"
   ec2_admin_port: "$(nova:ec2_admin_port)"
   protocol: "$(nova:protocol)"
+
+wanted_passwords:
+  service_token: 'service admin token'
+  admin_password: 'keystone admin user'
+  demo_password: 'keystone demo user'
+  service_password: 'service authentication password'
 ...

@@ -74,25 +74,15 @@ EOF
         return 1
     fi
     echo "Installing needed pypi dependencies:"
-    pip-python install -U -I termcolor iniparse
+    pip-python install -U -I termcolor iniparse "keyring==0.9.2"
     if [ $? -ne 0 ]; then
         return 1
     fi
     return 0
 }
 
-load_rc_files()
-{
-    for i in `ls *.rc 2>/dev/null`; do
-        if [ -f "$i" ]; then
-            source "$i"
-        fi
-    done
-}
-
 run_smithy()
 {
-    load_rc_files
     PYTHON=`which python`
     exec $PYTHON anvil $ARGS
 }

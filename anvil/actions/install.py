@@ -45,7 +45,7 @@ class InstallAction(action.Action):
     def lookup_name(self):
         return 'install'
 
-    def _write_exports(self, component_order, instances, filename):
+    def _write_exports(self, component_order, instances, path):
         entries = []
         contents = StringIO()
         contents.write("# Exports for action %s\n\n" % (self.name))
@@ -59,9 +59,9 @@ class InstallAction(action.Action):
                     contents.write("%s\n" % (export_entry))
                 contents.write("\n")
         if entries:
-            sh.write_file(filename, contents.getvalue())
+            sh.write_file(path, contents.getvalue())
             utils.log_iterable(entries,
-                               header="Wrote to %s %s exports" % (filename, len(entries)),
+                               header="Wrote to %s %s exports" % (path, len(entries)),
                                logger=LOG)
 
     def _run(self, persona, component_order, instances):

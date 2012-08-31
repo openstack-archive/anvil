@@ -63,6 +63,10 @@ class StatusException(AnvilException):
     pass
 
 
+class PasswordException(AnvilException):
+    pass
+
+
 class FileException(AnvilException):
     pass
 

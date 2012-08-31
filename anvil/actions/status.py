@@ -35,9 +35,9 @@ STATUS_COLOR_MAP = {
 
 
 class StatusAction(action.Action):
-    def __init__(self, name, distro, root_dir, **kwargs):
-        action.Action.__init__(self, name, distro, root_dir, **kwargs)
-        self.show_amount = kwargs.get('show_amount')
+    def __init__(self, name, distro, root_dir, cli_opts):
+        action.Action.__init__(self, name, distro, root_dir, cli_opts)
+        self.show_amount = cli_opts.get('show_amount', 0)
 
     @property
     def lookup_name(self):

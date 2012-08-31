@@ -19,11 +19,7 @@ from anvil import log
 
 LOG = log.getLogger(__name__)
 
-# Partial of rabbit user prompt
-PW_USER_PROMPT = 'the rabbit user'
-
 def get_shared_passwords(component):
     mp = {}
-    mp['pw'] = component.get_password('rabbit', PW_USER_PROMPT) 
+    mp['pw'] = component.get_password('rabbit')
     return mp
-
