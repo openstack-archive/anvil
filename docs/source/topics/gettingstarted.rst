@@ -209,7 +209,7 @@ In your ANVIL directory:
 
 ::
 
-    source install.rc
+    source /etc/anvil/install.rc
 
 This should set up the environment variables you need to run OpenStack
 CLI tools:

@@ -41,6 +41,7 @@ from anvil.pprint import center_text
 
 
 LOG = logging.getLogger()
+ANVIL_DIR = "/etc/anvil/"
 SETTINGS_FN = "/etc/anvil/settings.yaml"
 
 
@@ -85,6 +86,9 @@ def run(args):
     if 'dryrun' in args:
         env.set("ANVIL_DRYRUN", str(args['dryrun']))
 
+    # Ensure the anvil etc dir is there if others are about to use it
+    ensure_anvil_dir()
+
     # Load the distro
     dist = distro.load(settings.DISTRO_DIR)
     
@@ -100,7 +104,7 @@ def run(args):
     runner = runner_cls(distro=dist,
                         root_dir=root_dir,
                         name=action,
-                        **args)
+                        cli_opts=args)
 
     (repeat_string, line_max_len) = utils.welcome()
     print(center_text("Action Runner", repeat_string, line_max_len))
@@ -125,23 +129,27 @@ def run(args):
 
 def load_previous_settings():
     settings_prev = None
-    if sh.isfile(SETTINGS_FN):
-        try:
-            # Don't use sh here so that we always
-            # read this (even if dry-run)    
-            with open(SETTINGS_FN, 'r') as fh:
-                settings_prev = utils.load_yaml_text(fh.read())
-        except Exception:
-            pass
+    try:
+        # Don't use sh here so that we always
+        # read this (even if dry-run)    
+        with open(SETTINGS_FN, 'r') as fh:
+            settings_prev = utils.load_yaml_text(fh.read())
+    except Exception:
+        # Errors could be expected on format problems
+        # or on the file not being readable....
+        pass
     return settings_prev
 
 
+def ensure_anvil_dir():
+    if not sh.isdir(ANVIL_DIR):
+        with sh.Rooted(True):
+            os.makedirs(ANVIL_DIR)
+            (uid, gid) = sh.get_suids()
+            sh.chown_r(ANVIL_DIR, uid, gid)
+
+
 def store_current_settings(settings):
-    base_dir = sh.dirname(SETTINGS_FN)
-    if not sh.isdir(base_dir):
-        # Don't use sh here so that we always
-        # read this (even if dry-run)    
-        os.makedirs(base_dir)
     try:
         with sh.Rooted(True):
             with open(SETTINGS_FN, 'w') as fh:
@@ -149,9 +157,9 @@ def store_current_settings(settings):
                 fh.write(utils.add_header(SETTINGS_FN, utils.prettify_yaml(settings)))
                 fh.flush()
         (uid, gid) = sh.get_suids()
-        sh.chown_r(base_dir, uid, gid)
+        sh.chown(SETTINGS_FN, uid, gid)
     except Exception as e:
-        pass
+        LOG.debug("Failed writing to %s due to %s", SETTINGS_FN, e)
 
 
 def main():

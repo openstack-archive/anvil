@@ -31,7 +31,7 @@ PASSWORD_PROMPT = 'the database user'
 
 def get_shared_passwords(component):
     mp = {}
-    mp['pw'] = component.get_password('sql', PASSWORD_PROMPT)
+    mp['pw'] = component.get_password('sql')
     return mp
 
 

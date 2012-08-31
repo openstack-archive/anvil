@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import type_utils as tu
 from anvil import utils
@@ -48,8 +49,11 @@ class Component(object):
         # How we get any passwords we need
         self.passwords = passwords
 
-    def get_password(self, option, prompt_text, **kwargs):
-        return self.passwords.get_password(option, prompt_text, **kwargs)
+    def get_password(self, option):
+        pw_val = self.passwords.get(option)
+        if pw_val is None:
+            raise excp.PasswordException("Password asked for option %s but none was pre-populated!" % (option))
+        return pw_val
 
     def get_option(self, option, *options, **kwargs):
         option_value = utils.get_deep(self.options, [option] + list(options))

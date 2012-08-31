@@ -134,20 +134,10 @@ class Initializer(object):
 
 def get_shared_passwords(component):
     mp = {}
-    mp['service_token'] = component.get_password(
-        "service_token",
-        'the service admin token',
-        )
-    mp['admin_password'] = component.get_password(
-        'horizon_keystone_admin',
-        'the horizon and keystone admin',
-        length=20,
-        )
-    mp['demo_password'] = mp['admin_password']
-    mp['service_password'] = component.get_password(
-        'service_password',
-        'service authentication',
-        )
+    mp['service_token'] = component.get_password("service_token")
+    mp['admin_password'] = component.get_password('admin_password')
+    mp['demo_password'] = component.get_password('demo_password')
+    mp['service_password'] = component.get_password('service_password')
     return mp
 
 

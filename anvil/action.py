@@ -43,33 +43,44 @@ class PhaseFunctors(object):
 class Action(object):
     __meta__ = abc.ABCMeta
 
-    def __init__(self, name, distro, root_dir, **kwargs):
+    def __init__(self, name, distro, root_dir, cli_opts):
         self.distro = distro
         self.root_dir = root_dir
         self.name = name
         self.interpolator = cfg.YamlInterpolator(settings.COMPONENT_CONF_DIR)
-        self.passwords = pw.ProxyPassword()
-        self.password_files = [
-            sh.joinpths(root_dir, 'passwords.yaml'),
-        ]
-        self.default_password_file = sh.joinpths(os.getcwd(), 'passwords.yaml')
-        self.password_files.append(self.default_password_file)
-        if kwargs.get('prompt_for_passwords'):
-            self.passwords.resolvers.append(pw.InputPassword())
-        self.passwords.resolvers.append(pw.RandomPassword())
-        self.store_passwords = kwargs.get('store_passwords')
-        self.kwargs = kwargs
+        self.passwords = {}
+        self.keyring_path = cli_opts.pop('keyring_path')
+        self.keyring_encrypted = cli_opts.pop('keyring_encrypted')
+        self.prompt_for_passwords = cli_opts.pop('prompt_for_passwords', False)
+        self.store_passwords = cli_opts.pop('store_passwords', True)
+        self.cli_opts = cli_opts # Stored for components to get any options
 
-    def _establish_passwords(self):
-        pw_read = []
-        for fn in self.password_files:
-            if sh.isfile(fn):
-                self.passwords.cache.update(utils.load_yaml(fn))
-                pw_read.append(fn)
-        if pw_read:
-            utils.log_iterable(pw_read,
-                               header="Updated passwords to be used from %s files" % len(pw_read),
-                               logger=LOG)
+    def _establish_passwords(self, component_order, instances):
+        kr = pw.KeyringProxy(self.keyring_path,
+                             self.keyring_encrypted,
+                             self.prompt_for_passwords,
+                             True)
+        LOG.info("Reading passwords using a %s", kr)
+        to_save = {}
+        self.passwords.clear()
+        already_gotten = set()
+        for c in component_order:
+            instance = instances[c]
+            wanted_passwords = instance.get_option('wanted_passwords') or []
+            if not wanted_passwords:
+                continue
+            for (name, prompt) in wanted_passwords.items():
+                if name in already_gotten:
+                    continue
+                (from_keyring, pw_provided) = kr.read(name, prompt)
+                if not from_keyring and self.store_passwords:
+                    to_save[name] = pw_provided
+                self.passwords[name] = pw_provided
+                already_gotten.add(name)
+        if to_save:
+            LOG.info("Saving %s passwords using a %s", len(to_save), kr)
+            for (name, pw_provided) in to_save.items():
+                kr.save(name, pw_provided)
 
     @abc.abstractproperty
     @property
@@ -112,30 +123,6 @@ class Action(object):
         opts.update(persona_opts)
         return opts
 
-    def _update_passwords(self):
-        if not self.store_passwords:
-            return
-        if not self.passwords.cache:
-            return
-        who_update = []
-        for fn in self.password_files:
-            if sh.isfile(fn):
-                who_update.append(fn)
-        if not who_update:
-            who_update.append(self.default_password_file)
-        who_done = []
-        for fn in who_update:
-            if sh.isfile(fn):
-                contents = utils.load_yaml(fn)
-            else:
-                contents = {}
-            contents.update(self.passwords.cache)
-            sh.write_file(fn, utils.add_header(fn, utils.prettify_yaml(contents)))
-            who_done.append(fn)
-        utils.log_iterable(who_done,
-                           header="Updated/created %s password files" % len(who_done),
-                           logger=LOG)
-
     def _merge_subsystems(self, component_subsys, desired_subsys):
         joined_subsys = {}
         if not component_subsys:
@@ -155,7 +142,7 @@ class Action(object):
             if action not in sibling_instances:
                 sibling_instances[action] = {}
             cls = importer.import_entry_point(cls_name)
-            sibling_params = utils.merge_dicts(params, self.kwargs, preserve=True)
+            sibling_params = utils.merge_dicts(params, self.cli_opts, preserve=True)
             sibling_params['instances'] = sibling_instances[action]
             LOG.debug("Construction of sibling component %r (%r) params are:", name, action)
             utils.log_object(sibling_params, logger=LOG, level=logging.DEBUG)
@@ -204,7 +191,7 @@ class Action(object):
             instance_params['subsystems'] = self._merge_subsystems((distro_opts.pop('subsystems', None) or {}),
                                                                    (persona_subsystems.get(c) or {}))
             instance_params['siblings'] = siblings
-            instance_params = utils.merge_dicts(instance_params, self.kwargs, preserve=True)
+            instance_params = utils.merge_dicts(instance_params, self.cli_opts, preserve=True)
             LOG.debug("Construction of %r params are:", c)
             utils.log_object(instance_params, logger=LOG, level=logging.DEBUG)
             instances[c] = cls(**instance_params)
@@ -224,12 +211,11 @@ class Action(object):
         LOG.info("Booting up your components.")
         LOG.debug("Starting environment settings:")
         utils.log_object(env.get(), logger=LOG, level=logging.DEBUG, item_max_len=64)
-        self._establish_passwords()
+        self._establish_passwords(component_order, instances)
         self._verify_components(component_order, instances)
         self._warm_components(component_order, instances)
-        self._update_passwords()
 
-    def _write_exports(self, component_order, instances, filename):
+    def _write_exports(self, component_order, instances, path):
         # TODO(harlowja) perhaps remove this since its only used in a subclass...
         pass
 
@@ -237,8 +223,8 @@ class Action(object):
         LOG.info("Tearing down your components.")
         LOG.debug("Final environment settings:")
         utils.log_object(env.get(), logger=LOG, level=logging.DEBUG, item_max_len=64)
-        self._write_exports(component_order, instances, filename="%s.rc" % (self.name))
-        self._update_passwords()
+        exports_filename = "%s.rc" % (self.name)
+        self._write_exports(component_order, instances, sh.joinpths("/etc/anvil", exports_filename))
 
     def _get_phase_directory(self, name=None):
         if not name:
