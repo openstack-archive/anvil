@@ -40,16 +40,20 @@ bootstrap_rh()
     echo "Bootstrapping RHEL: $1"
     echo "Please wait..."
     echo "Installing node.js yum repository configuration."
-    cat > "/etc/yum.repos.d/epel-nodejs.repo" <<EOF
-# Place this file in your /etc/yum.repos.d/ directory
-
-[epel-nodejs]
-name=node.js stack in development: runtime and several npm packages
-baseurl=http://repos.fedorapeople.org/repos/lkundrak/nodejs/epel-6/\$basearch/
-enabled=1
-skip_if_unavailable=1
-gpgcheck=0
-EOF
+    JS_REPO_RPM_FN="nodejs-stable-release.noarch.rpm"
+    if [ ! -f "/tmp/$JS_REPO_RPM_FN" ]; then
+        echo "Downloading $JS_REPO_RPM_FN"
+        wget -q -O "/tmp/$JS_REPO_RPM_FN" "http://nodejs.tchol.org/repocfg/el/$JS_REPO_RPM_FN"
+        if [ $? -ne 0 ]; then
+            return 1
+        fi
+    fi
+    echo "Installing /tmp/$JS_REPO_RPM_FN."
+    rpm -i --replacepkgs "/tmp/$JS_REPO_RPM_FN" 2>&1
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+    echo "Locating the EPEL rpm."
     EPEL_RPM=$(curl -s "http://mirrors.kernel.org/fedora-epel/6/i386/" | grep -io ">\s*epel.*.rpm\s*<" | grep -io "epel.*.rpm")
     if [ $? -ne 0 ]; then
         return 1
