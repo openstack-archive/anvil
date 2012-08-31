@@ -61,6 +61,7 @@ class KeyringProxy(object):
         pw_val = self.ring.get_password(name, PW_USER)
         if pw_val:
             return (True, pw_val)
+        pw_val = ''
         if self.enable_prompt and prompt:
             pw_val = InputPassword().get_password(name, prompt)
         if self.random_on_empty and len(pw_val) == 0:
