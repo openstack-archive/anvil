@@ -108,8 +108,7 @@ class InputPassword(object):
 class RandomPassword(object):
     def generate_random(self, length):
         """Returns a randomly generated password of the specified length."""
-        LOG.debug("Generating a pseudo-random password of %d characters",
-                  length)
+        LOG.debug("Generating a pseudo-random secret of %d characters", length)
         if length <= 0:
             return ''
         return binascii.hexlify(os.urandom((length + 1) / 2))[:length]

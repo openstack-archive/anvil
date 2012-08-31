@@ -116,11 +116,8 @@ class Action(object):
         }
 
     def _merge_options(self, name, distro_opts, component_opts, persona_opts):
-        opts = {}
-        opts.update(self._get_component_dirs(name))
-        opts.update(distro_opts)
-        opts.update(component_opts)
-        opts.update(persona_opts)
+        opts = utils.merge_dicts(self._get_component_dirs(name),
+                                 distro_opts, component_opts, persona_opts)
         return opts
 
     def _merge_subsystems(self, component_subsys, desired_subsys):
