@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 #    Copyright (C) 2012 Yahoo! Inc. All Rights Reserved.
@@ -62,6 +64,7 @@ KERNEL_CHECKS = [
 ROOT_CHECKS = [
     re.compile(r"(.*)img$", re.I),
     re.compile(r'(.*?)aki-tty/image$', re.I),
+    re.compile(r'(.*?)qcow2$', re.I),
 ]
 
 # Used to match various file names with what could be a ram disk image
@@ -91,7 +94,7 @@ def pipe_in_out(in_fh, out_fh, chunk_size=1024):
         if data == '':
             break
         else:
-            ofh.write(data)
+            out_fh.write(data)
             bytes_piped += len(data)
     return bytes_piped
 
