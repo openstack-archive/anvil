@@ -295,7 +295,8 @@ components:
         -   name: httpd
         -   name: mod_wsgi
         -   name: nodejs
-        -   name: nodejs-npm
+        -   name: nodejs-compat-symlinks
+        -   name: npm
         pips:
         -   name: django
             version: "1.4"
