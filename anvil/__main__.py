@@ -151,10 +151,15 @@ def ensure_anvil_dir():
 
 def store_current_settings(settings):
     try:
+        # Remove certain keys that just shouldn't be saved
+        to_save = dict(settings)
+        for k in ['action', 'verbose', 'dryrun']:
+            if k in settings:
+                to_save.pop(k, None)
         with sh.Rooted(True):
             with open(SETTINGS_FN, 'w') as fh:
                 fh.write("# Anvil last used settings\n")
-                fh.write(utils.add_header(SETTINGS_FN, utils.prettify_yaml(settings)))
+                fh.write(utils.add_header(SETTINGS_FN, utils.prettify_yaml(to_save)))
                 fh.flush()
         (uid, gid) = sh.get_suids()
         sh.chown(SETTINGS_FN, uid, gid)
