@@ -24,7 +24,7 @@ VNC_PROXY_APP = 'nova-novncproxy'
 APP_OPTIONS = {
     # This reaches into the nova configuration file
     # TODO(harlowja) can we stop that?
-    VNC_PROXY_APP: ['--config-file', '%NOVA_CONF%', '--web', '.'],
+    VNC_PROXY_APP: ['--config-file', '$NOVA_CONF', '--web', '.'],
 }
 
 
