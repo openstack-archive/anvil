@@ -98,7 +98,7 @@ class InputPassword(object):
             if len(rc) == 0 or self._valid_password(rc):
                 break
             else:
-                LOG.warn("Invalid password %r (please try again)" % (rc))
+                LOG.warn("Invalid secret %r (please try again)" % (rc))
         return rc
 
     def get_password(self, option, prompt_text):
