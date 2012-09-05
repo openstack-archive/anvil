@@ -192,11 +192,10 @@ class GlanceInstaller(comp.PythonInstallComponent):
 
     @property
     def env_exports(self):
-        to_set = {}
+        to_set = []
         params = ghelper.get_shared_params(**self.options)
         for (endpoint, details) in params['endpoints'].items():
-            export_name = "GLANCE_%s_URI" % (endpoint.upper())
-            to_set[export_name] = details['uri']
+            to_set.append([("GLANCE_%s_URI" % (endpoint.upper())), details['uri']])
         return to_set
 
     def _config_param_replace(self, config_fn, contents, parameters):

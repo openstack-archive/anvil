@@ -74,7 +74,7 @@ class Component(object):
 
     @property
     def env_exports(self):
-        return {}
+        return []
 
     def verify(self):
         pass
