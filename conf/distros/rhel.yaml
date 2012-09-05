@@ -444,6 +444,7 @@ components:
             package: anvil.packaging.rpm:PythonPackager
         pips:
         -   name: cliff
+        -   name: cliff-tablib
         # This seems to cause conflicts with
         # the yum version that comes installed so use the pip version
         -   name: pyparsing 
