@@ -76,13 +76,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
 
     def _filter_pip_requires_line(self, line):
-        if line.lower().find('keystoneclient') != -1:
-            return None
-        if line.lower().find('ldap') != -1:
-            return None
-        if line.lower().find('http://tarballs.openstack.org') != -1:
-            return None
-        if line.lower().find('memcached') != -1:
+        if utils.has_any(line.lower(), 'keystoneclient', 'ldap', 'http://tarballs.openstack.org', 'memcached'):
             return None
         return line
 
@@ -105,8 +99,11 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         to_set['OS_PASSWORD'] = params['admin_password']
         to_set['OS_TENANT_NAME'] = params['demo_tenant']
         to_set['OS_USERNAME'] = params['demo_user']
-        to_set['OS_AUTH_URL'] = params['endpoints']['public']['uri']
-        to_set['SERVICE_ENDPOINT'] = params['endpoints']['admin']['uri']
+        for (endpoint, details) in params['endpoints'].items():
+            if endpoint.find('templated') != -1:
+                continue
+            export_name = "KEYSTONE_%s_URI" % (endpoint.upper())
+            to_set[export_name] = details['uri']
         return to_set
 
     @property
