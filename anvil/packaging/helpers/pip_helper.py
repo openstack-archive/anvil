@@ -14,14 +14,40 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from distutils import version as vr
 from pkg_resources import Requirement
 
+from anvil import log as logging
 from anvil import shell as sh
+
+LOG = logging.getLogger(__name__)
 
 FREEZE_CMD = ['freeze', '--local']
 
+
 # Cache of whats installed - 'uncached' as needed
 _installed_cache = None
+
+
+class LooseRequirement(object):
+    def __init__(self, name, version=None):
+        self.name = name
+        if version is not None:
+            self.version = vr.LooseVersion(version)
+        else:
+            self.version = None
+
+    def __str__(self):
+        if self.version is not None:
+            return "%s (%s)" % (self.name, self.version)
+        else:
+            return str(self.name)
+
+    def __contains__(self, version):
+        if self.version is None:
+            return True
+        else:
+            return version <= self.version
 
 
 def uncache():
@@ -30,7 +56,7 @@ def uncache():
 
 
 def _list_installed(pip_how):
-    cmd = [pip_how] + FREEZE_CMD
+    cmd = [str(pip_how)] + FREEZE_CMD
     (stdout, _stderr) = sh.execute(*cmd)
     installed = []
     for line in stdout.splitlines():
@@ -40,16 +66,14 @@ def _list_installed(pip_how):
         # Don't take editables either...
         if line.startswith('-e'):
             continue
-        # We need to adjust the == that freeze produces
-        # to instead have <= so that later when we ask
-        # if a version matches it will say yes it does and
-        # not just for exactly the same version
-        if line.find('==') != -1:
-            line = line.replace('==', '<=')
+        v = None
         try:
-            installed.append(Requirement.parse(line))
-        except ValueError:
-            pass
+            line_requirements = Requirement.parse(line)
+            (_cmp, v) = line_requirements.specs[0]
+        except (ValueError, TypeError) as e:
+            LOG.warn("Unparseable pip freeze line %s: %s" % (line, e))
+            continue
+        installed.append(LooseRequirement(line_requirements.key, v))
     return installed
 
 
@@ -67,10 +91,9 @@ def is_installed(pip_how, name, version=None):
 
 
 def get_installed(pip_how, name, version=None):
-    name_lc = name.lower()
     whats_there = _whats_installed(pip_how)
     for req in whats_there:
-        if not (name_lc == req.key):
+        if not (name.lower() == req.name):
             continue
         if not version:
             return req
