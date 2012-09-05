@@ -77,7 +77,7 @@ def _list_installed(pip_how):
     return installed
 
 
-def _whats_installed(pip_how):
+def whats_installed(pip_how):
     global _installed_cache
     if _installed_cache is None:
         _installed_cache = _list_installed(pip_how)
@@ -91,7 +91,7 @@ def is_installed(pip_how, name, version=None):
 
 
 def get_installed(pip_how, name, version=None):
-    whats_there = _whats_installed(pip_how)
+    whats_there = whats_installed(pip_how)
     for req in whats_there:
         if not (name.lower() == req.name):
             continue
