@@ -16,6 +16,11 @@
 
 import io
 
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
+
 from anvil import cfg
 from anvil import colorizer
 from anvil import components as comp
@@ -192,10 +197,10 @@ class GlanceInstaller(comp.PythonInstallComponent):
 
     @property
     def env_exports(self):
-        to_set = []
+        to_set = OrderedDict()
         params = ghelper.get_shared_params(**self.options)
         for (endpoint, details) in params['endpoints'].items():
-            to_set.append([("GLANCE_%s_URI" % (endpoint.upper())), details['uri']])
+            to_set[("GLANCE_%s_URI" % (endpoint.upper()))] = details['uri']
         return to_set
 
     def _config_param_replace(self, config_fn, contents, parameters):

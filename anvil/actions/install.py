@@ -53,11 +53,7 @@ class InstallAction(action.Action):
             exports = instances[c].env_exports
             if exports:
                 contents.write("# Exports for %s\n" % (c))
-                for export_entry in exports.items():
-                    if not export_entry or len(export_entry) != 2:
-                        contents.write("\n")
-                        continue
-                    (k, v) = export_entry
+                for (k, v) in exports.items():
                     export_entry = "export %s=%s" % (k, sh.shellquote(str(v).strip()))
                     entries.append(export_entry)
                     contents.write("%s\n" % (export_entry))

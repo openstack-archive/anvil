@@ -16,6 +16,11 @@
 
 import io
 
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
+
 from anvil import cfg
 from anvil import colorizer
 from anvil import components as comp
@@ -95,17 +100,16 @@ class KeystoneInstaller(comp.PythonInstallComponent):
     def env_exports(self):
         params = khelper.get_shared_params(**utils.merge_dicts(self.options,
                                                                khelper.get_shared_passwords(self)))
-        to_set = []
-        to_set.append(['OS_PASSWORD', params['admin_password']])
-        to_set.append(['OS_TENANT_NAME', params['demo_tenant']])
-        to_set.append(['OS_USERNAME', params['demo_user']])
-        to_set.append(['OS_AUTH_URL', params['endpoints']['public']['uri']])
-        to_set.append(['SERVICE_ENDPOINT', params['endpoints']['admin']['uri']])
-        to_set.append([])
+        to_set = OrderedDict()
+        to_set['OS_PASSWORD'] = params['admin_password']
+        to_set['OS_TENANT_NAME'] = params['demo_tenant']
+        to_set['OS_USERNAME'] = params['demo_user']
+        to_set['OS_AUTH_URL'] = params['endpoints']['public']['uri']
+        to_set['SERVICE_ENDPOINT'] = params['endpoints']['admin']['uri']
         for (endpoint, details) in params['endpoints'].items():
             if endpoint.find('templated') != -1:
                 continue
-            to_set.append([("KEYSTONE_%s_URI" % (endpoint.upper())), details['uri']])
+            to_set[("KEYSTONE_%s_URI" % (endpoint.upper()))] = details['uri']
         return to_set
 
     @property

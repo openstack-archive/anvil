@@ -16,6 +16,11 @@
 
 import io
 
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
+
 from anvil import cfg
 from anvil import colorizer
 from anvil import components as comp
@@ -174,13 +179,12 @@ class NovaInstaller(comp.PythonInstallComponent):
 
     @property
     def env_exports(self):
-        to_set = []
-        to_set.append(['NOVA_VERSION', self.get_option('nova_version')])
-        to_set.append(['COMPUTE_API_VERSION', self.get_option('nova_version')])
-        to_set.append([])
+        to_set = OrderedDict()
+        to_set['NOVA_VERSION'] = self.get_option('nova_version')
+        to_set['COMPUTE_API_VERSION'] = self.get_option('nova_version')
         n_params = nhelper.get_shared_params(**self.options)
         for (endpoint, details) in n_params['endpoints'].items():
-            to_set.append([("NOVA_%s_URI" % (endpoint.upper())), details['uri'])
+            to_set[("NOVA_%s_URI" % (endpoint.upper()))] = details['uri']
         return to_set
 
     def verify(self):
