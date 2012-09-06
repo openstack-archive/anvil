@@ -56,7 +56,7 @@ NAME_CLEANUPS.reverse()
 
 # Used to match various file names with what could be a kernel image
 KERNEL_CHECKS = [
-    re.compile(r"(.*)vmlinuz(.*)$", re.I),
+    re.compile(r"(.*)vmlinuz(.*)(?!\.md5)....$", re.I),
     re.compile(r'(.*?)aki-tty/image$', re.I),
 ]
 
@@ -70,7 +70,7 @@ ROOT_CHECKS = [
 # Used to match various file names with what could be a ram disk image
 RAMDISK_CHECKS = [
     re.compile(r"(.*)-initrd$", re.I),
-    re.compile(r"(.*)initramfs(.*)$", re.I),
+    re.compile(r"(.*)initramfs(.*)(?!\.md5)....$", re.I),
     re.compile(r'(.*?)ari-tty/image$', re.I),
 ]
 
