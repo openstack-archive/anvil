@@ -72,7 +72,7 @@ def get_shared_params(ip, protocol,
                       s3_host, s3_port,
                       volume_host, volume_port,
                       ec2_host, ec2_port,
-                      ec2_admin_host, ec2_admin_port):
+                      ec2_admin_host, ec2_admin_port, **kwargs):
     mp = {}
     mp['service_host'] = ip
 

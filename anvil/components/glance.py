@@ -16,6 +16,11 @@
 
 import io
 
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
+
 from anvil import cfg
 from anvil import colorizer
 from anvil import components as comp
@@ -81,7 +86,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
         return list(CONFIGS)
 
     def _filter_pip_requires_line(self, line):
-        if line.lower().find('swift') != -1:
+        if utils.has_any(line.lower(), 'swift'):
             return None
         return line
 
@@ -189,6 +194,14 @@ class GlanceInstaller(comp.PythonInstallComponent):
             config.set('logger_root', 'handlers', "devel,production")
             contents = config.stringify(fn)
         return contents
+
+    @property
+    def env_exports(self):
+        to_set = OrderedDict()
+        params = ghelper.get_shared_params(**self.options)
+        for (endpoint, details) in params['endpoints'].items():
+            to_set[("GLANCE_%s_URI" % (endpoint.upper()))] = details['uri']
+        return to_set
 
     def _config_param_replace(self, config_fn, contents, parameters):
         if config_fn in [REG_CONF, REG_PASTE_CONF, API_CONF, API_PASTE_CONF, LOGGING_CONF]:

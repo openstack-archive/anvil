@@ -16,6 +16,11 @@
 
 import io
 
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
+
 from anvil import cfg
 from anvil import colorizer
 from anvil import components as comp
@@ -76,13 +81,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
 
     def _filter_pip_requires_line(self, line):
-        if line.lower().find('keystoneclient') != -1:
-            return None
-        if line.lower().find('ldap') != -1:
-            return None
-        if line.lower().find('http://tarballs.openstack.org') != -1:
-            return None
-        if line.lower().find('memcached') != -1:
+        if utils.has_any(line.lower(), 'keystoneclient', 'ldap', 'http://tarballs.openstack.org', 'memcached'):
             return None
         return line
 
@@ -101,12 +100,16 @@ class KeystoneInstaller(comp.PythonInstallComponent):
     def env_exports(self):
         params = khelper.get_shared_params(**utils.merge_dicts(self.options,
                                                                khelper.get_shared_passwords(self)))
-        to_set = {}
+        to_set = OrderedDict()
         to_set['OS_PASSWORD'] = params['admin_password']
         to_set['OS_TENANT_NAME'] = params['demo_tenant']
         to_set['OS_USERNAME'] = params['demo_user']
         to_set['OS_AUTH_URL'] = params['endpoints']['public']['uri']
         to_set['SERVICE_ENDPOINT'] = params['endpoints']['admin']['uri']
+        for (endpoint, details) in params['endpoints'].items():
+            if endpoint.find('templated') != -1:
+                continue
+            to_set[("KEYSTONE_%s_URI" % (endpoint.upper()))] = details['uri']
         return to_set
 
     @property

@@ -69,6 +69,9 @@ SKIP_CHECKS = [
     re.compile(r"^[.]", re.I),
 ]
 
+# File extensions we will skip over (typically of content hashes)
+BAD_EXTENSIONS = ['md5', 'sha', 'sfv']
+
 
 class Unpacker(object):
 
@@ -84,6 +87,9 @@ class Unpacker(object):
         return files
 
     def _pat_checker(self, fn, patterns):
+        (root_fn, fn_ext) = os.path.splitext(fn)
+        if utils.has_any(fn_ext.lower(), *BAD_EXTENSIONS):
+            return False
         for pat in patterns:
             if pat.match(fn):
                 return True

@@ -359,16 +359,14 @@ def _array_begins_with(haystack, needle):
     return True
 
 
-def kill(pid, max_try=4, wait_time=1, sig=signal.SIGKILL):
-    if not is_running(pid) or is_dry_run():
-        return (True, 0)
+def _attempt_kill(pid, signal_type, max_try, wait_time):
     killed = False
     attempts = 0
     for _i in range(0, max_try):
         try:
             LOG.debug("Attempting to kill pid %s" % (pid))
             attempts += 1
-            os.kill(pid, sig)
+            os.kill(pid, signal_type)
             LOG.debug("Sleeping for %s seconds before next attempt to kill pid %s" % (wait_time, pid))
             sleep(wait_time)
         except OSError as e:
@@ -379,6 +377,19 @@ def kill(pid, max_try=4, wait_time=1, sig=signal.SIGKILL):
                 LOG.debug("Sleeping for %s seconds before next attempt to kill pid %s" % (wait_time, pid))
                 sleep(wait_time)
     return (killed, attempts)
+
+
+def kill(pid, max_try=4, wait_time=1):
+    if not is_running(pid) or is_dry_run():
+        return (True, 0)
+    (killed, i_attempts) = _attempt_kill(pid, signal.SIGINT, int(max_try / 2), wait_time)
+    if killed:
+        return (True, i_attempts)
+    (killed, k_attempts) = _attempt_kill(pid, signal.SIGKILL, int(max_try / 2), wait_time)
+    if killed:
+        return (True, i_attempts + k_attempts)
+    else:
+        return (False, i_attempts + k_attempts)
 
 
 def fork(program, app_dir, pid_fn, stdout_fn, stderr_fn, *args):

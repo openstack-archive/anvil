@@ -16,6 +16,11 @@
 
 import io
 
+try:
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
+
 from anvil import cfg
 from anvil import colorizer
 from anvil import components as comp
@@ -168,17 +173,17 @@ class NovaInstaller(comp.PythonInstallComponent):
         return list(CONFIGS)
 
     def _filter_pip_requires_line(self, line):
-        if line.lower().find('quantumclient') != -1:
-            return None
-        if line.lower().find('glance') != -1:
+        if utils.has_any(line.lower(), 'quantumclient', 'glance'):
             return None
         return line
 
     @property
     def env_exports(self):
-        to_set = {}
-        to_set['NOVA_VERSION'] = self.get_option('nova_version')
-        to_set['COMPUTE_API_VERSION'] = self.get_option('nova_version')
+        to_set = OrderedDict()
+        to_set['OS_COMPUTE_API_VERSION'] = self.get_option('nova_version')
+        n_params = nhelper.get_shared_params(**self.options)
+        for (endpoint, details) in n_params['endpoints'].items():
+            to_set[("NOVA_%s_URI" % (endpoint.upper()))] = details['uri']
         return to_set
 
     def verify(self):
