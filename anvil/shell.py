@@ -382,10 +382,10 @@ def _attempt_kill(pid, signal_type, max_try, wait_time):
 def kill(pid, max_try=4, wait_time=1):
     if not is_running(pid) or is_dry_run():
         return (True, 0)
-    (killed, i_attempts) = _attempt_kill(pid, signal.SIGINT, max_try / 2, wait_time)
+    (killed, i_attempts) = _attempt_kill(pid, signal.SIGINT, int(max_try / 2), wait_time)
     if killed:
         return (True, i_attempts)
-    (killed, k_attempts) = _attempt_kill(pid, signal.SIGKILL, max_try / 2, wait_time)
+    (killed, k_attempts) = _attempt_kill(pid, signal.SIGKILL, int(max_try / 2), wait_time)
     if killed:
         return (True, i_attempts + k_attempts)
     else:
