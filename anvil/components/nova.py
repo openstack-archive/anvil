@@ -180,8 +180,7 @@ class NovaInstaller(comp.PythonInstallComponent):
     @property
     def env_exports(self):
         to_set = OrderedDict()
-        to_set['NOVA_VERSION'] = self.get_option('nova_version')
-        to_set['COMPUTE_API_VERSION'] = self.get_option('nova_version')
+        to_set['OS_COMPUTE_API_VERSION'] = self.get_option('nova_version')
         n_params = nhelper.get_shared_params(**self.options)
         for (endpoint, details) in n_params['endpoints'].items():
             to_set[("NOVA_%s_URI" % (endpoint.upper()))] = details['uri']
