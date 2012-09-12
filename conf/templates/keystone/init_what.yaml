@@ -91,7 +91,7 @@ tenants:
 users:
 -   email: demo@example.com
     name: demo
-    password: '$keystone.admin_password'
+    password: '$keystone.demo_password'
     roles:
     - anotherrole:demo
     - Member:demo
