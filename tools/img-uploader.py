@@ -19,21 +19,16 @@ if os.path.exists(os.path.join(possible_topdir,
 from anvil import log as logging
 from anvil.components.helpers import glance
 
+from anvil import passwords
+
 
 def get_password(user):
-    pw = None
-    while pw is None:
-        prompt = "Please enter the keystone password for %s: " % (user)
-        apw = getpass.getpass(prompt)
-        if len(apw) == 0:
-            print("Empty password not allowed!")
-            continue
-        prompt = "Confirm password: "
-        bpw = getpass.getpass(prompt)
-        if not apw == bpw:
-            print("Passwords do not match!")
-        else:
-            pw = apw
+    pw_storage = passwords.KeyringProxy(path='/etc/anvil/passwords.cfg')
+    lookup_name = "%s_password" % (user)
+    prompt = "Please enter the keystone password for user %s: " % (user)
+    (exists, pw) = pw_storage.read(lookup_name, prompt)
+    if not exists:
+        pw_storage.save(lookup_name, pw)
     return pw
 
 

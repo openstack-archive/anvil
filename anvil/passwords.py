@@ -47,8 +47,10 @@ class FixedCryptedFileKeyring(CryptedFileKeyring):
 
 class KeyringProxy(object):
     def __init__(self, path, keyring_encrypted=False, enable_prompt=True, random_on_empty=True):
-        self.path = path
         self.keyring_encrypted = keyring_encrypted
+        if self.keyring_encrypted and not path.endswith(".crypt"):
+            path = "%s.crypt" % (path)
+        self.path = path
         if keyring_encrypted:
             self.ring = FixedCryptedFileKeyring()
         else:
