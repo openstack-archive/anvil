@@ -117,7 +117,7 @@ components:
         -   name: python-setuptools
             removable: false
         pip_to_package:
-        # Shared pypi packages + there package information.
+        # Shared pypi packages + their package information.
         # Packages is what is really used for installation (the pypi name
         # is just for matching since the general section is not python code).
         -   name: pylint 
@@ -220,6 +220,7 @@ components:
                           target: "/usr/lib/python2.6/site-packages/webob"
         pips:
         # Pips that aren't packages yet (or versions aren't right...)
+        -   name: cmd2
         -   name: coverage
         -   name: distribute
             removable: false
@@ -232,6 +233,10 @@ components:
         -   name: pycrypto
             options: # Force it to upgrade
                 - "-U"
+            removable: false
+        # This seems to cause conflicts with
+        # the yum version that comes installed so use the pip version
+        -   name: pyparsing 
             removable: false
         -   name: requests
         -   name: sphinx
@@ -445,10 +450,6 @@ components:
         pips:
         -   name: cliff
         -   name: cliff-tablib
-        # This seems to cause conflicts with
-        # the yum version that comes installed so use the pip version
-        -   name: pyparsing 
-            removable: false
     rabbit-mq:
         action_classes:
             install: anvil.components.rabbit:RabbitInstaller
