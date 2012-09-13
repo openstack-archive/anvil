@@ -66,7 +66,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
                                        self.distro.get_command_config('apache', 'name'),
                                        'horizon_error.log')
 
-    def _filter_pip_requires_line(self, line):
+    def _filter_pip_requires_line(self, fn, line):
         # Knock off all nova, quantum, swift, keystone, cinder
         # clients since anvil will be making sure those are installed
         # instead of asking pip to do it...
