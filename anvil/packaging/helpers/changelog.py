@@ -29,35 +29,39 @@ import textwrap
 import iso8601
 
 from anvil import shell as sh
+from anvil import utils
+
+PER_CALL_AM = 50
 
 
 class GitChangeLog(object):
     __meta__ = abc.ABCMeta
 
-    def __init__(self, wkdir, max_history=100):
+    def __init__(self, wkdir, max_history=-1):
         self.wkdir = wkdir
         self.max_history = max_history
         self.date_buckets = None
         self.mail_mapping = None
 
-    def _parse_mailmap():
+    def _parse_mailmap(self):
         if self.mail_mapping is not None:
             return self.mail_mapping
         mapping = {}
         mailmap_fn = sh.joinpths(self.wkdir, '.mailmap')
-        if os.path.exists(mailmap_fn):
-            fp = sh.load_file(mailmap_fn).splitlines()
-            for l in fp:
-                l = l.strip()
-                if not l.startswith('#') and ' ' in l:
-                    canonical_email, alias = [x for x in l.split(' ')
+        for line in sh.load_file(mailmap_fn).splitlines():
+            line = line.strip()
+            if not line.startswith('#') and ' ' in line:
+                try:
+                    canonical_email, alias = [x for x in line.split(' ')
                                               if x.startswith('<')]
                     mapping[alias] = canonical_email
+                except (TypeError, ValueError, IndexError):
+                    pass
         self.mail_mapping = mapping
-        self.mail_mapping
+        return self.mail_mapping
 
-    def _get_commit_detail(self, commit, field):
-        detail_cmd = ['git', 'log', '-1', "--pretty=format:%s" % field, commit]
+    def _get_commit_detail(self, commit, field, am=1):
+        detail_cmd = ['git', 'log', '--color=never', '-%s' % (am), "--pretty=format:%s" % (field), commit]
         (stdout, _stderr) = sh.execute(*detail_cmd, cwd=self.wkdir)
         ret = stdout.strip('\n').splitlines()
         if len(ret) == 1:
@@ -67,47 +71,64 @@ class GitChangeLog(object):
             ret = "\n".join(ret)
         return ret
 
-    def _filter_logs(self, line):
-        if not line.strip():
-            return False
-        # Look for things after the commit hash
-        line = line[41:]
-        if (line.find('l10n: ') != 0 and line.find('Merge commit') != 0 and line.find('Merge branch') != 0):
-            return True
-        return False
-
     def get_log(self):
         if self.date_buckets is None:
             self.date_buckets = self._get_log()
         return self.date_buckets
 
+    def _skip_entry(self, summary, date, email, name):
+        email = email.lower().strip()
+        if email in ['jenkins@review.openstack.org']:
+            return True
+        summary = summary.lower().strip()
+        if summary.startswith('merge commit'):
+            return True
+        if summary.startswith("merge branch"):
+           return True
+        if not all([summary, date, email, name]):
+            return True
+        return False
+
     def _get_log(self):
-        log_cmd = ['git', 'log', '--pretty=oneline']
+        log_cmd = ['git', 'log', '--pretty=oneline', '--color=never']
         if self.max_history > 0:
             log_cmd += ['-n%s' % (self.max_history)]
         (sysout, _stderr) = sh.execute(*log_cmd, cwd=self.wkdir)
-        lines = filter(self._filter_logs, sysout.strip('\n').splitlines())
+        lines = sysout.strip('\n').splitlines()
 
         # Extract the raw commit details
-        mmp = self._parse_mailmap()
+        try:
+            mmp = self._parse_mailmap()
+        except IOError:
+            mmp = {}
         log = []
-        for line in lines:
-            fields = line.split(' ')
-            commit = fields[0]
-            # See: http://opensource.apple.com/source/Git/Git-26/src/git-htmldocs/pretty-formats.txt
-            #
-            # TODO(harlowja): can we stop making so many freaking external calls and join these?
-            details = self._get_commit_detail(commit, "[%s][%ai][%aE][%an]")
-            details_m = re.match(r"^\s*\[(.*?)\]\[(.*?)\]\[(.*?)\]\[(.*?)\]\s*$", details)
-            if not details_m:
-                continue
-            (summary, date, author_email, author_name) = details_m.groups()
-            log.append({
-                'summary': summary,
-                'when': iso8601.parse_date(date),
-                'author_email': mmp.get(author_email, author_email),
-                'author_name': author_name,
-            })
+        with utils.progress_bar("Git changelog analysis", len(lines) + 1) as pb:
+            for i in range(0, len(lines), PER_CALL_AM):
+                pb.update(i)
+
+                line = lines[i]
+                fields = line.split(' ')
+                if not len(fields):
+                    continue
+
+                # See: http://opensource.apple.com/source/Git/Git-26/src/git-htmldocs/pretty-formats.txt
+                commit_id = fields[0]
+                details = self._get_commit_detail(commit_id, "[%s][%ai][%aE][%an]", PER_CALL_AM)
+                for det in details.splitlines():
+                    details_m = re.match(r"^\s*\[(.*?)\]\[(.*?)\]\[(.*?)\]\[(.*?)\]\s*$", det)
+                    if not details_m:
+                        continue
+                    (summary, date, author_email, author_name) = details_m.groups()
+                    author_email = mmp.get(author_email, author_email)
+                    date = iso8601.parse_date(date)
+                    if self._skip_entry(summary, date, author_email, author_name):
+                        continue
+                    log.append({
+                        'summary': summary,
+                        'when': date,
+                        'author_email': author_email,
+                        'author_name': author_name,
+                    })
 
         # Bucketize the dates by day
         date_buckets = {}
@@ -138,10 +159,11 @@ class RpmChangeLog(GitChangeLog):
                 lines.append(header)
                 summary = msg['summary']
                 sublines = textwrap.wrap(summary, 77)
-                lines.append("- %s" % sublines[0])
-                if len(sublines) > 1:
-                    for subline in sublines[1:]:
-                        lines.append("  %s" % subline)
+                if len(sublines):
+                    lines.append("- %s" % sublines[0])
+                    if len(sublines) > 1:
+                        for subline in sublines[1:]:
+                            lines.append("  %s" % subline)
         # Replace utf8 oddities with ? just incase
         contents = "\n".join(lines)
         contents = contents.decode('utf8').encode('ascii', 'replace')
