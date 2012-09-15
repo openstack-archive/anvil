@@ -87,7 +87,7 @@ class Unpacker(object):
         return files
 
     def _pat_checker(self, fn, patterns):
-        (root_fn, fn_ext) = os.path.splitext(fn)
+        (_root_fn, fn_ext) = os.path.splitext(fn)
         if utils.has_any(fn_ext.lower(), *BAD_EXTENSIONS):
             return False
         for pat in patterns:

@@ -15,7 +15,6 @@
 #    under the License..
 
 import abc
-import os
 
 from anvil import cfg
 from anvil import colorizer

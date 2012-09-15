@@ -24,8 +24,6 @@ from keyring.backend import UncryptedFileKeyring
 from keyring.util import properties
 
 from anvil import log as logging
-from anvil import shell as sh
-from anvil import utils
 
 LOG = logging.getLogger(__name__)
 RAND_PW_LEN = 20

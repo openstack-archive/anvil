@@ -7,6 +7,8 @@ import sys
 
 import yaml
 
+
 if __name__ == "__main__":
-    with open(sys.argv[1], 'r') as f:
-        yaml.load(f)
+    fh = open(sys.argv[1], 'r')
+    yaml.load(fh.read())
+    fh.close()
