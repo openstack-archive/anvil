@@ -85,6 +85,8 @@ class GitChangeLog(object):
             return True
         if summary.startswith("merge branch"):
            return True
+        if summary.startswith("merge remote"):
+           return True
         if not all([summary, date, email, name]):
             return True
         return False
