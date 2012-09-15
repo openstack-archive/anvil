@@ -25,7 +25,7 @@ class OpenStackClientUninstaller(comp.PythonUninstallComponent):
 
 
 class OpenStackClientInstaller(comp.PythonInstallComponent):
-    def _filter_pip_requires_line(self, line):
+    def _filter_pip_requires_line(self, fn, line):
         if line.lower().find('keystoneclient') != -1:
             return None
         if line.lower().find('novaclient') != -1:

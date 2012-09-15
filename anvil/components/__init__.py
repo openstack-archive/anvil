@@ -407,7 +407,7 @@ class PythonInstallComponent(PkgInstallComponent):
                         continue
                     elif s_line.startswith("#"):
                         new_lines.append(s_line)
-                    elif not self._filter_pip_requires_line(s_line):
+                    elif not self._filter_pip_requires_line(fn, s_line):
                         new_lines.append(("# %s" % (s_line)))
                     else:
                         new_lines.append(s_line)
@@ -415,7 +415,8 @@ class PythonInstallComponent(PkgInstallComponent):
                 sh.write_file_and_backup(fn, contents)
         return len(req_fns)
 
-    def _filter_pip_requires_line(self, line):
+    def _filter_pip_requires_line(self, fn, line):
+        # Return none to filter or the line itself to leave alone...
         return line
 
     def pre_install(self):

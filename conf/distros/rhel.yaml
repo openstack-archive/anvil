@@ -87,6 +87,7 @@ components:
             removable: false
         -   name: iputils
             removable: false
+        # Needed to build the newer lxml version used by nova
         -   name: libxml2-devel
             removable: false
         -   name: libxslt-devel
@@ -150,10 +151,6 @@ components:
         -   name: lockfile
             package:
                 name: python-lockfile
-        -   name: lxml
-            package:
-                name: python-lxml
-                removable: false
         -   name: mock
             package:
                 name: python-mock
@@ -223,6 +220,11 @@ components:
         -   name: cmd2
         -   name: coverage
         -   name: distribute
+            removable: false
+        -   name: lxml
+            version: "2.3.5"
+            options: # Force it to upgrade
+                - "-U"
             removable: false
         -   name: nose-exclude
         -   name: nosehtmloutput

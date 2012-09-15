@@ -85,8 +85,8 @@ class GlanceInstaller(comp.PythonInstallComponent):
     def config_files(self):
         return list(CONFIGS)
 
-    def _filter_pip_requires_line(self, line):
-        if utils.has_any(line.lower(), 'swift'):
+    def _filter_pip_requires_line(self, fn, line):
+        if utils.has_any(line.lower(), 'swift', 'keystoneclient'):
             return None
         return line
 

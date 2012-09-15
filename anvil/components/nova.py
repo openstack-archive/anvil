@@ -172,7 +172,7 @@ class NovaInstaller(comp.PythonInstallComponent):
     def config_files(self):
         return list(CONFIGS)
 
-    def _filter_pip_requires_line(self, line):
+    def _filter_pip_requires_line(self, fn, line):
         if utils.has_any(line.lower(), 'quantumclient', 'glance'):
             return None
         return line

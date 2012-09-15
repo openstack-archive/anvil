@@ -86,7 +86,7 @@ def execute(*cmd, **kwargs):
     shell = kwargs.pop('shell', False)
 
     # Ensure all string args
-    execute_cmd = list()
+    execute_cmd = []
     for c in cmd:
         execute_cmd.append(str(c))
 
@@ -308,55 +308,23 @@ def chown_r(path, uid, gid, run_as_root=True):
 
 
 def _explode_path(path):
-    parts = list()
+    dirs = []
+    comps = []
     path = abspth(path)
-    while path != ROOT_PATH and path:
-        (path, name) = os.path.split(path)
-        parts.append(name)
-    parts.reverse()
-    return parts
-
-
-def _explode_form_path(path):
-    ret_paths = list()
-    ret_paths.append(ROOT_PATH)
-    ex_path = _explode_path(path)
-    for i in range(len(ex_path)):
-        to_make = [ROOT_PATH] + ex_path[0:i] + [ex_path[i]]
-        ret_paths.append(joinpths(*to_make))
-    return ret_paths
+    dirs.append(path)
+    (head, tail) = os.path.split(path)
+    while tail:
+        dirs.append(head)
+        comps.append(tail)
+        path = head
+        (head, tail) = os.path.split(path)
+    dirs.sort()
+    comps.reverse()
+    return (dirs, comps)
 
 
 def explode_path(path):
-    return _explode_form_path(path)
-
-
-def remove_parents(child_path, paths):
-    if not paths:
-        return list()
-    cleaned_paths = [abspth(p) for p in paths]
-    cleaned_child_path = abspth(child_path)
-    to_check_paths = [_explode_path(p) for p in cleaned_paths]
-    check_path = _explode_path(cleaned_child_path)
-    new_paths = list()
-    for p in to_check_paths:
-        if _array_begins_with(p, check_path):
-            pass
-        else:
-            new_paths.append(p)
-    ret_paths = list()
-    for p in new_paths:
-        ret_paths.append(abspth(os.sep + os.sep.join(p)))
-    return ret_paths
-
-
-def _array_begins_with(haystack, needle):
-    if len(haystack) > len(needle):
-        return False
-    for i in range(len(haystack)):
-        if haystack[i] != needle[i]:
-            return False
-    return True
+    return _explode_path(path)[0]
 
 
 def _attempt_kill(pid, signal_type, max_try, wait_time):
@@ -467,8 +435,8 @@ def is_running(pid):
 
 
 def mkdirslist(path):
-    dirs_possible = _explode_form_path(path)
-    dirs_made = list()
+    dirs_possible = explode_path(path)
+    dirs_made = []
     for check_path in dirs_possible:
         if not isdir(check_path):
             mkdir(check_path, False)
