@@ -23,6 +23,7 @@
 # Author: Brian C. Lane <bcl@redhat.com>
 
 import abc
+import re
 import textwrap
 
 import iso8601
@@ -37,6 +38,23 @@ class GitChangeLog(object):
         self.wkdir = wkdir
         self.max_history = max_history
         self.date_buckets = None
+        self.mail_mapping = None
+
+    def _parse_mailmap():
+        if self.mail_mapping is not None:
+            return self.mail_mapping
+        mapping = {}
+        mailmap_fn = sh.joinpths(self.wkdir, '.mailmap')
+        if os.path.exists(mailmap_fn):
+            fp = sh.load_file(mailmap_fn).splitlines()
+            for l in fp:
+                l = l.strip()
+                if not l.startswith('#') and ' ' in l:
+                    canonical_email, alias = [x for x in l.split(' ')
+                                              if x.startswith('<')]
+                    mapping[alias] = canonical_email
+        self.mail_mapping = mapping
+        self.mail_mapping
 
     def _get_commit_detail(self, commit, field):
         detail_cmd = ['git', 'log', '-1', "--pretty=format:%s" % field, commit]
@@ -71,6 +89,7 @@ class GitChangeLog(object):
         lines = filter(self._filter_logs, sysout.strip('\n').splitlines())
 
         # Extract the raw commit details
+        mmp = self._parse_mailmap()
         log = []
         for line in lines:
             fields = line.split(' ')
@@ -78,14 +97,15 @@ class GitChangeLog(object):
             # See: http://opensource.apple.com/source/Git/Git-26/src/git-htmldocs/pretty-formats.txt
             #
             # TODO(harlowja): can we stop making so many freaking external calls and join these?
-            summary = self._get_commit_detail(commit, "%s")
-            date = self._get_commit_detail(commit, "%ai")
-            author_email = self._get_commit_detail(commit, "%aE")
-            author_name = self._get_commit_detail(commit, "%an")
+            details = self._get_commit_detail(commit, "[%s][%ai][%aE][%an]")
+            details_m = re.match(r"^\s*\[(.*?)\]\[(.*?)\]\[(.*?)\]\[(.*?)\]\s*$", details)
+            if not details_m:
+                continue
+            (summary, date, author_email, author_name) = details_m.groups()
             log.append({
                 'summary': summary,
                 'when': iso8601.parse_date(date),
-                'author_email': author_email,
+                'author_email': mmp.get(author_email, author_email),
                 'author_name': author_name,
             })
 
