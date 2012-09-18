@@ -52,9 +52,9 @@ def main():
     logging.setupLogging(logging.DEBUG)
     params = {
         'keystone': {
-            'demo_tenant': options.tenant,
-            'demo_user': options.user,
-            'demo_password': get_password(options.user),
+            'admin_tenant': options.tenant,
+            'admin_user': options.user,
+            'admin_password': get_password(options.user),
             'endpoints': {
                 'public': {
                     'uri': options.keystone_uri,
