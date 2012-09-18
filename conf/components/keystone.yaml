@@ -42,6 +42,5 @@ nova:
 wanted_passwords:
   service_token: 'service admin token'
   admin_password: 'keystone admin user'
-  demo_password: 'keystone demo user'
   service_password: 'service authentication password'
 ...
