@@ -118,6 +118,6 @@ class InstallAction(action.Action):
             ),
             component_order,
             instances,
-            "post-install"
+            "post-install",
             'uninstall', 'unconfigure', 'pre-uninstall', 'post-uninstall'
             )
