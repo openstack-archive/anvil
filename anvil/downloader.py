@@ -130,8 +130,8 @@ class UrlLibDownloader(Downloader):
 def download(distro, uri, target_dir, **kwargs):
     puri = urlparse(uri)
     scheme = puri.scheme.lower()
-    path = puri.path
-    if scheme in ['git'] or path.find('.git') != -1:
+    path = puri.path.strip().split("?", 1)[0]
+    if scheme == 'git' or path.lower().endswith('.git'):
         downloader = GitDownloader(distro, uri, target_dir)
         downloader.download()
     elif scheme in ['http', 'https']:
@@ -140,7 +140,6 @@ def download(distro, uri, target_dir, **kwargs):
             downloader = UrlLibDownloader(uri, sh.joinpths(tdir, fn))
             downloader.download()
             if fn.endswith('.tar.gz'):
-                dirs_made = sh.mkdirslist(target_dir)
                 cmd = ['tar', '-xzvf', sh.joinpths(tdir, fn), '-C', target_dir]
                 sh.execute(*cmd)
             elif fn.endswith('.zip'):

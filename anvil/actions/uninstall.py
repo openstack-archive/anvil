@@ -14,8 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import functools
-
 from anvil import action
 from anvil import colorizer
 from anvil import log
