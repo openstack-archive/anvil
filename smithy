@@ -39,6 +39,7 @@ bootstrap_rh()
 {
     echo "Bootstrapping RHEL: $1"
     echo "Please wait..."
+
     echo "Installing node.js yum repository configuration."
     JS_REPO_RPM_FN="nodejs-stable-release.noarch.rpm"
     if [ ! -f "/tmp/$JS_REPO_RPM_FN" ]; then
@@ -49,10 +50,8 @@ bootstrap_rh()
         fi
     fi
     echo "Installing /tmp/$JS_REPO_RPM_FN."
-    rpm -i --replacepkgs "/tmp/$JS_REPO_RPM_FN" 2>&1
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
+    yum install --assumeyes --nogpgcheck -t "/tmp/$JS_REPO_RPM_FN" 2>&1
+
     echo "Locating the EPEL rpm."
     EPEL_RPM=$(curl -s "http://mirrors.kernel.org/fedora-epel/6/i386/" | grep -io ">\s*epel.*.rpm\s*<" | grep -io "epel.*.rpm")
     if [ $? -ne 0 ]; then
@@ -66,22 +65,15 @@ bootstrap_rh()
         fi
     fi
     echo "Installing /tmp/$EPEL_RPM."
-    rpm -i --replacepkgs "/tmp/$EPEL_RPM" 2>&1
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
+    yum install --assumeyes --nogpgcheck -t "/tmp/$EPEL_RPM" 2>&1
+
     echo "Installing needed distribution dependencies:"
     pkgs="gcc git pylint python python-netifaces python-pep8 python-cheetah"
     pkgs="$pkgs python-pip python-progressbar PyYAML python-ordereddict python-iso8601"
     yum install -y $pkgs 2>&1
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
+
     echo "Installing needed pypi dependencies:"
     pip-python install -U -I termcolor iniparse "keyring==0.9.2"
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
     return 0
 }
 
