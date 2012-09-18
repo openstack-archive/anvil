@@ -87,7 +87,7 @@ class Unpacker(object):
         return files
 
     def _pat_checker(self, fn, patterns):
-        (root_fn, fn_ext) = os.path.splitext(fn)
+        (_root_fn, fn_ext) = os.path.splitext(fn)
         if utils.has_any(fn_ext.lower(), *BAD_EXTENSIONS):
             return False
         for pat in patterns:
@@ -279,11 +279,14 @@ class Image(object):
             self._check_name(kernel_image_name)
             LOG.info('Adding kernel %s to glance.', colorizer.quote(kernel_image_name))
             LOG.info("Please wait installing...")
+            args = {
+                'container_format': kernel['container_format'],
+                'disk_format': kernel['disk_format'],
+                'name': kernel_image_name,
+                'is_public': True,
+            }
             with open(kernel['file_name'], 'r') as fh:
-                resource = self.client.images.create(data=fh,
-                    container_format=kernel['container_format'],
-                    disk_format=kernel['disk_format'],
-                    name=kernel_image_name)
+                resource = self.client.images.create(data=fh, **args)
                 kernel_id = resource.id
 
         # Upload the ramdisk, if we have one
@@ -294,26 +297,31 @@ class Image(object):
             self._check_name(ram_image_name)
             LOG.info('Adding ramdisk %s to glance.', colorizer.quote(ram_image_name))
             LOG.info("Please wait installing...")
+            args = {
+                'container_format': initrd['container_format'],
+                'disk_format': initrd['disk_format'],
+                'name': ram_image_name,
+                'is_public': True,
+            }
             with open(initrd['file_name'], 'r') as fh:
-                resource = self.client.images.create(data=fh,
-                    container_format=initrd['container_format'],
-                    disk_format=initrd['disk_format'],
-                    name=ram_image_name)
+                resource = self.client.images.create(data=fh, **args)
                 initrd_id = resource.id
 
         # Upload the root, we must have one...
         LOG.info('Adding image %s to glance.', colorizer.quote(image_name))
         self._check_name(image_name)
-        args = dict()
-        args['name'] = image_name
+        args = {
+            'name': image_name,
+            'container_format': location['container_format'],
+            'disk_format': location['disk_format'],
+            'is_public': True,
+            'properties': {},
+        }
         if kernel_id or initrd_id:
-            args['properties'] = dict()
             if kernel_id:
                 args['properties']['kernel_id'] = kernel_id
             if initrd_id:
                 args['properties']['ramdisk_id'] = initrd_id
-        args['container_format'] = location['container_format']
-        args['disk_format'] = location['disk_format']
         LOG.info("Please wait installing...")
         with open(location['file_name'], 'r') as fh:
             resource = self.client.images.create(data=fh, **args)
@@ -357,9 +365,9 @@ class UploadService(object):
     def _get_token(self, kclient_v2):
         LOG.info("Getting your keystone token so that image uploads may proceed.")
         params = self.params['keystone']
-        client = kclient_v2.Client(username=params['demo_user'],
-            password=params['demo_password'],
-            tenant_name=params['demo_tenant'],
+        client = kclient_v2.Client(username=params['admin_user'],
+            password=params['admin_password'],
+            tenant_name=params['admin_tenant'],
             auth_url=params['endpoints']['public']['uri'])
         return client.auth_token
 

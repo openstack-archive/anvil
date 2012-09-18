@@ -104,11 +104,6 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         to_set['OS_PASSWORD'] = params['admin_password']
         to_set['OS_TENANT_NAME'] = params['admin_tenant']
         to_set['OS_USERNAME'] = params['admin_user']
-
-        to_set['DEMO_OS_PASSWORD'] = params['demo_password']
-        to_set['DEMO_OS_TENANT_NAME'] = params['demo_tenant']
-        to_set['DEMO_OS_USERNAME'] = params['demo_user']
-
         to_set['OS_AUTH_URL'] = params['endpoints']['public']['uri']
         to_set['SERVICE_ENDPOINT'] = params['endpoints']['admin']['uri']
         for (endpoint, details) in params['endpoints'].items():

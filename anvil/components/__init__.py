@@ -116,8 +116,9 @@ class PkgInstallComponent(component.Component):
             utils.log_iterable(uris, logger=LOG,
                     header="Downloading from %s uris" % (len(uris)))
             self.tracewriter.download_happened(target_dir, from_uri)
-            dirs_made = down.download(self.distro, from_uri, target_dir)
+            dirs_made = sh.mkdirslist(target_dir)
             self.tracewriter.dirs_made(*dirs_made)
+            down.download(self.distro, from_uri, target_dir)
             return uris
 
     def config_params(self, config_fn):
@@ -684,10 +685,9 @@ class PkgUninstallComponent(component.Component):
     def uninstall(self):
         self._uninstall_pkgs()
         self._uninstall_touched_files()
-        self._uninstall_dirs()
 
     def post_uninstall(self):
-        pass
+        self._uninstall_dirs()
 
     def pre_uninstall(self):
         pass
@@ -719,7 +719,7 @@ class PkgUninstallComponent(component.Component):
 
     def _uninstall_dirs(self):
         dirs_made = self.tracereader.dirs_made()
-        dirs_alive = filter(sh.isdir, [sh.abspth(d) for d in dirs_made])
+        dirs_alive = filter(sh.isdir, dirs_made)
         if dirs_alive:
             utils.log_iterable(dirs_alive, logger=LOG,
                 header="Removing %s created directories" % (len(dirs_alive)))

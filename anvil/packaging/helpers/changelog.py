@@ -37,28 +37,22 @@ PER_CALL_AM = 50
 class GitChangeLog(object):
     __meta__ = abc.ABCMeta
 
-    def __init__(self, wkdir, max_history=-1):
+    def __init__(self, wkdir):
         self.wkdir = wkdir
-        self.max_history = max_history
         self.date_buckets = None
-        self.mail_mapping = None
 
     def _parse_mailmap(self):
-        if self.mail_mapping is not None:
-            return self.mail_mapping
         mapping = {}
         mailmap_fn = sh.joinpths(self.wkdir, '.mailmap')
         for line in sh.load_file(mailmap_fn).splitlines():
             line = line.strip()
             if not line.startswith('#') and ' ' in line:
                 try:
-                    canonical_email, alias = [x for x in line.split(' ')
-                                              if x.startswith('<')]
+                    (canonical_email, alias) = [x for x in line.split(' ') if x.startswith('<')]
                     mapping[alias] = canonical_email
                 except (TypeError, ValueError, IndexError):
                     pass
-        self.mail_mapping = mapping
-        return self.mail_mapping
+        return mapping
 
     def _get_commit_detail(self, commit, field, am=1):
         detail_cmd = ['git', 'log', '--color=never', '-%s' % (am), "--pretty=format:%s" % (field), commit]
@@ -84,15 +78,15 @@ class GitChangeLog(object):
         if summary.startswith('merge commit'):
             return True
         if summary.startswith("merge branch"):
-           return True
+            return True
+        if summary.startswith("merge remote"):
+            return True
         if not all([summary, date, email, name]):
             return True
         return False
 
     def _get_log(self):
         log_cmd = ['git', 'log', '--pretty=oneline', '--color=never']
-        if self.max_history > 0:
-            log_cmd += ['-n%s' % (self.max_history)]
         (sysout, _stderr) = sh.execute(*log_cmd, cwd=self.wkdir)
         lines = sysout.strip('\n').splitlines()
 

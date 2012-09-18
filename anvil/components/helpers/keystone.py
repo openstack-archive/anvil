@@ -136,23 +136,19 @@ def get_shared_passwords(component):
     mp = {}
     mp['service_token'] = component.get_password("service_token")
     mp['admin_password'] = component.get_password('admin_password')
-    mp['demo_password'] = component.get_password('demo_password')
     mp['service_password'] = component.get_password('service_password')
     return mp
 
 
-def get_shared_params(ip, service_token, admin_password, demo_password, service_password,
+def get_shared_params(ip, service_token, admin_password, service_password,
                       auth_host, auth_port, auth_proto, service_host, service_port, service_proto,
                       **kwargs):
 
     mp = {}
 
     # Tenants and users
-    mp['tenants'] = ['admin', 'service', 'demo']
-    mp['users'] = ['admin', 'demo']
-
-    mp['demo_tenant'] = 'demo'
-    mp['demo_user'] = 'demo'
+    mp['tenants'] = ['admin', 'service']
+    mp['users'] = ['admin']
 
     mp['admin_tenant'] = 'admin'
     mp['admin_user'] = 'admin'
@@ -165,7 +161,6 @@ def get_shared_params(ip, service_token, admin_password, demo_password, service_
     # Tokens and passwords
     mp['service_token'] = service_token
     mp['admin_password'] = admin_password
-    mp['demo_password'] = demo_password
     mp['service_password'] = service_password
 
     host_ip = ip

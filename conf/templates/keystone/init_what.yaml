@@ -46,7 +46,6 @@ endpoints:
     region: RegionOne
 roles:
 - admin
-- anotherrole
 - KeystoneAdmin
 - KeystoneServiceAdmin
 # The Member role is used by Horizon and Swift so we need to keep it.
@@ -83,32 +82,20 @@ services:
     type: network
 tenants:
 -   description: Admin tenant
-    name: admin
--   description: Demo tenant
-    name: demo
+    name: '$keystone.admin_tenant'
 -   description: Service tenant
-    name: service
+    name: '$keystone.service_tenant'
 users:
--   email: demo@example.com
-    name: demo
-    password: '$keystone.demo_password'
-    roles:
-    - anotherrole:demo
-    - Member:demo
-    tenants:
-    - demo
 -   email: admin@example.com
-    name: admin
+    name: '$keystone.admin_user'
     password: '$keystone.admin_password'
     roles:
-    - admin:admin
-    - admin:demo
-    - KeystoneAdmin:admin
-    - KeystoneServiceAdmin:admin
+    - "${keystone.admin_user}:admin"
+    - "KeystoneAdmin:admin"
+    - "KeystoneServiceAdmin:admin"
     tenants:
-    - admin
+    - "${keystone.admin_tenant}"
     - service
-    - demo
 -   email: ec2@example.com
     name: ec2
     password: '$keystone.service_password'

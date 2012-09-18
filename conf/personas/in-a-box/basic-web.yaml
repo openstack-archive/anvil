@@ -9,10 +9,10 @@ components:
 - glance
 - glance-client
 - no-vnc
+- cinder-client
 - nova
 - nova-client
 # These seem needed for horizon (even if not used?)
-- cinder-client
 - quantum-client
 - swift-client
 - horizon

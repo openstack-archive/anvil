@@ -149,12 +149,12 @@ def ensure_anvil_dir():
             sh.chown_r(ANVIL_DIR, uid, gid)
 
 
-def store_current_settings(settings):
+def store_current_settings(c_settings):
     try:
         # Remove certain keys that just shouldn't be saved
-        to_save = dict(settings)
+        to_save = dict(c_settings)
         for k in ['action', 'verbose', 'dryrun']:
-            if k in settings:
+            if k in c_settings:
                 to_save.pop(k, None)
         with sh.Rooted(True):
             with open(SETTINGS_FN, 'w') as fh:

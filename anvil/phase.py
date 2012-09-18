@@ -28,45 +28,49 @@ LOG = logging.getLogger(__name__)
 class PhaseRecorder(object):
     def __init__(self, fn):
         self.fn = fn
+        self.state = None
 
     @contextmanager
-    def mark(self, phasename):
-        contents = dict()
-        contents['name'] = phasename
-        contents['when'] = utils.iso8601()
-        yield phasename
-        LOG.debug("Marking the completion of phase %r in file %r", phasename, self.fn)
-        lines = [json.dumps(contents), '']
-        sh.append_file(self.fn, utils.joinlinesep(*lines))
+    def mark(self, what):
+        contents = self.list_phases()
+        contents[what] = utils.iso8601()
+        yield what
+        sh.write_file(self.fn, json.dumps(contents))
 
-    def __contains__(self, phasename):
+    def unmark(self, what):
+        contents = self.list_phases()
+        contents.pop(what, None)
+        sh.write_file(self.fn, json.dumps(contents))
+
+    def __contains__(self, what):
         phases = self.list_phases()
-        if phasename in phases:
+        if what in phases:
             return True
         return False
 
     def list_phases(self):
-        phases = set()
+        if self.state is not None:
+            return self.state
         if not sh.isfile(self.fn):
-            return phases
-        for i, line in enumerate(sh.load_file(self.fn).splitlines()):
-            line = line.strip()
-            if line:
-                data = json.loads(line)
-                if not isinstance(data, dict):
-                    raise TypeError("Unknown phase entry in %s on line %s" % (self.fn, i + 1))
-                if 'name' in data:
-                    phases.add(data['name'])
-        return phases
+            self.state  = {}
+        else:
+            self.state = json.loads(sh.load_file(self.fn))
+        return self.state
 
 
-class NullPhaseRecorder(PhaseRecorder):
+class NullPhaseRecorder(object):
     def __init__(self):
-        PhaseRecorder.__init__(self, None)
+        pass
 
     @contextmanager
-    def mark(self, phasename):
-        yield phasename
+    def mark(self, what):
+        yield what
 
     def list_phases(self):
-        return set()
+        return {}
+
+    def unmark(self, what):
+        pass
+
+    def __contains__(self, what):
+        return False

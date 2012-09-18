@@ -15,7 +15,6 @@
 #    under the License..
 
 import abc
-import os
 
 from anvil import cfg
 from anvil import colorizer
@@ -46,6 +45,7 @@ class Action(object):
     def __init__(self, name, distro, root_dir, cli_opts):
         self.distro = distro
         self.root_dir = root_dir
+        self.phase_dir = sh.joinpths(root_dir, 'phases')
         self.name = name
         self.interpolator = cfg.YamlInterpolator(settings.COMPONENT_CONF_DIR)
         self.passwords = {}
@@ -223,26 +223,26 @@ class Action(object):
         exports_filename = "%s.rc" % (self.name)
         self._write_exports(component_order, instances, sh.joinpths("/etc/anvil", exports_filename))
 
-    def _get_phase_directory(self, name=None):
-        if not name:
-            name = self.name
-        return sh.joinpths(self.root_dir, "phases", name)
+    def _get_phase_filename(self, phase_name):
+        dir_path = self.phase_dir
+        sh.mkdirslist(dir_path)
+        real_name = phase_name.lower().strip().replace("-", '_').replace(" ", "_")
+        return sh.joinpths(dir_path, "%s.phases" % (real_name))
 
-    def _get_phase_filename(self, phase_name, base_name=None):
-        dir_path = self._get_phase_directory(base_name)
-        if not sh.isdir(dir_path):
-            sh.mkdirslist(dir_path)
-        return sh.joinpths(dir_path, "%s.phases" % (phase_name.lower()))
-
-    def _run_phase(self, functors, component_order, instances, phase_name):
+    def _run_phase(self, functors, component_order, instances, phase_name, *inv_phase_names):
         """
         Run a given 'functor' across all of the components, in order.
         """
-        component_results = dict()
-        if phase_name:
-            phase_recorder = phase.PhaseRecorder(self._get_phase_filename(phase_name))
-        else:
+        component_results = {}
+        if not phase_name:
             phase_recorder = phase.NullPhaseRecorder()
+        else:
+            phase_recorder = phase.PhaseRecorder(self._get_phase_filename(phase_name))
+
+        neg_phase_recs = []
+        if inv_phase_names:
+            for n in inv_phase_names:
+                neg_phase_recs.append(phase.PhaseRecorder(self._get_phase_filename(n)))
 
         def change_activate(instance, on_off):
             # Activate/deactivate them and there siblings (if any)
@@ -271,22 +271,13 @@ class Action(object):
                             result = functors.run(instance)
                         if functors.end:
                             functors.end(instance, result)
+                        for n in neg_phase_recs:
+                            n.unmark(c)
                     component_results[instance] = result
                     change_activate(instance, True)
                 except excp.NoTraceException:
                     pass
-        self._on_completion(phase_name, component_results)
         return component_results
-
-    def _get_opposite_stages(self, phase_name):
-        return ('', [])
-
-    def _on_completion(self, phase_name, results):
-        (base_name, to_destroy) = self._get_opposite_stages(phase_name)
-        for name in to_destroy:
-            fn = self._get_phase_filename(name, base_name)
-            if sh.isfile(fn):
-                sh.unlink(fn)
 
     def run(self, persona):
         instances = self._construct_instances(persona)
