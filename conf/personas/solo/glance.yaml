@@ -12,7 +12,7 @@ options:
 subsystems:
     glance:
     - api
-    - reg
+    - registry
 supports:
 - rhel
 ...

@@ -38,16 +38,21 @@ options:
 subsystems:
     glance:
     - api
-    - reg
+    - registry
+    keystone:
+    - all
     nova:
-    - api
-    - cauth
+    - api-ec2
+    - api-metadata
+    - api-os-compute
     - cert
-    - cpu
-    - net
-    - sched
-    - xvnc
-    - novnc
+    - compute
+    - consoleauth
+    - dhcpbridge
+    - network
+    - novncproxy
+    - scheduler
+    - xvpvncproxy
 supports:
 - rhel
 ...

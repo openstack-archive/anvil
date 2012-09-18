@@ -61,14 +61,6 @@ SYNC_DB_CMD = [sh.joinpths('$BIN_DIR', 'keystone-manage'),
                 # import_nova_auth: Import a dump of nova auth data into keystone.
                 'db_sync']
 
-# What to start
-APP_NAME = 'keystone-all'
-APP_OPTIONS = {
-    APP_NAME: ['--config-file=%s' % (sh.joinpths('$CONFIG_DIR', ROOT_CONF)),
-                "--debug", '-v',
-                '--log-config=%s' % (sh.joinpths('$CONFIG_DIR', LOGGING_CONF))],
-}
-
 
 class KeystoneUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -201,7 +193,6 @@ class KeystoneRuntime(comp.PythonRuntime):
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
         self.init_fn = sh.joinpths(self.get_option('trace_dir'), INIT_WHAT_HAPPENED)
 
-
     def _filter_init(self, init_what):
         endpoints = init_what['endpoints']
         adjusted_endpoints = []
@@ -241,15 +232,24 @@ class KeystoneRuntime(comp.PythonRuntime):
     @property
     def apps_to_start(self):
         apps = []
-        for app_name in APP_OPTIONS.keys():
-            apps.append({
-                'name': app_name,
-                'path': sh.joinpths(self.bin_dir, app_name),
-            })
+        for (name, _values) in self.subsystems.items():
+            real_name = "keystone-%s" % (name)
+            app_pth = sh.joinpths(self.bin_dir, real_name)
+            if sh.is_executable(app_pth):
+                apps.append({
+                    'name': real_name,
+                    'path': app_pth,
+                })
         return apps
 
     def app_options(self, app):
-        return APP_OPTIONS.get(app)
+        return [
+            '--config-file=%s' % (sh.joinpths('$CONFIG_DIR', ROOT_CONF)),
+            "--debug",
+            '--verbose',
+            '--nouse-syslog',
+            '--log-config=%s' % (sh.joinpths('$CONFIG_DIR', LOGGING_CONF)),
+        ]
 
 
 class KeystoneTester(comp.PythonTestingComponent):
