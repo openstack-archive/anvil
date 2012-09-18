@@ -258,11 +258,12 @@ class Registry(object):
 
 class Image(object):
 
-    def __init__(self, client, url):
+    def __init__(self, client, url, is_public):
         self.client = client
         self.registry = Registry(client)
         self.url = url
         self.parsed_url = urlparse.urlparse(url)
+        self.is_public = is_public
 
     def _check_name(self, name):
         LOG.info("Checking if image %s already exists already in glance.", colorizer.quote(name))
@@ -283,7 +284,7 @@ class Image(object):
                 'container_format': kernel['container_format'],
                 'disk_format': kernel['disk_format'],
                 'name': kernel_image_name,
-                'is_public': True,
+                'is_public': self.is_public,
             }
             with open(kernel['file_name'], 'r') as fh:
                 resource = self.client.images.create(data=fh, **args)
@@ -301,7 +302,7 @@ class Image(object):
                 'container_format': initrd['container_format'],
                 'disk_format': initrd['disk_format'],
                 'name': ram_image_name,
-                'is_public': True,
+                'is_public': self.is_public,
             }
             with open(initrd['file_name'], 'r') as fh:
                 resource = self.client.images.create(data=fh, **args)
@@ -314,7 +315,7 @@ class Image(object):
             'name': image_name,
             'container_format': location['container_format'],
             'disk_format': location['disk_format'],
-            'is_public': True,
+            'is_public': self.is_public,
             'properties': {},
         }
         if kernel_id or initrd_id:
@@ -398,7 +399,8 @@ class UploadService(object):
                                 header="Attempting to download+extract+upload %s images" % len(urls))
             for url in urls:
                 try:
-                    (name, img_id) = Image(client, url).install()
+                    img_handle = Image(client, url, self.params.get('public', True))
+                    (name, img_id) = img_handle.install()
                     LOG.info("Installed image named %s with image id %s.", colorizer.quote(name), colorizer.quote(img_id))
                     am_installed += 1
                 except (IOError,
