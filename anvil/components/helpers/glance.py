@@ -283,9 +283,7 @@ class Image(object):
                 'container_format': kernel['container_format'],
                 'disk_format': kernel['disk_format'],
                 'name': kernel_image_name,
-                'properties': {
-                    'is_public': True,
-                },
+                'is_public': True,
             }
             with open(kernel['file_name'], 'r') as fh:
                 resource = self.client.images.create(data=fh, **args)
@@ -303,9 +301,7 @@ class Image(object):
                 'container_format': initrd['container_format'],
                 'disk_format': initrd['disk_format'],
                 'name': ram_image_name,
-                'properties': {
-                    'is_public': True,
-                },
+                'is_public': True,
             }
             with open(initrd['file_name'], 'r') as fh:
                 resource = self.client.images.create(data=fh, **args)
@@ -318,9 +314,8 @@ class Image(object):
             'name': image_name,
             'container_format': location['container_format'],
             'disk_format': location['disk_format'],
-            'properties': {
-                'is_public': True,
-            },
+            'is_public': True,
+            'properties': {},
         }
         if kernel_id or initrd_id:
             if kernel_id:
