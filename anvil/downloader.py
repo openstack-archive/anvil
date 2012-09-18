@@ -134,7 +134,7 @@ def download(distro, uri, target_dir, **kwargs):
     if scheme in ['git'] or path.find('.git') != -1:
         downloader = GitDownloader(distro, uri, target_dir)
         downloader.download()
-    if scheme in ['http', 'https']:
+    elif scheme in ['http', 'https']:
         with utils.tempdir() as tdir:
             fn = sh.basename(path)
             downloader = UrlLibDownloader(uri, sh.joinpths(tdir, fn))
