@@ -121,7 +121,7 @@ class UrlLibDownloader(Downloader):
                         pass
                 with open(self.store_where, 'wb') as ofh:
                     return (self.store_where, sh.pipe_in_out(conn, ofh,
-                                            chunk_cb=functools.partial(update_bar, p_bar)))
+                                                             chunk_cb=functools.partial(update_bar, p_bar)))
         finally:
             if p_bar:
                 p_bar.finish()
@@ -132,12 +132,9 @@ def download(distro, uri, target_dir, **kwargs):
     scheme = puri.scheme.lower()
     path = puri.path
     if scheme in ['git'] or path.find('.git') != -1:
-        dirs_made = sh.mkdirslist(target_dir)
         downloader = GitDownloader(distro, uri, target_dir)
         downloader.download()
-        return dirs_made
     if scheme in ['http', 'https']:
-        dirs_made = []
         with utils.tempdir() as tdir:
             fn = sh.basename(path)
             downloader = UrlLibDownloader(uri, sh.joinpths(tdir, fn))
@@ -149,11 +146,9 @@ def download(distro, uri, target_dir, **kwargs):
             elif fn.endswith('.zip'):
                 # TODO(harlowja) this might not be 100% right...
                 # we might have to move the finished directory...
-                dirs_made = sh.mkdirslist(target_dir)
                 cmd = ['unzip', sh.joinpths(tdir, fn), '-d', target_dir]
                 sh.execute(*cmd)
             else:
                 raise excp.DownloadException("Unable to extract %s downloaded from %s" % (fn, uri))
-        return dirs_made
     else:
         raise excp.DownloadException("Unknown scheme %s, unable to download from %s" % (scheme, uri))
