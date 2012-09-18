@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import functools
+
 from anvil import action
 from anvil import colorizer
 from anvil import log
@@ -21,23 +23,6 @@ from anvil import log
 from anvil.action import PhaseFunctors
 
 LOG = log.getLogger(__name__)
-
-
-# Which phase files we will remove
-# at the completion of the given stage
-KNOCK_OFF_MAP = {
-    'uninstall': [
-        'download',
-    ],
-    'unconfigure': [
-        'configure',
-    ],
-    "post-uninstall": [
-        'download', 'configure',
-        'pre-install', 'install',
-        'post-install',
-    ],
-}
 
 
 class UninstallAction(action.Action):
@@ -59,7 +44,8 @@ class UninstallAction(action.Action):
             ),
             component_order,
             instances,
-            "Unconfigure"
+            'unconfigure',
+            'configure'
             )
         self._run_phase(
             PhaseFunctors(
@@ -69,7 +55,8 @@ class UninstallAction(action.Action):
             ),
             component_order,
             instances,
-            "Pre-uninstall",
+            'pre-uninstall',
+            'post-install'
             )
         self._run_phase(
             PhaseFunctors(
@@ -79,7 +66,8 @@ class UninstallAction(action.Action):
             ),
             component_order,
             instances,
-            "Uninstall"
+            'uninstall',
+            'install'
             )
         self._run_phase(
             PhaseFunctors(
@@ -89,8 +77,6 @@ class UninstallAction(action.Action):
             ),
             component_order,
             instances,
-            "Post-uninstall",
+            'post-uninstall',
+            'download', 'configure', 'pre-install', 'install', 'post-install'
             )
-
-    def _get_opposite_stages(self, phase_name):
-        return ('install', KNOCK_OFF_MAP.get(phase_name.lower(), []))
