@@ -78,49 +78,6 @@ FLOATING_NET_CMDS = [
     },
 ]
 
-# NCPU, NVOL, NAPI ... are here as possible subsystems of nova
-NCPU = "cpu"
-NVOL = "vol"
-NAPI = "api"
-NOBJ = "obj"
-NNET = "net"
-NCERT = "cert"
-NSCHED = "sched"
-NCAUTH = "cauth"
-NXVNC = "xvnc"
-NNOVNC = 'novnc'
-SUBSYSTEMS = [NCPU, NVOL, NAPI,
-              NOBJ, NNET, NCERT,
-              NSCHED, NCAUTH, NXVNC,
-              NNOVNC]
-
-# What to start
-APP_OPTIONS = {
-    #these are currently the core components/applications
-    'nova-api': ['--config-file', '$CFG_FILE'],
-    'nova-compute': ['--config-file', '$CFG_FILE'],
-    'nova-volume': ['--config-file', '$CFG_FILE'],
-    'nova-network': ['--config-file', '$CFG_FILE'],
-    'nova-scheduler': ['--config-file', '$CFG_FILE'],
-    'nova-cert': ['--config-file', '$CFG_FILE'],
-    'nova-objectstore': ['--config-file', '$CFG_FILE'],
-    'nova-consoleauth': ['--config-file', '$CFG_FILE'],
-    'nova-xvpvncproxy': ['--config-file', '$CFG_FILE'],
-}
-
-# Sub component names to actual app names (matching previous dict)
-SUB_COMPONENT_NAME_MAP = {
-    NCPU: 'nova-compute',
-    NVOL: 'nova-volume',
-    NAPI: 'nova-api',
-    NOBJ: 'nova-objectstore',
-    NNET: 'nova-network',
-    NCERT: 'nova-cert',
-    NSCHED: 'nova-scheduler',
-    NCAUTH: 'nova-consoleauth',
-    NXVNC: 'nova-xvpvncproxy',
-}
-
 # Subdirs of the checkout/download
 BIN_DIR = 'bin'
 
@@ -137,13 +94,6 @@ class NovaUninstaller(comp.PythonUninstallComponent):
         self._clear_libvirt_domains()
         self._clean_it()
 
-    def _filter_subsystems(self):
-        subs = set()
-        for (name, _values) in self.subsystems.items():
-            if name in SUB_COMPONENT_NAME_MAP:
-                subs.add(name)
-        return subs
-
     def _clean_it(self):
         cleaner_fn = sh.joinpths(self.get_option('app_dir'), BIN_DIR, CLEANER_DATA_CONF)
         if sh.isfile(cleaner_fn):
@@ -151,7 +101,7 @@ class NovaUninstaller(comp.PythonUninstallComponent):
             # These environment additions are important
             # in that they eventually affect how this script runs
             env = {
-                'ENABLED_SERVICES': ",".join(self._filter_subsystems()),
+                'ENABLED_SERVICES': ",".join(self.subsystems.keys()),
             }
             sh.execute(cleaner_fn, run_as_root=True, env_overrides=env)
 
@@ -354,10 +304,12 @@ class NovaRuntime(comp.PythonRuntime):
     def apps_to_start(self):
         apps = []
         for (name, _values) in self.subsystems.items():
-            if name in SUB_COMPONENT_NAME_MAP:
+            real_name = "nova-%s" % (name)
+            app_pth = sh.joinpths(self.bin_dir, real_name)
+            if sh.is_executable(app_pth):
                 apps.append({
-                    'name': SUB_COMPONENT_NAME_MAP[name],
-                    'path': sh.joinpths(self.get_option('app_dir'), BIN_DIR, SUB_COMPONENT_NAME_MAP[name]),
+                    'name': real_name,
+                    'path': app_pth,
                 })
         return apps
 
@@ -384,7 +336,7 @@ class NovaRuntime(comp.PythonRuntime):
         return params
 
     def app_options(self, app):
-        return APP_OPTIONS.get(app)
+        return ['--config-file', '$CFG_FILE']
 
 
 class NovaTester(comp.PythonTestingComponent):

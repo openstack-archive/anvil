@@ -11,10 +11,17 @@ options:
         mq-type: rabbit
 subsystems:
     nova:
-    - api
-    - cpu
-    - net
-    - sched
+    - api-ec2
+    - api-metadata
+    - api-os-compute
+    - cert
+    - compute
+    - consoleauth
+    - dhcpbridge
+    - network
+    - novncproxy
+    - scheduler
+    - xvpvncproxy
 supports:
 - rhel
 ...

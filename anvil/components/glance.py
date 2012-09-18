@@ -44,24 +44,8 @@ POLICY_JSON = 'policy.json'
 CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF,
            REG_PASTE_CONF, POLICY_JSON, LOGGING_CONF]
 
-# Reg, api, scrub are here as possible subsystems
-GAPI = "api"
-GREG = "reg"
-
 # This db will be dropped and created
 DB_NAME = "glance"
-
-# What applications to start
-APP_OPTIONS = {
-    'glance-api': ['--config-file', sh.joinpths('$CONFIG_DIR', API_CONF)],
-    'glance-registry': ['--config-file', sh.joinpths('$CONFIG_DIR', REG_CONF)],
-}
-
-# How the subcompoent small name translates to an actual app
-SUB_TO_APP = {
-    GAPI: 'glance-api',
-    GREG: 'glance-registry',
-}
 
 # Sync db command
 SYNC_DB_CMD = [sh.joinpths('$BIN_DIR', 'glance-manage'),
@@ -239,15 +223,22 @@ class GlanceRuntime(comp.PythonRuntime):
     def apps_to_start(self):
         apps = []
         for (name, _values) in self.subsystems.items():
-            if name in SUB_TO_APP:
+            real_name = "glance-%s" % name
+            app_pth = sh.joinpths(self.bin_dir, real_name)
+            if sh.is_executable(app_pth):
                 apps.append({
-                    'name': SUB_TO_APP[name],
-                    'path': sh.joinpths(self.bin_dir, SUB_TO_APP[name]),
+                    'name': real_name,
+                    'path': app_pth,
                 })
         return apps
 
     def app_options(self, app):
-        return APP_OPTIONS.get(app)
+        if app.find('api') != -1:
+            return ['--config-file', sh.joinpths('$CONFIG_DIR', API_CONF)]
+        elif app.find('registry') != -1:
+            return ['--config-file', sh.joinpths('$CONFIG_DIR', REG_CONF)]
+        else:
+            return []
 
     def _get_image_urls(self):
         uris = self.get_option('image_urls', default_value=[])
