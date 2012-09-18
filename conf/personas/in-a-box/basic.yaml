@@ -8,6 +8,7 @@ components:
 - keystone-client
 - glance
 - glance-client
+- cinder-client
 - nova
 - nova-client
 # Super client, so install after other clients
