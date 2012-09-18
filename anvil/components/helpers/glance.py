@@ -357,9 +357,9 @@ class UploadService(object):
     def _get_token(self, kclient_v2):
         LOG.info("Getting your keystone token so that image uploads may proceed.")
         params = self.params['keystone']
-        client = kclient_v2.Client(username=params['demo_user'],
-            password=params['demo_password'],
-            tenant_name=params['demo_tenant'],
+        client = kclient_v2.Client(username=params['admin_user'],
+            password=params['admin_password'],
+            tenant_name=params['admin_tenant'],
             auth_url=params['endpoints']['public']['uri'])
         return client.auth_token
 
