@@ -225,6 +225,11 @@ class ConfConfigurator(object):
             nova_conf.add('rabbit_password', rbhelper.get_shared_passwords(self.installer)['pw'])
             nova_conf.add('rabbit_userid', self.installer.get_option('rabbit', 'user_id'))
             nova_conf.add('rpc_backend', 'nova.rpc.impl_kombu')
+        
+        # The USB tablet device is meant to improve mouse behavior in
+        # the VNC console, but it has the side effect of increasing
+        # the CPU usage of an idle VM tenfold.
+        nova_conf.add('use_usb_tablet', False)
 
         # Where instances will be stored
         instances_path = self.installer.get_option('instances_path')
