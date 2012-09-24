@@ -17,19 +17,11 @@
 from anvil import components as comp
 
 
-class GlanceClientUninstaller(comp.PythonUninstallComponent):
-    pass
-
-
 class GlanceClientInstaller(comp.PythonInstallComponent):
     def _filter_pip_requires_line(self, fn, line):
         if line.lower().find('keystoneclient') != -1:
             return None
         return line
-
-
-class GlanceClientRuntime(comp.EmptyRuntime):
-    pass
 
 
 class GlanceClientTester(comp.PythonTestingComponent):
