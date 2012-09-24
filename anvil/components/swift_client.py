@@ -17,16 +17,8 @@
 from anvil import components as comp
 
 
-class SwiftClientUninstaller(comp.PythonUninstallComponent):
-    pass
-
-
 class SwiftClientInstaller(comp.PythonInstallComponent):
     def _filter_pip_requires_line(self, fn, line):
         if line.lower().find('keystoneclient') != -1:
             return None
         return line
-
-
-class SwiftClientRuntime(comp.EmptyRuntime):
-    pass

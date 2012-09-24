@@ -15,13 +15,6 @@
 #    under the License.
 
 from anvil import components as comp
-from anvil import log as logging
-
-LOG = logging.getLogger(__name__)
-
-
-class OpenStackClientUninstaller(comp.PythonUninstallComponent):
-    pass
 
 
 class OpenStackClientInstaller(comp.PythonInstallComponent):
@@ -33,10 +26,6 @@ class OpenStackClientInstaller(comp.PythonInstallComponent):
         if line.lower().find('glanceclient') != -1:
             return None
         return line
-
-
-class OpenStackClientRuntime(comp.EmptyRuntime):
-    pass
 
 
 class OpenStackClientTester(comp.PythonTestingComponent):
