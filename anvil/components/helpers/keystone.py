@@ -171,14 +171,14 @@ def get_shared_params(ip, service_token, admin_password, service_password,
     keystone_auth_port = auth_port
     keystone_auth_proto = auth_proto
     keystone_auth_uri = utils.make_url(keystone_auth_proto,
-                                       keystone_auth_host, keystone_auth_port, path="v2.0")
+                                       keystone_auth_host, keystone_auth_port, path="v2.0/")
 
     # Components of the public+internal endpoint
     keystone_service_host = service_host
     keystone_service_port = service_port
     keystone_service_proto = service_proto
     keystone_service_uri = utils.make_url(keystone_service_proto,
-                                          keystone_service_host, keystone_service_port, path="v2.0")
+                                          keystone_service_host, keystone_service_port, path="v2.0/")
 
     mp['endpoints'] = {
         'admin': {
@@ -189,7 +189,7 @@ def get_shared_params(ip, service_token, admin_password, service_password,
         },
         'admin_templated': {
             'uri': utils.make_url(keystone_auth_proto,
-                            keystone_auth_host, port='$(admin_port)s', path="v2.0"),
+                            keystone_auth_host, port='$(admin_port)s', path="v2.0/"),
             'protocol': keystone_auth_proto,
             'host': keystone_auth_host,
         },
@@ -201,7 +201,7 @@ def get_shared_params(ip, service_token, admin_password, service_password,
         },
         'public_templated': {
             'uri': utils.make_url(keystone_service_proto,
-                            keystone_service_host, port='$(public_port)s', path="v2.0"),
+                            keystone_service_host, port='$(public_port)s', path="v2.0/"),
             'protocol': keystone_service_proto,
             'host': keystone_service_host,
         },

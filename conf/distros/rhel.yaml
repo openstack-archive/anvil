@@ -377,6 +377,12 @@ components:
         -   name: feedparser
             package:
                 name: python-feedparser
+        -   name: carrot
+            package:
+                name: python-carrot
+        -   name: python-gflags
+            package:
+                name: python-gflags
         pips:
         -   name: Cheetah
             version: "2.4.4"

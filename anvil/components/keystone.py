@@ -73,7 +73,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
 
     def _filter_pip_requires_line(self, fn, line):
-        if utils.has_any(line.lower(), 'keystoneclient', 'ldap', 'http://tarballs.openstack.org', 'memcached'):
+        if utils.has_any(line.lower(), 'keystoneclient', 'ldap', 'http://tarballs.openstack.org', 'memcached', 'python-keystoneclient', 'swift'):
             return None
         return line
 
@@ -126,7 +126,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         if config_fn == LOGGING_CONF:
             real_fn = 'logging.conf.sample'
         elif config_fn == ROOT_CONF:
-            real_fn = "keystone.conf.sample"
+            real_fn = "keystone.conf"
         fn = sh.joinpths(self.get_option('app_dir'), 'etc', real_fn)
         return (fn, sh.load_file(fn))
 
