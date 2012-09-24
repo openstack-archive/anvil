@@ -11,10 +11,9 @@ if __name__ == "__main__":
     args = list(sys.argv)
     args = args[1:]
     for fn in args:
-        data = None
-        with open(fn, 'r') as fh:
-            data = yaml.load(fh.read())
-            fh.close()
+        fh = open(fn, 'r')
+        data = yaml.load(fh.read())
+        fh.close()
         formatted = yaml.dump(data,
                             line_break="\n",
                             indent=4,
@@ -22,4 +21,5 @@ if __name__ == "__main__":
                             explicit_end=True,
                             default_flow_style=False,
                             )
-        print formatted
+        print("# Formatted %s" % (fn))
+        print(formatted)
