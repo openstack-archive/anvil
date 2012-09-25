@@ -34,6 +34,9 @@ LOG = logging.getLogger(__name__)
 
 
 class StringiferMixin(object):
+    def __init__(self):
+        pass
+
     def stringify(self, fn=None):
         contents = ''
         with io.BytesIO() as outputstream:
@@ -43,16 +46,19 @@ class StringiferMixin(object):
         return contents
 
 
-class IgnoreMissingMixin(object):
+class ConfigHelperMixin(object):
     DEF_INT = 0
     DEF_FLOAT = 0.0
     DEF_BOOLEAN = False
     DEF_BASE = None
 
+    def __init__(self, templatize_values=False):
+        self.templatize_values = templatize_values
+
     def get(self, section, option):
         value = self.DEF_BASE
         try:
-            value = super(IgnoreMissingMixin, self).get(section, option)
+            value = super(ConfigHelperMixin, self).get(section, option)
         except NoSectionError:
             pass
         except NoOptionError:
@@ -62,47 +68,57 @@ class IgnoreMissingMixin(object):
     def set(self, section, option, value):
         if not self.has_section(section) and section.lower() != 'default':
             self.add_section(section)
-        super(IgnoreMissingMixin, self).set(section, option, value)
+        if self.templatize_values:
+            real_value = "%" + str(option) + "%"
+            for c in ['-', ' ', '\t', ':']:
+                real_value = real_value.replace(c, '_')
+            value = real_value
+        super(ConfigHelperMixin, self).set(section, option, value)
 
     def remove_option(self, section, option):
         if self.has_option(section, option):
-            super(IgnoreMissingMixin, self).remove_option(section, option)
+            super(ConfigHelperMixin, self).remove_option(section, option)
 
     def getboolean(self, section, option):
         if not self.has_option(section, option):
             return self.DEF_BOOLEAN
-        return super(IgnoreMissingMixin, self).getboolean(section, option)
+        return super(ConfigHelperMixin, self).getboolean(section, option)
 
     def getfloat(self, section, option):
         if not self.has_option(section, option):
             return self.DEF_FLOAT
-        return super(IgnoreMissingMixin, self).getfloat(section, option)
+        return super(ConfigHelperMixin, self).getfloat(section, option)
 
     def getint(self, section, option):
         if not self.has_option(section, option):
             return self.DEF_INT
-        return super(IgnoreMissingMixin, self).getint(section, option)
+        return super(ConfigHelperMixin, self).getint(section, option)
+
+    def getlist(self, section, option):
+        return self.get(section, option).split(",")
 
 
-class BuiltinConfigParser(IgnoreMissingMixin, ConfigParser.RawConfigParser, StringiferMixin):
-    def __init__(self, cs=True, fns=None, defaults=None):
-        ConfigParser.RawConfigParser.__init__(self, defaults=defaults)
-        if cs:
-            # Make option names case sensitive
-            # See: http://docs.python.org/library/configparser.html#ConfigParser.RawConfigParser.optionxform
-            self.optionxform = str
+class BuiltinConfigParser(ConfigHelperMixin, ConfigParser.RawConfigParser, StringiferMixin):
+    def __init__(self, fns=None, templatize_values=False):
+        ConfigHelperMixin.__init__(self, templatize_values)
+        ConfigParser.RawConfigParser.__init__(self)
+        StringiferMixin.__init__(self)
+        # Make option names case sensitive
+        # See: http://docs.python.org/library/configparser.html#ConfigParser.RawConfigParser.optionxform
+        self.optionxform = str
         if fns:
             for f in fns:
                 self.read(f)
 
 
-class RewritableConfigParser(IgnoreMissingMixin, iniparse.RawConfigParser, StringiferMixin):
-    def __init__(self, cs=True, fns=None, defaults=None):
-        iniparse.RawConfigParser.__init__(self, defaults=defaults)
-        if cs:
-            # Make option names case sensitive
-            # See: http://docs.python.org/library/configparser.html#ConfigParser.RawConfigParser.optionxform
-            self.optionxform = str
+class RewritableConfigParser(ConfigHelperMixin, iniparse.RawConfigParser, StringiferMixin):
+    def __init__(self, fns=None, templatize_values=False):
+        ConfigHelperMixin.__init__(self, templatize_values)
+        iniparse.RawConfigParser.__init__(self)
+        StringiferMixin.__init__(self)
+        # Make option names case sensitive
+        # See: http://docs.python.org/library/configparser.html#ConfigParser.RawConfigParser.optionxform
+        self.optionxform = str
         if fns:
             for f in fns:
                 self.read(f)
@@ -226,3 +242,12 @@ class YamlInterpolator(object):
         self.interpolated[root] = self.included[root]
         self.interpolated[root] = self._interpolate(self.interpolated[root])
         return self.interpolated[root]
+
+
+def create_parser(cfg_cls, component, fns=None):
+    templatize_values = component.get_bool_option('template_config')
+    cfg_opts = {
+        'fns': fns,
+        'templatize_values': templatize_values,
+    }
+    return cfg_cls(**cfg_opts)
