@@ -144,7 +144,7 @@ class ConfConfigurator(object):
     def generate(self, fn):
 
         # Everything built goes in here
-        nova_conf = Conf(fn)
+        nova_conf = Conf(fn, self.installer)
 
         # Used more than once so we calculate it ahead of time
         hostip = self.installer.get_option('ip')
@@ -387,8 +387,9 @@ class ConfConfigurator(object):
 
 # This class represents the data/format of the nova config file
 class Conf(object):
-    def __init__(self, name):
-        self.backing = cfg.BuiltinConfigParser()
+    def __init__(self, name, installer):
+        self.installer = installer
+        self.backing = cfg.create_parser(cfg.BuiltinConfigParser, self.installer)
         self.name = name
 
     def add(self, key, value, *values):

@@ -25,7 +25,7 @@ LOG = logging.getLogger(__name__)
 
 class PhaseRecorder(object):
     def __init__(self, fn):
-        self.fn = fn
+        self.filename = fn
         self.state = None
 
     def _format_contents(self, contents):
@@ -36,12 +36,12 @@ class PhaseRecorder(object):
         contents = self.list_phases()
         contents[what] = utils.iso8601()
         yield what
-        sh.write_file(self.fn, self._format_contents(contents))
+        sh.write_file(self.filename, self._format_contents(contents))
 
     def unmark(self, what):
         contents = self.list_phases()
         contents.pop(what, None)
-        sh.write_file(self.fn, self._format_contents(contents))
+        sh.write_file(self.filename, self._format_contents(contents))
 
     def __contains__(self, what):
         phases = self.list_phases()
@@ -55,10 +55,10 @@ class PhaseRecorder(object):
         state = {}
         # Shell not used to avoid dry-run capturing
         try:
-            with open(self.fn, 'r') as fh:
+            with open(self.filename, 'r') as fh:
                 state = utils.load_yaml_text(fh.read())
                 if not isinstance(state, (dict)):
-                    raise TypeError("Phase file %s expected dictionary root type" % (self.fn))
+                    raise TypeError("Phase file %s expected dictionary root type" % (self.filename))
         except IOError:
             pass
         self.state = state

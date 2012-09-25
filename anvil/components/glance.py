@@ -111,7 +111,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
     def _config_adjust_registry(self, contents, fn):
         params = ghelper.get_shared_params(**self.options)
         with io.BytesIO(contents) as stream:
-            config = cfg.RewritableConfigParser()
+            config = cfg.create_parser(cfg.RewritableConfigParser, self)
             config.readfp(stream)
             config.set('DEFAULT', 'debug', self.get_bool_option('verbose'))
             config.set('DEFAULT', 'verbose', self.get_bool_option('verbose'))
@@ -132,7 +132,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
                                            **utils.merge_dicts(self.get_option('keystone'), 
                                                                khelper.get_shared_passwords(self)))
         with io.BytesIO(contents) as stream:
-            config = cfg.RewritableConfigParser()
+            config = cfg.create_parser(cfg.RewritableConfigParser, self)
             config.readfp(stream)
             config.set('filter:authtoken', 'auth_host', params['endpoints']['admin']['host'])
             config.set('filter:authtoken', 'auth_port', params['endpoints']['admin']['port'])
@@ -150,7 +150,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
     def _config_adjust_api(self, contents, fn):
         params = ghelper.get_shared_params(**self.options)
         with io.BytesIO(contents) as stream:
-            config = cfg.RewritableConfigParser()
+            config = cfg.create_parser(cfg.RewritableConfigParser, self)
             config.readfp(stream)
             img_store_dir = sh.joinpths(self.get_option('component_dir'), 'images')
             config.set('DEFAULT', 'debug', self.get_bool_option('verbose',))
@@ -172,7 +172,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
 
     def _config_adjust_logging(self, contents, fn):
         with io.BytesIO(contents) as stream:
-            config = cfg.RewritableConfigParser()
+            config = cfg.create_parser(cfg.RewritableConfigParser, self)
             config.readfp(stream)
             config.set('logger_root', 'level', 'DEBUG')
             config.set('logger_root', 'handlers', "devel,production")
