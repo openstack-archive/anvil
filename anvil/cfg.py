@@ -18,11 +18,12 @@
 import ConfigParser
 from ConfigParser import (NoSectionError, NoOptionError)
 
-import io
 import re
 
 # This one keeps comments but has some weirdness with it
 import iniparse
+
+from StringIO import StringIO
 
 from anvil import log as logging
 from anvil import shell as sh
@@ -38,11 +39,9 @@ class StringiferMixin(object):
         pass
 
     def stringify(self, fn=None):
-        contents = ''
-        with io.BytesIO() as outputstream:
-            self.write(outputstream)
-            outputstream.flush()
-            contents = utils.add_header(fn, outputstream.getvalue())
+        outputstream = StringIO()
+        self.write(outputstream)
+        contents = utils.add_header(fn, outputstream.getvalue())
         return contents
 
 
@@ -69,10 +68,16 @@ class ConfigHelperMixin(object):
         if not self.has_section(section) and section.lower() != 'default':
             self.add_section(section)
         if self.templatize_values:
-            real_value = "%" + str(option) + "%"
+            tpl_value = StringIO()
+            safe_value = str(option)
             for c in ['-', ' ', '\t', ':']:
-                real_value = real_value.replace(c, '_')
-            value = real_value
+                safe_value = safe_value.replace(c, '_')
+            safe_value = safe_value.upper()
+            tpl_value.write("%" + safe_value + "%")
+            if value:
+                comment_value = str(value).strip().encode('string_escape')
+                tpl_value.write(" # %s" % (comment_value))
+            value = tpl_value.getvalue()
         super(ConfigHelperMixin, self).set(section, option, value)
 
     def remove_option(self, section, option):
