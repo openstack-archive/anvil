@@ -120,6 +120,15 @@ def parse(previous_settings=None):
                          help=("when packaging attempt to use the versions that are "
                                "installed for the components dependencies"))
     parser.add_option_group(pkg_group)
+    
+    install_group = OptionGroup(parser, "Install specific options")
+    install_group.add_option("--only-configure",
+                                action="store_true",
+                                dest="only_configure",
+                                default=False,
+                                help=("when installing only perform the"
+                                      " download and install phases (default: %default)"))
+    parser.add_option_group(install_group)
 
     uninstall_group = OptionGroup(parser, "Uninstall specific options")
     uninstall_group.add_option("--purge",
@@ -143,6 +152,7 @@ def parse(previous_settings=None):
     values['action'] = (options.action or "")
     values['persona_fn'] = options.persona_fn
     values['verbose'] = options.verbose
+    values['only_configure'] = options.only_configure
     values['prompt_for_passwords'] = options.prompt_for_passwords
     values['show_amount'] = max(0, options.show_amount)
     values['store_passwords'] = options.store_passwords
