@@ -80,8 +80,8 @@ class InstallAction(action.Action):
 
         if self.only_configure:
             # TODO(harlowja) this could really be a new action that
-            # does the download and configure and let the install 
-            # routing actually do the install steps
+            # does the download and configure and let the install
+            # routine actually do the install steps...
             LOG.info("Exiting early, only asked to download and configure!")
             return
 

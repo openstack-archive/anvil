@@ -122,7 +122,7 @@ def parse(previous_settings=None):
     parser.add_option_group(pkg_group)
     
     install_group = OptionGroup(parser, "Install specific options")
-    install_group.add_option("--only-configure",
+    install_group.add_option('-c', "--only-configure",
                                 action="store_true",
                                 dest="only_configure",
                                 default=False,
