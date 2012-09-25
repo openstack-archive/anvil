@@ -64,20 +64,25 @@ class ConfigHelperMixin(object):
             pass
         return value
 
+    def _template_value(self, option, value):
+        if not self.templatize_values:
+            return value
+        tpl_value = StringIO()
+        safe_value = str(option)
+        for c in ['-', ' ', '\t', ':', '$', '%', '(', ')']:
+            safe_value = safe_value.replace(c, '_')
+        tpl_value.write("$(%s)" % (safe_value.upper().strip()))
+        comment_value = str(value).strip().encode('string_escape')
+        for c in ['(', ')', '$']:
+            comment_value = comment_value.replace(c, '')
+        comment_value = comment_value.strip()
+        tpl_value.write(" # %s" % (comment_value))
+        return tpl_value.getvalue()
+
     def set(self, section, option, value):
         if not self.has_section(section) and section.lower() != 'default':
             self.add_section(section)
-        if self.templatize_values:
-            tpl_value = StringIO()
-            safe_value = str(option)
-            for c in ['-', ' ', '\t', ':']:
-                safe_value = safe_value.replace(c, '_')
-            safe_value = safe_value.upper()
-            tpl_value.write("%" + safe_value + "%")
-            if value:
-                comment_value = str(value).strip().encode('string_escape')
-                tpl_value.write(" # %s" % (comment_value))
-            value = tpl_value.getvalue()
+        value = self._template_value(option, value)
         super(ConfigHelperMixin, self).set(section, option, value)
 
     def remove_option(self, section, option):
