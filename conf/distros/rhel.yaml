@@ -383,7 +383,7 @@ components:
         -   name: python-daemon
             version: "1.5.5"
         subsystems:
-            cpu:
+            compute:
                 packages:
                 -   name: iscsi-initiator-utils
                     removable: false
@@ -405,7 +405,7 @@ components:
                     removable: false
                 -   name: qemu-kvm
                     removable: false
-            vol:
+            volume:
                 packages:
                 -   name: iscsi-initiator-utils
                     removable: false
