@@ -38,15 +38,15 @@ API_CONF = 'nova.conf'
 # This db will be dropped then created
 DB_NAME = 'nova'
 
-# Virt drivers map -> to there connection name
-VIRT_DRIVER_CON_MAP = {
-    'libvirt': 'libvirt',
-    'xenserver': 'xenapi',
-    'vmware': 'vmwareapi',
-    'baremetal': 'baremetal',
+# Virt 'canonicalized' name to there computer driver name
+VIRT_DRIVER_MAP = {
+    'libvirt': 'libvirt.LibvirtDriver',
+    'xenserver': 'xenapi.XenAPIDriver',
+    'vmware': 'vmwareapi.VMWareESXDriver',
+    'baremetal': 'baremetal.BareMetalDriver',
 }
 
-# Message queue types to there internal 'canoncalized' name
+# Message queue types to there internal 'canonicalized' name
 MQ_TYPES = {
     'qpid': 'qpid',
     'qpidd': 'qpid',
@@ -61,8 +61,8 @@ def canon_mq_type(mq_type):
 
 
 def canon_virt_driver(virt_driver):
-    virt_driver = virt_driver.strip().lower()
-    if not (virt_driver in VIRT_DRIVER_CON_MAP):
+    virt_driver = str(virt_driver).strip().lower()
+    if not (virt_driver in VIRT_DRIVER_MAP):
         return 'libvirt'
     return virt_driver
 
@@ -378,7 +378,7 @@ class ConfConfigurator(object):
     # Configures any virt driver settings
     def _configure_virt_driver(self, nova_conf):
         drive_canon = canon_virt_driver(self.installer.get_option('virt_driver'))
-        nova_conf.add('connection_type', VIRT_DRIVER_CON_MAP.get(drive_canon, drive_canon))
+        nova_conf.add('compute_driver', VIRT_DRIVER_MAP.get(drive_canon, drive_canon))
         if drive_canon == 'libvirt':
             nova_conf.add('firewall_driver', self.installer.get_option('libvirt_firewall_driver'))
         else:
