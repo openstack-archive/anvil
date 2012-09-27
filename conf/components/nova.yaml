@@ -2,7 +2,7 @@
 ---
 
 # Where we download this from...
-get_from: "git://github.com/openstack/nova.git?branch=master"
+get_from: "git://github.com/openstack/nova.git?tag=2012.1.1"
 
 # Host and ports for the different nova services
 api_host: "$(auto:ip)"

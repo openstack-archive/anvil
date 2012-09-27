@@ -1,7 +1,7 @@
 # Settings for component horizon
 ---
 # Where we download this from...
-get_from: "git://github.com/openstack/horizon.git?branch=master"
+get_from: "git://github.com/openstack/horizon.git?tag=2012.1.1"
 
 # This is the group of the user (adjust as needed)
 apache_group: "$(auto:user)"
