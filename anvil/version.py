@@ -14,7 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-ANVIL_VERSION = ['2012', '2', None]
+ANVIL_VERSION = ['2013', '1', None]
 YEAR, COUNT, REVISION = ANVIL_VERSION
 FINAL = False  # May never be final ;)
 
