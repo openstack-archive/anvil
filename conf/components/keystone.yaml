@@ -1,7 +1,7 @@
 # Settings for component keystone
 ---
 # Where we download this from...
-get_from: "git://github.com/openstack/keystone.git?branch=master"
+get_from: "git://github.com/openstack/keystone.git?tag=2012.2"
 
 # Where is the keystone auth host at?
 auth_host: "$(auto:ip)"
