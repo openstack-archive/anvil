@@ -197,6 +197,10 @@ class ConfConfigurator(object):
 
         # Auth will be using keystone
         nova_conf.add('auth_strategy', 'keystone')
+        
+        # Is config drive being forced?
+        if self.installer.get_bool_option('force_cfg_drive'):
+            nova_conf.add('force_config_drive', 'always')
 
         # Don't always force images to raw
         nova_conf.add('force_raw_images', self.installer.get_bool_option('force_raw_images'))
