@@ -61,6 +61,9 @@ checksum_base_images: True
 glance_server: "$(glance:host):$(glance:api_port)"
 img_service: nova.image.glance.GlanceImageService
 
+# Force the config drive to turn on?
+force_cfg_drive: False
+
 # How instances will be named and where
 instance_name_postfix: "%08x"
 instance_name_prefix: "instance-"
