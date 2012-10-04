@@ -92,7 +92,7 @@ class Unpacker(object):
         if utils.has_any(fn_ext.lower(), *BAD_EXTENSIONS):
             return False
         for pat in patterns:
-            if pat.match(fn):
+            if pat.search(fn):
                 return True
         return False
 
