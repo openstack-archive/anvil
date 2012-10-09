@@ -277,6 +277,6 @@ class GlanceTester(comp.PythonTestingComponent):
             cmd = ['nosetests']
         # See: $ man nosetests
         #cmd.append('--nologcapture')
-        for e in self._get_test_exclusions():
-            cmd.append('--exclude=%s' % (e))
+        #for e in self._get_test_exclusions():
+        #    cmd.append('--exclude=%s' % (e))
         return cmd
