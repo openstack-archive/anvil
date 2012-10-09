@@ -265,3 +265,18 @@ class GlanceTester(comp.PythonTestingComponent):
             # These seem to require swift, not always installed...
             'test_swift_store',
         ]
+    def _get_test_command(self):
+        # See: http://docs.openstack.org/developer/nova/devref/unit_tests.html
+        # And: http://wiki.openstack.org/ProjectTestingInterface
+        app_dir = self.get_option('app_dir')
+        if sh.isfile(sh.joinpths(app_dir, 'run_tests.sh')) and self._use_run_tests():
+            cmd = [sh.joinpths(app_dir, 'run_tests.sh'), '-N']
+        else:
+            # Assume tox is being used, which we can't use directly
+            # since anvil doesn't really do venv stuff (its meant to avoid those...)
+            cmd = ['nosetests']
+        # See: $ man nosetests
+        #cmd.append('--nologcapture')
+        for e in self._get_test_exclusions():
+            cmd.append('--exclude=%s' % (e))
+        return cmd
