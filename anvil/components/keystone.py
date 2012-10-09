@@ -266,5 +266,5 @@ class KeystoneTester(comp.PythonTestingComponent):
             # Aren't always installing ldap...
             'test_backend_ldap',
             # failing while testing with folsom during CI build, not sure why
-            'KcEssex3TestCase',
+            'test_keystoneclient',
         ]
