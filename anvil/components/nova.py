@@ -108,7 +108,7 @@ class NovaUninstaller(comp.PythonUninstallComponent):
     def _clear_libvirt_domains(self):
         virt_driver = nhelper.canon_virt_driver(self.get_option('virt_driver'))
         if virt_driver == 'libvirt':
-            inst_prefix = self.get_option('instance_name_prefix', 'instance-')
+            inst_prefix = self.get_option('instance_name_prefix', default_value='instance-')
             libvirt_type = lv.canon_libvirt_type(self.get_option('libvirt_type'))
             self.virsh.clear_domains(libvirt_type, inst_prefix)
 
