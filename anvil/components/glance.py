@@ -270,7 +270,7 @@ class GlanceTester(comp.PythonTestingComponent):
         # See: http://docs.openstack.org/developer/nova/devref/unit_tests.html
         # And: http://wiki.openstack.org/ProjectTestingInterface
         app_dir = self.get_option('app_dir')
-        if sh.isfile(sh.joinpths(app_dir, 'run_tests.sh')) and False #self._use_run_tests():
+        if sh.isfile(sh.joinpths(app_dir, 'run_tests.sh')) and False: #self._use_run_tests():
             cmd = [sh.joinpths(app_dir, 'run_tests.sh'), '-N']
         else:
             # Assume tox is being used, which we can't use directly
