@@ -275,16 +275,12 @@ class GlanceTester(comp.PythonTestingComponent):
         else:
             # Assume tox is being used, which we can't use directly
             # since anvil doesn't really do venv stuff (its meant to avoid those...)
-            cmd = ['export NOSE_WITH_OPENSTACK=1 \
-                    export NOSE_OPENSTACK_COLOR=1 \
-                    export NOSE_OPENSTACK_RED=0.05 \
-                    export NOSE_OPENSTACK_YELLOW=0.025 \
-                    export NOSE_OPENSTACK_SHOW_ELAPSED=1 \
-                    export NOSE_OPENSTACK_STDOUT=1 \
-                    nosetests --exclude-dir=glance/tests/functional \
-                    --with-coverage --cover-package=glance \
-                    --exclude=test_swift_store \
-                ']
+            cmd = ['export NOSE_WITH_OPENSTACK=1','export NOSE_OPENSTACK_COLOR=1',
+                    'export NOSE_OPENSTACK_RED=0.05','export NOSE_OPENSTACK_YELLOW=0.025',
+                    'export NOSE_OPENSTACK_SHOW_ELAPSED=1','export NOSE_OPENSTACK_STDOUT=1',
+                    'nosetests','--exclude-dir=glance/tests/functional',
+                    '--with-coverage','--cover-package=glance','--exclude=test_swift_store'
+                  ]
         # See: $ man nosetests
         #cmd.append('--nologcapture')
         #for e in self._get_test_exclusions():
