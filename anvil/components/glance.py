@@ -306,8 +306,10 @@ class GlanceTester(comp.PythonTestingComponent):
         else:
             # Assume tox is being used, which we can't use directly
             # since anvil doesn't really do venv stuff (its meant to avoid those...)
-            cmd = ['nosetests','--exclude-dir=glance/tests/functional',
-                    '--with-coverage','--cover-package=glance','--exclude=test_swift_store']
+            # once bug https://review.openstack.org/#/c/14405/ is fix we can add the line bellow (gporras)
+            #cmd = ['nosetests','--exclude-dir=glance/tests/functional',
+            #        '--with-coverage','--cover-package=glance','--exclude=test_swift_store']
+            cmd = ['nosetests']
         # See: $ man nosetests
         #cmd.append('--nologcapture')
         #for e in self._get_test_exclusions():
