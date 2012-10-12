@@ -108,23 +108,21 @@ class GlanceInstaller(comp.PythonInstallComponent):
         fn = sh.joinpths(self.get_option('app_dir'), 'etc', real_fn)
         return (fn, sh.load_file(fn))
 
-    def _config_adjust_registry(self, contents, fn):
-        params = ghelper.get_shared_params(**self.options)
-        with io.BytesIO(contents) as stream:
-            config = cfg.create_parser(cfg.RewritableConfigParser, self)
-            config.readfp(stream)
-            config.set('DEFAULT', 'debug', self.get_bool_option('verbose'))
-            config.set('DEFAULT', 'verbose', self.get_bool_option('verbose'))
-            config.set('DEFAULT', 'bind_port', params['endpoints']['registry']['port'])
-            config.set('DEFAULT', 'sql_connection', dbhelper.fetch_dbdsn(dbname=DB_NAME,
-                                                                         utf8=True,
-                                                                         dbtype=self.get_option('db', 'type'),
-                                                                         **utils.merge_dicts(self.get_option('db'),
-                                                                                             dbhelper.get_shared_passwords(self))))
-            config.remove_option('DEFAULT', 'log_file')
-            config.set('paste_deploy', 'flavor', self.get_option('paste_flavor'))
-            return config.stringify(fn)
-        return contents
+    def _fetch_keystone_params(self):
+        params = khelper.get_shared_params(ip=self.get_option('ip'),
+                                           service_user='glance',
+                                           **utils.merge_dicts(self.get_option('keystone'), 
+                                                               khelper.get_shared_passwords(self)))
+        return {
+            'auth_host': params['endpoints']['admin']['host'],
+            'auth_port': params['endpoints']['admin']['port'],
+            'auth_protocol': params['endpoints']['admin']['protocol'],
+            # This uses the public uri not the admin one...
+            'auth_uri': params['endpoints']['public']['uri'],
+            'admin_tenant_name': params['service_tenant'],
+            'admin_user': params['service_user'],
+            'admin_password': params['service_password'],
+        }
 
     def _config_adjust_paste(self, contents, fn):
         params = khelper.get_shared_params(ip=self.get_option('ip'),
@@ -134,30 +132,19 @@ class GlanceInstaller(comp.PythonInstallComponent):
         with io.BytesIO(contents) as stream:
             config = cfg.create_parser(cfg.RewritableConfigParser, self)
             config.readfp(stream)
-            config.set('filter:authtoken', 'auth_host', params['endpoints']['admin']['host'])
-            config.set('filter:authtoken', 'auth_port', params['endpoints']['admin']['port'])
-            config.set('filter:authtoken', 'auth_protocol', params['endpoints']['admin']['protocol'])
-
-            # This uses the public uri not the admin one...
-            config.set('filter:authtoken', 'auth_uri', params['endpoints']['public']['uri'])
-
-            config.set('filter:authtoken', 'admin_tenant_name', params['service_tenant'])
-            config.set('filter:authtoken', 'admin_user', params['service_user'])
-            config.set('filter:authtoken', 'admin_password', params['service_password'])
+            for (k, v) in self._fetch_keystone_params().items():
+                config.set('filter:authtoken', k, v)
             contents = config.stringify(fn)
         return contents
 
-    def _config_adjust_api(self, contents, fn):
-        params = ghelper.get_shared_params(**self.options)
+    def _config_adjust_api_reg(self, contents, fn):
+        gparams = ghelper.get_shared_params(**self.options)
         with io.BytesIO(contents) as stream:
             config = cfg.create_parser(cfg.RewritableConfigParser, self)
             config.readfp(stream)
-            img_store_dir = sh.joinpths(self.get_option('component_dir'), 'images')
-            config.set('DEFAULT', 'debug', self.get_bool_option('verbose',))
+            config.set('DEFAULT', 'debug', self.get_bool_option('verbose'))
             config.set('DEFAULT', 'verbose', self.get_bool_option('verbose'))
-            config.set('DEFAULT', 'default_store', 'file')
-            config.set('DEFAULT', 'filesystem_store_datadir', img_store_dir)
-            config.set('DEFAULT', 'bind_port', params['endpoints']['public']['port'])
+            config.set('DEFAULT', 'bind_port', gparams['endpoints']['public']['port'])
             config.set('DEFAULT', 'sql_connection', dbhelper.fetch_dbdsn(dbname=DB_NAME,
                                                                          utf8=True,
                                                                          dbtype=self.get_option('db', 'type'),
@@ -165,9 +152,15 @@ class GlanceInstaller(comp.PythonInstallComponent):
                                                                                              dbhelper.get_shared_passwords(self))))
             config.remove_option('DEFAULT', 'log_file')
             config.set('paste_deploy', 'flavor', self.get_option('paste_flavor'))
-            LOG.debug("Ensuring file system store directory %r exists and is empty." % (img_store_dir))
-            sh.deldir(img_store_dir)
-            self.tracewriter.dirs_made(*sh.mkdirslist(img_store_dir))
+            for (k, v) in self._fetch_keystone_params().items():
+                config.set('keystone_authtoken', k, v)
+            if fn in [API_CONF]:
+                config.set('DEFAULT', 'default_store', 'file')
+                img_store_dir = sh.joinpths(self.get_option('component_dir'), 'images')
+                config.set('DEFAULT', 'filesystem_store_datadir', img_store_dir)
+                LOG.debug("Ensuring file system store directory %r exists and is empty." % (img_store_dir))
+                sh.deldir(img_store_dir)
+                self.tracewriter.dirs_made(*sh.mkdirslist(img_store_dir))
             return config.stringify(fn)
 
     def _config_adjust_logging(self, contents, fn):
@@ -194,12 +187,10 @@ class GlanceInstaller(comp.PythonInstallComponent):
             return comp.PythonInstallComponent._config_param_replace(self, config_fn, contents, parameters)
 
     def _config_adjust(self, contents, name):
-        if name == REG_CONF:
-            return self._config_adjust_registry(contents, name)
+        if name in [REG_CONF, API_CONF]:
+            return self._config_adjust_api_reg(contents, name)
         elif name == REG_PASTE_CONF:
             return self._config_adjust_paste(contents, name)
-        elif name == API_CONF:
-            return self._config_adjust_api(contents, name)
         elif name == API_PASTE_CONF:
             return self._config_adjust_paste(contents, name)
         elif name == LOGGING_CONF:
