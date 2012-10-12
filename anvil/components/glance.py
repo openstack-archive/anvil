@@ -265,6 +265,37 @@ class GlanceTester(comp.PythonTestingComponent):
             # These seem to require swift, not always installed...
             'test_swift_store',
         ]
+
+    def _get_env(self):
+        env_addons = {}
+        app_dir = self.get_option('app_dir')
+        tox_fn = sh.joinpths(app_dir, 'tox.ini')
+        if sh.isfile(tox_fn):
+            try:
+                tox_cfg = cfg.BuiltinConfigParser(fns=[tox_fn])
+                env_values = tox_cfg.get('testenv', 'setenv') or ''
+                for env_line in env_values.splitlines():
+                    env_line = env_line.strip()
+                    env_line = env_line.split("#")[0].strip()
+                    if not env_line:
+                        continue
+                    env_entry = env_line.split('=', 1)
+                    if len(env_entry) == 2:
+                        (name, value) = env_entry
+                        name = name.strip()
+                        value = value.strip()
+                        if name.lower() != 'virtual_env':
+                            env_addons[name] = value
+            except IOError:
+                pass
+        env_addons['NOSE_WITH_OPENSTACK'] = 1
+        env_addons['NOSE_OPENSTACK_COLOR'] = 1
+        env_addons['NOSE_OPENSTACK_RED'] = 0.05
+        env_addons['NOSE_OPENSTACK_YELLOW'] = 0.025
+        env_addons['NOSE_OPENSTACK_SHOW_ELAPSED'] = 1
+        env_addons['NOSE_OPENSTACK_STDOUT'] = 1
+        return env_addons
+
     # redefining method as run_tests don't support exclude
     def _get_test_command(self):
         # See: http://docs.openstack.org/developer/nova/devref/unit_tests.html
@@ -275,12 +306,8 @@ class GlanceTester(comp.PythonTestingComponent):
         else:
             # Assume tox is being used, which we can't use directly
             # since anvil doesn't really do venv stuff (its meant to avoid those...)
-            cmd = ['export NOSE_WITH_OPENSTACK=1','export NOSE_OPENSTACK_COLOR=1',
-                    'export NOSE_OPENSTACK_RED=0.05','export NOSE_OPENSTACK_YELLOW=0.025',
-                    'export NOSE_OPENSTACK_SHOW_ELAPSED=1','export NOSE_OPENSTACK_STDOUT=1',
-                    'nosetests','--exclude-dir=glance/tests/functional',
-                    '--with-coverage','--cover-package=glance','--exclude=test_swift_store'
-                  ]
+            cmd = ['nosetests','--exclude-dir=glance/tests/functional',
+                    '--with-coverage','--cover-package=glance','--exclude=test_swift_store']
         # See: $ man nosetests
         #cmd.append('--nologcapture')
         #for e in self._get_test_exclusions():
