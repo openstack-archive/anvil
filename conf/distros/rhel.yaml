@@ -282,6 +282,10 @@ components:
             running: anvil.components:EmptyRuntime
             test: anvil.components.glance_client:GlanceClientTester
             uninstall: anvil.components:PythonUninstallComponent
+        pip_to_package:
+        -   name: pyOpenSSL
+            package:
+                name: pyOpenSSL
         pips:
         -   name: nosexcover
         -   name: setuptools-git
