@@ -30,9 +30,9 @@ PASSWORD_PROMPT = 'the database user'
 
 
 def get_shared_passwords(component):
-    mp = {}
-    mp['pw'] = component.get_password('sql')
-    return mp
+    return {
+        'pw': component.get_password('sql'),
+    }
 
 
 def drop_db(distro, dbtype, user, pw, dbname, **kwargs):
