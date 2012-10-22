@@ -144,7 +144,10 @@ class GlanceInstaller(comp.PythonInstallComponent):
             config.readfp(stream)
             config.set('DEFAULT', 'debug', self.get_bool_option('verbose'))
             config.set('DEFAULT', 'verbose', self.get_bool_option('verbose'))
-            config.set('DEFAULT', 'bind_port', gparams['endpoints']['public']['port'])
+            if fn in [REG_CONF]:
+                config.set('DEFAULT', 'bind_port', gparams['endpoints']['registry']['port'])
+            else:
+                config.set('DEFAULT', 'bind_port', gparams['endpoints']['public']['port'])
             config.set('DEFAULT', 'sql_connection', dbhelper.fetch_dbdsn(dbname=DB_NAME,
                                                                          utf8=True,
                                                                          dbtype=self.get_option('db', 'type'),
