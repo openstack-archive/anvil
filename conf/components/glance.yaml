@@ -1,7 +1,7 @@
 # Settings for component glance
 ---
 # Where we download this from...
-get_from: "git://github.com/openstack/glance.git?tag=stable/folsom"
+get_from: "git://github.com/openstack/glance.git?branch=stable/folsom"
 
 host: "$(auto:ip)"
 api_port: 9292
