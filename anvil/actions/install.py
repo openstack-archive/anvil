@@ -56,6 +56,7 @@ class InstallAction(action.Action):
                                logger=LOG)
 
     def _run(self, persona, component_order, instances):
+        removals = []
         self._run_phase(
             PhaseFunctors(
                 start=lambda i: LOG.info('Downloading %s.', colorizer.quote(i.name)),
@@ -64,8 +65,22 @@ class InstallAction(action.Action):
             ),
             component_order,
             instances,
-            "download"
+            "download",
+            *removals
             )
+        self._run_phase(
+            PhaseFunctors(
+                start=lambda i: LOG.info('Post-download patching %s.', colorizer.quote(i.name)),
+                run=lambda i: i.patch("download"),
+                end=None,
+            ),
+            component_order,
+            instances,
+            "download-patch",
+            *removals
+            )
+
+        removals += ['uninstall', 'unconfigure']
         self._run_phase(
             PhaseFunctors(
                 start=lambda i: LOG.info('Configuring %s.', colorizer.quote(i.name)),
@@ -75,7 +90,7 @@ class InstallAction(action.Action):
             component_order,
             instances,
             "configure",
-            'unconfigure'
+            *removals
             )
 
         if self.only_configure:
@@ -85,6 +100,7 @@ class InstallAction(action.Action):
             LOG.info("Exiting early, only asked to download and configure!")
             return
 
+        removals += ['pre-uninstall', 'post-uninstall']
         self._run_phase(
             PhaseFunctors(
                 start=lambda i: LOG.info('Preinstalling %s.', colorizer.quote(i.name)),
@@ -93,7 +109,8 @@ class InstallAction(action.Action):
             ),
             component_order,
             instances,
-            "pre-install"
+            "pre-install",
+            *removals
             )
 
         def install_start(instance):
@@ -120,7 +137,7 @@ class InstallAction(action.Action):
             component_order,
             instances,
             "install",
-            'uninstall'
+            *removals
             )
         self._run_phase(
             PhaseFunctors(
@@ -131,5 +148,5 @@ class InstallAction(action.Action):
             component_order,
             instances,
             "post-install",
-            'uninstall', 'unconfigure', 'pre-uninstall', 'post-uninstall'
+            *removals
             )

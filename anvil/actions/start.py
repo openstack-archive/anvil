@@ -29,6 +29,7 @@ class StartAction(action.Action):
         return 'running'
 
     def _run(self, persona, component_order, instances):
+        removals = []
         self._run_phase(
             PhaseFunctors(
                 start=None,
@@ -38,7 +39,9 @@ class StartAction(action.Action):
             component_order,
             instances,
             "pre-start",
+            *removals
             )
+        removals += ['stopped']
         self._run_phase(
             PhaseFunctors(
                 start=lambda i: LOG.info('Starting %s.', i.name),
@@ -48,7 +51,7 @@ class StartAction(action.Action):
             component_order,
             instances,
             "start",
-            'stopped'
+            *removals
             )
         self._run_phase(
             PhaseFunctors(
@@ -59,5 +62,5 @@ class StartAction(action.Action):
             component_order,
             instances,
             "post-start",
-            'stopped'
+            *removals
             )

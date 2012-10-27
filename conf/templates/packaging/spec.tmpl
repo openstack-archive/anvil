@@ -85,6 +85,13 @@ Requires: ${i}
 #end for
 #end if
 
+# Custom patches
+#set $size = 0
+#for $p in $patches
+Patch${size}: $p
+#set $size += 1
+#end for
+
 %description
 #if $details.description
 $details.description
@@ -97,6 +104,13 @@ $details.summary
 #if $build.has_key('setup')
 %setup $build.setup
 #end if
+
+# Custom patches activation
+#set $size = 0
+#for $p in $patches
+%patch${size} -p1
+#set $size += 1
+#end for
 
 #if $build.has_key('action')
 %build

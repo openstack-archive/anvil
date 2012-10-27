@@ -54,6 +54,23 @@ class DependencyPackager(comp.Component):
             self._build_paths = bpaths
         return dict(self._build_paths)
 
+    def _patches(self):
+        your_patches = []
+        in_patches = self.get_option('patches', 'package')
+        if in_patches:
+            for path in in_patches:
+                path = sh.abspth(path)
+                if sh.isdir(path):
+                    for c_path in sh.listdir(path, files_only=True):
+                        tgt_fn = sh.joinpths(self.build_paths['sources'], sh.basename(c_path))
+                        sh.copy(c_path, tgt_fn)
+                        your_patches.append(sh.basename(tgt_fn))
+                else:
+                    tgt_fn = sh.joinpths(self.build_paths['sources'], sh.basename(path))
+                    sh.copy(path, tgt_fn)
+                    your_patches.append(sh.basename(tgt_fn))
+        return your_patches
+
     def _requirements(self):
         return {
             'install': self._install_requirements(),
@@ -142,6 +159,7 @@ class DependencyPackager(comp.Component):
             'build': self._build_details(),
             'who': sh.getuser(),
             'date': utils.iso8601(),
+            'patches': self._patches(),
             'details': self.details,
         }
         (_fn, content) = utils.load_template('packaging', 'spec.tmpl')

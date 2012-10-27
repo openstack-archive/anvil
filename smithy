@@ -7,6 +7,11 @@ fi
 
 shopt -s nocasematch
 
+# Possible locations of the epel rpm/list url
+RHEL_VERSION=$(lsb_release  -r  | awk '{ print $2 }' | cut -d"." -f1)
+EPEL_RPM_LIST="http://mirrors.kernel.org/fedora-epel/$RHEL_VERSION/i386"
+NODE_RPM_URL="http://nodejs.tchol.org/repocfg/el/nodejs-stable-release.noarch.rpm"
+
 ARGS="$@"
 VER=$(python -c "from anvil import version; print version.version_string()")
 PWD=`pwd`
@@ -41,39 +46,41 @@ bootstrap_rh()
     echo "Please wait..."
 
     echo "Installing node.js yum repository configuration."
-    JS_REPO_RPM_FN="nodejs-stable-release.noarch.rpm"
+    JS_REPO_RPM_FN=$(basename $NODE_RPM_URL)
     if [ ! -f "/tmp/$JS_REPO_RPM_FN" ]; then
-        echo "Downloading $JS_REPO_RPM_FN"
-        wget -q -O "/tmp/$JS_REPO_RPM_FN" "http://nodejs.tchol.org/repocfg/el/$JS_REPO_RPM_FN"
+        echo "Downloading $JS_REPO_RPM_FN to /tmp/$JS_REPO_RPM_FN..."
+        wget -q -O "/tmp/$JS_REPO_RPM_FN" "$NODE_RPM_URL"
         if [ $? -ne 0 ]; then
             return 1
         fi
     fi
-    echo "Installing /tmp/$JS_REPO_RPM_FN."
+    echo "Installing /tmp/$JS_REPO_RPM_FN..."
     yum install --assumeyes --nogpgcheck -t "/tmp/$JS_REPO_RPM_FN" 2>&1
 
-    echo "Locating the EPEL rpm."
-    EPEL_RPM=$(curl -s "http://mirrors.kernel.org/fedora-epel/6/i386/" | grep -io ">\s*epel.*.rpm\s*<" | grep -io "epel.*.rpm")
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-    if [ ! -f "/tmp/$EPEL_RPM" ]; then
-        echo "Downloading $EPEL_RPM."
-        wget -q -O "/tmp/$EPEL_RPM" "http://mirrors.kernel.org/fedora-epel/6/i386/$EPEL_RPM"
+    echo "Locating the EPEL rpm..."
+    if [ -z "$EPEL_RPM" ]; then
+        EPEL_RPM=$(curl -s "$EPEL_RPM_LIST/" | grep -io ">\s*epel.*.rpm\s*<" | grep -io "epel.*.rpm")
         if [ $? -ne 0 ]; then
             return 1
         fi
     fi
-    echo "Installing /tmp/$EPEL_RPM."
+    if [ ! -f "/tmp/$EPEL_RPM" ]; then
+        echo "Downloading $EPEL_RPM to /tmp/$EPEL_RPM"
+        wget -q -O "/tmp/$EPEL_RPM" "$EPEL_RPM_LIST/$EPEL_RPM"
+        if [ $? -ne 0 ]; then
+            return 1
+        fi
+    fi
+    echo "Installing /tmp/$EPEL_RPM..."
     yum install --assumeyes --nogpgcheck -t "/tmp/$EPEL_RPM" 2>&1
 
-    echo "Installing needed distribution dependencies:"
+    echo "Installing distribution dependencies..."
     pkgs="gcc git pylint python python-netifaces python-pep8 python-cheetah"
     pkgs="$pkgs python-pip python-progressbar PyYAML python-ordereddict python-iso8601"
     yum install -y $pkgs 2>&1
 
-    echo "Installing needed pypi dependencies:"
-    pip-python install -U -I termcolor iniparse "keyring==0.9.2"
+    echo "Installing pypi dependencies..."
+    pip-python install -U -I termcolor iniparse "keyring>=0.9.2"
     return 0
 }
 

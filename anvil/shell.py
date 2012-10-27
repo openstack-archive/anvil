@@ -254,8 +254,23 @@ def fileperms(path):
     return (os.stat(path).st_mode & 0777)
 
 
-def listdir(path):
-    return os.listdir(path)
+def listdir(path, recursive=False, dirs_only=False, files_only=False):
+    path = abspth(path)
+    all_contents = []
+    if not recursive:
+        all_contents = os.listdir(path)
+        all_contents = [os.path.join(path, f) for f in all_contents]
+    else:
+        for (root, dirs, files) in os.walk(path):
+            for d in dirs:
+                all_contents.append(joinpths(root, d))
+            for f in files:
+                all_contents.append(joinpths(root, f))
+    if dirs_only:
+        all_contents = [f for f in all_contents if isdir(f)]
+    if files_only:
+        all_contents = [f for f in all_contents if isfile(f)]
+    return all_contents
 
 
 def isfile(fn):

@@ -34,6 +34,7 @@ class StopAction(action.Action):
         return components
 
     def _run(self, persona, component_order, instances):
+        removals = ['pre-start', 'start', 'post-start']
         self._run_phase(
             PhaseFunctors(
                 start=lambda i: LOG.info('Stopping %s.', colorizer.quote(i.name)),
@@ -43,5 +44,5 @@ class StopAction(action.Action):
             component_order,
             instances,
             "stopped",
-            'pre-start', 'start', 'post-start'
+            *removals
             )
