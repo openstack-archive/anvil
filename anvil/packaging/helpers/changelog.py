@@ -28,10 +28,17 @@ import textwrap
 
 import iso8601
 
+from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
 
+LOG = logging.getLogger(__name__)
+
 PER_CALL_AM = 50
+
+
+def translate_utf8(text):
+    return text.decode('utf8').encode('ascii', 'replace')
 
 
 class GitChangeLog(object):
@@ -71,6 +78,12 @@ class GitChangeLog(object):
         return self.date_buckets
 
     def _skip_entry(self, summary, date, email, name):
+        for f in [summary, name, email]:
+            try:
+                translate_utf8(f)
+            except UnicodeError:
+                LOG.warn("Non-utf8 field %s found", f)
+                return True
         email = email.lower().strip()
         if email in ['jenkins@review.openstack.org']:
             return True
@@ -118,10 +131,10 @@ class GitChangeLog(object):
                     if self._skip_entry(summary, date, author_email, author_name):
                         continue
                     log.append({
-                        'summary': summary,
+                        'summary': translate_utf8(summary),
                         'when': date,
-                        'author_email': author_email,
-                        'author_name': author_name,
+                        'author_email': translate_utf8(author_email),
+                        'author_name': translate_utf8(author_name),
                     })
 
         # Bucketize the dates by day
@@ -158,7 +171,4 @@ class RpmChangeLog(GitChangeLog):
                     if len(sublines) > 1:
                         for subline in sublines[1:]:
                             lines.append("  %s" % subline)
-        # Replace utf8 oddities with ? just incase
-        contents = "\n".join(lines)
-        contents = contents.decode('utf8').encode('ascii', 'replace')
-        return contents
+        return "\n".join(lines)
