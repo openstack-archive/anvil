@@ -261,6 +261,8 @@ class Action(object):
                 LOG.debug("Skipping phase named %r for component %r since it already happened.", phase_name, c)
                 change_activate(instance, True)
                 component_results[c] = None
+                for n in neg_phase_recs:
+                    n.unmark(c)
             else:
                 try:
                     result = None

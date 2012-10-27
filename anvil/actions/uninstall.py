@@ -34,6 +34,7 @@ class UninstallAction(action.Action):
         return components
 
     def _run(self, persona, component_order, instances):
+        removals = ['configure']
         self._run_phase(
             PhaseFunctors(
                 start=lambda i: LOG.info('Unconfiguring %s.', colorizer.quote(i.name)),
@@ -43,8 +44,9 @@ class UninstallAction(action.Action):
             component_order,
             instances,
             'unconfigure',
-            'configure'
+            *removals
             )
+        removals += ['post-install']
         self._run_phase(
             PhaseFunctors(
                 start=None,
@@ -54,8 +56,9 @@ class UninstallAction(action.Action):
             component_order,
             instances,
             'pre-uninstall',
-            'post-install'
+            *removals
             )
+        removals += ['install']
         self._run_phase(
             PhaseFunctors(
                 start=lambda i: LOG.info('Uninstalling %s.', colorizer.quote(i.name)),
@@ -65,8 +68,9 @@ class UninstallAction(action.Action):
             component_order,
             instances,
             'uninstall',
-            'install'
+            *removals
             )
+        removals += ['download', 'configure', "download-patch", 'pre-install', 'post-install']
         self._run_phase(
             PhaseFunctors(
                 start=lambda i: LOG.info('Post-uninstalling %s.', colorizer.quote(i.name)),
@@ -76,5 +80,5 @@ class UninstallAction(action.Action):
             component_order,
             instances,
             'post-uninstall',
-            'download', 'configure', 'pre-install', 'install', 'post-install'
+            *removals
             )
