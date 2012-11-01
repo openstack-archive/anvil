@@ -57,22 +57,34 @@ bootstrap_rh()
     echo "Installing /tmp/$JS_REPO_RPM_FN..."
     yum install --assumeyes --nogpgcheck -t "/tmp/$JS_REPO_RPM_FN" 2>&1
 
-    echo "Locating the EPEL rpm..."
-    if [ -z "$EPEL_RPM" ]; then
-        EPEL_RPM=$(curl -s "$EPEL_RPM_LIST/" | grep -io ">\s*epel.*.rpm\s*<" | grep -io "epel.*.rpm")
-        if [ $? -ne 0 ]; then
-            return 1
+    if [ ! -z $YREPO_RPM ]; then
+        echo "Locating the YREPO rpm..."
+        if [ ! -f "/tmp/$YREPO_RPM" ]; then  
+            wget -q -O "/tmp/$YREPO_RPM" "http://edge.dist.corp.yahoo.com:8000/yum/properties/codewar/openstack/6/noarch/$YREPO_RPM"
+            if [ $? -ne 0 ]; then
+                return 1
+            fi
         fi
-    fi
-    if [ ! -f "/tmp/$EPEL_RPM" ]; then
-        echo "Downloading $EPEL_RPM to /tmp/$EPEL_RPM"
-        wget -q -O "/tmp/$EPEL_RPM" "$EPEL_RPM_LIST/$EPEL_RPM"
-        if [ $? -ne 0 ]; then
-            return 1
+        echo "Installing /tmp/$YREPO_RPM..."
+        yum install --assumeyes --nogpgcheck -t "/tmp/$YREPO_RPM" 2>&1
+    else 
+        echo "Locating the EPEL rpm..."
+        if [ -z "$EPEL_RPM" ]; then
+            EPEL_RPM=$(curl -s "$EPEL_RPM_LIST/" | grep -io ">\s*epel.*.rpm\s*<" | grep -io "epel.*.rpm")
+            if [ $? -ne 0 ]; then
+                return 1
+            fi
         fi
+        if [ ! -f "/tmp/$EPEL_RPM" ]; then
+            echo "Downloading $EPEL_RPM to /tmp/$EPEL_RPM"
+            wget -q -O "/tmp/$EPEL_RPM" "$EPEL_RPM_LIST/$EPEL_RPM"
+            if [ $? -ne 0 ]; then
+                return 1
+            fi
+        fi
+        echo "Installing /tmp/$EPEL_RPM..."
+        yum install --assumeyes --nogpgcheck -t "/tmp/$EPEL_RPM" 2>&1
     fi
-    echo "Installing /tmp/$EPEL_RPM..."
-    yum install --assumeyes --nogpgcheck -t "/tmp/$EPEL_RPM" 2>&1
 
     echo "Installing distribution dependencies..."
     pkgs="gcc git pylint python python-netifaces python-pep8 python-cheetah"
