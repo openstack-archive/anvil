@@ -200,6 +200,9 @@ components:
         -   name: simplejson
             package:
                 name: python-simplejson
+        -   name: testtools
+            package:
+                name: python-testtools
         -   name: unittest2
             package:
                 name: python-unittest2
