@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import abc
 import contextlib
 import functools
 import urllib2
@@ -32,10 +33,13 @@ LOG = logging.getLogger(__name__)
 
 
 class Downloader(object):
+    __metaclass__ = abc.ABCMeta
+
     def __init__(self, uri, store_where):
         self.uri = uri
         self.store_where = store_where
 
+    @abc.abstractmethod
     def download(self):
         raise NotImplementedError()
 
