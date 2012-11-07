@@ -70,7 +70,7 @@ def main():
         },
     }
     img_am = len(options.images)
-    uploader = glance.UploadService(params)
+    uploader = glance.UploadService(**params)
     am_installed = uploader.install(options.images)
     if img_am == am_installed:
         return 0
