@@ -248,8 +248,10 @@ class GlanceRuntime(comp.PythonRuntime):
             params['keystone'] = khelper.get_shared_params(ip=self.get_option('ip'),
                                                            service_user='glance',
                                                            **utils.merge_dicts(self.get_option('keystone'),
-                                                                               khelper.get_shared_passwords(self)))
-            ghelper.UploadService(params).install(self._get_image_urls())
+            cache_dir = self.get_option('image_cache_dir')
+            if cache_dir:
+                params['cache_dir'] = cache_dir
+            ghelper.UploadService(**params).install(self._get_image_urls())
 
 
 class GlanceTester(comp.PythonTestingComponent):
@@ -260,50 +262,14 @@ class GlanceTester(comp.PythonTestingComponent):
             'test_swift_store',
         ]
 
-    def _get_env(self):
-        env_addons = {}
-        app_dir = self.get_option('app_dir')
-        tox_fn = sh.joinpths(app_dir, 'tox.ini')
-        if sh.isfile(tox_fn):
-            try:
-                tox_cfg = cfg.BuiltinConfigParser(fns=[tox_fn])
-                env_values = tox_cfg.get('testenv', 'setenv') or ''
-                for env_line in env_values.splitlines():
-                    env_line = env_line.strip()
-                    env_line = env_line.split("#")[0].strip()
-                    if not env_line:
-                        continue
-                    env_entry = env_line.split('=', 1)
-                    if len(env_entry) == 2:
-                        (name, value) = env_entry
-                        name = name.strip()
-                        value = value.strip()
-                        if name.lower() != 'virtual_env':
-                            env_addons[name] = value
-            except IOError:
-                pass
-        env_addons['NOSE_WITH_OPENSTACK'] = 1
-        env_addons['NOSE_OPENSTACK_COLOR'] = 1
-        env_addons['NOSE_OPENSTACK_RED'] = 0.05
-        env_addons['NOSE_OPENSTACK_YELLOW'] = 0.025
-        env_addons['NOSE_OPENSTACK_SHOW_ELAPSED'] = 1
-        env_addons['NOSE_OPENSTACK_STDOUT'] = 1
-        return env_addons
-
-    # redefining method as run_tests don't support exclude
+    # NOTE: redefining method as run_tests doesn't support exclude
     def _get_test_command(self):
-        # See: http://docs.openstack.org/developer/nova/devref/unit_tests.html
-        # And: http://wiki.openstack.org/ProjectTestingInterface
-        app_dir = self.get_option('app_dir')
-        if sh.isfile(sh.joinpths(app_dir, 'run_tests.sh')) and False: #self._use_run_tests():
-            cmd = [sh.joinpths(app_dir, 'run_tests.sh'), '-N']
-        else:
-            # Assume tox is being used, which we can't use directly
-            # since anvil doesn't really do venv stuff (its meant to avoid those...)
-            cmd = ['nosetests','--exclude-dir=glance/tests/functional',
-                    '--with-coverage','--cover-package=glance','--exclude=test_swift_store']
         # See: $ man nosetests
-        #cmd.append('--nologcapture')
-        #for e in self._get_test_exclusions():
-        #    cmd.append('--exclude=%s' % (e))
+        #
+        # It seems to assume tox is being used, which we can't use directly
+        # since anvil doesn't really do venv stuff (its meant to avoid those...)
+        cmd = ['nosetests','--exclude-dir=glance/tests/functional',
+               '--with-coverage','--cover-package=glance']
+        for e in self._get_test_exclusions():
+            cmd.append('--exclude=%s' % (e))
         return cmd
