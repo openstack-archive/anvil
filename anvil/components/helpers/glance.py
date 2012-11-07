@@ -369,7 +369,7 @@ class Image(object):
             else:
                 fetched_fn = self.url
             unpack_info = Unpacker().unpack(url_fn, fetched_fn, cache_path)
-            sh.write_file(meta_path, utils.prettify_yaml(unpack_info))
+            sh.write_file(details_path, utils.prettify_yaml(unpack_info))
         tgt_image_name = self._generate_img_name(url_fn)
         img_id = self._register(tgt_image_name, unpack_info)
         return (tgt_image_name, img_id)
