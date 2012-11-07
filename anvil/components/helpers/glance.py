@@ -359,7 +359,7 @@ class Image(object):
             raise IOError("Can not determine file name from url: %r" % (self.url))
         (cache_path, details_path) = self._cached_paths()
         if sh.exists(cache_path) and sh.exists(details_path):
-            unpack_info = utils.load_yaml(sh.load_file(details_path))
+            unpack_info = utils.load_yaml_text(sh.load_file(details_path))
         else:
             sh.mkdir(cache_path)
             if not self._is_url_local():
