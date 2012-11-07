@@ -247,7 +247,8 @@ class GlanceRuntime(comp.PythonRuntime):
             params['glance'] = ghelper.get_shared_params(**self.options)
             params['keystone'] = khelper.get_shared_params(ip=self.get_option('ip'),
                                                            service_user='glance',
-                                                           **utils.merge_dicts(self.get_option('keystone')))
+                                                           **utils.merge_dicts(self.get_option('keystone'),
+                                                                               khelper.get_shared_passwords(self)))
             cache_dir = self.get_option('image_cache_dir')
             if cache_dir:
                 params['cache_dir'] = cache_dir
