@@ -15,6 +15,7 @@
 #    under the License.
 
 import contextlib
+import hashlib
 import os
 import re
 import tarfile
@@ -259,12 +260,13 @@ class Registry(object):
 
 class Image(object):
 
-    def __init__(self, client, url, is_public):
+    def __init__(self, client, url, is_public, cache_dir):
         self.client = client
         self.registry = Registry(client)
         self.url = url
         self.parsed_url = urlparse.urlparse(url)
         self.is_public = is_public
+        self.cache_dir = cache_dir
 
     def _check_name(self, name):
         LOG.info("Checking if image %s already exists already in glance.", colorizer.quote(name))
@@ -343,39 +345,58 @@ class Image(object):
     def _is_url_local(self):
         return (sh.exists(self.url) or (self.parsed_url.scheme == '' and self.parsed_url.netloc == ''))
 
+    def _cached_paths(self):
+        url_fn = self._extract_url_fn()
+        md5er = hashlib.new('md5')
+        md5er.update(self.url)
+        path = sh.joinpths(self.cache_dir, md5er.hexdigest())
+        details_path = sh.joinpths(self.cache_dir, md5er.hexdigest() + ".details")
+        return (path, details_path)
+
     def install(self):
         url_fn = self._extract_url_fn()
         if not url_fn:
             raise IOError("Can not determine file name from url: %r" % (self.url))
-        with utils.tempdir() as tdir:
+        (cache_path, details_path) = self._cached_paths()
+        if sh.exists(cache_path) and sh.exists(details_path):
+            unpack_info = utils.load_yaml_text(sh.load_file(details_path))
+        else:
+            sh.mkdir(cache_path)
             if not self._is_url_local():
-                (fetched_fn, bytes_down) = down.UrlLibDownloader(self.url, sh.joinpths(tdir, url_fn)).download()
+                (fetched_fn, bytes_down) = down.UrlLibDownloader(self.url,
+                                                                 sh.joinpths(cache_path, url_fn)).download()
                 LOG.debug("For url %s we downloaded %s bytes to %s", self.url, bytes_down, fetched_fn)
             else:
                 fetched_fn = self.url
-            unpack_info = Unpacker().unpack(url_fn, fetched_fn, tdir)
-            tgt_image_name = self._generate_img_name(url_fn)
-            img_id = self._register(tgt_image_name, unpack_info)
-            return (tgt_image_name, img_id)
+            unpack_info = Unpacker().unpack(url_fn, fetched_fn, cache_path)
+            sh.write_file(details_path, utils.prettify_yaml(unpack_info))
+        tgt_image_name = self._generate_img_name(url_fn)
+        img_id = self._register(tgt_image_name, unpack_info)
+        return (tgt_image_name, img_id)
 
 
 class UploadService(object):
 
-    def __init__(self, params):
-        self.params = params
+    def __init__(self, glance, keystone, cache_dir='/usr/share/anvil/glance/cache', is_public=True):
+        self.glance_params = glance
+        self.keystone_params = keystone
+        self.cache_dir = cache_dir
+        self.is_public = is_public
 
     def _get_token(self, kclient_v2):
         LOG.info("Getting your keystone token so that image uploads may proceed.")
-        params = self.params['keystone']
-        client = kclient_v2.Client(username=params['admin_user'],
-            password=params['admin_password'],
-            tenant_name=params['admin_tenant'],
-            auth_url=params['endpoints']['public']['uri'])
+        k_params = self.keystone_params
+        client = kclient_v2.Client(username=k_params['admin_user'],
+                                   password=k_params['admin_password'],
+                                   tenant_name=k_params['admin_tenant'],
+                                   auth_url=k_params['endpoints']['public']['uri'])
         return client.auth_token
 
     def install(self, urls):
         am_installed = 0
         try:
+            # Done at a function level since this module may be used
+            # before these libraries actually exist...
             gclient_v1 = importer.import_module('glanceclient.v1.client')
             gexceptions = importer.import_module('glanceclient.common.exceptions')
             kclient_v2 = importer.import_module('keystoneclient.v2_0.client')
@@ -386,11 +407,10 @@ class UploadService(object):
         if urls:
             try:
                 # Ensure all services ok
-                for n in ['glance', 'keystone']:
-                    params = self.params[n]
+                for params in [self.glance_params, self.keystone_params]:
                     utils.wait_for_url(params['endpoints']['public']['uri'])
-                params = self.params['glance']
-                client = gclient_v1.Client(endpoint=params['endpoints']['public']['uri'],
+                g_params = self.glance_params
+                client = gclient_v1.Client(endpoint=g_params['endpoints']['public']['uri'],
                                            token=self._get_token(kclient_v2))
             except (RuntimeError, gexceptions.ClientException,
                     kexceptions.ClientException, IOError) as e:
@@ -400,7 +420,9 @@ class UploadService(object):
                                 header="Attempting to download+extract+upload %s images" % len(urls))
             for url in urls:
                 try:
-                    img_handle = Image(client, url, self.params.get('public', True))
+                    img_handle = Image(client, url,
+                                       is_public=self.is_public,
+                                       cache_dir=self.cache_dir)
                     (name, img_id) = img_handle.install()
                     LOG.info("Installed image named %s with image id %s.", colorizer.quote(name), colorizer.quote(img_id))
                     am_installed += 1
