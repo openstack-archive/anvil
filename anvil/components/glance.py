@@ -249,7 +249,10 @@ class GlanceRuntime(comp.PythonRuntime):
                                                            service_user='glance',
                                                            **utils.merge_dicts(self.get_option('keystone'),
                                                                                khelper.get_shared_passwords(self)))
-            ghelper.UploadService(params).install(self._get_image_urls())
+            cache_dir = self.get_option('image_cache_dir')
+            if cache_dir:
+                params['cache_dir'] = cache_dir
+            ghelper.UploadService(**params).install(self._get_image_urls())
 
 
 class GlanceTester(comp.PythonTestingComponent):
@@ -259,18 +262,15 @@ class GlanceTester(comp.PythonTestingComponent):
             # These seem to require swift, not always installed...
             'test_swift_store',
         ]
+
+    # NOTE: redefining method as run_tests doesn't support exclude
     def _get_test_command(self):
-        # See: http://docs.openstack.org/developer/nova/devref/unit_tests.html
-        # And: http://wiki.openstack.org/ProjectTestingInterface
-        app_dir = self.get_option('app_dir')
-        if sh.isfile(sh.joinpths(app_dir, 'run_tests.sh')) and self._use_run_tests():
-            cmd = [sh.joinpths(app_dir, 'run_tests.sh'), '-N']
-        else:
-            # Assume tox is being used, which we can't use directly
-            # since anvil doesn't really do venv stuff (its meant to avoid those...)
-            cmd = ['nosetests']
         # See: $ man nosetests
-        #cmd.append('--nologcapture')
+        #
+        # It seems to assume tox is being used, which we can't use directly
+        # since anvil doesn't really do venv stuff (its meant to avoid those...)
+        cmd = ['nosetests','--exclude-dir=glance/tests/functional',
+               '--with-coverage','--cover-package=glance']
         for e in self._get_test_exclusions():
             cmd.append('--exclude=%s' % (e))
         return cmd

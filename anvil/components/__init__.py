@@ -116,10 +116,12 @@ class PkgInstallComponent(component.Component):
             uris = [from_uri]
             utils.log_iterable(uris, logger=LOG,
                     header="Downloading from %s uris" % (len(uris)))
+            # Ensure that we mark it as occuring, so that even if it
+            # fails we can go clean it up...
             self.tracewriter.download_happened(target_dir, from_uri)
-            dirs_made = sh.mkdirslist(target_dir)
-            self.tracewriter.dirs_made(*dirs_made)
-            down.download(self.distro, from_uri, target_dir)
+            self.tracewriter.dirs_made(*sh.mkdirslist(target_dir))
+            fetcher = down.GitDownloader(self.distro, from_uri, target_dir)
+            fetcher.download()
             return uris
 
     def patch(self, section):
@@ -843,6 +845,12 @@ class PythonTestingComponent(component.Component):
                             env_addons[name] = value
             except IOError:
                 pass
+        env_addons['NOSE_WITH_OPENSTACK'] = 1
+        env_addons['NOSE_OPENSTACK_COLOR'] = 1
+        env_addons['NOSE_OPENSTACK_RED'] = 0.05
+        env_addons['NOSE_OPENSTACK_YELLOW'] = 0.025
+        env_addons['NOSE_OPENSTACK_SHOW_ELAPSED'] = 1
+        env_addons['NOSE_OPENSTACK_STDOUT'] = 1
         return env_addons
 
     def run_tests(self):

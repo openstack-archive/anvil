@@ -41,8 +41,6 @@ from anvil.pprint import center_text
 
 
 LOG = logging.getLogger()
-ANVIL_DIR = "/etc/anvil/"
-SETTINGS_FN = "/etc/anvil/settings.yaml"
 
 
 def run(args):
@@ -86,8 +84,8 @@ def run(args):
     if 'dryrun' in args:
         env.set("ANVIL_DRYRUN", str(args['dryrun']))
 
-    # Ensure the anvil etc dir is there if others are about to use it
-    ensure_anvil_dir()
+    # Ensure the anvil dirs are there if others are about to use it...
+    ensure_anvil_dirs()
 
     # Load the distro
     dist = distro.load(settings.DISTRO_DIR)
@@ -132,7 +130,7 @@ def load_previous_settings():
     try:
         # Don't use sh here so that we always
         # read this (even if dry-run)    
-        with open(SETTINGS_FN, 'r') as fh:
+        with open("/etc/anvil/settings.yaml", 'r') as fh:
             settings_prev = utils.load_yaml_text(fh.read())
     except Exception:
         # Errors could be expected on format problems
@@ -141,12 +139,10 @@ def load_previous_settings():
     return settings_prev
 
 
-def ensure_anvil_dir():
-    if not sh.isdir(ANVIL_DIR):
+def ensure_anvil_dirs():
+    for d in ["/etc/anvil/", '/usr/share/anvil/']:
         with sh.Rooted(True):
-            os.makedirs(ANVIL_DIR)
-            (uid, gid) = sh.get_suids()
-            sh.chown_r(ANVIL_DIR, uid, gid)
+            sh.mkdir(d, adjust_suids=True)
 
 
 def store_current_settings(c_settings):
@@ -157,14 +153,15 @@ def store_current_settings(c_settings):
             if k in c_settings:
                 to_save.pop(k, None)
         with sh.Rooted(True):
-            with open(SETTINGS_FN, 'w') as fh:
+            with open("/etc/anvil/settings.yaml", 'w') as fh:
                 fh.write("# Anvil last used settings\n")
-                fh.write(utils.add_header(SETTINGS_FN, utils.prettify_yaml(to_save)))
+                fh.write(utils.add_header("/etc/anvil/settings.yaml",
+                         utils.prettify_yaml(to_save)))
                 fh.flush()
         (uid, gid) = sh.get_suids()
-        sh.chown(SETTINGS_FN, uid, gid)
+        sh.chown("/etc/anvil/settings.yaml", uid, gid)
     except Exception as e:
-        LOG.debug("Failed writing to %s due to %s", SETTINGS_FN, e)
+        LOG.debug("Failed writing to %s due to %s", "/etc/anvil/settings.yaml", e)
 
 
 def main():

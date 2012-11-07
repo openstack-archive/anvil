@@ -505,7 +505,7 @@ def load_file(fn):
     return data
 
 
-def mkdir(path, recurse=True):
+def mkdir(path, recurse=True, adjust_suids=False):
     if not isdir(path):
         if recurse:
             LOG.debug("Recursively creating directory %r" % (path))
@@ -515,6 +515,10 @@ def mkdir(path, recurse=True):
             LOG.debug("Creating directory %r" % (path))
             if not is_dry_run():
                 os.mkdir(path)
+    if adjust_suids:
+         (uid, gid) = get_suids()
+         if uid is not None and gid is not None:
+             chown_r(path, uid, gid)
     return path
 
 
