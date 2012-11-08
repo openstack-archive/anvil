@@ -222,9 +222,8 @@ class PythonPackager(DependencyPackager):
 
     def _gather_files(self):
         files = DependencyPackager._gather_files(self)
-        files['directories'].append("%{python_sitelib}/" + (self.details['name']))
-        files['files'].append("%{python_sitelib}/" + (self.details['name']))
-        files['files'].append("%{python_sitelib}/" + "%s-*.egg-info/" % (self.details['name']))
+        files['directories'].append("%{python_sitelib}/")
+        files['files'].append("%{python_sitelib}/")
         files['files'].append("%{_bindir}/")
         return files
 
