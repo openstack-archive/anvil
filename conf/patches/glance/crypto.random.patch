@@ -1,0 +1,39 @@
+Crypto.Random was added in python-crypto-2.1.0 to replace
+the problematic randpool in 2.0.1: http://www.pycrypto.org/randpool-broken
+However on Linux os.urandom() should be fine to set IV.
+
+I'm not sure it's necessary to pad with random bytes,
+but I'm leaving that as is for now:
+http://www.codekoala.com/blog/2009/aes-encryption-python-using-pycrypto/#comment-25921785
+http://eli.thegreenplace.net/2010/06/25/aes-encryption-of-files-in-python-with-pycrypto/
+
+diff -Naur glance-2012.1.orig/glance/common/crypt.py glance-2012.1/glance/common/crypt.py
+--- glance-2012.1.orig/glance/common/crypt.py	2012-03-30 13:12:40.000000000 +0000
++++ glance-2012.1/glance/common/crypt.py	2012-04-09 01:46:38.244937150 +0000
+@@ -21,10 +21,7 @@
+ """
+ 
+ import base64
+-
+ from Crypto.Cipher import AES
+-from Crypto import Random
+-from Crypto.Random import random
+ 
+ 
+ def urlsafe_encrypt(key, plaintext, blocksize=16):
+@@ -41,13 +38,12 @@
+         Pads text to be encrypted
+         """
+         pad_length = (blocksize - len(text) % blocksize)
+-        sr = random.StrongRandom()
+-        pad = ''.join(chr(sr.randint(1, 0xFF)) for i in range(pad_length - 1))
++        pad = os.urandom(pad_length - 1)
+         # We use chr(0) as a delimiter between text and padding
+         return text + chr(0) + pad
+ 
+     # random initial 16 bytes for CBC
+-    init_vector = Random.get_random_bytes(16)
++    init_vector = os.urandom(16)
+     cypher = AES.new(key, AES.MODE_CBC, init_vector)
+     padded = cypher.encrypt(pad(str(plaintext)))
+     return base64.urlsafe_b64encode(init_vector + padded)

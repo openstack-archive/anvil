@@ -31,6 +31,8 @@ def apply_patches(patch_files, working_dir):
     apply_files = []
     for p in patch_files:
         p = sh.abspth(p)
+        if not p.endswith(".patch"):
+            continue
         if not sh.isfile(p):
             LOG.warn("Can not apply non-file patch %s", p)
         apply_files.append(p)
