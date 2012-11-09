@@ -121,6 +121,9 @@ $build.action
 #if $build.has_key('install_how')
 $build.install_how
 #end if
+#if $build.has_key('remove_file')
+$build.remove_file
+#end if
 
 %files
 %defattr(-,root,root,-)
