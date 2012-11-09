@@ -233,6 +233,7 @@ class PythonPackager(DependencyPackager):
         b_dets['setup'] = '-q -n %{name}-%{version}'
         b_dets['action'] = '%{__python} setup.py build'
         b_dets['install_how'] = '%{__python} setup.py install --prefix=%{_prefix} --root=%{buildroot}'
+        b_dets['remove_file'] = self.get_option('remove_file')
         return b_dets
 
     def verify(self):
