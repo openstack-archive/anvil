@@ -20,6 +20,11 @@ db:
   host: "$(db:host)"
   port: "$(db:port)"
 
+# Package time patches
+patches:
+  package:
+    - "conf/patches/glance/"
+
 # Interactions with keystone are via the following settings
 paste_flavor: 'keystone'
 keystone:

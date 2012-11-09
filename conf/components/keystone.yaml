@@ -19,7 +19,12 @@ db:
   user: "$(db:user)"
   host: "$(db:host)"
   port: "$(db:port)"
-  
+
+# Package time patches
+patches:
+  package:
+    - "conf/patches/keystone/"
+
 # Needed when running to setup the right roles/endpoints...
 glance:
   api_port: "$(glance:api_port)"
