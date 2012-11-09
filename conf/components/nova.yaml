@@ -123,6 +123,11 @@ volume_group: nova-volumes
 volume_name_postfix: "%08x"
 volume_name_prefix: "volume-"
 
+# Package time patches
+patches:
+  package:
+    - "conf/patches/nova/"
+
 # Needed for setting up your database
 db:
   type: "$(db:type)"
