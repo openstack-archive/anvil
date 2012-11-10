@@ -30,16 +30,18 @@
 +# TODO: See can we get pkg_resources to do the right thing directly
 +import paste
 +paste.__path__.insert(0, paste.__path__.pop(-1))
---- keystone-2012.1/bin/keystone-all.orig	2012-04-04 04:22:54.000000000 +0200
-+++ keystone-2012.1/bin/keystone-all	2012-05-29 19:32:51.728668936 +0200
-@@ -16,11 +16,11 @@
-                                '__init__.py')):
-     sys.path.insert(0, possible_topdir)
+--- keystone-2012.1/bin/keystone-all.orig   2012-11-09 22:44:31.000000000 +0000
++++ keystone-2012.1/bin/keystone-all    2012-11-09 23:49:04.560249926 +0000
+@@ -20,13 +20,13 @@
+ 
+ eventlet.patcher.monkey_patch(all=False, socket=True, time=True, thread=True)
  
 -from paste import deploy
 -
  from keystone import config
  from keystone.common import wsgi
+ from keystone.common import utils
+ from keystone.openstack.common import importutils
  
 +from paste import deploy
 +
