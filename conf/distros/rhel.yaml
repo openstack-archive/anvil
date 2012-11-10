@@ -32,6 +32,7 @@ commands:
         start: service mysqld start
         status: service mysqld status
         stop: service mysqld stop
+    # Pip command varies depending on the distro
     pip: pip-python
     # Commands used when setting up python projects
     python:
@@ -135,6 +136,9 @@ components:
         -   name: babel
             package:
                 name: python-babel
+        -   name: cmd2
+            package:
+                name: python-cmd2
         -   name: eventlet
             package:
                 name: python-eventlet
@@ -170,6 +174,9 @@ components:
                           target: "/usr/lib/python2.6/site-packages/nose"
                         - source: "/usr/bin/nosetests1.1"
                           target: "/usr/bin/nosetests"
+        -   name: passlib
+            package:
+                name: python-passlib
         -   name: paste
             package:
                 name: python-paste
@@ -189,6 +196,10 @@ components:
             package:
                 name: python-pip
                 removable: false
+        -   name: pyparsing
+            package:
+                name: pyparsing
+                removable: false
         -   name: routes
             package:
                 name: python-routes1.12
@@ -200,6 +211,18 @@ components:
         -   name: simplejson
             package:
                 name: python-simplejson
+        -   name: sphinx
+            package:
+                name: python-sphinx10
+                packager_name: anvil.distros.rhel:YumPackagerWithRelinks
+                packager_options:
+                    links:
+                        - source: "/usr/bin/sphinx-1.0-build"
+                          target: "/usr/bin/sphinx-build"
+                        - source: "/usr/bin/sphinx-1.0-quickstart"
+                          target: "/usr/bin/sphinx-quickstart"
+                        - source: "/usr/bin/sphinx-1.0-autogen"
+                          target: "/usr/bin/sphinx-autogen"
         -   name: testtools
             package:
                 name: python-testtools
@@ -220,33 +243,32 @@ components:
                           target: "/usr/lib/python2.6/site-packages/webob"
         pips:
         # Pips that aren't packages yet (or versions aren't right...)
-        -   name: cmd2
         -   name: coverage
         -   name: distribute
             removable: false
         -   name: lxml
             version: "2.3.5"
-            options: # Force it to upgrade
+            options: # Force it to upgrade if its there already
+                     # but versions are miss-matched
                 - "-U"
             removable: false
         -   name: nose-exclude
         -   name: nosehtmloutput
         -   name: openstack.nose_plugin
-        -   name: passlib
         -   name: prettytable
-            version: "0.6" # This is not right, 0.6 and 0.6.1 are needed??
+            version: "0.6.1"
         -   name: pycrypto
-            options: # Force it to upgrade
+            version: "2.6"
+            options: # Force it to upgrade if its there already
+                     # but versions are miss-matched
                 - "-U"
             removable: false
-        # This seems to cause conflicts with
-        # the yum version that comes installed so use the pip version
-        -   name: pyparsing
-            removable: false
         -   name: requests
-        -   name: sphinx
-        -   name: sqlalchemy # Need this or nova pukes with 'Did not recognize type 'BIGINT' of column 'bw_in''
-            options: # Force it to upgrade
+        # Need this or nova pukes with 'Did not recognize type 'BIGINT' of column 'bw_in''
+        -   name: sqlalchemy
+            version: "0.7.9"
+            options: # Force it to upgrade if its there already
+                     # but versions are miss-matched
                 - "-U"
         -   name: sqlalchemy-migrate
     glance:
@@ -262,6 +284,9 @@ components:
         # and versions inside those files into distribution
         # package names equivalents (if possible)
         pip_to_package:
+        -   name: jsonschema
+            package:
+                name: python-jsonschema
         -   name: pysendfile
             package:
                 name: pysendfile
@@ -276,8 +301,7 @@ components:
         -   name: boto
             version: "2.1.1"
         -   name: wsgiref
-        -   name: xattr
-        -   name: jsonschema
+        -   name: xattr # Seems to be only in test-requires
     glance-client:
         action_classes:
             install: anvil.components.glance_client:GlanceClientInstaller
@@ -289,11 +313,12 @@ components:
         -   name: pyOpenSSL
             package:
                 name: pyOpenSSL
-        pips:
-        -   name: nosexcover
-        -   name: setuptools-git
         -   name: warlock
-            version: "0.1.0"
+            package:
+                name: python-warlock
+        pips:
+        -   name: nosexcover # Seems to be only in test-requires
+        -   name: setuptools-git # Seems to be only in test-requires
     horizon:
         action_classes:
             install: anvil.distros.rhel:HorizonInstaller
@@ -302,6 +327,15 @@ components:
             test: anvil.components:PythonTestingComponent
             uninstall: anvil.components.horizon:HorizonUninstaller
         pip_to_package:
+        -   name: django
+            package:
+                name: Django14
+        -   name: django-compressor
+            package:
+                name: python-django-compressor
+        -   name: django-nose
+            package:
+                name: python-django-nose
         -   name: pytz
             package:
                 name: pytz
@@ -312,10 +346,6 @@ components:
         -   name: nodejs-compat-symlinks
         -   name: npm
         pips:
-        -   name: django
-            version: "1.4"
-        -   name: django-compressor
-        -   name: django-nose
         -   name: django-openstack-auth
         -   name: nosexcover
         -   name: selenium
@@ -390,8 +420,6 @@ components:
         pips:
         -   name: Cheetah
             version: "2.4.4"
-        -   name: python-daemon
-            version: "1.5.5"
         subsystems:
             compute:
                 packages:
@@ -448,9 +476,10 @@ components:
             running: anvil.components:EmptyRuntime
             test: anvil.components.openstack_client:OpenStackClientTester
             uninstall: anvil.components:PythonUninstallComponent
-        pips:
-        -   name: cliff
         pip_to_package:
+        -   name: cliff
+            package:
+                name: python-cliff
         -   name: keyring
             package:
                 name: python-keyring
@@ -461,8 +490,11 @@ components:
             running: anvil.components:EmptyRuntime
             test: anvil.components:PythonTestingComponent
             uninstall: anvil.components:PythonUninstallComponent
-        pips:
+        pip_to_package:
         -   name: cliff
+            package:
+                name: python-cliff
+        pips:
         -   name: cliff-tablib
     rabbit-mq:
         action_classes:
