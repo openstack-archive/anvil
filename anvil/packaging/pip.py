@@ -39,11 +39,25 @@ class Packager(pack.Packager):
         return self.distro.get_command_config('pip')
 
     def _anything_there(self, pkg):
-        # Anything with options always gets installed
-        if 'options' in pkg:
+        pkg_there = pip_helper.get_installed(self._get_pip_command(),
+                                             pkg['name'], pkg.get('version'))
+        if not pkg_there:
             return None
-        return pip_helper.get_installed(self._get_pip_command(),
-                                        pkg['name'], pkg.get('version'))
+        if 'options' in pkg and 'version' in pkg:
+            # Ensure exact version if options
+            wanted_pkg = pip_helper.LooseRequirement(pkg['name'],
+                                                     pkg.get('version'))
+            wanted_ver = wanted_pkg.version
+            if wanted_ver == pkg_there.version and wanted_ver is not None:
+                return pkg_there
+            else:
+                # Mismatched version
+                return None
+        elif 'options' in pkg:
+            # Anything with options always gets installed
+            return None
+        else:
+            return pkg_there
 
     def _execute_pip(self, cmd):
         pip_cmd = self._get_pip_command()
