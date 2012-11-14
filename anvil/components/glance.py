@@ -259,13 +259,8 @@ class GlanceTester(comp.PythonTestingComponent):
             'test_swift_store',
         ]
 
-    # NOTE: redefining method as run_tests doesn't support exclude
+    # NOTE: only run the unit tests
     def _get_test_command(self):
-        # See: $ man nosetests
-        #
-        # It seems to assume tox is being used, which we can't use directly
-        # since anvil doesn't really do venv stuff (its meant to avoid those...)
-        cmd = ['nosetests', '--exclude-dir=glance/tests/functional']
-        for e in self._get_test_exclusions():
-            cmd.append('--exclude=%s' % (e))
+        base_cmd = comp.PythonTestingComponent._get_test_command(self)
+        cmd = base_cmd + ['--unittests-only']
         return cmd
