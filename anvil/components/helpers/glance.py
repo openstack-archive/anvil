@@ -75,6 +75,13 @@ SKIP_CHECKS = [
 BAD_EXTENSIONS = ['md5', 'sha', 'sfv']
 
 
+def _hash_it(content, hash_algo='md5'):
+    hasher = hashlib.new(hash_algo)
+    hasher.update(content)
+    digest = hasher.hexdigest()
+    return digest
+
+
 class Unpacker(object):
 
     def _get_tar_file_members(self, arc_fn):
@@ -346,18 +353,38 @@ class Image(object):
         return (sh.exists(self.url) or (self.parsed_url.scheme == '' and self.parsed_url.netloc == ''))
 
     def _cached_paths(self):
-        md5er = hashlib.new('md5')
-        md5er.update(self.url)
-        path = sh.joinpths(self.cache_dir, md5er.hexdigest())
-        details_path = sh.joinpths(self.cache_dir, md5er.hexdigest() + ".details")
+        digest = _hash_it(self.url)
+        path = sh.joinpths(self.cache_dir, digest)
+        details_path = sh.joinpths(self.cache_dir, digest + ".details")
         return (path, details_path)
+
+    def _validate_cache(self, cache_path, details_path):
+        for path in [cache_path, details_path]:
+            if not sh.exists(path):
+                return False
+        check_files = []
+        try:
+            unpack_info = utils.load_yaml_text(sh.load_file(details_path))
+            check_files.append(unpack_info['file_name'])
+            if 'kernel' in unpack_info:
+                check_files.append(unpack_info['kernel']['file_name'])
+            if 'ramdisk' in unpack_info:
+                check_files.append(unpack_info['ramdisk']['file_name'])
+        except Exception:
+            return False
+        for path in check_files:
+            if not sh.isfile(path):
+                return False
+        return True
 
     def install(self):
         url_fn = self._extract_url_fn()
         if not url_fn:
             raise IOError("Can not determine file name from url: %r" % (self.url))
         (cache_path, details_path) = self._cached_paths()
-        if sh.exists(cache_path) and sh.exists(details_path):
+        use_cached = self._validate_cache(cache_path, details_path)
+        if use_cached:
+            LOG.info("Found valid cached image + metadata at: %s", colorizer.quote(cache_path))
             unpack_info = utils.load_yaml_text(sh.load_file(details_path))
         else:
             sh.mkdir(cache_path)
