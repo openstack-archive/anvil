@@ -48,9 +48,6 @@ fi
 unset SERVICE_TOKEN
 unset SERVICE_ENDPOINT
 
-# Now we start showing whats happening
-set -x
-
 # Set the ec2 url so euca2ools works
 EC2_URL=$(keystone catalog --service ec2 | awk '/ publicURL / { print $4 }')
 
@@ -94,3 +91,5 @@ alias ec2-bundle-image="ec2-bundle-image --cert \${EC2_CERT} --privatekey \${EC2
 alias ec2-upload-bundle="ec2-upload-bundle -a \${EC2_ACCESS_KEY} -s \${EC2_SECRET_KEY} --url \${S3_URL} --ec2cert \${NOVA_CERT}"
 EOF
 
+echo "For future euca commands please run \$ source '$ENV_FN'"
+echo "Goodbye."
