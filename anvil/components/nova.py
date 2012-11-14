@@ -340,8 +340,14 @@ class NovaRuntime(comp.PythonRuntime):
 
 
 class NovaTester(comp.PythonTestingComponent):
+    # TODO(harlowja) these should probably be bugs...
     def _get_test_exclusions(self):
         return [
             # Disable since quantumclient is not always installed.
             'test_quantumv2',
         ]
+
+    def _get_test_command(self):
+        base_cmd = comp.PythonTestingComponent._get_test_command(self)
+        cmd = base_cmd + ['--hide-elapsed']
+        return cmd
