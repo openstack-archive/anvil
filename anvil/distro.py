@@ -33,7 +33,6 @@ LOG = logging.getLogger(__name__)
 
 
 class Distro(object):
- 
     def __init__(self, name, platform_pattern, packager_name, commands, components):
         self.name = name
         self._platform_pattern = re.compile(platform_pattern, re.IGNORECASE)

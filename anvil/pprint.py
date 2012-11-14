@@ -40,7 +40,6 @@ def _pformat_list(lst, item_max_len):
     return "\n".join(lines)
 
 
-
 def _pformat_hash(hsh, item_max_len):
     lines = []
     if not hsh:
@@ -80,7 +79,7 @@ def _pformat_escape(item, item_max_len):
 
 def _pformat_simple(item, item_max_len):
     if item_max_len is None or item_max_len < 0:
-        return  "%s" % (item)
+        return "%s" % (item)
     if item_max_len == 0:
         return ''
     item_str = "%s" % (item)

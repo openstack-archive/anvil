@@ -151,7 +151,7 @@ class ConfConfigurator(object):
 
         nova_conf.add('verbose', self.installer.get_bool_option('verbose'))
 
-        # Allow destination machine to match source for resize. 
+        # Allow destination machine to match source for resize.
         nova_conf.add('allow_resize_to_same_host', True)
 
         # Which scheduler do u want?
@@ -197,7 +197,7 @@ class ConfConfigurator(object):
 
         # Auth will be using keystone
         nova_conf.add('auth_strategy', 'keystone')
-        
+
         # Is config drive being forced?
         if self.installer.get_bool_option('force_cfg_drive'):
             nova_conf.add('force_config_drive', 'always')
@@ -229,7 +229,7 @@ class ConfConfigurator(object):
             nova_conf.add('rabbit_password', rbhelper.get_shared_passwords(self.installer)['pw'])
             nova_conf.add('rabbit_userid', self.installer.get_option('rabbit', 'user_id'))
             nova_conf.add('rpc_backend', 'nova.rpc.impl_kombu')
-        
+
         # The USB tablet device is meant to improve mouse behavior in
         # the VNC console, but it has the side effect of increasing
         # the CPU usage of an idle VM tenfold.

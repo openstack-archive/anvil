@@ -59,12 +59,12 @@ class HorizonInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
         self.blackhole_dir = sh.joinpths(self.get_option('app_dir'), '.blackhole')
-        self.access_log =  sh.joinpths('/var/log/',
-                                       self.distro.get_command_config('apache', 'name'),
-                                       'horizon_access.log')
-        self.error_log =  sh.joinpths('/var/log/',
-                                       self.distro.get_command_config('apache', 'name'),
-                                       'horizon_error.log')
+        self.access_log = sh.joinpths('/var/log/',
+                                      self.distro.get_command_config('apache', 'name'),
+                                      'horizon_access.log')
+        self.error_log = sh.joinpths('/var/log/',
+                                     self.distro.get_command_config('apache', 'name'),
+                                     'horizon_error.log')
 
     def _filter_pip_requires_line(self, fn, line):
         # Knock off all nova, quantum, swift, keystone, cinder

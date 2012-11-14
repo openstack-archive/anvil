@@ -37,6 +37,3 @@ def get_key(key, default_value=None):
     if value is None:
         value = default_value
     return value
-
-
-    

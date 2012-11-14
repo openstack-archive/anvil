@@ -111,7 +111,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
     def _fetch_keystone_params(self):
         params = khelper.get_shared_params(ip=self.get_option('ip'),
                                            service_user='glance',
-                                           **utils.merge_dicts(self.get_option('keystone'), 
+                                           **utils.merge_dicts(self.get_option('keystone'),
                                                                khelper.get_shared_passwords(self)))
         return {
             'auth_host': params['endpoints']['admin']['host'],
@@ -125,10 +125,6 @@ class GlanceInstaller(comp.PythonInstallComponent):
         }
 
     def _config_adjust_paste(self, contents, fn):
-        params = khelper.get_shared_params(ip=self.get_option('ip'),
-                                           service_user='glance',
-                                           **utils.merge_dicts(self.get_option('keystone'), 
-                                                               khelper.get_shared_passwords(self)))
         with io.BytesIO(contents) as stream:
             config = cfg.create_parser(cfg.RewritableConfigParser, self)
             config.readfp(stream)
@@ -151,7 +147,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
             config.set('DEFAULT', 'sql_connection', dbhelper.fetch_dbdsn(dbname=DB_NAME,
                                                                          utf8=True,
                                                                          dbtype=self.get_option('db', 'type'),
-                                                                         **utils.merge_dicts(self.get_option('db'), 
+                                                                         **utils.merge_dicts(self.get_option('db'),
                                                                                              dbhelper.get_shared_passwords(self))))
             config.remove_option('DEFAULT', 'log_file')
             config.set('paste_deploy', 'flavor', self.get_option('paste_flavor'))
@@ -269,8 +265,7 @@ class GlanceTester(comp.PythonTestingComponent):
         #
         # It seems to assume tox is being used, which we can't use directly
         # since anvil doesn't really do venv stuff (its meant to avoid those...)
-        cmd = ['nosetests','--exclude-dir=glance/tests/functional',
-               '--with-coverage','--cover-package=glance']
+        cmd = ['nosetests', '--exclude-dir=glance/tests/functional']
         for e in self._get_test_exclusions():
             cmd.append('--exclude=%s' % (e))
         return cmd

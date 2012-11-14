@@ -31,20 +31,23 @@ function find_code {
 }
 
 function run_pep8 {
-  echo "Running pep8 ..."
+  echo "+ Running pep8 ..."
   files=$(find_code)
-  ignores="E202,E501"
+  ignores="E202,E501,E128,E127,E126,E125,E124,E123,E121"
   output_filename="pep8.log"
   opts="--ignore=$ignores --repeat"
   pep8 ${opts} ${files} 2>&1 > $output_filename
+  # Exit code is always 1 if any error or warning is found.
   if [ "$?" -ne "0" ]; then
     echo "Some badness was found!"
+    echo "Check '$output_filename' for a full report."
+  else
+    echo "You are a pep8 guru!"
   fi
-  echo "Check '$output_filename' for a full report."
 }
 
 function run_pylint {
-  echo "Running pylint ..."
+  echo "+ Running pylint ..."
   opts="--rcfile=pylintrc --output-format=parseable"
   files=$(find_code)
   output_filename="pylint.log"
@@ -65,20 +68,20 @@ function run_pylint {
     else
       echo "You are not yet a code master."
       grep -i "Your code" $output_filename
+      echo "Check '$output_filename' for a full report."
     fi
   fi
-  echo "Check '$output_filename' for a full report."
 }
 
 function run_tests {
-  echo "Running tests ..."
+  echo "+ Running tests ..."
   # Cleanup *.pyc
   find . -type f -name "*.pyc" -delete
   $NOSETESTS
 }
 
 function validate_yaml {
-    echo "Validating YAML files..."
+    echo "+ Validating YAML files..."
     for f in `find conf/ -name *.yaml -type f`; do
         echo "Checking yaml file: $f"
         python tools/validate-yaml.py $f

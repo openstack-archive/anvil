@@ -21,7 +21,7 @@ def make_bool(val):
     if isinstance(val, bool):
         return val
     if isinstance(val, types.NoneType):
-        return False        
+        return False
     sval = str(val).lower().strip()
     if sval in ['true', '1', 'on', 'yes', 't']:
         return True

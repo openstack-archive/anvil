@@ -29,19 +29,6 @@ LOG = logging.getLogger(__name__)
 RAND_PW_LEN = 20
 PW_USER = 'anvil'
 
-# There is some weird issue fixed after 0.9.2
-# this applies that fix for us for now (taken from the trunk code)...
-class FixedCryptedFileKeyring(CryptedFileKeyring):
-
-    @properties.NonDataProperty
-    def keyring_key(self):
-        # _unlock or _init_file will set the key or raise an exception
-        if self._check_file():
-            self._unlock()
-        else:
-            self._init_file()
-        return self.keyring_key
-
 
 class KeyringProxy(object):
     def __init__(self, path, keyring_encrypted=False, enable_prompt=True, random_on_empty=True):
@@ -50,7 +37,7 @@ class KeyringProxy(object):
             path = "%s.crypt" % (path)
         self.path = path
         if keyring_encrypted:
-            self.ring = FixedCryptedFileKeyring()
+            self.ring = CryptedFileKeyring()
         else:
             self.ring = UncryptedFileKeyring()
         self.ring.file_path = path
@@ -67,7 +54,7 @@ class KeyringProxy(object):
         if self.random_on_empty and len(pw_val) == 0:
             pw_val = RandomPassword().get_password(name, RAND_PW_LEN)
         return (False, pw_val)
-    
+
     def save(self, name, password):
         self.ring.set_password(name, PW_USER, password)
 
@@ -89,8 +76,8 @@ class InputPassword(object):
     def _prompt_user(self, prompt_text):
         prompt_text = prompt_text.strip()
         message = ("Enter a secret to use for the %s "
-                   "[or press enter to get a generated one]: " % prompt_text
-                   )
+                   "[or press enter to get a generated one]: ")
+        message = message % (prompt_text)
         rc = ""
         while True:
             rc = getpass.getpass(message)

@@ -19,15 +19,13 @@ import contextlib
 import functools
 import urllib2
 
-from urlparse import (urlparse, parse_qs)
+from urlparse import parse_qs
 
 import progressbar
 
 from anvil import colorizer
-from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
-from anvil import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -75,7 +73,7 @@ class GitDownloader(Downloader):
         if branch or tag:
             checkout_what = []
             if tag:
-                # Avoid 'detached HEAD state' message by moving to a 
+                # Avoid 'detached HEAD state' message by moving to a
                 # $tag-anvil branch for that tag
                 checkout_what = [tag, '-b', "%s-%s" % (tag, 'anvil')]
                 LOG.info("Adjusting to tag %s.", colorizer.quote(tag))

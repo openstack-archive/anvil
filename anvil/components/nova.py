@@ -200,9 +200,9 @@ class NovaInstaller(comp.PythonInstallComponent):
     def _config_adjust_paste(self, contents, fn):
         params = khelper.get_shared_params(ip=self.get_option('ip'),
                                            service_user='nova',
-                                           **utils.merge_dicts(self.get_option('keystone'), 
+                                           **utils.merge_dicts(self.get_option('keystone'),
                                                                khelper.get_shared_passwords(self)))
-        
+
         with io.BytesIO(contents) as stream:
             config = cfg.create_parser(cfg.RewritableConfigParser, self)
             config.readfp(stream)

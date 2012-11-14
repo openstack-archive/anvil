@@ -138,7 +138,7 @@ class DependencyPackager(comp.Component):
         return None
 
     def _make_fn(self, ext):
-        your_fn = "%s-%s-%s.%s" % (self.details['name'], 
+        your_fn = "%s-%s-%s.%s" % (self.details['name'],
                                    self.details['version'],
                                    self.details['release'], ext)
         return your_fn
@@ -192,7 +192,7 @@ class DependencyPackager(comp.Component):
 
     def package(self):
         self._create_package()
-        return self.package_dir 
+        return self.package_dir
 
 
 class PythonPackager(DependencyPackager):
@@ -200,12 +200,13 @@ class PythonPackager(DependencyPackager):
         DependencyPackager.__init__(self, *args, **kargs)
         self._extended_details = None
         self._setup_fn = sh.joinpths(self.get_option('app_dir'), 'setup.py')
-        
+
     def _build_requirements(self):
         return [
             'python',
             'python-devel',
-            'gcc', # Often used for building c python modules, should not be harmful...
+            # Often used for building c python modules, should not be harmful...
+            'gcc',
             'python-setuptools',
         ]
 

@@ -54,13 +54,15 @@ from anvil.packaging import pip
 
 LOG = logging.getLogger(__name__)
 
-#### 
+####
 #### STATUS CONSTANTS
 ####
 STATUS_INSTALLED = 'installed'
 STATUS_STARTED = "started"
 STATUS_STOPPED = "stopped"
 STATUS_UNKNOWN = "unknown"
+
+
 class ProgramStatus(object):
     def __init__(self, status, name=None, details=''):
         self.name = name
@@ -71,14 +73,16 @@ class ProgramStatus(object):
 #### Utils...
 ####
 
+
 def make_packager(package, default_class, **kwargs):
     cls = packager.get_packager_class(package, default_class)
     return cls(**kwargs)
 
 
-#### 
+####
 #### INSTALL CLASSES
 ####
+
 
 class PkgInstallComponent(component.Component):
     def __init__(self, *args, **kargs):
@@ -512,7 +516,7 @@ class PythonInstallComponent(PkgInstallComponent):
         return configured_am
 
 
-#### 
+####
 #### RUNTIME CLASSES
 ####
 
@@ -612,7 +616,7 @@ class PythonRuntime(ProgramRuntime):
 
     def _post_app_start(self, app_info):
         if 'sleep_time' in app_info:
-            LOG.info("%s requested a %s second sleep time, please wait...", 
+            LOG.info("%s requested a %s second sleep time, please wait...",
                      colorizer.quote(app_info.get('name')), app_info.get('sleep_time'))
             sh.sleep(int(app_info.get('sleep_time')))
 
@@ -668,7 +672,7 @@ class PythonRuntime(ProgramRuntime):
         return statii
 
 
-#### 
+####
 #### UNINSTALL CLASSES
 ####
 
@@ -790,7 +794,7 @@ class PythonUninstallComponent(PkgUninstallComponent):
                     LOG.warn("No python directory found at %s - skipping", colorizer.quote(where, quote_color='red'))
 
 
-#### 
+####
 #### TESTING CLASSES
 ####
 
@@ -803,10 +807,10 @@ class EmptyTestingComponent(component.Component):
 class PythonTestingComponent(component.Component):
     def _get_test_exclusions(self):
         return []
-    
+
     def _use_run_tests(self):
         return True
-    
+
     def _get_test_command(self):
         # See: http://docs.openstack.org/developer/nova/devref/unit_tests.html
         # And: http://wiki.openstack.org/ProjectTestingInterface
@@ -828,6 +832,7 @@ class PythonTestingComponent(component.Component):
         app_dir = self.get_option('app_dir')
         tox_fn = sh.joinpths(app_dir, 'tox.ini')
         if sh.isfile(tox_fn):
+            # Suck out some settings from the tox file
             try:
                 tox_cfg = cfg.BuiltinConfigParser(fns=[tox_fn])
                 env_values = tox_cfg.get('testenv', 'setenv') or ''
@@ -856,7 +861,7 @@ class PythonTestingComponent(component.Component):
     def run_tests(self):
         app_dir = self.get_option('app_dir')
         if not sh.isdir(app_dir):
-            LOG.warn("Unable to find application directory at %s, can not run %s tests.", 
+            LOG.warn("Unable to find application directory at %s, can not run %s tests.",
                      colorizer.quote(app_dir), colorizer.quote(self.name))
             return
         cmd = self._get_test_command()
@@ -864,7 +869,7 @@ class PythonTestingComponent(component.Component):
         sh.execute(*cmd, stdout_fh=None, stderr_fh=None, cwd=app_dir, env_overrides=env)
 
 
-#### 
+####
 #### PACKAGING CLASSES
 ####
 

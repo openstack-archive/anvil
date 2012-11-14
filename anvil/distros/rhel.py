@@ -26,7 +26,7 @@ from anvil import colorizer
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
-                                             
+
 from anvil.components import db
 from anvil.components import horizon
 from anvil.components import nova
@@ -166,7 +166,7 @@ class NovaInstaller(nova.NovaInstaller):
                 cmd = ['groupadd', 'libvirtd']
                 sh.execute(*cmd, run_as_root=True)
             if not sh.isfile(LIBVIRT_POLICY_FN):
-                contents =  self._get_policy(self._get_policy_users())
+                contents = self._get_policy(self._get_policy_users())
                 with sh.Rooted(True):
                     sh.mkdirslist(sh.dirname(LIBVIRT_POLICY_FN))
                     sh.write_file(LIBVIRT_POLICY_FN, contents)

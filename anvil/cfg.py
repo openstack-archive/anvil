@@ -185,7 +185,7 @@ class YamlInterpolator(object):
         elif isinstance(v, (list, set, tuple)):
             n_v = self._interpolate_iterable(v)
         return n_v
-    
+
     def _interpolate_string(self, what):
         if not re.search(INTERP_PAT, what):
             return what

@@ -24,13 +24,13 @@ LOG = logging.getLogger(__name__)
 
 
 class Component(object):
-    def __init__(self, name, subsystems, instances, options, siblings,  distro, passwords, **kwargs):
+    def __init__(self, name, subsystems, instances, options, siblings, distro, passwords, **kwargs):
         # Subsystems this was requested with
         self.subsystems = subsystems
-        
+
         # The component name (from config)
         self.name = name
-        
+
         # Any component options
         self.options = options
 
@@ -93,7 +93,7 @@ class Component(object):
         }
 
     def warm_configs(self):
-        # Before any actions occur you get the chance to 
+        # Before any actions occur you get the chance to
         # warmup the configs u might use (ie for prompting for passwords
         # earlier rather than later)
         pass

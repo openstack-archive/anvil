@@ -346,7 +346,6 @@ class Image(object):
         return (sh.exists(self.url) or (self.parsed_url.scheme == '' and self.parsed_url.netloc == ''))
 
     def _cached_paths(self):
-        url_fn = self._extract_url_fn()
         md5er = hashlib.new('md5')
         md5er.update(self.url)
         path = sh.joinpths(self.cache_dir, md5er.hexdigest())

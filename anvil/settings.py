@@ -23,4 +23,3 @@ COMPONENT_CONF_DIR = os.path.join(CONFIG_DIR, "components")
 DISTRO_DIR = os.path.join(CONFIG_DIR, "distros")
 PERSONA_DIR = os.path.join(CONFIG_DIR, "personas")
 TEMPLATE_DIR = os.path.join(CONFIG_DIR, "templates")
-

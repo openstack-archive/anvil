@@ -34,7 +34,7 @@ def _size_cb(option, opt_str, value, parser):
         parser.values.show_amount = utils.to_bytes(value)
     except (TypeError, ValueError) as e:
         raise OptionValueError("Invalid value for %s due to %s" % (opt_str, e))
-        
+
 
 def parse(previous_settings=None):
 
@@ -120,7 +120,7 @@ def parse(previous_settings=None):
                          help=("when packaging attempt to use the versions that are "
                                "installed for the components dependencies"))
     parser.add_option_group(pkg_group)
-    
+
     install_group = OptionGroup(parser, "Install specific options")
     install_group.add_option('-c', "--only-configure",
                                 action="store_true",
@@ -140,7 +140,7 @@ def parse(previous_settings=None):
     parser.add_option_group(uninstall_group)
 
     # Extract only what we care about, these will be passed
-    # to the constructor of actions as arguments 
+    # to the constructor of actions as arguments
     # so don't adjust the naming wily nilly...
     if previous_settings:
         parser.set_defaults(**previous_settings)

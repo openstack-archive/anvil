@@ -483,10 +483,10 @@ ____ ___  ____ _  _ ____ ___ ____ ____ _  _
     return random.choice(possibles).strip("\n\r")
 
 
-
 def _welcome_slang():
-    potentials = list()
-    potentials.append("And now for something completely different!")
+    potentials = [
+        "And now for something completely different!",
+    ]
     return random.choice(potentials)
 
 

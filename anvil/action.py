@@ -53,7 +53,8 @@ class Action(object):
         self.keyring_encrypted = cli_opts.pop('keyring_encrypted')
         self.prompt_for_passwords = cli_opts.pop('prompt_for_passwords', False)
         self.store_passwords = cli_opts.pop('store_passwords', True)
-        self.cli_opts = cli_opts # Stored for components to get any options
+        # Stored for components to get any options
+        self.cli_opts = cli_opts
 
     def _establish_passwords(self, component_order, instances):
         kr = pw.KeyringProxy(self.keyring_path,

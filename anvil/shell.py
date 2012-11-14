@@ -516,9 +516,9 @@ def mkdir(path, recurse=True, adjust_suids=False):
             if not is_dry_run():
                 os.mkdir(path)
     if adjust_suids:
-         (uid, gid) = get_suids()
-         if uid is not None and gid is not None:
-             chown_r(path, uid, gid)
+        (uid, gid) = get_suids()
+        if uid is not None and gid is not None:
+            chown_r(path, uid, gid)
     return path
 
 

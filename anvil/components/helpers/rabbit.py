@@ -19,6 +19,7 @@ from anvil import log
 
 LOG = log.getLogger(__name__)
 
+
 def get_shared_passwords(component):
     mp = {}
     mp['pw'] = component.get_password('rabbit')
