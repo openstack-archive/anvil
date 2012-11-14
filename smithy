@@ -80,6 +80,7 @@ bootstrap_rh()
     yum install -y $pkgs 2>&1
 
     echo "Installing pypi dependencies..."
+    pip-python install -U -I hgtools 
     pip-python install -U -I termcolor iniparse "keyring>=0.9.2"
     return 0
 }
