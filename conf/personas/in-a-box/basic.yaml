@@ -24,6 +24,7 @@ options:
     keystone:
         db-sync: true
         do-init: true
+        enable-pki: false
 subsystems:
     glance:
     - api

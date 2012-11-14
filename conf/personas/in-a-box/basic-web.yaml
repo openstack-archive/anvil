@@ -32,6 +32,7 @@ options:
     keystone:
         db-sync: true
         do-init: true
+        enable-pki: false
     horizon:
         db-sync: true
         make-blackhole: true

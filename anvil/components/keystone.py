@@ -50,16 +50,17 @@ LOGGING_CONF = "logging.conf"
 POLICY_JSON = 'policy.json'
 CONFIGS = [ROOT_CONF, LOGGING_CONF, POLICY_JSON]
 
-# Sync db command
-SYNC_DB_CMD = [sh.joinpths('$BIN_DIR', 'keystone-manage'),
+# Invoking the keystone manage command uses this template
+MANAGE_CMD = [sh.joinpths('$BIN_DIR', 'keystone-manage'),
                 '--config-file=$CONFIG_FILE',
-                '--debug', '-v',
-                # Available commands:
-                # db_sync: Sync the database.
-                # export_legacy_catalog: Export the service catalog from a legacy database.
-                # import_legacy: Import a legacy database.
-                # import_nova_auth: Import a dump of nova auth data into keystone.
-                'db_sync']
+                '--debug', '-v']
+
+# PKI base files
+PKI_FILES = {
+    'ca_certs': 'ssl/certs/ca.pem',
+    'keyfile': 'ssl/private/signing_key.pem',
+    'certfile': 'ssl/certs/signing_cert.pem',
+}
 
 
 class KeystoneUninstaller(comp.PythonUninstallComponent):
@@ -82,10 +83,13 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         if self.get_bool_option('db-sync'):
             self._setup_db()
             self._sync_db()
+        if self.get_bool_option('enable-pki'):
+            self._setup_pki()
 
     def _sync_db(self):
         LOG.info("Syncing keystone to database: %s", colorizer.quote(DB_NAME))
-        cmds = [{'cmd': SYNC_DB_CMD, 'run_as_root': True}]
+        sync_cmd = MANAGE_CMD + ['db_sync']
+        cmds = [{'cmd': sync_cmd, 'run_as_root': True}]
         utils.execute_template(*cmds, cwd=self.bin_dir, params=self.config_params(None))
 
     @property
@@ -120,6 +124,19 @@ class KeystoneInstaller(comp.PythonInstallComponent):
                            **utils.merge_dicts(self.get_option('db'),
                                                dbhelper.get_shared_passwords(self)))
 
+    def _setup_pki(self):
+        LOG.info("Setting up keystone's pki support.")
+        (uid, gid) = sh.get_suids()
+        for v in PKI_FILES.values():
+            dir_path = sh.dirname(sh.joinpths(self.link_dir, v))
+            made_paths = sh.mkdirslist(dir_path)
+            if made_paths:
+                if uid and gid:
+                    sh.chown_r(dir_path, uid, gid)
+                self.tracewriter.dirs_made(*made_paths)
+        pki_cmd = MANAGE_CMD + ['pki_setup']
+        cmds = [{'cmd': pki_cmd, 'run_as_root': True}]
+        utils.execute_template(*cmds, cwd=self.bin_dir, params=self.config_params(None))
 
     def source_config(self, config_fn):
         real_fn = config_fn
@@ -157,6 +174,13 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             config.set('DEFAULT', 'public_port', params['endpoints']['public']['port'])
             config.set('DEFAULT', 'verbose', True)
             config.set('DEFAULT', 'debug', True)
+            if self.get_bool_option('enable-pki'):
+                config.set('signing', 'token_format', 'PKI')
+                for (k, v) in PKI_FILES.items():
+                    path = sh.joinpths(self.link_dir, v)
+                    config.set('signing', k, path)
+            else:
+                config.set('signing', 'token_format', 'UUID')
             config.set('catalog', 'driver', 'keystone.catalog.backends.sql.Catalog')
             config.remove_option('DEFAULT', 'log_config')
             config.set('sql', 'connection', dbhelper.fetch_dbdsn(dbname=DB_NAME,
