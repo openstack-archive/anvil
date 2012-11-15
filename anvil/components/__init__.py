@@ -341,7 +341,7 @@ class PythonInstallComponent(PkgInstallComponent):
             if not c.activated or c is self:
                 continue
             if isinstance(c, (PythonInstallComponent)):
-                pip_mp[name] = c._base_pips()
+                pip_mp[name] = c._base_pips()  # pylint: disable=W0212
         pip_found = False
         pip_who = None
         for (who, pips) in pip_mp.items():
@@ -822,7 +822,8 @@ class PythonTestingComponent(component.Component):
             # since anvil doesn't really do venv stuff (its meant to avoid those...)
             cmd = ['nosetests']
         # See: $ man nosetests
-        cmd.append('--nologcapture')
+        if self.get_bool_option("verbose"):
+            cmd.append('--nologcapture')
         for e in self._get_test_exclusions():
             cmd.append('--exclude=%s' % (e))
         return cmd
