@@ -11,6 +11,7 @@ function usage {
   echo ""
   echo "  -p, --pep8               Just run pep8"
   echo "  -h, --help               Print this usage message"
+  echo "  -c, --coverage           Generate coverage report"
   echo ""
   exit
 }
