@@ -21,7 +21,6 @@ import os
 
 from keyring.backend import CryptedFileKeyring
 from keyring.backend import UncryptedFileKeyring
-from keyring.util import properties
 
 from anvil import log as logging
 

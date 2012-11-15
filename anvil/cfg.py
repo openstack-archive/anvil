@@ -176,15 +176,15 @@ class YamlInterpolator(object):
                 n_what.append(self._do_include(v))
             return n_what
 
-    def _interpolate(self, v):
-        n_v = v
-        if v and isinstance(v, (basestring, str)):
-            n_v = self._interpolate_string(v)
-        elif isinstance(v, dict):
-            n_v = self._interpolate_dictionary(v)
-        elif isinstance(v, (list, set, tuple)):
-            n_v = self._interpolate_iterable(v)
-        return n_v
+    def _interpolate(self, value):
+        new_value = value
+        if value and isinstance(value, (basestring, str)):
+            new_value = self._interpolate_string(value)
+        elif isinstance(value, (dict)):
+            new_value = self._interpolate_dictionary(value)
+        elif isinstance(value, (list, set, tuple)):
+            new_value = self._interpolate_iterable(value)
+        return new_value
 
     def _interpolate_string(self, what):
         if not re.search(INTERP_PAT, what):
