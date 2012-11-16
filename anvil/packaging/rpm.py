@@ -40,6 +40,7 @@ class DependencyPackager(comp.Component):
         self.match_installed = tu.make_bool(kargs.get('match_installed'))
         self._build_paths = None
         self._details = None
+        self._helper = yum_helper.Helper()
 
     @property
     def build_paths(self):
@@ -82,9 +83,10 @@ class DependencyPackager(comp.Component):
     def _match_version_installed(self, yum_pkg):
         if not self.match_installed:
             return yum_pkg
-        installed_pkg = yum_helper.get_installed(yum_pkg['name'])
-        if not installed_pkg:
+        installed_pkgs = self._helper.get_installed(yum_pkg['name'])
+        if not installed_pkgs:
             return yum_pkg
+        installed_pkg = installed_pkgs[0]
         pkg_new = copy.deepcopy(yum_pkg)
         pkg_new['version'] = installed_pkg.printVer()
         return pkg_new

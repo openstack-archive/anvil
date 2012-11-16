@@ -5,16 +5,17 @@ components:
 - db
 - rabbit-mq
 - keystone
+# Client used by many components
 - keystone-client
 - glance
+# Clients used by nova (+ others)
 - glance-client
-- no-vnc
 - cinder-client
+- quantum-client
+- swift-client # Seems only needed for horizon?
+- no-vnc
 - nova
 - nova-client
-# These seem needed for horizon (even if not used?)
-- quantum-client
-- swift-client
 - horizon
 # Super client, so install after other clients
 - openstack-client

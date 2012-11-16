@@ -18,47 +18,66 @@ from anvil import shell as sh
 
 # See http://yum.baseurl.org/api/yum-3.2.26/yum-module.html
 from yum import YumBase
+
 from yum.packages import PackageObject
 
-# Cache of yumbase object
-_yum_base = None
+
+class Requirement(object):
+    def __init__(self, name, version):
+        self.name = str(name)
+        self.version = version
+
+    def __str__(self):
+        name = self.name
+        if self.version is not None:
+            name += "-%s" % (self.version)
+        return name
+
+    @property
+    def package(self):
+        # Form a 'fake' rpm package that
+        # can be used to compare against
+        # other rpm packages using the
+        # standard rpm routines
+        my_pkg = PackageObject()
+        my_pkg.name = self.name
+        if self.version is not None:
+            my_pkg.version = str(self.version)
+        return my_pkg
 
 
-def _make_yum_base():
-    global _yum_base
-    if _yum_base is None:
-        # This seems needed...
+class Helper(object):
+    # Cache of yumbase object
+    _yum_base = None
+
+    @staticmethod
+    def _get_yum_base():
+        if Helper._yum_base is None:
+            # This 'root' seems needed...
+            # otherwise 'cannot open Packages database in /var/lib/rpm' starts to happen
+            with sh.Rooted(True):
+                _yum_base = YumBase()
+                _yum_base.setCacheDir(force=True)
+            Helper._yum_base = _yum_base
+        return Helper._yum_base
+
+    def is_installed(self, name):
+        if len(self.get_installed(name)):
+            return True
+        else:
+            return False
+
+    def get_installed(self, name):
+        base = Helper._get_yum_base()
+        # This 'root' seems needed...
         # otherwise 'cannot open Packages database in /var/lib/rpm' starts to happen
+        # even though we are just doing a read-only operation, which
+        # is pretty odd...
         with sh.Rooted(True):
-            _yum_base = YumBase()
-            _yum_base.setCacheDir(force=True)
-    return _yum_base
-
-
-def is_installed(name, version=None):
-    if get_installed(name, version):
-        return True
-    else:
-        return False
-
-
-def get_installed(name, version=None):
-    # This seems needed...
-    # otherwise 'cannot open Packages database in /var/lib/rpm' starts to happen
-    with sh.Rooted(True):
-        yb = _make_yum_base()
-        pkg_obj = yb.doPackageLists(pkgnarrow='installed',
-                                    ignore_case=True, patterns=[name])
-    whats_installed = pkg_obj.installed
-    if not whats_installed:
-        return None
-    # Compare whats installed to a fake package that will
-    # represent what might be installed...
-    fake_pkg = PackageObject()
-    fake_pkg.name = name
-    if version:
-        fake_pkg.version = str(version)
-    for installed_pkg in whats_installed:
-        if installed_pkg.verGE(fake_pkg):
-            return installed_pkg
-    return None
+            pkgs = base.doPackageLists(pkgnarrow='installed',
+                                       ignore_case=True, patterns=[name])
+            if pkgs.installed:
+                whats_installed = list(pkgs.installed)
+            else:
+                whats_installed = []
+        return whats_installed

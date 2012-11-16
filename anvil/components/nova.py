@@ -347,9 +347,6 @@ class NovaTester(comp.PythonTestingComponent):
             'test_quantumv2',
         ]
 
-    def _get_env(self):
-        return {}
-
     def _get_test_command(self):
         base_cmd = comp.PythonTestingComponent._get_test_command(self)
         # This doesn't exist in the nosetests (v1.1) in rhel6
