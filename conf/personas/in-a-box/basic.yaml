@@ -5,10 +5,13 @@ components:
 - db
 - rabbit-mq
 - keystone
+# Client used by many components
 - keystone-client
 - glance
+# Clients used by nova (+ others)
 - glance-client
 - cinder-client
+- quantum-client
 - nova
 - nova-client
 # Super client, so install after other clients

@@ -15,7 +15,8 @@
 #    under the License.
 
 from distutils import version as vr
-from pkg_resources import Requirement
+
+import pkg_resources
 
 from anvil import log as logging
 from anvil import shell as sh
@@ -25,78 +26,68 @@ LOG = logging.getLogger(__name__)
 FREEZE_CMD = ['freeze', '--local']
 
 
-# Cache of whats installed - 'uncached' as needed
-_installed_cache = None
-
-
-class LooseRequirement(object):
+class Requirement(object):
     def __init__(self, name, version=None):
-        self.name = name
+        self.name = str(name)
         if version is not None:
-            self.version = vr.LooseVersion(version)
+            self.version = vr.LooseVersion(str(version))
         else:
             self.version = None
+        self.key = self.name.lower()
 
     def __str__(self):
+        name = str(self.name)
         if self.version is not None:
-            return "%s (%s)" % (self.name, self.version)
-        else:
-            return str(self.name)
-
-    def __contains__(self, version):
-        if self.version is None:
-            return True
-        else:
-            return version <= self.version
+            name += "==" + str(self.version)
+        return name
 
 
-def uncache():
-    global _installed_cache
-    _installed_cache = None
-
-
-def _list_installed(pip_how):
-    cmd = [str(pip_how)] + FREEZE_CMD
-    (stdout, _stderr) = sh.execute(*cmd)
-    installed = []
-    for line in stdout.splitlines():
+def parse_requirements(contents, adjust=False):
+    lines = []
+    for line in contents.splitlines():
         line = line.strip()
-        if not line or line.startswith('#'):
+        if not len(line) or line.startswith('#'):
             continue
         # Don't take editables either...
-        if line.startswith('-e'):
+        if line.lower().startswith('-e'):
             continue
-        v = None
-        try:
-            line_requirements = Requirement.parse(line)
-            (_cmp, v) = line_requirements.specs[0]
-        except (ValueError, TypeError) as e:
-            LOG.warn("Unparseable pip freeze line %s: %s" % (line, e))
-            continue
-        installed.append(LooseRequirement(line_requirements.key, v))
-    return installed
+        lines.append(line)
+    requires = []
+    for req in pkg_resources.parse_requirements(lines):
+        requires.append(req)
+    return requires
 
 
-def whats_installed(pip_how):
-    global _installed_cache
-    if _installed_cache is None:
-        _installed_cache = _list_installed(pip_how)
-    return _installed_cache
+class Helper(object):
+    # Cache of whats installed list
+    _installed_cache = None
 
+    def __init__(self, pip_how):
+        self._pip_how = pip_how
 
-def is_installed(pip_how, name, version=None):
-    if get_installed(pip_how, name, version):
-        return True
-    return False
+    def _list_installed(self):
+        cmd = [str(self._pip_how)] + FREEZE_CMD
+        (stdout, _stderr) = sh.execute(*cmd)
+        return parse_requirements(stdout, True)
 
+    @staticmethod
+    def uncache():
+        Helper._installed_cache = None
 
-def get_installed(pip_how, name, version=None):
-    whats_there = whats_installed(pip_how)
-    for req in whats_there:
-        if not (name.lower() == req.name):
-            continue
-        if not version:
-            return req
-        if version in req:
-            return req
-    return None
+    def whats_installed(self):
+        if Helper._installed_cache is None:
+            Helper._installed_cache = self._list_installed()
+        return list(Helper._installed_cache)
+
+    def is_installed(self, name):
+        if self.get_installed(name):
+            return True
+        return False
+
+    def get_installed(self, name):
+        whats_there = self.whats_installed()
+        for whats_installed in whats_there:
+            if not (name.lower() == whats_installed.key):
+                continue
+            return whats_installed
+        return None

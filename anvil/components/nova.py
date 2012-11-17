@@ -349,5 +349,7 @@ class NovaTester(comp.PythonTestingComponent):
 
     def _get_test_command(self):
         base_cmd = comp.PythonTestingComponent._get_test_command(self)
-        cmd = base_cmd + ['--hide-elapsed']
+        # This doesn't exist in the nosetests (v1.1) in rhel6
+        # cmd = base_cmd + ['--hide-elapsed']
+        cmd = base_cmd
         return cmd

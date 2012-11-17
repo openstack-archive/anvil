@@ -125,8 +125,6 @@ def execute(*cmd, **kwargs):
         process_env = env.get()
         for (k, v) in env_overrides.items():
             process_env[k] = str(v)
-    else:
-        process_env = env.get()
 
     # LOG.debug("With environment %s", process_env)
     demoter = None

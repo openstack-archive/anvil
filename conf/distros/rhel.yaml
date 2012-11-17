@@ -223,9 +223,6 @@ components:
                           target: "/usr/bin/sphinx-quickstart"
                         - source: "/usr/bin/sphinx-1.0-autogen"
                           target: "/usr/bin/sphinx-autogen"
-        -   name: testtools
-            package:
-                name: python-testtools
         -   name: unittest2
             package:
                 name: python-unittest2
@@ -271,6 +268,7 @@ components:
                      # but versions are miss-matched
                 - "-U"
         -   name: sqlalchemy-migrate
+        -   name: testtools # Seems like the version in rhel is to old...
     glance:
         action_classes:
             install: anvil.components.glance:GlanceInstaller
@@ -284,6 +282,9 @@ components:
         # and versions inside those files into distribution
         # package names equivalents (if possible)
         pip_to_package:
+        -   name: pyOpenSSL
+            package:
+                name: pyOpenSSL
         -   name: jsonschema
             package:
                 name: python-jsonschema
@@ -383,11 +384,11 @@ components:
             uninstall: anvil.components.nova:NovaUninstaller
         packages:
         -   name: MySQL-python
+        # Helpful utilities/core
+        # system requirements
         -   name: dnsmasq
             removable: false
         -   name: ebtables
-            removable: false
-        -   name: fuse
             removable: false
         -   name: iptables
             removable: false
@@ -420,9 +421,12 @@ components:
         pips:
         -   name: Cheetah
             version: "2.4.4"
+        -   name: fixtures # Seems for testing only
         subsystems:
             compute:
                 packages:
+                -   name: fuse # Needed for mounting
+                    removable: false
                 -   name: guestfish
                     removable: false
                 -   name: iscsi-initiator-utils
@@ -438,8 +442,6 @@ components:
                 -   name: libvirt-client
                     removable: false
                 -   name: libvirt-python
-                    removable: false
-                -   name: lvm2
                     removable: false
                 -   name: qemu-img
                     removable: false

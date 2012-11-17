@@ -72,11 +72,3 @@ class Packager(object):
     @abc.abstractmethod
     def _install(self, pkg):
         raise NotImplementedError()
-
-
-def get_packager_class(package_info, default_packager_class=None):
-    packager_name = package_info.get('packager_name') or ''
-    packager_name = packager_name.strip()
-    if not packager_name:
-        return default_packager_class
-    return importer.import_entry_point(packager_name)

@@ -14,50 +14,61 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import packager as pack
 from anvil import shell as sh
 
 from anvil.packaging.helpers import pip_helper
 
+import pkg_resources
+
 LOG = logging.getLogger(__name__)
 
 PIP_UNINSTALL_CMD_OPTS = ['-y', '-q']
 PIP_INSTALL_CMD_OPTS = ['-q']
-NAMED_VERSION_TEMPL = "%s == %s"
+
+
+def extract_requirement(pkg_info):
+    p_name = pkg_info.get('name', '')
+    p_name = p_name.strip()
+    p_name = pkg_resources.safe_name(p_name)
+    if not p_name:
+        raise ValueError("Pip requirement provided with an empty name")
+    p_version = pkg_info.get('version')
+    if p_version is not None:
+        if isinstance(p_version, (int, float, long)):
+            p_version = str(p_version)
+        if isinstance(p_version, (str, basestring)):
+            p_version = pkg_resources.safe_version(p_version)
+        else:
+            raise TypeError("Pip requirement version must be a string or numeric type")
+    return pip_helper.Requirement(p_name, p_version)
 
 
 class Packager(pack.Packager):
-
-    def _make_pip_name(self, name, version):
-        if not version:
-            return str(name)
-        else:
-            return NAMED_VERSION_TEMPL % (name, version)
+    def __init__(self, distro, remove_default=False):
+        pack.Packager.__init__(self, distro, remove_default)
+        self.helper = pip_helper.Helper(self._get_pip_command())
 
     def _get_pip_command(self):
         return self.distro.get_command_config('pip')
 
-    def _anything_there(self, pkg):
-        pkg_there = pip_helper.get_installed(self._get_pip_command(),
-                                             pkg['name'], pkg.get('version'))
-        if not pkg_there:
+    def _anything_there(self, pip):
+        wanted_pip = extract_requirement(pip)
+        pip_there = self.helper.get_installed(wanted_pip.name)
+        if not pip_there:
+            # Nothing installed
             return None
-        if 'options' in pkg and 'version' in pkg:
-            # Ensure exact version if options
-            wanted_pkg = pip_helper.LooseRequirement(pkg['name'],
-                                                     pkg.get('version'))
-            wanted_ver = wanted_pkg.version
-            if wanted_ver == pkg_there.version and wanted_ver is not None:
-                return pkg_there
-            else:
-                # Mismatched version
-                return None
-        elif 'options' in pkg:
-            # Anything with options always gets installed
-            return None
-        else:
-            return pkg_there
+        if wanted_pip.version is not None:
+            # Check if version wanted will work with whats installed
+            if str(wanted_pip.version) not in pip_there:
+                msg = ("Pip %s is already installed"
+                       " and it is not compatible with desired"
+                       " pip %s")
+                msg = msg % (pip_there, wanted_pip)
+                raise excp.DependencyException(msg)
+        return pip_there
 
     def _execute_pip(self, cmd):
         pip_cmd = self._get_pip_command()
@@ -67,8 +78,9 @@ class Packager(pack.Packager):
         try:
             sh.execute(*pip_cmd, run_as_root=True)
         finally:
-            # The known packages installed is probably not consistent anymore so uncache it
-            pip_helper.uncache()
+            # The known packages installed is probably
+            # not consistent anymore so uncache it
+            pip_helper.Helper.uncache()
 
     def _install(self, pip):
         cmd = ['install'] + PIP_INSTALL_CMD_OPTS
@@ -78,13 +90,14 @@ class Packager(pack.Packager):
                 options = [str(options)]
             for opt in options:
                 cmd.append(str(opt))
-        cmd.append(self._make_pip_name(pip['name'], pip.get('version')))
+        install_what = extract_requirement(pip)
+        cmd.append(str(install_what))
         self._execute_pip(cmd)
 
     def _remove(self, pip):
         # Versions don't seem to matter here...
-        name = self._make_pip_name(pip['name'], None)
-        if not pip_helper.is_installed(self._get_pip_command(), name):
+        remove_what = extract_requirement(pip)
+        if not self.helper.is_installed(remove_what.name):
             return
-        cmd = ['uninstall'] + PIP_UNINSTALL_CMD_OPTS + [name]
+        cmd = ['uninstall'] + PIP_UNINSTALL_CMD_OPTS + [remove_what.name]
         self._execute_pip(cmd)

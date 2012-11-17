@@ -161,6 +161,9 @@ class ConfConfigurator(object):
         # Rate limit the api??
         nova_conf.add('api_rate_limit', self.installer.get_bool_option('api_rate_limit'))
 
+        # Ensure the policy.json is referenced correctly
+        nova_conf.add('policy_file', '/etc/nova/policy.json')
+
         # Setup nova network/settings
         self._configure_network_settings(nova_conf)
 

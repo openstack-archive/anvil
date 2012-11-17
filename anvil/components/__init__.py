@@ -31,10 +31,9 @@
 #    under the License.
 
 import functools
+import os
 import re
 import weakref
-
-from pkg_resources import Requirement
 
 from anvil import cfg
 from anvil import colorizer
@@ -51,6 +50,8 @@ from anvil import trace as tr
 from anvil import utils
 
 from anvil.packaging import pip
+
+from anvil.packaging.helpers import pip_helper
 
 LOG = logging.getLogger(__name__)
 
@@ -73,10 +74,22 @@ class ProgramStatus(object):
 #### Utils...
 ####
 
+# Cache of accessed packagers
+_PACKAGERS = {}
+
 
 def make_packager(package, default_class, **kwargs):
-    cls = packager.get_packager_class(package, default_class)
-    return cls(**kwargs)
+    packager_name = package.get('packager_name') or ''
+    packager_name = packager_name.strip()
+    if packager_name:
+        packager_cls = importer.import_entry_point(packager_name)
+    else:
+        packager_cls = default_class
+    if packager_cls in _PACKAGERS:
+        return _PACKAGERS[packager_cls]
+    p = packager_cls(**kwargs)
+    _PACKAGERS[packager_cls] = p
+    return p
 
 
 ####
@@ -92,15 +105,6 @@ class PkgInstallComponent(component.Component):
 
     def _get_download_config(self):
         return None
-
-    def _clear_package_duplicates(self, pkg_list):
-        dup_free_list = []
-        names_there = set()
-        for pkg in pkg_list:
-            if pkg['name'] not in names_there:
-                dup_free_list.append(pkg)
-                names_there.add(pkg['name'])
-        return dup_free_list
 
     def _get_download_location(self):
         key = self._get_download_config()
@@ -157,7 +161,6 @@ class PkgInstallComponent(component.Component):
             if 'packages' in values:
                 LOG.debug("Extending package list with packages for subsystem: %r", name)
                 pkg_list.extend(values.get('packages'))
-        pkg_list = self._clear_package_duplicates(pkg_list)
         return pkg_list
 
     def install(self):
@@ -169,7 +172,8 @@ class PkgInstallComponent(component.Component):
                 header="Setting up %s distribution packages" % (len(pkg_names)))
             with utils.progress_bar('Installing', len(pkgs)) as p_bar:
                 for (i, p) in enumerate(pkgs):
-                    installer = make_packager(p, self.distro.package_manager_class, distro=self.distro)
+                    installer = make_packager(p, self.distro.package_manager_class,
+                                              distro=self.distro)
                     self.tracewriter.package_installed(p)
                     installer.install(p)
                     p_bar.update(i + 1)
@@ -177,13 +181,15 @@ class PkgInstallComponent(component.Component):
     def pre_install(self):
         pkgs = self.packages
         for p in pkgs:
-            installer = make_packager(p, self.distro.package_manager_class, distro=self.distro)
+            installer = make_packager(p, self.distro.package_manager_class,
+                                      distro=self.distro)
             installer.pre_install(p, self.params)
 
     def post_install(self):
         pkgs = self.packages
         for p in pkgs:
-            installer = make_packager(p, self.distro.package_manager_class, distro=self.distro)
+            installer = make_packager(p, self.distro.package_manager_class,
+                                      distro=self.distro)
             installer.post_install(p, self.params)
 
     @property
@@ -298,64 +304,73 @@ class PythonInstallComponent(PkgInstallComponent):
             pip_pkg_list = []
         return pip_pkg_list
 
-    def _match_pip_requires(self, pip_name):
+    def _match_pip_requires(self, pip_req):
 
-        # TODO(harlowja) Is this a bug?? that this is needed?
-        def pip_match(in1, in2):
-            in1 = in1.replace("-", "_")
-            in1 = in1.lower()
-            in2 = in2.replace('-', '_')
-            in2 = in2.lower()
-            return in1 == in2
+        def pip_use(who, there_pip):
+            if there_pip.key != pip_req.key:
+                return False
+            if not len(pip_req.specs):
+                # No version/restrictions specified
+                return True
+            there_version = None
+            if there_pip.version is not None:
+                there_version = str(there_pip.version)
+            if there_version in pip_req:
+                return True
+            # Different possibly incompat. versions found...
+            if there_version is None:
+                # Assume pip will install the correct version anyway
+                if who != self.name:
+                    msg = ("Component %r asked for package '%s'"
+                           " and '%s' is being selected from %r instead...")
+                    LOG.debug(msg, self.name, pip_req, there_pip, who)
+                return True
+            else:
+                if who != self.name:
+                    msg = ("Component %r provides package '%s'"
+                           " but '%s' is being asked for by %r instead...")
+                    LOG.warn(msg, who, there_pip, pip_req, self.name)
+                return False
 
-        pip_found = False
-        pkg_found = None
+        LOG.debug("Attempting to find who satisfies pip requirement '%s'", pip_req)
 
         # Try to find it in anyones pip -> pkg list
-        pip2_pkg_mp = {
+        all_pip_2_pkgs = {
             self.name: self.pips_to_packages,
         }
+        # Gather them all (but only if they activate before me)
+        # since if they activate after, we can't depend on it
+        # to satisfy our requirement...
         for (name, c) in self.instances.items():
             if c is self or not c.activated:
                 continue
             if isinstance(c, (PythonInstallComponent)):
-                pip2_pkg_mp[name] = c.pips_to_packages
-        for (who, pips_2_pkgs) in pip2_pkg_mp.items():
+                all_pip_2_pkgs[name] = c.pips_to_packages
+        for (who, pips_2_pkgs) in all_pip_2_pkgs.items():
             for pip_info in pips_2_pkgs:
-                if pip_match(pip_name, pip_info['name']):
-                    pip_found = True
-                    pkg_found = pip_info.get('package')
-                    LOG.debug("Matched pip->pkg %r from component %r", pip_name, who)
-                    break
-            if pip_found:
-                break
-        if pip_found:
-            return (pkg_found, False)
+                there_pip = pip.extract_requirement(pip_info)
+                if not pip_use(who, there_pip):
+                    continue
+                LOG.debug("Matched pip->pkg '%s' from component %r", there_pip, who)
+                return (dict(pip_info.get('package')), False)
 
         # Ok nobody had it in a pip->pkg mapping
         # but see if they had it in there pip collection
-        pip_mp = {
-            self.name: self._base_pips(),
+        all_pips = {
+            self.name: self._base_pips(),  # Use base pips to avoid recursion...
         }
         for (name, c) in self.instances.items():
             if not c.activated or c is self:
                 continue
             if isinstance(c, (PythonInstallComponent)):
-                pip_mp[name] = c._base_pips()
-        pip_found = False
-        pip_who = None
-        for (who, pips) in pip_mp.items():
-            for pip_info in pips:
-                if pip_match(pip_info['name'], pip_name):
-                    pip_found = True
-                    pip_who = pip_info
-                    LOG.debug("Matched pip %r from other component %r", pip_name, who)
-                    break
-            if pip_found:
-                break
-        if pip_found:
-            return (pip_who, True)
-
+                all_pips[name] = c._base_pips()  # pylint: disable=W0212
+        for (who, there_pips) in all_pips.items():
+            for pip_info in there_pips:
+                there_pip = pip.extract_requirement(pip_info)
+                if not pip_use(who, there_pip):
+                    continue
+                LOG.debug("Matched pip '%s' from component %r", there_pip, who)
+                return (dict(pip_info), True)
         return (None, False)
 
     def _get_mapped_packages(self):
@@ -363,7 +378,9 @@ class PythonInstallComponent(PkgInstallComponent):
         all_pips = []
         for fn in self.requires_files:
             all_pips.extend(self._extract_pip_requires(fn))
-        for (_requirement, (pkg_info, from_pip)) in all_pips:
+        for details in all_pips:
+            pkg_info = details['package']
+            from_pip = details['from_pip']
             if from_pip or not pkg_info:
                 continue
             add_on_pkgs.append(pkg_info)
@@ -374,7 +391,9 @@ class PythonInstallComponent(PkgInstallComponent):
         all_pips = []
         for fn in self.requires_files:
             all_pips.extend(self._extract_pip_requires(fn))
-        for (_requirement, (pkg_info, from_pip)) in all_pips:
+        for details in all_pips:
+            pkg_info = details['package']
+            from_pip = details['from_pip']
             if not from_pip or not pkg_info:
                 continue
             add_on_pips.append(pkg_info)
@@ -388,14 +407,12 @@ class PythonInstallComponent(PkgInstallComponent):
             if 'pips' in values:
                 LOG.debug("Extending pip list with pips for subsystem: %r" % (name))
                 pip_list.extend(values.get('pips'))
-        pip_list = self._clear_package_duplicates(pip_list)
         return pip_list
 
     @property
     def pips(self):
         pip_list = self._base_pips()
         pip_list.extend(self._get_mapped_pips())
-        pip_list = self._clear_package_duplicates(pip_list)
         return pip_list
 
     def _install_pips(self):
@@ -407,7 +424,8 @@ class PythonInstallComponent(PkgInstallComponent):
             with utils.progress_bar('Installing', len(pips)) as p_bar:
                 for (i, p) in enumerate(pips):
                     self.tracewriter.pip_installed(p)
-                    installer = make_packager(p, pip.Packager, distro=self.distro)
+                    installer = make_packager(p, pip.Packager,
+                                              distro=self.distro)
                     installer.install(p)
                     p_bar.update(i + 1)
 
@@ -445,13 +463,15 @@ class PythonInstallComponent(PkgInstallComponent):
         self._verify_pip_requires()
         PkgInstallComponent.pre_install(self)
         for p in self.pips:
-            installer = make_packager(p, pip.Packager, distro=self.distro)
+            installer = make_packager(p, pip.Packager,
+                                      distro=self.distro)
             installer.pre_install(p, self.params)
 
     def post_install(self):
         PkgInstallComponent.post_install(self)
         for p in self.pips:
-            installer = make_packager(p, pip.Packager, distro=self.distro)
+            installer = make_packager(p, pip.Packager,
+                                      distro=self.distro)
             installer.post_install(p, self.params)
 
     def _install_python_setups(self):
@@ -483,28 +503,30 @@ class PythonInstallComponent(PkgInstallComponent):
         if not sh.isfile(fn):
             return []
         LOG.debug("Resolving dependencies from %s.", colorizer.quote(fn))
-        pips_needed = []
-        for line in sh.load_file(fn).splitlines():
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            pips_needed.append(Requirement.parse(line))
-        if not pips_needed:
-            return []
+        pips_needed = pip_helper.parse_requirements(sh.load_file(fn))
         matchings = []
-        for requirement in pips_needed:
-            matchings.append([requirement, self._match_pip_requires(requirement.project_name)])
+        for req in pips_needed:
+            (pkg_info, from_pip) = self._match_pip_requires(req)
+            matchings.append({
+                'requirement': req,
+                'package': pkg_info,
+                'from_pip': from_pip,
+                'needed_by': fn,
+            })
         return matchings
 
     def _verify_pip_requires(self):
         all_pips = []
         for fn in self.requires_files:
             all_pips.extend(self._extract_pip_requires(fn))
-        for (requirement, (pkg_info, _from_pip)) in all_pips:
+        for details in all_pips:
+            req = details['requirement']
+            needed_by = details['needed_by']
+            pkg_info = details['package']
             if not pkg_info:
-                raise excp.DependencyException(("Pip dependency '%s' is not translatable to a listed"
+                raise excp.DependencyException(("Pip dependency '%s' needed by '%s' is not translatable to a listed"
                                                 " (from this or previously activated components) pip package"
-                                                ' or a pip->package mapping!') % (requirement))
+                                                ' or a pip->package mapping!') % (req, needed_by))
 
     def install(self):
         PkgInstallComponent.install(self)
@@ -723,7 +745,8 @@ class PkgUninstallComponent(component.Component):
             with utils.progress_bar('Uninstalling', len(pkgs), reverse=True) as p_bar:
                 for (i, p) in enumerate(pkgs):
                     uninstaller = make_packager(p, self.distro.package_manager_class,
-                                                distro=self.distro, remove_default=self.purge_packages)
+                                                distro=self.distro,
+                                                remove_default=self.purge_packages)
                     if uninstaller.remove(p):
                         which_removed.append(p['name'])
                     p_bar.update(i + 1)
@@ -766,7 +789,8 @@ class PythonUninstallComponent(PkgUninstallComponent):
                 for (i, p) in enumerate(pips):
                     try:
                         uninstaller = make_packager(p, pip.Packager,
-                                                    distro=self.distro, remove_default=self.purge_packages)
+                                                    distro=self.distro,
+                                                    remove_default=self.purge_packages)
                         if uninstaller.remove(p):
                             which_removed.append(p['name'])
                     except excp.ProcessExecutionError as e:
@@ -822,15 +846,15 @@ class PythonTestingComponent(component.Component):
             # since anvil doesn't really do venv stuff (its meant to avoid those...)
             cmd = ['nosetests']
         # See: $ man nosetests
-        cmd.append('--nologcapture')
+        if self.get_bool_option("verbose"):
+            cmd.append('--nologcapture')
         for e in self._get_test_exclusions():
             cmd.append('--exclude=%s' % (e))
         return cmd
 
     def _get_env(self):
         env_addons = {}
-        app_dir = self.get_option('app_dir')
-        tox_fn = sh.joinpths(app_dir, 'tox.ini')
+        tox_fn = sh.joinpths(self.get_option('app_dir'), 'tox.ini')
         if sh.isfile(tox_fn):
             # Suck out some settings from the tox file
             try:
@@ -848,14 +872,11 @@ class PythonTestingComponent(component.Component):
                         value = value.strip()
                         if name.lower() != 'virtual_env':
                             env_addons[name] = value
+                if env_addons:
+                    LOG.debug("From %s we read in %s environment settings:", tox_fn, len(env_addons))
+                    utils.log_object(env_addons, logger=LOG, level=logging.DEBUG)
             except IOError:
                 pass
-        env_addons['NOSE_WITH_OPENSTACK'] = 1
-        env_addons['NOSE_OPENSTACK_COLOR'] = 1
-        env_addons['NOSE_OPENSTACK_RED'] = 0.05
-        env_addons['NOSE_OPENSTACK_YELLOW'] = 0.025
-        env_addons['NOSE_OPENSTACK_SHOW_ELAPSED'] = 1
-        env_addons['NOSE_OPENSTACK_STDOUT'] = 1
         return env_addons
 
     def run_tests(self):
@@ -866,7 +887,11 @@ class PythonTestingComponent(component.Component):
             return
         cmd = self._get_test_command()
         env = self._get_env()
-        sh.execute(*cmd, stdout_fh=None, stderr_fh=None, cwd=app_dir, env_overrides=env)
+        with open(os.devnull, 'w') as null_fh:
+            if self.get_bool_option("verbose"):
+                null_fh = None
+            sh.execute(*cmd, stdout_fh=None, stderr_fh=null_fh,
+                       cwd=app_dir, env_overrides=env)
 
 
 ####
