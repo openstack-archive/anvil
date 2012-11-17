@@ -846,7 +846,7 @@ class PythonTestingComponent(component.Component):
             # since anvil doesn't really do venv stuff (its meant to avoid those...)
             cmd = ['nosetests']
         # See: $ man nosetests
-        if self.get_bool_option("verbose"):
+        if self.get_bool_option("verbose", default_value=False):
             cmd.append('--nologcapture')
         for e in self._get_test_exclusions():
             cmd.append('--exclude=%s' % (e))
@@ -887,8 +887,8 @@ class PythonTestingComponent(component.Component):
             return
         cmd = self._get_test_command()
         env = self._get_env()
-        with open(os.devnull, 'w') as null_fh:
-            if self.get_bool_option("verbose"):
+        with open(os.devnull, 'wb') as null_fh:
+            if self.get_bool_option("verbose", default_value=False):
                 null_fh = None
             sh.execute(*cmd, stdout_fh=None, stderr_fh=null_fh,
                        cwd=app_dir, env_overrides=env)
