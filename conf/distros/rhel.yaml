@@ -249,6 +249,7 @@ components:
         -   name: nosehtmloutput
         -   name: openstack.nose_plugin
         -   name: pep8 # The rhel version appears to not be new enough...
+            version: "1.2"
         -   name: prettytable
             version: "0.6.1"
         -   name: pycrypto
