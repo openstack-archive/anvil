@@ -303,6 +303,13 @@ class PythonInstallComponent(PkgInstallComponent):
             pip_pkg_list = []
         return pip_pkg_list
 
+    @property
+    def pip_requires(self):
+        all_pips = []
+        for fn in self.requires_files:
+            all_pips.extend(self._extract_pip_requires(fn))
+        return all_pips
+
     def _match_pip_requires(self, pip_req):
 
         def pip_use(who, there_pip):
@@ -374,27 +381,29 @@ class PythonInstallComponent(PkgInstallComponent):
 
     def _get_mapped_packages(self):
         add_on_pkgs = []
-        all_pips = []
-        for fn in self.requires_files:
-            all_pips.extend(self._extract_pip_requires(fn))
+        all_pips = self.pip_requires
         for details in all_pips:
             pkg_info = details['package']
             from_pip = details['from_pip']
             if from_pip or not pkg_info:
                 continue
+            # Keep the initial requirement
+            pkg_info = dict(pkg_info)
+            pkg_info['requirement'] = details['requirement']
             add_on_pkgs.append(pkg_info)
         return add_on_pkgs
 
     def _get_mapped_pips(self):
         add_on_pips = []
-        all_pips = []
-        for fn in self.requires_files:
-            all_pips.extend(self._extract_pip_requires(fn))
+        all_pips = self.pip_requires
         for details in all_pips:
             pkg_info = details['package']
             from_pip = details['from_pip']
             if not from_pip or not pkg_info:
                 continue
+            # Keep the initial requirement
+            pkg_info = dict(pkg_info)
+            pkg_info['requirement'] = details['requirement']
             add_on_pips.append(pkg_info)
         return add_on_pips
 
@@ -516,9 +525,7 @@ class PythonInstallComponent(PkgInstallComponent):
         return matchings
 
     def _verify_pip_requires(self):
-        all_pips = []
-        for fn in self.requires_files:
-            all_pips.extend(self._extract_pip_requires(fn))
+        all_pips = self.pip_requires
         for details in all_pips:
             req = details['requirement']
             needed_by = details['needed_by']
@@ -820,6 +827,10 @@ class EmptyTestingComponent(component.Component):
 
 
 class PythonTestingComponent(component.Component):
+    def __init__(self, *args, **kargs):
+        component.Component.__init__(self, *args, **kargs)
+        self.helper = pip_helper.Helper(self.distro)
+
     def _get_test_exclusions(self):
         return []
 
@@ -832,6 +843,8 @@ class PythonTestingComponent(component.Component):
         app_dir = self.get_option('app_dir')
         if sh.isfile(sh.joinpths(app_dir, 'run_tests.sh')) and self._use_run_tests():
             cmd = [sh.joinpths(app_dir, 'run_tests.sh'), '-N']
+            if not self._use_pep8():
+                cmd.append('--no-pep8')
         else:
             # Assume tox is being used, which we can't use directly
             # since anvil doesn't really do venv stuff (its meant to avoid those...)
@@ -842,6 +855,34 @@ class PythonTestingComponent(component.Component):
         for e in self._get_test_exclusions():
             cmd.append('--exclude=%s' % (e))
         return cmd
+
+    def _use_pep8(self):
+        # Seems like the varying versions are borking pep8 from working...
+        i_sibling = self.siblings.get('install')
+        # Check if whats installed actually matches
+        pep8_wanted = None
+        if isinstance(i_sibling, (PythonInstallComponent)):
+            for p in i_sibling.pip_requires:
+                req = p['requirement']
+                if req.key == "pep8":
+                    pep8_wanted = req
+                    break
+        if not pep8_wanted:
+            # Doesn't matter since its not wanted anyway
+            return True
+        pep8_there = self.helper.get_installed('pep8')
+        if not pep8_there:
+            # Hard to use it if it isn't there...
+            LOG.warn("Pep8 version mismatch, none is installed but %s is wanting %s",
+                     self.name, pep8_wanted)
+            return False
+        if not (pep8_there == pep8_wanted):
+            # Versions not matching, this is causes pep8 to puke when it doesn't need to
+            # so skip it from running in the first place...
+            LOG.warn("Pep8 version mismatch, installed is %s but %s is applying %s",
+                     pep8_there, self.name, pep8_wanted)
+            return False
+        return self.get_bool_option('use_pep8', default_value=True)
 
     def _get_env(self):
         env_addons = {}

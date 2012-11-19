@@ -16,6 +16,15 @@ YUM_OPTS="--assumeyes --nogpgcheck"
 
 # Source in our variables (or overrides)
 source ".anvilrc"
+if [ -n "$SUDO_USER" ]; then
+    USER_HOME=$(getent passwd $SUDO_USER | cut -d: -f6)
+    if [ -n "$USER_HOME" ]; then
+        HOME_RC="${USER_HOME}/.anvilrc"
+        if [ -f "$HOME_RC" ]; then
+            source "$HOME_RC"
+        fi
+    fi
+fi
 
 ARGS="$@"
 VER=$(python -c "from anvil import version; print version.version_string()")
@@ -34,6 +43,9 @@ fi
 
 bootstrap_node()
 {
+    if [ -z "$NODE_RPM_URL" ]; then
+        return 0
+    fi
     echo "Installing node.js yum repository configuration."
     JS_REPO_RPM_FN=$(basename $NODE_RPM_URL)
     if [ ! -f "/tmp/$JS_REPO_RPM_FN" ]; then
@@ -49,6 +61,9 @@ bootstrap_node()
 
 bootstrap_epel()
 {
+    if [ -z "$EPEL_RPM_LIST" ]; then
+        return 0
+    fi
     echo "Locating the EPEL rpm..."
     if [ -z "$EPEL_RPM" ]; then
         EPEL_RPM=$(curl -s "$EPEL_RPM_LIST/" | grep -io ">\s*epel.*.rpm\s*<" | grep -io "epel.*.rpm")
@@ -86,13 +101,14 @@ bootstrap_rhel()
     echo "Please wait..."
     bootstrap_node
     bootstrap_epel
-    bootstrap_dependencies
-
-    echo "Installing distribution dependencies..."
-    yum install $YUM_OPTS $PKG_DEPS 2>&1
-
-    echo "Installing pypi dependencies..."
-    pip-python install -U -I -r "$PIP_DEP_FN"
+    if [ -n "$PKG_DEPS" ]; then
+        echo "Installing distribution dependencies..."
+        yum install $YUM_OPTS $PKG_DEPS 2>&1
+    fi
+    if [ -f "$PIP_DEP_FN" ]; then
+        echo "Installing pypi dependencies..."
+        pip-python install -U -I -r "$PIP_DEP_FN"
+    fi
     return 0
 }
 

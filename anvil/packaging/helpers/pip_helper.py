@@ -62,8 +62,11 @@ class Helper(object):
     # Cache of whats installed list
     _installed_cache = None
 
-    def __init__(self, pip_how):
-        self._pip_how = pip_how
+    def __init__(self, call_how):
+        if not isinstance(call_how, (basestring, str)):
+            self._pip_how = call_how.get_command_config('pip')
+        else:
+            self._pip_how = call_how
 
     def _list_installed(self):
         cmd = [str(self._pip_how)] + FREEZE_CMD
