@@ -182,7 +182,7 @@ def execute(*cmd, **kwargs):
             LOG.debug("A failure may of just happened when running command %r [%s] (%s, %s)",
                       str_cmd, rc, stdout, stderr)
         # See if a requested storage place was given for stderr/stdout
-        trace_writer = kwargs.get('trace_writer')
+        trace_writer = kwargs.get('tracewriter')
         stdout_fn = kwargs.get('stdout_fn')
         if stdout_fn:
             write_file(stdout_fn, stdout)
@@ -447,13 +447,15 @@ def is_running(pid):
     return running
 
 
-def mkdirslist(path):
+def mkdirslist(path, tracewriter=None, adjust_suids=False):
     dirs_possible = explode_path(path)
     dirs_made = []
-    for check_path in dirs_possible:
-        if not isdir(check_path):
-            mkdir(check_path, False)
-            dirs_made.append(check_path)
+    for dir_path in dirs_possible:
+        if not isdir(dir_path):
+            mkdir(dir_path, recurse=False, adjust_suids=adjust_suids)
+            if tracewriter:
+                tracewriter.dirs_made(dir_path)
+            dirs_made.append(dir_path)
     return dirs_made
 
 
@@ -469,37 +471,41 @@ def append_file(fn, text, flush=True, quiet=False):
     return fn
 
 
-def write_file(fn, text, flush=True, quiet=False):
+def write_file(fn, text, flush=True, quiet=False, tracewriter=None):
     if not quiet:
         LOG.debug("Writing to file %r (%d bytes) (flush=%s)", fn, len(text), (flush))
         LOG.debug("> %s" % (text))
     if not is_dry_run():
-        with open(fn, "w") as f:
-            f.write(text)
+        mkdirslist(dirname(fn), tracewriter=tracewriter)
+        with open(fn, "w") as fh:
+            fh.write(text)
             if flush:
-                f.flush()
-    return fn
+                fh.flush()
+    if tracewriter:
+        tracewriter.file_touched(fn)
 
 
-def touch_file(fn, die_if_there=True, quiet=False, file_size=0):
+def touch_file(fn, die_if_there=True, quiet=False, file_size=0, tracewriter=None):
     if not isfile(fn):
         if not quiet:
             LOG.debug("Touching and truncating file %r (truncate size=%s)", fn, file_size)
         if not is_dry_run():
-            with open(fn, "w") as f:
-                f.truncate(file_size)
+            mkdirslist(dirname(fn), tracewriter=tracewriter)
+            with open(fn, "w") as fh:
+                fh.truncate(file_size)
+            if tracewriter:
+                tracewriter.file_touched(fn)
     else:
         if die_if_there:
             msg = "Can not touch & truncate file %r since it already exists" % (fn)
             raise excp.FileException(msg)
-    return fn
 
 
 def load_file(fn):
     data = ""
     if not is_dry_run():
-        with open(fn, "r") as f:
-            data = f.read()
+        with open(fn, "r") as fh:
+            data = fh.read()
     return data
 
 
@@ -544,16 +550,16 @@ def rmdir(path, quiet=True, run_as_root=False):
             pass
 
 
-def symlink(source, link, force=True, run_as_root=True):
+def symlink(source, link, force=True, run_as_root=True, tracewriter=None):
     with Rooted(run_as_root):
         LOG.debug("Creating symlink from %r => %r" % (link, source))
-        path = dirname(link)
-        needed_pths = mkdirslist(path)
+        mkdirslist(dirname(link), tracewriter=tracewriter)
         if not is_dry_run():
-            if force and (exists(link) or islink(link)):
+            if force and (exists(link) and islink(link)):
                 unlink(link, True)
             os.symlink(source, link)
-        return needed_pths
+            if tracewriter:
+                tracewriter.symlink_made(link)
 
 
 def exists(path):

@@ -158,8 +158,9 @@ class GlanceInstaller(comp.PythonInstallComponent):
                 img_store_dir = sh.joinpths(self.get_option('component_dir'), 'images')
                 config.set('DEFAULT', 'filesystem_store_datadir', img_store_dir)
                 LOG.debug("Ensuring file system store directory %r exists and is empty." % (img_store_dir))
-                sh.deldir(img_store_dir)
-                self.tracewriter.dirs_made(*sh.mkdirslist(img_store_dir))
+                if sh.isdir(img_store_dir):
+                    sh.deldir(img_store_dir)
+                sh.mkdirslist(img_store_dir, tracewriter=self.tracewriter, adjust_suids=True)
             return config.stringify(fn)
 
     def _config_adjust_logging(self, contents, fn):

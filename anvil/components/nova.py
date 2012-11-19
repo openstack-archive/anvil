@@ -160,14 +160,11 @@ class NovaInstaller(comp.PythonInstallComponent):
 
     def _setup_cleaner(self):
         LOG.info("Configuring cleaner template: %s", colorizer.quote(CLEANER_DATA_CONF))
-        (_fn, contents) = utils.load_template(self.name, CLEANER_DATA_CONF)
+        (_src_fn, contents) = utils.load_template(self.name, CLEANER_DATA_CONF)
         cleaner_fn = sh.joinpths(self.get_option('component_dir'), 'tools', CLEANER_DATA_CONF)
-        if not sh.isdir(sh.dirname(cleaner_fn)):
-            dirs_made = sh.mkdirslist(sh.dirname(cleaner_fn))
-            self.tracewriter.dirs_made(*dirs_made)
-        sh.write_file(cleaner_fn, contents)
+        sh.mkdirslist(sh.dirname(cleaner_fn), tracewriter=self.tracewriter)
+        sh.write_file(cleaner_fn, contents, tracewriter=self.tracewriter)
         sh.chmod(cleaner_fn, 0755)
-        self.tracewriter.file_touched(cleaner_fn)
 
     def _setup_db(self):
         dbhelper.drop_db(distro=self.distro,
