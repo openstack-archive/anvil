@@ -920,7 +920,7 @@ class PythonTestingComponent(component.Component):
         cmd = self._get_test_command()
         env = self._get_env()
         with open(os.devnull, 'wb') as null_fh:
-            if self.get_bool_option("verbose", default_value=False):
+            if self.get_bool_option("tests_verbose", default_value=False):
                 null_fh = None
             sh.execute(*cmd, stdout_fh=None, stderr_fh=null_fh,
                        cwd=app_dir, env_overrides=env)
