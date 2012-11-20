@@ -92,6 +92,16 @@ def make_packager(package, default_class, **kwargs):
     return p
 
 
+# Remove any private keys from a package dictionary
+def filter_package(pkg):
+    n_pkg = {}
+    for (k, v) in pkg.items():
+        if not k or k.startswith("_"):
+            continue
+        else:
+            n_pkg[k] = v
+    return n_pkg
+
 ####
 #### INSTALL CLASSES
 ####
@@ -125,10 +135,11 @@ class PkgInstallComponent(component.Component):
             utils.log_iterable(uris, logger=LOG,
                                header="Downloading from %s uris" % (len(uris)))
             sh.mkdirslist(target_dir, tracewriter=self.tracewriter)
+            # This is used to delete what is downloaded (done before
+            # fetching to ensure its cleaned up even on download failures)
+            self.tracewriter.download_happened(target_dir, from_uri)
             fetcher = down.GitDownloader(self.distro, from_uri, target_dir)
             fetcher.download()
-            # This is used to delete what is downloaded
-            self.tracewriter.download_happened(target_dir, from_uri)
             return uris
 
     def patch(self, section):
@@ -168,15 +179,15 @@ class PkgInstallComponent(component.Component):
         if pkgs:
             pkg_names = [p['name'] for p in pkgs]
             utils.log_iterable(pkg_names, logger=LOG,
-                header="Setting up %s distribution packages" % (len(pkg_names)))
+                               header="Setting up %s distribution packages" % (len(pkg_names)))
             with utils.progress_bar('Installing', len(pkgs)) as p_bar:
                 for (i, p) in enumerate(pkgs):
                     installer = make_packager(p, self.distro.package_manager_class,
                                               distro=self.distro)
                     installer.install(p)
-                    p_bar.update(i + 1)
                     # Mark that this happened so that we can uninstall it
-                    self.tracewriter.package_installed(p)
+                    self.tracewriter.package_installed(filter_package(p))
+                    p_bar.update(i + 1)
 
     def pre_install(self):
         pkgs = self.packages
@@ -225,7 +236,7 @@ class PkgInstallComponent(component.Component):
         config_fns = self.config_files
         if config_fns:
             utils.log_iterable(config_fns, logger=LOG,
-                header="Configuring %s files" % (len(config_fns)))
+                               header="Configuring %s files" % (len(config_fns)))
             for fn in config_fns:
                 tgt_fn = self.target_config(fn)
                 sh.mkdirslist(sh.dirname(tgt_fn), tracewriter=self.tracewriter)
@@ -389,7 +400,7 @@ class PythonInstallComponent(PkgInstallComponent):
                 continue
             # Keep the initial requirement
             pkg_info = dict(pkg_info)
-            pkg_info['requirement'] = details['requirement']
+            pkg_info['__requirement'] = details['requirement']
             add_on_pkgs.append(pkg_info)
         return add_on_pkgs
 
@@ -403,7 +414,7 @@ class PythonInstallComponent(PkgInstallComponent):
                 continue
             # Keep the initial requirement
             pkg_info = dict(pkg_info)
-            pkg_info['requirement'] = details['requirement']
+            pkg_info['__requirement'] = details['requirement']
             add_on_pips.append(pkg_info)
         return add_on_pips
 
@@ -428,14 +439,14 @@ class PythonInstallComponent(PkgInstallComponent):
         if pips:
             pip_names = [p['name'] for p in pips]
             utils.log_iterable(pip_names, logger=LOG,
-                header="Setting up %s python packages" % (len(pip_names)))
+                               header="Setting up %s python packages" % (len(pip_names)))
             with utils.progress_bar('Installing', len(pips)) as p_bar:
                 for (i, p) in enumerate(pips):
                     installer = make_packager(p, pip.Packager,
                                               distro=self.distro)
                     installer.install(p)
                     # Note that we did it so that we can remove it...
-                    self.tracewriter.pip_installed(p)
+                    self.tracewriter.pip_installed(filter_package(p))
                     p_bar.update(i + 1)
 
     def _clean_pip_requires(self):
@@ -447,7 +458,7 @@ class PythonInstallComponent(PkgInstallComponent):
             req_fns.append(fn)
         if req_fns:
             utils.log_iterable(req_fns, logger=LOG,
-                header="Adjusting %s pip 'requires' files" % (len(req_fns)))
+                               header="Adjusting %s pip 'requires' files" % (len(req_fns)))
             for fn in req_fns:
                 new_lines = []
                 for line in sh.load_file(fn).splitlines():
@@ -492,7 +503,7 @@ class PythonInstallComponent(PkgInstallComponent):
                 if not real_dirs[name]:
                     real_dirs[name] = self.get_option('app_dir')
             utils.log_iterable(real_dirs.values(), logger=LOG,
-                header="Setting up %s python directories" % (len(real_dirs)))
+                               header="Setting up %s python directories" % (len(real_dirs)))
             setup_cmd = self.distro.get_command('python', 'setup')
             for (name, working_dir) in real_dirs.items():
                 sh.mkdirslist(working_dir, tracewriter=self.tracewriter)
@@ -719,7 +730,7 @@ class PkgUninstallComponent(component.Component):
         sym_files = self.tracereader.symlinks_made()
         if sym_files:
             utils.log_iterable(sym_files, logger=LOG,
-                header="Removing %s symlink files" % (len(sym_files)))
+                               header="Removing %s symlink files" % (len(sym_files)))
             for fn in sym_files:
                 sh.unlink(fn, run_as_root=True)
 
@@ -738,7 +749,7 @@ class PkgUninstallComponent(component.Component):
         if pkgs:
             pkg_names = set([p['name'] for p in pkgs])
             utils.log_iterable(pkg_names, logger=LOG,
-                header="Potentially removing %s distribution packages" % (len(pkg_names)))
+                               header="Potentially removing %s distribution packages" % (len(pkg_names)))
             which_removed = []
             with utils.progress_bar('Uninstalling', len(pkgs), reverse=True) as p_bar:
                 for (i, p) in enumerate(pkgs):
@@ -749,13 +760,13 @@ class PkgUninstallComponent(component.Component):
                         which_removed.append(p['name'])
                     p_bar.update(i + 1)
             utils.log_iterable(which_removed, logger=LOG,
-                    header="Actually removed %s distribution packages" % (len(which_removed)))
+                               header="Actually removed %s distribution packages" % (len(which_removed)))
 
     def _uninstall_files(self):
         files_touched = self.tracereader.files_touched()
         if files_touched:
             utils.log_iterable(files_touched, logger=LOG,
-                header="Removing %s miscellaneous files" % (len(files_touched)))
+                               header="Removing %s miscellaneous files" % (len(files_touched)))
             for fn in files_touched:
                 sh.unlink(fn, run_as_root=True)
 
@@ -764,7 +775,7 @@ class PkgUninstallComponent(component.Component):
         dirs_alive = filter(sh.isdir, dirs_made)
         if dirs_alive:
             utils.log_iterable(dirs_alive, logger=LOG,
-                header="Removing %s created directories" % (len(dirs_alive)))
+                               header="Removing %s created directories" % (len(dirs_alive)))
             for dir_name in dirs_alive:
                 sh.deldir(dir_name, run_as_root=True)
 
@@ -781,7 +792,7 @@ class PythonUninstallComponent(PkgUninstallComponent):
         if pips:
             pip_names = [p['name'] for p in pips]
             utils.log_iterable(pip_names, logger=LOG,
-                header="Potentially removing %s python packages" % (len(pip_names)))
+                               header="Potentially removing %s python packages" % (len(pip_names)))
             which_removed = []
             with utils.progress_bar('Uninstalling', len(pips), reverse=True) as p_bar:
                 for (i, p) in enumerate(pips):
@@ -798,7 +809,7 @@ class PythonUninstallComponent(PkgUninstallComponent):
                             raise
                     p_bar.update(i + 1)
             utils.log_iterable(which_removed, logger=LOG,
-                    header="Actually removed %s python packages" % (len(which_removed)))
+                               header="Actually removed %s python packages" % (len(which_removed)))
 
     def _uninstall_python(self):
         py_listing = self.tracereader.py_listing()
@@ -807,7 +818,7 @@ class PythonUninstallComponent(PkgUninstallComponent):
             for (_name, where) in py_listing:
                 py_listing_dirs.add(where)
             utils.log_iterable(py_listing_dirs, logger=LOG,
-                header="Uninstalling %s python setups" % (len(py_listing_dirs)))
+                               header="Uninstalling %s python setups" % (len(py_listing_dirs)))
             unsetup_cmd = self.distro.get_command('python', 'unsetup')
             for where in py_listing_dirs:
                 if sh.isdir(where):
@@ -863,7 +874,7 @@ class PythonTestingComponent(component.Component):
         pep8_wanted = None
         if isinstance(i_sibling, (PythonInstallComponent)):
             for p in i_sibling.pip_requires:
-                req = p['requirement']
+                req = p['__requirement']
                 if req.key == "pep8":
                     pep8_wanted = req
                     break
