@@ -123,13 +123,12 @@ class PkgInstallComponent(component.Component):
         else:
             uris = [from_uri]
             utils.log_iterable(uris, logger=LOG,
-                    header="Downloading from %s uris" % (len(uris)))
-            # Ensure that we mark it as occuring, so that even if it
-            # fails we can go clean it up...
-            self.tracewriter.download_happened(target_dir, from_uri)
-            self.tracewriter.dirs_made(*sh.mkdirslist(target_dir))
+                               header="Downloading from %s uris" % (len(uris)))
+            sh.mkdirslist(target_dir, tracewriter=self.tracewriter)
             fetcher = down.GitDownloader(self.distro, from_uri, target_dir)
             fetcher.download()
+            # This is used to delete what is downloaded
+            self.tracewriter.download_happened(target_dir, from_uri)
             return uris
 
     def patch(self, section):
@@ -174,9 +173,10 @@ class PkgInstallComponent(component.Component):
                 for (i, p) in enumerate(pkgs):
                     installer = make_packager(p, self.distro.package_manager_class,
                                               distro=self.distro)
-                    self.tracewriter.package_installed(p)
                     installer.install(p)
                     p_bar.update(i + 1)
+                    # Mark that this happened so that we can uninstall it
+                    self.tracewriter.package_installed(p)
 
     def pre_install(self):
         pkgs = self.packages
@@ -228,12 +228,12 @@ class PkgInstallComponent(component.Component):
                 header="Configuring %s files" % (len(config_fns)))
             for fn in config_fns:
                 tgt_fn = self.target_config(fn)
-                self.tracewriter.dirs_made(*sh.mkdirslist(sh.dirname(tgt_fn)))
+                sh.mkdirslist(sh.dirname(tgt_fn), tracewriter=self.tracewriter)
                 (source_fn, contents) = self.source_config(fn)
                 LOG.debug("Configuring file %s ---> %s.", (source_fn), (tgt_fn))
                 contents = self._config_param_replace(fn, contents, self.config_params(fn))
                 contents = self._config_adjust(contents, fn)
-                self.tracewriter.cfg_file_written(sh.write_file(tgt_fn, contents))
+                sh.write_file(tgt_fn, contents, tracewriter=self.tracewriter)
         return len(config_fns)
 
     def _configure_symlinks(self):
@@ -258,8 +258,7 @@ class PkgInstallComponent(component.Component):
             for link in links_to_be:
                 try:
                     LOG.debug("Symlinking %s to %s.", link, source)
-                    self.tracewriter.dirs_made(*sh.symlink(source, link))
-                    self.tracewriter.symlink_made(link)
+                    sh.symlink(source, link, tracewriter=self.tracewriter)
                     links_made += 1
                 except (IOError, OSError) as e:
                     LOG.warn("Symlinking %s to %s failed: %s", colorizer.quote(link), colorizer.quote(source), e)
@@ -303,6 +302,13 @@ class PythonInstallComponent(PkgInstallComponent):
         if not pip_pkg_list:
             pip_pkg_list = []
         return pip_pkg_list
+
+    @property
+    def pip_requires(self):
+        all_pips = []
+        for fn in self.requires_files:
+            all_pips.extend(self._extract_pip_requires(fn))
+        return all_pips
 
     def _match_pip_requires(self, pip_req):
 
@@ -375,27 +381,29 @@ class PythonInstallComponent(PkgInstallComponent):
 
     def _get_mapped_packages(self):
         add_on_pkgs = []
-        all_pips = []
-        for fn in self.requires_files:
-            all_pips.extend(self._extract_pip_requires(fn))
+        all_pips = self.pip_requires
         for details in all_pips:
             pkg_info = details['package']
             from_pip = details['from_pip']
             if from_pip or not pkg_info:
                 continue
+            # Keep the initial requirement
+            pkg_info = dict(pkg_info)
+            pkg_info['requirement'] = details['requirement']
             add_on_pkgs.append(pkg_info)
         return add_on_pkgs
 
     def _get_mapped_pips(self):
         add_on_pips = []
-        all_pips = []
-        for fn in self.requires_files:
-            all_pips.extend(self._extract_pip_requires(fn))
+        all_pips = self.pip_requires
         for details in all_pips:
             pkg_info = details['package']
             from_pip = details['from_pip']
             if not from_pip or not pkg_info:
                 continue
+            # Keep the initial requirement
+            pkg_info = dict(pkg_info)
+            pkg_info['requirement'] = details['requirement']
             add_on_pips.append(pkg_info)
         return add_on_pips
 
@@ -423,10 +431,11 @@ class PythonInstallComponent(PkgInstallComponent):
                 header="Setting up %s python packages" % (len(pip_names)))
             with utils.progress_bar('Installing', len(pips)) as p_bar:
                 for (i, p) in enumerate(pips):
-                    self.tracewriter.pip_installed(p)
                     installer = make_packager(p, pip.Packager,
                                               distro=self.distro)
                     installer.install(p)
+                    # Note that we did it so that we can remove it...
+                    self.tracewriter.pip_installed(p)
                     p_bar.update(i + 1)
 
     def _clean_pip_requires(self):
@@ -486,13 +495,13 @@ class PythonInstallComponent(PkgInstallComponent):
                 header="Setting up %s python directories" % (len(real_dirs)))
             setup_cmd = self.distro.get_command('python', 'setup')
             for (name, working_dir) in real_dirs.items():
-                self.tracewriter.dirs_made(*sh.mkdirslist(working_dir))
-                self.tracewriter.py_installed(name, working_dir)
-                root_fn = sh.joinpths(self.get_option('trace_dir'), "%s.python.setup" % (name))
+                sh.mkdirslist(working_dir, tracewriter=self.tracewriter)
+                setup_fn = sh.joinpths(self.get_option('trace_dir'), "%s.python.setup" % (name))
                 sh.execute(*setup_cmd, cwd=working_dir, run_as_root=True,
-                           stderr_fn='%s.stderr' % (root_fn),
-                           stdout_fn='%s.stdout' % (root_fn),
-                           trace_writer=self.tracewriter)
+                           stderr_fn='%s.stderr' % (setup_fn),
+                           stdout_fn='%s.stdout' % (setup_fn),
+                           tracewriter=self.tracewriter)
+                self.tracewriter.py_installed(name, working_dir)
 
     def _python_install(self):
         self._install_pips()
@@ -516,9 +525,7 @@ class PythonInstallComponent(PkgInstallComponent):
         return matchings
 
     def _verify_pip_requires(self):
-        all_pips = []
-        for fn in self.requires_files:
-            all_pips.extend(self._extract_pip_requires(fn))
+        all_pips = self.pip_requires
         for details in all_pips:
             req = details['requirement']
             needed_by = details['needed_by']
@@ -706,7 +713,6 @@ class PkgUninstallComponent(component.Component):
         self.purge_packages = kargs.get('purge_packages')
 
     def unconfigure(self):
-        self._unconfigure_files()
         self._unconfigure_links()
 
     def _unconfigure_links(self):
@@ -717,17 +723,9 @@ class PkgUninstallComponent(component.Component):
             for fn in sym_files:
                 sh.unlink(fn, run_as_root=True)
 
-    def _unconfigure_files(self):
-        cfg_files = self.tracereader.files_configured()
-        if cfg_files:
-            utils.log_iterable(cfg_files, logger=LOG,
-                header="Removing %s configuration files" % (len(cfg_files)))
-            for fn in cfg_files:
-                sh.unlink(fn, run_as_root=True)
-
     def uninstall(self):
         self._uninstall_pkgs()
-        self._uninstall_touched_files()
+        self._uninstall_files()
 
     def post_uninstall(self):
         self._uninstall_dirs()
@@ -753,7 +751,7 @@ class PkgUninstallComponent(component.Component):
             utils.log_iterable(which_removed, logger=LOG,
                     header="Actually removed %s distribution packages" % (len(which_removed)))
 
-    def _uninstall_touched_files(self):
+    def _uninstall_files(self):
         files_touched = self.tracereader.files_touched()
         if files_touched:
             utils.log_iterable(files_touched, logger=LOG,
@@ -829,6 +827,10 @@ class EmptyTestingComponent(component.Component):
 
 
 class PythonTestingComponent(component.Component):
+    def __init__(self, *args, **kargs):
+        component.Component.__init__(self, *args, **kargs)
+        self.helper = pip_helper.Helper(self.distro)
+
     def _get_test_exclusions(self):
         return []
 
@@ -841,16 +843,46 @@ class PythonTestingComponent(component.Component):
         app_dir = self.get_option('app_dir')
         if sh.isfile(sh.joinpths(app_dir, 'run_tests.sh')) and self._use_run_tests():
             cmd = [sh.joinpths(app_dir, 'run_tests.sh'), '-N']
+            if not self._use_pep8():
+                cmd.append('--no-pep8')
         else:
             # Assume tox is being used, which we can't use directly
             # since anvil doesn't really do venv stuff (its meant to avoid those...)
             cmd = ['nosetests']
         # See: $ man nosetests
-        if self.get_bool_option("verbose"):
+        if self.get_bool_option("verbose", default_value=False):
             cmd.append('--nologcapture')
         for e in self._get_test_exclusions():
             cmd.append('--exclude=%s' % (e))
         return cmd
+
+    def _use_pep8(self):
+        # Seems like the varying versions are borking pep8 from working...
+        i_sibling = self.siblings.get('install')
+        # Check if whats installed actually matches
+        pep8_wanted = None
+        if isinstance(i_sibling, (PythonInstallComponent)):
+            for p in i_sibling.pip_requires:
+                req = p['requirement']
+                if req.key == "pep8":
+                    pep8_wanted = req
+                    break
+        if not pep8_wanted:
+            # Doesn't matter since its not wanted anyway
+            return True
+        pep8_there = self.helper.get_installed('pep8')
+        if not pep8_there:
+            # Hard to use it if it isn't there...
+            LOG.warn("Pep8 version mismatch, none is installed but %s is wanting %s",
+                     self.name, pep8_wanted)
+            return False
+        if not (pep8_there == pep8_wanted):
+            # Versions not matching, this is causes pep8 to puke when it doesn't need to
+            # so skip it from running in the first place...
+            LOG.warn("Pep8 version mismatch, installed is %s but %s is applying %s",
+                     pep8_there, self.name, pep8_wanted)
+            return False
+        return self.get_bool_option('use_pep8', default_value=True)
 
     def _get_env(self):
         env_addons = {}
@@ -887,8 +919,8 @@ class PythonTestingComponent(component.Component):
             return
         cmd = self._get_test_command()
         env = self._get_env()
-        with open(os.devnull, 'w') as null_fh:
-            if self.get_bool_option("verbose"):
+        with open(os.devnull, 'wb') as null_fh:
+            if self.get_bool_option("tests_verbose", default_value=False):
                 null_fh = None
             sh.execute(*cmd, stdout_fh=None, stderr_fh=null_fh,
                        cwd=app_dir, env_overrides=env)

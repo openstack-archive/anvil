@@ -112,9 +112,9 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def _setup_blackhole(self):
         # Create an empty directory that apache uses as docroot
-        self.tracewriter.dirs_made(*sh.mkdirslist(self.blackhole_dir))
+        sh.mkdirslist(self.blackhole_dir, tracewriter=self.tracewriter)
 
-    def _setup_logs(self, clear):
+    def _setup_logs(self, clear=False):
         log_fns = [self.access_log, self.error_log]
         utils.log_iterable(log_fns, logger=LOG,
                            header="Adjusting %s log files" % (len(log_fns)))
@@ -122,10 +122,8 @@ class HorizonInstaller(comp.PythonInstallComponent):
             with sh.Rooted(True):
                 if clear:
                     sh.unlink(fn, True)
-                sh.mkdirslist(sh.dirname(fn))
-                sh.touch_file(fn, die_if_there=False)
+                sh.touch_file(fn, die_if_there=False, tracewriter=self.tracewriter)
                 sh.chmod(fn, 0666)
-            self.tracewriter.file_touched(fn)
         return len(log_fns)
 
     def _sync_db(self):

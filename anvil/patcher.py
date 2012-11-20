@@ -25,18 +25,32 @@ LOG = logging.getLogger(__name__)
 PATCH_CMD = ['patch', '-p1']
 
 
+def _is_patch(path):
+    if not path.endswith(".patch"):
+        return False
+    if not sh.isfile(path):
+        return False
+    return True
+
+
+def expand_patches(paths):
+    if not paths:
+        return []
+    all_paths = []
+    # Expand patch files/dirs
+    for path in paths:
+        path = sh.abspth(path)
+        if sh.isdir(path):
+            all_paths.extend([p for p in sh.listdir(path, files_only=True)])
+        else:
+            all_paths.append(path)
+    # Now filter on valid patches
+    return [p for p in all_paths if _is_patch(p)]
+
+
 def apply_patches(patch_files, working_dir):
-    if not patch_files:
-        return
-    apply_files = []
-    for p in patch_files:
-        p = sh.abspth(p)
-        if not p.endswith(".patch"):
-            continue
-        if not sh.isfile(p):
-            LOG.warn("Can not apply non-file patch %s", p)
-        apply_files.append(p)
-    if not apply_files:
+    apply_files = expand_patches(patch_files)
+    if not len(apply_files):
         return
     if not sh.isdir(working_dir):
         LOG.warn("Can only apply %s patches 'inside' a directory and not '%s'",
@@ -46,5 +60,5 @@ def apply_patches(patch_files, working_dir):
         for p in apply_files:
             LOG.debug("Applying patch %s in directory %s", p, working_dir)
             patch_contents = sh.load_file(p)
-            if patch_contents:
+            if len(patch_contents):
                 sh.execute(*PATCH_CMD, process_input=patch_contents)

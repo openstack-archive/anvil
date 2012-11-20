@@ -49,7 +49,7 @@ def extract_requirement(pkg_info):
 class Packager(pack.Packager):
     def __init__(self, distro, remove_default=False):
         pack.Packager.__init__(self, distro, remove_default)
-        self.helper = pip_helper.Helper(self._get_pip_command())
+        self.helper = pip_helper.Helper(distro)
 
     def _get_pip_command(self):
         return self.distro.get_command_config('pip')

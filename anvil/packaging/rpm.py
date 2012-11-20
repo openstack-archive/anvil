@@ -20,6 +20,7 @@ from anvil import colorizer
 from anvil import component as comp
 from anvil import exceptions as excp
 from anvil import log as logging
+from anvil import patcher
 from anvil import shell as sh
 from anvil import trace as tr
 from anvil import type_utils as tu
@@ -30,14 +31,16 @@ from anvil.packaging.helpers import yum_helper
 
 LOG = logging.getLogger(__name__)
 
+RPM_DIR_NAMES = ['sources', 'specs', 'srpms', 'rpms', 'build']
+
 
 class DependencyPackager(comp.Component):
-    def __init__(self, *args, **kargs):
-        comp.Component.__init__(self, *args, **kargs)
-        trace_fn = tr.trace_filename(self.get_option('trace_dir'), 'created')
-        self.tracewriter = tr.TraceWriter(trace_fn, break_if_there=False)
+    def __init__(self, *args, **kwargs):
+        comp.Component.__init__(self, *args, **kwargs)
+        self.tracewriter = tr.TraceWriter(tr.trace_filename(self.get_option('trace_dir'), 'created'),
+                                          break_if_there=False)
         self.package_dir = sh.joinpths(self.get_option('component_dir'), 'package')
-        self.match_installed = tu.make_bool(kargs.get('match_installed'))
+        self.match_installed = tu.make_bool(kwargs.get('match_installed'))
         self._build_paths = None
         self._details = None
         self._helper = yum_helper.Helper()
@@ -45,33 +48,23 @@ class DependencyPackager(comp.Component):
     @property
     def build_paths(self):
         if self._build_paths is None:
-            bpaths = {}
-            for name in ['sources', 'specs', 'srpms', 'rpms', 'build']:
+            build_paths = {}
+            for name in RPM_DIR_NAMES:
                 final_path = sh.joinpths(self.package_dir, name.upper())
-                bpaths[name] = final_path
+                build_paths[name] = final_path
                 if sh.isdir(final_path):
                     sh.deldir(final_path, True)
-                self.tracewriter.dirs_made(*sh.mkdirslist(final_path))
-            self._build_paths = bpaths
-        return dict(self._build_paths)
+                sh.mkdirslist(final_path, tracewriter=self.tracewriter)
+            self._build_paths = build_paths
+        return copy.deepcopy(self._build_paths)  # Return copy (not the same instance)
 
     def _patches(self):
+        in_patches = patcher.expand_patches(self.get_option('patches', 'package'))
         your_patches = []
-        in_patches = self.get_option('patches', 'package')
-        if in_patches:
-            for path in in_patches:
-                path = sh.abspth(path)
-                if sh.isdir(path):
-                    for c_path in sh.listdir(path, files_only=True):
-                        if not c_path.endswith(".patch"):
-                            continue
-                        tgt_fn = sh.joinpths(self.build_paths['sources'], sh.basename(c_path))
-                        sh.copy(c_path, tgt_fn)
-                        your_patches.append(sh.basename(tgt_fn))
-                elif path.endswith(".patch"):
-                    tgt_fn = sh.joinpths(self.build_paths['sources'], sh.basename(path))
-                    sh.copy(path, tgt_fn)
-                    your_patches.append(sh.basename(tgt_fn))
+        for path in in_patches:
+            target_path = sh.joinpths(self.build_paths['sources'], sh.basename(path))
+            sh.copy(path, target_path)
+            your_patches.append(sh.basename(target_path))
         return your_patches
 
     def _requirements(self):
@@ -84,12 +77,19 @@ class DependencyPackager(comp.Component):
         if not self.match_installed:
             return yum_pkg
         installed_pkgs = self._helper.get_installed(yum_pkg['name'])
-        if not installed_pkgs:
+        if not len(installed_pkgs):
             return yum_pkg
         installed_pkg = installed_pkgs[0]
-        pkg_new = copy.deepcopy(yum_pkg)
-        pkg_new['version'] = installed_pkg.printVer()
-        return pkg_new
+        # Send back a modified copy with the installed version
+        yum_pkg = copy.deepcopy(yum_pkg)
+        yum_pkg['version'] = str(installed_pkg.printVer())
+        return yum_pkg
+
+    def _get_packager(self):
+        return "%s <%s@%s>" % (sh.getuser(), sh.getuser(), sh.hostname())
+
+    def _get_summary(self):
+        return 'Package build of %s on %s' % (self.name, utils.iso8601())
 
     @property
     def details(self):
@@ -99,14 +99,14 @@ class DependencyPackager(comp.Component):
             'name': self.name,
             'version': 0,
             'release': self.get_int_option('release', default_value=1),
-            'packager': "%s <%s@%s>" % (sh.getuser(), sh.getuser(), sh.hostname()),
+            'packager': self._get_packager(),
             'changelog': '',
             'license': 'Apache License, Version 2.0',
             'automatic_dependencies': True,
             'vendor': None,
             'url': '',
             'description': '',
-            'summary': 'Package build of %s on %s' % (self.name, utils.iso8601()),
+            'summary': self._get_summary(),
         }
         return self._details
 

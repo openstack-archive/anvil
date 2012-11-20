@@ -67,10 +67,6 @@ class TraceWriter(object):
         what['where'] = where
         self.trace(PYTHON_INSTALL, json.dumps(what))
 
-    def cfg_file_written(self, fn):
-        self._start()
-        self.trace(CFG_WRITING_FILE, fn)
-
     def symlink_made(self, link):
         self._start()
         self.trace(SYMLINK_MAKE, link)
@@ -209,16 +205,6 @@ class TraceReader(object):
             if cmd == SYMLINK_MAKE and len(action):
                 links.append(action)
         return links
-
-    def files_configured(self):
-        lines = self.read()
-        files = list()
-        for (cmd, action) in lines:
-            if cmd == CFG_WRITING_FILE and len(action):
-                files.append(action)
-        files = list(set(files))
-        files.sort()
-        return files
 
     def pips_installed(self):
         lines = self.read()

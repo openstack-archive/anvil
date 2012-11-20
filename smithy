@@ -7,10 +7,25 @@ fi
 
 shopt -s nocasematch
 
-# Possible locations of the epel rpm/list url
 RHEL_VERSION=$(lsb_release  -r  | awk '{ print $2 }' | cut -d"." -f1)
 EPEL_RPM_LIST="http://mirrors.kernel.org/fedora-epel/$RHEL_VERSION/i386"
 NODE_RPM_URL="http://nodejs.tchol.org/repocfg/el/nodejs-stable-release.noarch.rpm"
+PKG_DEPS=$(cat "tools/pkg-requires" | egrep -v "^\s*(#|$)")
+PIP_DEP_FN="tools/pip-requires"
+YUM_OPTS="--assumeyes --nogpgcheck"
+PIP_CMD="pip-python"
+
+# Source in our variables (or overrides)
+source ".anvilrc"
+if [ -n "$SUDO_USER" ]; then
+    USER_HOME=$(getent passwd $SUDO_USER | cut -d: -f6)
+    if [ -n "$USER_HOME" ]; then
+        HOME_RC="${USER_HOME}/.anvilrc"
+        if [ -f "$HOME_RC" ]; then
+            source "$HOME_RC"
+        fi
+    fi
+fi
 
 ARGS="$@"
 VER=$(python -c "from anvil import version; print version.version_string()")
@@ -27,24 +42,11 @@ if [ -z "$BOOT_FILES" ]; then
     BOOT_FILES="${BOOT_FILES} ${HOME}/$BOOT_FN"
 fi
 
-has_bootstrapped()
+bootstrap_node()
 {
-    for i in $BOOT_FILES; do
-        if [ -f $i ]; then
-            contents=`cat $i`
-            if [ "$contents" == "$VER" ]; then
-                return 0
-            fi
-        fi
-    done
-    return 1
-}
-
-bootstrap_rh()
-{
-    echo "Bootstrapping RHEL: $1"
-    echo "Please wait..."
-
+    if [ -z "$NODE_RPM_URL" ]; then
+        return 0
+    fi
     echo "Installing node.js yum repository configuration."
     JS_REPO_RPM_FN=$(basename $NODE_RPM_URL)
     if [ ! -f "/tmp/$JS_REPO_RPM_FN" ]; then
@@ -55,8 +57,14 @@ bootstrap_rh()
         fi
     fi
     echo "Installing /tmp/$JS_REPO_RPM_FN..."
-    yum install --assumeyes --nogpgcheck -t "/tmp/$JS_REPO_RPM_FN" 2>&1
+    yum install $YUM_OPTS -t "/tmp/$JS_REPO_RPM_FN" 2>&1
+}
 
+bootstrap_epel()
+{
+    if [ -z "$EPEL_RPM_LIST" ]; then
+        return 0
+    fi
     echo "Locating the EPEL rpm..."
     if [ -z "$EPEL_RPM" ]; then
         EPEL_RPM=$(curl -s "$EPEL_RPM_LIST/" | grep -io ">\s*epel.*.rpm\s*<" | grep -io "epel.*.rpm")
@@ -72,16 +80,36 @@ bootstrap_rh()
         fi
     fi
     echo "Installing /tmp/$EPEL_RPM..."
-    yum install --assumeyes --nogpgcheck -t "/tmp/$EPEL_RPM" 2>&1
+    yum install $YUM_OPTS -t "/tmp/$EPEL_RPM" 2>&1
+}
 
-    echo "Installing distribution dependencies..."
-    pkgs="gcc git pylint python python-netifaces python-pep8 python-cheetah"
-    pkgs="$pkgs python-pip python-progressbar PyYAML python-ordereddict python-iso8601"
-    yum install -y $pkgs 2>&1
+has_bootstrapped()
+{
+    for i in $BOOT_FILES; do
+        if [ -f $i ]; then
+            contents=`cat $i`
+            if [ "$contents" == "$VER" ]; then
+                return 0
+            fi
+        fi
+    done
+    return 1
+}
 
-    echo "Installing pypi dependencies..."
-    pip-python install -U -I hgtools 
-    pip-python install -U -I termcolor iniparse "keyring>=0.9.2"
+bootstrap_rhel()
+{
+    echo "Bootstrapping RHEL: $1"
+    echo "Please wait..."
+    bootstrap_node
+    bootstrap_epel
+    if [ -n "$PKG_DEPS" ]; then
+        echo "Installing distribution dependencies..."
+        yum install $YUM_OPTS $PKG_DEPS 2>&1
+    fi
+    if [ -f "$PIP_DEP_FN" ]; then
+        echo "Installing pypi dependencies..."
+        $PIP_CMD install -U -I -r "$PIP_DEP_FN"
+    fi
     return 0
 }
 
@@ -114,7 +142,7 @@ if [[ "$TYPE" =~ "Red Hat Enterprise Linux Server" ]]; then
         echo "This script must be ran on RHEL 6.0+ and not RHEL $RH_VER."
         puke
     fi
-    bootstrap_rh $RH_VER
+    bootstrap_rhel $RH_VER
     if [ $? -eq 0 ]; then
         for i in $BOOT_FILES; do
             echo "$VER" > $i

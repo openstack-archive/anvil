@@ -1,0 +1,13 @@
+gcc
+git 
+pylint
+python 
+python-netifaces
+# python-pep8 (conflicts with the ones to be installed)
+python-cheetah
+# python-pip (conflicts with the ones to be installed)
+python-progressbar
+PyYAML
+python-ordereddict
+python-iso8601
+

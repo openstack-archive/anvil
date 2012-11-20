@@ -188,10 +188,6 @@ components:
                     links:
                         - source: "/usr/lib/python2.6/site-packages/PasteDeploy-1.5*-py2.6.egg/paste/deploy"
                           target: "/usr/lib/python2.6/site-packages/paste/deploy"
-        -   name: pep8
-            package:
-                name: python-pep8
-                removable: false
         -   name: pip
             package:
                 name: python-pip
@@ -252,6 +248,7 @@ components:
         -   name: nose-exclude
         -   name: nosehtmloutput
         -   name: openstack.nose_plugin
+        -   name: pep8 # The rhel version appears to not be new enough...
         -   name: prettytable
             version: "0.6.1"
         -   name: pycrypto

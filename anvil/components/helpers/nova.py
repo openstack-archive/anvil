@@ -121,6 +121,7 @@ class ConfConfigurator(object):
 
     def __init__(self, installer):
         self.installer = weakref.proxy(installer)
+        self.tracewriter = self.installer.tracewriter
 
     def verify(self):
         # Do a little check to make sure actually have that interface/s
@@ -368,10 +369,11 @@ class ConfConfigurator(object):
     # Ensures the place where instances will be is useable
     def _configure_instances_path(self, instances_path, nova_conf):
         nova_conf.add('instances_path', instances_path)
-        LOG.debug("Attempting to create instance directory: %r", instances_path)
-        self.installer.tracewriter.dirs_made(*sh.mkdirslist(instances_path))
-        LOG.debug("Adjusting permissions of instance directory: %r", instances_path)
-        sh.chmod(instances_path, 0777)
+        if not sh.isdir(instances_path):
+            LOG.debug("Attempting to create instance directory: %r", instances_path)
+            sh.mkdirslist(instances_path, tracewriter=self.tracewriter)
+            LOG.debug("Adjusting permissions of instance directory: %r", instances_path)
+            sh.chmod(instances_path, 0777)
 
     # Any special libvirt configurations go here
     def _configure_libvirt(self, virt_type, nova_conf):

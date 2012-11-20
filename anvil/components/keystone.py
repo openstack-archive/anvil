@@ -126,14 +126,9 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
     def _setup_pki(self):
         LOG.info("Setting up keystone's pki support.")
-        (uid, gid) = sh.get_suids()
-        for v in PKI_FILES.values():
-            dir_path = sh.dirname(sh.joinpths(self.link_dir, v))
-            made_paths = sh.mkdirslist(dir_path)
-            if made_paths:
-                if uid and gid:
-                    sh.chown_r(dir_path, uid, gid)
-                self.tracewriter.dirs_made(*made_paths)
+        for value in PKI_FILES.values():
+            sh.mkdirslist(sh.dirname(sh.joinpths(self.link_dir, value)),
+                          tracewriter=self.tracewriter, adjust_suids=True)
         pki_cmd = MANAGE_CMD + ['pki_setup']
         cmds = [{'cmd': pki_cmd, 'run_as_root': True}]
         utils.execute_template(*cmds, cwd=self.bin_dir, params=self.config_params(None))
