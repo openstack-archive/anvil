@@ -92,6 +92,16 @@ def make_packager(package, default_class, **kwargs):
     return p
 
 
+# Remove any private keys from a package dictionary
+def filter_package(pkg):
+    n_pkg = {}
+    for (k, v) in pkg.items():
+        if not k or k.startswith("_"):
+            continue
+        else:
+            n_pkg[k] = v
+    return n_pkg
+
 ####
 #### INSTALL CLASSES
 ####
@@ -176,9 +186,7 @@ class PkgInstallComponent(component.Component):
                                               distro=self.distro)
                     installer.install(p)
                     # Mark that this happened so that we can uninstall it
-                    p_c = dict(p)
-                    p_c.pop('required', None)  # Exclude the pip requirement object
-                    self.tracewriter.package_installed(p_c)
+                    self.tracewriter.package_installed(filter_package(p))
                     p_bar.update(i + 1)
 
     def pre_install(self):
@@ -392,7 +400,7 @@ class PythonInstallComponent(PkgInstallComponent):
                 continue
             # Keep the initial requirement
             pkg_info = dict(pkg_info)
-            pkg_info['requirement'] = details['requirement']
+            pkg_info['__requirement'] = details['requirement']
             add_on_pkgs.append(pkg_info)
         return add_on_pkgs
 
@@ -406,7 +414,7 @@ class PythonInstallComponent(PkgInstallComponent):
                 continue
             # Keep the initial requirement
             pkg_info = dict(pkg_info)
-            pkg_info['requirement'] = details['requirement']
+            pkg_info['__requirement'] = details['requirement']
             add_on_pips.append(pkg_info)
         return add_on_pips
 
@@ -438,9 +446,7 @@ class PythonInstallComponent(PkgInstallComponent):
                                               distro=self.distro)
                     installer.install(p)
                     # Note that we did it so that we can remove it...
-                    p_c = dict(p)
-                    p_c.pop('required', None)  # Exclude the pip requirement object
-                    self.tracewriter.pip_installed(p_c)
+                    self.tracewriter.pip_installed(filter_package(p))
                     p_bar.update(i + 1)
 
     def _clean_pip_requires(self):
@@ -868,7 +874,7 @@ class PythonTestingComponent(component.Component):
         pep8_wanted = None
         if isinstance(i_sibling, (PythonInstallComponent)):
             for p in i_sibling.pip_requires:
-                req = p['requirement']
+                req = p['__requirement']
                 if req.key == "pep8":
                     pep8_wanted = req
                     break
