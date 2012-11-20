@@ -88,11 +88,9 @@ class GitChangeLog(object):
         if email in ['jenkins@review.openstack.org']:
             return True
         summary = summary.lower().strip()
-        if summary.startswith('merge commit'):
-            return True
-        if summary.startswith("merge branch"):
-            return True
-        if summary.startswith("merge remote"):
+        if summary.startswith('merge commit') or \
+           summary.startswith("merge branch") or \
+           summary.startswith("merge remote"):
             return True
         if not all([summary, date, email, name]):
             return True
