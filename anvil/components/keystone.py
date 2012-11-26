@@ -16,17 +16,14 @@
 
 import io
 
-try:
-    from collections import OrderedDict
-except ImportError:
-    from ordereddict import OrderedDict
-
 from anvil import cfg
 from anvil import colorizer
 from anvil import components as comp
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
+
+from anvil.utils import OrderedDict
 
 from anvil.components.helpers import db as dbhelper
 from anvil.components.helpers import glance as ghelper

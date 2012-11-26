@@ -13,6 +13,7 @@ NODE_RPM_URL="http://nodejs.tchol.org/repocfg/el/nodejs-stable-release.noarch.rp
 PKG_DEPS=$(cat "tools/pkg-requires" | egrep -v "^\s*(#|$)")
 PIP_DEP_FN="tools/pip-requires"
 YUM_OPTS="--assumeyes --nogpgcheck"
+PIP_CMD="pip-python"
 
 # Source in our variables (or overrides)
 source ".anvilrc"
@@ -107,7 +108,7 @@ bootstrap_rhel()
     fi
     if [ -f "$PIP_DEP_FN" ]; then
         echo "Installing pypi dependencies..."
-        pip-python install -U -I -r "$PIP_DEP_FN"
+        $PIP_CMD install -U -I -r "$PIP_DEP_FN"
     fi
     return 0
 }
@@ -120,7 +121,9 @@ run_smithy()
 
 puke()
 {
-    if [[ "$FORCE" == "yes" ]]; then
+    # TODO(harlowja) better way to do this??
+    cleaned_force=$(python -c "f='$FORCE';print(f.lower().strip())")
+    if [[ "$cleaned_force" == "yes" ]]; then
         run_smithy
     else
         echo "To run anyway set FORCE=yes and rerun."

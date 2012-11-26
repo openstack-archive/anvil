@@ -36,6 +36,11 @@ class InstallAction(action.Action):
     def lookup_name(self):
         return 'install'
 
+    def _on_finish(self, persona, component_order, instances):
+        action.Action._on_finish(self, persona, component_order, instances)
+        self._write_exports(component_order, instances, sh.joinpths("/etc/anvil",
+                                                                    "%s.rc" % (self.name)))
+
     def _write_exports(self, component_order, instances, path):
         entries = []
         contents = StringIO()
@@ -117,7 +122,7 @@ class InstallAction(action.Action):
             subsystems = set(list(instance.subsystems))
             if subsystems:
                 utils.log_iterable(sorted(subsystems), logger=LOG,
-                    header='Installing %s using subsystems' % colorizer.quote(instance.name))
+                                   header='Installing %s using subsystems' % colorizer.quote(instance.name))
             else:
                 LOG.info("Installing %s.", colorizer.quote(instance.name))
 

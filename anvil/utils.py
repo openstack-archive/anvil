@@ -25,6 +25,12 @@ import socket
 import tempfile
 import urllib2
 
+try:
+    # Only in python 2.7+
+    from collections import OrderedDict
+except ImportError:
+    from ordereddict import OrderedDict
+
 from datetime import datetime
 
 from urlparse import urlunparse
@@ -65,6 +71,242 @@ COWS['unhappy'] = r'''
         ({eye}{eye})/
         {ear}--{ear}
 '''
+
+# Welcome messages
+WELCOMES = [
+    "And now for something completely different!",
+    "Let us get on with the show!",
+]
+
+# Thank you figlet ;)
+# See: http://www.figlet.org/
+STACKERS = []
+STACKERS.append(r'''
+  ___  ____  _____ _   _ ____ _____  _    ____ _  __
+ / _ \|  _ \| ____| \ | / ___|_   _|/ \  / ___| |/ /
+| | | | |_) |  _| |  \| \___ \ | | / _ \| |   | ' /
+| |_| |  __/| |___| |\  |___) || |/ ___ \ |___| . \
+ \___/|_|   |_____|_| \_|____/ |_/_/   \_\____|_|\_\
+
+''')
+STACKERS.append(r'''
+  ___  ___ ___ _  _ ___ _____ _   ___ _  __
+ / _ \| _ \ __| \| / __|_   _/_\ / __| |/ /
+| (_) |  _/ _|| .` \__ \ | |/ _ \ (__| ' <
+ \___/|_| |___|_|\_|___/ |_/_/ \_\___|_|\_\
+
+''')
+STACKERS.append(r'''
+____ ___  ____ _  _ ____ ___ ____ ____ _  _
+|  | |__] |___ |\ | [__   |  |__| |    |_/
+|__| |    |___ | \| ___]  |  |  | |___ | \_
+
+''')
+STACKERS.append(r'''
+  _  ___ ___  _  _  __  ___  _   __  _  _
+ / \| o \ __|| \| |/ _||_ _|/ \ / _|| |//
+( o )  _/ _| | \\ |\_ \ | || o ( (_ |  (
+ \_/|_| |___||_|\_||__/ |_||_n_|\__||_|\\
+
+''')
+STACKERS.append(r'''
+   _   ___  ___  _  __  ___ _____  _    __  _
+ ,' \ / o |/ _/ / |/ /,' _//_  _/.' \ ,'_/ / //7
+/ o |/ _,'/ _/ / || /_\ `.  / / / o // /_ /  ,'
+|_,'/_/  /___//_/|_//___,' /_/ /_n_/ |__//_/\\
+
+''')
+STACKERS.append(r'''
+ _____  ___    ___    _   _  ___   _____  _____  ___    _   _
+(  _  )(  _`\ (  _`\ ( ) ( )(  _`\(_   _)(  _  )(  _`\ ( ) ( )
+| ( ) || |_) )| (_(_)| `\| || (_(_) | |  | (_) || ( (_)| |/'/'
+| | | || ,__/'|  _)_ | , ` |`\__ \  | |  |  _  || |  _ | , <
+| (_) || |    | (_( )| |`\ |( )_) | | |  | | | || (_( )| |\`\
+(_____)(_)    (____/'(_) (_)`\____) (_)  (_) (_)(____/'(_) (_)
+
+''')
+
+# Success displays
+IT_WORKED = []
+IT_WORKED.append(r'''
+ ___________
+/ You shine \
+| out like  |
+| a shaft   |
+| of gold   |
+| when all  |
+| around is |
+\ dark.     /
+ -----------
+''')
+IT_WORKED.append(r'''
+ ______________________________
+< I'm a lumberjack and I'm OK. >
+ ------------------------------
+''')
+IT_WORKED.append(r'''
+ ____________________
+/ Australia!         \
+| Australia!         |
+| Australia!         |
+\ We love you, amen. /
+ --------------------
+''')
+IT_WORKED.append(r'''
+ ______________
+/ Say no more, \
+| Nudge nudge  |
+\ wink wink.   /
+ --------------
+''')
+IT_WORKED.append(r'''
+ ________________
+/ And there was  \
+\ much rejoicing /
+ ----------------
+''')
+IT_WORKED.append(r'''
+ __________
+< Success! >
+ ----------''')
+
+# Failure displays
+IT_FAILED = []
+IT_FAILED.append(r'''
+ __________
+< Failure! >
+ ----------
+''')
+IT_FAILED.append(r'''
+ ___________
+< Run away! >
+ -----------
+''')
+IT_FAILED.append(r'''
+ ______________________
+/ NOBODY expects the   \
+\ Spanish Inquisition! /
+ ----------------------
+''')
+IT_FAILED.append(r'''
+ ______________________
+/ Spam spam spam spam  \
+\ baked beans and spam /
+ ----------------------
+''')
+IT_FAILED.append(r'''
+ ____________________
+/ Brave Sir Robin    \
+\ ran away.          /
+ --------------------
+''')
+IT_FAILED.append(r'''
+ _______________________
+< Message for you, sir. >
+ -----------------------
+''')
+IT_FAILED.append(r'''
+ ____________________
+/ We are the knights \
+\ who say.... NI!    /
+ --------------------
+''')
+IT_FAILED.append(r'''
+ ____________________
+/ Now go away or I   \
+| shall taunt you a  |
+\ second time.       /
+ --------------------
+''')
+IT_FAILED.append(r'''
+ ____________________
+/ It's time for the  \
+| penguin on top of  |
+| your television to |
+\ explode.           /
+ --------------------
+''')
+IT_FAILED.append(r'''
+ _____________________
+/ We were in the nick \
+| of time. You were   |
+\ in great peril.     /
+ ---------------------
+''')
+IT_FAILED.append(r'''
+ ___________________
+/ I know a dead     \
+| parrot when I see |
+| one, and I'm      |
+| looking at one    |
+\ right now.        /
+ -------------------
+''')
+IT_FAILED.append(r'''
+ _________________
+/ Welcome to the  \
+| National Cheese |
+\ Emporium        /
+ -----------------
+''')
+IT_FAILED.append(r'''
+ ______________________
+/ What is the airspeed \
+| velocity of an       |
+\ unladen swallow?     /
+ ----------------------
+''')
+IT_FAILED.append(r'''
+ ______________________
+/ Now stand aside,     \
+\ worthy adversary.    /
+ ----------------------
+''')
+IT_FAILED.append(r'''
+ ___________________
+/ Okay, we'll call  \
+\ it a draw.        /
+ -------------------
+''')
+IT_FAILED.append(r'''
+ _______________
+/ She turned me \
+\ into a newt!  /
+ ---------------
+''')
+IT_FAILED.append(r'''
+ ___________________
+< Fetchez la vache! >
+ -------------------
+''')
+IT_FAILED.append(r'''
+ __________________________
+/ We'd better not risk     \
+| another frontal assault, |
+\ that rabbit's dynamite.  /
+ --------------------------
+''')
+IT_FAILED.append(r'''
+ ______________________
+/ This is supposed to  \
+| be a happy occasion. |
+| Let's not bicker and |
+| argue about who      |
+\ killed who.          /
+ ----------------------
+''')
+IT_FAILED.append(r'''
+ _______________________
+< You have been borked. >
+ -----------------------
+''')
+IT_FAILED.append(r'''
+ __________________
+/ We used to dream  \
+| of living in a    |
+\ corridor!         /
+ -------------------
+''')
 
 LOG = logging.getLogger(__name__)
 
@@ -167,7 +409,7 @@ def iso8601():
 
 
 def merge_dicts(*dicts, **kwargs):
-    merged = {}
+    merged = OrderedDict()
     for mp in dicts:
         for (k, v) in mp.items():
             if kwargs.get('preserve') and k in merged:
@@ -222,8 +464,8 @@ def get_deep(items, path, quiet=True):
 
 
 def load_template(component, template_name):
-    templ_pth = sh.joinpths(settings.TEMPLATE_DIR, component, template_name)
-    return (templ_pth, sh.load_file(templ_pth))
+    path = sh.joinpths(settings.TEMPLATE_DIR, component, template_name)
+    return (path, sh.load_file(path))
 
 
 def execute_template(cmd, *cmds, **kargs):
@@ -313,10 +555,11 @@ def log_iterable(to_log, header=None, logger=None, color='blue'):
 
 @contextlib.contextmanager
 def progress_bar(name, max_am, reverse=False):
-    widgets = list()
-    widgets.append('%s: ' % (name))
-    widgets.append(progressbar.Percentage())
-    widgets.append(' ')
+    widgets = [
+        '%s: ' % (name),
+        progressbar.Percentage(),
+        ' ',
+    ]
     if reverse:
         widgets.append(progressbar.ReverseBar())
     else:
@@ -343,7 +586,7 @@ def tempdir(**kwargs):
         sh.deldir(tdir)
 
 
-def get_host_ip():
+def get_host_ip(default_ip='127.0.0.1'):
     """
     Returns the actual ip of the local machine.
 
@@ -358,12 +601,14 @@ def get_host_ip():
     try:
         csock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         csock.connect(('8.8.8.8', 80))
-        (addr, _) = csock.getsockname()
-        csock.close()
-        ip = addr
+        with contextlib.closing(csock) as s:
+            (addr, _) = s.getsockname()
+            if addr:
+                ip = addr
     except socket.error:
         pass
-    # Attempt to find it
+    # Attempt to find the first ipv4 with an addr
+    # and use that as the address
     if not ip:
         interfaces = get_interfaces()
         for (_, net_info) in interfaces.items():
@@ -373,27 +618,27 @@ def get_host_ip():
                 if a_ip:
                     ip = a_ip
                     break
-    # Just return a localhost version then
+    # Just return a default verson then
     if not ip:
-        ip = "127.0.0.1"
+        ip = default_ip
     return ip
 
 
 @contextlib.contextmanager
 def chdir(where_to):
-    curr_cd = os.getcwd()
-    if curr_cd == where_to:
+    curr_dir = os.getcwd()
+    if curr_dir == where_to:
         yield where_to
     else:
         try:
             os.chdir(where_to)
             yield where_to
         finally:
-            os.chdir(curr_cd)
+            os.chdir(curr_dir)
 
 
 def get_interfaces():
-    interfaces = {}
+    interfaces = OrderedDict()
     for intfc in netifaces.interfaces():
         interface_info = {}
         interface_addresses = netifaces.ifaddresses(intfc)
@@ -433,61 +678,15 @@ def prettify_yaml(obj):
 
 
 def _get_welcome_stack():
-    possibles = []
-    # Thank you figlet ;)
-    # See: http://www.figlet.org/
-    possibles.append(r'''
-  ___  ____  _____ _   _ ____ _____  _    ____ _  __
- / _ \|  _ \| ____| \ | / ___|_   _|/ \  / ___| |/ /
-| | | | |_) |  _| |  \| \___ \ | | / _ \| |   | ' /
-| |_| |  __/| |___| |\  |___) || |/ ___ \ |___| . \
- \___/|_|   |_____|_| \_|____/ |_/_/   \_\____|_|\_\
-
-''')
-    possibles.append(r'''
-  ___  ___ ___ _  _ ___ _____ _   ___ _  __
- / _ \| _ \ __| \| / __|_   _/_\ / __| |/ /
-| (_) |  _/ _|| .` \__ \ | |/ _ \ (__| ' <
- \___/|_| |___|_|\_|___/ |_/_/ \_\___|_|\_\
-
-''')
-    possibles.append(r'''
-____ ___  ____ _  _ ____ ___ ____ ____ _  _
-|  | |__] |___ |\ | [__   |  |__| |    |_/
-|__| |    |___ | \| ___]  |  |  | |___ | \_
-
-''')
-    possibles.append(r'''
-  _  ___ ___  _  _  __  ___  _   __  _  _
- / \| o \ __|| \| |/ _||_ _|/ \ / _|| |//
-( o )  _/ _| | \\ |\_ \ | || o ( (_ |  (
- \_/|_| |___||_|\_||__/ |_||_n_|\__||_|\\
-
-''')
-    possibles.append(r'''
-   _   ___  ___  _  __  ___ _____  _    __  _
- ,' \ / o |/ _/ / |/ /,' _//_  _/.' \ ,'_/ / //7
-/ o |/ _,'/ _/ / || /_\ `.  / / / o // /_ /  ,'
-|_,'/_/  /___//_/|_//___,' /_/ /_n_/ |__//_/\\
-
-''')
-    possibles.append(r'''
- _____  ___    ___    _   _  ___   _____  _____  ___    _   _
-(  _  )(  _`\ (  _`\ ( ) ( )(  _`\(_   _)(  _  )(  _`\ ( ) ( )
-| ( ) || |_) )| (_(_)| `\| || (_(_) | |  | (_) || ( (_)| |/'/'
-| | | || ,__/'|  _)_ | , ` |`\__ \  | |  |  _  || |  _ | , <
-| (_) || |    | (_( )| |`\ |( )_) | | |  | | | || (_( )| |\`\
-(_____)(_)    (____/'(_) (_)`\____) (_)  (_) (_)(____/'(_) (_)
-
-''')
-    return random.choice(possibles).strip("\n\r")
+    msg = random.choice(STACKERS)
+    msg = msg.strip("\n\r")
+    return msg
 
 
 def _welcome_slang():
-    potentials = [
-        "And now for something completely different!",
-    ]
-    return random.choice(potentials)
+    msg = random.choice(WELCOMES)
+    msg = msg.strip("\n\r")
+    return msg
 
 
 def _color_blob(text, text_color):
@@ -500,201 +699,21 @@ def _color_blob(text, text_color):
 
 
 def _goodbye_header(worked):
-    # Cowsay headers
-    # See: http://www.nog.net/~tony/warez/cowsay.shtml
-    potentials_oks = []
-    potentials_oks.append(r'''
- ___________
-/ You shine \
-| out like  |
-| a shaft   |
-| of gold   |
-| when all  |
-| around is |
-\ dark.     /
- -----------
-''')
-    potentials_oks.append(r'''
- ______________________________
-< I'm a lumberjack and I'm OK. >
- ------------------------------
-''')
-    potentials_oks.append(r'''
- ____________________
-/ Australia!         \
-| Australia!         |
-| Australia!         |
-\ We love you, amen. /
- --------------------
-''')
-    potentials_oks.append(r'''
- ______________
-/ Say no more, \
-| Nudge nudge  |
-\ wink wink.   /
- --------------
-''')
-    potentials_oks.append(r'''
- ________________
-/ And there was  \
-\ much rejoicing /
- ----------------
-''')
-    potentials_oks.append(r'''
- __________
-< Success! >
- ----------''')
-    potentials_fails = []
-    potentials_fails.append(r'''
- __________
-< Failure! >
- ----------
-''')
-    potentials_fails.append(r'''
- ___________
-< Run away! >
- -----------
-''')
-    potentials_fails.append(r'''
- ______________________
-/ NOBODY expects the   \
-\ Spanish Inquisition! /
- ----------------------
-''')
-    potentials_fails.append(r'''
- ______________________
-/ Spam spam spam spam  \
-\ baked beans and spam /
- ----------------------
-''')
-    potentials_fails.append(r'''
- ____________________
-/ Brave Sir Robin    \
-\ ran away.          /
- --------------------
-''')
-    potentials_fails.append(r'''
- _______________________
-< Message for you, sir. >
- -----------------------
-''')
-    potentials_fails.append(r'''
- ____________________
-/ We are the knights \
-\ who say.... NI!    /
- --------------------
-''')
-    potentials_fails.append(r'''
- ____________________
-/ Now go away or I   \
-| shall taunt you a  |
-\ second time.       /
- --------------------
-''')
-    potentials_fails.append(r'''
- ____________________
-/ It's time for the  \
-| penguin on top of  |
-| your television to |
-\ explode.           /
- --------------------
-''')
-    potentials_fails.append(r'''
- _____________________
-/ We were in the nick \
-| of time. You were   |
-\ in great peril.     /
- ---------------------
-''')
-    potentials_fails.append(r'''
- ___________________
-/ I know a dead     \
-| parrot when I see |
-| one, and I'm      |
-| looking at one    |
-\ right now.        /
- -------------------
-''')
-    potentials_fails.append(r'''
- _________________
-/ Welcome to the  \
-| National Cheese |
-\ Emporium        /
- -----------------
-''')
-    potentials_fails.append(r'''
- ______________________
-/ What is the airspeed \
-| velocity of an       |
-\ unladen swallow?     /
- ----------------------
-''')
-    potentials_fails.append(r'''
- ______________________
-/ Now stand aside,     \
-\ worthy adversary.    /
- ----------------------
-''')
-    potentials_fails.append(r'''
- ___________________
-/ Okay, we'll call  \
-\ it a draw.        /
- -------------------
-''')
-    potentials_fails.append(r'''
- _______________
-/ She turned me \
-\ into a newt!  /
- ---------------
-''')
-    potentials_fails.append(r'''
- ___________________
-< Fetchez la vache! >
- -------------------
-''')
-    potentials_fails.append(r'''
- __________________________
-/ We'd better not risk     \
-| another frontal assault, |
-\ that rabbit's dynamite.  /
- --------------------------
-''')
-    potentials_fails.append(r'''
- ______________________
-/ This is supposed to  \
-| be a happy occasion. |
-| Let's not bicker and |
-| argue about who      |
-\ killed who.          /
- ----------------------
-''')
-    potentials_fails.append(r'''
- _______________________
-< You have been borked. >
- -----------------------
-''')
-    potentials_fails.append(r'''
- __________________
-/ We used to dream  \
-| of living in a    |
-\ corridor!         /
- -------------------
-''')
+    take_from = IT_WORKED
+    apply_color = 'green'
     if not worked:
-        msg = random.choice(potentials_fails).strip("\n\r")
-        colored_msg = _color_blob(msg, 'red')
-    else:
-        msg = random.choice(potentials_oks).strip("\n\r")
-        colored_msg = _color_blob(msg, 'green')
-    return colored_msg
+        take_from = IT_FAILED
+        apply_color = 'red'
+    msg = random.choice(take_from)
+    msg = msg.strip("\n\r")
+    return _color_blob(msg, apply_color)
 
 
 def goodbye(worked):
-    if worked:
-        cow = COWS['happy']
-        eye_fmt = colorizer.color('o', 'green')
-        ear = colorizer.color("^", 'green')
-    else:
+    cow = COWS['happy']
+    eye_fmt = colorizer.color('o', 'green')
+    ear = colorizer.color("^", 'green')
+    if not worked:
         cow = COWS['unhappy']
         eye_fmt = colorizer.color("o", 'red')
         ear = colorizer.color("v", 'red')
