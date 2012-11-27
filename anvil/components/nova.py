@@ -94,18 +94,20 @@ class NovaUninstaller(comp.PythonUninstallComponent):
             self._clean_net()
 
     def _clean_net(self):
-        cleaner = nhelper.NetworkCleaner(self)
         try:
+            LOG.info("Cleaning up nova-network's dirty laundry.")
+            cleaner = nhelper.NetworkCleaner(self)
             cleaner.clean()
-        except excp.AnvilException as e:
-            LOG.warn("Failed cleaning up nova-networks dirty laundry due to: %s", e)
+        except Exception as e:
+            LOG.warn("Failed cleaning up nova-network's dirty laundry due to: %s", e)
 
     def _clean_compute(self):
-        cleaner = nhelper.ComputeCleaner(self)
         try:
+            LOG.info("Cleaning up nova-compute's dirty laundry.")
+            cleaner = nhelper.ComputeCleaner(self)
             cleaner.clean()
-        except excp.AnvilException as e:
-            LOG.warn("Failed cleaning up nova-computes dirty laundry due to: %s", e)
+        except Exception as e:
+            LOG.warn("Failed cleaning up nova-compute's dirty laundry due to: %s", e)
 
 
 class NovaInstaller(comp.PythonInstallComponent):
