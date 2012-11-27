@@ -16,6 +16,7 @@
 
 from distutils import version as vr
 
+import copy
 import pkg_resources
 
 from anvil import log as logging
@@ -42,16 +43,24 @@ class Requirement(object):
         return name
 
 
+def _skip_requirement(line):
+    # Skip blank lines or comment lines
+    if not len(line):
+        return True
+    if line.startswith("#"):
+        return True
+    # Skip editables also...
+    if line.lower().startswith('-e'):
+        return True
+    return False
+
+
 def parse_requirements(contents, adjust=False):
     lines = []
     for line in contents.splitlines():
         line = line.strip()
-        if not len(line) or line.startswith('#'):
-            continue
-        # Don't take editables either...
-        if line.lower().startswith('-e'):
-            continue
-        lines.append(line)
+        if not _skip_requirement(line):
+            lines.append(line)
     requires = []
     for req in pkg_resources.parse_requirements(lines):
         requires.append(req)
@@ -59,28 +68,28 @@ def parse_requirements(contents, adjust=False):
 
 
 class Helper(object):
-    # Cache of whats installed list
-    _installed_cache = None
+    # Cache of whats installed
+    _installed_cache = {}
 
     def __init__(self, call_how):
         if not isinstance(call_how, (basestring, str)):
-            self._pip_how = call_how.get_command_config('pip')
+            # Assume u are passing in a distro object
+            self._pip_how = str(call_how.get_command_config('pip'))
         else:
             self._pip_how = call_how
 
     def _list_installed(self):
-        cmd = [str(self._pip_how)] + FREEZE_CMD
+        cmd = [self._pip_how] + FREEZE_CMD
         (stdout, _stderr) = sh.execute(*cmd)
         return parse_requirements(stdout, True)
 
-    @staticmethod
-    def uncache():
-        Helper._installed_cache = None
+    def uncache(self):
+        Helper._installed_cache.pop(self._pip_how, None)
 
     def whats_installed(self):
-        if Helper._installed_cache is None:
-            Helper._installed_cache = self._list_installed()
-        return list(Helper._installed_cache)
+        if not (self._pip_how in Helper._installed_cache):
+            Helper._installed_cache[self._pip_how] = self._list_installed()
+        return copy.copy(Helper._installed_cache[self._pip_how])
 
     def is_installed(self, name):
         if self.get_installed(name):
@@ -89,8 +98,9 @@ class Helper(object):
 
     def get_installed(self, name):
         whats_there = self.whats_installed()
+        wanted_package = Requirement(name)
         for whats_installed in whats_there:
-            if not (name.lower() == whats_installed.key):
+            if not (wanted_package.key == whats_installed.key):
                 continue
             return whats_installed
         return None
