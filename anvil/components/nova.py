@@ -119,7 +119,7 @@ class NovaInstaller(comp.PythonInstallComponent):
 
     def _filter_pip_requires_line(self, fn, line):
         # We handle these ourselves in anvil
-        if utils.has_any(line.lower(), 'quantumclient', 'cinder', 'glance', 'ldap'):
+        if utils.has_any(line.lower(), 'quantumclient', 'cinder', 'glance', 'ldap', 'keystoneclient'):
             return None
         return line
 
