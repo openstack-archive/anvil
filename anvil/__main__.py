@@ -192,32 +192,32 @@ def main():
     logging.setupLogging(log_level)
     LOG.debug("Log level is: %s" % (logging.getLevelName(log_level)))
 
-    def clean_exc(exc):
+    def print_exc(exc):
+        if not exc:
+            return
         msg = str(exc).strip()
         if not msg:
-            return ''
-        if msg.endswith(".") or msg.endswith("!"):
-            return msg
-        else:
-            return msg + "."
+            return
+        if not (msg.endswith(".") or msg.endswith("!")):
+            msg = msg + "."
+        if msg:
+            print(msg)
 
-    def traceback_fn():
+    def print_traceback():
         traceback = None
         if log_level < logging.INFO:
             # See: http://docs.python.org/library/traceback.html
             # When its not none u get more detailed info about the exception
             traceback = sys.exc_traceback
         tb.print_exception(sys.exc_type, sys.exc_value,
-                traceback, file=sys.stdout)
+                           traceback, file=sys.stdout)
 
     try:
         ensure_perms()
     except excp.PermException as e:
-        e_msg = clean_exc(e)
-        if e_msg:
-            print(e_msg)
-        print("This program should be running via %s as it performs some root-only commands" \
-              ", is it not?" % (colorizer.quote('sudo', quote_color='red')))
+        print_exc(e)
+        print(("This program should be running via %s as it performs some root-only commands is it not?")
+              % (colorizer.quote('sudo', quote_color='red')))
         return 2
 
     try:
@@ -225,24 +225,22 @@ def main():
         utils.goodbye(True)
         return 0
     except excp.OptionException as e:
-        e_msg = clean_exc(e)
-        if e_msg:
-            print(e_msg)
+        print_exc(e)
         print("Perhaps you should try %s" % (colorizer.quote('--help', quote_color='red')))
         return 1
     except Exception:
         utils.goodbye(False)
-        traceback_fn()
+        print_traceback()
         return 1
 
 
 if __name__ == "__main__":
-    rc = main()
+    return_code = main()
     # Switch back to root mode for anything
     # that needs to run in that mode for cleanups and etc...
-    try:
-        if rc != 2:
+    if return_code != 2:
+        try:
             sh.root_mode(quiet=False)
-    except excp.AnvilException:
-        pass
-    sys.exit(rc)
+        except:
+            pass
+    sys.exit(return_code)
