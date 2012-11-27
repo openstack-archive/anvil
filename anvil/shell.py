@@ -14,7 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import errno
 import getpass
 import grp
 import os
@@ -26,6 +25,8 @@ import socket
 import subprocess
 import sys
 import time
+
+import psutil  # http://code.google.com/p/psutil/wiki/Documentation
 
 from anvil import env
 from anvil import exceptions as excp
@@ -47,6 +48,11 @@ ROOT_PATH = os.sep
 # by others after this is first fetched...
 SUDO_UID = env.get_key('SUDO_UID')
 SUDO_GID = env.get_key('SUDO_GID')
+
+
+class Process(psutil.Process):
+    def __str__(self):
+        return "%s (%s)" % (self.pid, self.name)
 
 
 class Rooted(object):
@@ -349,37 +355,39 @@ def explode_path(path):
     return _explode_path(path)[0]
 
 
-def _attempt_kill(pid, signal_type, max_try, wait_time):
+def _attempt_kill(proc, signal_type, max_try, wait_time):
     killed = False
     attempts = 0
     for _i in range(0, max_try):
+        if not proc.is_running():
+            killed = True
+            break
         try:
-            LOG.debug("Attempting to kill pid %s" % (pid))
+            LOG.debug("Attempting to kill process %s" % (proc))
             attempts += 1
-            os.kill(pid, signal_type)
-            LOG.debug("Sleeping for %s seconds before next attempt to kill pid %s" % (wait_time, pid))
+            proc.send_signal(signal_type)
+            LOG.debug("Sleeping for %s seconds before next attempt to kill process %s" % (wait_time, proc))
             sleep(wait_time)
-        except OSError as e:
-            if e.errno == errno.ESRCH:
-                # Gotcha!
-                killed = True
-                break
-            else:
-                LOG.debug("Failed killing %s due to: %s", pid, e)
-                LOG.debug("Sleeping for %s seconds before next attempt to kill pid %s" % (wait_time, pid))
-                sleep(wait_time)
+        except psutil.error.NoSuchProcess:
+            killed = True
+            break
+        except Exception as e:
+            LOG.debug("Failed killing %s due to: %s", proc, e)
+            LOG.debug("Sleeping for %s seconds before next attempt to kill process %s" % (wait_time, proc))
+            sleep(wait_time)
     return (killed, attempts)
 
 
 def kill(pid, max_try=4, wait_time=1):
     if not is_running(pid) or is_dry_run():
         return (True, 0)
+    proc = Process(pid)
     # Try the nicer sig-int first...
-    (killed, i_attempts) = _attempt_kill(pid, signal.SIGINT, int(max_try / 2), wait_time)
+    (killed, i_attempts) = _attempt_kill(proc, signal.SIGINT, int(max_try / 2), wait_time)
     if killed:
         return (True, i_attempts)
     # Get agressive and try sig-kill....
-    (killed, k_attempts) = _attempt_kill(pid, signal.SIGKILL, int(max_try / 2), wait_time)
+    (killed, k_attempts) = _attempt_kill(proc, signal.SIGKILL, int(max_try / 2), wait_time)
     if killed:
         return (True, i_attempts + k_attempts)
     else:
@@ -442,25 +450,7 @@ def fork(program, app_dir, pid_fn, stdout_fn, stderr_fn, *args):
 def is_running(pid):
     if is_dry_run():
         return True
-    # TODO(harlowja): this can be done better
-    # but it will suffice for now....
-    #
-    # Check proc
-    proc_fn = joinpths("/proc", str(pid))
-    if exists(proc_fn):
-        LOG.debug("By looking at %s we determined %s is still running.", proc_fn, pid)
-        return True
-    # Try a slightly more aggressive way...
-    running = True
-    try:
-        os.kill(pid, signal.SIG_DFL)
-    except OSError as e:
-        if e.errno == errno.EPERM:
-            pass
-        else:
-            running = False
-    LOG.debug("By attempting to signal %s we determined it is %s", pid, {True: 'alive', False: 'dead'}[running])
-    return running
+    return Process(pid).is_running()
 
 
 def mkdirslist(path, tracewriter=None, adjust_suids=False):
