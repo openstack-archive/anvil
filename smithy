@@ -121,7 +121,9 @@ run_smithy()
 
 puke()
 {
-    if [[ "$FORCE" == "yes" ]]; then
+    # TODO(harlowja) better way to do this??
+    cleaned_force=$(python -c "f='$FORCE';print(f.lower().strip())")
+    if [[ "$cleaned_force" == "yes" ]]; then
         run_smithy
     else
         echo "To run anyway set FORCE=yes and rerun."

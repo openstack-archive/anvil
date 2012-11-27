@@ -15,6 +15,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import collections
 import copy
 import glob
 import platform
@@ -30,6 +31,8 @@ from anvil import log as logging
 from anvil import shell as sh
 
 LOG = logging.getLogger(__name__)
+
+Component = collections.namedtuple("Component", 'entry_point,options,siblings')
 
 
 class Distro(object):
@@ -89,14 +92,14 @@ class Distro(object):
     def extract_component(self, name, action):
         """Return the class + component info to use for doing the action w/the component."""
         try:
-            # Use a copy instead of the original
+            # Use a copy instead of the original since we will be
+            # modifying this dictionary which may not be wanted for future
+            # usages of this dictionary (so keep the original clean)...
             component_info = copy.deepcopy(self._components[name])
-            action_classes = component_info['action_classes']
-            entry_point = action_classes[action]
-            del action_classes[action]
-            cls = importer.import_entry_point(entry_point)
-            return ((cls, component_info), action_classes)
-        except KeyError:
+            action_classes = component_info.pop('action_classes')
+            entry_point = action_classes.pop(action)
+            return Component(entry_point, component_info, action_classes)
+        except (KeyError, ValueError):
             raise RuntimeError('No class configured to %r %r on %r' %
                                (action, name, self.name))
 
@@ -120,9 +123,7 @@ def load(path):
     distro_possibles = []
     input_files = glob.glob(sh.joinpths(path, '*.yaml'))
     if not input_files:
-        raise excp.ConfigException(
-            'Did not find any distro definition files in %r' %
-            path)
+        raise excp.ConfigException('Did not find any distro definition files in %r' % path)
     for fn in input_files:
         LOG.debug("Attempting to load distro definition from %r", fn)
         try:

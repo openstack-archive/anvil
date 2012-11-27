@@ -164,6 +164,14 @@ def store_current_settings(c_settings):
         LOG.debug("Failed writing to %s due to %s", "/etc/anvil/settings.yaml", e)
 
 
+def ensure_perms():
+    # Ensure we are running as root to start...
+    if not sh.got_root():
+        raise excp.PermException("Root access required")
+    # Drop to usermode (which also ensures we can do this...)
+    sh.user_mode(quiet=False)
+
+
 def main():
     """
     Starts the execution of without
@@ -171,7 +179,7 @@ def main():
     logging is setup and that sudo access is available and in-use.
 
     Arguments: N/A
-    Returns: 1 for success, 0 for failure
+    Returns: 1 for success, 0 for failure and 2 for permission change failure.
     """
 
     # Do this first so people can see the help message...
@@ -182,53 +190,57 @@ def main():
     if args['verbose'] or args['dryrun']:
         log_level = logging.DEBUG
     logging.setupLogging(log_level)
-
     LOG.debug("Log level is: %s" % (logging.getLevelName(log_level)))
 
-    def clean_exc(exc):
+    def print_exc(exc):
+        if not exc:
+            return
         msg = str(exc).strip()
-        if msg.endswith(".") or msg.endswith("!"):
-            return msg
-        else:
-            return msg + "."
+        if not msg:
+            return
+        if not (msg.endswith(".") or msg.endswith("!")):
+            msg = msg + "."
+        if msg:
+            print(msg)
 
-    def traceback_fn():
+    def print_traceback():
         traceback = None
         if log_level < logging.INFO:
             # See: http://docs.python.org/library/traceback.html
             # When its not none u get more detailed info about the exception
             traceback = sys.exc_traceback
         tb.print_exception(sys.exc_type, sys.exc_value,
-                traceback, file=sys.stdout)
+                           traceback, file=sys.stdout)
 
     try:
-        # Drop to usermode
-        sh.user_mode(quiet=False)
-    except excp.AnvilException as e:
-        print(clean_exc(e))
-        print("This program should be running via %s, is it not?" % (colorizer.quote('sudo', quote_color='red')))
-        return 1
+        ensure_perms()
+    except excp.PermException as e:
+        print_exc(e)
+        print(("This program should be running via %s as it performs some root-only commands is it not?")
+              % (colorizer.quote('sudo', quote_color='red')))
+        return 2
 
     try:
         run(args)
         utils.goodbye(True)
         return 0
     except excp.OptionException as e:
-        print(clean_exc(e))
+        print_exc(e)
         print("Perhaps you should try %s" % (colorizer.quote('--help', quote_color='red')))
         return 1
     except Exception:
         utils.goodbye(False)
-        traceback_fn()
+        print_traceback()
         return 1
 
 
 if __name__ == "__main__":
-    rc = main()
+    return_code = main()
     # Switch back to root mode for anything
     # that needs to run in that mode for cleanups and etc...
-    try:
-        sh.root_mode(quiet=False)
-    except excp.AnvilException:
-        pass
-    sys.exit(rc)
+    if return_code != 2:
+        try:
+            sh.root_mode(quiet=False)
+        except:
+            pass
+    sys.exit(return_code)

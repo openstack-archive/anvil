@@ -80,7 +80,7 @@ class Packager(pack.Packager):
         finally:
             # The known packages installed is probably
             # not consistent anymore so uncache it
-            pip_helper.Helper.uncache()
+            self.helper.uncache()
 
     def _install(self, pip):
         cmd = ['install'] + PIP_INSTALL_CMD_OPTS

@@ -15,6 +15,7 @@
 #    under the License..
 
 import abc
+import copy
 
 from anvil import cfg
 from anvil import colorizer
@@ -26,8 +27,9 @@ from anvil import passwords as pw
 from anvil import phase
 from anvil import settings
 from anvil import shell as sh
-from anvil import type_utils as tu
 from anvil import utils
+
+from anvil.utils import OrderedDict
 
 LOG = logging.getLogger(__name__)
 
@@ -44,10 +46,15 @@ class Action(object):
 
     def __init__(self, name, distro, root_dir, cli_opts):
         self.distro = distro
-        self.root_dir = root_dir
-        self.phase_dir = sh.joinpths(root_dir, 'phases')
         self.name = name
+        # Root directory where all files/downloads will be based at
+        self.root_dir = root_dir
+        # Action phases are tracked in this directory
+        self.phase_dir = sh.joinpths(root_dir, 'phases')
+        # Yamls are 'interpolated' using this instance at the given
+        # component directory where component configuration will be found...
         self.interpolator = cfg.YamlInterpolator(settings.COMPONENT_CONF_DIR)
+        # Keyring/pw settings + cache
         self.passwords = {}
         self.keyring_path = cli_opts.pop('keyring_path')
         self.keyring_encrypted = cli_opts.pop('keyring_encrypted')
@@ -86,6 +93,9 @@ class Action(object):
     @abc.abstractproperty
     @property
     def lookup_name(self):
+        # Name that will be used to lookup this module
+        # in any configuration (may or may not be the same as the name
+        # of this action)....
         raise NotImplementedError()
 
     @abc.abstractmethod
@@ -101,7 +111,7 @@ class Action(object):
         """Returns the components in the order they should be processed.
         """
         # Duplicate the list to avoid problems if it is updated later.
-        return list(components)
+        return copy.copy(components)
 
     def _get_component_dirs(self, component):
         component_dir = sh.joinpths(self.root_dir, component)
@@ -117,46 +127,44 @@ class Action(object):
         }
 
     def _merge_options(self, name, distro_opts, component_opts, persona_opts):
-        opts = utils.merge_dicts(self._get_component_dirs(name),
+        return utils.merge_dicts(self._get_component_dirs(name),
                                  distro_opts, component_opts, persona_opts)
-        return opts
 
-    def _merge_subsystems(self, component_subsys, desired_subsys):
-        joined_subsys = {}
-        if not component_subsys:
-            component_subsys = {}
-        if not desired_subsys:
-            return joined_subsys
-        for subsys in desired_subsys:
-            if subsys in component_subsys:
-                joined_subsys[subsys] = component_subsys[subsys]
-            else:
-                joined_subsys[subsys] = {}
-        return joined_subsys
+    def _merge_subsystems(self, distro_subsystems, desired_subsystems):
+        subsystems = {}
+        for subsystem_name in desired_subsystems:
+            # Return a deep copy so that later instances can not modify
+            # other instances subsystem accidentally...
+            subsystems[subsystem_name] = copy.deepcopy(distro_subsystems.get(subsystem_name, {}))
+        return subsystems
 
-    def _construct_siblings(self, name, siblings, params, sibling_instances):
-        there_siblings = {}
-        for (action, cls_name) in siblings.items():
+    def _construct_siblings(self, name, siblings, base_params, sibling_instances):
+        # First setup the sibling instance action references
+        for (action, _entry_point) in siblings.items():
             if action not in sibling_instances:
                 sibling_instances[action] = {}
-            cls = importer.import_entry_point(cls_name)
-            sibling_params = utils.merge_dicts(params, self.cli_opts, preserve=True)
+        there_siblings = {}
+        for (action, entry_point) in siblings.items():
+            sibling_params = utils.merge_dicts(base_params, self.cli_opts, preserve=True)
+            # Give the sibling the reference to all other siblings being created
+            # which will be populated when they are created (now or later) for
+            # the same action
             sibling_params['instances'] = sibling_instances[action]
-            LOG.debug("Construction of sibling component %r (%r) params are:", name, action)
-            utils.log_object(sibling_params, logger=LOG, level=logging.DEBUG)
-            a_sibling = cls(**sibling_params)
+            a_sibling = importer.construct_entry_point(entry_point, **sibling_params)
             # Update the sibling we are returning and the corresponding
             # siblings for that action (so that the sibling can have the
             # correct 'sibling' instances associated with it, if it needs those...)
             there_siblings[action] = a_sibling
+            # Update all siblings being constructed so that there siblings will
+            # be correct when fetched...
             sibling_instances[action][name] = a_sibling
         return there_siblings
 
-    def _get_interp_options(self, name):
-        base = {}
+    def _get_interpolated_options(self, name):
+        interpolated_opts = {}
         for c in ['general', name]:
-            base.update(self.interpolator.extract(c))
-        return base
+            interpolated_opts.update(self.interpolator.extract(c))
+        return interpolated_opts
 
     def _construct_instances(self, persona):
         """
@@ -164,35 +172,47 @@ class Action(object):
         """
         persona_subsystems = persona.wanted_subsystems or {}
         persona_opts = persona.component_options or {}
+        wanted_components = persona.wanted_components or []
+        # All siblings for the current persona
         instances = {}
+        # Keeps track of all sibling instances across all components + actions
+        # so that each instance or sibling instance will be connected to the
+        # right set of siblings....
         sibling_instances = {}
-        for c in persona.wanted_components:
-            ((cls, distro_opts), siblings) = self.distro.extract_component(c, self.lookup_name)
-            LOG.debug("Constructing component %r (%s)", c, tu.obj_name(cls))
-            instance_params = {}
-            instance_params['name'] = c
+        for c in wanted_components:
+            d_component = self.distro.extract_component(c, self.lookup_name)
+            LOG.debug("Constructing component %r (%s)", c, d_component.entry_point)
+            d_subsystems = d_component.options.pop('subsystems', {})
+            sibling_params = {}
+            sibling_params['name'] = c
             # First create its siblings with a 'minimal' set of options
             # This is done, so that they will work in a minimal state, they do not
             # get access to the persona options since those are action specific (or could be),
             # if this is not useful, we can give them full access, unsure if its worse or better...
-            instance_params['subsystems'] = {}
-            instance_params['siblings'] = {}
-            instance_params['passwords'] = self.passwords
-            instance_params['distro'] = self.distro
-            instance_params['options'] = self._merge_options(c, self._get_interp_options(c), distro_opts, {})
-            LOG.debug("Constructing %r siblings...", c)
-            siblings = self._construct_siblings(c, siblings, instance_params, sibling_instances)
-            # Now inject the full options
+            sibling_params['subsystems'] = {}
+            sibling_params['siblings'] = {}
+            sibling_params['passwords'] = self.passwords
+            sibling_params['distro'] = self.distro
+            sibling_params['options'] = self._merge_options(c,
+                                                            component_opts=self._get_interpolated_options(c),
+                                                            distro_opts=d_component.options,
+                                                            persona_opts={})
+            LOG.debug("Constructing %r %s siblings...", c, len(d_component.siblings))
+            my_siblings = self._construct_siblings(c, d_component.siblings, sibling_params, sibling_instances)
+            # Now inject the full options and create the target instance
+            # with the full set of options and not the restricted set that
+            # siblings get...
+            instance_params = dict(sibling_params)
             instance_params['instances'] = instances
-            instance_params['options'] = self._merge_options(c, self._get_interp_options(c), distro_opts,
-                                                            (persona_opts.get(c) or {}))
-            instance_params['subsystems'] = self._merge_subsystems((distro_opts.pop('subsystems', None) or {}),
-                                                                   (persona_subsystems.get(c) or {}))
-            instance_params['siblings'] = siblings
+            instance_params['options'] = self._merge_options(c,
+                                                             component_opts=self._get_interpolated_options(c),
+                                                             distro_opts=d_component.options,
+                                                             persona_opts=persona_opts.get(c, {}))
+            instance_params['subsystems'] = self._merge_subsystems(distro_subsystems=d_subsystems,
+                                                                   desired_subsystems=persona_subsystems.get(c, []))
+            instance_params['siblings'] = my_siblings
             instance_params = utils.merge_dicts(instance_params, self.cli_opts, preserve=True)
-            LOG.debug("Construction of %r params are:", c)
-            utils.log_object(instance_params, logger=LOG, level=logging.DEBUG)
-            instances[c] = cls(**instance_params)
+            instances[c] = importer.construct_entry_point(d_component.entry_point, **instance_params)
         return instances
 
     def _verify_components(self, component_order, instances):
@@ -209,32 +229,29 @@ class Action(object):
         LOG.info("Booting up your components.")
         LOG.debug("Starting environment settings:")
         utils.log_object(env.get(), logger=LOG, level=logging.DEBUG, item_max_len=64)
+        sh.mkdirslist(self.phase_dir)
         self._establish_passwords(component_order, instances)
         self._verify_components(component_order, instances)
         self._warm_components(component_order, instances)
-
-    def _write_exports(self, component_order, instances, path):
-        # TODO(harlowja) perhaps remove this since its only used in a subclass...
-        pass
 
     def _on_finish(self, persona, component_order, instances):
         LOG.info("Tearing down your components.")
         LOG.debug("Final environment settings:")
         utils.log_object(env.get(), logger=LOG, level=logging.DEBUG, item_max_len=64)
-        exports_filename = "%s.rc" % (self.name)
-        self._write_exports(component_order, instances, sh.joinpths("/etc/anvil", exports_filename))
 
     def _get_phase_filename(self, phase_name):
-        dir_path = self.phase_dir
-        sh.mkdirslist(dir_path)
-        real_name = phase_name.lower().strip().replace("-", '_').replace(" ", "_")
-        return sh.joinpths(dir_path, "%s.phases" % (real_name))
+        phase_name = phase_name.lower().strip()
+        phase_name = phase_name.replace("-", '_')
+        phase_name = phase_name.replace(" ", "_")
+        if not phase_name:
+            raise ValueError("Phase name must not be empty")
+        return sh.joinpths(self.phase_dir, "%s.phases" % (phase_name))
 
     def _run_phase(self, functors, component_order, instances, phase_name, *inv_phase_names):
         """
         Run a given 'functor' across all of the components, in order.
         """
-        component_results = {}
+        component_results = OrderedDict()
         if not phase_name:
             phase_recorder = phase.NullPhaseRecorder()
         else:
@@ -243,7 +260,10 @@ class Action(object):
         neg_phase_recs = []
         if inv_phase_names:
             for n in inv_phase_names:
-                neg_phase_recs.append(phase.PhaseRecorder(self._get_phase_filename(n)))
+                if not n:
+                    neg_phase_recs.append(phase.NullPhaseRecorder())
+                else:
+                    neg_phase_recs.append(phase.PhaseRecorder(self._get_phase_filename(n)))
 
         def change_activate(instance, on_off):
             # Activate/deactivate them and there siblings (if any)
@@ -251,22 +271,22 @@ class Action(object):
             for (_name, sibling_instance) in instance.siblings.items():
                 sibling_instance.activated = on_off
 
+        def run_inverse_recorders(c_name):
+            for n in neg_phase_recs:
+                n.unmark(c_name)
+
         # Reset all activations
         for c in component_order:
             change_activate(instances[c], False)
 
         # Run all components which have not been ran previously (due to phase tracking)
         for c in component_order:
+            result = None
             instance = instances[c]
             if c in phase_recorder:
                 LOG.debug("Skipping phase named %r for component %r since it already happened.", phase_name, c)
-                change_activate(instance, True)
-                component_results[c] = None
-                for n in neg_phase_recs:
-                    n.unmark(c)
             else:
                 try:
-                    result = None
                     with phase_recorder.mark(c):
                         if functors.start:
                             functors.start(instance)
@@ -274,12 +294,11 @@ class Action(object):
                             result = functors.run(instance)
                         if functors.end:
                             functors.end(instance, result)
-                        for n in neg_phase_recs:
-                            n.unmark(c)
-                    component_results[instance] = result
-                    change_activate(instance, True)
                 except excp.NoTraceException:
                     pass
+            change_activate(instance, True)
+            component_results[c] = result
+            run_inverse_recorders(c)
         return component_results
 
     def run(self, persona):
@@ -292,4 +311,3 @@ class Action(object):
         self._on_start(persona, component_order, instances)
         self._run(persona, component_order, instances)
         self._on_finish(persona, component_order, instances)
-        return component_order

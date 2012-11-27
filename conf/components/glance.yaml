@@ -41,5 +41,5 @@ keystone:
 image_cache_dir: "/usr/share/anvil/glance/images"
 
 # Used by install section in the specfile
-remove_file: /bin/rm -rf %{buildroot}/usr/bin/glance
+remove_file: "/bin/rm -rf %{buildroot}/usr/bin/glance"
 ...

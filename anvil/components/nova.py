@@ -24,7 +24,7 @@ except ImportError:
 from anvil import cfg
 from anvil import colorizer
 from anvil import components as comp
-from anvil import exceptions
+from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
@@ -81,9 +81,6 @@ FLOATING_NET_CMDS = [
 # Subdirs of the checkout/download
 BIN_DIR = 'bin'
 
-# This is a special conf
-CLEANER_DATA_CONF = 'nova-clean.sh'
-
 
 class NovaUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -91,26 +88,26 @@ class NovaUninstaller(comp.PythonUninstallComponent):
         self.virsh = lv.Virsh(self.get_int_option('service_wait_seconds'), self.distro)
 
     def pre_uninstall(self):
-        self._clear_libvirt_domains()
-        self._clean_it()
+        if 'compute' in self.subsystems:
+            self._clean_compute()
+        if 'network' in self.subsystems:
+            self._clean_net()
 
-    def _clean_it(self):
-        cleaner_fn = sh.joinpths(self.get_option('component_dir'), 'tools', CLEANER_DATA_CONF)
-        if sh.isfile(cleaner_fn):
-            LOG.info("Cleaning up your system by running nova cleaner script: %s", colorizer.quote(cleaner_fn))
-            # These environment additions are important
-            # in that they eventually affect how this script runs
-            env = {
-                'ENABLED_SERVICES': ",".join(self.subsystems.keys()),
-            }
-            sh.execute(cleaner_fn, run_as_root=True, env_overrides=env)
+    def _clean_net(self):
+        try:
+            LOG.info("Cleaning up nova-network's dirty laundry.")
+            cleaner = nhelper.NetworkCleaner(self)
+            cleaner.clean()
+        except Exception as e:
+            LOG.warn("Failed cleaning up nova-network's dirty laundry due to: %s", e)
 
-    def _clear_libvirt_domains(self):
-        virt_driver = nhelper.canon_virt_driver(self.get_option('virt_driver'))
-        if virt_driver == 'libvirt':
-            inst_prefix = self.get_option('instance_name_prefix', default_value='instance-')
-            libvirt_type = lv.canon_libvirt_type(self.get_option('libvirt_type'))
-            self.virsh.clear_domains(libvirt_type, inst_prefix)
+    def _clean_compute(self):
+        try:
+            LOG.info("Cleaning up nova-compute's dirty laundry.")
+            cleaner = nhelper.ComputeCleaner(self)
+            cleaner.clean()
+        except Exception as e:
+            LOG.warn("Failed cleaning up nova-compute's dirty laundry due to: %s", e)
 
 
 class NovaInstaller(comp.PythonInstallComponent):
@@ -124,7 +121,7 @@ class NovaInstaller(comp.PythonInstallComponent):
 
     def _filter_pip_requires_line(self, fn, line):
         # We handle these ourselves in anvil
-        if utils.has_any(line.lower(), 'quantumclient', 'cinder', 'glance', 'ldap'):
+        if utils.has_any(line.lower(), 'quantumclient', 'cinder', 'glance', 'ldap', 'keystoneclient'):
             return None
         return line
 
@@ -156,15 +153,6 @@ class NovaInstaller(comp.PythonInstallComponent):
         if self.get_bool_option('db-sync'):
             self._setup_db()
             self._sync_db()
-        self._setup_cleaner()
-
-    def _setup_cleaner(self):
-        LOG.info("Configuring cleaner template: %s", colorizer.quote(CLEANER_DATA_CONF))
-        (_src_fn, contents) = utils.load_template(self.name, CLEANER_DATA_CONF)
-        cleaner_fn = sh.joinpths(self.get_option('component_dir'), 'tools', CLEANER_DATA_CONF)
-        sh.mkdirslist(sh.dirname(cleaner_fn), tracewriter=self.tracewriter)
-        sh.write_file(cleaner_fn, contents, tracewriter=self.tracewriter)
-        sh.chmod(cleaner_fn, 0755)
 
     def _setup_db(self):
         dbhelper.drop_db(distro=self.distro,
@@ -323,11 +311,11 @@ class NovaRuntime(comp.PythonRuntime):
                 self.virsh.check_virt(virt_type)
                 self.virsh.restart_service()
                 LOG.info("Libvirt virtualization type %s seems to be working and running.", colorizer.quote(virt_type))
-            except exceptions.ProcessExecutionError as e:
+            except excp.ProcessExecutionError as e:
                 msg = ("Libvirt type %r does not seem to be active or configured correctly, "
                         "perhaps you should be using %r instead: %s" %
                         (virt_type, lv.DEF_VIRT_TYPE, e))
-                raise exceptions.StartException(msg)
+                raise excp.StartException(msg)
 
     def app_params(self, app_name):
         params = comp.PythonRuntime.app_params(self, app_name)
