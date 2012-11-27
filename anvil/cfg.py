@@ -160,8 +160,8 @@ class YamlInterpolator(object):
 
     def _include_dictionary(self, what):
         n_what = {}
-        for (k, v) in what.iteritems():
-            n_what[k] = self._do_include(v)
+        for (k, value) in what.iteritems():
+            n_what[k] = self._do_include(value)
         return n_what
 
     def _include_iterable(self, what):
