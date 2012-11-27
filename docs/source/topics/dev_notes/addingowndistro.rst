@@ -53,17 +53,33 @@ we can add in your own distribution support.
 **anvil/distros**
   These are typically subclasses of components that may override generic functionality to correct
   for a given distribution doing or requiring something different to occur before/after or during
-  an install or other action. Feel free to add-on your own subclasses here and make sure you reference
-  them in your **conf/distros** yaml file so that the correct subclass will be used.
+  an install or other action. 
+
+  **When to adjust:** Feel free to add-on your own subclasses here as needed to handle any special actions
+  that your new distribution may require and make sure you reference those classes/entrypoints 
+  in your **conf/distros** yaml file so that the correct subclass will be used. The rhel distro has a good set
+  of examples that overload various key points so that rhel can work correctly.
 
 **anvil/packaging**
   The modules in this folder will be referenced in your **conf/distros** yaml file and will control
-  how to install packages (ie using yum and pip) and how to uninstall those same packages. If needed
-  it should be simple to look at the packaging interface and add your own. After adding make sure you reference
-  them in your **conf/distros** yaml file so that the correct subclass will be used. If you are going
-  to want to create package files from the installed code then you will need to hook-in to a file similar
-  to the rpm module that exists there. This code will get activated when a package action occurs and it
-  current will cause the neccasary actions to occur to create a rpm ``spec`` file which can be used with
-  the rpmbuild command.
+  how to install packages (ie using yum and pip) and how to uninstall those same packages. This code will also
+  get activated when a 'package' action occurs which currently will cause the necessary actions to occur to 
+  create a rpm ``spec`` file which can be used with the ``rpmbuild`` command.
 
+  **When to adjust:**  If needed it should be simple to look at the packaging interface and add your own.
+  After adding make sure you reference them in your **conf/distros** yaml file so that the correct subclass will be used. If you are going
+  to want to create package files from the installed code then you will need to hook-in to a file similar
+  to the rpm module that exists there. 
+
+Bring back the dead!
+----------
+
+If you are adding in debian/ubuntu/fedora support please check out the older code that existed that did this
+which was removed due to it being unmatained. It might help ease the process if these files are just brought
+back from the dead and fixed as needed...
+
++ https://github.com/yahoo/Openstack-Anvil/blob/2012.5.11/anvil/packaging/apt.py
++ https://github.com/yahoo/Openstack-Anvil/blob/2012.5.11/anvil/distros/oneiric.py
++ https://github.com/yahoo/Openstack-Anvil/blob/2012.5.11/conf/distros/ubuntu-oneiric.yaml
++ https://github.com/yahoo/Openstack-Anvil/blob/2012.5.11/conf/distros/fedora-16.yaml
 
