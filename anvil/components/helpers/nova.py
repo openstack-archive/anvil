@@ -187,7 +187,7 @@ class NetworkCleaner(object):
         # Isolate the nova rules
         clean_rules = []
         list_cmd = ['iptables', '--list-rules', '--verbose']
-        (stdout, _stderr) = sh.execute(list_cmd, run_as_root=True)
+        (stdout, _stderr) = sh.execute(*list_cmd, run_as_root=True)
         for line in stdout.splitlines():
             line = line.strip()
             if not line_matcher(line, "-A"):
@@ -200,7 +200,7 @@ class NetworkCleaner(object):
         # Isolate the nova nat rules
         clean_nats = []
         nat_cmd = ['iptables', '--list-rules', '--verbose', '--table', 'nat']
-        (stdout, _stderr) = sh.execute(nat_cmd, run_as_root=True)
+        (stdout, _stderr) = sh.execute(*nat_cmd, run_as_root=True)
         for line in stdout.splitlines():
             line = line.strip()
             if not line_matcher(line, "-A"):
@@ -213,7 +213,7 @@ class NetworkCleaner(object):
         # Isolate the nova chains
         clean_chains = []
         chain_cmd = ['iptables', '--list-rules', '--verbose']
-        (stdout, _stderr) = sh.execute(list_cmd, run_as_root=True)
+        (stdout, _stderr) = sh.execute(*chain_cmd, run_as_root=True)
         for line in stdout.splitlines():
             if not line_matcher(line, "-N"):
                 continue
@@ -225,7 +225,7 @@ class NetworkCleaner(object):
         # Isolate the nova nat chains
         clean_nat_chains = []
         nat_chain_cmd = ['iptables', '--list-rules', '--verbose', '--table', 'nat']
-        (stdout, _stderr) = sh.execute(list_cmd, run_as_root=True)
+        (stdout, _stderr) = sh.execute(*nat_chain_cmd, run_as_root=True)
         for line in stdout.splitlines():
             if not line_matcher(line, "-N"):
                 continue
