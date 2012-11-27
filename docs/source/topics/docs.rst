@@ -16,7 +16,7 @@ For developers
 ===========
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    dev_notes/addingowndistro
 
