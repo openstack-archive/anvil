@@ -19,6 +19,10 @@ class AnvilException(Exception):
     pass
 
 
+class PermException(AnvilException):
+    pass
+
+
 class OptionException(AnvilException):
     pass
 

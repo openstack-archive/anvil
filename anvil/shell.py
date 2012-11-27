@@ -43,6 +43,11 @@ SHELL_QUOTE_REPLACERS = {
 }
 ROOT_PATH = os.sep
 
+# Locally stash these so that they can not be changed
+# by others after this is first fetched...
+SUDO_UID = env.get_key('SUDO_UID')
+SUDO_GID = env.get_key('SUDO_GID')
+
 
 class Rooted(object):
     def __init__(self, run_as_root):
@@ -62,12 +67,13 @@ class Rooted(object):
 
 
 def is_dry_run():
-    dry_v = env.get_key('ANVIL_DRYRUN')
-    if not dry_v:
-        return False
-    return tu.make_bool(dry_v)
+    # Not stashed locally since the main entrypoint
+    # actually adjusts this value depending on a command
+    # line option...
+    return tu.make_bool(env.get_key('ANVIL_DRYRUN'))
 
 
+# Originally borrowed from nova computes execute...
 def execute(*cmd, **kwargs):
     process_input = kwargs.pop('process_input', None)
     check_exit_code = kwargs.pop('check_exit_code', [0])
@@ -85,10 +91,8 @@ def execute(*cmd, **kwargs):
     run_as_root = kwargs.pop('run_as_root', False)
     shell = kwargs.pop('shell', False)
 
-    # Ensure all string args
-    execute_cmd = []
-    for c in cmd:
-        execute_cmd.append(str(c))
+    # Ensure all string args (ie for those that send ints and such...)
+    execute_cmd = [str(c) for c in cmd]
 
     # From the docs it seems a shell command must be a string??
     # TODO(harlowja) this might not really be needed?
@@ -126,7 +130,6 @@ def execute(*cmd, **kwargs):
         for (k, v) in env_overrides.items():
             process_env[k] = str(v)
 
-    # LOG.debug("With environment %s", process_env)
     demoter = None
 
     def demoter_functor(user_uid, user_gid):
@@ -137,10 +140,7 @@ def execute(*cmd, **kwargs):
 
     if not run_as_root:
         (user_uid, user_gid) = get_suids()
-        if user_uid is None or user_gid is None:
-            pass
-        else:
-            demoter = demoter_functor(user_uid=user_uid, user_gid=user_gid)
+        demoter = demoter_functor(user_uid=user_uid, user_gid=user_gid)
 
     rc = None
     result = None
@@ -204,23 +204,27 @@ def abspth(path):
     return os.path.abspath(path)
 
 
-def hostname():
+def hostname(default='localhost'):
     try:
         return socket.gethostname()
     except socket.error:
-        return 'localhost'
+        return default
 
 
 def isuseable(path, options=os.W_OK | os.R_OK | os.X_OK):
     return os.access(path, options)
 
 
+# Useful for doing progress bars that get told the current progress
+# for the transfer ever chunk via the chunk callback function that
+# will be called after each chunk has been written...
 def pipe_in_out(in_fh, out_fh, chunk_size=1024, chunk_cb=None):
     bytes_piped = 0
     LOG.debug("Transferring the contents of %s to %s in chunks of size %s.", in_fh, out_fh, chunk_size)
     while True:
         data = in_fh.read(chunk_size)
         if data == '':
+            # EOF
             break
         else:
             out_fh.write(data)
@@ -288,16 +292,22 @@ def joinpths(*paths):
 
 
 def get_suids():
-    uid = env.get_key('SUDO_UID')
+    uid = SUDO_UID
     if uid is not None:
         uid = int(uid)
-    gid = env.get_key('SUDO_GID')
+    gid = SUDO_GID
     if gid is not None:
         gid = int(gid)
     return (uid, gid)
 
 
 def chown(path, uid, gid, run_as_root=True):
+    if uid is None:
+        uid = -1
+    if gid is None:
+        gid = -1
+    if uid == -1 and gid == -1:
+        return 0
     LOG.debug("Changing ownership of %r to %s:%s" % (path, uid, gid))
     with Rooted(run_as_root):
         if not is_dry_run():
@@ -308,15 +318,14 @@ def chown(path, uid, gid, run_as_root=True):
 def chown_r(path, uid, gid, run_as_root=True):
     changed = 0
     with Rooted(run_as_root):
-        if isdir(path):
-            for (root, dirs, files) in os.walk(path):
-                changed += chown(root, uid, gid)
-                for d in dirs:
-                    dir_pth = joinpths(root, d)
-                    changed += chown(dir_pth, uid, gid)
-                for f in files:
-                    fn_pth = joinpths(root, f)
-                    changed += chown(fn_pth, uid, gid)
+        for (root, dirs, files) in os.walk(path):
+            changed += chown(root, uid, gid)
+            for d in dirs:
+                dir_pth = joinpths(root, d)
+                changed += chown(dir_pth, uid, gid)
+            for f in files:
+                fn_pth = joinpths(root, f)
+                changed += chown(fn_pth, uid, gid)
     return changed
 
 
@@ -352,9 +361,11 @@ def _attempt_kill(pid, signal_type, max_try, wait_time):
             sleep(wait_time)
         except OSError as e:
             if e.errno == errno.ESRCH:
+                # Gotcha!
                 killed = True
                 break
             else:
+                LOG.debug("Failed killing %s due to: %s", pid, e)
                 LOG.debug("Sleeping for %s seconds before next attempt to kill pid %s" % (wait_time, pid))
                 sleep(wait_time)
     return (killed, attempts)
@@ -363,9 +374,11 @@ def _attempt_kill(pid, signal_type, max_try, wait_time):
 def kill(pid, max_try=4, wait_time=1):
     if not is_running(pid) or is_dry_run():
         return (True, 0)
+    # Try the nicer sig-int first...
     (killed, i_attempts) = _attempt_kill(pid, signal.SIGINT, int(max_try / 2), wait_time)
     if killed:
         return (True, i_attempts)
+    # Get agressive and try sig-kill....
     (killed, k_attempts) = _attempt_kill(pid, signal.SIGKILL, int(max_try / 2), wait_time)
     if killed:
         return (True, i_attempts + k_attempts)
@@ -429,6 +442,9 @@ def fork(program, app_dir, pid_fn, stdout_fn, stderr_fn, *args):
 def is_running(pid):
     if is_dry_run():
         return True
+    # TODO(harlowja): this can be done better
+    # but it will suffice for now....
+    #
     # Check proc
     proc_fn = joinpths("/proc", str(pid))
     if exists(proc_fn):
@@ -437,7 +453,7 @@ def is_running(pid):
     # Try a slightly more aggressive way...
     running = True
     try:
-        os.kill(pid, 0)
+        os.kill(pid, signal.SIG_DFL)
     except OSError as e:
         if e.errno == errno.EPERM:
             pass
@@ -686,27 +702,26 @@ def chmod(fname, mode):
 
 
 def got_root():
-    return (os.geteuid() == 0)
+    e_id = geteuid()
+    g_id = getegid()
+    for a_id in [e_id, g_id]:
+        if a_id != 0:
+            return False
+    return True
 
 
 def root_mode(quiet=True):
-    root_uid = getuid('root')
-    root_gid = getgid('root')
-    if root_uid is None or root_gid is None:
-        msg = "Cannot escalate permissions to (user=root) - does that user exist??"
+    root_uid = 0
+    root_gid = 0
+    try:
+        os.setreuid(0, root_uid)
+        os.setregid(0, root_gid)
+    except OSError as e:
+        msg = "Cannot escalate permissions to (uid=%s, gid=%s): %s" % (root_uid, root_gid, e)
         if quiet:
             LOG.warn(msg)
         else:
-            raise excp.AnvilException(msg)
-    else:
-        try:
-            os.setreuid(0, root_uid)
-            os.setregid(0, root_gid)
-        except OSError:
-            if quiet:
-                LOG.warn("Cannot escalate permissions to (user=%s, group=%s)" % (root_uid, root_gid))
-            else:
-                raise
+            raise excp.PermException(msg)
 
 
 def user_mode(quiet=True):
@@ -715,21 +730,22 @@ def user_mode(quiet=True):
         try:
             os.setregid(0, sudo_gid)
             os.setreuid(0, sudo_uid)
-        except OSError:
+        except OSError as e:
+            msg = "Cannot drop permissions to (uid=%s, gid=%s): %s" % (sudo_uid, sudo_gid, e)
             if quiet:
-                LOG.warn("Cannot drop permissions to (user=%s, group=%s)" % (sudo_uid, sudo_gid))
+                LOG.warn(msg)
             else:
-                raise
+                raise excp.PermException(msg)
     else:
-        msg = "Can not switch to user mode, no suid user id or group id"
+        msg = "Can not switch to user mode, no suid user id or suid group id"
         if quiet:
             LOG.warn(msg)
         else:
-            raise excp.AnvilException(msg)
+            raise excp.PermException(msg)
 
 
 def is_executable(fn):
-    return isfile(fn) and os.access(fn, os.X_OK)
+    return isfile(fn) and isuseable(fn, options=os.X_OK)
 
 
 def geteuid():
