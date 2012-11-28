@@ -149,4 +149,12 @@ rabbit:
   user_id: "$(rabbit-mq:user_id)"
   host: "$(rabbit-mq:host)"
 
+# This is needed to allow installs based on personas
+wanted_passwords:
+  rabbit: 'rabbit user'
+  service_token: 'service admin token'
+  admin_password: 'keystone admin user'
+  service_password: 'service authentication password'
+  sql: "database user"
+
 ...
