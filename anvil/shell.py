@@ -48,6 +48,9 @@ SHELL_QUOTE_REPLACERS = {
 SUDO_UID = env.get_key('SUDO_UID')
 SUDO_GID = env.get_key('SUDO_GID')
 
+# Set only once
+IS_DRYRUN = None
+
 
 class Process(psutil.Process):
     def __str__(self):
@@ -71,13 +74,17 @@ class Rooted(object):
             self.engaged = False
 
 
+def set_dry_run(on_off):
+    global IS_DRYRUN
+    if not isinstance(on_off, (bool)):
+        raise TypeError("Dry run value must be a boolean")
+    if IS_DRYRUN is not None:
+        raise RuntimeError("Dry run value has already been previously set to '%s'" % (IS_DRYRUN))
+    IS_DRYRUN = on_off
+
+
 def is_dry_run():
-    # Not stashed locally since the main entrypoint
-    # actually adjusts this value depending on a command
-    # line option...
-    #
-    # TODO(harlowja): probably change that to not work that way...
-    return tu.make_bool(env.get_key('ANVIL_DRYRUN'))
+    return bool(IS_DRYRUN)
 
 
 # Originally borrowed from nova computes execute...
