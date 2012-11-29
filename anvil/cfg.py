@@ -144,6 +144,7 @@ class YamlInterpolator(object):
             'user': sh.getuser,
             'group': sh.getgroupname,
             'home': sh.gethomedir,
+            'hostname': sh.hostname,
         }
 
     def _interpolate_iterable(self, what):
