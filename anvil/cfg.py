@@ -139,6 +139,12 @@ class YamlInterpolator(object):
         self.included = {}
         self.interpolated = {}
         self.base = base
+        self.auto_specials = {
+            'ip': utils.get_host_ip,
+            'user': sh.getuser,
+            'group': sh.getgroupname,
+            'home': sh.gethomedir,
+        }
 
     def _interpolate_iterable(self, what):
         if isinstance(what, (set)):
@@ -150,6 +156,8 @@ class YamlInterpolator(object):
             n_what = []
             for v in what:
                 n_what.append(self._interpolate(v))
+            if isinstance(what, (tuple)):
+                n_what = tuple(n_what)
             return n_what
 
     def _interpolate_dictionary(self, what):
@@ -174,6 +182,8 @@ class YamlInterpolator(object):
             n_what = []
             for v in what:
                 n_what.append(self._do_include(v))
+            if isinstance(what, (tuple)):
+                n_what = tuple(n_what)
             return n_what
 
     def _interpolate(self, value):
@@ -188,13 +198,16 @@ class YamlInterpolator(object):
 
     def _interpolate_string(self, what):
         if not re.search(INTERP_PAT, what):
+            # Leave it alone if the sub won't do
+            # anything to begin with
             return what
 
         def replacer(match):
             who = match.group(1).strip()
             key = match.group(2).strip()
-            if self._process_special(who, key):
-                return self._process_special(who, key)
+            (is_special, special_value) = self._process_special(who, key)
+            if is_special:
+                return special_value
             if who not in self.interpolated:
                 self.interpolated[who] = self.included[who]
                 self.interpolated[who] = self._interpolate(self.included[who])
@@ -203,37 +216,42 @@ class YamlInterpolator(object):
         return re.sub(INTERP_PAT, replacer, what)
 
     def _process_special(self, who, key):
-        if key == 'ip' and who == 'auto':
-            return utils.get_host_ip()
-        if key == 'user' and who == 'auto':
-            return sh.getuser()
-        if who == 'auto':
-            raise KeyError("Unknown auto key type %s" % (key))
-        return None
+        if who and who.lower() in ['auto']:
+            if key not in self.auto_specials:
+                raise KeyError("Unknown auto key %r" % (key))
+            functor = self.auto_specials[key]
+            return (True, functor())
+        return (False, None)
 
     def _include_string(self, what):
         if not re.search(INTERP_PAT, what):
+            # Leave it alone if the sub won't do
+            # anything to begin with
             return what
 
         def replacer(match):
             who = match.group(1).strip()
             key = match.group(2).strip()
-            if self._process_special(who, key):
-                return self._process_special(who, key)
+            (is_special, special_value) = self._process_special(who, key)
+            if is_special:
+                return special_value
+            # Process there includes and then
+            # fetch the value that should have been
+            # populated
             self._process_includes(who)
             return str(self.included[who][key])
 
         return re.sub(INTERP_PAT, replacer, what)
 
-    def _do_include(self, v):
-        n_v = v
-        if v and isinstance(v, (basestring, str)):
-            n_v = self._include_string(v)
-        elif isinstance(v, dict):
-            n_v = self._include_dictionary(v)
-        elif isinstance(v, (list, set, tuple)):
-            n_v = self._include_iterable(v)
-        return n_v
+    def _do_include(self, value):
+        new_value = value
+        if value and isinstance(value, (basestring, str)):
+            new_value = self._include_string(value)
+        elif isinstance(value, (dict)):
+            new_value = self._include_dictionary(value)
+        elif isinstance(value, (list, set, tuple)):
+            new_value = self._include_iterable(value)
+        return new_value
 
     def _process_includes(self, root):
         if root in self.included:
