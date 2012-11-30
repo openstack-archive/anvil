@@ -286,7 +286,7 @@ class ConfConfigurator(object):
         # Used more than once so we calculate it ahead of time
         hostip = self.installer.get_option('ip')
 
-        nova_conf.add('verbose', self.installer.get_bool_option('verbose'))
+        nova_conf.add('verbose', self.installer.get_bool_option('log_verbose'))
 
         # Allow destination machine to match source for resize.
         nova_conf.add('allow_resize_to_same_host', True)

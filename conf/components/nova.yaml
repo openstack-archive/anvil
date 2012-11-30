@@ -102,7 +102,7 @@ nova_version: "1.1"
 scheduler:  nova.scheduler.filter_scheduler.FilterScheduler
 
 # Should nova be in verbose mode?
-verbose: True
+log_verbose: True
 
 # Virtualization settings
 # Drivers known (libvirt, xensever, vmware, baremetal)
