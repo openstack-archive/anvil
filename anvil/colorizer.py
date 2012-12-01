@@ -23,13 +23,15 @@ from anvil import type_utils as tu
 
 COLORS = termcolor.COLORS.keys()
 
+LOG_COLOR = True
+if 'LOG_COLOR' in env.get():
+    LOG_COLOR = tu.make_bool(env.get_key('LOG_COLOR'))
+if not sys.stdout.isatty():
+    LOG_COLOR = False
+
 
 def color_enabled():
-    if 'LOG_COLOR' in env.get() and not tu.make_bool(env.get_key('LOG_COLOR')):
-        return False
-    if not sys.stdout.isatty():
-        return False
-    return True
+    return LOG_COLOR
 
 
 def quote(data, quote_color='green', **kargs):
