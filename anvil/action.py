@@ -277,7 +277,7 @@ class Action(object):
             phase_recorder = phase.PhaseRecorder(self._get_phase_filename(phase_name))
 
         # These phase recorders will be used to undo other actions activities
-        # ie, when an install completes you want to uninstall phase to be
+        # ie, when an install completes you want the uninstall phase to be
         # removed from that actions phase file (and so on). This list will be
         # used to accomplish that.
         neg_phase_recs = []
