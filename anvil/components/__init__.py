@@ -821,7 +821,7 @@ class PythonTestingComponent(component.Component):
         cmd.append('--nologcapture')
         for e in self._get_test_exclusions():
             cmd.append('--exclude=%s' % (e))
-        xunit_fn = self.get_option("xunit_filename"):
+        xunit_fn = self.get_option("xunit_filename")
         if xunit_fn:
             cmd.append("--with-xunit")
             cmd.append("--xunit-file=%s" % (xunit_fn))
