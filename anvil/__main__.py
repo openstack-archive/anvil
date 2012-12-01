@@ -82,7 +82,7 @@ def run(args):
 
     # Stash the dryrun value (if any)
     if 'dryrun' in args:
-        env.set("ANVIL_DRYRUN", str(args['dryrun']))
+        sh.set_dry_run(args['dryrun'])
 
     # Ensure the anvil dirs are there if others are about to use it...
     ensure_anvil_dirs()

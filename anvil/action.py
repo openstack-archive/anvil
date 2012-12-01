@@ -33,6 +33,10 @@ from anvil.utils import OrderedDict
 
 LOG = logging.getLogger(__name__)
 
+# Include the general yaml during all interpolation
+# actions since it typically contains useful shared settings...
+BASE_YAML_INTERP = ('general', )
+
 
 class PhaseFunctors(object):
     def __init__(self, start, run, end):
@@ -74,7 +78,7 @@ class Action(object):
         already_gotten = set()
         for c in component_order:
             instance = instances[c]
-            wanted_passwords = instance.get_option('wanted_passwords') or []
+            wanted_passwords = instance.get_option('wanted_passwords')
             if not wanted_passwords:
                 continue
             for (name, prompt) in wanted_passwords.items():
@@ -160,11 +164,18 @@ class Action(object):
             sibling_instances[action][name] = a_sibling
         return there_siblings
 
+    def _get_interpolated_names(self, name):
+        # Return which sources that will be interpolated from
+        # Note(harlowja): if one of the bases here pulls in
+        # another yaml, it will be done automatically so this
+        # list is more of the starting list and not the end list...
+        return list(BASE_YAML_INTERP) + [name]
+
     def _get_interpolated_options(self, name):
-        interpolated_opts = {}
-        for c in ['general', name]:
-            interpolated_opts.update(self.interpolator.extract(c))
-        return interpolated_opts
+        opts = {}
+        for c in self._get_interpolated_names(name):
+            opts.update(self.interpolator.extract(c))
+        return opts
 
     def _construct_instances(self, persona):
         """
@@ -240,6 +251,7 @@ class Action(object):
         utils.log_object(env.get(), logger=LOG, level=logging.DEBUG, item_max_len=64)
 
     def _get_phase_filename(self, phase_name):
+        # Do some canonicalization of the phase name so its in a semi-standard format...
         phase_name = phase_name.lower().strip()
         phase_name = phase_name.replace("-", '_')
         phase_name = phase_name.replace(" ", "_")
@@ -251,12 +263,23 @@ class Action(object):
         """
         Run a given 'functor' across all of the components, in order.
         """
+        # All the results for each component end up in here
+        # in the order in which they ran...
         component_results = OrderedDict()
+
+        # This phase recorder will be used to check if a given component
+        # and action has ran in the past, if so that components action
+        # will not be ran again. It will also be used to mark that a given
+        # component has completed a phase (if that phase runs).
         if not phase_name:
             phase_recorder = phase.NullPhaseRecorder()
         else:
             phase_recorder = phase.PhaseRecorder(self._get_phase_filename(phase_name))
 
+        # These phase recorders will be used to undo other actions activities
+        # ie, when an install completes you want to uninstall phase to be
+        # removed from that actions phase file (and so on). This list will be
+        # used to accomplish that.
         neg_phase_recs = []
         if inv_phase_names:
             for n in inv_phase_names:
@@ -266,7 +289,14 @@ class Action(object):
                     neg_phase_recs.append(phase.PhaseRecorder(self._get_phase_filename(n)))
 
         def change_activate(instance, on_off):
-            # Activate/deactivate them and there siblings (if any)
+            # Activate/deactivate a component instance and there siblings (if any)
+            #
+            # This is used when you say are looking at components
+            # that have been activated before your component has been.
+            #
+            # Typically this is useful for checking if a previous component
+            # has a shared dependency with your component and if so then there
+            # is no need to reinstall said dependency...
             instance.activated = on_off
             for (_name, sibling_instance) in instance.siblings.items():
                 sibling_instance.activated = on_off

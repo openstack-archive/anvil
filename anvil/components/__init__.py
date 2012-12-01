@@ -856,6 +856,10 @@ class PythonTestingComponent(component.Component):
             cmd.append('--nologcapture')
         for e in self._get_test_exclusions():
             cmd.append('--exclude=%s' % (e))
+        xunit_fn = self.get_option("xunit_filename"):
+        if xunit_fn:
+            cmd.append("--with-xunit")
+            cmd.append("--xunit-file=%s" % (xunit_fn))
         return cmd
 
     def _use_pep8(self):
@@ -922,7 +926,7 @@ class PythonTestingComponent(component.Component):
         cmd = self._get_test_command()
         env = self._get_env()
         with open(os.devnull, 'wb') as null_fh:
-            if self.get_bool_option("tests_verbose", default_value=False):
+            if self.get_bool_option("verbose", default_value=False):
                 null_fh = None
             sh.execute(*cmd, stdout_fh=None, stderr_fh=null_fh,
                        cwd=app_dir, env_overrides=env)

@@ -28,7 +28,6 @@ if [ -n "$SUDO_USER" ]; then
 fi
 
 ARGS="$@"
-VER=$(python -c "from anvil import version; print version.version_string()")
 PWD=`pwd`
 if [ -z "$BOOT_FILES" ]; then
     BOOT_FN=".anvil_bootstrapped"
@@ -85,15 +84,24 @@ bootstrap_epel()
 
 has_bootstrapped()
 {
+    checksums=$(get_checksums)
     for i in $BOOT_FILES; do
         if [ -f $i ]; then
             contents=`cat $i`
-            if [ "$contents" == "$VER" ]; then
+            if [ "$contents" == "$checksums" ]; then
                 return 0
             fi
         fi
     done
     return 1
+}
+
+get_checksums()
+{
+    pkg_checksum=$(md5sum tools/pkg-requires)
+    pip_checksum=$(md5sum tools/pip-requires)
+    echo "$pkg_checksum"
+    echo "$pip_checksum"
 }
 
 bootstrap_rhel()
@@ -122,7 +130,7 @@ run_smithy()
 puke()
 {
     # TODO(harlowja) better way to do this??
-    cleaned_force=$(python -c "f='$FORCE';print(f.lower().strip())")
+    cleaned_force=$(python -c "f='$FORCE'; print(f.lower().strip())")
     if [[ "$cleaned_force" == "yes" ]]; then
         run_smithy
     else
@@ -146,8 +154,12 @@ if [[ "$TYPE" =~ "Red Hat Enterprise Linux Server" ]]; then
     fi
     bootstrap_rhel $RH_VER
     if [ $? -eq 0 ]; then
+        # Write the checksums of the requirement files
+        # which if new requirements are added will cause new checksums
+        # and a new dependency install...
+        checksums=$(get_checksums)
         for i in $BOOT_FILES; do
-            echo "$VER" > $i
+            echo -e "$checksums" > $i
         done
         run_smithy
     else

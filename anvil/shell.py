@@ -42,12 +42,14 @@ SHELL_QUOTE_REPLACERS = {
     "$": '\$',
     '`': '\`',
 }
-ROOT_PATH = os.sep
 
 # Locally stash these so that they can not be changed
 # by others after this is first fetched...
 SUDO_UID = env.get_key('SUDO_UID')
 SUDO_GID = env.get_key('SUDO_GID')
+
+# Set only once
+IS_DRYRUN = None
 
 
 class Process(psutil.Process):
@@ -72,11 +74,17 @@ class Rooted(object):
             self.engaged = False
 
 
+def set_dry_run(on_off):
+    global IS_DRYRUN
+    if not isinstance(on_off, (bool)):
+        raise TypeError("Dry run value must be a boolean")
+    if IS_DRYRUN is not None:
+        raise RuntimeError("Dry run value has already been previously set to '%s'" % (IS_DRYRUN))
+    IS_DRYRUN = on_off
+
+
 def is_dry_run():
-    # Not stashed locally since the main entrypoint
-    # actually adjusts this value depending on a command
-    # line option...
-    return tu.make_bool(env.get_key('ANVIL_DRYRUN'))
+    return bool(IS_DRYRUN)
 
 
 # Originally borrowed from nova computes execute...
@@ -85,13 +93,12 @@ def execute(*cmd, **kwargs):
     check_exit_code = kwargs.pop('check_exit_code', [0])
     cwd = kwargs.pop('cwd', None)
     env_overrides = kwargs.pop('env_overrides', None)
-    close_stdin = kwargs.pop('close_stdin', False)
     ignore_exit_code = kwargs.pop('ignore_exit_code', False)
 
-    if isinstance(check_exit_code, bool):
+    if isinstance(check_exit_code, (bool)):
         ignore_exit_code = not check_exit_code
         check_exit_code = [0]
-    elif isinstance(check_exit_code, int):
+    elif isinstance(check_exit_code, (int)):
         check_exit_code = [check_exit_code]
 
     run_as_root = kwargs.pop('run_as_root', False)
@@ -109,22 +116,28 @@ def execute(*cmd, **kwargs):
     stdin_fh = subprocess.PIPE
     stdout_fh = subprocess.PIPE
     stderr_fh = subprocess.PIPE
-    close_file_descriptors = True
 
-    if 'stdout_fh' in kwargs.keys():
-        stdout_fh = kwargs.get('stdout_fh')
+    stdout_fn = kwargs.get('stdout_fn')
+    stderr_fn = kwargs.get('stderr_fn')
+    trace_writer = kwargs.get('tracewriter')
 
-    if 'stdin_fh' in kwargs.keys():
-        stdin_fh = kwargs.get('stdin_fh')
-        process_input = None
+    if 'stdout_fh' in kwargs:
+        stdout_fh = kwargs['stdout_fh']
+        if stdout_fn:
+            LOG.warn("Stdout file handles and stdout file names can not be used simultaneously!")
+            stdout_fn = None
 
-    if 'stderr_fh' in kwargs.keys():
-        stderr_fh = kwargs.get('stderr_fh')
+    if 'stderr_fh' in kwargs:
+        stderr_fh = kwargs['stderr_fh']
+        if stderr_fn:
+            LOG.warn("Stderr file handles and stderr file names can not be used simultaneously!")
+            stderr_fn = None
 
     if not shell:
         LOG.debug('Running cmd: %r' % (execute_cmd))
     else:
         LOG.debug('Running shell cmd: %r' % (execute_cmd))
+
     if process_input is not None:
         LOG.debug('With stdin: %s' % (process_input))
     if cwd:
@@ -145,8 +158,12 @@ def execute(*cmd, **kwargs):
         return doit
 
     if not run_as_root:
+        # Ensure we drop down to the suid user before the command
+        # is executed (ensuring we don't run in root mode when we
+        # should not be)
         (user_uid, user_gid) = get_suids()
-        demoter = demoter_functor(user_uid=user_uid, user_gid=user_gid)
+        if user_uid is not None and user_gid is not None:
+            demoter = demoter_functor(user_uid=user_uid, user_gid=user_gid)
 
     rc = None
     result = None
@@ -157,7 +174,7 @@ def execute(*cmd, **kwargs):
         else:
             try:
                 obj = subprocess.Popen(execute_cmd, stdin=stdin_fh, stdout=stdout_fh, stderr=stderr_fh,
-                                       close_fds=close_file_descriptors, cwd=cwd, shell=shell,
+                                       close_fds=True, cwd=cwd, shell=shell,
                                        preexec_fn=demoter, env=process_env)
                 if process_input is not None:
                     result = obj.communicate(str(process_input))
@@ -166,8 +183,6 @@ def execute(*cmd, **kwargs):
             except OSError as e:
                 raise excp.ProcessExecutionError(description="%s: [%s, %s]" % (e, e.errno, e.strerror),
                                                  cmd=str_cmd)
-            if (stdin_fh != subprocess.PIPE and obj.stdin and close_stdin):
-                obj.stdin.close()
             rc = obj.returncode
 
     if not result:
@@ -188,13 +203,10 @@ def execute(*cmd, **kwargs):
             LOG.debug("A failure may of just happened when running command %r [%s] (%s, %s)",
                       str_cmd, rc, stdout, stderr)
         # See if a requested storage place was given for stderr/stdout
-        trace_writer = kwargs.get('tracewriter')
-        stdout_fn = kwargs.get('stdout_fn')
         if stdout_fn:
             write_file(stdout_fn, stdout)
             if trace_writer:
                 trace_writer.file_touched(stdout_fn)
-        stderr_fn = kwargs.get('stderr_fn')
         if stderr_fn:
             write_file(stderr_fn, stderr)
             if trace_writer:
@@ -204,7 +216,7 @@ def execute(*cmd, **kwargs):
 
 def abspth(path):
     if not path:
-        path = ROOT_PATH
+        path = "/"
     if path == "~":
         path = gethomedir()
     return os.path.abspath(path)
