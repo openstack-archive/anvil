@@ -46,10 +46,8 @@ LOG = logging.getLogger()
 def run(args):
     """
     Starts the execution after args have been parsed and logging has been setup.
-
-    Arguments: N/A
-    Returns: True for success to run, False for failure to start
     """
+
     LOG.debug("CLI arguments are:")
     utils.log_object(args, logger=LOG, level=logging.DEBUG, item_max_len=128)
 
@@ -58,6 +56,12 @@ def run(args):
     action = args.pop("action", '').strip().lower()
     if action not in actions.names():
         raise excp.OptionException("Invalid action name %r specified!" % (action))
+
+    persona_fn = args.pop('persona_fn')
+    if not persona_fn:
+        raise excp.OptionException("No persona file name specified!")
+    if not sh.isfile(persona_fn):
+        raise excp.OptionException("Invalid persona file %r specified!" % (persona_fn))
 
     # Determine + setup the root directory...
     # If not provided attempt to locate it via the environment control files
@@ -68,13 +72,9 @@ def run(args):
     if not root_dir:
         root_dir = sh.joinpths(sh.gethomedir(), 'openstack')
     root_dir = sh.abspth(root_dir)
-    sh.mkdir(root_dir)
 
-    persona_fn = args.pop('persona_fn')
-    if not persona_fn:
-        raise excp.OptionException("No persona file name specified!")
-    if not sh.isfile(persona_fn):
-        raise excp.OptionException("Invalid persona file %r specified!" % (persona_fn))
+    (repeat_string, line_max_len) = utils.welcome()
+    print(center_text("Action Runner", repeat_string, line_max_len))
 
     # !!
     # Here on out we should be using the logger (and not print)!!
@@ -85,7 +85,7 @@ def run(args):
         sh.set_dry_run(args['dryrun'])
 
     # Ensure the anvil dirs are there if others are about to use it...
-    ensure_anvil_dirs()
+    ensure_anvil_dirs(root_dir)
 
     # Load the distro
     dist = distro.load(settings.DISTRO_DIR)
@@ -103,9 +103,6 @@ def run(args):
                         root_dir=root_dir,
                         name=action,
                         cli_opts=args)
-
-    (repeat_string, line_max_len) = utils.welcome()
-    print(center_text("Action Runner", repeat_string, line_max_len))
 
     # Now that the settings are known to work, store them for next run
     store_current_settings(saved_args)
@@ -139,8 +136,14 @@ def load_previous_settings():
     return settings_prev
 
 
-def ensure_anvil_dirs():
-    for d in ["/etc/anvil/", '/usr/share/anvil/']:
+def ensure_anvil_dirs(root_dir):
+    wanted_dirs = ["/etc/anvil/", '/usr/share/anvil/']
+    if root_dir and root_dir not in wanted_dirs:
+        wanted_dirs.append(root_dir)
+    for d in wanted_dirs:
+        if sh.isdir(d):
+            continue
+        LOG.info("Creating anvil directory at path: %s", d)
         with sh.Rooted(True):
             sh.mkdir(d, adjust_suids=True)
 
