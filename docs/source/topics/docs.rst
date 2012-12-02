@@ -18,5 +18,6 @@ For developers
 .. toctree::
    :maxdepth: 1
 
+   dev_notes/architecture
    dev_notes/addingowndistro
 
