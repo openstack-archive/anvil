@@ -27,3 +27,10 @@ class GlanceClientInstaller(comp.PythonInstallComponent):
 class GlanceClientTester(comp.PythonTestingComponent):
     def _use_run_tests(self):
         return False
+
+    def _get_test_exclusions(self):
+        return [
+            # These seem to require swift, not always installed...
+            'test_ssl_cert_mismatch',
+            'test_ssl_cert_subject_alt_name',
+        ]
