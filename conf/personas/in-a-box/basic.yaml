@@ -11,6 +11,8 @@ components:
 - cinder-client
 - nova
 - nova-client
+# Needed for testing quantumv2 added 
+- quantum-client
 # Super client, so install after other clients
 - openstack-client
 options:
