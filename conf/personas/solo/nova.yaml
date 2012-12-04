@@ -2,7 +2,6 @@
 components:
 # Order matters here!
 - general
-- quantum-client
 - nova
 - nova-client
 options:
