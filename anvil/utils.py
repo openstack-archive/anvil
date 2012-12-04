@@ -442,9 +442,9 @@ def prettify_yaml(obj):
     return formatted
 
 
-def _pick_message(pattern):
+def _pick_message(pattern, def_message="This page is intentionally left blank."):
     if not pattern:
-        return ""
+        return def_message
     expanded_pattern = sh.joinpths(settings.MESSAGING_DIR, pattern)
     file_matches = glob.glob(expanded_pattern)
     file_matches = [f for f in file_matches if sh.isfile(f)]
@@ -452,9 +452,11 @@ def _pick_message(pattern):
         file_selected = random.choice(file_matches)
         with open(file_selected, 'r') as fh:
             contents = fh.read()
-        return contents.strip("\n\r")
+        contents = contents.strip("\n\r")
+        if not contents:
+            contents = def_message
     except (IndexError, IOError):
-        return ''
+        return def_message
 
 
 def _get_welcome_stack():
