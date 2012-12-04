@@ -18,6 +18,7 @@
 #    under the License.
 
 import contextlib
+import glob
 import os
 import random
 import re
@@ -71,242 +72,6 @@ COWS['unhappy'] = r'''
         ({eye}{eye})/
         {ear}--{ear}
 '''
-
-# Welcome messages
-WELCOMES = [
-    "And now for something completely different!",
-    "Let us get on with the show!",
-]
-
-# Thank you figlet ;)
-# See: http://www.figlet.org/
-STACKERS = []
-STACKERS.append(r'''
-  ___  ____  _____ _   _ ____ _____  _    ____ _  __
- / _ \|  _ \| ____| \ | / ___|_   _|/ \  / ___| |/ /
-| | | | |_) |  _| |  \| \___ \ | | / _ \| |   | ' /
-| |_| |  __/| |___| |\  |___) || |/ ___ \ |___| . \
- \___/|_|   |_____|_| \_|____/ |_/_/   \_\____|_|\_\
-
-''')
-STACKERS.append(r'''
-  ___  ___ ___ _  _ ___ _____ _   ___ _  __
- / _ \| _ \ __| \| / __|_   _/_\ / __| |/ /
-| (_) |  _/ _|| .` \__ \ | |/ _ \ (__| ' <
- \___/|_| |___|_|\_|___/ |_/_/ \_\___|_|\_\
-
-''')
-STACKERS.append(r'''
-____ ___  ____ _  _ ____ ___ ____ ____ _  _
-|  | |__] |___ |\ | [__   |  |__| |    |_/
-|__| |    |___ | \| ___]  |  |  | |___ | \_
-
-''')
-STACKERS.append(r'''
-  _  ___ ___  _  _  __  ___  _   __  _  _
- / \| o \ __|| \| |/ _||_ _|/ \ / _|| |//
-( o )  _/ _| | \\ |\_ \ | || o ( (_ |  (
- \_/|_| |___||_|\_||__/ |_||_n_|\__||_|\\
-
-''')
-STACKERS.append(r'''
-   _   ___  ___  _  __  ___ _____  _    __  _
- ,' \ / o |/ _/ / |/ /,' _//_  _/.' \ ,'_/ / //7
-/ o |/ _,'/ _/ / || /_\ `.  / / / o // /_ /  ,'
-|_,'/_/  /___//_/|_//___,' /_/ /_n_/ |__//_/\\
-
-''')
-STACKERS.append(r'''
- _____  ___    ___    _   _  ___   _____  _____  ___    _   _
-(  _  )(  _`\ (  _`\ ( ) ( )(  _`\(_   _)(  _  )(  _`\ ( ) ( )
-| ( ) || |_) )| (_(_)| `\| || (_(_) | |  | (_) || ( (_)| |/'/'
-| | | || ,__/'|  _)_ | , ` |`\__ \  | |  |  _  || |  _ | , <
-| (_) || |    | (_( )| |`\ |( )_) | | |  | | | || (_( )| |\`\
-(_____)(_)    (____/'(_) (_)`\____) (_)  (_) (_)(____/'(_) (_)
-
-''')
-
-# Success displays
-IT_WORKED = []
-IT_WORKED.append(r'''
- ___________
-/ You shine \
-| out like  |
-| a shaft   |
-| of gold   |
-| when all  |
-| around is |
-\ dark.     /
- -----------
-''')
-IT_WORKED.append(r'''
- ______________________________
-< I'm a lumberjack and I'm OK. >
- ------------------------------
-''')
-IT_WORKED.append(r'''
- ____________________
-/ Australia!         \
-| Australia!         |
-| Australia!         |
-\ We love you, amen. /
- --------------------
-''')
-IT_WORKED.append(r'''
- ______________
-/ Say no more, \
-| Nudge nudge  |
-\ wink wink.   /
- --------------
-''')
-IT_WORKED.append(r'''
- ________________
-/ And there was  \
-\ much rejoicing /
- ----------------
-''')
-IT_WORKED.append(r'''
- __________
-< Success! >
- ----------''')
-
-# Failure displays
-IT_FAILED = []
-IT_FAILED.append(r'''
- __________
-< Failure! >
- ----------
-''')
-IT_FAILED.append(r'''
- ___________
-< Run away! >
- -----------
-''')
-IT_FAILED.append(r'''
- ______________________
-/ NOBODY expects the   \
-\ Spanish Inquisition! /
- ----------------------
-''')
-IT_FAILED.append(r'''
- ______________________
-/ Spam spam spam spam  \
-\ baked beans and spam /
- ----------------------
-''')
-IT_FAILED.append(r'''
- ____________________
-/ Brave Sir Robin    \
-\ ran away.          /
- --------------------
-''')
-IT_FAILED.append(r'''
- _______________________
-< Message for you, sir. >
- -----------------------
-''')
-IT_FAILED.append(r'''
- ____________________
-/ We are the knights \
-\ who say.... NI!    /
- --------------------
-''')
-IT_FAILED.append(r'''
- ____________________
-/ Now go away or I   \
-| shall taunt you a  |
-\ second time.       /
- --------------------
-''')
-IT_FAILED.append(r'''
- ____________________
-/ It's time for the  \
-| penguin on top of  |
-| your television to |
-\ explode.           /
- --------------------
-''')
-IT_FAILED.append(r'''
- _____________________
-/ We were in the nick \
-| of time. You were   |
-\ in great peril.     /
- ---------------------
-''')
-IT_FAILED.append(r'''
- ___________________
-/ I know a dead     \
-| parrot when I see |
-| one, and I'm      |
-| looking at one    |
-\ right now.        /
- -------------------
-''')
-IT_FAILED.append(r'''
- _________________
-/ Welcome to the  \
-| National Cheese |
-\ Emporium        /
- -----------------
-''')
-IT_FAILED.append(r'''
- ______________________
-/ What is the airspeed \
-| velocity of an       |
-\ unladen swallow?     /
- ----------------------
-''')
-IT_FAILED.append(r'''
- ______________________
-/ Now stand aside,     \
-\ worthy adversary.    /
- ----------------------
-''')
-IT_FAILED.append(r'''
- ___________________
-/ Okay, we'll call  \
-\ it a draw.        /
- -------------------
-''')
-IT_FAILED.append(r'''
- _______________
-/ She turned me \
-\ into a newt!  /
- ---------------
-''')
-IT_FAILED.append(r'''
- ___________________
-< Fetchez la vache! >
- -------------------
-''')
-IT_FAILED.append(r'''
- __________________________
-/ We'd better not risk     \
-| another frontal assault, |
-\ that rabbit's dynamite.  /
- --------------------------
-''')
-IT_FAILED.append(r'''
- ______________________
-/ This is supposed to  \
-| be a happy occasion. |
-| Let's not bicker and |
-| argue about who      |
-\ killed who.          /
- ----------------------
-''')
-IT_FAILED.append(r'''
- _______________________
-< You have been borked. >
- -----------------------
-''')
-IT_FAILED.append(r'''
- __________________
-/ We used to dream  \
-| of living in a    |
-\ corridor!         /
- -------------------
-''')
 
 LOG = logging.getLogger(__name__)
 
@@ -677,16 +442,27 @@ def prettify_yaml(obj):
     return formatted
 
 
+def _pick_message(pattern):
+    if not pattern:
+        return ""
+    expanded_pattern = sh.joinpths(settings.MESSAGING_DIR, pattern)
+    file_matches = glob.glob(expanded_pattern)
+    file_matches = [f for f in file_matches if sh.isfile(f)]
+    try:
+        file_selected = random.choice(file_matches)
+        with open(file_selected, 'r') as fh:
+            contents = fh.read()
+        return contents.strip("\n\r")
+    except (IndexError, IOError):
+        return ''
+
+
 def _get_welcome_stack():
-    msg = random.choice(STACKERS)
-    msg = msg.strip("\n\r")
-    return msg
+    return _pick_message("stacks.*")
 
 
 def _welcome_slang():
-    msg = random.choice(WELCOMES)
-    msg = msg.strip("\n\r")
-    return msg
+    return _pick_message("welcome.*")
 
 
 def _color_blob(text, text_color):
@@ -699,10 +475,10 @@ def _color_blob(text, text_color):
 
 
 def _goodbye_header(worked):
-    take_from = IT_WORKED
+    take_from = _pick_message("success.*")
     apply_color = 'green'
     if not worked:
-        take_from = IT_FAILED
+        take_from = _pick_message("fails.*")
         apply_color = 'red'
     msg = random.choice(take_from)
     msg = msg.strip("\n\r")
