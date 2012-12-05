@@ -204,6 +204,9 @@ components:
             package:
                 name: python-unittest2
                 removable: false
+        -   name: keyring
+            package:
+                name: python-keyring
         -   name: webob
             package:
                 name: python-webob1.0
@@ -445,9 +448,6 @@ components:
         pips:
         -   name: cliff
         pip_to_package:
-        -   name: keyring
-            package:
-                name: python-keyring
     quantum-client:
         action_classes:
             install: anvil.components:PythonInstallComponent
