@@ -135,46 +135,47 @@ class DBInstaller(comp.PkgInstallComponent):
 
 
 class DBRuntime(comp.ProgramRuntime):
-    def __init__(self, *args, **kargs):
-        comp.ProgramRuntime.__init__(self, *args, **kargs)
-
-    def _get_run_actions(self, act, exception_cls):
+    def _get_command(self, action):
         db_type = self.get_option("type")
         distro_options = self.distro.get_command_config(db_type)
         if distro_options is None:
-            raise NotImplementedError(BASE_ERROR % (act, db_type))
-        return self.distro.get_command(db_type, act)
+            raise NotImplementedError(BASE_ERROR % (action, db_type))
+        return self.distro.get_command(db_type, action)
 
     @property
-    def apps_to_start(self):
+    def applications(self):
         db_type = self.get_option("type")
-        return [db_type]
+        return [
+            comp.Program(db_type),
+        ]
 
+    def _run_action(self, action, check_exit_code=True):
+        cmd = self._get_command(action)
+        if not cmd:
+            raise NotImplementedError("No distro command provided to perform action %r" % (action))
+        return sh.execute(*cmd, run_as_root=True, check_exit_code=check_exit_code)
+    
     def start(self):
-        if self.status()[0].status != comp.STATUS_STARTED:
-            start_cmd = self._get_run_actions('start', excp.StartException)
-            sh.execute(*start_cmd, run_as_root=True, check_exit_code=True)
+        if self.statii()[0].status != comp.STATUS_STARTED:
+            self._run_action('start')
             return 1
         else:
             return 0
 
     def stop(self):
-        if self.status()[0].status != comp.STATUS_STOPPED:
-            stop_cmd = self._get_run_actions('stop', excp.StopException)
-            sh.execute(*stop_cmd, run_as_root=True, check_exit_code=True)
+        if self.statii()[0].status != comp.STATUS_STOPPED:
+            self._run_action('stop')
             return 1
         else:
             return 0
 
     def restart(self):
         LOG.info("Restarting your database.")
-        restart_cmd = self._get_run_actions('restart', excp.RestartException)
-        sh.execute(*restart_cmd, run_as_root=True, check_exit_code=True)
+        self._run_action('restart')
         return 1
 
-    def status(self):
-        status_cmd = self._get_run_actions('status', excp.StatusException)
-        (sysout, stderr) = sh.execute(*status_cmd, run_as_root=True, check_exit_code=False)
+    def statii(self):
+        (sysout, stderr) = self._run_action('status', False)
         combined = (sysout + stderr).lower()
         st = comp.STATUS_UNKNOWN
         if combined.find("running") != -1:
@@ -182,7 +183,7 @@ class DBRuntime(comp.ProgramRuntime):
         elif utils.has_any(combined, 'stop', 'unrecognized'):
             st = comp.STATUS_STOPPED
         return [
-            comp.ProgramStatus(name=self.get_option("type"),
+            comp.ProgramStatus(name=self.applications[0].name,
                                status=st,
                                details=(sysout + stderr).strip()),
         ]

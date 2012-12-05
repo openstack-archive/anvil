@@ -40,19 +40,18 @@ class NoVNCInstaller(comp.PythonInstallComponent):
 
 class NoVNCRuntime(comp.PythonRuntime):
     @property
-    def apps_to_start(self):
+    def applications(self):
         apps = []
-        for app_name in APP_OPTIONS.keys():
-            apps.append({
-                'name': app_name,
-                'path': sh.joinpths(self.get_option('app_dir'), UTIL_DIR, app_name),
-            })
+        for (name, argv) in APP_OPTIONS.items():
+            path = sh.joinpths(self.get_option('app_dir'), UTIL_DIR, name)
+            if sh.is_executable(path):
+                apps.append(comp.Program(name, path, argv=argv))
         return apps
 
-    def app_params(self, app_name):
-        params = comp.ProgramRuntime.app_params(self, app_name)
+    def app_params(self, program):
+        params = comp.ProgramRuntime.app_params(self, program)
         nova_comp_name = self.get_option('nova-component')
-        if app_name == VNC_PROXY_APP:
+        if program.name == VNC_PROXY_APP:
             if nova_comp_name in self.instances:
                 # FIXME(harlowja): Have to reach into the nova component to get the config path (puke)
                 nova_runtime = self.instances[nova_comp_name]
@@ -60,6 +59,3 @@ class NoVNCRuntime(comp.PythonRuntime):
             else:
                 raise RuntimeError("NoVNC can not be started without the location of the nova configuration file")
         return params
-
-    def app_options(self, app):
-        return APP_OPTIONS.get(app)

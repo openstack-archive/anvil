@@ -76,27 +76,24 @@ class RabbitInstaller(comp.PkgInstallComponent):
 
 
 class RabbitRuntime(comp.ProgramRuntime):
-    def __init__(self, *args, **kargs):
-        comp.ProgramRuntime.__init__(self, *args, **kargs)
-        self.wait_time = self.get_int_option('service_wait_seconds')
-
     def start(self):
-        if self.status()[0].status != comp.STATUS_STARTED:
-            self._run_cmd(self.distro.get_command('rabbit-mq', 'start'))
+        if self.statii()[0].status != comp.STATUS_STARTED:
+            self._run_action('start')
             return 1
         else:
             return 0
 
     @property
-    def apps_to_start(self):
-        return ['rabbit-mq']
+    def applications(self):
+        return [
+            comp.Program('rabbit-mq'),
+        ]
 
-    def status(self):
+    def statii(self):
         # This has got to be the worst status output.
         #
         # I have ever seen (its like a weird mix json+crap)
-        status_cmd = self.distro.get_command('rabbit-mq', 'status')
-        (sysout, stderr) = sh.execute(*status_cmd, check_exit_code=False, run_as_root=True)
+        (sysout, stderr) = self._run_action('status', check_exit_code=False)
         st = comp.STATUS_UNKNOWN
         combined = (sysout + stderr).lower()
         if utils.has_any(combined, 'nodedown', "unable to connect to node", 'unrecognized'):
@@ -108,7 +105,10 @@ class RabbitRuntime(comp.ProgramRuntime):
                                details=(sysout + stderr).strip()),
         ]
 
-    def _run_cmd(self, cmd, check_exit=True):
+    def _run_action(self, action, check_exit_code=True):
+        cmd = self.distro.get_command('rabbit-mq', action)
+        if not cmd:
+            raise NotImplementedError("No distro command provided to perform action %r" % (action))
         # This seems to fix one of the bugs with rabbit mq starting and stopping
         # not cool, possibly connected to the following bugs:
         #
@@ -116,18 +116,24 @@ class RabbitRuntime(comp.ProgramRuntime):
         # See: https://bugs.launchpad.net/ubuntu/+source/rabbitmq-server/+bug/878600
         #
         # RHEL seems to have this bug also...
-        with TemporaryFile() as f:
-            return sh.execute(*cmd, run_as_root=True,
-                        stdout_fh=f, stderr_fh=f,
-                        check_exit_code=check_exit)
+        with TemporaryFile() as s_fh:
+            with TemporaryFile() as e_fh:
+                sh.execute(*cmd, run_as_root=True,
+                           stdout_fh=s_fh, stderr_fh=e_fh,
+                           check_exit_code=check_exit_code)
+                # Read from the file handles instead of the typical output...
+                for a_fh in [s_fh, e_fh]:
+                    a_fh.flush()
+                    a_fh.seek(0)
+                return (s_fh.read(), e_fh.read())
 
     def restart(self):
-        self._run_cmd(self.distro.get_command('rabbit-mq', 'restart'))
+        self._run_action('restart')
         return 1
 
     def stop(self):
-        if self.status()[0].status != comp.STATUS_STOPPED:
-            self._run_cmd(self.distro.get_command('rabbit-mq', 'stop'))
+        if self.statii()[0].status != comp.STATUS_STOPPED:
+            self._run_action('stop')
             return 1
         else:
             return 0

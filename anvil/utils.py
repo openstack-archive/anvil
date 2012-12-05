@@ -455,6 +455,7 @@ def _pick_message(pattern, def_message="This page is intentionally left blank.")
         contents = contents.strip("\n\r")
         if not contents:
             contents = def_message
+        return contents
     except (IndexError, IOError):
         return def_message
 
@@ -477,13 +478,11 @@ def _color_blob(text, text_color):
 
 
 def _goodbye_header(worked):
-    take_from = _pick_message("success.*")
+    msg = _pick_message("success.*")
     apply_color = 'green'
     if not worked:
-        take_from = _pick_message("fails.*")
+        msg = _pick_message("fails.*")
         apply_color = 'red'
-    msg = random.choice(take_from)
-    msg = msg.strip("\n\r")
     return _color_blob(msg, apply_color)
 
 

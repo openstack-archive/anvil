@@ -16,11 +16,6 @@
 
 import io
 
-try:
-    from collections import OrderedDict
-except ImportError:
-    from ordereddict import OrderedDict
-
 from anvil import cfg
 from anvil import colorizer
 from anvil import components as comp
@@ -127,7 +122,7 @@ class NovaInstaller(comp.PythonInstallComponent):
 
     @property
     def env_exports(self):
-        to_set = OrderedDict()
+        to_set = utils.OrderedDict()
         to_set['OS_COMPUTE_API_VERSION'] = self.get_option('nova_version')
         n_params = nhelper.get_shared_params(**self.options)
         for (endpoint, details) in n_params['endpoints'].items():
@@ -288,16 +283,13 @@ class NovaRuntime(comp.PythonRuntime):
         self._do_network_init()
 
     @property
-    def apps_to_start(self):
+    def applications(self):
         apps = []
         for (name, _values) in self.subsystems.items():
-            real_name = "nova-%s" % (name)
-            app_pth = sh.joinpths(self.bin_dir, real_name)
-            if sh.is_executable(app_pth):
-                apps.append({
-                    'name': real_name,
-                    'path': app_pth,
-                })
+            name = "nova-%s" % (name.lower())
+            path = sh.joinpths(self.bin_dir, name)
+            if sh.is_executable(path):
+                apps.append(comp.Program(name, path, argv=self._fetch_argv(name)))
         return apps
 
     def pre_start(self):
@@ -317,13 +309,15 @@ class NovaRuntime(comp.PythonRuntime):
                         (virt_type, lv.DEF_VIRT_TYPE, e))
                 raise excp.StartException(msg)
 
-    def app_params(self, app_name):
-        params = comp.PythonRuntime.app_params(self, app_name)
+    def app_params(self, program):
+        params = comp.PythonRuntime.app_params(self, program)
         params['CFG_FILE'] = self.config_path
         return params
 
-    def app_options(self, app):
-        return ['--config-file', '$CFG_FILE']
+    def _fetch_argv(self, name):
+        return [
+            '--config-file', '$CFG_FILE',
+        ]
 
 
 class NovaTester(comp.PythonTestingComponent):

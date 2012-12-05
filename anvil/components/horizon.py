@@ -186,29 +186,31 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
 class HorizonRuntime(comp.ProgramRuntime):
     def start(self):
-        if self.status()[0].status != comp.STATUS_STARTED:
-            start_cmd = self.distro.get_command('apache', 'start')
-            sh.execute(*start_cmd, run_as_root=True, check_exit_code=True)
+        if self.statii()[0].status != comp.STATUS_STARTED:
+            self._run_action('start')
             return 1
         else:
             return 0
 
+    def _run_action(self, action, check_exit_code=True):
+        cmd = self.distro.get_command('apache', action)
+        if not cmd:
+            raise NotImplementedError("No distro command provided to perform action %r" % (action))
+        return sh.execute(*cmd, run_as_root=True, check_exit_code=check_exit_code)
+
     def restart(self):
-        restart_cmd = self.distro.get_command('apache', 'restart')
-        sh.execute(*restart_cmd, run_as_root=True, check_exit_code=True)
+        self._run_action('restart')
         return 1
 
     def stop(self):
-        if self.status()[0].status != comp.STATUS_STOPPED:
-            stop_cmd = self.distro.get_command('apache', 'stop')
-            sh.execute(*stop_cmd, run_as_root=True, check_exit_code=True)
+        if self.statii()[0].status != comp.STATUS_STOPPED:
+            self._run_action('stop')
             return 1
         else:
             return 0
 
-    def status(self):
-        status_cmd = self.distro.get_command('apache', 'status')
-        (sysout, stderr) = sh.execute(*status_cmd, run_as_root=True, check_exit_code=False)
+    def statii(self):
+        (sysout, stderr) = self._run_action('status', check_exit_code=False)
         combined = (sysout + stderr).lower()
         st = comp.STATUS_UNKNOWN
         if combined.find("is running") != -1:

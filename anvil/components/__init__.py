@@ -56,21 +56,6 @@ from anvil.packaging.helpers import pip_helper
 LOG = logging.getLogger(__name__)
 
 ####
-#### STATUS CONSTANTS
-####
-STATUS_INSTALLED = 'installed'
-STATUS_STARTED = "started"
-STATUS_STOPPED = "stopped"
-STATUS_UNKNOWN = "unknown"
-
-
-class ProgramStatus(object):
-    def __init__(self, status, name=None, details=''):
-        self.name = name
-        self.status = status
-        self.details = details
-
-####
 #### Utils...
 ####
 
@@ -551,21 +536,53 @@ class PythonInstallComponent(PkgInstallComponent):
 #### RUNTIME CLASSES
 ####
 
+DEFAULT_RUNNER = 'anvil.runners.fork:ForkRunner'
+
+####
+#### STATUS CONSTANTS
+####
+STATUS_INSTALLED = 'installed'
+STATUS_STARTED = "started"
+STATUS_STOPPED = "stopped"
+STATUS_UNKNOWN = "unknown"
+
+
+class ProgramStatus(object):
+    def __init__(self, status, name=None, details=''):
+        self.name = name
+        self.status = status
+        self.details = details
+
+
+class Program(object):
+    def __init__(self, name, path=None, working_dir=None, argv=None):
+        self.name = name
+        if path is None:
+            self.path = name
+        else:
+            self.path = path
+        self.working_dir = working_dir
+        if argv is None:
+            self.argv = tuple()
+        else:
+            self.argv = tuple(argv)
+
+    def __str__(self):
+        what = str(self.name)
+        if self.path:
+            what += " (%s)" % (self.path)
+        return what
+
+
 class ProgramRuntime(component.Component):
     @property
-    def apps_to_start(self):
+    def applications(self):
+        # A list of applications since a single component sometimes
+        # has a list of programs to start (ie nova) instead of a single application (ie the db)
         return []
-
-    def app_options(self, app_name):
-        return []
-
-    def app_params(self, app_name):
-        mp = dict(self.params)
-        if app_name:
-            mp['APP_NAME'] = app_name
-        return mp
 
     def restart(self):
+        # How many applications restarted
         return 0
 
     def post_start(self):
@@ -574,40 +591,51 @@ class ProgramRuntime(component.Component):
     def pre_start(self):
         pass
 
-    def status(self):
+    def statii(self):
+        # A list of statuses since a single component sometimes
+        # has a list of programs to report on (ie nova) instead of a single application (ie the db)
         return []
 
     def start(self):
+        # How many applications started
         return 0
 
     def stop(self):
+        # How many applications stopped
         return 0
 
+    # TODO(harlowja): seems like this could be a mixin?
     def wait_active(self, between_wait=1, max_attempts=5):
-        rt_name = self.name
-        num_started = len(self.apps_to_start)
+        # Attempt to wait until all potentially started applications
+        # are actually started (for whatever defintion of started is applicable)
+        # for up to a given amount of attempts and wait time between attempts.
+        num_started = len(self.applications)
         if not num_started:
-            raise excp.StartException("No %r programs started, can not wait for them to become active..." % (rt_name))
+            raise excp.StatusException("No %r programs started, can not wait for them to become active..." % (self.name))
 
         def waiter(try_num):
-            LOG.info("Waiting %s seconds for component %s programs to start.", between_wait, colorizer.quote(rt_name))
+            LOG.info("Waiting %s seconds for component %s programs to start.", between_wait, colorizer.quote(self.name))
             LOG.info("Please wait...")
             sh.sleep(between_wait)
 
         for i in range(0, max_attempts):
-            statii = self.status()
-            if len(statii) == num_started:
+            statii = self.statii()
+            if len(statii) >= num_started:  # >= if someone reports more than started...
                 not_worked = []
-                for p_status in statii:
-                    if p_status.status != STATUS_STARTED:
-                        not_worked.append(p_status)
+                for p in statii:
+                    if p.status != STATUS_STARTED:
+                        not_worked.append(p)
                 if len(not_worked) == 0:
                     return
+            else:
+                # Eck less applications were found with status then what were started!
+                LOG.warn("%s less applications reported status than were actually started!",
+                         num_started - len(statii))
             waiter(i + 1)
 
-        tot_time = max(0, between_wait * max_attempts)
-        raise excp.StartException("Failed waiting %s seconds for component %r programs to become active..."
-                                  % (tot_time, rt_name))
+        tot_time = max(0, (between_wait * max_attempts))
+        raise excp.StatusException("Failed waiting %s seconds for component %r programs to become active..."
+                                   % (tot_time, self.name))
 
 
 class EmptyRuntime(ProgramRuntime):
@@ -617,85 +645,130 @@ class EmptyRuntime(ProgramRuntime):
 class PythonRuntime(ProgramRuntime):
     def __init__(self, *args, **kargs):
         ProgramRuntime.__init__(self, *args, **kargs)
-        trace_fn = tr.trace_filename(self.get_option('trace_dir'), 'start')
-        self.tracewriter = tr.TraceWriter(trace_fn, break_if_there=True)
-        self.tracereader = tr.TraceReader(trace_fn)
+        start_trace = tr.trace_filename(self.get_option('trace_dir'), 'start')
+        self.tracewriter = tr.TraceWriter(start_trace, break_if_there=True)
+        self.tracereader = tr.TraceReader(start_trace)
+
+    def app_params(self, program):
+        params = dict(self.params)
+        if program and program.name:
+            params['APP_NAME'] = str(program.name)
+        return params
 
     def start(self):
-        # Select how we are going to start it
-        run_type = self.get_option("run_type", default_value='anvil.runners.fork:ForkRunner')
-        starter = importer.construct_entry_point(run_type, self)
-        am_started = 0
-        for app_info in self.apps_to_start:
-            self._start_app(app_info, run_type, starter)
-            self._post_app_start(app_info)
-            am_started += 1
-        return am_started
+        # Perform a check just to make sure said programs aren't already started and bail out
+        # so that it we don't unintentionally start new ones and thus causing confusion for all
+        # involved...
+        what_may_already_be_started = []
+        try:
+            what_may_already_be_started = self.tracereader.apps_started()
+        except excp.NoTraceException:
+            pass
+        if what_may_already_be_started:
+            msg = "%s programs of component %s may already be running, did you forget to stop those?"
+            raise excp.StartException(msg % (len(what_may_already_be_started), self.name))
 
-    def _start_app(self, app_info, run_type, starter):
-        app_name = app_info["name"]
-        app_pth = app_info.get("path", app_name)
-        app_dir = app_info.get("app_dir", self.get_option('app_dir'))
-        app_options = self.app_options(app_name)
-        app_params = self.app_params(app_name)
-        program_opts = [utils.expand_template(c, app_params) for c in app_options]
-        LOG.debug("Starting %r using %r", app_name, starter)
-        details_fn = starter.start(app_name, app_pth=app_pth, app_dir=app_dir, opts=program_opts)
-        LOG.info("Started sub-program %s.", colorizer.quote(app_name))
+        # Select how we are going to start it and get on with the show...
+        runner_entry_point = self.get_option("run_type", default_value=DEFAULT_RUNNER)
+        starter_args = [self, runner_entry_point]
+        starter = importer.construct_entry_point(runner_entry_point, *starter_args)
+        amount_started = 0
+        for program in self.applications:
+            self._start_app(program, starter)
+            amount_started += 1
+        return amount_started
+
+    def _start_app(self, program, starter):
+        app_working_dir = program.working_dir
+        if not app_working_dir:
+            app_working_dir = self.get_option('app_dir')
+
+        # Un-templatize whatever argv (program options) the program has specified
+        # with whatever program params were retrieved to create the 'real' set
+        # of program options (if applicable)
+        app_params = self.app_params(program)
+        if app_params:
+            app_argv = [utils.expand_template(arg, app_params) for arg in program.argv]
+        else:
+            app_argv = program.argv
+        LOG.debug("Starting %r using a %r", program.name, starter)
+
+        # TODO(harlowja): clean this function params up (should just take a program)
+        details_path = starter.start(program.name,
+                                     app_pth=program.path,
+                                     app_dir=app_working_dir,
+                                     opts=app_argv)
+
         # This trace is used to locate details about what/how to stop
-        self.tracewriter.app_started(app_name, details_fn, run_type)
+        LOG.info("Started program %s under component %s.", colorizer.quote(program.name), self.name)
+        self.tracewriter.app_started(program.name, details_path, start.name)
 
-    def _post_app_start(self, app_info):
-        if 'sleep_time' in app_info:
-            LOG.info("%s requested a %s second sleep time, please wait...",
-                     colorizer.quote(app_info.get('name')), app_info.get('sleep_time'))
-            sh.sleep(int(app_info.get('sleep_time')))
-
-    def _locate_investigators(self, apps_started):
-        investigator_created = {}
+    def _locate_investigators(self, applications_started):
+        # Recreate the runners that can be used to dive deeper into the applications list
+        # that was started (a 3 tuple of (name, trace, who_started)).
+        investigators_created = {}
         to_investigate = []
-        for (app_name, _trace_fn, run_type) in apps_started:
-            investigator = investigator_created.get(run_type)
+        for (name, _trace, who_started) in applications_started:
+            investigator = investigators_created.get(who_started)
             if investigator is None:
                 try:
-                    investigator = importer.construct_entry_point(run_type, self)
-                    investigator_created[run_type] = investigator
+                    investigator_args = [self, who_started]
+                    investigator = importer.construct_entry_point(who_started, *investigator_args)
+                    investigators_created[who_started] = investigator
                 except RuntimeError as e:
                     LOG.warn("Could not load class %s which should be used to investigate %s: %s",
-                             colorizer.quote(run_type), colorizer.quote(app_name), e)
+                             colorizer.quote(who_started), colorizer.quote(name), e)
                     continue
-            to_investigate.append((app_name, investigator))
+            to_investigate.append((name, investigator))
         return to_investigate
 
     def stop(self):
-        # Anything to stop??
-        killed_am = 0
-        apps_started = 0
+        # Anything to stop in the first place??
+        what_was_started = []
         try:
-            apps_started = self.tracereader.apps_started()
+            what_was_started = self.tracereader.apps_started()
         except excp.NoTraceException:
             pass
-        if not apps_started:
-            return killed_am
-        to_kill = self._locate_investigators(apps_started)
-        for (app_name, handler) in to_kill:
-            handler.stop(app_name)
-            killed_am += 1
-        if len(apps_started) == killed_am:
-            sh.unlink(self.tracereader.filename())
-        return killed_am
+        if not what_was_started:
+            return 0
 
-    def status(self):
-        statii = []
-        apps_started = None
+        # Get the investigators/runners which can be used
+        # to actually do the stopping and attempt to perform said stop.
+        applications_stopped = []
+        for (name, handler) in self._locate_investigators(what_was_started):
+            handler.stop(name)
+            applications_stopped.append(name)
+        if applications_stopped:
+            utils.log_iterable(applications_stopped,
+                               header="Stopped %s programs started under %s component" % (len(applications_stopped), self.name),
+                               logger=LOG)
+
+        # Only if we stopped the amount which was supposedly started can
+        # we actually remove the trace where those applications have been
+        # marked as started in (ie the connection back to how they were started)
+        if len(applications_stopped) < len(what_was_started):
+            diff = len(what_was_started) - len(applications_stopped)
+            LOG.warn(("%s less applications were stopped than were started, please check out %s"
+                      " to stop these program manually."), diff, colorizer.quote(self.tracereader.filename(), quote_color='yellow'))
+        else:
+            sh.unlink(self.tracereader.filename())
+
+        return len(applications_stopped)
+
+    def statii(self):
+        # Anything to get status on in the first place??
+        what_was_started = []
         try:
-            apps_started = self.tracereader.apps_started()
+            what_was_started = self.tracereader.apps_started()
         except excp.NoTraceException:
             pass
-        if not apps_started:
-            return statii
-        to_check = self._locate_investigators(apps_started)
-        for (name, handler) in to_check:
+        if not what_was_started:
+            return []
+
+        # Get the investigators/runners which can be used
+        # to actually do the status inquiry and attempt to perform said inquiry.
+        statii = []
+        for (name, handler) in self._locate_investigators(what_was_started):
             (status, details) = handler.status(name)
             statii.append(ProgramStatus(name=name,
                                         status=status,
@@ -856,7 +929,7 @@ class PythonTestingComponent(component.Component):
             cmd.append('--nologcapture')
         for e in self._get_test_exclusions():
             cmd.append('--exclude=%s' % (e))
-        xunit_fn = self.get_option("xunit_filename"):
+        xunit_fn = self.get_option("xunit_filename")
         if xunit_fn:
             cmd.append("--with-xunit")
             cmd.append("--xunit-file=%s" % (xunit_fn))
