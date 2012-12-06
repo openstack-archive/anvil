@@ -701,7 +701,7 @@ class PythonRuntime(ProgramRuntime):
 
         # This trace is used to locate details about what/how to stop
         LOG.info("Started program %s under component %s.", colorizer.quote(program.name), self.name)
-        self.tracewriter.app_started(program.name, details_path, start.name)
+        self.tracewriter.app_started(program.name, details_path, starter.name)
 
     def _locate_investigators(self, applications_started):
         # Recreate the runners that can be used to dive deeper into the applications list
