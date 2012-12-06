@@ -223,9 +223,6 @@ components:
             package:
                 name: python-unittest2
                 removable: false
-        -   name: keyring
-            package:
-                name: python-keyring
         -   name: webob
             package:
                 name: python-webob1.0
@@ -241,6 +238,8 @@ components:
         # Pips that aren't packages yet (or versions aren't right...)
         -   name: coverage
         -   name: distribute
+            removable: false
+        -   name: keyring # Shared at least by openstack-client, keystone-client (+anvil itself)
             removable: false
         -   name: lxml
             version: "2.3.5"
@@ -525,4 +524,3 @@ components:
             test: anvil.components:PythonTestingComponent
             uninstall: anvil.components:PythonUninstallComponent
 ...
-
