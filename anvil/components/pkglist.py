@@ -24,6 +24,7 @@ class Installer(comp.PythonInstallComponent):
         pkg_list = super(Installer, self).packages
         if not pkg_list:
             pkg_list = []
+        # If any pips that have mapped packages, suck them out as well
         pips_to_packages = self.pips_to_packages
         for pip_to_package in pips_to_packages:
             if 'package' in pip_to_package:

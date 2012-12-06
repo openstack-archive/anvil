@@ -211,22 +211,19 @@ class GlanceRuntime(comp.PythonRuntime):
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
 
     @property
-    def apps_to_start(self):
+    def applications(self):
         apps = []
         for (name, _values) in self.subsystems.items():
-            real_name = "glance-%s" % name
-            app_pth = sh.joinpths(self.bin_dir, real_name)
-            if sh.is_executable(app_pth):
-                apps.append({
-                    'name': real_name,
-                    'path': app_pth,
-                })
+            name = "glance-%s" % (name.lower())
+            path = sh.joinpths(self.bin_dir, name)
+            if sh.is_executable(path):
+                apps.append(comp.Program(name, path, argv=self._fetch_argv(name)))
         return apps
 
-    def app_options(self, app):
-        if app.find('api') != -1:
+    def _fetch_argv(self, name):
+        if name.find('api') != -1:
             return ['--config-file', sh.joinpths('$CONFIG_DIR', API_CONF)]
-        elif app.find('registry') != -1:
+        elif name.find('registry') != -1:
             return ['--config-file', sh.joinpths('$CONFIG_DIR', REG_CONF)]
         else:
             return []

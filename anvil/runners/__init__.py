@@ -23,8 +23,9 @@ from anvil.components import STATUS_UNKNOWN
 class Runner(object):
     __meta__ = abc.ABCMeta
 
-    def __init__(self, runtime):
+    def __init__(self, runtime, name):
         self.runtime = weakref.proxy(runtime)
+        self.name = name
 
     def start(self, app_name, app_pth, app_dir, opts):
         # Returns a file name that contains what was started

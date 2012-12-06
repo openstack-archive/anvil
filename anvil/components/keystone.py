@@ -246,19 +246,16 @@ class KeystoneRuntime(comp.PythonRuntime):
             LOG.info("If you wish to re-run initialization, delete %s", colorizer.quote(self.init_fn))
 
     @property
-    def apps_to_start(self):
+    def applications(self):
         apps = []
         for (name, _values) in self.subsystems.items():
-            real_name = "keystone-%s" % (name)
-            app_pth = sh.joinpths(self.bin_dir, real_name)
-            if sh.is_executable(app_pth):
-                apps.append({
-                    'name': real_name,
-                    'path': app_pth,
-                })
+            name = "keystone-%s" % (name.lower())
+            path = sh.joinpths(self.bin_dir, name)
+            if sh.is_executable(path):
+                apps.append(comp.Program(name, path, argv=self._fetch_argv(name)))
         return apps
 
-    def app_options(self, app):
+    def _fetch_argv(self, name):
         return [
             '--config-file=%s' % (sh.joinpths('$CONFIG_DIR', ROOT_CONF)),
             "--debug",
