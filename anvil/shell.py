@@ -31,7 +31,6 @@ import psutil  # http://code.google.com/p/psutil/wiki/Documentation
 from anvil import env
 from anvil import exceptions as excp
 from anvil import log as logging
-from anvil import type_utils as tu
 
 LOG = logging.getLogger(__name__)
 
