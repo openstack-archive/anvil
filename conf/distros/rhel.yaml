@@ -204,9 +204,6 @@ components:
             package:
                 name: python-unittest2
                 removable: false
-        -   name: keyring
-            package:
-                name: python-keyring
         -   name: webob
             package:
                 name: python-webob1.0
@@ -223,6 +220,8 @@ components:
         -   name: cmd2
         -   name: coverage
         -   name: distribute
+            removable: false
+        -   name: keyring # Shared at least by openstack-client, keystone-client (+anvil itself)
             removable: false
         -   name: lxml
             version: "2.3.5"
