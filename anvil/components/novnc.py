@@ -21,11 +21,6 @@ from anvil import shell as sh
 UTIL_DIR = 'utils'
 
 VNC_PROXY_APP = 'nova-novncproxy'
-APP_OPTIONS = {
-    # This reaches into the nova configuration file
-    # TODO(harlowja) can we stop that?
-    VNC_PROXY_APP: ['--config-file', '$NOVA_CONF', '--web', '.'],
-}
 
 
 class NoVNCUninstaller(comp.PythonUninstallComponent):
@@ -35,27 +30,24 @@ class NoVNCUninstaller(comp.PythonUninstallComponent):
 class NoVNCInstaller(comp.PythonInstallComponent):
     @property
     def python_directories(self):
+        # Its python but not one that we need to run setup.py in...
         return {}
 
 
 class NoVNCRuntime(comp.PythonRuntime):
     @property
     def applications(self):
-        apps = []
-        for (name, argv) in APP_OPTIONS.items():
-            path = sh.joinpths(self.get_option('app_dir'), UTIL_DIR, name)
-            if sh.is_executable(path):
-                apps.append(comp.Program(name, path, argv=argv))
-        return apps
+        path = sh.joinpths(self.get_option('app_dir'), UTIL_DIR, VNC_PROXY_APP)
+        argv = ['--config-file', self._get_nova_conf(), '--web', '.']
+        return [
+            comp.Program(VNC_PROXY_APP, path, argv=argv),
+        ]
 
-    def app_params(self, program):
-        params = comp.ProgramRuntime.app_params(self, program)
+    def _get_nova_conf(self):
         nova_comp_name = self.get_option('nova-component')
-        if program.name == VNC_PROXY_APP:
-            if nova_comp_name in self.instances:
-                # FIXME(harlowja): Have to reach into the nova component to get the config path (puke)
-                nova_runtime = self.instances[nova_comp_name]
-                params['NOVA_CONF'] = nova_runtime.config_path
-            else:
-                raise RuntimeError("NoVNC can not be started without the location of the nova configuration file")
-        return params
+        if nova_comp_name in self.instances:
+            # FIXME(harlowja): Have to reach into the nova component to get the config path (puke)
+            nova_runtime = self.instances[nova_comp_name]
+            return nova_runtime.config_path
+        else:
+            raise RuntimeError("NoVNC can not be started without the location of the nova configuration file")

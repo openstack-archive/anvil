@@ -16,7 +16,6 @@
 
 from anvil import colorizer
 from anvil import components as comp
-from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
@@ -154,7 +153,7 @@ class DBRuntime(comp.ProgramRuntime):
         if not cmd:
             raise NotImplementedError("No distro command provided to perform action %r" % (action))
         return sh.execute(*cmd, run_as_root=True, check_exit_code=check_exit_code)
-    
+
     def start(self):
         if self.statii()[0].status != comp.STATUS_STARTED:
             self._run_action('start')
