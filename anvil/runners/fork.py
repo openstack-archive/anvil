@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import errno
 import json
 
 from anvil import exceptions as excp
@@ -47,10 +48,10 @@ class ForkFiles(object):
         #
         # Typically said file has a integer pid in it so load said file
         # and covert its contents to an int or fail trying...
-        if self.pid and sh.isfile(self.pid):
+        if self.pid:
             try:
                 return int(sh.load_file(self.pid).strip())
-            except (ValueError, TypeError, IOError):
+            except (ValueError, TypeError):
                 return None
         else:
             return None
@@ -81,14 +82,28 @@ class ForkRunner(base.Runner):
             raise excp.StopException(msg)
         with sh.Rooted(True):
             fork_fns = self._form_file_names(app_name)
-            pid = fork_fns.extract_pid()
-            if pid is None:
+            skip_kill = True
+            pid = None
+            try:
+                pid = fork_fns.extract_pid()
+                skip_kill = False
+            except IOError as e:
+                if e.errno == errno.ENOENT:
+                    pass
+                else:
+                    skip_kill = False
+            if not skip_kill and pid is None:
                 msg = "Could not extract a valid pid from %r" % (fork_fns.pid)
                 raise excp.StopException(msg)
-            (killed, attempts) = sh.kill(pid)
+            # Bother trying to kill said process?
+            if not skip_kill:
+                (killed, attempts) = sh.kill(pid)
+            else:
+                (killed, attempts) = (True, 0)
             # Trash the files if it worked
             if killed:
-                LOG.debug("Killed pid '%s' after %s attempts.", pid, attempts)
+                if not skip_kill:
+                    LOG.debug("Killed pid '%s' after %s attempts.", pid, attempts)
                 for leftover_fn in fork_fns.as_list():
                     if sh.exists(leftover_fn):
                         LOG.debug("Removing forking related file %r", (leftover_fn))
