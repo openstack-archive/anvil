@@ -368,12 +368,15 @@ def explode_path(path):
 
 
 def _attempt_kill(proc, signal_type, max_try, wait_time):
+    try:
+        if not proc.is_running():
+            return (True, 0)
+    except psutil.error.NoSuchProcess:
+        return (True, 0)
+    # Be a little more forceful...
     killed = False
     attempts = 0
     for _i in range(0, max_try):
-        if not proc.is_running():
-            killed = True
-            break
         try:
             LOG.debug("Attempting to kill process %s" % (proc))
             attempts += 1
@@ -462,7 +465,10 @@ def fork(program, app_dir, pid_fn, stdout_fn, stderr_fn, *args):
 def is_running(pid):
     if is_dry_run():
         return True
-    return Process(pid).is_running()
+    try:
+        return Process(pid).is_running()
+    except psutil.error.NoSuchProcess:
+        return False
 
 
 def mkdirslist(path, tracewriter=None, adjust_suids=False):
