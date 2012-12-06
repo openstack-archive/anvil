@@ -44,7 +44,7 @@ class StatusAction(action.Action):
         return 'running'
 
     def _fetch_status(self, component):
-        return component.status()
+        return component.statii()
 
     def _quote_status(self, status):
         return colorizer.quote(status, quote_color=STATUS_COLOR_MAP.get(status, 'red'))
