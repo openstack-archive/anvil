@@ -90,6 +90,10 @@ class ExponentialBackoff(object):
             value = value * value
             yield value
 
+    def __str__(self):
+        vals = [str(v) for v in self]
+        return "Backoff %s" % (vals)
+
 
 def expand_template(contents, params):
     if not params:
@@ -135,7 +139,7 @@ def has_any(text, *look_for):
     return False
 
 
-def wait_for_url(url, max_attempts=3):
+def wait_for_url(url, max_attempts=5):
     LOG.info("Waiting for url %s to become active (max_attempts=%s)",
              colorizer.quote(url), max_attempts)
 
