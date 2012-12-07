@@ -66,13 +66,11 @@ class HorizonInstaller(comp.PythonInstallComponent):
                                      self.distro.get_command_config('apache', 'name'),
                                      'horizon_error.log')
 
-    def _filter_pip_requires_line(self, fn, line):
+    def _filter_pip_requires(self, fn, lines):
         # Knock off all nova, quantum, swift, keystone, cinder
         # clients since anvil will be making sure those are installed
-        # instead of asking pip to do it...
-        if re.search(r'([n|q|s|k|g|c]\w+client)', line, re.I):
-            return None
-        return line
+        # instead of asking setup.py to do it...
+        return [l for l in lines if not re.search(r'([n|q|s|k|g|c]\w+client)', l, re.I)]
 
     def verify(self):
         comp.PythonInstallComponent.verify(self)

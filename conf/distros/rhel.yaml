@@ -408,9 +408,6 @@ components:
         -   name: suds
             package:
                 name: python-suds
-        -   name: paramiko
-            package:
-                name: python-paramiko
         -   name: feedparser
             package:
                 name: python-feedparser
@@ -418,9 +415,8 @@ components:
             package:
                 name: MySQL-python
         pips:
-        -   name: Cheetah
-            version: "2.4.4"
-        -   name: fixtures # Seems for testing only
+        # Seems for testing only??
+        -   name: fixtures
         subsystems:
             compute:
                 packages:
