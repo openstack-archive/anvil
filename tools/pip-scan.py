@@ -29,21 +29,32 @@ def main():
                           if re.search("(test|pip)[-]requires", f, re.I)]
     requires_files = sorted(list(set(requires_files)))
     requirements = []
+    source_requirements = {}
     for fn in requires_files:
-        requirements.extend(pip_helper.parse_requirements(sh.load_file(fn)))
+        source_requirements[fn] = []
+        for req in pip_helper.parse_requirements(sh.load_file(fn)):
+            requirements.append(req)
+            source_requirements[fn].append(req)
     requirements = set(requirements)
+
     yaml_fn = sh.abspth(sys.argv[1])
     distro_yaml = utils.load_yaml(yaml_fn)
-    print("Comparing pips/pip2pkgs in %s to those found in %s" % (sys.argv[1], requires_files))
     components = distro_yaml.get('components', {})
     all_known_names = []
-    for (_c, details) in components.items():
+    components_pips = {}
+    for (c, details) in components.items():
+        components_pips[c] = []
         pip2pkgs = details.get('pip_to_package', [])
         pips = details.get('pips', [])
+        known_names = []
         for item in pip2pkgs:
-            all_known_names.append(item['name'].lower().strip())
+            known_names.append(item['name'].lower().strip())
         for item in pips:
-            all_known_names.append(item['name'].lower().strip())
+            known_names.append(item['name'].lower().strip())
+        components_pips[c].extend(known_names)
+        all_known_names.extend(known_names)
+
+    print("Comparing pips/pip2pkgs in %s to those found in %s" % (yaml_fn, requires_files))
     all_known_names = sorted(list(set(all_known_names)))
     not_needed = []
     for n in all_known_names:
@@ -52,7 +63,13 @@ def main():
     if not_needed:
         print("The following distro yaml mappings may not be needed:")
         for n in sorted(not_needed):
-            print("  + %s" % (n))
+            msg = "  + %s (" % (n)
+            # Find which components said they need this...
+            for (c, known_names) in components_pips.items():
+                if n in known_names:
+                    msg += c + ","
+            msg += ")"
+            print(msg)
     not_found = []
     for n in requirements:
         name = n.key.lower().strip()
@@ -61,7 +78,18 @@ def main():
     if not_found:
         print("The following distro yaml mappings may be required but where not found:")
         for n in sorted(not_found):
-            print("  + %s" % (n))
+            msg = "  + %s" % (n)
+            msg += " ("
+            # Find which file/s said they need this...
+            for (fn, reqs) in source_requirements.items():
+                matched = False
+                for r in reqs:
+                    if r.key.lower().strip() == name:
+                        matched = True
+                if matched:
+                    msg += fn + ","
+            msg += ")"
+            print(msg)
     return len(not_found) + len(not_needed)
 
 
