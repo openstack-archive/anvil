@@ -132,10 +132,14 @@ class ForkRunner(base.Runner):
             stdout = sh.load_file(fork_fns.stdout)
         except (IOError, ValueError, TypeError):
             pass
+        details = {
+            'STDOUT': stdout,
+            'STDERR': stderr,
+        }
         if pid is not None and sh.is_running(pid):
-            return (STATUS_STARTED, (stdout + stderr).strip())
+            return (STATUS_STARTED, details)
         else:
-            return (STATUS_UNKNOWN, (stdout + stderr).strip())
+            return (STATUS_UNKNOWN, details)
 
     def _form_file_names(self, app_name):
         # Form all files names which should be connected to the given forked application name

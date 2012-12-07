@@ -184,5 +184,8 @@ class DBRuntime(comp.ProgramRuntime):
         return [
             comp.ProgramStatus(name=self.applications[0].name,
                                status=st,
-                               details=(sysout + stderr).strip()),
+                               details={
+                                   'STDOUT': sysout,
+                                   'STDERR': stderr,
+                               }),
         ]
