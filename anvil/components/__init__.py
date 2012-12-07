@@ -426,34 +426,26 @@ class PythonInstallComponent(PkgInstallComponent):
                     p_bar.update(i + 1)
 
     def _clean_pip_requires(self):
-        # Fixup these files if they exist (sometimes they have 'junk' in them)
-        req_fns = []
-        for fn in self.requires_files:
-            if not sh.isfile(fn):
-                continue
-            req_fns.append(fn)
+        # Fixup these files if they exist, sometimes they have 'junk' in them
+        # that anvil will install instead of pip or setup.py and we don't want
+        # the setup.py file to attempt to install said dependencies since it
+        # typically picks locations that either are not what we desire or if
+        # said file contains editables, it may even pick external source directories
+        # which is what anvil is setting up as well...
+        req_fns = [f for f in self.requires_files if sh.isfile(f)]
         if req_fns:
             utils.log_iterable(req_fns, logger=LOG,
                                header="Adjusting %s pip 'requires' files" % (len(req_fns)))
             for fn in req_fns:
-                new_lines = []
-                for line in sh.load_file(fn).splitlines():
-                    s_line = line.strip()
-                    if len(s_line) == 0:
-                        continue
-                    elif s_line.startswith("#"):
-                        new_lines.append(s_line)
-                    elif not self._filter_pip_requires_line(fn, s_line):
-                        new_lines.append(("# %s" % (s_line)))
-                    else:
-                        new_lines.append(s_line)
+                old_lines = sh.load_file(fn).splitlines()
+                new_lines = self._filter_pip_requires(fn, old_lines)
                 contents = "# Cleaned on %s\n\n%s\n" % (utils.iso8601(), "\n".join(new_lines))
                 sh.write_file_and_backup(fn, contents)
         return len(req_fns)
 
-    def _filter_pip_requires_line(self, fn, line):
-        # Return none to filter or the line itself to leave alone...
-        return line
+    def _filter_pip_requires(self, fn, lines):
+        # The default does no filtering except to ensure that said lines are valid...
+        return lines
 
     def pre_install(self):
         self._verify_pip_requires()

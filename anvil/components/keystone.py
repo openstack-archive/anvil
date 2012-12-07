@@ -70,10 +70,10 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
 
-    def _filter_pip_requires_line(self, fn, line):
-        if utils.has_any(line.lower(), 'keystoneclient', 'ldap', 'http://tarballs.openstack.org', 'memcached'):
-            return None
-        return line
+    def _filter_pip_requires(self, fn, lines):
+        return [l for l in lines
+                if not utils.has_any(l.lower(), 'keystoneclient',
+                                     'ldap', 'http://tarballs.openstack.org', 'memcached')]
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)

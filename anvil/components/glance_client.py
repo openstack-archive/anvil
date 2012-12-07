@@ -18,10 +18,8 @@ from anvil import components as comp
 
 
 class GlanceClientInstaller(comp.PythonInstallComponent):
-    def _filter_pip_requires_line(self, fn, line):
-        if line.lower().find('keystoneclient') != -1:
-            return None
-        return line
+    def _filter_pip_requires(self, fn, lines):
+        return [l for l in lines if l.lower().find('keystoneclient') == -1]
 
 
 class GlanceClientTester(comp.PythonTestingComponent):

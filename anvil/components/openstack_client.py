@@ -15,17 +15,14 @@
 #    under the License.
 
 from anvil import components as comp
+from anvil import utils
 
 
 class OpenStackClientInstaller(comp.PythonInstallComponent):
-    def _filter_pip_requires_line(self, fn, line):
-        if line.lower().find('keystoneclient') != -1:
-            return None
-        if line.lower().find('novaclient') != -1:
-            return None
-        if line.lower().find('glanceclient') != -1:
-            return None
-        return line
+    def _filter_pip_requires(self, fn, lines):
+        return [l for l in lines
+                if not utils.has_any(l.lower(),
+                                     'keystoneclient', 'novaclient', 'glanceclient')]
 
 
 class OpenStackClientTester(comp.PythonTestingComponent):

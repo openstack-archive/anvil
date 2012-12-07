@@ -338,14 +338,15 @@ class ConfConfigurator(object):
         # Auth will be using keystone
         nova_conf.add('auth_strategy', 'keystone')
 
-        # Is config drive being forced?
+        # Is config drive being forced on?
         if self.installer.get_bool_option('force_cfg_drive'):
             nova_conf.add('force_config_drive', 'always')
 
-        # Don't always force images to raw
+        # Don't always force images to raw, which makes things take time to get to raw...
         nova_conf.add('force_raw_images', self.installer.get_bool_option('force_raw_images'))
 
-        # Add a checksum for images fetched to a hypervisor
+        # Add a checksum for images fetched for each hypervisor?
+        # This check absorbs cpu cycles, warning....
         nova_conf.add('checksum_base_images', self.installer.get_bool_option('checksum_base_images'))
 
         # Vnc settings setup

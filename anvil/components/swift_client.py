@@ -15,10 +15,10 @@
 #    under the License.
 
 from anvil import components as comp
+from anvil import utils
 
 
 class SwiftClientInstaller(comp.PythonInstallComponent):
-    def _filter_pip_requires_line(self, fn, line):
-        if line.lower().find('keystoneclient') != -1:
-            return None
-        return line
+    def _filter_pip_requires(self, fn, lines):
+        return [l for l in lines
+                if not utils.has_any(l.lower(), 'keystoneclient')]

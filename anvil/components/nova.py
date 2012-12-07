@@ -114,11 +114,10 @@ class NovaInstaller(comp.PythonInstallComponent):
     def config_files(self):
         return list(CONFIGS)
 
-    def _filter_pip_requires_line(self, fn, line):
-        # We handle these ourselves in anvil
-        if utils.has_any(line.lower(), 'quantumclient', 'cinder', 'glance', 'ldap', 'keystoneclient'):
-            return None
-        return line
+    def _filter_pip_requires(self, fn, lines):
+        return [l for l in lines
+                if not utils.has_any(l.lower(), 'quantumclient',
+                                     'cinder', 'glance', 'ldap', 'keystoneclient')]
 
     @property
     def env_exports(self):
