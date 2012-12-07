@@ -227,7 +227,7 @@ class PythonPackager(DependencyPackager):
         files['directories'].append("%{python_sitelib}/")
         files['files'].append("%{python_sitelib}/")
         if not self.get_option('remove_package_bindir'):
-                files['files'].append("%{_bindir}/")
+            files['files'].append("%{_bindir}/")
         return files
 
     def _build_details(self):
