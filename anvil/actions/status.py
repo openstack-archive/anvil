@@ -54,13 +54,27 @@ class StatusAction(action.Action):
             LOG.info("Status of %s is %s.", colorizer.quote(component.name), self._quote_status(STATUS_UNKNOWN))
             return
 
-        def details_printer(entry, spacing, max_len):
-            det = utils.truncate_text(entry.details, max_len=max_len, from_bottom=True)
-            for line in det.splitlines():
+        def log_details(text, spacing, max_len):
+            text = utils.truncate_text(text, max_len=max_len, from_bottom=True)
+            for line in text.splitlines():
                 line = line.replace("\t", "\\t")
                 line = line.replace("\r", "\\r")
                 line = utils.truncate_text(line, max_len=120)
                 LOG.info("%s>> %s", (" " * spacing), line)
+
+        def details_printer(entry, spacing, max_len):
+            details = entry.details
+            if isinstance(details, (basestring, str)):
+                log_details(details, spacing, max_len)
+            elif isinstance(details, (dict)):
+                keys = sorted(details.keys())
+                for k in keys:
+                    LOG.info("%s%s:", (" " * spacing), str(k))
+                    log_details(details[k], spacing + 1, max_len)
+            elif details is None:
+                pass
+            else:
+                raise RuntimeError("Unknown how to print the details of %s" % (entry.name))
 
         if len(result) == 1:
             s = result[0]

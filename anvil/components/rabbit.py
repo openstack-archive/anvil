@@ -102,7 +102,10 @@ class RabbitRuntime(comp.ProgramRuntime):
             st = comp.STATUS_STARTED
         return [
             comp.ProgramStatus(status=st,
-                               details=(sysout + stderr).strip()),
+                               details={
+                                   'STDOUT': sysout,
+                                   'STDERR': stderr,
+                               }),
         ]
 
     def _run_action(self, action, check_exit_code=True):
