@@ -75,8 +75,9 @@ def main():
         name = n.key.lower().strip()
         if name not in all_known_names:
             not_found.append(name)
+    not_found = sorted(list(set(not_found)))
     if not_found:
-        print("The following distro yaml mappings may be required but where not found:")
+        print("The following distro yaml mappings may be required but were not found:")
         for n in sorted(not_found):
             msg = "  + %s" % (n)
             msg += " ("
