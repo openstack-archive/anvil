@@ -70,17 +70,8 @@ class GlanceInstaller(comp.PythonInstallComponent):
         return list(CONFIGS)
 
     def _filter_pip_requires(self, fn, lines):
-        new_lines = []
-        for line in lines:
-            # Anvil handles installing these if needed
-            # and not setup.py
-            if utils.has_any(line.lower(), 'swift', 'keystoneclient'):
-                continue
-            elif line.strip().startswith("-e"):
-                continue
-            else:
-                new_lines.append(line)
-        return new_lines
+        return [l for l in lines
+                if not utils.has_any(l.lower(), 'swift', 'keystoneclient')]
 
     def pre_install(self):
         comp.PythonInstallComponent.pre_install(self)
