@@ -76,6 +76,21 @@ COWS['unhappy'] = r'''
 LOG = logging.getLogger(__name__)
 
 
+class ExponentialBackoff(object):
+    def __init__(self, start, attempts):
+        self.start = start
+        self.attempts = attempts
+
+    def __iter__(self):
+        value = self.start
+        if self.attempts <= 0:
+            raise StopIteration()
+        yield value
+        for _i in xrange(0, self.attempts - 1):
+            value = value * value
+            yield value
+
+
 def expand_template(contents, params):
     if not params:
         params = {}
@@ -120,35 +135,38 @@ def has_any(text, *look_for):
     return False
 
 
-def wait_for_url(url, max_attempts=3, wait_between=5):
-    excps = []
-    LOG.info("Waiting for url %s to become active (max_attempts=%s, seconds_between=%s)",
-             colorizer.quote(url), max_attempts, wait_between)
+def wait_for_url(url, max_attempts=3):
+    LOG.info("Waiting for url %s to become active (max_attempts=%s)",
+             colorizer.quote(url), max_attempts)
 
-    def waiter():
-        LOG.info("Sleeping for %s seconds, %s is still not active.", wait_between, colorizer.quote(url))
-        sh.sleep(wait_between)
+    def waiter(sleep_secs):
+        LOG.info("Sleeping for %s seconds, %s is still not active.", sleep_secs, colorizer.quote(url))
+        sh.sleep(sleep_secs)
 
     def success(attempts):
         LOG.info("Url %s became active after %s attempts!", colorizer.quote(url), attempts)
 
-    for i in range(0, max_attempts):
+    excps = []
+    attempts = 0
+    for sleep_time in ExponentialBackoff(1.3, max_attempts):
+        attempts += 1
         try:
             with contextlib.closing(urllib2.urlopen(urllib2.Request(url))) as req:
                 req.read()
-                success(i + 1)
+                success(attempts)
                 return
         except urllib2.HTTPError as e:
-            if e.code in xrange(200, 499) or e.code in [501]:
+            if e.code in range(200, 600):
                 # Should be ok, at least its responding...
-                success(i + 1)
+                # although potentially incorrectly...
+                success(attempts)
                 return
             else:
                 excps.append(e)
-                waiter()
+                waiter(sleep_time)
         except IOError as e:
             excps.append(e)
-            waiter()
+            waiter(sleep_time)
     if excps:
         raise excps[-1]
 
