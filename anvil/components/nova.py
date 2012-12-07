@@ -141,12 +141,28 @@ class NovaInstaller(comp.PythonInstallComponent):
         LOG.info("Syncing nova to database named: %s", colorizer.quote(DB_NAME))
         utils.execute_template(*DB_SYNC_CMD, params=self.config_params(None))
 
+    def _fix_virt(self):
+        virt_driver = nhelper.canon_virt_driver(self.get_option('virt_driver'))
+        if virt_driver == 'libvirt':
+            virt_type = lv.canon_libvirt_type(self.get_option('libvirt_type'))
+            if virt_type == 'qemu':
+                # On RHEL it appears a sym-link needs to be created
+                # to enable qemu to actually work, apparently fixed
+                # in RHEL 6.4.
+                #
+                # See: http://fedoraproject.org/wiki/Getting_started_with_OpenStack_EPEL
+                if not sh.isfile('/usr/bin/qemu-system-x86_64'):
+                    sh.symlink('/usr/libexec/qemu-kvm', '/usr/bin/qemu-system-x86_64',
+                               tracewriter=self.tracewriter)
+
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
         # Extra actions to do nova setup
         if self.get_bool_option('db-sync'):
             self._setup_db()
             self._sync_db()
+        # Patch up your virtualization system
+        self._fix_virt()
 
     def _setup_db(self):
         dbhelper.drop_db(distro=self.distro,
