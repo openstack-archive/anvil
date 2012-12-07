@@ -26,7 +26,7 @@ def main():
     for d in root_dirs:
         all_contents = sh.listdir(d, recursive=True, files_only=True)
         requires_files = [sh.abspth(f) for f in all_contents
-                          if re.search("(test|pip)[-]requires", f, re.I)]
+                          if re.search(r"(test|pip)[-]requires$", f, re.I)]
     requires_files = sorted(list(set(requires_files)))
     requirements = []
     source_requirements = {}

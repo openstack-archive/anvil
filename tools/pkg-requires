@@ -3,7 +3,6 @@ gcc
 git 
 pylint
 python
-python-cheetah
 python-iso8601
 python-netifaces
 python-ordereddict

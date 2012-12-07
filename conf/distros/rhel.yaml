@@ -417,6 +417,14 @@ components:
         pips:
         # Seems for testing only??
         -   name: fixtures
+        # Why is this still needed??
+        -   name: Cheetah
+        # This seems to be a core dependency for a 'cas' tool
+        # so don't try to remove it since it will also remove
+        # said 'cas' tool, unfortunately the version of paramiko
+        # installed in rhel uses a old version of crypto which
+        # other components actually can't use. This sucks...
+        -   name: paramiko
         subsystems:
             compute:
                 packages:

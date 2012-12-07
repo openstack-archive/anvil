@@ -52,6 +52,9 @@ def _skip_requirement(line):
     # Skip editables also...
     if line.lower().startswith('-e'):
         return True
+    # Skip http types also...
+    if line.lower().startswith('http://'):
+        return True
     return False
 
 
