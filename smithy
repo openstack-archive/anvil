@@ -84,12 +84,12 @@ clean_requires()
 {
     # First remove comments and blank lines from said files
     if [ -f "tools/pkg-requires" ]; then
-        grep -v "(^\s*#.*$|^\s*$)" tools/pkg-requires > /tmp/anvil-pkg-requires
+        grep -Pv "(^\s*#.*$|^\s*$)" tools/pkg-requires > /tmp/anvil-pkg-requires
     else
         echo "" > /tmp/anvil-pkg-requires
     fi
     if [ -f "tools/pip-requires" ]; then
-        grep -v "(^\s*#.*$|^\s*$)" tools/pip-requires > /tmp/anvil-pip-requires
+        grep -Pv "(^\s*#.*$|^\s*$)" tools/pip-requires > /tmp/anvil-pip-requires
     else
         echo "" > /tmp/anvil-pip-requires
     fi
