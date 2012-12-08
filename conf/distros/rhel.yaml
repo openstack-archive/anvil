@@ -81,7 +81,6 @@ components:
             removable: false
         -   name: dnsmasq-utils
             removable: false
-        -   name: euca2ools
         -   name: gawk
             removable: false
         -   name: git
@@ -426,6 +425,9 @@ components:
         # other components actually can't use. This sucks...
         -   name: paramiko
         subsystems:
+            novncproxy:
+                packages:
+                -  name: python-websockify
             compute:
                 packages:
                 -   name: fuse # Needed for mounting

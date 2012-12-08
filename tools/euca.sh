@@ -92,4 +92,5 @@ alias ec2-upload-bundle="ec2-upload-bundle -a \${EC2_ACCESS_KEY} -s \${EC2_SECRE
 EOF
 
 echo "For future euca commands please run \$ source '$ENV_FN'"
+echo "Please also install your local distributions euca2ools or go to http://www.eucalyptus.com/download/euca2ools"
 echo "Goodbye."
