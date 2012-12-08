@@ -425,6 +425,9 @@ components:
         # other components actually can't use. This sucks...
         -   name: paramiko
         subsystems:
+            novncproxy:
+                packages:
+                -  name: python-websockify
             compute:
                 packages:
                 -   name: fuse # Needed for mounting
