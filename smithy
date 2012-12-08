@@ -128,6 +128,7 @@ bootstrap_rhel()
     # work better when installed individually (error reporting
     # and interdependency wise).
     for line in `cat /tmp/anvil-pkg-requires`; do
+        echo "Install pkg requirement $line"
         yum install $YUM_OPTS $line 2>&1
     done
     for line in `cat /tmp/anvil-pip-requires`; do
