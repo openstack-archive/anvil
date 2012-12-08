@@ -22,22 +22,32 @@ def main():
         print("%s distro_yaml root_dir ..." % sys.argv[0])
         return 1
     root_dirs = sys.argv[2:]
+    yaml_fn = sh.abspth(sys.argv[1])
+
     requires_files = []
     for d in root_dirs:
         all_contents = sh.listdir(d, recursive=True, files_only=True)
         requires_files = [sh.abspth(f) for f in all_contents
                           if re.search(r"(test|pip)[-]requires$", f, re.I)]
+
     requires_files = sorted(list(set(requires_files)))
     requirements = []
     source_requirements = {}
     for fn in requires_files:
         source_requirements[fn] = []
         for req in pip_helper.parse_requirements(sh.load_file(fn)):
-            requirements.append(req)
-            source_requirements[fn].append(req)
-    requirements = set(requirements)
+            requirements.append(req.key.lower().strip())
+            source_requirements[fn].append(req.key.lower().strip())
 
-    yaml_fn = sh.abspth(sys.argv[1])
+    print("Comparing pips/pip2pkgs in %s to those found in %s" % (yaml_fn, root_dirs))
+    for fn in sorted(requires_files):
+        print(" + " + str(fn))
+
+    requirements = set(requirements)
+    print("All known requirements:")
+    for r in sorted(requirements):
+        print("+ " + str(r))
+
     distro_yaml = utils.load_yaml(yaml_fn)
     components = distro_yaml.get('components', {})
     all_known_names = []
@@ -54,7 +64,6 @@ def main():
         components_pips[c].extend(known_names)
         all_known_names.extend(known_names)
 
-    print("Comparing pips/pip2pkgs in %s to those found in %s" % (yaml_fn, requires_files))
     all_known_names = sorted(list(set(all_known_names)))
     not_needed = []
     for n in all_known_names:
@@ -72,7 +81,7 @@ def main():
             print(msg)
     not_found = []
     for n in requirements:
-        name = n.key.lower().strip()
+        name = n.lower().strip()
         if name not in all_known_names:
             not_found.append(name)
     not_found = sorted(list(set(not_found)))
@@ -85,7 +94,7 @@ def main():
             for (fn, reqs) in source_requirements.items():
                 matched = False
                 for r in reqs:
-                    if r.key.lower().strip() == name:
+                    if r.lower().strip() == name:
                         matched = True
                 if matched:
                     msg += fn + ","
