@@ -10,8 +10,6 @@ shopt -s nocasematch
 RHEL_VERSION=$(lsb_release  -r  | awk '{ print $2 }' | cut -d"." -f1)
 EPEL_RPM_LIST="http://mirrors.kernel.org/fedora-epel/$RHEL_VERSION/i386"
 NODE_RPM_URL="http://nodejs.tchol.org/repocfg/el/nodejs-stable-release.noarch.rpm"
-PKG_DEPS=$(cat "tools/pkg-requires" | egrep -v "^\s*(#|$)")
-PIP_DEP_FN="tools/pip-requires"
 YUM_OPTS="--assumeyes --nogpgcheck"
 PIP_CMD="pip-python"
 
@@ -82,6 +80,21 @@ bootstrap_epel()
     yum install $YUM_OPTS -t "/tmp/$EPEL_RPM" 2>&1
 }
 
+clean_requires()
+{
+    # First remove comments and blank lines from said files
+    if [ -f "tools/pkg-requires" ]; then
+        grep -v "(^\s*#.*$|^\s*$)" tools/pkg-requires > /tmp/anvil-pkg-requires
+    else
+        echo "" > /tmp/anvil-pkg-requires
+    fi
+    if [ -f "tools/pip-requires" ]; then
+        grep -v "(^\s*#.*$|^\s*$)" tools/pip-requires > /tmp/anvil-pip-requires
+    else
+        echo "" > /tmp/anvil-pip-requires
+    fi
+}
+
 has_bootstrapped()
 {
     checksums=$(get_checksums)
@@ -98,8 +111,9 @@ has_bootstrapped()
 
 get_checksums()
 {
-    pkg_checksum=$(md5sum tools/pkg-requires)
-    pip_checksum=$(md5sum tools/pip-requires)
+    # Now checksum said files to be used in telling if said files have changed
+    pkg_checksum=$(md5sum /tmp/anvil-pkg-requires)
+    pip_checksum=$(md5sum /tmp/anvil-pip-requires)
     echo "$pkg_checksum"
     echo "$pip_checksum"
 }
@@ -110,14 +124,16 @@ bootstrap_rhel()
     echo "Please wait..."
     bootstrap_node
     bootstrap_epel
-    if [ -n "$PKG_DEPS" ]; then
-        echo "Installing distribution dependencies..."
-        yum install $YUM_OPTS $PKG_DEPS 2>&1
-    fi
-    if [ -f "$PIP_DEP_FN" ]; then
-        echo "Installing pypi dependencies..."
-        $PIP_CMD install -U -I -r "$PIP_DEP_FN"
-    fi
+    # Install line by line since yum and pip
+    # work better when installed individually (error reporting
+    # and interdependency wise).
+    for line in `cat /tmp/anvil-pkg-requires`; do
+        yum install $YUM_OPTS $line 2>&1
+    done
+    for line in `cat /tmp/anvil-pip-requires`; do
+        echo "Install pip requirement $line"
+        $PIP_CMD install -U -I $line
+    done
     return 0
 }
 
@@ -139,6 +155,7 @@ puke()
     fi
 }
 
+clean_requires
 has_bootstrapped
 if [ $? -eq 0 ]; then
     run_smithy
