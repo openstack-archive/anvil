@@ -30,13 +30,6 @@ PWD=`pwd`
 if [ -z "$BOOT_FILES" ]; then
     BOOT_FN=".anvil_bootstrapped"
     BOOT_FILES="${PWD}/$BOOT_FN"
-    if [ -n "$SUDO_USER" ]; then
-        USER_HOME=$(getent passwd $SUDO_USER | cut -d: -f6)
-        if [ -n "$USER_HOME" ]; then
-            BOOT_FILES="${BOOT_FILES} ${USER_HOME}/$BOOT_FN"
-        fi
-    fi
-    BOOT_FILES="${BOOT_FILES} ${HOME}/$BOOT_FN"
 fi
 
 bootstrap_node()
@@ -55,6 +48,7 @@ bootstrap_node()
     fi
     echo "Installing /tmp/$JS_REPO_RPM_FN..."
     yum install $YUM_OPTS -t "/tmp/$JS_REPO_RPM_FN" 2>&1
+    return $?
 }
 
 bootstrap_epel()
@@ -78,6 +72,7 @@ bootstrap_epel()
     fi
     echo "Installing /tmp/$EPEL_RPM..."
     yum install $YUM_OPTS -t "/tmp/$EPEL_RPM" 2>&1
+    return $?
 }
 
 clean_requires()
@@ -122,18 +117,41 @@ bootstrap_rhel()
 {
     echo "Bootstrapping RHEL: $1"
     echo "Please wait..."
+
+    # Node is typically needed for horizon (some css stuff)
     bootstrap_node
+    if [ "$?" != "0" ];
+    then
+        return $?
+    fi
+
+    # EPEL provides most of the python dependencies for RHEL
     bootstrap_epel
+    if [ "$?" != "0" ];
+    then
+        return $?
+    fi
+
     # Install line by line since yum and pip
     # work better when installed individually (error reporting
     # and interdependency wise).
     for line in `cat /tmp/anvil-pkg-requires`; do
         echo "Install pkg requirement $line"
-        yum install $YUM_OPTS $line 2>&1
+        yum install $YUM_OPTS $line 2>&1 > /dev/null
+        if [ "$?" != "0" ];
+        then
+            echo "Failed installing ${line}!!"
+            return 1
+        fi
     done
     for line in `cat /tmp/anvil-pip-requires`; do
         echo "Install pip requirement $line"
-        $PIP_CMD install -U -I $line
+        $PIP_CMD install -U -I $line 2>&1 > /dev/null
+        if [ "$?" != "0" ];
+        then
+            echo "Failed installing ${line}!!"
+            return 1
+        fi
     done
     return 0
 }
