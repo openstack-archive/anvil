@@ -17,6 +17,13 @@ apache_user: "$(auto:user)"
 # Port horizon should run on
 port: 80
 
+# We need to get a viable node.js repository to work
+# with, this is only really needed for distributions where
+# said distributions do not have node.js available yet...
+#
+# NOTE(harlowja): blank out/remove as needed...
+nodejs_repo: "http://nodejs.tchol.org/repocfg/el/nodejs-stable-release.noarch.rpm"
+
 # Needed for setting up your database
 db:
   type: "$(db:type)"

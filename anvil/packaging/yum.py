@@ -49,6 +49,10 @@ class YumPackager(pack.Packager):
     def _install_special(self, name, info):
         return False
 
+    def direct_install(self, filename):
+        cmd = YUM_INSTALL + [filename]
+        self._execute_yum(cmd)
+
     def _install(self, pkg):
         name = pkg['name']
         if self._install_special(name, pkg):
