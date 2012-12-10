@@ -162,6 +162,7 @@ if [[ "$TYPE" =~ "Red Hat Enterprise Linux Server" ]]; then
         for i in $BOOT_FILES; do
             echo -e "$checksums" > $i
         done
+        echo "Done bootstrapping; marked this as being completed in $BOOT_FILES"
         run_smithy
     else
         echo "Bootstrapping RHEL $RH_VER failed!!!"
