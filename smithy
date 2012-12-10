@@ -44,8 +44,14 @@ bootstrap_epel()
         return 1
     fi
     echo "+ Installing /tmp/$EPEL_RPM..."
-    yum install $YUM_OPTS -t "/tmp/$EPEL_RPM" 2>&1 > /dev/null
-    return $?
+    output=$(yum install $YUM_OPTS -t "/tmp/$EPEL_RPM" 2>&1)
+    yum_code=$?
+    if [[ $output =~ "does not update installed package" ]]; then
+        # Check for this case directly since this seems to return
+        # a 1 status code even though nothing happened...
+        return 0
+    fi
+    return $yum_code
 }
 
 clean_requires()
