@@ -46,7 +46,7 @@ bootstrap_epel()
         fi
     fi
     echo "Installing /tmp/$EPEL_RPM..."
-    yum install $YUM_OPTS -t "/tmp/$EPEL_RPM" 2>&1
+    yum install $YUM_OPTS -t "/tmp/$EPEL_RPM" 2>&1 > /dev/null
     return $?
 }
 
