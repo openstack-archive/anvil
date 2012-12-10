@@ -101,7 +101,7 @@ bootstrap_rhel()
     # work better when installed individually (error reporting
     # and interdependency wise).
     for line in `cat /tmp/anvil-pkg-requires`; do
-        echo "+ Installing package requirement $line"
+        echo "+ Installing package requirement '$line'"
         yum install $YUM_OPTS $line 2>&1 > /dev/null
         if [ $? -ne 0 ];
         then
@@ -110,7 +110,7 @@ bootstrap_rhel()
         fi
     done
     for line in `cat /tmp/anvil-pip-requires`; do
-        echo "+ Installing pip requirement $line"
+        echo "+ Installing pypi requirement '$line'"
         $PIP_CMD install -U -I $line 2>&1 > /dev/null
         if [ $? -ne 0 ];
         then
