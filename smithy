@@ -47,11 +47,13 @@ bootstrap_rh()
 
     echo "Installing node.js yum repository configuration."
     JS_REPO_RPM_FN=$(basename $NODE_RPM_URL)
-    if [ ! -f "/tmp/$JS_REPO_RPM_FN" ]; then
-        echo "Downloading $JS_REPO_RPM_FN to /tmp/$JS_REPO_RPM_FN..."
-        wget -q -O "/tmp/$JS_REPO_RPM_FN" "$NODE_RPM_URL"
-        if [ $? -ne 0 ]; then
-            return 1
+    if [ ! -z $NODE_RPM_URL ]; then 
+        if [ ! -f "/tmp/$JS_REPO_RPM_FN" ]; then
+            echo "Downloading $JS_REPO_RPM_FN to /tmp/$JS_REPO_RPM_FN..."
+            wget -q -O "/tmp/$JS_REPO_RPM_FN" "$NODE_RPM_URL"
+            if [ $? -ne 0 ]; then
+                return 1
+            fi
         fi
     fi
     echo "Installing /tmp/$JS_REPO_RPM_FN..."
