@@ -97,7 +97,7 @@ bootstrap_rhel()
     bootstrap_epel
     if [ $? -ne 0 ];
     then
-        return $?
+        return 1
     fi
 
     # Install line by line since yum and pip
