@@ -95,7 +95,7 @@ bootstrap_rhel()
 
     # EPEL provides most of the python dependencies for RHEL
     bootstrap_epel
-    if [ "$?" != "0" ];
+    if [ $? -ne 0 ];
     then
         return $?
     fi
@@ -106,7 +106,7 @@ bootstrap_rhel()
     for line in `cat /tmp/anvil-pkg-requires`; do
         echo "Install pkg requirement $line"
         yum install $YUM_OPTS $line 2>&1 > /dev/null
-        if [ "$?" != "0" ];
+        if [ $? -ne 0 ];
         then
             echo "Failed installing ${line}!!"
             return 1
@@ -115,7 +115,7 @@ bootstrap_rhel()
     for line in `cat /tmp/anvil-pip-requires`; do
         echo "Install pip requirement $line"
         $PIP_CMD install -U -I $line 2>&1 > /dev/null
-        if [ "$?" != "0" ];
+        if [ $? -ne 0 ];
         then
             echo "Failed installing ${line}!!"
             return 1
