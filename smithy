@@ -31,21 +31,19 @@ bootstrap_epel()
     if [ -z "$EPEL_RPM_LIST" ]; then
         return 0
     fi
-    echo "Locating the EPEL rpm..."
+    echo "+ Locating the EPEL rpm..."
     if [ -z "$EPEL_RPM" ]; then
         EPEL_RPM=$(curl -s "$EPEL_RPM_LIST/" | grep -io ">\s*epel.*.rpm\s*<" | grep -io "epel.*.rpm")
         if [ $? -ne 0 ]; then
             return 1
         fi
     fi
-    if [ ! -f "/tmp/$EPEL_RPM" ]; then
-        echo "Downloading $EPEL_RPM to /tmp/$EPEL_RPM"
-        wget -q -O "/tmp/$EPEL_RPM" "$EPEL_RPM_LIST/$EPEL_RPM"
-        if [ $? -ne 0 ]; then
-            return 1
-        fi
+    echo "+ Downloading $EPEL_RPM to /tmp/$EPEL_RPM"
+    wget -q -O "/tmp/$EPEL_RPM" "$EPEL_RPM_LIST/$EPEL_RPM"
+    if [ $? -ne 0 ]; then
+        return 1
     fi
-    echo "Installing /tmp/$EPEL_RPM..."
+    echo "+ Installing /tmp/$EPEL_RPM..."
     yum install $YUM_OPTS -t "/tmp/$EPEL_RPM" 2>&1 > /dev/null
     return $?
 }
@@ -90,8 +88,7 @@ get_checksums()
 
 bootstrap_rhel()
 {
-    echo "Bootstrapping RHEL: $1"
-    echo "Please wait..."
+    echo "Bootstrapping RHEL $1"
 
     # EPEL provides most of the python dependencies for RHEL
     bootstrap_epel
@@ -104,7 +101,7 @@ bootstrap_rhel()
     # work better when installed individually (error reporting
     # and interdependency wise).
     for line in `cat /tmp/anvil-pkg-requires`; do
-        echo "Install pkg requirement $line"
+        echo "+ Installing package requirement $line"
         yum install $YUM_OPTS $line 2>&1 > /dev/null
         if [ $? -ne 0 ];
         then
@@ -113,7 +110,7 @@ bootstrap_rhel()
         fi
     done
     for line in `cat /tmp/anvil-pip-requires`; do
-        echo "Install pip requirement $line"
+        echo "+ Installing pip requirement $line"
         $PIP_CMD install -U -I $line 2>&1 > /dev/null
         if [ $? -ne 0 ];
         then
@@ -167,7 +164,7 @@ if [[ "$TYPE" =~ "Red Hat Enterprise Linux Server" ]]; then
         done
         run_smithy
     else
-        echo "Bootstrapping RHEL $RH_VER failed."
+        echo "Bootstrapping RHEL $RH_VER failed!!!"
         exit 1
     fi
 else
