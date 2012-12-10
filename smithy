@@ -10,7 +10,7 @@ shopt -s nocasematch
 # Possible locations of the epel rpm/list url
 RHEL_VERSION=$(lsb_release  -r  | awk '{ print $2 }' | cut -d"." -f1)
 EPEL_RPM_LIST="http://mirrors.kernel.org/fedora-epel/$RHEL_VERSION/i386"
-NODE_RPM_URL="http://nodejs.tchol.org/repocfg/el/nodejs-stable-release.noarch.rpm"
+#NODE_RPM_URL="http://nodejs.tchol.org/repocfg/el/nodejs-stable-release.noarch.rpm"
 
 ARGS="$@"
 VER=$(python -c "from anvil import version; print version.version_string()")
@@ -45,17 +45,17 @@ bootstrap_rh()
     echo "Bootstrapping RHEL: $1"
     echo "Please wait..."
 
-    echo "Installing node.js yum repository configuration."
-    JS_REPO_RPM_FN=$(basename $NODE_RPM_URL)
-    if [ ! -f "/tmp/$JS_REPO_RPM_FN" ]; then
-        echo "Downloading $JS_REPO_RPM_FN to /tmp/$JS_REPO_RPM_FN..."
-        wget -q -O "/tmp/$JS_REPO_RPM_FN" "$NODE_RPM_URL"
-        if [ $? -ne 0 ]; then
-            return 1
-        fi
-    fi
-    echo "Installing /tmp/$JS_REPO_RPM_FN..."
-    yum install --assumeyes --nogpgcheck -t "/tmp/$JS_REPO_RPM_FN" 2>&1
+#    echo "Installing node.js yum repository configuration."
+#    JS_REPO_RPM_FN=$(basename $NODE_RPM_URL)
+#    if [ ! -f "/tmp/$JS_REPO_RPM_FN" ]; then
+#        echo "Downloading $JS_REPO_RPM_FN to /tmp/$JS_REPO_RPM_FN..."
+#        wget -q -O "/tmp/$JS_REPO_RPM_FN" "$NODE_RPM_URL"
+#        if [ $? -ne 0 ]; then
+#            return 1
+#        fi
+#    fi
+#    echo "Installing /tmp/$JS_REPO_RPM_FN..."
+#    yum install --assumeyes --nogpgcheck -t "/tmp/$JS_REPO_RPM_FN" 2>&1
 
     if [ ! -z $YREPO_RPM ]; then
         echo "Locating the YREPO rpm..."
