@@ -46,7 +46,7 @@ bootstrap_rh()
 
     if [ ! -z $MY_REPO ]; then
         MY_RPM=$(echo $MY_REPO | egrep -o "[^/]*$")
-        echo "Locating the YREPO rpm..."
+        echo "Locating the MY_REPO rpm..."
         if [ ! -f "/tmp/$MY_RPM" ]; then
             wget -q -O "/tmp/$MY_RPM" "$MY_REPO"
             if [ $? -ne 0 ]; then
