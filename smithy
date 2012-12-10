@@ -1,15 +1,9 @@
 #!/bin/bash
 
-if [ "$(id -u)" != "0" ]; then
-   echo "This script must be run as root!" 1>&2
-   exit 1
-fi
-
 shopt -s nocasematch
 
 RHEL_VERSION=$(lsb_release  -r  | awk '{ print $2 }' | cut -d"." -f1)
 EPEL_RPM_LIST="http://mirrors.kernel.org/fedora-epel/$RHEL_VERSION/i386"
-NODE_RPM_URL="http://nodejs.tchol.org/repocfg/el/nodejs-stable-release.noarch.rpm"
 YUM_OPTS="--assumeyes --nogpgcheck"
 PIP_CMD="pip-python"
 
@@ -31,25 +25,6 @@ if [ -z "$BOOT_FILES" ]; then
     BOOT_FN=".anvil_bootstrapped"
     BOOT_FILES="${PWD}/$BOOT_FN"
 fi
-
-bootstrap_node()
-{
-    if [ -z "$NODE_RPM_URL" ]; then
-        return 0
-    fi
-    echo "Installing node.js yum repository configuration."
-    JS_REPO_RPM_FN=$(basename $NODE_RPM_URL)
-    if [ ! -f "/tmp/$JS_REPO_RPM_FN" ]; then
-        echo "Downloading $JS_REPO_RPM_FN to /tmp/$JS_REPO_RPM_FN..."
-        wget -q -O "/tmp/$JS_REPO_RPM_FN" "$NODE_RPM_URL"
-        if [ $? -ne 0 ]; then
-            return 1
-        fi
-    fi
-    echo "Installing /tmp/$JS_REPO_RPM_FN..."
-    yum install $YUM_OPTS -t "/tmp/$JS_REPO_RPM_FN" 2>&1
-    return $?
-}
 
 bootstrap_epel()
 {
@@ -117,13 +92,6 @@ bootstrap_rhel()
 {
     echo "Bootstrapping RHEL: $1"
     echo "Please wait..."
-
-    # Node is typically needed for horizon (some css stuff)
-    bootstrap_node
-    if [ "$?" != "0" ];
-    then
-        return $?
-    fi
 
     # EPEL provides most of the python dependencies for RHEL
     bootstrap_epel

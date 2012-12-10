@@ -67,6 +67,10 @@ class YumPackager(pack.Packager):
         return sh.execute(*yum_cmd, run_as_root=True,
                           check_exit_code=True, **kargs)
 
+    def direct_install(self, filename):
+        cmd = YUM_INSTALL + [filename]
+        self._execute_yum(cmd)
+
     def _remove_special(self, name, info):
         return False
 
