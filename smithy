@@ -1,15 +1,9 @@
 #!/bin/bash
 
-if [ "$(id -u)" != "0" ]; then
-   echo "This script must be run as root!" 1>&2
-   exit 1
-fi
-
 shopt -s nocasematch
 
 RHEL_VERSION=$(lsb_release  -r  | awk '{ print $2 }' | cut -d"." -f1)
 EPEL_RPM_LIST="http://mirrors.kernel.org/fedora-epel/$RHEL_VERSION/i386"
-NODE_RPM_URL="http://nodejs.tchol.org/repocfg/el/nodejs-stable-release.noarch.rpm"
 YUM_OPTS="--assumeyes --nogpgcheck"
 PIP_CMD="pip-python"
 
@@ -30,54 +24,34 @@ PWD=`pwd`
 if [ -z "$BOOT_FILES" ]; then
     BOOT_FN=".anvil_bootstrapped"
     BOOT_FILES="${PWD}/$BOOT_FN"
-    if [ -n "$SUDO_USER" ]; then
-        USER_HOME=$(getent passwd $SUDO_USER | cut -d: -f6)
-        if [ -n "$USER_HOME" ]; then
-            BOOT_FILES="${BOOT_FILES} ${USER_HOME}/$BOOT_FN"
-        fi
-    fi
-    BOOT_FILES="${BOOT_FILES} ${HOME}/$BOOT_FN"
 fi
-
-bootstrap_node()
-{
-    if [ -z "$NODE_RPM_URL" ]; then
-        return 0
-    fi
-    echo "Installing node.js yum repository configuration."
-    JS_REPO_RPM_FN=$(basename $NODE_RPM_URL)
-    if [ ! -f "/tmp/$JS_REPO_RPM_FN" ]; then
-        echo "Downloading $JS_REPO_RPM_FN to /tmp/$JS_REPO_RPM_FN..."
-        wget -q -O "/tmp/$JS_REPO_RPM_FN" "$NODE_RPM_URL"
-        if [ $? -ne 0 ]; then
-            return 1
-        fi
-    fi
-    echo "Installing /tmp/$JS_REPO_RPM_FN..."
-    yum install $YUM_OPTS -t "/tmp/$JS_REPO_RPM_FN" 2>&1
-}
 
 bootstrap_epel()
 {
     if [ -z "$EPEL_RPM_LIST" ]; then
         return 0
     fi
-    echo "Locating the EPEL rpm..."
+    echo "+ Locating the EPEL rpm..."
     if [ -z "$EPEL_RPM" ]; then
         EPEL_RPM=$(curl -s "$EPEL_RPM_LIST/" | grep -io ">\s*epel.*.rpm\s*<" | grep -io "epel.*.rpm")
         if [ $? -ne 0 ]; then
             return 1
         fi
     fi
-    if [ ! -f "/tmp/$EPEL_RPM" ]; then
-        echo "Downloading $EPEL_RPM to /tmp/$EPEL_RPM"
-        wget -q -O "/tmp/$EPEL_RPM" "$EPEL_RPM_LIST/$EPEL_RPM"
-        if [ $? -ne 0 ]; then
-            return 1
-        fi
+    echo "+ Downloading $EPEL_RPM_LIST/$EPEL_RPM to /tmp/$EPEL_RPM"
+    wget -q -O "/tmp/$EPEL_RPM" "$EPEL_RPM_LIST/$EPEL_RPM"
+    if [ $? -ne 0 ]; then
+        return 1
     fi
-    echo "Installing /tmp/$EPEL_RPM..."
-    yum install $YUM_OPTS -t "/tmp/$EPEL_RPM" 2>&1
+    echo "+ Installing /tmp/$EPEL_RPM..."
+    output=$(yum install $YUM_OPTS -t "/tmp/$EPEL_RPM" 2>&1)
+    yum_code=$?
+    if [[ $output =~ "does not update installed package" ]]; then
+        # Check for this case directly since this seems to return
+        # a 1 status code even though nothing happened...
+        return 0
+    fi
+    return $yum_code
 }
 
 clean_requires()
@@ -120,20 +94,35 @@ get_checksums()
 
 bootstrap_rhel()
 {
-    echo "Bootstrapping RHEL: $1"
-    echo "Please wait..."
-    bootstrap_node
+    echo "Bootstrapping RHEL $1"
+
+    # EPEL provides most of the python dependencies for RHEL
     bootstrap_epel
+    if [ $? -ne 0 ];
+    then
+        return 1
+    fi
+
     # Install line by line since yum and pip
     # work better when installed individually (error reporting
     # and interdependency wise).
     for line in `cat /tmp/anvil-pkg-requires`; do
-        echo "Install pkg requirement $line"
-        yum install $YUM_OPTS $line 2>&1
+        echo "+ Installing package requirement '$line'"
+        yum install $YUM_OPTS $line 2>&1 > /dev/null
+        if [ $? -ne 0 ];
+        then
+            echo "Failed installing ${line}!!"
+            return 1
+        fi
     done
     for line in `cat /tmp/anvil-pip-requires`; do
-        echo "Install pip requirement $line"
-        $PIP_CMD install -U -I $line
+        echo "+ Installing pypi requirement '$line'"
+        $PIP_CMD install -U -I $line 2>&1 > /dev/null
+        if [ $? -ne 0 ];
+        then
+            echo "Failed installing ${line}!!"
+            return 1
+        fi
     done
     return 0
 }
@@ -179,9 +168,10 @@ if [[ "$TYPE" =~ "Red Hat Enterprise Linux Server" ]]; then
         for i in $BOOT_FILES; do
             echo -e "$checksums" > $i
         done
+        echo "Done bootstrapping; marked this as being completed in $BOOT_FILES"
         run_smithy
     else
-        echo "Bootstrapping RHEL $RH_VER failed."
+        echo "Bootstrapping RHEL $RH_VER failed!!!"
         exit 1
     fi
 else

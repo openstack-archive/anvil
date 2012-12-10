@@ -509,6 +509,7 @@ components:
             uninstall: anvil.components.rabbit:RabbitUninstaller
         packages:
         -   name: rabbitmq-server
+            # Disable qpidd as these rabbitmq & qpidd conflict
             pre-install:
             -   cmd:
                 - service
@@ -516,6 +517,7 @@ components:
                 - stop
                 ignore_failure: true
                 run_as_root: true
+            # Also stop it from starting on boot (if rebooted)
             -   cmd:
                 - chkconfig
                 - qpidd
