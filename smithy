@@ -38,7 +38,7 @@ bootstrap_epel()
             return 1
         fi
     fi
-    echo "+ Downloading $EPEL_RPM to /tmp/$EPEL_RPM"
+    echo "+ Downloading $EPEL_RPM_LIST/$EPEL_RPM to /tmp/$EPEL_RPM"
     wget -q -O "/tmp/$EPEL_RPM" "$EPEL_RPM_LIST/$EPEL_RPM"
     if [ $? -ne 0 ]; then
         return 1
