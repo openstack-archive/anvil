@@ -663,7 +663,7 @@ def unlink(path, ignore_errors=True, run_as_root=False):
                 pass
 
 
-def copy(src, dst, tracewriter=None):
+def copy(src, dst):
     LOG.debug("Copying: %r => %r" % (src, dst))
     if not is_dry_run():
         shutil.copy(src, dst)
