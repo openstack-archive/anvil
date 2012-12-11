@@ -67,11 +67,11 @@ function run_pylint {
     # * 16 if a convention message was issued
     # * 32 on usage error
     echo "A fatal pylint error occurred!"
+    FAILED_TESTS=1
   else
     if [ "$?" -eq "0" ]; then
       echo "Your code is perfect you code master!"
     else
-      FAILED_TESTS=1
       echo "You are not yet a code master."
       grep -i "Your code" $output_filename
       echo "Check '$output_filename' for a full report."
