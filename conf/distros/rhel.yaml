@@ -424,6 +424,7 @@ components:
         # installed in rhel uses a old version of crypto which
         # other components actually can't use. This sucks...
         -   name: paramiko
+        -   name: stevedore
         subsystems:
             novncproxy:
                 packages:
