@@ -14,11 +14,11 @@ LOCAL_PATH = os.path.dirname(os.path.abspath(__file__))
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': '$DB_NAME',
-        'USER': '$DB_USER',
-        'PASSWORD': '$DB_PASSWORD',
-        'HOST': '$DB_HOST',
-        'PORT': '$DB_PORT',
+        'NAME': '${DB_NAME}',
+        'USER': '${DB_USER}',
+        'PASSWORD': '${DB_PASSWORD}',
+        'HOST': '${DB_HOST}',
+        'PORT': '${DB_PORT}',
         'TEST_NAME': '${DB_NAME}_test',
     },
 }
@@ -40,7 +40,6 @@ SECRET_KEY = secret_key.generate_or_read_from_file(os.path.join(LOCAL_PATH, '.se
 HORIZON_CONFIG = {
     'dashboards': ('nova', 'syspanel', 'settings',),
     'default_dashboard': 'nova',
-    'user_home': 'openstack_dashboard.views.user_home',
 }
 
 # TODO(tres): Remove these once Keystone has an API to identify auth backend.
@@ -49,9 +48,60 @@ OPENSTACK_KEYSTONE_BACKEND = {
     'can_edit_user': True
 }
 
-OPENSTACK_HOST = "$OPENSTACK_HOST"
+OPENSTACK_HOST = "${OPENSTACK_HOST}"
 OPENSTACK_KEYSTONE_URL = "http://%s:5000/v2.0" % OPENSTACK_HOST
+
+# FIXME: this is only needed until keystone fixes its GET /tenants call
+# so that it doesn't return everything for admins
 OPENSTACK_KEYSTONE_ADMIN_URL = "http://%s:35357/v2.0" % OPENSTACK_HOST
 OPENSTACK_KEYSTONE_DEFAULT_ROLE = "Member"
 
-SWIFT_PAGINATE_LIMIT = 100
+# If you have external monitoring links, eg:
+# EXTERNAL_MONITORING = [
+#     ['Nagios','http://foo.com'],
+#     ['Ganglia','http://bar.com'],
+# ]
+
+#LOGGING = {
+#        'version': 1,
+#        # When set to True this will disable all logging except
+#        # for loggers specified in this configuration dictionary. Note that
+#        # if nothing is specified here and disable_existing_loggers is True,
+#        # django.db.backends will still log unless it is disabled explicitly.
+#        'disable_existing_loggers': False,
+#        'handlers': {
+#            'null': {
+#                'level': 'DEBUG',
+#                'class': 'django.utils.log.NullHandler',
+#                },
+#            'console': {
+#                # Set the level to "DEBUG" for verbose output logging.
+#                'level': 'INFO',
+#                'class': 'logging.StreamHandler',
+#                },
+#            },
+#        'loggers': {
+#            # Logging from django.db.backends is VERY verbose, send to null
+#            # by default.
+#            'django.db.backends': {
+#                'handlers': ['null'],
+#                'propagate': False,
+#                },
+#            'horizon': {
+#                'handlers': ['console'],
+#                'propagate': False,
+#            },
+#            'novaclient': {
+#                'handlers': ['console'],
+#                'propagate': False,
+#            },
+#            'keystoneclient': {
+#                'handlers': ['console'],
+#                'propagate': False,
+#            },
+#            'nose.plugins.manager': {
+#                'handlers': ['console'],
+#                'propagate': False,
+#            }
+#        }
+#}
