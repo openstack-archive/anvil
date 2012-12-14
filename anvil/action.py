@@ -174,7 +174,8 @@ class Action(object):
             # This is done, so that they will work in a minimal state, they do not
             # get access to the persona options since those are action specific (or could be),
             # if this is not useful, we can give them full access, unsure if its worse or better...
-            instance_params['subsystems'] = {}
+            active_subsystems = self._merge_subsystems(distro_opts.pop('subsystems', {}), persona_subsystems.get(c, {}))
+            instance_params['subsystems'] = active_subsystems
             instance_params['siblings'] = {}
             instance_params['passwords'] = self.passwords
             instance_params['distro'] = self.distro
@@ -185,8 +186,6 @@ class Action(object):
             instance_params['instances'] = instances
             instance_params['options'] = self._merge_options(c, self._get_interp_options(c), distro_opts,
                                                             (persona_opts.get(c) or {}))
-            instance_params['subsystems'] = self._merge_subsystems((distro_opts.pop('subsystems', None) or {}),
-                                                                   (persona_subsystems.get(c) or {}))
             instance_params['siblings'] = siblings
             instance_params = utils.merge_dicts(instance_params, self.cli_opts, preserve=True)
             LOG.debug("Construction of %r params are:", c)
