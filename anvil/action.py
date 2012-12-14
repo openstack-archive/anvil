@@ -200,8 +200,10 @@ class Action(object):
             # This is done, so that they will work in a minimal state, they do not
             # get access to the persona options since those are action specific (or could be),
             # if this is not useful, we can give them full access, unsure if its worse or better...
-            sibling_params['subsystems'] = {}
-            sibling_params['siblings'] = {}
+            active_subsystems = self._merge_subsystems(distro_subsystems=d_subsystems,
+                                                       desired_subsystems=persona_subsystems.get(c, []))
+            sibling_params['subsystems'] = active_subsystems
+            sibling_params['siblings'] = {}  # This gets adjusted during construction
             sibling_params['passwords'] = self.passwords
             sibling_params['distro'] = self.distro
             sibling_params['options'] = self._merge_options(c,
@@ -219,8 +221,6 @@ class Action(object):
                                                              component_opts=self._get_interpolated_options(c),
                                                              distro_opts=d_component.options,
                                                              persona_opts=persona_opts.get(c, {}))
-            instance_params['subsystems'] = self._merge_subsystems(distro_subsystems=d_subsystems,
-                                                                   desired_subsystems=persona_subsystems.get(c, []))
             instance_params['siblings'] = my_siblings
             instance_params = utils.merge_dicts(instance_params, self.cli_opts, preserve=True)
             instances[c] = importer.construct_entry_point(d_component.entry_point, **instance_params)
