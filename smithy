@@ -2,8 +2,6 @@
 
 shopt -s nocasematch
 
-RHEL_VERSION=$(lsb_release  -r  | awk '{ print $2 }' | cut -d"." -f1)
-EPEL_RPM_LIST="http://mirrors.kernel.org/fedora-epel/$RHEL_VERSION/i386"
 YUM_OPTS="--assumeyes --nogpgcheck"
 PIP_CMD="pip-python"
 
@@ -19,112 +17,101 @@ if [ -n "$SUDO_USER" ]; then
     fi
 fi
 
-ARGS="$@"
 PWD=`pwd`
 if [ -z "$BOOT_FILES" ]; then
     BOOT_FN=".anvil_bootstrapped"
     BOOT_FILES="${PWD}/$BOOT_FN"
 fi
 
+cache_and_install_rpm_url()
+{
+    url=${1:?"Error: rpm uri is undefined!"}
+    cachedir=${RPM_CACHEDIR:-'/tmp'}
+    rpm=$(basename $url)
+    if [ ! -f "$cachedir/$rpm" ]; then
+	echo "Downloading $rpm to $cachedir..."
+        curl -s $url -o "$cachedir/$rpm" || return 1
+    fi
+    install_rpm "$cachedir/$rpm"
+    return $?
+}
+
+install_rpm()
+{
+    rpmstr=${1:?"Error: rpm to install is undefined!"}
+    rpm=$rpmstr
+    [ $(dirname $rpm) = '.' ] || rpm=$(rpm -qp $rpmstr 2> /dev/null )
+    rpm -q $rpm > /dev/null 2>&1 && return 0
+    echo "+ Installing rpm requirement '$rpm'"
+    yum install $YUM_OPTS "$rpmstr" 2>&1
+    return $?
+}
+
+install_pypi()
+{
+    pypi=${1:?"Error: pypi to install is undefined!"}
+    # TODO: Figure out a way to make pypi installation idempotent -- 
+    # in the simple case we can simply return true if the package
+    # appears in the output of 'pip freeze' but this doesn't handle
+    # the 'pkg>=1.0' syntax. -I explicitly reinstalls.
+    $PIP_CMD install -U -I $pypi
+    return $?
+}
+
 bootstrap_epel()
 {
-    if [ -z "$EPEL_RPM_LIST" ]; then
-        return 0
-    fi
-    echo "+ Locating the EPEL rpm..."
-    if [ -z "$EPEL_RPM" ]; then
-        EPEL_RPM=$(curl -s "$EPEL_RPM_LIST/" | grep -io ">\s*epel.*.rpm\s*<" | grep -io "epel.*.rpm")
-        if [ $? -ne 0 ]; then
-            return 1
-        fi
-    fi
-    echo "+ Downloading $EPEL_RPM_LIST/$EPEL_RPM to /tmp/$EPEL_RPM"
-    wget -q -O "/tmp/$EPEL_RPM" "$EPEL_RPM_LIST/$EPEL_RPM"
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-    echo "+ Installing /tmp/$EPEL_RPM..."
-    output=$(yum install $YUM_OPTS -t "/tmp/$EPEL_RPM" 2>&1)
-    yum_code=$?
-    if [[ $output =~ "does not update installed package" ]]; then
-        # Check for this case directly since this seems to return
-        # a 1 status code even though nothing happened...
-        return 0
-    fi
-    return $yum_code
+    [ -z "$EPEL_RPM_URL" ] && return 0
+    cache_and_install_rpm_url $EPEL_RPM_URL
+    return $?
 }
 
-clean_requires()
+bootstrap_packages()
 {
-    # First remove comments and blank lines from said files
-    if [ -f "tools/pkg-requires" ]; then
-        grep -Pv "(^\s*#.*$|^\s*$)" tools/pkg-requires > /tmp/anvil-pkg-requires
-    else
-        echo "" > /tmp/anvil-pkg-requires
-    fi
-    if [ -f "tools/pip-requires" ]; then
-        grep -Pv "(^\s*#.*$|^\s*$)" tools/pip-requires > /tmp/anvil-pip-requires
-    else
-        echo "" > /tmp/anvil-pip-requires
-    fi
+    [ -z "$PACKAGES" ] && return 0
+    for pkg in $PACKAGES; do
+	format=$(echo $pkg | cut -d: -f1)
+        name=$(echo $pkg | cut -d: -f2)
+        echo "+ Installing $format requirement '$name'"
+        install_$format $name
+	if [ $? != 0 ]; then
+            echo "Error: Installation of $format package '$name' failed!"
+	    return $?
+	fi
+    done
 }
 
-has_bootstrapped()
+require()
 {
+    format=${1?"Error: Specify a format as the first arg to require!"}
+    name=${2?"Error: No name specified for required $format"}
+    case "$format" in
+        rpm|pypi)
+            PACKAGES="$PACKAGES $format:$name"
+        ;;
+        *)
+            echo "Error: Smithy does not know how to handle $format requirements!"
+            exit 1
+        ;;
+    esac
+}
+
+needs_bootstrap()
+{
+    $BOOTSTRAP && return 0 
     checksums=$(get_checksums)
     for i in $BOOT_FILES; do
         if [ -f $i ]; then
             contents=`cat $i`
-            if [ "$contents" == "$checksums" ]; then
-                return 0
-            fi
+            [ "$contents" = "$checksums" ] && return 1
         fi
     done
-    return 1
+    return 0
 }
 
 get_checksums()
 {
-    # Now checksum said files to be used in telling if said files have changed
-    pkg_checksum=$(md5sum /tmp/anvil-pkg-requires)
-    pip_checksum=$(md5sum /tmp/anvil-pip-requires)
-    echo "$pkg_checksum"
-    echo "$pip_checksum"
-}
-
-bootstrap_rhel()
-{
-    echo "Bootstrapping RHEL $1"
-
-    # EPEL provides most of the python dependencies for RHEL
-    bootstrap_epel
-    if [ $? -ne 0 ];
-    then
-        return 1
-    fi
-
-    # Install line by line since yum and pip
-    # work better when installed individually (error reporting
-    # and interdependency wise).
-    for line in `cat /tmp/anvil-pkg-requires`; do
-        echo "+ Installing package requirement '$line'"
-        yum install $YUM_OPTS $line 2>&1 > /dev/null
-        if [ $? -ne 0 ];
-        then
-            echo "Failed installing ${line}!!"
-            return 1
-        fi
-    done
-    for line in `cat /tmp/anvil-pip-requires`; do
-        echo "+ Installing pypi requirement '$line'"
-        $PIP_CMD install -U -I $line 2>&1 > /dev/null
-        if [ $? -ne 0 ];
-        then
-            echo "Failed installing ${line}!!"
-            return 1
-        fi
-    done
-    return 0
+    # used to tell if the file have changed
+    echo $(md5sum "$BSCONF_FILE")
 }
 
 run_smithy()
@@ -135,49 +122,93 @@ run_smithy()
 
 puke()
 {
-    # TODO(harlowja) better way to do this??
-    cleaned_force=$(python -c "f='$FORCE'; print(f.lower().strip())")
+    cleaned_force=$(echo $FORCE | sed -e 's/\([A-Z]\)/\L\1/g;s/\s//g')
     if [[ "$cleaned_force" == "yes" ]]; then
         run_smithy
     else
-        echo "To run anyway set FORCE=yes and rerun."
+        echo "To run anyway set FORCE=yes and rerun." >&2
         exit 1
     fi
 }
 
-clean_requires
-has_bootstrapped
-if [ $? -eq 0 ]; then
-    run_smithy
+## identify which bootstrap configuration file to use: either set
+## explicitly (BSCONF_FILE) or determined based on the os distribution:
+BSCONF_DIR=${BSCONF_DIR:-$(dirname $(readlink -f "$0"))/tools/bootstrap}
+TYPE=$(lsb_release -d | cut  -f 2)
+RELEASE=$(lsb_release -r | cut  -f 2)
+
+if [ -z "$BSCONF_FILE" ]; then
+    OSDIST=$(echo $TYPE | sed -e 's/release.*$//g;s/\s//g')
+    BSCONF_FILE="$BSCONF_DIR/$OSDIST"
 fi
 
-TYPE=$(lsb_release -d | cut  -f 2)
-if [[ "$TYPE" =~ "Red Hat Enterprise Linux Server" ]]; then
-    RH_VER=$(lsb_release -r | cut  -f 2)
-    BC_OK=$(echo "$RH_VER < 6" | bc)
-    if [ "$BC_OK" == "1" ]; then
-        echo "This script must be ran on RHEL 6.0+ and not RHEL $RH_VER."
-        puke
-    fi
-    bootstrap_rhel $RH_VER
-    if [ $? -eq 0 ]; then
-        # Write the checksums of the requirement files
-        # which if new requirements are added will cause new checksums
-        # and a new dependency install...
-        checksums=$(get_checksums)
-        for i in $BOOT_FILES; do
-            echo -e "$checksums" > $i
-        done
-        echo "Done bootstrapping; marked this as being completed in $BOOT_FILES"
-        run_smithy
-    else
-        echo "Bootstrapping RHEL $RH_VER failed!!!"
-        exit 1
-    fi
-else
-    echo "Anvil has not been tested on distribution '$TYPE'"
+ARGS=
+BOOTSTRAP=false
+# ad-hoc getopt to handle long opts. smithy opts are consumed while
+# those to anvil are copied through.
+while [ ! -z $1 ]; do
+    case "$1" in
+        '--bootstrap')
+	    BOOTSTRAP=true
+	    shift
+	    ;;
+	'--force')
+	    FORCE=yes
+	    shift
+	    ;;
+	*)
+	    ARGS="$ARGS $1"
+	    shift
+	    ;;
+    esac
+done
+
+if ! needs_bootstrap; then
+    run_smithy
+elif ! $BOOTSTRAP; then
+    echo "This system needs to be updatedin order to run anvil!" >&2
+    echo "Running 'sudo smithy --bootstrap' will attempt to do so." >&2
+    exit 1
+fi
+
+## Bootstrap smithy
+
+if [ "$(id -u)" != "0" ]; then
+    echo "You must run 'smithy --bootstrap' with root privileges!" >&2
+   exit 1
+fi
+if [ ! -f $BSCONF_FILE ]; then 
+     echo "Anvil has not been tested on distribution '$TYPE'" >&2
+     puke
+fi
+echo "Sourcing $BSCONF_FILE"
+source $BSCONF_FILE
+MIN_RELEASE=${MIN_RELEASE:?"Error: MIN_RELEASE is undefined!"}
+SHORTNAME=${SHORTNAME:?"Error: SHORTNAME is undefined!"}
+
+BC_OK=$(echo "$RELEASE < $MIN_RELEASE" | bc)
+if [ "$BC_OK" == "1" ]; then
+    echo "This script must be run on $SHORTNAME $MIN_RELEASE+ and not $SHORTNAME $RELEASE." >&2
     puke
 fi
 
+echo "Bootstrapping $SHORTNAME $RELEASE"
+echo "Please wait..."
 
+for step in ${STEPS:?"Error: STEPS is undefined!"}; do
+    bootstrap_${step}
+    if [ $? != 0 ]; then
+        echo "Bootstrapping $SHORTNAME $RELEASE failed." >&2
+        exit 1
+    fi
+done
 
+# Write the checksums of the bootstrap file
+# which if new requirements are added will cause new checksums
+# and a new dependency install...
+checksum=$(get_checksums)
+for i in $BOOT_FILES; do
+    echo -e $checksum > $i
+done
+echo "Success! Bootstrapped for $SHORTNAME $RELEASE"
+exit 0
