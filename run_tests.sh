@@ -5,6 +5,9 @@ set -u
 NOSEARGS=
 JUST_PEP8=0
 
+# this flag will get set to 1 if any tests fail
+FAILED_TESTS=0
+
 function usage {
   echo "Usage: $0 [OPTION]..."
   echo "Run anvils test suite."
@@ -42,6 +45,7 @@ function run_pep8 {
   if [ "$?" -ne "0" ]; then
     echo "Some badness was found!"
     echo "Check '$output_filename' for a full report."
+    FAILED_TESTS=1
   else
     echo "You are a pep8 guru!"
   fi
@@ -63,6 +67,7 @@ function run_pylint {
     # * 16 if a convention message was issued
     # * 32 on usage error
     echo "A fatal pylint error occurred!"
+    FAILED_TESTS=1
   else
     if [ "$?" -eq "0" ]; then
       echo "Your code is perfect you code master!"
@@ -79,6 +84,9 @@ function run_tests {
   # Cleanup *.pyc
   find . -type f -name "*.pyc" -delete
   $NOSETESTS
+  if [ "$?" -ne "0" ]; then
+    FAILED_TESTS=1
+  fi
 }
 
 function validate_yaml {
@@ -88,6 +96,7 @@ function validate_yaml {
         python tools/validate-yaml.py $f
         if [ "$?" -ne "0" ]; then
           echo "File: $f has some badness in it!"
+          FAILED_TESTS=1
         fi
     done
 }
@@ -100,10 +109,13 @@ export NOSETESTS="nosetests $NOSEARGS"
 
 if [ $JUST_PEP8 -eq 1 ]; then
     run_pep8
-    exit 0
+    exit $FAILED_TESTS
 fi
 
 run_tests
 run_pep8
 run_pylint
 validate_yaml
+
+exit $FAILED_TESTS
+
