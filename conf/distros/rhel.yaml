@@ -425,6 +425,10 @@ components:
         # other components actually can't use. This sucks...
         -   name: paramiko
         -   name: stevedore
+        -   name: discover
+        -   name: python-subunit
+        -   name: testrepository
+            version: '0.0.8'
         subsystems:
             novncproxy:
                 packages:
