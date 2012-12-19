@@ -42,7 +42,7 @@ install_rpm()
     rpm=$rpmstr
     [ $(dirname $rpm) = '.' ] || rpm=$(rpm -qp $rpmstr 2> /dev/null )
     rpm -q $rpm > /dev/null 2>&1 && return 0
-    echo "+ Installing rpm requirement '$rpm'"
+    echo "Installing rpm requirement '$rpm'"
     yum install $YUM_OPTS "$rpmstr" 2>&1
     return $?
 }
@@ -71,7 +71,7 @@ bootstrap_packages()
     for pkg in $PACKAGES; do
 	format=$(echo $pkg | cut -d: -f1)
         name=$(echo $pkg | cut -d: -f2)
-        echo "+ Installing $format requirement '$name'"
+        echo "Installing $format requirement '$name'"
         install_$format $name
 	if [ $? != 0 ]; then
             echo "Error: Installation of $format package '$name' failed!"
@@ -131,7 +131,7 @@ puke()
     fi
 }
 
-## identify which bootstrap configuration file to use: either set
+## Identify which bootstrap configuration file to use: either set
 ## explicitly (BSCONF_FILE) or determined based on the os distribution:
 BSCONF_DIR=${BSCONF_DIR:-$(dirname $(readlink -f "$0"))/tools/bootstrap}
 TYPE=$(lsb_release -d | cut  -f 2)
@@ -142,10 +142,12 @@ if [ -z "$BSCONF_FILE" ]; then
     BSCONF_FILE="$BSCONF_DIR/$OSDIST"
 fi
 
-ARGS=
+ARGS=""
 BOOTSTRAP=false
-# ad-hoc getopt to handle long opts. smithy opts are consumed while
-# those to anvil are copied through.
+
+# Ad-hoc getopt to handle long opts. 
+#
+# Smithy opts are consumed while those to anvil are copied through.
 while [ ! -z $1 ]; do
     case "$1" in
         '--bootstrap')
@@ -166,13 +168,12 @@ done
 if ! needs_bootstrap; then
     run_smithy
 elif ! $BOOTSTRAP; then
-    echo "This system needs to be updatedin order to run anvil!" >&2
+    echo "This system needs to be updated in order to run anvil!" >&2
     echo "Running 'sudo smithy --bootstrap' will attempt to do so." >&2
     exit 1
 fi
 
 ## Bootstrap smithy
-
 if [ "$(id -u)" != "0" ]; then
     echo "You must run 'smithy --bootstrap' with root privileges!" >&2
    exit 1
