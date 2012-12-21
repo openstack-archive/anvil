@@ -69,9 +69,10 @@ class Virsh(object):
     def _destroy_domain(self, libvirt, conn, dom_name):
         try:
             dom = conn.lookupByName(dom_name)
-            LOG.debug("Destroying domain (%r) (id=%s) running %r" % (dom_name, dom.ID(), dom.OSType()))
-            dom.destroy()
-            dom.undefine()
+            if dom:
+                LOG.debug("Destroying domain (%r) (id=%s) running %r" % (dom_name, dom.ID(), dom.OSType()))
+                dom.destroy()
+                dom.undefine()
         except libvirt.libvirtError as e:
             LOG.warn("Could not clear out libvirt domain %s due to: %s", colorizer.quote(dom_name), e)
 
