@@ -109,6 +109,9 @@ class Virsh(object):
     def clear_domains(self, virt_type, inst_prefix):
         libvirt = None
         try:
+            # A late import is done since this code could be used before libvirt is actually
+            # installed, and that will cause the top level python import to fail which will
+            # make anvil not work, so import it dynamically to bypass the previous mechanism
             libvirt = importer.import_module('libvirt')
         except RuntimeError as e:
             pass
