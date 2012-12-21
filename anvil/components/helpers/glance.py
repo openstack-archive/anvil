@@ -91,8 +91,7 @@ class Unpacker(object):
             for tmemb in tfh.getmembers():
                 if not tmemb.isfile():
                     continue
-                fn = tmemb.name
-                files.append(fn)
+                files.append(tmemb.name)
         return files
 
     def _pat_checker(self, fn, patterns):
