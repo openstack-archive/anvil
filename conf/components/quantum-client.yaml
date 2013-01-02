@@ -3,4 +3,11 @@
 
 get_from: "git://github.com/openstack/python-quantumclient.git?branch=master"
 
+patches:
+  # After check-out/download time patches
+  download:
+    # Temporarily fixes https://bugs.launchpad.net/python-glanceclient/+bug/1090592
+    # which appears in all clients
+    - "conf/patches/quantum-client/fix-tag-version.patch"
+
 ...
