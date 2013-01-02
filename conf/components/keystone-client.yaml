@@ -7,4 +7,11 @@ get_from: "git://github.com/openstack/python-keystoneclient.git?branch=master"
 # This code is out of compliance, so skip it...
 use_pep8: False
 
+patches:
+  # After check-out/download time patches
+  download:
+    # Temporarily fixes https://bugs.launchpad.net/python-glanceclient/+bug/1090592
+    # which appears in all clients
+    - "conf/patches/keystone-client/fix-tag-version.patch"
+
 ...
