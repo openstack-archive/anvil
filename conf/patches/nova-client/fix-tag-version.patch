@@ -1,0 +1,12 @@
+--- a/novaclient/openstack/common/setup.py	2013-01-02 11:03:25.495111000 -0800
++++ b/novaclient/openstack/common/setup.py	2013-01-02 11:03:51.254869000 -0800
+@@ -156,7 +156,8 @@
+ 
+ 
+ def _get_git_current_tag():
+-    return _run_shell_command("git tag --contains HEAD")
++    # return _run_shell_command("git tag --contains HEAD")
++    return _run_shell_command("git describe --always --tag")
+ 
+ 
+ def _get_git_tag_info():
