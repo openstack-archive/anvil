@@ -20,14 +20,14 @@ commands:
         verify: virsh -c $VIRT_PROTOCOL uri
     mysql:
         # NOTE: we aren't stopping any sql injection...
-        create_db: mysql --user=$USER --password=$PASSWORD -e 
+        create_db: mysql --user=$USER --password=$PASSWORD -e
                    "CREATE DATABASE $DB CHARACTER SET $CHARACTER_SET;"
-        drop_db: mysql --user=$USER --password=$PASSWORD -e 
+        drop_db: mysql --user=$USER --password=$PASSWORD -e
                  "DROP DATABASE IF EXISTS $DB;"
-        grant_all: mysql --user=$USER --password=$PASSWORD -e 
+        grant_all: mysql --user=$USER --password=$PASSWORD -e
                    "GRANT ALL PRIVILEGES ON *.* TO '$USER'@'%' IDENTIFIED BY '$PASSWORD'; FLUSH PRIVILEGES;"
         restart: service mysqld restart
-        set_pwd: mysql --user=$USER --password=$OLD_PASSWORD -e 
+        set_pwd: mysql --user=$USER --password=$OLD_PASSWORD -e
                  "USE mysql; UPDATE user SET password=PASSWORD('$NEW_PASSWORD') WHERE User='$USER';  FLUSH PRIVILEGES;"
         start: service mysqld start
         status: service mysqld status
@@ -46,7 +46,7 @@ commands:
         restart: service rabbitmq-server restart
         start: service rabbitmq-server start
         status: service rabbitmq-server status
-        stop: service rabbitmq-server stop                 
+        stop: service rabbitmq-server stop
 components:
     cinder-client:
         action_classes:
@@ -121,14 +121,14 @@ components:
         # Shared pypi packages + their package information.
         # Packages is what is really used for installation (the pypi name
         # is just for matching since the general section is not python code).
-        -   name: pylint 
+        -   name: pylint
             package:
                 name: pylint
                 removable: false
         -   name: anyjson
             package:
                 name: python-anyjson
-        -   name: argparse 
+        -   name: argparse
             package:
                 name: python-argparse
                 removable: false
@@ -215,6 +215,9 @@ components:
                     links:
                         - source: "/usr/lib/python2.6/site-packages/WebOb-*-py2.6.egg/webob/"
                           target: "/usr/lib/python2.6/site-packages/webob"
+        -   name: fixtures
+            package:
+                name: python-fixtures
         pips:
         # Pips that aren't packages yet (or versions aren't right...)
         -   name: cmd2
@@ -240,7 +243,7 @@ components:
             removable: false
         # This seems to cause conflicts with
         # the yum version that comes installed so use the pip version
-        -   name: pyparsing 
+        -   name: pyparsing
             removable: false
         -   name: requests
         -   name: sphinx
@@ -255,7 +258,7 @@ components:
             running: anvil.components.glance:GlanceRuntime
             test: anvil.components.glance:GlanceTester
             uninstall: anvil.components.glance:GlanceUninstaller
-        # When parsing 'tools/pip-requires' and 
+        # When parsing 'tools/pip-requires' and
         # 'tools/test-requires' (if they exist)
         # the following map will be used to translate names
         # and versions inside those files into distribution
@@ -375,7 +378,7 @@ components:
             package:
                 name: python-amqplib
         -   name: suds
-            package: 
+            package:
                 name: python-suds
         -   name: paramiko
             package:
