@@ -26,34 +26,24 @@ from anvil.packaging import yum
 
 from tempfile import NamedTemporaryFile
 
+import binascii
 import os
 import re
 
-from anvil.components.helpers import db as dbhelper
-
 LOG = logging.getLogger(__name__)
 
-# Actual dir names
-ROOT_HORIZON = 'horizon'
-ROOT_DASH = 'openstack_dashboard'
+# See https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-SECRET_KEY
+#
+# Needs to be a multiple of 2 for our usage...
+SECRET_KEY_LEN = 10
 
-# Name used for python install trace
-HORIZON_NAME = ROOT_HORIZON
-DASH_NAME = 'dashboard'
-
-# Config files messed with
-HORIZON_PY_CONF = "horizon_settings.py"
-HORIZON_APACHE_CONF = 'horizon.conf'
-CONFIGS = [HORIZON_PY_CONF, HORIZON_APACHE_CONF]
-
-# DB sync that needs to happen for horizon
-DB_SYNC_CMD = ['python', 'manage.py', 'syncdb', '--noinput']
+# Config files messed with...
+HORIZON_LOCAL_SETTINGS_CONF = "local_settings.py"
+HORIZON_APACHE_CONF = 'horizon_apache.conf'
+CONFIGS = [HORIZON_LOCAL_SETTINGS_CONF, HORIZON_APACHE_CONF]
 
 # Users which apache may not like starting as..
 BAD_APACHE_USERS = ['root']
-
-# This db will be dropped and created
-DB_NAME = 'horizon'
 
 
 class HorizonUninstaller(comp.PythonUninstallComponent):
@@ -88,6 +78,10 @@ class HorizonInstaller(comp.PythonInstallComponent):
     def _install_node_repo(self):
         repo_url = self.get_option('nodejs_repo')
         if not repo_url:
+            # Ok then, hope node js is in your path for when horizon attempts
+            # to use it... if not possibly follow:
+            #
+            # http://www.chrisabernethy.com/installing-node-js-on-centos-redhat/
             return
         # Download the said url and install it so that we can actually install
         # the node.js requirement which seems to be needed by horizon for css compiling??
@@ -112,7 +106,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
             elif fn_ext == ".rpm":
                 # Install it instead from said rpm (which likely is a
                 # file that contains said repo location)...
-                packager = yum.YumPackager(self.distro).direct_install(temp_fh.name)
+                yum.YumPackager(self.distro).direct_install(temp_fh.name)
 
     @property
     def symlinks(self):
@@ -136,9 +130,8 @@ class HorizonInstaller(comp.PythonInstallComponent):
             raise excp.ConfigException(msg)
 
     def target_config(self, config_name):
-        if config_name == HORIZON_PY_CONF:
-            # FIXME(harlowja) don't write to checked out locations...
-            return sh.joinpths(self.get_option('app_dir'), ROOT_DASH, 'local', 'local_settings.py')
+        if config_name == HORIZON_LOCAL_SETTINGS_CONF:
+            return sh.joinpths(self.get_option('app_dir'), 'openstack_dashboard', 'local', config_name)
         else:
             return comp.PythonInstallComponent.target_config(self, config_name)
 
@@ -162,24 +155,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
                 sh.chmod(fn, 0666)
         return len(log_fns)
 
-    def _sync_db(self):
-        # Initialize the horizon database (it stores sessions and notices shown to users).
-        # The user system is external (keystone).
-        LOG.info("Syncing horizon to database: %s", colorizer.quote(DB_NAME))
-        sh.execute(*DB_SYNC_CMD, cwd=self.get_option('app_dir'))
-
-    def _setup_db(self):
-        dbhelper.drop_db(distro=self.distro,
-                         dbtype=self.get_option('db', 'type'),
-                         dbname=DB_NAME,
-                         **utils.merge_dicts(self.get_option('db'),
-                                             dbhelper.get_shared_passwords(self)))
-        dbhelper.create_db(distro=self.distro,
-                           dbtype=self.get_option('db', 'type'),
-                           dbname=DB_NAME,
-                           **utils.merge_dicts(self.get_option('db'),
-                                               dbhelper.get_shared_passwords(self)))
-
     def _configure_files(self):
         am = comp.PythonInstallComponent._configure_files(self)
         am += self._setup_logs(self.get_bool_option('clear-logs'))
@@ -187,9 +162,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
-        if self.get_bool_option('db-sync'):
-            self._setup_db()
-            self._sync_db()
         if self.get_bool_option('make-blackhole'):
             self._setup_blackhole()
 
@@ -212,11 +184,10 @@ class HorizonInstaller(comp.PythonInstallComponent):
             mp['BLACK_HOLE_DIR'] = self.blackhole_dir
         else:
             mp['OPENSTACK_HOST'] = self.get_option('ip')
-            mp['DB_NAME'] = DB_NAME
-            mp['DB_USER'] = self.get_option('db', 'user')
-            mp['DB_PASSWORD'] = dbhelper.get_shared_passwords(self)['pw']
-            mp['DB_HOST'] = self.get_option("db", "host")
-            mp['DB_PORT'] = self.get_option("db", "port")
+            if SECRET_KEY_LEN <= 0:
+                mp['SECRET_KEY'] = ''
+            else:
+                mp['SECRET_KEY'] = binascii.b2a_hex(os.urandom(SECRET_KEY_LEN / 2))
         return mp
 
 

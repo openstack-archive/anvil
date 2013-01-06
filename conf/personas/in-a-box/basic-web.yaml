@@ -35,7 +35,6 @@ options:
         do-init: true
         enable-pki: false
     horizon:
-        db-sync: true
         make-blackhole: true
 subsystems:
     glance:
