@@ -225,6 +225,10 @@ class HorizonRuntime(comp.ProgramRuntime):
         elif utils.has_any(combined, 'stopped', 'unrecognized', 'not running'):
             st = comp.STATUS_STOPPED
         return [
-            comp.ProgramStatus(status=st,
-                               details=(sysout + stderr).strip()),
+            comp.ProgramStatus(name='apache',
+                               status=st,
+                               details={
+                                   'STDOUT': sysout,
+                                   'STDERR': stderr,
+                               }),
         ]
