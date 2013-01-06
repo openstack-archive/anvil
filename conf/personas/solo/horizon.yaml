@@ -11,7 +11,7 @@ components:
 - horizon
 options:
     horizon:
-        db-sync: true
+        make-blackhole: true
 supports:
 - rhel
 ...
