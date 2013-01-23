@@ -463,6 +463,19 @@ components:
         pips:
         -   name: cliff
         -   name: cliff-tablib
+    quantum:
+        action_classes:
+            install: anvil.components.quantum:QuantumInstaller
+            package: anvil.packaging.rpm:PythonPackager
+            running: anvil.components:EmptyRuntime
+            test: anvil.components:EmptyTestingComponent
+            uninstall: anvil.components:PythonUninstallComponent
+        pips:
+        -   name: amqplib
+        -   name: kombu
+        -   name: pyudev
+        -   name: alembic
+        -   name: configobj
     rabbit-mq:
         action_classes:
             install: anvil.components.rabbit:RabbitInstaller

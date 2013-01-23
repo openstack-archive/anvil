@@ -1,0 +1,1 @@
+get_from: "git://github.com/openstack/quantum.git?tag=2012.2.1"

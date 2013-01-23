@@ -10,6 +10,7 @@ components:
 - glance-client
 - cinder-client
 - quantum-client
+- quantum
 - nova
 - nova-client
 # Super client, so install after other clients
