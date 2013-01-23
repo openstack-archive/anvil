@@ -2,7 +2,7 @@
 SHORTNAME=RHEL
 MIN_RELEASE=6.0
 STEPS="epel packages"
-EPEL_RPM_URL="http://mirrors.kernel.org/fedora-epel/6/i386/epel-release-6-7.noarch.rpm"
+EPEL_RPM_URL="http://mirrors.kernel.org/fedora-epel/6/i386/epel-release-6-8.noarch.rpm"
 ## Package Requirements (Order matters!)
 require rpm PyYAML
 require rpm gcc
@@ -15,8 +15,8 @@ require rpm python-ordereddict
 require rpm python-pip
 require rpm python-progressbar
 require rpm python-psutil
+require rpm python-iniparse
 require pypi termcolor
-require pypi iniparse
 require pypi hgtools
 require pypi 'keyring>=0.9.2'
 # This matches the nova version and doesn't really 
