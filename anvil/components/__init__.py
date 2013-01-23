@@ -865,9 +865,12 @@ class PythonTestingComponent(component.Component):
             return
         cmd = self._get_test_command()
         env = self._get_env()
-        sh.execute(*cmd, stdout_fh=None, stderr_fh=None, cwd=app_dir, env_overrides=env)
-
-
+        try:
+            sh.execute(*cmd, stdout_fh=None, stderr_fh=None, cwd=app_dir, env_overrides=env)
+        except excp.ProcessExecutionError as e:
+            return e.exit_code
+        # test passed
+        return 0
 #### 
 #### PACKAGING CLASSES
 ####
