@@ -452,6 +452,8 @@ components:
             uninstall: anvil.components:PythonUninstallComponent
         pips:
         -   name: cliff
+        -   name: discover
+        -   name: testrepository
         pip_to_package:
     quantum-client:
         action_classes:
