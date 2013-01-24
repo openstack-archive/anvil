@@ -934,7 +934,7 @@ class PythonTestingComponent(component.Component):
         pep8_wanted = None
         if isinstance(i_sibling, (PythonInstallComponent)):
             for p in i_sibling.pip_requires:
-                req = p['__requirement']
+                req = p['requirement']
                 if req.key == "pep8":
                     pep8_wanted = req
                     break
