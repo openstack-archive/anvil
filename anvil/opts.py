@@ -49,6 +49,21 @@ def parse(previous_settings=None):
                       dest="verbose",
                       default=False,
                       help="make the output logging verbose")
+    parser.add_option("-f", "--logfmt",
+                      action="store",
+                      dest="logfmt",
+                      default="%(levelname)s: @%(name)s : %(message)s",
+                      help="log format")
+    parser.add_option("-t", "--timestamp",
+                      action="store_true",
+                      dest="add_timestamp",
+                      default=False,
+                      help="Add timestamp to log records")
+    parser.add_option("--date-format",
+                      action="store",
+                      dest="datefmt",
+                      default=None,
+                      help="Date fromat")
     parser.add_option("--dryrun",
                       action="store_true",
                       dest="dryrun",
@@ -120,7 +135,7 @@ def parse(previous_settings=None):
                          help=("when packaging attempt to use the versions that are "
                                "installed for the components dependencies"))
     parser.add_option_group(pkg_group)
-    
+
     install_group = OptionGroup(parser, "Install specific options")
     install_group.add_option('-c', "--only-configure",
                                 action="store_true",
@@ -140,7 +155,7 @@ def parse(previous_settings=None):
     parser.add_option_group(uninstall_group)
 
     # Extract only what we care about, these will be passed
-    # to the constructor of actions as arguments 
+    # to the constructor of actions as arguments
     # so don't adjust the naming wily nilly...
     if previous_settings:
         parser.set_defaults(**previous_settings)
@@ -160,4 +175,7 @@ def parse(previous_settings=None):
     values['purge_packages'] = options.purge_packages
     values['keyring_path'] = options.keyring_path
     values['keyring_encrypted'] = options.keyring_encrypted
+    values['timestamp'] = options.add_timestamp
+    values['logfmt'] = options.logfmt
+    values['datefmt'] = options.datefmt
     return values
