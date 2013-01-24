@@ -35,6 +35,15 @@ from anvil import utils
 LOG = logging.getLogger(__name__)
 
 PER_CALL_AM = 50
+SKIP_EMAILS = [
+    'jenkins@review.openstack.org',
+]
+SKIP_SUMMARIES = [
+    re.compile(r'^merge commit', re.I),
+    re.compile(r'^merge branch', re.I),
+    re.compile(r'^merge pull', re.I),
+    re.compile(r'^merge remote', re.I),
+]
 
 
 def translate_utf8(text):
@@ -85,13 +94,12 @@ class GitChangeLog(object):
                 LOG.warn("Non-utf8 field %s found", f)
                 return True
         email = email.lower().strip()
-        if email in ['jenkins@review.openstack.org']:
+        if email in SKIP_EMAILS:
             return True
-        summary = summary.lower().strip()
-        if summary.startswith('merge commit') or \
-           summary.startswith("merge branch") or \
-           summary.startswith("merge remote"):
-            return True
+        summary = summary.strip()
+        for s in SKIP_SUMMARIES:
+            if s.search(summary):
+                return True
         if not all([summary, date, email, name]):
             return True
         return False
