@@ -103,10 +103,10 @@ class TermAdapter(logging.LoggerAdapter):
         logging.LoggerAdapter.__init__(self, logger, dict())
 
 
-def setupLogging(log_level, format='%(levelname)s: @%(name)s : %(message)s'):
+def setupLogging(log_level, format=None, date_format=None):
     root_logger = getLogger().logger
     console_logger = StreamHandler(sys.stdout)
-    console_logger.setFormatter(TermFormatter(format))
+    console_logger.setFormatter(TermFormatter(format, date_format))
     root_logger.addHandler(console_logger)
     root_logger.setLevel(log_level)
 

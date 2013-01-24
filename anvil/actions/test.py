@@ -29,7 +29,7 @@ class TestAction(action.Action):
         return 'test'
 
     def _run(self, persona, component_order, instances):
-        self._run_phase(
+        results = self._run_phase(
             PhaseFunctors(
                 start=lambda i: LOG.info('Running tests of component %s.', colorizer.quote(i.name)),
                 run=lambda i: i.run_tests(),
@@ -39,3 +39,6 @@ class TestAction(action.Action):
             instances,
             None,
             )
+        error = [component.name for (component, rc) in results.items() if rc]
+        if error:
+            raise RuntimeError("Test errors in '%s' components" % ", ".join(error))

@@ -89,7 +89,7 @@ def run(args):
 
     # Load the distro
     dist = distro.load(settings.DISTRO_DIR)
-    
+
     # Load + verify the person
     try:
         persona_obj = persona.load(persona_fn)
@@ -129,7 +129,7 @@ def load_previous_settings():
     settings_prev = None
     try:
         # Don't use sh here so that we always
-        # read this (even if dry-run)    
+        # read this (even if dry-run)
         with open("/etc/anvil/settings.yaml", 'r') as fh:
             settings_prev = utils.load_yaml_text(fh.read())
     except Exception:
@@ -173,7 +173,7 @@ def main():
     Arguments: N/A
     Returns: 1 for success, 0 for failure
     """
-    
+
     # Do this first so people can see the help message...
     args = opts.parse(load_previous_settings())
 
@@ -181,7 +181,10 @@ def main():
     log_level = logging.INFO
     if args['verbose'] or args['dryrun']:
         log_level = logging.DEBUG
-    logging.setupLogging(log_level)
+
+    logfmt = ("%(asctime) " if args['timestamp'] else "") + args['logfmt']
+
+    logging.setupLogging(log_level, logfmt, args['datefmt'])
 
     LOG.debug("Log level is: %s" % (logging.getLevelName(log_level)))
 
