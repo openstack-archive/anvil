@@ -50,6 +50,7 @@ class Packager(pack.Packager):
     def __init__(self, distro, remove_default=False):
         pack.Packager.__init__(self, distro, remove_default)
         self.helper = pip_helper.Helper(distro)
+        self.upgraded = {}
 
     def _get_pip_command(self):
         return self.distro.get_command_config('pip')
@@ -63,11 +64,24 @@ class Packager(pack.Packager):
         if wanted_pip.version is not None:
             # Check if version wanted will work with whats installed
             if str(wanted_pip.version) not in pip_there:
-                msg = ("Pip %s is already installed"
-                       " and it is not compatible with desired"
-                       " pip %s")
-                msg = msg % (pip_there, wanted_pip)
-                raise excp.DependencyException(msg)
+                is_upgrading = False
+                for o in ['-U', '--upgrade']:
+                    if o in pip.get('options', []):
+                        is_upgrading = True
+                if is_upgrading and (wanted_pip.name not in self.upgraded):
+                    # Upgrade should hopefully get that package to the right version....
+                    LOG.info("Upgrade is occuring for %s, even though %s is installed.",
+                             wanted_pip, pip_there)
+                    # Mark it so that we don't keep on flip-flopping on upgrading this
+                    # package (ie install new, install old, install new....)
+                    self.upgraded[wanted_pip.name] = wanted_pip
+                    return None
+                else:
+                    msg = ("Pip %s is already installed"
+                           " and it is not compatible with desired"
+                           " pip %s")
+                    msg = msg % (pip_there, wanted_pip)
+                    raise excp.DependencyException(msg)
         return pip_there
 
     def _execute_pip(self, cmd):
