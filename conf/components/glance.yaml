@@ -20,8 +20,10 @@ db:
   host: "$(db:host)"
   port: "$(db:port)"
 
-# Package time patches
 patches:
+  # After check-out/download time patches
+  download: []
+  # At packaging time patches
   package:
     - "conf/patches/glance/"
 
@@ -40,6 +42,6 @@ keystone:
 # uploading does not have to occur
 image_cache_dir: "/usr/share/anvil/glance/images"
 
-# Used by install section in the specfile
+# Used by install section in the specfile (conflicts with the client binary...)
 remove_file: "/bin/rm -rf %{buildroot}/usr/bin/glance"
 ...

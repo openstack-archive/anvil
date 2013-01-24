@@ -21,6 +21,9 @@ options:
         db-sync: true
         do-network-init: true
         mq-type: "rabbit"
+        enable-cells: false
+        enable-spice: false
+        local-conductor: false
     glance:
         db-sync: true
         load-images: true
@@ -40,6 +43,7 @@ subsystems:
     - api-os-compute
     - cert
     - compute
+    - conductor
     - consoleauth
     - dhcpbridge
     - network

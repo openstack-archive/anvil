@@ -349,12 +349,18 @@ class ConfConfigurator(object):
         # This check absorbs cpu cycles, warning....
         nova_conf.add('checksum_base_images', self.installer.get_bool_option('checksum_base_images'))
 
+        # Setup the interprocess locking directory (don't put me on shared storage)
+        lock_path = self.installer.get_option('lock_path')
+        if not lock_path:
+            lock_path = sh.joinpths(self.installer.get_option('component_dir'), 'locks')
+        sh.mkdirslist(lock_path, tracewriter=self.tracewriter)
+        nova_conf.add('lock_path', lock_path)
+
         # Vnc settings setup
         self._configure_vnc(nova_conf)
 
         # Where our paste config is
-        nova_conf.add('api_paste_config',
-                      self.installer.target_config(PASTE_CONF))
+        nova_conf.add('api_paste_config', self.installer.target_config(PASTE_CONF))
 
         # What our imaging service will be
         self._configure_image_service(nova_conf, hostip)
@@ -387,6 +393,9 @@ class ConfConfigurator(object):
 
         # Handle any virt driver specifics
         self._configure_virt_driver(nova_conf)
+
+        # Handle configuring the conductor service
+        self._configure_conductor(nova_conf)
 
         # Annnnnd extract to finish
         return self._get_content(nova_conf)
@@ -464,8 +473,19 @@ class ConfConfigurator(object):
         nova_conf.add('iscsi_helper', 'tgtadm')
 
     def _configure_quantum(self, nova_conf):
-        # TODO(harlowja) fixup for folsom
         pass
+
+    def _configure_cells(self, nova_conf):
+        cells_enabled = self.installer.get_bool_option('enable-cells')
+        nova_conf.add_with_section('cells', 'enable', cells_enabled)
+
+    def _configure_spice(self, nova_conf):
+        spicy = self.installer.get_bool_option('enable-spice')
+        nova_conf.add_with_section('spice', 'enable', spicy)
+
+    def _configure_conductor(self, nova_conf):
+        conductor_local = self.installer.get_bool_option('local-conductor')
+        nova_conf.add_with_section('conductor', 'use_local', conductor_local)
 
     def _configure_network_settings(self, nova_conf):
         if self.installer.get_bool_option('quantum-enabled'):
@@ -514,9 +534,6 @@ class ConfConfigurator(object):
 
     # Any special libvirt configurations go here
     def _configure_libvirt(self, virt_type, nova_conf):
-        if virt_type == 'lxc':
-            # TODO(harlowja) need to add some goodies here
-            pass
         nova_conf.add('libvirt_type', virt_type)
         # https://blueprints.launchpad.net/nova/+spec/libvirt-xml-cpu-model
         nova_conf.add('libvirt_cpu_mode', 'none')
@@ -538,7 +555,7 @@ class Conf(object):
         self.backing = cfg.create_parser(cfg.BuiltinConfigParser, self.installer)
         self.name = name
 
-    def add(self, key, value, *values):
+    def add_with_section(self, section, key, value, *values):
         real_key = str(key)
         real_value = ""
         if len(values):
@@ -546,8 +563,11 @@ class Conf(object):
             real_value = ",".join(str_values)
         else:
             real_value = str(value)
-        self.backing.set('DEFAULT', real_key, real_value)
-        LOG.debug("Added nova conf key %r with value %r" % (real_key, real_value))
+        LOG.debug("Added nova conf key %r with value %r under section %r", real_key, real_value, section)
+        self.backing.set(section, real_key, real_value)
+
+    def add(self, key, value, *values):
+        self.add_with_section('DEFAULT', key, value, *values)
 
     def generate(self):
         return self.backing.stringify(fn=self.name)

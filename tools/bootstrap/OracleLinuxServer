@@ -2,7 +2,7 @@
 SHORTNAME=OEL
 MIN_RELEASE=6.3
 STEPS="epel packages"
-EPEL_RPM_URL="http://mirrors.kernel.org/fedora-epel/6/i386/epel-release-6-7.noarch.rpm"
+EPEL_RPM_URL="http://mirrors.kernel.org/fedora-epel/6/i386/epel-release-6-8.noarch.rpm"
 ## Package Requirements (Order matters!)
 require rpm PyYAML
 require rpm gcc

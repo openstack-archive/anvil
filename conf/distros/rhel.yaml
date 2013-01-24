@@ -238,6 +238,7 @@ components:
         -   name: coverage
         -   name: distribute
             removable: false
+        -   name: fixtures
         -   name: keyring # Shared at least by openstack-client, keystone-client (+anvil itself)
             removable: false
         -   name: lxml
@@ -259,6 +260,7 @@ components:
                 - "-U"
             removable: false
         -   name: requests
+            version: '0.14.2' # 1.0 seemed to introduce new backwayd incompatible changes, not cool!!
         # Need this or nova pukes with 'Did not recognize type 'BIGINT' of column 'bw_in''
         -   name: sqlalchemy
             version: "0.7.9"
@@ -413,9 +415,10 @@ components:
         -   name: MySQL-python
             package:
                 name: MySQL-python
+        -   name: websockify
+            package:
+                name: python-websockify
         pips:
-        # Seems for testing only??
-        -   name: fixtures
         # Why is this still needed??
         -   name: Cheetah
         # This seems to be a core dependency for a 'cas' tool
@@ -428,11 +431,7 @@ components:
         -   name: discover
         -   name: python-subunit
         -   name: testrepository
-            version: '0.0.8'
         subsystems:
-            novncproxy:
-                packages:
-                -  name: python-websockify
             compute:
                 packages:
                 -   name: fuse # Needed for mounting
