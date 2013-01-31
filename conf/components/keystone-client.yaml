@@ -2,7 +2,7 @@
 ---
 
 # Where we download this from...
-get_from: "git://github.com/openstack/python-keystoneclient.git?branch=master"
+get_from: "git://github.com/openstack/python-keystoneclient.git?tag=0.2.2"
 
 patches:
   # After check-out/download time patches
