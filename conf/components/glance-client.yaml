@@ -2,7 +2,7 @@
 ---
 
 # Where we download this from...
-get_from: git://github.com/openstack/python-glanceclient.git?branch=master
+get_from: git://github.com/openstack/python-glanceclient.git?tag=0.7.0
 
 patches:
   # After check-out/download time patches
