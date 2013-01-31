@@ -2,7 +2,7 @@
 ---
 
 # Where we download this from...
-get_from: "git://github.com/openstack/python-novaclient.git?branch=master"
+get_from: "git://github.com/openstack/python-novaclient.git?tag=2.10.0"
 
 patches:
   # After check-out/download time patches
