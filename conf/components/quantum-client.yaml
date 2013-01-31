@@ -1,7 +1,7 @@
 # Settings for component quantum-client
 ---
 
-get_from: "git://github.com/openstack/python-quantumclient.git?branch=master"
+get_from: "git://github.com/openstack/python-quantumclient.git?tag=2.1"
 
 patches:
   # After check-out/download time patches
