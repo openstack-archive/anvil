@@ -1,7 +1,7 @@
 ---
 # RedHat Enterprise Linux 6.0+
 name: rhel
-platform_pattern: redhat(.*)
+platform_pattern: redhat(.*)|centos(.*)
 packager_name: anvil.packaging.yum:YumPackager
 commands:
     apache:
@@ -320,6 +320,8 @@ components:
         pips:
         -   name: nosexcover # Seems to be only in test-requires
         -   name: setuptools-git # Seems to be only in test-requires
+        -   name: discover # Seems to be only in test-requires
+        -   name: testrepository # Seems to be only in test-requires
     horizon:
         action_classes:
             install: anvil.distros.rhel:HorizonInstaller
