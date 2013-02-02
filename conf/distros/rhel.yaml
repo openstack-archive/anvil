@@ -300,7 +300,6 @@ components:
         pips:
         # Pips that aren't packages yet (and not in the 'general' section)
         -   name: boto
-            version: "2.1.1"
         -   name: wsgiref
         -   name: xattr # Seems to be only in test-requires
     glance-client:
@@ -320,6 +319,8 @@ components:
         pips:
         -   name: nosexcover # Seems to be only in test-requires
         -   name: setuptools-git # Seems to be only in test-requires
+        -   name: discover
+        -   name: testrepository
     horizon:
         action_classes:
             install: anvil.distros.rhel:HorizonInstaller
