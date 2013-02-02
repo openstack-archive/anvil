@@ -320,6 +320,7 @@ components:
         pips:
         -   name: nosexcover # Seems to be only in test-requires
         -   name: setuptools-git # Seems to be only in test-requires
+        -   name: discover
     horizon:
         action_classes:
             install: anvil.distros.rhel:HorizonInstaller
