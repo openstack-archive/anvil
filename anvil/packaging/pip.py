@@ -70,7 +70,7 @@ class Packager(pack.Packager):
                         is_upgrading = True
                 if is_upgrading and (wanted_pip.name not in self.upgraded):
                     # Upgrade should hopefully get that package to the right version....
-                    LOG.info("Upgrade is occuring for %s, even though %s is installed.",
+                    LOG.warn("Upgrade is occuring for %s, even though %s is installed.",
                              wanted_pip, pip_there)
                     # Mark it so that we don't keep on flip-flopping on upgrading this
                     # package (ie install new, install old, install new....)

@@ -300,7 +300,6 @@ components:
         pips:
         # Pips that aren't packages yet (and not in the 'general' section)
         -   name: boto
-            version: "2.1.1"
         -   name: wsgiref
         -   name: xattr # Seems to be only in test-requires
     glance-client:
