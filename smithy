@@ -134,11 +134,28 @@ puke()
 ## Identify which bootstrap configuration file to use: either set
 ## explicitly (BSCONF_FILE) or determined based on the os distribution:
 BSCONF_DIR=${BSCONF_DIR:-$(dirname $(readlink -f "$0"))/tools/bootstrap}
-TYPE=$(lsb_release -d | cut  -f 2)
-RELEASE=$(lsb_release -r | cut  -f 2)
+get_os_info(){
+    OS=`uname`
+    if [ "${OS}" = "Linux" ] ; then
+        if [ -f /etc/redhat-release ] ; then
+            PKG="rpm"
+            OSNAME=`cat /etc/redhat-release`
+            OSDIST=`cat /etc/redhat-release | sed -e 's/release.*$//g;s/\s//g'`
+            PSUEDONAME=`cat /etc/redhat-release | sed s/.*\(// | sed s/\)//`
+            RELEASE=`cat /etc/redhat-release | sed s/.*release\ // | sed s/\ .*//`
+        elif [ -f /etc/debian_version ] ; then
+            PKG="deb"
+            OSDIST=`cat /etc/lsb-release | grep '^DISTRIB_ID' | awk -F= '{ print $2 }'`
+            PSUEDONAME=`cat /etc/lsb-release | grep '^DISTRIB_CODENAME' | awk -F= '{ print $2 }'`
+            RELEASE=`cat /etc/lsb-release | grep '^DISTRIB_RELEASE' | awk -F= '{ print $2 }'`
+            OSNAME="$OSDIST $RELEASE ($PSUEDONAME)"
+        fi
+    fi
+}
+
+get_os_info
 
 if [ -z "$BSCONF_FILE" ]; then
-    OSDIST=$(echo $TYPE | sed -e 's/release.*$//g;s/\s//g')
     BSCONF_FILE="$BSCONF_DIR/$OSDIST"
 fi
 
@@ -179,7 +196,7 @@ if [ "$(id -u)" != "0" ]; then
    exit 1
 fi
 if [ ! -f $BSCONF_FILE ]; then 
-     echo "Anvil has not been tested on distribution '$TYPE'" >&2
+     echo "Anvil has not been tested on distribution '$OSNAME'" >&2
      puke
 fi
 echo "Sourcing $BSCONF_FILE"
