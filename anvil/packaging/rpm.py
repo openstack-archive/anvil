@@ -96,7 +96,7 @@ class DependencyPackager(comp.Component):
         if self._details is not None:
             return self._details
         self._details = {
-            'name': self.name,
+            'name': self.get_option("rpm_package_name", default_value=self.name),
             'version': 0,
             'release': self.get_int_option('release', default_value=1),
             'packager': self._get_packager(),
@@ -283,10 +283,14 @@ class PythonPackager(DependencyPackager):
             replacements = {
                 'version': '--version',
                 'license': '--license',
-                'name': '--name',
                 'vendor': '--author',
                 'url': '--url',
             }
+
+            # only replace name if it isn't set in the component config file
+            if self.get_option("rpm_package_name") is None:
+                replacements['name'] = '--name'
+
             for (key, opt) in replacements.items():
                 cmd = setup_cmd + [opt]
                 (stdout, _stderr) = sh.execute(*cmd, run_as_root=True, cwd=self.get_option('app_dir'))
