@@ -25,6 +25,8 @@ class OpenStackClientInstaller(comp.PythonInstallComponent):
             return None
         if line.lower().find('glanceclient') != -1:
             return None
+        if line.lower().find('python-cinderclient') != -1:
+            return None
         return line
 
 
