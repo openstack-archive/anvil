@@ -432,9 +432,12 @@ components:
         -   name: discover
         -   name: python-subunit
         -   name: testrepository
+        -   name: psycopg2
         subsystems:
             compute:
                 packages:
+                -   name: avahi
+                    removable: false
                 -   name: fuse # Needed for mounting
                     removable: false
                 -   name: guestfish
@@ -452,6 +455,8 @@ components:
                 -   name: libvirt-client
                     removable: false
                 -   name: libvirt-python
+                    removable: false
+                -   name: postgresql-devel # for psycopg2
                     removable: false
                 -   name: qemu-img
                     removable: false
@@ -505,6 +510,7 @@ components:
                 name: python-cliff
         pips:
         -   name: cliff-tablib
+        -   name: python-subunit
     rabbit-mq:
         action_classes:
             install: anvil.components.rabbit:RabbitInstaller
