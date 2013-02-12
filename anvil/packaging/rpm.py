@@ -96,7 +96,7 @@ class DependencyPackager(comp.Component):
         self._details = {
             'name': self.name,
             'version': 0,
-            'release': self.get_int_option('release', default_value=1),
+            'release': self.get_option('release', default_value=1),
             'packager': "%s <%s@%s>" % (sh.getuser(), sh.getuser(), sh.hostname()),
             'changelog': '',
             'license': 'Apache License, Version 2.0',
