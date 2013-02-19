@@ -822,6 +822,8 @@ class PythonTestingComponent(component.Component):
         for e in self._get_test_exclusions():
             cmd.append('--exclude=%s' % (e))
         xunit_fn = self.get_option("xunit_filename")
+        if self.get_option("test_coverage"):
+            cmd.append("--with-coverage")
         if xunit_fn:
             cmd.append("--with-xunit")
             cmd.append("--xunit-file=%s" % (xunit_fn))
