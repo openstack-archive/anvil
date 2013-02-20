@@ -130,7 +130,16 @@ class PkgInstallComponent(component.Component):
     def patch(self, section):
         what_patches = self.get_option('patches', section)
         (_from_uri, target_dir) = self._get_download_location()
-        patcher.apply_patches(what_patches, target_dir)
+        if not what_patches:
+            what_patches = []
+        canon_what_patches = []
+        for path in what_patches:
+            if sh.isdir(path):
+                canon_what_patches.extend(sorted(sh.listdir(path, files_only=True)))
+            elif sh.isfile(path):
+                canon_what_patches.append(path)
+        if canon_what_patches:
+            patcher.apply_patches(canon_what_patches, target_dir)
 
     def config_params(self, config_fn):
         mp = dict(self.params)
