@@ -132,7 +132,7 @@ class PkgInstallComponent(component.Component):
         canon_what_patches = []
         for path in what_patches:
             if sh.isdir(path):
-                canon_what_patches.extend(sh.listdir(path, files_only=True))
+                canon_what_patches.extend(sorted(sh.listdir(path, files_only=True)))
             elif sh.isfile(path):
                 canon_what_patches.append(path)
         if canon_what_patches:
