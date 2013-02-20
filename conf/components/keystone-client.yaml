@@ -9,6 +9,6 @@ patches:
   download:
     # Temporarily fixes https://bugs.launchpad.net/python-glanceclient/+bug/1090592
     # which appears in all clients
-    - "conf/patches/keystone-client/fix-tag-version.patch"
+    - "conf/patches/keystone-client/"
 
 ...

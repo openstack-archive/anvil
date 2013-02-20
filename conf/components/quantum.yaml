@@ -1,1 +1,6 @@
 get_from: "git://github.com/openstack/quantum.git?branch=stable/folsom"
+
+# Package time patches
+patches:
+  package:
+    - "conf/patches/quantum/"
