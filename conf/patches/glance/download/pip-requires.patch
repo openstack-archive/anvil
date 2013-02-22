@@ -1,0 +1,27 @@
+nova and quantum both strict on kombu 1.0.4, but glance is open-ended,
+which causes a later version to be pulled in, breaking dependencies.
+
+same thing happens with anyjson
+
+diff --git a/tools/pip-requires b/tools/pip-requires
+index 549f6e5..78bfb93 100644
+--- a/tools/pip-requires
++++ b/tools/pip-requires
+@@ -4,7 +4,7 @@
+ greenlet>=0.3.1
+ 
+ SQLAlchemy>=0.7,<=0.7.9
+-anyjson
++anyjson==0.2.4
+ eventlet>=0.9.12
+ PasteDeploy
+ routes
+@@ -14,7 +14,7 @@ argparse
+ boto==2.1.1
+ sqlalchemy-migrate>=0.7
+ httplib2
+-kombu
++kombu==1.0.4
+ pycrypto>=2.1.0alpha1
+ iso8601>=0.1.4
+ 
