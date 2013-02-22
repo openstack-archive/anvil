@@ -1,0 +1,12 @@
+--- a/glance/openstack/common/setup.py	2013-02-21 17:12:01.501298170 -0800
++++ b/glance/openstack/common/setup.py	2013-02-21 17:13:09.360406891 -0800
+@@ -150,7 +150,8 @@
+ 
+ 
+ def _get_git_current_tag():
+-    return _run_shell_command("git tag --contains HEAD")
++    return _run_shell_command("git describe --always --tag")
++#    return _run_shell_command("git tag --contains HEAD")
+ 
+ 
+ def _get_git_tag_info():
