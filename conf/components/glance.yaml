@@ -22,10 +22,11 @@ db:
 
 patches:
   # After check-out/download time patches
-  download: []
+  download:
+    - "conf/patches/glance/download/"
   # At packaging time patches
   package:
-    - "conf/patches/glance/"
+    - "conf/patches/glance/package/"
 
 # Interactions with keystone are via the following settings
 paste_flavor: 'keystone'
