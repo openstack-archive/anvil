@@ -191,10 +191,19 @@ components:
             package:
                 name: python-pip
                 removable: false
+        -   name: pyasn1
+            package:
+                name: python-pyasn1
+        -   name: pyflakes
+            package:
+                name: pyflakes
         -   name: pyparsing
             package:
                 name: pyparsing
                 removable: false
+        -   name: pysqlite
+            package:
+                name: python-sqlite2
         -   name: routes
             package:
                 name: python-routes1.12
