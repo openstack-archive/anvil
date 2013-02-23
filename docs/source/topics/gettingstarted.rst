@@ -8,7 +8,7 @@ Getting Started
 Simple setup!
 =============
 
-Made to be as simple as possible, but not to simple.
+Made to be as simple as possible, but not too simple.
 
 Prerequisites
 =============
