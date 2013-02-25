@@ -67,6 +67,13 @@ class Helper(object):
         else:
             return False
 
+    def get_available(self):
+        base = Helper._get_yum_base()
+        with sh.Rooted(True):
+            pkgs = base.doPackageLists()
+            avail = list(pkgs.available)
+            return avail
+
     def get_installed(self, name):
         base = Helper._get_yum_base()
         # This 'root' seems needed...

@@ -41,6 +41,10 @@ def extract_requirement(pkg_info):
     return yum_helper.Requirement(p_name, p_version)
 
 
+class MultiplePackageSolutions(Exception):
+    pass
+
+
 class YumPackager(pack.Packager):
     def __init__(self, distro, remove_default=False):
         pack.Packager.__init__(self, distro, remove_default)
@@ -61,6 +65,73 @@ class YumPackager(pack.Packager):
         LOG.warn("There was %s matches to %s found, none satisified our request!",
                  len(whats_installed), req)
         return None
+
+    def match_pip_2_package(self, pip_requirement):
+        possible_pkgs = self._match_pip_name(pip_requirement)
+        if not possible_pkgs:
+            return None
+
+        def match_version(yum_pkg):
+            version = str(yum_pkg.version)
+            if version in pip_requirement:
+                return True
+            return False
+
+        satisfying_packages = [p for p in possible_pkgs if match_version(p)]
+        if not satisfying_packages:
+            return None
+
+        if len(satisfying_packages) > 1:
+            msg = "Multiple satisfying packages found for requirement %s: %s" % (pip_requirement,
+                                                                                 ", ".join([str(p) for p in satisfying_packages]))
+            raise MultiplePackageSolutions(msg)
+        else:
+            return satisfying_packages[0]
+
+    def _match_pip_name(self, pip_requirement):
+        # See if we can find anything that might work
+        # by looking at our available yum packages.
+        all_available = self.helper.get_available()
+
+        # Try a few name variations to see if we can find a matching
+        # rpm for a given pip, using a little apriori knowledge about
+        # how redhat usually does it...
+        possible_names = [
+            pip_requirement.project_name,
+            pip_requirement.key,
+            "python-%s" % (pip_requirement.project_name),
+            "python-%s" % (pip_requirement.key),
+        ]
+
+        def is_exact_match_name(yum_pkg):
+            # First check direct match.
+            pkg_name = str(yum_pkg.name)
+            if pkg_name in possible_names:
+                return True
+            return False
+
+        def skip_packages_named(name):
+            name = name.lower()
+            # Skip on ones that end with '-doc' or 'src'
+            if name.endswith('-doc'):
+                return True
+            if name.endswith('-src'):
+                return True
+            return False
+
+        def is_partial_match_name(yum_pkg):
+            pkg_name = str(yum_pkg.name)
+            if skip_packages_named(pkg_name):
+                return False
+            for n in possible_names:
+                if pkg_name.find(n) != -1:
+                    return True
+            return False
+
+        matches = [p for p in all_available if is_exact_match_name(p)]
+        if not matches:
+            matches = [p for p in all_available if is_partial_match_name(p)]
+        return matches
 
     def _execute_yum(self, cmd, **kargs):
         yum_cmd = YUM_CMD + cmd

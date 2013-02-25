@@ -50,6 +50,7 @@ from anvil import trace as tr
 from anvil import utils
 
 from anvil.packaging import pip
+from anvil.packaging import yum
 
 from anvil.packaging.helpers import pip_helper
 
@@ -356,6 +357,25 @@ class PythonInstallComponent(PkgInstallComponent):
                 LOG.debug("Matched pip->pkg '%s' from component %r", there_pip, who)
                 return (dict(pip_info.get('package')), False)
 
+        # Ok nobody had it in there pip->pkg mapping
+        # but now lets see if we can automatically find
+        # a pip->pkg mapping for them using the good ole'
+        # rpm/yum database.
+        installer = make_packager({}, self.distro.package_manager_class,
+                                  distro=self.distro)
+        if installer and isinstance(installer, (yum.YumPackager)):
+            try:
+                rpm_pkg = installer.match_pip_2_package(pip_req)
+                if rpm_pkg:
+                    pkg_info = {
+                        'name': str(rpm_pkg.name),
+                        'version': str(rpm_pkg.version),
+                    }
+                    LOG.debug("Auto-matched %s -> %s", pip_req, rpm_pkg)
+                    return (pkg_info, False)
+            except yum.MultiplePackageSolutions as e:
+                LOG.warn("Unable to automatically map pip to package: %s", e)
+
         # Ok nobody had it in a pip->pkg mapping
         # but see if they had it in there pip collection
         all_pips = {
@@ -373,6 +393,7 @@ class PythonInstallComponent(PkgInstallComponent):
                     continue
                 LOG.debug("Matched pip '%s' from component %r", there_pip, who)
                 return (dict(pip_info), True)
+
         return (None, False)
 
     def _get_mapped_packages(self):
