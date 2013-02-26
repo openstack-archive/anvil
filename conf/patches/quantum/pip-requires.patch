@@ -1,7 +1,7 @@
-diff --git a/tools/pip-requires b/tools/pip-requires
+diff --git a/quantum/tools/pip-requires b/quantum/tools/pip-requires
 index 44b5279..337dc8f 100644
---- a/tools/pip-requires
-+++ b/tools/pip-requires
+--- a/quantum/tools/pip-requires
++++ b/quantum/tools/pip-requires
 @@ -2,12 +2,12 @@ Paste
  PasteDeploy==1.5.0
  Routes>=1.12.3
