@@ -14,8 +14,6 @@ components:
 - quantum-client
 - nova
 - nova-client
-# Super client, so install after other clients
-- openstack-client
 options:
     nova:
         db-sync: true

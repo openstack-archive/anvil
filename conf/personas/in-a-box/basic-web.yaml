@@ -17,8 +17,6 @@ components:
 - nova
 - nova-client
 - horizon
-# Super client, so install after other clients
-- openstack-client
 options:
     no-vnc:
         # This is the nova component name (we need this to hook into the nova conf...)
