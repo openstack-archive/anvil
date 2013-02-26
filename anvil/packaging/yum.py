@@ -94,8 +94,8 @@ class YumPackager(pack.Packager):
             if len(packages) == 1:
                 satisfying_packages.extend(packages)
             else:
-                satisfying_packages = sorted(packages)
-                satisfying_packages.append(satisfying_packages[-1])
+                packages = sorted(packages)
+                satisfying_packages.append(packages[-1])
 
         if len(satisfying_packages) > 1:
             msg = "Multiple satisfying packages found for requirement %s: %s" % (pip_requirement,
