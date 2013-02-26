@@ -61,7 +61,7 @@ class DependencyPackager(comp.Component):
             for path in in_patches:
                 path = sh.abspth(path)
                 if sh.isdir(path):
-                    for c_path in sh.listdir(path, files_only=True):
+                    for c_path in sorted(sh.listdir(path, files_only=True)):
                         if not c_path.endswith(".patch"):
                             continue
                         tgt_fn = sh.joinpths(self.build_paths['sources'], sh.basename(c_path))
