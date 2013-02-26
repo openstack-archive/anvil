@@ -18,6 +18,7 @@ from StringIO import StringIO
 
 from anvil import action
 from anvil import colorizer
+from anvil import components
 from anvil import log
 from anvil import shell as sh
 from anvil import utils
@@ -59,6 +60,9 @@ class InstallAction(action.Action):
             utils.log_iterable(entries,
                                header="Wrote to %s %s exports" % (path, len(entries)),
                                logger=LOG)
+
+    def _analyze_dependencies(self, instance_dependencies):
+        LOG.debug("Full known dependency list: %s", instance_dependencies)
 
     def _run(self, persona, component_order, instances):
         removals = []
@@ -105,6 +109,17 @@ class InstallAction(action.Action):
             LOG.info("Exiting early, only asked to download and configure!")
             return
 
+        instance_dependencies = {}
+
+        def preinstall_run(instance):
+            instance.pre_install()
+            its_deps = {}
+            if isinstance(instance, (components.PkgInstallComponent)):
+                its_deps['packages'] = instance.packages
+            if isinstance(instance, (components.PythonInstallComponent)):
+                its_deps['pips'] = instance.pip_requires
+            instance_dependencies[instance.name] = its_deps
+
         removals += ['pre-uninstall', 'post-uninstall']
         self._run_phase(
             PhaseFunctors(
@@ -117,6 +132,9 @@ class InstallAction(action.Action):
             "pre-install",
             *removals
             )
+
+        # Do validation on the installed dependency set.
+        self._analyze_dependencies(instance_dependencies)
 
         def install_start(instance):
             subsystems = set(list(instance.subsystems))
