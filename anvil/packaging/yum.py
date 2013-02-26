@@ -126,7 +126,7 @@ class YumPackager(pack.Packager):
         def skip_packages_named(name):
             # Skip on ones that end with '-doc' or 'src'
             name = name.lower()
-            if name.endswith('-doc'):
+            if name.endswith('doc'):
                 return True
             if name.endswith('-src'):
                 return True
