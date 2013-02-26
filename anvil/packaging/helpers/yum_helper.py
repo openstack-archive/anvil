@@ -72,6 +72,7 @@ class Helper(object):
         with sh.Rooted(True):
             pkgs = base.doPackageLists()
             avail = list(pkgs.available)
+            avail.extend(pkgs.installed)
             return avail
 
     def get_installed(self, name):
