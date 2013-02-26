@@ -330,6 +330,7 @@ components:
         -   name: discover
         -   name: psycopg2
         -   name: suds # The version in rhel doesn't work...
+        -   name: Babel # The version in rhel doesn't work...
         subsystems:
             compute:
                 packages:
