@@ -121,48 +121,12 @@ components:
         # Shared pypi packages + their package information.
         # Packages is what is really used for installation (the pypi name
         # is just for matching since the general section is not python code).
-        -   name: pylint
-            package:
-                name: pylint
-                removable: false
-        -   name: anyjson
-            package:
-                name: python-anyjson
-        -   name: argparse
-            package:
-                name: python-argparse
-                removable: false
-        -   name: babel
-            package:
-                name: python-babel
-        -   name: cmd2
-            package:
-                name: python-cmd2
-        -   name: eventlet
-            package:
-                name: python-eventlet
-        -   name: greenlet
-            package:
-                name: python-greenlet
-        -   name: httplib2
-            package:
-                name: python-httplib2
-                removable: false
-        -   name: iso8601
-            package:
-                name: python-iso8601
-        -   name: lockfile
-            package:
-                name: python-lockfile
-        -   name: mock
-            package:
-                name: python-mock
-        -   name: mox
-            package:
-                name: python-mox
-        -   name: netaddr
-            package:
-                name: python-netaddr
+        #
+        # When parsing 'tools/pip-requires' and
+        # 'tools/test-requires' (if they exist)
+        # the following map will be used to translate names
+        # and versions inside those files into distribution
+        # package names equivalents (if possible)
         -   name: nose
             package:
                 name: python-nose1.1
@@ -173,12 +137,6 @@ components:
                           target: "/usr/lib/python2.6/site-packages/nose"
                         - source: "/usr/bin/nosetests1.1"
                           target: "/usr/bin/nosetests"
-        -   name: passlib
-            package:
-                name: python-passlib
-        -   name: paste
-            package:
-                name: python-paste
         -   name: pastedeploy
             package:
                 name: python-paste-deploy1.5
@@ -187,20 +145,6 @@ components:
                     links:
                         - source: "/usr/lib/python2.6/site-packages/PasteDeploy-1.5*-py2.6.egg/paste/deploy"
                           target: "/usr/lib/python2.6/site-packages/paste/deploy"
-        -   name: pip
-            package:
-                name: python-pip
-                removable: false
-        -   name: pyasn1
-            package:
-                name: python-pyasn1
-        -   name: pyflakes
-            package:
-                name: pyflakes
-        -   name: pyparsing
-            package:
-                name: pyparsing
-                removable: false
         -   name: pysqlite
             package:
                 name: python-sqlite2
@@ -212,9 +156,6 @@ components:
                     links:
                         - source: "/usr/lib/python2.6/site-packages/Routes-1.*-py2.6.egg/routes"
                           target: "/usr/lib/python2.6/site-packages/routes"
-        -   name: simplejson
-            package:
-                name: python-simplejson
         -   name: sphinx
             package:
                 name: python-sphinx10
@@ -227,10 +168,6 @@ components:
                           target: "/usr/bin/sphinx-quickstart"
                         - source: "/usr/bin/sphinx-1.0-autogen"
                           target: "/usr/bin/sphinx-autogen"
-        -   name: unittest2
-            package:
-                name: python-unittest2
-                removable: false
         -   name: webob
             package:
                 name: python-webob1.0
@@ -244,6 +181,8 @@ components:
                           target: "/usr/lib/python2.6/site-packages/webob"
         pips:
         # Pips that aren't packages yet (or versions aren't right...)
+        # and need to be installed by pip instead...
+        -   name: cliff
         -   name: coverage
         -   name: distribute
             removable: false
@@ -260,6 +199,7 @@ components:
         -   name: nosehtmloutput
         -   name: openstack.nose_plugin
         -   name: pep8 # The rhel version appears to not be new enough...
+        -   name: pylint # The rhel version appears to not be new enough...
         -   name: prettytable
             version: "0.6.1"
         -   name: pycrypto
@@ -268,6 +208,7 @@ components:
                      # but versions are miss-matched
                 - "-U"
             removable: false
+        -   name: python-subunit
         -   name: requests
             version: '0.14.2' # 1.0 seemed to introduce new backwayd incompatible changes, not cool!!
         # Need this or nova pukes with 'Did not recognize type 'BIGINT' of column 'bw_in''
@@ -277,6 +218,7 @@ components:
                      # but versions are miss-matched
                 - "-U"
         -   name: sqlalchemy-migrate
+        -   name: testrepository
         -   name: testtools # Seems like the version in rhel is to old...
     glance:
         action_classes:
@@ -285,29 +227,9 @@ components:
             running: anvil.components.glance:GlanceRuntime
             test: anvil.components.glance:GlanceTester
             uninstall: anvil.components.glance:GlanceUninstaller
-        # When parsing 'tools/pip-requires' and
-        # 'tools/test-requires' (if they exist)
-        # the following map will be used to translate names
-        # and versions inside those files into distribution
-        # package names equivalents (if possible)
-        pip_to_package:
-        -   name: pyOpenSSL
-            package:
-                name: pyOpenSSL
-        -   name: jsonschema
-            package:
-                name: python-jsonschema
-        -   name: pysendfile
-            package:
-                name: pysendfile
-        -   name: kombu
-            package:
-                # Only needed for notifications???
-                name: python-kombu
         packages:
         -   name: MySQL-python
         pips:
-        # Pips that aren't packages yet (and not in the 'general' section)
         -   name: boto
         -   name: wsgiref
         -   name: xattr # Seems to be only in test-requires
@@ -318,18 +240,11 @@ components:
             running: anvil.components:EmptyRuntime
             test: anvil.components.glance_client:GlanceClientTester
             uninstall: anvil.components:PythonUninstallComponent
-        pip_to_package:
-        -   name: pyOpenSSL
-            package:
-                name: pyOpenSSL
-        -   name: warlock
-            package:
-                name: python-warlock
         pips:
-        -   name: nosexcover # Seems to be only in test-requires
-        -   name: setuptools-git # Seems to be only in test-requires
-        -   name: discover # Seems to be only in test-requires
-        -   name: testrepository # Seems to be only in test-requires
+        -   name: nosexcover
+        -   name: setuptools-git
+        -   name: discover
+        -   name: warlock
     horizon:
         action_classes:
             install: anvil.distros.rhel:HorizonInstaller
@@ -341,15 +256,6 @@ components:
         -   name: django
             package:
                 name: Django14
-        -   name: django-compressor
-            package:
-                name: python-django-compressor
-        -   name: django-nose
-            package:
-                name: python-django-nose
-        -   name: pytz
-            package:
-                name: pytz
         packages:
         -   name: httpd
         -   name: mod_wsgi
@@ -369,10 +275,6 @@ components:
             uninstall: anvil.components.keystone:KeystoneUninstaller
         packages:
         -   name: MySQL-python
-        pip_to_package:
-        -   name: netifaces
-            package:
-                name: python-netifaces
         pips:
         -   name: pam
             version: '0.1.4'
@@ -413,21 +315,9 @@ components:
         -   name: vconfig
             removable: false
         pip_to_package:
-        -   name: amqplib
-            package:
-                name: python-amqplib
-        -   name: suds
-            package:
-                name: python-suds
-        -   name: feedparser
-            package:
-                name: python-feedparser
         -   name: MySQL-python
             package:
                 name: MySQL-python
-        -   name: websockify
-            package:
-                name: python-websockify
         pips:
         # Why is this still needed??
         -   name: Cheetah
@@ -439,9 +329,9 @@ components:
         -   name: paramiko
         -   name: stevedore
         -   name: discover
-        -   name: python-subunit
-        -   name: testrepository
         -   name: psycopg2
+        -   name: suds # The version in rhel doesn't work...
+        -   name: Babel # The version in rhel doesn't work...
         subsystems:
             compute:
                 packages:
@@ -502,10 +392,6 @@ components:
             running: anvil.components:EmptyRuntime
             test: anvil.components.openstack_client:OpenStackClientTester
             uninstall: anvil.components:PythonUninstallComponent
-        pip_to_package:
-        -   name: cliff
-            package:
-                name: python-cliff
     quantum-client:
         action_classes:
             install: anvil.components:PythonInstallComponent
@@ -513,13 +399,8 @@ components:
             running: anvil.components:EmptyRuntime
             test: anvil.components:PythonTestingComponent
             uninstall: anvil.components:PythonUninstallComponent
-        pip_to_package:
-        -   name: cliff
-            package:
-                name: python-cliff
         pips:
         -   name: cliff-tablib
-        -   name: python-subunit
     rabbit-mq:
         action_classes:
             install: anvil.components.rabbit:RabbitInstaller
