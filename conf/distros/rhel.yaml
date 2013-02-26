@@ -242,6 +242,7 @@ components:
         -   name: nosexcover
         -   name: setuptools-git
         -   name: discover
+        -   name: warlock
     horizon:
         action_classes:
             install: anvil.distros.rhel:HorizonInstaller
