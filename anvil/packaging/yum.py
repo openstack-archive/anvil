@@ -133,6 +133,12 @@ class YumPackager(pack.Packager):
             return False
 
         def is_partial_match_name(yum_pkg):
+            possible_names = [
+                pip_requirement.project_name,
+                pip_requirement.key,
+                "python-%s" % (pip_requirement.project_name),
+                "python-%s" % (pip_requirement.key),
+            ]
             pkg_name = str(yum_pkg.name)
             if skip_packages_named(pkg_name):
                 return False
@@ -145,6 +151,7 @@ class YumPackager(pack.Packager):
             matches = [p for p in all_available if func(p)]
             if len(matches):
                 return matches
+
         return []
 
     def _execute_yum(self, cmd, **kargs):
