@@ -109,22 +109,22 @@ class InstallAction(action.Action):
             LOG.info("Exiting early, only asked to download and configure!")
             return
 
-        instance_dependencies = {}
+        all_instance_dependencies = {}
 
         def preinstall_run(instance):
             instance.pre_install()
-            its_deps = {}
+            instance_dependencies = {}
             if isinstance(instance, (components.PkgInstallComponent)):
-                its_deps['packages'] = instance.packages
+                instance_dependencies['packages'] = instance.packages
             if isinstance(instance, (components.PythonInstallComponent)):
-                its_deps['pips'] = instance.pip_requires
-            instance_dependencies[instance.name] = its_deps
+                instance_dependencies['pips'] = instance.pip_requires
+            all_instance_dependencies[instance.name] = instance_dependencies
 
         removals += ['pre-uninstall', 'post-uninstall']
         self._run_phase(
             PhaseFunctors(
                 start=lambda i: LOG.info('Preinstalling %s.', colorizer.quote(i.name)),
-                run=lambda i: i.pre_install(),
+                run=preinstall_run,
                 end=None,
             ),
             component_order,
@@ -134,7 +134,7 @@ class InstallAction(action.Action):
             )
 
         # Do validation on the installed dependency set.
-        self._analyze_dependencies(instance_dependencies)
+        self._analyze_dependencies(all_instance_dependencies)
 
         def install_start(instance):
             subsystems = set(list(instance.subsystems))
