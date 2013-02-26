@@ -96,23 +96,36 @@ class YumPackager(pack.Packager):
         # Try a few name variations to see if we can find a matching
         # rpm for a given pip, using a little apriori knowledge about
         # how redhat usually does it...
-        possible_names = [
-            pip_requirement.project_name,
-            pip_requirement.key,
-            "python-%s" % (pip_requirement.project_name),
-            "python-%s" % (pip_requirement.key),
-        ]
 
-        def is_exact_match_name(yum_pkg):
-            # First check direct match.
+        def is_exact_match(yum_pkg):
+            possible_names = [
+                "python-%s" % (pip_requirement.project_name),
+                "python-%s" % (pip_requirement.key),
+            ]
             pkg_name = str(yum_pkg.name)
+            if skip_packages_named(pkg_name):
+                return False
+            if pkg_name in possible_names:
+                return True
+            return False
+
+        def is_weak_exact_match_name(yum_pkg):
+            possible_names = [
+                pip_requirement.project_name,
+                pip_requirement.key,
+                "python-%s" % (pip_requirement.project_name),
+                "python-%s" % (pip_requirement.key),
+            ]
+            pkg_name = str(yum_pkg.name)
+            if skip_packages_named(pkg_name):
+                return False
             if pkg_name in possible_names:
                 return True
             return False
 
         def skip_packages_named(name):
-            name = name.lower()
             # Skip on ones that end with '-doc' or 'src'
+            name = name.lower()
             if name.endswith('-doc'):
                 return True
             if name.endswith('-src'):
@@ -128,10 +141,11 @@ class YumPackager(pack.Packager):
                     return True
             return False
 
-        matches = [p for p in all_available if is_exact_match_name(p)]
-        if not matches:
-            matches = [p for p in all_available if is_partial_match_name(p)]
-        return matches
+        for func in [is_exact_match, is_weak_exact_match_name, is_partial_match_name]:
+            matches = [p for p in all_available if func(p)]
+            if len(matches):
+                return matches
+        return []
 
     def _execute_yum(self, cmd, **kargs):
         yum_cmd = YUM_CMD + cmd
