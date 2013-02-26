@@ -329,6 +329,7 @@ components:
         -   name: stevedore
         -   name: discover
         -   name: psycopg2
+        -   name: suds # The version in rhel doesn't work...
         subsystems:
             compute:
                 packages:
