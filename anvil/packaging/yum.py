@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import packager as pack
 from anvil import shell as sh
@@ -41,7 +42,7 @@ def extract_requirement(pkg_info):
     return yum_helper.Requirement(p_name, p_version)
 
 
-class MultiplePackageSolutions(Exception):
+class MultiplePackageSolutions(excp.DependencyException):
     pass
 
 

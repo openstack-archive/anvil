@@ -20,6 +20,7 @@ from anvil import action
 from anvil import colorizer
 from anvil import components
 from anvil import log
+from anvil import pprint
 from anvil import shell as sh
 from anvil import utils
 
@@ -62,7 +63,8 @@ class InstallAction(action.Action):
                                logger=LOG)
 
     def _analyze_dependencies(self, instance_dependencies):
-        LOG.debug("Full known dependency list: %s", instance_dependencies)
+        LOG.debug("Full known dependency list: ")
+        LOG.debug(pprint.pformat(instance_dependencies))
 
     def _run(self, persona, component_order, instances):
         removals = []

@@ -363,17 +363,20 @@ class PythonInstallComponent(PkgInstallComponent):
         # rpm/yum database.
         installer = make_packager({}, self.distro.package_manager_class,
                                   distro=self.distro)
-        if installer and isinstance(installer, (yum.YumPackager)):
+
+        # TODO(harlowja): make this better
+        if installer and hasattr(installer, 'match_pip_2_package'):
             try:
-                rpm_pkg = installer.match_pip_2_package(pip_req)
-                if rpm_pkg:
+                dist_pkg = installer.match_pip_2_package(pip_req)
+                if dist_pkg:
                     pkg_info = {
-                        'name': str(rpm_pkg.name),
-                        'version': str(rpm_pkg.version),
+                        'name': str(dist_pkg.name),
+                        'version': str(dist_pkg.version),
+                        '__requirement': dist_pkg,
                     }
-                    LOG.debug("Auto-matched %s -> %s", pip_req, rpm_pkg)
+                    LOG.debug("Auto-matched %s -> %s", pip_req, dist_pkg)
                     return (pkg_info, False)
-            except yum.MultiplePackageSolutions as e:
+            except excp.DependencyException as e:
                 LOG.warn("Unable to automatically map pip to package: %s", e)
 
         # Ok nobody had it in a pip->pkg mapping
