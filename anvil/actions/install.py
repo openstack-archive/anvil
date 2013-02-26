@@ -109,16 +109,8 @@ class InstallAction(action.Action):
             LOG.info("Exiting early, only asked to download and configure!")
             return
 
-        all_instance_dependencies = {}
-
         def preinstall_run(instance):
             instance.pre_install()
-            instance_dependencies = {}
-            if isinstance(instance, (components.PkgInstallComponent)):
-                instance_dependencies['packages'] = instance.packages
-            if isinstance(instance, (components.PythonInstallComponent)):
-                instance_dependencies['pips'] = instance.pip_requires
-            all_instance_dependencies[instance.name] = instance_dependencies
 
         removals += ['pre-uninstall', 'post-uninstall']
         self._run_phase(
@@ -130,6 +122,28 @@ class InstallAction(action.Action):
             component_order,
             instances,
             "pre-install",
+            *removals
+            )
+
+        all_instance_dependencies = {}
+
+        def capture_run(instance):
+            instance_dependencies = {}
+            if isinstance(instance, (components.PkgInstallComponent)):
+                instance_dependencies['packages'] = instance.packages
+            if isinstance(instance, (components.PythonInstallComponent)):
+                instance_dependencies['pips'] = instance.pip_requires
+            all_instance_dependencies[instance.name] = instance_dependencies
+
+        self._run_phase(
+            PhaseFunctors(
+                start=lambda i: LOG.info('Capturing dependencies of %s.', colorizer.quote(i.name)),
+                run=capture_run,
+                end=None,
+            ),
+            component_order,
+            instances,
+            None,
             *removals
             )
 
