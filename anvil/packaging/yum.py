@@ -81,6 +81,22 @@ class YumPackager(pack.Packager):
         if not satisfying_packages:
             return None
 
+        # Remove packages with same name and leave the newest there...
+        non_same_versions_packages = {}
+        for p in satisfying_packages:
+            if p.name not in non_same_versions_packages:
+                non_same_versions_packages[p.name] = [p]
+            else:
+                non_same_versions_packages[p.name].append(p)
+
+        satisfying_packages = []
+        for (name, packages) in non_same_versions_packages.items():
+            if len(packages) == 1:
+                satisfying_packages.extend(packages)
+            else:
+                satisfying_packages = sorted(satisfying_packages)
+                satisfying_packages.append(satisfying_packages[-1])
+
         if len(satisfying_packages) > 1:
             msg = "Multiple satisfying packages found for requirement %s: %s" % (pip_requirement,
                                                                                  ", ".join([str(p) for p in satisfying_packages]))
