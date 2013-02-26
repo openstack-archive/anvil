@@ -182,6 +182,7 @@ components:
         pips:
         # Pips that aren't packages yet (or versions aren't right...)
         # and need to be installed by pip instead...
+        -   name: cliff
         -   name: coverage
         -   name: distribute
             removable: false
