@@ -1,0 +1,19 @@
+diff --git a/tools/pip-requires b/tools/pip-requires
+index 44b5279..337dc8f 100644
+--- a/tools/pip-requires
++++ b/tools/pip-requires
+@@ -2,12 +2,12 @@ Paste
+ PasteDeploy==1.5.0
+ Routes>=1.12.3
+ amqplib==0.6.1
+-anyjson==0.2.4
++anyjson>=0.2.4
+ eventlet>=0.9.17
+ greenlet>=0.3.1
+ httplib2
+ iso8601>=0.1.4
+-kombu==1.0.4
++kombu>=1.0.4
+ lxml
+ netaddr
+ python-quantumclient>=2.0
