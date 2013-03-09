@@ -70,9 +70,6 @@ class GlanceInstaller(comp.PythonInstallComponent):
         return [l for l in lines
                 if not utils.has_any(l.lower(), 'swift', 'keystoneclient')]
 
-    def pre_install(self):
-        comp.PythonInstallComponent.pre_install(self)
-
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
         if self.get_bool_option('db-sync'):

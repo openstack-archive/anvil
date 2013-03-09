@@ -20,7 +20,5 @@ require rpm python-iniparse
 require rpm patch
 require pypi termcolor
 require pypi hgtools
-require pypi 'keyring>=0.9.2'
-# This matches the nova version and doesn't really 
-# need to be a strong dependency for anvil to work..
-require pypi 'Cheetah==2.4.4'
+require pypi keyring
+require pypi Cheetah
