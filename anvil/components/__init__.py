@@ -357,7 +357,25 @@ class PythonInstallComponent(PkgInstallComponent):
                 LOG.debug("Matched pip->pkg '%s' from component %r", there_pip, who)
                 return (dict(pip_info.get('package')), False)
 
-        # Ok nobody had it in there pip->pkg mapping
+        # Ok nobody had it in a pip->pkg mapping
+        # but see if they had it in there pip collection
+        all_pips = {
+            self.name: self._base_pips(),  # Use base pips to avoid recursion...
+        }
+        for (name, c) in self.instances.items():
+            if not c.activated or c is self:
+                continue
+            if isinstance(c, (PythonInstallComponent)):
+                all_pips[name] = c._base_pips()  # pylint: disable=W0212
+        for (who, there_pips) in all_pips.items():
+            for pip_info in there_pips:
+                there_pip = pip.extract_requirement(pip_info)
+                if not pip_use(who, there_pip):
+                    continue
+                LOG.debug("Matched pip '%s' from component %r", there_pip, who)
+                return (dict(pip_info), True)
+
+        # Ok nobody had it in there pip->pkg mapping or pip mapping
         # but now lets see if we can automatically find
         # a pip->pkg mapping for them using the good ole'
         # rpm/yum database.
@@ -378,24 +396,6 @@ class PythonInstallComponent(PkgInstallComponent):
                     return (pkg_info, False)
             except excp.DependencyException as e:
                 LOG.warn("Unable to automatically map pip to package: %s", e)
-
-        # Ok nobody had it in a pip->pkg mapping
-        # but see if they had it in there pip collection
-        all_pips = {
-            self.name: self._base_pips(),  # Use base pips to avoid recursion...
-        }
-        for (name, c) in self.instances.items():
-            if not c.activated or c is self:
-                continue
-            if isinstance(c, (PythonInstallComponent)):
-                all_pips[name] = c._base_pips()  # pylint: disable=W0212
-        for (who, there_pips) in all_pips.items():
-            for pip_info in there_pips:
-                there_pip = pip.extract_requirement(pip_info)
-                if not pip_use(who, there_pip):
-                    continue
-                LOG.debug("Matched pip '%s' from component %r", there_pip, who)
-                return (dict(pip_info), True)
 
         return (None, False)
 
