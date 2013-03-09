@@ -146,7 +146,7 @@ class NetworkCleaner(object):
             cmdline = ''
             with sh.Rooted(True):
                 cwd = proc.getcwd()
-                cmdline = proc.cmdline
+                cmdline = " ".join(proc.cmdline)
             to_try = False
             for t in [cwd, cmdline]:
                 if t.lower().find("nova") != -1:
