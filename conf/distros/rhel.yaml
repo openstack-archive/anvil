@@ -313,9 +313,7 @@ components:
         packages:
         -   name: httpd
         -   name: mod_wsgi
-        -   name: nodejs
-        -   name: nodejs-compat-symlinks
-        -   name: npm
+        -   name: ./local-rpms/nodejs-0.10.0-1.x86_64.rpm
         pips:
         -   name: django
             version: "1.4"
