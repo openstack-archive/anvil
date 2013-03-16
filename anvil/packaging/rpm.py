@@ -288,7 +288,7 @@ class PythonPackager(DependencyPackager):
             }
 
             # only replace name if it isn't set in the component config file
-            if self.get_option("rpm_package_name") is None:
+            if not self.get_option("rpm_package_name"):
                 replacements['name'] = '--name'
 
             for (key, opt) in replacements.items():
