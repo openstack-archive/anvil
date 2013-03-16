@@ -72,42 +72,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
         comp.PythonInstallComponent.verify(self)
         self._check_ug()
 
-    def pre_install(self):
-        self._install_node_repo()
-
-    def _install_node_repo(self):
-        repo_url = self.get_option('nodejs_repo')
-        if not repo_url:
-            # Ok then, hope node js is in your path for when horizon attempts
-            # to use it... if not possibly follow:
-            #
-            # http://www.chrisabernethy.com/installing-node-js-on-centos-redhat/
-            return
-        # Download the said url and install it so that we can actually install
-        # the node.js requirement which seems to be needed by horizon for css compiling??
-        repo_basename = sh.basename(repo_url)
-        (_fn, fn_ext) = os.path.splitext(repo_basename)
-        fn_ext = fn_ext.lower().strip()
-        if fn_ext not in ['.rpm', '.repo']:
-            LOG.warn("Unknown node.js repository configuration extension %s (we only support .rpm or .repo)!", colorizer.quote(fn_ext))
-            return
-        with NamedTemporaryFile(suffix=fn_ext) as temp_fh:
-            LOG.info("Downloading node.js repository configuration from %s to %s.", repo_url, temp_fh.name)
-            down.UrlLibDownloader(repo_url, temp_fh.name).download()
-            temp_fh.flush()
-            if fn_ext == ".repo":
-                # Just write out the repo file after downloading it...
-                repo_file_name = sh.joinpths("/etc/yum.repos.d", repo_basename)
-                if not sh.exists(repo_file_name):
-                    with sh.Rooted(True):
-                        sh.write_file(repo_file_name, sh.load_file(temp_fh.name),
-                                      tracewriter=self.tracewriter)
-                        sh.chmod(repo_file_name, 0644)
-            elif fn_ext == ".rpm":
-                # Install it instead from said rpm (which likely is a
-                # file that contains said repo location)...
-                yum.YumPackager(self.distro).direct_install(temp_fh.name)
-
     @property
     def symlinks(self):
         links = super(HorizonInstaller, self).symlinks
