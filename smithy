@@ -193,12 +193,13 @@ fi
 ## Bootstrap smithy
 if [ "$(id -u)" != "0" ]; then
     echo "You must run 'smithy --bootstrap' with root privileges!" >&2
-   exit 1
+    exit 1
 fi
 if [ ! -f $BSCONF_FILE ]; then 
-     echo "Anvil has not been tested on distribution '$OSNAME'" >&2
-     puke
+    echo "Anvil has not been tested on distribution '$OSNAME'" >&2
+    puke
 fi
+
 echo "Sourcing $BSCONF_FILE"
 source $BSCONF_FILE
 MIN_RELEASE=${MIN_RELEASE:?"Error: MIN_RELEASE is undefined!"}
@@ -212,7 +213,6 @@ fi
 
 echo "Bootstrapping $SHORTNAME $RELEASE"
 echo "Please wait..."
-
 for step in ${STEPS:?"Error: STEPS is undefined!"}; do
     bootstrap_${step}
     if [ $? != 0 ]; then
