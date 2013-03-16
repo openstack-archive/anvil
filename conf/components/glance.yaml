@@ -27,6 +27,13 @@ patches:
   package:
     - "conf/patches/glance/"
 
+# Test exclusions...
+#
+# TODO(harlowja) these should probably be bugs...
+exclude_tests:
+  # These seem to require swift, not always installed...
+  - test_swift_store
+
 # Interactions with keystone are via the following settings
 paste_flavor: 'keystone'
 keystone:

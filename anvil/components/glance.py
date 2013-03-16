@@ -243,15 +243,8 @@ class GlanceRuntime(comp.PythonRuntime):
 
 
 class GlanceTester(comp.PythonTestingComponent):
-    # TODO(harlowja) these should probably be bugs...
-    def _get_test_exclusions(self):
-        return [
-            # These seem to require swift, not always installed...
-            'test_swift_store',
-        ]
-
     # NOTE: only run the unit tests
     def _get_test_command(self):
         base_cmd = comp.PythonTestingComponent._get_test_command(self)
-        cmd = base_cmd + ['--unittests-only']
-        return cmd
+        base_cmd = base_cmd + ['--unittests-only']
+        return base_cmd

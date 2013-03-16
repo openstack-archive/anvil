@@ -292,7 +292,7 @@ components:
             install: anvil.distros.rhel:NovaInstaller
             package: anvil.packaging.rpm:PythonPackager
             running: anvil.components.nova:NovaRuntime
-            test: anvil.components.nova:NovaTester
+            test: anvil.components:PythonTestingComponent
             uninstall: anvil.components.nova:NovaUninstaller
         packages:
         -   name: MySQL-python

@@ -269,19 +269,5 @@ class KeystoneTester(comp.PythonTestingComponent):
     # Disable the keystone client integration tests
     def _get_test_command(self):
         base_cmd = comp.PythonTestingComponent._get_test_command(self)
-        cmd = base_cmd + ['-xintegration']
-        return cmd
-
-    # TODO(harlowja) these should probably be bugs...
-    def _get_test_exclusions(self):
-        return [
-            # These 2 seem to require swift, not always installed...
-            'test_swift_auth_middleware',
-            'test_s3_token_middleware',
-            # Aren't always installing memcache...
-            'test_backend_memcache',
-            # Oddness: 'unable to access signing dir /root/keystone-signing'
-            'test_nomemcache',
-            # Aren't always installing ldap...
-            'test_backend_ldap',
-        ]
+        base_cmd = base_cmd + ['-xintegration']
+        return base_cmd

@@ -932,7 +932,7 @@ class PythonTestingComponent(component.Component):
         self.helper = pip_helper.Helper(self.distro)
 
     def _get_test_exclusions(self):
-        return []
+        return self.get_option('exclude_tests', default_value=[])
 
     def _use_run_tests(self):
         return True

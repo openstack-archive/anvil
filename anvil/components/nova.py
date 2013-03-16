@@ -333,19 +333,3 @@ class NovaRuntime(comp.PythonRuntime):
         return [
             '--config-file', '$CFG_FILE',
         ]
-
-
-class NovaTester(comp.PythonTestingComponent):
-    # TODO(harlowja) these should probably be bugs...
-    def _get_test_exclusions(self):
-        return [
-            # Disable since quantumclient is not always installed.
-            'test_quantumv2',
-        ]
-
-    def _get_test_command(self):
-        base_cmd = comp.PythonTestingComponent._get_test_command(self)
-        # This doesn't exist in the nosetests (v1.1) in rhel6
-        # cmd = base_cmd + ['--hide-elapsed']
-        cmd = base_cmd
-        return cmd

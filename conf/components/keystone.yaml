@@ -25,12 +25,25 @@ patches:
   package:
     - "conf/patches/keystone/"
 
+# Test exclusions...
+#
+# TODO(harlowja) these should probably be bugs...
+exclude_tests:
+  # These 2 seem to require swift, not always installed...
+  - test_swift_auth_middleware
+  - test_s3_token_middleware
+  # Aren't always installing memcache...
+  - test_backend_memcache
+  - test_nomemcache
+  # Aren't always installing ldap...
+  - test_backend_ldap
+
 # Needed when running to setup the right roles/endpoints...
 glance:
   api_port: "$(glance:api_port)"
   protocol: "$(glance:protocol)"
   reg_port: "$(glance:reg_port)"
-  
+
 nova: 
   api_host: "$(nova:api_host)"
   api_port: "$(nova:api_port)"
