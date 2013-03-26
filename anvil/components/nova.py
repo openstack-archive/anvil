@@ -116,8 +116,12 @@ class NovaInstaller(comp.PythonInstallComponent):
 
     def _filter_pip_requires(self, fn, lines):
         return [l for l in lines
+                # Take out entries that aren't really always needed or are
+                # resolved/installed by anvil during installation in the first
+                # place..
                 if not utils.has_any(l.lower(), 'quantumclient',
-                                     'cinder', 'glance', 'ldap', 'keystoneclient')]
+                                     'cinder', 'glance', 'ldap', 'oslo.config',
+                                     'keystoneclient')]
 
     @property
     def env_exports(self):

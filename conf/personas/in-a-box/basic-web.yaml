@@ -4,6 +4,7 @@ components:
 - general
 - db
 - rabbit-mq
+- oslo-config
 - keystone
 # Client used by many components
 - keystone-client
