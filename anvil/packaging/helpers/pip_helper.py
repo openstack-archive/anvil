@@ -18,6 +18,7 @@ from distutils import version as vr
 
 import copy
 import pkg_resources
+import xmlrpclib
 
 from anvil import log as logging
 from anvil import shell as sh
@@ -56,6 +57,36 @@ def _skip_requirement(line):
     if line.lower().startswith('http://'):
         return True
     return False
+
+
+def find_pypi_match(req, pypi_url='http://python.org/pypi'):
+    try:
+        pypi = xmlrpclib.ServerProxy(pypi_url)
+        possibles = []
+        LOG.debug("Searching pypi @ %s for %s", , pypi_url, req)
+        for h in pypi.search({'name': req.key}):
+            if req.key == h.get('name', '').lower():
+                LOG.debug("Found potential match %s", h)
+                # Seem to get prefix matches back, only want exact match...
+                possible = h['name']
+                if 'version' in h:
+                    # Less than so later comparison works... since this
+                    # package can satisfy requests for versions less than
+                    # or equal to itself...
+                    possible += "<=%s" % (h['version'])
+                possibles.append({
+                    'parsed': parse_requirements(possible)[0],
+                    'requirement': Requirement(h['name'], h.get('version')),
+                })
+        if not possibles:
+            return None
+        for p in possibles:
+            if req in p['parsed']:
+                LOG.debug("Found match in pypi: %s satisfies %s", p['parsed'], req)
+                return p['requirement']
+    except (IOError, xmlrpclib.Fault, xmlrpclib.Error) as e:
+        LOG.warn("Scanning pypi failed: %s", e)
+    return None
 
 
 def parse_requirements(contents, adjust=False):

@@ -392,10 +392,22 @@ class PythonInstallComponent(PkgInstallComponent):
                         'version': str(dist_pkg.version),
                         '__requirement': dist_pkg,
                     }
-                    LOG.debug("Auto-matched %s -> %s", pip_req, dist_pkg)
+                    LOG.debug("Auto-matched (dist) %s -> %s", pip_req, dist_pkg)
                     return (pkg_info, False)
             except excp.DependencyException as e:
                 LOG.warn("Unable to automatically map pip to package: %s", e)
+
+        # Ok still nobody has it, search pypi...
+        pypi_pkg = pip_helper.find_pypi_match(pip_req)
+        if pypi_pkg:
+            pkg_info = {
+                'name': str(pypi_pkg.name),
+                '__requirement': pypi_pkg,
+            }
+            if pypi_pkg.version:
+                pkg_info['version'] = str(pypi_pkg.version)
+            LOG.debug("Auto-matched (pypi) %s -> %s", pip_req, pypi_pkg)
+            return (pkg_info, True)
 
         return (None, False)
 
