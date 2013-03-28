@@ -1,0 +1,6 @@
+# Settings for component oslo.config
+---
+
+get_from: "git://github.com/openstack/oslo-incubator.git?branch=master"
+
+...

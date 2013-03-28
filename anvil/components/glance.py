@@ -68,7 +68,11 @@ class GlanceInstaller(comp.PythonInstallComponent):
 
     def _filter_pip_requires(self, fn, lines):
         return [l for l in lines
-                if not utils.has_any(l.lower(), 'swift', 'keystoneclient')]
+                # Take out entries that aren't really always needed or are
+                # resolved/installed by anvil during installation in the first
+                # place..
+                if not utils.has_any(l.lower(), 'swift', 'keystoneclient',
+                                     'oslo.config')]
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)

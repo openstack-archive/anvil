@@ -280,7 +280,7 @@ components:
         -   name: webtest  # This version in package form conflicts with webob1.0
     keystone-client:
         action_classes:
-            install: anvil.components:PythonInstallComponent
+            install: anvil.components.keystone_client:KeystoneClientInstaller
             package: anvil.packaging.rpm:PythonPackager
             running: anvil.components:EmptyRuntime
             test: anvil.components:PythonTestingComponent
@@ -389,6 +389,20 @@ components:
             package: anvil.packaging.rpm:PythonPackager
             running: anvil.components:EmptyRuntime
             test: anvil.components.openstack_client:OpenStackClientTester
+            uninstall: anvil.components:PythonUninstallComponent
+    oslo-config:
+        action_classes:
+            install: anvil.components:PythonInstallComponent
+            package: anvil.packaging.rpm:PythonPackager
+            running: anvil.components:EmptyRuntime
+            test: anvil.components:PythonTestingComponent
+            uninstall: anvil.components:PythonUninstallComponent
+    oslo-incubator:
+        action_classes:
+            install: anvil.components:PythonInstallComponent
+            package: anvil.packaging.rpm:PythonPackager
+            running: anvil.components:EmptyRuntime
+            test: anvil.components:PythonTestingComponent
             uninstall: anvil.components:PythonUninstallComponent
     quantum-client:
         action_classes:
