@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Approved+1: Tim Daly, Jr. <timjr@yahoo-inc.com>
+Code-Review+2: Tim Daly, Jr. <timjr@yahoo-inc.com>
+Submitted-by: Jenkins
+Submitted-at: Thu, 28 Mar 2013 18:14:36 +0000
+Reviewed-on: https://review.openstack.org/25436
+Project: stackforge/anvil
+Branch: refs/heads/master
