@@ -145,9 +145,6 @@ components:
                     links:
                         - source: "/usr/lib/python2.6/site-packages/PasteDeploy-1.5*-py2.6.egg/paste/deploy"
                           target: "/usr/lib/python2.6/site-packages/paste/deploy"
-        -   name: pysqlite
-            package:
-                name: python-sqlite2
         -   name: routes
             package:
                 name: python-routes1.12
@@ -202,6 +199,10 @@ components:
         -   name: pylint # The rhel version appears to not be new enough...
         -   name: prettytable
             version: "0.6.1"
+        -   name: pysqlite
+            options: # Force it to upgrade if its there already
+                     # but versions are miss-matched
+                - "-U"
         -   name: pycrypto
             version: "2.6"
             options: # Force it to upgrade if its there already
