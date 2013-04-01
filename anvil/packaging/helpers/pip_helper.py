@@ -63,7 +63,7 @@ def find_pypi_match(req, pypi_url='http://python.org/pypi'):
     try:
         pypi = xmlrpclib.ServerProxy(pypi_url)
         possibles = []
-        LOG.debug("Searching pypi @ %s for %s", , pypi_url, req)
+        LOG.debug("Searching pypi @ %s for %s", pypi_url, req)
         for h in pypi.search({'name': req.key}):
             if req.key == h.get('name', '').lower():
                 LOG.debug("Found potential match %s", h)
