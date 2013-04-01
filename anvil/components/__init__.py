@@ -163,7 +163,7 @@ class PkgInstallComponent(component.Component):
         LOG.debug('Preparing to install packages for: %r', self.name)
         pkgs = self.packages
         if pkgs:
-            pkg_names = [p['name'] for p in pkgs]
+            pkg_names = set([p['name'] for p in pkgs])
             utils.log_iterable(pkg_names, logger=LOG,
                                header="Setting up %s distribution packages" % (len(pkg_names)))
             with utils.progress_bar('Installing', len(pkgs)) as p_bar:
@@ -458,7 +458,7 @@ class PythonInstallComponent(PkgInstallComponent):
     def _install_pips(self):
         pips = self.pips
         if pips:
-            pip_names = [p['name'] for p in pips]
+            pip_names = set([p['name'] for p in pips])
             utils.log_iterable(pip_names, logger=LOG,
                                header="Setting up %s python packages" % (len(pip_names)))
             with utils.progress_bar('Installing', len(pips)) as p_bar:
@@ -891,7 +891,7 @@ class PythonUninstallComponent(PkgUninstallComponent):
     def _uninstall_pips(self):
         pips = self.tracereader.pips_installed()
         if pips:
-            pip_names = [p['name'] for p in pips]
+            pip_names = set([p['name'] for p in pips])
             utils.log_iterable(pip_names, logger=LOG,
                                header="Potentially removing %s python packages" % (len(pip_names)))
             which_removed = []
