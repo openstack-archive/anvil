@@ -1,7 +1,7 @@
 # Settings for component glance
 ---
 # Where we download this from...
-get_from: "git://github.com/openstack/glance.git?branch=master"
+get_from: "git://github.com/openstack/glance.git?tag=2013.1"
 
 host: "$(auto:ip)"
 api_port: 9292
