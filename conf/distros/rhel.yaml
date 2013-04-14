@@ -87,7 +87,7 @@ components:
             removable: false
         -   name: iputils
             removable: false
-        # Needed to build the newer lxml version used by nova
+        # Needed to build the newer lxml
         -   name: libxml2-devel
             removable: false
         -   name: libxslt-devel
@@ -99,6 +99,9 @@ components:
         -   name: openssh-server
             removable: false
         -   name: psmisc
+            removable: false
+        # Needed to build a newer pysqlite
+        -   name: sqlite-devel
             removable: false
         -   name: sudo
             removable: false
