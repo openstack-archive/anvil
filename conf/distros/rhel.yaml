@@ -229,8 +229,8 @@ components:
             install: anvil.components.glance:GlanceInstaller
             package: anvil.packaging.rpm:PythonPackager
             running: anvil.components.glance:GlanceRuntime
-            test: anvil.components.glance:GlanceTester
-            coverage: anvil.components.glance:GlanceTester
+            coverage: anvil.components:PythonTestingComponent
+            test: anvil.components:PythonTestingComponent
             uninstall: anvil.components.glance:GlanceUninstaller
         packages:
         -   name: MySQL-python
@@ -243,8 +243,8 @@ components:
             install: anvil.components.glance_client:GlanceClientInstaller
             package: anvil.packaging.rpm:PythonPackager
             running: anvil.components:EmptyRuntime
-            test: anvil.components.glance_client:GlanceClientTester
             coverage: anvil.components:PythonTestingComponent
+            test: anvil.components:PythonTestingComponent
             uninstall: anvil.components:PythonUninstallComponent
         pips:
         -   name: nosexcover

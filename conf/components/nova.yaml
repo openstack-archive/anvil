@@ -134,6 +134,17 @@ patches:
 exclude_tests:
   # Disable since quantumclient is not always installed.
   - test_quantumv2
+  # Will fail if ipv6 turned off
+  - test_service_random_port_with_ipv6
+  - test_start_random_port_with_ipv6
+  - test_app_using_ipv6_and_ssl
+  # Bug in tests if libvirt installed
+  - test_libvirt
+  # Bug
+  - test_archive_deleted_rows_fk_constraint
+
+exclude_tests_dir:
+  - smoketests
 
 # Needed for setting up your database
 db:
