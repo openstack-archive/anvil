@@ -24,10 +24,18 @@ from anvil import shell as sh
 from anvil import utils
 
 from anvil.components import base
-from anvil.components import base_install as binstall
 from anvil.packaging.helpers import pip_helper
 
 LOG = logging.getLogger(__name__)
+
+
+# Environment to run tests
+DEFAULT_ENV = {
+    'NOSE_WITH_OPENSTACK': '1',
+    'NOSE_OPENSTACK_RED':'0.05',
+    'NOSE_OPENSTACK_YELLOW':'0.025',
+    'NOSE_OPENSTACK_SHOW_ELAPSED':'1',
+}
 
 
 class EmptyTestingComponent(base.Component):
@@ -43,6 +51,9 @@ class PythonTestingComponent(base.Component):
     def _get_test_exclusions(self):
         return self.get_option('exclude_tests', default_value=[])
 
+    def _get_test_dir_exclusions(self):
+        return self.get_option('exclude_tests_dir', default_value=[])
+
     def _use_run_tests(self):
         return True
 
@@ -50,55 +61,34 @@ class PythonTestingComponent(base.Component):
         # See: http://docs.openstack.org/developer/nova/devref/unit_tests.html
         # And: http://wiki.openstack.org/ProjectTestingInterface
         app_dir = self.get_option('app_dir')
-        if sh.isfile(sh.joinpths(app_dir, 'run_tests.sh')) and self._use_run_tests():
-            cmd = [sh.joinpths(app_dir, 'run_tests.sh'), '-N']
-            if not self._use_pep8():
-                cmd.append('--no-pep8')
-        else:
-            # Assume tox is being used, which we can't use directly
-            # since anvil doesn't really do venv stuff (its meant to avoid those...)
-            cmd = ['nosetests']
+
+        cmd = ['coverage', 'run', '/usr/bin/nosetests']
         # See: $ man nosetests
-        if self.get_bool_option("verbose", default_value=False):
-            cmd.append('--nologcapture')
+
+        if not colorizer.color_enabled():
+            cmd.append('--openstack-nocolor')
+        else:
+            cmd.append('--openstack-color')
+
+        if self.get_bool_option("verbose", default_value=True):
+            cmd.append('--verbosity=2')
+            cmd.append('--detailed-errors')
+        else:
+            cmd.append('--verbosity=1')
+            cmd.append('--openstack-num-slow=0')
         for e in self._get_test_exclusions():
             cmd.append('--exclude=%s' % (e))
+        for e in self._get_test_dir_exclusions():
+            cmd.append('--exclude-dir=%s' % (e))
         xunit_fn = self.get_option("xunit_filename")
         if xunit_fn:
             cmd.append("--with-xunit")
             cmd.append("--xunit-file=%s" % (xunit_fn))
+        LOG.debug("Running tests: %s" % cmd)
         return cmd
 
-    def _use_pep8(self):
-        # Seems like the varying versions are borking pep8 from working...
-        i_sibling = self.siblings.get('install')
-        # Check if whats installed actually matches
-        pep8_wanted = None
-        if isinstance(i_sibling, (binstall.PythonInstallComponent)):
-            for p in i_sibling.pip_requires:
-                req = p['requirement']
-                if req.key == "pep8":
-                    pep8_wanted = req
-                    break
-        if not pep8_wanted:
-            # Doesn't matter since its not wanted anyway
-            return True
-        pep8_there = self.helper.get_installed('pep8')
-        if not pep8_there:
-            # Hard to use it if it isn't there...
-            LOG.warn("Pep8 version mismatch, none is installed but %s is wanting %s",
-                     self.name, pep8_wanted)
-            return False
-        if not (pep8_there == pep8_wanted):
-            # Versions not matching, this is causes pep8 to puke when it doesn't need to
-            # so skip it from running in the first place...
-            LOG.warn("Pep8 version mismatch, installed is %s but %s is applying %s",
-                     pep8_there, self.name, pep8_wanted)
-            return False
-        return self.get_bool_option('use_pep8', default_value=True)
-
     def _get_env(self):
-        env_addons = {}
+        env_addons = DEFAULT_ENV.copy()
         tox_fn = sh.joinpths(self.get_option('app_dir'), 'tox.ini')
         if sh.isfile(tox_fn):
             # Suck out some settings from the tox file
