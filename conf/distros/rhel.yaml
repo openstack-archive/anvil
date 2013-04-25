@@ -55,6 +55,7 @@ components:
             package: anvil.packaging.rpm:PythonPackager
             running: anvil.components:EmptyRuntime
             test: anvil.components:PythonTestingComponent
+            coverage: anvil.components:PythonTestingComponent
             uninstall: anvil.components:PythonUninstallComponent
     db:
         action_classes:
@@ -62,6 +63,7 @@ components:
             package: anvil.packaging.rpm:DependencyPackager
             running: anvil.components.db:DBRuntime
             test: anvil.components:EmptyTestingComponent
+            coverage: anvil.components:EmptyTestingComponent
             uninstall: anvil.components.db:DBUninstaller
         packages:
         -   name: mysql
@@ -72,6 +74,7 @@ components:
             package: anvil.packaging.rpm:DependencyPackager
             running: anvil.components:EmptyRuntime
             test: anvil.components:EmptyTestingComponent
+            coverage: anvil.components:EmptyTestingComponent
             uninstall: anvil.components.pkglist:Uninstaller
         packages:
         # Shared system packages
@@ -227,6 +230,7 @@ components:
             package: anvil.packaging.rpm:PythonPackager
             running: anvil.components.glance:GlanceRuntime
             test: anvil.components.glance:GlanceTester
+            coverage: anvil.components.glance:GlanceTester
             uninstall: anvil.components.glance:GlanceUninstaller
         packages:
         -   name: MySQL-python
@@ -240,6 +244,7 @@ components:
             package: anvil.packaging.rpm:PythonPackager
             running: anvil.components:EmptyRuntime
             test: anvil.components.glance_client:GlanceClientTester
+            coverage: anvil.components:PythonTestingComponent
             uninstall: anvil.components:PythonUninstallComponent
         pips:
         -   name: nosexcover
@@ -252,6 +257,7 @@ components:
             package: anvil.packaging.rpm:PythonPackager
             running: anvil.components.horizon:HorizonRuntime
             test: anvil.components:PythonTestingComponent
+            coverage: anvil.components:PythonTestingComponent
             uninstall: anvil.components.horizon:HorizonUninstaller
         pip_to_package:
         -   name: django
@@ -271,6 +277,7 @@ components:
             package: anvil.packaging.rpm:PythonPackager
             running: anvil.components.keystone:KeystoneRuntime
             test: anvil.components.keystone:KeystoneTester
+            coverage: anvil.components.keystone:KeystoneTester
             uninstall: anvil.components.keystone:KeystoneUninstaller
         packages:
         -   name: MySQL-python
@@ -285,6 +292,7 @@ components:
             package: anvil.packaging.rpm:PythonPackager
             running: anvil.components:EmptyRuntime
             test: anvil.components:PythonTestingComponent
+            coverage: anvil.components:PythonTestingComponent
             uninstall: anvil.components:PythonUninstallComponent
     nova:
         action_classes:
@@ -292,6 +300,7 @@ components:
             package: anvil.packaging.rpm:PythonPackager
             running: anvil.components.nova:NovaRuntime
             test: anvil.components:PythonTestingComponent
+            coverage: anvil.components:PythonTestingComponent
             uninstall: anvil.components.nova:NovaUninstaller
         packages:
         -   name: MySQL-python
@@ -374,6 +383,7 @@ components:
             package: anvil.packaging.rpm:PythonPackager
             running: anvil.components:EmptyRuntime
             test: anvil.components:PythonTestingComponent
+            coverage: anvil.components:PythonTestingComponent
             uninstall: anvil.components:PythonUninstallComponent
     no-vnc:
         action_classes:
@@ -381,6 +391,7 @@ components:
             package: anvil.components:EmptyPackagingComponent
             running: anvil.components.novnc:NoVNCRuntime
             test: anvil.components:EmptyTestingComponent
+            coverage: anvil.components:EmptyTestingComponent
             uninstall: anvil.components.novnc:NoVNCUninstaller
         packages:
         -   name: python-websockify
@@ -390,6 +401,7 @@ components:
             package: anvil.packaging.rpm:PythonPackager
             running: anvil.components:EmptyRuntime
             test: anvil.components.openstack_client:OpenStackClientTester
+            coverage: anvil.components.openstack_client:OpenStackClientTester
             uninstall: anvil.components:PythonUninstallComponent
     oslo-config:
         action_classes:
@@ -397,6 +409,7 @@ components:
             package: anvil.packaging.rpm:PythonPackager
             running: anvil.components:EmptyRuntime
             test: anvil.components:PythonTestingComponent
+            coverage: anvil.components:PythonTestingComponent
             uninstall: anvil.components:PythonUninstallComponent
     oslo-incubator:
         action_classes:
@@ -404,6 +417,7 @@ components:
             package: anvil.packaging.rpm:PythonPackager
             running: anvil.components:EmptyRuntime
             test: anvil.components:PythonTestingComponent
+            coverage: anvil.components:EmptyTestingComponent
             uninstall: anvil.components:PythonUninstallComponent
     quantum-client:
         action_classes:
@@ -411,6 +425,7 @@ components:
             package: anvil.packaging.rpm:PythonPackager
             running: anvil.components:EmptyRuntime
             test: anvil.components:PythonTestingComponent
+            coverage: anvil.components:PythonTestingComponent
             uninstall: anvil.components:PythonUninstallComponent
         pips:
         -   name: cliff-tablib
@@ -420,6 +435,7 @@ components:
             package: anvil.packaging.rpm:DependencyPackager
             running: anvil.distros.rhel:RabbitRuntime
             test: anvil.components:EmptyTestingComponent
+            coverage: anvil.components:EmptyTestingComponent
             uninstall: anvil.components.rabbit:RabbitUninstaller
         packages:
         -   name: rabbitmq-server
@@ -444,5 +460,6 @@ components:
             package: anvil.packaging.rpm:PythonPackager
             running: anvil.components:EmptyRuntime
             test: anvil.components:PythonTestingComponent
+            coverage: anvil.components:PythonTestingComponent
             uninstall: anvil.components:PythonUninstallComponent
 ...
