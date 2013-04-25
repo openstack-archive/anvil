@@ -7,6 +7,9 @@ get_from: "git://github.com/openstack/python-keystoneclient.git?branch=master"
 # This code is out of compliance, so skip it...
 use_pep8: False
 
+exclude_tests:
+    - test_not_use_cache_from_env
+
 patches:
   # After check-out/download time patches
   download:
