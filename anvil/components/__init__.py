@@ -945,6 +945,8 @@ class EmptyTestingComponent(component.Component):
     def run_tests(self):
         return
 
+    def show_coverage(self):
+        return
 
 class PythonTestingComponent(component.Component):
     def __init__(self, *args, **kargs):
@@ -1065,6 +1067,26 @@ class PythonTestingComponent(component.Component):
                     LOG.warn("Ignoring test failure of component %s: %s", colorizer.quote(self.name), e)
                 else:
                     raise e
+
+    def show_coverage(self):
+        app_dir = self.get_option('app_dir')
+        if not sh.isdir(app_dir):
+            LOG.warn("Unable to find application directory at %s, can not run %s tests.",
+                     colorizer.quote(app_dir), colorizer.quote(self.name))
+            return
+        env = self._get_env()
+        # Try to combine reports
+        cmd = ['coverage', 'combine']
+        try:
+            sh.execute(*cmd, stdout_fh=None, stderr_fh=None, cwd=app_dir, env_overrides=env)
+        except excp.ProcessExecutionError as e:
+            pass
+
+        cmd = ['coverage', 'report']
+        try:
+            sh.execute(*cmd, stdout_fh=None, stderr_fh=None, cwd=app_dir, env_overrides=env)
+        except excp.ProcessExecutionError as e:
+            LOG.warn("Something wrong with %s: %s", colorizer.quote(self.name), e)
 
 
 ####

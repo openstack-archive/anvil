@@ -20,6 +20,7 @@ from anvil.actions import start
 from anvil.actions import status
 from anvil.actions import stop
 from anvil.actions import test
+from anvil.actions import coverage
 from anvil.actions import uninstall
 
 
@@ -30,6 +31,7 @@ _NAMES_TO_RUNNER = {
     'status': status.StatusAction,
     'stop': stop.StopAction,
     'test': test.TestAction,
+    'coverage': coverage.CoverageAction,
     'uninstall': uninstall.UninstallAction,
 }
 _RUNNER_TO_NAMES = dict((v, k) for k, v in _NAMES_TO_RUNNER.items())
