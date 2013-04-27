@@ -63,6 +63,14 @@ LOG = logging.getLogger(__name__)
 # Cache of accessed packagers
 _PACKAGERS = {}
 
+# Enviroment to run tests
+DEFAULT_ENV = {
+        'NOSE_WITH_OPENSTACK':'1',
+        'NOSE_OPENSTACK_COLOR':'1',
+        'NOSE_OPENSTACK_RED':'0.05',
+        'NOSE_OPENSTACK_YELLOW':'0.025',
+        'NOSE_OPENSTACK_SHOW_ELAPSED':'1',
+        'NOSE_OPENSTACK_STDOUT':'1' }
 
 def make_packager(package, default_class, **kwargs):
     packager_name = package.get('packager_name') or ''
@@ -946,6 +954,9 @@ class PythonTestingComponent(component.Component):
     def _get_test_exclusions(self):
         return self.get_option('exclude_tests', default_value=[])
 
+    def _get_test_dir_exclusions(self):
+        return self.get_option('exclude_tests_dir', default_value=[])
+
     def _use_run_tests(self):
         return True
 
@@ -953,23 +964,27 @@ class PythonTestingComponent(component.Component):
         # See: http://docs.openstack.org/developer/nova/devref/unit_tests.html
         # And: http://wiki.openstack.org/ProjectTestingInterface
         app_dir = self.get_option('app_dir')
-        if sh.isfile(sh.joinpths(app_dir, 'run_tests.sh')) and self._use_run_tests():
-            cmd = [sh.joinpths(app_dir, 'run_tests.sh'), '-N']
-            if not self._use_pep8():
-                cmd.append('--no-pep8')
-        else:
-            # Assume tox is being used, which we can't use directly
-            # since anvil doesn't really do venv stuff (its meant to avoid those...)
-            cmd = ['nosetests']
+
+        cmd = ['coverage', 'run', '/usr/bin/nosetests']
         # See: $ man nosetests
-        if self.get_bool_option("verbose", default_value=False):
-            cmd.append('--nologcapture')
+        if not colorizer.color_enabled():
+            cmd.append('--openstack-nocolor')
+        else:
+            cmd.append('--openstack-color')
+        if self.get_bool_option("verbose", default_value=True):
+            cmd.append('--verbosity=2')
+            cmd.append('--detailed-errors')
+        else:
+            cmd.append('--verbosity=1')
         for e in self._get_test_exclusions():
             cmd.append('--exclude=%s' % (e))
+        for e in self._get_test_dir_exclusions():
+            cmd.append('--exclude-dir=%s' % (e))
         xunit_fn = self.get_option("xunit_filename")
         if xunit_fn:
             cmd.append("--with-xunit")
             cmd.append("--xunit-file=%s" % (xunit_fn))
+        LOG.debug("Running tests: %s" % cmd)
         return cmd
 
     def _use_pep8(self):
@@ -1001,7 +1016,7 @@ class PythonTestingComponent(component.Component):
         return self.get_bool_option('use_pep8', default_value=True)
 
     def _get_env(self):
-        env_addons = {}
+        env_addons = DEFAULT_ENV.copy()
         tox_fn = sh.joinpths(self.get_option('app_dir'), 'tox.ini')
         if sh.isfile(tox_fn):
             # Suck out some settings from the tox file
@@ -1025,6 +1040,11 @@ class PythonTestingComponent(component.Component):
                     utils.log_object(env_addons, logger=LOG, level=logging.DEBUG)
             except IOError:
                 pass
+
+        if not colorizer.color_enabled():
+            env_addons['NOSE_OPENSTACK_COLOR'] = '0'
+        if self.get_bool_option("verbose", default_value=True):
+            env_addons['NOSE_OPENSTACK_STDOUT'] = '1'
         return env_addons
 
     def run_tests(self):
