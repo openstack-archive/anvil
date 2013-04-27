@@ -24,16 +24,16 @@ Source code
 
 The source code is on github located at:
 
-https://github.com/yahoo/Openstack-Anvil
+https://github.com/stackforge/anvil/
 
 Feel free to fork it and contribute to it. You can also get a tarball or zip archive of the code.
 
-Tags
+Branches
 ----
 
-Stable *tags* can also be downloaded:
+Stable *branches* can also be downloaded:
 
-https://github.com/yahoo/Openstack-Anvil/tags
+https://github.com/stackforge/anvil/branches
 
 
 Hacking

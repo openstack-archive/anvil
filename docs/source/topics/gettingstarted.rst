@@ -134,7 +134,7 @@ We’ll grab the latest version of ANVIL via git:
 
 ::
 
-    $ git clone git://github.com/yahoo/Openstack-Anvil.git anvil
+    $ git clone git://github.com/stackforge/anvil.git
 
 Configuration
 -------------
@@ -147,7 +147,18 @@ to fit your desired configuration of nova/glance and the other OpenStack compone
 If you are using a ``FlatManager`` and RH/Fedora then you might want to read and follow:
 
 http://www.techotopia.com/index.php/Creating_an_RHEL_5_KVM_Networked_Bridge_Interface
-    
+
+
+Pre-installing
+----------
+
+In order to ensure that anvil will have its correct dependencies you need to first run the
+bootstrapping code that will setup said dependencies for your operating system.
+
+::
+
+    sudo ./smithy --bootstrap
+
 Installing
 ----------
 
