@@ -1,5 +1,24 @@
---- keystone-2012.1/keystone/__init__.py.newdeps	2012-02-29 11:16:06.000000000 +0100
-+++ keystone-2012.1/keystone/__init__.py	2012-03-01 22:42:08.546503618 +0100
+--- keystone-2013.1/bin/keystone-all
++++ keystone-2013.1/bin/keystone-all
+@@ -19,14 +19,14 @@ if os.path.exists(os.path.join(possible_topdir,
+     sys.path.insert(0, possible_topdir)
+ 
+ 
+-from paste import deploy
+-
+ from keystone import config
+ from keystone.common import wsgi
+ from keystone.common import utils
+ from keystone.openstack.common import importutils
+ from keystone.openstack.common import version
+ 
++from paste import deploy
++
+ 
+ CONF = config.CONF
+ 
+--- keystone-2013.1/keystone/__init__.py
++++ keystone-2013.1/keystone/__init__.py
 @@ -0,0 +1,29 @@
 +import sys
 +import pkg_resources
@@ -30,21 +49,3 @@
 +# TODO: See can we get pkg_resources to do the right thing directly
 +import paste
 +paste.__path__.insert(0, paste.__path__.pop(-1))
---- keystone-2012.1/bin/keystone-all.orig   2012-11-09 22:44:31.000000000 +0000
-+++ keystone-2012.1/bin/keystone-all    2012-11-09 23:49:04.560249926 +0000
-@@ -20,13 +20,13 @@
- 
- eventlet.patcher.monkey_patch(all=False, socket=True, time=True, thread=True)
- 
--from paste import deploy
--
- from keystone import config
- from keystone.common import wsgi
- from keystone.common import utils
- from keystone.openstack.common import importutils
- 
-+from paste import deploy
-+
- 
- CONF = config.CONF
- 

@@ -1,9 +1,9 @@
---- nova-2012.2.1/nova/__init__.py.orig 2012-11-10 00:12:05.519266593 +0000
-+++ nova-2012.2.1/nova/__init__.py  2012-11-10 00:13:32.515948084 +0000
-@@ -31,6 +31,37 @@
- .. moduleauthor:: Andy Smith <andy@anarkystic.com>
+--- nova-2013.1/nova/__init__.py
++++ nova-2013.1/nova/__init__.py
+@@ -24,6 +24,36 @@
+    :platform: Unix
+    :synopsis: Infrastructure-as-a-Service Cloud platform.
  """
- 
 +import sys
 +import pkg_resources
 +
@@ -34,7 +34,5 @@
 +import paste
 +paste.__path__.insert(0, paste.__path__.pop(-1))
 +
-+
+ 
  import gettext
- 
- 
