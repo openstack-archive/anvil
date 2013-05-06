@@ -50,17 +50,20 @@ SYNC_DB_CMD = [sh.joinpths('$BIN_DIR', 'glance-manage'),
                 # Available commands:
                 'db_sync']
 
+# Location of scripts
+BIN_DIR = '/usr/bin/'
+
 
 class GlanceUninstaller(comp.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, *args, **kargs)
-        self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
+        self.bin_dir = BIN_DIR
 
 
 class GlanceInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
+        self.bin_dir = BIN_DIR
 
     @property
     def config_files(self):
@@ -205,7 +208,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
 class GlanceRuntime(comp.PythonRuntime):
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
-        self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
+        self.bin_dir = BIN_DIR
 
     @property
     def applications(self):
