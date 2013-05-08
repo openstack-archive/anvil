@@ -30,20 +30,8 @@ PIP_INSTALL_CMD_OPTS = ['-q']
 
 
 def extract_requirement(pkg_info):
-    p_name = pkg_info.get('name', '')
-    p_name = p_name.strip()
-    p_name = pkg_resources.safe_name(p_name)
-    if not p_name:
-        raise ValueError("Pip requirement provided with an empty name")
-    p_version = pkg_info.get('version')
-    if p_version is not None:
-        if isinstance(p_version, (int, float, long)):
-            p_version = str(p_version)
-        if isinstance(p_version, (str, basestring)):
-            p_version = pkg_resources.safe_version(p_version)
-        else:
-            raise TypeError("Pip requirement version must be a string or numeric type")
-    return pip_helper.Requirement(p_name, p_version)
+    return pip_helper.create_requirement(
+        pkg_info.get('name', ''), pkg_info.get('version'))
 
 
 class Packager(pack.Packager):
@@ -57,31 +45,30 @@ class Packager(pack.Packager):
 
     def _anything_there(self, pip):
         wanted_pip = extract_requirement(pip)
-        pip_there = self.helper.get_installed(wanted_pip.name)
+        pip_there = self.helper.get_installed(wanted_pip.key)
         if not pip_there:
             # Nothing installed
             return None
-        if wanted_pip.version is not None:
-            # Check if version wanted will work with whats installed
-            if str(wanted_pip.version) not in pip_there:
-                is_upgrading = False
-                for o in ['-U', '--upgrade']:
-                    if o in pip.get('options', []):
-                        is_upgrading = True
-                if is_upgrading and (wanted_pip.name not in self.upgraded):
-                    # Upgrade should hopefully get that package to the right version....
-                    LOG.warn("Upgrade is occuring for %s, even though %s is installed.",
-                             wanted_pip, pip_there)
-                    # Mark it so that we don't keep on flip-flopping on upgrading this
-                    # package (ie install new, install old, install new....)
-                    self.upgraded[wanted_pip.name] = wanted_pip
-                    return None
-                else:
-                    msg = ("Pip %s is already installed"
-                           " and it is not compatible with desired"
-                           " pip %s")
-                    msg = msg % (pip_there, wanted_pip)
-                    raise excp.DependencyException(msg)
+        # Check if version wanted will work with whats installed
+        if pip_there.specs[0][1] not in wanted_pip:
+            is_upgrading = False
+            for o in ['-U', '--upgrade']:
+                if o in pip.get('options', []):
+                    is_upgrading = True
+            if is_upgrading and (wanted_pip.key not in self.upgraded):
+                # Upgrade should hopefully get that package to the right version....
+                LOG.warn("Upgrade is occuring for %s, even though %s is installed.",
+                         wanted_pip, pip_there)
+                # Mark it so that we don't keep on flip-flopping on upgrading this
+                # package (ie install new, install old, install new....)
+                self.upgraded[wanted_pip.key] = wanted_pip
+                return None
+            else:
+                msg = ("Pip %s is already installed"
+                       " and it is not compatible with desired"
+                       " pip %s")
+                msg = msg % (pip_there, wanted_pip)
+                raise excp.DependencyException(msg)
         return pip_there
 
     def _execute_pip(self, cmd):
