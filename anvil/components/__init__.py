@@ -316,9 +316,7 @@ class PythonInstallComponent(PkgInstallComponent):
                 # No version/restrictions specified
                 return True
             there_version = None
-            if there_pip.version is not None:
-                there_version = str(there_pip.version)
-            if there_version in pip_req:
+            if not there_pip.specs or there_pip == pip_req:
                 return True
             # Different possibly incompat. versions found...
             if there_version is None:
@@ -401,11 +399,13 @@ class PythonInstallComponent(PkgInstallComponent):
         pypi_pkg = pip_helper.find_pypi_match(pip_req)
         if pypi_pkg:
             pkg_info = {
-                'name': str(pypi_pkg.name),
+                'name': str(pypi_pkg.key),
                 '__requirement': pypi_pkg,
             }
-            if pypi_pkg.version:
-                pkg_info['version'] = str(pypi_pkg.version)
+            try:
+                pkg_info['version'] = pypi_pkg.specs[0][1]
+            except IndexError:
+                pass
             LOG.debug("Auto-matched (pypi) %s -> %s", pip_req, pypi_pkg)
             return (pkg_info, True)
 
