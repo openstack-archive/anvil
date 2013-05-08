@@ -28,20 +28,21 @@ LOG = logging.getLogger(__name__)
 FREEZE_CMD = ['freeze', '--local']
 
 
-class Requirement(object):
-    def __init__(self, name, version=None):
-        self.name = str(name)
-        if version is not None:
-            self.version = vr.LooseVersion(str(version))
+def create_requirement(name, version=None):
+    name = pkg_resources.safe_name(name.strip())
+    if not name:
+        raise ValueError("Pip requirement provided with an empty name")
+    if version is not None:
+        if isinstance(version, (int, float, long)):
+            version = "==%s" % version
+        if isinstance(version, (str, basestring)):
+            if version[0] not in "=<>":
+                version = "==%s" % version
         else:
-            self.version = None
-        self.key = self.name.lower()
-
-    def __str__(self):
-        name = str(self.name)
-        if self.version is not None:
-            name += "==" + str(self.version)
-        return name
+            raise TypeError(
+                "Pip requirement version must be a string or numeric type")
+        name = "%s%s" % (name, version)
+    return pkg_resources.Requirement.parse(name)
 
 
 def _skip_requirement(line):
@@ -76,7 +77,8 @@ def find_pypi_match(req, pypi_url='http://python.org/pypi'):
                     possible += "<=%s" % (h['version'])
                 possibles.append({
                     'parsed': parse_requirements(possible)[0],
-                    'requirement': Requirement(h['name'], h.get('version')),
+                    'requirement': create_requirement(
+                        h['name'], h.get('version')),
                 })
         if not possibles:
             return None
@@ -132,7 +134,7 @@ class Helper(object):
 
     def get_installed(self, name):
         whats_there = self.whats_installed()
-        wanted_package = Requirement(name)
+        wanted_package = create_requirement(name)
         for whats_installed in whats_there:
             if not (wanted_package.key == whats_installed.key):
                 continue
