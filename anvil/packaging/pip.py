@@ -64,6 +64,7 @@ class Packager(pack.Packager):
                 self.upgraded[wanted_pip.key] = wanted_pip
                 return None
             else:
+                import pdb; pdb.set_trace()
                 msg = ("Pip %s is already installed"
                        " and it is not compatible with desired"
                        " pip %s")
