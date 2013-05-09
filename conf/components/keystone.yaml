@@ -57,6 +57,10 @@ nova:
   ec2_admin_port: "$(nova:ec2_admin_port)"
   protocol: "$(nova:protocol)"
 
+quantum:
+  api_host: "$(quantum:api_host)"
+  api_port: "$(quantum:api_port)"
+
 # This is needed to allow installs based on personas
 wanted_passwords:
   rabbit: 'rabbit user'
