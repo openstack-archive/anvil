@@ -14,6 +14,7 @@ components:
 - cinder-client
 - quantum-client
 - swift-client # Seems only needed for horizon?
+- quantum
 - no-vnc
 - nova
 - nova-client
@@ -26,6 +27,8 @@ options:
         db-sync: true
         do-network-init: true
         mq-type: rabbit
+        quantum-enabled: true
+        quantum-core-plugin: linuxbridge
     glance:
         db-sync: true
         load-images: true
@@ -35,6 +38,8 @@ options:
         enable-pki: false
     horizon:
         make-blackhole: true
+    quantum:
+        db-sync: true
 subsystems:
     glance:
     - api
@@ -53,6 +58,8 @@ subsystems:
     - novncproxy
     - scheduler
     - xvpvncproxy
+    quantum:
+    - server
 supports:
 - rhel
 ...

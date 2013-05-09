@@ -411,6 +411,14 @@ components:
             running: anvil.components:EmptyRuntime
             test: anvil.components:PythonTestingComponent
             uninstall: anvil.components:PythonUninstallComponent
+    quantum:
+        action_classes:
+            install: anvil.components.quantum:QuantumInstaller
+            package: anvil.packaging.rpm:PythonPackager
+            running: anvil.components.quantum:QuantumRuntime
+            test: anvil.components:PythonTestingComponent
+            coverage: anvil.components:PythonTestingComponent
+            uninstall: anvil.components.quantum:QuantumUninstaller
     quantum-client:
         action_classes:
             install: anvil.components:PythonInstallComponent

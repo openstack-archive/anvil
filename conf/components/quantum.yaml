@@ -1,0 +1,45 @@
+# Settings for component quantum-client
+---
+
+# Where we download this from...
+get_from: "git://github.com/openstack/quantum.git?tag=2013.1"
+
+# Host and ports for the different quantum services
+api_host: "$(auto:ip)"
+api_port: 8776
+protocol: http
+
+# Needed for setting up your database
+db:
+  type: "$(db:type)"
+  user: "$(db:user)"
+  host: "$(db:host)"
+  port: "$(db:port)"
+
+# Interactions with keystone are via the following settings
+keystone:
+  auth_host: "$(keystone:auth_host)"
+  auth_port: "$(keystone:auth_port)"
+  auth_proto: "$(keystone:auth_proto)"
+  service_host: "$(keystone:service_host)"
+  service_port: "$(keystone:service_port)"
+  service_proto: "$(keystone:service_proto)"
+
+# Rabbit mq hookins
+rabbit:
+  user_id: "$(rabbit-mq:user_id)"
+  host: "$(rabbit-mq:host)"
+
+# This is needed to allow installs based on personas
+wanted_passwords:
+  service_token: 'service admin token'
+  admin_password: 'keystone admin user'
+  service_password: 'service authentication password'
+  sql: "database user"
+
+core_plugin: linuxbridge
+
+network_vlan_ranges: physnet1:100:299
+physical_interface_mappings: physnet1:100:299
+
+...
