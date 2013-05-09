@@ -134,6 +134,32 @@ class RewritableConfigParser(ConfigHelperMixin, iniparse.RawConfigParser, String
                 self.read(f)
 
 
+class DefaultConf(object):
+    """This class represents the data/format of the config file with
+    a large DEFAULT section"""
+
+    current_section = "DEFAULT"
+
+    def __init__(self, backing, current_section=None):
+        self.backing = backing
+        self.current_section = current_section or self.current_section
+
+    def add_with_section(self, section, key, value, *values):
+        real_key = str(key)
+        real_value = ""
+        if len(values):
+            str_values = [str(value)] + [str(v) for v in values]
+            real_value = ",".join(str_values)
+        else:
+            real_value = str(value)
+        LOG.debug("Added conf key %r with value %r under section %r",
+                  real_key, real_value, section)
+        self.backing.set(section, real_key, real_value)
+
+    def add(self, key, value, *values):
+        self.add_with_section(self.current_section, key, value, *values)
+
+
 class YamlInterpolator(object):
     def __init__(self, base):
         self.included = {}
