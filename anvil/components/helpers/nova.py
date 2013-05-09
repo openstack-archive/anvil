@@ -25,6 +25,8 @@ from anvil import shell as sh
 from anvil import utils
 
 from anvil.components.helpers import db as dbhelper
+from anvil.components.helpers import keystone as khelper
+from anvil.components.helpers import quantum as qhelper
 from anvil.components.helpers import rabbit as rbhelper
 from anvil.components.helpers import virt as lv
 
@@ -473,7 +475,36 @@ class ConfConfigurator(object):
         nova_conf.add('iscsi_helper', 'tgtadm')
 
     def _configure_quantum(self, nova_conf):
-        pass
+        params = khelper.get_shared_params(
+            ip=self.installer.get_option('ip'),
+            service_user='nova',
+            **utils.merge_dicts(self.installer.get_option('keystone'),
+                                khelper.get_shared_passwords(self.installer)))
+        params['quantum'] = qhelper.get_shared_params(
+            ip=self.installer.get_option('ip'),
+            **self.installer.get_option('quantum'))
+
+        nova_conf.add("network_api_class", "nova.network.quantumv2.api.API")
+        nova_conf.add("quantum_admin_username", params['service_user'])
+        nova_conf.add("quantum_admin_password", params['service_password'])
+        nova_conf.add("quantum_admin_auth_url", params['endpoints']['public']['uri'])
+        nova_conf.add("quantum_auth_strategy", "keystone")
+        nova_conf.add("quantum_admin_tenant_name", params['service_tenant'])
+        nova_conf.add("quantum_url", params['quantum']['endpoints']['uri'])
+        libvirt_vif_drivers = {
+            "linuxbridge": "nova.virt.libvirt.vif.QuantumLinuxBridgeVIFDriver",
+            "openvswitch": "nova.virt.libvirt.vif.LibvirtHybridOVSBridgeDriver",
+        }
+        # FIXME(aababilov): error on KeyError
+        nova_conf.add(
+            "libvirt_vif_driver",
+            libvirt_vif_drivers[self.installer.get_option('quantum-core-plugin')])
+
+        # FIXME(aababilov): add for linuxbridge:
+        nova_conf.add("libvirt_vif_type", "ethernet")
+        nova_conf.add("connection_type", "libvirt")
+        nova_conf.add("quantum_use_dhcp",
+                      self.installer.get_bool_option('quantum-use-dhcp'))
 
     def _configure_cells(self, nova_conf):
         cells_enabled = self.installer.get_bool_option('enable-cells')
