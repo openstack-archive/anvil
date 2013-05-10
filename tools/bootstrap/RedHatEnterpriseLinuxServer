@@ -9,6 +9,7 @@ require rpm gcc
 require rpm git
 require rpm pylint
 require rpm python
+require rpm python-devel
 require rpm python-iso8601
 require rpm python-netifaces
 require rpm python-ordereddict
