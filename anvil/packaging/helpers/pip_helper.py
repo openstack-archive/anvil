@@ -63,29 +63,13 @@ def _skip_requirement(line):
 def find_pypi_match(req, pypi_url='http://python.org/pypi'):
     try:
         pypi = xmlrpclib.ServerProxy(pypi_url)
-        possibles = []
         LOG.debug("Searching pypi @ %s for %s", pypi_url, req)
-        for h in pypi.search({'name': req.key}):
-            if req.key == h.get('name', '').lower():
-                LOG.debug("Found potential match %s", h)
-                # Seem to get prefix matches back, only want exact match...
-                possible = h['name']
-                if 'version' in h:
-                    # Less than so later comparison works... since this
-                    # package can satisfy requests for versions less than
-                    # or equal to itself...
-                    possible += "<=%s" % (h['version'])
-                possibles.append({
-                    'parsed': parse_requirements(possible)[0],
-                    'requirement': create_requirement(
-                        h['name'], h.get('version')),
-                })
-        if not possibles:
-            return None
-        for p in possibles:
-            if req in p['parsed']:
-                LOG.debug("Found match in pypi: %s satisfies %s", p['parsed'], req)
-                return p['requirement']
+        for version in pypi.package_releases(req.key, True):
+            if version in req:
+                LOG.debug("Found match in pypi: %s==%s satisfies %s", req.key, version, req)
+                return create_requirement(req.key, version)
+            else:
+                LOG.debug("Found potential match: %s==%s doesn't satisfy %s", req.key, version, req)
     except (IOError, xmlrpclib.Fault, xmlrpclib.Error) as e:
         LOG.warn("Scanning pypi failed: %s", e)
     return None
