@@ -16,6 +16,7 @@
 
 from anvil.actions import install
 from anvil.actions import package
+from anvil.actions import restart
 from anvil.actions import start
 from anvil.actions import status
 from anvil.actions import stop
@@ -27,6 +28,7 @@ from anvil.actions import uninstall
 _NAMES_TO_RUNNER = {
     'install': install.InstallAction,
     'package': package.PackageAction,
+    'restart': restart.RestartAction,
     'start': start.StartAction,
     'status': status.StatusAction,
     'stop': stop.StopAction,
