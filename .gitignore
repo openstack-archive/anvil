@@ -15,3 +15,5 @@ pidfile
 TAGS
 *.rc
 *_flymake.*
+*~
+.anvil_bootstrapped
