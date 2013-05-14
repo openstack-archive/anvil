@@ -263,7 +263,7 @@ components:
         packages:
         -   name: httpd
         -   name: mod_wsgi
-        -   name: ./local-rpms/nodejs-0.10.0-1.x86_64.rpm
+        -   name: nodejs
         pips:
         -   name: django-openstack-auth
         -   name: nosexcover
