@@ -15,6 +15,7 @@ components:
 - quantum-client
 - swift-client # Seems only needed for horizon?
 - quantum
+- cinder
 - no-vnc
 - nova
 - nova-client
@@ -39,6 +40,7 @@ options:
     horizon:
         make-blackhole: true
     quantum:
+    cinder:
         db-sync: true
 subsystems:
     glance:
@@ -60,6 +62,8 @@ subsystems:
     - xvpvncproxy
     quantum:
     - server
+    cinder:
+    - all
 supports:
 - rhel
 ...
