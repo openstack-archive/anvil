@@ -29,6 +29,7 @@ from anvil.components.helpers import db as dbhelper
 from anvil.components.helpers import glance as ghelper
 from anvil.components.helpers import keystone as khelper
 from anvil.components.helpers import nova as nhelper
+from anvil.components.helpers import quantum as qhelper
 
 LOG = logging.getLogger(__name__)
 
@@ -235,6 +236,7 @@ class KeystoneRuntime(comp.PythonRuntime):
             params['keystone'] = khelper.get_shared_params(**utils.merge_dicts(self.options, khelper.get_shared_passwords(self)))
             params['glance'] = ghelper.get_shared_params(ip=self.get_option('ip'), **self.get_option('glance'))
             params['nova'] = nhelper.get_shared_params(ip=self.get_option('ip'), **self.get_option('nova'))
+            params['quantum'] = qhelper.get_shared_params(ip=self.get_option('ip'), **self.get_option('quantum'))
             wait_urls = [
                 params['keystone']['endpoints']['admin']['uri'],
                 params['keystone']['endpoints']['public']['uri'],
