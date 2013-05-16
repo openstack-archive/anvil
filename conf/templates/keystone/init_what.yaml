@@ -25,9 +25,9 @@ endpoints:
     public_url: "$glance.endpoints.public.uri"
     region: RegionOne
 -   service: volume
-    admin_url: "${nova.endpoints.volume.uri}/%(tenant_id)s"
-    internal_url: "${nova.endpoints.volume.uri}/%(tenant_id)s"
-    public_url: "${nova.endpoints.volume.uri}/%(tenant_id)s"
+    admin_url: "${cinder.endpoints.volume.uri}/%(tenant_id)s"
+    internal_url: "${cinder.endpoints.volume.uri}/%(tenant_id)s"
+    public_url: "${cinder.endpoints.volume.uri}/%(tenant_id)s"
     region: RegionOne
 -   service: s3
     admin_url: "$nova.endpoints.s3.uri"
@@ -74,7 +74,7 @@ services:
 -   description: S3 Service
     name: s3
     type: s3
--   description: Nova Volume Service
+-   description: Cinder Service
     name: volume
     type: volume
 -   description: Quantum Service
@@ -112,6 +112,14 @@ users:
     - service
 -   email: nova@example.com
     name: nova
+    password: '$keystone.service_password'
+    roles:
+    - admin:service
+    - ResellerAdmin:service
+    tenants:
+    - service
+-   email: cinder@example.com
+    name: cinder
     password: '$keystone.service_password'
     roles:
     - admin:service
