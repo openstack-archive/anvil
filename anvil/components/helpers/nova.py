@@ -74,7 +74,6 @@ def canon_virt_driver(virt_driver):
 def get_shared_params(ip, protocol,
                       api_host, api_port,
                       s3_host, s3_port,
-                      volume_host, volume_port,
                       ec2_host, ec2_port,
                       ec2_admin_host, ec2_admin_port, **kwargs):
     mp = {}
@@ -92,12 +91,6 @@ def get_shared_params(ip, protocol,
             'uri': utils.make_url(protocol, ec2_host, ec2_port, "services/Cloud"),
             'port': ec2_port,
             'host': ec2_host,
-            'protocol': protocol,
-        },
-        'volume': {
-            'uri': utils.make_url(protocol, volume_host, volume_port, "v1"),
-            'port': volume_port,
-            'host': volume_host,
             'protocol': protocol,
         },
         's3': {
@@ -306,10 +299,6 @@ class ConfConfigurator(object):
         # Setup nova network/settings
         self._configure_network_settings(nova_conf)
 
-        # Setup nova volume/settings
-        if self.installer.get_option('volumes'):
-            self._configure_vols(nova_conf)
-
         # The ip of where we are running
         nova_conf.add('my_ip', hostip)
 
@@ -464,15 +453,6 @@ class ConfConfigurator(object):
         nova_conf.add('xvpvncproxy_base_url', self.installer.get_option('xvpvncproxy_url'))
         nova_conf.add('vncserver_listen', self.installer.get_option('vncserver_listen', default_value='127.0.0.1'))
         nova_conf.add('vncserver_proxyclient_address', self.installer.get_option('vncserver_proxyclient_address', default_value='127.0.0.1'))
-
-    # Fixes up your nova volumes
-    def _configure_vols(self, nova_conf):
-        nova_conf.add('volume_group', self.installer.get_option('volume_group'))
-        vol_name_tpl = self.installer.get_option('volume_name_prefix') + self.installer.get_option('volume_name_postfix')
-        if not vol_name_tpl:
-            vol_name_tpl = 'volume-%08x'
-        nova_conf.add('volume_name_template', vol_name_tpl)
-        nova_conf.add('iscsi_helper', 'tgtadm')
 
     def _configure_quantum(self, nova_conf):
         params = khelper.get_shared_params(
