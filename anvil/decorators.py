@@ -21,7 +21,7 @@ import functools
 
 
 # http://wiki.python.org/moin/PythonDecoratorLibrary#Memoize
-class memoized(object):
+class memoized(object):  # pylint: disable=C0103
     '''Decorator. Caches a function's return value each time it is called.
     If called later with the same arguments, the cached value is returned
     (not reevaluated).

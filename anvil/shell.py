@@ -38,8 +38,8 @@ SHELL_QUOTE_REPLACERS = {
     "\"": "\\\"",
     "(": "\\(",
     ")": "\\)",
-    "$": '\$',
-    '`': '\`',
+    "$": "\\$",
+    "`": "\\`",
 }
 
 # Locally stash these so that they can not be changed

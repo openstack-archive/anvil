@@ -15,18 +15,14 @@
 #    under the License.
 
 from anvil import action
-from anvil import colorizer
-from anvil import log
 from anvil.actions import start
 from anvil.actions import stop
 
-from anvil.action import PhaseFunctors
-
-LOG = log.getLogger(__name__)
-
 
 class RestartAction(action.Action):
+
     def __init__(self, name, distro, root_dir, cli_opts):
+        super(RestartAction, self).__init__(name, distro, root_dir, cli_opts)
         self.start = start.StartAction(name, distro, root_dir, cli_opts.copy())
         self.stop = stop.StopAction(name, distro, root_dir, cli_opts.copy())
 
