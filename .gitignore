@@ -17,3 +17,6 @@ TAGS
 *_flymake.*
 *~
 .anvil_bootstrapped
+.metadata/
+.project
+.pydevproject

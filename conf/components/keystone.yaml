@@ -32,13 +32,15 @@ exclude_tests:
   # These 2 seem to require swift, not always installed...
   - test_swift_auth_middleware
   - test_s3_token_middleware
-  # Aren't always installing memcache...
-  - test_backend_memcache
-  - test_nomemcache
-  # Aren't always installing ldap...
+
+  # Aren't always installing memcache...          
+  - test_backend_memcache               
+  - test_nomemcache             
+  # Aren't always installing ldap...            
   - test_backend_ldap
 
 # Needed when running to setup the right roles/endpoints...
+# 
 glance:
   api_port: "$(glance:api_port)"
   protocol: "$(glance:protocol)"
@@ -49,8 +51,6 @@ nova:
   api_port: "$(nova:api_port)"
   s3_host: "$(nova:s3_host)"
   s3_port: "$(nova:s3_port)"
-  volume_host: "$(nova:volume_host)"
-  volume_port: "$(nova:volume_port)"
   ec2_host: "$(nova:ec2_host)"
   ec2_port: "$(nova:ec2_port)"
   ec2_admin_host: "$(nova:ec2_admin_host)"
@@ -60,6 +60,10 @@ nova:
 quantum:
   api_host: "$(quantum:api_host)"
   api_port: "$(quantum:api_port)"
+
+cinder:
+  api_host: "$(cinder:api_host)"
+  api_port: "$(cinder:api_port)"
 
 # This is needed to allow installs based on personas
 wanted_passwords:
