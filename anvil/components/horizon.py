@@ -14,17 +14,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import colorizer
 from anvil import components as comp
-from anvil import downloader as down
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
-
-from anvil.packaging import yum
-
-from tempfile import NamedTemporaryFile
 
 import binascii
 import os

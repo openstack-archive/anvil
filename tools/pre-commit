@@ -9,7 +9,7 @@ trap 'git stash pop -q' EXIT
 STATUS=0
 FILES="$(git diff --cached --name-only --diff-filter=AM | grep -E '\.py$')"
 if [ -n "$FILES" ]; then
-    pep8 -r $FILES || STATUS=1
+    pylint $FILES || STATUS=1
     if grep -nEH --color '(import pdb|pdb.set_trace)' $FILES; then
         echo "Please remove pdb"
         STATUS=1

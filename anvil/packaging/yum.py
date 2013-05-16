@@ -91,7 +91,7 @@ class YumPackager(pack.Packager):
                 non_same_versions_packages[p.name].append(p)
 
         satisfying_packages = []
-        for (name, packages) in non_same_versions_packages.items():
+        for (_, packages) in non_same_versions_packages.items():
             if len(packages) == 1:
                 satisfying_packages.extend(packages)
             else:
