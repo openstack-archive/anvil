@@ -65,27 +65,38 @@ class GitDownloader(Downloader):
             branch = 'master'
         if sh.isdir(self.store_where) and sh.isdir(sh.joinpths(self.store_where, '.git')):
             LOG.info("Existing git directory located at %s, leaving it alone.", colorizer.quote(self.store_where))
+            # do git clean -xdfq and git reset --hard to undo possible changes
+            cmd = list(self.distro.get_command("git", "clean")) + ["-xdfq"]
+            sh.execute(*cmd, cwd=self.store_where)
+            cmd = list(self.distro.get_command("git", "reset")) + ["--hard"]
+            sh.execute(*cmd, cwd=self.store_where)
         else:
             LOG.info("Downloading %s (%s) to %s.", colorizer.quote(uri), branch, colorizer.quote(self.store_where))
             cmd = list(self.distro.get_command('git', 'clone'))
             cmd += [uri, self.store_where]
             sh.execute(*cmd)
         if branch or tag:
-            checkout_what = []
             if tag:
                 # Avoid 'detached HEAD state' message by moving to a
                 # $tag-anvil branch for that tag
-                checkout_what = [tag, '-b', "%s-%s" % (tag, 'anvil')]
+                new_branch = "%s-%s" % (tag, 'anvil')
+                checkout_what = [tag, '-b', new_branch]
                 LOG.info("Adjusting to tag %s.", colorizer.quote(tag))
             else:
-                if branch.lower() == 'master':
-                    checkout_what = ['master']
-                else:
-                    # Set it up to track the remote branch correctly
-                    checkout_what = ['--track', '-b', branch, 'origin/%s' % (branch)]
+                # Set it up to track the remote branch correctly
+                new_branch = branch
+                checkout_what = ['-t', '-b', new_branch, 'origin/%s' % branch]
                 LOG.info("Adjusting branch to %s.", colorizer.quote(branch))
-            cmd = list(self.distro.get_command('git', 'checkout'))
-            cmd += checkout_what
+            git_checkout = list(self.distro.get_command('git', 'checkout'))
+            git_branch = list(self.distro.get_command('git', 'branch'))
+            # detach, drop new_branch if it exists, and checkout to new_branch
+            # newer git allows branch resetting: git checkout -B $new_branch
+            # so, all these are for compatibility with older RHEL git
+            cmd = git_checkout + ["--detach"]
+            sh.execute(*cmd, cwd=self.store_where)
+            cmd = git_branch + ["-D", new_branch]
+            sh.execute(*cmd, cwd=self.store_where, ignore_exit_code=True)
+            cmd = git_checkout + checkout_what
             sh.execute(*cmd, cwd=self.store_where)
 
 
