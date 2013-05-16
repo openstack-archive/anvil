@@ -43,12 +43,18 @@ LOGGING_CONF = "logging.conf"
 CONFIGS = [PASTE_CONF, POLICY_CONF, LOGGING_CONF, API_CONF]
 ADJUST_CONFIGS = [PASTE_CONF]
 
-# This is a special marker file that when it exists, signifies that nova net was inited
+# This is a special marker file that when it exists, signifies that nova
+# net was inited
 NET_INITED_FN = 'nova.network.inited.yaml'
 
 # This makes the database be in sync with nova
 DB_SYNC_CMD = [
-    {'cmd': ['$BIN_DIR/nova-manage', '--config-file', '$CFG_FILE', 'db', 'sync'], 'run_as_root': True},
+    {'cmd': ['$BIN_DIR/nova-manage',
+     '--config-file',
+     '$CFG_FILE',
+     'db',
+     'sync'],
+     'run_as_root': True},
 ]
 
 # Used to create a fixed network when initializating nova
@@ -63,7 +69,8 @@ FIXED_NET_CMDS = [
 # Used to create a floating network + test floating pool
 FLOATING_NET_CMDS = [
     {
-        'cmd': ['$BIN_DIR/nova-manage', '--config-file', '$CFG_FILE', 'floating', 'create', '$FLOATING_RANGE'],
+        'cmd': ['$BIN_DIR/nova-manage', '--config-file',
+                '$CFG_FILE', 'floating', 'create', '$FLOATING_RANGE'],
         'run_as_root': True,
     },
     {
@@ -78,9 +85,13 @@ BIN_DIR = 'bin'
 
 
 class NovaUninstaller(comp.PythonUninstallComponent):
+
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, *args, **kargs)
-        self.virsh = lv.Virsh(self.get_int_option('service_wait_seconds'), self.distro)
+        self.virsh = lv.Virsh(
+            self.get_int_option(
+                'service_wait_seconds'),
+            self.distro)
 
     def pre_uninstall(self):
         if 'compute' in self.subsystems:
@@ -94,7 +105,9 @@ class NovaUninstaller(comp.PythonUninstallComponent):
             cleaner = nhelper.NetworkCleaner(self)
             cleaner.clean()
         except Exception as e:
-            LOG.warn("Failed cleaning up nova-network's dirty laundry due to: %s", e)
+            LOG.warn(
+                "Failed cleaning up nova-network's dirty laundry due to: %s",
+                e)
 
     def _clean_compute(self):
         try:
@@ -102,10 +115,13 @@ class NovaUninstaller(comp.PythonUninstallComponent):
             cleaner = nhelper.ComputeCleaner(self)
             cleaner.clean()
         except Exception as e:
-            LOG.warn("Failed cleaning up nova-compute's dirty laundry due to: %s", e)
+            LOG.warn(
+                "Failed cleaning up nova-compute's dirty laundry due to: %s",
+                e)
 
 
 class NovaInstaller(comp.PythonInstallComponent):
+
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
         self.conf_maker = nhelper.ConfConfigurator(self)
@@ -142,7 +158,9 @@ class NovaInstaller(comp.PythonInstallComponent):
             rhelper.get_shared_passwords(self)
 
     def _sync_db(self):
-        LOG.info("Syncing nova to database named: %s", colorizer.quote(DB_NAME))
+        LOG.info(
+            "Syncing nova to database named: %s",
+            colorizer.quote(DB_NAME))
         utils.execute_template(*DB_SYNC_CMD, params=self.config_params(None))
 
     def _fix_virt(self):
@@ -154,10 +172,12 @@ class NovaInstaller(comp.PythonInstallComponent):
                 # to enable qemu to actually work, apparently fixed
                 # in RHEL 6.4.
                 #
-                # See: http://fedoraproject.org/wiki/Getting_started_with_OpenStack_EPEL
+                # See:
+                # http://fedoraproject.org/wiki/Getting_started_with_OpenStack_EPEL
                 if not sh.isfile('/usr/bin/qemu-system-x86_64'):
-                    sh.symlink('/usr/libexec/qemu-kvm', '/usr/bin/qemu-system-x86_64',
-                               tracewriter=self.tracewriter)
+                    sh.symlink(
+                        '/usr/libexec/qemu-kvm', '/usr/bin/qemu-system-x86_64',
+                        tracewriter=self.tracewriter)
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
@@ -201,24 +221,73 @@ class NovaInstaller(comp.PythonInstallComponent):
     def _config_adjust_paste(self, contents, fn):
         params = khelper.get_shared_params(ip=self.get_option('ip'),
                                            service_user='nova',
-                                           **utils.merge_dicts(self.get_option('keystone'),
-                                                               khelper.get_shared_passwords(self)))
+                                           **utils.merge_dicts(
+                                               self.get_option('keystone'),
+                                           khelper.get_shared_passwords(self)))
 
         with io.BytesIO(contents) as stream:
             config = cfg.create_parser(cfg.RewritableConfigParser, self)
             config.readfp(stream)
 
-            config.set('filter:authtoken', 'auth_host', params['endpoints']['admin']['host'])
-            config.set('filter:authtoken', 'auth_port', params['endpoints']['admin']['port'])
-            config.set('filter:authtoken', 'auth_protocol', params['endpoints']['admin']['protocol'])
+            config.set(
+                'filter:authtoken',
+                'auth_host',
+                params[
+                    'endpoints'][
+                        'admin'][
+                            'host'])
+            config.set(
+                'filter:authtoken',
+                'auth_port',
+                params[
+                    'endpoints'][
+                        'admin'][
+                            'port'])
+            config.set(
+                'filter:authtoken',
+                'auth_protocol',
+                params[
+                    'endpoints'][
+                        'admin'][
+                            'protocol'])
 
-            config.set('filter:authtoken', 'service_host', params['endpoints']['internal']['host'])
-            config.set('filter:authtoken', 'service_port', params['endpoints']['internal']['port'])
-            config.set('filter:authtoken', 'service_protocol', params['endpoints']['internal']['protocol'])
+            config.set(
+                'filter:authtoken',
+                'service_host',
+                params[
+                    'endpoints'][
+                        'internal'][
+                            'host'])
+            config.set(
+                'filter:authtoken',
+                'service_port',
+                params[
+                    'endpoints'][
+                        'internal'][
+                            'port'])
+            config.set(
+                'filter:authtoken',
+                'service_protocol',
+                params[
+                    'endpoints'][
+                        'internal'][
+                            'protocol'])
 
-            config.set('filter:authtoken', 'admin_tenant_name', params['service_tenant'])
-            config.set('filter:authtoken', 'admin_user', params['service_user'])
-            config.set('filter:authtoken', 'admin_password', params['service_password'])
+            config.set(
+                'filter:authtoken',
+                'admin_tenant_name',
+                params[
+                    'service_tenant'])
+            config.set(
+                'filter:authtoken',
+                'admin_user',
+                params[
+                    'service_user'])
+            config.set(
+                'filter:authtoken',
+                'admin_password',
+                params[
+                    'service_password'])
 
             contents = config.stringify(fn)
         return contents
@@ -257,13 +326,16 @@ class NovaInstaller(comp.PythonInstallComponent):
 
 
 class NovaRuntime(comp.PythonRuntime):
+
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.wait_time = self.get_int_option('service_wait_seconds')
         self.virsh = lv.Virsh(self.wait_time, self.distro)
         self.config_path = sh.joinpths(self.get_option('cfg_dir'), API_CONF)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
-        self.net_init_fn = sh.joinpths(self.get_option('trace_dir'), NET_INITED_FN)
+        self.net_init_fn = sh.joinpths(
+            self.get_option('trace_dir'),
+            NET_INITED_FN)
 
     def _do_network_init(self):
         ran_fn = self.net_init_fn
@@ -277,18 +349,27 @@ class NovaRuntime(comp.PythonRuntime):
             mp['BIN_DIR'] = self.bin_dir
             if self.get_bool_option('enable_fixed'):
                 # Create a fixed network
-                mp['FIXED_NETWORK_SIZE'] = self.get_option('fixed_network_size', default_value='256')
-                mp['FIXED_RANGE'] = self.get_option('fixed_range', default_value='10.0.0.0/24')
+                mp['FIXED_NETWORK_SIZE'] = self.get_option(
+                    'fixed_network_size', default_value='256')
+                mp['FIXED_RANGE'] = self.get_option(
+                    'fixed_range',
+                    default_value='10.0.0.0/24')
                 cmds.extend(FIXED_NET_CMDS)
             if self.get_bool_option('enable_floating'):
                 # Create a floating network + test floating pool
                 cmds.extend(FLOATING_NET_CMDS)
-                mp['FLOATING_RANGE'] = self.get_option('floating_range', default_value='172.24.4.224/28')
-                mp['TEST_FLOATING_RANGE'] = self.get_option('test_floating_range', default_value='192.168.253.0/29')
-                mp['TEST_FLOATING_POOL'] = self.get_option('test_floating_pool', default_value='test')
+                mp['FLOATING_RANGE'] = self.get_option(
+                    'floating_range',
+                    default_value='172.24.4.224/28')
+                mp['TEST_FLOATING_RANGE'] = self.get_option(
+                    'test_floating_range',
+                    default_value='192.168.253.0/29')
+                mp['TEST_FLOATING_POOL'] = self.get_option(
+                    'test_floating_pool', default_value='test')
             # Anything to run??
             if cmds:
-                LOG.info("Creating your nova network to be used with instances.")
+                LOG.info(
+                    "Creating your nova network to be used with instances.")
                 utils.execute_template(*cmds, params=mp)
             # Writing this makes sure that we don't init again
             cmd_mp = {
@@ -296,7 +377,9 @@ class NovaRuntime(comp.PythonRuntime):
                 'replacements': mp,
             }
             sh.write_file(ran_fn, utils.prettify_yaml(cmd_mp))
-            LOG.info("If you wish to re-run network initialization, delete %s", colorizer.quote(ran_fn))
+            LOG.info(
+                "If you wish to re-run network initialization, delete %s",
+                colorizer.quote(ran_fn))
 
     def post_start(self):
         self._do_network_init()
@@ -308,7 +391,12 @@ class NovaRuntime(comp.PythonRuntime):
             name = "nova-%s" % (name.lower())
             path = sh.joinpths(self.bin_dir, name)
             if sh.is_executable(path):
-                apps.append(comp.Program(name, path, argv=self._fetch_argv(name)))
+                apps.append(
+                    comp.Program(
+                        name,
+                        path,
+                        argv=self._fetch_argv(
+                            name)))
         return apps
 
     def pre_start(self):
@@ -317,15 +405,19 @@ class NovaRuntime(comp.PythonRuntime):
         virt_driver = nhelper.canon_virt_driver(self.get_option('virt_driver'))
         if virt_driver == 'libvirt':
             virt_type = lv.canon_libvirt_type(self.get_option('libvirt_type'))
-            LOG.info("Checking that your selected libvirt virtualization type %s is working and running.", colorizer.quote(virt_type))
+            LOG.info(
+                "Checking that your selected libvirt virtualization type %s is working and running.",
+                colorizer.quote(virt_type))
             try:
                 self.virsh.check_virt(virt_type)
                 self.virsh.restart_service()
-                LOG.info("Libvirt virtualization type %s seems to be working and running.", colorizer.quote(virt_type))
+                LOG.info(
+                    "Libvirt virtualization type %s seems to be working and running.",
+                    colorizer.quote(virt_type))
             except excp.ProcessExecutionError as e:
                 msg = ("Libvirt type %r does not seem to be active or configured correctly, "
-                        "perhaps you should be using %r instead: %s" %
-                        (virt_type, lv.DEF_VIRT_TYPE, e))
+                       "perhaps you should be using %r instead: %s" %
+                      (virt_type, lv.DEF_VIRT_TYPE, e))
                 raise excp.StartException(msg)
 
     def app_params(self, program):

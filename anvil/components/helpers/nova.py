@@ -81,13 +81,15 @@ def get_shared_params(ip, protocol,
     # Uri's of the various nova endpoints
     mp['endpoints'] = {
         'ec2_admin': {
-            'uri': utils.make_url(protocol, ec2_admin_host, ec2_admin_port, "services/Admin"),
+            'uri': utils.make_url(
+                protocol, ec2_admin_host, ec2_admin_port, "services/Admin"),
             'port': ec2_admin_port,
             'host': ec2_admin_host,
             'protocol': protocol,
         },
         'ec2_cloud': {
-            'uri': utils.make_url(protocol, ec2_host, ec2_port, "services/Cloud"),
+            'uri': utils.make_url(
+                protocol, ec2_host, ec2_port, "services/Cloud"),
             'port': ec2_port,
             'host': ec2_host,
             'protocol': protocol,
@@ -116,19 +118,30 @@ def get_shared_params(ip, protocol,
 
 
 class ComputeCleaner(object):
+
     def __init__(self, uninstaller):
         self.uninstaller = weakref.proxy(uninstaller)
 
     def clean(self):
-        virsh = lv.Virsh(self.uninstaller.get_int_option('service_wait_seconds'), self.uninstaller.distro)
-        virt_driver = canon_virt_driver(self.uninstaller.get_option('virt_driver'))
+        virsh = lv.Virsh(
+            self.uninstaller.get_int_option(
+                'service_wait_seconds'),
+            self.uninstaller.distro)
+        virt_driver = canon_virt_driver(
+            self.uninstaller.get_option(
+                'virt_driver'))
         if virt_driver == 'libvirt':
-            inst_prefix = self.uninstaller.get_option('instance_name_prefix', default_value='instance-')
-            libvirt_type = lv.canon_libvirt_type(self.uninstaller.get_option('libvirt_type'))
+            inst_prefix = self.uninstaller.get_option(
+                'instance_name_prefix',
+                default_value='instance-')
+            libvirt_type = lv.canon_libvirt_type(
+                self.uninstaller.get_option(
+                    'libvirt_type'))
             virsh.clear_domains(libvirt_type, inst_prefix)
 
 
 class NetworkCleaner(object):
+
     def __init__(self, uninstaller):
         self.uninstaller = weakref.proxy(uninstaller)
 
@@ -224,7 +237,12 @@ class NetworkCleaner(object):
 
         # Isolate the nova nat chains
         clean_nat_chains = []
-        nat_chain_cmd = ['iptables', '--list-rules', '--verbose', '--table', 'nat']
+        nat_chain_cmd = [
+            'iptables',
+            '--list-rules',
+            '--verbose',
+            '--table',
+            'nat']
         (stdout, _stderr) = sh.execute(*nat_chain_cmd, run_as_root=True)
         for line in stdout.splitlines():
             if not line_matcher(line, "-N"):
@@ -252,7 +270,8 @@ class NetworkCleaner(object):
 # This class has the smarts to build the configuration file based on
 # various runtime values. A useful reference for figuring out this
 # is at http://docs.openstack.org/diablo/openstack-compute/admin/content/ch_configuring-openstack-compute.html
-# See also: https://github.com/openstack/nova/blob/master/etc/nova/nova.conf.sample
+# See also:
+# https://github.com/openstack/nova/blob/master/etc/nova/nova.conf.sample
 class ConfConfigurator(object):
 
     def __init__(self, installer):
@@ -262,20 +281,27 @@ class ConfConfigurator(object):
     def verify(self):
         # Do a little check to make sure actually have that interface/s
         public_interface = self.installer.get_option('public_interface')
-        vlan_interface = self.installer.get_option('vlan_interface', default_value=public_interface)
+        vlan_interface = self.installer.get_option(
+            'vlan_interface',
+            default_value=public_interface)
         known_interfaces = utils.get_interfaces()
         if not public_interface in known_interfaces:
-            msg = "Public interface %r is not a known interface (is it one of %s??)" % (public_interface, ", ".join(known_interfaces))
+            msg = "Public interface %r is not a known interface (is it one of %s??)" % (
+                public_interface, ", ".join(known_interfaces))
             raise exceptions.ConfigException(msg)
         if not vlan_interface in known_interfaces:
-            msg = "VLAN interface %r is not a known interface (is it one of %s??)" % (vlan_interface, ", ".join(known_interfaces))
+            msg = "VLAN interface %r is not a known interface (is it one of %s??)" % (
+                vlan_interface, ", ".join(known_interfaces))
             raise exceptions.ConfigException(msg)
         # Driver specific interface checks
-        drive_canon = canon_virt_driver(self.installer.get_option('virt_driver'))
+        drive_canon = canon_virt_driver(
+            self.installer.get_option(
+                'virt_driver'))
         if drive_canon == 'libvirt':
             flat_interface = self.installer.get_option('flat_interface')
             if flat_interface and not flat_interface in known_interfaces:
-                msg = "Libvirt flat interface %s is not a known interface (is it one of %s??)" % (flat_interface, ", ".join(known_interfaces))
+                msg = "Libvirt flat interface %s is not a known interface (is it one of %s??)" % (
+                    flat_interface, ", ".join(known_interfaces))
                 raise exceptions.ConfigException(msg)
 
     def generate(self, fn):
@@ -296,7 +322,10 @@ class ConfConfigurator(object):
                       self.installer.get_option('scheduler', default_value='nova.scheduler.filter_scheduler.FilterScheduler'))
 
         # Rate limit the api??
-        nova_conf.add('api_rate_limit', self.installer.get_bool_option('api_rate_limit'))
+        nova_conf.add(
+            'api_rate_limit',
+            self.installer.get_bool_option(
+                'api_rate_limit'))
 
         # Ensure the policy.json is referenced correctly
         nova_conf.add('policy_file', '/etc/nova/policy.json')
@@ -314,15 +343,23 @@ class ConfConfigurator(object):
         # Setup your sql connection
         dbdsn = dbhelper.fetch_dbdsn(dbname=DB_NAME,
                                      utf8=True,
-                                     dbtype=self.installer.get_option('db', 'type'),
-                                     **utils.merge_dicts(self.installer.get_option('db'),
-                                                         dbhelper.get_shared_passwords(self.installer)))
+                                     dbtype=self.installer.get_option(
+                                         'db', 'type'),
+                                     **utils.merge_dicts(
+                                         self.installer.get_option('db'),
+                                     dbhelper.get_shared_passwords(self.installer)))
         nova_conf.add('sql_connection', dbdsn)
 
         # Configure anything libvirt related?
-        virt_driver = canon_virt_driver(self.installer.get_option('virt_driver'))
+        virt_driver = canon_virt_driver(
+            self.installer.get_option(
+                'virt_driver'))
         if virt_driver == 'libvirt':
-            self._configure_libvirt(lv.canon_libvirt_type(self.installer.get_option('libvirt_type')), nova_conf)
+            self._configure_libvirt(
+                lv.canon_libvirt_type(
+                    self.installer.get_option(
+                        'libvirt_type')),
+                nova_conf)
 
         # How instances will be presented
         instance_template = "%s%s" % (self.installer.get_option('instance_name_prefix'),
@@ -342,17 +379,28 @@ class ConfConfigurator(object):
         if self.installer.get_bool_option('force_cfg_drive'):
             nova_conf.add('force_config_drive', 'always')
 
-        # Don't always force images to raw, which makes things take time to get to raw...
-        nova_conf.add('force_raw_images', self.installer.get_bool_option('force_raw_images'))
+        # Don't always force images to raw, which makes things take time to get
+        # to raw...
+        nova_conf.add(
+            'force_raw_images',
+            self.installer.get_bool_option(
+                'force_raw_images'))
 
         # Add a checksum for images fetched for each hypervisor?
         # This check absorbs cpu cycles, warning....
-        nova_conf.add('checksum_base_images', self.installer.get_bool_option('checksum_base_images'))
+        nova_conf.add(
+            'checksum_base_images',
+            self.installer.get_bool_option(
+                'checksum_base_images'))
 
-        # Setup the interprocess locking directory (don't put me on shared storage)
+        # Setup the interprocess locking directory (don't put me on shared
+        # storage)
         lock_path = self.installer.get_option('lock_path')
         if not lock_path:
-            lock_path = sh.joinpths(self.installer.get_option('component_dir'), 'locks')
+            lock_path = sh.joinpths(
+                self.installer.get_option(
+                    'component_dir'),
+                'locks')
         sh.mkdirslist(lock_path, tracewriter=self.tracewriter)
         nova_conf.add('lock_path', lock_path)
 
@@ -360,21 +408,41 @@ class ConfConfigurator(object):
         self._configure_vnc(nova_conf)
 
         # Where our paste config is
-        nova_conf.add('api_paste_config', self.installer.target_config(PASTE_CONF))
+        nova_conf.add(
+            'api_paste_config',
+            self.installer.target_config(
+                PASTE_CONF))
 
         # What our imaging service will be
         self._configure_image_service(nova_conf, hostip)
 
         # Configs for ec2 / s3 stuff
-        nova_conf.add('ec2_dmz_host', self.installer.get_option('ec2_dmz_host', default_value=hostip))
+        nova_conf.add(
+            'ec2_dmz_host',
+            self.installer.get_option(
+                'ec2_dmz_host',
+                default_value=hostip))
         nova_conf.add('s3_host', hostip)
 
         # How is your message queue setup?
         mq_type = canon_mq_type(self.installer.get_option('mq-type'))
         if mq_type == 'rabbit':
-            nova_conf.add('rabbit_host', self.installer.get_option('rabbit', 'host', default_value=hostip))
-            nova_conf.add('rabbit_password', rbhelper.get_shared_passwords(self.installer)['pw'])
-            nova_conf.add('rabbit_userid', self.installer.get_option('rabbit', 'user_id'))
+            nova_conf.add(
+                'rabbit_host',
+                self.installer.get_option(
+                    'rabbit',
+                    'host',
+                    default_value=hostip))
+            nova_conf.add(
+                'rabbit_password',
+                rbhelper.get_shared_passwords(
+                    self.installer)[
+                        'pw'])
+            nova_conf.add(
+                'rabbit_userid',
+                self.installer.get_option(
+                    'rabbit',
+                    'user_id'))
             nova_conf.add('rpc_backend', 'nova.rpc.impl_kombu')
 
         # The USB tablet device is meant to improve mouse behavior in
@@ -385,7 +453,10 @@ class ConfConfigurator(object):
         # Where instances will be stored
         instances_path = self.installer.get_option('instances_path')
         if not instances_path:
-            instances_path = sh.joinpths(self.installer.get_option('component_dir'), 'instances')
+            instances_path = sh.joinpths(
+                self.installer.get_option(
+                    'component_dir'),
+                'instances')
         self._configure_instances_path(instances_path, nova_conf)
 
         # Is this a multihost setup?
@@ -427,7 +498,8 @@ class ConfConfigurator(object):
         generated_content = nova_conf.generate()
         extra_flags = self._get_extra('extra_flags')
         if extra_flags:
-            LOG.warn("EXTRA_FLAGS is defined and may need to be converted to EXTRA_OPTS!")
+            LOG.warn(
+                "EXTRA_FLAGS is defined and may need to be converted to EXTRA_OPTS!")
             extra_flags = self._convert_extra_flags(extra_flags)
         extra_opts = self._get_extra('extra_opts')
         if extra_flags or extra_opts:
@@ -447,26 +519,49 @@ class ConfConfigurator(object):
 
     def _configure_image_service(self, nova_conf, hostip):
         # What image service we will u be using sir?
-        img_service = self.installer.get_option('img_service', default_value='nova.image.glance.GlanceImageService')
+        img_service = self.installer.get_option(
+            'img_service',
+            default_value='nova.image.glance.GlanceImageService')
         nova_conf.add('image_service', img_service)
 
         # If glance then where is it?
         if img_service.lower().find("glance") != -1:
-            glance_api_server = self.installer.get_option('glance_server', default_value=("%s:9292" % (hostip)))
+            glance_api_server = self.installer.get_option(
+                'glance_server', default_value=("%s:9292" %
+                                                         (hostip)))
             nova_conf.add('glance_api_servers', glance_api_server)
 
     def _configure_vnc(self, nova_conf):
         # All nova-compute workers need to know the vnc configuration options
         # These settings don't hurt anything if n-xvnc and n-novnc are disabled
-        nova_conf.add('novncproxy_base_url', self.installer.get_option('vncproxy_url'))
-        nova_conf.add('xvpvncproxy_base_url', self.installer.get_option('xvpvncproxy_url'))
-        nova_conf.add('vncserver_listen', self.installer.get_option('vncserver_listen', default_value='127.0.0.1'))
-        nova_conf.add('vncserver_proxyclient_address', self.installer.get_option('vncserver_proxyclient_address', default_value='127.0.0.1'))
+        nova_conf.add(
+            'novncproxy_base_url',
+            self.installer.get_option(
+                'vncproxy_url'))
+        nova_conf.add(
+            'xvpvncproxy_base_url',
+            self.installer.get_option(
+                'xvpvncproxy_url'))
+        nova_conf.add(
+            'vncserver_listen',
+            self.installer.get_option(
+                'vncserver_listen',
+                default_value='127.0.0.1'))
+        nova_conf.add(
+            'vncserver_proxyclient_address',
+            self.installer.get_option(
+                'vncserver_proxyclient_address',
+                default_value='127.0.0.1'))
 
     # Fixes up your nova volumes
     def _configure_vols(self, nova_conf):
-        nova_conf.add('volume_group', self.installer.get_option('volume_group'))
-        vol_name_tpl = self.installer.get_option('volume_name_prefix') + self.installer.get_option('volume_name_postfix')
+        nova_conf.add(
+            'volume_group',
+            self.installer.get_option(
+                'volume_group'))
+        vol_name_tpl = self.installer.get_option(
+            'volume_name_prefix') + self.installer.get_option(
+                'volume_name_postfix')
         if not vol_name_tpl:
             vol_name_tpl = 'volume-%08x'
         nova_conf.add('volume_name_template', vol_name_tpl)
@@ -491,28 +586,47 @@ class ConfConfigurator(object):
         if self.installer.get_bool_option('quantum-enabled'):
             self._configure_quantum(nova_conf)
         else:
-            nova_conf.add('network_manager', self.installer.get_option('network_manager'))
+            nova_conf.add(
+                'network_manager',
+                self.installer.get_option(
+                    'network_manager'))
 
         # Configs dhcp bridge stuff???
         # TODO(harlowja) why is this the same as the nova.conf?
-        nova_conf.add('dhcpbridge_flagfile', sh.joinpths(self.installer.get_option('cfg_dir'), API_CONF))
+        nova_conf.add(
+            'dhcpbridge_flagfile',
+            sh.joinpths(
+                self.installer.get_option(
+                    'cfg_dir'),
+                API_CONF))
 
-        # Network prefix for the IP network that all the projects for future VM guests reside on. Example: 192.168.0.0/12
+        # Network prefix for the IP network that all the projects for future VM
+        # guests reside on. Example: 192.168.0.0/12
         nova_conf.add('fixed_range', self.installer.get_option('fixed_range'))
 
         # The value for vlan_interface may default to the the current value
         # of public_interface. We'll grab the value and keep it handy.
         public_interface = self.installer.get_option('public_interface')
-        vlan_interface = self.installer.get_option('vlan_interface', default_value=public_interface)
+        vlan_interface = self.installer.get_option(
+            'vlan_interface',
+            default_value=public_interface)
         nova_conf.add('public_interface', public_interface)
         nova_conf.add('vlan_interface', vlan_interface)
 
-        # This forces dnsmasq to update its leases table when an instance is terminated.
+        # This forces dnsmasq to update its leases table when an instance is
+        # terminated.
         nova_conf.add('force_dhcp_release', True)
 
         # Special virt driver network settings
-        nova_conf.add('flat_network_bridge', self.installer.get_option('flat_network_bridge', default_value='br100'))
-        nova_conf.add('flat_injected', self.installer.get_bool_option('flat_injected'))
+        nova_conf.add(
+            'flat_network_bridge',
+            self.installer.get_option(
+                'flat_network_bridge',
+                default_value='br100'))
+        nova_conf.add(
+            'flat_injected',
+            self.installer.get_bool_option(
+                'flat_injected'))
         flat_interface = self.installer.get_option('flat_interface')
         if flat_interface:
             nova_conf.add('flat_interface', flat_interface)
@@ -527,10 +641,14 @@ class ConfConfigurator(object):
     def _configure_instances_path(self, instances_path, nova_conf):
         nova_conf.add('instances_path', instances_path)
         if not sh.isdir(instances_path):
-            LOG.debug("Attempting to create instance directory: %r", instances_path)
+            LOG.debug(
+                "Attempting to create instance directory: %r",
+                instances_path)
             sh.mkdirslist(instances_path, tracewriter=self.tracewriter)
-            LOG.debug("Adjusting permissions of instance directory: %r", instances_path)
-            sh.chmod(instances_path, 0777)
+            LOG.debug(
+                "Adjusting permissions of instance directory: %r",
+                instances_path)
+            sh.chmod(instances_path, 0o777)
 
     # Any special libvirt configurations go here
     def _configure_libvirt(self, virt_type, nova_conf):
@@ -540,19 +658,34 @@ class ConfConfigurator(object):
 
     # Configures any virt driver settings
     def _configure_virt_driver(self, nova_conf):
-        drive_canon = canon_virt_driver(self.installer.get_option('virt_driver'))
-        nova_conf.add('compute_driver', VIRT_DRIVER_MAP.get(drive_canon, drive_canon))
+        drive_canon = canon_virt_driver(
+            self.installer.get_option(
+                'virt_driver'))
+        nova_conf.add(
+            'compute_driver',
+            VIRT_DRIVER_MAP.get(
+                drive_canon,
+                drive_canon))
         if drive_canon == 'libvirt':
-            nova_conf.add('firewall_driver', self.installer.get_option('libvirt_firewall_driver'))
+            nova_conf.add(
+                'firewall_driver',
+                self.installer.get_option(
+                    'libvirt_firewall_driver'))
         else:
-            nova_conf.add('firewall_driver', self.installer.get_option('basic_firewall_driver'))
+            nova_conf.add(
+                'firewall_driver',
+                self.installer.get_option(
+                    'basic_firewall_driver'))
 
 
 # This class represents the data/format of the nova config file
 class Conf(object):
+
     def __init__(self, name, installer):
         self.installer = installer
-        self.backing = cfg.create_parser(cfg.BuiltinConfigParser, self.installer)
+        self.backing = cfg.create_parser(
+            cfg.BuiltinConfigParser,
+            self.installer)
         self.name = name
 
     def add_with_section(self, section, key, value, *values):
@@ -563,7 +696,11 @@ class Conf(object):
             real_value = ",".join(str_values)
         else:
             real_value = str(value)
-        LOG.debug("Added nova conf key %r with value %r under section %r", real_key, real_value, section)
+        LOG.debug(
+            "Added nova conf key %r with value %r under section %r",
+            real_key,
+            real_value,
+            section)
         self.backing.set(section, real_key, real_value)
 
     def add(self, key, value, *values):

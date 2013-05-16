@@ -46,18 +46,20 @@ DB_NAME = "glance"
 
 # Sync db command
 SYNC_DB_CMD = [sh.joinpths('$BIN_DIR', 'glance-manage'),
-                '--debug', '-v',
-                # Available commands:
-                'db_sync']
+               '--debug', '-v',
+               # Available commands:
+               'db_sync']
 
 
 class GlanceUninstaller(comp.PythonUninstallComponent):
+
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
 
 
 class GlanceInstaller(comp.PythonInstallComponent):
+
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
@@ -95,7 +97,11 @@ class GlanceInstaller(comp.PythonInstallComponent):
     def _sync_db(self):
         LOG.info("Syncing glance to database: %s", colorizer.quote(DB_NAME))
         cmds = [{'cmd': SYNC_DB_CMD, 'run_as_root': True}]
-        utils.execute_template(*cmds, cwd=self.bin_dir, params=self.config_params(None))
+        utils.execute_template(
+            *cmds,
+            cwd=self.bin_dir,
+            params=self.config_params(
+                None))
 
     def source_config(self, config_fn):
         if config_fn == LOGGING_CONF:
@@ -108,8 +114,9 @@ class GlanceInstaller(comp.PythonInstallComponent):
     def _fetch_keystone_params(self):
         params = khelper.get_shared_params(ip=self.get_option('ip'),
                                            service_user='glance',
-                                           **utils.merge_dicts(self.get_option('keystone'),
-                                                               khelper.get_shared_passwords(self)))
+                                           **utils.merge_dicts(
+                                               self.get_option('keystone'),
+                                           khelper.get_shared_passwords(self)))
         return {
             'auth_host': params['endpoints']['admin']['host'],
             'auth_port': params['endpoints']['admin']['port'],
@@ -138,26 +145,57 @@ class GlanceInstaller(comp.PythonInstallComponent):
             config.set('DEFAULT', 'debug', self.get_bool_option('verbose'))
             config.set('DEFAULT', 'verbose', self.get_bool_option('verbose'))
             if fn in [REG_CONF]:
-                config.set('DEFAULT', 'bind_port', gparams['endpoints']['registry']['port'])
+                config.set(
+                    'DEFAULT',
+                    'bind_port',
+                    gparams[
+                        'endpoints'][
+                            'registry'][
+                                'port'])
             else:
-                config.set('DEFAULT', 'bind_port', gparams['endpoints']['public']['port'])
-            config.set('DEFAULT', 'sql_connection', dbhelper.fetch_dbdsn(dbname=DB_NAME,
-                                                                         utf8=True,
-                                                                         dbtype=self.get_option('db', 'type'),
-                                                                         **utils.merge_dicts(self.get_option('db'),
-                                                                                             dbhelper.get_shared_passwords(self))))
+                config.set(
+                    'DEFAULT',
+                    'bind_port',
+                    gparams[
+                        'endpoints'][
+                            'public'][
+                                'port'])
+            config.set(
+                'DEFAULT', 'sql_connection', dbhelper.fetch_dbdsn(dbname=DB_NAME,
+                                                                  utf8=True,
+                                                                  dbtype=self.get_option(
+                                                                  'db', 'type'),
+                                                                  **utils.merge_dicts(
+                                                                  self.get_option(
+                'db'),
+                                                                      dbhelper.get_shared_passwords(self))))
             config.remove_option('DEFAULT', 'log_file')
-            config.set('paste_deploy', 'flavor', self.get_option('paste_flavor'))
+            config.set(
+                'paste_deploy',
+                'flavor',
+                self.get_option(
+                    'paste_flavor'))
             for (k, v) in self._fetch_keystone_params().items():
                 config.set('keystone_authtoken', k, v)
             if fn in [API_CONF]:
                 config.set('DEFAULT', 'default_store', 'file')
-                img_store_dir = sh.joinpths(self.get_option('component_dir'), 'images')
-                config.set('DEFAULT', 'filesystem_store_datadir', img_store_dir)
-                LOG.debug("Ensuring file system store directory %r exists and is empty." % (img_store_dir))
+                img_store_dir = sh.joinpths(
+                    self.get_option(
+                        'component_dir'),
+                    'images')
+                config.set(
+                    'DEFAULT',
+                    'filesystem_store_datadir',
+                    img_store_dir)
+                LOG.debug(
+                    "Ensuring file system store directory %r exists and is empty." %
+                    (img_store_dir))
                 if sh.isdir(img_store_dir):
                     sh.deldir(img_store_dir)
-                sh.mkdirslist(img_store_dir, tracewriter=self.tracewriter, adjust_suids=True)
+                sh.mkdirslist(
+                    img_store_dir,
+                    tracewriter=self.tracewriter,
+                    adjust_suids=True)
             return config.stringify(fn)
 
     def _config_adjust_logging(self, contents, fn):
@@ -203,6 +241,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
 
 
 class GlanceRuntime(comp.PythonRuntime):
+
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
@@ -214,7 +253,12 @@ class GlanceRuntime(comp.PythonRuntime):
             name = "glance-%s" % (name.lower())
             path = sh.joinpths(self.bin_dir, name)
             if sh.is_executable(path):
-                apps.append(comp.Program(name, path, argv=self._fetch_argv(name)))
+                apps.append(
+                    comp.Program(
+                        name,
+                        path,
+                        argv=self._fetch_argv(
+                            name)))
         return apps
 
     def _fetch_argv(self, name):
@@ -236,10 +280,13 @@ class GlanceRuntime(comp.PythonRuntime):
             self.wait_active()
             params = {}
             params['glance'] = ghelper.get_shared_params(**self.options)
-            params['keystone'] = khelper.get_shared_params(ip=self.get_option('ip'),
-                                                           service_user='glance',
-                                                           **utils.merge_dicts(self.get_option('keystone'),
-                                                                               khelper.get_shared_passwords(self)))
+            params[
+                'keystone'] = khelper.get_shared_params(ip=self.get_option('ip'),
+                                                        service_user='glance',
+                                                        **utils.merge_dicts(
+                                                        self.get_option(
+                                                        'keystone'),
+                                                        khelper.get_shared_passwords(self)))
             cache_dir = self.get_option('image_cache_dir')
             if cache_dir:
                 params['cache_dir'] = cache_dir
@@ -248,6 +295,7 @@ class GlanceRuntime(comp.PythonRuntime):
 
 class GlanceTester(comp.PythonTestingComponent):
     # NOTE: only run the unit tests
+
     def _get_test_command(self):
         base_cmd = comp.PythonTestingComponent._get_test_command(self)
         base_cmd = base_cmd + ['--unittests-only']

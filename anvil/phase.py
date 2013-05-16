@@ -24,6 +24,7 @@ LOG = logging.getLogger(__name__)
 
 
 class PhaseRecorder(object):
+
     def __init__(self, fn):
         self.filename = fn
         self.state = None
@@ -58,7 +59,9 @@ class PhaseRecorder(object):
             with open(self.filename, 'r') as fh:
                 state = utils.load_yaml_text(fh.read())
                 if not isinstance(state, (dict)):
-                    raise TypeError("Phase file %s expected dictionary root type" % (self.filename))
+                    raise TypeError(
+                        "Phase file %s expected dictionary root type" %
+                        (self.filename))
         except IOError:
             pass
         self.state = state
@@ -66,6 +69,7 @@ class PhaseRecorder(object):
 
 
 class NullPhaseRecorder(object):
+
     def __init__(self):
         pass
 

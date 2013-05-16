@@ -24,7 +24,8 @@ def get():
 def set(key, value):
     # This is really screwy, python is really odd in this area
     # See: from http://docs.python.org/library/os.html
-    # Calling putenv() directly does not change os.environ, so it's better to modify os.environ.
+    # Calling putenv() directly does not change os.environ, so it's better to
+    # modify os.environ.
     if key is not None:
         os.environ[str(key)] = str(value)
 

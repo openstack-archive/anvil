@@ -35,6 +35,7 @@ LOG = logging.getLogger(__name__)
 
 
 class StringiferMixin(object):
+
     def __init__(self):
         pass
 
@@ -109,12 +110,14 @@ class ConfigHelperMixin(object):
 
 
 class BuiltinConfigParser(ConfigHelperMixin, ConfigParser.RawConfigParser, StringiferMixin):
+
     def __init__(self, fns=None, templatize_values=False):
         ConfigHelperMixin.__init__(self, templatize_values)
         ConfigParser.RawConfigParser.__init__(self)
         StringiferMixin.__init__(self)
         # Make option names case sensitive
-        # See: http://docs.python.org/library/configparser.html#ConfigParser.RawConfigParser.optionxform
+        # See:
+        # http://docs.python.org/library/configparser.html#ConfigParser.RawConfigParser.optionxform
         self.optionxform = str
         if fns:
             for f in fns:
@@ -122,12 +125,14 @@ class BuiltinConfigParser(ConfigHelperMixin, ConfigParser.RawConfigParser, Strin
 
 
 class RewritableConfigParser(ConfigHelperMixin, iniparse.RawConfigParser, StringiferMixin):
+
     def __init__(self, fns=None, templatize_values=False):
         ConfigHelperMixin.__init__(self, templatize_values)
         iniparse.RawConfigParser.__init__(self)
         StringiferMixin.__init__(self)
         # Make option names case sensitive
-        # See: http://docs.python.org/library/configparser.html#ConfigParser.RawConfigParser.optionxform
+        # See:
+        # http://docs.python.org/library/configparser.html#ConfigParser.RawConfigParser.optionxform
         self.optionxform = str
         if fns:
             for f in fns:
@@ -135,6 +140,7 @@ class RewritableConfigParser(ConfigHelperMixin, iniparse.RawConfigParser, String
 
 
 class YamlInterpolator(object):
+
     def __init__(self, base):
         self.included = {}
         self.interpolated = {}

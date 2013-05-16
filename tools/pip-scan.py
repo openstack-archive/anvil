@@ -41,7 +41,9 @@ def main():
             requirements.append(req.key.lower().strip())
             source_requirements[fn].append(req.key.lower().strip())
 
-    print("Comparing pips/pip2pkgs in %s to those found in %s" % (yaml_fn, root_dirs))
+    print(
+        "Comparing pips/pip2pkgs in %s to those found in %s" %
+        (yaml_fn, root_dirs))
     for fn in sorted(requires_files):
         print(" + " + str(fn))
 
@@ -88,7 +90,8 @@ def main():
             not_found.append(name)
     not_found = sorted(list(set(not_found)))
     if not_found:
-        print("The following distro yaml mappings may be required but were not found:")
+        print(
+            "The following distro yaml mappings may be required but were not found:")
         for n in sorted(not_found):
             msg = "  + %s" % (n)
             msg += " ("

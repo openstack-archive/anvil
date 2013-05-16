@@ -38,7 +38,8 @@ def extract_requirement(pkg_info):
         if isinstance(p_version, (int, float, long)):
             p_version = str(p_version)
         if not isinstance(p_version, (str, basestring)):
-            raise TypeError("Yum requirement version must be a string or numeric type")
+            raise TypeError(
+                "Yum requirement version must be a string or numeric type")
     return yum_helper.Requirement(p_name, p_version)
 
 
@@ -47,6 +48,7 @@ class MultiplePackageSolutions(excp.DependencyException):
 
 
 class YumPackager(pack.Packager):
+
     def __init__(self, distro, remove_default=False):
         pack.Packager.__init__(self, distro, remove_default)
         self.helper = yum_helper.Helper()
@@ -63,8 +65,9 @@ class YumPackager(pack.Packager):
             if p.verGE(req.package):
                 return p
         # Warn that incompat. versions could be installed...
-        LOG.warn("There was %s matches to %s found, none satisified our request!",
-                 len(whats_installed), req)
+        LOG.warn(
+            "There was %s matches to %s found, none satisified our request!",
+            len(whats_installed), req)
         return None
 
     def match_pip_2_package(self, pip_requirement):
@@ -210,8 +213,9 @@ class YumPackager(pack.Packager):
             return
         if not matched:
             # Warn that incompat. version could be uninstalled
-            LOG.warn("Removing package named %s even though %s packages with different versions exist",
-                     req, len(whats_there))
+            LOG.warn(
+                "Removing package named %s even though %s packages with different versions exist",
+                req, len(whats_there))
         if self._remove_special(req.name, pkg):
             return
         # Not removing specific version, this could

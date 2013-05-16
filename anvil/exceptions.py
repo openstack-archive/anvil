@@ -84,6 +84,7 @@ class DependencyException(AnvilException):
 
 
 class ProcessExecutionError(IOError):
+
     def __init__(self, stdout=None, stderr=None,
                  exit_code=None, cmd=None,
                  description=None):
@@ -103,8 +104,8 @@ class ProcessExecutionError(IOError):
         if not self.stdout:
             self.stdout = ''
         message = ('%s\nCommand: %s\n'
-                    'Exit code: %s\nStdout: %r\n'
-                    'Stderr: %r' % (self.description, self.cmd,
-                                            self.exit_code, self.stdout,
-                                            self.stderr))
+                   'Exit code: %s\nStdout: %r\n'
+                   'Stderr: %r' % (self.description, self.cmd,
+                                   self.exit_code, self.stdout,
+                                   self.stderr))
         IOError.__init__(self, message)

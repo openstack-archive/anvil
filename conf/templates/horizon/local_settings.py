@@ -1,10 +1,10 @@
-#* 
-   This is a cheetah template!
-*#
+#*
+    This is a cheetah template!
+*
 
 # These settings are good for dev-like environments (or ci)
 # When moving to production it is likely some more thought should
-# be given here... 
+# be given here...
 #
 # See: https://docs.djangoproject.com/en/dev/ref/settings/
 #
@@ -39,7 +39,8 @@ MAILER_EMAIL_BACKEND = EMAIL_BACKEND
 
 # Set a secure and unique SECRET_KEY (the Django default is '')
 #
-# See: https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-SECRET_KEY
+# See:
+# https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-SECRET_KEY
 SECRET_KEY = "${SECRET_KEY}"
 
 # The OPENSTACK_KEYSTONE_BACKEND settings can be used to identify the
@@ -78,7 +79,7 @@ LOGGING = {
             'level': 'INFO',
             'class': 'logging.StreamHandler',
         },
-     },
+    },
     'loggers': {
         # Logging from django.db.backends is VERY verbose, send to null
         # by default.
@@ -112,4 +113,3 @@ LOGGING = {
         },
     },
 }
-

@@ -38,7 +38,10 @@ def get_shared_passwords(component):
 def drop_db(distro, dbtype, user, pw, dbname, **kwargs):
     dropcmd = distro.get_command(dbtype, 'drop_db', silent=True)
     if dropcmd:
-        LOG.info('Dropping %s database: %s', colorizer.quote(dbtype), colorizer.quote(dbname))
+        LOG.info(
+            'Dropping %s database: %s',
+            colorizer.quote(dbtype),
+            colorizer.quote(dbname))
         params = dict()
         params['PASSWORD'] = pw
         params['USER'] = user
@@ -58,7 +61,11 @@ def create_db(distro, dbtype, user, pw, dbname, **kwargs):
     createcmd = distro.get_command(dbtype, 'create_db', silent=True)
     if createcmd:
         charset = kwargs.get('charset', 'utf8')
-        LOG.info('Creating %s database: %s (%s)', colorizer.quote(dbtype), colorizer.quote(dbname), charset)
+        LOG.info(
+            'Creating %s database: %s (%s)',
+            colorizer.quote(dbtype),
+            colorizer.quote(dbname),
+            charset)
         params = dict()
         params['PASSWORD'] = pw
         params['USER'] = user
@@ -91,7 +98,9 @@ def grant_permissions(dbtype, distro, user, pw, restart_func=None):
                 'USER': user,
             }
             cmds = [{'cmd': grant_cmd}]
-            LOG.info("Giving user %s full control of all databases.", colorizer.quote(user))
+            LOG.info(
+                "Giving user %s full control of all databases.",
+                colorizer.quote(user))
             utils.execute_template(*cmds, params=params)
     return
 

@@ -30,7 +30,9 @@ PW_USER = 'anvil'
 
 
 class KeyringProxy(object):
-    def __init__(self, path, keyring_encrypted=False, enable_prompt=True, random_on_empty=True):
+
+    def __init__(self, path, keyring_encrypted=False,
+                 enable_prompt=True, random_on_empty=True):
         self.keyring_encrypted = keyring_encrypted
         if self.keyring_encrypted and not path.endswith(".crypt"):
             path = "%s.crypt" % (path)
@@ -65,6 +67,7 @@ class KeyringProxy(object):
 
 
 class InputPassword(object):
+
     def _valid_password(self, pw):
         cleaned_pw = pw.strip()
         if len(cleaned_pw) == 0:
@@ -80,7 +83,8 @@ class InputPassword(object):
         rc = ""
         while True:
             rc = getpass.getpass(message)
-            # Length zero seems to mean just enter was pressed (which means skip in our case)
+            # Length zero seems to mean just enter was pressed (which means
+            # skip in our case)
             if len(rc) == 0 or self._valid_password(rc):
                 break
             else:
@@ -92,6 +96,7 @@ class InputPassword(object):
 
 
 class RandomPassword(object):
+
     def generate_random(self, length):
         """Returns a randomly generated password of the specified length."""
         LOG.debug("Generating a pseudo-random secret of %d characters", length)

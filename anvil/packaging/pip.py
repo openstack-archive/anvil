@@ -35,6 +35,7 @@ def extract_requirement(pkg_info):
 
 
 class Packager(pack.Packager):
+
     def __init__(self, distro, remove_default=False):
         pack.Packager.__init__(self, distro, remove_default)
         self.helper = pip_helper.Helper(distro)
@@ -56,9 +57,11 @@ class Packager(pack.Packager):
                 if o in pip.get('options', []):
                     is_upgrading = True
             if is_upgrading and (wanted_pip.key not in self.upgraded):
-                # Upgrade should hopefully get that package to the right version....
-                LOG.warn("Upgrade is occuring for %s, even though %s is installed.",
-                         wanted_pip, pip_there)
+                # Upgrade should hopefully get that package to the right
+                # version....
+                LOG.warn(
+                    "Upgrade is occuring for %s, even though %s is installed.",
+                    wanted_pip, pip_there)
                 # Mark it so that we don't keep on flip-flopping on upgrading this
                 # package (ie install new, install old, install new....)
                 self.upgraded[wanted_pip.key] = wanted_pip

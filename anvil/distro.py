@@ -36,7 +36,9 @@ Component = collections.namedtuple("Component", 'entry_point,options,siblings')
 
 
 class Distro(object):
-    def __init__(self, name, platform_pattern, packager_name, commands, components):
+
+    def __init__(self, name, platform_pattern,
+                 packager_name, commands, components):
         self.name = name
         self._platform_pattern = re.compile(platform_pattern, re.IGNORECASE)
         self._packager_name = packager_name
@@ -123,7 +125,9 @@ def load(path):
     distro_possibles = []
     input_files = glob.glob(sh.joinpths(path, '*.yaml'))
     if not input_files:
-        raise excp.ConfigException('Did not find any distro definition files in %r' % path)
+        raise excp.ConfigException(
+            'Did not find any distro definition files in %r' %
+            path)
     for fn in input_files:
         LOG.debug("Attempting to load distro definition from %r", fn)
         try:
@@ -134,5 +138,8 @@ def load(path):
                 cls_kvs = yaml.safe_load(contents)
                 distro_possibles.append(Distro(**cls_kvs))
         except (IOError, yaml.YAMLError) as err:
-            LOG.warning('Could not load distro definition from %r: %s', fn, err)
+            LOG.warning(
+                'Could not load distro definition from %r: %s',
+                fn,
+                err)
     return _match_distro(distro_possibles)

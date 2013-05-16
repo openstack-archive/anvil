@@ -64,14 +64,23 @@ class GitChangeLog(object):
             line = line.strip()
             if not line.startswith('#') and ' ' in line:
                 try:
-                    (canonical_email, alias) = [x for x in line.split(' ') if x.startswith('<')]
+                    (canonical_email, alias) = [
+                        x for x in line.split(' ') if x.startswith('<')]
                     mapping[alias] = canonical_email
                 except (TypeError, ValueError, IndexError):
                     pass
         return mapping
 
     def _get_commit_detail(self, commit, field, am=1):
-        detail_cmd = ['git', 'log', '--color=never', '-%s' % (am), "--pretty=format:%s" % (field), commit]
+        detail_cmd = [
+            'git',
+            'log',
+            '--color=never',
+            '-%s' % (
+                am),
+            "--pretty=format:%s" % (
+            field),
+            commit]
         (stdout, _stderr) = sh.execute(*detail_cmd, cwd=self.wkdir)
         ret = stdout.strip('\n').splitlines()
         if len(ret) == 1:
@@ -124,14 +133,21 @@ class GitChangeLog(object):
                 if not len(fields):
                     continue
 
-                # See: http://opensource.apple.com/source/Git/Git-26/src/git-htmldocs/pretty-formats.txt
+                # See:
+                # http://opensource.apple.com/source/Git/Git-26/src/git-htmldocs/pretty-formats.txt
                 commit_id = fields[0]
-                details = self._get_commit_detail(commit_id, "[%s][%ai][%aE][%an]", PER_CALL_AM)
+                details = self._get_commit_detail(
+                    commit_id,
+                    "[%s][%ai][%aE][%an]",
+                    PER_CALL_AM)
                 for det in details.splitlines():
-                    details_m = re.match(r"^\s*\[(.*?)\]\[(.*?)\]\[(.*?)\]\[(.*?)\]\s*$", det)
+                    details_m = re.match(
+                        r"^\s*\[(.*?)\]\[(.*?)\]\[(.*?)\]\[(.*?)\]\s*$",
+                        det)
                     if not details_m:
                         continue
-                    (summary, date, author_email, author_name) = details_m.groups()
+                    (summary, date, author_email,
+                     author_name) = details_m.groups()
                     author_email = mmp.get(author_email, author_email)
                     date = iso8601.parse_date(date)
                     if self._skip_entry(summary, date, author_email, author_name):
@@ -160,6 +176,7 @@ class GitChangeLog(object):
 
 
 class RpmChangeLog(GitChangeLog):
+
     def format_log(self):
         date_buckets = self.get_log()
         lines = []

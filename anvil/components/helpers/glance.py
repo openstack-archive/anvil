@@ -36,13 +36,12 @@ TAR_EXTS = ['.tgz', '.gzip', '.gz', '.bz2', '.tar']
 # Used to attempt to produce a name for images (to see if we already have it)
 # And to use as the final name...
 # Reverse sorted so that .tar.gz replaces before .tar (and so on)
-NAME_CLEANUPS = [
+NAME_CLEANUPS = sorted([
     '.tar.gz',
     '.img.gz',
     '.qcow2',
     '.img',
-] + TAR_EXTS
-NAME_CLEANUPS.sort()
+] + TAR_EXTS)
 NAME_CLEANUPS.reverse()
 
 # Used to match various file names with what could be a kernel image
@@ -113,7 +112,7 @@ class Unpacker(object):
         ramdisk_fn = None
         img_fn = None
         utils.log_iterable(files, logger=LOG,
-              header="Looking at %s files from %s to find the kernel/ramdisk/root images" % (len(files), colorizer.quote(files_location)))
+                           header="Looking at %s files from %s to find the kernel/ramdisk/root images" % (len(files), colorizer.quote(files_location)))
 
         for fn in files:
             if self._pat_checker(fn, KERNEL_CHECKS):
@@ -131,7 +130,12 @@ class Unpacker(object):
         return (img_fn, ramdisk_fn, kernel_fn)
 
     def _unpack_tar_member(self, tarhandle, member, output_location):
-        LOG.info("Extracting %s to %s.", colorizer.quote(member.name), colorizer.quote(output_location))
+        LOG.info(
+            "Extracting %s to %s.",
+            colorizer.quote(
+                member.name),
+            colorizer.quote(
+            output_location))
         with contextlib.closing(tarhandle.extractfile(member)) as mfh:
             with open(output_location, "wb") as ofh:
                 return sh.pipe_in_out(mfh, ofh)
@@ -170,8 +174,11 @@ class Unpacker(object):
 
     def _unpack_tar(self, file_name, file_location, tmp_dir):
         (root_name, _) = os.path.splitext(file_name)
-        tar_members = self._filter_files(self._get_tar_file_members(file_location))
-        (root_img_fn, ramdisk_fn, kernel_fn) = self._find_pieces(tar_members, file_location)
+        tar_members = self._filter_files(
+            self._get_tar_file_members(
+                file_location))
+        (root_img_fn, ramdisk_fn, kernel_fn) = self._find_pieces(
+            tar_members, file_location)
         if not root_img_fn:
             msg = "Tar file %r has no root image member" % (file_name)
             raise IOError(msg)
@@ -183,13 +190,19 @@ class Unpacker(object):
         with contextlib.closing(tarfile.open(file_location, 'r')) as tfh:
             for m in tfh.getmembers():
                 if m.name == root_img_fn:
-                    root_real_fn = sh.joinpths(extract_dir, sh.basename(root_img_fn))
+                    root_real_fn = sh.joinpths(
+                        extract_dir,
+                        sh.basename(root_img_fn))
                     self._unpack_tar_member(tfh, m, root_real_fn)
                 elif ramdisk_fn and m.name == ramdisk_fn:
-                    ramdisk_real_fn = sh.joinpths(extract_dir, sh.basename(ramdisk_fn))
+                    ramdisk_real_fn = sh.joinpths(
+                        extract_dir,
+                        sh.basename(ramdisk_fn))
                     self._unpack_tar_member(tfh, m, ramdisk_real_fn)
                 elif kernel_fn and m.name == kernel_fn:
-                    kernel_real_fn = sh.joinpths(extract_dir, sh.basename(kernel_fn))
+                    kernel_real_fn = sh.joinpths(
+                        extract_dir,
+                        sh.basename(kernel_fn))
                     self._unpack_tar_member(tfh, m, kernel_real_fn)
         return self._describe(root_real_fn, ramdisk_real_fn, kernel_real_fn)
 
@@ -203,7 +216,7 @@ class Unpacker(object):
             pieces.append("%s (kernel image)" % (colorizer.quote(kernel_fn)))
         if pieces:
             utils.log_iterable(pieces, logger=LOG,
-                                header="Found %s images from a %s" % (len(pieces), src_type))
+                               header="Found %s images from a %s" % (len(pieces), src_type))
 
     def _unpack_dir(self, dir_path):
         """
@@ -215,7 +228,8 @@ class Unpacker(object):
             full_fn = sh.joinpths(dir_path, fn)
             if sh.isfile(full_fn):
                 potential_files.add(sh.canon_path(full_fn))
-        (root_fn, ramdisk_fn, kernel_fn) = self._find_pieces(potential_files, dir_path)
+        (root_fn, ramdisk_fn, kernel_fn) = self._find_pieces(
+            potential_files, dir_path)
         if not root_fn:
             msg = "Directory %r has no root image member" % (dir_path)
             raise IOError(msg)
@@ -275,7 +289,9 @@ class Image(object):
         self.cache_dir = cache_dir
 
     def _check_name(self, name):
-        LOG.info("Checking if image %s already exists already in glance.", colorizer.quote(name))
+        LOG.info(
+            "Checking if image %s already exists already in glance.",
+            colorizer.quote(name))
         if name in self.registry:
             raise IOError("Image named %s already exists." % (name))
 
@@ -287,7 +303,10 @@ class Image(object):
         if kernel:
             kernel_image_name = "%s-vmlinuz" % (image_name)
             self._check_name(kernel_image_name)
-            LOG.info('Adding kernel %s to glance.', colorizer.quote(kernel_image_name))
+            LOG.info(
+                'Adding kernel %s to glance.',
+                colorizer.quote(
+                    kernel_image_name))
             LOG.info("Please wait installing...")
             args = {
                 'container_format': kernel['container_format'],
@@ -305,7 +324,10 @@ class Image(object):
         if initrd:
             ram_image_name = "%s-initrd" % (image_name)
             self._check_name(ram_image_name)
-            LOG.info('Adding ramdisk %s to glance.', colorizer.quote(ram_image_name))
+            LOG.info(
+                'Adding ramdisk %s to glance.',
+                colorizer.quote(
+                    ram_image_name))
             LOG.info("Please wait installing...")
             args = {
                 'container_format': initrd['container_format'],
@@ -379,18 +401,26 @@ class Image(object):
     def install(self):
         url_fn = self._extract_url_fn()
         if not url_fn:
-            raise IOError("Can not determine file name from url: %r" % (self.url))
+            raise IOError(
+                "Can not determine file name from url: %r" %
+                (self.url))
         (cache_path, details_path) = self._cached_paths()
         use_cached = self._validate_cache(cache_path, details_path)
         if use_cached:
-            LOG.info("Found valid cached image + metadata at: %s", colorizer.quote(cache_path))
+            LOG.info(
+                "Found valid cached image + metadata at: %s",
+                colorizer.quote(cache_path))
             unpack_info = utils.load_yaml_text(sh.load_file(details_path))
         else:
             sh.mkdir(cache_path)
             if not self._is_url_local():
                 (fetched_fn, bytes_down) = down.UrlLibDownloader(self.url,
                                                                  sh.joinpths(cache_path, url_fn)).download()
-                LOG.debug("For url %s we downloaded %s bytes to %s", self.url, bytes_down, fetched_fn)
+                LOG.debug(
+                    "For url %s we downloaded %s bytes to %s",
+                    self.url,
+                    bytes_down,
+                    fetched_fn)
             else:
                 fetched_fn = self.url
             unpack_info = Unpacker().unpack(url_fn, fetched_fn, cache_path)
@@ -402,14 +432,16 @@ class Image(object):
 
 class UploadService(object):
 
-    def __init__(self, glance, keystone, cache_dir='/usr/share/anvil/glance/cache', is_public=True):
+    def __init__(self, glance, keystone,
+                 cache_dir='/usr/share/anvil/glance/cache', is_public=True):
         self.glance_params = glance
         self.keystone_params = keystone
         self.cache_dir = cache_dir
         self.is_public = is_public
 
     def _get_token(self, kclient_v2):
-        LOG.info("Getting your keystone token so that image uploads may proceed.")
+        LOG.info(
+            "Getting your keystone token so that image uploads may proceed.")
         k_params = self.keystone_params
         client = kclient_v2.Client(username=k_params['admin_user'],
                                    password=k_params['admin_password'],
@@ -423,7 +455,8 @@ class UploadService(object):
             # Done at a function level since this module may be used
             # before these libraries actually exist...
             gclient_v1 = importer.import_module('glanceclient.v1.client')
-            gexceptions = importer.import_module('glanceclient.common.exceptions')
+            gexceptions = importer.import_module(
+                'glanceclient.common.exceptions')
             kclient_v2 = importer.import_module('keystoneclient.v2_0.client')
             kexceptions = importer.import_module('keystoneclient.exceptions')
         except RuntimeError as e:
@@ -435,21 +468,27 @@ class UploadService(object):
                 for params in [self.glance_params, self.keystone_params]:
                     utils.wait_for_url(params['endpoints']['public']['uri'])
                 g_params = self.glance_params
-                client = gclient_v1.Client(endpoint=g_params['endpoints']['public']['uri'],
-                                           token=self._get_token(kclient_v2))
+                client = gclient_v1.Client(
+                    endpoint=g_params['endpoints']['public']['uri'],
+                    token=self._get_token(kclient_v2))
             except (RuntimeError, gexceptions.ClientException,
                     kexceptions.ClientException, IOError) as e:
-                LOG.exception('Failed fetching needed clients for image calls due to: %s', e)
+                LOG.exception(
+                    'Failed fetching needed clients for image calls due to: %s',
+                    e)
                 return am_installed
             utils.log_iterable(urls, logger=LOG,
-                                header="Attempting to download+extract+upload %s images" % len(urls))
+                               header="Attempting to download+extract+upload %s images" % len(urls))
             for url in urls:
                 try:
                     img_handle = Image(client, url,
                                        is_public=self.is_public,
                                        cache_dir=self.cache_dir)
                     (name, img_id) = img_handle.install()
-                    LOG.info("Installed image named %s with image id %s.", colorizer.quote(name), colorizer.quote(img_id))
+                    LOG.info(
+                        "Installed image named %s with image id %s.",
+                        colorizer.quote(name),
+                        colorizer.quote(img_id))
                     am_installed += 1
                 except (IOError,
                         tarfile.TarError,
@@ -459,7 +498,8 @@ class UploadService(object):
         return am_installed
 
 
-def get_shared_params(ip, api_port=9292, protocol='http', reg_port=9191, **kwargs):
+def get_shared_params(
+        ip, api_port=9292, protocol='http', reg_port=9191, **kwargs):
     mp = {}
     mp['service_host'] = ip
 
@@ -477,7 +517,8 @@ def get_shared_params(ip, api_port=9292, protocol='http', reg_port=9191, **kwarg
             'protocol': glance_protocol,
         },
         'registry': {
-            'uri': utils.make_url(glance_protocol, glance_host, glance_registry_port),
+            'uri': utils.make_url(
+                glance_protocol, glance_host, glance_registry_port),
             'port': glance_registry_port,
             'host': glance_host,
             'protocol': glance_protocol,

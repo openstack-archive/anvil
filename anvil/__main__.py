@@ -55,13 +55,17 @@ def run(args):
     saved_args = dict(args)
     action = args.pop("action", '').strip().lower()
     if action not in actions.names():
-        raise excp.OptionException("Invalid action name %r specified!" % (action))
+        raise excp.OptionException(
+            "Invalid action name %r specified!" %
+            (action))
 
     persona_fn = args.pop('persona_fn')
     if not persona_fn:
         raise excp.OptionException("No persona file name specified!")
     if not sh.isfile(persona_fn):
-        raise excp.OptionException("Invalid persona file %r specified!" % (persona_fn))
+        raise excp.OptionException(
+            "Invalid persona file %r specified!" %
+            (persona_fn))
 
     # Determine + setup the root directory...
     # If not provided attempt to locate it via the environment control files
@@ -95,7 +99,9 @@ def run(args):
         persona_obj = persona.load(persona_fn)
         persona_obj.verify(dist)
     except Exception as e:
-        raise excp.OptionException("Error loading persona file: %s due to %s" % (persona_fn, e))
+        raise excp.OptionException(
+            "Error loading persona file: %s due to %s" %
+            (persona_fn, e))
 
     # Get the object we will be running with...
     runner_cls = actions.class_for(action)
@@ -164,7 +170,10 @@ def store_current_settings(c_settings):
         (uid, gid) = sh.get_suids()
         sh.chown("/etc/anvil/settings.yaml", uid, gid)
     except Exception as e:
-        LOG.debug("Failed writing to %s due to %s", "/etc/anvil/settings.yaml", e)
+        LOG.debug(
+            "Failed writing to %s due to %s",
+            "/etc/anvil/settings.yaml",
+            e)
 
 
 def ensure_perms():
@@ -211,8 +220,8 @@ def main():
         if log_level < logging.INFO:
             # See: http://docs.python.org/library/traceback.html
             # When its not none u get more detailed info about the exception
-            traceback = sys.exc_traceback
-        tb.print_exception(sys.exc_type, sys.exc_value,
+            traceback = sys.exc_info()[2]
+        tb.print_exception(sys.exc_info()[0], sys.exc_info()[1],
                            traceback, file=sys.stdout)
 
     try:
@@ -229,7 +238,9 @@ def main():
         return 0
     except excp.OptionException as e:
         print_exc(e)
-        print("Perhaps you should try %s" % (colorizer.quote('--help', quote_color='red')))
+        print(
+            "Perhaps you should try %s" %
+            (colorizer.quote('--help', quote_color='red')))
         return 1
     except Exception:
         utils.goodbye(False)

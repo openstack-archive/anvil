@@ -27,7 +27,8 @@ from anvil import utils
 def get_token():
     pw_storage = passwords.KeyringProxy(path='/etc/anvil/passwords.cfg')
     lookup_name = "service_token"
-    prompt = "Please enter the password for %s: " % ('/etc/anvil/passwords.cfg')
+    prompt = "Please enter the password for %s: " % (
+        '/etc/anvil/passwords.cfg')
     (exists, token) = pw_storage.read(lookup_name, prompt)
     if not exists:
         pw_storage.save(lookup_name, token)
@@ -35,13 +36,14 @@ def get_token():
 
 
 def replace_services_endpoints(token, options):
-    client = importer.construct_entry_point("keystoneclient.v2_0.client:Client",
-                                             token=token, endpoint=options.keystone_uri)
+    client = importer.construct_entry_point(
+        "keystoneclient.v2_0.client:Client",
+        token=token, endpoint=options.keystone_uri)
     current_endpoints = client.endpoints.list()
     current_services = client.services.list()
 
     def filter_resource(r):
-        raw = dict(r.__dict__) # Can't access the raw attrs, arg...
+        raw = dict(r.__dict__)  # Can't access the raw attrs, arg...
         raw_cleaned = {}
         for k, v in raw.items():
             if k == 'manager' or k.startswith('_'):

@@ -52,11 +52,13 @@ class DBUninstaller(comp.PkgUninstallComponent):
                           " that we can set it the next time you install."), colorizer.quote(RESET_BASE_PW))
                 pwd_cmd = self.distro.get_command(dbtype, 'set_pwd')
                 if pwd_cmd:
-                    LOG.info("Ensuring your database is started before we operate on it.")
+                    LOG.info(
+                        "Ensuring your database is started before we operate on it.")
                     self.runtime.start()
                     self.runtime.wait_active()
                     params = {
-                        'OLD_PASSWORD': dbhelper.get_shared_passwords(self)['pw'],
+                        'OLD_PASSWORD':
+                        dbhelper.get_shared_passwords(self)['pw'],
                         'NEW_PASSWORD': RESET_BASE_PW,
                         'USER': self.get_option("user", default_value='root'),
                     }
@@ -111,11 +113,13 @@ class DBInstaller(comp.PkgInstallComponent):
                 if pwd_cmd:
                     LOG.info(("Attempting to set your db password"
                               " just incase it wasn't set previously."))
-                    LOG.info("Ensuring your database is started before we operate on it.")
+                    LOG.info(
+                        "Ensuring your database is started before we operate on it.")
                     self.runtime.start()
                     self.runtime.wait_active()
                     params = {
-                        'NEW_PASSWORD': dbhelper.get_shared_passwords(self)['pw'],
+                        'NEW_PASSWORD':
+                        dbhelper.get_shared_passwords(self)['pw'],
                         'USER': self.get_option("user", default_value='root'),
                         'OLD_PASSWORD': RESET_BASE_PW,
                     }
@@ -123,17 +127,20 @@ class DBInstaller(comp.PkgInstallComponent):
                     utils.execute_template(*cmds, params=params)
         except IOError:
             LOG.warn(("Couldn't set your db password. It might have already been "
-                       "set by a previous process."))
+                      "set by a previous process."))
 
         # Ensure access granted
         dbhelper.grant_permissions(dbtype,
                                    distro=self.distro,
-                                   user=self.get_option("user", default_value='root'),
+                                   user=self.get_option(
+                                   "user",
+                                   default_value='root'),
                                    restart_func=self.runtime.restart,
                                    **dbhelper.get_shared_passwords(self))
 
 
 class DBRuntime(comp.ProgramRuntime):
+
     def _get_command(self, action):
         db_type = self.get_option("type")
         distro_options = self.distro.get_command_config(db_type)
@@ -151,7 +158,9 @@ class DBRuntime(comp.ProgramRuntime):
     def _run_action(self, action, check_exit_code=True):
         cmd = self._get_command(action)
         if not cmd:
-            raise NotImplementedError("No distro command provided to perform action %r" % (action))
+            raise NotImplementedError(
+                "No distro command provided to perform action %r" %
+                (action))
         return sh.execute(*cmd, run_as_root=True, check_exit_code=check_exit_code)
 
     def start(self):

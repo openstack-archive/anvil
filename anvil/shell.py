@@ -52,11 +52,13 @@ IS_DRYRUN = None
 
 
 class Process(psutil.Process):
+
     def __str__(self):
         return "%s (%s)" % (self.pid, self.name)
 
 
 class Rooted(object):
+
     def __init__(self, run_as_root):
         self.root_mode = run_as_root
         self.engaged = False
@@ -78,7 +80,9 @@ def set_dry_run(on_off):
     if not isinstance(on_off, (bool)):
         raise TypeError("Dry run value must be a boolean")
     if IS_DRYRUN is not None:
-        raise RuntimeError("Dry run value has already been previously set to '%s'" % (IS_DRYRUN))
+        raise RuntimeError(
+            "Dry run value has already been previously set to '%s'" %
+            (IS_DRYRUN))
     IS_DRYRUN = on_off
 
 
@@ -123,13 +127,15 @@ def execute(*cmd, **kwargs):
     if 'stdout_fh' in kwargs:
         stdout_fh = kwargs['stdout_fh']
         if stdout_fn:
-            LOG.warn("Stdout file handles and stdout file names can not be used simultaneously!")
+            LOG.warn(
+                "Stdout file handles and stdout file names can not be used simultaneously!")
             stdout_fn = None
 
     if 'stderr_fh' in kwargs:
         stderr_fh = kwargs['stderr_fh']
         if stderr_fn:
-            LOG.warn("Stderr file handles and stderr file names can not be used simultaneously!")
+            LOG.warn(
+                "Stderr file handles and stderr file names can not be used simultaneously!")
             stderr_fn = None
 
     if not shell:
@@ -172,16 +178,18 @@ def execute(*cmd, **kwargs):
             result = ('', '')
         else:
             try:
-                obj = subprocess.Popen(execute_cmd, stdin=stdin_fh, stdout=stdout_fh, stderr=stderr_fh,
-                                       close_fds=True, cwd=cwd, shell=shell,
-                                       preexec_fn=demoter, env=process_env)
+                obj = subprocess.Popen(
+                    execute_cmd, stdin=stdin_fh, stdout=stdout_fh, stderr=stderr_fh,
+                    close_fds=True, cwd=cwd, shell=shell,
+                    preexec_fn=demoter, env=process_env)
                 if process_input is not None:
                     result = obj.communicate(str(process_input))
                 else:
                     result = obj.communicate()
             except OSError as e:
-                raise excp.ProcessExecutionError(description="%s: [%s, %s]" % (e, e.errno, e.strerror),
-                                                 cmd=str_cmd)
+                raise excp.ProcessExecutionError(
+                    description="%s: [%s, %s]" % (e, e.errno, e.strerror),
+                    cmd=str_cmd)
             rc = obj.returncode
 
     if not result:
@@ -199,8 +207,9 @@ def execute(*cmd, **kwargs):
     else:
         # Log it anyway
         if rc not in check_exit_code:
-            LOG.debug("A failure may of just happened when running command %r [%s] (%s, %s)",
-                      str_cmd, rc, stdout, stderr)
+            LOG.debug(
+                "A failure may of just happened when running command %r [%s] (%s, %s)",
+                str_cmd, rc, stdout, stderr)
         # See if a requested storage place was given for stderr/stdout
         if stdout_fn:
             write_file(stdout_fn, stdout)
@@ -237,7 +246,11 @@ def isuseable(path, options=os.W_OK | os.R_OK | os.X_OK):
 # will be called after each chunk has been written...
 def pipe_in_out(in_fh, out_fh, chunk_size=1024, chunk_cb=None):
     bytes_piped = 0
-    LOG.debug("Transferring the contents of %s to %s in chunks of size %s.", in_fh, out_fh, chunk_size)
+    LOG.debug(
+        "Transferring the contents of %s to %s in chunks of size %s.",
+        in_fh,
+        out_fh,
+        chunk_size)
     while True:
         data = in_fh.read(chunk_size)
         if data == '':
@@ -252,7 +265,8 @@ def pipe_in_out(in_fh, out_fh, chunk_size=1024, chunk_cb=None):
 
 
 def shellquote(text):
-    # TODO(harlowja) find a better way - since there doesn't seem to be a standard lib that actually works
+    # TODO(harlowja) find a better way - since there doesn't seem to be a
+    # standard lib that actually works
     do_adjust = False
     for srch in SHELL_QUOTE_REPLACERS.keys():
         if text.find(srch) != -1:
@@ -264,13 +278,13 @@ def shellquote(text):
     if do_adjust or \
         text.startswith((" ", "\t")) or \
         text.endswith((" ", "\t")) or \
-        text.find("'") != -1:
+            text.find("'") != -1:
         text = "\"%s\"" % (text)
     return text
 
 
 def fileperms(path):
-    return (os.stat(path).st_mode & 0777)
+    return (os.stat(path).st_mode & 0o777)
 
 
 def listdir(path, recursive=False, dirs_only=False, files_only=False):
@@ -380,14 +394,18 @@ def _attempt_kill(proc, signal_type, max_try, wait_time):
             LOG.debug("Attempting to kill process %s" % (proc))
             attempts += 1
             proc.send_signal(signal_type)
-            LOG.debug("Sleeping for %s seconds before next attempt to kill process %s" % (wait_time, proc))
+            LOG.debug(
+                "Sleeping for %s seconds before next attempt to kill process %s" %
+                (wait_time, proc))
             sleep(wait_time)
         except psutil.error.NoSuchProcess:
             killed = True
             break
         except Exception as e:
             LOG.debug("Failed killing %s due to: %s", proc, e)
-            LOG.debug("Sleeping for %s seconds before next attempt to kill process %s" % (wait_time, proc))
+            LOG.debug(
+                "Sleeping for %s seconds before next attempt to kill process %s" %
+                (wait_time, proc))
             sleep(wait_time)
     return (killed, attempts)
 
@@ -397,11 +415,13 @@ def kill(pid, max_try=4, wait_time=1):
         return (True, 0)
     proc = Process(pid)
     # Try the nicer sig-int first...
-    (killed, i_attempts) = _attempt_kill(proc, signal.SIGINT, int(max_try / 2), wait_time)
+    (killed, i_attempts) = _attempt_kill(proc,
+                                         signal.SIGINT, int(max_try / 2), wait_time)
     if killed:
         return (True, i_attempts)
     # Get agressive and try sig-kill....
-    (killed, k_attempts) = _attempt_kill(proc, signal.SIGKILL, int(max_try / 2), wait_time)
+    (killed, k_attempts) = _attempt_kill(proc,
+                                         signal.SIGKILL, int(max_try / 2), wait_time)
     if killed:
         return (True, i_attempts + k_attempts)
     else:
@@ -484,7 +504,11 @@ def mkdirslist(path, tracewriter=None, adjust_suids=False):
 
 def append_file(fn, text, flush=True, quiet=False):
     if not quiet:
-        LOG.debug("Appending to file %r (%d bytes) (flush=%s)", fn, len(text), (flush))
+        LOG.debug(
+            "Appending to file %r (%d bytes) (flush=%s)",
+            fn,
+            len(text),
+            (flush))
         LOG.debug(">> %s" % (text))
     if not is_dry_run():
         with open(fn, "a") as f:
@@ -496,7 +520,11 @@ def append_file(fn, text, flush=True, quiet=False):
 
 def write_file(fn, text, flush=True, quiet=False, tracewriter=None):
     if not quiet:
-        LOG.debug("Writing to file %r (%d bytes) (flush=%s)", fn, len(text), (flush))
+        LOG.debug(
+            "Writing to file %r (%d bytes) (flush=%s)",
+            fn,
+            len(text),
+            (flush))
         LOG.debug("> %s" % (text))
     if not is_dry_run():
         mkdirslist(dirname(fn), tracewriter=tracewriter)
@@ -508,10 +536,14 @@ def write_file(fn, text, flush=True, quiet=False, tracewriter=None):
         tracewriter.file_touched(fn)
 
 
-def touch_file(fn, die_if_there=True, quiet=False, file_size=0, tracewriter=None):
+def touch_file(fn, die_if_there=True,
+               quiet=False, file_size=0, tracewriter=None):
     if not isfile(fn):
         if not quiet:
-            LOG.debug("Touching and truncating file %r (truncate size=%s)", fn, file_size)
+            LOG.debug(
+                "Touching and truncating file %r (truncate size=%s)",
+                fn,
+                file_size)
         if not is_dry_run():
             mkdirslist(dirname(fn), tracewriter=tracewriter)
             with open(fn, "w") as fh:
@@ -520,7 +552,8 @@ def touch_file(fn, die_if_there=True, quiet=False, file_size=0, tracewriter=None
                 tracewriter.file_touched(fn)
     else:
         if die_if_there:
-            msg = "Can not touch & truncate file %r since it already exists" % (fn)
+            msg = "Can not touch & truncate file %r since it already exists" % (
+                fn)
             raise excp.FileException(msg)
 
 
@@ -552,7 +585,9 @@ def mkdir(path, recurse=True, adjust_suids=False):
 def deldir(path, run_as_root=False):
     with Rooted(run_as_root):
         if isdir(path):
-            LOG.debug("Recursively deleting directory tree starting at %r" % (path))
+            LOG.debug(
+                "Recursively deleting directory tree starting at %r" %
+                (path))
             if not is_dry_run():
                 shutil.rmtree(path)
 
@@ -562,7 +597,9 @@ def rmdir(path, quiet=True, run_as_root=False):
         return
     try:
         with Rooted(run_as_root):
-            LOG.debug("Deleting directory %r with the cavet that we will fail if it's not empty." % (path))
+            LOG.debug(
+                "Deleting directory %r with the cavet that we will fail if it's not empty." %
+                (path))
             if not is_dry_run():
                 os.rmdir(path)
             LOG.debug("Deleted directory %r" % (path))
@@ -724,7 +761,8 @@ def root_mode(quiet=True):
         os.setreuid(0, root_uid)
         os.setregid(0, root_gid)
     except OSError as e:
-        msg = "Cannot escalate permissions to (uid=%s, gid=%s): %s" % (root_uid, root_gid, e)
+        msg = "Cannot escalate permissions to (uid=%s, gid=%s): %s" % (
+            root_uid, root_gid, e)
         if quiet:
             LOG.warn(msg)
         else:
@@ -738,7 +776,8 @@ def user_mode(quiet=True):
             os.setregid(0, sudo_gid)
             os.setreuid(0, sudo_uid)
         except OSError as e:
-            msg = "Cannot drop permissions to (uid=%s, gid=%s): %s" % (sudo_uid, sudo_gid, e)
+            msg = "Cannot drop permissions to (uid=%s, gid=%s): %s" % (
+                sudo_uid, sudo_gid, e)
             if quiet:
                 LOG.warn(msg)
             else:

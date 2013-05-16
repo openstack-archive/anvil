@@ -24,6 +24,7 @@ LOG = log.getLogger(__name__)
 
 
 class PackageAction(action.Action):
+
     @property
     def lookup_name(self):
         return 'package'
@@ -39,11 +40,13 @@ class PackageAction(action.Action):
     def _run(self, persona, component_order, instances):
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Creating a package for component %s.', colorizer.quote(i.name)),
+                start=lambda i: LOG.info(
+                    'Creating a package for component %s.',
+                    colorizer.quote(i.name)),
                 run=lambda i: i.package(),
                 end=self._finish_package,
             ),
             component_order,
             instances,
             None,
-            )
+        )

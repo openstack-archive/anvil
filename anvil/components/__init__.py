@@ -56,9 +56,9 @@ from anvil.packaging.helpers import pip_helper
 
 LOG = logging.getLogger(__name__)
 
-####
-#### Utils...
-####
+#
+# Utils...
+#
 
 # Cache of accessed packagers
 _PACKAGERS = {}
@@ -88,12 +88,13 @@ def filter_package(pkg):
             n_pkg[k] = v
     return n_pkg
 
-####
-#### INSTALL CLASSES
-####
+#
+# INSTALL CLASSES
+#
 
 
 class PkgInstallComponent(component.Component):
+
     def __init__(self, *args, **kargs):
         component.Component.__init__(self, *args, **kargs)
         trace_fn = tr.trace_filename(self.get_option('trace_dir'), 'created')
@@ -136,7 +137,9 @@ class PkgInstallComponent(component.Component):
         canon_what_patches = []
         for path in what_patches:
             if sh.isdir(path):
-                canon_what_patches.extend(sorted(sh.listdir(path, files_only=True)))
+                canon_what_patches.extend(
+                    sorted(sh.listdir(path,
+                                      files_only=True)))
             elif sh.isfile(path):
                 canon_what_patches.append(path)
         if canon_what_patches:
@@ -155,7 +158,9 @@ class PkgInstallComponent(component.Component):
             pkg_list = []
         for name, values in self.subsystems.items():
             if 'packages' in values:
-                LOG.debug("Extending package list with packages for subsystem: %r", name)
+                LOG.debug(
+                    "Extending package list with packages for subsystem: %r",
+                    name)
                 pkg_list.extend(values.get('packages'))
         return pkg_list
 
@@ -168,8 +173,9 @@ class PkgInstallComponent(component.Component):
                                header="Setting up %s distribution packages" % (len(pkg_names)))
             with utils.progress_bar('Installing', len(pkgs)) as p_bar:
                 for (i, p) in enumerate(pkgs):
-                    installer = make_packager(p, self.distro.package_manager_class,
-                                              distro=self.distro)
+                    installer = make_packager(
+                        p, self.distro.package_manager_class,
+                        distro=self.distro)
                     installer.install(p)
                     # Mark that this happened so that we can uninstall it
                     self.tracewriter.package_installed(filter_package(p))
@@ -227,8 +233,12 @@ class PkgInstallComponent(component.Component):
                 tgt_fn = self.target_config(fn)
                 sh.mkdirslist(sh.dirname(tgt_fn), tracewriter=self.tracewriter)
                 (source_fn, contents) = self.source_config(fn)
-                LOG.debug("Configuring file %s ---> %s.", (source_fn), (tgt_fn))
-                contents = self._config_param_replace(fn, contents, self.config_params(fn))
+                LOG.debug(
+                    "Configuring file %s ---> %s.",
+                    (source_fn),
+                    (tgt_fn))
+                contents = self._config_param_replace(
+                    fn, contents, self.config_params(fn))
                 contents = self._config_adjust(contents, fn)
                 sh.write_file(tgt_fn, contents, tracewriter=self.tracewriter)
         return len(config_fns)
@@ -258,7 +268,11 @@ class PkgInstallComponent(component.Component):
                     sh.symlink(source, link, tracewriter=self.tracewriter)
                     links_made += 1
                 except (IOError, OSError) as e:
-                    LOG.warn("Symlinking %s to %s failed: %s", colorizer.quote(link), colorizer.quote(source), e)
+                    LOG.warn(
+                        "Symlinking %s to %s failed: %s",
+                        colorizer.quote(link),
+                        colorizer.quote(source),
+                        e)
         return links_made
 
     def configure(self):
@@ -266,13 +280,19 @@ class PkgInstallComponent(component.Component):
 
 
 class PythonInstallComponent(PkgInstallComponent):
+
     def __init__(self, *args, **kargs):
         PkgInstallComponent.__init__(self, *args, **kargs)
         self.requires_files = [
             sh.joinpths(self.get_option('app_dir'), 'tools', 'pip-requires'),
         ]
         if self.get_bool_option('use_tests_requires', default_value=True):
-            self.requires_files.append(sh.joinpths(self.get_option('app_dir'), 'tools', 'test-requires'))
+            self.requires_files.append(
+                sh.joinpths(
+                    self.get_option(
+                        'app_dir'),
+                    'tools',
+                    'test-requires'))
 
     def _get_download_config(self):
         return 'get_from'
@@ -333,7 +353,9 @@ class PythonInstallComponent(PkgInstallComponent):
                     LOG.warn(msg, who, there_pip, pip_req, self.name)
                 return False
 
-        LOG.debug("Attempting to find who satisfies pip requirement '%s'", pip_req)
+        LOG.debug(
+            "Attempting to find who satisfies pip requirement '%s'",
+            pip_req)
 
         # Try to find it in anyones pip -> pkg list
         all_pip_2_pkgs = {
@@ -352,7 +374,10 @@ class PythonInstallComponent(PkgInstallComponent):
                 there_pip = pip.extract_requirement(pip_info)
                 if not pip_use(who, there_pip):
                     continue
-                LOG.debug("Matched pip->pkg '%s' from component %r", there_pip, who)
+                LOG.debug(
+                    "Matched pip->pkg '%s' from component %r",
+                    there_pip,
+                    who)
                 return (dict(pip_info.get('package')), False)
 
         # Ok nobody had it in a pip->pkg mapping
@@ -390,7 +415,10 @@ class PythonInstallComponent(PkgInstallComponent):
                         'version': str(dist_pkg.version),
                         '__requirement': dist_pkg,
                     }
-                    LOG.debug("Auto-matched (dist) %s -> %s", pip_req, dist_pkg)
+                    LOG.debug(
+                        "Auto-matched (dist) %s -> %s",
+                        pip_req,
+                        dist_pkg)
                     return (pkg_info, False)
             except excp.DependencyException as e:
                 LOG.warn("Unable to automatically map pip to package: %s", e)
@@ -445,7 +473,9 @@ class PythonInstallComponent(PkgInstallComponent):
             pip_list = []
         for (name, values) in self.subsystems.items():
             if 'pips' in values:
-                LOG.debug("Extending pip list with pips for subsystem: %r" % (name))
+                LOG.debug(
+                    "Extending pip list with pips for subsystem: %r" %
+                    (name))
                 pip_list.extend(values.get('pips'))
         return pip_list
 
@@ -484,12 +514,14 @@ class PythonInstallComponent(PkgInstallComponent):
             for fn in req_fns:
                 old_lines = sh.load_file(fn).splitlines()
                 new_lines = self._filter_pip_requires(fn, old_lines)
-                contents = "# Cleaned on %s\n\n%s\n" % (utils.iso8601(), "\n".join(new_lines))
+                contents = "# Cleaned on %s\n\n%s\n" % (
+                    utils.iso8601(), "\n".join(new_lines))
                 sh.write_file_and_backup(fn, contents)
         return len(req_fns)
 
     def _filter_pip_requires(self, fn, lines):
-        # The default does no filtering except to ensure that said lines are valid...
+        # The default does no filtering except to ensure that said lines are
+        # valid...
         return lines
 
     def pre_install(self):
@@ -520,7 +552,11 @@ class PythonInstallComponent(PkgInstallComponent):
             setup_cmd = self.distro.get_command('python', 'setup')
             for (name, working_dir) in real_dirs.items():
                 sh.mkdirslist(working_dir, tracewriter=self.tracewriter)
-                setup_fn = sh.joinpths(self.get_option('trace_dir'), "%s.python.setup" % (name))
+                setup_fn = sh.joinpths(
+                    self.get_option(
+                        'trace_dir'),
+                    "%s.python.setup" % (
+                        name))
                 sh.execute(*setup_cmd, cwd=working_dir, run_as_root=True,
                            stderr_fn='%s.stderr' % (setup_fn),
                            stdout_fn='%s.stdout' % (setup_fn),
@@ -569,15 +605,15 @@ class PythonInstallComponent(PkgInstallComponent):
         return configured_am
 
 
-####
-#### RUNTIME CLASSES
-####
+#
+# RUNTIME CLASSES
+#
 
 DEFAULT_RUNNER = 'anvil.runners.fork:ForkRunner'
 
-####
-#### STATUS CONSTANTS
-####
+#
+# STATUS CONSTANTS
+#
 STATUS_INSTALLED = 'installed'
 STATUS_STARTED = "started"
 STATUS_STOPPED = "stopped"
@@ -585,6 +621,7 @@ STATUS_UNKNOWN = "unknown"
 
 
 class ProgramStatus(object):
+
     def __init__(self, status, name=None, details=''):
         self.name = name
         self.status = status
@@ -592,6 +629,7 @@ class ProgramStatus(object):
 
 
 class Program(object):
+
     def __init__(self, name, path=None, working_dir=None, argv=None):
         self.name = name
         if path is None:
@@ -612,10 +650,12 @@ class Program(object):
 
 
 class ProgramRuntime(component.Component):
+
     @property
     def applications(self):
         # A list of applications since a single component sometimes
-        # has a list of programs to start (ie nova) instead of a single application (ie the db)
+        # has a list of programs to start (ie nova) instead of a single
+        # application (ie the db)
         return []
 
     def restart(self):
@@ -630,7 +670,8 @@ class ProgramRuntime(component.Component):
 
     def statii(self):
         # A list of statuses since a single component sometimes
-        # has a list of programs to report on (ie nova) instead of a single application (ie the db)
+        # has a list of programs to report on (ie nova) instead of a single
+        # application (ie the db)
         return []
 
     def start(self):
@@ -648,10 +689,15 @@ class ProgramRuntime(component.Component):
         # for up to a given amount of attempts and wait time between attempts.
         num_started = len(self.applications)
         if not num_started:
-            raise excp.StatusException("No %r programs started, can not wait for them to become active..." % (self.name))
+            raise excp.StatusException(
+                "No %r programs started, can not wait for them to become active..." %
+                (self.name))
 
         def waiter(try_num):
-            LOG.info("Waiting %s seconds for component %s programs to start.", between_wait, colorizer.quote(self.name))
+            LOG.info(
+                "Waiting %s seconds for component %s programs to start.",
+                between_wait,
+                colorizer.quote(self.name))
             LOG.info("Please wait...")
             sh.sleep(between_wait)
 
@@ -665,9 +711,11 @@ class ProgramRuntime(component.Component):
                 if len(not_worked) == 0:
                     return
             else:
-                # Eck less applications were found with status then what were started!
-                LOG.warn("%s less applications reported status than were actually started!",
-                         num_started - len(statii))
+                # Eck less applications were found with status then what were
+                # started!
+                LOG.warn(
+                    "%s less applications reported status than were actually started!",
+                    num_started - len(statii))
             waiter(i + 1)
 
         tot_time = max(0, (between_wait * max_attempts))
@@ -680,6 +728,7 @@ class EmptyRuntime(ProgramRuntime):
 
 
 class PythonRuntime(ProgramRuntime):
+
     def __init__(self, *args, **kargs):
         ProgramRuntime.__init__(self, *args, **kargs)
         start_trace = tr.trace_filename(self.get_option('trace_dir'), 'start')
@@ -703,12 +752,17 @@ class PythonRuntime(ProgramRuntime):
             pass
         if what_may_already_be_started:
             msg = "%s programs of component %s may already be running, did you forget to stop those?"
-            raise excp.StartException(msg % (len(what_may_already_be_started), self.name))
+            raise excp.StartException(
+                msg %
+                (len(what_may_already_be_started), self.name))
 
         # Select how we are going to start it and get on with the show...
-        runner_entry_point = self.get_option("run_type", default_value=DEFAULT_RUNNER)
+        runner_entry_point = self.get_option(
+            "run_type",
+            default_value=DEFAULT_RUNNER)
         starter_args = [self, runner_entry_point]
-        starter = importer.construct_entry_point(runner_entry_point, *starter_args)
+        starter = importer.construct_entry_point(
+            runner_entry_point, *starter_args)
         amount_started = 0
         for program in self.applications:
             self._start_app(program, starter)
@@ -725,19 +779,25 @@ class PythonRuntime(ProgramRuntime):
         # of program options (if applicable)
         app_params = self.app_params(program)
         if app_params:
-            app_argv = [utils.expand_template(arg, app_params) for arg in program.argv]
+            app_argv = [utils.expand_template(
+                        arg,
+                        app_params) for arg in program.argv]
         else:
             app_argv = program.argv
         LOG.debug("Starting %r using a %r", program.name, starter)
 
-        # TODO(harlowja): clean this function params up (should just take a program)
+        # TODO(harlowja): clean this function params up (should just take a
+        # program)
         details_path = starter.start(program.name,
                                      app_pth=program.path,
                                      app_dir=app_working_dir,
                                      opts=app_argv)
 
         # This trace is used to locate details about what/how to stop
-        LOG.info("Started program %s under component %s.", colorizer.quote(program.name), self.name)
+        LOG.info(
+            "Started program %s under component %s.",
+            colorizer.quote(program.name),
+            self.name)
         self.tracewriter.app_started(program.name, details_path, starter.name)
 
     def _locate_investigators(self, applications_started):
@@ -750,11 +810,13 @@ class PythonRuntime(ProgramRuntime):
             if investigator is None:
                 try:
                     investigator_args = [self, who_started]
-                    investigator = importer.construct_entry_point(who_started, *investigator_args)
+                    investigator = importer.construct_entry_point(
+                        who_started, *investigator_args)
                     investigators_created[who_started] = investigator
                 except RuntimeError as e:
-                    LOG.warn("Could not load class %s which should be used to investigate %s: %s",
-                             colorizer.quote(who_started), colorizer.quote(name), e)
+                    LOG.warn(
+                        "Could not load class %s which should be used to investigate %s: %s",
+                        colorizer.quote(who_started), colorizer.quote(name), e)
                     continue
             to_investigate.append((name, investigator))
         return to_investigate
@@ -777,12 +839,14 @@ class PythonRuntime(ProgramRuntime):
             applications_stopped.append(name)
         if applications_stopped:
             utils.log_iterable(applications_stopped,
-                               header="Stopped %s programs started under %s component" % (len(applications_stopped), self.name),
+                               header="Stopped %s programs started under %s component" % (
+                                   len(applications_stopped), self.name),
                                logger=LOG)
 
         # Only if we stopped the amount which was supposedly started can
         # we actually remove the trace where those applications have been
-        # marked as started in (ie the connection back to how they were started)
+        # marked as started in (ie the connection back to how they were
+        # started)
         if len(applications_stopped) < len(what_was_started):
             diff = len(what_was_started) - len(applications_stopped)
             LOG.warn(("%s less applications were stopped than were started, please check out %s"
@@ -803,7 +867,8 @@ class PythonRuntime(ProgramRuntime):
             return []
 
         # Get the investigators/runners which can be used
-        # to actually do the status inquiry and attempt to perform said inquiry.
+        # to actually do the status inquiry and attempt to perform said
+        # inquiry.
         statii = []
         for (name, handler) in self._locate_investigators(what_was_started):
             (status, details) = handler.status(name)
@@ -813,11 +878,12 @@ class PythonRuntime(ProgramRuntime):
         return statii
 
 
-####
-#### UNINSTALL CLASSES
-####
+#
+# UNINSTALL CLASSES
+#
 
 class PkgUninstallComponent(component.Component):
+
     def __init__(self, *args, **kargs):
         component.Component.__init__(self, *args, **kargs)
         trace_fn = tr.trace_filename(self.get_option('trace_dir'), 'created')
@@ -854,9 +920,10 @@ class PkgUninstallComponent(component.Component):
             which_removed = []
             with utils.progress_bar('Uninstalling', len(pkgs), reverse=True) as p_bar:
                 for (i, p) in enumerate(pkgs):
-                    uninstaller = make_packager(p, self.distro.package_manager_class,
-                                                distro=self.distro,
-                                                remove_default=self.purge_packages)
+                    uninstaller = make_packager(
+                        p, self.distro.package_manager_class,
+                        distro=self.distro,
+                        remove_default=self.purge_packages)
                     if uninstaller.remove(p):
                         which_removed.append(p['name'])
                     p_bar.update(i + 1)
@@ -904,7 +971,8 @@ class PythonUninstallComponent(PkgUninstallComponent):
                         if uninstaller.remove(p):
                             which_removed.append(p['name'])
                     except excp.ProcessExecutionError as e:
-                        # NOTE(harlowja): pip seems to die if a pkg isn't there even in quiet mode
+                        # NOTE(harlowja): pip seems to die if a pkg isn't there
+                        # even in quiet mode
                         combined = (str(e.stderr) + str(e.stdout))
                         if not re.search(r"not\s+installed", combined, re.I):
                             raise
@@ -925,20 +993,25 @@ class PythonUninstallComponent(PkgUninstallComponent):
                 if sh.isdir(where):
                     sh.execute(*unsetup_cmd, cwd=where, run_as_root=True)
                 else:
-                    LOG.warn("No python directory found at %s - skipping", colorizer.quote(where, quote_color='red'))
+                    LOG.warn(
+                        "No python directory found at %s - skipping",
+                        colorizer.quote(where,
+                                        quote_color='red'))
 
 
-####
-#### TESTING CLASSES
-####
+#
+# TESTING CLASSES
+#
 
 
 class EmptyTestingComponent(component.Component):
+
     def run_tests(self):
         return
 
 
 class PythonTestingComponent(component.Component):
+
     def __init__(self, *args, **kargs):
         component.Component.__init__(self, *args, **kargs)
         self.helper = pip_helper.Helper(self.distro)
@@ -959,7 +1032,8 @@ class PythonTestingComponent(component.Component):
                 cmd.append('--no-pep8')
         else:
             # Assume tox is being used, which we can't use directly
-            # since anvil doesn't really do venv stuff (its meant to avoid those...)
+            # since anvil doesn't really do venv stuff (its meant to avoid
+            # those...)
             cmd = ['nosetests']
         # See: $ man nosetests
         if self.get_bool_option("verbose", default_value=False):
@@ -989,14 +1063,16 @@ class PythonTestingComponent(component.Component):
         pep8_there = self.helper.get_installed('pep8')
         if not pep8_there:
             # Hard to use it if it isn't there...
-            LOG.warn("Pep8 version mismatch, none is installed but %s is wanting %s",
-                     self.name, pep8_wanted)
+            LOG.warn(
+                "Pep8 version mismatch, none is installed but %s is wanting %s",
+                self.name, pep8_wanted)
             return False
         if not (pep8_there == pep8_wanted):
             # Versions not matching, this is causes pep8 to puke when it doesn't need to
             # so skip it from running in the first place...
-            LOG.warn("Pep8 version mismatch, installed is %s but %s is applying %s",
-                     pep8_there, self.name, pep8_wanted)
+            LOG.warn(
+                "Pep8 version mismatch, installed is %s but %s is applying %s",
+                pep8_there, self.name, pep8_wanted)
             return False
         return self.get_bool_option('use_pep8', default_value=True)
 
@@ -1021,8 +1097,14 @@ class PythonTestingComponent(component.Component):
                         if name.lower() != 'virtual_env':
                             env_addons[name] = value
                 if env_addons:
-                    LOG.debug("From %s we read in %s environment settings:", tox_fn, len(env_addons))
-                    utils.log_object(env_addons, logger=LOG, level=logging.DEBUG)
+                    LOG.debug(
+                        "From %s we read in %s environment settings:",
+                        tox_fn,
+                        len(env_addons))
+                    utils.log_object(
+                        env_addons,
+                        logger=LOG,
+                        level=logging.DEBUG)
             except IOError:
                 pass
         return env_addons
@@ -1030,8 +1112,9 @@ class PythonTestingComponent(component.Component):
     def run_tests(self):
         app_dir = self.get_option('app_dir')
         if not sh.isdir(app_dir):
-            LOG.warn("Unable to find application directory at %s, can not run %s tests.",
-                     colorizer.quote(app_dir), colorizer.quote(self.name))
+            LOG.warn(
+                "Unable to find application directory at %s, can not run %s tests.",
+                colorizer.quote(app_dir), colorizer.quote(self.name))
             return
         cmd = self._get_test_command()
         env = self._get_env()
@@ -1039,18 +1122,27 @@ class PythonTestingComponent(component.Component):
             if self.get_bool_option("verbose", default_value=False):
                 null_fh = None
             try:
-                sh.execute(*cmd, stdout_fh=None, stderr_fh=null_fh, cwd=app_dir, env_overrides=env)
+                sh.execute(
+                    *cmd,
+                    stdout_fh=None,
+                    stderr_fh=null_fh,
+                    cwd=app_dir,
+                    env_overrides=env)
             except excp.ProcessExecutionError as e:
                 if self.get_bool_option("ignore-test-failures", default_value=False):
-                    LOG.warn("Ignoring test failure of component %s: %s", colorizer.quote(self.name), e)
+                    LOG.warn(
+                        "Ignoring test failure of component %s: %s",
+                        colorizer.quote(self.name),
+                        e)
                 else:
                     raise e
 
 
-####
-#### PACKAGING CLASSES
-####
+#
+# PACKAGING CLASSES
+#
 
 class EmptyPackagingComponent(component.Component):
+
     def package(self):
         return None

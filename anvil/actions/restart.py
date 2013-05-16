@@ -26,6 +26,7 @@ LOG = log.getLogger(__name__)
 
 
 class RestartAction(action.Action):
+
     def __init__(self, name, distro, root_dir, cli_opts):
         self.start = start.StartAction(name, distro, root_dir, cli_opts.copy())
         self.stop = stop.StopAction(name, distro, root_dir, cli_opts.copy())

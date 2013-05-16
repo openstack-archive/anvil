@@ -24,6 +24,7 @@ LOG = log.getLogger(__name__)
 
 
 class UninstallAction(action.Action):
+
     @property
     def lookup_name(self):
         return 'uninstall'
@@ -37,7 +38,9 @@ class UninstallAction(action.Action):
         removals = ['configure']
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Unconfiguring %s.', colorizer.quote(i.name)),
+                start=lambda i: LOG.info(
+                    'Unconfiguring %s.',
+                    colorizer.quote(i.name)),
                 run=lambda i: i.unconfigure(),
                 end=None,
             ),
@@ -45,7 +48,7 @@ class UninstallAction(action.Action):
             instances,
             'unconfigure',
             *removals
-            )
+        )
         removals += ['post-install']
         self._run_phase(
             PhaseFunctors(
@@ -57,11 +60,13 @@ class UninstallAction(action.Action):
             instances,
             'pre-uninstall',
             *removals
-            )
+        )
         removals += ['install']
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Uninstalling %s.', colorizer.quote(i.name)),
+                start=lambda i: LOG.info(
+                    'Uninstalling %s.',
+                    colorizer.quote(i.name)),
                 run=lambda i: i.uninstall(),
                 end=None,
             ),
@@ -69,11 +74,18 @@ class UninstallAction(action.Action):
             instances,
             'uninstall',
             *removals
-            )
-        removals += ['download', 'configure', "download-patch", 'pre-install', 'post-install']
+        )
+        removals += [
+            'download',
+            'configure',
+            "download-patch",
+            'pre-install',
+            'post-install']
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Post-uninstalling %s.', colorizer.quote(i.name)),
+                start=lambda i: LOG.info(
+                    'Post-uninstalling %s.',
+                    colorizer.quote(i.name)),
                 run=lambda i: i.post_uninstall(),
                 end=None,
             ),
@@ -81,4 +93,4 @@ class UninstallAction(action.Action):
             instances,
             'post-uninstall',
             *removals
-            )
+        )

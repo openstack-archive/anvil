@@ -35,6 +35,7 @@ STATUS_COLOR_MAP = {
 
 
 class StatusAction(action.Action):
+
     def __init__(self, name, distro, root_dir, cli_opts):
         action.Action.__init__(self, name, distro, root_dir, cli_opts)
         self.show_amount = cli_opts.get('show_amount', 0)
@@ -51,7 +52,12 @@ class StatusAction(action.Action):
 
     def _print_status(self, component, result):
         if not result:
-            LOG.info("Status of %s is %s.", colorizer.quote(component.name), self._quote_status(STATUS_UNKNOWN))
+            LOG.info(
+                "Status of %s is %s.",
+                colorizer.quote(
+                    component.name),
+                self._quote_status(
+                    STATUS_UNKNOWN))
             return
 
         def log_details(text, spacing, max_len):
@@ -74,14 +80,27 @@ class StatusAction(action.Action):
             elif details is None:
                 pass
             else:
-                raise RuntimeError("Unknown how to print the details of %s" % (entry.name))
+                raise RuntimeError(
+                    "Unknown how to print the details of %s" %
+                    (entry.name))
 
         if len(result) == 1:
             s = result[0]
             if s.name and s.name != component.name:
-                LOG.info("Status of %s (%s) is %s.", colorizer.quote(component.name), s.name, self._quote_status(s.status))
+                LOG.info(
+                    "Status of %s (%s) is %s.",
+                    colorizer.quote(
+                        component.name),
+                    s.name,
+                    self._quote_status(
+                        s.status))
             else:
-                LOG.info("Status of %s is %s.", colorizer.quote(component.name), self._quote_status(s.status))
+                LOG.info(
+                    "Status of %s is %s.",
+                    colorizer.quote(
+                        component.name),
+                    self._quote_status(
+                        s.status))
             if self.show_amount > 0 and s.details:
                 details_printer(s, 2, self.show_amount)
         else:
@@ -101,4 +120,4 @@ class StatusAction(action.Action):
             component_order,
             instances,
             None,
-            )
+        )

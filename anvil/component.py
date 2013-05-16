@@ -24,7 +24,9 @@ LOG = logging.getLogger(__name__)
 
 
 class Component(object):
-    def __init__(self, name, subsystems, instances, options, siblings, distro, passwords, **kwargs):
+
+    def __init__(self, name, subsystems, instances,
+                 options, siblings, distro, passwords, **kwargs):
         # Subsystems this was requested with
         self.subsystems = subsystems
 
@@ -52,7 +54,9 @@ class Component(object):
     def get_password(self, option):
         pw_val = self.passwords.get(option)
         if pw_val is None:
-            raise excp.PasswordException("Password asked for option %s but none was pre-populated!" % (option))
+            raise excp.PasswordException(
+                "Password asked for option %s but none was pre-populated!" %
+                (option))
         return pw_val
 
     def get_option(self, option, *options, **kwargs):

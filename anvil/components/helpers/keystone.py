@@ -25,9 +25,11 @@ LOG = logging.getLogger(__name__)
 class Initializer(object):
 
     def __init__(self, service_token, admin_uri):
-        # Late load since its using a client lib that is only avail after install...
-        self.client = importer.construct_entry_point("keystoneclient.v2_0.client:Client",
-                                                    token=service_token, endpoint=admin_uri)
+        # Late load since its using a client lib that is only avail after
+        # install...
+        self.client = importer.construct_entry_point(
+            "keystoneclient.v2_0.client:Client",
+            token=service_token, endpoint=admin_uri)
 
     def _create_tenants(self, tenants):
         tenants_made = dict()
@@ -73,7 +75,9 @@ class Initializer(object):
         for info in users:
             name = info['name']
             if name in roles_attached:
-                LOG.warn("Already attached roles to user %s", colorizer.quote(name))
+                LOG.warn(
+                    "Already attached roles to user %s",
+                    colorizer.quote(name))
             roles_attached.add(name)
             user = users_made[name]
             for role_entry in info['roles']:
@@ -82,11 +86,17 @@ class Initializer(object):
                 role_name = r
                 tenant_name = t
                 if not role_name or not tenant_name:
-                    raise RuntimeError("Role or tenant name missing for user %s" % (name))
+                    raise RuntimeError(
+                        "Role or tenant name missing for user %s" %
+                        (name))
                 if not role_name in roles_made:
-                    raise RuntimeError("Role %s not previously created for user %s" % (role_name, name))
+                    raise RuntimeError(
+                        "Role %s not previously created for user %s" %
+                        (role_name, name))
                 if not tenant_name in tenants_made:
-                    raise RuntimeError("Tenant %s not previously created for user %s" % (tenant_name, name))
+                    raise RuntimeError(
+                        "Tenant %s not previously created for user %s" %
+                        (tenant_name, name))
                 user_role = {
                     'user': user,
                     'role': roles_made[role_name],
@@ -112,7 +122,9 @@ class Initializer(object):
         for entry in endpoints:
             name = entry['service']
             if name not in services:
-                raise RuntimeError("Endpoint %s not attached to a previously created service" % (name))
+                raise RuntimeError(
+                    "Endpoint %s not attached to a previously created service" %
+                    (name))
             service = services[name]
             endpoint = {
                 'region': entry['region'],
@@ -127,7 +139,11 @@ class Initializer(object):
         created_tenants = self._create_tenants(tenants)
         created_users = self._create_users(users, created_tenants)
         created_roles = self._create_roles(roles)
-        self._connect_roles(users, created_roles, created_tenants, created_users)
+        self._connect_roles(
+            users,
+            created_roles,
+            created_tenants,
+            created_users)
         services_made = self._create_services(services)
         self._create_endpoints(endpoints, services_made)
 
@@ -189,7 +205,7 @@ def get_shared_params(ip, service_token, admin_password, service_password,
         },
         'admin_templated': {
             'uri': utils.make_url(keystone_auth_proto,
-                            keystone_auth_host, port='$(admin_port)s', path="v2.0"),
+                                  keystone_auth_host, port='$(admin_port)s', path="v2.0"),
             'protocol': keystone_auth_proto,
             'host': keystone_auth_host,
         },
@@ -201,12 +217,13 @@ def get_shared_params(ip, service_token, admin_password, service_password,
         },
         'public_templated': {
             'uri': utils.make_url(keystone_service_proto,
-                            keystone_service_host, port='$(public_port)s', path="v2.0"),
+                                  keystone_service_host, port='$(public_port)s', path="v2.0"),
             'protocol': keystone_service_proto,
             'host': keystone_service_host,
         },
     }
     mp['endpoints']['internal'] = dict(mp['endpoints']['public'])
-    mp['endpoints']['internal_templated'] = dict(mp['endpoints']['public_templated'])
+    mp['endpoints']['internal_templated'] = dict(
+        mp['endpoints']['public_templated'])
 
     return mp

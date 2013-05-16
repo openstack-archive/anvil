@@ -41,7 +41,10 @@ class Packager(object):
             self._install(pkg)
             LOG.debug("Installed %s", pkg)
         else:
-            LOG.debug("Skipping install of %r since %s is already there.", pkg['name'], installed_already)
+            LOG.debug(
+                "Skipping install of %r since %s is already there.",
+                pkg['name'],
+                installed_already)
 
     def remove(self, pkg):
         should_remove = self.remove_default
@@ -55,13 +58,17 @@ class Packager(object):
     def pre_install(self, pkg, params=None):
         cmds = pkg.get('pre-install')
         if cmds:
-            LOG.info("Running pre-install commands for package %s.", colorizer.quote(pkg['name']))
+            LOG.info(
+                "Running pre-install commands for package %s.",
+                colorizer.quote(pkg['name']))
             utils.execute_template(*cmds, params=params)
 
     def post_install(self, pkg, params=None):
         cmds = pkg.get('post-install')
         if cmds:
-            LOG.info("Running post-install commands for package %s.", colorizer.quote(pkg['name']))
+            LOG.info(
+                "Running post-install commands for package %s.",
+                colorizer.quote(pkg['name']))
             utils.execute_template(*cmds, params=params)
 
     @abc.abstractmethod

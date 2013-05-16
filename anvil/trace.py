@@ -151,8 +151,11 @@ class TraceReader(object):
         for (cmd, action) in lines:
             if cmd == AP_STARTED and len(action):
                 entry = json.loads(action)
-                if type(entry) is dict:
-                    apps.append((entry.get('name'), entry.get('trace_fn'), entry.get('how')))
+                if isinstance(entry, dict):
+                    apps.append(
+                        (entry.get('name'),
+                         entry.get('trace_fn'),
+                            entry.get('how')))
         return apps
 
     def py_listing(self):
@@ -161,7 +164,7 @@ class TraceReader(object):
         for (cmd, action) in lines:
             if cmd == PYTHON_INSTALL and len(action):
                 entry = json.loads(action)
-                if type(entry) is dict:
+                if isinstance(entry, dict):
                     py_entries.append((entry.get("name"), entry.get("where")))
         return py_entries
 
@@ -171,14 +174,13 @@ class TraceReader(object):
         for (cmd, action) in lines:
             if cmd == DOWNLOADED and len(action):
                 entry = json.loads(action)
-                if type(entry) is dict:
+                if isinstance(entry, dict):
                     locations.append((entry.get('target'), entry.get('uri')))
         return locations
 
     def _sort_paths(self, pths):
         # Ensure in correct order (ie /tmp is before /)
-        pths = list(set(pths))
-        pths.sort()
+        pths = sorted(set(pths))
         pths.reverse()
         return pths
 
@@ -215,7 +217,7 @@ class TraceReader(object):
                 pip_list.append(action)
         for pip_data in pip_list:
             pip_info_full = json.loads(pip_data)
-            if type(pip_info_full) is dict:
+            if isinstance(pip_info_full, dict):
                 pips_installed.append(pip_info_full)
         return pips_installed
 
@@ -228,6 +230,6 @@ class TraceReader(object):
                 pkg_list.append(action)
         for pkg_data in pkg_list:
             pkg_info = json.loads(pkg_data)
-            if type(pkg_info) is dict:
+            if isinstance(pkg_info, dict):
                 pkgs_installed.append(pkg_info)
         return pkgs_installed

@@ -37,7 +37,9 @@ class Persona(object):
             raise RuntimeError("Persona does not support the loaded distro")
         for c in self.wanted_components:
             if not distro.known_component(c):
-                raise RuntimeError("Persona provided component %s but its not supported by the loaded distro" % (c))
+                raise RuntimeError(
+                    "Persona provided component %s but its not supported by the loaded distro" %
+                    (c))
 
 
 def load(fn):

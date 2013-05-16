@@ -77,6 +77,7 @@ LOG = logging.getLogger(__name__)
 
 
 class ExponentialBackoff(object):
+
     def __init__(self, start, attempts):
         self.start = start
         self.attempts = attempts
@@ -144,11 +145,17 @@ def wait_for_url(url, max_attempts=5):
              colorizer.quote(url), max_attempts)
 
     def waiter(sleep_secs):
-        LOG.info("Sleeping for %s seconds, %s is still not active.", sleep_secs, colorizer.quote(url))
+        LOG.info(
+            "Sleeping for %s seconds, %s is still not active.",
+            sleep_secs,
+            colorizer.quote(url))
         sh.sleep(sleep_secs)
 
     def success(attempts):
-        LOG.info("Url %s became active after %s attempts!", colorizer.quote(url), attempts)
+        LOG.info(
+            "Url %s became active after %s attempts!",
+            colorizer.quote(url),
+            attempts)
 
     excps = []
     attempts = 0
@@ -206,7 +213,8 @@ def merge_dicts(*dicts, **kwargs):
     return merged
 
 
-def make_url(scheme, host, port=None, path='', params='', query='', fragment=''):
+def make_url(scheme, host, port=None,
+             path='', params='', query='', fragment=''):
 
     pieces = []
     pieces.append(scheme or '')
@@ -243,7 +251,9 @@ def get_deep(items, path, quiet=True):
         get_method = getattr(items, 'get', None)
         if not get_method:
             if not quiet:
-                raise RuntimeError("Can not figure out how to extract an item from %s" % (items))
+                raise RuntimeError(
+                    "Can not figure out how to extract an item from %s" %
+                    (items))
             else:
                 return None
         else:
@@ -463,7 +473,8 @@ def prettify_yaml(obj):
     return formatted
 
 
-def _pick_message(pattern, def_message="This page is intentionally left blank."):
+def _pick_message(
+        pattern, def_message="This page is intentionally left blank."):
     if not pattern:
         return def_message
     expanded_pattern = sh.joinpths(settings.MESSAGING_DIR, pattern)
@@ -525,7 +536,12 @@ def welcome(prog_name='Anvil', version_text=version.version_string()):
     lower = "| %s |" % (version_text)
     welcome_header = _get_welcome_stack()
     max_line_len = len(max(welcome_header.splitlines(), key=len))
-    footer = colorizer.color(prog_name, 'green') + ": " + colorizer.color(lower, 'blue', bold=True)
+    footer = colorizer.color(
+        prog_name,
+        'green') + ": " + colorizer.color(
+            lower,
+            'blue',
+            bold=True)
     uncolored_footer = prog_name + ": " + lower
     if max_line_len - len(uncolored_footer) > 0:
         # This format string will center the uncolored text which

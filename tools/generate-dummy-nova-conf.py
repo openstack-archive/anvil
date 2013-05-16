@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
-## Tool to run the nova config generating code and spit out a dummy
-## version.  Useful for testing that code in isolation.
+# Tool to run the nova config generating code and spit out a dummy
+# version.  Useful for testing that code in isolation.
 
 import os
 import sys
@@ -44,6 +44,7 @@ def make_fakey(all_opts, last='dummy'):
 
 
 class DummyInstaller(object):
+
     def get_option(self, option, *options, **kwargs):
         if option == 'db':
             src = {
@@ -74,7 +75,6 @@ class DummyInstaller(object):
 
     def __init__(self):
         self.tracewriter = TraceWriter(DUMMY_FILE)
-
 
 
 d = DummyInstaller()

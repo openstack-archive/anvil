@@ -82,7 +82,10 @@ def parse(previous_settings=None):
                           action="store",
                           type="string",
                           dest="persona_fn",
-                          default=sh.joinpths(settings.PERSONA_DIR, 'in-a-box', 'basic.yaml'),
+                          default=sh.joinpths(
+                          settings.PERSONA_DIR,
+                          'in-a-box',
+                          'basic.yaml'),
                           metavar="FILE",
                           help="persona yaml file to apply (default: %default)")
     base_group.add_option("-a", "--action",
@@ -123,20 +126,20 @@ def parse(previous_settings=None):
 
     install_group = OptionGroup(parser, "Install specific options")
     install_group.add_option('-c', "--only-configure",
-                                action="store_true",
-                                dest="only_configure",
-                                default=False,
-                                help=("when installing only perform the"
-                                      " download and install phases (default: %default)"))
+                             action="store_true",
+                             dest="only_configure",
+                             default=False,
+                             help=("when installing only perform the"
+                                   " download and install phases (default: %default)"))
     parser.add_option_group(install_group)
 
     uninstall_group = OptionGroup(parser, "Uninstall specific options")
     uninstall_group.add_option("--purge",
-                                action="store_true",
-                                dest="purge_packages",
-                                default=False,
-                                help=("assume when a package is not marked as"
-                                      " removable that it can be removed (default: %default)"))
+                               action="store_true",
+                               dest="purge_packages",
+                               default=False,
+                               help=("assume when a package is not marked as"
+                                     " removable that it can be removed (default: %default)"))
     parser.add_option_group(uninstall_group)
 
     # Extract only what we care about, these will be passed

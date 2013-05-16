@@ -23,6 +23,7 @@ from yum.packages import PackageObject
 
 
 class Requirement(object):
+
     def __init__(self, name, version):
         self.name = str(name)
         self.version = version
@@ -54,7 +55,8 @@ class Helper(object):
     def _get_yum_base():
         if Helper._yum_base is None:
             # This 'root' seems needed...
-            # otherwise 'cannot open Packages database in /var/lib/rpm' starts to happen
+            # otherwise 'cannot open Packages database in /var/lib/rpm' starts
+            # to happen
             with sh.Rooted(True):
                 _yum_base = YumBase()
                 _yum_base.setCacheDir(force=True)

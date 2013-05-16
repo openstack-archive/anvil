@@ -28,6 +28,7 @@ class NoVNCUninstaller(comp.PythonUninstallComponent):
 
 
 class NoVNCInstaller(comp.PythonInstallComponent):
+
     @property
     def python_directories(self):
         # Its python but not one that we need to run setup.py in...
@@ -35,6 +36,7 @@ class NoVNCInstaller(comp.PythonInstallComponent):
 
 
 class NoVNCRuntime(comp.PythonRuntime):
+
     @property
     def applications(self):
         path = sh.joinpths(self.get_option('app_dir'), UTIL_DIR, VNC_PROXY_APP)
@@ -46,8 +48,10 @@ class NoVNCRuntime(comp.PythonRuntime):
     def _get_nova_conf(self):
         nova_comp_name = self.get_option('nova-component')
         if nova_comp_name in self.instances:
-            # FIXME(harlowja): Have to reach into the nova component to get the config path (puke)
+            # FIXME(harlowja): Have to reach into the nova component to get the
+            # config path (puke)
             nova_runtime = self.instances[nova_comp_name]
             return nova_runtime.config_path
         else:
-            raise RuntimeError("NoVNC can not be started without the location of the nova configuration file")
+            raise RuntimeError(
+                "NoVNC can not be started without the location of the nova configuration file")

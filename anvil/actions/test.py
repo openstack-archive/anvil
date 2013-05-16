@@ -24,6 +24,7 @@ LOG = log.getLogger(__name__)
 
 
 class TestAction(action.Action):
+
     @property
     def lookup_name(self):
         return 'test'
@@ -31,11 +32,13 @@ class TestAction(action.Action):
     def _run(self, persona, component_order, instances):
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Running tests of component %s.', colorizer.quote(i.name)),
+                start=lambda i: LOG.info(
+                    'Running tests of component %s.',
+                    colorizer.quote(i.name)),
                 run=lambda i: i.run_tests(),
                 end=None,
             ),
             component_order,
             instances,
             None,
-            )
+        )

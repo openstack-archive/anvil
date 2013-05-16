@@ -59,7 +59,8 @@ class Virsh(object):
 
     def _service_status(self):
         cmd = self.distro.get_command('libvirt', 'status')
-        (stdout, stderr) = sh.execute(*cmd, run_as_root=True, check_exit_code=False)
+        (stdout, stderr) = sh.execute(
+            *cmd, run_as_root=True, check_exit_code=False)
         combined = (stdout + stderr)
         if combined.lower().find("running") != -1 or combined.lower().find('start') != -1:
             return (_ALIVE, combined)
@@ -70,11 +71,16 @@ class Virsh(object):
         try:
             dom = conn.lookupByName(dom_name)
             if dom:
-                LOG.debug("Destroying domain (%r) (id=%s) running %r" % (dom_name, dom.ID(), dom.OSType()))
+                LOG.debug(
+                    "Destroying domain (%r) (id=%s) running %r" %
+                    (dom_name, dom.ID(), dom.OSType()))
                 dom.destroy()
                 dom.undefine()
         except libvirt.libvirtError as e:
-            LOG.warn("Could not clear out libvirt domain %s due to: %s", colorizer.quote(dom_name), e)
+            LOG.warn(
+                "Could not clear out libvirt domain %s due to: %s",
+                colorizer.quote(dom_name),
+                e)
 
     def restart_service(self):
         cmd = self.distro.get_command('libvirt', 'restart')
@@ -86,12 +92,16 @@ class Virsh(object):
         for _i in range(0, self.wait_attempts):
             (st, output) = self._service_status()
             if st != _ALIVE:
-                LOG.info("Please wait %s seconds until libvirt is started.", self.wait_time)
+                LOG.info(
+                    "Please wait %s seconds until libvirt is started.",
+                    self.wait_time)
                 sh.sleep(self.wait_time)
             else:
                 started = True
         if not started:
-            raise excp.StartException("Unable to start the libvirt daemon due to: %s" % (output))
+            raise excp.StartException(
+                "Unable to start the libvirt daemon due to: %s" %
+                (output))
 
     def check_virt(self, virt_type):
         virt_protocol = LIBVIRT_PROTOCOL_MAP.get(virt_type)
@@ -112,19 +122,25 @@ class Virsh(object):
         try:
             # A late import is done since this code could be used before libvirt is actually
             # installed, and that will cause the top level python import to fail which will
-            # make anvil not work, so import it dynamically to bypass the previous mechanism
+            # make anvil not work, so import it dynamically to bypass the
+            # previous mechanism
             libvirt = importer.import_module('libvirt')
         except RuntimeError as e:
             pass
         if not libvirt:
-            LOG.warn("Could not clear out libvirt domains, libvirt not available for python.")
+            LOG.warn(
+                "Could not clear out libvirt domains, libvirt not available for python.")
             return
         virt_protocol = LIBVIRT_PROTOCOL_MAP.get(virt_type)
         if not virt_protocol:
-            LOG.warn("Could not clear out libvirt domains, no known protocol for virt type: %s", colorizer.quote(virt_type))
+            LOG.warn(
+                "Could not clear out libvirt domains, no known protocol for virt type: %s",
+                colorizer.quote(virt_type))
             return
         with sh.Rooted(True):
-            LOG.info("Attempting to clear out leftover libvirt domains using protocol: %s", colorizer.quote(virt_protocol))
+            LOG.info(
+                "Attempting to clear out leftover libvirt domains using protocol: %s",
+                colorizer.quote(virt_protocol))
             try:
                 self.restart_service()
                 self.wait_active()
@@ -134,7 +150,10 @@ class Virsh(object):
             try:
                 conn = libvirt.open(virt_protocol)
             except libvirt.libvirtError as e:
-                LOG.warn("Could not connect to libvirt using protocol %s due to: %s", colorizer.quote(virt_protocol), e)
+                LOG.warn(
+                    "Could not connect to libvirt using protocol %s due to: %s",
+                    colorizer.quote(virt_protocol),
+                    e)
                 return
             with contextlib.closing(conn) as ch:
                 try:
@@ -145,8 +164,10 @@ class Virsh(object):
                             kill_domains.append(domain)
                     if kill_domains:
                         utils.log_iterable(kill_domains, logger=LOG,
-                            header="Found %s old domains to destroy" % (len(kill_domains)))
+                                           header="Found %s old domains to destroy" % (len(kill_domains)))
                         for domain in sorted(kill_domains):
                             self._destroy_domain(libvirt, ch, domain)
-                except libvirt.libvirtError, e:
-                    LOG.warn("Could not clear out libvirt domains due to: %s", e)
+                except libvirt.libvirtError as e:
+                    LOG.warn(
+                        "Could not clear out libvirt domains due to: %s",
+                        e)

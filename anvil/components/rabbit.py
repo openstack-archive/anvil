@@ -31,18 +31,25 @@ RESET_BASE_PW = ''
 
 
 class RabbitUninstaller(comp.PkgUninstallComponent):
+
     def __init__(self, *args, **kargs):
         comp.PkgUninstallComponent.__init__(self, *args, **kargs)
         self.runtime = self.siblings.get('running')
 
     def pre_uninstall(self):
         try:
-            LOG.debug("Attempting to reset the rabbit-mq guest password to: %s", colorizer.quote(RESET_BASE_PW))
+            LOG.debug(
+                "Attempting to reset the rabbit-mq guest password to: %s",
+                colorizer.quote(RESET_BASE_PW))
             self.runtime.start()
             self.runtime.wait_active()
-            cmd = self.distro.get_command('rabbit-mq', 'change_password') + [RESET_BASE_PW]
+            cmd = self.distro.get_command(
+                'rabbit-mq',
+                'change_password') + [
+                    RESET_BASE_PW]
             sh.execute(*cmd, run_as_root=True)
-            LOG.info("Restarting so that your rabbit-mq password is reflected.")
+            LOG.info(
+                "Restarting so that your rabbit-mq password is reflected.")
             self.runtime.restart()
             self.runtime.wait_active()
         except IOError:
@@ -51,6 +58,7 @@ class RabbitUninstaller(comp.PkgUninstallComponent):
 
 
 class RabbitInstaller(comp.PkgInstallComponent):
+
     def __init__(self, *args, **kargs):
         comp.PkgInstallComponent.__init__(self, *args, **kargs)
         self.runtime = self.siblings.get('running')
@@ -60,7 +68,9 @@ class RabbitInstaller(comp.PkgInstallComponent):
 
     def _setup_pw(self):
         user_id = self.get_option('user_id')
-        LOG.info("Setting up your rabbit-mq %s password.", colorizer.quote(user_id))
+        LOG.info(
+            "Setting up your rabbit-mq %s password.",
+            colorizer.quote(user_id))
         self.runtime.start()
         self.runtime.wait_active()
         cmd = list(self.distro.get_command('rabbit-mq', 'change_password'))
@@ -76,6 +86,7 @@ class RabbitInstaller(comp.PkgInstallComponent):
 
 
 class RabbitRuntime(comp.ProgramRuntime):
+
     def start(self):
         if self.statii()[0].status != comp.STATUS_STARTED:
             self._run_action('start')
@@ -111,7 +122,9 @@ class RabbitRuntime(comp.ProgramRuntime):
     def _run_action(self, action, check_exit_code=True):
         cmd = self.distro.get_command('rabbit-mq', action)
         if not cmd:
-            raise NotImplementedError("No distro command provided to perform action %r" % (action))
+            raise NotImplementedError(
+                "No distro command provided to perform action %r" %
+                (action))
         # This seems to fix one of the bugs with rabbit mq starting and stopping
         # not cool, possibly connected to the following bugs:
         #

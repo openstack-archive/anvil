@@ -37,6 +37,7 @@ FORK_TEMPL = "%s.fork"
 
 
 class ForkFiles(object):
+
     def __init__(self, pid, stdout, stderr, trace=None):
         self.pid = pid
         self.stdout = stdout
@@ -69,6 +70,7 @@ class ForkFiles(object):
 
 
 class ForkRunner(base.Runner):
+
     def stop(self, app_name):
         # The location of the pid file should be in the attached
         # runtimes trace directory, so see if we can find said file
@@ -78,7 +80,8 @@ class ForkRunner(base.Runner):
         # pid such as the stderr/stdout files that were being written to...
         trace_dir = self.runtime.get_option('trace_dir')
         if not sh.isdir(trace_dir):
-            msg = "No trace directory found from which to stop: %r" % (app_name)
+            msg = "No trace directory found from which to stop: %r" % (
+                app_name)
             raise excp.StopException(msg)
         with sh.Rooted(True):
             fork_fns = self._form_file_names(app_name)
@@ -103,13 +106,19 @@ class ForkRunner(base.Runner):
             # Trash the files if it worked
             if killed:
                 if not skip_kill:
-                    LOG.debug("Killed pid '%s' after %s attempts.", pid, attempts)
+                    LOG.debug(
+                        "Killed pid '%s' after %s attempts.",
+                        pid,
+                        attempts)
                 for leftover_fn in fork_fns.as_list():
                     if sh.exists(leftover_fn):
-                        LOG.debug("Removing forking related file %r", (leftover_fn))
+                        LOG.debug(
+                            "Removing forking related file %r",
+                            (leftover_fn))
                         sh.unlink(leftover_fn)
             else:
-                msg = "Could not stop %r after %s attempts" % (app_name, attempts)
+                msg = "Could not stop %r after %s attempts" % (
+                    app_name, attempts)
                 raise excp.StopException(msg)
 
     def status(self, app_name):
@@ -142,7 +151,8 @@ class ForkRunner(base.Runner):
             return (STATUS_UNKNOWN, details)
 
     def _form_file_names(self, app_name):
-        # Form all files names which should be connected to the given forked application name
+        # Form all files names which should be connected to the given forked
+        # application name
         fork_fn = FORK_TEMPL % (app_name)
         trace_dir = self.runtime.get_option('trace_dir')
         trace_fn = None
@@ -172,15 +182,25 @@ class ForkRunner(base.Runner):
             for (k, v) in trace_info.items():
                 if v is not None:
                     run_trace.trace(k, v)
-        LOG.debug("Forking %r by running command %r with args (%s)" % (app_name, app_pth, " ".join(args)))
+        LOG.debug(
+            "Forking %r by running command %r with args (%s)" %
+            (app_name, app_pth, " ".join(args)))
         with sh.Rooted(True):
-            sh.fork(app_pth, app_wkdir, fork_fns.pid, fork_fns.stdout, fork_fns.stderr, *args)
+            sh.fork(
+                app_pth,
+                app_wkdir,
+                fork_fns.pid,
+                fork_fns.stdout,
+                fork_fns.stderr,
+                *
+                args)
         return trace_fn
 
     def _post_start(self, app_name):
         fork_fns = self._form_file_names(app_name)
         utils.log_iterable(fork_fns.as_list(),
-                           header="Forked %s with details in the following files" % (app_name),
+                           header="Forked %s with details in the following files" % (
+                               app_name),
                            logger=LOG)
 
     def start(self, app_name, app_pth, app_dir, opts):

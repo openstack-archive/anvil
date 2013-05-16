@@ -24,6 +24,7 @@ LOG = log.getLogger(__name__)
 
 
 class StartAction(action.Action):
+
     @property
     def lookup_name(self):
         return 'running'
@@ -40,22 +41,25 @@ class StartAction(action.Action):
             instances,
             "pre-start",
             *removals
-            )
+        )
         removals += ['stopped']
         self._run_phase(
             PhaseFunctors(
                 start=lambda i: LOG.info('Starting %s.', i.name),
                 run=lambda i: i.start(),
-                end=lambda i, result: LOG.info("Start %s applications", colorizer.quote(result)),
+                end=lambda i, result: LOG.info(
+                    "Start %s applications", colorizer.quote(result)),
             ),
             component_order,
             instances,
             "start",
             *removals
-            )
+        )
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Post-starting %s.', colorizer.quote(i.name)),
+                start=lambda i: LOG.info(
+                    'Post-starting %s.',
+                    colorizer.quote(i.name)),
                 run=lambda i: i.post_start(),
                 end=None,
             ),
@@ -63,4 +67,4 @@ class StartAction(action.Action):
             instances,
             "post-start",
             *removals
-            )
+        )

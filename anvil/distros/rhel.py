@@ -57,7 +57,10 @@ class DBInstaller(db.DBInstaller):
     MYSQL_CONF = '/etc/my.cnf'
 
     def _configure_db_confs(self):
-        LOG.info("Fixing up %s mysql configs.", colorizer.quote(self.distro.name))
+        LOG.info(
+            "Fixing up %s mysql configs.",
+            colorizer.quote(
+                self.distro.name))
         new_lines = []
         for line in sh.load_file(DBInstaller.MYSQL_CONF).splitlines():
             if line.startswith('skip-grant-tables'):
@@ -68,7 +71,10 @@ class DBInstaller(db.DBInstaller):
             else:
                 new_lines.append(line)
         with sh.Rooted(True):
-            sh.write_file_and_backup(DBInstaller.MYSQL_CONF, utils.joinlinesep(*new_lines))
+            sh.write_file_and_backup(
+                DBInstaller.MYSQL_CONF,
+                utils.joinlinesep(
+                    *new_lines))
 
 
 class HorizonInstaller(horizon.HorizonInstaller):
@@ -91,7 +97,10 @@ class HorizonInstaller(horizon.HorizonInstaller):
                 line = "Listen 0.0.0.0:80"
             new_lines.append(line)
         with sh.Rooted(True):
-            sh.write_file_and_backup(HorizonInstaller.HTTPD_CONF, utils.joinlinesep(*new_lines))
+            sh.write_file_and_backup(
+                HorizonInstaller.HTTPD_CONF,
+                utils.joinlinesep(
+                    *new_lines))
 
     def _config_fixups(self):
         self._config_fix_httpd()
@@ -107,7 +116,8 @@ class HorizonInstaller(horizon.HorizonInstaller):
         if apache_conf_tgt not in links:
             links[apache_conf_tgt] = []
         links[apache_conf_tgt].append(sh.joinpths('/etc/',
-                                                  self.distro.get_command_config('apache', 'name'),
+                                                  self.distro.get_command_config(
+                                                  'apache', 'name'),
                                                   'conf.d', horizon.HORIZON_APACHE_CONF))
         return links
 
@@ -131,7 +141,7 @@ class RabbitRuntime(rabbit.RabbitRuntime):
                 # Seems like we need root perms to list that directory...
                 for fn in sh.listdir(base_dir):
                     if re.match("(.*?)(err|log)$", fn, re.I):
-                        sh.chmod(sh.joinpths(base_dir, fn), 0666)
+                        sh.chmod(sh.joinpths(base_dir, fn), 0o666)
 
     def start(self):
         self._fix_log_dir()
@@ -159,7 +169,8 @@ class NovaInstaller(nova.NovaInstaller):
 
     def configure(self):
         configs_made = nova.NovaInstaller.configure(self)
-        driver_canon = nhelper.canon_virt_driver(self.get_option('virt_driver'))
+        driver_canon = nhelper.canon_virt_driver(
+            self.get_option('virt_driver'))
         if driver_canon == 'libvirt':
             # Create a libvirtd user group
             if not sh.group_exists('libvirtd'):
@@ -197,7 +208,9 @@ class YumPackagerWithRelinks(yum.YumPackager):
             if not isinstance(tgt, (list, tuple)):
                 tgt = [tgt]
             if len(src) != len(tgt):
-                raise RuntimeError("Unable to link %s sources to %s locations" % (len(src), len(tgt)))
+                raise RuntimeError(
+                    "Unable to link %s sources to %s locations" %
+                    (len(src), len(tgt)))
             for i in range(len(src)):
                 i_src = src[i]
                 i_tgt = tgt[i]

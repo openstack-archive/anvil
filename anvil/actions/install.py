@@ -30,6 +30,7 @@ LOG = log.getLogger(__name__)
 
 
 class InstallAction(action.Action):
+
     def __init__(self, name, distro, root_dir, cli_opts):
         action.Action.__init__(self, name, distro, root_dir, cli_opts)
         self.only_configure = cli_opts.get('only_configure')
@@ -40,8 +41,9 @@ class InstallAction(action.Action):
 
     def _on_finish(self, persona, component_order, instances):
         action.Action._on_finish(self, persona, component_order, instances)
-        self._write_exports(component_order, instances, sh.joinpths("/etc/anvil",
-                                                                    "%s.rc" % (self.name)))
+        self._write_exports(
+            component_order, instances, sh.joinpths("/etc/anvil",
+                                                    "%s.rc" % (self.name)))
 
     def _write_exports(self, component_order, instances, path):
         entries = []
@@ -52,14 +54,16 @@ class InstallAction(action.Action):
             if exports:
                 contents.write("# Exports for %s\n" % (c))
                 for (k, v) in exports.items():
-                    export_entry = "export %s=%s" % (k, sh.shellquote(str(v).strip()))
+                    export_entry = "export %s=%s" % (
+                        k, sh.shellquote(str(v).strip()))
                     entries.append(export_entry)
                     contents.write("%s\n" % (export_entry))
                 contents.write("\n")
         if entries:
             sh.write_file(path, contents.getvalue())
             utils.log_iterable(entries,
-                               header="Wrote to %s %s exports" % (path, len(entries)),
+                               header="Wrote to %s %s exports" % (
+                                   path, len(entries)),
                                logger=LOG)
 
     def _analyze_dependencies(self, instance_dependencies):
@@ -70,18 +74,23 @@ class InstallAction(action.Action):
         removals = []
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Downloading %s.', colorizer.quote(i.name)),
+                start=lambda i: LOG.info(
+                    'Downloading %s.',
+                    colorizer.quote(i.name)),
                 run=lambda i: i.download(),
-                end=lambda i, result: LOG.info("Performed %s downloads.", len(result))
+                end=lambda i, result: LOG.info(
+                    "Performed %s downloads.", len(result))
             ),
             component_order,
             instances,
             "download",
             *removals
-            )
+        )
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Post-download patching %s.', colorizer.quote(i.name)),
+                start=lambda i: LOG.info(
+                    'Post-download patching %s.',
+                    colorizer.quote(i.name)),
                 run=lambda i: i.patch("download"),
                 end=None,
             ),
@@ -89,12 +98,14 @@ class InstallAction(action.Action):
             instances,
             "download-patch",
             *removals
-            )
+        )
 
         removals += ['uninstall', 'unconfigure']
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Configuring %s.', colorizer.quote(i.name)),
+                start=lambda i: LOG.info(
+                    'Configuring %s.',
+                    colorizer.quote(i.name)),
                 run=lambda i: i.configure(),
                 end=None,
             ),
@@ -102,7 +113,7 @@ class InstallAction(action.Action):
             instances,
             "configure",
             *removals
-            )
+        )
 
         if self.only_configure:
             # TODO(harlowja) this could really be a new action that
@@ -117,7 +128,9 @@ class InstallAction(action.Action):
         removals += ['pre-uninstall', 'post-uninstall']
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Preinstalling %s.', colorizer.quote(i.name)),
+                start=lambda i: LOG.info(
+                    'Preinstalling %s.',
+                    colorizer.quote(i.name)),
                 run=preinstall_run,
                 end=None,
             ),
@@ -125,7 +138,7 @@ class InstallAction(action.Action):
             instances,
             "pre-install",
             *removals
-            )
+        )
 
         all_instance_dependencies = {}
 
@@ -139,7 +152,9 @@ class InstallAction(action.Action):
 
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Capturing dependencies of %s.', colorizer.quote(i.name)),
+                start=lambda i: LOG.info(
+                    'Capturing dependencies of %s.',
+                    colorizer.quote(i.name)),
                 run=capture_run,
                 end=None,
             ),
@@ -147,7 +162,7 @@ class InstallAction(action.Action):
             instances,
             None,
             *removals
-            )
+        )
 
         # Do validation on the installed dependency set.
         self._analyze_dependencies(all_instance_dependencies)
@@ -162,7 +177,10 @@ class InstallAction(action.Action):
 
         def install_finish(instance, result):
             if not result:
-                LOG.info("Finished install of %s.", colorizer.quote(instance.name))
+                LOG.info(
+                    "Finished install of %s.",
+                    colorizer.quote(
+                        instance.name))
             else:
                 LOG.info("Finished install of %s with result %s.",
                          colorizer.quote(instance.name), result)
@@ -177,10 +195,12 @@ class InstallAction(action.Action):
             instances,
             "install",
             *removals
-            )
+        )
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Post-installing %s.', colorizer.quote(i.name)),
+                start=lambda i: LOG.info(
+                    'Post-installing %s.',
+                    colorizer.quote(i.name)),
                 run=lambda i: i.post_install(),
                 end=None
             ),
@@ -188,4 +208,4 @@ class InstallAction(action.Action):
             instances,
             "post-install",
             *removals
-            )
+        )

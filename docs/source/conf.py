@@ -1,4 +1,5 @@
-import sys, os
+import sys
+import os
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -12,13 +13,13 @@ from anvil import version as anvil_version
 from anvil import settings as anvil_settings
 
 # Supress warnings for docs that aren't used yet
-#unused_docs = [
+# unused_docs = [
 #]
 
-# -- General configuration -----------------------------------------------------
+# -- General configuration -----------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#needs_sphinx = '1.0'
+# needs_sphinx = '1.0'
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
@@ -56,7 +57,7 @@ exclude_patterns = []
 # output. They are ignored by default.
 show_authors = False
 
-# -- Options for HTML output ---------------------------------------------------
+# -- Options for HTML output ---------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.

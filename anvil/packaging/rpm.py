@@ -35,11 +35,16 @@ RPM_DIR_NAMES = ['sources', 'specs', 'srpms', 'rpms', 'build']
 
 
 class DependencyPackager(comp.Component):
+
     def __init__(self, *args, **kwargs):
         comp.Component.__init__(self, *args, **kwargs)
-        self.tracewriter = tr.TraceWriter(tr.trace_filename(self.get_option('trace_dir'), 'created'),
-                                          break_if_there=False)
-        self.package_dir = sh.joinpths(self.get_option('component_dir'), 'package')
+        self.tracewriter = tr.TraceWriter(
+            tr.trace_filename(self.get_option('trace_dir'), 'created'),
+            break_if_there=False)
+        self.package_dir = sh.joinpths(
+            self.get_option(
+                'component_dir'),
+            'package')
         self.match_installed = tu.make_bool(kwargs.get('match_installed'))
         self._build_paths = None
         self._details = None
@@ -59,10 +64,16 @@ class DependencyPackager(comp.Component):
         return copy.deepcopy(self._build_paths)  # Return copy (not the same instance)
 
     def _patches(self):
-        in_patches = patcher.expand_patches(self.get_option('patches', 'package'))
+        in_patches = patcher.expand_patches(
+            self.get_option('patches',
+                            'package'))
         your_patches = []
         for path in in_patches:
-            target_path = sh.joinpths(self.build_paths['sources'], sh.basename(path))
+            target_path = sh.joinpths(
+                self.build_paths[
+                    'sources'],
+                sh.basename(
+                    path))
             sh.copy(path, target_path)
             your_patches.append(sh.basename(target_path))
         return your_patches
@@ -96,7 +107,8 @@ class DependencyPackager(comp.Component):
         if self._details is not None:
             return self._details
         self._details = {
-            'name': self.get_option("rpm_package_name", default_value=self.name),
+            'name': self.get_option(
+                "rpm_package_name", default_value=self.name),
             'version': 0,
             'release': self.get_option('release', default_value=1),
             'packager': self._get_packager(),
@@ -173,8 +185,13 @@ class DependencyPackager(comp.Component):
         files['sources'].append("%s.tar.gz" % (spec_base))
         utils.log_object(params, logger=LOG, level=logging.DEBUG)
         sh.write_file(spec_fn, utils.expand_template(content, params))
-        tar_it(sh.joinpths(self.build_paths['sources'], "%s.tar.gz" % (spec_base)),
-               spec_base, wkdir=self.build_paths['specs'])
+        tar_it(
+            sh.joinpths(
+                self.build_paths[
+                    'sources'],
+                "%s.tar.gz" % (
+                    spec_base)),
+            spec_base, wkdir=self.build_paths['specs'])
 
     def _build_requirements(self):
         return []
@@ -198,6 +215,7 @@ class DependencyPackager(comp.Component):
 
 
 class PythonPackager(DependencyPackager):
+
     def __init__(self, *args, **kargs):
         DependencyPackager.__init__(self, *args, **kargs)
         self._extended_details = None
@@ -207,7 +225,8 @@ class PythonPackager(DependencyPackager):
         return [
             'python',
             'python-devel',
-            # Often used for building c python modules, should not be harmful...
+            # Often used for building c python modules, should not be
+            # harmful...
             'gcc',
             'python-setuptools',
         ]
@@ -238,7 +257,8 @@ class PythonPackager(DependencyPackager):
         b_dets = DependencyPackager._build_details(self)
         b_dets['setup'] = '-q -n %{name}-%{version}'
         b_dets['action'] = '%{__python} setup.py build'
-        b_dets['install_how'] = '%{__python} setup.py install --prefix=%{_prefix} --root=%{buildroot}'
+        b_dets[
+            'install_how'] = '%{__python} setup.py install --prefix=%{_prefix} --root=%{buildroot}'
         b_dets['remove_file'] = self.get_option('remove_file')
         return b_dets
 
@@ -249,8 +269,15 @@ class PythonPackager(DependencyPackager):
 
     def _make_source_archive(self):
         with utils.tempdir() as td:
-            arch_base_name = "%s-%s" % (self.details['name'], self.details['version'])
-            sh.copytree(self.get_option('app_dir'), sh.joinpths(td, arch_base_name))
+            arch_base_name = "%s-%s" % (
+                self.details['name'],
+                self.details['version'])
+            sh.copytree(
+                self.get_option(
+                    'app_dir'),
+                sh.joinpths(
+                    td,
+                    arch_base_name))
             arch_tmp_fn = sh.joinpths(td, "%s.tar.gz" % (arch_base_name))
             tar_it(arch_tmp_fn, arch_base_name, td)
             sh.move(arch_tmp_fn, self.build_paths['sources'])
@@ -258,10 +285,12 @@ class PythonPackager(DependencyPackager):
 
     def _description(self):
         describe_cmd = ['python', self._setup_fn, '--description']
-        (stdout, _stderr) = sh.execute(*describe_cmd, run_as_root=True, cwd=self.get_option('app_dir'))
+        (stdout, _stderr) = sh.execute(*describe_cmd,
+                                       run_as_root=True, cwd=self.get_option('app_dir'))
         stdout = stdout.strip()
         if stdout:
-            # RPM apparently rejects descriptions with blank lines (even between content)
+            # RPM apparently rejects descriptions with blank lines (even
+            # between content)
             descr_lines = []
             for line in stdout.splitlines():
                 sline = line.strip()
@@ -293,14 +322,20 @@ class PythonPackager(DependencyPackager):
 
             for (key, opt) in replacements.items():
                 cmd = setup_cmd + [opt]
-                (stdout, _stderr) = sh.execute(*cmd, run_as_root=True, cwd=self.get_option('app_dir'))
+                (stdout, _stderr) = sh.execute(
+                    *cmd, run_as_root=True, cwd=self.get_option('app_dir'))
                 stdout = stdout.strip()
                 if stdout:
                     ext_dets[key] = stdout
             description = self._description()
             if description:
                 ext_dets['description'] = "\n".join(description)
-                ext_dets['summary'] = utils.truncate_text("\n".join(description[0:1]), 50)
+                ext_dets[
+                    'summary'] = utils.truncate_text(
+                        "\n".join(
+                            description[
+                                0:1]),
+                        50)
             ext_dets['changelog'] = self._build_changelog()
             self._extended_details = ext_dets
         extended_dets = dict(base)
@@ -314,7 +349,9 @@ class PythonPackager(DependencyPackager):
             pips.extend(i_sibling.pips)
         if pips:
             for pip_info in pips:
-                LOG.warn("Unable to package pip %s dependency in an rpm.", colorizer.quote(pip_info['name']))
+                LOG.warn(
+                    "Unable to package pip %s dependency in an rpm.",
+                    colorizer.quote(pip_info['name']))
         return DependencyPackager.package(self)
 
 

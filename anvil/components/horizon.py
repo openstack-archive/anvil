@@ -47,19 +47,25 @@ BAD_APACHE_USERS = ['root']
 
 
 class HorizonUninstaller(comp.PythonUninstallComponent):
+
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, *args, **kargs)
 
 
 class HorizonInstaller(comp.PythonInstallComponent):
+
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.blackhole_dir = sh.joinpths(self.get_option('app_dir'), '.blackhole')
+        self.blackhole_dir = sh.joinpths(
+            self.get_option('app_dir'),
+            '.blackhole')
         self.access_log = sh.joinpths('/var/log/',
-                                      self.distro.get_command_config('apache', 'name'),
+                                      self.distro.get_command_config(
+                                      'apache', 'name'),
                                       'horizon_access.log')
         self.error_log = sh.joinpths('/var/log/',
-                                     self.distro.get_command_config('apache', 'name'),
+                                     self.distro.get_command_config(
+                                     'apache', 'name'),
                                      'horizon_error.log')
 
     def _filter_pip_requires(self, fn, lines):
@@ -89,8 +95,8 @@ class HorizonInstaller(comp.PythonInstallComponent):
             raise excp.ConfigException(msg)
         if user in BAD_APACHE_USERS:
             msg = ("You may want to adjust your configuration, "
-                    "(user=%s, group=%s) will not work with apache!"
-                    % (user, group))
+                   "(user=%s, group=%s) will not work with apache!"
+                   % (user, group))
             raise excp.ConfigException(msg)
 
     def target_config(self, config_name):
@@ -115,8 +121,11 @@ class HorizonInstaller(comp.PythonInstallComponent):
             with sh.Rooted(True):
                 if clear:
                     sh.unlink(fn, True)
-                sh.touch_file(fn, die_if_there=False, tracewriter=self.tracewriter)
-                sh.chmod(fn, 0666)
+                sh.touch_file(
+                    fn,
+                    die_if_there=False,
+                    tracewriter=self.tracewriter)
+                sh.chmod(fn, 0o666)
         return len(log_fns)
 
     def _configure_files(self):
@@ -142,7 +151,8 @@ class HorizonInstaller(comp.PythonInstallComponent):
             mp['USER'] = user
             mp['HORIZON_DIR'] = self.get_option('app_dir')
             mp['HORIZON_PORT'] = self.get_int_option('port', default_value=80)
-            mp['APACHE_NAME'] = self.distro.get_command_config('apache', 'name')
+            mp['APACHE_NAME'] = self.distro.get_command_config(
+                'apache', 'name')
             mp['ERROR_LOG'] = self.error_log
             mp['ACCESS_LOG'] = self.access_log
             mp['BLACK_HOLE_DIR'] = self.blackhole_dir
@@ -151,11 +161,13 @@ class HorizonInstaller(comp.PythonInstallComponent):
             if SECRET_KEY_LEN <= 0:
                 mp['SECRET_KEY'] = ''
             else:
-                mp['SECRET_KEY'] = binascii.b2a_hex(os.urandom(SECRET_KEY_LEN / 2))
+                mp['SECRET_KEY'] = binascii.b2a_hex(
+                    os.urandom(SECRET_KEY_LEN / 2))
         return mp
 
 
 class HorizonRuntime(comp.ProgramRuntime):
+
     def start(self):
         if self.statii()[0].status != comp.STATUS_STARTED:
             self._run_action('start')
@@ -166,7 +178,9 @@ class HorizonRuntime(comp.ProgramRuntime):
     def _run_action(self, action, check_exit_code=True):
         cmd = self.distro.get_command('apache', action)
         if not cmd:
-            raise NotImplementedError("No distro command provided to perform action %r" % (action))
+            raise NotImplementedError(
+                "No distro command provided to perform action %r" %
+                (action))
         return sh.execute(*cmd, run_as_root=True, check_exit_code=check_exit_code)
 
     def restart(self):

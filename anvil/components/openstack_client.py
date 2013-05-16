@@ -19,6 +19,7 @@ from anvil import utils
 
 
 class OpenStackClientInstaller(comp.PythonInstallComponent):
+
     def _filter_pip_requires(self, fn, lines):
         return [l for l in lines
                 if not utils.has_any(l.lower(),
@@ -26,5 +27,6 @@ class OpenStackClientInstaller(comp.PythonInstallComponent):
 
 
 class OpenStackClientTester(comp.PythonTestingComponent):
+
     def _use_run_tests(self):
         return False

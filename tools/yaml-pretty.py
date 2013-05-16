@@ -15,11 +15,11 @@ if __name__ == "__main__":
         data = yaml.load(fh.read())
         fh.close()
         formatted = yaml.dump(data,
-                            line_break="\n",
-                            indent=4,
-                            explicit_start=True,
-                            explicit_end=True,
-                            default_flow_style=False,
-                            )
+                              line_break="\n",
+                              indent=4,
+                              explicit_start=True,
+                              explicit_end=True,
+                              default_flow_style=False,
+                              )
         print("# Formatted %s" % (fn))
         print(formatted)

@@ -49,8 +49,8 @@ CONFIGS = [ROOT_CONF, LOGGING_CONF, POLICY_JSON]
 
 # Invoking the keystone manage command uses this template
 MANAGE_CMD = [sh.joinpths('$BIN_DIR', 'keystone-manage'),
-                '--config-file=$CONFIG_FILE',
-                '--debug', '-v']
+              '--config-file=$CONFIG_FILE',
+              '--debug', '-v']
 
 # PKI base files
 PKI_FILES = {
@@ -61,11 +61,13 @@ PKI_FILES = {
 
 
 class KeystoneUninstaller(comp.PythonUninstallComponent):
+
     def __init__(self, *args, **kargs):
         comp.PythonUninstallComponent.__init__(self, *args, **kargs)
 
 
 class KeystoneInstaller(comp.PythonInstallComponent):
+
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
@@ -75,9 +77,10 @@ class KeystoneInstaller(comp.PythonInstallComponent):
                 # Take out entries that aren't really always needed or are
                 # resolved/installed by anvil during installation in the first
                 # place..
-                if not utils.has_any(l.lower(), 'keystoneclient', 'oslo.config',
-                                     'ldap', 'http://tarballs.openstack.org',
-                                     'memcached')]
+                if not utils.has_any(
+                    l.lower(), 'keystoneclient', 'oslo.config',
+                'ldap', 'http://tarballs.openstack.org',
+                'memcached')]
 
     def post_install(self):
         comp.PythonInstallComponent.post_install(self)
@@ -91,7 +94,11 @@ class KeystoneInstaller(comp.PythonInstallComponent):
         LOG.info("Syncing keystone to database: %s", colorizer.quote(DB_NAME))
         sync_cmd = MANAGE_CMD + ['db_sync']
         cmds = [{'cmd': sync_cmd, 'run_as_root': True}]
-        utils.execute_template(*cmds, cwd=self.bin_dir, params=self.config_params(None))
+        utils.execute_template(
+            *cmds,
+            cwd=self.bin_dir,
+            params=self.config_params(
+                None))
 
     @property
     def env_exports(self):
@@ -132,7 +139,11 @@ class KeystoneInstaller(comp.PythonInstallComponent):
                           tracewriter=self.tracewriter, adjust_suids=True)
         pki_cmd = MANAGE_CMD + ['pki_setup']
         cmds = [{'cmd': pki_cmd, 'run_as_root': True}]
-        utils.execute_template(*cmds, cwd=self.bin_dir, params=self.config_params(None))
+        utils.execute_template(
+            *cmds,
+            cwd=self.bin_dir,
+            params=self.config_params(
+                None))
 
     def source_config(self, config_fn):
         real_fn = config_fn
@@ -166,8 +177,20 @@ class KeystoneInstaller(comp.PythonInstallComponent):
             config = cfg.create_parser(cfg.RewritableConfigParser, self)
             config.readfp(stream)
             config.set('DEFAULT', 'admin_token', params['service_token'])
-            config.set('DEFAULT', 'admin_port', params['endpoints']['admin']['port'])
-            config.set('DEFAULT', 'public_port', params['endpoints']['public']['port'])
+            config.set(
+                'DEFAULT',
+                'admin_port',
+                params[
+                    'endpoints'][
+                        'admin'][
+                            'port'])
+            config.set(
+                'DEFAULT',
+                'public_port',
+                params[
+                    'endpoints'][
+                        'public'][
+                            'port'])
             config.set('DEFAULT', 'verbose', True)
             config.set('DEFAULT', 'debug', True)
             if self.get_bool_option('enable-pki'):
@@ -177,14 +200,24 @@ class KeystoneInstaller(comp.PythonInstallComponent):
                     config.set('signing', k, path)
             else:
                 config.set('signing', 'token_format', 'UUID')
-            config.set('catalog', 'driver', 'keystone.catalog.backends.sql.Catalog')
+            config.set(
+                'catalog',
+                'driver',
+                'keystone.catalog.backends.sql.Catalog')
             config.remove_option('DEFAULT', 'log_config')
-            config.set('sql', 'connection', dbhelper.fetch_dbdsn(dbname=DB_NAME,
-                                                                 utf8=True,
-                                                                 dbtype=self.get_option('db', 'type'),
-                                                                 **utils.merge_dicts(self.get_option('db'),
-                                                                                     dbhelper.get_shared_passwords(self))))
-            config.set('ec2', 'driver', "keystone.contrib.ec2.backends.sql.Ec2")
+            config.set(
+                'sql', 'connection', dbhelper.fetch_dbdsn(dbname=DB_NAME,
+                                                          utf8=True,
+                                                          dbtype=self.get_option(
+                                                          'db', 'type'),
+                                                          **utils.merge_dicts(
+                                                          self.get_option(
+                'db'),
+                                                              dbhelper.get_shared_passwords(self))))
+            config.set(
+                'ec2',
+                'driver',
+                "keystone.contrib.ec2.backends.sql.Ec2")
             contents = config.stringify(fn)
         return contents
 
@@ -208,10 +241,14 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
 
 class KeystoneRuntime(comp.PythonRuntime):
+
     def __init__(self, *args, **kargs):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
-        self.init_fn = sh.joinpths(self.get_option('trace_dir'), INIT_WHAT_HAPPENED)
+        self.init_fn = sh.joinpths(
+            self.get_option(
+                'trace_dir'),
+            INIT_WHAT_HAPPENED)
 
     def _filter_init(self, init_what):
         endpoints = init_what['endpoints']
@@ -232,9 +269,24 @@ class KeystoneRuntime(comp.PythonRuntime):
             (fn, contents) = utils.load_template(self.name, INIT_WHAT_FN)
             LOG.debug("Initializing with contents of %s", fn)
             params = {}
-            params['keystone'] = khelper.get_shared_params(**utils.merge_dicts(self.options, khelper.get_shared_passwords(self)))
-            params['glance'] = ghelper.get_shared_params(ip=self.get_option('ip'), **self.get_option('glance'))
-            params['nova'] = nhelper.get_shared_params(ip=self.get_option('ip'), **self.get_option('nova'))
+            params[
+                'keystone'] = khelper.get_shared_params(
+                    **utils.merge_dicts(
+                        self.options,
+                        khelper.get_shared_passwords(
+                            self)))
+            params[
+                'glance'] = ghelper.get_shared_params(
+                    ip=self.get_option(
+                        'ip'),
+                    **self.get_option(
+                        'glance'))
+            params[
+                'nova'] = nhelper.get_shared_params(
+                    ip=self.get_option(
+                        'ip'),
+                    **self.get_option(
+                        'nova'))
             wait_urls = [
                 params['keystone']['endpoints']['admin']['uri'],
                 params['keystone']['endpoints']['public']['uri'],
@@ -242,12 +294,15 @@ class KeystoneRuntime(comp.PythonRuntime):
             for url in wait_urls:
                 utils.wait_for_url(url)
             init_what = utils.load_yaml_text(contents)
-            init_what = utils.expand_template_deep(self._filter_init(init_what), params)
+            init_what = utils.expand_template_deep(
+                self._filter_init(init_what), params)
             khelper.Initializer(params['keystone']['service_token'],
                                 params['keystone']['endpoints']['admin']['uri']).initialize(**init_what)
             # Writing this makes sure that we don't init again
             sh.write_file(self.init_fn, utils.prettify_yaml(init_what))
-            LOG.info("If you wish to re-run initialization, delete %s", colorizer.quote(self.init_fn))
+            LOG.info(
+                "If you wish to re-run initialization, delete %s",
+                colorizer.quote(self.init_fn))
 
     @property
     def applications(self):
@@ -256,7 +311,12 @@ class KeystoneRuntime(comp.PythonRuntime):
             name = "keystone-%s" % (name.lower())
             path = sh.joinpths(self.bin_dir, name)
             if sh.is_executable(path):
-                apps.append(comp.Program(name, path, argv=self._fetch_argv(name)))
+                apps.append(
+                    comp.Program(
+                        name,
+                        path,
+                        argv=self._fetch_argv(
+                            name)))
         return apps
 
     def _fetch_argv(self, name):
@@ -271,6 +331,7 @@ class KeystoneRuntime(comp.PythonRuntime):
 
 class KeystoneTester(comp.PythonTestingComponent):
     # Disable the keystone client integration tests
+
     def _get_test_command(self):
         base_cmd = comp.PythonTestingComponent._get_test_command(self)
         base_cmd = base_cmd + ['-xintegration']

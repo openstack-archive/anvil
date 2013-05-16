@@ -43,6 +43,7 @@ class Downloader(object):
 
 
 class GitDownloader(Downloader):
+
     def __init__(self, distro, uri, store_where):
         Downloader.__init__(self, uri, store_where)
         self.distro = distro
@@ -64,9 +65,17 @@ class GitDownloader(Downloader):
         if not branch:
             branch = 'master'
         if sh.isdir(self.store_where) and sh.isdir(sh.joinpths(self.store_where, '.git')):
-            LOG.info("Existing git directory located at %s, leaving it alone.", colorizer.quote(self.store_where))
+            LOG.info(
+                "Existing git directory located at %s, leaving it alone.",
+                colorizer.quote(self.store_where))
         else:
-            LOG.info("Downloading %s (%s) to %s.", colorizer.quote(uri), branch, colorizer.quote(self.store_where))
+            LOG.info(
+                "Downloading %s (%s) to %s.",
+                colorizer.quote(
+                    uri),
+                branch,
+                colorizer.quote(
+                    self.store_where))
             cmd = list(self.distro.get_command('git', 'clone'))
             cmd += [uri, self.store_where]
             sh.execute(*cmd)
@@ -82,7 +91,12 @@ class GitDownloader(Downloader):
                     checkout_what = ['master']
                 else:
                     # Set it up to track the remote branch correctly
-                    checkout_what = ['--track', '-b', branch, 'origin/%s' % (branch)]
+                    checkout_what = [
+                        '--track',
+                        '-b',
+                        branch,
+                        'origin/%s' % (
+                            branch)]
                 LOG.info("Adjusting branch to %s.", colorizer.quote(branch))
             cmd = list(self.distro.get_command('git', 'checkout'))
             cmd += checkout_what
@@ -90,6 +104,7 @@ class GitDownloader(Downloader):
 
 
 class UrlLibDownloader(Downloader):
+
     def __init__(self, uri, store_where, **kargs):
         Downloader.__init__(self, uri, store_where)
         self.quiet = kargs.get('quiet', False)
@@ -105,7 +120,10 @@ class UrlLibDownloader(Downloader):
         return progressbar.ProgressBar(widgets=widgets, maxval=size)
 
     def download(self):
-        LOG.info('Downloading using urllib2: %s to %s.', colorizer.quote(self.uri), colorizer.quote(self.store_where))
+        LOG.info(
+            'Downloading using urllib2: %s to %s.',
+            colorizer.quote(self.uri),
+            colorizer.quote(self.store_where))
         p_bar = None
 
         def update_bar(progress_bar, bytes_down):

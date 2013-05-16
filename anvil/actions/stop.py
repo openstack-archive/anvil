@@ -24,6 +24,7 @@ LOG = log.getLogger(__name__)
 
 
 class StopAction(action.Action):
+
     @property
     def lookup_name(self):
         return 'running'
@@ -37,12 +38,15 @@ class StopAction(action.Action):
         removals = ['pre-start', 'start', 'post-start']
         self._run_phase(
             PhaseFunctors(
-                start=lambda i: LOG.info('Stopping %s.', colorizer.quote(i.name)),
+                start=lambda i: LOG.info(
+                    'Stopping %s.',
+                    colorizer.quote(i.name)),
                 run=lambda i: i.stop(),
-                end=lambda i, result: LOG.info("Stopped %s items.", colorizer.quote(result)),
+                end=lambda i, result: LOG.info(
+                    "Stopped %s items.", colorizer.quote(result)),
             ),
             component_order,
             instances,
             "stopped",
             *removals
-            )
+        )
