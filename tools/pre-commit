@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# install me this way:
+# cp pre-commit "$(git rev-parse --git-dir)/hooks/"
+
+git stash -q --keep-index
+trap 'git stash pop -q' EXIT
+
+STATUS=0
+FILES="$(git diff --cached --name-only --diff-filter=AM | grep -E '\.py$')"
+if [ -n "$FILES" ]; then
+    pep8 -r $FILES || STATUS=1
+    if grep -nEH --color '(import pdb|pdb.set_trace)' $FILES; then
+        echo "Please remove pdb"
+        STATUS=1
+    fi
+fi
+
+FILES="$(git diff --cached --name-only --diff-filter=AM | grep -E '\.(py|html|js)$')"
+if [ -n "$FILES" ]; then
+    if grep -nEH --color '\s+$' $FILES; then
+        echo "Please remove trailing spaces"
+        STATUS=1
+    fi
+fi
+
+exit $STATUS
