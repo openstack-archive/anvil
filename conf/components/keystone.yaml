@@ -49,8 +49,6 @@ nova:
   api_port: "$(nova:api_port)"
   s3_host: "$(nova:s3_host)"
   s3_port: "$(nova:s3_port)"
-  volume_host: "$(nova:volume_host)"
-  volume_port: "$(nova:volume_port)"
   ec2_host: "$(nova:ec2_host)"
   ec2_port: "$(nova:ec2_port)"
   ec2_admin_host: "$(nova:ec2_admin_host)"
@@ -60,6 +58,10 @@ nova:
 quantum:
   api_host: "$(quantum:api_host)"
   api_port: "$(quantum:api_port)"
+
+cinder:
+  api_host: "$(cinder:api_host)"
+  api_port: "$(cinder:api_port)"
 
 # This is needed to allow installs based on personas
 wanted_passwords:

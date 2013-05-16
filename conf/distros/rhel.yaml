@@ -52,6 +52,16 @@ commands:
         status: service rabbitmq-server status
         stop: service rabbitmq-server stop
 components:
+    cinder:
+        action_classes:
+            install: anvil.components.cinder:CinderInstaller
+            package: anvil.packaging.rpm:PythonPackager
+            running: anvil.components.cinder:CinderRuntime
+            test: anvil.components:PythonTestingComponent
+            coverage: anvil.components:PythonTestingComponent
+            uninstall: anvil.components.cinder:CinderUninstaller
+        pips:
+            - name: hp3parclient
     cinder-client:
         action_classes:
             install: anvil.components:PythonInstallComponent

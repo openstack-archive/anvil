@@ -120,13 +120,6 @@ vncserver_listen: 127.0.0.1
 vncserver_proxyclient_address: ""
 xvpvncproxy_url: "http://$(auto:ip):6081/console"
 
-# Not currently working (to be replaced by cinder)
-volume_backing_file: ""
-volume_backing_file_size: 2052M
-volume_group: nova-volumes
-volume_name_postfix: "%08x"
-volume_name_prefix: "volume-"
-
 # Package time patches
 patches:
   package:
