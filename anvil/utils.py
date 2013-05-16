@@ -51,7 +51,7 @@ from anvil import version
 
 from anvil.pprint import center_text
 
-MONTY_PYTHON_TEXT_RE = re.compile("([a-z0-9A-Z\?!.,'\"]+)")
+MONTY_PYTHON_TEXT_RE = re.compile(r"([a-z0-9A-Z\?!.,'\"]+)")
 
 # Thx cowsay
 # See: http://www.nog.net/~tony/warez/cowsay.shtml

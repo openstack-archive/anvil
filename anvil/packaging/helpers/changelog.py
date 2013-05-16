@@ -77,7 +77,7 @@ class GitChangeLog(object):
         if len(ret) == 1:
             ret = ret[0]
         else:
-            ret = filter(lambda x: x.strip() != '', ret)
+            ret = [x for x in ret if x.strip() != '']
             ret = "\n".join(ret)
         return ret
 

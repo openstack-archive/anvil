@@ -32,7 +32,8 @@ from anvil import shell as sh
 
 LOG = logging.getLogger(__name__)
 
-Component = collections.namedtuple("Component", 'entry_point,options,siblings')
+Component = collections.namedtuple(  # pylint: disable=C0103
+    "Component", 'entry_point,options,siblings')
 
 
 class Distro(object):

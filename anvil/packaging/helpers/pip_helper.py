@@ -14,8 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from distutils import version as vr
-
 import copy
 import pkg_resources
 import xmlrpclib
