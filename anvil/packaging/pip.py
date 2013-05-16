@@ -21,7 +21,6 @@ from anvil import shell as sh
 
 from anvil.packaging.helpers import pip_helper
 
-import pkg_resources
 
 LOG = logging.getLogger(__name__)
 
