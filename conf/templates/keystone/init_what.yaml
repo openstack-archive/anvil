@@ -25,9 +25,9 @@ endpoints:
     public_url: "$glance.endpoints.public.uri"
     region: RegionOne
 -   service: volume
-    admin_url: "${nova.endpoints.volume.uri}/%(tenant_id)s"
-    internal_url: "${nova.endpoints.volume.uri}/%(tenant_id)s"
-    public_url: "${nova.endpoints.volume.uri}/%(tenant_id)s"
+    admin_url: "${cinder.endpoints.volume.uri}/%(tenant_id)s"
+    internal_url: "${cinder.endpoints.volume.uri}/%(tenant_id)s"
+    public_url: "${cinder.endpoints.volume.uri}/%(tenant_id)s"
     region: RegionOne
 -   service: s3
     admin_url: "$nova.endpoints.s3.uri"
