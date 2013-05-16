@@ -11,8 +11,11 @@ commands:
         status: service httpd status
         stop: service httpd stop
     git:
+        branch: git branch
         checkout: git checkout
+        clean: git clean
         clone: git clone
+        reset: git reset
     libvirt:
         restart: service libvirtd restart
         status: service libvirtd status
