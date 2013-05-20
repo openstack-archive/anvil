@@ -22,7 +22,8 @@ from anvil.actions import stop
 class RestartAction(action.Action):
 
     def __init__(self, name, distro, root_dir, cli_opts):
-        super(RestartAction, self).__init__(name, distro, root_dir, cli_opts)
+        super(RestartAction, self).__init__(
+            name, distro, root_dir, cli_opts.copy())
         self.start = start.StartAction(name, distro, root_dir, cli_opts.copy())
         self.stop = stop.StopAction(name, distro, root_dir, cli_opts.copy())
 
