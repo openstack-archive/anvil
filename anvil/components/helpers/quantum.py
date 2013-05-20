@@ -17,13 +17,13 @@
 from anvil import utils
 
 
-def get_shared_params(ip, api_host, api_port=8776, protocol='http', **kwargs):
+def get_shared_params(ip, api_host, api_port=9696, protocol='http', **kwargs):
     mp = {}
     mp['service_host'] = ip
 
     # Uri's of the various quantum endpoints
     mp['endpoints'] = {
-        'uri': utils.make_url(protocol, api_host, api_port, "v2"),
+        'uri': utils.make_url(protocol, api_host, api_port),
         'port': api_port,
         'host': api_host,
         'protocol': protocol,

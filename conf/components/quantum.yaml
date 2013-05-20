@@ -6,7 +6,7 @@ get_from: "git://github.com/openstack/quantum.git?tag=2013.1"
 
 # Host and ports for the different quantum services
 api_host: "$(auto:ip)"
-api_port: 8776
+api_port: 9696
 protocol: http
 
 # Needed for setting up your database
