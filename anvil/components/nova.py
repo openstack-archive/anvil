@@ -14,9 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import io
-
-from anvil import cfg
 from anvil import colorizer
 from anvil import components as comp
 from anvil import exceptions as excp
@@ -24,24 +21,12 @@ from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
 
-from anvil.components.helpers import db as dbhelper
-from anvil.components.helpers import keystone as khelper
+from anvil.components.configurators import nova as nconf
 from anvil.components.helpers import nova as nhelper
 from anvil.components.helpers import rabbit as rhelper
 from anvil.components.helpers import virt as lv
 
 LOG = logging.getLogger(__name__)
-
-# Copies from helpers
-API_CONF = nhelper.API_CONF
-DB_NAME = nhelper.DB_NAME
-PASTE_CONF = nhelper.PASTE_CONF
-
-# Normal conf
-POLICY_CONF = 'policy.json'
-LOGGING_CONF = "logging.conf"
-CONFIGS = [PASTE_CONF, POLICY_CONF, LOGGING_CONF, API_CONF]
-ADJUST_CONFIGS = [PASTE_CONF]
 
 # This is a special marker file that when it exists, signifies that nova net was inited
 NET_INITED_FN = 'nova.network.inited.yaml'
@@ -108,11 +93,7 @@ class NovaUninstaller(comp.PythonUninstallComponent):
 class NovaInstaller(comp.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         comp.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.conf_maker = nhelper.ConfConfigurator(self)
-
-    @property
-    def config_files(self):
-        return list(CONFIGS)
+        self.configurator = nconf.NovaConfigurator(self)
 
     def _filter_pip_requires(self, fn, lines):
         return [l for l in lines
@@ -134,19 +115,19 @@ class NovaInstaller(comp.PythonInstallComponent):
 
     def verify(self):
         comp.PythonInstallComponent.verify(self)
-        self.conf_maker.verify()
+        self.configurator.verify()
 
     def warm_configs(self):
-        mq_type = nhelper.canon_mq_type(self.get_option('mq-type'))
+        mq_type = utils.canon_mq_type(self.get_option('mq-type'))
         if mq_type == 'rabbit':
             rhelper.get_shared_passwords(self)
 
     def _sync_db(self):
-        LOG.info("Syncing nova to database named: %s", colorizer.quote(DB_NAME))
+        LOG.info("Syncing nova to database named: %s", colorizer.quote(self.configurator.DB_NAME))
         utils.execute_template(*DB_SYNC_CMD, params=self.config_params(None))
 
     def _fix_virt(self):
-        virt_driver = nhelper.canon_virt_driver(self.get_option('virt_driver'))
+        virt_driver = utils.canon_virt_driver(self.get_option('virt_driver'))
         if virt_driver == 'libvirt':
             virt_type = lv.canon_libvirt_type(self.get_option('libvirt_type'))
             if virt_type == 'qemu':
@@ -163,95 +144,14 @@ class NovaInstaller(comp.PythonInstallComponent):
         comp.PythonInstallComponent.post_install(self)
         # Extra actions to do nova setup
         if self.get_bool_option('db-sync'):
-            self._setup_db()
+            self.configurator.setup_db()
             self._sync_db()
         # Patch up your virtualization system
         self._fix_virt()
 
-    def _setup_db(self):
-        dbhelper.drop_db(distro=self.distro,
-                         dbtype=self.get_option('db', 'type'),
-                         dbname=DB_NAME,
-                         **utils.merge_dicts(self.get_option('db'),
-                                             dbhelper.get_shared_passwords(self)))
-        # Explicitly use latin1: to avoid lp#829209, nova expects the database to
-        # use latin1 by default, and then upgrades the database to utf8 (see the
-        # 082_essex.py in nova)
-        dbhelper.create_db(distro=self.distro,
-                           dbtype=self.get_option('db', 'type'),
-                           dbname=DB_NAME,
-                           charset='latin1',
-                           **utils.merge_dicts(self.get_option('db'),
-                                               dbhelper.get_shared_passwords(self)))
-
-    def _generate_nova_conf(self, fn):
-        LOG.debug("Generating dynamic content for nova: %s.", (fn))
-        return self.conf_maker.generate(fn)
-
-    def source_config(self, config_fn):
-        if config_fn == PASTE_CONF:
-            config_fn = 'api-paste.ini'
-        elif config_fn == LOGGING_CONF:
-            config_fn = 'logging_sample.conf'
-        elif config_fn == API_CONF:
-            config_fn = 'nova.conf.sample'
-        fn = sh.joinpths(self.get_option('app_dir'), 'etc', "nova", config_fn)
-        return (fn, sh.load_file(fn))
-
-    def _config_adjust_paste(self, contents, fn):
-        params = khelper.get_shared_params(ip=self.get_option('ip'),
-                                           service_user='nova',
-                                           **utils.merge_dicts(self.get_option('keystone'),
-                                                               khelper.get_shared_passwords(self)))
-
-        with io.BytesIO(contents) as stream:
-            config = cfg.create_parser(cfg.RewritableConfigParser, self)
-            config.readfp(stream)
-
-            config.set('filter:authtoken', 'auth_host', params['endpoints']['admin']['host'])
-            config.set('filter:authtoken', 'auth_port', params['endpoints']['admin']['port'])
-            config.set('filter:authtoken', 'auth_protocol', params['endpoints']['admin']['protocol'])
-
-            config.set('filter:authtoken', 'service_host', params['endpoints']['internal']['host'])
-            config.set('filter:authtoken', 'service_port', params['endpoints']['internal']['port'])
-            config.set('filter:authtoken', 'service_protocol', params['endpoints']['internal']['protocol'])
-
-            config.set('filter:authtoken', 'admin_tenant_name', params['service_tenant'])
-            config.set('filter:authtoken', 'admin_user', params['service_user'])
-            config.set('filter:authtoken', 'admin_password', params['service_password'])
-
-            contents = config.stringify(fn)
-        return contents
-
-    def _config_adjust_logging(self, contents, fn):
-        with io.BytesIO(contents) as stream:
-            config = cfg.create_parser(cfg.RewritableConfigParser, self)
-            config.readfp(stream)
-            config.set('logger_root', 'level', 'DEBUG')
-            config.set('logger_root', 'handlers', "stdout")
-            contents = config.stringify(fn)
-        return contents
-
-    def _config_adjust(self, contents, name):
-        if name == PASTE_CONF:
-            return self._config_adjust_paste(contents, name)
-        elif name == LOGGING_CONF:
-            return self._config_adjust_logging(contents, name)
-        elif name == API_CONF:
-            return self._generate_nova_conf(name)
-        else:
-            return contents
-
-    def _config_param_replace(self, config_fn, contents, parameters):
-        if config_fn in [PASTE_CONF, LOGGING_CONF, API_CONF]:
-            # We handle these ourselves
-            return contents
-        else:
-            return comp.PythonInstallComponent._config_param_replace(self, config_fn, contents, parameters)
-
     def config_params(self, config_fn):
         mp = comp.PythonInstallComponent.config_params(self, config_fn)
-        mp['CFG_FILE'] = sh.joinpths(self.get_option('cfg_dir'), API_CONF)
+        mp['CFG_FILE'] = sh.joinpths(self.get_option('cfg_dir'), nconf.API_CONF)
         mp['BIN_DIR'] = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
         return mp
 
@@ -261,7 +161,7 @@ class NovaRuntime(comp.PythonRuntime):
         comp.PythonRuntime.__init__(self, *args, **kargs)
         self.wait_time = self.get_int_option('service_wait_seconds')
         self.virsh = lv.Virsh(self.wait_time, self.distro)
-        self.config_path = sh.joinpths(self.get_option('cfg_dir'), API_CONF)
+        self.config_path = sh.joinpths(self.get_option('cfg_dir'), nconf.API_CONF)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
         self.net_init_fn = sh.joinpths(self.get_option('trace_dir'), NET_INITED_FN)
 
@@ -314,7 +214,7 @@ class NovaRuntime(comp.PythonRuntime):
     def pre_start(self):
         # Let the parent class do its thing
         comp.PythonRuntime.pre_start(self)
-        virt_driver = nhelper.canon_virt_driver(self.get_option('virt_driver'))
+        virt_driver = utils.canon_virt_driver(self.get_option('virt_driver'))
         if virt_driver == 'libvirt':
             virt_type = lv.canon_libvirt_type(self.get_option('libvirt_type'))
             LOG.info("Checking that your selected libvirt virtualization type %s is working and running.", colorizer.quote(virt_type))

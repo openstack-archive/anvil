@@ -32,9 +32,9 @@ from anvil.components import horizon
 from anvil.components import nova
 from anvil.components import rabbit
 
-from anvil.packaging import yum
+from anvil.components.configurators import horizon as hconf
 
-from anvil.components.helpers import nova as nhelper
+from anvil.packaging import yum
 
 LOG = logging.getLogger(__name__)
 
@@ -75,6 +75,10 @@ class HorizonInstaller(horizon.HorizonInstaller):
 
     HTTPD_CONF = '/etc/httpd/conf/httpd.conf'
 
+    def __init__(self, *args, **kargs):
+        horizon.HorizonInstaller.__init__(self, *args, **kargs)
+        self.configurator = hconf.HorizonRhelConfigurator(self)
+
     def _config_fix_httpd(self):
         LOG.info("Fixing up: %s", colorizer.quote(HorizonInstaller.HTTPD_CONF))
         (user, group) = self._get_apache_user_group()
@@ -99,17 +103,6 @@ class HorizonInstaller(horizon.HorizonInstaller):
     def post_install(self):
         horizon.HorizonInstaller.post_install(self)
         self._config_fixups()
-
-    @property
-    def symlinks(self):
-        links = super(HorizonInstaller, self).symlinks
-        apache_conf_tgt = self.target_config(horizon.HORIZON_APACHE_CONF)
-        if apache_conf_tgt not in links:
-            links[apache_conf_tgt] = []
-        links[apache_conf_tgt].append(sh.joinpths('/etc/',
-                                                  self.distro.get_command_config('apache', 'name'),
-                                                  'conf.d', horizon.HORIZON_APACHE_CONF))
-        return links
 
 
 class RabbitRuntime(rabbit.RabbitRuntime):
@@ -159,7 +152,7 @@ class NovaInstaller(nova.NovaInstaller):
 
     def configure(self):
         configs_made = nova.NovaInstaller.configure(self)
-        driver_canon = nhelper.canon_virt_driver(self.get_option('virt_driver'))
+        driver_canon = utils.canon_virt_driver(self.get_option('virt_driver'))
         if driver_canon == 'libvirt':
             # Create a libvirtd user group
             if not sh.group_exists('libvirtd'):

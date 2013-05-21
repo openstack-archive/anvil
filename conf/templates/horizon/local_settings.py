@@ -1,10 +1,10 @@
-#* 
+#*
    This is a cheetah template!
 *#
 
 # These settings are good for dev-like environments (or ci)
 # When moving to production it is likely some more thought should
-# be given here... 
+# be given here...
 #
 # See: https://docs.djangoproject.com/en/dev/ref/settings/
 #

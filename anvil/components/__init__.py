@@ -54,6 +54,8 @@ from anvil.packaging import yum
 
 from anvil.packaging.helpers import pip_helper
 
+from anvil.components.configurators import base as conf
+
 LOG = logging.getLogger(__name__)
 
 ####
@@ -106,6 +108,7 @@ class PkgInstallComponent(component.Component):
         component.Component.__init__(self, *args, **kargs)
         trace_fn = tr.trace_filename(self.get_option('trace_dir'), 'created')
         self.tracewriter = tr.TraceWriter(trace_fn, break_if_there=False)
+        self.configurator = conf.Configurator(self)
 
     def _get_download_config(self):
         return None
@@ -197,52 +200,23 @@ class PkgInstallComponent(component.Component):
                                       distro=self.distro)
             installer.post_install(p, self.params)
 
-    @property
-    def config_files(self):
-        return []
-
-    def _config_adjust(self, contents, config_fn):
-        return contents
-
-    def target_config(self, config_fn):
-        return sh.joinpths(self.get_option('cfg_dir'), config_fn)
-
-    def source_config(self, config_fn):
-        return utils.load_template(self.name, config_fn)
-
-    @property
-    def link_dir(self):
-        link_dir_base = self.distro.get_command_config('base_link_dir')
-        return sh.joinpths(link_dir_base, self.name)
-
-    @property
-    def symlinks(self):
-        links = {}
-        for fn in self.config_files:
-            source_fn = self.target_config(fn)
-            links[source_fn] = [sh.joinpths(self.link_dir, fn)]
-        return links
-
-    def _config_param_replace(self, config_fn, contents, parameters):
-        return utils.expand_template(contents, parameters)
-
     def _configure_files(self):
-        config_fns = self.config_files
+        config_fns = self.configurator.config_files
         if config_fns:
             utils.log_iterable(config_fns, logger=LOG,
                                header="Configuring %s files" % (len(config_fns)))
             for fn in config_fns:
-                tgt_fn = self.target_config(fn)
+                tgt_fn = self.configurator.target_config(fn)
                 sh.mkdirslist(sh.dirname(tgt_fn), tracewriter=self.tracewriter)
-                (source_fn, contents) = self.source_config(fn)
+                (source_fn, contents) = self.configurator.source_config(fn)
                 LOG.debug("Configuring file %s ---> %s.", (source_fn), (tgt_fn))
-                contents = self._config_param_replace(fn, contents, self.config_params(fn))
-                contents = self._config_adjust(contents, fn)
+                contents = self.configurator.config_param_replace(fn, contents, self.config_params(fn))
+                contents = self.configurator.config_adjust(contents, fn)
                 sh.write_file(tgt_fn, contents, tracewriter=self.tracewriter)
         return len(config_fns)
 
     def _configure_symlinks(self):
-        links = self.symlinks
+        links = self.configurator.symlinks
         if not links:
             return 0
         # This sort happens so that we link in the correct order

@@ -20,6 +20,8 @@ from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
 
+from anvil.components.configurators import horizon as hconf
+
 import binascii
 import os
 import re
@@ -30,11 +32,6 @@ LOG = logging.getLogger(__name__)
 #
 # Needs to be a multiple of 2 for our usage...
 SECRET_KEY_LEN = 10
-
-# Config files messed with...
-HORIZON_LOCAL_SETTINGS_CONF = "local_settings.py"
-HORIZON_APACHE_CONF = 'horizon_apache.conf'
-CONFIGS = [HORIZON_LOCAL_SETTINGS_CONF, HORIZON_APACHE_CONF]
 
 # Users which apache may not like starting as..
 BAD_APACHE_USERS = ['root']
@@ -55,6 +52,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         self.error_log = sh.joinpths('/var/log/',
                                      self.distro.get_command_config('apache', 'name'),
                                      'horizon_error.log')
+        self.configurator = hconf.HorizonConfigurator(self)
 
     def _filter_pip_requires(self, fn, lines):
         # Knock off all nova, quantum, swift, keystone, cinder
@@ -65,13 +63,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
     def verify(self):
         comp.PythonInstallComponent.verify(self)
         self._check_ug()
-
-    @property
-    def symlinks(self):
-        links = super(HorizonInstaller, self).symlinks
-        links[self.access_log] = [sh.joinpths(self.link_dir, 'access.log')]
-        links[self.error_log] = [sh.joinpths(self.link_dir, 'error.log')]
-        return links
 
     def _check_ug(self):
         (user, group) = self._get_apache_user_group()
@@ -86,16 +77,6 @@ class HorizonInstaller(comp.PythonInstallComponent):
                     "(user=%s, group=%s) will not work with apache!"
                     % (user, group))
             raise excp.ConfigException(msg)
-
-    def target_config(self, config_name):
-        if config_name == HORIZON_LOCAL_SETTINGS_CONF:
-            return sh.joinpths(self.get_option('app_dir'), 'openstack_dashboard', 'local', config_name)
-        else:
-            return comp.PythonInstallComponent.target_config(self, config_name)
-
-    @property
-    def config_files(self):
-        return list(CONFIGS)
 
     def _setup_blackhole(self):
         # Create an empty directory that apache uses as docroot
@@ -130,7 +111,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         # This dict will be used to fill in the configuration
         # params with actual values
         mp = comp.PythonInstallComponent.config_params(self, config_fn)
-        if config_fn == HORIZON_APACHE_CONF:
+        if config_fn == hconf.HORIZON_APACHE_CONF:
             (user, group) = self._get_apache_user_group()
             mp['GROUP'] = group
             mp['USER'] = user
