@@ -51,6 +51,22 @@ from anvil import version
 
 from anvil.pprint import center_text
 
+# Message queue types to there internal 'canonicalized' name
+MQ_TYPES = {
+    'qpid': 'qpid',
+    'qpidd': 'qpid',
+    'rabbit': 'rabbit',
+    'rabbit-mq': 'rabbit',
+}
+
+# Virt 'canonicalized' name to there computer driver name
+VIRT_DRIVER_MAP = {
+    'libvirt': 'libvirt.LibvirtDriver',
+    'xenserver': 'xenapi.XenAPIDriver',
+    'vmware': 'vmwareapi.VMWareESXDriver',
+    'baremetal': 'baremetal.BareMetalDriver',
+}
+
 MONTY_PYTHON_TEXT_RE = re.compile(r"([a-z0-9A-Z\?!.,'\"]+)")
 
 # Thx cowsay
@@ -538,3 +554,14 @@ def welcome(prog_name='Anvil', version_text=version.version_string()):
     slang = center_text(_welcome_slang(), ' ', real_max)
     print(colorizer.color(slang, 'magenta', bold=True))
     return ("-", real_max)
+
+def canon_mq_type(mq_type):
+    mq_type = str(mq_type).lower().strip()
+    return MQ_TYPES.get(mq_type, 'rabbit')
+
+
+def canon_virt_driver(virt_driver):
+    virt_driver = str(virt_driver).strip().lower()
+    if not (virt_driver in VIRT_DRIVER_MAP):
+        return 'libvirt'
+    return virt_driver

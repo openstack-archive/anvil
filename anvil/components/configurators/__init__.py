@@ -1,6 +1,6 @@
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
 
-#    Copyright (C) 2012 Yahoo! Inc. All Rights Reserved.
+#    Copyright (C) 2013 Yahoo! Inc. All Rights Reserved.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License"); you may
 #    not use this file except in compliance with the License. You may obtain
@@ -13,23 +13,3 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-
-from anvil import utils
-
-def get_shared_params(ip, api_host, api_port=8776, protocol='http', **kwargs):
-    mp = {}
-    mp['service_host'] = ip
-
-    # Uri's of the various cinder endpoints
-    mp['endpoints'] = {
-        'volume': {
-            'uri': utils.make_url(protocol, api_host, api_port, "v2"),
-            'port': api_port,
-            'host': api_host,
-            'protocol': protocol,
-        },
-        'internal': {
-        }
-    }
-
-    return mp

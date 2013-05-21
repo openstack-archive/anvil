@@ -159,6 +159,9 @@ class DefaultConf(object):
     def add(self, key, value, *values):
         self.add_with_section(self.current_section, key, value, *values)
 
+    def remove(self, section, key):
+        self.backing.remove_option(section, key)
+
 
 class YamlInterpolator(object):
     def __init__(self, base):
