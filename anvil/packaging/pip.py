@@ -14,9 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import exceptions as excp
 from anvil import log as logging
-from anvil import packager as pack
+from anvil.packaging import base
 from anvil import shell as sh
 
 from anvil.packaging.helpers import pip_helper
@@ -33,42 +32,14 @@ def extract_requirement(pkg_info):
         pkg_info.get('name', ''), pkg_info.get('version'))
 
 
-class Packager(pack.Packager):
+class Packager(base.Packager):
     def __init__(self, distro, remove_default=False):
-        pack.Packager.__init__(self, distro, remove_default)
+        super(Packager, self).__init__(distro, remove_default)
         self.helper = pip_helper.Helper(distro)
         self.upgraded = {}
 
     def _get_pip_command(self):
         return self.distro.get_command_config('pip')
-
-    def _anything_there(self, pip):
-        wanted_pip = extract_requirement(pip)
-        pip_there = self.helper.get_installed(wanted_pip.key)
-        if not pip_there:
-            # Nothing installed
-            return None
-        # Check if version wanted will work with whats installed
-        if pip_there.specs[0][1] not in wanted_pip:
-            is_upgrading = False
-            for o in ['-U', '--upgrade']:
-                if o in pip.get('options', []):
-                    is_upgrading = True
-            if is_upgrading and (wanted_pip.key not in self.upgraded):
-                # Upgrade should hopefully get that package to the right version....
-                LOG.warn("Upgrade is occuring for %s, even though %s is installed.",
-                         wanted_pip, pip_there)
-                # Mark it so that we don't keep on flip-flopping on upgrading this
-                # package (ie install new, install old, install new....)
-                self.upgraded[wanted_pip.key] = wanted_pip
-                return None
-            else:
-                msg = ("Pip %s is already installed"
-                       " and it is not compatible with desired"
-                       " pip %s")
-                msg = msg % (pip_there, wanted_pip)
-                raise excp.DependencyException(msg)
-        return pip_there
 
     def _execute_pip(self, cmd):
         pip_cmd = self._get_pip_command()
@@ -81,18 +52,6 @@ class Packager(pack.Packager):
             # The known packages installed is probably
             # not consistent anymore so uncache it
             self.helper.uncache()
-
-    def _install(self, pip):
-        cmd = ['install'] + PIP_INSTALL_CMD_OPTS
-        options = pip.get('options')
-        if options:
-            if not isinstance(options, (list, tuple, set)):
-                options = [str(options)]
-            for opt in options:
-                cmd.append(str(opt))
-        install_what = extract_requirement(pip)
-        cmd.append(str(install_what))
-        self._execute_pip(cmd)
 
     def _remove(self, pip):
         # Versions don't seem to matter here...

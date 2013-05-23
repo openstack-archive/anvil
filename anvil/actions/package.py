@@ -23,6 +23,8 @@ LOG = log.getLogger(__name__)
 
 
 class PackageAction(action.Action):
+    needs_sudo = False
+
     @property
     def lookup_name(self):
         return 'package'
