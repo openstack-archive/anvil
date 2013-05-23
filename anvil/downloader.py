@@ -24,6 +24,7 @@ from urlparse import parse_qs
 import progressbar
 
 from anvil import colorizer
+from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
 
@@ -67,7 +68,14 @@ class GitDownloader(Downloader):
             LOG.info("Existing git directory located at %s, leaving it alone.", colorizer.quote(self.store_where))
             # do git clean -xdfq and git reset --hard to undo possible changes
             cmd = list(self.distro.get_command("git", "clean")) + ["-xdfq"]
-            sh.execute(*cmd, cwd=self.store_where, run_as_root=True)
+            try:
+                sh.execute(*cmd, cwd=self.store_where, run_as_root=True)
+            except excp.ProcessExecutionError:
+                (_stdout, stderr) = sh.execute(
+                    *cmd, cwd=self.store_where, ignore_exit_code=True)
+                if stderr:
+                    for line in stderr.splitlines():
+                        LOG.warning(line)
             cmd = list(self.distro.get_command("git", "reset")) + ["--hard"]
             sh.execute(*cmd, cwd=self.store_where)
         else:

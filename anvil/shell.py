@@ -14,6 +14,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+# TODO(aababilov): why don't use POSIX shell command names?
+# mv, cp, rm, rm -r, or mkdir -pand so on
+# instead of move, copy, unlink, rmdir, or mkdir (do not fail if dir exists)
+# It would be easier to guess function name and behaviour
+
 import getpass
 import grp
 import os

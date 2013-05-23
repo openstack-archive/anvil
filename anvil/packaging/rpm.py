@@ -16,7 +16,6 @@
 
 import copy
 
-from anvil import colorizer
 from anvil import component as comp
 from anvil import exceptions as excp
 from anvil import log as logging
@@ -49,12 +48,12 @@ class DependencyPackager(comp.Component):
     def build_paths(self):
         if self._build_paths is None:
             build_paths = {}
+            if sh.isdir(self.package_dir):
+                sh.deldir(self.package_dir)
             for name in RPM_DIR_NAMES:
                 final_path = sh.joinpths(self.package_dir, name.upper())
                 build_paths[name] = final_path
-                if sh.isdir(final_path):
-                    sh.deldir(final_path, True)
-                sh.mkdirslist(final_path, tracewriter=self.tracewriter)
+                sh.mkdir(final_path, recurse=True)
             self._build_paths = build_paths
         return copy.deepcopy(self._build_paths)  # Return copy (not the same instance)
 
@@ -258,7 +257,8 @@ class PythonPackager(DependencyPackager):
 
     def _description(self):
         describe_cmd = ['python', self._setup_fn, '--description']
-        (stdout, _stderr) = sh.execute(*describe_cmd, run_as_root=True, cwd=self.get_option('app_dir'))
+        # FIXME(aababilov): why execute was run_as_root?!
+        (stdout, _stderr) = sh.execute(*describe_cmd, cwd=self.get_option('app_dir'))
         stdout = stdout.strip()
         if stdout:
             # RPM apparently rejects descriptions with blank lines (even between content)
@@ -293,7 +293,8 @@ class PythonPackager(DependencyPackager):
 
             for (key, opt) in replacements.items():
                 cmd = setup_cmd + [opt]
-                (stdout, _stderr) = sh.execute(*cmd, run_as_root=True, cwd=self.get_option('app_dir'))
+                # FIXME(aababilov): why execute was run_as_root?!
+                (stdout, _stderr) = sh.execute(*cmd, cwd=self.get_option('app_dir'))
                 stdout = stdout.strip()
                 if stdout:
                     ext_dets[key] = stdout
@@ -308,13 +309,7 @@ class PythonPackager(DependencyPackager):
         return extended_dets
 
     def package(self):
-        i_sibling = self.siblings.get('install')
-        pips = []
-        if i_sibling:
-            pips.extend(i_sibling.pips)
-        if pips:
-            for pip_info in pips:
-                LOG.warn("Unable to package pip %s dependency in an rpm.", colorizer.quote(pip_info['name']))
+        # TODO(aababilov): handle pips
         return DependencyPackager.package(self)
 
 

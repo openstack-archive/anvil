@@ -28,6 +28,7 @@ YUM_INSTALL = ["install", "-y", "-t"]
 YUM_REMOVE = ['erase', '-y', "-t"]
 
 
+# TODO(aababilov): use it in `Requires:' at prepare.py
 def extract_requirement(pkg_info):
     p_name = pkg_info.get('name', '')
     p_name = p_name.strip()
@@ -51,126 +52,6 @@ class YumPackager(pack.Packager):
         pack.Packager.__init__(self, distro, remove_default)
         self.helper = yum_helper.Helper()
 
-    def _anything_there(self, pkg):
-        req = extract_requirement(pkg)
-        whats_installed = self.helper.get_installed(req.name)
-        if len(whats_installed) == 0:
-            return None
-        # Check if whats installed will work, and if it won't
-        # then hopefully whats being installed will and
-        # something later doesn't come by and change it...
-        for p in whats_installed:
-            if p.verGE(req.package):
-                return p
-        # Warn that incompat. versions could be installed...
-        LOG.warn("There was %s matches to %s found, none satisified our request!",
-                 len(whats_installed), req)
-        return None
-
-    def match_pip_2_package(self, pip_requirement):
-        possible_pkgs = self._match_pip_name(pip_requirement)
-        if not possible_pkgs:
-            return None
-
-        def match_version(yum_pkg):
-            version = str(yum_pkg.version)
-            if version in pip_requirement:
-                return True
-            return False
-
-        satisfying_packages = [p for p in possible_pkgs if match_version(p)]
-        if not satisfying_packages:
-            return None
-
-        # Remove packages with same name and leave the newest there...
-        non_same_versions_packages = {}
-        for p in satisfying_packages:
-            if p.name not in non_same_versions_packages:
-                non_same_versions_packages[p.name] = [p]
-            else:
-                non_same_versions_packages[p.name].append(p)
-
-        satisfying_packages = []
-        for (_, packages) in non_same_versions_packages.items():
-            if len(packages) == 1:
-                satisfying_packages.extend(packages)
-            else:
-                packages = sorted(packages)
-                satisfying_packages.append(packages[-1])
-
-        if len(satisfying_packages) > 1:
-            msg = "Multiple satisfying packages found for requirement %s: %s" % (pip_requirement,
-                                                                                 ", ".join([str(p) for p in satisfying_packages]))
-            raise MultiplePackageSolutions(msg)
-        else:
-            return satisfying_packages[0]
-
-    def _match_pip_name(self, pip_requirement):
-        # See if we can find anything that might work
-        # by looking at our available yum packages.
-        all_available = self.helper.get_available()
-
-        # Try a few name variations to see if we can find a matching
-        # rpm for a given pip, using a little apriori knowledge about
-        # how redhat usually does it...
-
-        def is_exact_match(yum_pkg):
-            possible_names = [
-                "python-%s" % (pip_requirement.project_name),
-                "python-%s" % (pip_requirement.key),
-            ]
-            pkg_name = str(yum_pkg.name)
-            if skip_packages_named(pkg_name):
-                return False
-            if pkg_name in possible_names:
-                return True
-            return False
-
-        def is_weak_exact_match_name(yum_pkg):
-            possible_names = [
-                pip_requirement.project_name,
-                pip_requirement.key,
-                "python-%s" % (pip_requirement.project_name),
-                "python-%s" % (pip_requirement.key),
-            ]
-            pkg_name = str(yum_pkg.name)
-            if skip_packages_named(pkg_name):
-                return False
-            if pkg_name in possible_names:
-                return True
-            return False
-
-        def skip_packages_named(name):
-            # Skip on ones that end with '-doc' or 'src'
-            name = name.lower()
-            if name.endswith('doc'):
-                return True
-            if name.endswith('-src'):
-                return True
-            return False
-
-        def is_partial_match_name(yum_pkg):
-            possible_names = [
-                pip_requirement.project_name,
-                pip_requirement.key,
-                "python-%s" % (pip_requirement.project_name),
-                "python-%s" % (pip_requirement.key),
-            ]
-            pkg_name = str(yum_pkg.name)
-            if skip_packages_named(pkg_name):
-                return False
-            for n in possible_names:
-                if pkg_name.find(n) != -1:
-                    return True
-            return False
-
-        for func in [is_exact_match, is_weak_exact_match_name, is_partial_match_name]:
-            matches = [p for p in all_available if func(p)]
-            if len(matches):
-                return matches
-
-        return []
-
     def _execute_yum(self, cmd, **kargs):
         yum_cmd = YUM_CMD + cmd
         return sh.execute(*yum_cmd, run_as_root=True,
@@ -182,17 +63,6 @@ class YumPackager(pack.Packager):
 
     def _remove_special(self, name, info):
         return False
-
-    def _install_special(self, name, info):
-        return False
-
-    def _install(self, pkg):
-        req = extract_requirement(pkg)
-        if self._install_special(req.name, pkg):
-            return
-        else:
-            cmd = YUM_INSTALL + [str(req)]
-            self._execute_yum(cmd)
 
     def _remove(self, pkg):
         req = extract_requirement(pkg)
@@ -219,3 +89,13 @@ class YumPackager(pack.Packager):
         # it does cause problems...
         cmd = YUM_REMOVE + [req.name]
         self._execute_yum(cmd)
+
+    def pre_install(self, pkg, params=None):
+        """pre-install is handled in openstack-deps %pre script.
+        """
+        pass
+
+    def post_install(self, pkg, params=None):
+        """post-install is handled in openstack-deps %post script.
+        """
+        pass
