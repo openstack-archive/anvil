@@ -51,7 +51,7 @@ class StatusAction(action.Action):
 
     def _print_status(self, component, result):
         if not result:
-            LOG.info("Status of %s is %s.", colorizer.quote(component.name), self._quote_status(STATUS_UNKNOWN))
+            LOG.info("Status of %s is %s.", colorizer.quote(component.name), self._quote_status(STATUS_INSTALLED))
             return
 
         def log_details(text, spacing, max_len):
