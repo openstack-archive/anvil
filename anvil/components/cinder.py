@@ -31,18 +31,10 @@ SYNC_DB_CMD = [sh.joinpths('$BIN_DIR', 'cinder-manage'),
                 # Available commands:
                 'db', 'sync']
 
-BIN_DIR = 'bin'
-
-class CinderUninstaller(binstall.PythonUninstallComponent):
-    def __init__(self, *args, **kargs):
-        binstall.PythonUninstallComponent.__init__(self, *args, **kargs)
-        self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
-
 
 class CinderInstaller(binstall.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         binstall.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
         self.configurator = cconf.CinderConfigurator(self)
 
     def post_install(self):
@@ -51,13 +43,6 @@ class CinderInstaller(binstall.PythonInstallComponent):
             self.configurator.setup_db()
             self._sync_db()
 
-    def _filter_pip_requires(self, fn, lines):
-        return [l for l in lines
-            # Take out entries that aren't really always needed or are
-            # resolved/installed by anvil during installation in the first
-            # place..
-            if not utils.has_any(l.lower(), 'oslo.config')]
-
     def _sync_db(self):
         LOG.info("Syncing cinder to database: %s", colorizer.quote(self.configurator.DB_NAME))
         cmds = [{'cmd': SYNC_DB_CMD, 'run_as_root': True}]
@@ -65,14 +50,13 @@ class CinderInstaller(binstall.PythonInstallComponent):
 
     def config_params(self, config_fn):
         mp = binstall.PythonInstallComponent.config_params(self, config_fn)
-        mp['BIN_DIR'] = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
+        mp['BIN_DIR'] = self.bin_dir
         return mp
 
 
 class CinderRuntime(bruntime.PythonRuntime):
     def __init__(self, *args, **kargs):
         bruntime.PythonRuntime.__init__(self, *args, **kargs)
-        self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
         self.config_path = sh.joinpths(self.get_option('cfg_dir'), cconf.API_CONF)
 
     @property

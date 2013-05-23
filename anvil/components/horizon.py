@@ -26,7 +26,6 @@ from anvil.components.configurators import horizon as hconf
 
 import binascii
 import os
-import re
 
 LOG = logging.getLogger(__name__)
 
@@ -55,12 +54,6 @@ class HorizonInstaller(binstall.PythonInstallComponent):
                                      self.distro.get_command_config('apache', 'name'),
                                      'horizon_error.log')
         self.configurator = hconf.HorizonConfigurator(self)
-
-    def _filter_pip_requires(self, fn, lines):
-        # Knock off all nova, quantum, swift, keystone, cinder
-        # clients since anvil will be making sure those are installed
-        # instead of asking setup.py to do it...
-        return [l for l in lines if not re.search(r'([n|q|s|k|g|c]\w+client)', l, re.I)]
 
     def verify(self):
         binstall.PythonInstallComponent.verify(self)

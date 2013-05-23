@@ -60,9 +60,6 @@ FLOATING_NET_CMDS = [
     },
 ]
 
-# Subdirs of the checkout/download
-BIN_DIR = 'bin'
-
 
 class NovaUninstaller(binstall.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
@@ -96,15 +93,6 @@ class NovaInstaller(binstall.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         binstall.PythonInstallComponent.__init__(self, *args, **kargs)
         self.configurator = nconf.NovaConfigurator(self)
-
-    def _filter_pip_requires(self, fn, lines):
-        return [l for l in lines
-                # Take out entries that aren't really always needed or are
-                # resolved/installed by anvil during installation in the first
-                # place..
-                if not utils.has_any(l.lower(), 'quantumclient',
-                                     'cinder', 'glance', 'ldap', 'oslo.config',
-                                     'keystoneclient')]
 
     @property
     def env_exports(self):
@@ -154,7 +142,7 @@ class NovaInstaller(binstall.PythonInstallComponent):
     def config_params(self, config_fn):
         mp = binstall.PythonInstallComponent.config_params(self, config_fn)
         mp['CFG_FILE'] = sh.joinpths(self.get_option('cfg_dir'), nconf.API_CONF)
-        mp['BIN_DIR'] = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
+        mp['BIN_DIR'] = self.bin_dir
         return mp
 
 
@@ -164,7 +152,6 @@ class NovaRuntime(bruntime.PythonRuntime):
         self.wait_time = self.get_int_option('service_wait_seconds')
         self.virsh = lv.Virsh(self.wait_time, self.distro)
         self.config_path = sh.joinpths(self.get_option('cfg_dir'), nconf.API_CONF)
-        self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
         self.net_init_fn = sh.joinpths(self.get_option('trace_dir'), NET_INITED_FN)
 
     def _do_network_init(self):

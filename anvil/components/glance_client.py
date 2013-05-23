@@ -14,11 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil.components import base_install as binstall
 from anvil.components import base_testing as btesting
-
-class GlanceClientInstaller(binstall.PythonInstallComponent):
-    pass
 
 
 class GlanceClientTester(btesting.PythonTestingComponent):

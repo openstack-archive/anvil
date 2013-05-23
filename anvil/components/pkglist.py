@@ -19,18 +19,6 @@ from anvil.components import base_install as binstall
 
 
 class Installer(binstall.PythonInstallComponent):
-    @property
-    def packages(self):
-        pkg_list = super(Installer, self).packages
-        if not pkg_list:
-            pkg_list = []
-        # If any pips that have mapped packages, suck them out as well
-        pips_to_packages = self.pips_to_packages
-        for pip_to_package in pips_to_packages:
-            if 'package' in pip_to_package:
-                pkg_list.append(pip_to_package['package'])
-        return pkg_list
-
     def _get_python_directories(self):
         return {}
 

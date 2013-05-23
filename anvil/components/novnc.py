@@ -16,24 +16,12 @@
 
 from anvil import shell as sh
 
-from anvil.components import base_install as binstall
 from anvil.components import base_runtime as bruntime
 
 # Where the application is really
 UTIL_DIR = 'utils'
 
 VNC_PROXY_APP = 'nova-novncproxy'
-
-
-class NoVNCUninstaller(binstall.PythonUninstallComponent):
-    pass
-
-
-class NoVNCInstaller(binstall.PythonInstallComponent):
-    @property
-    def python_directories(self):
-        # Its python but not one that we need to run setup.py in...
-        return {}
 
 
 class NoVNCRuntime(bruntime.PythonRuntime):
