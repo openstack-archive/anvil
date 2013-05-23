@@ -46,25 +46,11 @@ MANAGE_CMD = [sh.joinpths('$BIN_DIR', 'keystone-manage'),
                 '--config-file=$CONFIG_FILE',
                 '--debug', '-v']
 
-class KeystoneUninstaller(binstall.PythonUninstallComponent):
-    def __init__(self, *args, **kargs):
-        binstall.PythonUninstallComponent.__init__(self, *args, **kargs)
-
 
 class KeystoneInstaller(binstall.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         binstall.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
         self.configurator = kconf.KeystoneConfigurator(self)
-
-    def _filter_pip_requires(self, fn, lines):
-        return [l for l in lines
-                # Take out entries that aren't really always needed or are
-                # resolved/installed by anvil during installation in the first
-                # place..
-                if not utils.has_any(l.lower(), 'keystoneclient', 'oslo.config',
-                                     'ldap', 'http://tarballs.openstack.org',
-                                     'memcached')]
 
     def post_install(self):
         binstall.PythonInstallComponent.post_install(self)
@@ -119,7 +105,6 @@ class KeystoneInstaller(binstall.PythonInstallComponent):
 class KeystoneRuntime(bruntime.PythonRuntime):
     def __init__(self, *args, **kargs):
         bruntime.PythonRuntime.__init__(self, *args, **kargs)
-        self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
         self.init_fn = sh.joinpths(self.get_option('trace_dir'), INIT_WHAT_HAPPENED)
 
     def _filter_init(self, init_what):

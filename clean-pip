@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# this utility removes package installed by pip
+# but not by rpm
+
+tmp_dir=$(mktemp -d)
+
+echo "Moving unowned files to $tmp_dir"
+
+for f in /usr/lib*/python*/site-packages/*; do
+    if ! rpm -qf $f &>/dev/null; then
+        mv -v $f $tmp_dir/
+    fi
+done

@@ -17,7 +17,6 @@
 from anvil import colorizer
 from anvil import log as logging
 from anvil import shell as sh
-from anvil import utils
 
 from anvil.components import base_install as binstall
 from anvil.components import base_runtime as bruntime
@@ -30,18 +29,10 @@ LOG = logging.getLogger(__name__)
 SYNC_DB_CMD = [sh.joinpths("$BIN_DIR", "quantum-db-manage"),
                "sync"]
 
-BIN_DIR = "bin"
-
-class QuantumUninstaller(binstall.PythonUninstallComponent):
-    def __init__(self, *args, **kargs):
-        super(QuantumUninstaller, self).__init__(*args, **kargs)
-        self.bin_dir = sh.joinpths(self.get_option("app_dir"), BIN_DIR)
-
 
 class QuantumInstaller(binstall.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         super(QuantumInstaller, self).__init__(*args, **kargs)
-        self.bin_dir = sh.joinpths(self.get_option("app_dir"), BIN_DIR)
         self.configurator = qconf.QuantumConfigurator(self)
 
     def post_install(self):
@@ -49,13 +40,6 @@ class QuantumInstaller(binstall.PythonInstallComponent):
         if self.get_bool_option("db-sync"):
             self.configurator.setup_db()
             self._sync_db()
-
-    def _filter_pip_requires(self, fn, lines):
-        # Take out entries that aren't really always needed or are
-        # resolved/installed by anvil during installation in the first
-        # place..
-        return [l for l in lines
-                if not utils.has_any(l.lower(), "oslo.config")]
 
     def _sync_db(self):
         LOG.info("Syncing quantum to database: %s", colorizer.quote(self.configurator.DB_NAME))
@@ -77,8 +61,6 @@ class QuantumRuntime(bruntime.PythonRuntime):
     def __init__(self, *args, **kargs):
         super(QuantumRuntime, self).__init__(*args, **kargs)
 
-        # TODO(aababilov): move to base class
-        self.bin_dir = sh.joinpths(self.get_option("app_dir"), BIN_DIR)
         self.config_path = sh.joinpths(self.get_option("cfg_dir"), qconf.API_CONF)
 
     # TODO(aababilov): move to base class

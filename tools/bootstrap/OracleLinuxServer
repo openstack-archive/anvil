@@ -1,22 +1,33 @@
+# -*- sh -*-
 ## Bootstrap OEL 6.3+ for Openstack Anvil
 SHORTNAME=OEL
 MIN_RELEASE=6.3
 STEPS="epel packages"
 EPEL_RPM_URL="http://mirrors.kernel.org/fedora-epel/6/i386/epel-release-6-8.noarch.rpm"
 ## Package Requirements (Order matters!)
-require rpm PyYAML
-require rpm gcc
-require rpm git
-require rpm pylint
-require rpm python
-require rpm python-iso8601
-require rpm python-netifaces
-require rpm python-ordereddict
-require rpm python-pip
-require rpm python-progressbar
-require rpm python-psutil
-require pypi termcolor
-require pypi iniparse
-require pypi hgtools
-require pypi keyring
-require pypi Cheetah
+require PyYAML
+require gcc
+require git
+require patch
+require rpm-build
+require createrepo
+require pylint
+require python
+require python-iso8601
+require python-netifaces
+require python-ordereddict
+require python-pip
+require python-progressbar
+require python-psutil
+require python-cheetah Cheetah
+require python-keyring keyring
+require python-iniparse iniparse
+# Build dependencies
+require sqlite-devel
+require mysql-devel
+require postgresql-devel
+require openldap-devel
+require libxml2-devel
+require libxslt-devel
+# This one will be built
+require python-termcolor termcolor

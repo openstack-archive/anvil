@@ -16,7 +16,6 @@
 
 import copy
 import pkg_resources
-import xmlrpclib
 
 from anvil import log as logging
 from anvil import shell as sh
@@ -56,23 +55,6 @@ def _skip_requirement(line):
     if line.lower().startswith('http://'):
         return True
     return False
-
-
-def find_pypi_match(req, pypi_url='http://python.org/pypi'):
-    try:
-        pypi = xmlrpclib.ServerProxy(pypi_url)
-        LOG.debug("Searching pypi @ %s for %s", pypi_url, req)
-        for version in pypi.package_releases(req.key, True):
-            if version in req:
-                LOG.debug("Found match in pypi: %s==%s satisfies %s",
-                          req.key, version, req)
-                return req
-            else:
-                LOG.debug("Found potential match: %s==%s doesn't satisfy %s",
-                          req.key, version, req)
-    except (IOError, xmlrpclib.Fault, xmlrpclib.Error) as e:
-        LOG.warn("Scanning pypi failed: %s", e)
-    return None
 
 
 def parse_requirements(contents, adjust=False):

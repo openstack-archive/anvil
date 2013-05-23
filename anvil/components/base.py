@@ -49,6 +49,8 @@ class Component(object):
         # How we get any passwords we need
         self.passwords = passwords
 
+        self.bin_dir = "/usr/bin"
+
     def get_password(self, option):
         pw_val = self.passwords.get(option)
         if pw_val is None:
