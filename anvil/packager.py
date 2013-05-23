@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+# pylint: disable=R0921
 import abc
 
 from anvil import colorizer
@@ -33,7 +34,7 @@ class Packager(object):
 
     @abc.abstractmethod
     def _anything_there(self, pkg):
-        raise NotImplementedError()
+        pass
 
     def install(self, pkg):
         installed_already = self._anything_there(pkg)

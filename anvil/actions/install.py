@@ -20,13 +20,18 @@ from anvil import action
 from anvil import colorizer
 from anvil import components
 from anvil import log
-from anvil import pprint
 from anvil import shell as sh
 from anvil import utils
 
 from anvil.action import PhaseFunctors
+from anvil.actions import prepare
 
 LOG = log.getLogger(__name__)
+
+
+multipip_executable = "multipip"
+py2rpm_executable = "py2rpm"
+force_frozen = True
 
 
 class InstallAction(action.Action):
@@ -62,36 +67,8 @@ class InstallAction(action.Action):
                                header="Wrote to %s %s exports" % (path, len(entries)),
                                logger=LOG)
 
-    def _analyze_dependencies(self, instance_dependencies):
-        LOG.debug("Full known dependency list: ")
-        LOG.debug(pprint.pformat(instance_dependencies))
-
     def _run(self, persona, component_order, instances):
-        removals = []
-        self._run_phase(
-            PhaseFunctors(
-                start=lambda i: LOG.info('Downloading %s.', colorizer.quote(i.name)),
-                run=lambda i: i.download(),
-                end=lambda i, result: LOG.info("Performed %s downloads.", len(result))
-            ),
-            component_order,
-            instances,
-            "download",
-            *removals
-            )
-        self._run_phase(
-            PhaseFunctors(
-                start=lambda i: LOG.info('Post-download patching %s.', colorizer.quote(i.name)),
-                run=lambda i: i.patch("download"),
-                end=None,
-            ),
-            component_order,
-            instances,
-            "download-patch",
-            *removals
-            )
-
-        removals += ['uninstall', 'unconfigure']
+        removals = ['uninstall', 'unconfigure']
         self._run_phase(
             PhaseFunctors(
                 start=lambda i: LOG.info('Configuring %s.', colorizer.quote(i.name)),
@@ -103,13 +80,6 @@ class InstallAction(action.Action):
             "configure",
             *removals
             )
-
-        if self.only_configure:
-            # TODO(harlowja) this could really be a new action that
-            # does the download and configure and let the install
-            # routine actually do the install steps...
-            LOG.info("Exiting early, only asked to download and configure!")
-            return
 
         def preinstall_run(instance):
             instance.pre_install()
@@ -127,30 +97,6 @@ class InstallAction(action.Action):
             *removals
             )
 
-        all_instance_dependencies = {}
-
-        def capture_run(instance):
-            instance_dependencies = {}
-            if isinstance(instance, (components.PkgInstallComponent)):
-                instance_dependencies['packages'] = instance.packages
-            if isinstance(instance, (components.PythonInstallComponent)):
-                instance_dependencies['pips'] = instance.pip_requires
-            all_instance_dependencies[instance.name] = instance_dependencies
-
-        self._run_phase(
-            PhaseFunctors(
-                start=lambda i: LOG.info('Capturing dependencies of %s.', colorizer.quote(i.name)),
-                run=capture_run,
-                end=None,
-            ),
-            component_order,
-            instances,
-            None,
-            *removals
-            )
-
-        # Do validation on the installed dependency set.
-        self._analyze_dependencies(all_instance_dependencies)
 
         def install_start(instance):
             subsystems = set(list(instance.subsystems))
@@ -166,6 +112,25 @@ class InstallAction(action.Action):
             else:
                 LOG.info("Finished install of %s with result %s.",
                          colorizer.quote(instance.name), result)
+
+        packages = {}
+        for inst in instances.itervalues():
+            if isinstance(inst, components.PkgInstallComponent):
+                for pack in inst.packages:
+                    packages[pack["name"]] = pack
+
+        anvil_repo_filename = sh.joinpths(self.root_dir, "deps", "anvil.repo")
+        with sh.Rooted(True):
+            sh.copy(anvil_repo_filename, "/etc/yum.repos.d/")
+        packages[prepare.OPENSTACK_DEPS_PACKAGE_NAME] = {
+            "name": prepare.OPENSTACK_DEPS_PACKAGE_NAME
+        }
+        cmdline = ["yum", "erase", "-y", prepare.OPENSTACK_DEPS_PACKAGE_NAME]
+        sh.execute(*cmdline, run_as_root=True)
+        cmdline = ["yum", "clean", "all"]
+        sh.execute(*cmdline, run_as_root=True)
+        components.PkgInstallComponent.install_packages(
+            packages.values(), self.distro, sh.joinpths(self.root_dir, "deps"))
 
         self._run_phase(
             PhaseFunctors(

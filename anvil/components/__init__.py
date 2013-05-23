@@ -32,6 +32,7 @@
 
 import functools
 import os
+import pkg_resources
 import re
 import weakref
 
@@ -153,6 +154,9 @@ class PkgInstallComponent(component.Component):
 
     @property
     def packages(self):
+        return self.extended_packages()
+
+    def extended_packages(self):
         pkg_list = self.get_option('packages', default_value=[])
         if not pkg_list:
             pkg_list = []
@@ -162,21 +166,26 @@ class PkgInstallComponent(component.Component):
                 pkg_list.extend(values.get('packages'))
         return pkg_list
 
+    @staticmethod
+    def install_packages(pkgs, distro, trace_dir):
+        if not pkgs:
+            return
+        trace_fn = tr.trace_filename(trace_dir, "install")
+        tracewriter = tr.TraceWriter(trace_fn, break_if_there=False)
+        pkg_names = set([p['name'] for p in pkgs])
+        utils.log_iterable(pkg_names, logger=LOG,
+                           header="Setting up %s distribution packages" % (len(pkg_names)))
+        with utils.progress_bar('Installing', len(pkgs)) as p_bar:
+            for (i, p) in enumerate(pkgs):
+                installer = make_packager(p, distro.package_manager_class,
+                                          distro=distro)
+                installer.install(p)
+                # Mark that this happened so that we can uninstall it
+                tracewriter.package_installed(filter_package(p))
+                p_bar.update(i + 1)
+
     def install(self):
-        LOG.debug('Preparing to install packages for: %r', self.name)
-        pkgs = self.packages
-        if pkgs:
-            pkg_names = set([p['name'] for p in pkgs])
-            utils.log_iterable(pkg_names, logger=LOG,
-                               header="Setting up %s distribution packages" % (len(pkg_names)))
-            with utils.progress_bar('Installing', len(pkgs)) as p_bar:
-                for (i, p) in enumerate(pkgs):
-                    installer = make_packager(p, self.distro.package_manager_class,
-                                              distro=self.distro)
-                    installer.install(p)
-                    # Mark that this happened so that we can uninstall it
-                    self.tracewriter.package_installed(filter_package(p))
-                    p_bar.update(i + 1)
+        pass
 
     def pre_install(self):
         pkgs = self.packages
@@ -235,11 +244,16 @@ class PkgInstallComponent(component.Component):
                     LOG.warn("Symlinking %s to %s failed: %s", colorizer.quote(link), colorizer.quote(source), e)
         return links_made
 
+    def prepare(self):
+        pass
+
     def configure(self):
         return self._configure_files() + self._configure_symlinks()
 
 
 class PythonInstallComponent(PkgInstallComponent):
+    forced_packages = []
+
     def __init__(self, *args, **kargs):
         PkgInstallComponent.__init__(self, *args, **kargs)
         self.requires_files = [
@@ -260,14 +274,6 @@ class PythonInstallComponent(PkgInstallComponent):
         return py_dirs
 
     @property
-    def packages(self):
-        pkg_list = super(PythonInstallComponent, self).packages
-        if not pkg_list:
-            pkg_list = []
-        pkg_list.extend(self._get_mapped_packages())
-        return pkg_list
-
-    @property
     def pips_to_packages(self):
         pip_pkg_list = self.get_option('pip_to_package', default_value=[])
         if not pip_pkg_list:
@@ -276,114 +282,7 @@ class PythonInstallComponent(PkgInstallComponent):
 
     @property
     def pip_requires(self):
-        all_pips = []
-        for fn in self.requires_files:
-            all_pips.extend(self._extract_pip_requires(fn))
-        return all_pips
-
-    def _match_pip_requires(self, pip_req):
-
-        def pip_use(who, there_pip):
-            if there_pip.key != pip_req.key:
-                return False
-            if not len(pip_req.specs):
-                # No version/restrictions specified
-                return True
-            there_version = None
-            if not there_pip.specs or there_pip == pip_req:
-                return True
-            # Different possibly incompat. versions found...
-            if there_version is None:
-                # Assume pip will install the correct version anyway
-                if who != self.name:
-                    msg = ("Component %r asked for package '%s'"
-                           " and '%s' is being selected from %r instead...")
-                    LOG.debug(msg, self.name, pip_req, there_pip, who)
-                return True
-            else:
-                if who != self.name:
-                    msg = ("Component %r provides package '%s'"
-                           " but '%s' is being asked for by %r instead...")
-                    LOG.warn(msg, who, there_pip, pip_req, self.name)
-                return False
-
-        LOG.debug("Attempting to find who satisfies pip requirement '%s'", pip_req)
-
-        # Try to find it in anyones pip -> pkg list
-        all_pip_2_pkgs = {
-            self.name: self.pips_to_packages,
-        }
-        # Gather them all (but only if they activate before me)
-        # since if they activate after, we can't depend on it
-        # to satisfy our requirement...
-        for (name, c) in self.instances.items():
-            if c is self or not c.activated:
-                continue
-            if isinstance(c, (PythonInstallComponent)):
-                all_pip_2_pkgs[name] = c.pips_to_packages
-        for (who, pips_2_pkgs) in all_pip_2_pkgs.items():
-            for pip_info in pips_2_pkgs:
-                there_pip = pip.extract_requirement(pip_info)
-                if not pip_use(who, there_pip):
-                    continue
-                LOG.debug("Matched pip->pkg '%s' from component %r", there_pip, who)
-                return (dict(pip_info.get('package')), False)
-
-        # Ok nobody had it in a pip->pkg mapping
-        # but see if they had it in there pip collection
-        all_pips = {
-            self.name: self._base_pips(),  # Use base pips to avoid recursion...
-        }
-        for (name, c) in self.instances.items():
-            if not c.activated or c is self:
-                continue
-            if isinstance(c, (PythonInstallComponent)):
-                all_pips[name] = c._base_pips()  # pylint: disable=W0212
-        for (who, there_pips) in all_pips.items():
-            for pip_info in there_pips:
-                there_pip = pip.extract_requirement(pip_info)
-                if not pip_use(who, there_pip):
-                    continue
-                LOG.debug("Matched pip '%s' from component %r", there_pip, who)
-                return (dict(pip_info), True)
-
-        # Ok nobody had it in there pip->pkg mapping or pip mapping
-        # but now lets see if we can automatically find
-        # a pip->pkg mapping for them using the good ole'
-        # rpm/yum database.
-        installer = make_packager({}, self.distro.package_manager_class,
-                                  distro=self.distro)
-
-        # TODO(harlowja): make this better
-        if installer and hasattr(installer, 'match_pip_2_package'):
-            try:
-                dist_pkg = installer.match_pip_2_package(pip_req)
-                if dist_pkg:
-                    pkg_info = {
-                        'name': str(dist_pkg.name),
-                        'version': str(dist_pkg.version),
-                        '__requirement': dist_pkg,
-                    }
-                    LOG.debug("Auto-matched (dist) %s -> %s", pip_req, dist_pkg)
-                    return (pkg_info, False)
-            except excp.DependencyException as e:
-                LOG.warn("Unable to automatically map pip to package: %s", e)
-
-        # Ok still nobody has it, search pypi...
-        pypi_pkg = pip_helper.find_pypi_match(pip_req)
-        if pypi_pkg:
-            pkg_info = {
-                'name': str(pypi_pkg.key),
-                '__requirement': pypi_pkg,
-            }
-            try:
-                pkg_info['version'] = pypi_pkg.specs[0][1]
-            except IndexError:
-                pass
-            LOG.debug("Auto-matched (pypi) %s -> %s", pip_req, pypi_pkg)
-            return (pkg_info, True)
-
-        return (None, False)
+        return []
 
     def _get_mapped_packages(self):
         add_on_pkgs = []
@@ -433,7 +332,7 @@ class PythonInstallComponent(PkgInstallComponent):
         pips = self.pips
         if pips:
             pip_names = set([p['name'] for p in pips])
-            utils.log_iterable(pip_names, logger=LOG,
+            utils.log_iterable(sorted(pip_names), logger=LOG,
                                header="Setting up %s python packages" % (len(pip_names)))
             with utils.progress_bar('Installing', len(pips)) as p_bar:
                 for (i, p) in enumerate(pips):
@@ -455,8 +354,22 @@ class PythonInstallComponent(PkgInstallComponent):
         if req_fns:
             utils.log_iterable(req_fns, logger=LOG,
                                header="Adjusting %s pip 'requires' files" % (len(req_fns)))
+            if self.forced_packages:
+                forced_by_key = dict((pkg.key, pkg) for pkg in self.forced_packages)
+            else:
+                forced_by_key = {}
             for fn in req_fns:
                 old_lines = sh.load_file(fn).splitlines()
+                if forced_by_key:
+                    new_lines = []
+                    for line in old_lines:
+                        try:
+                            req = pkg_resources.Requirement.parse(line)
+                            new_lines.append(str(forced_by_key[req.key]))
+                        except:
+                            # we don't force the package of it has a bad format
+                            new_lines.append(line)
+                    old_lines = new_lines
                 new_lines = self._filter_pip_requires(fn, old_lines)
                 contents = "# Cleaned on %s\n\n%s\n" % (utils.iso8601(), "\n".join(new_lines))
                 sh.write_file_and_backup(fn, contents)
@@ -465,21 +378,6 @@ class PythonInstallComponent(PkgInstallComponent):
     def _filter_pip_requires(self, fn, lines):
         # The default does no filtering except to ensure that said lines are valid...
         return lines
-
-    def pre_install(self):
-        self._verify_pip_requires()
-        PkgInstallComponent.pre_install(self)
-        for p in self.pips:
-            installer = make_packager(p, pip.Packager,
-                                      distro=self.distro)
-            installer.pre_install(p, self.params)
-
-    def post_install(self):
-        PkgInstallComponent.post_install(self)
-        for p in self.pips:
-            installer = make_packager(p, pip.Packager,
-                                      distro=self.distro)
-            installer.post_install(p, self.params)
 
     def _install_python_setups(self):
         py_dirs = self.python_directories
@@ -502,45 +400,16 @@ class PythonInstallComponent(PkgInstallComponent):
                 self.tracewriter.py_installed(name, working_dir)
 
     def _python_install(self):
-        self._install_pips()
+        # TODO: remove all associated code
+        # self._install_pips()
         self._install_python_setups()
-
-    @decorators.memoized
-    def _extract_pip_requires(self, fn):
-        if not sh.isfile(fn):
-            return []
-        LOG.debug("Resolving dependencies from %s.", colorizer.quote(fn))
-        pips_needed = pip_helper.parse_requirements(sh.load_file(fn))
-        matchings = []
-        for req in pips_needed:
-            (pkg_info, from_pip) = self._match_pip_requires(req)
-            matchings.append({
-                'requirement': req,
-                'package': pkg_info,
-                'from_pip': from_pip,
-                'needed_by': fn,
-            })
-        return matchings
-
-    def _verify_pip_requires(self):
-        all_pips = self.pip_requires
-        for details in all_pips:
-            req = details['requirement']
-            needed_by = details['needed_by']
-            pkg_info = details['package']
-            if not pkg_info:
-                raise excp.DependencyException(("Pip dependency '%s' needed by '%s' is not translatable to a listed"
-                                                " (from this or previously activated components) pip package"
-                                                ' or a pip->package mapping!') % (req, needed_by))
 
     def install(self):
         PkgInstallComponent.install(self)
         self._python_install()
 
-    def configure(self):
-        configured_am = PkgInstallComponent.configure(self)
-        configured_am += self._clean_pip_requires()
-        return configured_am
+    def prepare(self):
+        self._clean_pip_requires()
 
 
 ####

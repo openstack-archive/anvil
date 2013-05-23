@@ -1,0 +1,4 @@
+[anvil]
+name=anvil
+baseurl=$baseurl
+gpgcheck=0
