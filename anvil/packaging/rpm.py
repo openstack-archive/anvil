@@ -16,7 +16,6 @@
 
 import copy
 
-from anvil import colorizer
 from anvil import component as comp
 from anvil import exceptions as excp
 from anvil import log as logging
@@ -308,13 +307,7 @@ class PythonPackager(DependencyPackager):
         return extended_dets
 
     def package(self):
-        i_sibling = self.siblings.get('install')
-        pips = []
-        if i_sibling:
-            pips.extend(i_sibling.pips)
-        if pips:
-            for pip_info in pips:
-                LOG.warn("Unable to package pip %s dependency in an rpm.", colorizer.quote(pip_info['name']))
+        # TODO(aababilov): handle pips
         return DependencyPackager.package(self)
 
 

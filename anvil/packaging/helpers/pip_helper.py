@@ -62,7 +62,15 @@ def find_pypi_match(req, pypi_url='http://python.org/pypi'):
     try:
         pypi = xmlrpclib.ServerProxy(pypi_url)
         LOG.debug("Searching pypi @ %s for %s", pypi_url, req)
-        for version in pypi.package_releases(req.key, True):
+        avail_versions = pypi.package_releases(req.project_name, True)
+        if not avail_versions:
+            # package_releases is case-sensitive
+            similar = pypi.search({"name": req.key})
+            for pkg in similar:
+                if pkg["name"].lower() == req.key:
+                    avail_versions = pypi.package_releases(pkg["name"], True)
+                    break
+        for version in avail_versions:
             if version in req:
                 LOG.debug("Found match in pypi: %s==%s satisfies %s",
                           req.key, version, req)
