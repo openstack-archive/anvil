@@ -19,6 +19,7 @@ components:
 - no-vnc
 - nova
 - nova-client
+- django-openstack-auth
 - horizon
 options:
     no-vnc:

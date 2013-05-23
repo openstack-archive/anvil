@@ -39,25 +39,10 @@ SYNC_DB_CMD = [sh.joinpths('$BIN_DIR', 'glance-manage'),
                 'db_sync']
 
 
-class GlanceUninstaller(binstall.PythonUninstallComponent):
-    def __init__(self, *args, **kargs):
-        binstall.PythonUninstallComponent.__init__(self, *args, **kargs)
-        self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
-
-
 class GlanceInstaller(binstall.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         binstall.PythonInstallComponent.__init__(self, *args, **kargs)
-        self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
         self.configurator = gconf.GlanceConfigurator(self)
-
-    def _filter_pip_requires(self, fn, lines):
-        return [l for l in lines
-                # Take out entries that aren't really always needed or are
-                # resolved/installed by anvil during installation in the first
-                # place..
-                if not utils.has_any(l.lower(), 'swift', 'keystoneclient',
-                                     'oslo.config')]
 
     def post_install(self):
         binstall.PythonInstallComponent.post_install(self)
@@ -86,10 +71,6 @@ class GlanceInstaller(binstall.PythonInstallComponent):
 
 
 class GlanceRuntime(bruntime.PythonRuntime):
-    def __init__(self, *args, **kargs):
-        bruntime.PythonRuntime.__init__(self, *args, **kargs)
-        self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
-
     @property
     def applications(self):
         apps = []

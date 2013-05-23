@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import distutils.spawn
 import getpass
 import grp
 import os
@@ -28,19 +29,12 @@ import time
 
 import psutil  # http://code.google.com/p/psutil/wiki/Documentation
 
+import anvil
 from anvil import env
 from anvil import exceptions as excp
 from anvil import log as logging
 
 LOG = logging.getLogger(__name__)
-
-SHELL_QUOTE_REPLACERS = {
-    "\"": "\\\"",
-    "(": "\\(",
-    ")": "\\)",
-    "$": "\\$",
-    "`": "\\`",
-}
 
 # Locally stash these so that they can not be changed
 # by others after this is first fetched...
@@ -252,21 +246,9 @@ def pipe_in_out(in_fh, out_fh, chunk_size=1024, chunk_cb=None):
 
 
 def shellquote(text):
-    # TODO(harlowja) find a better way - since there doesn't seem to be a standard lib that actually works
-    do_adjust = False
-    for srch in SHELL_QUOTE_REPLACERS.keys():
-        if text.find(srch) != -1:
-            do_adjust = True
-            break
-    if do_adjust:
-        for (srch, replace) in SHELL_QUOTE_REPLACERS.items():
-            text = text.replace(srch, replace)
-    if do_adjust or \
-        text.startswith((" ", "\t")) or \
-        text.endswith((" ", "\t")) or \
-        text.find("'") != -1:
-        text = "\"%s\"" % (text)
-    return text
+    if text.isalnum():
+        return text
+    return "'%s'" % text.replace("'", "'\\''")
 
 
 def fileperms(path):
@@ -677,9 +659,14 @@ def copytree(src, dst):
     return dst
 
 
-def move(src, dst):
+def move(src, dst, force=False):
     LOG.debug("Moving: %r => %r" % (src, dst))
     if not is_dry_run():
+        if force:
+            if isdir(dst):
+                dst = joinpths(dst, basename(src))
+            if isfile(dst):
+                unlink(dst)
         shutil.move(src, dst)
     return dst
 
@@ -770,3 +757,17 @@ def sleep(winks):
         LOG.debug("Not really sleeping for: %s seconds" % (winks))
     else:
         time.sleep(winks)
+
+
+def which(name, additional_dirs=None):
+    full_name = distutils.spawn.find_executable(name)
+    if full_name:
+        return full_name
+    for dir_name in additional_dirs or []:
+        full_name = joinpths(
+            dirname(dirname(abspth(anvil.__file__))),
+            dir_name,
+            name)
+        if isfile(full_name):
+            return full_name
+    raise excp.FileException("Cannot find %s" % name)

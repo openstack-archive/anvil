@@ -2,8 +2,12 @@
 
 shopt -s nocasematch
 
+SMITHY_NAME=$(readlink -f "$0")
+cd "$(dirname "$0")"
+
 YUM_OPTS="--assumeyes --nogpgcheck"
-PIP_CMD="pip-python"
+PIP_CMD=""
+PY2RPM_CMD="$PWD/multipip/py2rpm"
 
 # Source in our variables (or overrides)
 source ".anvilrc"
@@ -17,17 +21,48 @@ if [ -n "$SUDO_USER" ]; then
     fi
 fi
 
-PWD=`pwd`
 if [ -z "$BOOT_FILES" ]; then
     BOOT_FN=".anvil_bootstrapped"
     BOOT_FILES="${PWD}/$BOOT_FN"
 fi
+
+conflicts() {
+    echo "Removing conflicting packages $(echo $@)"
+    yum erase -y $@
+}
+
+find_pip()
+{
+    if [ -n "$PIP_CMD" ]; then
+        return
+    fi
+    PIP_CMD=""
+    for name in pip pip-python; do
+        if which "$name" &>/dev/null; then
+            PIP_CMD=$name
+            break
+        fi
+    done
+    if [ -z "$PIP_CMD" ]; then
+        echo "pip or pip-python not found"
+        exit 1
+    fi
+}
+
+rpm_is_installed()
+{
+    local name="$(basename "$1")"
+    rpm -q "${name%.rpm}" &>/dev/null
+}
 
 cache_and_install_rpm_url()
 {
     url=${1:?"Error: rpm uri is undefined!"}
     cachedir=${RPM_CACHEDIR:-'/tmp'}
     rpm=$(basename $url)
+    if rpm_is_installed "$rpm"; then
+        return
+    fi
     if [ ! -f "$cachedir/$rpm" ]; then
 	echo "Downloading $rpm to $cachedir..."
         curl -s $url -o "$cachedir/$rpm" || return 1
@@ -38,24 +73,29 @@ cache_and_install_rpm_url()
 
 install_rpm()
 {
-    rpmstr=${1:?"Error: rpm to install is undefined!"}
-    rpm=$rpmstr
-    [ $(dirname $rpm) = '.' ] || rpm=$(rpm -qp $rpmstr 2> /dev/null )
-    rpm -q $rpm > /dev/null 2>&1 && return 0
-    echo "Installing rpm requirement '$rpm'"
-    yum install $YUM_OPTS "$rpmstr" 2>&1
-    return $?
-}
+    local rpm_path=$1
+    local py_name=$2
 
-install_pypi()
-{
-    pypi=${1:?"Error: pypi to install is undefined!"}
-    # TODO: Figure out a way to make pypi installation idempotent -- 
-    # in the simple case we can simply return true if the package
-    # appears in the output of 'pip freeze' but this doesn't handle
-    # the 'pkg>=1.0' syntax. -I explicitly reinstalls.
-    $PIP_CMD install -U -I $pypi
-    return $?
+    if [ -n "$rpm_path" ]; then
+        # install or update package
+        yum install $YUM_OPTS "$rpm_path" && return 0
+    fi
+    if [ -z "$py_name" ]; then
+        return 1
+    fi
+    # RPM is not available. Try to build it on fly
+    pip_tmp_dir=$(mktemp -d)
+    find_pip
+    $PIP_CMD install -U -I $py_name --download "$pip_tmp_dir"
+    echo "Building RPM for $py_name"
+    rpm_names=$("$PY2RPM_CMD" "$pip_tmp_dir/"* 2>/dev/null |
+        awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)
+    rm -rf "$pip_tmp_dir"
+    if [ -z "$rpm_names" ]; then
+        echo "No binary RPM was built for $py_name"
+        return 1
+    fi
+    yum install $YUM_OPTS $rpm_names
 }
 
 bootstrap_epel()
@@ -69,30 +109,26 @@ bootstrap_packages()
 {
     [ -z "$PACKAGES" ] && return 0
     for pkg in $PACKAGES; do
-	format=$(echo $pkg | cut -d: -f1)
-        name=$(echo $pkg | cut -d: -f2)
-        echo "Installing $format requirement '$name'"
-        install_$format $name
-	if [ $? != 0 ]; then
-            echo "Error: Installation of $format package '$name' failed!"
-	    return $?
+	local rpm_name=$(echo $pkg | cut -d: -f1)
+        local py_name=$(echo $pkg | cut -d: -f2)
+        install_rpm $rpm_name $py_name
+        install_status=$?
+	if [ "$install_status" != 0 ]; then
+            echo "Error: Installation of package '$rpm_name' failed!"
+	    return "$install_status"
 	fi
     done
 }
 
 require()
 {
-    format=${1?"Error: Specify a format as the first arg to require!"}
-    name=${2?"Error: No name specified for required $format"}
-    case "$format" in
-        rpm|pypi)
-            PACKAGES="$PACKAGES $format:$name"
-        ;;
-        *)
-            echo "Error: Smithy does not know how to handle $format requirements!"
-            exit 1
-        ;;
-    esac
+    local rpm_name=$1
+    local py_name=$2
+    if [ -z "$rpm_name" -a -z "$py_name" ]; then
+        echo "Please specify at RPM or Python package name"
+        exit 1
+    fi
+    PACKAGES="$PACKAGES $rpm_name:$py_name"
 }
 
 needs_bootstrap()
@@ -186,13 +222,13 @@ if ! needs_bootstrap; then
     run_smithy
 elif ! $BOOTSTRAP; then
     echo "This system needs to be updated in order to run anvil!" >&2
-    echo "Running 'sudo smithy --bootstrap' will attempt to do so." >&2
+    echo "Running 'sudo $SMITHY_NAME --bootstrap' will attempt to do so." >&2
     exit 1
 fi
 
 ## Bootstrap smithy
 if [ "$(id -u)" != "0" ]; then
-    echo "You must run 'smithy --bootstrap' with root privileges!" >&2
+    echo "You must run '$SMITHY_NAME --bootstrap' with root privileges!" >&2
     exit 1
 fi
 if [ ! -f $BSCONF_FILE ]; then 

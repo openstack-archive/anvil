@@ -8,6 +8,7 @@ components:
 - quantum-client
 - swift-client
 - cinder-client
+- django-openstack-auth
 - horizon
 options:
     horizon:

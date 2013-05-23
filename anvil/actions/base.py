@@ -47,6 +47,7 @@ class PhaseFunctors(object):
 
 class Action(object):
     __meta__ = abc.ABCMeta
+    needs_sudo = True
 
     def __init__(self, name, distro, root_dir, cli_opts):
         self.distro = distro

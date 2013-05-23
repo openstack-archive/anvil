@@ -1,0 +1,468 @@
+#!/usr/bin/python
+
+import argparse
+import distutils.spawn
+import logging
+import re
+import os
+import os.path
+import shutil
+import subprocess
+import sys
+import tempfile
+
+import pip.util
+import pkg_resources
+
+
+class InstallationError(Exception):
+    pass
+
+
+logger = logging.getLogger()
+
+package_map = {
+    "django": "Django",
+    "distribute": "python-setuptools",
+    "pam": "python-pam",
+    "pycrypto": "python-crypto",
+}
+
+package_names = {}
+
+arch_dependent = [
+    "selenium",
+]
+
+epoch_map = {}
+
+
+def package_name_python2rpm(python_name):
+    python_name = python_name.lower()
+    try:
+        return package_map[python_name]
+    except:
+        pass
+    python_name = python_name.replace("_", "-").replace(".", "-")
+    if python_name.startswith("python-"):
+        prefixed_name = python_name
+    else:
+        prefixed_name = "python-%s" % python_name
+    try:
+        return package_names[prefixed_name]
+    except:
+        pass
+    try:
+        return package_names[python_name]
+    except:
+        pass
+    return prefixed_name
+
+
+setup_py = "setup.py"
+
+
+def egg_info_path(source_dir, filename):
+    base = os.path.join(source_dir, "pip-egg-info")
+    filenames = os.listdir(base)
+    if not filenames:
+        raise InstallationError("No files/directories in %s (from %s)"
+                                % (base, filename))
+
+    # if we have more than one match, we pick the toplevel one.
+    if len(filenames) > 1:
+        filenames.sort(key=lambda x: x.count(os.path.sep) +
+                       (os.path.altsep and
+                        x.count(os.path.altsep) or 0))
+    return os.path.join(base, filenames[0], filename)
+
+
+def egg_info_lines(source_dir, filename):
+    filename = egg_info_path(source_dir, filename)
+    if not os.path.exists(filename):
+        return []
+    with open(filename, "r") as f:
+        return f.readlines()
+
+
+_requirements_section_re = re.compile(r'\[(.*?)\]')
+
+
+def egg_info_requirements(source_dir, extras=()):
+    in_extra = None
+    for line in egg_info_lines(source_dir, 'requires.txt'):
+        match = _requirements_section_re.match(line.lower())
+        if match:
+            in_extra = match.group(1)
+            continue
+        if in_extra and in_extra not in extras:
+            # Skip requirement for an extra we aren't requiring
+            continue
+        yield line
+
+
+def setup_py_one_line(source_dir, command):
+    """Run `python setup.py $command` and return the last line.
+
+    python ldap is so clever that is prints extra stuff
+    before package name or version. Lets return the last line
+    """
+    return call_subprocess(
+        [sys.executable, setup_py, command],
+        cwd=source_dir, show_stdout=False)[0].splitlines()[-1].strip()
+
+
+def create_parser():
+    parser = argparse.ArgumentParser()
+
+    rpm_base = os.path.expanduser("~/rpmbuild")
+    source_dir = os.getcwd()
+
+    rpmbuild_executable = (distutils.spawn.find_executable("rpmbuild") or
+                           distutils.spawn.find_executable("rpm"))
+    parser.add_argument(
+        "--pip-verbose", "-f",
+        action="store_true",
+        default=False,
+        help="Show pip stdout")
+    parser.add_argument(
+        "--debug", "-d",
+        action="store_true",
+        default=False,
+        help="Print debug information")
+    parser.add_argument(
+        "--source-only", "-s",
+        action="store_true",
+        default=False,
+        help="Only generate source RPM")
+    parser.add_argument(
+        "--rpm-base",
+        metavar="<dir>",
+        default=rpm_base,
+        help="rpmbuild directory (default: %s)" % rpm_base)
+    parser.add_argument(
+        "--rpmbuild",
+        metavar="<dir>",
+        default=rpmbuild_executable,
+        help="rpmbuild executable (default: %s)" % rpmbuild_executable)
+    parser.add_argument(
+        "--convert", "-c",
+        dest="convert",
+        metavar="<name>",
+        nargs="+",
+        default=[],
+        help="Python requirement name to be converted to RPM package names")
+    parser.add_argument(
+        dest="sources",
+        metavar="<dir or archive>",
+        nargs="*",
+        default=[source_dir],
+        help="Source directories of packages (default: current directory)")
+    parser.add_argument(
+        "--install-script",
+        metavar="<filename>",
+        default=None,
+        help="Specify a script for the INSTALL phase of RPM building")
+    parser.add_argument(
+        "--arch-dependent", "-a",
+        metavar="<Python package name>",
+        nargs="+",
+        default=arch_dependent,
+        help="Known architecture dependent packages")
+    parser.add_argument(
+        "--epoch", "-e",
+        metavar="<number>",
+        type=int,
+        default=None,
+        help="RPM epoch for generated packages")
+    parser.add_argument(
+        "--epoch-list", "-l",
+        metavar="<Python package name == epoch number>",
+        nargs="+",
+        default=[],
+        help="Forced RPM epochs for packages")
+    return parser
+
+
+def call_subprocess(cmd, cwd=None, show_stdout=True, raise_on_returncode=True):
+    if show_stdout:
+        stdout = None
+    else:
+        stdout = subprocess.PIPE
+    proc = subprocess.Popen(cmd, cwd=cwd, stderr=None, stdin=None, stdout=stdout)
+    ret = proc.communicate()
+    if proc.returncode:
+        cwd = cwd or os.getcwd()
+        command_desc = " ".join(cmd)
+        if raise_on_returncode:
+            raise InstallationError(
+                "Command %s failed with error code %s in %s"
+                % (command_desc, proc.returncode, cwd))
+        else:
+            logger.warn(
+                "Command %s had error code %s in %s"
+                % (command_desc, proc.returncode, cwd))
+    return ret
+
+
+def setup_logging(options):
+    level = logging.DEBUG if options.debug else logging.WARNING
+    handler = logging.StreamHandler(sys.stderr)
+    logger.addHandler(handler)
+    logger.setLevel(level)
+
+
+def build_name_map():
+    cmdline = ["yum", "list", "-q"]
+    try:
+        yum_list = call_subprocess(cmdline, show_stdout=False)[0]
+    except Exception as ex:
+        logging.warning(str(ex))
+        return
+    for line in yum_list.split("\n")[1:]:
+        if line:
+            line = line.split(None, 1)[0].split(".", 1)[0]
+            package_names[line.lower()] = line
+
+
+def build_epoch_map(options):
+    for epoch_spec in options.epoch_list:
+        try:
+            (name, epoch) = epoch_spec.split("==")
+            name = name.strip().lower()
+            epoch = epoch.strip()
+            assert(name and epoch)
+        except (IndexError, AssertionError):
+            raise InstallationError("Bad epoch specifier: `%s'" % epoch_spec)
+        else:
+            epoch_map[name] = epoch
+
+
+def run_egg_info(source_dir, options):
+    script = """
+__file__ = __SETUP_PY__
+from setuptools.command import egg_info
+import pkg_resources
+import os
+def replacement_run(self):
+    self.mkpath(self.egg_info)
+    installer = self.distribution.fetch_build_egg
+    for ep in pkg_resources.iter_entry_points('egg_info.writers'):
+        # require=False is the change we're making:
+        writer = ep.load(require=False)
+        if writer:
+            writer(self, ep.name, os.path.join(self.egg_info,ep.name))
+    self.find_sources()
+egg_info.egg_info.run = replacement_run
+exec(compile(open(__file__).read().replace('\\r\\n', '\\n'), __file__, 'exec'))
+"""
+    script = script.replace('__SETUP_PY__', "'setup.py'")
+    egg_info_dir = os.path.join(source_dir, 'pip-egg-info')
+    if not os.path.exists(egg_info_dir):
+        os.makedirs(egg_info_dir)
+    egg_base_option = ['--egg-base', 'pip-egg-info']
+    call_subprocess(
+        [sys.executable, '-c', script, 'egg_info'] + egg_base_option,
+        cwd=source_dir,
+        show_stdout=options.pip_verbose)
+
+
+VERSION_RE = re.compile(r"^(.*[^.0])(\.0+)*$")
+
+
+def trim_zeroes(version):
+    """RPM mishandles versions like "0.8.0". Make it happy."""
+    match = VERSION_RE.match(version)
+    if match:
+        return match.group(1)
+    return version
+
+
+def requires_and_conflicts(req_list, multiline):
+    rpm_requires = ""
+    rpm_conflicts = ""
+    for line in req_list:
+        try:
+            req = pkg_resources.Requirement.parse(line)
+        except:
+            continue
+        rpm_name = package_name_python2rpm(req.key)
+        if not req.specs:
+            if multiline:
+                rpm_requires += "\nRequires:"
+            rpm_requires = "%s %s" % (
+                rpm_requires, rpm_name)
+        for spec in req.specs:
+            # kind in ("==", "<=", ">=", "!=")
+            kind = spec[0]
+            version = trim_zeroes(spec[1])
+            try:
+                version = "%s:%s" % (epoch_map[req.key], version)
+            except KeyError:
+                pass
+            if kind == "!=":
+                if multiline:
+                    rpm_conflicts += "\nConflicts:"
+                rpm_conflicts = "%s %s = %s" % (
+                    rpm_conflicts, rpm_name, version)
+                continue
+            if kind == "==":
+                kind = "="
+            if multiline:
+                rpm_requires += "\nRequires:"
+            rpm_requires = "%s %s %s %s" % (
+                rpm_requires, rpm_name, kind, version)
+    return rpm_requires, rpm_conflicts
+
+
+def build_rpm(options, filename):
+    if os.path.isfile(filename):
+        temp_dir = tempfile.mkdtemp('-unpack', 'py2rpm-')
+        pip.util.unpack_file(filename, temp_dir, None, None)
+        source_dir = temp_dir
+        archive_name = filename
+    elif os.path.isdir(filename):
+        temp_dir = None
+        archive_name = None
+        source_dir = filename
+    else:
+        raise InstallationError(
+            "`%s' is not a regular file nor a directory" % filename)
+
+    setup_py = "setup.py"
+
+    run_egg_info(source_dir, options)
+    rpm_requires, rpm_conflicts = requires_and_conflicts(
+        egg_info_requirements(source_dir), multiline=False)
+
+    pkg_name = setup_py_one_line(source_dir, "--name")
+    build_dir = options.rpm_base
+    cmdline = [
+        sys.executable, setup_py, "bdist_rpm",
+        "--rpm-base",  build_dir,
+        "--source-only",
+        "--install-script", options.install_script,
+    ]
+    if rpm_requires:
+        cmdline += ["--requires",  rpm_requires]
+    if rpm_conflicts:
+        cmdline += ["--conflicts",  rpm_conflicts]
+    call_subprocess(cmdline, cwd=source_dir, raise_on_returncode=False)
+
+    rpm_name = package_name_python2rpm(pkg_name)
+    spec_name = os.path.join(build_dir, "SPECS", "%s.spec" % pkg_name)
+    if not os.path.exists(spec_name):
+        raise InstallationError("`%s' does not exist" % spec_name)
+    if rpm_name != pkg_name:
+        old_name = spec_name
+        spec_name = os.path.join(build_dir, "SPECS", "%s.spec" % rpm_name)
+        os.rename(old_name, spec_name)
+    cmdline = [
+        "sed", "-i",
+        "-e", "s/^Name:.*$/Name: %s/" % rpm_name,
+        "-e", "s/%{name}/%{pkg_name}/g",
+        "-e", "s/^%%define name.*$/%%define pkg_name %s/" % pkg_name,
+    ]
+    epoch = epoch_map.get(pkg_name.lower(), options.epoch)
+    if epoch is not None:
+        cmdline += [
+            "-e", "s/^Version:/Epoch: %s\\nVersion:/" % epoch,
+        ]
+    if pkg_name.lower() in options.arch_dependent:
+        cmdline += [
+            "-e", "/^BuildArch/d",
+        ]
+    if archive_name:
+        cmdline += [
+            "-e",
+            "s/^Source0: .*$/Source0: %s/" % os.path.basename(archive_name)
+        ]
+        shutil.copy(archive_name,
+                    os.path.join(build_dir, "SOURCES"))
+    call_subprocess(cmdline + [spec_name])
+    cmdline = [
+        "sed", "-i", "-r",
+        "-e", "/%doc/s/ man[^ ]+//",
+    ]
+    call_subprocess(cmdline + [spec_name])
+    if options.source_only:
+        rpmbuild_what = "-bs"
+    else:
+        rpmbuild_what = "-ba"
+    if rpmbuild_what:
+        call_subprocess(
+            [options.rpmbuild, rpmbuild_what,
+            "--define", "_topdir %s" % build_dir,
+            spec_name])
+    if temp_dir:
+        shutil.rmtree(temp_dir)
+
+
+def main():
+    parser = create_parser()
+    options = parser.parse_args()
+    setup_logging(options)
+    build_name_map()
+    build_epoch_map(options)
+
+    if options.convert:
+        rpm_requires, rpm_conflicts = requires_and_conflicts(
+            options.convert, multiline=True)
+        if rpm_requires:
+            print rpm_requires.strip()
+        if rpm_conflicts:
+            print rpm_conflicts.strip()
+        return
+
+    install_script_content = """python setup.py install -O1 --root=$RPM_BUILD_ROOT --record=INSTALLED_FILES
+abspath_installed_files=$(readlink -f INSTALLED_FILES)
+(
+    cd $RPM_BUILD_ROOT
+    for i in usr/*/python*/site-packages/* usr/bin/*; do
+        if [ -e "$i" ]; then
+            sed -i "s@/$i/@DELETE_ME@" "$abspath_installed_files"
+            echo "/$i"
+        fi
+    done
+    if [ -d usr/man ]; then
+        rm -rf usr/share/man
+        mkdir -p usr/share
+        mv usr/man usr/share/
+        sed -i "s@/usr/man/@DELETE_ME@" "$abspath_installed_files"
+        for i in usr/share/man/*; do
+            echo "/$i/*"
+        done
+    fi
+) >> GATHERED_FILES
+{ sed '/^DELETE_ME/d' INSTALLED_FILES; cat GATHERED_FILES; } | sort -u > INSTALLED_FILES.tmp
+mv -f INSTALLED_FILES{.tmp,}
+"""
+    if not options.install_script:
+        tmp_install_script = tempfile.mkstemp()
+        options.install_script = tmp_install_script[1]
+        os.write(tmp_install_script[0], install_script_content)
+        os.close(tmp_install_script[0])
+    else:
+        tmp_install_script = None
+    options.arch_dependent = set(pkg.lower() for pkg in options.arch_dependent)
+    failed_pkgs = []
+    for src in (os.path.abspath(sdir) for sdir in options.sources):
+        try:
+            build_rpm(options, src)
+        except Exception as ex:
+            failed_pkgs.append((src, ex))
+            print >> sys.stderr, ex
+    if tmp_install_script:
+        os.unlink(tmp_install_script[1])
+    if failed_pkgs:
+        print >> sys.stderr, "These packages failed to build:"
+        for descr in failed_pkgs:
+            print >> sys.stderr, "%s:\n\t%s" % descr
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as ex:
+        print >> sys.stderr, ex

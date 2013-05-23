@@ -1,23 +1,6 @@
+# -*- sh -*-
 ## Bootstrap for Redhat Enterprise Linux 6.x
 SHORTNAME=RHEL
 MIN_RELEASE=6.0
-STEPS="epel packages"
-EPEL_RPM_URL="http://mirrors.kernel.org/fedora-epel/6/i386/epel-release-6-8.noarch.rpm"
-## Package Requirements (Order matters!)
-require rpm PyYAML
-require rpm gcc
-require rpm git
-require rpm pylint
-require rpm python
-require rpm python-devel
-require rpm python-iso8601
-require rpm python-netifaces
-require rpm python-ordereddict
-require rpm python-pip
-require rpm python-progressbar
-require rpm python-psutil
-require rpm python-iniparse
-require pypi termcolor
-require pypi hgtools
-require pypi keyring
-require pypi Cheetah
+
+source "$BSCONF_DIR/CommonRedHat"
