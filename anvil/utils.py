@@ -555,6 +555,14 @@ def welcome(prog_name='Anvil', version_text=version.version_string()):
     print(colorizer.color(slang, 'magenta', bold=True))
     return ("-", real_max)
 
+
+def splitlines_not_empty(text):
+    for line in text.splitlines():
+        line = line.strip()
+        if line:
+            yield line
+
+
 def canon_mq_type(mq_type):
     mq_type = str(mq_type).lower().strip()
     return MQ_TYPES.get(mq_type, 'rabbit')

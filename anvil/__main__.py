@@ -54,8 +54,13 @@ def run(args):
     # Keep the old args around so we have the full set to write out
     saved_args = dict(args)
     action = args.pop("action", '').strip().lower()
-    if action not in actions.names():
-        raise excp.OptionException("Invalid action name %r specified!" % (action))
+    try:
+        runner_cls = actions.class_for(action)
+    except Exception as ex:
+        raise excp.OptionException(str(ex))
+
+    if runner_cls.needs_sudo:
+        ensure_perms()
 
     persona_fn = args.pop('persona_fn')
     if not persona_fn:
@@ -98,7 +103,6 @@ def run(args):
         raise excp.OptionException("Error loading persona file: %s due to %s" % (persona_fn, e))
 
     # Get the object we will be running with...
-    runner_cls = actions.class_for(action)
     runner = runner_cls(distro=dist,
                         root_dir=root_dir,
                         name=action,
@@ -216,17 +220,14 @@ def main():
                            traceback, file=sys.stdout)
 
     try:
-        ensure_perms()
-    except excp.PermException as e:
-        print_exc(e)
-        print(("This program should be running via %s as it performs some root-only commands is it not?")
-              % (colorizer.quote('sudo', quote_color='red')))
-        return 2
-
-    try:
         run(args)
         utils.goodbye(True)
         return 0
+    except excp.PermException as e:
+        print_exc(e)
+        print(("This program should be running via %s as it performs some root-only commands is it not?")
+                % (colorizer.quote('sudo', quote_color='red')))
+        return 2
     except excp.OptionException as e:
         print_exc(e)
         print("Perhaps you should try %s" % (colorizer.quote('--help', quote_color='red')))
