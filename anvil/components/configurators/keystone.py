@@ -68,6 +68,6 @@ class KeystoneConfigurator(base.Configurator):
             config.add_with_section('signing', 'token_format', 'UUID')
         config.add_with_section('catalog', 'driver', 'keystone.catalog.backends.sql.Catalog')
         config.remove('DEFAULT', 'log_config')
-        config.add_with_section('sql', 'connection', self.fetch_dbdsn(self.DB_NAME))
+        config.add_with_section('sql', 'connection', self.fetch_dbdsn())
         config.add_with_section('ec2', 'driver', "keystone.contrib.ec2.backends.sql.Ec2")
 

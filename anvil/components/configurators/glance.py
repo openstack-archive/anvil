@@ -55,7 +55,7 @@ class GlanceConfigurator(base.Configurator):
     def _config_adjust_api_reg(self, config):
         config.add('debug', self.installer.get_bool_option('verbose'))
         config.add('verbose', self.installer.get_bool_option('verbose'))
-        config.add('sql_connection', self.fetch_dbdsn(self.DB_NAME))
+        config.add('sql_connection', self.fetch_dbdsn())
         config.remove('DEFAULT', 'log_file')
         config.add_with_section('paste_deploy', 'flavor', self.installer.get_option('paste_flavor'))
         for (k, v) in self._fetch_keystone_params().items():
