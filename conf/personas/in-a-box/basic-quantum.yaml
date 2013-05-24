@@ -1,0 +1,66 @@
+---
+components:
+# Order matters here!
+- general
+- db
+- rabbit-mq
+- oslo-config
+- keystone
+# Client used by many components
+- keystone-client
+- glance
+# Clients used by nova (+ others)
+- glance-client
+- cinder-client
+- quantum-client
+- quantum
+- cinder
+- nova
+- nova-client
+options:
+    nova:
+        db-sync: true
+        do-network-init: true
+        enable-cells: false
+        enable-spice: false
+        local-conductor: false
+        mq-type: "rabbit"
+        quantum-core-plugin: linuxbridge
+        quantum-enabled: true
+    glance:
+        db-sync: true
+        load-images: true
+    keystone:
+        db-sync: true
+        do-init: true
+        enable-pki: false
+    cinder:
+        db-sync: true
+    quantum:
+        db-sync: true
+subsystems:
+    glance:
+    - api
+    - registry
+    keystone:
+    - all
+    nova:
+    - api-ec2
+    - api-metadata
+    - api-os-compute
+    - cert
+    - compute
+    - consoleauth
+    - dhcpbridge
+    - network
+    - novncproxy
+    - scheduler
+    - xvpvncproxy
+    quantum:
+    - server
+    cinder:
+    - all
+supports:
+- rhel
+...
+
