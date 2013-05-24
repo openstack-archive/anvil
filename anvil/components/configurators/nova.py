@@ -90,7 +90,7 @@ class NovaConfigurator(base.Configurator):
         # The ip of where we are running
         nova_conf.add('my_ip', hostip)
 
-        nova_conf.add('sql_connection', self.fetch_dbdsn(self.DB_NAME))
+        nova_conf.add('sql_connection', self.fetch_dbdsn())
 
         # Configure anything libvirt related?
         virt_driver = utils.canon_virt_driver(self.installer.get_option('virt_driver'))

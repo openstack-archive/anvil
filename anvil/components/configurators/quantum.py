@@ -140,7 +140,7 @@ class QuantumConfigurator(base.Configurator):
         plugin_conf.add_with_section(
             "DATABASE",
             "sql_connection",
-            self.fetch_dbdsn(DB_NAME))
+            self.fetch_dbdsn())
         plugin_conf.add_with_section(
             "LINUX_BRIDGE",
             "physical_interface_mappings",
