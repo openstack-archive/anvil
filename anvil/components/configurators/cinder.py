@@ -47,7 +47,7 @@ class CinderConfigurator(base.Configurator):
     def _config_adjust_api(self, config):
         self.setup_rpc(config)
         # Setup your sql connection
-        config.add('sql_connection', self.fetch_dbdsn(self.DB_NAME))
+        config.add('sql_connection', self.fetch_dbdsn())
         # Auth will be using keystone
         config.add('auth_strategy', 'keystone')
         # Where our paste config is

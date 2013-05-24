@@ -25,11 +25,13 @@ from anvil.components.helpers import db as dbhelper
 from anvil.components.helpers import keystone as khelper
 from anvil.components.helpers import rabbit as rhelper
 
-class Configurator(object):
 
-    def __init__(self, installer, configs = []):
+class Configurator(object):
+    DB_NAME = "undefined"
+
+    def __init__(self, installer, configs=None):
         self.installer = weakref.proxy(installer)
-        self.configs = configs
+        self.configs = configs or []
         self.source_configs = {}
         self.config_adjusters = {}
         self.config_dir = None
@@ -98,10 +100,10 @@ class Configurator(object):
             if rpc_backend:
                 conf.add('rpc_backend', rpc_backend)
 
-    def fetch_dbdsn(self, dbname):
+    def fetch_dbdsn(self):
         return dbhelper.fetch_dbdsn(
-            dbname = dbname,
-            utf8 = True,
+            dbname=self.DB_NAME,
+            utf8=True,
             dbtype=self.installer.get_option('db', 'type'),
             **utils.merge_dicts(self.installer.get_option('db'),
                                 dbhelper.get_shared_passwords(self.installer)))
