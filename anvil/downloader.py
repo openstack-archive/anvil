@@ -93,7 +93,7 @@ class GitDownloader(Downloader):
             # newer git allows branch resetting: git checkout -B $new_branch
             # so, all these are for compatibility with older RHEL git
             cmd = git_checkout + ["--detach"]
-            sh.execute(*cmd, cwd=self.store_where)
+            sh.execute(*cmd, cwd=self.store_where, ignore_exit_code=True)
             cmd = git_branch + ["-D", new_branch]
             sh.execute(*cmd, cwd=self.store_where, ignore_exit_code=True)
             cmd = git_checkout + checkout_what
