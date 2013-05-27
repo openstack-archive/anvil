@@ -15,12 +15,15 @@
 #    under the License.
 
 from anvil import colorizer
-from anvil import components as comp
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
 
 from anvil.utils import OrderedDict
+
+from anvil.components import base_install as binstall
+from anvil.components import base_runtime as bruntime
+from anvil.components import base_testing as btesting
 
 from anvil.components.helpers import glance as ghelper
 from anvil.components.helpers import keystone as khelper
@@ -36,15 +39,15 @@ SYNC_DB_CMD = [sh.joinpths('$BIN_DIR', 'glance-manage'),
                 'db_sync']
 
 
-class GlanceUninstaller(comp.PythonUninstallComponent):
+class GlanceUninstaller(binstall.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
+        binstall.PythonUninstallComponent.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
 
 
-class GlanceInstaller(comp.PythonInstallComponent):
+class GlanceInstaller(binstall.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, *args, **kargs)
+        binstall.PythonInstallComponent.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
         self.configurator = gconf.GlanceConfigurator(self)
 
@@ -57,7 +60,7 @@ class GlanceInstaller(comp.PythonInstallComponent):
                                      'oslo.config')]
 
     def post_install(self):
-        comp.PythonInstallComponent.post_install(self)
+        binstall.PythonInstallComponent.post_install(self)
         if self.get_bool_option('db-sync'):
             self.configurator.setup_db()
             self._sync_db()
@@ -77,14 +80,14 @@ class GlanceInstaller(comp.PythonInstallComponent):
 
     def config_params(self, config_fn):
         # These be used to fill in the configuration params
-        mp = comp.PythonInstallComponent.config_params(self, config_fn)
+        mp = binstall.PythonInstallComponent.config_params(self, config_fn)
         mp['BIN_DIR'] = self.bin_dir
         return mp
 
 
-class GlanceRuntime(comp.PythonRuntime):
+class GlanceRuntime(bruntime.PythonRuntime):
     def __init__(self, *args, **kargs):
-        comp.PythonRuntime.__init__(self, *args, **kargs)
+        bruntime.PythonRuntime.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
 
     @property
@@ -94,7 +97,7 @@ class GlanceRuntime(comp.PythonRuntime):
             name = "glance-%s" % (name.lower())
             path = sh.joinpths(self.bin_dir, name)
             if sh.is_executable(path):
-                apps.append(comp.Program(name, path, argv=self._fetch_argv(name)))
+                apps.append(bruntime.Program(name, path, argv=self._fetch_argv(name)))
         return apps
 
     def _fetch_argv(self, name):
@@ -110,7 +113,7 @@ class GlanceRuntime(comp.PythonRuntime):
         return [u.strip() for u in uris if len(u.strip())]
 
     def post_start(self):
-        comp.PythonRuntime.post_start(self)
+        bruntime.PythonRuntime.post_start(self)
         if self.get_bool_option('load-images'):
             # Install any images that need activating...
             self.wait_active()
@@ -126,9 +129,9 @@ class GlanceRuntime(comp.PythonRuntime):
             ghelper.UploadService(**params).install(self._get_image_urls())
 
 
-class GlanceTester(comp.PythonTestingComponent):
+class GlanceTester(btesting.PythonTestingComponent):
     # NOTE: only run the unit tests
     def _get_test_command(self):
-        base_cmd = comp.PythonTestingComponent._get_test_command(self)
+        base_cmd = btesting.PythonTestingComponent._get_test_command(self)
         base_cmd = base_cmd + ['--unittests-only']
         return base_cmd

@@ -14,15 +14,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import components as comp
+from anvil.components import base_install as binstall
+from anvil.components import base_testing as btesting
 
-
-class GlanceClientInstaller(comp.PythonInstallComponent):
+class GlanceClientInstaller(binstall.PythonInstallComponent):
     def _filter_pip_requires(self, fn, lines):
         return [l for l in lines if l.lower().find('keystoneclient') == -1]
 
 
-class GlanceClientTester(comp.PythonTestingComponent):
+class GlanceClientTester(btesting.PythonTestingComponent):
     def _use_run_tests(self):
         return False
 

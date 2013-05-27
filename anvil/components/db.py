@@ -15,10 +15,12 @@
 #    under the License.
 
 from anvil import colorizer
-from anvil import components as comp
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
+
+from anvil.components import base_install as binstall
+from anvil.components import base_runtime as bruntime
 
 from anvil.components.helpers import db as dbhelper
 
@@ -34,10 +36,10 @@ RESET_BASE_PW = ''
 BASE_ERROR = dbhelper.BASE_ERROR
 
 
-class DBUninstaller(comp.PkgUninstallComponent):
+class DBUninstaller(binstall.PkgUninstallComponent):
 
     def __init__(self, *args, **kargs):
-        comp.PkgUninstallComponent.__init__(self, *args, **kargs)
+        binstall.PkgUninstallComponent.__init__(self, *args, **kargs)
         self.runtime = self.siblings.get('running')
 
     def warm_configs(self):
@@ -67,17 +69,17 @@ class DBUninstaller(comp.PkgUninstallComponent):
                       "reset the password to %s before the next install"), colorizer.quote(RESET_BASE_PW))
 
 
-class DBInstaller(comp.PkgInstallComponent):
+class DBInstaller(binstall.PkgInstallComponent):
     __meta__ = abc.ABCMeta
 
     def __init__(self, *args, **kargs):
-        comp.PkgInstallComponent.__init__(self, *args, **kargs)
+        binstall.PkgInstallComponent.__init__(self, *args, **kargs)
         self.runtime = self.siblings.get('running')
 
     def config_params(self, config_fn):
         # This dictionary will be used for parameter replacement
         # In pre-install and post-install sections
-        mp = comp.PkgInstallComponent.config_params(self, config_fn)
+        mp = binstall.PkgInstallComponent.config_params(self, config_fn)
         mp.update({
             'PASSWORD': dbhelper.get_shared_passwords(self)['pw'],
             'BOOT_START': "true",
@@ -95,7 +97,7 @@ class DBInstaller(comp.PkgInstallComponent):
         pass
 
     def post_install(self):
-        comp.PkgInstallComponent.post_install(self)
+        binstall.PkgInstallComponent.post_install(self)
 
         # Fix up the db configs
         self._configure_db_confs()
@@ -133,7 +135,7 @@ class DBInstaller(comp.PkgInstallComponent):
                                    **dbhelper.get_shared_passwords(self))
 
 
-class DBRuntime(comp.ProgramRuntime):
+class DBRuntime(bruntime.ProgramRuntime):
     def _get_command(self, action):
         db_type = self.get_option("type")
         distro_options = self.distro.get_command_config(db_type)
@@ -145,7 +147,7 @@ class DBRuntime(comp.ProgramRuntime):
     def applications(self):
         db_type = self.get_option("type")
         return [
-            comp.Program(db_type),
+            bruntime.Program(db_type),
         ]
 
     def _run_action(self, action, check_exit_code=True):
@@ -155,14 +157,14 @@ class DBRuntime(comp.ProgramRuntime):
         return sh.execute(*cmd, run_as_root=True, check_exit_code=check_exit_code)
 
     def start(self):
-        if self.statii()[0].status != comp.STATUS_STARTED:
+        if self.statii()[0].status != bruntime.STATUS_STARTED:
             self._run_action('start')
             return 1
         else:
             return 0
 
     def stop(self):
-        if self.statii()[0].status != comp.STATUS_STOPPED:
+        if self.statii()[0].status != bruntime.STATUS_STOPPED:
             self._run_action('stop')
             return 1
         else:
@@ -176,13 +178,13 @@ class DBRuntime(comp.ProgramRuntime):
     def statii(self):
         (sysout, stderr) = self._run_action('status', False)
         combined = (sysout + stderr).lower()
-        st = comp.STATUS_UNKNOWN
+        st = bruntime.STATUS_UNKNOWN
         if combined.find("running") != -1:
-            st = comp.STATUS_STARTED
+            st = bruntime.STATUS_STARTED
         elif utils.has_any(combined, 'stop', 'unrecognized'):
-            st = comp.STATUS_STOPPED
+            st = bruntime.STATUS_STOPPED
         return [
-            comp.ProgramStatus(name=self.applications[0].name,
+            bruntime.ProgramStatus(name=self.applications[0].name,
                                status=st,
                                details={
                                    'STDOUT': sysout,

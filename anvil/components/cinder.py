@@ -15,10 +15,12 @@
 #    under the License.
 
 from anvil import colorizer
-from anvil import components as comp
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
+
+from anvil.components import base_install as binstall
+from anvil.components import base_runtime as bruntime
 
 from anvil.components.configurators import cinder as cconf
 
@@ -31,20 +33,20 @@ SYNC_DB_CMD = [sh.joinpths('$BIN_DIR', 'cinder-manage'),
 
 BIN_DIR = 'bin'
 
-class CinderUninstaller(comp.PythonUninstallComponent):
+class CinderUninstaller(binstall.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
+        binstall.PythonUninstallComponent.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
 
 
-class CinderInstaller(comp.PythonInstallComponent):
+class CinderInstaller(binstall.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, *args, **kargs)
+        binstall.PythonInstallComponent.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
         self.configurator = cconf.CinderConfigurator(self)
 
     def post_install(self):
-        comp.PythonInstallComponent.post_install(self)
+        binstall.PythonInstallComponent.post_install(self)
         if self.get_bool_option('db-sync'):
             self.configurator.setup_db()
             self._sync_db()
@@ -62,14 +64,14 @@ class CinderInstaller(comp.PythonInstallComponent):
         utils.execute_template(*cmds, cwd=self.bin_dir, params=self.config_params(None))
 
     def config_params(self, config_fn):
-        mp = comp.PythonInstallComponent.config_params(self, config_fn)
+        mp = binstall.PythonInstallComponent.config_params(self, config_fn)
         mp['BIN_DIR'] = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
         return mp
 
 
-class CinderRuntime(comp.PythonRuntime):
+class CinderRuntime(bruntime.PythonRuntime):
     def __init__(self, *args, **kargs):
-        comp.PythonRuntime.__init__(self, *args, **kargs)
+        bruntime.PythonRuntime.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
         self.config_path = sh.joinpths(self.get_option('cfg_dir'), cconf.API_CONF)
 
@@ -80,11 +82,11 @@ class CinderRuntime(comp.PythonRuntime):
             name = "cinder-%s" % (name.lower())
             path = sh.joinpths(self.bin_dir, name)
             if sh.is_executable(path):
-                apps.append(comp.Program(name, path, argv=self._fetch_argv(name)))
+                apps.append(bruntime.Program(name, path, argv=self._fetch_argv(name)))
         return apps
 
     def app_params(self, program):
-        params = comp.PythonRuntime.app_params(self, program)
+        params = bruntime.PythonRuntime.app_params(self, program)
         params['CFG_FILE'] = self.config_path
         return params
 
