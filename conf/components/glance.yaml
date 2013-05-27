@@ -13,13 +13,6 @@ verbose: True
 image_urls:
 - "http://download.cirros-cloud.net/0.3.1/cirros-0.3.1-x86_64-disk.img"
 
-# Needed for setting up your database
-db:
-  type: "$(db:type)"
-  user: "$(db:user)"
-  host: "$(db:host)"
-  port: "$(db:port)"
-
 patches:
   # After check-out/download time patches
   download: []
@@ -36,13 +29,6 @@ exclude_tests:
 
 # Interactions with keystone are via the following settings
 paste_flavor: 'keystone'
-keystone:
-  auth_host: "$(keystone:auth_host)"
-  auth_port: "$(keystone:auth_port)"
-  auth_proto: "$(keystone:auth_proto)"
-  service_host: "$(keystone:service_host)"
-  service_port: "$(keystone:service_port)"
-  service_proto: "$(keystone:service_proto)"
 
 # Images that are downloaded are stored here with
 # metadata about them, so that re-examination before
