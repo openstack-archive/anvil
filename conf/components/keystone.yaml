@@ -13,13 +13,6 @@ service_host: "$(auto:ip)"
 service_port: 5000
 service_proto: http
 
-# Needed for setting up your database
-db:
-  type: "$(db:type)"
-  user: "$(db:user)"
-  host: "$(db:host)"
-  port: "$(db:port)"
-
 # Package time patches
 patches:
   package:
@@ -63,11 +56,4 @@ cinder:
   api_host: "$(cinder:api_host)"
   api_port: "$(cinder:api_port)"
 
-# This is needed to allow installs based on personas
-wanted_passwords:
-  rabbit: 'rabbit user'
-  service_token: 'service admin token'
-  admin_password: 'keystone admin user'
-  service_password: 'service authentication password'
-  sql: "database user"
 ...

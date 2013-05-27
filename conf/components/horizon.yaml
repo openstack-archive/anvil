@@ -17,10 +17,4 @@ apache_user: "$(auto:user)"
 # Port horizon should run on
 port: 80
 
-# Needed for setting up your database
-db:
-  type: "$(db:type)"
-  user: "$(db:user)"
-  host: "$(db:host)"
-  port: "$(db:port)"
 ...
