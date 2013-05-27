@@ -15,10 +15,12 @@
 #    under the License.
 
 from anvil import colorizer
-from anvil import components as comp
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
+
+from anvil.components import base_install as binstall
+from anvil.components import base_runtime as bruntime
 
 from anvil.components.configurators import quantum as qconf
 LOG = logging.getLogger(__name__)
@@ -30,13 +32,13 @@ SYNC_DB_CMD = [sh.joinpths("$BIN_DIR", "quantum-db-manage"),
 
 BIN_DIR = "bin"
 
-class QuantumUninstaller(comp.PythonUninstallComponent):
+class QuantumUninstaller(binstall.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
         super(QuantumUninstaller, self).__init__(*args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option("app_dir"), BIN_DIR)
 
 
-class QuantumInstaller(comp.PythonInstallComponent):
+class QuantumInstaller(binstall.PythonInstallComponent):
     def __init__(self, *args, **kargs):
         super(QuantumInstaller, self).__init__(*args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option("app_dir"), BIN_DIR)
@@ -68,7 +70,7 @@ class QuantumInstaller(comp.PythonInstallComponent):
         return mp
 
 
-class QuantumRuntime(comp.PythonRuntime):
+class QuantumRuntime(bruntime.PythonRuntime):
 
     system = "quantum"
 
@@ -87,12 +89,12 @@ class QuantumRuntime(comp.PythonRuntime):
             name = "%s-%s" % (self.system, name.lower())
             path = sh.joinpths(self.bin_dir, name)
             if sh.is_executable(path):
-                apps.append(comp.Program(
+                apps.append(bruntime.Program(
                     name, path, argv=self._fetch_argv(name)))
         return apps
 
     def app_params(self, program):
-        params = comp.PythonRuntime.app_params(self, program)
+        params = bruntime.PythonRuntime.app_params(self, program)
         params["CFG_FILE"] = self.config_path
         return params
 

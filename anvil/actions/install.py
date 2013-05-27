@@ -18,12 +18,12 @@ from StringIO import StringIO
 
 from anvil import action
 from anvil import colorizer
-from anvil import components
 from anvil import log
 from anvil import pprint
 from anvil import shell as sh
 from anvil import utils
 
+from anvil.components import base_install as binstall
 from anvil.action import PhaseFunctors
 
 LOG = log.getLogger(__name__)
@@ -131,9 +131,9 @@ class InstallAction(action.Action):
 
         def capture_run(instance):
             instance_dependencies = {}
-            if isinstance(instance, (components.PkgInstallComponent)):
+            if isinstance(instance, (binstall.PkgInstallComponent)):
                 instance_dependencies['packages'] = instance.packages
-            if isinstance(instance, (components.PythonInstallComponent)):
+            if isinstance(instance, (binstall.PythonInstallComponent)):
                 instance_dependencies['pips'] = instance.pip_requires
             all_instance_dependencies[instance.name] = instance_dependencies
 

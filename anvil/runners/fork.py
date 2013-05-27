@@ -24,7 +24,7 @@ from anvil import shell as sh
 from anvil import trace as tr
 from anvil import utils
 
-from anvil.components import (STATUS_STARTED, STATUS_UNKNOWN)
+from anvil.components.base_runtime import (STATUS_STARTED, STATUS_UNKNOWN)
 
 LOG = logging.getLogger(__name__)
 

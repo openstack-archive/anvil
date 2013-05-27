@@ -15,11 +15,13 @@
 #    under the License.
 
 from anvil import colorizer
-from anvil import components as comp
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
+
+from anvil.components import base_install as binstall
+from anvil.components import base_runtime as bruntime
 
 from anvil.components.configurators import nova as nconf
 from anvil.components.helpers import nova as nhelper
@@ -62,9 +64,9 @@ FLOATING_NET_CMDS = [
 BIN_DIR = 'bin'
 
 
-class NovaUninstaller(comp.PythonUninstallComponent):
+class NovaUninstaller(binstall.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
+        binstall.PythonUninstallComponent.__init__(self, *args, **kargs)
         self.virsh = lv.Virsh(self.get_int_option('service_wait_seconds'), self.distro)
 
     def pre_uninstall(self):
@@ -90,9 +92,9 @@ class NovaUninstaller(comp.PythonUninstallComponent):
             LOG.warn("Failed cleaning up nova-compute's dirty laundry due to: %s", e)
 
 
-class NovaInstaller(comp.PythonInstallComponent):
+class NovaInstaller(binstall.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, *args, **kargs)
+        binstall.PythonInstallComponent.__init__(self, *args, **kargs)
         self.configurator = nconf.NovaConfigurator(self)
 
     def _filter_pip_requires(self, fn, lines):
@@ -114,7 +116,7 @@ class NovaInstaller(comp.PythonInstallComponent):
         return to_set
 
     def verify(self):
-        comp.PythonInstallComponent.verify(self)
+        binstall.PythonInstallComponent.verify(self)
         self.configurator.verify()
 
     def warm_configs(self):
@@ -141,7 +143,7 @@ class NovaInstaller(comp.PythonInstallComponent):
                                tracewriter=self.tracewriter)
 
     def post_install(self):
-        comp.PythonInstallComponent.post_install(self)
+        binstall.PythonInstallComponent.post_install(self)
         # Extra actions to do nova setup
         if self.get_bool_option('db-sync'):
             self.configurator.setup_db()
@@ -150,15 +152,15 @@ class NovaInstaller(comp.PythonInstallComponent):
         self._fix_virt()
 
     def config_params(self, config_fn):
-        mp = comp.PythonInstallComponent.config_params(self, config_fn)
+        mp = binstall.PythonInstallComponent.config_params(self, config_fn)
         mp['CFG_FILE'] = sh.joinpths(self.get_option('cfg_dir'), nconf.API_CONF)
         mp['BIN_DIR'] = sh.joinpths(self.get_option('app_dir'), BIN_DIR)
         return mp
 
 
-class NovaRuntime(comp.PythonRuntime):
+class NovaRuntime(bruntime.PythonRuntime):
     def __init__(self, *args, **kargs):
-        comp.PythonRuntime.__init__(self, *args, **kargs)
+        bruntime.PythonRuntime.__init__(self, *args, **kargs)
         self.wait_time = self.get_int_option('service_wait_seconds')
         self.virsh = lv.Virsh(self.wait_time, self.distro)
         self.config_path = sh.joinpths(self.get_option('cfg_dir'), nconf.API_CONF)
@@ -208,12 +210,12 @@ class NovaRuntime(comp.PythonRuntime):
             name = "nova-%s" % (name.lower())
             path = sh.joinpths(self.bin_dir, name)
             if sh.is_executable(path):
-                apps.append(comp.Program(name, path, argv=self._fetch_argv(name)))
+                apps.append(bruntime.Program(name, path, argv=self._fetch_argv(name)))
         return apps
 
     def pre_start(self):
         # Let the parent class do its thing
-        comp.PythonRuntime.pre_start(self)
+        bruntime.PythonRuntime.pre_start(self)
         virt_driver = utils.canon_virt_driver(self.get_option('virt_driver'))
         if virt_driver == 'libvirt':
             virt_type = lv.canon_libvirt_type(self.get_option('libvirt_type'))
@@ -229,7 +231,7 @@ class NovaRuntime(comp.PythonRuntime):
                 raise excp.StartException(msg)
 
     def app_params(self, program):
-        params = comp.PythonRuntime.app_params(self, program)
+        params = bruntime.PythonRuntime.app_params(self, program)
         params['CFG_FILE'] = self.config_path
         return params
 
