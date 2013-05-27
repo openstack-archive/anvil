@@ -14,9 +14,20 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import components as comp
+from anvil.components import base_install as binstall
+from anvil.components import base_testing as btesting
+
+class GlanceClientInstaller(binstall.PythonInstallComponent):
+    pass
 
 
-class GlanceClientInstaller(comp.PythonInstallComponent):
-    def _filter_pip_requires(self, fn, lines):
-        return [l for l in lines if l.lower().find('keystoneclient') == -1]
+class GlanceClientTester(btesting.PythonTestingComponent):
+    def _use_run_tests(self):
+        return False
+
+    def _get_test_exclusions(self):
+        return [
+            # These seem to require swift, not always installed...
+            'test_ssl_cert_mismatch',
+            'test_ssl_cert_subject_alt_name',
+        ]

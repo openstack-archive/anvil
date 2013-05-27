@@ -14,11 +14,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import components as comp
 from anvil import utils
 
+from anvil.components import base_install as binstall
 
-class KeystoneClientInstaller(comp.PythonInstallComponent):
+class KeystoneClientInstaller(binstall.PythonInstallComponent):
     def _filter_pip_requires(self, fn, lines):
         return [l for l in lines
                 # Take out entries that aren't really always needed or are

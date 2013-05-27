@@ -17,7 +17,6 @@
 import copy
 
 from anvil import colorizer
-from anvil import component as comp
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import patcher
@@ -25,6 +24,8 @@ from anvil import shell as sh
 from anvil import trace as tr
 from anvil import type_utils as tu
 from anvil import utils
+
+from anvil.components import base as comp
 
 from anvil.packaging.helpers import changelog
 from anvil.packaging.helpers import yum_helper
