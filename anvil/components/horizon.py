@@ -14,11 +14,14 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import components as comp
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
+
+from anvil.components import base_install as binstall
+from anvil.components import base_uninstall as buninstall
+from anvil.components import base_runtime as bruntime
 
 from anvil.components.configurators import horizon as hconf
 
@@ -37,14 +40,14 @@ SECRET_KEY_LEN = 10
 BAD_APACHE_USERS = ['root']
 
 
-class HorizonUninstaller(comp.PythonUninstallComponent):
+class HorizonUninstaller(buninstall.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
+        buninstall.PythonUninstallComponent.__init__(self, *args, **kargs)
 
 
-class HorizonInstaller(comp.PythonInstallComponent):
+class HorizonInstaller(binstall.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, *args, **kargs)
+        binstall.PythonInstallComponent.__init__(self, *args, **kargs)
         self.blackhole_dir = sh.joinpths(self.get_option('app_dir'), '.blackhole')
         self.access_log = sh.joinpths('/var/log/',
                                       self.distro.get_command_config('apache', 'name'),
@@ -61,7 +64,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
         return [l for l in lines if not re.search(r'([n|q|s|k|g|c]\w+client)', l, re.I)]
 
     def verify(self):
-        comp.PythonInstallComponent.verify(self)
+        binstall.PythonInstallComponent.verify(self)
         self._check_ug()
 
     def _check_ug(self):
@@ -95,12 +98,12 @@ class HorizonInstaller(comp.PythonInstallComponent):
         return len(log_fns)
 
     def _configure_files(self):
-        am = comp.PythonInstallComponent._configure_files(self)
+        am = binstall.PythonInstallComponent._configure_files(self)
         am += self._setup_logs(self.get_bool_option('clear-logs'))
         return am
 
     def post_install(self):
-        comp.PythonInstallComponent.post_install(self)
+        binstall.PythonInstallComponent.post_install(self)
         if self.get_bool_option('make-blackhole'):
             self._setup_blackhole()
 
@@ -110,7 +113,7 @@ class HorizonInstaller(comp.PythonInstallComponent):
     def config_params(self, config_fn):
         # This dict will be used to fill in the configuration
         # params with actual values
-        mp = comp.PythonInstallComponent.config_params(self, config_fn)
+        mp = binstall.PythonInstallComponent.config_params(self, config_fn)
         if config_fn == hconf.HORIZON_APACHE_CONF:
             (user, group) = self._get_apache_user_group()
             mp['GROUP'] = group
@@ -130,9 +133,9 @@ class HorizonInstaller(comp.PythonInstallComponent):
         return mp
 
 
-class HorizonRuntime(comp.ProgramRuntime):
+class HorizonRuntime(bruntime.ProgramRuntime):
     def start(self):
-        if self.statii()[0].status != comp.STATUS_STARTED:
+        if self.statii()[0].status != bruntime.STATUS_STARTED:
             self._run_action('start')
             return 1
         else:
@@ -149,7 +152,7 @@ class HorizonRuntime(comp.ProgramRuntime):
         return 1
 
     def stop(self):
-        if self.statii()[0].status != comp.STATUS_STOPPED:
+        if self.statii()[0].status != bruntime.STATUS_STOPPED:
             self._run_action('stop')
             return 1
         else:
@@ -158,13 +161,13 @@ class HorizonRuntime(comp.ProgramRuntime):
     def statii(self):
         (sysout, stderr) = self._run_action('status', check_exit_code=False)
         combined = (sysout + stderr).lower()
-        st = comp.STATUS_UNKNOWN
+        st = bruntime.STATUS_UNKNOWN
         if combined.find("is running") != -1:
-            st = comp.STATUS_STARTED
+            st = bruntime.STATUS_STARTED
         elif utils.has_any(combined, 'stopped', 'unrecognized', 'not running'):
-            st = comp.STATUS_STOPPED
+            st = bruntime.STATUS_STOPPED
         return [
-            comp.ProgramStatus(name='apache',
+            bruntime.ProgramStatus(name='apache',
                                status=st,
                                details={
                                    'STDOUT': sysout,

@@ -14,8 +14,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import components as comp
 from anvil import shell as sh
+
+from anvil.components import base_install as binstall
+from anvil.components import base_uninstall as buninstall
+from anvil.components import base_runtime as bruntime
 
 # Where the application is really
 UTIL_DIR = 'utils'
@@ -23,24 +26,24 @@ UTIL_DIR = 'utils'
 VNC_PROXY_APP = 'nova-novncproxy'
 
 
-class NoVNCUninstaller(comp.PythonUninstallComponent):
+class NoVNCUninstaller(buninstall.PythonUninstallComponent):
     pass
 
 
-class NoVNCInstaller(comp.PythonInstallComponent):
+class NoVNCInstaller(binstall.PythonInstallComponent):
     @property
     def python_directories(self):
         # Its python but not one that we need to run setup.py in...
         return {}
 
 
-class NoVNCRuntime(comp.PythonRuntime):
+class NoVNCRuntime(bruntime.PythonRuntime):
     @property
     def applications(self):
         path = sh.joinpths(self.get_option('app_dir'), UTIL_DIR, VNC_PROXY_APP)
         argv = ['--config-file', self._get_nova_conf(), '--web', '.']
         return [
-            comp.Program(VNC_PROXY_APP, path, argv=argv),
+            bruntime.Program(VNC_PROXY_APP, path, argv=argv),
         ]
 
     def _get_nova_conf(self):

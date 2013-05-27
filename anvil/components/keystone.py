@@ -15,12 +15,16 @@
 #    under the License.
 
 from anvil import colorizer
-from anvil import components as comp
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
 
 from anvil.utils import OrderedDict
+
+from anvil.components import base_install as binstall
+from anvil.components import base_uninstall as buninstall
+from anvil.components import base_runtime as bruntime
+from anvil.components import base_testing as btesting
 
 from anvil.components.helpers import glance as ghelper
 from anvil.components.helpers import keystone as khelper
@@ -43,14 +47,14 @@ MANAGE_CMD = [sh.joinpths('$BIN_DIR', 'keystone-manage'),
                 '--config-file=$CONFIG_FILE',
                 '--debug', '-v']
 
-class KeystoneUninstaller(comp.PythonUninstallComponent):
+class KeystoneUninstaller(buninstall.PythonUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonUninstallComponent.__init__(self, *args, **kargs)
+        buninstall.PythonUninstallComponent.__init__(self, *args, **kargs)
 
 
-class KeystoneInstaller(comp.PythonInstallComponent):
+class KeystoneInstaller(binstall.PythonInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PythonInstallComponent.__init__(self, *args, **kargs)
+        binstall.PythonInstallComponent.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
         self.configurator = kconf.KeystoneConfigurator(self)
 
@@ -64,7 +68,7 @@ class KeystoneInstaller(comp.PythonInstallComponent):
                                      'memcached')]
 
     def post_install(self):
-        comp.PythonInstallComponent.post_install(self)
+        binstall.PythonInstallComponent.post_install(self)
         if self.get_bool_option('db-sync'):
             self.configurator.setup_db()
             self._sync_db()
@@ -107,15 +111,15 @@ class KeystoneInstaller(comp.PythonInstallComponent):
 
     def config_params(self, config_fn):
         # These be used to fill in the configuration params
-        mp = comp.PythonInstallComponent.config_params(self, config_fn)
+        mp = binstall.PythonInstallComponent.config_params(self, config_fn)
         mp['BIN_DIR'] = self.bin_dir
         mp['CONFIG_FILE'] = sh.joinpths(self.get_option('cfg_dir'), kconf.ROOT_CONF)
         return mp
 
 
-class KeystoneRuntime(comp.PythonRuntime):
+class KeystoneRuntime(bruntime.PythonRuntime):
     def __init__(self, *args, **kargs):
-        comp.PythonRuntime.__init__(self, *args, **kargs)
+        bruntime.PythonRuntime.__init__(self, *args, **kargs)
         self.bin_dir = sh.joinpths(self.get_option('app_dir'), 'bin')
         self.init_fn = sh.joinpths(self.get_option('trace_dir'), INIT_WHAT_HAPPENED)
 
@@ -164,7 +168,7 @@ class KeystoneRuntime(comp.PythonRuntime):
             name = "keystone-%s" % (name.lower())
             path = sh.joinpths(self.bin_dir, name)
             if sh.is_executable(path):
-                apps.append(comp.Program(name, path, argv=self._fetch_argv(name)))
+                apps.append(bruntime.Program(name, path, argv=self._fetch_argv(name)))
         return apps
 
     def _fetch_argv(self, name):
@@ -177,9 +181,9 @@ class KeystoneRuntime(comp.PythonRuntime):
         ]
 
 
-class KeystoneTester(comp.PythonTestingComponent):
+class KeystoneTester(btesting.PythonTestingComponent):
     # Disable the keystone client integration tests
     def _get_test_command(self):
-        base_cmd = comp.PythonTestingComponent._get_test_command(self)
+        base_cmd = btesting.PythonTestingComponent._get_test_command(self)
         base_cmd = base_cmd + ['-xintegration']
         return base_cmd

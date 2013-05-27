@@ -57,24 +57,24 @@ components:
             install: anvil.components.cinder:CinderInstaller
             package: anvil.packaging.rpm:PythonPackager
             running: anvil.components.cinder:CinderRuntime
-            test: anvil.components:PythonTestingComponent
-            coverage: anvil.components:PythonTestingComponent
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.cinder:CinderUninstaller
         pips:
             - name: hp3parclient
     cinder-client:
         action_classes:
-            install: anvil.components:PythonInstallComponent
+            install: anvil.components.base_install:PythonInstallComponent
             package: anvil.packaging.rpm:PythonPackager
-            running: anvil.components:EmptyRuntime
-            test: anvil.components:PythonTestingComponent
-            uninstall: anvil.components:PythonUninstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_uninstall:PythonUninstallComponent
     db:
         action_classes:
             install: anvil.distros.rhel:DBInstaller
             package: anvil.packaging.rpm:DependencyPackager
             running: anvil.components.db:DBRuntime
-            test: anvil.components:EmptyTestingComponent
+            test: anvil.components.base_testing:EmptyTestingComponent
             uninstall: anvil.components.db:DBUninstaller
         packages:
         -   name: mysql
@@ -83,8 +83,8 @@ components:
         action_classes:
             install: anvil.components.pkglist:Installer
             package: anvil.packaging.rpm:DependencyPackager
-            running: anvil.components:EmptyRuntime
-            test: anvil.components:EmptyTestingComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:EmptyTestingComponent
             uninstall: anvil.components.pkglist:Uninstaller
         packages:
         # Shared system packages
@@ -271,9 +271,9 @@ components:
         action_classes:
             install: anvil.components.glance_client:GlanceClientInstaller
             package: anvil.packaging.rpm:PythonPackager
-            running: anvil.components:EmptyRuntime
+            running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.glance_client:GlanceClientTester
-            uninstall: anvil.components:PythonUninstallComponent
+            uninstall: anvil.components.base_uninstall:PythonUninstallComponent
         pips:
         -   name: nosexcover
         -   name: setuptools-git
@@ -284,7 +284,7 @@ components:
             install: anvil.distros.rhel:HorizonInstaller
             package: anvil.packaging.rpm:PythonPackager
             running: anvil.components.horizon:HorizonRuntime
-            test: anvil.components:PythonTestingComponent
+            test: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.horizon:HorizonUninstaller
         pip_to_package:
         -   name: django
@@ -316,15 +316,15 @@ components:
         action_classes:
             install: anvil.components.keystone_client:KeystoneClientInstaller
             package: anvil.packaging.rpm:PythonPackager
-            running: anvil.components:EmptyRuntime
-            test: anvil.components:PythonTestingComponent
-            uninstall: anvil.components:PythonUninstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_uninstall:PythonUninstallComponent
     nova:
         action_classes:
             install: anvil.distros.rhel:NovaInstaller
             package: anvil.packaging.rpm:PythonPackager
             running: anvil.components.nova:NovaRuntime
-            test: anvil.components:PythonTestingComponent
+            test: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.nova:NovaUninstaller
         packages:
         -   name: MySQL-python
@@ -403,17 +403,17 @@ components:
                     removable: false
     nova-client:
         action_classes:
-            install: anvil.components:PythonInstallComponent
+            install: anvil.components.base_install:PythonInstallComponent
             package: anvil.packaging.rpm:PythonPackager
-            running: anvil.components:EmptyRuntime
-            test: anvil.components:PythonTestingComponent
-            uninstall: anvil.components:PythonUninstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_uninstall:PythonUninstallComponent
     no-vnc:
         action_classes:
             install: anvil.components.novnc:NoVNCInstaller
-            package: anvil.components:EmptyPackagingComponent
+            package: anvil.components.base_packaging:EmptyPackagingComponent
             running: anvil.components.novnc:NoVNCRuntime
-            test: anvil.components:EmptyTestingComponent
+            test: anvil.components.base_testing:EmptyTestingComponent
             uninstall: anvil.components.novnc:NoVNCUninstaller
         packages:
         -   name: python-websockify
@@ -421,38 +421,38 @@ components:
         action_classes:
             install: anvil.components.openstack_client:OpenStackClientInstaller
             package: anvil.packaging.rpm:PythonPackager
-            running: anvil.components:EmptyRuntime
+            running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.openstack_client:OpenStackClientTester
-            uninstall: anvil.components:PythonUninstallComponent
+            uninstall: anvil.components.base_uninstall:PythonUninstallComponent
     oslo-config:
         action_classes:
-            install: anvil.components:PythonInstallComponent
+            install: anvil.components.base_install:PythonInstallComponent
             package: anvil.packaging.rpm:PythonPackager
-            running: anvil.components:EmptyRuntime
-            test: anvil.components:PythonTestingComponent
-            uninstall: anvil.components:PythonUninstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_uninstall:PythonUninstallComponent
     oslo-incubator:
         action_classes:
-            install: anvil.components:PythonInstallComponent
+            install: anvil.components.base_install:PythonInstallComponent
             package: anvil.packaging.rpm:PythonPackager
-            running: anvil.components:EmptyRuntime
-            test: anvil.components:PythonTestingComponent
-            uninstall: anvil.components:PythonUninstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_uninstall:PythonUninstallComponent
     quantum:
         action_classes:
             install: anvil.components.quantum:QuantumInstaller
             package: anvil.packaging.rpm:PythonPackager
             running: anvil.components.quantum:QuantumRuntime
-            test: anvil.components:PythonTestingComponent
-            coverage: anvil.components:PythonTestingComponent
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.quantum:QuantumUninstaller
     quantum-client:
         action_classes:
-            install: anvil.components:PythonInstallComponent
+            install: anvil.components.base_install:PythonInstallComponent
             package: anvil.packaging.rpm:PythonPackager
-            running: anvil.components:EmptyRuntime
-            test: anvil.components:PythonTestingComponent
-            uninstall: anvil.components:PythonUninstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_uninstall:PythonUninstallComponent
         pips:
         -   name: cliff-tablib
     rabbit-mq:
@@ -460,7 +460,7 @@ components:
             install: anvil.components.rabbit:RabbitInstaller
             package: anvil.packaging.rpm:DependencyPackager
             running: anvil.distros.rhel:RabbitRuntime
-            test: anvil.components:EmptyTestingComponent
+            test: anvil.components.base_testing:EmptyTestingComponent
             uninstall: anvil.components.rabbit:RabbitUninstaller
         packages:
         -   name: rabbitmq-server
@@ -483,7 +483,7 @@ components:
         action_classes:
             install: anvil.components.swift_client:SwiftClientInstaller
             package: anvil.packaging.rpm:PythonPackager
-            running: anvil.components:EmptyRuntime
-            test: anvil.components:PythonTestingComponent
-            uninstall: anvil.components:PythonUninstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_uninstall:PythonUninstallComponent
 ...

@@ -15,10 +15,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import components as comp
+from anvil.components import base_install as binstall
+from anvil.components import base_uninstall as buninstall
 
 
-class Installer(comp.PythonInstallComponent):
+class Installer(binstall.PythonInstallComponent):
     @property
     def packages(self):
         pkg_list = super(Installer, self).packages
@@ -38,5 +39,5 @@ class Installer(comp.PythonInstallComponent):
         return None
 
 
-class Uninstaller(comp.PythonUninstallComponent):
+class Uninstaller(buninstall.PythonUninstallComponent):
     pass

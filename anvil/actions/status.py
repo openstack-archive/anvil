@@ -23,7 +23,7 @@ from anvil.action import PhaseFunctors
 
 LOG = log.getLogger(__name__)
 
-from anvil.components import (STATUS_INSTALLED, STATUS_STARTED,
+from anvil.components.base_runtime import (STATUS_INSTALLED, STATUS_STARTED,
                               STATUS_STOPPED, STATUS_UNKNOWN)
 
 STATUS_COLOR_MAP = {

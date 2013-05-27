@@ -17,10 +17,13 @@
 from tempfile import TemporaryFile
 
 from anvil import colorizer
-from anvil import components as comp
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
+
+from anvil.components import base_install as binstall
+from anvil.components import base_uninstall as buninstall
+from anvil.components import base_runtime as bruntime
 
 from anvil.components.helpers import rabbit as rhelper
 
@@ -30,9 +33,9 @@ LOG = logging.getLogger(__name__)
 RESET_BASE_PW = ''
 
 
-class RabbitUninstaller(comp.PkgUninstallComponent):
+class RabbitUninstaller(buninstall.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PkgUninstallComponent.__init__(self, *args, **kargs)
+        buninstall.PkgUninstallComponent.__init__(self, *args, **kargs)
         self.runtime = self.siblings.get('running')
 
     def pre_uninstall(self):
@@ -50,9 +53,9 @@ class RabbitUninstaller(comp.PkgUninstallComponent):
                       "reset the password to %s before the next install"), colorizer.quote(RESET_BASE_PW))
 
 
-class RabbitInstaller(comp.PkgInstallComponent):
+class RabbitInstaller(binstall.PkgInstallComponent):
     def __init__(self, *args, **kargs):
-        comp.PkgInstallComponent.__init__(self, *args, **kargs)
+        binstall.PkgInstallComponent.__init__(self, *args, **kargs)
         self.runtime = self.siblings.get('running')
 
     def warm_configs(self):
@@ -71,13 +74,13 @@ class RabbitInstaller(comp.PkgInstallComponent):
         self.runtime.wait_active()
 
     def post_install(self):
-        comp.PkgInstallComponent.post_install(self)
+        binstall.PkgInstallComponent.post_install(self)
         self._setup_pw()
 
 
-class RabbitRuntime(comp.ProgramRuntime):
+class RabbitRuntime(bruntime.ProgramRuntime):
     def start(self):
-        if self.statii()[0].status != comp.STATUS_STARTED:
+        if self.statii()[0].status != bruntime.STATUS_STARTED:
             self._run_action('start')
             return 1
         else:
@@ -86,7 +89,7 @@ class RabbitRuntime(comp.ProgramRuntime):
     @property
     def applications(self):
         return [
-            comp.Program('rabbit-mq'),
+            bruntime.Program('rabbit-mq'),
         ]
 
     def statii(self):
@@ -94,14 +97,14 @@ class RabbitRuntime(comp.ProgramRuntime):
         #
         # I have ever seen (its like a weird mix json+crap)
         (sysout, stderr) = self._run_action('status', check_exit_code=False)
-        st = comp.STATUS_UNKNOWN
+        st = bruntime.STATUS_UNKNOWN
         combined = (sysout + stderr).lower()
         if utils.has_any(combined, 'nodedown', "unable to connect to node", 'unrecognized'):
-            st = comp.STATUS_STOPPED
+            st = bruntime.STATUS_STOPPED
         elif combined.find('running_applications') != -1:
-            st = comp.STATUS_STARTED
+            st = bruntime.STATUS_STARTED
         return [
-            comp.ProgramStatus(status=st,
+            bruntime.ProgramStatus(status=st,
                                details={
                                    'STDOUT': sysout,
                                    'STDERR': stderr,
@@ -135,7 +138,7 @@ class RabbitRuntime(comp.ProgramRuntime):
         return 1
 
     def stop(self):
-        if self.statii()[0].status != comp.STATUS_STOPPED:
+        if self.statii()[0].status != bruntime.STATUS_STOPPED:
             self._run_action('stop')
             return 1
         else:
