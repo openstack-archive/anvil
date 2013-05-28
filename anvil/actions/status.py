@@ -14,12 +14,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import action
 from anvil import colorizer
 from anvil import log
 from anvil import utils
 
-from anvil.action import PhaseFunctors
+from anvil.actions import action
+from anvil.actions.action import PhaseFunctors
 
 LOG = log.getLogger(__name__)
 

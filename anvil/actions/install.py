@@ -16,7 +16,6 @@
 
 from StringIO import StringIO
 
-from anvil import action
 from anvil import colorizer
 from anvil import log
 from anvil import pprint
@@ -24,7 +23,8 @@ from anvil import shell as sh
 from anvil import utils
 
 from anvil.components import base_install as binstall
-from anvil.action import PhaseFunctors
+from anvil.actions import action
+from anvil.actions.action import PhaseFunctors
 
 LOG = log.getLogger(__name__)
 
