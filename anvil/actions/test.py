@@ -14,11 +14,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import action
 from anvil import colorizer
 from anvil import log
 
-from anvil.action import PhaseFunctors
+from anvil.actions import base as action
 
 LOG = log.getLogger(__name__)
 
@@ -30,7 +29,7 @@ class TestAction(action.Action):
 
     def _run(self, persona, component_order, instances):
         self._run_phase(
-            PhaseFunctors(
+            action.PhaseFunctors(
                 start=lambda i: LOG.info('Running tests of component %s.', colorizer.quote(i.name)),
                 run=lambda i: i.run_tests(),
                 end=None,
