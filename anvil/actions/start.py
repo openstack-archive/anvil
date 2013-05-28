@@ -14,11 +14,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import action
 from anvil import colorizer
 from anvil import log
 
-from anvil.action import PhaseFunctors
+from anvil.actions import base as action
 
 LOG = log.getLogger(__name__)
 
@@ -31,7 +30,7 @@ class StartAction(action.Action):
     def _run(self, persona, component_order, instances):
         removals = []
         self._run_phase(
-            PhaseFunctors(
+            action.PhaseFunctors(
                 start=None,
                 run=lambda i: i.pre_start(),
                 end=None,
@@ -43,7 +42,7 @@ class StartAction(action.Action):
             )
         removals += ['stopped']
         self._run_phase(
-            PhaseFunctors(
+            action.PhaseFunctors(
                 start=lambda i: LOG.info('Starting %s.', i.name),
                 run=lambda i: i.start(),
                 end=lambda i, result: LOG.info("Start %s applications", colorizer.quote(result)),
@@ -54,7 +53,7 @@ class StartAction(action.Action):
             *removals
             )
         self._run_phase(
-            PhaseFunctors(
+            action.PhaseFunctors(
                 start=lambda i: LOG.info('Post-starting %s.', colorizer.quote(i.name)),
                 run=lambda i: i.post_start(),
                 end=None,

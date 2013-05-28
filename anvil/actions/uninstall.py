@@ -14,11 +14,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import action
 from anvil import colorizer
 from anvil import log
 
-from anvil.action import PhaseFunctors
+from anvil.actions import base as action
 
 LOG = log.getLogger(__name__)
 
@@ -36,7 +35,7 @@ class UninstallAction(action.Action):
     def _run(self, persona, component_order, instances):
         removals = ['configure']
         self._run_phase(
-            PhaseFunctors(
+            action.PhaseFunctors(
                 start=lambda i: LOG.info('Unconfiguring %s.', colorizer.quote(i.name)),
                 run=lambda i: i.unconfigure(),
                 end=None,
@@ -48,7 +47,7 @@ class UninstallAction(action.Action):
             )
         removals += ['post-install']
         self._run_phase(
-            PhaseFunctors(
+            action.PhaseFunctors(
                 start=None,
                 run=lambda i: i.pre_uninstall(),
                 end=None,
@@ -60,7 +59,7 @@ class UninstallAction(action.Action):
             )
         removals += ['install']
         self._run_phase(
-            PhaseFunctors(
+            action.PhaseFunctors(
                 start=lambda i: LOG.info('Uninstalling %s.', colorizer.quote(i.name)),
                 run=lambda i: i.uninstall(),
                 end=None,
@@ -72,7 +71,7 @@ class UninstallAction(action.Action):
             )
         removals += ['download', 'configure', "download-patch", 'pre-install', 'post-install']
         self._run_phase(
-            PhaseFunctors(
+            action.PhaseFunctors(
                 start=lambda i: LOG.info('Post-uninstalling %s.', colorizer.quote(i.name)),
                 run=lambda i: i.post_uninstall(),
                 end=None,

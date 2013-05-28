@@ -14,7 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import action
+from anvil.actions import base as action
 from anvil.actions import start
 from anvil.actions import stop
 
