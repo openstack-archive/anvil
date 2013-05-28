@@ -16,7 +16,6 @@
 
 from StringIO import StringIO
 
-from anvil import action
 from anvil import colorizer
 from anvil import log
 from anvil import pprint
@@ -24,7 +23,7 @@ from anvil import shell as sh
 from anvil import utils
 
 from anvil.components import base_install as binstall
-from anvil.action import PhaseFunctors
+from anvil.actions import base as action
 
 LOG = log.getLogger(__name__)
 
@@ -69,7 +68,7 @@ class InstallAction(action.Action):
     def _run(self, persona, component_order, instances):
         removals = []
         self._run_phase(
-            PhaseFunctors(
+            action.PhaseFunctors(
                 start=lambda i: LOG.info('Downloading %s.', colorizer.quote(i.name)),
                 run=lambda i: i.download(),
                 end=lambda i, result: LOG.info("Performed %s downloads.", len(result))
@@ -80,7 +79,7 @@ class InstallAction(action.Action):
             *removals
             )
         self._run_phase(
-            PhaseFunctors(
+            action.PhaseFunctors(
                 start=lambda i: LOG.info('Post-download patching %s.', colorizer.quote(i.name)),
                 run=lambda i: i.patch("download"),
                 end=None,
@@ -93,7 +92,7 @@ class InstallAction(action.Action):
 
         removals += ['uninstall', 'unconfigure']
         self._run_phase(
-            PhaseFunctors(
+            action.PhaseFunctors(
                 start=lambda i: LOG.info('Configuring %s.', colorizer.quote(i.name)),
                 run=lambda i: i.configure(),
                 end=None,
@@ -116,7 +115,7 @@ class InstallAction(action.Action):
 
         removals += ['pre-uninstall', 'post-uninstall']
         self._run_phase(
-            PhaseFunctors(
+            action.PhaseFunctors(
                 start=lambda i: LOG.info('Preinstalling %s.', colorizer.quote(i.name)),
                 run=preinstall_run,
                 end=None,
@@ -138,7 +137,7 @@ class InstallAction(action.Action):
             all_instance_dependencies[instance.name] = instance_dependencies
 
         self._run_phase(
-            PhaseFunctors(
+            action.PhaseFunctors(
                 start=lambda i: LOG.info('Capturing dependencies of %s.', colorizer.quote(i.name)),
                 run=capture_run,
                 end=None,
@@ -168,7 +167,7 @@ class InstallAction(action.Action):
                          colorizer.quote(instance.name), result)
 
         self._run_phase(
-            PhaseFunctors(
+            action.PhaseFunctors(
                 start=install_start,
                 run=lambda i: i.install(),
                 end=install_finish,
@@ -179,7 +178,7 @@ class InstallAction(action.Action):
             *removals
             )
         self._run_phase(
-            PhaseFunctors(
+            action.PhaseFunctors(
                 start=lambda i: LOG.info('Post-installing %s.', colorizer.quote(i.name)),
                 run=lambda i: i.post_install(),
                 end=None
