@@ -61,9 +61,9 @@ FLOATING_NET_CMDS = [
 ]
 
 
-class NovaUninstaller(binstall.PythonUninstallComponent):
+class NovaUninstaller(binstall.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
-        binstall.PythonUninstallComponent.__init__(self, *args, **kargs)
+        binstall.PkgUninstallComponent.__init__(self, *args, **kargs)
         self.virsh = lv.Virsh(self.get_int_option('service_wait_seconds'), self.distro)
 
     def pre_uninstall(self):

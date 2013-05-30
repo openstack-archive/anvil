@@ -57,19 +57,23 @@ class UninstallAction(action.Action):
             'pre-uninstall',
             *removals
             )
-        removals += ['install']
+
+        general_package = "general"
+        dependency_handler = self.distro.dependency_handler_class(
+            self.distro, self.root_dir, instances.values())
         self._run_phase(
             action.PhaseFunctors(
-                start=lambda i: LOG.info('Uninstalling %s.', colorizer.quote(i.name)),
-                run=lambda i: i.uninstall(),
+                start=lambda i: LOG.info("Uninstalling packages"),
+                run=lambda i: dependency_handler.uninstall(),
                 end=None,
             ),
-            component_order,
-            instances,
-            'uninstall',
+            [general_package],
+            {general_package: instances[general_package]},
+            "uninstall",
             *removals
             )
-        removals += ['download', 'configure', "download-patch", 'pre-install', 'post-install']
+        
+        removals += ['install', 'download', 'configure', "download-patch", 'pre-install', 'post-install']
         self._run_phase(
             action.PhaseFunctors(
                 start=lambda i: LOG.info('Post-uninstalling %s.', colorizer.quote(i.name)),

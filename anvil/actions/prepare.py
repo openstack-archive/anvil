@@ -24,7 +24,7 @@ LOG = log.getLogger(__name__)
 
 
 class PrepareAction(action.Action):
-    needs_sudo = False
+    needs_sudo = True
 
     def __init__(self, name, distro, root_dir, cli_opts):
         action.Action.__init__(self, name, distro, root_dir, cli_opts)
