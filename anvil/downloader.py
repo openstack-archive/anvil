@@ -79,15 +79,6 @@ class GitDownloader(Downloader):
             sh.execute(*cmd, cwd=self.store_where)
             cmd = ["git", "reset", "--hard"]
             sh.execute(*cmd, cwd=self.store_where)
-            # detach, drop new_branch if it exists, and checkout to new_branch
-            # newer git allows branch resetting: git checkout -B $new_branch
-            # so, all these are for compatibility with older RHEL git
-            cmd = ["git", "rev-parse", "HEAD"]
-            git_head = sh.execute(*cmd, cwd=self.store_where)[0].strip()
-            cmd = ["git", "checkout", git_head]
-            sh.execute(*cmd, cwd=self.store_where)
-            cmd = ["git", "branch", "-D", new_branch]
-            sh.execute(*cmd, cwd=self.store_where, ignore_exit_code=True)
         else:
             LOG.info("Downloading %s (%s) to %s.", colorizer.quote(uri), branch, colorizer.quote(self.store_where))
             cmd = ["git", "clone", uri, self.store_where]
@@ -96,6 +87,15 @@ class GitDownloader(Downloader):
             LOG.info("Adjusting to tag %s.", colorizer.quote(tag))
         else:
             LOG.info("Adjusting branch to %s.", colorizer.quote(branch))
+        # detach, drop new_branch if it exists, and checkout to new_branch
+        # newer git allows branch resetting: git checkout -B $new_branch
+        # so, all these are for compatibility with older RHEL git
+        cmd = ["git", "rev-parse", "HEAD"]
+        git_head = sh.execute(*cmd, cwd=self.store_where)[0].strip()
+        cmd = ["git", "checkout", git_head]
+        sh.execute(*cmd, cwd=self.store_where)
+        cmd = ["git", "branch", "-D", new_branch]
+        sh.execute(*cmd, cwd=self.store_where, ignore_exit_code=True)
         cmd = ["git", "checkout"] + checkout_what
         sh.execute(*cmd, cwd=self.store_where)
 
