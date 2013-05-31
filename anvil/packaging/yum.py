@@ -285,12 +285,26 @@ BuildArch: noarch
 
     def install(self):
         super(YumDependencyHandler, self).install()
+        helper = yum_helper.Helper()
+
+        # Ensure we copy the local repo file name to the main repo so that
+        # yum will find it when installing packages.
         with sh.Rooted(True):
             sh.copy(self.anvil_repo_filename, "/etc/yum.repos.d/")
-        cmdline = ["yum", "erase", "-y", self.OPENSTACK_DEPS_PACKAGE_NAME]
-        cmdline.extend(self.nopackages)
-        sh.execute(*cmdline, run_as_root=True, ignore_exit_code=True,
-                   stdout_fh=sys.stdout, stderr_fh=sys.stderr)
+
+        cmdline = []
+        if helper.is_installed(self.OPENSTACK_DEPS_PACKAGE_NAME):
+            cmdline = [self.OPENSTACK_DEPS_PACKAGE_NAME]
+
+        for p in self.nopackages:
+            if helper.is_installed(p):
+                cmdline.append(p)
+
+        if cmdline:
+            cmdline = ["yum", "erase", "-y"] + cmdline
+            sh.execute(*cmdline, run_as_root=True, ignore_exit_code=True,
+                       stdout_fh=sys.stdout, stderr_fh=sys.stderr)
+
         cmdline = ["yum", "clean", "all"]
         sh.execute(*cmdline, run_as_root=True)
 
@@ -299,14 +313,21 @@ BuildArch: noarch
                    stdout_fh=sys.stdout, stderr_fh=sys.stderr)
 
         rpm_names = self._create_openstack_packages_list()
-        cmdline = ["yum", "install", "-y"] + rpm_names
-        sh.execute(*cmdline, run_as_root=True,
-                   stdout_fh=sys.stdout, stderr_fh=sys.stderr)
+        if rpm_names:
+            cmdline = ["yum", "install", "-y"] + rpm_names
+            sh.execute(*cmdline, run_as_root=True,
+                       stdout_fh=sys.stdout, stderr_fh=sys.stderr)
 
     def uninstall(self):
         super(YumDependencyHandler, self).uninstall()
-        rpm_names = self._create_openstack_packages_list()
-        cmdline = ["yum", "remove", "--remove-leaves", "-y"] + rpm_names
-        sh.execute(*cmdline, run_as_root=True,
-                   stdout_fh=sys.stdout, stderr_fh=sys.stderr)
+        helper = yum_helper.Helper()
+        rpm_names = []
+        for name in self._create_openstack_packages_list():
+            if helper.is_installed(name):
+                rpm_names.append(name)
+
+        if rpm_names:
+            cmdline = ["yum", "remove", "--remove-leaves", "-y"] + rpm_names
+            sh.execute(*cmdline, run_as_root=True,
+                       stdout_fh=sys.stdout, stderr_fh=sys.stderr)
 
