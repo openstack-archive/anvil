@@ -2,7 +2,7 @@
 # RedHat Enterprise Linux 6.0+
 name: rhel
 platform_pattern: redhat(.*)|centos(.*)
-packager_name: anvil.packaging.yum:YumPackager
+install_helper: anvil.packaging.yum:YumInstallHelper
 dependency_handler: anvil.packaging.yum:YumDependencyHandler
 commands:
     apache:
@@ -61,7 +61,6 @@ components:
     db:
         action_classes:
             install: anvil.distros.rhel:DBInstaller
-            package: anvil.packaging.base:EmptyPackager
             running: anvil.components.db:DBRuntime
             test: anvil.components.base_testing:EmptyTestingComponent
             uninstall: anvil.components.db:DBUninstaller
@@ -71,7 +70,6 @@ components:
     general:
         action_classes:
             install: anvil.components.pkglist:Installer
-            package: anvil.packaging.base:EmptyPackager
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.base_testing:EmptyTestingComponent
             uninstall: anvil.components.pkglist:Uninstaller
@@ -265,7 +263,6 @@ components:
     no-vnc:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
-            package: anvil.packaging.base:EmptyPackager
             running: anvil.components.novnc:NoVNCRuntime
             test: anvil.components.base_testing:EmptyTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
@@ -306,7 +303,6 @@ components:
     rabbit-mq:
         action_classes:
             install: anvil.components.rabbit:RabbitInstaller
-            package: anvil.packaging.base:EmptyPackager
             running: anvil.distros.rhel:RabbitRuntime
             test: anvil.components.base_testing:EmptyTestingComponent
             uninstall: anvil.components.rabbit:RabbitUninstaller
@@ -319,14 +315,12 @@ components:
                 - qpidd
                 - stop
                 ignore_failure: true
-                run_as_root: true
             # Also stop it from starting on boot (if rebooted)
             -   cmd:
                 - chkconfig
                 - qpidd
                 - 'off'
                 ignore_failure: true
-                run_as_root: true
     swift-client:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent

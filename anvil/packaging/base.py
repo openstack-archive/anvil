@@ -15,39 +15,24 @@
 #    under the License.
 
 # R0921: Abstract class not referenced
-#pylint: disable=R0921
-
-import abc
+# R0902: Too many instance attributes
+#pylint: disable=R0902,R0921
 
 import pkg_resources
 
 from anvil import colorizer
-from anvil.components import base as component_base
 from anvil import log as logging
 from anvil import shell as sh
-from anvil import type_utils
 from anvil import utils
 
 LOG = logging.getLogger(__name__)
 
 
-class Packager(object):
-    """Basic class for package management systems support.
+class InstallHelper(object):
+    """Run pre and post install for a single package.
     """
-    __meta__ = abc.ABCMeta
-
-    def __init__(self, distro, remove_default=False):
+    def __init__(self, distro):
         self.distro = distro
-        self.remove_default = remove_default
-
-    def remove(self, pkg):
-        should_remove = self.remove_default
-        if 'removable' in pkg:
-            should_remove = type_utils.make_bool(pkg['removable'])
-        if not should_remove:
-            return False
-        self._remove(pkg)
-        return True
 
     def pre_install(self, pkg, params=None):
         cmds = pkg.get('pre-install')
@@ -60,14 +45,6 @@ class Packager(object):
         if cmds:
             LOG.info("Running post-install commands for package %s.", colorizer.quote(pkg['name']))
             utils.execute_template(*cmds, params=params)
-
-    @abc.abstractmethod
-    def _remove(self, pkg):
-        pass
-
-    @abc.abstractmethod
-    def _install(self, pkg):
-        pass
 
 
 OPENSTACK_PACKAGES = set([
@@ -131,7 +108,7 @@ class DependencyHandler(object):
         python_names = []
         for pkg_dir in package_dirs:
             cmdline = ["python", "setup.py", "--name"]
-            python_names.append(sh.execute(*cmdline, cwd=pkg_dir)[0].
+            python_names.append(sh.execute(cmdline, cwd=pkg_dir)[0].
                                 splitlines()[-1].strip())
         return python_names
 
@@ -206,7 +183,7 @@ class DependencyHandler(object):
             cmdline.append("--frozen")
         cmdline = cmdline + extra_pips + ["-r"] + requires_files
 
-        output = sh.execute(*cmdline, ignore_exit_code=True)
+        output = sh.execute(cmdline, check_exit_code=False)
         conflict_descr = output[1].strip()
         forced_keys = set()
         if conflict_descr:
@@ -265,7 +242,7 @@ class DependencyHandler(object):
             if nopips:
                 cmdline.append("--ignore-packages")
                 cmdline.extend(nopips)
-            output = sh.execute(*cmdline)
+            output = sh.execute(cmdline)
             pips_to_download = list(utils.splitlines_not_empty(output[0]))
         else:
             pips_to_download = self.pips_to_install
@@ -293,10 +270,5 @@ class DependencyHandler(object):
         LOG.info("You can watch progress in another terminal with")
         LOG.info("    tail -f %s" % out_filename)
         with open(out_filename, "w") as out:
-            sh.execute(*cmdline, stdout_fh=out, stderrr_fh=out)
+            sh.execute(cmdline, stdout_fh=out, stderr_fh=out)
         return sh.listdir(self.download_dir, files_only=True)
-
-
-class EmptyPackager(component_base.Component):
-    def package(self):
-        return None

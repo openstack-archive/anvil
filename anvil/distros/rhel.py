@@ -19,7 +19,6 @@
 Platform-specific logic for RedHat Enterprise Linux components.
 """
 
-import glob
 import re
 
 from anvil import colorizer
@@ -34,7 +33,6 @@ from anvil.components import rabbit
 
 from anvil.components.configurators import horizon as hconf
 
-from anvil.packaging import yum
 
 LOG = logging.getLogger(__name__)
 
@@ -67,8 +65,7 @@ class DBInstaller(db.DBInstaller):
                 new_lines.append('bind-address = 0.0.0.0')
             else:
                 new_lines.append(line)
-        with sh.Rooted(True):
-            sh.write_file_and_backup(DBInstaller.MYSQL_CONF, utils.joinlinesep(*new_lines))
+        sh.write_file_and_backup(DBInstaller.MYSQL_CONF, utils.joinlinesep(*new_lines))
 
 
 class HorizonInstaller(horizon.HorizonInstaller):
@@ -94,8 +91,7 @@ class HorizonInstaller(horizon.HorizonInstaller):
             if re.match(r"^\s*Listen\s+(.*)$", line, re.I):
                 line = "Listen 0.0.0.0:80"
             new_lines.append(line)
-        with sh.Rooted(True):
-            sh.write_file_and_backup(HorizonInstaller.HTTPD_CONF, utils.joinlinesep(*new_lines))
+        sh.write_file_and_backup(HorizonInstaller.HTTPD_CONF, utils.joinlinesep(*new_lines))
 
     def _config_fixups(self):
         self._config_fix_httpd()
@@ -120,11 +116,10 @@ class RabbitRuntime(rabbit.RabbitRuntime):
         # And not trying to run this service directly...
         base_dir = sh.joinpths("/var/log", 'rabbitmq')
         if sh.isdir(base_dir):
-            with sh.Rooted(True):
-                # Seems like we need root perms to list that directory...
-                for fn in sh.listdir(base_dir):
-                    if re.match("(.*?)(err|log)$", fn, re.I):
-                        sh.chmod(sh.joinpths(base_dir, fn), 0666)
+            # Seems like we need root perms to list that directory...
+            for fn in sh.listdir(base_dir):
+                if re.match("(.*?)(err|log)$", fn, re.I):
+                    sh.chmod(sh.joinpths(base_dir, fn), 0666)
 
     def start(self):
         self._fix_log_dir()
@@ -157,42 +152,10 @@ class NovaInstaller(nova.NovaInstaller):
             # Create a libvirtd user group
             if not sh.group_exists('libvirtd'):
                 cmd = ['groupadd', 'libvirtd']
-                sh.execute(*cmd, run_as_root=True)
+                sh.execute(cmd)
             if not sh.isfile(LIBVIRT_POLICY_FN):
                 contents = self._get_policy(self._get_policy_users())
-                with sh.Rooted(True):
-                    sh.mkdirslist(sh.dirname(LIBVIRT_POLICY_FN))
-                    sh.write_file(LIBVIRT_POLICY_FN, contents)
+                sh.mkdirslist(sh.dirname(LIBVIRT_POLICY_FN))
+                sh.write_file(LIBVIRT_POLICY_FN, contents)
                 configs_made += 1
         return configs_made
-
-
-class YumPackagerWithRelinks(yum.YumPackager):
-
-    def _remove(self, pkg):
-        yum.YumPackager._remove(self, pkg)
-        options = pkg.get('packager_options') or {}
-        links = options.get('links') or []
-        for entry in links:
-            if sh.islink(entry['target']):
-                sh.unlink(entry['target'])
-
-    def _install(self, pkg):
-        yum.YumPackager._install(self, pkg)
-        options = pkg.get('packager_options') or {}
-        links = options.get('links') or []
-        for entry in links:
-            tgt = entry.get('target')
-            src = entry.get('source')
-            if not tgt or not src:
-                continue
-            src = glob.glob(src)
-            if not isinstance(tgt, (list, tuple)):
-                tgt = [tgt]
-            if len(src) != len(tgt):
-                raise RuntimeError("Unable to link %s sources to %s locations" % (len(src), len(tgt)))
-            for i in range(len(src)):
-                i_src = src[i]
-                i_tgt = tgt[i]
-                if not sh.islink(i_tgt):
-                    sh.symlink(i_src, i_tgt)

@@ -43,7 +43,7 @@ class RabbitUninstaller(binstall.PkgUninstallComponent):
             self.runtime.start()
             self.runtime.wait_active()
             cmd = self.distro.get_command('rabbit-mq', 'change_password') + [RESET_BASE_PW]
-            sh.execute(*cmd, run_as_root=True)
+            sh.execute(cmd)
             LOG.info("Restarting so that your rabbit-mq password is reflected.")
             self.runtime.restart()
             self.runtime.wait_active()
@@ -67,7 +67,7 @@ class RabbitInstaller(binstall.PkgInstallComponent):
         self.runtime.wait_active()
         cmd = list(self.distro.get_command('rabbit-mq', 'change_password'))
         cmd += [user_id, rhelper.get_shared_passwords(self)['pw']]
-        sh.execute(*cmd, run_as_root=True)
+        sh.execute(cmd)
         LOG.info("Restarting so that your rabbit-mq password is reflected.")
         self.runtime.restart()
         self.runtime.wait_active()
@@ -123,7 +123,7 @@ class RabbitRuntime(bruntime.ProgramRuntime):
         # RHEL seems to have this bug also...
         with TemporaryFile() as s_fh:
             with TemporaryFile() as e_fh:
-                sh.execute(*cmd, run_as_root=True,
+                sh.execute(cmd,
                            stdout_fh=s_fh, stderr_fh=e_fh,
                            check_exit_code=check_exit_code)
                 # Read from the file handles instead of the typical output...

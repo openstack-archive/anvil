@@ -80,37 +80,36 @@ class ForkRunner(base.Runner):
         if not sh.isdir(trace_dir):
             msg = "No trace directory found from which to stop: %r" % (app_name)
             raise excp.StopException(msg)
-        with sh.Rooted(True):
-            fork_fns = self._form_file_names(app_name)
-            skip_kill = True
-            pid = None
-            try:
-                pid = fork_fns.extract_pid()
+        fork_fns = self._form_file_names(app_name)
+        skip_kill = True
+        pid = None
+        try:
+            pid = fork_fns.extract_pid()
+            skip_kill = False
+        except IOError as e:
+            if e.errno == errno.ENOENT:
+                pass
+            else:
                 skip_kill = False
-            except IOError as e:
-                if e.errno == errno.ENOENT:
-                    pass
-                else:
-                    skip_kill = False
-            if not skip_kill and pid is None:
-                msg = "Could not extract a valid pid from %r" % (fork_fns.pid)
-                raise excp.StopException(msg)
-            # Bother trying to kill said process?
+        if not skip_kill and pid is None:
+            msg = "Could not extract a valid pid from %r" % (fork_fns.pid)
+            raise excp.StopException(msg)
+        # Bother trying to kill said process?
+        if not skip_kill:
+            (killed, attempts) = sh.kill(pid)
+        else:
+            (killed, attempts) = (True, 0)
+        # Trash the files if it worked
+        if killed:
             if not skip_kill:
-                (killed, attempts) = sh.kill(pid)
-            else:
-                (killed, attempts) = (True, 0)
-            # Trash the files if it worked
-            if killed:
-                if not skip_kill:
-                    LOG.debug("Killed pid '%s' after %s attempts.", pid, attempts)
-                for leftover_fn in fork_fns.as_list():
-                    if sh.exists(leftover_fn):
-                        LOG.debug("Removing forking related file %r", (leftover_fn))
-                        sh.unlink(leftover_fn)
-            else:
-                msg = "Could not stop %r after %s attempts" % (app_name, attempts)
-                raise excp.StopException(msg)
+                LOG.debug("Killed pid '%s' after %s attempts.", pid, attempts)
+            for leftover_fn in fork_fns.as_list():
+                if sh.exists(leftover_fn):
+                    LOG.debug("Removing forking related file %r", (leftover_fn))
+                    sh.unlink(leftover_fn)
+        else:
+            msg = "Could not stop %r after %s attempts" % (app_name, attempts)
+            raise excp.StopException(msg)
 
     def status(self, app_name):
         # Attempt to find the status of a given app by finding where that apps
@@ -173,8 +172,7 @@ class ForkRunner(base.Runner):
                 if v is not None:
                     run_trace.trace(k, v)
         LOG.debug("Forking %r by running command %r with args (%s)" % (app_name, app_pth, " ".join(args)))
-        with sh.Rooted(True):
-            sh.fork(app_pth, app_wkdir, fork_fns.pid, fork_fns.stdout, fork_fns.stderr, *args)
+        sh.fork(app_pth, app_wkdir, fork_fns.pid, fork_fns.stdout, fork_fns.stderr, *args)
         return trace_fn
 
     def _post_start(self, app_name):

@@ -46,7 +46,6 @@ def drop_db(distro, dbtype, user, pw, dbname, **kwargs):
         cmds = list()
         cmds.append({
             'cmd': dropcmd,
-            'run_as_root': False,
         })
         utils.execute_template(*cmds, params=params)
     else:
@@ -67,7 +66,6 @@ def create_db(distro, dbtype, user, pw, dbname, **kwargs):
         cmds = list()
         cmds.append({
             'cmd': createcmd,
-            'run_as_root': False,
         })
         utils.execute_template(*cmds, params=params)
     else:
