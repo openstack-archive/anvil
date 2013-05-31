@@ -26,5 +26,5 @@ class Installer(binstall.PythonInstallComponent):
         return None
 
 
-class Uninstaller(binstall.PythonUninstallComponent):
+class Uninstaller(binstall.PkgUninstallComponent):
     pass

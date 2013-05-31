@@ -159,6 +159,9 @@ class DependencyHandler(object):
             for pkg in inst.get_option("nopackages") or []:
                 self.nopackages.append(pkg["name"])
 
+    def uninstall(self):
+        pass
+
     def clean_pip_requires(self, requires_files):
         # Fixup incompatible dependencies
         if not (requires_files and self.forced_packages):

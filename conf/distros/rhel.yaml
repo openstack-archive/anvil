@@ -49,7 +49,7 @@ components:
             running: anvil.components.cinder:CinderRuntime
             test: anvil.components.base_testing:PythonTestingComponent
             coverage: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PythonUninstallComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
         pips:
             - name: hp3parclient
     cinder-client:
@@ -57,7 +57,7 @@ components:
             install: anvil.components.base_install:PythonInstallComponent
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PythonUninstallComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
     db:
         action_classes:
             install: anvil.distros.rhel:DBInstaller
@@ -141,7 +141,7 @@ components:
             install: anvil.components.glance:GlanceInstaller
             running: anvil.components.glance:GlanceRuntime
             test: anvil.components.glance:GlanceTester
-            uninstall: anvil.components.base_install:PythonUninstallComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
         packages:
         -   name: MySQL-python
         pips:
@@ -155,7 +155,7 @@ components:
             install: anvil.components.base_install:PythonInstallComponent
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.glance_client:GlanceClientTester
-            uninstall: anvil.components.base_install:PythonUninstallComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
     horizon:
         action_classes:
             install: anvil.distros.rhel:HorizonInstaller
@@ -171,13 +171,13 @@ components:
             install: anvil.components.base_install:PythonInstallComponent
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.base_testing:EmptyTestingComponent
-            uninstall: anvil.components.base_install:PythonUninstallComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
     keystone:
         action_classes:
             install: anvil.components.keystone:KeystoneInstaller
             running: anvil.components.keystone:KeystoneRuntime
             test: anvil.components.keystone:KeystoneTester
-            uninstall: anvil.components.base_install:PythonUninstallComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
         packages:
         -   name: MySQL-python
     keystone-client:
@@ -185,7 +185,7 @@ components:
             install: anvil.components.base_install:PythonInstallComponent
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PythonUninstallComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
     nova:
         action_classes:
             install: anvil.distros.rhel:NovaInstaller
@@ -261,14 +261,14 @@ components:
             install: anvil.components.base_install:PythonInstallComponent
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PythonUninstallComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
     no-vnc:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
             package: anvil.packaging.base:EmptyPackager
             running: anvil.components.novnc:NoVNCRuntime
             test: anvil.components.base_testing:EmptyTestingComponent
-            uninstall: anvil.components.base_install:PythonUninstallComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
         packages:
         -   name: python-websockify
         -   name: numpy
@@ -277,32 +277,32 @@ components:
             install: anvil.components.openstack_client:OpenStackClientInstaller
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.openstack_client:OpenStackClientTester
-            uninstall: anvil.components.base_install:PythonUninstallComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
     oslo-config:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PythonUninstallComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
     oslo-incubator:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PythonUninstallComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
     quantum:
         action_classes:
             install: anvil.components.quantum:QuantumInstaller
             running: anvil.components.quantum:QuantumRuntime
             test: anvil.components.base_testing:PythonTestingComponent
             coverage: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PythonUninstallComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
     quantum-client:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PythonUninstallComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
     rabbit-mq:
         action_classes:
             install: anvil.components.rabbit:RabbitInstaller
@@ -332,5 +332,5 @@ components:
             install: anvil.components.base_install:PythonInstallComponent
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PythonUninstallComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
 ...

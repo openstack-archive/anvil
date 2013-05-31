@@ -27,7 +27,6 @@ DOWNLOADED = "DOWNLOADED"
 FILE_TOUCHED = "FILE_TOUCHED"
 PIP_INSTALL = 'PIP_INSTALL'
 PKG_INSTALL = "PKG_INSTALL"
-PYTHON_INSTALL = "PYTHON_INSTALL"
 SYMLINK_MAKE = "SYMLINK_MAKE"
 
 
@@ -59,13 +58,6 @@ class TraceWriter(object):
             sh.touch_file(self.trace_fn, die_if_there=self.break_if_there)
             self.started = True
             self.dirs_made(*trace_dirs)
-
-    def py_installed(self, name, where):
-        self._start()
-        what = dict()
-        what['name'] = name
-        what['where'] = where
-        self.trace(PYTHON_INSTALL, json.dumps(what))
 
     def symlink_made(self, link):
         self._start()
@@ -147,16 +139,6 @@ class TraceReader(object):
                     apps.append((entry.get('name'), entry.get('trace_fn'), entry.get('how')))
         return apps
 
-    def py_listing(self):
-        lines = self.read()
-        py_entries = list()
-        for (cmd, action) in lines:
-            if cmd == PYTHON_INSTALL and len(action):
-                entry = json.loads(action)
-                if type(entry) is dict:
-                    py_entries.append((entry.get("name"), entry.get("where")))
-        return py_entries
-
     def download_locations(self):
         lines = self.read()
         locations = list()
@@ -210,16 +192,3 @@ class TraceReader(object):
             if type(pip_info_full) is dict:
                 pips_installed.append(pip_info_full)
         return pips_installed
-
-    def packages_installed(self):
-        lines = self.read()
-        pkgs_installed = list()
-        pkg_list = list()
-        for (cmd, action) in lines:
-            if cmd == PKG_INSTALL and len(action):
-                pkg_list.append(action)
-        for pkg_data in pkg_list:
-            pkg_info = json.loads(pkg_data)
-            if type(pkg_info) is dict:
-                pkgs_installed.append(pkg_info)
-        return pkgs_installed
