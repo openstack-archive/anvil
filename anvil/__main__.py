@@ -148,8 +148,7 @@ def ensure_anvil_dirs(root_dir):
         if sh.isdir(d):
             continue
         LOG.info("Creating anvil directory at path: %s", d)
-        with sh.Rooted(True):
-            sh.mkdir(d, adjust_suids=True)
+        sh.mkdir(d)
 
 
 def store_current_settings(c_settings):
@@ -159,14 +158,11 @@ def store_current_settings(c_settings):
         for k in ['action', 'verbose', 'dryrun']:
             if k in c_settings:
                 to_save.pop(k, None)
-        with sh.Rooted(True):
-            with open("/etc/anvil/settings.yaml", 'w') as fh:
-                fh.write("# Anvil last used settings\n")
-                fh.write(utils.add_header("/etc/anvil/settings.yaml",
-                         utils.prettify_yaml(to_save)))
-                fh.flush()
-        (uid, gid) = sh.get_suids()
-        sh.chown("/etc/anvil/settings.yaml", uid, gid)
+        with open("/etc/anvil/settings.yaml", 'w') as fh:
+            fh.write("# Anvil last used settings\n")
+            fh.write(utils.add_header("/etc/anvil/settings.yaml",
+                     utils.prettify_yaml(to_save)))
+            fh.flush()
     except Exception as e:
         LOG.debug("Failed writing to %s due to %s", "/etc/anvil/settings.yaml", e)
 
@@ -175,8 +171,6 @@ def ensure_perms():
     # Ensure we are running as root to start...
     if not sh.got_root():
         raise excp.PermException("Root access required")
-    # Drop to usermode (which also ensures we can do this...)
-    sh.user_mode(quiet=False)
 
 
 def main():

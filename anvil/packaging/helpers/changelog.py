@@ -72,7 +72,7 @@ class GitChangeLog(object):
 
     def _get_commit_detail(self, commit, field, am=1):
         detail_cmd = ['git', 'log', '--color=never', '-%s' % (am), "--pretty=format:%s" % (field), commit]
-        (stdout, _stderr) = sh.execute(*detail_cmd, cwd=self.wkdir)
+        (stdout, _stderr) = sh.execute(detail_cmd, cwd=self.wkdir)
         ret = stdout.strip('\n').splitlines()
         if len(ret) == 1:
             ret = ret[0]
@@ -106,7 +106,7 @@ class GitChangeLog(object):
 
     def _get_log(self):
         log_cmd = ['git', 'log', '--pretty=oneline', '--color=never']
-        (sysout, _stderr) = sh.execute(*log_cmd, cwd=self.wkdir)
+        (sysout, _stderr) = sh.execute(log_cmd, cwd=self.wkdir)
         lines = sysout.strip('\n').splitlines()
 
         # Extract the raw commit details

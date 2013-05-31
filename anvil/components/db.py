@@ -154,7 +154,7 @@ class DBRuntime(bruntime.ProgramRuntime):
         cmd = self._get_command(action)
         if not cmd:
             raise NotImplementedError("No distro command provided to perform action %r" % (action))
-        return sh.execute(*cmd, run_as_root=True, check_exit_code=check_exit_code)
+        return sh.execute(cmd, check_exit_code=check_exit_code)
 
     def start(self):
         if self.statii()[0].status != bruntime.STATUS_STARTED:

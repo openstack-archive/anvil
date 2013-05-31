@@ -63,7 +63,7 @@ class KeystoneInstaller(binstall.PythonInstallComponent):
     def _sync_db(self):
         LOG.info("Syncing keystone to database: %s", colorizer.quote(self.configurator.DB_NAME))
         sync_cmd = MANAGE_CMD + ['db_sync']
-        cmds = [{'cmd': sync_cmd, 'run_as_root': True}]
+        cmds = [{'cmd': sync_cmd}]
         utils.execute_template(*cmds, cwd=self.bin_dir, params=self.config_params(None))
 
     @property
@@ -86,9 +86,9 @@ class KeystoneInstaller(binstall.PythonInstallComponent):
         LOG.info("Setting up keystone's pki support.")
         for value in kconf.PKI_FILES.values():
             sh.mkdirslist(sh.dirname(sh.joinpths(self.configurator.link_dir, value)),
-                          tracewriter=self.tracewriter, adjust_suids=True)
+                          tracewriter=self.tracewriter)
         pki_cmd = MANAGE_CMD + ['pki_setup']
-        cmds = [{'cmd': pki_cmd, 'run_as_root': True}]
+        cmds = [{'cmd': pki_cmd}]
         utils.execute_template(*cmds, cwd=self.bin_dir, params=self.config_params(None))
 
     def warm_configs(self):

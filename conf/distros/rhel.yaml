@@ -309,14 +309,12 @@ components:
                 - qpidd
                 - stop
                 ignore_failure: true
-                run_as_root: true
             # Also stop it from starting on boot (if rebooted)
             -   cmd:
                 - chkconfig
                 - qpidd
                 - 'off'
                 ignore_failure: true
-                run_as_root: true
     swift-client:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent

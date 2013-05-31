@@ -52,7 +52,7 @@ class GlanceInstaller(binstall.PythonInstallComponent):
 
     def _sync_db(self):
         LOG.info("Syncing glance to database: %s", colorizer.quote(self.configurator.DB_NAME))
-        cmds = [{'cmd': SYNC_DB_CMD, 'run_as_root': True}]
+        cmds = [{'cmd': SYNC_DB_CMD}]
         utils.execute_template(*cmds, cwd=self.bin_dir, params=self.config_params(None))
 
     @property

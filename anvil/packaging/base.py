@@ -103,7 +103,7 @@ class DependencyHandler(object):
         python_names = []
         for pkg_dir in package_dirs:
             cmdline = ["python", "setup.py", "--name"]
-            python_names.append(sh.execute(*cmdline, cwd=pkg_dir)[0].
+            python_names.append(sh.execute(cmdline, cwd=pkg_dir)[0].
                                 splitlines()[-1].strip())
         return python_names
 
@@ -171,7 +171,7 @@ class DependencyHandler(object):
         ]
         cmdline = cmdline + extra_pips + ["-r"] + requires_files
 
-        output = sh.execute(*cmdline, ignore_exit_code=True)
+        output = sh.execute(cmdline, check_exit_code=False)
         conflict_descr = output[1].strip()
         forced_keys = set()
         if conflict_descr:
@@ -252,5 +252,5 @@ class DependencyHandler(object):
         LOG.info("You can watch progress in another terminal with")
         LOG.info("    tail -f %s" % out_filename)
         with open(out_filename, "w") as out:
-            sh.execute(*cmdline, stdout_fh=out, stderrr_fh=out)
+            sh.execute(cmdline, stdout_fh=out, stderr_fh=out)
         return sh.listdir(self.download_dir, files_only=True)
