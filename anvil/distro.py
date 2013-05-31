@@ -39,11 +39,11 @@ Component = collections.namedtuple(  # pylint: disable=C0103
 class Distro(object):
     def __init__(self,
                  name, platform_pattern,
-                 packager_name, dependency_handler,
+                 install_helper, dependency_handler,
                  commands, components):
         self.name = name
         self._platform_pattern = re.compile(platform_pattern, re.IGNORECASE)
-        self._packager_name = packager_name
+        self._install_helper = install_helper
         self._dependency_handler = dependency_handler
         self._commands = commands
         self._components = components
@@ -90,9 +90,9 @@ class Distro(object):
         return bool(self._platform_pattern.search(platform_name))
 
     @property
-    def package_manager_class(self):
+    def install_helper_class(self):
         """Return a package manager that will work for this distro."""
-        return importer.import_entry_point(self._packager_name)
+        return importer.import_entry_point(self._install_helper)
 
     @property
     def dependency_handler_class(self):

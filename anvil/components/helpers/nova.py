@@ -93,9 +93,8 @@ class NetworkCleaner(object):
                 continue
             cwd = ''
             cmdline = ''
-            with sh.Rooted(True):
-                cwd = proc.getcwd()
-                cmdline = " ".join(proc.cmdline)
+            cwd = proc.getcwd()
+            cmdline = " ".join(proc.cmdline)
             to_try = False
             for t in [cwd, cmdline]:
                 if t.lower().find("nova") != -1:
@@ -107,8 +106,7 @@ class NetworkCleaner(object):
                                header="Killing leftover nova dnsmasq processes with process ids",
                                logger=nconf.LOG)
             for pid in to_kill:
-                with sh.Rooted(True):
-                    sh.kill(pid)
+                sh.kill(pid)
 
     def _clean_iptables(self):
         # Nova doesn't seem to cleanup its iptables rules that it
@@ -136,7 +134,7 @@ class NetworkCleaner(object):
         # Isolate the nova rules
         clean_rules = []
         list_cmd = ['iptables', '--list-rules', '--verbose']
-        (stdout, _stderr) = sh.execute(*list_cmd, run_as_root=True)
+        (stdout, _stderr) = sh.execute(list_cmd)
         for line in stdout.splitlines():
             line = line.strip()
             if not line_matcher(line, "-A"):
@@ -149,7 +147,7 @@ class NetworkCleaner(object):
         # Isolate the nova nat rules
         clean_nats = []
         nat_cmd = ['iptables', '--list-rules', '--verbose', '--table', 'nat']
-        (stdout, _stderr) = sh.execute(*nat_cmd, run_as_root=True)
+        (stdout, _stderr) = sh.execute(nat_cmd)
         for line in stdout.splitlines():
             line = line.strip()
             if not line_matcher(line, "-A"):
@@ -162,7 +160,7 @@ class NetworkCleaner(object):
         # Isolate the nova chains
         clean_chains = []
         chain_cmd = ['iptables', '--list-rules', '--verbose']
-        (stdout, _stderr) = sh.execute(*chain_cmd, run_as_root=True)
+        (stdout, _stderr) = sh.execute(chain_cmd)
         for line in stdout.splitlines():
             if not line_matcher(line, "-N"):
                 continue
@@ -174,7 +172,7 @@ class NetworkCleaner(object):
         # Isolate the nova nat chains
         clean_nat_chains = []
         nat_chain_cmd = ['iptables', '--list-rules', '--verbose', '--table', 'nat']
-        (stdout, _stderr) = sh.execute(*nat_chain_cmd, run_as_root=True)
+        (stdout, _stderr) = sh.execute(nat_chain_cmd)
         for line in stdout.splitlines():
             if not line_matcher(line, "-N"):
                 continue
@@ -187,11 +185,11 @@ class NetworkCleaner(object):
         for r in clean_rules + clean_chains:
             pieces = r.split(None)
             pieces = ['iptables'] + pieces
-            sh.execute(*pieces, run_as_root=True, shell=True)
+            sh.execute(pieces, shell=True)
         for r in clean_nats + clean_nat_chains:
             pieces = r.split(None)
             pieces = ['iptables', '--table', 'nat'] + pieces
-            sh.execute(*pieces, run_as_root=True, shell=True)
+            sh.execute(pieces, shell=True)
 
     def clean(self):
         self._stop_dnsmasq()

@@ -32,9 +32,9 @@ def extract_requirement(pkg_info):
         pkg_info.get('name', ''), pkg_info.get('version'))
 
 
-class Packager(base.Packager):
-    def __init__(self, distro, remove_default=False):
-        super(Packager, self).__init__(distro, remove_default)
+class PipInstallHelper(base.InstallHelper):
+    def __init__(self, distro):
+        super(PipInstallHelper, self).__init__(distro)
         self.helper = pip_helper.Helper(distro)
         self.upgraded = {}
 
@@ -47,7 +47,7 @@ class Packager(base.Packager):
             pip_cmd = [pip_cmd]
         pip_cmd = pip_cmd + cmd
         try:
-            sh.execute(*pip_cmd, run_as_root=True)
+            sh.execute(pip_cmd)
         finally:
             # The known packages installed is probably
             # not consistent anymore so uncache it

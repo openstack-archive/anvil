@@ -23,77 +23,11 @@ from anvil.packaging import base
 from anvil import shell as sh
 from anvil import utils
 
-from anvil.packaging.helpers import yum_helper
 
 LOG = logging.getLogger(__name__)
 
-YUM_CMD = ['yum']
-YUM_INSTALL = ["install", "-y", "-t"]
-YUM_REMOVE = ['erase', '-y', "-t"]
 
-
-# TODO(aababilov): use it in `Requires:' at YumDependencyHandler
-def extract_requirement(pkg_info):
-    p_name = pkg_info.get('name', '')
-    p_name = p_name.strip()
-    if not p_name:
-        raise ValueError("Yum requirement provided with an empty name")
-    p_version = pkg_info.get('version')
-    if p_version is not None:
-        if isinstance(p_version, (int, float, long)):
-            p_version = str(p_version)
-        if not isinstance(p_version, (str, basestring)):
-            raise TypeError("Yum requirement version must be a string or numeric type")
-    return yum_helper.Requirement(p_name, p_version)
-
-
-class MultiplePackageSolutions(excp.DependencyException):
-    pass
-
-
-class YumPackager(base.Packager):
-    def __init__(self, distro, remove_default=False):
-        super(YumPackager, self).__init__(distro, remove_default)
-        self.helper = yum_helper.Helper()
-
-    def _execute_yum(self, cmd, **kargs):
-        yum_cmd = YUM_CMD + cmd
-        return sh.execute(*yum_cmd, run_as_root=True,
-                          check_exit_code=True, **kargs)
-
-    def direct_install(self, filename):
-        cmd = YUM_INSTALL + [filename]
-        self._execute_yum(cmd)
-
-    def _remove_special(self, name, info):
-        return False
-
-    def _remove(self, pkg):
-        req = extract_requirement(pkg)
-        whats_there = self.helper.get_installed(req.name)
-        matched = False
-        if req.version is None and len(whats_there):
-            # Always matches...
-            matched = True
-        else:
-            for p in whats_there:
-                if p.verEQ(req.package):
-                    matched = True
-        if not len(whats_there):
-            # Nothing installed
-            return
-        if not matched:
-            # Warn that incompat. version could be uninstalled
-            LOG.warn("Removing package named %s even though %s packages with different versions exist",
-                     req, len(whats_there))
-        if self._remove_special(req.name, pkg):
-            return
-        # Not removing specific version, this could
-        # cause problems but should be good enough until
-        # it does cause problems...
-        cmd = YUM_REMOVE + [req.name]
-        self._execute_yum(cmd)
-
+class YumInstallHelper(base.InstallHelper):
     def pre_install(self, pkg, params=None):
         """pre-install is handled in openstack-deps %pre script.
         """
@@ -168,7 +102,13 @@ BuildArch: noarch
         }
         for pack_name in sorted(packages.iterkeys()):
             pack = packages[pack_name]
-            spec_content += "Requires: %s\n" % pack["name"]
+            cont = [spec_content, "Requires: ", pack["name"]]
+            version = pack.get("version")
+            if version:
+                cont.append(" ")
+                cont.append(version)
+            cont.append("\n")
+            spec_content = "".join(spec_content)
             for script_name in script_map.iterkeys():
                 try:
                     script_list = pack[script_name]
@@ -214,7 +154,7 @@ BuildArch: noarch
             spec_filename,
         ]
         LOG.info("Building %s RPM" % self.OPENSTACK_DEPS_PACKAGE_NAME)
-        sh.execute(*cmdline)
+        sh.execute(cmdline)
 
     def _build_dependencies(self):
         package_files = self.download_dependencies()
@@ -233,7 +173,7 @@ BuildArch: noarch
         LOG.info("    tail -f %s" % out_filename)
         with open(out_filename, "w") as out:
             try:
-                sh.execute(*cmdline, stdout_fh=out, stderr_fh=out)
+                sh.execute(cmdline, stdout_fh=out, stderr_fh=out)
             except excp.ProcessExecutionError:
                 LOG.error("Some packages failed to build.")
                 LOG.error("That's usually not a big deal,"
@@ -251,7 +191,7 @@ BuildArch: noarch
         LOG.info("You can watch progress in another terminal with")
         LOG.info("    tail -f %s" % out_filename)
         with open(out_filename, "w") as out:
-            sh.execute(*cmdline, stdout_fh=out, stderr_fh=out)
+            sh.execute(cmdline, stdout_fh=out, stderr_fh=out)
 
     def _create_deps_repo(self):
         for filename in sh.listdir(sh.joinpths(self.rpmbuild_dir, "RPMS"),
@@ -263,7 +203,7 @@ BuildArch: noarch
         for repo_dir in self.deps_repo_dir, self.deps_src_repo_dir:
             cmdline = ["createrepo", repo_dir]
             LOG.info("Creating repo at %s" % repo_dir)
-            sh.execute(*cmdline)
+            sh.execute(cmdline)
         LOG.info("Writing anvil.repo to %s" % self.anvil_repo_filename)
         (_fn, content) = utils.load_template('packaging', 'anvil.repo')
         params = {"baseurl_bin": "file://%s" % self.deps_repo_dir,
@@ -274,8 +214,7 @@ BuildArch: noarch
     def _create_openstack_packages_list(self):
         cmdline = [self.py2rpm_executable, "--convert"] + self.python_names
         rpm_names = []
-        # run as root since /tmp/pip-build-root must be owned by root
-        for name in sh.execute(*cmdline, run_as_root=True)[0].splitlines():
+        for name in sh.execute(cmdline)[0].splitlines():
             # name is "Requires: rpm-name"
             try:
                 rpm_names.append(name.split(":")[1].strip())
@@ -285,28 +224,24 @@ BuildArch: noarch
 
     def install(self):
         super(YumDependencyHandler, self).install()
-        with sh.Rooted(True):
-            sh.copy(self.anvil_repo_filename, "/etc/yum.repos.d/")
+        sh.copy(self.anvil_repo_filename, "/etc/yum.repos.d/")
         cmdline = ["yum", "erase", "-y", self.OPENSTACK_DEPS_PACKAGE_NAME]
         cmdline.extend(self.nopackages)
-        sh.execute(*cmdline, run_as_root=True, ignore_exit_code=True,
+        sh.execute(cmdline, ignore_exit_code=True,
                    stdout_fh=sys.stdout, stderr_fh=sys.stderr)
         cmdline = ["yum", "clean", "all"]
-        sh.execute(*cmdline, run_as_root=True)
+        sh.execute(cmdline)
 
         cmdline = ["yum", "install", "-y", self.OPENSTACK_DEPS_PACKAGE_NAME]
-        sh.execute(*cmdline, run_as_root=True,
-                   stdout_fh=sys.stdout, stderr_fh=sys.stderr)
+        sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
 
         rpm_names = self._create_openstack_packages_list()
         cmdline = ["yum", "install", "-y"] + rpm_names
-        sh.execute(*cmdline, run_as_root=True,
-                   stdout_fh=sys.stdout, stderr_fh=sys.stderr)
+        sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
 
     def uninstall(self):
         super(YumDependencyHandler, self).uninstall()
         rpm_names = self._create_openstack_packages_list()
         cmdline = ["yum", "remove", "--remove-leaves", "-y"] + rpm_names
-        sh.execute(*cmdline, run_as_root=True,
-                   stdout_fh=sys.stdout, stderr_fh=sys.stderr)
+        sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
 

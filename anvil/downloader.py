@@ -76,13 +76,13 @@ class GitDownloader(Downloader):
             LOG.info("Existing git directory located at %s, leaving it alone.", colorizer.quote(self.store_where))
             # do git clean -xdfq and git reset --hard to undo possible changes
             cmd = ["git", "clean", "-xdfq"]
-            sh.execute(*cmd, cwd=self.store_where)
+            sh.execute(cmd, cwd=self.store_where)
             cmd = ["git", "reset", "--hard"]
-            sh.execute(*cmd, cwd=self.store_where)
+            sh.execute(cmd, cwd=self.store_where)
         else:
             LOG.info("Downloading %s (%s) to %s.", colorizer.quote(uri), branch, colorizer.quote(self.store_where))
             cmd = ["git", "clone", uri, self.store_where]
-            sh.execute(*cmd)
+            sh.execute(cmd)
         if tag:
             LOG.info("Adjusting to tag %s.", colorizer.quote(tag))
         else:
@@ -91,13 +91,13 @@ class GitDownloader(Downloader):
         # newer git allows branch resetting: git checkout -B $new_branch
         # so, all these are for compatibility with older RHEL git
         cmd = ["git", "rev-parse", "HEAD"]
-        git_head = sh.execute(*cmd, cwd=self.store_where)[0].strip()
+        git_head = sh.execute(cmd, cwd=self.store_where)[0].strip()
         cmd = ["git", "checkout", git_head]
-        sh.execute(*cmd, cwd=self.store_where)
+        sh.execute(cmd, cwd=self.store_where)
         cmd = ["git", "branch", "-D", new_branch]
-        sh.execute(*cmd, cwd=self.store_where, ignore_exit_code=True)
+        sh.execute(cmd, cwd=self.store_where, ignore_exit_code=True)
         cmd = ["git", "checkout"] + checkout_what
-        sh.execute(*cmd, cwd=self.store_where)
+        sh.execute(cmd, cwd=self.store_where)
 
 
 class UrlLibDownloader(Downloader):

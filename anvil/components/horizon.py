@@ -82,11 +82,10 @@ class HorizonInstaller(binstall.PythonInstallComponent):
         utils.log_iterable(log_fns, logger=LOG,
                            header="Adjusting %s log files" % (len(log_fns)))
         for fn in log_fns:
-            with sh.Rooted(True):
-                if clear:
-                    sh.unlink(fn, True)
-                sh.touch_file(fn, die_if_there=False, tracewriter=self.tracewriter)
-                sh.chmod(fn, 0666)
+            if clear:
+                sh.unlink(fn, True)
+            sh.touch_file(fn, die_if_there=False, tracewriter=self.tracewriter)
+            sh.chmod(fn, 0666)
         return len(log_fns)
 
     def _configure_files(self):
@@ -137,7 +136,7 @@ class HorizonRuntime(bruntime.ProgramRuntime):
         cmd = self.distro.get_command('apache', action)
         if not cmd:
             raise NotImplementedError("No distro command provided to perform action %r" % (action))
-        return sh.execute(*cmd, run_as_root=True, check_exit_code=check_exit_code)
+        return sh.execute(cmd, check_exit_code=check_exit_code)
 
     def restart(self):
         self._run_action('restart')
