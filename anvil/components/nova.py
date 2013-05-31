@@ -35,7 +35,7 @@ NET_INITED_FN = 'nova.network.inited.yaml'
 
 # This makes the database be in sync with nova
 DB_SYNC_CMD = [
-    {'cmd': ['$BIN_DIR/nova-manage', '--config-file', '$CFG_FILE', 'db', 'sync'], 'run_as_root': True},
+    {'cmd': ['$BIN_DIR/nova-manage', '--config-file', '$CFG_FILE', 'db', 'sync']},
 ]
 
 # Used to create a fixed network when initializating nova
@@ -43,7 +43,6 @@ FIXED_NET_CMDS = [
     {
         'cmd': ['$BIN_DIR/nova-manage', '--config-file', '$CFG_FILE',
                 'network', 'create', 'private', '$FIXED_RANGE', '1', '$FIXED_NETWORK_SIZE'],
-        'run_as_root': True,
     },
 ]
 
@@ -51,12 +50,10 @@ FIXED_NET_CMDS = [
 FLOATING_NET_CMDS = [
     {
         'cmd': ['$BIN_DIR/nova-manage', '--config-file', '$CFG_FILE', 'floating', 'create', '$FLOATING_RANGE'],
-        'run_as_root': True,
     },
     {
         'cmd': ['$BIN_DIR/nova-manage', '--config-file', '$CFG_FILE',
                 'floating', 'create', '--ip_range=$TEST_FLOATING_RANGE', '--pool=$TEST_FLOATING_POOL'],
-        'run_as_root': True,
     },
 ]
 

@@ -136,7 +136,7 @@ class PythonTestingComponent(base.Component):
             if self.get_bool_option("verbose", default_value=False):
                 null_fh = None
             try:
-                sh.execute(*cmd, stdout_fh=None, stderr_fh=null_fh, cwd=app_dir, env_overrides=env)
+                sh.execute(cmd, stdout_fh=None, stderr_fh=null_fh, cwd=app_dir, env_overrides=env)
             except excp.ProcessExecutionError as e:
                 if self.get_bool_option("ignore-test-failures", default_value=False):
                     LOG.warn("Ignoring test failure of component %s: %s", colorizer.quote(self.name), e)

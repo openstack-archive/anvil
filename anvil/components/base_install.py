@@ -177,7 +177,6 @@ class PkgUninstallComponent(base.Component):
         super(PkgUninstallComponent, self).__init__(*args, **kargs)
         trace_fn = tr.trace_filename(self.get_option('trace_dir'), 'created')
         self.tracereader = tr.TraceReader(trace_fn)
-        self.purge_packages = kargs.get('purge_packages')
 
     def unconfigure(self):
         self._unconfigure_links()
@@ -188,7 +187,7 @@ class PkgUninstallComponent(base.Component):
             utils.log_iterable(sym_files, logger=LOG,
                                header="Removing %s symlink files" % (len(sym_files)))
             for fn in sym_files:
-                sh.unlink(fn, run_as_root=True)
+                sh.unlink(fn)
 
     def post_uninstall(self):
         self._uninstall_files()
@@ -203,7 +202,7 @@ class PkgUninstallComponent(base.Component):
             utils.log_iterable(files_touched, logger=LOG,
                                header="Removing %s miscellaneous files" % (len(files_touched)))
             for fn in files_touched:
-                sh.unlink(fn, run_as_root=True)
+                sh.unlink(fn)
 
     def _uninstall_dirs(self):
         dirs_made = self.tracereader.dirs_made()
@@ -212,4 +211,4 @@ class PkgUninstallComponent(base.Component):
             utils.log_iterable(dirs_alive, logger=LOG,
                                header="Removing %s created directories" % (len(dirs_alive)))
             for dir_name in dirs_alive:
-                sh.deldir(dir_name, run_as_root=True)
+                sh.deldir(dir_name)

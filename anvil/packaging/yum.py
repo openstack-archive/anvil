@@ -118,7 +118,7 @@ class YumDependencyHandler(base.DependencyHandler):
 Version: %s.%s.%s
 Release: 0
 License: Apache 2.0
-Summary: Python dependencies for OpenStack
+Summary: OpenStack dependencies
 BuildArch: noarch
 
 """ % (self.OPENSTACK_DEPS_PACKAGE_NAME, today.year, today.month, today.day)
@@ -140,7 +140,13 @@ BuildArch: noarch
         }
         for pack_name in sorted(packages.iterkeys()):
             pack = packages[pack_name]
-            spec_content += "Requires: %s\n" % pack["name"]
+            cont = [spec_content, "Requires: ", pack["name"]]
+            version = pack.get("version")
+            if version:
+                cont.append(" ")
+                cont.append(version)
+            cont.append("\n")
+            spec_content = "".join(cont)
             for script_name in script_map.iterkeys():
                 try:
                     script_list = pack[script_name]
@@ -186,7 +192,7 @@ BuildArch: noarch
             spec_filename,
         ]
         LOG.info("Building %s RPM" % self.OPENSTACK_DEPS_PACKAGE_NAME)
-        sh.execute(*cmdline)
+        sh.execute(cmdline)
 
     def _build_dependencies(self):
         package_files = self.download_dependencies()
@@ -205,7 +211,7 @@ BuildArch: noarch
         LOG.info("    tail -f %s" % out_filename)
         with open(out_filename, "w") as out:
             try:
-                sh.execute(*cmdline, stdout_fh=out, stderr_fh=out)
+                sh.execute(cmdline, stdout_fh=out, stderr_fh=out)
             except excp.ProcessExecutionError:
                 LOG.error("Some packages failed to build.")
                 LOG.error("That's usually not a big deal,"
@@ -223,7 +229,7 @@ BuildArch: noarch
         LOG.info("You can watch progress in another terminal with")
         LOG.info("    tail -f %s" % out_filename)
         with open(out_filename, "w") as out:
-            sh.execute(*cmdline, stdout_fh=out, stderr_fh=out)
+            sh.execute(cmdline, stdout_fh=out, stderr_fh=out)
 
     def _create_deps_repo(self):
         for filename in sh.listdir(sh.joinpths(self.rpmbuild_dir, "RPMS"),
@@ -235,7 +241,7 @@ BuildArch: noarch
         for repo_dir in self.deps_repo_dir, self.deps_src_repo_dir:
             cmdline = ["createrepo", repo_dir]
             LOG.info("Creating repo at %s" % repo_dir)
-            sh.execute(*cmdline)
+            sh.execute(cmdline)
         LOG.info("Writing anvil.repo to %s" % self.anvil_repo_filename)
         (_fn, content) = utils.load_template('packaging', 'anvil.repo')
         params = {"baseurl_bin": "file://%s" % self.deps_repo_dir,
@@ -249,8 +255,7 @@ BuildArch: noarch
 
         cmdline = [self.py2rpm_executable, "--convert"] + python_names
         rpm_names = []
-        # run as root since /tmp/pip-build-root must be owned by root
-        for name in sh.execute(*cmdline, run_as_root=True)[0].splitlines():
+        for name in sh.execute(cmdline)[0].splitlines():
             # name is "Requires: rpm-name"
             try:
                 rpm_names.append(name.split(":")[1].strip())
@@ -264,8 +269,7 @@ BuildArch: noarch
 
         # Ensure we copy the local repo file name to the main repo so that
         # yum will find it when installing packages.
-        with sh.Rooted(True):
-            sh.copy(self.anvil_repo_filename, "/etc/yum.repos.d/")
+        sh.copy(self.anvil_repo_filename, "/etc/yum.repos.d/")
 
         cmdline = []
         if helper.is_installed(self.OPENSTACK_DEPS_PACKAGE_NAME):
@@ -277,21 +281,18 @@ BuildArch: noarch
 
         if cmdline:
             cmdline = ["yum", "erase", "-y"] + cmdline
-            sh.execute(*cmdline, run_as_root=True, ignore_exit_code=True,
-                       stdout_fh=sys.stdout, stderr_fh=sys.stderr)
+            sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
 
         cmdline = ["yum", "clean", "all"]
-        sh.execute(*cmdline, run_as_root=True)
+        sh.execute(cmdline)
 
         cmdline = ["yum", "install", "-y", self.OPENSTACK_DEPS_PACKAGE_NAME]
-        sh.execute(*cmdline, run_as_root=True,
-                   stdout_fh=sys.stdout, stderr_fh=sys.stderr)
+        sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
 
         rpm_names = self._convert_names_python2rpm(self.python_names)
         if rpm_names:
             cmdline = ["yum", "install", "-y"] + rpm_names
-            sh.execute(*cmdline, run_as_root=True,
-                       stdout_fh=sys.stdout, stderr_fh=sys.stderr)
+            sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
 
     def uninstall(self):
         super(YumDependencyHandler, self).uninstall()
@@ -303,5 +304,4 @@ BuildArch: noarch
 
         if rpm_names:
             cmdline = ["yum", "remove", "--remove-leaves", "-y"] + rpm_names
-            sh.execute(*cmdline, run_as_root=True,
-                       stdout_fh=sys.stdout, stderr_fh=sys.stderr)
+            sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)

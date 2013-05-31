@@ -14,8 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import shell as sh
-
 # See http://yum.baseurl.org/api/yum-3.2.26/yum-module.html
 from yum import YumBase
 
@@ -53,11 +51,8 @@ class Helper(object):
     @staticmethod
     def _get_yum_base():
         if Helper._yum_base is None:
-            # This 'root' seems needed...
-            # otherwise 'cannot open Packages database in /var/lib/rpm' starts to happen
-            with sh.Rooted(True):
-                _yum_base = YumBase()
-                _yum_base.setCacheDir(force=True)
+            _yum_base = YumBase()
+            _yum_base.setCacheDir(force=True)
             Helper._yum_base = _yum_base
         return Helper._yum_base
 
@@ -69,23 +64,17 @@ class Helper(object):
 
     def get_available(self):
         base = Helper._get_yum_base()
-        with sh.Rooted(True):
-            pkgs = base.doPackageLists()
-            avail = list(pkgs.available)
-            avail.extend(pkgs.installed)
-            return avail
+        pkgs = base.doPackageLists()
+        avail = list(pkgs.available)
+        avail.extend(pkgs.installed)
+        return avail
 
     def get_installed(self, name):
         base = Helper._get_yum_base()
-        # This 'root' seems needed...
-        # otherwise 'cannot open Packages database in /var/lib/rpm' starts to happen
-        # even though we are just doing a read-only operation, which
-        # is pretty odd...
-        with sh.Rooted(True):
-            pkgs = base.doPackageLists(pkgnarrow='installed',
-                                       ignore_case=True, patterns=[name])
-            if pkgs.installed:
-                whats_installed = list(pkgs.installed)
-            else:
-                whats_installed = []
+        pkgs = base.doPackageLists(pkgnarrow='installed',
+                                   ignore_case=True, patterns=[name])
+        if pkgs.installed:
+            whats_installed = list(pkgs.installed)
+        else:
+            whats_installed = []
         return whats_installed

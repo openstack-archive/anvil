@@ -61,4 +61,4 @@ def apply_patches(patch_files, working_dir):
             LOG.debug("Applying patch %s in directory %s", p, working_dir)
             patch_contents = sh.load_file(p)
             if len(patch_contents):
-                sh.execute(*PATCH_CMD, process_input=patch_contents)
+                sh.execute(PATCH_CMD, process_input=patch_contents)

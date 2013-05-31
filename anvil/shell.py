@@ -14,6 +14,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+# R0915: Too many statements
+# pylint: disable=R0915
+
 import distutils.spawn
 import getpass
 import grp
@@ -50,23 +53,6 @@ class Process(psutil.Process):
         return "%s (%s)" % (self.pid, self.name)
 
 
-class Rooted(object):
-    def __init__(self, run_as_root):
-        self.root_mode = run_as_root
-        self.engaged = False
-
-    def __enter__(self):
-        if self.root_mode and not got_root():
-            root_mode()
-            self.engaged = True
-        return self.engaged
-
-    def __exit__(self, type, value, traceback):
-        if self.root_mode and self.engaged:
-            user_mode()
-            self.engaged = False
-
-
 def set_dry_run(on_off):
     global IS_DRYRUN
     if not isinstance(on_off, (bool)):
@@ -81,50 +67,44 @@ def is_dry_run():
 
 
 # Originally borrowed from nova computes execute...
-def execute(*cmd, **kwargs):
-    process_input = kwargs.pop('process_input', None)
-    check_exit_code = kwargs.pop('check_exit_code', [0])
-    cwd = kwargs.pop('cwd', None)
-    env_overrides = kwargs.pop('env_overrides', None)
-    ignore_exit_code = kwargs.pop('ignore_exit_code', False)
+def execute(cmd,
+            process_input=None,
+            check_exit_code=True,
+            cwd=None,
+            shell=False,
+            env_overrides=None,
+            stdout_fh=None,
+            stderr_fh=None,
+            stdout_fn=None,
+            stderr_fn=None,
+            trace_writer=None):
+    """Helper method to execute command.
 
+    :param cmd:             Passed to subprocess.Popen
+    :param process_input:   Send to opened process
+    :param check_exit_code: Single `bool`, `int`, or `list` of allowed exit
+                            codes.  By default, only 0 exit code is allowed.
+                            Raise :class:`exceptions.ProcessExecutionError`
+                            unless program exits with one of these code
+
+    :returns: a tuple, (stdout, stderr) from the spawned process, or None if
+              the command fails
+    """
     if isinstance(check_exit_code, (bool)):
         ignore_exit_code = not check_exit_code
         check_exit_code = [0]
     elif isinstance(check_exit_code, (int)):
         check_exit_code = [check_exit_code]
 
-    run_as_root = kwargs.pop('run_as_root', False)
-    shell = kwargs.pop('shell', False)
-
     # Ensure all string args (ie for those that send ints and such...)
     execute_cmd = [str(c) for c in cmd]
 
     # From the docs it seems a shell command must be a string??
     # TODO(harlowja) this might not really be needed?
-    str_cmd = " ".join(execute_cmd)
+    str_cmd = " ".join(shellquote(word) for word in cmd)
+
     if shell:
-        execute_cmd = str_cmd.strip()
-
-    stdin_fh = subprocess.PIPE
-    stdout_fh = subprocess.PIPE
-    stderr_fh = subprocess.PIPE
-
-    stdout_fn = kwargs.get('stdout_fn')
-    stderr_fn = kwargs.get('stderr_fn')
-    trace_writer = kwargs.get('tracewriter')
-
-    if 'stdout_fh' in kwargs:
-        stdout_fh = kwargs['stdout_fh']
-        if stdout_fn:
-            LOG.warn("Stdout file handles and stdout file names can not be used simultaneously!")
-            stdout_fn = None
-
-    if 'stderr_fh' in kwargs:
-        stderr_fh = kwargs['stderr_fh']
-        if stderr_fn:
-            LOG.warn("Stderr file handles and stderr file names can not be used simultaneously!")
-            stderr_fn = None
+        execute_cmd = str_cmd
 
     if not shell:
         LOG.debug('Running cmd: %r' % (execute_cmd))
@@ -136,56 +116,48 @@ def execute(*cmd, **kwargs):
     if cwd:
         LOG.debug("In working directory: %r" % (cwd))
 
+    if stdout_fn is not None and stdout_fh is not None:
+        LOG.warn("Stdout file handles and stdout file names can not be used simultaneously!")
+    if stderr_fn is not None and stderr_fh is not None:
+        LOG.warn("Stderr file handles and stderr file names can not be used simultaneously!")
+
     process_env = None
     if env_overrides and len(env_overrides):
         process_env = env.get()
         for (k, v) in env_overrides.items():
             process_env[k] = str(v)
 
-    demoter = None
-
-    def demoter_functor(user_uid, user_gid):
-        def doit():
-            os.setregid(user_gid, user_gid)
-            os.setreuid(user_uid, user_uid)
-        return doit
-
-    if not run_as_root:
-        # Ensure we drop down to the suid user before the command
-        # is executed (ensuring we don't run in root mode when we
-        # should not be)
-        (user_uid, user_gid) = get_suids()
-        if user_uid is not None and user_gid is not None:
-            demoter = demoter_functor(user_uid=user_uid, user_gid=user_gid)
-
     rc = None
-    result = None
-    with Rooted(run_as_root):
-        if is_dry_run():
-            rc = 0
-            result = ('', '')
-        else:
-            try:
-                obj = subprocess.Popen(execute_cmd, stdin=stdin_fh, stdout=stdout_fh, stderr=stderr_fh,
-                                       close_fds=True, cwd=cwd, shell=shell,
-                                       preexec_fn=demoter, env=process_env)
-                if process_input is not None:
-                    result = obj.communicate(str(process_input))
-                else:
-                    result = obj.communicate()
-            except OSError as e:
-                raise excp.ProcessExecutionError(description="%s: [%s, %s]" % (e, e.errno, e.strerror),
-                                                 cmd=str_cmd)
-            rc = obj.returncode
+    result = ("", "")
+    if is_dry_run():
+        rc = 0
+    else:
+        stdin_fh = subprocess.PIPE
+        if stdout_fn or (stdout_fh is None):
+            stdout_fh = subprocess.PIPE
+        if stderr_fn or (stderr_fh is None):
+            stderr_fh = subprocess.PIPE
+        try:
+            obj = subprocess.Popen(execute_cmd, stdin=stdin_fh, stdout=stdout_fh, stderr=stderr_fh,
+                                   close_fds=True, cwd=cwd, shell=shell,
+                                   env=process_env)
+            if process_input is not None:
+                result = obj.communicate(str(process_input))
+            else:
+                result = obj.communicate()
+        except OSError as e:
+            raise excp.ProcessExecutionError(description="%s: [%s, %s]" % (e, e.errno, e.strerror),
+                                             cmd=str_cmd)
+        rc = obj.returncode
 
-    if not result:
-        result = ("", "")
-
-    (stdout, stderr) = result
-    if stdout is None:
-        stdout = ''
-    if stderr is None:
-        stderr = ''
+    if stdout_fh != subprocess.PIPE:
+        stdout = "<redirected to %s>" % (stdout_fn or stdout_fh)
+    else:
+        stdout = result[0] or ""
+    if stderr_fh != subprocess.PIPE:
+        stderr = "<redirected to %s>" % (stderr_fn or stderr_fh)
+    else:
+        stderr = result[1] or ""
 
     if (not ignore_exit_code) and (rc not in check_exit_code):
         raise excp.ProcessExecutionError(exit_code=rc, stdout=stdout,
@@ -196,14 +168,11 @@ def execute(*cmd, **kwargs):
             LOG.debug("A failure may of just happened when running command %r [%s] (%s, %s)",
                       str_cmd, rc, stdout, stderr)
         # See if a requested storage place was given for stderr/stdout
-        if stdout_fn:
-            write_file(stdout_fn, stdout)
-            if trace_writer:
-                trace_writer.file_touched(stdout_fn)
-        if stderr_fn:
-            write_file(stderr_fn, stderr)
-            if trace_writer:
-                trace_writer.file_touched(stderr_fn)
+        for name, handle in ((stdout_fn, stdout), (stderr_fn, stderr)):
+            if name:
+                write_file(name, handle)
+                if trace_writer:
+                    trace_writer.file_touched(name)
         return (stdout, stderr)
 
 
@@ -300,7 +269,7 @@ def get_suids():
     return (uid, gid)
 
 
-def chown(path, uid, gid, run_as_root=True):
+def chown(path, uid, gid):
     if uid is None:
         uid = -1
     if gid is None:
@@ -308,23 +277,21 @@ def chown(path, uid, gid, run_as_root=True):
     if uid == -1 and gid == -1:
         return 0
     LOG.debug("Changing ownership of %r to %s:%s" % (path, uid, gid))
-    with Rooted(run_as_root):
-        if not is_dry_run():
-            os.chown(path, uid, gid)
+    if not is_dry_run():
+        os.chown(path, uid, gid)
     return 1
 
 
-def chown_r(path, uid, gid, run_as_root=True):
+def chown_r(path, uid, gid):
     changed = 0
-    with Rooted(run_as_root):
-        for (root, dirs, files) in os.walk(path):
-            changed += chown(root, uid, gid)
-            for d in dirs:
-                dir_pth = joinpths(root, d)
-                changed += chown(dir_pth, uid, gid)
-            for f in files:
-                fn_pth = joinpths(root, f)
-                changed += chown(fn_pth, uid, gid)
+    for (root, dirs, files) in os.walk(path):
+        changed += chown(root, uid, gid)
+        for d in dirs:
+            dir_pth = joinpths(root, d)
+            changed += chown(dir_pth, uid, gid)
+        for f in files:
+            fn_pth = joinpths(root, f)
+            changed += chown(fn_pth, uid, gid)
     return changed
 
 
@@ -452,12 +419,12 @@ def is_running(pid):
         return False
 
 
-def mkdirslist(path, tracewriter=None, adjust_suids=False):
+def mkdirslist(path, tracewriter=None):
     dirs_possible = explode_path(path)
     dirs_made = []
     for dir_path in dirs_possible:
         if not isdir(dir_path):
-            mkdir(dir_path, recurse=False, adjust_suids=adjust_suids)
+            mkdir(dir_path, recurse=False)
             if tracewriter:
                 tracewriter.dirs_made(dir_path)
             dirs_made.append(dir_path)
@@ -514,7 +481,7 @@ def load_file(fn):
     return data
 
 
-def mkdir(path, recurse=True, adjust_suids=False):
+def mkdir(path, recurse=True):
     if not isdir(path):
         if recurse:
             LOG.debug("Recursively creating directory %r" % (path))
@@ -524,30 +491,24 @@ def mkdir(path, recurse=True, adjust_suids=False):
             LOG.debug("Creating directory %r" % (path))
             if not is_dry_run():
                 os.mkdir(path)
-    if adjust_suids:
-        (uid, gid) = get_suids()
-        if uid is not None and gid is not None:
-            chown_r(path, uid, gid)
     return path
 
 
-def deldir(path, run_as_root=False):
-    with Rooted(run_as_root):
-        if isdir(path):
-            LOG.debug("Recursively deleting directory tree starting at %r" % (path))
-            if not is_dry_run():
-                shutil.rmtree(path)
+def deldir(path):
+    if isdir(path):
+        LOG.debug("Recursively deleting directory tree starting at %r" % (path))
+        if not is_dry_run():
+            shutil.rmtree(path)
 
 
-def rmdir(path, quiet=True, run_as_root=False):
+def rmdir(path, quiet=True):
     if not isdir(path):
         return
     try:
-        with Rooted(run_as_root):
-            LOG.debug("Deleting directory %r with the cavet that we will fail if it's not empty." % (path))
-            if not is_dry_run():
-                os.rmdir(path)
-            LOG.debug("Deleted directory %r" % (path))
+        LOG.debug("Deleting directory %r with the cavet that we will fail if it's not empty." % (path))
+        if not is_dry_run():
+            os.rmdir(path)
+        LOG.debug("Deleted directory %r" % (path))
     except OSError:
         if not quiet:
             raise
@@ -555,16 +516,15 @@ def rmdir(path, quiet=True, run_as_root=False):
             pass
 
 
-def symlink(source, link, force=True, run_as_root=True, tracewriter=None):
-    with Rooted(run_as_root):
-        LOG.debug("Creating symlink from %r => %r" % (link, source))
-        mkdirslist(dirname(link), tracewriter=tracewriter)
-        if not is_dry_run():
-            if force and (exists(link) and islink(link)):
-                unlink(link, True)
-            os.symlink(source, link)
-            if tracewriter:
-                tracewriter.symlink_made(link)
+def symlink(source, link, force=True, tracewriter=None):
+    LOG.debug("Creating symlink from %r => %r" % (link, source))
+    mkdirslist(dirname(link), tracewriter=tracewriter)
+    if not is_dry_run():
+        if force and (exists(link) and islink(link)):
+            unlink(link, True)
+        os.symlink(source, link)
+        if tracewriter:
+            tracewriter.symlink_made(link)
 
 
 def exists(path):
@@ -632,12 +592,11 @@ def getgroupname():
     return grp.getgrgid(gid).gr_name
 
 
-def unlink(path, ignore_errors=True, run_as_root=False):
+def unlink(path, ignore_errors=True):
     LOG.debug("Unlinking (removing) %r" % (path))
     if not is_dry_run():
         try:
-            with Rooted(run_as_root):
-                os.unlink(path)
+            os.unlink(path)
         except OSError:
             if not ignore_errors:
                 raise
@@ -712,26 +671,6 @@ def root_mode(quiet=True):
         os.setregid(0, root_gid)
     except OSError as e:
         msg = "Cannot escalate permissions to (uid=%s, gid=%s): %s" % (root_uid, root_gid, e)
-        if quiet:
-            LOG.warn(msg)
-        else:
-            raise excp.PermException(msg)
-
-
-def user_mode(quiet=True):
-    (sudo_uid, sudo_gid) = get_suids()
-    if sudo_uid is not None and sudo_gid is not None:
-        try:
-            os.setregid(0, sudo_gid)
-            os.setreuid(0, sudo_uid)
-        except OSError as e:
-            msg = "Cannot drop permissions to (uid=%s, gid=%s): %s" % (sudo_uid, sudo_gid, e)
-            if quiet:
-                LOG.warn(msg)
-            else:
-                raise excp.PermException(msg)
-    else:
-        msg = "Can not switch to user mode, no suid user id or suid group id"
         if quiet:
             LOG.warn(msg)
         else:
