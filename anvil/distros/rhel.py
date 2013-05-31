@@ -19,7 +19,6 @@
 Platform-specific logic for RedHat Enterprise Linux components.
 """
 
-import glob
 import re
 
 from anvil import colorizer
@@ -34,7 +33,6 @@ from anvil.components import rabbit
 
 from anvil.components.configurators import horizon as hconf
 
-from anvil.packaging import yum
 
 LOG = logging.getLogger(__name__)
 
@@ -165,34 +163,3 @@ class NovaInstaller(nova.NovaInstaller):
                     sh.write_file(LIBVIRT_POLICY_FN, contents)
                 configs_made += 1
         return configs_made
-
-
-class YumPackagerWithRelinks(yum.YumPackager):
-
-    def _remove(self, pkg):
-        yum.YumPackager._remove(self, pkg)
-        options = pkg.get('packager_options') or {}
-        links = options.get('links') or []
-        for entry in links:
-            if sh.islink(entry['target']):
-                sh.unlink(entry['target'])
-
-    def _install(self, pkg):
-        yum.YumPackager._install(self, pkg)
-        options = pkg.get('packager_options') or {}
-        links = options.get('links') or []
-        for entry in links:
-            tgt = entry.get('target')
-            src = entry.get('source')
-            if not tgt or not src:
-                continue
-            src = glob.glob(src)
-            if not isinstance(tgt, (list, tuple)):
-                tgt = [tgt]
-            if len(src) != len(tgt):
-                raise RuntimeError("Unable to link %s sources to %s locations" % (len(src), len(tgt)))
-            for i in range(len(src)):
-                i_src = src[i]
-                i_tgt = tgt[i]
-                if not sh.islink(i_tgt):
-                    sh.symlink(i_src, i_tgt)
