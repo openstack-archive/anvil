@@ -15,7 +15,6 @@
 from anvil import colorizer
 from anvil.components import base
 from anvil import downloader as down
-from anvil import importer
 from anvil import log as logging
 from anvil import patcher
 from anvil import shell as sh
@@ -25,23 +24,6 @@ from anvil import utils
 from anvil.components.configurators import base as conf
 
 LOG = logging.getLogger(__name__)
-
-# Cache of accessed packagers
-_PACKAGERS = {}
-
-
-def make_packager(package, default_class, **kwargs):
-    packager_name = package.get('packager_name') or ''
-    packager_name = packager_name.strip()
-    if packager_name:
-        packager_cls = importer.import_entry_point(packager_name)
-    else:
-        packager_cls = default_class
-    if packager_cls in _PACKAGERS:
-        return _PACKAGERS[packager_cls]
-    p = packager_cls(**kwargs)
-    _PACKAGERS[packager_cls] = p
-    return p
 
 
 class PkgInstallComponent(base.Component):
@@ -117,15 +99,13 @@ class PkgInstallComponent(base.Component):
     def pre_install(self):
         pkgs = self.packages
         for p in pkgs:
-            installer = make_packager(p, self.distro.package_manager_class,
-                                      distro=self.distro)
+            installer = self.distro.install_helper_class(distro=self.distro)
             installer.pre_install(p, self.params)
 
     def post_install(self):
         pkgs = self.packages
         for p in pkgs:
-            installer = make_packager(p, self.distro.package_manager_class,
-                                      distro=self.distro)
+            installer = self.distro.install_helper_class(distro=self.distro)
             installer.post_install(p, self.params)
 
     def _configure_files(self):
