@@ -82,7 +82,7 @@ class Helper(object):
 
     def _list_installed(self):
         cmd = [self._pip_how] + FREEZE_CMD
-        (stdout, _stderr) = sh.execute(*cmd, run_as_root=True)
+        (stdout, _stderr) = sh.execute(cmd)
         return parse_requirements(stdout, True)
 
     def uncache(self):

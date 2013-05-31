@@ -72,7 +72,7 @@ class GlanceConfigurator(base.Configurator):
         LOG.debug("Ensuring file system store directory %r exists and is empty." % (img_store_dir))
         if sh.isdir(img_store_dir):
             sh.deldir(img_store_dir)
-        sh.mkdirslist(img_store_dir, tracewriter=self.installer.tracewriter, adjust_suids=True)
+        sh.mkdirslist(img_store_dir, tracewriter=self.installer.tracewriter)
 
     def _config_adjust_reg(self, config):
         self._config_adjust_api_reg(config)

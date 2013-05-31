@@ -286,10 +286,10 @@ def execute_template(cmd, *cmds, **kargs):
                 stdin_tpl = [stdin_tpl]
             stdin = [expand_template(c, params) for c in stdin_tpl]
             stdin = "\n".join(stdin)
-        result = sh.execute(*run_what,
-                            run_as_root=info.get('run_as_root', False),
+        result = sh.execute(run_what,
                             process_input=stdin,
-                            ignore_exit_code=info.get('ignore_failure', False),
+                            check_exit_code=not info.get(
+                                'ignore_failure', False),
                             **kargs)
         results.append(result)
     return results
