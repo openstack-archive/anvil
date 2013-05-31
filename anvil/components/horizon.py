@@ -38,9 +38,9 @@ SECRET_KEY_LEN = 10
 BAD_APACHE_USERS = ['root']
 
 
-class HorizonUninstaller(binstall.PythonUninstallComponent):
+class HorizonUninstaller(binstall.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
-        binstall.PythonUninstallComponent.__init__(self, *args, **kargs)
+        binstall.PkgUninstallComponent.__init__(self, *args, **kargs)
 
 
 class HorizonInstaller(binstall.PythonInstallComponent):

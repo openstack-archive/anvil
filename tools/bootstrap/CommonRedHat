@@ -25,6 +25,7 @@ require python-psutil
 require python-iniparse
 require pylint
 require createrepo
+require yum-plugin-remove-with-leaves
 
 # multipip dependencies
 require rpm-build

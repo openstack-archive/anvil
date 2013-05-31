@@ -271,6 +271,18 @@ BuildArch: noarch
         sh.write_file(
             self.anvil_repo_filename, utils.expand_template(content, params))
 
+    def _create_openstack_packages_list(self):
+        cmdline = [self.py2rpm_executable, "--convert"] + self.python_names
+        rpm_names = []
+        # run as root since /tmp/pip-build-root must be owned by root
+        for name in sh.execute(*cmdline, run_as_root=True)[0].splitlines():
+            # name is "Requires: rpm-name"
+            try:
+                rpm_names.append(name.split(":")[1].strip())
+            except IndexError:
+                pass
+        return rpm_names
+
     def install(self):
         super(YumDependencyHandler, self).install()
         with sh.Rooted(True):
@@ -286,15 +298,15 @@ BuildArch: noarch
         sh.execute(*cmdline, run_as_root=True,
                    stdout_fh=sys.stdout, stderr_fh=sys.stderr)
 
-        cmdline = [self.py2rpm_executable, "--convert"] + self.python_names
-        rpm_names = []
-        # run as root since /tmp/pip-build-root must be owned by root
-        for name in sh.execute(*cmdline, run_as_root=True)[0].splitlines():
-            # name is "Requires: rpm-name"
-            try:
-                rpm_names.append(name.split(":")[1].strip())
-            except IndexError:
-                pass
+        rpm_names = self._create_openstack_packages_list()
         cmdline = ["yum", "install", "-y"] + rpm_names
         sh.execute(*cmdline, run_as_root=True,
                    stdout_fh=sys.stdout, stderr_fh=sys.stderr)
+
+    def uninstall(self):
+        super(YumDependencyHandler, self).uninstall()
+        rpm_names = self._create_openstack_packages_list()
+        cmdline = ["yum", "remove", "--remove-leaves", "-y"] + rpm_names
+        sh.execute(*cmdline, run_as_root=True,
+                   stdout_fh=sys.stdout, stderr_fh=sys.stderr)
+

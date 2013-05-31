@@ -210,33 +210,12 @@ class PkgUninstallComponent(base.Component):
             for fn in sym_files:
                 sh.unlink(fn, run_as_root=True)
 
-    def uninstall(self):
-        self._uninstall_pkgs()
-        self._uninstall_files()
-
     def post_uninstall(self):
+        self._uninstall_files()
         self._uninstall_dirs()
 
     def pre_uninstall(self):
         pass
-
-    def _uninstall_pkgs(self):
-        pkgs = self.tracereader.packages_installed()
-        if pkgs:
-            pkg_names = set([p['name'] for p in pkgs])
-            utils.log_iterable(pkg_names, logger=LOG,
-                               header="Potentially removing %s distribution packages" % (len(pkg_names)))
-            which_removed = []
-            with utils.progress_bar('Uninstalling', len(pkgs), reverse=True) as p_bar:
-                for (i, p) in enumerate(pkgs):
-                    uninstaller = make_packager(p, self.distro.package_manager_class,
-                                                distro=self.distro,
-                                                remove_default=self.purge_packages)
-                    if uninstaller.remove(p):
-                        which_removed.append(p['name'])
-                    p_bar.update(i + 1)
-            utils.log_iterable(which_removed, logger=LOG,
-                               header="Actually removed %s distribution packages" % (len(which_removed)))
 
     def _uninstall_files(self):
         files_touched = self.tracereader.files_touched()
@@ -254,25 +233,3 @@ class PkgUninstallComponent(base.Component):
                                header="Removing %s created directories" % (len(dirs_alive)))
             for dir_name in dirs_alive:
                 sh.deldir(dir_name, run_as_root=True)
-
-
-class PythonUninstallComponent(PkgUninstallComponent):
-
-    def uninstall(self):
-        self._uninstall_python()
-        PkgUninstallComponent.uninstall(self)
-
-    def _uninstall_python(self):
-        py_listing = self.tracereader.py_listing()
-        if py_listing:
-            py_listing_dirs = set()
-            for (_name, where) in py_listing:
-                py_listing_dirs.add(where)
-            utils.log_iterable(py_listing_dirs, logger=LOG,
-                               header="Uninstalling %s python setups" % (len(py_listing_dirs)))
-            unsetup_cmd = self.distro.get_command('python', 'unsetup')
-            for where in py_listing_dirs:
-                if sh.isdir(where):
-                    sh.execute(*unsetup_cmd, cwd=where, run_as_root=True)
-                else:
-                    LOG.warn("No python directory found at %s - skipping", colorizer.quote(where, quote_color='red'))
