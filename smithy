@@ -5,6 +5,7 @@ shopt -s nocasematch
 SMITHY_NAME=$(readlink -f "$0")
 cd "$(dirname "$0")"
 
+VERBOSE="${VERBOSE:-0}"
 YUM_OPTS="--assumeyes --nogpgcheck"
 PIP_CMD=""
 PY2RPM_CMD="$PWD/multipip/py2rpm"
@@ -26,9 +27,24 @@ if [ -z "$BOOT_FILES" ]; then
     BOOT_FILES="${PWD}/$BOOT_FN"
 fi
 
+execute() {
+    if [ "$VERBOSE" == "1" ]; then
+        output=$($* 2>&1)
+        rc=$?
+        echo "$output"
+        return $rc
+    else
+        output=$($* 2>&1 &>/dev/null)
+        return $?
+    fi
+}
+
 conflicts() {
-    echo "Removing conflicting packages $(echo $@)"
-    yum erase -y $@
+    for p in "$@"; do
+        if rpm_is_installed "$p"; then
+            execute yum erase $YUM_OPTS $p
+        fi
+    done
 }
 
 find_pip()
@@ -36,6 +52,7 @@ find_pip()
     if [ -n "$PIP_CMD" ]; then
         return
     fi
+    # Attempt to find the pip command.
     PIP_CMD=""
     for name in pip pip-python; do
         if which "$name" &>/dev/null; then
@@ -52,7 +69,8 @@ find_pip()
 rpm_is_installed()
 {
     local name="$(basename "$1")"
-    rpm -q "${name%.rpm}" &>/dev/null
+    execute rpm -q "${name%.rpm}"
+    return $?
 }
 
 cache_and_install_rpm_url()
@@ -64,8 +82,8 @@ cache_and_install_rpm_url()
         return
     fi
     if [ ! -f "$cachedir/$rpm" ]; then
-	echo "Downloading $rpm to $cachedir..."
-        curl -s $url -o "$cachedir/$rpm" || return 1
+        echo "Downloading $rpm to $cachedir..."
+        execute curl -s $url -o "$cachedir/$rpm" || return 1
     fi
     install_rpm "$cachedir/$rpm"
     return $?
@@ -75,18 +93,17 @@ install_rpm()
 {
     local rpm_path=$1
     local py_name=$2
-
+    # Install or update package
     if [ -n "$rpm_path" ]; then
-        # install or update package
-        yum install $YUM_OPTS "$rpm_path" && return 0
+        execute yum install $YUM_OPTS "$rpm_path" && return 0
     fi
     if [ -z "$py_name" ]; then
         return 1
     fi
-    # RPM is not available. Try to build it on fly
+    # RPM is not available. Try to build it on fly.
     pip_tmp_dir=$(mktemp -d)
     find_pip
-    $PIP_CMD install -U -I $py_name --download "$pip_tmp_dir"
+    execute $PIP_CMD install -U -I $py_name --download "$pip_tmp_dir"
     echo "Building RPM for $py_name"
     rpm_names=$("$PY2RPM_CMD" "$pip_tmp_dir/"* 2>/dev/null |
         awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)
@@ -95,7 +112,7 @@ install_rpm()
         echo "No binary RPM was built for $py_name"
         return 1
     fi
-    yum install $YUM_OPTS $rpm_names
+    execute yum install $YUM_OPTS $rpm_names
 }
 
 bootstrap_epel()
@@ -109,14 +126,14 @@ bootstrap_packages()
 {
     [ -z "$PACKAGES" ] && return 0
     for pkg in $PACKAGES; do
-	local rpm_name=$(echo $pkg | cut -d: -f1)
+        local rpm_name=$(echo $pkg | cut -d: -f1)
         local py_name=$(echo $pkg | cut -d: -f2)
         install_rpm $rpm_name $py_name
         install_status=$?
-	if [ "$install_status" != 0 ]; then
-            echo "Error: Installation of package '$rpm_name' failed!"
-	    return "$install_status"
-	fi
+        if [ "$install_status" != 0 ]; then
+                echo "Error: Installation of package '$rpm_name' failed!"
+            return "$install_status"
+        fi
     done
 }
 
