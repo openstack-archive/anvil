@@ -120,12 +120,6 @@ components:
             removable: false
         -   name: python-setuptools
             removable: false
-        nopips:
-        # these items fail to build from Python packages,
-        # but their RPMs are available from base and epel repos
-        -   name: requests
-        -   name: mysql-python
-        -   name: pyOpenSSL
         # these packages conflict with our deps and must be removed
         nopackages:
         -   name: python-paste-deploy1.5
