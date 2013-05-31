@@ -91,7 +91,7 @@ OPENSTACK_PACKAGES = set([
 class DependencyHandler(object):
     """Basic class for handler of OpenStack dependencies.
     """
-    multipip_executable = sh.which("multipip", ["multipip"])
+    multipip_executable = sh.which("multipip", ["tools/"])
     # Update requirements to make them allow already installed packages
     force_frozen = True
 

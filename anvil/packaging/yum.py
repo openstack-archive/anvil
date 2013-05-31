@@ -108,7 +108,7 @@ class YumPackager(base.Packager):
 class YumDependencyHandler(base.DependencyHandler):
     OPENSTACK_DEPS_PACKAGE_NAME = "openstack-deps"
     OPENSTACK_EPOCH = 2
-    py2rpm_executable = sh.which("py2rpm", ["multipip"])
+    py2rpm_executable = sh.which("py2rpm", ["tools/"])
 
     def __init__(self, distro, root_dir, instances):
         super(YumDependencyHandler, self).__init__(distro, root_dir, instances)

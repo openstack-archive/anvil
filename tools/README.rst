@@ -1,5 +1,8 @@
+**Anvil utility toolbelt**
+==========================
+
 multipip
-========
+--------
 
 `pip` utility refuses to handle multiple requirements for one package::
 
@@ -54,22 +57,23 @@ freeze`)::
     pip==1.2
     
 py2rpm
-======
+------
 
 Distutils provides an interface for building RPMs::
 
     $ python ./setup.py bdist_rpm
 
 This tool has several problems:
+
 * Red Hat based distros use different package names, e.g.,
   `python-setuptools` instead of `distribute`, `python-nose` instead
-  of `nose` and so on;
-* `Requires` and `Conflicts` sections for generated RPM are incorrect;
-* sometimes not all required files are packaged;
-* miscellaneous problems with man files;
-* package directory in `/usr/lib*/python*/site-packages/<pkg>` is not
+  of `nose` and so on...
+* `Requires` and `Conflicts` sections for generated RPM are incorrect.
+* Sometimes not all required files are packaged.
+* Miscellaneous problems with man files;
+* Package directory in `/usr/lib*/python*/site-packages/<pkg>` is not
   owned by any RPM;
-* some packages (like selenium) are architecture dependent but
+* Some packages (like selenium) are architecture dependent but
   `bdist_rpm` generates `BuildArch: noarch` for them.
 
 `py2rpm` is aimed to solve all these problems.
@@ -82,3 +86,43 @@ builds RPMs (current directory is used by default)::
     Wrote: /home/guest/rpmbuild/SRPMS/python-multipip-0.1-1.src.rpm
     Wrote: /home/guest/rpmbuild/RPMS/noarch/python-multipip-0.1-1.noarch.rpm
     ...
+
+build-install-node-from-source.sh
+---------------------------------
+
+Helps build latest `node.js` from source into rpms.
+
+clean-pip
+---------
+
+This utility removes package installed by pip but not by rpm.
+
+clear-dns.sh
+------------
+
+Removes leftover nova dnsmasq processes frequently left behind.
+
+img-uploader
+------------
+
+Helper tool to upload images to glance using your anvil settings.
+
+validate-yaml
+-------------
+
+Validates yaml is formatted correctly.
+
+yaml-pretty
+-----------
+
+Pretty prints yaml into a standard format.
+
+resize.sh
+---------
+
+Resizes a images filesystem using guestfish.
+
+euca.sh
+-------
+
+Creates ec2 keys for usage with nova.
