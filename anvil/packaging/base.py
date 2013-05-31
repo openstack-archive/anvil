@@ -86,9 +86,6 @@ class DependencyHandler(object):
         self.pip_executable = str(self.distro.get_command_config('pip'))
         self.pips_to_install = []
         self.forced_packages = []
-        # nopips is a list of items that fail to build from Python packages,
-        # but their RPMs are available from base and epel repos
-        self.nopips = []
         # these packages conflict with our deps and must be removed
         self.nopackages = []
         self.package_dirs = self._get_package_dirs(instances)
@@ -115,7 +112,6 @@ class DependencyHandler(object):
     def package(self):
         requires_files = []
         extra_pips = []
-        self.nopips = []
         for inst in self.instances:
             try:
                 requires_files.extend(inst.requires_files)
@@ -124,8 +120,6 @@ class DependencyHandler(object):
             for pkg in inst.get_option("pips") or []:
                 extra_pips.append(
                     "%s%s" % (pkg["name"], pkg.get("version", "")))
-            for pkg in inst.get_option("nopips") or []:
-                self.nopips.append(pkg["name"])
         requires_files = filter(sh.isfile, requires_files)
         self.gather_pips_to_install(requires_files, extra_pips)
         self.clean_pip_requires(requires_files)
@@ -214,6 +208,19 @@ class DependencyHandler(object):
         sh.write_file(self.forced_requires_filename,
                       "\n".join(str(req) for req in self.forced_packages))
 
+    def filter_download_requires(self):
+        cmdline = [
+            self.multipip_executable,
+            "--pip", self.pip_executable,
+            "--ignore-installed",
+        ] + self.pips_to_install
+        if self.python_names:
+            cmdline.append("--ignore-packages")
+            cmdline.extend(self.python_names)
+        output = sh.execute(cmdline)
+        pips_to_download = list(utils.splitlines_not_empty(output[0]))
+        return pips_to_download
+
     def download_dependencies(self, ignore_installed=True, clear_cache=False):
         """Download dependencies from `$deps_dir/download-requires`.
 
@@ -226,29 +233,11 @@ class DependencyHandler(object):
             sh.deldir(cache_dir)
         sh.mkdir(self.deps_dir, recurse=True)
 
+        pips_to_download = self.filter_download_requires()
         download_requires_filename = sh.joinpths(
             self.deps_dir, "download-requires")
-        nopips = self.nopips + self.python_names
-        if ignore_installed or nopips:
-            cmdline = [
-                self.multipip_executable,
-                "--pip", self.pip_executable,
-            ]
-            if ignore_installed:
-                cmdline += [
-                    "--ignore-installed",
-                ]
-            cmdline.extend(self.pips_to_install)
-            if nopips:
-                cmdline.append("--ignore-packages")
-                cmdline.extend(nopips)
-            output = sh.execute(cmdline)
-            pips_to_download = list(utils.splitlines_not_empty(output[0]))
-        else:
-            pips_to_download = self.pips_to_install
         sh.write_file(download_requires_filename,
                       "\n".join(str(req) for req in pips_to_download))
-
         if not pips_to_download:
             return []
         # NOTE(aababilov): pip has issues with already downloaded files
