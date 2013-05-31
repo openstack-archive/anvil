@@ -83,6 +83,8 @@ class DependencyHandler(object):
             self.deps_dir, "pip-requires")
         self.forced_requires_filename = sh.joinpths(
             self.deps_dir, "forced-requires")
+        self.download_requires_filename = sh.joinpths(
+            self.deps_dir, "download-requires")
         self.pip_executable = str(self.distro.get_command_config('pip'))
         self.pips_to_install = []
         self.forced_packages = []
@@ -214,6 +216,23 @@ class DependencyHandler(object):
         sh.write_file(self.forced_requires_filename,
                       "\n".join(str(req) for req in self.forced_packages))
 
+    def write_download_requires(self):
+        nopips = self.nopips + self.python_names
+        cmdline = [
+            self.multipip_executable,
+            "--pip", self.pip_executable,
+            "--ignore-installed",
+        ]
+        cmdline.extend(self.pips_to_install)
+        if nopips:
+            cmdline.append("--ignore-packages")
+            cmdline.extend(nopips)
+        output = sh.execute(cmdline)
+        pips_to_download = list(utils.splitlines_not_empty(output[0]))
+        sh.write_file(self.download_requires_filename,
+                      "\n".join(str(req) for req in pips_to_download))
+        return pips_to_download
+
     def download_dependencies(self, ignore_installed=True, clear_cache=False):
         """Download dependencies from `$deps_dir/download-requires`.
 
@@ -226,29 +245,7 @@ class DependencyHandler(object):
             sh.deldir(cache_dir)
         sh.mkdir(self.deps_dir, recurse=True)
 
-        download_requires_filename = sh.joinpths(
-            self.deps_dir, "download-requires")
-        nopips = self.nopips + self.python_names
-        if ignore_installed or nopips:
-            cmdline = [
-                self.multipip_executable,
-                "--pip", self.pip_executable,
-            ]
-            if ignore_installed:
-                cmdline += [
-                    "--ignore-installed",
-                ]
-            cmdline.extend(self.pips_to_install)
-            if nopips:
-                cmdline.append("--ignore-packages")
-                cmdline.extend(nopips)
-            output = sh.execute(cmdline)
-            pips_to_download = list(utils.splitlines_not_empty(output[0]))
-        else:
-            pips_to_download = self.pips_to_install
-        sh.write_file(download_requires_filename,
-                      "\n".join(str(req) for req in pips_to_download))
-
+        pips_to_download = self.write_download_requires()
         if not pips_to_download:
             return []
         # NOTE(aababilov): pip has issues with already downloaded files
@@ -262,7 +259,7 @@ class DependencyHandler(object):
             "--download-cache",
             cache_dir,
             "-r",
-            download_requires_filename,
+            self.download_requires_filename,
         ]
         out_filename = sh.joinpths(self.deps_dir, "pip-install-download.out")
         utils.log_iterable(sorted(pips_to_download), logger=LOG,

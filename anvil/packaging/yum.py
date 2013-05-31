@@ -17,9 +17,12 @@
 import datetime
 import sys
 
+import pkg_resources
+
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil.packaging import base
+from anvil.packaging.helpers import yum_helper
 from anvil import shell as sh
 from anvil import utils
 
@@ -62,6 +65,46 @@ class YumDependencyHandler(base.DependencyHandler):
         self._build_dependencies()
         self._build_openstack()
         self._create_deps_repo()
+
+    def write_download_requires(self):
+        yum_map = {}
+        for pkg in yum_helper.Helper().get_available():
+            for provides in pkg.provides:
+                yum_map.setdefault(provides[0], set()).add(
+                    (pkg.version, pkg.repo.id))
+
+        nopips = [pkg_resources.Requirement.parse(name).key
+                  for name in self.nopips + self.python_names]
+        pips_to_download = []
+        req_to_install = [pkg_resources.Requirement.parse(pkg)
+                          for pkg in self.pips_to_install]
+        req_to_install = [
+            req for req in req_to_install if req.key not in nopips]
+        rpm_to_install = self._convert_names_python2rpm(
+            [req.key for req in req_to_install])
+        satisfied_list = []
+        for req, rpm_name in zip(req_to_install, rpm_to_install):
+            try:
+                yum_versions = yum_map[rpm_name]
+            except:
+                continue
+            satisfied = False
+            for (version, repo_id) in yum_versions:
+                if version in req:
+                    satisfied = True
+                    satisfied_list.append(
+                        "%s as %s-%s from %s" %
+                        (req, rpm_name, version, repo_id))
+                    break
+            if not satisfied:
+                pips_to_download.append(str(req))
+        if satisfied_list:
+            utils.log_iterable(
+                sorted(satisfied_list), logger=LOG,
+                header="These Python packages are already available as RPMs")
+        sh.write_file(self.download_requires_filename,
+                      "\n".join(str(req) for req in pips_to_download))
+        return pips_to_download
 
     def _write_all_deps_package(self):
         spec_filename = sh.joinpths(
@@ -211,8 +254,8 @@ BuildArch: noarch
         sh.write_file(
             self.anvil_repo_filename, utils.expand_template(content, params))
 
-    def _create_openstack_packages_list(self):
-        cmdline = [self.py2rpm_executable, "--convert"] + self.python_names
+    def _convert_names_python2rpm(self, python_names):
+        cmdline = [self.py2rpm_executable, "--convert"] + python_names
         rpm_names = []
         for name in sh.execute(cmdline)[0].splitlines():
             # name is "Requires: rpm-name"
@@ -235,13 +278,13 @@ BuildArch: noarch
         cmdline = ["yum", "install", "-y", self.OPENSTACK_DEPS_PACKAGE_NAME]
         sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
 
-        rpm_names = self._create_openstack_packages_list()
+        rpm_names = self._convert_names_python2rpm(self.python_names)
         cmdline = ["yum", "install", "-y"] + rpm_names
         sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
 
     def uninstall(self):
         super(YumDependencyHandler, self).uninstall()
-        rpm_names = self._create_openstack_packages_list()
+        rpm_names = self._convert_names_python2rpm(self.python_names)
         cmdline = ["yum", "remove", "--remove-leaves", "-y"] + rpm_names
         sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
 
