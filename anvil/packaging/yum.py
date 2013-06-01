@@ -272,6 +272,9 @@ BuildArch: noarch
             self.anvil_repo_filename, utils.expand_template(content, params))
 
     def _create_openstack_packages_list(self):
+        if not self.python_names:
+            return []
+
         cmdline = [self.py2rpm_executable, "--convert"] + self.python_names
         rpm_names = []
         # run as root since /tmp/pip-build-root must be owned by root
