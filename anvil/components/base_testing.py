@@ -29,6 +29,7 @@ from anvil.packaging.helpers import pip_helper
 
 LOG = logging.getLogger(__name__)
 
+
 class EmptyTestingComponent(base.Component):
     def run_tests(self):
         return

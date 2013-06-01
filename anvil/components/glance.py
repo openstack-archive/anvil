@@ -38,9 +38,6 @@ SYNC_DB_CMD = [sh.joinpths('$BIN_DIR', 'glance-manage'),
                 # Available commands:
                 'db_sync']
 
-# Location of scripts
-BIN_DIR = '/usr/bin/'
-
 
 class GlanceInstaller(binstall.PythonInstallComponent):
     def __init__(self, *args, **kargs):
