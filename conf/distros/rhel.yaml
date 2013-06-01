@@ -140,7 +140,7 @@ components:
         action_classes:
             install: anvil.components.glance:GlanceInstaller
             running: anvil.components.glance:GlanceRuntime
-            coverage: anvil.components:PythonTestingComponent
+            coverage: anvil.components.glance:GlanceTester
             test: anvil.components.glance:GlanceTester
             uninstall: anvil.components.base_install:PkgUninstallComponent
         packages:
