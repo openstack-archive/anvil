@@ -116,6 +116,7 @@ class YumDependencyHandler(base.DependencyHandler):
         self.deps_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps")
         self.deps_src_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps-sources")
         self.anvil_repo_filename = sh.joinpths(self.deps_dir, "anvil.repo")
+        self.anvil_yum_repo_filename = "/etc/yum.repos.d/anvil.repo"
 
     def _epoch_list(self):
         return [
@@ -286,7 +287,8 @@ BuildArch: noarch
     def install(self):
         super(YumDependencyHandler, self).install()
         with sh.Rooted(True):
-            sh.copy(self.anvil_repo_filename, "/etc/yum.repos.d/")
+            sh.copy(self.anvil_repo_filename, self.anvil_yum_repo_filename)
+
         cmdline = ["yum", "erase", "-y", self.OPENSTACK_DEPS_PACKAGE_NAME]
         cmdline.extend(self.nopackages)
         sh.execute(*cmdline, run_as_root=True, ignore_exit_code=True,
@@ -305,6 +307,9 @@ BuildArch: noarch
 
     def uninstall(self):
         super(YumDependencyHandler, self).uninstall()
+        if sh.isfile(self.anvil_yum_repo_filename):
+            sh.unlink(self.anvil_yum_repo_filename, run_as_root=True)
+
         rpm_names = self._create_openstack_packages_list()
         cmdline = ["yum", "remove", "--remove-leaves", "-y"] + rpm_names
         sh.execute(*cmdline, run_as_root=True,
