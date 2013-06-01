@@ -14,40 +14,25 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+# R0902: Too many instance attributes
 # R0921: Abstract class not referenced
-#pylint: disable=R0921
-
-import abc
+#pylint: disable=R0902,R0921
 
 import pkg_resources
 
 from anvil import colorizer
-from anvil.components import base as component_base
 from anvil import log as logging
 from anvil import shell as sh
-from anvil import type_utils
 from anvil import utils
 
 LOG = logging.getLogger(__name__)
 
 
-class Packager(object):
-    """Basic class for package management systems support.
+class InstallHelper(object):
+    """Run pre and post install for a single package.
     """
-    __meta__ = abc.ABCMeta
-
-    def __init__(self, distro, remove_default=False):
+    def __init__(self, distro):
         self.distro = distro
-        self.remove_default = remove_default
-
-    def remove(self, pkg):
-        should_remove = self.remove_default
-        if 'removable' in pkg:
-            should_remove = type_utils.make_bool(pkg['removable'])
-        if not should_remove:
-            return False
-        self._remove(pkg)
-        return True
 
     def pre_install(self, pkg, params=None):
         cmds = pkg.get('pre-install')
@@ -60,14 +45,6 @@ class Packager(object):
         if cmds:
             LOG.info("Running post-install commands for package %s.", colorizer.quote(pkg['name']))
             utils.execute_template(*cmds, params=params)
-
-    @abc.abstractmethod
-    def _remove(self, pkg):
-        pass
-
-    @abc.abstractmethod
-    def _install(self, pkg):
-        pass
 
 
 OPENSTACK_PACKAGES = set([
@@ -92,8 +69,6 @@ class DependencyHandler(object):
     """Basic class for handler of OpenStack dependencies.
     """
     multipip_executable = sh.which("multipip", ["tools/"])
-    # Update requirements to make them allow already installed packages
-    force_frozen = True
 
     def __init__(self, distro, root_dir, instances):
         self.distro = distro
@@ -109,9 +84,6 @@ class DependencyHandler(object):
         self.pip_executable = str(self.distro.get_command_config('pip'))
         self.pips_to_install = []
         self.forced_packages = []
-        # nopips is a list of items that fail to build from Python packages,
-        # but their RPMs are available from base and epel repos
-        self.nopips = []
         # these packages conflict with our deps and must be removed
         self.nopackages = []
         self.package_dirs = self._get_package_dirs(instances)
@@ -138,7 +110,6 @@ class DependencyHandler(object):
     def package(self):
         requires_files = []
         extra_pips = []
-        self.nopips = []
         for inst in self.instances:
             try:
                 requires_files.extend(inst.requires_files)
@@ -147,8 +118,6 @@ class DependencyHandler(object):
             for pkg in inst.get_option("pips") or []:
                 extra_pips.append(
                     "%s%s" % (pkg["name"], pkg.get("version", "")))
-            for pkg in inst.get_option("nopips") or []:
-                self.nopips.append(pkg["name"])
         requires_files = filter(sh.isfile, requires_files)
         self.gather_pips_to_install(requires_files, extra_pips)
         self.clean_pip_requires(requires_files)
@@ -190,8 +159,6 @@ class DependencyHandler(object):
         """Analyze requires_files and extra_pips.
 
         Updates `self.forced_packages` and `self.pips_to_install`.
-        If `self.force_frozen`, update requirements to make them allow already
-        installed packages.
         Writes requirements to `self.gathered_requires_filename`.
         """
         extra_pips = extra_pips or []
@@ -202,8 +169,6 @@ class DependencyHandler(object):
             "--pip",
             self.pip_executable
         ]
-        if self.force_frozen:
-            cmdline.append("--frozen")
         cmdline = cmdline + extra_pips + ["-r"] + requires_files
 
         output = sh.execute(*cmdline, ignore_exit_code=True)
@@ -237,10 +202,22 @@ class DependencyHandler(object):
         sh.write_file(self.forced_requires_filename,
                       "\n".join(str(req) for req in self.forced_packages))
 
-    def download_dependencies(self, ignore_installed=True, clear_cache=False):
+    def filter_download_requires(self):
+        if not self.python_names:
+            return self.pips_to_install
+        cmdline = [
+            self.multipip_executable,
+            "--pip", self.pip_executable,
+        ] + self.pips_to_install + [
+            "--ignore-packages",
+        ] + self.python_names
+        output = sh.execute(cmdline)
+        pips_to_download = list(utils.splitlines_not_empty(output[0]))
+        return pips_to_download
+
+    def download_dependencies(self, clear_cache=False):
         """Download dependencies from `$deps_dir/download-requires`.
 
-        :param ignore_installed: do not download already installed packages
         :param clear_cache: clear `$deps_dir/cache` dir (pip can work incorrectly
             when it has a cache)
         """
@@ -251,27 +228,9 @@ class DependencyHandler(object):
 
         download_requires_filename = sh.joinpths(
             self.deps_dir, "download-requires")
-        nopips = self.nopips + self.python_names
-        if ignore_installed or nopips:
-            cmdline = [
-                self.multipip_executable,
-                "--pip", self.pip_executable,
-            ]
-            if ignore_installed:
-                cmdline += [
-                    "--ignore-installed",
-                ]
-            cmdline.extend(self.pips_to_install)
-            if nopips:
-                cmdline.append("--ignore-packages")
-                cmdline.extend(nopips)
-            output = sh.execute(*cmdline)
-            pips_to_download = list(utils.splitlines_not_empty(output[0]))
-        else:
-            pips_to_download = self.pips_to_install
+        pips_to_download = self.filter_download_requires()
         sh.write_file(download_requires_filename,
                       "\n".join(str(req) for req in pips_to_download))
-
         if not pips_to_download:
             return []
         # NOTE(aababilov): pip has issues with already downloaded files
@@ -295,8 +254,3 @@ class DependencyHandler(object):
         with open(out_filename, "w") as out:
             sh.execute(*cmdline, stdout_fh=out, stderrr_fh=out)
         return sh.listdir(self.download_dir, files_only=True)
-
-
-class EmptyPackager(component_base.Component):
-    def package(self):
-        return None

@@ -17,83 +17,20 @@
 import datetime
 import sys
 
+import pkg_resources
+
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil.packaging import base
+from anvil.packaging.helpers import yum_helper
 from anvil import shell as sh
 from anvil import utils
 
-from anvil.packaging.helpers import yum_helper
 
 LOG = logging.getLogger(__name__)
 
-YUM_CMD = ['yum']
-YUM_INSTALL = ["install", "-y", "-t"]
-YUM_REMOVE = ['erase', '-y', "-t"]
 
-
-# TODO(aababilov): use it in `Requires:' at YumDependencyHandler
-def extract_requirement(pkg_info):
-    p_name = pkg_info.get('name', '')
-    p_name = p_name.strip()
-    if not p_name:
-        raise ValueError("Yum requirement provided with an empty name")
-    p_version = pkg_info.get('version')
-    if p_version is not None:
-        if isinstance(p_version, (int, float, long)):
-            p_version = str(p_version)
-        if not isinstance(p_version, (str, basestring)):
-            raise TypeError("Yum requirement version must be a string or numeric type")
-    return yum_helper.Requirement(p_name, p_version)
-
-
-class MultiplePackageSolutions(excp.DependencyException):
-    pass
-
-
-class YumPackager(base.Packager):
-    def __init__(self, distro, remove_default=False):
-        super(YumPackager, self).__init__(distro, remove_default)
-        self.helper = yum_helper.Helper()
-
-    def _execute_yum(self, cmd, **kargs):
-        yum_cmd = YUM_CMD + cmd
-        return sh.execute(*yum_cmd, run_as_root=True,
-                          check_exit_code=True, **kargs)
-
-    def direct_install(self, filename):
-        cmd = YUM_INSTALL + [filename]
-        self._execute_yum(cmd)
-
-    def _remove_special(self, name, info):
-        return False
-
-    def _remove(self, pkg):
-        req = extract_requirement(pkg)
-        whats_there = self.helper.get_installed(req.name)
-        matched = False
-        if req.version is None and len(whats_there):
-            # Always matches...
-            matched = True
-        else:
-            for p in whats_there:
-                if p.verEQ(req.package):
-                    matched = True
-        if not len(whats_there):
-            # Nothing installed
-            return
-        if not matched:
-            # Warn that incompat. version could be uninstalled
-            LOG.warn("Removing package named %s even though %s packages with different versions exist",
-                     req, len(whats_there))
-        if self._remove_special(req.name, pkg):
-            return
-        # Not removing specific version, this could
-        # cause problems but should be good enough until
-        # it does cause problems...
-        cmd = YUM_REMOVE + [req.name]
-        self._execute_yum(cmd)
-
+class YumInstallHelper(base.InstallHelper):
     def pre_install(self, pkg, params=None):
         """pre-install is handled in openstack-deps %pre script.
         """
@@ -128,6 +65,41 @@ class YumDependencyHandler(base.DependencyHandler):
         self._build_dependencies()
         self._build_openstack()
         self._create_deps_repo()
+
+    def filter_download_requires(self):
+        yum_map = {}
+        for pkg in yum_helper.Helper().get_available():
+            for provides in pkg.provides:
+                yum_map.setdefault(provides[0], set()).add(
+                    (pkg.version, pkg.repo.id))
+
+        nopips = [pkg_resources.Requirement.parse(name).key
+                  for name in self.python_names]
+        pips_to_download = []
+        req_to_install = [pkg_resources.Requirement.parse(pkg)
+                          for pkg in self.pips_to_install]
+        req_to_install = [
+            req for req in req_to_install if req.key not in nopips]
+        rpm_to_install = self._convert_names_python2rpm(
+            [req.key for req in req_to_install])
+        satisfied_list = []
+        for req, rpm_name in zip(req_to_install, rpm_to_install):
+            yum_versions = yum_map.get(rpm_name, [])
+            satisfied = False
+            for (version, repo_id) in yum_versions:
+                if version in req:
+                    satisfied = True
+                    satisfied_list.append(
+                        "%s as %s-%s from %s" %
+                        (req, rpm_name, version, repo_id))
+                    break
+            if not satisfied:
+                pips_to_download.append(str(req))
+        if satisfied_list:
+            utils.log_iterable(
+                sorted(satisfied_list), logger=LOG,
+                header="These Python packages are already available as RPMs")
+        return pips_to_download
 
     def _write_all_deps_package(self):
         spec_filename = sh.joinpths(
@@ -271,11 +243,11 @@ BuildArch: noarch
         sh.write_file(
             self.anvil_repo_filename, utils.expand_template(content, params))
 
-    def _create_openstack_packages_list(self):
+    def _convert_names_python2rpm(self, python_names):
         if not self.python_names:
             return []
 
-        cmdline = [self.py2rpm_executable, "--convert"] + self.python_names
+        cmdline = [self.py2rpm_executable, "--convert"] + python_names
         rpm_names = []
         # run as root since /tmp/pip-build-root must be owned by root
         for name in sh.execute(*cmdline, run_as_root=True)[0].splitlines():
@@ -315,7 +287,7 @@ BuildArch: noarch
         sh.execute(*cmdline, run_as_root=True,
                    stdout_fh=sys.stdout, stderr_fh=sys.stderr)
 
-        rpm_names = self._create_openstack_packages_list()
+        rpm_names = self._convert_names_python2rpm(self.python_names)
         if rpm_names:
             cmdline = ["yum", "install", "-y"] + rpm_names
             sh.execute(*cmdline, run_as_root=True,
@@ -325,7 +297,7 @@ BuildArch: noarch
         super(YumDependencyHandler, self).uninstall()
         helper = yum_helper.Helper()
         rpm_names = []
-        for name in self._create_openstack_packages_list():
+        for name in self._convert_names_python2rpm(self.python_names):
             if helper.is_installed(name):
                 rpm_names.append(name)
 
@@ -333,4 +305,3 @@ BuildArch: noarch
             cmdline = ["yum", "remove", "--remove-leaves", "-y"] + rpm_names
             sh.execute(*cmdline, run_as_root=True,
                        stdout_fh=sys.stdout, stderr_fh=sys.stderr)
-
