@@ -282,5 +282,11 @@ checksum=$(get_checksums)
 for i in $BOOT_FILES; do
     echo -e $checksum > $i
 done
+
+mkdir -pv /etc/anvil /usr/share/anvil
+if [ -n "$SUDO_UID" -a -n "SUDO_GID" ]; then
+    chown -c "$SUDO_UID:$SUDO_GID" /etc/anvil /usr/share/anvil
+fi
+
 echo "Success! Bootstrapped for $SHORTNAME $RELEASE"
 exit 0
