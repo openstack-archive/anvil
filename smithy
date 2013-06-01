@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 
 YUM_OPTS="--assumeyes --nogpgcheck"
 PIP_CMD=""
-PY2RPM_CMD="$PWD/multipip/py2rpm"
+PY2RPM_CMD="$PWD/tools/py2rpm"
 
 # Source in our variables (or overrides)
 source ".anvilrc"
