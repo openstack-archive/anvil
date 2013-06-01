@@ -44,3 +44,4 @@ require libxslt-devel
 require python-cheetah Cheetah
 require python-keyring keyring
 require python-termcolor termcolor
+require python-d2to1 d2to1
