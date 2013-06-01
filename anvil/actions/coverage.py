@@ -14,11 +14,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import action
+from anvil.actions import base as action
 from anvil import colorizer
 from anvil import log
-
-from anvil.action import PhaseFunctors
 
 LOG = log.getLogger(__name__)
 
@@ -30,7 +28,7 @@ class CoverageAction(action.Action):
 
     def _run(self, persona, component_order, instances):
         results = self._run_phase(
-            PhaseFunctors(
+            action.PhaseFunctors(
                 start=lambda i: LOG.info('Show tests coverage for component %s.', colorizer.quote(i.name)),
                 run=lambda i: i.show_coverage(),
                 end=None,
