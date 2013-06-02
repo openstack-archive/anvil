@@ -22,14 +22,18 @@ Read the great documentation for developers/admins at
 - http://docs.openstack.org/
 
 This will vastly help you understand what the
-configurations and options do when anvil configures them.
+configurations and options do when ANVIL configures them.
 
 Linux
 -----
 
-One of the tested Linux distributions (RHEL 6.2+ until further updated)
+One of the tested distributions.
 
-You can get RHEL 6.2+ (**64-bit** is preferred) from http://rhn.redhat.com/.
+- RHEL 6.2+
+- CentOS 6.2+
+- Oracle Enteprise Linux 6.2+
+
+You can get CentOS 6.2+ (**64-bit** is preferred) from https://www.centos.org/
 
 Networking
 ----------
@@ -91,8 +95,7 @@ Also disable selinux:
 
      $ sudo vi /etc/sysconfig/selinux
 
-Change *SELINUX=enforcing* to *SELINUX=disabled* then it seems you need
-to reboot.
+Change *SELINUX=enforcing* to *SELINUX=disabled* then reboot.
 
 ::
 
@@ -110,7 +113,7 @@ This can be typically solved by running the following (and then updating the ``i
     $ sudo chmod -R a+rwx /home/openstack
 
 Also as documented at http://docs.openstack.org/essex/openstack-compute/admin/content/qemu.html#fixes-rhel-qemu
-please run the following (after installation).
+please run the following (**after** installation).
 
 ::
 
@@ -150,7 +153,7 @@ http://www.techotopia.com/index.php/Creating_an_RHEL_5_KVM_Networked_Bridge_Inte
 
 
 Pre-installing
-----------
+--------------
 
 In order to ensure that anvil will have its correct dependencies you need to first run the
 bootstrapping code that will setup said dependencies for your operating system.
@@ -158,6 +161,23 @@ bootstrapping code that will setup said dependencies for your operating system.
 ::
 
     sudo ./smithy --bootstrap
+
+Preparing
+---------
+
+Now prepare *OpenStacks* components by running the following:
+
+::
+
+    ./smithy -a prepare
+
+You should see a corresponding OpenStack repositories getting downloaded using
+git, python setups occurring and configuration files being written as well as
+rpm packages being built (and a repository setup from those components) that
+will allow you to reliably and repeatly install the OpenStack components and
+there dependencies as ANVIL figures out how to prepare your desired components (if you
+desire more informational output add a ``-v``to that
+command).
 
 Installing
 ----------
@@ -169,10 +189,9 @@ Now install *OpenStacks* components by running the following:
     sudo ./smithy -a install
 
 You should see a set of distribution packages and/or pips being
-installed, python setups occurring and configuration files being written
-as ANVIL figures out how to install your desired components (if you
-desire more informational output add a ``-v``to that
-command).
+installed and configuration files being written as ANVIL figures out how to
+install your desired components from the prepared packages built in the last
+step (if you desire more informational output add a ``-v``to that command).
 
 Testing
 ----------
@@ -196,18 +215,12 @@ Now that you have installed *OpenStack* you can now start your
     sudo ./smithy -a start
 
 
-Check horizon
-~~~~~~~~~~~~~
+Check horizon (if applicable)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Once that occurs you should be able to go to your hosts ip with a web
 browser and view horizon which can be logged in with the user ``admin``
-and the password you entered when prompted for
-``Enter a password to use for horizon and keystone``. If you let the
-system auto-generate one for you you will need to check the final output
-of the above install and pick up the password that was generated which
-should be displayed at key ``passwords/horizon_keystone_admin``. You can
-also later find this authentication information in the generated
-``passwords.yaml`` file.
+and the password you entered when prompted for.
 
 If you see a login page and can access horizon then:
 
@@ -238,7 +251,7 @@ EC2 apis run the following to get your EC2 certs:
 
 ::
 
-    ./euca.sh $OS_USERNAME $OS_TENANT_NAME
+    ./tools/euca.sh $OS_USERNAME $OS_TENANT_NAME
 
 It broke?
 ~~~~~~~~~

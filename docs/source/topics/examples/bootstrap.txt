@@ -1,0 +1,1428 @@
+Sourcing /home/harlowja/anvil/tools/bootstrap/RedHatEnterpriseLinuxServer
+Removing conflicting packages python-paste-deploy1.5 python-nose1.1 python-routes1.12 python-sphinx10 python-webob1.0 Django14
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, security,
+              : tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Remove Process
+No Packages marked for removal
+Bootstrapping RHEL 6.2
+Please wait...
+Downloading epel-release-6-8.noarch.rpm to /tmp...
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, security,
+              : tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Examining /tmp/epel-release-6-8.noarch.rpm: epel-release-6-8.noarch
+Marking /tmp/epel-release-6-8.noarch.rpm to be installed
+Resolving Dependencies
+--> Running transaction check
+---> Package epel-release.noarch 0:6-8 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package            Arch         Version   Repository                      Size
+================================================================================
+Installing:
+ epel-release       noarch       6-8       /epel-release-6-8.noarch        22 k
+
+Transaction Summary
+================================================================================
+Install       1 Package(s)
+
+Total size: 22 k
+Installed size: 22 k
+Downloading Packages:
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+
+  Installing : epel-release-6-8.noarch                                      1/1 
+
+  Verifying  : epel-release-6-8.noarch                                      1/1 
+
+Installed:
+  epel-release.noarch 0:6-8                                                     
+
+Complete!
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, security,
+              : tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Package PyYAML-3.10-3.el6.x86_64 already installed and latest version
+Nothing to do
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, security,
+              : tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Resolving Dependencies
+--> Running transaction check
+---> Package gcc.x86_64 0:4.4.6-4.el6 will be updated
+--> Processing Dependency: gcc = 4.4.6-4.el6 for package: gcc-c++-4.4.6-4.el6.x86_64
+---> Package gcc.x86_64 0:4.4.7-3.el6 will be an update
+--> Processing Dependency: cpp = 4.4.7-3.el6 for package: gcc-4.4.7-3.el6.x86_64
+--> Processing Dependency: libgomp = 4.4.7-3.el6 for package: gcc-4.4.7-3.el6.x86_64
+--> Processing Dependency: libgcc >= 4.4.7-3.el6 for package: gcc-4.4.7-3.el6.x86_64
+--> Running transaction check
+---> Package cpp.x86_64 0:4.4.6-4.el6 will be updated
+---> Package cpp.x86_64 0:4.4.7-3.el6 will be an update
+---> Package gcc-c++.x86_64 0:4.4.6-4.el6 will be updated
+---> Package gcc-c++.x86_64 0:4.4.7-3.el6 will be an update
+--> Processing Dependency: libstdc++-devel = 4.4.7-3.el6 for package: gcc-c++-4.4.7-3.el6.x86_64
+--> Processing Dependency: libstdc++ = 4.4.7-3.el6 for package: gcc-c++-4.4.7-3.el6.x86_64
+---> Package libgcc.i686 0:4.4.6-4.el6 will be updated
+---> Package libgcc.x86_64 0:4.4.6-4.el6 will be updated
+---> Package libgcc.i686 0:4.4.7-3.el6 will be an update
+---> Package libgcc.x86_64 0:4.4.7-3.el6 will be an update
+---> Package libgomp.i686 0:4.4.6-4.el6 will be updated
+---> Package libgomp.x86_64 0:4.4.6-4.el6 will be updated
+---> Package libgomp.i686 0:4.4.7-3.el6 will be an update
+---> Package libgomp.x86_64 0:4.4.7-3.el6 will be an update
+--> Running transaction check
+---> Package libstdc++.i686 0:4.4.6-4.el6 will be updated
+---> Package libstdc++.x86_64 0:4.4.6-4.el6 will be updated
+---> Package libstdc++.i686 0:4.4.7-3.el6 will be an update
+---> Package libstdc++.x86_64 0:4.4.7-3.el6 will be an update
+---> Package libstdc++-devel.x86_64 0:4.4.6-4.el6 will be updated
+---> Package libstdc++-devel.x86_64 0:4.4.7-3.el6 will be an update
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package                Arch          Version              Repository      Size
+================================================================================
+Updating:
+ gcc                    x86_64        4.4.7-3.el6          updates         10 M
+Updating for dependencies:
+ cpp                    x86_64        4.4.7-3.el6          updates        3.7 M
+ gcc-c++                x86_64        4.4.7-3.el6          updates        4.7 M
+ libgcc                 i686          4.4.7-3.el6          updates        112 k
+ libgcc                 x86_64        4.4.7-3.el6          updates        100 k
+ libgomp                i686          4.4.7-3.el6          updates        120 k
+ libgomp                x86_64        4.4.7-3.el6          updates        118 k
+ libstdc++              i686          4.4.7-3.el6          updates        300 k
+ libstdc++              x86_64        4.4.7-3.el6          updates        293 k
+ libstdc++-devel        x86_64        4.4.7-3.el6          updates        1.6 M
+
+Transaction Summary
+================================================================================
+Upgrade      10 Package(s)
+
+Total download size: 21 M
+Downloading Packages:
+Setting up and reading Presto delta metadata
+Processing delta metadata
+Package(s) data still to download: 21 M
+--------------------------------------------------------------------------------
+Total                                            23 MB/s |  21 MB     00:00     
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+
+  Updating   : libgcc-4.4.7-3.el6.x86_64                                   1/20 
+
+  Updating   : libstdc++-4.4.7-3.el6.x86_64                                2/20 
+
+  Updating   : libstdc++-devel-4.4.7-3.el6.x86_64                          3/20 
+
+  Updating   : cpp-4.4.7-3.el6.x86_64                                      4/20 
+
+  Updating   : libgomp-4.4.7-3.el6.x86_64                                  5/20 
+
+  Updating   : gcc-4.4.7-3.el6.x86_64                                      6/20 
+
+  Updating   : libgcc-4.4.7-3.el6.i686                                     7/20 
+
+  Updating   : gcc-c++-4.4.7-3.el6.x86_64                                  8/20 
+
+  Updating   : libstdc++-4.4.7-3.el6.i686                                  9/20 
+
+  Updating   : libgomp-4.4.7-3.el6.i686                                   10/20 
+
+  Cleanup    : libstdc++-4.4.6-4.el6                                      11/20 
+
+  Cleanup    : libgcc-4.4.6-4.el6                                         12/20 
+
+  Cleanup    : libgomp-4.4.6-4.el6                                        13/20 
+
+  Cleanup    : gcc-c++-4.4.6-4.el6.x86_64                                 14/20 
+
+  Cleanup    : libstdc++-devel-4.4.6-4.el6.x86_64                         15/20 
+
+  Cleanup    : gcc-4.4.6-4.el6.x86_64                                     16/20 
+
+  Cleanup    : libstdc++-4.4.6-4.el6                                      17/20 
+
+  Cleanup    : libgcc-4.4.6-4.el6                                         18/20 
+
+  Cleanup    : cpp-4.4.6-4.el6.x86_64                                     19/20 
+
+  Cleanup    : libgomp-4.4.6-4.el6                                        20/20 
+
+  Verifying  : libstdc++-4.4.7-3.el6.i686                                  1/20 
+
+  Verifying  : libgomp-4.4.7-3.el6.i686                                    2/20 
+
+  Verifying  : gcc-c++-4.4.7-3.el6.x86_64                                  3/20 
+
+  Verifying  : gcc-4.4.7-3.el6.x86_64                                      4/20 
+
+  Verifying  : libgomp-4.4.7-3.el6.x86_64                                  5/20 
+
+  Verifying  : libgcc-4.4.7-3.el6.x86_64                                   6/20 
+
+  Verifying  : cpp-4.4.7-3.el6.x86_64                                      7/20 
+
+  Verifying  : libgcc-4.4.7-3.el6.i686                                     8/20 
+
+  Verifying  : libstdc++-devel-4.4.7-3.el6.x86_64                          9/20 
+
+  Verifying  : libstdc++-4.4.7-3.el6.x86_64                               10/20 
+
+  Verifying  : libgcc-4.4.6-4.el6.i686                                    11/20 
+
+  Verifying  : libgomp-4.4.6-4.el6.i686                                   12/20 
+
+  Verifying  : libgcc-4.4.6-4.el6.x86_64                                  13/20 
+
+  Verifying  : gcc-4.4.6-4.el6.x86_64                                     14/20 
+
+  Verifying  : gcc-c++-4.4.6-4.el6.x86_64                                 15/20 
+
+  Verifying  : libstdc++-devel-4.4.6-4.el6.x86_64                         16/20 
+
+  Verifying  : libstdc++-4.4.6-4.el6.x86_64                               17/20 
+
+  Verifying  : libgomp-4.4.6-4.el6.x86_64                                 18/20 
+
+  Verifying  : cpp-4.4.6-4.el6.x86_64                                     19/20 
+
+  Verifying  : libstdc++-4.4.6-4.el6.i686                                 20/20 
+
+Updated:
+  gcc.x86_64 0:4.4.7-3.el6                                                      
+
+Dependency Updated:
+  cpp.x86_64 0:4.4.7-3.el6                  gcc-c++.x86_64 0:4.4.7-3.el6       
+  libgcc.i686 0:4.4.7-3.el6                 libgcc.x86_64 0:4.4.7-3.el6        
+  libgomp.i686 0:4.4.7-3.el6                libgomp.x86_64 0:4.4.7-3.el6       
+  libstdc++.i686 0:4.4.7-3.el6              libstdc++.x86_64 0:4.4.7-3.el6     
+  libstdc++-devel.x86_64 0:4.4.7-3.el6     
+
+Complete!
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, security,
+              : tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Package git-1.7.1-3.el6_4.1.x86_64 already installed and latest version
+Nothing to do
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, security,
+              : tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Package patch-2.6-6.el6.x86_64 already installed and latest version
+Nothing to do
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, security,
+              : tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Resolving Dependencies
+--> Running transaction check
+---> Package python.x86_64 0:2.6.6-29.el6_2.2 will be updated
+--> Processing Dependency: python = 2.6.6-29.el6_2.2 for package: python-libs-2.6.6-29.el6_2.2.x86_64
+---> Package python.x86_64 0:2.6.6-36.el6 will be an update
+--> Running transaction check
+---> Package python-libs.x86_64 0:2.6.6-29.el6_2.2 will be updated
+---> Package python-libs.x86_64 0:2.6.6-36.el6 will be an update
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package             Arch           Version               Repository       Size
+================================================================================
+Updating:
+ python              x86_64         2.6.6-36.el6          updates         4.8 M
+Updating for dependencies:
+ python-libs         x86_64         2.6.6-36.el6          updates         595 k
+
+Transaction Summary
+================================================================================
+Upgrade       2 Package(s)
+
+Total download size: 5.4 M
+Downloading Packages:
+Setting up and reading Presto delta metadata
+Processing delta metadata
+Package(s) data still to download: 5.4 M
+--------------------------------------------------------------------------------
+Total                                            26 MB/s | 5.4 MB     00:00     
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+
+  Updating   : python-libs-2.6.6-36.el6.x86_64                              1/4 
+
+  Updating   : python-2.6.6-36.el6.x86_64                                   2/4 
+
+  Cleanup    : python-libs-2.6.6-29.el6_2.2.x86_64                          3/4 
+
+  Cleanup    : python-2.6.6-29.el6_2.2.x86_64                               4/4 
+
+  Verifying  : python-2.6.6-36.el6.x86_64                                   1/4 
+
+  Verifying  : python-libs-2.6.6-36.el6.x86_64                              2/4 
+
+  Verifying  : python-2.6.6-29.el6_2.2.x86_64                               3/4 
+
+  Verifying  : python-libs-2.6.6-29.el6_2.2.x86_64                          4/4 
+
+Updated:
+  python.x86_64 0:2.6.6-36.el6                                                  
+
+Dependency Updated:
+  python-libs.x86_64 0:2.6.6-36.el6                                             
+
+Complete!
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, security,
+              : tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Resolving Dependencies
+--> Running transaction check
+---> Package python-devel.x86_64 0:2.6.6-36.el6 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package              Arch           Version              Repository       Size
+================================================================================
+Installing:
+ python-devel         x86_64         2.6.6-36.el6         updates         168 k
+
+Transaction Summary
+================================================================================
+Install       1 Package(s)
+
+Total download size: 168 k
+Installed size: 455 k
+Downloading Packages:
+Setting up and reading Presto delta metadata
+Processing delta metadata
+Package(s) data still to download: 168 k
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+
+  Installing : python-devel-2.6.6-36.el6.x86_64                             1/1 
+
+  Verifying  : python-devel-2.6.6-36.el6.x86_64                             1/1 
+
+Installed:
+  python-devel.x86_64 0:2.6.6-36.el6                                            
+
+Complete!
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, security,
+              : tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Package python-argparse-1.2.1-2.el6.noarch already installed and latest version
+Nothing to do
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, security,
+              : tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Resolving Dependencies
+--> Running transaction check
+---> Package python-iso8601.noarch 0:0.1.4-2.el6 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package                Arch           Version               Repository    Size
+================================================================================
+Installing:
+ python-iso8601         noarch         0.1.4-2.el6           epel          12 k
+
+Transaction Summary
+================================================================================
+Install       1 Package(s)
+
+Total download size: 12 k
+Installed size: 23 k
+Downloading Packages:
+Setting up and reading Presto delta metadata
+Processing delta metadata
+Package(s) data still to download: 12 k
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+
+  Installing : python-iso8601-0.1.4-2.el6.noarch                            1/1 
+
+  Verifying  : python-iso8601-0.1.4-2.el6.noarch                            1/1 
+
+Installed:
+  python-iso8601.noarch 0:0.1.4-2.el6                                           
+
+Complete!
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, security,
+              : tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Resolving Dependencies
+--> Running transaction check
+---> Package python-netifaces.x86_64 0:0.5-1.el6 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package                  Arch           Version             Repository    Size
+================================================================================
+Installing:
+ python-netifaces         x86_64         0.5-1.el6           epel          12 k
+
+Transaction Summary
+================================================================================
+Install       1 Package(s)
+
+Total download size: 12 k
+Installed size: 17 k
+Downloading Packages:
+Setting up and reading Presto delta metadata
+Processing delta metadata
+Package(s) data still to download: 12 k
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+
+  Installing : python-netifaces-0.5-1.el6.x86_64                            1/1 
+
+  Verifying  : python-netifaces-0.5-1.el6.x86_64                            1/1 
+
+Installed:
+  python-netifaces.x86_64 0:0.5-1.el6                                           
+
+Complete!
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, security,
+              : tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Resolving Dependencies
+--> Running transaction check
+---> Package python-ordereddict.noarch 0:1.1-2.el6 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package                    Arch           Version           Repository    Size
+================================================================================
+Installing:
+ python-ordereddict         noarch         1.1-2.el6         epel         7.6 k
+
+Transaction Summary
+================================================================================
+Install       1 Package(s)
+
+Total download size: 7.6 k
+Installed size: 9.7 k
+Downloading Packages:
+Setting up and reading Presto delta metadata
+Processing delta metadata
+Package(s) data still to download: 7.6 k
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+
+  Installing : python-ordereddict-1.1-2.el6.noarch                          1/1 
+
+  Verifying  : python-ordereddict-1.1-2.el6.noarch                          1/1 
+
+Installed:
+  python-ordereddict.noarch 0:1.1-2.el6                                         
+
+Complete!
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, security,
+              : tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Resolving Dependencies
+--> Running transaction check
+---> Package python-progressbar.noarch 0:2.3-1.el6 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package                    Arch           Version           Repository    Size
+================================================================================
+Installing:
+ python-progressbar         noarch         2.3-1.el6         epel          20 k
+
+Transaction Summary
+================================================================================
+Install       1 Package(s)
+
+Total download size: 20 k
+Installed size: 50 k
+Downloading Packages:
+Setting up and reading Presto delta metadata
+Processing delta metadata
+Package(s) data still to download: 20 k
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+
+  Installing : python-progressbar-2.3-1.el6.noarch                          1/1 
+
+  Verifying  : python-progressbar-2.3-1.el6.noarch                          1/1 
+
+Installed:
+  python-progressbar.noarch 0:2.3-1.el6                                         
+
+Complete!
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, security,
+              : tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Resolving Dependencies
+--> Running transaction check
+---> Package python-psutil.x86_64 0:0.6.1-1.el6 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package               Arch           Version                Repository    Size
+================================================================================
+Installing:
+ python-psutil         x86_64         0.6.1-1.el6            epel          84 k
+
+Transaction Summary
+================================================================================
+Install       1 Package(s)
+
+Total download size: 84 k
+Installed size: 354 k
+Downloading Packages:
+Setting up and reading Presto delta metadata
+Processing delta metadata
+Package(s) data still to download: 84 k
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+
+  Installing : python-psutil-0.6.1-1.el6.x86_64                             1/1 
+
+  Verifying  : python-psutil-0.6.1-1.el6.x86_64                             1/1 
+
+Installed:
+  python-psutil.x86_64 0:0.6.1-1.el6                                            
+
+Complete!
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, security,
+              : tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Package python-iniparse-0.3.1-2.1.el6.noarch already installed and latest version
+Nothing to do
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, security,
+              : tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Resolving Dependencies
+--> Running transaction check
+---> Package pylint.noarch 0:0.21.1-2.el6 will be installed
+--> Processing Dependency: python-logilab-astng for package: pylint-0.21.1-2.el6.noarch
+--> Running transaction check
+---> Package python-logilab-astng.noarch 0:0.20.1-1.el6 will be installed
+--> Processing Dependency: python-logilab-common for package: python-logilab-astng-0.20.1-1.el6.noarch
+--> Running transaction check
+---> Package python-logilab-common.noarch 0:0.50.3-1.el6 will be installed
+--> Processing Dependency: mx for package: python-logilab-common-0.50.3-1.el6.noarch
+--> Running transaction check
+---> Package mx.x86_64 0:3.1.1-6.el6 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package                     Arch         Version              Repository  Size
+================================================================================
+Installing:
+ pylint                      noarch       0.21.1-2.el6         epel       218 k
+Installing for dependencies:
+ mx                          x86_64       3.1.1-6.el6          epel       4.0 M
+ python-logilab-astng        noarch       0.20.1-1.el6         epel       132 k
+ python-logilab-common       noarch       0.50.3-1.el6         epel       275 k
+
+Transaction Summary
+================================================================================
+Install       4 Package(s)
+
+Total download size: 4.6 M
+Installed size: 9.1 M
+Downloading Packages:
+Setting up and reading Presto delta metadata
+Processing delta metadata
+Package(s) data still to download: 4.6 M
+--------------------------------------------------------------------------------
+Total                                           2.3 MB/s | 4.6 MB     00:02     
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+
+  Installing : mx-3.1.1-6.el6.x86_64                                        1/4 
+
+  Installing : python-logilab-common-0.50.3-1.el6.noarch                    2/4 
+
+  Installing : python-logilab-astng-0.20.1-1.el6.noarch                     3/4 
+
+  Installing : pylint-0.21.1-2.el6.noarch                                   4/4 
+
+  Verifying  : python-logilab-common-0.50.3-1.el6.noarch                    1/4 
+
+  Verifying  : pylint-0.21.1-2.el6.noarch                                   2/4 
+
+  Verifying  : mx-3.1.1-6.el6.x86_64                                        3/4 
+
+  Verifying  : python-logilab-astng-0.20.1-1.el6.noarch                     4/4 
+
+Installed:
+  pylint.noarch 0:0.21.1-2.el6                                                  
+
+Dependency Installed:
+  mx.x86_64 0:3.1.1-6.el6                                                       
+  python-logilab-astng.noarch 0:0.20.1-1.el6                                    
+  python-logilab-common.noarch 0:0.50.3-1.el6                                   
+
+Complete!
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, security,
+              : tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Resolving Dependencies
+--> Running transaction check
+---> Package createrepo.noarch 0:0.9.8-5.el6 will be updated
+---> Package createrepo.noarch 0:0.9.9-17.el6 will be an update
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package            Arch           Version                Repository       Size
+================================================================================
+Updating:
+ createrepo         noarch         0.9.9-17.el6           updates          94 k
+
+Transaction Summary
+================================================================================
+Upgrade       1 Package(s)
+
+Total download size: 94 k
+Downloading Packages:
+Setting up and reading Presto delta metadata
+Processing delta metadata
+Package(s) data still to download: 94 k
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+
+  Updating   : createrepo-0.9.9-17.el6.noarch                               1/2 
+
+  Cleanup    : createrepo-0.9.8-5.el6.noarch                                2/2 
+
+  Verifying  : createrepo-0.9.9-17.el6.noarch                               1/2 
+
+  Verifying  : createrepo-0.9.8-5.el6.noarch                                2/2 
+
+Updated:
+  createrepo.noarch 0:0.9.9-17.el6                                              
+
+Complete!
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, security,
+              : tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Resolving Dependencies
+--> Running transaction check
+---> Package yum-plugin-remove-with-leaves.noarch 0:1.1.30-14.el6 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package                          Arch      Version            Repository  Size
+================================================================================
+Installing:
+ yum-plugin-remove-with-leaves    noarch    1.1.30-14.el6      updates     22 k
+
+Transaction Summary
+================================================================================
+Install       1 Package(s)
+
+Total download size: 22 k
+Installed size: 26 k
+Downloading Packages:
+Setting up and reading Presto delta metadata
+Processing delta metadata
+Package(s) data still to download: 22 k
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+
+  Installing : yum-plugin-remove-with-leaves-1.1.30-14.el6.noarch           1/1 
+
+  Verifying  : yum-plugin-remove-with-leaves-1.1.30-14.el6.noarch           1/1 
+
+Installed:
+  yum-plugin-remove-with-leaves.noarch 0:1.1.30-14.el6                          
+
+Complete!
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, remove-with-
+              : leaves, security, tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Resolving Dependencies
+--> Running transaction check
+---> Package rpm-build.x86_64 0:4.8.0-27.el6 will be updated
+---> Package rpm-build.x86_64 0:4.8.0-32.el6 will be an update
+--> Processing Dependency: rpm = 4.8.0-32.el6 for package: rpm-build-4.8.0-32.el6.x86_64
+--> Running transaction check
+---> Package rpm.x86_64 0:4.8.0-27.el6 will be updated
+--> Processing Dependency: rpm = 4.8.0-27.el6 for package: rpm-libs-4.8.0-27.el6.i686
+--> Processing Dependency: rpm = 4.8.0-27.el6 for package: rpm-libs-4.8.0-27.el6.x86_64
+--> Processing Dependency: rpm = 4.8.0-27.el6 for package: rpm-python-4.8.0-27.el6.x86_64
+---> Package rpm.x86_64 0:4.8.0-32.el6 will be an update
+--> Running transaction check
+---> Package rpm-libs.i686 0:4.8.0-27.el6 will be updated
+---> Package rpm-libs.x86_64 0:4.8.0-27.el6 will be updated
+---> Package rpm-libs.i686 0:4.8.0-32.el6 will be an update
+---> Package rpm-libs.x86_64 0:4.8.0-32.el6 will be an update
+---> Package rpm-python.x86_64 0:4.8.0-27.el6 will be updated
+---> Package rpm-python.x86_64 0:4.8.0-32.el6 will be an update
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package            Arch           Version                Repository       Size
+================================================================================
+Updating:
+ rpm-build          x86_64         4.8.0-32.el6           updates         126 k
+Updating for dependencies:
+ rpm                x86_64         4.8.0-32.el6           updates         901 k
+ rpm-libs           i686           4.8.0-32.el6           updates         315 k
+ rpm-libs           x86_64         4.8.0-32.el6           updates         312 k
+ rpm-python         x86_64         4.8.0-32.el6           updates          56 k
+
+Transaction Summary
+================================================================================
+Upgrade       5 Package(s)
+
+Total download size: 1.7 M
+Downloading Packages:
+Setting up and reading Presto delta metadata
+Processing delta metadata
+Package(s) data still to download: 1.7 M
+--------------------------------------------------------------------------------
+Total                                           5.5 MB/s | 1.7 MB     00:00     
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+
+  Updating   : rpm-libs-4.8.0-32.el6.x86_64                                1/10 
+
+  Updating   : rpm-4.8.0-32.el6.x86_64                                     2/10 
+
+  Updating   : rpm-build-4.8.0-32.el6.x86_64                               3/10 
+
+  Updating   : rpm-python-4.8.0-32.el6.x86_64                              4/10 
+
+  Updating   : rpm-libs-4.8.0-32.el6.i686                                  5/10 
+
+  Cleanup    : rpm-python-4.8.0-27.el6.x86_64                              6/10 
+
+  Cleanup    : rpm-build-4.8.0-27.el6.x86_64                               7/10 
+
+  Cleanup    : rpm-libs-4.8.0-27.el6                                       8/10 
+
+  Cleanup    : rpm-libs-4.8.0-27.el6                                       9/10 
+
+  Cleanup    : rpm-4.8.0-27.el6.x86_64                                    10/10 
+
+  Verifying  : rpm-build-4.8.0-32.el6.x86_64                               1/10 
+
+  Verifying  : rpm-4.8.0-32.el6.x86_64                                     2/10 
+
+  Verifying  : rpm-libs-4.8.0-32.el6.x86_64                                3/10 
+
+  Verifying  : rpm-libs-4.8.0-32.el6.i686                                  4/10 
+
+  Verifying  : rpm-python-4.8.0-32.el6.x86_64                              5/10 
+
+  Verifying  : rpm-libs-4.8.0-27.el6.i686                                  6/10 
+
+  Verifying  : rpm-python-4.8.0-27.el6.x86_64                              7/10 
+
+  Verifying  : rpm-build-4.8.0-27.el6.x86_64                               8/10 
+
+  Verifying  : rpm-4.8.0-27.el6.x86_64                                     9/10 
+
+  Verifying  : rpm-libs-4.8.0-27.el6.x86_64                               10/10 
+
+Updated:
+  rpm-build.x86_64 0:4.8.0-32.el6                                               
+
+Dependency Updated:
+  rpm.x86_64 0:4.8.0-32.el6             rpm-libs.i686 0:4.8.0-32.el6           
+  rpm-libs.x86_64 0:4.8.0-32.el6        rpm-python.x86_64 0:4.8.0-32.el6       
+
+Complete!
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, remove-with-
+              : leaves, security, tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Resolving Dependencies
+--> Running transaction check
+---> Package python-pip.noarch 0:1.3.1-1.el6 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package             Arch            Version                Repository     Size
+================================================================================
+Installing:
+ python-pip          noarch          1.3.1-1.el6            epel          329 k
+
+Transaction Summary
+================================================================================
+Install       1 Package(s)
+
+Total download size: 329 k
+Installed size: 1.0 M
+Downloading Packages:
+Setting up and reading Presto delta metadata
+Processing delta metadata
+Package(s) data still to download: 329 k
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+
+  Installing : python-pip-1.3.1-1.el6.noarch                                1/1 
+
+  Verifying  : python-pip-1.3.1-1.el6.noarch                                1/1 
+
+Installed:
+  python-pip.noarch 0:1.3.1-1.el6                                               
+
+Complete!
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, remove-with-
+              : leaves, security, tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Package python-setuptools-0.6.10-3.el6.noarch already installed and latest version
+Nothing to do
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, remove-with-
+              : leaves, security, tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Resolving Dependencies
+--> Running transaction check
+---> Package sqlite-devel.x86_64 0:3.6.20-1.el6 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package              Arch           Version                 Repository    Size
+================================================================================
+Installing:
+ sqlite-devel         x86_64         3.6.20-1.el6            base          81 k
+
+Transaction Summary
+================================================================================
+Install       1 Package(s)
+
+Total download size: 81 k
+Installed size: 283 k
+Downloading Packages:
+Setting up and reading Presto delta metadata
+Processing delta metadata
+Package(s) data still to download: 81 k
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+
+  Installing : sqlite-devel-3.6.20-1.el6.x86_64                             1/1 
+
+  Verifying  : sqlite-devel-3.6.20-1.el6.x86_64                             1/1 
+
+Installed:
+  sqlite-devel.x86_64 0:3.6.20-1.el6                                            
+
+Complete!
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, remove-with-
+              : leaves, security, tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Resolving Dependencies
+--> Running transaction check
+---> Package mysql-devel.x86_64 0:5.1.69-1.el6_4 will be installed
+--> Processing Dependency: mysql = 5.1.69-1.el6_4 for package: mysql-devel-5.1.69-1.el6_4.x86_64
+--> Processing Dependency: libmysqlclient.so.16()(64bit) for package: mysql-devel-5.1.69-1.el6_4.x86_64
+--> Processing Dependency: libmysqlclient_r.so.16()(64bit) for package: mysql-devel-5.1.69-1.el6_4.x86_64
+--> Running transaction check
+---> Package mysql.x86_64 0:5.1.69-1.el6_4 will be installed
+---> Package mysql-libs.x86_64 0:5.1.69-1.el6_4 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package            Arch          Version                  Repository      Size
+================================================================================
+Installing:
+ mysql-devel        x86_64        5.1.69-1.el6_4           updates        128 k
+Installing for dependencies:
+ mysql              x86_64        5.1.69-1.el6_4           updates        907 k
+ mysql-libs         x86_64        5.1.69-1.el6_4           updates        1.2 M
+
+Transaction Summary
+================================================================================
+Install       3 Package(s)
+
+Total download size: 2.2 M
+Installed size: 6.8 M
+Downloading Packages:
+Setting up and reading Presto delta metadata
+Processing delta metadata
+Package(s) data still to download: 2.2 M
+--------------------------------------------------------------------------------
+Total                                            32 MB/s | 2.2 MB     00:00     
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+
+  Installing : mysql-libs-5.1.69-1.el6_4.x86_64                             1/3 
+
+  Installing : mysql-5.1.69-1.el6_4.x86_64                                  2/3 
+
+  Installing : mysql-devel-5.1.69-1.el6_4.x86_64                            3/3 
+
+  Verifying  : mysql-5.1.69-1.el6_4.x86_64                                  1/3 
+
+  Verifying  : mysql-devel-5.1.69-1.el6_4.x86_64                            2/3 
+
+  Verifying  : mysql-libs-5.1.69-1.el6_4.x86_64                             3/3 
+
+Installed:
+  mysql-devel.x86_64 0:5.1.69-1.el6_4                                           
+
+Dependency Installed:
+  mysql.x86_64 0:5.1.69-1.el6_4        mysql-libs.x86_64 0:5.1.69-1.el6_4       
+
+Complete!
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, remove-with-
+              : leaves, security, tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Resolving Dependencies
+--> Running transaction check
+---> Package postgresql-devel.x86_64 0:8.4.13-1.el6_3 will be installed
+--> Processing Dependency: postgresql(x86-64) = 8.4.13-1.el6_3 for package: postgresql-devel-8.4.13-1.el6_3.x86_64
+--> Processing Dependency: postgresql-libs(x86-64) = 8.4.13-1.el6_3 for package: postgresql-devel-8.4.13-1.el6_3.x86_64
+--> Processing Dependency: libecpg_compat.so.3()(64bit) for package: postgresql-devel-8.4.13-1.el6_3.x86_64
+--> Processing Dependency: libpq.so.5()(64bit) for package: postgresql-devel-8.4.13-1.el6_3.x86_64
+--> Processing Dependency: libecpg.so.6()(64bit) for package: postgresql-devel-8.4.13-1.el6_3.x86_64
+--> Processing Dependency: libpgtypes.so.3()(64bit) for package: postgresql-devel-8.4.13-1.el6_3.x86_64
+--> Running transaction check
+---> Package postgresql.x86_64 0:8.4.13-1.el6_3 will be installed
+---> Package postgresql-libs.x86_64 0:8.4.13-1.el6_3 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package                Arch         Version                Repository     Size
+================================================================================
+Installing:
+ postgresql-devel       x86_64       8.4.13-1.el6_3         updates       813 k
+Installing for dependencies:
+ postgresql             x86_64       8.4.13-1.el6_3         updates       2.8 M
+ postgresql-libs        x86_64       8.4.13-1.el6_3         updates       200 k
+
+Transaction Summary
+================================================================================
+Install       3 Package(s)
+
+Total download size: 3.7 M
+Installed size: 19 M
+Downloading Packages:
+Setting up and reading Presto delta metadata
+Processing delta metadata
+Package(s) data still to download: 3.7 M
+--------------------------------------------------------------------------------
+Total                                            14 MB/s | 3.7 MB     00:00     
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+
+  Installing : postgresql-libs-8.4.13-1.el6_3.x86_64                        1/3 
+
+  Installing : postgresql-8.4.13-1.el6_3.x86_64                             2/3 
+
+  Installing : postgresql-devel-8.4.13-1.el6_3.x86_64                       3/3 
+
+  Verifying  : postgresql-devel-8.4.13-1.el6_3.x86_64                       1/3 
+
+  Verifying  : postgresql-libs-8.4.13-1.el6_3.x86_64                        2/3 
+
+  Verifying  : postgresql-8.4.13-1.el6_3.x86_64                             3/3 
+
+Installed:
+  postgresql-devel.x86_64 0:8.4.13-1.el6_3                                      
+
+Dependency Installed:
+  postgresql.x86_64 0:8.4.13-1.el6_3   postgresql-libs.x86_64 0:8.4.13-1.el6_3  
+
+Complete!
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, remove-with-
+              : leaves, security, tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Resolving Dependencies
+--> Running transaction check
+---> Package openldap-devel.x86_64 0:2.4.23-32.el6_4.1 will be installed
+--> Processing Dependency: openldap = 2.4.23-32.el6_4.1 for package: openldap-devel-2.4.23-32.el6_4.1.x86_64
+--> Processing Dependency: cyrus-sasl-devel >= 2.1 for package: openldap-devel-2.4.23-32.el6_4.1.x86_64
+--> Running transaction check
+---> Package cyrus-sasl-devel.x86_64 0:2.1.23-13.el6_3.1 will be installed
+--> Processing Dependency: cyrus-sasl = 2.1.23-13.el6_3.1 for package: cyrus-sasl-devel-2.1.23-13.el6_3.1.x86_64
+--> Processing Dependency: cyrus-sasl-lib = 2.1.23-13.el6_3.1 for package: cyrus-sasl-devel-2.1.23-13.el6_3.1.x86_64
+---> Package openldap.i686 0:2.4.23-26.el6 will be updated
+---> Package openldap.x86_64 0:2.4.23-26.el6 will be updated
+---> Package openldap.i686 0:2.4.23-32.el6_4.1 will be an update
+---> Package openldap.x86_64 0:2.4.23-32.el6_4.1 will be an update
+--> Running transaction check
+---> Package cyrus-sasl.x86_64 0:2.1.23-13.el6 will be updated
+---> Package cyrus-sasl.x86_64 0:2.1.23-13.el6_3.1 will be an update
+---> Package cyrus-sasl-lib.i686 0:2.1.23-13.el6 will be updated
+---> Package cyrus-sasl-lib.x86_64 0:2.1.23-13.el6 will be updated
+---> Package cyrus-sasl-lib.i686 0:2.1.23-13.el6_3.1 will be an update
+---> Package cyrus-sasl-lib.x86_64 0:2.1.23-13.el6_3.1 will be an update
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package               Arch        Version                   Repository    Size
+================================================================================
+Installing:
+ openldap-devel        x86_64      2.4.23-32.el6_4.1         updates      1.1 M
+Installing for dependencies:
+ cyrus-sasl-devel      x86_64      2.1.23-13.el6_3.1         updates      302 k
+Updating for dependencies:
+ cyrus-sasl            x86_64      2.1.23-13.el6_3.1         updates       78 k
+ cyrus-sasl-lib        i686        2.1.23-13.el6_3.1         updates      136 k
+ cyrus-sasl-lib        x86_64      2.1.23-13.el6_3.1         updates      136 k
+ openldap              i686        2.4.23-32.el6_4.1         updates      267 k
+ openldap              x86_64      2.4.23-32.el6_4.1         updates      265 k
+
+Transaction Summary
+================================================================================
+Install       2 Package(s)
+Upgrade       5 Package(s)
+
+Total download size: 2.2 M
+Downloading Packages:
+Setting up and reading Presto delta metadata
+Processing delta metadata
+Package(s) data still to download: 2.2 M
+--------------------------------------------------------------------------------
+Total                                           6.2 MB/s | 2.2 MB     00:00     
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+
+  Updating   : cyrus-sasl-lib-2.1.23-13.el6_3.1.x86_64                     1/12 
+
+  Updating   : openldap-2.4.23-32.el6_4.1.x86_64                           2/12 
+
+  Updating   : cyrus-sasl-2.1.23-13.el6_3.1.x86_64                         3/12 
+
+  Installing : cyrus-sasl-devel-2.1.23-13.el6_3.1.x86_64                   4/12 
+
+  Updating   : cyrus-sasl-lib-2.1.23-13.el6_3.1.i686                       5/12 
+
+  Installing : openldap-devel-2.4.23-32.el6_4.1.x86_64                     6/12 
+
+  Updating   : openldap-2.4.23-32.el6_4.1.i686                             7/12 
+
+  Cleanup    : cyrus-sasl-2.1.23-13.el6.x86_64                             8/12 
+
+  Cleanup    : openldap-2.4.23-26.el6                                      9/12 
+
+  Cleanup    : openldap-2.4.23-26.el6                                     10/12 
+
+  Cleanup    : cyrus-sasl-lib-2.1.23-13.el6                               11/12 
+
+  Cleanup    : cyrus-sasl-lib-2.1.23-13.el6                               12/12 
+
+  Verifying  : openldap-2.4.23-32.el6_4.1.x86_64                           1/12 
+
+  Verifying  : cyrus-sasl-lib-2.1.23-13.el6_3.1.x86_64                     2/12 
+
+  Verifying  : openldap-devel-2.4.23-32.el6_4.1.x86_64                     3/12 
+
+  Verifying  : cyrus-sasl-2.1.23-13.el6_3.1.x86_64                         4/12 
+
+  Verifying  : openldap-2.4.23-32.el6_4.1.i686                             5/12 
+
+  Verifying  : cyrus-sasl-devel-2.1.23-13.el6_3.1.x86_64                   6/12 
+
+  Verifying  : cyrus-sasl-lib-2.1.23-13.el6_3.1.i686                       7/12 
+
+  Verifying  : openldap-2.4.23-26.el6.x86_64                               8/12 
+
+  Verifying  : cyrus-sasl-lib-2.1.23-13.el6.i686                           9/12 
+
+  Verifying  : openldap-2.4.23-26.el6.i686                                10/12 
+
+  Verifying  : cyrus-sasl-2.1.23-13.el6.x86_64                            11/12 
+
+  Verifying  : cyrus-sasl-lib-2.1.23-13.el6.x86_64                        12/12 
+
+Installed:
+  openldap-devel.x86_64 0:2.4.23-32.el6_4.1                                     
+
+Dependency Installed:
+  cyrus-sasl-devel.x86_64 0:2.1.23-13.el6_3.1                                   
+
+Dependency Updated:
+  cyrus-sasl.x86_64 0:2.1.23-13.el6_3.1                                         
+  cyrus-sasl-lib.i686 0:2.1.23-13.el6_3.1                                       
+  cyrus-sasl-lib.x86_64 0:2.1.23-13.el6_3.1                                     
+  openldap.i686 0:2.4.23-32.el6_4.1                                             
+  openldap.x86_64 0:2.4.23-32.el6_4.1                                           
+
+Complete!
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, remove-with-
+              : leaves, security, tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Resolving Dependencies
+--> Running transaction check
+---> Package libxml2-devel.x86_64 0:2.7.6-4.el6_2.4 will be updated
+---> Package libxml2-devel.x86_64 0:2.7.6-12.el6_4.1 will be an update
+--> Processing Dependency: libxml2 = 2.7.6-12.el6_4.1 for package: libxml2-devel-2.7.6-12.el6_4.1.x86_64
+--> Running transaction check
+---> Package libxml2.i686 0:2.7.6-4.el6_2.4 will be updated
+--> Processing Dependency: libxml2 = 2.7.6-4.el6_2.4 for package: libxml2-devel-2.7.6-4.el6_2.4.i686
+--> Processing Dependency: libxml2 = 2.7.6-4.el6_2.4 for package: libxml2-python-2.7.6-4.el6_2.4.x86_64
+---> Package libxml2.x86_64 0:2.7.6-4.el6_2.4 will be updated
+---> Package libxml2.i686 0:2.7.6-12.el6_4.1 will be an update
+---> Package libxml2.x86_64 0:2.7.6-12.el6_4.1 will be an update
+--> Running transaction check
+---> Package libxml2-devel.i686 0:2.7.6-4.el6_2.4 will be updated
+---> Package libxml2-devel.i686 0:2.7.6-12.el6_4.1 will be an update
+---> Package libxml2-python.x86_64 0:2.7.6-4.el6_2.4 will be updated
+---> Package libxml2-python.x86_64 0:2.7.6-12.el6_4.1 will be an update
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package              Arch         Version                  Repository     Size
+================================================================================
+Updating:
+ libxml2-devel        x86_64       2.7.6-12.el6_4.1         updates       1.1 M
+Updating for dependencies:
+ libxml2              i686         2.7.6-12.el6_4.1         updates       800 k
+ libxml2              x86_64       2.7.6-12.el6_4.1         updates       799 k
+ libxml2-devel        i686         2.7.6-12.el6_4.1         updates       1.1 M
+ libxml2-python       x86_64       2.7.6-12.el6_4.1         updates       321 k
+
+Transaction Summary
+================================================================================
+Upgrade       5 Package(s)
+
+Total download size: 4.0 M
+Downloading Packages:
+Setting up and reading Presto delta metadata
+Processing delta metadata
+Package(s) data still to download: 4.0 M
+--------------------------------------------------------------------------------
+Total                                            11 MB/s | 4.0 MB     00:00     
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+
+  Updating   : libxml2-2.7.6-12.el6_4.1.x86_64                             1/10 
+
+  Updating   : libxml2-2.7.6-12.el6_4.1.i686                               2/10 
+
+  Updating   : libxml2-devel-2.7.6-12.el6_4.1.i686                         3/10 
+
+  Updating   : libxml2-python-2.7.6-12.el6_4.1.x86_64                      4/10 
+
+  Updating   : libxml2-devel-2.7.6-12.el6_4.1.x86_64                       5/10 
+
+  Cleanup    : libxml2-devel-2.7.6-4.el6_2.4                               6/10 
+
+  Cleanup    : libxml2-devel-2.7.6-4.el6_2.4                               7/10 
+
+  Cleanup    : libxml2-python-2.7.6-4.el6_2.4.x86_64                       8/10 
+
+  Cleanup    : libxml2-2.7.6-4.el6_2.4                                     9/10 
+
+  Cleanup    : libxml2-2.7.6-4.el6_2.4                                    10/10 
+
+  Verifying  : libxml2-2.7.6-12.el6_4.1.x86_64                             1/10 
+
+  Verifying  : libxml2-devel-2.7.6-12.el6_4.1.i686                         2/10 
+
+  Verifying  : libxml2-python-2.7.6-12.el6_4.1.x86_64                      3/10 
+
+  Verifying  : libxml2-devel-2.7.6-12.el6_4.1.x86_64                       4/10 
+
+  Verifying  : libxml2-2.7.6-12.el6_4.1.i686                               5/10 
+
+  Verifying  : libxml2-devel-2.7.6-4.el6_2.4.i686                          6/10 
+
+  Verifying  : libxml2-2.7.6-4.el6_2.4.x86_64                              7/10 
+
+  Verifying  : libxml2-2.7.6-4.el6_2.4.i686                                8/10 
+
+  Verifying  : libxml2-devel-2.7.6-4.el6_2.4.x86_64                        9/10 
+
+  Verifying  : libxml2-python-2.7.6-4.el6_2.4.x86_64                      10/10 
+
+Updated:
+  libxml2-devel.x86_64 0:2.7.6-12.el6_4.1                                       
+
+Dependency Updated:
+  libxml2.i686 0:2.7.6-12.el6_4.1                                               
+  libxml2.x86_64 0:2.7.6-12.el6_4.1                                             
+  libxml2-devel.i686 0:2.7.6-12.el6_4.1                                         
+  libxml2-python.x86_64 0:2.7.6-12.el6_4.1                                      
+
+Complete!
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, remove-with-
+              : leaves, security, tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Resolving Dependencies
+--> Running transaction check
+---> Package libxslt-devel.x86_64 0:1.1.26-2.el6_3.1 will be installed
+--> Processing Dependency: libxslt = 1.1.26-2.el6_3.1 for package: libxslt-devel-1.1.26-2.el6_3.1.x86_64
+--> Processing Dependency: libgcrypt-devel for package: libxslt-devel-1.1.26-2.el6_3.1.x86_64
+--> Running transaction check
+---> Package libgcrypt-devel.x86_64 0:1.4.5-9.el6_2.2 will be installed
+--> Processing Dependency: libgpg-error-devel for package: libgcrypt-devel-1.4.5-9.el6_2.2.x86_64
+---> Package libxslt.i686 0:1.1.26-2.el6 will be updated
+---> Package libxslt.x86_64 0:1.1.26-2.el6 will be updated
+---> Package libxslt.i686 0:1.1.26-2.el6_3.1 will be an update
+---> Package libxslt.x86_64 0:1.1.26-2.el6_3.1 will be an update
+--> Running transaction check
+---> Package libgpg-error-devel.x86_64 0:1.7-4.el6 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package                 Arch        Version                 Repository    Size
+================================================================================
+Installing:
+ libxslt-devel           x86_64      1.1.26-2.el6_3.1        updates      561 k
+Installing for dependencies:
+ libgcrypt-devel         x86_64      1.4.5-9.el6_2.2         updates      118 k
+ libgpg-error-devel      x86_64      1.7-4.el6               base          14 k
+Updating for dependencies:
+ libxslt                 i686        1.1.26-2.el6_3.1        updates      451 k
+ libxslt                 x86_64      1.1.26-2.el6_3.1        updates      452 k
+
+Transaction Summary
+================================================================================
+Install       3 Package(s)
+Upgrade       2 Package(s)
+
+Total download size: 1.6 M
+Downloading Packages:
+Setting up and reading Presto delta metadata
+Processing delta metadata
+Package(s) data still to download: 1.6 M
+--------------------------------------------------------------------------------
+Total                                           5.9 MB/s | 1.6 MB     00:00     
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+
+  Updating   : libxslt-1.1.26-2.el6_3.1.x86_64                              1/7 
+
+  Installing : libgpg-error-devel-1.7-4.el6.x86_64                          2/7 
+
+  Installing : libgcrypt-devel-1.4.5-9.el6_2.2.x86_64                       3/7 
+
+  Installing : libxslt-devel-1.1.26-2.el6_3.1.x86_64                        4/7 
+
+  Updating   : libxslt-1.1.26-2.el6_3.1.i686                                5/7 
+
+  Cleanup    : libxslt-1.1.26-2.el6                                         6/7 
+
+  Cleanup    : libxslt-1.1.26-2.el6                                         7/7 
+
+  Verifying  : libgcrypt-devel-1.4.5-9.el6_2.2.x86_64                       1/7 
+
+  Verifying  : libgpg-error-devel-1.7-4.el6.x86_64                          2/7 
+
+  Verifying  : libxslt-1.1.26-2.el6_3.1.i686                                3/7 
+
+  Verifying  : libxslt-devel-1.1.26-2.el6_3.1.x86_64                        4/7 
+
+  Verifying  : libxslt-1.1.26-2.el6_3.1.x86_64                              5/7 
+
+  Verifying  : libxslt-1.1.26-2.el6.i686                                    6/7 
+
+  Verifying  : libxslt-1.1.26-2.el6.x86_64                                  7/7 
+
+Installed:
+  libxslt-devel.x86_64 0:1.1.26-2.el6_3.1                                       
+
+Dependency Installed:
+  libgcrypt-devel.x86_64 0:1.4.5-9.el6_2.2                                      
+  libgpg-error-devel.x86_64 0:1.7-4.el6                                         
+
+Dependency Updated:
+  libxslt.i686 0:1.1.26-2.el6_3.1       libxslt.x86_64 0:1.1.26-2.el6_3.1      
+
+Complete!
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, remove-with-
+              : leaves, security, tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Package python-cheetah-2.4.1-1.el6.x86_64 already installed and latest version
+Nothing to do
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, remove-with-
+              : leaves, security, tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Resolving Dependencies
+--> Running transaction check
+---> Package python-keyring.noarch 0:0.7-1.el6 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package                 Arch            Version            Repository     Size
+================================================================================
+Installing:
+ python-keyring          noarch          0.7-1.el6          epel           54 k
+
+Transaction Summary
+================================================================================
+Install       1 Package(s)
+
+Total download size: 54 k
+Installed size: 214 k
+Downloading Packages:
+Setting up and reading Presto delta metadata
+Processing delta metadata
+Package(s) data still to download: 54 k
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+
+  Installing : python-keyring-0.7-1.el6.noarch                              1/1 
+
+  Verifying  : python-keyring-0.7-1.el6.noarch                              1/1 
+
+Installed:
+  python-keyring.noarch 0:0.7-1.el6                                             
+
+Complete!
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, remove-with-
+              : leaves, security, tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+No package python-termcolor available.
+Downloading/unpacking termcolor
+  Downloading termcolor-1.1.0.tar.gz
+Saved /tmp/tmp.x5Fvcbefwg/termcolor-1.1.0.tar.gz
+Running setup.py egg_info for package termcolor
+Successfully downloaded termcolor
+Cleaning up...
+Building RPM for termcolor
+Loaded plugins: aliases, changelog, downloadonly, kabi, presto, remove-with-
+              : leaves, security, tmprepo, verify, versionlock
+Loading support for Red Hat kernel ABI
+Setting up Install Process
+Examining /root/rpmbuild/RPMS/noarch/python-termcolor-1.1.0-1.noarch.rpm: python-termcolor-1.1.0-1.noarch
+Marking /root/rpmbuild/RPMS/noarch/python-termcolor-1.1.0-1.noarch.rpm to be installed
+Resolving Dependencies
+--> Running transaction check
+---> Package python-termcolor.noarch 0:1.1.0-1 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package            Arch     Version   Repository                          Size
+================================================================================
+Installing:
+ python-termcolor   noarch   1.1.0-1   /python-termcolor-1.1.0-1.noarch    12 k
+
+Transaction Summary
+================================================================================
+Install       1 Package(s)
+
+Total size: 12 k
+Installed size: 12 k
+Downloading Packages:
+Running rpm_check_debug
+Running Transaction Test
+Transaction Test Succeeded
+Running Transaction
+
+  Installing : python-termcolor-1.1.0-1.noarch                              1/1 
+
+  Verifying  : python-termcolor-1.1.0-1.noarch                              1/1 
+
+Installed:
+  python-termcolor.noarch 0:1.1.0-1                                             
+
+Complete!
+mkdir: created directory `/etc/anvil'
+mkdir: created directory `/usr/share/anvil'
+changed ownership of `/etc/anvil' to 38604:100
+changed ownership of `/usr/share/anvil' to 38604:100
+Success! Bootstrapped for RHEL 6.2

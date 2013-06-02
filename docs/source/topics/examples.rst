@@ -3,7 +3,32 @@
 
 ===============
 Examples
-===============
+===============.
+
+Bootstrapping
+---------------------------
+
+::
+
+     $ sudo ./smithy --bootstrap
+
+
+.. literalinclude:: examples/bootstrap.txt
+   :language: none
+   :linenos:
+
+
+Preparing
+---------------------------
+
+::
+
+     $ sudo ./smithy -a prepare
+
+
+.. literalinclude:: examples/prepare.txt
+   :language: none
+   :linenos:
 
 Installing
 ---------------------------
