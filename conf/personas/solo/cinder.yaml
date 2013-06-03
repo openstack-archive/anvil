@@ -1,0 +1,16 @@
+---
+components:
+# Order matters here!
+- general
+- cinder
+- cinder-client
+options:
+    cinder:
+        db-sync: true
+subsystems:
+    cinder:
+    - all
+supports:
+- rhel
+...
+

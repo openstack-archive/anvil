@@ -9,6 +9,7 @@ components:
 # Client used by many components
 - keystone-client
 - glance
+- cinder
 # Clients used by nova (+ others)
 - glance-client
 - cinder-client
@@ -30,6 +31,8 @@ options:
         db-sync: true
         do-init: true
         enable-pki: false
+    cinder:
+        db-sync: true
 subsystems:
     glance:
     - api
@@ -49,6 +52,8 @@ subsystems:
     - novncproxy
     - scheduler
     - xvpvncproxy
+    cinder:
+    - all
 supports:
 - rhel
 ...
