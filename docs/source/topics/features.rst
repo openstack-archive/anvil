@@ -1,3 +1,6 @@
+.. _features:
+
+
 ========
 Features
 ========
@@ -6,13 +9,12 @@ Features
 -  Supports the following *actions* on the various `OpenStack`_ components.
 
    * **Installing**:
-   
-     * Downloading source from git and performing tag/branch checkouts automatically.
-     * Verifying that the ``test-requires`` and ``pip-requires`` files have packages that can be
-       translated to a known `pypi`_/rpm package (or building said package to satisfy said translation).
-     * Installing or building those dependencies & handling `pypi`_ and rpm/yum packaging specifics for you.
-     * Configuring the needed  files, symlinks, adjustments, tweaks...
-   
+
+     * Automatically downloading source from git and performing tag/branch checkouts.
+     * Automatically verifying and translating ``test-requires`` and ``pip-requires`` files to known `pypi`_/rpm packages.
+     * Automatically installing and building dependencies/packaging (`pypi`_ and rpm) specifics for you.
+     * Automatically configuring the needed  files, symlinks, adjustments, tweaks.
+
    * **Starting**: starting of the components sub-programs with
      the needed configuration via the common `daemon`_ model
 
@@ -28,7 +30,7 @@ Features
    * **Testing**: running each components unit tests (and in the future performing a simple set of integration tests)
    * **Packaging**: creating a basic set of packages that matches the components selected
    
-     - Supports automatic injection of dependencies, creation of change log from git history...
+     - Supports automatic injection of dependencies, creation of change log from git history.
    
    * **Status**: checking the status of the running components sub-programs
 

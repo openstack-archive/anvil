@@ -1,8 +1,8 @@
 .. _bugs-hugs-code:
 
-===============
+==================
 Bugs & Hugs & Code
-===============
+==================
 
 Community
 =========
@@ -29,7 +29,7 @@ https://github.com/stackforge/anvil/
 Feel free to fork it and contribute to it. You can also get a tarball or zip archive of the code.
 
 Branches
-----
+--------
 
 Stable *branches* can also be downloaded:
 
@@ -37,7 +37,7 @@ https://github.com/stackforge/anvil/branches
 
 
 Hacking
-=============
+=======
 
 Feel free to hack but please try to follow the `hacking guidelines`_
 

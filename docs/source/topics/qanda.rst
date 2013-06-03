@@ -1,11 +1,11 @@
 .. _q-a:
 
-===============
+=====================
 Questions and Answers
-===============
+=====================
 
 How do I cause the anvil dependencies to be reinstalled?
---------------------------------------------
+--------------------------------------------------------
 
 Anvil bootstraps itself via shell script (if you look at the code
 in the file ``smithy`` you will see that it is actually a bash
@@ -59,7 +59,7 @@ An example of this, lets adjust nova to use the ``stable/essex`` branch.
 
      
 `OMG` the images take forever to download!
-----------------------------------------
+------------------------------------------
 
 Sometimes the images that will be uploaded to glance take a long time to
 download and extract and upload.

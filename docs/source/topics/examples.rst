@@ -1,12 +1,12 @@
 .. _examples:
 
 
-===============
+========
 Examples
-===============.
+========
 
 Bootstrapping
----------------------------
+-------------
 
 ::
 
@@ -19,7 +19,7 @@ Bootstrapping
 
 
 Preparing
----------------------------
+---------
 
 ::
 
@@ -31,7 +31,7 @@ Preparing
    :linenos:
 
 Installing
----------------------------
+----------
 
 ::
 
@@ -44,7 +44,7 @@ Installing
 
 
 Testing
----------------------------
+-------
 
 ::
 
@@ -57,7 +57,7 @@ Testing
 
 
 Starting
----------------------------
+--------
 
 ::
 
@@ -70,7 +70,7 @@ Starting
 
 
 Status
----------------------------
+------
 
 ::
 
@@ -83,7 +83,7 @@ Status
 
 
 Stopping
----------------------------
+--------
 
 ::
 
@@ -96,29 +96,37 @@ Stopping
 
 
 Packaging
----------------------------
+---------
 
+To see the packages built (after prepare has finished). 
 
 ::
 
-     $ sudo ./smithy -a package
+    $ ls /home/harlowja/openstack/deps/rpmbuild/SPECS/ | cat
 
-
-.. literalinclude:: examples/packaging.txt
+.. literalinclude:: examples/spec_dir.txt
    :language: none
    :linenos:
 
 ::
 
-    $ cat /home/harlowja/openstack/nova/package/SPECS/nova-2012.2-1.spec 
+    $ cat openstack-deps.spec
 
-.. literalinclude:: examples/packaging-result.txt
+.. literalinclude:: examples/openstack-deps.txt
+   :language: none
+   :linenos:
+
+::
+
+    $ cat python-nova.spec 
+
+.. literalinclude:: examples/nova-spec.txt
    :language: none
    :linenos:
 
 
 Uninstalling
----------------------------
+------------
 
 ::
 

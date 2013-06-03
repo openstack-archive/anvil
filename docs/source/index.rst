@@ -10,7 +10,7 @@ ANVIL Documentation
 ----
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    topics/features
    topics/docs

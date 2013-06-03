@@ -1,14 +1,15 @@
-   _   ___  ___  _  __  ___ _____  _    __  _
- ,' \ / o |/ _/ / |/ /,' _//_  _/.' \ ,'_/ / //7
-/ o |/ _,'/ _/ / || /_\ `.  / / / o // /_ /  ,'
-|_,'/_/  /___//_/|_//___,' /_/ /_n_/ |__//_/\\
-             Anvil: | 2013.1-dev |              
-  And now for something completely different!   
------------------Action Runner------------------
+$ ./smithy -a prepare
+  ___  ____  _____ _   _ ____ _____  _    ____ _  __
+ / _ \|  _ \| ____| \ | / ___|_   _|/ \  / ___| |/ /
+| | | | |_) |  _| |  \| \___ \ | | / _ \| |   | ' /
+| |_| |  __/| |___| |\  |___) || |/ ___ \ |___| . \
+ \___/|_|   |_____|_| \_|____/ |_/_/   \_\____|_|\_\
+               Anvil: | 2013.1-dev |                
+    And now for something completely different!     
+-------------------Action Runner--------------------
+INFO: @anvil : Creating anvil directory at path: /home/harlowja/openstack
 INFO: @anvil.distro : Matched distro rhel for platform Linux-2.6.32-220.23.1.el6.YAHOO.20120713.x86_64-x86_64-with-redhat-6.2-Santiago
-WARNING: @anvil.shell : Cannot escalate permissions to (uid=0, gid=0): [Errno 1] Operation not permitted
-WARNING: @anvil.shell : Can not switch to user mode, no suid user id or suid group id
-INFO: @anvil : Starting action prepare on 2013-06-02T01:42:01.909075 for distro: rhel
+INFO: @anvil : Starting action prepare on 2013-06-03T17:33:26.819259 for distro: rhel
 INFO: @anvil : Using persona: conf/personas/in-a-box/basic.yaml
 INFO: @anvil : In root directory: /home/harlowja/openstack
 INFO: @anvil.actions.base : Processing components for action prepare.
@@ -20,6 +21,7 @@ INFO: @anvil.actions.base : |-- oslo-config
 INFO: @anvil.actions.base : |-- keystone
 INFO: @anvil.actions.base : |-- keystone-client
 INFO: @anvil.actions.base : |-- glance
+INFO: @anvil.actions.base : |-- cinder
 INFO: @anvil.actions.base : |-- glance-client
 INFO: @anvil.actions.base : |-- cinder-client
 INFO: @anvil.actions.base : |-- quantum-client
@@ -27,6 +29,12 @@ INFO: @anvil.actions.base : |-- nova
 INFO: @anvil.actions.base : |-- nova-client
 INFO: @anvil.actions.base : Booting up your components.
 INFO: @anvil.actions.base : Reading passwords using a unencrypted keyring @ /etc/anvil/passwords.cfg
+Enter a secret to use for the service authentication password [or press enter to get a generated one]: 
+Enter a secret to use for the rabbit user [or press enter to get a generated one]: 
+Enter a secret to use for the keystone admin user [or press enter to get a generated one]: 
+Enter a secret to use for the service admin token [or press enter to get a generated one]: 
+Enter a secret to use for the database user [or press enter to get a generated one]: 
+INFO: @anvil.actions.base : Saving 5 passwords using a unencrypted keyring @ /etc/anvil/passwords.cfg
 INFO: @anvil.actions.base : Verifying that the components are ready to rock-n-roll.
 INFO: @anvil.actions.base : Warming up component configurations.
 INFO: @anvil.actions.prepare : Downloading general.
@@ -57,6 +65,12 @@ INFO: @anvil.actions.prepare : Downloading glance.
 INFO: @anvil.components.base_install : Downloading from 1 uris:
 INFO: @anvil.components.base_install : |-- git://github.com/openstack/glance.git?tag=2013.1
 INFO: @anvil.downloader : Downloading git://github.com/openstack/glance.git (master) to /home/harlowja/openstack/glance/app.
+INFO: @anvil.downloader : Adjusting to tag 2013.1.
+INFO: @anvil.actions.prepare : Performed 1 downloads.
+INFO: @anvil.actions.prepare : Downloading cinder.
+INFO: @anvil.components.base_install : Downloading from 1 uris:
+INFO: @anvil.components.base_install : |-- git://github.com/openstack/cinder.git?tag=2013.1
+INFO: @anvil.downloader : Downloading git://github.com/openstack/cinder.git (master) to /home/harlowja/openstack/cinder/app.
 INFO: @anvil.downloader : Adjusting to tag 2013.1.
 INFO: @anvil.actions.prepare : Performed 1 downloads.
 INFO: @anvil.actions.prepare : Downloading glance-client.
@@ -96,11 +110,25 @@ INFO: @anvil.actions.prepare : Post-download patching oslo-config.
 INFO: @anvil.actions.prepare : Post-download patching keystone.
 INFO: @anvil.actions.prepare : Post-download patching keystone-client.
 INFO: @anvil.actions.prepare : Post-download patching glance.
+INFO: @anvil.actions.prepare : Post-download patching cinder.
 INFO: @anvil.actions.prepare : Post-download patching glance-client.
 INFO: @anvil.actions.prepare : Post-download patching cinder-client.
 INFO: @anvil.actions.prepare : Post-download patching quantum-client.
 INFO: @anvil.actions.prepare : Post-download patching nova.
 INFO: @anvil.actions.prepare : Post-download patching nova-client.
+INFO: @anvil.actions.prepare : Preparing general.
+INFO: @anvil.actions.prepare : Preparing db.
+INFO: @anvil.actions.prepare : Preparing rabbit-mq.
+INFO: @anvil.actions.prepare : Preparing oslo-config.
+INFO: @anvil.actions.prepare : Preparing keystone.
+INFO: @anvil.actions.prepare : Preparing keystone-client.
+INFO: @anvil.actions.prepare : Preparing glance.
+INFO: @anvil.actions.prepare : Preparing cinder.
+INFO: @anvil.actions.prepare : Preparing glance-client.
+INFO: @anvil.actions.prepare : Preparing cinder-client.
+INFO: @anvil.actions.prepare : Preparing quantum-client.
+INFO: @anvil.actions.prepare : Preparing nova.
+INFO: @anvil.actions.prepare : Preparing nova-client.
 INFO: @anvil.actions.prepare : Packing OpenStack and its dependencies
 INFO: @anvil.packaging.base : Full known Python dependency list:
 INFO: @anvil.packaging.base : |-- Cheetah>=2.4.4
@@ -114,16 +142,18 @@ INFO: @anvil.packaging.base : |-- cliff-tablib>=1.0
 INFO: @anvil.packaging.base : |-- cliff>=1.3.1
 INFO: @anvil.packaging.base : |-- coverage>=3.6
 INFO: @anvil.packaging.base : |-- discover
-INFO: @anvil.packaging.base : |-- distribute>=0.6.24
+INFO: @anvil.packaging.base : |-- distribute>=0.6.28
 INFO: @anvil.packaging.base : |-- eventlet>=0.9.17
 INFO: @anvil.packaging.base : |-- feedparser
 INFO: @anvil.packaging.base : |-- fixtures>=0.3.12
 INFO: @anvil.packaging.base : |-- greenlet>=0.3.1
+INFO: @anvil.packaging.base : |-- hp3parclient>=1.0.0
 INFO: @anvil.packaging.base : |-- httplib2
 INFO: @anvil.packaging.base : |-- iso8601>=0.1.4
 INFO: @anvil.packaging.base : |-- jsonschema>=0.7,<2
 INFO: @anvil.packaging.base : |-- keyring
 INFO: @anvil.packaging.base : |-- kombu>=1.0.4
+INFO: @anvil.packaging.base : |-- lockfile>=0.8
 INFO: @anvil.packaging.base : |-- lxml>=2.3
 INFO: @anvil.packaging.base : |-- mock
 INFO: @anvil.packaging.base : |-- mox==0.5.3
@@ -162,7 +192,7 @@ INFO: @anvil.packaging.base : |-- simplejson
 INFO: @anvil.packaging.base : |-- sphinx>=1.1.2
 INFO: @anvil.packaging.base : |-- sqlalchemy-migrate>=0.7.2
 INFO: @anvil.packaging.base : |-- sqlalchemy>=0.7.8,<=0.7.9
-INFO: @anvil.packaging.base : |-- stevedore>=0.7
+INFO: @anvil.packaging.base : |-- stevedore>=0.8.0
 INFO: @anvil.packaging.base : |-- suds>=0.4
 INFO: @anvil.packaging.base : |-- testrepository>=0.0.13
 INFO: @anvil.packaging.base : |-- testtools>=0.9.27
@@ -170,17 +200,11 @@ INFO: @anvil.packaging.base : |-- unittest2
 INFO: @anvil.packaging.base : |-- warlock>=0.7.0,<2
 INFO: @anvil.packaging.base : |-- websockify<0.4
 INFO: @anvil.packaging.base : |-- webtest
-INFO: @anvil.packaging.base : |-- wsgiref
+INFO: @anvil.packaging.base : |-- wsgiref>=0.1.2
 INFO: @anvil.packaging.base : |-- xattr>=0.6.0
 INFO: @anvil.packaging.yum : Building openstack-deps RPM
-WARNING: @anvil.shell : Cannot escalate permissions to (uid=0, gid=0): [Errno 1] Operation not permitted
 Loaded plugins: kabi, presto, remove-with-leaves, versionlock
 Loading support for Red Hat kernel ABI
-WARNING: @anvil.shell : Can not switch to user mode, no suid user id or suid group id
-WARNING: @anvil.shell : Cannot escalate permissions to (uid=0, gid=0): [Errno 1] Operation not permitted
-WARNING: @anvil.shell : Can not switch to user mode, no suid user id or suid group id
-WARNING: @anvil.shell : Cannot escalate permissions to (uid=0, gid=0): [Errno 1] Operation not permitted
-WARNING: @anvil.shell : Can not switch to user mode, no suid user id or suid group id
 INFO: @anvil.packaging.yum : These Python packages are already available as RPMs:
 INFO: @anvil.packaging.yum : |-- amqplib>=0.6.1 as python-amqplib-0.6.1 from epel
 INFO: @anvil.packaging.yum : |-- anyjson>=0.2.4 as python-anyjson-0.3.1 from epel
@@ -194,6 +218,7 @@ INFO: @anvil.packaging.yum : |-- httplib2 as python-httplib2-0.7.7 from epel
 INFO: @anvil.packaging.yum : |-- iso8601>=0.1.4 as python-iso8601-0.1.4 from installed
 INFO: @anvil.packaging.yum : |-- keyring as python-keyring-0.7 from installed
 INFO: @anvil.packaging.yum : |-- kombu>=1.0.4 as python-kombu-1.1.3 from epel
+INFO: @anvil.packaging.yum : |-- lockfile>=0.8 as python-lockfile-0.8 from epel
 INFO: @anvil.packaging.yum : |-- mock as python-mock-0.8.0 from epel
 INFO: @anvil.packaging.yum : |-- mox==0.5.3 as python-mox-0.5.3 from epel
 INFO: @anvil.packaging.yum : |-- mysql-python as MySQL-python-1.2.3 from base
@@ -212,7 +237,7 @@ INFO: @anvil.packaging.yum : |-- pysendfile==2.0.0 as pysendfile-2.0.0 from epel
 INFO: @anvil.packaging.yum : |-- python-memcached as python-memcached-1.43 from updates
 INFO: @anvil.packaging.yum : |-- requests>=1.0.0 as python-requests-1.1.0 from epel
 INFO: @anvil.packaging.yum : |-- simplejson as python-simplejson-2.0.9 from base
-INFO: @anvil.packaging.yum : |-- stevedore>=0.7 as python-stevedore-0.8 from epel
+INFO: @anvil.packaging.yum : |-- stevedore>=0.8.0 as python-stevedore-0.8 from epel
 INFO: @anvil.packaging.yum : |-- suds>=0.4 as python-suds-0.4.1 from base
 INFO: @anvil.packaging.yum : |-- testtools>=0.9.27 as python-testtools-0.9.29 from epel
 INFO: @anvil.packaging.yum : |-- unittest2 as python-unittest2-0.5.1 from epel
@@ -226,7 +251,8 @@ INFO: @anvil.packaging.base : |-- cliff-tablib>=1.0
 INFO: @anvil.packaging.base : |-- cliff>=1.3.1
 INFO: @anvil.packaging.base : |-- coverage>=3.6
 INFO: @anvil.packaging.base : |-- discover
-INFO: @anvil.packaging.base : |-- distribute>=0.6.24
+INFO: @anvil.packaging.base : |-- distribute>=0.6.28
+INFO: @anvil.packaging.base : |-- hp3parclient>=1.0.0
 INFO: @anvil.packaging.base : |-- jsonschema>=0.7,<2
 INFO: @anvil.packaging.base : |-- lxml>=2.3
 INFO: @anvil.packaging.base : |-- netaddr>=0.7.6
@@ -249,7 +275,7 @@ INFO: @anvil.packaging.base : |-- sqlalchemy-migrate>=0.7.2
 INFO: @anvil.packaging.base : |-- sqlalchemy>=0.7.8,<=0.7.9
 INFO: @anvil.packaging.base : |-- testrepository>=0.0.13
 INFO: @anvil.packaging.base : |-- warlock>=0.7.0,<2
-INFO: @anvil.packaging.base : |-- wsgiref
+INFO: @anvil.packaging.base : |-- wsgiref>=0.1.2
 INFO: @anvil.packaging.base : |-- xattr>=0.6.0
 INFO: @anvil.packaging.base : You can watch progress in another terminal with
 INFO: @anvil.packaging.base :     tail -f /home/harlowja/openstack/deps/pip-install-download.out
@@ -277,6 +303,8 @@ INFO: @anvil.packaging.yum : |-- /home/harlowja/openstack/deps/download/distribu
 INFO: @anvil.packaging.yum : |-- /home/harlowja/openstack/deps/download/docutils-0.10.tar.gz
 INFO: @anvil.packaging.yum : |-- /home/harlowja/openstack/deps/download/extras-0.0.3.tar.gz
 INFO: @anvil.packaging.yum : |-- /home/harlowja/openstack/deps/download/fixtures-0.3.12.tar.gz
+INFO: @anvil.packaging.yum : |-- /home/harlowja/openstack/deps/download/hp3parclient-1.0.0.tar.gz
+INFO: @anvil.packaging.yum : |-- /home/harlowja/openstack/deps/download/httplib2-0.8.tar.gz
 INFO: @anvil.packaging.yum : |-- /home/harlowja/openstack/deps/download/jsonpatch-1.0.tar.gz
 INFO: @anvil.packaging.yum : |-- /home/harlowja/openstack/deps/download/jsonpointer-1.0.tar.gz
 INFO: @anvil.packaging.yum : |-- /home/harlowja/openstack/deps/download/jsonschema-1.3.0.tar.gz
@@ -314,6 +342,7 @@ INFO: @anvil.packaging.yum : You can watch progress in another terminal with
 INFO: @anvil.packaging.yum :     tail -f /home/harlowja/openstack/deps/py2rpm.deps.out
 INFO: @anvil.packaging.yum : Building RPM packages for directories:
 INFO: @anvil.packaging.yum : |-- /home/harlowja/openstack/cinder-client/app
+INFO: @anvil.packaging.yum : |-- /home/harlowja/openstack/cinder/app
 INFO: @anvil.packaging.yum : |-- /home/harlowja/openstack/glance-client/app
 INFO: @anvil.packaging.yum : |-- /home/harlowja/openstack/glance/app
 INFO: @anvil.packaging.yum : |-- /home/harlowja/openstack/keystone-client/app
@@ -328,13 +357,10 @@ INFO: @anvil.packaging.yum : Creating repo at /home/harlowja/openstack/deps/open
 INFO: @anvil.packaging.yum : Creating repo at /home/harlowja/openstack/deps/openstack-deps-sources
 INFO: @anvil.packaging.yum : Writing anvil.repo to /home/harlowja/openstack/deps/anvil.repo
 INFO: @anvil.actions.base : Tearing down your components.
-INFO: @anvil : It took 691.522 seconds or 11.53 minutes to complete action prepare.
- ____________________
-/ Australia!         \
-| Australia!         |
-| Australia!         |
-\ We love you, amen. /
- --------------------
+INFO: @anvil : It took 836.359 seconds or 13.94 minutes to complete action prepare.
+ ______________________________
+< I'm a lumberjack and I'm OK. >
+ ------------------------------
         \   ^__^
          \  (oo)\_______
             (__)\       )\/\

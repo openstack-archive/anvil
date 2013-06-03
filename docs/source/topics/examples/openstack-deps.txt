@@ -1,0 +1,65 @@
+Name: openstack-deps
+Version: 2013.6.3
+Release: 0
+License: Apache 2.0
+Summary: OpenStack dependencies
+BuildArch: noarch
+
+Requires: MySQL-python
+Requires: avahi
+Requires: coreutils
+Requires: curl
+Requires: dnsmasq
+Requires: dnsmasq-utils
+Requires: ebtables
+Requires: fuse
+Requires: gawk
+Requires: git
+Requires: guestfish
+Requires: iptables
+Requires: iputils
+Requires: iscsi-initiator-utils
+Requires: kpartx
+Requires: libguestfs
+Requires: libguestfs-mount
+Requires: libguestfs-tools
+Requires: libvirt
+Requires: libvirt-client
+Requires: libvirt-python
+Requires: libxml2-devel
+Requires: libxslt-devel
+Requires: lsof
+Requires: mlocate
+Requires: mysql
+Requires: mysql-server
+Requires: openssh-server
+Requires: parted
+Requires: postgresql-devel
+Requires: psmisc
+Requires: python
+Requires: python-devel
+Requires: python-distutils-extra
+Requires: python-setuptools
+Requires: qemu-img
+Requires: qemu-kvm
+Requires: rabbitmq-server
+Requires: sqlite
+Requires: sqlite-devel
+Requires: sudo
+Requires: tcpdump
+Requires: unzip
+Requires: vconfig
+Requires: wget
+
+%description
+
+
+%pre
+
+# rabbitmq-server
+service qpidd stop 2>/dev/null || true
+chkconfig qpidd off 2>/dev/null || true
+
+
+%files
+

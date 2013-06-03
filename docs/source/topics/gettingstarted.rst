@@ -139,6 +139,7 @@ We’ll grab the latest version of ANVIL via git:
 
     $ git clone git://github.com/stackforge/anvil.git
 
+
 Configuration
 -------------
 
@@ -176,7 +177,7 @@ git, python setups occurring and configuration files being written as well as
 rpm packages being built (and a repository setup from those components) that
 will allow you to reliably and repeatly install the OpenStack components and
 there dependencies as ANVIL figures out how to prepare your desired components (if you
-desire more informational output add a ``-v``to that
+desire more informational output add a ``-v`` to that
 command).
 
 Installing
@@ -191,7 +192,7 @@ Now install *OpenStacks* components by running the following:
 You should see a set of distribution packages and/or pips being
 installed and configuration files being written as ANVIL figures out how to
 install your desired components from the prepared packages built in the last
-step (if you desire more informational output add a ``-v``to that command).
+step (if you desire more informational output add a ``-v`` to that command).
 
 Testing
 ----------

@@ -7,4 +7,3 @@ Basics
 
    gettingstarted
    solvedproblems
-   

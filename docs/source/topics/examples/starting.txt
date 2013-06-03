@@ -1,108 +1,205 @@
 $ sudo ./smithy -a start
-INFO: @anvil.distro : Matched distro rhel for platform Linux-2.6.32-220.4.2.el6.YAHOO.20120217.x86_64-x86_64-with-redhat-6.2-Santiago
-____ ___  ____ _  _ ____ ___ ____ ____ _  _
-|  | |__] |___ |\ | [__   |  |__| |    |_/
-|__| |    |___ | \| ___]  |  |  | |___ | \_
-           Anvil: | 2012.2-dev |           
-And now for something completely different!
----------------Action Runner---------------
-INFO: @anvil : Starting action start on Tue, 28 Aug 2012 23:28:30 for distro: rhel
+  ___  ____  _____ _   _ ____ _____  _    ____ _  __
+ / _ \|  _ \| ____| \ | / ___|_   _|/ \  / ___| |/ /
+| | | | |_) |  _| |  \| \___ \ | | / _ \| |   | ' /
+| |_| |  __/| |___| |\  |___) || |/ ___ \ |___| . \
+ \___/|_|   |_____|_| \_|____/ |_/_/   \_\____|_|\_\
+               Anvil: | 2013.1-dev |                
+    And now for something completely different!     
+-------------------Action Runner--------------------
+INFO: @anvil.distro : Matched distro rhel for platform Linux-2.6.32-220.23.1.el6.YAHOO.20120713.x86_64-x86_64-with-redhat-6.2-Santiago
+INFO: @anvil : Starting action start on 2013-06-03T17:53:27.251491 for distro: rhel
 INFO: @anvil : Using persona: conf/personas/in-a-box/basic.yaml
 INFO: @anvil : In root directory: /home/harlowja/openstack
-INFO: @anvil.action : Processing components for action start.
-INFO: @anvil.action : Activating in the following order:
-INFO: @anvil.action : |-- general
-INFO: @anvil.action : |-- db
-INFO: @anvil.action : |-- rabbit-mq
-INFO: @anvil.action : |-- keystone
-INFO: @anvil.action : |-- keystone-client
-INFO: @anvil.action : |-- glance
-INFO: @anvil.action : |-- glance-client
-INFO: @anvil.action : |-- nova
-INFO: @anvil.action : |-- nova-client
-INFO: @anvil.action : |-- openstack-client
-INFO: @anvil.action : Booting up your components.
-INFO: @anvil.action : Updated passwords to be used from 1 files:
-INFO: @anvil.action : |-- /home/harlowja/anvil/passwords.yaml
-INFO: @anvil.action : Verifying that the components are ready to rock-n-roll.
-INFO: @anvil.action : Warming up component configurations.
-INFO: @anvil.action : Updated/created 1 password files:
-INFO: @anvil.action : |-- /home/harlowja/anvil/passwords.yaml
+INFO: @anvil.actions.base : Processing components for action start.
+INFO: @anvil.actions.base : Activating in the following order:
+INFO: @anvil.actions.base : |-- general
+INFO: @anvil.actions.base : |-- db
+INFO: @anvil.actions.base : |-- rabbit-mq
+INFO: @anvil.actions.base : |-- oslo-config
+INFO: @anvil.actions.base : |-- keystone
+INFO: @anvil.actions.base : |-- keystone-client
+INFO: @anvil.actions.base : |-- glance
+INFO: @anvil.actions.base : |-- cinder
+INFO: @anvil.actions.base : |-- glance-client
+INFO: @anvil.actions.base : |-- cinder-client
+INFO: @anvil.actions.base : |-- quantum-client
+INFO: @anvil.actions.base : |-- nova
+INFO: @anvil.actions.base : |-- nova-client
+INFO: @anvil.actions.base : Booting up your components.
+INFO: @anvil.actions.base : Reading passwords using a unencrypted keyring @ /etc/anvil/passwords.cfg
+INFO: @anvil.actions.base : Verifying that the components are ready to rock-n-roll.
+INFO: @anvil.actions.base : Warming up component configurations.
 INFO: @anvil.components.nova : Checking that your selected libvirt virtualization type qemu is working and running.
 INFO: @anvil.components.nova : Libvirt virtualization type qemu seems to be working and running.
 INFO: @anvil.actions.start : Starting general.
 INFO: @anvil.actions.start : Start 0 applications
 INFO: @anvil.actions.start : Starting db.
-INFO: @anvil.actions.start : Start 1 applications
+INFO: @anvil.actions.start : Start 0 applications
 INFO: @anvil.actions.start : Starting rabbit-mq.
-INFO: @anvil.actions.start : Start 1 applications
+INFO: @anvil.actions.start : Start 0 applications
+INFO: @anvil.actions.start : Starting oslo-config.
+INFO: @anvil.actions.start : Start 0 applications
 INFO: @anvil.actions.start : Starting keystone.
-INFO: @anvil.components : Started sub-program keystone-all.
+INFO: @anvil.runners.fork : Forked keystone-all with details in the following files:
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/keystone/traces/keystone-all.fork.pid
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/keystone/traces/keystone-all.fork.stdout
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/keystone/traces/keystone-all.fork.stderr
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/keystone/traces/keystone-all.fork.trace
+INFO: @anvil.components.base_runtime : Started program keystone-all under component keystone.
 INFO: @anvil.actions.start : Start 1 applications
 INFO: @anvil.actions.start : Starting keystone-client.
 INFO: @anvil.actions.start : Start 0 applications
 INFO: @anvil.actions.start : Starting glance.
-INFO: @anvil.components : Started sub-program glance-api.
-INFO: @anvil.components : Started sub-program glance-registry.
+INFO: @anvil.runners.fork : Forked glance-api with details in the following files:
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/glance/traces/glance-api.fork.pid
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/glance/traces/glance-api.fork.stdout
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/glance/traces/glance-api.fork.stderr
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/glance/traces/glance-api.fork.trace
+INFO: @anvil.components.base_runtime : Started program glance-api under component glance.
+INFO: @anvil.runners.fork : Forked glance-registry with details in the following files:
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/glance/traces/glance-registry.fork.pid
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/glance/traces/glance-registry.fork.stdout
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/glance/traces/glance-registry.fork.stderr
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/glance/traces/glance-registry.fork.trace
+INFO: @anvil.components.base_runtime : Started program glance-registry under component glance.
 INFO: @anvil.actions.start : Start 2 applications
+INFO: @anvil.actions.start : Starting cinder.
+INFO: @anvil.runners.fork : Forked cinder-all with details in the following files:
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/cinder/traces/cinder-all.fork.pid
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/cinder/traces/cinder-all.fork.stdout
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/cinder/traces/cinder-all.fork.stderr
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/cinder/traces/cinder-all.fork.trace
+INFO: @anvil.components.base_runtime : Started program cinder-all under component cinder.
+INFO: @anvil.actions.start : Start 1 applications
 INFO: @anvil.actions.start : Starting glance-client.
 INFO: @anvil.actions.start : Start 0 applications
-INFO: @anvil.actions.start : Starting nova.
-INFO: @anvil.components : Started sub-program nova-network.
-INFO: @anvil.components : Started sub-program nova-api.
-INFO: @anvil.components : Started sub-program nova-scheduler.
-INFO: @anvil.components : Started sub-program nova-compute.
-INFO: @anvil.actions.start : Start 4 applications
-INFO: @anvil.actions.start : Starting nova-client.
+INFO: @anvil.actions.start : Starting cinder-client.
 INFO: @anvil.actions.start : Start 0 applications
-INFO: @anvil.actions.start : Starting openstack-client.
+INFO: @anvil.actions.start : Starting quantum-client.
+INFO: @anvil.actions.start : Start 0 applications
+INFO: @anvil.actions.start : Starting nova.
+INFO: @anvil.runners.fork : Forked nova-api-metadata with details in the following files:
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-api-metadata.fork.pid
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-api-metadata.fork.stdout
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-api-metadata.fork.stderr
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-api-metadata.fork.trace
+INFO: @anvil.components.base_runtime : Started program nova-api-metadata under component nova.
+INFO: @anvil.runners.fork : Forked nova-compute with details in the following files:
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-compute.fork.pid
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-compute.fork.stdout
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-compute.fork.stderr
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-compute.fork.trace
+INFO: @anvil.components.base_runtime : Started program nova-compute under component nova.
+INFO: @anvil.runners.fork : Forked nova-network with details in the following files:
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-network.fork.pid
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-network.fork.stdout
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-network.fork.stderr
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-network.fork.trace
+INFO: @anvil.components.base_runtime : Started program nova-network under component nova.
+INFO: @anvil.runners.fork : Forked nova-conductor with details in the following files:
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-conductor.fork.pid
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-conductor.fork.stdout
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-conductor.fork.stderr
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-conductor.fork.trace
+INFO: @anvil.components.base_runtime : Started program nova-conductor under component nova.
+INFO: @anvil.runners.fork : Forked nova-dhcpbridge with details in the following files:
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-dhcpbridge.fork.pid
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-dhcpbridge.fork.stdout
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-dhcpbridge.fork.stderr
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-dhcpbridge.fork.trace
+INFO: @anvil.components.base_runtime : Started program nova-dhcpbridge under component nova.
+INFO: @anvil.runners.fork : Forked nova-api-ec2 with details in the following files:
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-api-ec2.fork.pid
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-api-ec2.fork.stdout
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-api-ec2.fork.stderr
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-api-ec2.fork.trace
+INFO: @anvil.components.base_runtime : Started program nova-api-ec2 under component nova.
+INFO: @anvil.runners.fork : Forked nova-scheduler with details in the following files:
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-scheduler.fork.pid
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-scheduler.fork.stdout
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-scheduler.fork.stderr
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-scheduler.fork.trace
+INFO: @anvil.components.base_runtime : Started program nova-scheduler under component nova.
+INFO: @anvil.runners.fork : Forked nova-api-os-compute with details in the following files:
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-api-os-compute.fork.pid
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-api-os-compute.fork.stdout
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-api-os-compute.fork.stderr
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-api-os-compute.fork.trace
+INFO: @anvil.components.base_runtime : Started program nova-api-os-compute under component nova.
+INFO: @anvil.runners.fork : Forked nova-cert with details in the following files:
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-cert.fork.pid
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-cert.fork.stdout
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-cert.fork.stderr
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-cert.fork.trace
+INFO: @anvil.components.base_runtime : Started program nova-cert under component nova.
+INFO: @anvil.runners.fork : Forked nova-novncproxy with details in the following files:
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-novncproxy.fork.pid
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-novncproxy.fork.stdout
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-novncproxy.fork.stderr
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-novncproxy.fork.trace
+INFO: @anvil.components.base_runtime : Started program nova-novncproxy under component nova.
+INFO: @anvil.runners.fork : Forked nova-xvpvncproxy with details in the following files:
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-xvpvncproxy.fork.pid
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-xvpvncproxy.fork.stdout
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-xvpvncproxy.fork.stderr
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-xvpvncproxy.fork.trace
+INFO: @anvil.components.base_runtime : Started program nova-xvpvncproxy under component nova.
+INFO: @anvil.runners.fork : Forked nova-consoleauth with details in the following files:
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-consoleauth.fork.pid
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-consoleauth.fork.stdout
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-consoleauth.fork.stderr
+INFO: @anvil.runners.fork : |-- /home/harlowja/openstack/nova/traces/nova-consoleauth.fork.trace
+INFO: @anvil.components.base_runtime : Started program nova-consoleauth under component nova.
+INFO: @anvil.actions.start : Start 12 applications
+INFO: @anvil.actions.start : Starting nova-client.
 INFO: @anvil.actions.start : Start 0 applications
 INFO: @anvil.actions.start : Post-starting general.
 INFO: @anvil.actions.start : Post-starting db.
 INFO: @anvil.actions.start : Post-starting rabbit-mq.
+INFO: @anvil.actions.start : Post-starting oslo-config.
 INFO: @anvil.actions.start : Post-starting keystone.
+INFO: @anvil.components.keystone : Running commands to initialize keystone.
+INFO: @anvil.utils : Waiting for url http://10.88.173.144:35357/v2.0 to become active (max_attempts=5)
+INFO: @anvil.utils : Sleeping for 1.3 seconds, http://10.88.173.144:35357/v2.0 is still not active.
+INFO: @anvil.utils : Sleeping for 1.69 seconds, http://10.88.173.144:35357/v2.0 is still not active.
+INFO: @anvil.utils : Sleeping for 2.8561 seconds, http://10.88.173.144:35357/v2.0 is still not active.
+INFO: @anvil.utils : Sleeping for 8.15730721 seconds, http://10.88.173.144:35357/v2.0 is still not active.
+INFO: @anvil.utils : Url http://10.88.173.144:35357/v2.0 became active after 5 attempts!
+INFO: @anvil.utils : Waiting for url http://10.88.173.144:5000/v2.0 to become active (max_attempts=5)
+INFO: @anvil.utils : Url http://10.88.173.144:5000/v2.0 became active after 1 attempts!
+INFO: @anvil.components.keystone : If you wish to re-run initialization, delete /home/harlowja/openstack/keystone/traces/keystone.inited.yaml
 INFO: @anvil.actions.start : Post-starting keystone-client.
 INFO: @anvil.actions.start : Post-starting glance.
-INFO: @anvil.utils : Waiting for http://172.21.102.12:9292 to become active (max_attempts=3, seconds_between=5)
-INFO: @anvil.utils : Sleeping for 5 seconds, http://172.21.102.12:9292 is still not active.
-INFO: @anvil.utils : http://172.21.102.12:9292 became active after 2 attempts!
-INFO: @anvil.utils : Waiting for http://172.21.102.12:5000/v2.0 to become active (max_attempts=3, seconds_between=5)
-INFO: @anvil.utils : http://172.21.102.12:5000/v2.0 became active after 1 attempts!
+INFO: @anvil.utils : Waiting for url http://10.88.173.144:9292 to become active (max_attempts=5)
+INFO: @anvil.utils : Url http://10.88.173.144:9292 became active after 1 attempts!
+INFO: @anvil.utils : Waiting for url http://10.88.173.144:5000/v2.0 to become active (max_attempts=5)
+INFO: @anvil.utils : Url http://10.88.173.144:5000/v2.0 became active after 1 attempts!
 INFO: @anvil.components.helpers.glance : Getting your keystone token so that image uploads may proceed.
 INFO: @anvil.components.helpers.glance : Attempting to download+extract+upload 1 images:
-INFO: @anvil.components.helpers.glance : |-- https://launchpad.net/cirros/trunk/0.3.0/+download/cirros-0.3.0-x86_64-disk.img
-INFO: @anvil.downloader : Downloading using urllib2: https://launchpad.net/cirros/trunk/0.3.0/+download/cirros-0.3.0-x86_64-disk.img to /tmp/tmpcPxQsz/cirros-0.3.0-x86_64-disk.img.
-Fetching: 100% |#################################################################################################################################################| Time: 0:00:03   2.89 MB/s
-INFO: @anvil.components.helpers.glance : Adding image cirros-0.3.0-x86_64-disk to glance.
-INFO: @anvil.components.helpers.glance : Checking if image cirros-0.3.0-x86_64-disk already exists already in glance.
-ERROR: @anvil.components.helpers.glance : Installing 'https://launchpad.net/cirros/trunk/0.3.0/+download/cirros-0.3.0-x86_64-disk.img' failed due to: Image named cirros-0.3.0-x86_64-disk already exists.
-Traceback (most recent call last):
-  File "/home/harlowja/anvil/anvil/components/helpers/glance.py", line 387, in install
-    (name, img_id) = Image(client, url).install()
-  File "/home/harlowja/anvil/anvil/components/helpers/glance.py", line 342, in install
-    img_id = self._register(tgt_image_name, unpack_info)
-  File "/home/harlowja/anvil/anvil/components/helpers/glance.py", line 300, in _register
-    self._check_name(image_name)
-  File "/home/harlowja/anvil/anvil/components/helpers/glance.py", line 264, in _check_name
-    raise IOError("Image named %s already exists." % (name))
-IOError: Image named cirros-0.3.0-x86_64-disk already exists.
+INFO: @anvil.components.helpers.glance : |-- http://download.cirros-cloud.net/0.3.1/cirros-0.3.1-x86_64-disk.img
+INFO: @anvil.downloader : Downloading using urllib2: http://download.cirros-cloud.net/0.3.1/cirros-0.3.1-x86_64-disk.img to /usr/share/anvil/glance/images/bc91ac55b89dc666140963f24db217f2/cirros-0.3.1-x86_64-disk.img.
+INFO: @anvil.components.helpers.glance : Adding image cirros-0.3.1-x86_64-disk to glance.
+INFO: @anvil.components.helpers.glance : Checking if image cirros-0.3.1-x86_64-disk already exists already in glance.
+INFO: @anvil.components.helpers.glance : Please wait installing...
+INFO: @anvil.components.helpers.glance : Installed image named cirros-0.3.1-x86_64-disk with image id 8c12f581-8da4-48e6-ba2c-3e99f9c1f5e2.
+INFO: @anvil.actions.start : Post-starting cinder.
 INFO: @anvil.actions.start : Post-starting glance-client.
+INFO: @anvil.actions.start : Post-starting cinder-client.
+INFO: @anvil.actions.start : Post-starting quantum-client.
 INFO: @anvil.actions.start : Post-starting nova.
+INFO: @anvil.components.nova : Creating your nova network to be used with instances.
+INFO: @anvil.components.nova : If you wish to re-run network initialization, delete /home/harlowja/openstack/nova/traces/nova.network.inited.yaml
 INFO: @anvil.actions.start : Post-starting nova-client.
-INFO: @anvil.actions.start : Post-starting openstack-client.
-INFO: @anvil.action : Tearing down your components.
-INFO: @anvil.action : Updated/created 1 password files:
-INFO: @anvil.action : |-- /home/harlowja/anvil/passwords.yaml
-INFO: @anvil : It took 16.318 seconds or 0.27 minutes to complete action start.
- ____________________
-/ Australia!         \
-| Australia!         |
-| Australia!         |
-\ We love you, amen. /
- --------------------
+INFO: @anvil.actions.base : Tearing down your components.
+INFO: @anvil : It took 31.611 seconds or 0.53 minutes to complete action start.
+ ______________
+/ Say no more, \
+| Nudge nudge  |
+\ wink wink.   /
+ --------------
         \   ^__^
          \  (oo)\_______
             (__)\       )\/\
                 ||----w |
                 ||     ||
-
