@@ -249,7 +249,7 @@ class DependencyHandler(object):
         out_filename = sh.joinpths(self.deps_dir, "pip-install-download.out")
         utils.log_iterable(sorted(pips_to_download), logger=LOG,
                            header="Downloading Python dependencies")
-        LOG.info("You can watch progress in another terminal with")
+        LOG.info("You can watch progress in another terminal with:")
         LOG.info("    tail -f %s" % out_filename)
         with open(out_filename, "w") as out:
             sh.execute(cmdline, stdout_fh=out, stderr_fh=out)

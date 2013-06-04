@@ -24,6 +24,7 @@ from anvil import log as logging
 from anvil.packaging import base
 from anvil.packaging.helpers import yum_helper
 from anvil import shell as sh
+from anvil import trace as tr
 from anvil import utils
 
 
@@ -46,13 +47,19 @@ class YumDependencyHandler(base.DependencyHandler):
     OPENSTACK_DEPS_PACKAGE_NAME = "openstack-deps"
     OPENSTACK_EPOCH = 2
     py2rpm_executable = sh.which("py2rpm", ["tools/"])
+    REPO_FN = "anvil.repo"
+    YUM_REPO_DIR = "/etc/yum.repos.d/"
 
     def __init__(self, distro, root_dir, instances):
         super(YumDependencyHandler, self).__init__(distro, root_dir, instances)
         self.rpmbuild_dir = sh.joinpths(self.deps_dir, "rpmbuild")
         self.deps_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps")
         self.deps_src_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps-sources")
-        self.anvil_repo_filename = sh.joinpths(self.deps_dir, "anvil.repo")
+        self.anvil_repo_filename = sh.joinpths(self.deps_dir, self.REPO_FN)
+        # Track what file we create so they can be cleaned up on uninstall.
+        trace_fn = tr.trace_filename(self.get_option('trace_dir'), 'created')
+        self.tracewriter = tr.TraceWriter(trace_fn, break_if_there=False)
+        self.helper = yum_helper.Helper()
 
     def _epoch_list(self):
         return [
@@ -115,6 +122,7 @@ class YumDependencyHandler(base.DependencyHandler):
             "SPECS",
             "%s.spec" % self.OPENSTACK_DEPS_PACKAGE_NAME)
 
+        # Clean out previous dirs.
         for dirname in (self.rpmbuild_dir,
                         self.deps_repo_dir,
                         self.deps_src_repo_dir):
@@ -193,7 +201,8 @@ BuildArch: noarch
                     script_body)
 
         spec_content += "\n%files\n"
-        sh.write_file(spec_filename, spec_content)
+        sh.write_file(spec_filename, spec_content,
+                      tracewriter=self.tracewriter)
         cmdline = [
             "rpmbuild", "-ba",
             "--define", "_topdir %s" % self.rpmbuild_dir,
@@ -215,7 +224,7 @@ BuildArch: noarch
             self.rpmbuild_dir,
         ] + self._epoch_list() + ["--"] + package_files
         out_filename = sh.joinpths(self.deps_dir, "py2rpm.deps.out")
-        LOG.info("You can watch progress in another terminal with")
+        LOG.info("You can watch progress in another terminal with:")
         LOG.info("    tail -f %s" % out_filename)
         with open(out_filename, "w") as out:
             try:
@@ -234,7 +243,7 @@ BuildArch: noarch
             self.rpmbuild_dir,
         ] + self._epoch_list() + ["--"] + self.package_dirs
         out_filename = sh.joinpths(self.deps_dir, "py2rpm.openstack.out")
-        LOG.info("You can watch progress in another terminal with")
+        LOG.info("You can watch progress in another terminal with:")
         LOG.info("    tail -f %s" % out_filename)
         with open(out_filename, "w") as out:
             sh.execute(cmdline, stdout_fh=out, stderr_fh=out)
@@ -250,12 +259,13 @@ BuildArch: noarch
             cmdline = ["createrepo", repo_dir]
             LOG.info("Creating repo at %s" % repo_dir)
             sh.execute(cmdline)
-        LOG.info("Writing anvil.repo to %s" % self.anvil_repo_filename)
-        (_fn, content) = utils.load_template('packaging', 'anvil.repo')
+        LOG.info("Writing %s to %s", self.REPO_FN, self.anvil_repo_filename)
+        (_fn, content) = utils.load_template('packaging', self.REPO_FN)
         params = {"baseurl_bin": "file://%s" % self.deps_repo_dir,
                   "baseurl_src": "file://%s" % self.deps_src_repo_dir}
-        sh.write_file(
-            self.anvil_repo_filename, utils.expand_template(content, params))
+        sh.write_file(self.anvil_repo_filename,
+                      utils.expand_template(content, params),
+                      tracewriter=self.tracewriter)
 
     def _convert_names_python2rpm(self, python_names):
         if not self.python_names:
@@ -273,18 +283,19 @@ BuildArch: noarch
 
     def install(self):
         super(YumDependencyHandler, self).install()
-        helper = yum_helper.Helper()
+        repo_filename = sh.joinpths(self.YUM_REPO_DIR, self.REPO_FN)
 
         # Ensure we copy the local repo file name to the main repo so that
         # yum will find it when installing packages.
-        sh.copy(self.anvil_repo_filename, "/etc/yum.repos.d/")
+        sh.write_file(repo_filename, sh.load_file(self.anvil_repo_filename),
+                      tracewriter=self.tracewriter)
 
+        # Erase it if its been previously installed.
         cmdline = []
-        if helper.is_installed(self.OPENSTACK_DEPS_PACKAGE_NAME):
-            cmdline = [self.OPENSTACK_DEPS_PACKAGE_NAME]
-
+        if self.helper.is_installed(self.OPENSTACK_DEPS_PACKAGE_NAME):
+            cmdline.append(self.OPENSTACK_DEPS_PACKAGE_NAME)
         for p in self.nopackages:
-            if helper.is_installed(p):
+            if self.helper.is_installed(p):
                 cmdline.append(p)
 
         if cmdline:
@@ -304,10 +315,9 @@ BuildArch: noarch
 
     def uninstall(self):
         super(YumDependencyHandler, self).uninstall()
-        helper = yum_helper.Helper()
         rpm_names = []
         for name in self._convert_names_python2rpm(self.python_names):
-            if helper.is_installed(name):
+            if self.helper.is_installed(name):
                 rpm_names.append(name)
 
         if rpm_names:
