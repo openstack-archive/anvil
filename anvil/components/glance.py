@@ -71,24 +71,6 @@ class GlanceInstaller(binstall.PythonInstallComponent):
 
 
 class GlanceRuntime(bruntime.PythonRuntime):
-    @property
-    def applications(self):
-        apps = []
-        for (name, _values) in self.subsystems.items():
-            name = "glance-%s" % (name.lower())
-            path = sh.joinpths(self.bin_dir, name)
-            if sh.is_executable(path):
-                apps.append(bruntime.Program(name, path, argv=self._fetch_argv(name)))
-        return apps
-
-    def _fetch_argv(self, name):
-        if name.find('api') != -1:
-            return ['--config-file', sh.joinpths('$CONFIG_DIR', gconf.API_CONF)]
-        elif name.find('registry') != -1:
-            return ['--config-file', sh.joinpths('$CONFIG_DIR', gconf.REG_CONF)]
-        else:
-            return []
-
     def _get_image_urls(self):
         uris = self.get_option('image_urls', default_value=[])
         return [u.strip() for u in uris if len(u.strip())]

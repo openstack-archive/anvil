@@ -21,6 +21,11 @@ dependency_handler:
     arch_dependent:
     -   selenium
 commands:
+    service:
+        restart: service NAME restart
+        start: service NAME start
+        status: service NAME status
+        stop: service NAME stop
     apache:
         name: httpd
         restart: service httpd restart
@@ -68,6 +73,8 @@ components:
             uninstall: anvil.components.base_install:PkgUninstallComponent
         pips:
             - name: hp3parclient
+        daemon_to_package:
+            all: openstack-cinder
     cinder-client:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
@@ -158,6 +165,10 @@ components:
         # then ignores warlock's requirement
         -   name: jsonschema
             version: ">=0.7,<2"
+        daemon_to_package:
+            api: openstack-glance
+            registry: openstack-glance
+            scrubber: openstack-glance
     glance-client:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
@@ -188,6 +199,8 @@ components:
             uninstall: anvil.components.base_install:PkgUninstallComponent
         packages:
         -   name: MySQL-python
+        daemon_to_package:
+            all: openstack-keystone
     keystone-client:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
@@ -264,13 +277,21 @@ components:
                     removable: false
                 -   name: scsi-target-utils
                     removable: false
+        daemon_to_package:
+            api-metadata: openstack-nova-api
+            api-ec2: openstack-nova-api
+            api-os-compute: openstack-nova-api
+            dhcpbridge: openstack-nova-network
+            xvpvncproxy: openstack-nova-console
+            spicehtml5proxy: openstack-nova-console
+            consoleauth: openstack-nova-console
     nova-client:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
-    no-vnc:
+    novnc:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
             running: anvil.components.novnc:NoVNCRuntime
@@ -304,6 +325,14 @@ components:
             test: anvil.components.base_testing:PythonTestingComponent
             coverage: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
+        daemon_to_package:
+            linuxbridge-agent: openstack-quantum-linuxbridge
+            openvswitch-agent: openstack-quantum-openvswitch
+            ovs-cleanup: openstack-quantum-openvswitch
+            dhcp-agent: openstack-quantum
+            l3-agent: openstack-quantum
+            rpc-zmq-receiver: openstack-quantum
+            server: openstack-quantum
     quantum-client:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent

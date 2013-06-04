@@ -57,7 +57,7 @@ class CinderInstaller(binstall.PythonInstallComponent):
 class CinderRuntime(bruntime.PythonRuntime):
     def __init__(self, *args, **kargs):
         bruntime.PythonRuntime.__init__(self, *args, **kargs)
-        self.config_path = sh.joinpths(self.get_option('cfg_dir'), cconf.API_CONF)
+        self.config_path = sh.joinpths(self.cfg_dir, cconf.API_CONF)
 
     @property
     def applications(self):

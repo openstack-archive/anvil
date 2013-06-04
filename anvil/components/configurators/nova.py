@@ -296,7 +296,7 @@ class NovaConfigurator(base.Configurator):
 
         # Configs dhcp bridge stuff???
         # TODO(harlowja) why is this the same as the nova.conf?
-        nova_conf.add('dhcpbridge_flagfile', sh.joinpths(self.installer.get_option('cfg_dir'), API_CONF))
+        nova_conf.add('dhcpbridge_flagfile', sh.joinpths(self.installer.cfg_dir, API_CONF))
 
         # Network prefix for the IP network that all the projects for future VM guests reside on. Example: 192.168.0.0/12
         nova_conf.add('fixed_range', self.installer.get_option('fixed_range'))

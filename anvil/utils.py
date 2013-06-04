@@ -573,3 +573,11 @@ def canon_virt_driver(virt_driver):
     if not (virt_driver in VIRT_DRIVER_MAP):
         return 'libvirt'
     return virt_driver
+
+
+def strip_prefix_suffix(line, prefix=None, suffix=None):
+    if prefix and line.startswith(prefix):
+        line = line[len(prefix):]
+    if suffix and line.endswith(suffix):
+        line = line[:-len(suffix)]
+    return line

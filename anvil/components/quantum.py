@@ -61,7 +61,7 @@ class QuantumRuntime(bruntime.PythonRuntime):
     def __init__(self, *args, **kargs):
         super(QuantumRuntime, self).__init__(*args, **kargs)
 
-        self.config_path = sh.joinpths(self.get_option("cfg_dir"), qconf.API_CONF)
+        self.config_path = sh.joinpths(self.cfg_dir, qconf.API_CONF)
 
     # TODO(aababilov): move to base class
     @property

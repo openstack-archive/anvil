@@ -138,7 +138,7 @@ class NovaInstaller(binstall.PythonInstallComponent):
 
     def config_params(self, config_fn):
         mp = binstall.PythonInstallComponent.config_params(self, config_fn)
-        mp['CFG_FILE'] = sh.joinpths(self.get_option('cfg_dir'), nconf.API_CONF)
+        mp['CFG_FILE'] = sh.joinpths(self.cfg_dir, nconf.API_CONF)
         mp['BIN_DIR'] = self.bin_dir
         return mp
 
@@ -148,7 +148,7 @@ class NovaRuntime(bruntime.PythonRuntime):
         bruntime.PythonRuntime.__init__(self, *args, **kargs)
         self.wait_time = self.get_int_option('service_wait_seconds')
         self.virsh = lv.Virsh(self.wait_time, self.distro)
-        self.config_path = sh.joinpths(self.get_option('cfg_dir'), nconf.API_CONF)
+        self.config_path = sh.joinpths(self.cfg_dir, nconf.API_CONF)
         self.net_init_fn = sh.joinpths(self.get_option('trace_dir'), NET_INITED_FN)
 
     def _do_network_init(self):

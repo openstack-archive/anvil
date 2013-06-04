@@ -1,0 +1,22 @@
+.TH novnc_server 1  "June 8, 2012" "version 0.3" "USER COMMANDS"
+
+.SH NAME
+novnc_server | noVNC proxy server
+.SH SYNOPSIS
+.B novnc_server [--listen PORT] [--vnc VNC_HOST:PORT] [--cert CERT]
+
+Starts the WebSockets proxy and a mini-webserver and 
+provides a cut-and-paste URL to go to.
+
+    --listen PORT         Port for proxy/webserver to listen on
+                          Default: 6080
+    --vnc VNC_HOST:PORT   VNC server host:port proxy target
+                          Default: localhost:5900
+    --cert CERT           Path to combined cert/key file
+                          Default: self.pem
+
+.SH AUTHOR
+Joel Martin (github@martintribe.org)
+
+.SH SEE ALSO
+websockify(1)
