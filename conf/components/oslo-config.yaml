@@ -1,6 +1,6 @@
 # Settings for component oslo.config
 ---
 
-get_from: "git://github.com/openstack/oslo.config.git?tag=1.1.0b1"
+get_from: "git://github.com/openstack/oslo.config.git?tag=1.1.0"
 
 ...

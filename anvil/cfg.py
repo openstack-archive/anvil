@@ -170,8 +170,6 @@ class YamlInterpolator(object):
         self.base = base
         self.auto_specials = {
             'ip': utils.get_host_ip,
-            'user': sh.getuser,
-            'group': sh.getgroupname,
             'home': sh.gethomedir,
             'hostname': sh.hostname,
         }

@@ -42,9 +42,8 @@ INIT_WHAT_FN = 'init_what.yaml'
 INIT_WHAT_HAPPENED = "keystone.inited.yaml"
 
 # Invoking the keystone manage command uses this template
-MANAGE_CMD = [sh.joinpths('$BIN_DIR', 'keystone-manage'),
-                '--config-file=$CONFIG_FILE',
-                '--debug', '-v']
+MANAGE_CMD = ['sudo', '-u', 'keystone', '/usr/bin/keystone-manage',
+              '--debug', '-v']
 
 
 class KeystoneInstaller(binstall.PythonInstallComponent):
@@ -75,7 +74,6 @@ class KeystoneInstaller(binstall.PythonInstallComponent):
         to_set['OS_TENANT_NAME'] = params['admin_tenant']
         to_set['OS_USERNAME'] = params['admin_user']
         to_set['OS_AUTH_URL'] = params['endpoints']['public']['uri']
-        to_set['SERVICE_ENDPOINT'] = params['endpoints']['admin']['uri']
         for (endpoint, details) in params['endpoints'].items():
             if endpoint.find('templated') != -1:
                 continue
@@ -94,17 +92,10 @@ class KeystoneInstaller(binstall.PythonInstallComponent):
     def warm_configs(self):
         khelper.get_shared_passwords(self)
 
-    def config_params(self, config_fn):
-        # These be used to fill in the configuration params
-        mp = binstall.PythonInstallComponent.config_params(self, config_fn)
-        mp['BIN_DIR'] = self.bin_dir
-        mp['CONFIG_FILE'] = sh.joinpths(self.get_option('cfg_dir'), kconf.ROOT_CONF)
-        return mp
 
-
-class KeystoneRuntime(bruntime.PythonRuntime):
+class KeystoneRuntime(bruntime.OpenStackRuntime):
     def __init__(self, *args, **kargs):
-        bruntime.PythonRuntime.__init__(self, *args, **kargs)
+        bruntime.OpenStackRuntime.__init__(self, *args, **kargs)
         self.init_fn = sh.joinpths(self.get_option('trace_dir'), INIT_WHAT_HAPPENED)
 
     def _filter_init(self, init_what):
@@ -144,25 +135,6 @@ class KeystoneRuntime(bruntime.PythonRuntime):
             # Writing this makes sure that we don't init again
             sh.write_file(self.init_fn, utils.prettify_yaml(init_what))
             LOG.info("If you wish to re-run initialization, delete %s", colorizer.quote(self.init_fn))
-
-    @property
-    def applications(self):
-        apps = []
-        for (name, _values) in self.subsystems.items():
-            name = "keystone-%s" % (name.lower())
-            path = sh.joinpths(self.bin_dir, name)
-            if sh.is_executable(path):
-                apps.append(bruntime.Program(name, path, argv=self._fetch_argv(name)))
-        return apps
-
-    def _fetch_argv(self, name):
-        return [
-            '--config-file=%s' % (sh.joinpths('$CONFIG_DIR', kconf.ROOT_CONF)),
-            "--debug",
-            '--verbose',
-            '--nouse-syslog',
-            '--log-config=%s' % (sh.joinpths('$CONFIG_DIR', kconf.LOGGING_CONF)),
-        ]
 
 
 class KeystoneTester(btesting.PythonTestingComponent):

@@ -57,28 +57,18 @@ class PrepareAction(action.Action):
             "download-patch",
             *removals
             )
+        dependency_handler = self.distro.dependency_handler_class(
+            self.distro, self.root_dir, instances.values())
+        dependency_handler.package_start()
         self._run_phase(
             action.PhaseFunctors(
-                start=lambda i: LOG.info('Preparing %s.', colorizer.quote(i.name)),
-                run=lambda i: i.prepare(),
+                start=lambda i: LOG.info("Packing %s", colorizer.quote(i.name)),
+                run=dependency_handler.package_instance,
                 end=None,
             ),
             component_order,
             instances,
-            "prepare",
-            *removals
-            )
-        dependency_handler = self.distro.dependency_handler_class(
-            self.distro, self.root_dir, instances.values())
-        general_package = "general"
-        self._run_phase(
-            action.PhaseFunctors(
-                start=lambda i: LOG.info("Packing OpenStack and its dependencies"),
-                run=lambda i: dependency_handler.package(),
-                end=None,
-            ),
-            [general_package],
-            {general_package: instances[general_package]},
             "package",
             *removals
             )
+        dependency_handler.package_finish()

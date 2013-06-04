@@ -69,6 +69,10 @@ class TraceWriter(object):
         what['from'] = uri
         self.trace(DOWNLOADED, json.dumps(what))
 
+    def pip_installed(self, pip_info):
+        self._start()
+        self.trace(PIP_INSTALL, json.dumps(pip_info))
+
     def dirs_made(self, *dirs):
         self._start()
         for d in dirs:
@@ -77,6 +81,10 @@ class TraceWriter(object):
     def file_touched(self, fn):
         self._start()
         self.trace(FILE_TOUCHED, fn)
+
+    def package_installed(self, pkg_name):
+        self._start()
+        self.trace(PKG_INSTALL, pkg_name)
 
     def app_started(self, name, info_fn, how):
         self._start()
@@ -190,3 +198,12 @@ class TraceReader(object):
             if type(pip_info_full) is dict:
                 pips_installed.append(pip_info_full)
         return pips_installed
+
+    def packages_installed(self):
+        lines = self.read()
+        pkgs_installed = list()
+        pkg_list = list()
+        for (cmd, action) in lines:
+            if cmd == PKG_INSTALL and len(action):
+                pkg_list.append(action)
+        return pkg_list

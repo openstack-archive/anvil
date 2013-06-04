@@ -3,18 +3,4 @@
 # Where we download this from...
 get_from: "git://github.com/openstack/horizon.git?tag=2013.1"
 
-# This is the group of the user (adjust as needed)
-apache_group: "$(auto:group)"
-
-# What user will apache be serving from.
-#
-# Root will typically not work (for apache on most distros)
-# sudo adduser <username> then sudo adduser <username> admin will be what you want to set this up
-#
-# It will default to the running user if not provided...
-apache_user: "$(auto:user)"
-
-# Port horizon should run on
-port: 80
-
 ...

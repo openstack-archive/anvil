@@ -7,8 +7,7 @@ conflicts 'python-paste-deploy1.5
     python-nose1.1
     python-routes1.12
     python-sphinx10
-    python-webob1.0
-    Django14'
+    python-webob1.0'
 ## Package Requirements (Order matters!)
 require PyYAML
 require gcc
@@ -33,12 +32,13 @@ require python-pip
 require python-setuptools
 
 # Build dependencies
-require sqlite-devel
+require libxml2-devel
+require libxslt-devel
 require mysql-devel
 require postgresql-devel
 require openldap-devel
-require libxml2-devel
-require libxslt-devel
+require sqlite-devel
+require dos2unix
 
 # This packages can be built from archives
 require python-cheetah Cheetah

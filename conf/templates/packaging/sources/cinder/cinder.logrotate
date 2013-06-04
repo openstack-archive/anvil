@@ -1,0 +1,9 @@
+compress
+
+/var/log/cinder/*.log {
+    weekly
+    rotate 4
+    missingok
+    compress
+    minsize 100k
+}
