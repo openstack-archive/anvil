@@ -12,7 +12,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import colorizer
 from anvil.components import base
 from anvil import downloader as down
 from anvil import log as logging
@@ -123,39 +122,16 @@ class PkgInstallComponent(base.Component):
                 sh.write_file(tgt_fn, contents, tracewriter=self.tracewriter)
         return len(config_fns)
 
-    def _configure_symlinks(self):
-        links = self.configurator.symlinks
-        if not links:
-            return 0
-        # This sort happens so that we link in the correct order
-        # although it might not matter. Either way. We ensure that the right
-        # order happens. Ie /etc/blah link runs before /etc/blah/blah
-        link_srcs = sorted(links.keys())
-        link_srcs.reverse()
-        link_nice = []
-        for source in link_srcs:
-            links_to_be = links[source]
-            for link in links_to_be:
-                link_nice.append("%s => %s" % (link, source))
-        utils.log_iterable(link_nice, logger=LOG,
-                           header="Creating %s sym-links" % (len(link_nice)))
-        links_made = 0
-        for source in link_srcs:
-            links_to_be = links[source]
-            for link in links_to_be:
-                try:
-                    LOG.debug("Symlinking %s to %s.", link, source)
-                    sh.symlink(source, link, tracewriter=self.tracewriter)
-                    links_made += 1
-                except (IOError, OSError) as e:
-                    LOG.warn("Symlinking %s to %s failed: %s", colorizer.quote(link), colorizer.quote(source), e)
-        return links_made
-
-    def prepare(self):
-        pass
-
     def configure(self):
-        return self._configure_files() + self._configure_symlinks()
+        files = self._configure_files()
+        conf_dir = "/etc/%s" % self.name
+        if sh.isdir(conf_dir):
+            sh.execute(
+                ["chown", "-R",
+                 "%s:%s" % (self.name, self.name),
+                 conf_dir],
+                check_exit_code=False)
+        return files
 
 
 class PythonInstallComponent(PkgInstallComponent):
@@ -179,15 +155,7 @@ class PkgUninstallComponent(base.Component):
         self.tracereader = tr.TraceReader(trace_fn)
 
     def unconfigure(self):
-        self._unconfigure_links()
-
-    def _unconfigure_links(self):
-        sym_files = self.tracereader.symlinks_made()
-        if sym_files:
-            utils.log_iterable(sym_files, logger=LOG,
-                               header="Removing %s symlink files" % (len(sym_files)))
-            for fn in sym_files:
-                sh.unlink(fn)
+        pass
 
     def post_uninstall(self):
         self._uninstall_files()

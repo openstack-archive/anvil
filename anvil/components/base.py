@@ -50,6 +50,7 @@ class Component(object):
         self.passwords = passwords
 
         self.bin_dir = "/usr/bin"
+        self.cfg_dir = "/etc/%s" % self.name
 
     def get_password(self, option):
         pw_val = self.passwords.get(option)
@@ -90,7 +91,6 @@ class Component(object):
         return {
             'APP_DIR': self.get_option('app_dir'),
             'COMPONENT_DIR': self.get_option('component_dir'),
-            'CONFIG_DIR': self.get_option('cfg_dir'),
             'TRACE_DIR': self.get_option('trace_dir'),
         }
 
@@ -99,3 +99,24 @@ class Component(object):
         # warmup the configs u might use (ie for prompting for passwords
         # earlier rather than later)
         pass
+
+    def subsystem_names(self):
+        return self.subsystems.keys()
+
+    def package_names(self):
+        """Return a set of names of all packages for this component.
+        """
+        names = set()
+        try:
+            for pack in self.packages:
+                names.add(pack["name"])
+        except (AttributeError, KeyError):
+            pass
+        daemon_to_package = self.distro._components[self.name].get(
+            "daemon_to_package", {})
+        for key in self.subsystem_names():
+            try:
+                names.add(daemon_to_package[key])
+            except KeyError:
+                names.add("openstack-%s-%s" % (self.name, key))
+        return names
