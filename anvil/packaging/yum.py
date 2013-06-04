@@ -57,8 +57,9 @@ class YumDependencyHandler(base.DependencyHandler):
         self.deps_src_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps-sources")
         self.anvil_repo_filename = sh.joinpths(self.deps_dir, self.REPO_FN)
         # Track what file we create so they can be cleaned up on uninstall.
-        trace_fn = tr.trace_filename(self.get_option('trace_dir'), 'created')
+        trace_fn = tr.trace_filename(root_dir, 'deps')
         self.tracewriter = tr.TraceWriter(trace_fn, break_if_there=False)
+        self.tracereader = tr.TraceReader(trace_fn)
         self.helper = yum_helper.Helper()
 
     def _epoch_list(self):
@@ -123,8 +124,7 @@ class YumDependencyHandler(base.DependencyHandler):
             "%s.spec" % self.OPENSTACK_DEPS_PACKAGE_NAME)
 
         # Clean out previous dirs.
-        for dirname in (self.rpmbuild_dir,
-                        self.deps_repo_dir,
+        for dirname in (self.rpmbuild_dir, self.deps_repo_dir,
                         self.deps_src_repo_dir):
             sh.deldir(dirname)
             sh.mkdir(dirname, recurse=True)
@@ -315,6 +315,14 @@ BuildArch: noarch
 
     def uninstall(self):
         super(YumDependencyHandler, self).uninstall()
+        if self.tracereader.exists():
+            for f in self.tracereader.files_touched():
+                sh.unlink(f)
+            for d in self.tracereader.dirs_made():
+                sh.deldir(d)
+            sh.unlink(self.tracereader.filename())
+            self.tracereader = None
+
         rpm_names = []
         for name in self._convert_names_python2rpm(self.python_names):
             if self.helper.is_installed(name):

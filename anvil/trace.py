@@ -35,7 +35,6 @@ def trace_filename(root_dir, base_name):
 
 
 class TraceWriter(object):
-
     def __init__(self, trace_fn, break_if_there=True):
         self.trace_fn = trace_fn
         self.started = False
@@ -89,7 +88,6 @@ class TraceWriter(object):
 
 
 class TraceReader(object):
-
     def __init__(self, trace_fn):
         self.trace_fn = trace_fn
         self.contents = None
