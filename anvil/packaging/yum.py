@@ -127,7 +127,7 @@ class YumDependencyHandler(base.DependencyHandler):
         for dirname in (self.rpmbuild_dir, self.deps_repo_dir,
                         self.deps_src_repo_dir):
             sh.deldir(dirname)
-            sh.mkdir(dirname, recurse=True)
+            sh.mkdirslist(dirname, tracewriter=self.tracewriter)
 
         today = datetime.date.today()
         spec_content = """Name: %s
