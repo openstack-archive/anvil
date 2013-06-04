@@ -16,7 +16,6 @@
 
 from anvil import colorizer
 from anvil import log as logging
-from anvil import shell as sh
 from anvil import utils
 
 from anvil.utils import OrderedDict
@@ -33,10 +32,10 @@ from anvil.components.configurators import glance as gconf
 LOG = logging.getLogger(__name__)
 
 # Sync db command
-SYNC_DB_CMD = [sh.joinpths('$BIN_DIR', 'glance-manage'),
-                '--debug', '-v',
-                # Available commands:
-                'db_sync']
+SYNC_DB_CMD = ['sudo', '-u', 'glance', '/usr/bin/glance-manage',
+               '--debug', '-v',
+               # Available commands:
+               'db_sync']
 
 
 class GlanceInstaller(binstall.PythonInstallComponent):
@@ -63,38 +62,14 @@ class GlanceInstaller(binstall.PythonInstallComponent):
             to_set[("GLANCE_%s_URI" % (endpoint.upper()))] = details['uri']
         return to_set
 
-    def config_params(self, config_fn):
-        # These be used to fill in the configuration params
-        mp = binstall.PythonInstallComponent.config_params(self, config_fn)
-        mp['BIN_DIR'] = self.bin_dir
-        return mp
 
-
-class GlanceRuntime(bruntime.PythonRuntime):
-    @property
-    def applications(self):
-        apps = []
-        for (name, _values) in self.subsystems.items():
-            name = "glance-%s" % (name.lower())
-            path = sh.joinpths(self.bin_dir, name)
-            if sh.is_executable(path):
-                apps.append(bruntime.Program(name, path, argv=self._fetch_argv(name)))
-        return apps
-
-    def _fetch_argv(self, name):
-        if name.find('api') != -1:
-            return ['--config-file', sh.joinpths('$CONFIG_DIR', gconf.API_CONF)]
-        elif name.find('registry') != -1:
-            return ['--config-file', sh.joinpths('$CONFIG_DIR', gconf.REG_CONF)]
-        else:
-            return []
-
+class GlanceRuntime(bruntime.OpenStackRuntime):
     def _get_image_urls(self):
         uris = self.get_option('image_urls', default_value=[])
         return [u.strip() for u in uris if len(u.strip())]
 
     def post_start(self):
-        bruntime.PythonRuntime.post_start(self)
+        bruntime.OpenStackRuntime.post_start(self)
         if self.get_bool_option('load-images'):
             # Install any images that need activating...
             self.wait_active()

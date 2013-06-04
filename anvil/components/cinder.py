@@ -16,18 +16,16 @@
 
 from anvil import colorizer
 from anvil import log as logging
-from anvil import shell as sh
 from anvil import utils
 
 from anvil.components import base_install as binstall
-from anvil.components import base_runtime as bruntime
 
 from anvil.components.configurators import cinder as cconf
 
 LOG = logging.getLogger(__name__)
 
 # Sync db command
-SYNC_DB_CMD = [sh.joinpths('$BIN_DIR', 'cinder-manage'),
+SYNC_DB_CMD = ['sudo', '-u', 'cinder', '/usr/bin/cinder-manage',
                 # Available commands:
                 'db', 'sync']
 
@@ -47,34 +45,3 @@ class CinderInstaller(binstall.PythonInstallComponent):
         LOG.info("Syncing cinder to database: %s", colorizer.quote(self.configurator.DB_NAME))
         cmds = [{'cmd': SYNC_DB_CMD}]
         utils.execute_template(*cmds, cwd=self.bin_dir, params=self.config_params(None))
-
-    def config_params(self, config_fn):
-        mp = binstall.PythonInstallComponent.config_params(self, config_fn)
-        mp['BIN_DIR'] = self.bin_dir
-        return mp
-
-
-class CinderRuntime(bruntime.PythonRuntime):
-    def __init__(self, *args, **kargs):
-        bruntime.PythonRuntime.__init__(self, *args, **kargs)
-        self.config_path = sh.joinpths(self.get_option('cfg_dir'), cconf.API_CONF)
-
-    @property
-    def applications(self):
-        apps = []
-        for (name, _values) in self.subsystems.items():
-            name = "cinder-%s" % (name.lower())
-            path = sh.joinpths(self.bin_dir, name)
-            if sh.is_executable(path):
-                apps.append(bruntime.Program(name, path, argv=self._fetch_argv(name)))
-        return apps
-
-    def app_params(self, program):
-        params = bruntime.PythonRuntime.app_params(self, program)
-        params['CFG_FILE'] = self.config_path
-        return params
-
-    def _fetch_argv(self, name):
-        return [
-            '--config-file', '$CFG_FILE',
-        ]

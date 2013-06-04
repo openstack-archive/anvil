@@ -45,22 +45,19 @@ subsystems:
     keystone:
     - all
     nova:
-    - api-ec2
-    - api-metadata
-    - api-os-compute
+    - api
     - cert
     - compute
     - consoleauth
-    - dhcpbridge
     - network
     - novncproxy
     - scheduler
     - xvpvncproxy
     quantum:
     - server
+    - linuxbridge-agent
     cinder:
     - all
 supports:
 - rhel
 ...
-

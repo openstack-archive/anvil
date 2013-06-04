@@ -1,8 +1,5 @@
 # Settings for component general
 ---
-# Python component run type to use (defaults to forking)
-run_type: "anvil.runners.fork:ForkRunner"
-
 ip: "$(auto:ip)"
 
 # How many seconds to wait until a service comes online before using it.
@@ -39,5 +36,5 @@ wanted_passwords:
   admin_password: 'keystone admin user'
   service_password: 'service authentication password'
   sql: "database user"
-  
+
 ...

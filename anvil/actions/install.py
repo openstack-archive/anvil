@@ -60,20 +60,7 @@ class InstallAction(action.Action):
                                logger=LOG)
 
     def _run(self, persona, component_order, instances):
-        removals = ['unconfigure']
-        self._run_phase(
-            action.PhaseFunctors(
-                start=lambda i: LOG.info('Configuring %s.', colorizer.quote(i.name)),
-                run=lambda i: i.configure(),
-                end=None,
-            ),
-            component_order,
-            instances,
-            "configure",
-            *removals
-            )
-
-        removals += ['pre-uninstall', 'post-uninstall']
+        removals = ['pre-uninstall', 'post-uninstall']
         self._run_phase(
             action.PhaseFunctors(
                 start=lambda i: LOG.info('Preinstalling %s.', colorizer.quote(i.name)),
@@ -101,6 +88,19 @@ class InstallAction(action.Action):
             [general_package],
             {general_package: instances[general_package]},
             "package-install",
+            *removals
+            )
+
+        removals += ['unconfigure']
+        self._run_phase(
+            action.PhaseFunctors(
+                start=lambda i: LOG.info('Configuring %s.', colorizer.quote(i.name)),
+                run=lambda i: i.configure(),
+                end=None,
+            ),
+            component_order,
+            instances,
+            "configure",
             *removals
             )
 

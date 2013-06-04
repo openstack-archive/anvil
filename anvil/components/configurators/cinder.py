@@ -43,6 +43,7 @@ class CinderConfigurator(base.Configurator):
             config.add_with_section('filter:authtoken', k, v)
 
     def _config_adjust_api(self, config):
+        config.add('log_dir', '/var/log/cinder')
         self.setup_rpc(config)
         # Setup your sql connection
         config.add('sql_connection', self.fetch_dbdsn())

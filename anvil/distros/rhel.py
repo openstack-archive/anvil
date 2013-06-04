@@ -28,27 +28,10 @@ from anvil import shell as sh
 from anvil import utils
 
 from anvil.components import db
-from anvil.components import horizon
-from anvil.components import nova
 from anvil.components import rabbit
-
-from anvil.components.configurators import horizon as hconf
 
 
 LOG = logging.getLogger(__name__)
-
-# See: http://wiki.libvirt.org/page/SSHPolicyKitSetup
-# FIXME(harlowja) take from distro config??
-LIBVIRT_POLICY_FN = "/etc/polkit-1/localauthority/50-local.d/50-libvirt-access.pkla"
-LIBVIRT_POLICY_CONTENTS = """
-[libvirt Management Access]
-Identity=${idents}
-Action=org.libvirt.unix.manage
-ResultAny=yes
-ResultInactive=yes
-ResultActive=yes
-"""
-DEF_IDENT = 'unix-group:libvirtd'
 
 
 class DBInstaller(db.DBInstaller):
@@ -62,39 +45,6 @@ class DBInstaller(db.DBInstaller):
         my_cnf.set('mysqld', 'default-storage-engine', 'InnoDB')
         my_cnf.set('mysqld', 'bind-address', '0.0.0.0')
         sh.write_file_and_backup(DBInstaller.MYSQL_CONF, my_cnf.stringify())
-
-
-class HorizonInstaller(horizon.HorizonInstaller):
-
-    HTTPD_CONF = '/etc/httpd/conf/httpd.conf'
-
-    def __init__(self, *args, **kargs):
-        horizon.HorizonInstaller.__init__(self, *args, **kargs)
-        self.configurator = hconf.HorizonRhelConfigurator(self)
-
-    def _config_fix_httpd(self):
-        LOG.info("Fixing up: %s", colorizer.quote(HorizonInstaller.HTTPD_CONF))
-        (user, group) = self._get_apache_user_group()
-        new_lines = []
-        for line in sh.load_file(HorizonInstaller.HTTPD_CONF).splitlines():
-            # Directives in the configuration files are case-insensitive,
-            # but arguments to directives are often case sensitive...
-            # NOTE(harlowja): we aren't handling multi-line fixups...
-            if re.match(r"^\s*User\s+(.*)$", line, re.I):
-                line = "User %s" % (user)
-            if re.match(r"^\s*Group\s+(.*)$", line, re.I):
-                line = "Group %s" % (group)
-            if re.match(r"^\s*Listen\s+(.*)$", line, re.I):
-                line = "Listen 0.0.0.0:80"
-            new_lines.append(line)
-        sh.write_file_and_backup(HorizonInstaller.HTTPD_CONF, utils.joinlinesep(*new_lines))
-
-    def _config_fixups(self):
-        self._config_fix_httpd()
-
-    def post_install(self):
-        horizon.HorizonInstaller.post_install(self)
-        self._config_fixups()
 
 
 class RabbitRuntime(rabbit.RabbitRuntime):
@@ -124,34 +74,3 @@ class RabbitRuntime(rabbit.RabbitRuntime):
     def restart(self):
         self._fix_log_dir()
         return rabbit.RabbitRuntime.restart(self)
-
-
-class NovaInstaller(nova.NovaInstaller):
-
-    def _get_policy(self, ident_users):
-        return utils.expand_template(LIBVIRT_POLICY_CONTENTS,
-                                     params={
-                                         'idents': (";".join(ident_users)),
-                                     })
-
-    def _get_policy_users(self):
-        ident_users = [
-            DEF_IDENT,
-            'unix-user:%s' % (sh.getuser()),
-        ]
-        return ident_users
-
-    def configure(self):
-        configs_made = nova.NovaInstaller.configure(self)
-        driver_canon = utils.canon_virt_driver(self.get_option('virt_driver'))
-        if driver_canon == 'libvirt':
-            # Create a libvirtd user group
-            if not sh.group_exists('libvirtd'):
-                cmd = ['groupadd', 'libvirtd']
-                sh.execute(cmd)
-            if not sh.isfile(LIBVIRT_POLICY_FN):
-                contents = self._get_policy(self._get_policy_users())
-                sh.mkdirslist(sh.dirname(LIBVIRT_POLICY_FN))
-                sh.write_file(LIBVIRT_POLICY_FN, contents)
-                configs_made += 1
-        return configs_made

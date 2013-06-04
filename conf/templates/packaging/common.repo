@@ -1,0 +1,10 @@
+[${repo_name}]
+name=${repo_name}
+baseurl=$baseurl_bin
+gpgcheck=0
+
+[${repo_name}-source]
+name=${repo_name} - source
+baseurl=$baseurl_src
+gpgcheck=0
+enabled=0

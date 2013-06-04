@@ -14,4 +14,11 @@ core_plugin: linuxbridge
 network_vlan_ranges: physnet1:100:299
 physical_interface_mappings: physnet1:100:299
 
+patches:
+  # After check-out/download time patches
+  download:
+    # Require kombu>=1.0.4. Original requirement kombu==1.0.4
+    # breaks yum
+    - "conf/patches/quantum/kombu-requirement.patch"
+
 ...

@@ -66,6 +66,8 @@ class NovaConfigurator(base.Configurator):
         hostip = self.installer.get_option('ip')
 
         nova_conf.add('verbose', self.installer.get_bool_option('log_verbose'))
+        nova_conf.add('state_path', '/var/lib/nova')
+        nova_conf.add('log_dir', '/var/log/nova')
 
         # Allow destination machine to match source for resize.
         nova_conf.add('allow_resize_to_same_host', True)
@@ -119,11 +121,7 @@ class NovaConfigurator(base.Configurator):
         nova_conf.add('checksum_base_images', self.installer.get_bool_option('checksum_base_images'))
 
         # Setup the interprocess locking directory (don't put me on shared storage)
-        lock_path = self.installer.get_option('lock_path')
-        if not lock_path:
-            lock_path = sh.joinpths(self.installer.get_option('component_dir'), 'locks')
-        sh.mkdirslist(lock_path, tracewriter=self.tracewriter)
-        nova_conf.add('lock_path', lock_path)
+        nova_conf.add('lock_path', '/var/lock/nova')
 
         # Vnc settings setup
         self._configure_vnc(nova_conf)
@@ -145,12 +143,6 @@ class NovaConfigurator(base.Configurator):
         # the VNC console, but it has the side effect of increasing
         # the CPU usage of an idle VM tenfold.
         nova_conf.add('use_usb_tablet', False)
-
-        # Where instances will be stored
-        instances_path = self.installer.get_option('instances_path')
-        if not instances_path:
-            instances_path = sh.joinpths(self.installer.get_option('component_dir'), 'instances')
-        self._configure_instances_path(instances_path, nova_conf)
 
         # Is this a multihost setup?
         self._configure_multihost(nova_conf)
@@ -292,7 +284,7 @@ class NovaConfigurator(base.Configurator):
 
         # Configs dhcp bridge stuff???
         # TODO(harlowja) why is this the same as the nova.conf?
-        nova_conf.add('dhcpbridge_flagfile', sh.joinpths(self.installer.get_option('cfg_dir'), API_CONF))
+        nova_conf.add('dhcpbridge_flagfile', sh.joinpths(self.installer.cfg_dir, API_CONF))
 
         # Network prefix for the IP network that all the projects for future VM guests reside on. Example: 192.168.0.0/12
         nova_conf.add('fixed_range', self.installer.get_option('fixed_range'))
@@ -319,15 +311,6 @@ class NovaConfigurator(base.Configurator):
         if self.installer.get_bool_option('multi_host'):
             nova_conf.add('multi_host', True)
             nova_conf.add('send_arp_for_ha', True)
-
-    # Ensures the place where instances will be is useable
-    def _configure_instances_path(self, instances_path, nova_conf):
-        nova_conf.add('instances_path', instances_path)
-        if not sh.isdir(instances_path):
-            LOG.debug("Attempting to create instance directory: %r", instances_path)
-            sh.mkdirslist(instances_path, tracewriter=self.tracewriter)
-            LOG.debug("Adjusting permissions of instance directory: %r", instances_path)
-            sh.chmod(instances_path, 0777)
 
     # Any special libvirt configurations go here
     def _configure_libvirt(self, virt_type, nova_conf):

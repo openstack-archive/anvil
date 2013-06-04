@@ -469,6 +469,8 @@ def write_file(fn, text, flush=True, quiet=False, tracewriter=None):
     if not is_dry_run():
         mkdirslist(dirname(fn), tracewriter=tracewriter)
         with open(fn, "w") as fh:
+            if isinstance(text, unicode):
+                text = text.encode("utf-8")
             fh.write(text)
             if flush:
                 fh.flush()

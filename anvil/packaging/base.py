@@ -123,7 +123,7 @@ class DependencyHandler(object):
                                 splitlines()[-1].strip())
         return python_names
 
-    def package(self):
+    def package_start(self):
         requires_files = []
         extra_pips = []
         for inst in self.instances:
@@ -137,6 +137,12 @@ class DependencyHandler(object):
         requires_files = filter(sh.isfile, requires_files)
         self.gather_pips_to_install(requires_files, extra_pips)
         self.clean_pip_requires(requires_files)
+
+    def package_instance(self, instance):
+        pass
+
+    def package_finish(self):
+        pass
 
     def install(self):
         for inst in self.instances:

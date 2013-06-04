@@ -54,6 +54,8 @@ class KeystoneConfigurator(base.Configurator):
         config.add_with_section('logger_root', 'handlers', "devel,production")
 
     def _config_adjust_root(self, config):
+        config.add('log_dir', '/var/log/keystone')
+        config.add('log_file', 'keystone-all.log')
         params = khelper.get_shared_params(**utils.merge_dicts(self.installer.options,
                                                                khelper.get_shared_passwords(self.installer)))
         config.add('admin_token', params['service_token'])
