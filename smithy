@@ -5,9 +5,21 @@ shopt -s nocasematch
 SMITHY_NAME=$(readlink -f "$0")
 cd "$(dirname "$0")"
 
+VERBOSE="${VERBOSE:-0}"
+PY2RPM_CMD="$PWD/tools/py2rpm"
+
 YUM_OPTS="--assumeyes --nogpgcheck"
 PIP_CMD=""
-PY2RPM_CMD="$PWD/tools/py2rpm"
+PIP_OPTS=""
+RPM_OPTS=""
+CURL_OPTS=""
+
+if [ "$VERBOSE" == "0" ]; then
+    YUM_OPTS="$YUM_OPTS -q"
+    PIP_OPTS="-q"
+    RPM_OPTS="-q"
+    CURL_OPTS="-s"
+fi
 
 # Source in our variables (or overrides)
 source ".anvilrc"
@@ -28,7 +40,7 @@ fi
 
 conflicts() {
     echo "Removing conflicting packages $(echo $@)"
-    yum erase -y $@
+    yum erase $YUM_OPTS $@
 }
 
 find_pip()
@@ -36,6 +48,7 @@ find_pip()
     if [ -n "$PIP_CMD" ]; then
         return
     fi
+    # Handle how RHEL likes to rename it.
     PIP_CMD=""
     for name in pip pip-python; do
         if which "$name" &>/dev/null; then
@@ -52,7 +65,7 @@ find_pip()
 rpm_is_installed()
 {
     local name="$(basename "$1")"
-    rpm -q "${name%.rpm}" &>/dev/null
+    rpm $RPM_OPTS "${name%.rpm}" &>/dev/null
 }
 
 cache_and_install_rpm_url()
@@ -64,8 +77,8 @@ cache_and_install_rpm_url()
         return
     fi
     if [ ! -f "$cachedir/$rpm" ]; then
-	echo "Downloading $rpm to $cachedir..."
-        curl -s $url -o "$cachedir/$rpm" || return 1
+        echo "Downloading $rpm to $cachedir..."
+        curl $CURL_OPTS $url -o "$cachedir/$rpm" || return 1
     fi
     install_rpm "$cachedir/$rpm"
     return $?
@@ -83,10 +96,15 @@ install_rpm()
     if [ -z "$py_name" ]; then
         return 1
     fi
+
     # RPM is not available. Try to build it on fly
+    # First download it.
     pip_tmp_dir=$(mktemp -d)
     find_pip
-    $PIP_CMD install -U -I $py_name --download "$pip_tmp_dir"
+    pip_opts="$PIP_OPTS -U -I"
+    $PIP_CMD install $pip_opts $py_name --download "$pip_tmp_dir"
+
+    # Now build it
     echo "Building RPM for $py_name"
     rpm_names=$("$PY2RPM_CMD" "$pip_tmp_dir/"* 2>/dev/null |
         awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)
@@ -109,14 +127,14 @@ bootstrap_packages()
 {
     [ -z "$PACKAGES" ] && return 0
     for pkg in $PACKAGES; do
-	local rpm_name=$(echo $pkg | cut -d: -f1)
+        local rpm_name=$(echo $pkg | cut -d: -f1)
         local py_name=$(echo $pkg | cut -d: -f2)
         install_rpm $rpm_name $py_name
         install_status=$?
-	if [ "$install_status" != 0 ]; then
+        if [ "$install_status" != 0 ]; then
             echo "Error: Installation of package '$rpm_name' failed!"
-	    return "$install_status"
-	fi
+            return "$install_status"
+        fi
     done
 }
 
