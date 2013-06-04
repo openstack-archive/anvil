@@ -14,10 +14,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import collections
 import datetime
-import sys
-
 import pkg_resources
+import sys
 
 from anvil import exceptions as excp
 from anvil import log as logging
@@ -71,34 +71,42 @@ class YumDependencyHandler(base.DependencyHandler):
         for pkg in yum_helper.Helper().get_available():
             for provides in pkg.provides:
                 yum_map.setdefault(provides[0], set()).add(
-                    (pkg.version, pkg.repo.id))
+                    (pkg.version, pkg.repo))
 
         nopips = [pkg_resources.Requirement.parse(name).key
                   for name in self.python_names]
+
         pips_to_download = []
         req_to_install = [pkg_resources.Requirement.parse(pkg)
                           for pkg in self.pips_to_install]
-        req_to_install = [
-            req for req in req_to_install if req.key not in nopips]
-        rpm_to_install = self._convert_names_python2rpm(
-            [req.key for req in req_to_install])
+        req_to_install = [req for req in req_to_install
+                          if req.key not in nopips]
+
+        requested_names = [req.key for req in req_to_install]
+        rpm_to_install = self._convert_names_python2rpm(requested_names)
+
         satisfied_list = []
-        for req, rpm_name in zip(req_to_install, rpm_to_install):
+        for (req, rpm_name) in zip(req_to_install, rpm_to_install):
             yum_versions = yum_map.get(rpm_name, [])
             satisfied = False
-            for (version, repo_id) in yum_versions:
+            for (version, repo) in yum_versions:
                 if version in req:
                     satisfied = True
-                    satisfied_list.append(
-                        "%s as %s-%s from %s" %
-                        (req, rpm_name, version, repo_id))
+                    satisfied_list.append((req, rpm_name, version, repo))
                     break
             if not satisfied:
                 pips_to_download.append(str(req))
+
         if satisfied_list:
-            utils.log_iterable(
-                sorted(satisfied_list), logger=LOG,
-                header="These Python packages are already available as RPMs")
+            # Organize by repo
+            repos = collections.defaultdict(list)
+            for (req, rpm_name, version, repo) in satisfied_list:
+                repos[repo].append("%s as %s-%s" % (req, rpm_name, version))
+            for r in sorted(repos.keys()):
+                header = ("%s Python packages are already available "
+                          "as RPMs from repository %s")
+                utils.log_iterable(sorted(repos[r]), logger=LOG,
+                                   header=header % (len(repos[r]), r))
         return pips_to_download
 
     def _write_all_deps_package(self):
