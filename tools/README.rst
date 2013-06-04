@@ -12,27 +12,23 @@ multipip
 Use `multipip` to join these requirements::
     
     $ multipip 'nose>=1.2' 'nose>=2' 'nose<4'
-    nose>=2,<4
+    {"compatibles": ["nose>=2,<4"], "incompatibles": {}}
 
 Files of requirements can be used as well::
 
     $ cat pip-requires 
     nose<4
     $ multipip 'nose>=1.2' 'nose>=2' -r pip-requires 
-    nose>=2,<4
+    {"compatibles": ["nose>=2,<4"], "incompatibles": {}}
 
-`multipip` prints error messages for incompatible requirements to
-stderr and chooses the first one::
+`multipip` prints error messages for badly formated requirements and exits early
+and for incompatible requirements provides you which package was incompatible
+and which versions were found to be problematic::
 
     $ cat pip-requires 
     pip==1.3
     $ multipip 'pip==1.2' -r pip-requires 
-    pip: incompatible requirements
-    Choosing:
-    	command line: pip==1.2
-    Conflicting:
-    	-r pip-requires (line 1): pip==1.3
-    pip==1.2
+    {"compatibles": [], "incompatibles": {"pip": ["pip==1.2", "pip==1.3"]}}
     
 It is possible to filter some packages from printed output. This can
 be useful for a huge `pip-requires` file::
@@ -42,7 +38,7 @@ be useful for a huge `pip-requires` file::
     pip==1.2
     nose>=1.2
     $ multipip -r pip-requires --ignore-packages nose
-    pip==1.2
+    {"compatibles": ["pip==1.2"], "incompatibles": {}}
 
 Installed packages can be filtered, too (they are taken from `pip
 freeze`)::
@@ -54,8 +50,8 @@ freeze`)::
     $ pip freeze | grep nose
     nose==1.1.2
     $ multipip -r pip-requires --ignore-installed
-    pip==1.2
-    
+    {"compatibles": ["pip==1.2"], "incompatibles": {}}
+
 py2rpm
 ------
 
