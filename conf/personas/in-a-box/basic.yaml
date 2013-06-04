@@ -47,7 +47,6 @@ subsystems:
     - compute
     - conductor
     - consoleauth
-    - dhcpbridge
     - network
     - novncproxy
     - scheduler
@@ -57,4 +56,3 @@ subsystems:
 supports:
 - rhel
 ...
-

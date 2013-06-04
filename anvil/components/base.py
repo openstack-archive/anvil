@@ -50,6 +50,7 @@ class Component(object):
         self.passwords = passwords
 
         self.bin_dir = "/usr/bin"
+        self.cfg_dir = "/etc/%s" % self.name
 
     def get_password(self, option):
         pw_val = self.passwords.get(option)
@@ -90,7 +91,6 @@ class Component(object):
         return {
             'APP_DIR': self.get_option('app_dir'),
             'COMPONENT_DIR': self.get_option('component_dir'),
-            'CONFIG_DIR': self.get_option('cfg_dir'),
             'TRACE_DIR': self.get_option('trace_dir'),
         }
 

@@ -21,6 +21,11 @@ dependency_handler:
     arch_dependent:
     -   selenium
 commands:
+    service:
+        restart: service NAME restart
+        start: service NAME start
+        status: service NAME status
+        stop: service NAME stop
     apache:
         name: httpd
         restart: service httpd restart
@@ -62,12 +67,14 @@ components:
     cinder:
         action_classes:
             install: anvil.components.cinder:CinderInstaller
-            running: anvil.components.cinder:CinderRuntime
+            running: anvil.components.base_runtime:PythonRuntime
             test: anvil.components.base_testing:PythonTestingComponent
             coverage: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
         pips:
             - name: hp3parclient
+        daemon_to_package:
+            all: openstack-cinder
     cinder-client:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
@@ -90,51 +97,18 @@ components:
             test: anvil.components.base_testing:EmptyTestingComponent
             uninstall: anvil.components.pkglist:Uninstaller
         packages:
-        # Shared system packages
-        -   name: coreutils
-            removable: false
-        -   name: curl
-            removable: false
-        -   name: dnsmasq-utils
-            removable: false
-        -   name: gawk
-            removable: false
-        -   name: git
-            removable: false
-        -   name: iputils
-            removable: false
-        # Needed to build the newer lxml
+        # Build time dependencies
         -   name: libxml2-devel
             removable: false
         -   name: libxslt-devel
             removable: false
-        -   name: lsof
+        -   name: mysql-devel
             removable: false
-        -   name: mlocate
+        -   name: postgresql-devel
             removable: false
-        -   name: openssh-server
+        -   name: openldap-devel
             removable: false
-        -   name: psmisc
-            removable: false
-        # Needed to build a newer pysqlite
         -   name: sqlite-devel
-            removable: false
-        -   name: sudo
-            removable: false
-        -   name: tcpdump
-            removable: false
-        -   name: unzip
-            removable: false
-        -   name: wget
-            removable: false
-        # Shared python packages
-        -   name: python
-            removable: false
-        -   name: python-devel
-            removable: false
-        -   name: python-distutils-extra
-            removable: false
-        -   name: python-setuptools
             removable: false
         # these packages conflict with our deps and must be removed
         nopackages:
@@ -150,14 +124,16 @@ components:
             running: anvil.components.glance:GlanceRuntime
             test: anvil.components.glance:GlanceTester
             uninstall: anvil.components.base_install:PkgUninstallComponent
-        packages:
-        -   name: MySQL-python
         pips:
         # warlock requires jsonschema>=0.7,<2
         # pip downloads jsonschema-2.0 and
         # then ignores warlock's requirement
         -   name: jsonschema
             version: ">=0.7,<2"
+        daemon_to_package:
+            api: openstack-glance
+            registry: openstack-glance
+            scrubber: openstack-glance
     glance-client:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
@@ -170,10 +146,6 @@ components:
             running: anvil.components.horizon:HorizonRuntime
             test: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.horizon:HorizonUninstaller
-        packages:
-        -   name: httpd
-        -   name: mod_wsgi
-        -   name: nodejs
     django-openstack-auth:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
@@ -186,8 +158,8 @@ components:
             running: anvil.components.keystone:KeystoneRuntime
             test: anvil.components.keystone:KeystoneTester
             uninstall: anvil.components.base_install:PkgUninstallComponent
-        packages:
-        -   name: MySQL-python
+        daemon_to_package:
+            all: openstack-keystone
     keystone-client:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
@@ -200,26 +172,6 @@ components:
             running: anvil.components.nova:NovaRuntime
             test: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.nova:NovaUninstaller
-        packages:
-        -   name: MySQL-python
-        # Helpful utilities/core
-        # system requirements
-        -   name: dnsmasq
-            removable: false
-        -   name: ebtables
-            removable: false
-        -   name: iptables
-            removable: false
-        -   name: iputils
-            removable: false
-        -   name: kpartx
-            removable: false
-        -   name: parted
-            removable: false
-        -   name: sqlite
-            removable: false
-        -   name: vconfig
-            removable: false
         pips:
         # This seems to be a core dependency for a 'cas' tool
         # so don't try to remove it since it will also remove
@@ -227,58 +179,26 @@ components:
         # installed in rhel uses a old version of crypto which
         # other components actually can't use. This sucks...
         -   name: paramiko
-        subsystems:
-            compute:
-                packages:
-                -   name: avahi
-                    removable: false
-                -   name: fuse # Needed for mounting
-                    removable: false
-                -   name: guestfish
-                    removable: false
-                -   name: iscsi-initiator-utils
-                    removable: false
-                -   name: libguestfs
-                    removable: false
-                -   name: libguestfs-mount
-                    removable: false
-                -   name: libguestfs-tools
-                    removable: false
-                -   name: libvirt
-                    removable: false
-                -   name: libvirt-client
-                    removable: false
-                -   name: libvirt-python
-                    removable: false
-                -   name: postgresql-devel # for psycopg2
-                    removable: false
-                -   name: qemu-img
-                    removable: false
-                -   name: qemu-kvm
-                    removable: false
-            volume:
-                packages:
-                -   name: iscsi-initiator-utils
-                    removable: false
-                -   name: lvm2
-                    removable: false
-                -   name: scsi-target-utils
-                    removable: false
+        daemon_to_package:
+            api-metadata: openstack-nova-api
+            api-ec2: openstack-nova-api
+            api-os-compute: openstack-nova-api
+            dhcpbridge: openstack-nova-network
+            xvpvncproxy: openstack-nova-console
+            spicehtml5proxy: openstack-nova-console
+            consoleauth: openstack-nova-console
     nova-client:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
-    no-vnc:
+    novnc:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
             running: anvil.components.novnc:NoVNCRuntime
             test: anvil.components.base_testing:EmptyTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
-        packages:
-        -   name: python-websockify
-        -   name: numpy
     openstack-client:
         action_classes:
             install: anvil.components.openstack_client:OpenStackClientInstaller
@@ -300,10 +220,18 @@ components:
     quantum:
         action_classes:
             install: anvil.components.quantum:QuantumInstaller
-            running: anvil.components.quantum:QuantumRuntime
+            running: anvil.components.base_runtime:PythonRuntime
             test: anvil.components.base_testing:PythonTestingComponent
             coverage: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
+        daemon_to_package:
+            linuxbridge-agent: openstack-quantum-linuxbridge
+            openvswitch-agent: openstack-quantum-openvswitch
+            ovs-cleanup: openstack-quantum-openvswitch
+            dhcp-agent: openstack-quantum
+            l3-agent: openstack-quantum
+            rpc-zmq-receiver: openstack-quantum
+            server: openstack-quantum
     quantum-client:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent

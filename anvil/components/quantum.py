@@ -16,17 +16,15 @@
 
 from anvil import colorizer
 from anvil import log as logging
-from anvil import shell as sh
 
 from anvil.components import base_install as binstall
-from anvil.components import base_runtime as bruntime
 
 from anvil.components.configurators import quantum as qconf
 LOG = logging.getLogger(__name__)
 
 # Sync db command
 # FIXME(aababilov)
-SYNC_DB_CMD = [sh.joinpths("$BIN_DIR", "quantum-db-manage"),
+SYNC_DB_CMD = ["/usr/bin/quantum-db-manage",
                "sync"]
 
 
@@ -46,41 +44,3 @@ class QuantumInstaller(binstall.PythonInstallComponent):
         #cmds = [{"cmd": SYNC_DB_CMD}]
         #utils.execute_template(*cmds, cwd=self.bin_dir,
         # params=self.config_params(None))
-
-    def config_params(self, config_fn):
-        # These be used to fill in the configuration params
-        mp = super(QuantumInstaller, self).config_params(config_fn)
-        mp["BIN_DIR"] = self.bin_dir
-        return mp
-
-
-class QuantumRuntime(bruntime.PythonRuntime):
-
-    system = "quantum"
-
-    def __init__(self, *args, **kargs):
-        super(QuantumRuntime, self).__init__(*args, **kargs)
-
-        self.config_path = sh.joinpths(self.get_option("cfg_dir"), qconf.API_CONF)
-
-    # TODO(aababilov): move to base class
-    @property
-    def applications(self):
-        apps = []
-        for (name, _values) in self.subsystems.items():
-            name = "%s-%s" % (self.system, name.lower())
-            path = sh.joinpths(self.bin_dir, name)
-            if sh.is_executable(path):
-                apps.append(bruntime.Program(
-                    name, path, argv=self._fetch_argv(name)))
-        return apps
-
-    def app_params(self, program):
-        params = bruntime.PythonRuntime.app_params(self, program)
-        params["CFG_FILE"] = self.config_path
-        return params
-
-    def _fetch_argv(self, name):
-        return [
-            "--config-file", "$CFG_FILE",
-        ]

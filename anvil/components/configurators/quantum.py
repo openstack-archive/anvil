@@ -128,6 +128,9 @@ class QuantumConfigurator(base.Configurator):
 
         self.setup_rpc(config, 'quantum.openstack.common.rpc.impl_kombu')
 
+        config.current_section = "AGENT"
+        config.add("root_helper", "sudo quantum-rootwrap /etc/quantum/rootwrap.conf")
+
         config.current_section = "keystone_authtoken"
         for (k, v) in self._fetch_keystone_params().items():
             config.add(k, v)

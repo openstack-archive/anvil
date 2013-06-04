@@ -122,10 +122,8 @@ class Action(object):
         component_dir = sh.joinpths(self.root_dir, component)
         trace_dir = sh.joinpths(component_dir, 'traces')
         app_dir = sh.joinpths(component_dir, 'app')
-        cfg_dir = sh.joinpths(component_dir, 'config')
         return {
             'app_dir': app_dir,
-            'cfg_dir': cfg_dir,
             'component_dir': component_dir,
             'root_dir': self.root_dir,
             'trace_dir': trace_dir,

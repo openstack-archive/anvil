@@ -35,13 +35,13 @@ NET_INITED_FN = 'nova.network.inited.yaml'
 
 # This makes the database be in sync with nova
 DB_SYNC_CMD = [
-    {'cmd': ['$BIN_DIR/nova-manage', '--config-file', '$CFG_FILE', 'db', 'sync']},
+    {'cmd': ['/usr/bin/nova-manage', 'db', 'sync']},
 ]
 
 # Used to create a fixed network when initializating nova
 FIXED_NET_CMDS = [
     {
-        'cmd': ['$BIN_DIR/nova-manage', '--config-file', '$CFG_FILE',
+        'cmd': ['/usr/bin/nova-manage',
                 'network', 'create', 'private', '$FIXED_RANGE', '1', '$FIXED_NETWORK_SIZE'],
     },
 ]
@@ -49,10 +49,10 @@ FIXED_NET_CMDS = [
 # Used to create a floating network + test floating pool
 FLOATING_NET_CMDS = [
     {
-        'cmd': ['$BIN_DIR/nova-manage', '--config-file', '$CFG_FILE', 'floating', 'create', '$FLOATING_RANGE'],
+        'cmd': ['/usr/bin/nova-manage', 'floating', 'create', '$FLOATING_RANGE'],
     },
     {
-        'cmd': ['$BIN_DIR/nova-manage', '--config-file', '$CFG_FILE',
+        'cmd': ['/usr/bin/nova-manage',
                 'floating', 'create', '--ip_range=$TEST_FLOATING_RANGE', '--pool=$TEST_FLOATING_POOL'],
     },
 ]
@@ -138,8 +138,7 @@ class NovaInstaller(binstall.PythonInstallComponent):
 
     def config_params(self, config_fn):
         mp = binstall.PythonInstallComponent.config_params(self, config_fn)
-        mp['CFG_FILE'] = sh.joinpths(self.get_option('cfg_dir'), nconf.API_CONF)
-        mp['BIN_DIR'] = self.bin_dir
+        mp['CFG_FILE'] = sh.joinpths(self.cfg_dir, nconf.API_CONF)
         return mp
 
 
@@ -148,7 +147,7 @@ class NovaRuntime(bruntime.PythonRuntime):
         bruntime.PythonRuntime.__init__(self, *args, **kargs)
         self.wait_time = self.get_int_option('service_wait_seconds')
         self.virsh = lv.Virsh(self.wait_time, self.distro)
-        self.config_path = sh.joinpths(self.get_option('cfg_dir'), nconf.API_CONF)
+        self.config_path = sh.joinpths(self.cfg_dir, nconf.API_CONF)
         self.net_init_fn = sh.joinpths(self.get_option('trace_dir'), NET_INITED_FN)
 
     def _do_network_init(self):
@@ -158,9 +157,7 @@ class NovaRuntime(bruntime.PythonRuntime):
             cmds = []
             mp = {
                 'CFG_FILE': self.config_path,
-                'BIN_DIR': self.bin_dir
             }
-            mp['BIN_DIR'] = self.bin_dir
             if self.get_bool_option('enable_fixed'):
                 # Create a fixed network
                 mp['FIXED_NETWORK_SIZE'] = self.get_option('fixed_network_size', default_value='256')
@@ -187,16 +184,6 @@ class NovaRuntime(bruntime.PythonRuntime):
     def post_start(self):
         self._do_network_init()
 
-    @property
-    def applications(self):
-        apps = []
-        for (name, _values) in self.subsystems.items():
-            name = "nova-%s" % (name.lower())
-            path = sh.joinpths(self.bin_dir, name)
-            if sh.is_executable(path):
-                apps.append(bruntime.Program(name, path, argv=self._fetch_argv(name)))
-        return apps
-
     def pre_start(self):
         # Let the parent class do its thing
         bruntime.PythonRuntime.pre_start(self)
@@ -218,8 +205,3 @@ class NovaRuntime(bruntime.PythonRuntime):
         params = bruntime.PythonRuntime.app_params(self, program)
         params['CFG_FILE'] = self.config_path
         return params
-
-    def _fetch_argv(self, name):
-        return [
-            '--config-file', '$CFG_FILE',
-        ]
