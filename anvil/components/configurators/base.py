@@ -41,14 +41,6 @@ class Configurator(object):
         return list(self.configs)
 
     @property
-    def symlinks(self):
-        links = {}
-        for fn in self.config_files:
-            source_fn = self.target_config(fn)
-            links[source_fn] = [sh.joinpths(self.link_dir, fn)]
-        return links
-
-    @property
     def link_dir(self):
         link_dir_base = self.installer.distro.get_command_config('base_link_dir')
         return sh.joinpths(link_dir_base, self.installer.name)
@@ -82,7 +74,7 @@ class Configurator(object):
         return contents
 
     def target_config(self, config_fn):
-        return sh.joinpths(self.installer.get_option('cfg_dir'), config_fn)
+        return sh.joinpths(self.installer.cfg_dir, config_fn)
 
     def setup_rpc(self, conf, rpc_backend=None):
         # How is your message queue setup?

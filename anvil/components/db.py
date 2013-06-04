@@ -16,7 +16,6 @@
 
 from anvil import colorizer
 from anvil import log as logging
-from anvil import shell as sh
 from anvil import utils
 
 from anvil.components import base_install as binstall
@@ -136,58 +135,6 @@ class DBInstaller(binstall.PkgInstallComponent):
 
 
 class DBRuntime(bruntime.ProgramRuntime):
-    def _get_command(self, action):
-        db_type = self.get_option("type")
-        distro_options = self.distro.get_command_config(db_type)
-        if distro_options is None:
-            raise NotImplementedError(BASE_ERROR % (action, db_type))
-        return self.distro.get_command(db_type, action)
-
     @property
     def applications(self):
-        db_type = self.get_option("type")
-        return [
-            bruntime.Program(db_type),
-        ]
-
-    def _run_action(self, action, check_exit_code=True):
-        cmd = self._get_command(action)
-        if not cmd:
-            raise NotImplementedError("No distro command provided to perform action %r" % (action))
-        return sh.execute(cmd, check_exit_code=check_exit_code)
-
-    def start(self):
-        if self.statii()[0].status != bruntime.STATUS_STARTED:
-            self._run_action('start')
-            return 1
-        else:
-            return 0
-
-    def stop(self):
-        if self.statii()[0].status != bruntime.STATUS_STOPPED:
-            self._run_action('stop')
-            return 1
-        else:
-            return 0
-
-    def restart(self):
-        LOG.info("Restarting your database.")
-        self._run_action('restart')
-        return 1
-
-    def statii(self):
-        (sysout, stderr) = self._run_action('status', False)
-        combined = (sysout + stderr).lower()
-        st = bruntime.STATUS_UNKNOWN
-        if combined.find("running") != -1:
-            st = bruntime.STATUS_STARTED
-        elif utils.has_any(combined, 'stop', 'unrecognized'):
-            st = bruntime.STATUS_STOPPED
-        return [
-            bruntime.ProgramStatus(name=self.applications[0].name,
-                               status=st,
-                               details={
-                                   'STDOUT': sysout,
-                                   'STDERR': stderr,
-                               }),
-        ]
+        return [self.distro.get_command(self.get_option("type"), "daemon")[0]]

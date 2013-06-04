@@ -117,6 +117,8 @@ class QuantumConfigurator(base.Configurator):
         config.add("api_paste_config", self.target_config(PASTE_CONF))
         # TODO(aababilov): add debug to other services conf files
         config.add('debug', self.installer.get_bool_option("debug"))
+        config.add("log_file", "quantum-server.log")
+        config.add("log_dir", "/var/log/quantum")
 
         # Setup the interprocess locking directory
         # (don't put me on shared storage)
@@ -127,6 +129,9 @@ class QuantumConfigurator(base.Configurator):
         config.add('lock_path', lock_path)
 
         self.setup_rpc(config, 'quantum.openstack.common.rpc.impl_kombu')
+
+        config.current_section = "AGENT"
+        config.add("root_helper", "sudo quantum-rootwrap /etc/quantum/rootwrap.conf")
 
         config.current_section = "keystone_authtoken"
         for (k, v) in self._fetch_keystone_params().items():

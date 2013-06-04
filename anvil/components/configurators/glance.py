@@ -56,7 +56,6 @@ class GlanceConfigurator(base.Configurator):
         config.add('debug', self.installer.get_bool_option('verbose'))
         config.add('verbose', self.installer.get_bool_option('verbose'))
         config.add('sql_connection', self.fetch_dbdsn())
-        config.remove('DEFAULT', 'log_file')
         config.add_with_section('paste_deploy', 'flavor', self.installer.get_option('paste_flavor'))
         for (k, v) in self._fetch_keystone_params().items():
             config.add_with_section('keystone_authtoken', k, v)
@@ -66,13 +65,8 @@ class GlanceConfigurator(base.Configurator):
         gparams = ghelper.get_shared_params(**self.installer.options)
         config.add('bind_port', gparams['endpoints']['public']['port'])
 
-        config.add( 'default_store', 'file')
-        img_store_dir = sh.joinpths(self.installer.get_option('component_dir'), 'images')
-        config.add('filesystem_store_datadir', img_store_dir)
-        LOG.debug("Ensuring file system store directory %r exists and is empty." % (img_store_dir))
-        if sh.isdir(img_store_dir):
-            sh.deldir(img_store_dir)
-        sh.mkdirslist(img_store_dir, tracewriter=self.installer.tracewriter)
+        config.add('default_store', 'file')
+        config.add('filesystem_store_datadir', "/var/lib/glance/images")
 
     def _config_adjust_reg(self, config):
         self._config_adjust_api_reg(config)

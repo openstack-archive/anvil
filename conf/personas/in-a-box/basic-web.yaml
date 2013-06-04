@@ -16,19 +16,20 @@ components:
 - swift-client # Seems only needed for horizon?
 - quantum
 - cinder
-- no-vnc
+- novnc
 - nova
 - nova-client
 - django-openstack-auth
 - horizon
 options:
-    no-vnc:
+    novnc:
         # This is the nova component name (we need this to hook into the nova conf...)
         nova-component: nova
     nova:
         db-sync: true
         do-network-init: true
         mq-type: rabbit
+        local-conductor: false
         quantum-enabled: true
         quantum-core-plugin: linuxbridge
     glance:
@@ -51,22 +52,20 @@ subsystems:
     keystone:
     - all
     nova:
-    - api-ec2
-    - api-metadata
-    - api-os-compute
+    - api
     - cert
     - compute
+    - conductor
     - consoleauth
-    - dhcpbridge
     - network
     - novncproxy
     - scheduler
     - xvpvncproxy
     quantum:
     - server
+    - linuxbridge-agent
     cinder:
     - all
 supports:
 - rhel
 ...
-
