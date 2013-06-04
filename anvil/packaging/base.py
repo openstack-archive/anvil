@@ -18,9 +18,11 @@
 # R0921: Abstract class not referenced
 #pylint: disable=R0902,R0921
 
+import json
 import pkg_resources
 
 from anvil import colorizer
+from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
@@ -149,7 +151,7 @@ class DependencyHandler(object):
                     req = pkg_resources.Requirement.parse(line)
                     new_lines.append(str(forced_by_key[req.key]))
                 except:
-                    # we don't force the package or it has a bad format
+                    # We don't force the package or it has a bad format
                     new_lines.append(line)
             contents = "# Cleaned on %s\n\n%s\n" % (
                 utils.iso8601(), "\n".join(new_lines))
@@ -171,34 +173,46 @@ class DependencyHandler(object):
         ]
         cmdline = cmdline + extra_pips + ["-r"] + requires_files
 
-        output = sh.execute(cmdline, check_exit_code=False)
-        conflict_descr = output[1].strip()
+        output = sh.execute(cmdline)
+        contents = json.loads(output[0])
+
+        # Figure out which ones were easily matched.
+        self.pips_to_install = []
+        for pkg in contents.get('compatibles', []):
+            if pkg.lower() not in OPENSTACK_PACKAGES:
+                self.pips_to_install.append(pkg)
+
+        # Figure out which ones we are forced to install.
         forced_keys = set()
-        if conflict_descr:
-            for line in conflict_descr.splitlines():
-                LOG.warning(line)
-                if line.endswith(": incompatible requirements"):
-                    forced_keys.add(line.split(":", 1)[0].lower())
-        self.pips_to_install = [
-            pkg
-            for pkg in utils.splitlines_not_empty(output[0])
-            if pkg.lower() not in OPENSTACK_PACKAGES]
-        sh.write_file(self.gathered_requires_filename,
-                      "\n".join(self.pips_to_install))
+        for (k, req_list) in contents.get('incompatibles', {}):
+            forced_keys.add(k.lower())
+            # Select the first.
+            if req_list and req_list[0] not in self.pips_to_install:
+                self.pips_to_install.append(req_list[0])
+
         if not self.pips_to_install:
-            LOG.error("No dependencies for OpenStack found."
+            LOG.error("No dependencies for OpenStack found. "
                       "Something went wrong. Please check:")
             LOG.error("'%s'" % "' '".join(cmdline))
-            raise RuntimeError("No dependencies for OpenStack found")
+            raise excp.AnvilException("No dependencies for OpenStack found!")
 
         utils.log_iterable(sorted(self.pips_to_install),
                            logger=LOG,
-                           header="Full known Python dependency list")
+                           header="Python dependency list (all)")
+        sh.write_file(self.gathered_requires_filename,
+                      "\n".join(self.pips_to_install))
+
         self.forced_packages = []
-        for pip in self.pips_to_install:
-            req = pkg_resources.Requirement.parse(pip)
-            if req.key in forced_keys:
-                self.forced_packages.append(req)
+        for k in forced_keys:
+            for pip in self.pips_to_install:
+                req = pkg_resources.Requirement.parse(pip)
+                if req.key == k:
+                    self.forced_packages.append(req)
+                    break
+        if self.forced_packages:
+            utils.log_iterable(sorted(self.forced_packages),
+                               logger=LOG,
+                               header="Python dependency list (forced)")
         sh.write_file(self.forced_requires_filename,
                       "\n".join(str(req) for req in self.forced_packages))
 
