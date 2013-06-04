@@ -16,13 +16,13 @@ components:
 - swift-client # Seems only needed for horizon?
 - quantum
 - cinder
-- no-vnc
+- novnc
 - nova
 - nova-client
 - django-openstack-auth
 - horizon
 options:
-    no-vnc:
+    novnc:
         # This is the nova component name (we need this to hook into the nova conf...)
         nova-component: nova
     nova:

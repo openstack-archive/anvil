@@ -23,11 +23,17 @@ logger = logging.getLogger()
 package_map = {
     "django": "Django",
     "distribute": "python-setuptools",
+    "mysql-python": "MySQL-python",
     "pam": "python-pam",
+    "pastedeploy": "python-paste-deploy",
     "pycrypto": "python-crypto",
+    "pyflakes": "pyflakes",
+    "pylint": "pylint",
+    "pyopenssl": "pyOpenSSL",
+    "pyparsing": "pyparsing",
+    "pysendfile": "pysendfile",
+    "pytz": "pytz",
 }
-
-package_names = {}
 
 arch_dependent = [
     "selenium",
@@ -208,14 +214,6 @@ def package_name_python2rpm(python_name):
         prefixed_name = python_name
     else:
         prefixed_name = "python-%s" % python_name
-    try:
-        return package_names[prefixed_name]
-    except:
-        pass
-    try:
-        return package_names[python_name]
-    except:
-        pass
     return prefixed_name
 
 
@@ -370,19 +368,6 @@ def setup_logging(options):
     handler = logging.StreamHandler(sys.stderr)
     logger.addHandler(handler)
     logger.setLevel(level)
-
-
-def build_name_map():
-    cmdline = ["yum", "list", "-q"]
-    try:
-        yum_list = call_subprocess(cmdline, show_stdout=False)[0]
-    except Exception as ex:
-        logging.warning(str(ex))
-        return
-    for line in yum_list.split("\n")[1:]:
-        if line:
-            line = line.split(None, 1)[0].split(".", 1)[0]
-            package_names[line.lower()] = line
 
 
 def build_epoch_map(options):
@@ -574,7 +559,6 @@ def main():
     parser = create_parser()
     options = parser.parse_args()
     setup_logging(options)
-    build_name_map()
     build_epoch_map(options)
 
     if options.convert:

@@ -1,0 +1,35 @@
+.TH nova-novncproxy 1  "June 8, 2012" "version 0.3" "USER COMMANDS"
+
+.SH NAME
+nova-novncproxy | noVNC proxy for Openstack Nova
+.SH SYNOPSIS
+.B nova-novncproxy [options]
+
+.SH OPTIONS
+.TP
+record : Record sessions to FILE.[session_number]
+.TP
+daemon : Become a daemon (background process)
+.TP
+ssl_only : Disallow non-encrypted connections'),
+.TP
+source_is_ipv6 : Source is ipv6
+.TP
+cert : SSL certificate file
+.TP
+key : SSL key file (if separate from cert)
+.TP
+web : Run webserver on same port. Serve files from DIR.
+.TP
+novncproxy_host : Host on which to listen for incoming requests.  
+			defaults to ='0.0.0.0'
+.TP
+novncproxy_port: Port on which to listen for incoming requests
+               defaults to 6080
+
+
+.SH AUTHOR
+Joel Martin (github@martintribe.org)
+
+.SH SEE ALSO
+websockify(1)

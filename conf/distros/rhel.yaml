@@ -254,7 +254,7 @@ components:
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
-    no-vnc:
+    novnc:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
             running: anvil.components.novnc:NoVNCRuntime

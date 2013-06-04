@@ -1,0 +1,150 @@
+%global python_name keystone
+%global daemon_prefix openstack-keystone
+
+%if ! (0%{?fedora} > 12 || 0%{?rhel} > 5)
+%{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
+%endif
+
+Name:           openstack-keystone
+Epoch:          1
+Version:        $version
+Release:        1%{?dist}
+Url:            http://www.openstack.org
+Summary:        Openstack Identity Service
+License:        Apache 2.0
+Vendor:         Openstack Foundation
+Group:          Applications/System
+
+Source0:        %{python_name}-%{version}.tar.gz
+Source1:        openstack-keystone.init
+
+BuildRoot:        %{_tmppath}/%{name}-%{version}-%{release}
+
+BuildArch:        noarch
+BuildRequires:    python-devel
+BuildRequires:    python-setuptools
+BuildRequires:    intltool
+
+Requires(post):   chkconfig
+Requires(postun): initscripts
+Requires(preun):  chkconfig
+Requires(pre):    shadow-utils
+Requires:         python-keystone = %{epoch}:%{version}-%{release}
+Requires:         start-stop-daemon
+
+%description
+Keystone is a Python implementation of the OpenStack
+(http://www.openstack.org) identity service API.
+
+This package contains the Keystone daemon.
+
+
+%if 0%{?with_doc}
+
+%package doc
+Summary:          Documentation for %{name}
+Group:            Documentation
+Requires:         %{name} = %{epoch}:%{version}-%{release}
+
+%description doc
+Keystone is a Python implementation of the OpenStack
+(http://www.openstack.org) identity service API.
+
+This package contains documentation for Keystone.
+
+%endif
+
+
+%package -n     python-keystone
+Summary:        Keystone Python libraries
+Group:          Development/Languages/Python
+
+#for $i in $requires
+${i}
+#end for
+
+%description -n  python-keystone
+Keystone is a Python implementation of the OpenStack
+(http://www.openstack.org) identity service API.
+
+This package contains the Keystone Python library.
+
+#raw
+%prep
+%setup -q -n %{python_name}-%{version}
+
+
+%build
+python setup.py build
+
+
+%install
+%__rm -rf %{buildroot}
+
+%if 0%{?with_doc}
+export PYTHONPATH="$PWD:$PYTHONPATH"
+
+pushd doc
+sphinx-build -b html source build/html
+popd
+
+# Fix hidden-file-or-dir warnings
+rm -fr doc/build/html/.doctrees doc/build/html/.buildinfo
+%endif
+
+python setup.py install --prefix=%{_prefix} --root=%{buildroot}
+
+install -d -m 755 %{buildroot}%{_sysconfdir}/keystone
+install -m 644 etc/* %{buildroot}%{_sysconfdir}/keystone
+
+install -d -m 755 %{buildroot}%{_sharedstatedir}/keystone
+install -d -m 755 %{buildroot}%{_localstatedir}/log/keystone
+install -d -m 755 %{buildroot}%{_localstatedir}/run/keystone
+
+install -p -D -m 755 %{SOURCE1} %{buildroot}%{_initrddir}/openstack-keystone
+
+%__rm -rf %{buildroot}%{py_sitelib}/{doc,tools}
+
+
+%clean
+%__rm -rf %{buildroot}
+
+
+%pre
+getent passwd keystone >/dev/null || \
+useradd -r -g nobody -G nobody -d %{_sharedstatedir}/keystone -s /sbin/nologin \
+-c "OpenStack Keystone Daemon" keystone
+exit 0
+
+
+%preun
+if [ $1 = 0 ] ; then
+    /sbin/service keystone stop
+    /sbin/chkconfig --del keystone
+fi
+
+
+%files
+%defattr(-,root,root,-)
+%doc README.rst HACKING.rst LICENSE
+%{_usr}/bin/*
+%config(noreplace) %{_sysconfdir}/keystone
+%dir %attr(0755, keystone, nobody) %{_sharedstatedir}/keystone
+%dir %attr(0755, keystone, nobody) %{_localstatedir}/log/keystone
+%dir %attr(0755, keystone, nobody) %{_localstatedir}/run/keystone
+%{_sysconfdir}/rc.d/init.d/*
+
+%if 0%{?with_doc}
+%files doc
+%defattr(-,root,root,-)
+%doc doc
+%endif
+
+%files -n python-keystone
+%defattr(-,root,root,-)
+%doc LICENSE
+%{python_sitelib}/*
+
+
+%changelog
+#endraw

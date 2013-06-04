@@ -14,17 +14,16 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import collections
 import datetime
-import pkg_resources
 import sys
 
-from anvil import exceptions as excp
+import pkg_resources
+
 from anvil import log as logging
 from anvil.packaging import base
 from anvil.packaging.helpers import yum_helper
+from anvil import settings
 from anvil import shell as sh
-from anvil import trace as tr
 from anvil import utils
 
 
@@ -46,75 +45,113 @@ class YumInstallHelper(base.InstallHelper):
 class YumDependencyHandler(base.DependencyHandler):
     OPENSTACK_DEPS_PACKAGE_NAME = "openstack-deps"
     OPENSTACK_EPOCH = 2
+    SPEC_TEMPLATE_DIR = "packaging/specs"
+    API_NAMES = {
+        "nova": "Compute",
+        "glance": "Image",
+        "keystone": "Identity",
+        "cinder": "Volume",
+        "quantum": "Networking",
+    }
+    SERVER_NAMES = ["nova", "glance", "keystone", "quantum", "cinder"]
     py2rpm_executable = sh.which("py2rpm", ["tools/"])
-    REPO_FN = "anvil.repo"
-    YUM_REPO_DIR = "/etc/yum.repos.d/"
+    rpmbuild_executable = sh.which("rpmbuild")
 
     def __init__(self, distro, root_dir, instances):
         super(YumDependencyHandler, self).__init__(distro, root_dir, instances)
         self.rpmbuild_dir = sh.joinpths(self.deps_dir, "rpmbuild")
-        self.deps_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps")
-        self.deps_src_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps-sources")
-        self.anvil_repo_filename = sh.joinpths(self.deps_dir, self.REPO_FN)
-        # Track what file we create so they can be cleaned up on uninstall.
-        trace_fn = tr.trace_filename(root_dir, 'deps')
-        self.tracewriter = tr.TraceWriter(trace_fn, break_if_there=False)
-        self.tracereader = tr.TraceReader(trace_fn)
-        self.helper = yum_helper.Helper()
+        self.rpm_sources_dir = sh.joinpths(self.rpmbuild_dir, "SOURCES")
+        self.anvil_repo_dir = sh.joinpths(self.deps_dir, "repo")
 
     def _epoch_list(self):
         return [
             "--epoch-list",
         ] + ["%s==%s" % (name, self.OPENSTACK_EPOCH) for name in self.python_names]
 
-    def package(self):
-        super(YumDependencyHandler, self).package()
-        self._write_all_deps_package()
-        self._build_dependencies()
-        self._build_openstack()
-        self._create_deps_repo()
+    def package_instance(self, instance):
+        for dirname in (sh.joinpths(self.rpmbuild_dir, "SPECS"),
+                        sh.joinpths(self.rpmbuild_dir, "SOURCES")):
+            sh.deldir(dirname)
+            sh.mkdir(dirname, recurse=True)
+        if instance.name == "general":
+            self._build_dependencies()
+            self._move_rpms("anvil-deps")
+            self._create_repo("anvil-deps")
+            self._write_all_deps_package()
+            self._move_rpms("anvil")
+            return
+        app_dir = instance.get_option("app_dir")
+        if sh.isdir(app_dir):
+            self._build_openstack_package(app_dir)
+            self._move_rpms("anvil")
+
+    def package_finish(self):
+        self._create_repo("anvil")
+
+    def _move_rpms(self, repo_name):
+        repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)
+        src_repo_dir = "%s-sources" % repo_dir
+        sh.mkdir(repo_dir, recurse=True)
+        sh.mkdir(src_repo_dir, recurse=True)
+        for filename in sh.listdir(sh.joinpths(self.rpmbuild_dir, "RPMS"),
+                                   recursive=True, files_only=True):
+            sh.move(filename, repo_dir, force=True)
+        for filename in sh.listdir(sh.joinpths(self.rpmbuild_dir, "SRPMS"),
+                                   recursive=True, files_only=True):
+            sh.move(filename, src_repo_dir, force=True)
+        return repo_dir
+
+    def _create_repo(self, repo_name):
+        repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)
+        src_repo_dir = "%s-sources" % repo_dir
+        for a_dir in repo_dir, src_repo_dir:
+            cmdline = ["createrepo", a_dir]
+            LOG.info("Creating repo at %s" % a_dir)
+            sh.execute(cmdline)
+        repo_filename = sh.joinpths(self.anvil_repo_dir, "%s.repo" % repo_name)
+        LOG.info("Writing %s" % repo_filename)
+        (_fn, content) = utils.load_template("packaging", "common.repo")
+        params = {
+            "repo_name": repo_name,
+            "baseurl_bin": "file://%s" % repo_dir,
+            "baseurl_src": "file://%s" % src_repo_dir
+        }
+        sh.write_file(
+            repo_filename, utils.expand_template(content, params))
 
     def filter_download_requires(self):
         yum_map = {}
         for pkg in yum_helper.Helper().get_available():
             for provides in pkg.provides:
                 yum_map.setdefault(provides[0], set()).add(
-                    (pkg.version, pkg.repo))
+                    (pkg.version, pkg.repo.id))
 
         nopips = [pkg_resources.Requirement.parse(name).key
                   for name in self.python_names]
-
         pips_to_download = []
         req_to_install = [pkg_resources.Requirement.parse(pkg)
                           for pkg in self.pips_to_install]
-        req_to_install = [req for req in req_to_install
-                          if req.key not in nopips]
-
-        requested_names = [req.key for req in req_to_install]
-        rpm_to_install = self._convert_names_python2rpm(requested_names)
-
+        req_to_install = [
+            req for req in req_to_install if req.key not in nopips]
+        rpm_to_install = self._convert_names_python2rpm(
+            [req.key for req in req_to_install])
         satisfied_list = []
-        for (req, rpm_name) in zip(req_to_install, rpm_to_install):
+        for req, rpm_name in zip(req_to_install, rpm_to_install):
             yum_versions = yum_map.get(rpm_name, [])
             satisfied = False
-            for (version, repo) in yum_versions:
+            for (version, repo_id) in yum_versions:
                 if version in req:
                     satisfied = True
-                    satisfied_list.append((req, rpm_name, version, repo))
+                    satisfied_list.append(
+                        "%s as %s-%s from %s" %
+                        (req, rpm_name, version, repo_id))
                     break
             if not satisfied:
                 pips_to_download.append(str(req))
-
         if satisfied_list:
-            # Organize by repo
-            repos = collections.defaultdict(list)
-            for (req, rpm_name, version, repo) in satisfied_list:
-                repos[repo].append("%s as %s-%s" % (req, rpm_name, version))
-            for r in sorted(repos.keys()):
-                header = ("%s Python packages are already available "
-                          "as RPMs from repository %s")
-                utils.log_iterable(sorted(repos[r]), logger=LOG,
-                                   header=header % (len(repos[r]), r))
+            utils.log_iterable(
+                sorted(satisfied_list), logger=LOG,
+                header="These Python packages are already available as RPMs")
         return pips_to_download
 
     def _write_all_deps_package(self):
@@ -122,12 +159,6 @@ class YumDependencyHandler(base.DependencyHandler):
             self.rpmbuild_dir,
             "SPECS",
             "%s.spec" % self.OPENSTACK_DEPS_PACKAGE_NAME)
-
-        # Clean out previous dirs.
-        for dirname in (self.rpmbuild_dir, self.deps_repo_dir,
-                        self.deps_src_repo_dir):
-            sh.deldir(dirname)
-            sh.mkdirslist(dirname, tracewriter=self.tracewriter)
 
         today = datetime.date.today()
         spec_content = """Name: %s
@@ -201,8 +232,7 @@ BuildArch: noarch
                     script_body)
 
         spec_content += "\n%files\n"
-        sh.write_file(spec_filename, spec_content,
-                      tracewriter=self.tracewriter)
+        sh.write_file(spec_filename, spec_content)
         cmdline = [
             "rpmbuild", "-ba",
             "--define", "_topdir %s" % self.rpmbuild_dir,
@@ -212,60 +242,171 @@ BuildArch: noarch
         sh.execute(cmdline)
 
     def _build_dependencies(self):
-        package_files = self.download_dependencies()
+        #        package_files = self.download_dependencies()
+        package_files = sh.listdir(self.download_dir, files_only=True)
         if not package_files:
             LOG.info("No RPM packages of OpenStack dependencies to build")
             return
-        utils.log_iterable(sorted(package_files), logger=LOG,
-                           header="Building RPM packages from files")
+        for filename in package_files:
+            LOG.info("Building RPM package from %s", filename)
+            cmdline = [
+                self.py2rpm_executable,
+                "--rpm-base",
+                self.rpmbuild_dir,
+            ] + self._epoch_list() + ["--", filename]
+            sh.execute_save_output(
+                cmdline,
+                out_filename=sh.joinpths(
+                    self.log_dir, "py2rpm-%s.out" % sh.basename(filename)))
+
+    @staticmethod
+    def _get_component_name(pkg_dir):
+        return sh.basename(sh.dirname(pkg_dir))
+
+    @staticmethod
+    def _python_get_name_version(pkg_dir):
+        cmdline = [sys.executable, "setup.py", "--name", "--version"]
+        name_version = sh.execute(cmdline, cwd=pkg_dir)[0].splitlines()
+        if len(name_version) < 2:
+            LOG.error("Cannot determine name and version for %s", pkg_dir)
+            return
+        return (name_version[-2].strip(), name_version[-1].strip())
+
+    def _write_spec_file(self, rpm_name, version, template_name, params):
+        # TODO(aababilov): write Requires
+        params["version"] = version
+        params["epoch"] = self.OPENSTACK_EPOCH
+        content = utils.load_template(self.SPEC_TEMPLATE_DIR, template_name)[1]
+        spec_filename = sh.joinpths(
+            self.rpmbuild_dir, "SPECS", "%s.spec" % rpm_name)
+        sh.write_file(spec_filename, utils.expand_template(content, params))
+        return spec_filename
+
+    def _build_openstack_package_client(self, pkg_dir):
+        name, version = self._python_get_name_version(pkg_dir)
+        clientname = utils.strip_prefix_suffix(name, "python-", "client")
+        if not clientname:
+            LOG.error("Bad client package name %s", name)
+            return
+        params = {
+            "clientname": clientname,
+            "apiname": self.API_NAMES.get(clientname, clientname.title()),
+            "requires": []
+        }
+        spec_filename = self._write_spec_file(
+            name, version, "python-commonclient.spec", params)
+        self._build_from_spec(pkg_dir, spec_filename)
+
+    def _build_openstack_package_server(self, pkg_dir):
+        name, version = self._python_get_name_version(pkg_dir)
+        spec_filename = "openstack-%s.spec" % name
+        spec_content = utils.load_template(self.SPEC_TEMPLATE_DIR, spec_filename)[1]
+        common_init_content = utils.load_template(
+            "packaging/init.d", "common.init")[1]
+
+        init_params = {
+            "package": name,
+            "config": "%s.conf" % name,
+        }
+        for line in spec_content.splitlines():
+            line = line.strip()
+            if line.startswith("Source") and line.endswith(".init"):
+                try:
+                    script = line.split(None, 1)[1]
+                except IndexError:
+                    pass
+                else:
+                    init_params["bin"] = utils.strip_prefix_suffix(
+                        script, "openstack-", ".init")
+                    sh.write_file(
+                        sh.joinpths(self.rpm_sources_dir, script),
+                        utils.expand_template(
+                            common_init_content, init_params))
+
+        params = {
+            "requires": []
+        }
+        spec_filename = self._write_spec_file(
+            "openstack-%s" % name, version, spec_filename, params)
+        self._build_from_spec(pkg_dir, spec_filename)
+
+    def _build_from_spec(self, pkg_dir, spec_filename):
+        if sh.isfile(sh.joinpths(pkg_dir, "setup.py")):
+            self._write_python_tarball(pkg_dir)
+        else:
+            self._write_git_tarball(pkg_dir, spec_filename)
+        component_name = self._get_component_name(pkg_dir)
+        other_sources_dir = sh.joinpths(
+            settings.TEMPLATE_DIR, "packaging/sources", component_name)
+        if sh.isdir(other_sources_dir):
+            for filename in sh.listdir(other_sources_dir, files_only=True):
+                sh.copy(filename, self.rpm_sources_dir)
+        cmdline = [
+            self.rpmbuild_executable,
+        # FIXME(aababilov): -ba
+            "-ba",
+            "--define", "_topdir %s" % self.rpmbuild_dir,
+            spec_filename,
+        ]
+        sh.execute_save_output(
+            cmdline, sh.joinpths(self.log_dir, sh.basename(spec_filename)))
+
+    def _write_git_tarball(self, pkg_dir, spec_filename):
+        cmdline = [
+            "rpm",
+            "-q",
+            "--specfile", spec_filename,
+            "--qf", "%{NAME}-%{VERSION}\n"
+        ]
+        tar_base = sh.execute(cmdline, cwd=pkg_dir)[0].splitlines()[0].strip()
+        output_filename = sh.joinpths(
+            self.rpm_sources_dir, "%s.tar.gz" % tar_base)
+        cmdline = [
+            "git",
+            "archive",
+            "--format=tar.gz",
+            "--prefix=%s/" % tar_base,
+            "--output=%s" % output_filename,
+            "HEAD",
+        ]
+        sh.execute(cmdline, cwd=pkg_dir)
+
+    def _write_python_tarball(self, pkg_dir):
+        cmdline = [
+            sys.executable,
+            "setup.py",
+            "sdist",
+            "--formats", "gztar",
+            "--dist-dir", self.rpm_sources_dir,
+        ]
+        sh.execute(cmdline, cwd=pkg_dir)
+
+    def _build_openstack_package(self, pkg_dir):
+        component_name = self._get_component_name(pkg_dir)
+        if component_name in self.SERVER_NAMES:
+            self._build_openstack_package_server(pkg_dir)
+            return
+        if component_name.endswith("client"):
+            self._build_openstack_package_client(pkg_dir)
+            return
+        spec_filename = sh.joinpths(
+            settings.TEMPLATE_DIR,
+            self.SPEC_TEMPLATE_DIR,
+            "%s.spec" % component_name)
+        if sh.isfile(spec_filename):
+            spec_filename = self._write_spec_file(
+                component_name, 1, "%s.spec" % component_name, {})
+            self._build_from_spec(pkg_dir, spec_filename)
+            return
         cmdline = [
             self.py2rpm_executable,
             "--rpm-base",
             self.rpmbuild_dir,
-        ] + self._epoch_list() + ["--"] + package_files
-        out_filename = sh.joinpths(self.deps_dir, "py2rpm.deps.out")
-        LOG.info("You can watch progress in another terminal with:")
-        LOG.info("    tail -f %s" % out_filename)
-        with open(out_filename, "w") as out:
-            try:
-                sh.execute(cmdline, stdout_fh=out, stderr_fh=out)
-            except excp.ProcessExecutionError:
-                LOG.error("Some packages failed to build.")
-                LOG.error("That's usually not a big deal,"
-                          " so, you can ignore this fact")
-
-    def _build_openstack(self):
-        utils.log_iterable(sorted(self.package_dirs), logger=LOG,
-                           header="Building RPM packages for directories")
-        cmdline = [
-            self.py2rpm_executable,
-            "--rpm-base",
-            self.rpmbuild_dir,
-        ] + self._epoch_list() + ["--"] + self.package_dirs
-        out_filename = sh.joinpths(self.deps_dir, "py2rpm.openstack.out")
-        LOG.info("You can watch progress in another terminal with:")
-        LOG.info("    tail -f %s" % out_filename)
-        with open(out_filename, "w") as out:
-            sh.execute(cmdline, stdout_fh=out, stderr_fh=out)
-
-    def _create_deps_repo(self):
-        for filename in sh.listdir(sh.joinpths(self.rpmbuild_dir, "RPMS"),
-                                   recursive=True, files_only=True):
-            sh.move(filename, self.deps_repo_dir, force=True)
-        for filename in sh.listdir(sh.joinpths(self.rpmbuild_dir, "SRPMS"),
-                                   recursive=True, files_only=True):
-            sh.move(filename, self.deps_src_repo_dir, force=True)
-        for repo_dir in self.deps_repo_dir, self.deps_src_repo_dir:
-            cmdline = ["createrepo", repo_dir]
-            LOG.info("Creating repo at %s" % repo_dir)
-            sh.execute(cmdline)
-        LOG.info("Writing %s to %s", self.REPO_FN, self.anvil_repo_filename)
-        (_fn, content) = utils.load_template('packaging', self.REPO_FN)
-        params = {"baseurl_bin": "file://%s" % self.deps_repo_dir,
-                  "baseurl_src": "file://%s" % self.deps_src_repo_dir}
-        sh.write_file(self.anvil_repo_filename,
-                      utils.expand_template(content, params),
-                      tracewriter=self.tracewriter)
+            pkg_dir
+        ] + self._epoch_list()
+        sh.execute_save_output(
+            cmdline, cwd=pkg_dir,
+            out_filename=sh.joinpths(self.log_dir, component_name))
 
     def _convert_names_python2rpm(self, python_names):
         if not self.python_names:
@@ -283,19 +424,22 @@ BuildArch: noarch
 
     def install(self):
         super(YumDependencyHandler, self).install()
-        repo_filename = sh.joinpths(self.YUM_REPO_DIR, self.REPO_FN)
+        helper = yum_helper.Helper()
 
         # Ensure we copy the local repo file name to the main repo so that
         # yum will find it when installing packages.
-        sh.write_file(repo_filename, sh.load_file(self.anvil_repo_filename),
-                      tracewriter=self.tracewriter)
+        for repo_name in "anvil", "anvil-deps":
+            repo_filename = sh.joinpths(
+                self.anvil_repo_dir, "%s.repo" % repo_name)
+            if sh.isfile(repo_filename):
+                sh.copy(repo_filename, "/etc/yum.repos.d/")
 
-        # Erase it if its been previously installed.
         cmdline = []
-        if self.helper.is_installed(self.OPENSTACK_DEPS_PACKAGE_NAME):
-            cmdline.append(self.OPENSTACK_DEPS_PACKAGE_NAME)
+        if helper.is_installed(self.OPENSTACK_DEPS_PACKAGE_NAME):
+            cmdline = [self.OPENSTACK_DEPS_PACKAGE_NAME]
+
         for p in self.nopackages:
-            if self.helper.is_installed(p):
+            if helper.is_installed(p):
                 cmdline.append(p)
 
         if cmdline:
@@ -315,17 +459,10 @@ BuildArch: noarch
 
     def uninstall(self):
         super(YumDependencyHandler, self).uninstall()
-        if self.tracereader.exists():
-            for f in self.tracereader.files_touched():
-                sh.unlink(f)
-            for d in self.tracereader.dirs_made():
-                sh.deldir(d)
-            sh.unlink(self.tracereader.filename())
-            self.tracereader = None
-
+        helper = yum_helper.Helper()
         rpm_names = []
         for name in self._convert_names_python2rpm(self.python_names):
-            if self.helper.is_installed(name):
+            if helper.is_installed(name):
                 rpm_names.append(name)
 
         if rpm_names:

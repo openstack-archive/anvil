@@ -18,11 +18,9 @@
 # R0921: Abstract class not referenced
 #pylint: disable=R0902,R0921
 
-import json
 import pkg_resources
 
 from anvil import colorizer
-from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
@@ -70,6 +68,7 @@ OPENSTACK_PACKAGES = set([
 class DependencyHandler(object):
     """Basic class for handler of OpenStack dependencies.
     """
+    MAX_PIP_DOWNLOAD_ATTEMPTS = 4
     multipip_executable = sh.which("multipip", ["tools/"])
 
     def __init__(self, distro, root_dir, instances):
@@ -79,6 +78,7 @@ class DependencyHandler(object):
 
         self.deps_dir = sh.joinpths(self.root_dir, "deps")
         self.download_dir = sh.joinpths(self.deps_dir, "download")
+        self.log_dir = sh.joinpths(self.deps_dir, "output")
         self.gathered_requires_filename = sh.joinpths(
             self.deps_dir, "pip-requires")
         self.forced_requires_filename = sh.joinpths(
@@ -109,7 +109,7 @@ class DependencyHandler(object):
                                 splitlines()[-1].strip())
         return python_names
 
-    def package(self):
+    def package_start(self):
         requires_files = []
         extra_pips = []
         for inst in self.instances:
@@ -123,6 +123,12 @@ class DependencyHandler(object):
         requires_files = filter(sh.isfile, requires_files)
         self.gather_pips_to_install(requires_files, extra_pips)
         self.clean_pip_requires(requires_files)
+
+    def package_instance(self, instance):
+        pass
+
+    def package_finish(self):
+        pass
 
     def install(self):
         self.nopackages = []
@@ -151,7 +157,7 @@ class DependencyHandler(object):
                     req = pkg_resources.Requirement.parse(line)
                     new_lines.append(str(forced_by_key[req.key]))
                 except:
-                    # We don't force the package or it has a bad format
+                    # we don't force the package or it has a bad format
                     new_lines.append(line)
             contents = "# Cleaned on %s\n\n%s\n" % (
                 utils.iso8601(), "\n".join(new_lines))
@@ -173,46 +179,34 @@ class DependencyHandler(object):
         ]
         cmdline = cmdline + extra_pips + ["-r"] + requires_files
 
-        output = sh.execute(cmdline)
-        contents = json.loads(output[0])
-
-        # Figure out which ones were easily matched.
-        self.pips_to_install = []
-        for pkg in contents.get('compatibles', []):
-            if pkg.lower() not in OPENSTACK_PACKAGES:
-                self.pips_to_install.append(pkg)
-
-        # Figure out which ones we are forced to install.
+        output = sh.execute(cmdline, check_exit_code=False)
+        conflict_descr = output[1].strip()
         forced_keys = set()
-        for (k, req_list) in contents.get('incompatibles', {}):
-            forced_keys.add(k.lower())
-            # Select the first.
-            if req_list and req_list[0] not in self.pips_to_install:
-                self.pips_to_install.append(req_list[0])
-
+        if conflict_descr:
+            for line in conflict_descr.splitlines():
+                LOG.warning(line)
+                if line.endswith(": incompatible requirements"):
+                    forced_keys.add(line.split(":", 1)[0].lower())
+        self.pips_to_install = [
+            pkg
+            for pkg in utils.splitlines_not_empty(output[0])
+            if pkg.lower() not in OPENSTACK_PACKAGES]
+        sh.write_file(self.gathered_requires_filename,
+                      "\n".join(self.pips_to_install))
         if not self.pips_to_install:
-            LOG.error("No dependencies for OpenStack found. "
+            LOG.error("No dependencies for OpenStack found."
                       "Something went wrong. Please check:")
             LOG.error("'%s'" % "' '".join(cmdline))
-            raise excp.AnvilException("No dependencies for OpenStack found!")
+            raise RuntimeError("No dependencies for OpenStack found")
 
         utils.log_iterable(sorted(self.pips_to_install),
                            logger=LOG,
-                           header="Python dependency list (all)")
-        sh.write_file(self.gathered_requires_filename,
-                      "\n".join(self.pips_to_install))
-
+                           header="Full known Python dependency list")
         self.forced_packages = []
-        for k in forced_keys:
-            for pip in self.pips_to_install:
-                req = pkg_resources.Requirement.parse(pip)
-                if req.key == k:
-                    self.forced_packages.append(req)
-                    break
-        if self.forced_packages:
-            utils.log_iterable(sorted(self.forced_packages),
-                               logger=LOG,
-                               header="Python dependency list (forced)")
+        for pip in self.pips_to_install:
+            req = pkg_resources.Requirement.parse(pip)
+            if req.key in forced_keys:
+                self.forced_packages.append(req)
         sh.write_file(self.forced_requires_filename,
                       "\n".join(str(req) for req in self.forced_packages))
 
@@ -235,10 +229,8 @@ class DependencyHandler(object):
         :param clear_cache: clear `$deps_dir/cache` dir (pip can work incorrectly
             when it has a cache)
         """
-        cache_dir = sh.joinpths(self.deps_dir, "cache")
-        if clear_cache:
-            sh.deldir(cache_dir)
-        sh.mkdir(self.deps_dir, recurse=True)
+        sh.deldir(self.download_dir)
+        sh.mkdir(self.download_dir, recurse=True)
 
         download_requires_filename = sh.joinpths(
             self.deps_dir, "download-requires")
@@ -247,24 +239,43 @@ class DependencyHandler(object):
                       "\n".join(str(req) for req in pips_to_download))
         if not pips_to_download:
             return []
-        # NOTE(aababilov): pip has issues with already downloaded files
-        sh.deldir(self.download_dir)
-        sh.mkdir(self.download_dir, recurse=True)
-        cmdline = [
-            self.pip_executable,
-            "install",
-            "--download",
-            self.download_dir,
-            "--download-cache",
-            cache_dir,
-            "-r",
-            download_requires_filename,
-        ]
-        out_filename = sh.joinpths(self.deps_dir, "pip-install-download.out")
-        utils.log_iterable(sorted(pips_to_download), logger=LOG,
-                           header="Downloading Python dependencies")
-        LOG.info("You can watch progress in another terminal with:")
-        LOG.info("    tail -f %s" % out_filename)
-        with open(out_filename, "w") as out:
-            sh.execute(cmdline, stdout_fh=out, stderr_fh=out)
+        pip_dir = sh.joinpths(self.deps_dir, "pip")
+        pip_download_dir = sh.joinpths(pip_dir, "download")
+        pip_build_dir = sh.joinpths(pip_dir, "build")
+        pip_cache_dir = sh.joinpths(pip_dir, "cache")
+        if clear_cache:
+            sh.deldir(pip_cache_dir)
+        for attempt in xrange(self.MAX_PIP_DOWNLOAD_ATTEMPTS):
+            # NOTE(aababilov): pip has issues with already downloaded files
+            sh.deldir(pip_download_dir)
+            sh.mkdir(pip_download_dir, recurse=True)
+            sh.deldir(pip_build_dir)
+            cmdline = [
+                self.pip_executable,
+                "install",
+                "--download", pip_download_dir,
+                "--download-cache", pip_cache_dir,
+                "--build", pip_build_dir,
+                "-r",
+                download_requires_filename,
+            ]
+            utils.log_iterable(
+                sorted(pips_to_download),
+                logger=LOG,
+                header="Downloading Python dependencies (attempt %s)" %
+                attempt)
+            out_filename = sh.joinpths(
+                self.log_dir, "pip-download-attempt-%s.out" % attempt)
+            try:
+                sh.execute_save_output(cmdline, out_filename=out_filename)
+            except:
+                LOG.info("pip failed")
+                pip_ok = False
+            else:
+                pip_ok = True
+            for filename in sh.listdir(pip_download_dir, files_only=True):
+                sh.copy(filename, self.download_dir)
+            if pip_ok:
+                break
+
         return sh.listdir(self.download_dir, files_only=True)
