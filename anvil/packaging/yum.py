@@ -15,9 +15,10 @@
 #    under the License.
 
 import collections
-import datetime
 import pkg_resources
 import sys
+
+from datetime import datetime
 
 from anvil import exceptions as excp
 from anvil import log as logging
@@ -129,15 +130,24 @@ class YumDependencyHandler(base.DependencyHandler):
             sh.deldir(dirname)
             sh.mkdirslist(dirname, tracewriter=self.tracewriter)
 
-        today = datetime.date.today()
+        def get_version_release():
+            right_now = datetime.now()
+            components = [
+                str(right_now.year),
+                str(right_now.month),
+                str(right_now.day),
+            ]
+            return (".".join(components), right_now.strftime("%s"))
+
+        (version, release) = get_version_release()
         spec_content = """Name: %s
-Version: %s.%s.%s
-Release: 0
+Version: %s
+Release: %s
 License: Apache 2.0
 Summary: OpenStack dependencies
 BuildArch: noarch
 
-""" % (self.OPENSTACK_DEPS_PACKAGE_NAME, today.year, today.month, today.day)
+""" % (self.OPENSTACK_DEPS_PACKAGE_NAME, version, release)
 
         packages = {}
         for inst in self.instances:
