@@ -253,6 +253,42 @@ def trim_zeroes(version):
     return version
 
 
+def clean_summary(filename):
+    with open(filename, "rb") as fh:
+        contents = fh.read()
+
+    # Fix how summary is not supposed to be more than 1 line but sometimes
+    # seems to be.
+    def summary_cleaner(mtch):
+        summary = mtch.group(1)
+        summary = summary.strip()
+        summary = summary.replace("\n", " ")
+        summary = truncate(summary)
+        summary = summary.strip()
+        return summary + "\n" + mtch.group(2)
+
+    # These are used to find where the summary ends.
+    spec_headers = ('Name', 'Version', 'Release', 'Copyright', 'Source', 'URL',
+                    'Packager', 'BuildRoot', 'License', 'Prefix', 'Group')
+    spec_headers = [h + ":" for h in spec_headers]
+    spec_headers = "|".join(spec_headers)
+    summary_matcher = re.compile(r"(^Summary:.*?)(" + spec_headers+ ")",
+                                 re.M|re.S)
+    contents = re.sub(summary_matcher, summary_cleaner, contents)
+
+    with open(filename, "wb") as fh:
+       fh.write(contents)
+
+
+def truncate(text, max_len=77):
+    if max_len <= 0:
+        return ''
+    if len(text) < max_len:
+        return text
+    text = text[0:max_len] + "..."
+    return text
+
+
 def requires_and_conflicts(req_list, multiline):
     rpm_requires = ""
     rpm_conflicts = ""
@@ -359,6 +395,7 @@ def build_rpm(options, filename):
         "-e", "/%doc/s/ man[^ ]+//",
     ]
     call_subprocess(cmdline + [spec_name])
+    clean_summary(spec_name)
     if options.source_only:
         rpmbuild_what = "-bs"
     else:
