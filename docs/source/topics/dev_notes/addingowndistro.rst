@@ -70,16 +70,3 @@ we can add in your own distribution support.
   After adding make sure you reference them in your **conf/distros** yaml file so that the correct subclass will be used. If you are going
   to want to create package files from the installed code then you will need to hook-in to a file similar
   to the rpm module that exists there. 
-
-Bring back the dead!
-----------
-
-If you are adding in debian/ubuntu/fedora support please check out the older code that existed that did this
-which was removed due to it being unmatained. It might help ease the process if these files are just brought
-back from the dead and fixed as needed...
-
-+ https://github.com/yahoo/Openstack-Anvil/blob/2012.5.11/anvil/packaging/apt.py
-+ https://github.com/yahoo/Openstack-Anvil/blob/2012.5.11/anvil/distros/oneiric.py
-+ https://github.com/yahoo/Openstack-Anvil/blob/2012.5.11/conf/distros/ubuntu-oneiric.yaml
-+ https://github.com/yahoo/Openstack-Anvil/blob/2012.5.11/conf/distros/fedora-16.yaml
-
