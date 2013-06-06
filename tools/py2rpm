@@ -17,19 +17,8 @@ import pkg_resources
 
 logger = logging.getLogger()
 
-package_map = {
-    "django": "Django",
-    "distribute": "python-setuptools",
-    "pam": "python-pam",
-    "pycrypto": "python-crypto",
-}
-
-package_names = {}
-
-arch_dependent = [
-    "selenium",
-]
-
+package_map = {}
+arch_dependent = set()
 epoch_map = {}
 
 requirements_section_re = re.compile(r'\[(.*?)\]')
@@ -41,7 +30,11 @@ class InstallationError(Exception):
     pass
 
 
-def package_name_python2rpm(python_name):
+def python_name_to_key(name):
+    return pkg_resources.Requirement.parse(name).key
+
+
+def python_key_to_rpm(python_name):
     python_name = python_name.lower()
     try:
         return package_map[python_name]
@@ -52,14 +45,6 @@ def package_name_python2rpm(python_name):
         prefixed_name = python_name
     else:
         prefixed_name = "python-%s" % python_name
-    try:
-        return package_names[prefixed_name]
-    except:
-        pass
-    try:
-        return package_names[python_name]
-    except:
-        pass
     return prefixed_name
 
 
@@ -165,7 +150,7 @@ def create_parser():
         "--arch-dependent", "-a",
         metavar="<Python package name>",
         nargs="+",
-        default=arch_dependent,
+        default=[],
         help="Known architecture dependent packages")
     parser.add_argument(
         "--epoch", "-e",
@@ -174,11 +159,17 @@ def create_parser():
         default=None,
         help="RPM epoch for generated packages")
     parser.add_argument(
-        "--epoch-list", "-l",
+        "--epoch-map", "-x",
         metavar="<Python package name == epoch number>",
         nargs="+",
         default=[],
         help="Forced RPM epochs for packages")
+    parser.add_argument(
+        "--package-map", "-p",
+        metavar="<Python package name == RPM name>",
+        nargs="+",
+        default=[],
+        help="Correspondence between Python and RPM package names")
     return parser
 
 
@@ -210,30 +201,19 @@ def setup_logging(options):
     logger.setLevel(level)
 
 
-def build_name_map():
-    cmdline = ["yum", "list", "-q"]
-    try:
-        yum_list = call_subprocess(cmdline, show_stdout=False)[0]
-    except Exception as ex:
-        logging.warning(str(ex))
-        return
-    for line in yum_list.split("\n")[1:]:
-        if line:
-            line = line.split(None, 1)[0].split(".", 1)[0]
-            package_names[line.lower()] = line
-
-
-def build_epoch_map(options):
-    for epoch_spec in options.epoch_list:
+def build_map(arguments):
+    result = {}
+    for arg in arguments:
         try:
-            (name, epoch) = epoch_spec.split("==")
-            name = name.strip().lower()
-            epoch = epoch.strip()
-            assert(name and epoch)
-        except (IndexError, AssertionError):
-            raise InstallationError("Bad epoch specifier: `%s'" % epoch_spec)
+            (key, value) = arg.split("==")
+            key = python_name_to_key(key)
+            value = value.strip()
+            assert value
+        except (IndexError, ValueError, AssertionError):
+            raise InstallationError("Bad specifier: `%s'" % value_spec)
         else:
-            epoch_map[name] = epoch
+            result[key] = value
+    return result
 
 
 def run_egg_info(source_dir, options):
@@ -281,7 +261,7 @@ def requires_and_conflicts(req_list, multiline):
             req = pkg_resources.Requirement.parse(line)
         except:
             continue
-        rpm_name = package_name_python2rpm(req.key)
+        rpm_name = python_key_to_rpm(req.key)
         if not req.specs:
             if multiline:
                 rpm_requires += "\nRequires:"
@@ -329,6 +309,7 @@ def build_rpm(options, filename):
         egg_info_requirements(source_dir), multiline=False)
 
     pkg_name = setup_py_one_line(source_dir, "--name")
+    pkg_key = python_name_to_key(pkg_name)
     build_dir = options.rpm_base
     cmdline = [
         sys.executable, setup_py, "bdist_rpm",
@@ -342,7 +323,7 @@ def build_rpm(options, filename):
         cmdline += ["--conflicts",  rpm_conflicts]
     call_subprocess(cmdline, cwd=source_dir, raise_on_returncode=False)
 
-    rpm_name = package_name_python2rpm(pkg_name)
+    rpm_name = python_key_to_rpm(pkg_key)
     spec_name = os.path.join(build_dir, "SPECS", "%s.spec" % pkg_name)
     if not os.path.exists(spec_name):
         raise InstallationError("`%s' does not exist" % spec_name)
@@ -356,12 +337,12 @@ def build_rpm(options, filename):
         "-e", "s/%{name}/%{pkg_name}/g",
         "-e", "s/^%%define name.*$/%%define pkg_name %s/" % pkg_name,
     ]
-    epoch = epoch_map.get(pkg_name.lower(), options.epoch)
+    epoch = epoch_map.get(pkg_key, options.epoch)
     if epoch is not None:
         cmdline += [
             "-e", "s/^Version:/Epoch: %s\\nVersion:/" % epoch,
         ]
-    if pkg_name.lower() in options.arch_dependent:
+    if pkg_key in arch_dependent:
         cmdline += [
             "-e", "/^BuildArch/d",
         ]
@@ -395,8 +376,13 @@ def main():
     parser = create_parser()
     options = parser.parse_args()
     setup_logging(options)
-    build_name_map()
-    build_epoch_map(options)
+    global arch_dependent
+    global package_map
+    global epoch_map
+    arch_dependent = set(python_name_to_key(pkg)
+                         for pkg in options.arch_dependent)
+    package_map = build_map(options.package_map)
+    epoch_map = build_map(options.epoch_map)
 
     if options.convert:
         rpm_requires, rpm_conflicts = requires_and_conflicts(
@@ -437,7 +423,6 @@ mv -f INSTALLED_FILES{.tmp,}
         os.close(tmp_install_script[0])
     else:
         tmp_install_script = None
-    options.arch_dependent = set(pkg.lower() for pkg in options.arch_dependent)
     failed_pkgs = []
     for src in (os.path.abspath(sdir) for sdir in options.sources):
         try:

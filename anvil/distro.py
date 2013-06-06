@@ -97,7 +97,7 @@ class Distro(object):
     @property
     def dependency_handler_class(self):
         """Return a dependency handler that will work for this distro."""
-        return importer.import_entry_point(self._dependency_handler)
+        return importer.import_entry_point(self._dependency_handler["name"])
 
     def extract_component(self, name, action):
         """Return the class + component info to use for doing the action w/the component."""

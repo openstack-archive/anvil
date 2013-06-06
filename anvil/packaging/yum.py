@@ -63,10 +63,30 @@ class YumDependencyHandler(base.DependencyHandler):
         self.tracereader = tr.TraceReader(trace_fn)
         self.helper = yum_helper.Helper()
 
-    def _epoch_list(self):
-        return [
-            "--epoch-list",
-        ] + ["%s==%s" % (name, self.OPENSTACK_EPOCH) for name in self.python_names]
+    def py2rpm_start_cmdline(self):
+        cmdline = [
+            self.py2rpm_executable,
+            "--rpm-base",
+            self.rpmbuild_dir,
+        ]
+        if self.python_names:
+            cmdline += [
+               "--epoch-map",
+            ] + ["%s==%s" % (name, self.OPENSTACK_EPOCH)
+                 for name in self.python_names]
+        package_map = self.distro._dependency_handler.get("package_map", {})
+        if package_map:
+            cmdline += [
+                "--package-map",
+            ] + ["%s==%s" % (key, value)
+                 for key, value in package_map.iteritems()]
+        arch_dependent = self.distro._dependency_handler.get(
+            "arch_dependent", [])
+        if arch_dependent:
+            cmdline += [
+                "--arch-dependent",
+            ] + arch_dependent
+        return cmdline
 
     def package(self):
         super(YumDependencyHandler, self).package()
@@ -228,11 +248,7 @@ BuildArch: noarch
             return
         utils.log_iterable(sorted(package_files), logger=LOG,
                            header="Building RPM packages from files")
-        cmdline = [
-            self.py2rpm_executable,
-            "--rpm-base",
-            self.rpmbuild_dir,
-        ] + self._epoch_list() + ["--"] + package_files
+        cmdline = self.py2rpm_start_cmdline() + ["--"] + package_files
         out_filename = sh.joinpths(self.deps_dir, "py2rpm.deps.out")
         LOG.info("You can watch progress in another terminal with:")
         LOG.info("    tail -f %s" % out_filename)
@@ -247,11 +263,7 @@ BuildArch: noarch
     def _build_openstack(self):
         utils.log_iterable(sorted(self.package_dirs), logger=LOG,
                            header="Building RPM packages for directories")
-        cmdline = [
-            self.py2rpm_executable,
-            "--rpm-base",
-            self.rpmbuild_dir,
-        ] + self._epoch_list() + ["--"] + self.package_dirs
+        cmdline = self.py2rpm_start_cmdline() + ["--"] + self.package_dirs
         out_filename = sh.joinpths(self.deps_dir, "py2rpm.openstack.out")
         LOG.info("You can watch progress in another terminal with:")
         LOG.info("    tail -f %s" % out_filename)
@@ -281,7 +293,7 @@ BuildArch: noarch
         if not self.python_names:
             return []
 
-        cmdline = [self.py2rpm_executable, "--convert"] + python_names
+        cmdline = self.py2rpm_start_cmdline() + ["--convert"] + python_names
         rpm_names = []
         for name in sh.execute(cmdline)[0].splitlines():
             # name is "Requires: rpm-name"
