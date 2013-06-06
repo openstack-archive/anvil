@@ -68,6 +68,7 @@ OPENSTACK_PACKAGES = set([
 class DependencyHandler(object):
     """Basic class for handler of OpenStack dependencies.
     """
+    MAX_PIP_DOWNLOAD_ATTEMPTS = 4
     multipip_executable = sh.which("multipip", ["tools/"])
 
     def __init__(self, distro, root_dir, instances):
@@ -77,6 +78,7 @@ class DependencyHandler(object):
 
         self.deps_dir = sh.joinpths(self.root_dir, "deps")
         self.download_dir = sh.joinpths(self.deps_dir, "download")
+        self.log_dir = sh.joinpths(self.deps_dir, "output")
         self.gathered_requires_filename = sh.joinpths(
             self.deps_dir, "pip-requires")
         self.forced_requires_filename = sh.joinpths(
@@ -221,10 +223,8 @@ class DependencyHandler(object):
         :param clear_cache: clear `$deps_dir/cache` dir (pip can work incorrectly
             when it has a cache)
         """
-        cache_dir = sh.joinpths(self.deps_dir, "cache")
-        if clear_cache:
-            sh.deldir(cache_dir)
-        sh.mkdir(self.deps_dir, recurse=True)
+        sh.deldir(self.download_dir)
+        sh.mkdir(self.download_dir, recurse=True)
 
         download_requires_filename = sh.joinpths(
             self.deps_dir, "download-requires")
@@ -233,24 +233,43 @@ class DependencyHandler(object):
                       "\n".join(str(req) for req in pips_to_download))
         if not pips_to_download:
             return []
-        # NOTE(aababilov): pip has issues with already downloaded files
-        sh.deldir(self.download_dir)
-        sh.mkdir(self.download_dir, recurse=True)
-        cmdline = [
-            self.pip_executable,
-            "install",
-            "--download",
-            self.download_dir,
-            "--download-cache",
-            cache_dir,
-            "-r",
-            download_requires_filename,
-        ]
-        out_filename = sh.joinpths(self.deps_dir, "pip-install-download.out")
-        utils.log_iterable(sorted(pips_to_download), logger=LOG,
-                           header="Downloading Python dependencies")
-        LOG.info("You can watch progress in another terminal with:")
-        LOG.info("    tail -f %s" % out_filename)
-        with open(out_filename, "w") as out:
-            sh.execute(cmdline, stdout_fh=out, stderr_fh=out)
+        pip_dir = sh.joinpths(self.deps_dir, "pip")
+        pip_download_dir = sh.joinpths(pip_dir, "download")
+        pip_build_dir = sh.joinpths(pip_dir, "build")
+        pip_cache_dir = sh.joinpths(pip_dir, "cache")
+        if clear_cache:
+            sh.deldir(pip_cache_dir)
+        for attempt in xrange(self.MAX_PIP_DOWNLOAD_ATTEMPTS):
+            # NOTE(aababilov): pip has issues with already downloaded files
+            sh.deldir(pip_download_dir)
+            sh.mkdir(pip_download_dir, recurse=True)
+            sh.deldir(pip_build_dir)
+            cmdline = [
+                self.pip_executable,
+                "install",
+                "--download", pip_download_dir,
+                "--download-cache", pip_cache_dir,
+                "--build", pip_build_dir,
+                "-r",
+                download_requires_filename,
+            ]
+            utils.log_iterable(
+                sorted(pips_to_download),
+                logger=LOG,
+                header="Downloading Python dependencies (attempt %s)" %
+                attempt)
+            out_filename = sh.joinpths(
+                self.log_dir, "pip-download-attempt-%s.out" % attempt)
+            try:
+                sh.execute_save_output(cmdline, out_filename=out_filename)
+            except:
+                LOG.info("pip failed")
+                pip_ok = False
+            else:
+                pip_ok = True
+            for filename in sh.listdir(pip_download_dir, files_only=True):
+                sh.move(filename, self.download_dir)
+            if pip_ok:
+                break
+
         return sh.listdir(self.download_dir, files_only=True)
