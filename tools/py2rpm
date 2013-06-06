@@ -315,6 +315,29 @@ def requires_and_conflicts(req_list, multiline):
     return rpm_requires, rpm_conflicts
 
 
+def clean_summary(filename):
+    with open(filename, "rb") as fh:
+        contents = fh.read()
+
+    # Fix how summary is not supposed to be more than 1 line but sometimes
+    # seems to be.
+    def summary_cleaner(mtch):
+        summary = mtch.group(1)
+        summary = summary.strip()
+        summary = summary.replace("\n", " ")
+        summary = truncate(summary)
+        summary = summary.strip()
+        return summary + "\n" + mtch.group(2)
+
+    spec_headers = [h + ":" for h in headers]
+    spec_headers = "|".join(spec_headers)
+    contents = re.sub(re.compile(r"(^Summary:.*?)(" + spec_headers+ ")", re.M|re.S),
+                      summary_cleaner, contents)
+
+    with open(filename, "wb") as fh:
+        fh.write(contents)
+
+
 def build_rpm(options, filename):
     if os.path.isfile(filename):
         temp_dir = tempfile.mkdtemp('-unpack', 'py2rpm-')
@@ -384,28 +407,7 @@ def build_rpm(options, filename):
         "-e", "/%doc/s/ man[^ ]+//",
     ]
     call_subprocess(cmdline + [spec_name])
-
-    # Do any adjustments inside the file.
-    with open(spec_file_name, "rb") as fh:
-        contents = fh.read()
-
-    # Fix how summary is not supposed to be more than 1 line but sometimes
-    # seems to be.
-    def summary_cleaner(mtch):
-        summary = mtch.group(1)
-        summary = summary.strip()
-        summary = summary.replace("\n", " ")
-        summary = truncate(summary)
-        summary = summary.strip()
-        return summary + "\n" + mtch.group(2)
-
-    spec_headers = [h + ":" for h in headers]
-    spec_headers = "|".join(spec_headers)
-    contents = re.sub(re.compile(r"(^Summary:.*?)(" + spec_headers+ ")", re.M|re.S),
-                      summary_cleaner, contents)
-
-    with open(spec_file_name, "wb") as fh:
-        fh.write(contents)
+    clean_summary(spec_name)
 
     if options.source_only:
         rpmbuild_what = "-bs"
