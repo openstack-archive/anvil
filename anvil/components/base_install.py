@@ -161,12 +161,16 @@ class PkgInstallComponent(base.Component):
 class PythonInstallComponent(PkgInstallComponent):
     def __init__(self, *args, **kargs):
         PkgInstallComponent.__init__(self, *args, **kargs)
-        tools_dir = sh.joinpths(self.get_option('app_dir'), 'tools')
+        app_dir = self.get_option('app_dir')
+        tools_dir = sh.joinpths(app_dir, 'tools')
         self.requires_files = [
             sh.joinpths(tools_dir, 'pip-requires'),
+            sh.joinpths(app_dir, 'requirements.txt'),
         ]
         if self.get_bool_option('use_tests_requires', default_value=True):
             self.requires_files.append(sh.joinpths(tools_dir, 'test-requires'))
+            self.requires_files.append(sh.joinpths(app_dir,
+                                                   'test-requirements.txt'))
 
     def _get_download_config(self):
         return 'get_from'
