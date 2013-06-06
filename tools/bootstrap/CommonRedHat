@@ -44,4 +44,8 @@ require libxslt-devel
 require python-cheetah Cheetah
 require python-keyring keyring
 require python-termcolor termcolor
-require python-d2to1 d2to1
+
+# This one requires a newer version and the
+# current EPEL rpm doesn't provide a version
+# that will satisify the desired versions in OpenStack.
+require "" d2to1
