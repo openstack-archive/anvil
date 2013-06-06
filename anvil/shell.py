@@ -176,6 +176,17 @@ def execute(cmd,
         return (stdout, stderr)
 
 
+def execute_save_output(cmd, out_filename, **kwargs):
+    kwargs = kwargs.copy()
+    mkdirslist(dirname(out_filename))
+    LOG.info("You can watch progress in another terminal with")
+    LOG.info("    tail -f %s" % out_filename)
+    with open(out_filename, "w") as out:
+        kwargs["stdout_fh"] = out
+        kwargs["stderr_fh"] = out
+        execute(cmd, **kwargs)
+
+
 def abspth(path):
     if not path:
         path = "/"

@@ -20,7 +20,6 @@ import sys
 
 from datetime import datetime
 
-from anvil import exceptions as excp
 from anvil import log as logging
 from anvil.packaging import base
 from anvil.packaging.helpers import yum_helper
@@ -138,6 +137,10 @@ class YumDependencyHandler(base.DependencyHandler):
                                    header=header % (len(repos[r]), r))
         return pips_to_download
 
+    @staticmethod
+    def _get_component_name(pkg_dir):
+        return sh.basename(sh.dirname(pkg_dir))
+
     def _write_all_deps_package(self):
         spec_filename = sh.joinpths(
             self.rpmbuild_dir,
@@ -243,32 +246,27 @@ BuildArch: noarch
 
     def _build_dependencies(self):
         package_files = self.download_dependencies()
+        package_files = sh.listdir(self.download_dir, files_only=True)
         if not package_files:
             LOG.info("No RPM packages of OpenStack dependencies to build")
             return
-        utils.log_iterable(sorted(package_files), logger=LOG,
-                           header="Building RPM packages from files")
-        cmdline = self.py2rpm_start_cmdline() + ["--"] + package_files
-        out_filename = sh.joinpths(self.deps_dir, "py2rpm.deps.out")
-        LOG.info("You can watch progress in another terminal with:")
-        LOG.info("    tail -f %s" % out_filename)
-        with open(out_filename, "w") as out:
-            try:
-                sh.execute(cmdline, stdout_fh=out, stderr_fh=out)
-            except excp.ProcessExecutionError:
-                LOG.error("Some packages failed to build.")
-                LOG.error("That's usually not a big deal,"
-                          " so, you can ignore this fact")
+        for filename in package_files:
+            LOG.info("Building RPM package from %s", filename)
+            cmdline = self.py2rpm_start_cmdline() + ["--", filename]
+            sh.execute_save_output(
+                cmdline,
+                out_filename=sh.joinpths(
+                    self.log_dir, "py2rpm-%s.out" % sh.basename(filename)))
 
     def _build_openstack(self):
-        utils.log_iterable(sorted(self.package_dirs), logger=LOG,
-                           header="Building RPM packages for directories")
-        cmdline = self.py2rpm_start_cmdline() + ["--"] + self.package_dirs
-        out_filename = sh.joinpths(self.deps_dir, "py2rpm.openstack.out")
-        LOG.info("You can watch progress in another terminal with:")
-        LOG.info("    tail -f %s" % out_filename)
-        with open(out_filename, "w") as out:
-            sh.execute(cmdline, stdout_fh=out, stderr_fh=out)
+        for pkg_dir in self.package_dirs:
+            component_name = self._get_component_name(pkg_dir)
+            LOG.info("Building RPM package for %s", component_name)
+            cmdline = self.py2rpm_start_cmdline() + ["--", pkg_dir]
+            sh.execute_save_output(
+                cmdline,
+                out_filename="%s/py2rpm.%s.out" % (
+                    self.log_dir, component_name))
 
     def _create_deps_repo(self):
         for filename in sh.listdir(sh.joinpths(self.rpmbuild_dir, "RPMS"),
