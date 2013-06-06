@@ -19,6 +19,7 @@ import datetime
 import pkg_resources
 import sys
 
+from anvil import colorizer
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil.packaging import base
@@ -113,8 +114,8 @@ class YumDependencyHandler(base.DependencyHandler):
             for r in sorted(repos.keys()):
                 header = ("%s Python packages are already available "
                           "as RPMs from repository %s")
-                utils.log_iterable(sorted(repos[r]), logger=LOG,
-                                   header=header % (len(repos[r]), r))
+                header = header % (len(repos[r]), colorizer.quote(r))
+                utils.log_iterable(sorted(repos[r]), logger=LOG, header=header)
         return pips_to_download
 
     def _write_all_deps_package(self):
