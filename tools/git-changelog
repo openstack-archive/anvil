@@ -26,6 +26,9 @@ logger = logging.getLogger()
 
 per_call_am = 50
 
+details_matcher = re.compile(r"^\s*\[(.*?)\]\[(.*?)\]\[(.*?)\]\[(.*?)\]\s*$",
+                             re.M)
+
 
 class ExecutionError(Exception):
     pass
@@ -35,6 +38,12 @@ def translate_utf8(text):
     return text.decode('utf8').encode('ascii', 'replace')
 
 
+# A .mailmap allows you to non-permanently 'rewrite' the changelog author
+# history so that author names map to a single canonical author name.
+#
+# The .mailmap file itself is simply a list of lines in the format:
+#
+# Canonical Author Name <canonical-author@email.com> Commit Author Name <commit-author@email.com>
 def parse_mailmap(wkdir):
     mapping = {}
     mailmap_fn = os.path.join(wkdir, '.mailmap')
@@ -54,9 +63,10 @@ def parse_mailmap(wkdir):
 
 # Based off of http://www.brianlane.com/nice-changelog-entries.html
 class GitChangeLog(object):
-    def __init__(self, wkdir):
+    def __init__(self, wkdir, skip_emails=None):
         self.wkdir = wkdir
         self.date_buckets = None
+        self.skip_emails = skip_emails
 
     def _get_commit_detail(self, commit, field, am=1):
         detail_cmd = ['git', 'log', '--color=never', '-%s' % (am),
@@ -84,6 +94,8 @@ class GitChangeLog(object):
                 logger.warn("Non-utf8 field %s found", f)
                 return True
         email = email.lower().strip()
+        if self.skip_emails and email in self.skip_emails:
+            return True
         summary = summary.strip()
         if not all([summary, date, email, name]):
             return True
@@ -114,9 +126,8 @@ class GitChangeLog(object):
                                                      per_call_am)
 
             # Extracts the pieces that should be in brackets.
-            details_matcher = r"^\s*\[(.*?)\]\[(.*?)\]\[(.*?)\]\[(.*?)\]\s*$"
             for a_commit in commit_details.splitlines():
-                matcher = re.match(details_matcher, a_commit)
+                matcher = details_matcher.match(a_commit)
                 if not matcher:
                     continue
                 (summary, date, author_email, author_name) = matcher.groups()
@@ -175,6 +186,12 @@ def create_parser():
         default="ChangeLog",
         help="Name of changelog file (default: ChangeLog)")
     parser.add_argument(
+        "--skip-email", "-s",
+        action='append',
+        default=[],
+        help="Skip the commits of the given email address",
+        metavar='<email>')
+    parser.add_argument(
         "commit",
         metavar="<commit>",
         default="HEAD",
@@ -224,8 +241,10 @@ def main():
         sys.exit(1)
 
     try:
-        with open("%s/%s" % (source_dir, options.filename), "wb") as out:
-            out.write(GitChangeLog(source_dir).format_log(options.commit))
+        log_filename = os.path.join(source_dir, options.filename)
+        with open(log_filename, "wb") as out:
+            generator = GitChangeLog(source_dir, options.skip)
+            out.write(generator.format_log(options.commit))
     except Exception as ex:
         print >> sys.stderr, ex
 
