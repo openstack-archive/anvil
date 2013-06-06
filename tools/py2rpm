@@ -399,6 +399,15 @@ def build_name_map():
             package_names[line.lower()] = line
 
 
+def truncate(text, max_len):
+    if max_len <= 0:
+        return ''
+    if len(text) < max_len:
+        return text
+    text = text[0:max_len] + "..."
+    return text
+
+
 def build_epoch_map(options):
     for epoch_spec in options.epoch_list:
         try:
@@ -546,9 +555,9 @@ def adjust_spec(options, spec_file_name, pkg_name, archive_name, build_dir, sour
     # seems to be (distribute has this problem).
     def summary_cleaner(mtch):
         summary = mtch.group(1)
-        nl = summary.find("\n")
-        if nl != -1:
-            summary = summary[0:nl] + "..."
+        summary = summary.strip()
+        summary = summary.replace("\n", " ")
+        summary = truncate(summary, 77)
         summary = summary.strip()
         return summary + "\n" + mtch.group(2)
 
