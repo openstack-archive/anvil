@@ -84,14 +84,30 @@ cache_and_install_rpm_url()
     return $?
 }
 
+yum_install()
+{
+    local rpm_path=$1
+    output=$(yum install $YUM_OPTS "$rpm_path" 2>&1)
+    rc=$?
+    echo $output
+    if [ "$rc" != "0" ]; then
+        if [[ "$output" =~ "Nothing to do" ]]; then
+            # Not really a problem.
+            return 0
+        fi
+    fi
+    return $rc
+}
+
 install_rpm()
 {
     local rpm_path=$1
     local py_name=$2
 
     if [ -n "$rpm_path" ]; then
-        # install or update package
-        yum install $YUM_OPTS "$rpm_path" && return 0
+        # Install or update package
+        yum_install "$rpm_path"
+        return $?
     fi
     if [ -z "$py_name" ]; then
         return 1
@@ -107,13 +123,22 @@ install_rpm()
     # Now build it
     echo "Building RPM for $py_name"
     rpm_names=$("$PY2RPM_CMD" "$pip_tmp_dir/"* 2>/dev/null |
-        awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)
+                awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)
     rm -rf "$pip_tmp_dir"
     if [ -z "$rpm_names" ]; then
         echo "No binary RPM was built for $py_name"
         return 1
     fi
-    yum install $YUM_OPTS $rpm_names
+    for pkg in $rpm_names; do
+        echo "Installing RPM $pkg"
+        if [ -f "$pkg" ]; then
+            yum_install "$pkg"
+            rc=$?
+            if [ "$rc" != "0" ]; then
+                return $rc
+            fi
+        fi
+    done
 }
 
 bootstrap_epel()
@@ -129,7 +154,7 @@ bootstrap_packages()
     for pkg in $PACKAGES; do
         local rpm_name=$(echo $pkg | cut -d: -f1)
         local py_name=$(echo $pkg | cut -d: -f2)
-        install_rpm $rpm_name $py_name
+        install_rpm "$rpm_name" "$py_name"
         install_status=$?
         if [ "$install_status" != 0 ]; then
             echo "Error: Installation of package '$rpm_name' failed!"
@@ -283,7 +308,7 @@ for i in $BOOT_FILES; do
     echo -e $checksum > $i
 done
 
-mkdir -pv /etc/anvil /usr/share/anvil
+mkdir -p -v /etc/anvil /usr/share/anvil
 if [ -n "$SUDO_UID" -a -n "SUDO_GID" ]; then
     chown -c "$SUDO_UID:$SUDO_GID" /etc/anvil /usr/share/anvil
 fi
