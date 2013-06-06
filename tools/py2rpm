@@ -1,9 +1,7 @@
 #!/usr/bin/python
 
 import argparse
-import collections
 import distutils.spawn
-import iso8601
 import logging
 import re
 import os
@@ -12,7 +10,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import textwrap
 
 import pip.util
 import pkg_resources
@@ -49,166 +46,13 @@ arch_dependent = [
 
 epoch_map = {}
 
-skip_emails = [
-    'jenkins@review.openstack.org',
-]
-
 requirements_section_re = re.compile(r'\[(.*?)\]')
 version_re = re.compile(r"^(.*[^.0])(\.0+)*$")
-
-skip_summaries = [
-    re.compile(r'^merge commit', re.I),
-    re.compile(r'^merge branch', re.I),
-    re.compile(r'^merge pull', re.I),
-    re.compile(r'^merge remote', re.I),
-]
-
-per_call_am = 50
-
 setup_py = "setup.py"
 
 
 class InstallationError(Exception):
     pass
-
-
-def translate_utf8(text):
-    return text.decode('utf8').encode('ascii', 'replace')
-
-
-def parse_mailmap(wkdir):
-    mapping = {}
-    mailmap_fn = os.path.join(wkdir, '.mailmap')
-    if not os.path.isfile(mailmap_fn):
-        return mapping
-    for line in open(mailmap_fn, 'rb').read().splitlines():
-        line = line.strip()
-        if len(line) and not line.startswith('#') and ' ' in line:
-            try:
-                (canonical_email, alias) = [x for x in line.split(' ')
-                                            if x.startswith('<')]
-                mapping[alias] = canonical_email
-            except (TypeError, ValueError, IndexError):
-                pass
-    return mapping
-
-
-# Based off of http://www.brianlane.com/nice-changelog-entries.html
-class GitChangeLog(object):
-    def __init__(self, wkdir):
-        self.wkdir = wkdir
-        self.date_buckets = None
-
-    @staticmethod
-    def can_build_for(wkdir):
-        if os.path.isdir(os.path.join(wkdir, ".git")):
-            return True
-        return False
-
-    def _get_commit_detail(self, commit, field, am=1):
-        detail_cmd = ['git', 'log', '--color=never', '-%s' % (am),
-                      "--pretty=format:%s" % (field), commit]
-        (stdout, _stderr) = call_subprocess(detail_cmd, cwd=self.wkdir,
-                                            show_stdout=False)
-        ret = stdout.strip('\n').splitlines()
-        if len(ret) == 1:
-            ret = ret[0]
-        else:
-            ret = [x for x in ret if x.strip() != '']
-            ret = "\n".join(ret)
-        return ret
-
-    def get_log(self):
-        if self.date_buckets is None:
-            self.date_buckets = self._get_log()
-        return self.date_buckets
-
-    def _skip_entry(self, summary, date, email, name):
-        for f in [summary, name, email]:
-            try:
-                translate_utf8(f)
-            except UnicodeError:
-                logger.warn("Non-utf8 field %s found", f)
-                return True
-        email = email.lower().strip()
-        if email in skip_emails:
-            return True
-        summary = summary.strip()
-        for r in skip_summaries:
-            if r.search(summary):
-                return True
-        if not all([summary, date, email, name]):
-            return True
-        return False
-
-    def _get_log(self):
-        log_cmd = ['git', 'log', '--pretty=oneline', '--color=never']
-        (sysout, _stderr) = call_subprocess(log_cmd, cwd=self.wkdir,
-                                            show_stdout=False)
-        lines = sysout.strip('\n').splitlines()
-
-        # Extract the raw commit details
-        mailmap = parse_mailmap(self.wkdir)
-        log = []
-
-        for i in range(0, len(lines), per_call_am):
-            line = lines[i]
-            fields = line.split(' ')
-            if not len(fields):
-                continue
-
-            # See: http://opensource.apple.com/source/Git/Git-26/src/git-htmldocs/pretty-formats.txt
-            commit_id = fields[0]
-            commit_details = self._get_commit_detail(commit_id,
-                                                     "[%s][%ai][%aE][%an]",
-                                                     per_call_am)
-
-            # Extracts the pieces that should be in brackets.
-            details_matcher = r"^\s*\[(.*?)\]\[(.*?)\]\[(.*?)\]\[(.*?)\]\s*$"
-            for a_commit in commit_details.splitlines():
-                matcher = re.match(details_matcher, a_commit)
-                if not matcher:
-                    continue
-                (summary, date, author_email, author_name) = matcher.groups()
-                author_email = mailmap.get(author_email, author_email)
-                try:
-                    date = iso8601.parse_date(date)
-                except iso8601.ParseError:
-                    date = None
-                if self._skip_entry(summary, date, author_email, author_name):
-                    continue
-                log.append({
-                    'summary': translate_utf8(summary),
-                    'when': date,
-                    'author_email': translate_utf8(author_email),
-                    'author_name': translate_utf8(author_name),
-                })
-
-        # Bucketize the dates by day
-        date_buckets = collections.defaultdict(list)
-        for entry in log:
-            day = entry['when'].date()
-            date_buckets[day].append(entry)
-        return date_buckets
-
-    def format_log(self):
-        date_buckets = self.get_log()
-        lines = []
-        for d in reversed(sorted(date_buckets.keys())):
-            entries = date_buckets[d]
-            for entry in entries:
-                header = "* %s %s <%s>" % (d.strftime("%a %b %d %Y"),
-                                           entry['author_name'],
-                                           entry['author_email'])
-                lines.append(header)
-                summary = entry['summary']
-                sublines = textwrap.wrap(summary, 77)
-                if len(sublines):
-                    lines.append("- %s" % sublines[0])
-                    if len(sublines) > 1:
-                        for subline in sublines[1:]:
-                            lines.append("  %s" % subline)
-        return "\n".join(lines)
 
 
 def package_name_python2rpm(python_name):
@@ -303,12 +147,6 @@ def create_parser():
         action="store_true",
         default=False,
         help="Only generate source RPM")
-    parser.add_argument(
-        "--no-changelog",
-        action="store_true",
-        default=False,
-        dest="no_changelog",
-        help="Do not attempt to build a changelog automatically.")
     parser.add_argument(
         "--rpm-base",
         metavar="<dir>",
@@ -419,19 +257,6 @@ def build_epoch_map(options):
             raise InstallationError("Bad epoch specifier: `%s'" % epoch_spec)
         else:
             epoch_map[name] = epoch
-
-
-def build_changelog(source_dir, options):
-    if options.no_changelog:
-        return ""
-    cls = None
-    for c in [GitChangeLog,]:
-        if c.can_build_for(source_dir):
-            cls = c
-            break
-    if not cls:
-        return ""
-    return "\n".join(['', '%changelog', cls(source_dir).format_log(), ''])
 
 
 def run_egg_info(source_dir, options):
@@ -694,5 +519,5 @@ mv -f INSTALLED_FILES{.tmp,}
 if __name__ == "__main__":
     try:
         main()
-    except Exception as ex:
-        print >> sys.stderr, ex
+    except Exception as exp:
+        print >> sys.stderr, exp
