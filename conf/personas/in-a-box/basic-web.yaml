@@ -15,6 +15,7 @@ components:
 - quantum-client
 - swift-client # Seems only needed for horizon?
 - quantum
+- openvswitch
 - cinder
 - novnc
 - nova
