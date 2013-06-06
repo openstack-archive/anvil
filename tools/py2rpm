@@ -20,6 +20,20 @@ import pkg_resources
 
 logger = logging.getLogger()
 
+headers = [
+    'Name',
+    'Version',
+    'Release',
+    'Copyright',
+    'Source',
+    'URL',
+    'Packager',
+    'BuildRoot',
+    'License',
+    'Prefix',
+    'Group',
+]
+
 package_map = {
     "django": "Django",
     "distribute": "python-setuptools",
@@ -449,6 +463,8 @@ def trim_zeroes(version):
 
 
 def requires_and_conflicts(req_list, multiline):
+    global epoch_map
+
     rpm_requires = ""
     rpm_conflicts = ""
     for line in req_list:
@@ -483,6 +499,66 @@ def requires_and_conflicts(req_list, multiline):
             rpm_requires = "%s %s %s %s" % (
                 rpm_requires, rpm_name, kind, version)
     return rpm_requires, rpm_conflicts
+
+
+def adjust_spec(options, spec_file_name, pkg_name, archive_name, build_dir, source_dir):
+    global epoch_map
+
+    rpm_name = package_name_python2rpm(pkg_name)
+    cmdline = [
+        "sed", "-i",
+        "-e", "s/^Name:.*$/Name: %s/" % rpm_name,
+        "-e", "s/%{name}/%{pkg_name}/g",
+        "-e", "s/^%%define name.*$/%%define pkg_name %s/" % pkg_name,
+    ]
+    epoch = epoch_map.get(pkg_name.lower(), options.epoch)
+    if epoch is not None:
+        cmdline += [
+            "-e", "s/^Version:/Epoch: %s\\nVersion:/" % epoch,
+        ]
+    if pkg_name.lower() in options.arch_dependent:
+        cmdline += [
+            "-e", "/^BuildArch/d",
+        ]
+    if archive_name:
+        cmdline += [
+            "-e",
+            "s/^Source0: .*$/Source0: %s/" % os.path.basename(archive_name)
+        ]
+        shutil.copy(archive_name, os.path.join(build_dir, "SOURCES"))
+    call_subprocess(cmdline + [spec_file_name])
+    cmdline = [
+        "sed", "-i", "-r",
+        "-e", "/%doc/s/ man[^ ]+//",
+    ]
+    call_subprocess(cmdline + [spec_file_name])
+
+    # Do any adjustments inside the file.
+    with open(spec_file_name, "rb") as fh:
+        contents = fh.read()
+
+    # Hook up a changelog if we can.
+    if not re.search(r"%changelog", contents):
+        changelog = build_changelog(source_dir, options)
+        contents += changelog
+
+    # Fix how summary is not supposed to be more than 1 line but sometimes
+    # seems to be (distribute has this problem).
+    def summary_cleaner(mtch):
+        summary = mtch.group(1)
+        nl = summary.find("\n")
+        if nl != -1:
+            summary = summary[0:nl] + "..."
+        summary = summary.strip()
+        return summary + "\n" + mtch.group(2)
+
+    spec_headers = [h + ":" for h in headers]
+    spec_headers = "|".join(spec_headers)
+    contents = re.sub(re.compile(r"(^Summary:.*?)(" + spec_headers+ ")", re.M|re.S),
+                      summary_cleaner, contents)
+
+    with open(spec_file_name, "wb") as fh:
+        fh.write(contents)
 
 
 def build_rpm(options, filename):
@@ -525,42 +601,15 @@ def build_rpm(options, filename):
         old_name = spec_name
         spec_name = os.path.join(build_dir, "SPECS", "%s.spec" % rpm_name)
         os.rename(old_name, spec_name)
-    cmdline = [
-        "sed", "-i",
-        "-e", "s/^Name:.*$/Name: %s/" % rpm_name,
-        "-e", "s/%{name}/%{pkg_name}/g",
-        "-e", "s/^%%define name.*$/%%define pkg_name %s/" % pkg_name,
-    ]
-    epoch = epoch_map.get(pkg_name.lower(), options.epoch)
-    if epoch is not None:
-        cmdline += [
-            "-e", "s/^Version:/Epoch: %s\\nVersion:/" % epoch,
-        ]
-    if pkg_name.lower() in options.arch_dependent:
-        cmdline += [
-            "-e", "/^BuildArch/d",
-        ]
-    if archive_name:
-        cmdline += [
-            "-e",
-            "s/^Source0: .*$/Source0: %s/" % os.path.basename(archive_name)
-        ]
-        shutil.copy(archive_name,
-                    os.path.join(build_dir, "SOURCES"))
-    call_subprocess(cmdline + [spec_name])
-    cmdline = [
-        "sed", "-i", "-r",
-        "-e", "/%doc/s/ man[^ ]+//",
-    ]
-    call_subprocess(cmdline + [spec_name])
+
+    # Clean up (or add new things) to the spec file.
+    adjust_spec(options, spec_name, pkg_name, archive_name, build_dir,
+                source_dir)
+
     if options.source_only:
         rpmbuild_what = "-bs"
     else:
         rpmbuild_what = "-ba"
-    contents = open(spec_name, "rb").read()
-    if not re.search(r"%changelog", contents):
-        contents += build_changelog(source_dir, options)
-        open(spec_name, "wb").write(contents)
     if rpmbuild_what:
         call_subprocess(
             [options.rpmbuild, rpmbuild_what,
