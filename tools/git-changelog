@@ -1,0 +1,237 @@
+#!/usr/bin/python
+
+"""
+This tool generates a pretty software's changelog from git history.
+
+http://fedoraproject.org/wiki/How_to_create_an_RPM_package says:
+
+  %changelog: Changes in the package. Use the format example above.
+              Do NOT put software's changelog at here. This changelog
+              is for RPM itself.
+"""
+
+import argparse
+import collections
+import iso8601
+import logging
+import re
+import os
+import os.path
+import subprocess
+import sys
+import textwrap
+
+
+logger = logging.getLogger()
+
+per_call_am = 50
+
+
+class ExecutionError(Exception):
+    pass
+
+
+def translate_utf8(text):
+    return text.decode('utf8').encode('ascii', 'replace')
+
+
+def parse_mailmap(wkdir):
+    mapping = {}
+    mailmap_fn = os.path.join(wkdir, '.mailmap')
+    if not os.path.isfile(mailmap_fn):
+        return mapping
+    for line in open(mailmap_fn, 'rb').read().splitlines():
+        line = line.strip()
+        if len(line) and not line.startswith('#') and ' ' in line:
+            try:
+                (canonical_email, alias) = [x for x in line.split(' ')
+                                            if x.startswith('<')]
+                mapping[alias] = canonical_email
+            except (TypeError, ValueError, IndexError):
+                pass
+    return mapping
+
+
+# Based off of http://www.brianlane.com/nice-changelog-entries.html
+class GitChangeLog(object):
+    def __init__(self, wkdir):
+        self.wkdir = wkdir
+        self.date_buckets = None
+
+    def _get_commit_detail(self, commit, field, am=1):
+        detail_cmd = ['git', 'log', '--color=never', '-%s' % (am),
+                      "--pretty=format:%s" % (field), commit]
+        (stdout, _stderr) = call_subprocess(detail_cmd, cwd=self.wkdir,
+                                            show_stdout=False)
+        ret = stdout.strip('\n').splitlines()
+        if len(ret) == 1:
+            ret = ret[0]
+        else:
+            ret = [x for x in ret if x.strip() != '']
+            ret = "\n".join(ret)
+        return ret
+
+    def get_log(self, commit):
+        if self.date_buckets is None:
+            self.date_buckets = self._get_log(commit)
+        return self.date_buckets
+
+    def _skip_entry(self, summary, date, email, name):
+        for f in [summary, name, email]:
+            try:
+                translate_utf8(f)
+            except UnicodeError:
+                logger.warn("Non-utf8 field %s found", f)
+                return True
+        email = email.lower().strip()
+        summary = summary.strip()
+        if not all([summary, date, email, name]):
+            return True
+        return False
+
+    def _get_log(self, commit):
+        log_cmd = ['git', 'log',
+                   '--no-merges', '--pretty=oneline',
+                   '--color=never', commit]
+        (sysout, _stderr) = call_subprocess(log_cmd, cwd=self.wkdir,
+                                            show_stdout=False)
+        lines = sysout.strip('\n').splitlines()
+
+        # Extract the raw commit details
+        mailmap = parse_mailmap(self.wkdir)
+        log = []
+
+        for i in range(0, len(lines), per_call_am):
+            line = lines[i]
+            fields = line.split(' ')
+            if not len(fields):
+                continue
+
+            # See: http://opensource.apple.com/source/Git/Git-26/src/git-htmldocs/pretty-formats.txt
+            commit_id = fields[0]
+            commit_details = self._get_commit_detail(commit_id,
+                                                     "[%s][%ai][%aE][%an]",
+                                                     per_call_am)
+
+            # Extracts the pieces that should be in brackets.
+            details_matcher = r"^\s*\[(.*?)\]\[(.*?)\]\[(.*?)\]\[(.*?)\]\s*$"
+            for a_commit in commit_details.splitlines():
+                matcher = re.match(details_matcher, a_commit)
+                if not matcher:
+                    continue
+                (summary, date, author_email, author_name) = matcher.groups()
+                author_email = mailmap.get(author_email, author_email)
+                try:
+                    date = iso8601.parse_date(date)
+                except iso8601.ParseError:
+                    date = None
+                if self._skip_entry(summary, date, author_email, author_name):
+                    continue
+                log.append({
+                    'summary': translate_utf8(summary),
+                    'when': date,
+                    'author_email': translate_utf8(author_email),
+                    'author_name': translate_utf8(author_name),
+                })
+
+        # Bucketize the dates by day
+        date_buckets = collections.defaultdict(list)
+        for entry in log:
+            day = entry['when'].date()
+            date_buckets[day].append(entry)
+        return date_buckets
+
+    def format_log(self, commit):
+        date_buckets = self.get_log(commit)
+        lines = []
+        for d in reversed(sorted(date_buckets.keys())):
+            entries = date_buckets[d]
+            for entry in entries:
+                header = "* %s %s <%s>" % (d.strftime("%a %b %d %Y"),
+                                           entry['author_name'],
+                                           entry['author_email'])
+                lines.append(header)
+                summary = entry['summary']
+                sublines = textwrap.wrap(summary, 77)
+                if len(sublines):
+                    lines.append("- %s" % sublines[0])
+                    if len(sublines) > 1:
+                        for subline in sublines[1:]:
+                            lines.append("  %s" % subline)
+                lines.append("")
+        return "\n".join(lines)
+
+
+def create_parser():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--debug", "-d",
+        action="store_true",
+        default=False,
+        help="Print debug information")
+    parser.add_argument(
+        "--filename", "-f",
+        default="ChangeLog",
+        help="Name of changelog file (default: ChangeLog)")
+    parser.add_argument(
+        "commit",
+        metavar="<commit>",
+        default="HEAD",
+        nargs="?",
+        help="The name of a commit for which to generate the log"
+        " (default: HEAD)")
+    return parser
+
+
+def call_subprocess(cmd, cwd=None, show_stdout=True, raise_on_returncode=True):
+    if show_stdout:
+        stdout = None
+    else:
+        stdout = subprocess.PIPE
+    proc = subprocess.Popen(cmd, cwd=cwd, stderr=None, stdin=None, stdout=stdout)
+    ret = proc.communicate()
+    if proc.returncode:
+        cwd = cwd or os.getcwd()
+        command_desc = " ".join(cmd)
+        if raise_on_returncode:
+            raise ExecutionError(
+                "Command %s failed with error code %s in %s"
+                % (command_desc, proc.returncode, cwd))
+        else:
+            logger.warn(
+                "Command %s had error code %s in %s"
+                % (command_desc, proc.returncode, cwd))
+    return ret
+
+
+def setup_logging(options):
+    level = logging.DEBUG if options.debug else logging.WARNING
+    handler = logging.StreamHandler(sys.stderr)
+    logger.addHandler(handler)
+    logger.setLevel(level)
+
+
+def main():
+    parser = create_parser()
+    options = parser.parse_args()
+    setup_logging(options)
+    source_dir = os.getcwd()
+
+    # .git can be a dir or a gitref regular file (for a git submodule)
+    if not os.path.exists(os.path.join(source_dir, ".git")):
+        print >> sys.stderr, "fatal: Not a git repository"
+        sys.exit(1)
+
+    try:
+        with open("%s/%s" % (source_dir, options.filename), "wb") as out:
+            out.write(GitChangeLog(source_dir).format_log(options.commit))
+    except Exception as ex:
+        print >> sys.stderr, ex
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as exp:
+        print >> sys.stderr, exp

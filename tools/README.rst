@@ -10,30 +10,30 @@ multipip
     Double requirement given: nose>=2 (already in nose>=1.2, name='nose')
 
 Use `multipip` to join these requirements::
-    
+
     $ multipip 'nose>=1.2' 'nose>=2' 'nose<4'
     {"compatibles": ["nose>=2,<4"], "incompatibles": {}}
 
 Files of requirements can be used as well::
 
-    $ cat pip-requires 
+    $ cat pip-requires
     nose<4
-    $ multipip 'nose>=1.2' 'nose>=2' -r pip-requires 
+    $ multipip 'nose>=1.2' 'nose>=2' -r pip-requires
     {"compatibles": ["nose>=2,<4"], "incompatibles": {}}
 
 `multipip` prints error messages for badly formated requirements and exits early
 and for incompatible requirements provides you which package was incompatible
 and which versions were found to be problematic::
 
-    $ cat pip-requires 
+    $ cat pip-requires
     pip==1.3
-    $ multipip 'pip==1.2' -r pip-requires 
+    $ multipip 'pip==1.2' -r pip-requires
     {"compatibles": [], "incompatibles": {"pip": ["pip==1.2", "pip==1.3"]}}
-    
+
 It is possible to filter some packages from printed output. This can
 be useful for a huge `pip-requires` file::
 
-    $ cat pip-requires 
+    $ cat pip-requires
     nose<4
     pip==1.2
     nose>=1.2
@@ -43,7 +43,7 @@ be useful for a huge `pip-requires` file::
 Installed packages can be filtered, too (they are taken from `pip
 freeze`)::
 
-    $ cat pip-requires 
+    $ cat pip-requires
     nose<4
     pip==1.2
     nose>=1.2
@@ -82,6 +82,12 @@ builds RPMs (current directory is used by default)::
     Wrote: /home/guest/rpmbuild/SRPMS/python-multipip-0.1-1.src.rpm
     Wrote: /home/guest/rpmbuild/RPMS/noarch/python-multipip-0.1-1.noarch.rpm
     ...
+
+
+git-changelog
+-------------
+This tool generates a pretty software's changelog from git history.
+
 
 build-install-node-from-source.sh
 ---------------------------------
