@@ -123,7 +123,7 @@ install_rpm()
     # Now build it
     echo "Building RPM for $py_name"
     rpm_names=$("$PY2RPM_CMD" "$pip_tmp_dir/"* 2>/dev/null |
-                awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)
+                awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u | grep -v "python-distribute")
     rm -rf "$pip_tmp_dir"
     if [ -z "$rpm_names" ]; then
         echo "No binary RPM was built for $py_name"
