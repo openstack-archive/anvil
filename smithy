@@ -89,7 +89,11 @@ yum_install()
     local rpm_path=$1
     output=$(yum install $YUM_OPTS "$rpm_path" 2>&1)
     rc=$?
-    echo $output
+    if [ -n "$output" ]; then
+        if [[ ! "$output" =~ "Nothing to do" ]]; then
+            echo $output
+        fi
+    fi
     if [ "$rc" != "0" ]; then
         if [[ "$output" =~ "Nothing to do" ]]; then
             # Not really a problem.
@@ -103,11 +107,11 @@ install_rpm()
 {
     local rpm_path=$1
     local py_name=$2
-
     if [ -n "$rpm_path" ]; then
-        # Install or update package
         yum_install "$rpm_path"
-        return $?
+        if rpm_is_installed "$rpm_path"; then
+            return 0
+        fi
     fi
     if [ -z "$py_name" ]; then
         return 1
@@ -118,7 +122,7 @@ install_rpm()
     pip_tmp_dir=$(mktemp -d)
     find_pip
     pip_opts="$PIP_OPTS -U -I"
-    $PIP_CMD install $pip_opts $py_name --download "$pip_tmp_dir"
+    $PIP_CMD install $pip_opts "$py_name" --download "$pip_tmp_dir"
 
     # Now build it
     echo "Building RPM for $py_name"
@@ -133,10 +137,6 @@ install_rpm()
         echo "Installing RPM $pkg"
         if [ -f "$pkg" ]; then
             yum_install "$pkg"
-            rc=$?
-            if [ "$rc" != "0" ]; then
-                return $rc
-            fi
         fi
     done
 }
