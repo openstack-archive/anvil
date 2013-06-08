@@ -50,6 +50,10 @@ class YumDependencyHandler(base.DependencyHandler):
     py2rpm_executable = sh.which("py2rpm", ["tools/"])
     REPO_FN = "anvil.repo"
     YUM_REPO_DIR = "/etc/yum.repos.d/"
+    BANNED_PACKAGES = [
+        'distribute',
+        'setuptools',
+    ]
 
     def __init__(self, distro, root_dir, instances):
         super(YumDependencyHandler, self).__init__(distro, root_dir, instances)
@@ -247,7 +251,18 @@ BuildArch: noarch
 
     def _build_dependencies(self):
         package_files = self.download_dependencies()
-        package_files = sh.listdir(self.download_dir, files_only=True)
+
+        def filter_files(package_files):
+            for p in package_files:
+                banned = False
+                for k in self.BANNED_PACKAGES:
+                    if k in p.lower():
+                        banned = True
+                if banned:
+                    continue
+                yield p
+
+        package_files = [f for f in filter_files(package_files)]
         if not package_files:
             LOG.info("No RPM packages of OpenStack dependencies to build")
             return
