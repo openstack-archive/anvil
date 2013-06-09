@@ -28,7 +28,6 @@ from anvil import shell as sh
 from anvil import trace as tr
 from anvil import utils
 
-
 LOG = logging.getLogger(__name__)
 
 
@@ -266,23 +265,39 @@ BuildArch: noarch
         if not package_files:
             LOG.info("No RPM packages of OpenStack dependencies to build")
             return
-        for filename in package_files:
-            LOG.info("Building RPM package from %s", filename)
-            cmdline = self.py2rpm_start_cmdline() + ["--", filename]
-            sh.execute_save_output(
-                cmdline,
-                out_filename=sh.joinpths(
-                    self.log_dir, "py2rpm-%s.out" % sh.basename(filename)))
+        package_base_names = [sh.basename(f) for f in package_files]
+        utils.log_iterable(sorted(package_base_names), logger=LOG,
+                           header=("Building %s dependency RPM"
+                                   " packages") % (len(package_files)))
+        with utils.progress_bar(name='Building',
+                                max_am=len(package_files)) as p_bar:
+            for (i, filename) in enumerate(sorted(package_files)):
+                cmdline = self.py2rpm_start_cmdline() + ["--", filename]
+                build_filename = "py2rpm-%s.out" % sh.basename(filename)
+                out_filename = sh.joinpths(self.log_dir, build_filename)
+                sh.execute_save_output(cmdline, out_filename=out_filename,
+                                       quiet=True)
+                p_bar.update(i + 1)
 
     def _build_openstack(self):
-        for pkg_dir in self.package_dirs:
-            component_name = self._get_component_name(pkg_dir)
-            LOG.info("Building RPM package for %s", component_name)
-            cmdline = self.py2rpm_start_cmdline() + ["--", pkg_dir]
-            sh.execute_save_output(
-                cmdline,
-                out_filename="%s/py2rpm.%s.out" % (
-                    self.log_dir, component_name))
+        if not self.package_dirs:
+            LOG.warn("No RPM packages of OpenStack installs to build")
+            return
+        component_names = [self._get_component_name(d)
+                           for d in self.package_dirs]
+        utils.log_iterable(sorted(component_names), logger=LOG,
+                           header=("Building %s OpenStack RPM"
+                                   " packages") % (len(self.package_dirs)))
+        with utils.progress_bar(name='Building',
+                                max_am=len(self.package_dirs)) as p_bar:
+            for (i, pkg_dir) in enumerate(sorted(self.package_dirs)):
+                component_name = self._get_component_name(pkg_dir)
+                cmdline = self.py2rpm_start_cmdline() + ["--", pkg_dir]
+                out_filename = sh.joinpths(self.log_dir,
+                                           "py2rpm.%s.out" % (component_name))
+                sh.execute_save_output(cmdline, out_filename=out_filename,
+                                       quiet=True)
+                p_bar.update(i + 1)
 
     def _create_deps_repo(self):
         for filename in sh.listdir(sh.joinpths(self.rpmbuild_dir, "RPMS"),
