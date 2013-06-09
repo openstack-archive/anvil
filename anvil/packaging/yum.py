@@ -23,6 +23,7 @@ from datetime import datetime
 from anvil import colorizer
 from anvil import log as logging
 from anvil.packaging import base
+from anvil.packaging.helpers import pip_helper
 from anvil.packaging.helpers import yum_helper
 from anvil import shell as sh
 from anvil import trace as tr
@@ -98,13 +99,24 @@ class YumDependencyHandler(base.DependencyHandler):
         self._build_openstack()
         self._create_deps_repo()
 
-    def filter_download_requires(self):
+    def _get_yum_available(self):
         yum_map = {}
-        for pkg in yum_helper.Helper().get_available():
+        for pkg in self.helper.get_available():
             for provides in pkg.provides:
-                yum_map.setdefault(provides[0], set()).add(
-                    (pkg.version, pkg.repo))
+                pkg_info = (pkg.version, pkg.repo)
+                yum_map.setdefault(provides[0], set()).add(pkg_info)
+        return yum_map
 
+    @staticmethod
+    def _find_yum_match(yum_map, req, rpm_name):
+        yum_versions = yum_map.get(rpm_name, [])
+        for (version, repo) in yum_versions:
+            if version in req:
+                return (version, repo)
+        return (None, None)
+
+    def filter_download_requires(self):
+        yum_map = self._get_yum_available()
         nopips = [pkg_resources.Requirement.parse(name).key
                   for name in self.python_names]
 
@@ -119,15 +131,11 @@ class YumDependencyHandler(base.DependencyHandler):
 
         satisfied_list = []
         for (req, rpm_name) in zip(req_to_install, rpm_to_install):
-            yum_versions = yum_map.get(rpm_name, [])
-            satisfied = False
-            for (version, repo) in yum_versions:
-                if version in req:
-                    satisfied = True
-                    satisfied_list.append((req, rpm_name, version, repo))
-                    break
-            if not satisfied:
+            (version, repo) = self._find_yum_match(yum_map, req, rpm_name)
+            if not repo:
                 pips_to_download.append(str(req))
+            else:
+                satisfied_list.append((req, rpm_name, version, repo))
 
         if satisfied_list:
             # Organize by repo
@@ -249,19 +257,49 @@ BuildArch: noarch
         sh.execute(cmdline)
 
     def _build_dependencies(self):
-        package_files = self.download_dependencies()
+        (pips_downloaded, package_files) = self.download_dependencies()
 
-        def filter_files(package_files):
-            for p in package_files:
-                banned = False
-                for k in self.BANNED_PACKAGES:
-                    if k in p.lower():
-                        banned = True
-                if banned:
+        # Analyze what was downloaded and eject things that were downloaded
+        # by pip as a dependency of a download but which we do not want to
+        # build or can satisfy by other means
+        no_pips = [pkg_resources.Requirement.parse(name).key
+                   for name in self.python_names]
+        no_pips.extend(self.BANNED_PACKAGES)
+        yum_map = self._get_yum_available()
+        pips_keys = set([p.key for p in pips_downloaded])
+
+        def filter_package_files(package_files):
+            package_reqs = []
+            package_keys = []
+            for filename in package_files:
+                package_details = pip_helper.get_archive_details(filename)
+                package_reqs.append(package_details['req'])
+                package_keys.append(package_details['req'].key)
+            package_rpm_names = self._convert_names_python2rpm(package_keys)
+            filtered_files = []
+            for (filename, req, rpm_name) in zip(package_files, package_reqs,
+                                                 package_rpm_names):
+                if req.key in no_pips:
+                    LOG.info(("Dependency %s was downloaded additionally "
+                             "but it is disallowed."), req)
                     continue
-                yield p
+                if req.key in pips_keys:
+                    filtered_files.append(filename)
+                    continue
+                # See if pip tried to download it but we already can satisfy
+                # it via yum and avoid building it in the first place...
+                (version, repo) = self._find_yum_match(yum_map, req, rpm_name)
+                if not repo:
+                    filtered_files.append(filename)
+                else:
+                    LOG.info(("Dependency %s was downloaded additionally "
+                             "but it can be satisfied by %s from repository "
+                             "%s instead."), req, colorizer.quote(rpm_name),
+                             colorizer.quote(repo))
+            return filtered_files
 
-        package_files = [f for f in filter_files(package_files)]
+        LOG.info("Filtering %s downloaded files.", len(package_files))
+        package_files = filter_package_files(package_files)
         if not package_files:
             LOG.info("No RPM packages of OpenStack dependencies to build")
             return
