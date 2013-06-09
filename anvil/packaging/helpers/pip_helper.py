@@ -17,8 +17,12 @@
 import copy
 import pkg_resources
 
+from pip import util as pip_util
+from pip import req as pip_req
+
 from anvil import log as logging
 from anvil import shell as sh
+from anvil import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -40,6 +44,25 @@ def create_requirement(name, version=None):
                 "Pip requirement version must be a string or numeric type")
         name = "%s%s" % (name, version)
     return pkg_resources.Requirement.parse(name)
+
+
+def get_archive_details(filename):
+    # Get pip to get us the egg-info.
+    with utils.tempdir() as td:
+        filename = sh.copy(filename, sh.joinpths(td, sh.basename(filename)))
+        extract_to = sh.mkdir(sh.joinpths(td, 'build'))
+        pip_util.unpack_file(filename, extract_to, content_type='', link='')
+        req = pip_req.InstallRequirement.from_line(extract_to)
+        req.source_dir = extract_to
+        req.run_egg_info()
+        # Selectively extract pieces of the req.
+        return {
+            'req': req.req,
+            'dependencies': req.requirements,
+            'name': req.name,
+            'pkg_info': req.pkg_info,
+            'dependency_links': req.dependency_links,
+        }
 
 
 def _skip_requirement(line):
