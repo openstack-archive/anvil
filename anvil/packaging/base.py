@@ -23,6 +23,7 @@ import pkg_resources
 from anvil import colorizer
 from anvil import exceptions as exc
 from anvil import log as logging
+from anvil.packaging.helpers import pip_helper
 from anvil import shell as sh
 from anvil import utils
 
@@ -236,6 +237,17 @@ class DependencyHandler(object):
         out_filename = sh.joinpths(self.log_dir, download_filename)
         sh.execute_save_output(cmdline, out_filename=out_filename)
 
+    def _examine_download_dir(self, pips_to_download, pip_download_dir):
+        pip_names = set([p.key for p in pips_to_download])
+        what_downloaded = sh.listdir(pip_download_dir, files_only=True)
+        LOG.info("Validating %s files that were downloaded.",
+                 len(what_downloaded))
+        for filename in what_downloaded:
+            pkg_details = pip_helper.get_archive_details(filename)
+            req = pkg_details['req']
+            if req.key not in pip_names:
+                LOG.info("Dependency %s was automatically included.", req)
+
     def download_dependencies(self, clear_cache=False):
         """Download dependencies from `$deps_dir/download-requires`.
 
@@ -252,7 +264,7 @@ class DependencyHandler(object):
         sh.write_file(download_requires_filename,
                       "\n".join(str(req) for req in pips_to_download))
         if not pips_to_download:
-            return []
+            return ([], [])
         pip_dir = sh.joinpths(self.deps_dir, "pip")
         pip_download_dir = sh.joinpths(pip_dir, "download")
         pip_build_dir = sh.joinpths(pip_dir, "build")
@@ -284,6 +296,8 @@ class DependencyHandler(object):
                 break
         if pip_failures:
             raise pip_failures[-1]
+        self._examine_download_dir(pips_to_download, pip_download_dir)
         for filename in sh.listdir(pip_download_dir, files_only=True):
             sh.move(filename, self.download_dir)
-        return sh.listdir(self.download_dir, files_only=True)
+        what_downloaded = sh.listdir(self.download_dir, files_only=True)
+        return (pips_to_download, what_downloaded)
