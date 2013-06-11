@@ -24,18 +24,14 @@ from anvil.components.helpers import virt as lv
 
 from anvil.components.configurators import base
 
-# Special generated conf
 API_CONF = 'nova.conf'
-
-# Paste configuration
 PASTE_CONF = 'nova-api-paste.ini'
-
 POLICY_CONF = 'policy.json'
 LOGGING_CONF = "logging.conf"
-
 CONFIGS = [PASTE_CONF, POLICY_CONF, LOGGING_CONF, API_CONF]
 
 LOG = logging.getLogger(__name__)
+
 
 class NovaConfigurator(base.Configurator):
 
