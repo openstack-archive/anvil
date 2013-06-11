@@ -414,7 +414,7 @@ BuildArch: noarch
             self.tracereader = None
 
         # Don't take out packages that anvil requires to run...
-        no_remove = os.env.get_key('REQUIRED_PACKAGES', '').split()
+        no_remove = env.get_key('REQUIRED_PACKAGES', '').split()
         no_remove = sorted(set(no_remove))
         rpm_names = []
         for name in self._convert_names_python2rpm(self.python_names):
