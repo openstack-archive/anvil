@@ -60,7 +60,7 @@ class InstallAction(action.Action):
                                logger=LOG)
 
     def _run(self, persona, component_order, instances):
-        removals = ['uninstall', 'unconfigure']
+        removals = ['unconfigure']
         self._run_phase(
             action.PhaseFunctors(
                 start=lambda i: LOG.info('Configuring %s.', colorizer.quote(i.name)),
@@ -104,6 +104,7 @@ class InstallAction(action.Action):
                 LOG.info("Finished install of %s with result %s.",
                          colorizer.quote(instance.name), result)
 
+        removals += ["package-uninstall", 'uninstall']
         dependency_handler = self.distro.dependency_handler_class(
             self.distro, self.root_dir, instances.values())
         general_package = "general"

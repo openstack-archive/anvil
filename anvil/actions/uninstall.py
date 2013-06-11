@@ -45,6 +45,7 @@ class UninstallAction(action.Action):
             'unconfigure',
             *removals
             )
+
         removals += ['post-install']
         self._run_phase(
             action.PhaseFunctors(
@@ -58,6 +59,7 @@ class UninstallAction(action.Action):
             *removals
             )
 
+        removals += ['package-install']
         general_package = "general"
         dependency_handler = self.distro.dependency_handler_class(
             self.distro, self.root_dir, instances.values())
@@ -69,6 +71,6 @@ class UninstallAction(action.Action):
             ),
             [general_package],
             {general_package: instances[general_package]},
-            "uninstall",
+            "package-uninstall",
             *removals
             )
