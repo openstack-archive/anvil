@@ -22,42 +22,18 @@ from anvil.actions import base as action
 LOG = log.getLogger(__name__)
 
 
-class UninstallAction(action.Action):
+class RemoveAction(action.Action):
     @property
     def lookup_name(self):
         return 'uninstall'
 
     def _order_components(self, components):
-        components = super(UninstallAction, self)._order_components(components)
+        components = super(RemoveAction, self)._order_components(components)
         components.reverse()
         return components
 
     def _run(self, persona, component_order, instances):
-        removals = ['configure']
-        self._run_phase(
-            action.PhaseFunctors(
-                start=lambda i: LOG.info('Unconfiguring %s.', colorizer.quote(i.name)),
-                run=lambda i: i.unconfigure(),
-                end=None,
-            ),
-            component_order,
-            instances,
-            'unconfigure',
-            *removals
-            )
-        removals += ['post-install']
-        self._run_phase(
-            action.PhaseFunctors(
-                start=None,
-                run=lambda i: i.pre_uninstall(),
-                end=None,
-            ),
-            component_order,
-            instances,
-            'pre-uninstall',
-            *removals
-            )
-
+        removals = ['install']
         general_package = "general"
         dependency_handler = self.distro.dependency_handler_class(
             self.distro, self.root_dir, instances.values())
@@ -70,5 +46,30 @@ class UninstallAction(action.Action):
             [general_package],
             {general_package: instances[general_package]},
             "uninstall",
+            *removals
+            )
+
+        self._run_phase(
+            action.PhaseFunctors(
+                start=lambda i: LOG.info('Uninstalling %s.', colorizer.quote(i.name)),
+                run=lambda i: i.uninstall(),
+                end=None,
+            ),
+            component_order,
+            instances,
+            'uninstall',
+            *removals
+            )
+
+        removals += ['pre-install']
+        self._run_phase(
+            action.PhaseFunctors(
+                start=lambda i: LOG.info('Post-uninstalling %s.', colorizer.quote(i.name)),
+                run=lambda i: i.post_uninstall(),
+                end=None,
+            ),
+            component_order,
+            instances,
+            'post-uninstall',
             *removals
             )

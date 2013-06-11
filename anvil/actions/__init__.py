@@ -14,14 +14,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil.actions import prepare
+from anvil.actions import coverage
 from anvil.actions import install
+from anvil.actions import prepare
+from anvil.actions import remove
 from anvil.actions import restart
 from anvil.actions import start
 from anvil.actions import status
 from anvil.actions import stop
 from anvil.actions import test
-from anvil.actions import coverage
 from anvil.actions import uninstall
 
 
@@ -35,6 +36,7 @@ _NAMES_TO_RUNNER = {
     'test': test.TestAction,
     'coverage': coverage.CoverageAction,
     'uninstall': uninstall.UninstallAction,
+    'remove': remove.RemoveAction,
 }
 _RUNNER_TO_NAMES = dict((v, k) for k, v in _NAMES_TO_RUNNER.items())
 
