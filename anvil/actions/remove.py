@@ -34,9 +34,11 @@ class RemoveAction(action.Action):
 
     def _run(self, persona, component_order, instances):
         removals = ['package-install', 'install']
+        dependency_handler_class = self.distro.dependency_handler_class
+        dependency_handler = dependency_handler_class(self.distro,
+                                                      self.root_dir,
+                                                      instances.values())
         general_package = "general"
-        dependency_handler = self.distro.dependency_handler_class(
-            self.distro, self.root_dir, instances.values())
         self._run_phase(
             action.PhaseFunctors(
                 start=lambda i: LOG.info("Destroying packages"),

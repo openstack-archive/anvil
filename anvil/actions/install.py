@@ -73,14 +73,11 @@ class InstallAction(action.Action):
             *removals
             )
 
-        def preinstall_run(instance):
-            instance.pre_install()
-
         removals += ['pre-uninstall', 'post-uninstall']
         self._run_phase(
             action.PhaseFunctors(
                 start=lambda i: LOG.info('Preinstalling %s.', colorizer.quote(i.name)),
-                run=preinstall_run,
+                run=lambda i: i.pre_install(),
                 end=None,
             ),
             component_order,
@@ -89,24 +86,11 @@ class InstallAction(action.Action):
             *removals
             )
 
-        def install_start(instance):
-            subsystems = set(list(instance.subsystems))
-            if subsystems:
-                utils.log_iterable(sorted(subsystems), logger=LOG,
-                                   header='Installing %s using subsystems' % colorizer.quote(instance.name))
-            else:
-                LOG.info("Installing %s.", colorizer.quote(instance.name))
-
-        def install_finish(instance, result):
-            if not result:
-                LOG.info("Finished install of %s.", colorizer.quote(instance.name))
-            else:
-                LOG.info("Finished install of %s with result %s.",
-                         colorizer.quote(instance.name), result)
-
         removals += ["package-uninstall", 'uninstall']
-        dependency_handler = self.distro.dependency_handler_class(
-            self.distro, self.root_dir, instances.values())
+        dependency_handler_class = self.distro.dependency_handler_class
+        dependency_handler = dependency_handler_class(self.distro,
+                                                      self.root_dir,
+                                                      instances.values())
         general_package = "general"
         self._run_phase(
             action.PhaseFunctors(
