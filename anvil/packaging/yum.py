@@ -27,7 +27,6 @@ from anvil.packaging import base
 from anvil.packaging.helpers import pip_helper
 from anvil.packaging.helpers import yum_helper
 from anvil import shell as sh
-from anvil import trace as tr
 from anvil import utils
 
 LOG = logging.getLogger(__name__)
@@ -62,10 +61,6 @@ class YumDependencyHandler(base.DependencyHandler):
         self.deps_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps")
         self.deps_src_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps-sources")
         self.anvil_repo_filename = sh.joinpths(self.deps_dir, self.REPO_FN)
-        # Track what file we create so they can be cleaned up on uninstall.
-        trace_fn = tr.trace_filename(root_dir, 'deps')
-        self.tracewriter = tr.TraceWriter(trace_fn, break_if_there=False)
-        self.tracereader = tr.TraceReader(trace_fn)
         self.helper = yum_helper.Helper()
 
     def py2rpm_start_cmdline(self):
@@ -405,13 +400,6 @@ BuildArch: noarch
 
     def uninstall(self):
         super(YumDependencyHandler, self).uninstall()
-        if self.tracereader.exists():
-            for f in self.tracereader.files_touched():
-                sh.unlink(f)
-            for d in self.tracereader.dirs_made():
-                sh.deldir(d)
-            sh.unlink(self.tracereader.filename())
-            self.tracereader = None
 
         # Don't take out packages that anvil requires to run...
         no_remove = env.get_key('REQUIRED_PACKAGES', '').split()

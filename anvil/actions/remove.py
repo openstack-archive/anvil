@@ -39,8 +39,8 @@ class RemoveAction(action.Action):
             self.distro, self.root_dir, instances.values())
         self._run_phase(
             action.PhaseFunctors(
-                start=lambda i: LOG.info("Uninstalling packages"),
-                run=lambda i: dependency_handler.uninstall(),
+                start=lambda i: LOG.info("Destroying packages"),
+                run=lambda i: dependency_handler.destroy(),
                 end=None,
             ),
             [general_package],
