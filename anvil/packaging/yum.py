@@ -21,6 +21,7 @@ import sys
 from datetime import datetime
 
 from anvil import colorizer
+from anvil import env
 from anvil import log as logging
 from anvil.packaging import base
 from anvil.packaging.helpers import pip_helper
@@ -412,11 +413,17 @@ BuildArch: noarch
             sh.unlink(self.tracereader.filename())
             self.tracereader = None
 
+        # Don't take out packages that anvil requires to run...
+        no_remove = os.env.get_key('REQUIRED_PACKAGES', '').split()
+        no_remove = sorted(set(no_remove))
         rpm_names = []
         for name in self._convert_names_python2rpm(self.python_names):
-            if self.helper.is_installed(name):
+            if self.helper.is_installed(name) and name not in no_remove:
                 rpm_names.append(name)
 
         if rpm_names:
-            cmdline = ["yum", "remove", "--remove-leaves", "-y"] + rpm_names
+            cmdline = ["yum", "remove", "--remove-leaves", "-y"]
+            for p in no_remove:
+                cmdline.append("--exclude=%s" % (p))
+            cmdline.extend(rpm_names)
             sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)

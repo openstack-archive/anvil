@@ -3,12 +3,13 @@ STEPS="epel packages"
 EPEL_RPM_URL="http://mirrors.kernel.org/fedora-epel/6/i386/epel-release-6-8.noarch.rpm"
 
 ## Bootstrap for Red Hat based distros
-conflicts 'python-paste-deploy1.5
-    python-nose1.1
-    python-routes1.12
-    python-sphinx10
-    python-webob1.0
-    Django14'
+conflicts python-paste-deploy1.5
+conflicts python-nose1.1
+conflicts python-routes1.12
+conflicts python-sphinx10
+conflicts python-webob1.0
+conflicts Django14
+
 ## Package Requirements (Order matters!)
 require PyYAML
 require gcc
@@ -49,4 +50,5 @@ require python-setuptools-git setuptools-git
 # This one requires a newer version and the
 # current EPEL rpm doesn't provide a version
 # that will satisify the desired versions in OpenStack.
-require "" d2to1
+require python-d2to1 d2to1 true
+require python-pbr pbr
