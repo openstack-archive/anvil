@@ -16,3 +16,5 @@ The temporary folder for building (/tmp/XYZ) is not owned by your user!
 This is a new feature of pip>=1.3 where it seems to incorrectly handle the SUDO
 user. To get around this just remove the above directory and reactivate the
 appropriate ANVIL command.
+
+Issue @ https://github.com/pypa/pip/issues/982
