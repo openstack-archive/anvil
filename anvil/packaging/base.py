@@ -21,6 +21,7 @@
 import pkg_resources
 
 from anvil import colorizer
+from anvil import env
 from anvil import exceptions as exc
 from anvil import log as logging
 from anvil.packaging.helpers import pip_helper
@@ -89,7 +90,7 @@ class DependencyHandler(object):
         self.pips_to_install = []
         self.forced_packages = []
         # These packages conflict with our deps and must be removed
-        self.nopackages = []
+        self.nopackages = env.get_key('CONFLICTING_PACKAGES', '').split()
         self.package_dirs = self._get_package_dirs(instances)
         # Instantiate this as late as we can.
         self._python_names = None
@@ -138,10 +139,10 @@ class DependencyHandler(object):
         self.clean_pip_requires(requires_files)
 
     def install(self):
-        self.nopackages = []
         for inst in self.instances:
             for pkg in inst.get_option("nopackages") or []:
-                self.nopackages.append(pkg["name"])
+                if pkg['name'] not in self.nopackages:
+                    self.nopackages.append(pkg["name"])
 
     def uninstall(self):
         pass
