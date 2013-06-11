@@ -136,14 +136,6 @@ components:
             removable: false
         -   name: python-setuptools
             removable: false
-        # these packages conflict with our deps and must be removed
-        nopackages:
-        -   name: python-paste-deploy1.5
-        -   name: python-nose1.1
-        -   name: python-routes1.12
-        -   name: python-sphinx10
-        -   name: python-webob1.0
-        -   name: Django14
     glance:
         action_classes:
             install: anvil.components.glance:GlanceInstaller
