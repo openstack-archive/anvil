@@ -33,7 +33,7 @@ class RemoveAction(action.Action):
         return components
 
     def _run(self, persona, component_order, instances):
-        removals = ['install']
+        removals = ['package-install', 'install']
         general_package = "general"
         dependency_handler = self.distro.dependency_handler_class(
             self.distro, self.root_dir, instances.values())
@@ -45,10 +45,11 @@ class RemoveAction(action.Action):
             ),
             [general_package],
             {general_package: instances[general_package]},
-            "uninstall",
+            "package-uninstall",
             *removals
             )
 
+        removals += ['prepare', 'download', "download-patch"]
         self._run_phase(
             action.PhaseFunctors(
                 start=lambda i: LOG.info('Uninstalling %s.', colorizer.quote(i.name)),
@@ -61,7 +62,7 @@ class RemoveAction(action.Action):
             *removals
             )
 
-        removals += ['pre-install']
+        removals += ['pre-install', 'post-install']
         self._run_phase(
             action.PhaseFunctors(
                 start=lambda i: LOG.info('Post-uninstalling %s.', colorizer.quote(i.name)),
