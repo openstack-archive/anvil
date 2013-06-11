@@ -49,4 +49,5 @@ require python-setuptools-git setuptools-git
 # This one requires a newer version and the
 # current EPEL rpm doesn't provide a version
 # that will satisify the desired versions in OpenStack.
-require "" d2to1
+require python-d2to1 d2to1 true
+require python-pbr pbr

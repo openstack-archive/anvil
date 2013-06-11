@@ -76,7 +76,6 @@ class DependencyHandler(object):
         self.distro = distro
         self.root_dir = root_dir
         self.instances = instances
-
         self.deps_dir = sh.joinpths(self.root_dir, "deps")
         self.download_dir = sh.joinpths(self.deps_dir, "download")
         self.log_dir = sh.joinpths(self.deps_dir, "output")
@@ -87,10 +86,17 @@ class DependencyHandler(object):
         self.pip_executable = str(self.distro.get_command_config('pip'))
         self.pips_to_install = []
         self.forced_packages = []
-        # these packages conflict with our deps and must be removed
+        # These packages conflict with our deps and must be removed
         self.nopackages = []
         self.package_dirs = self._get_package_dirs(instances)
-        self.python_names = self._get_python_names(self.package_dirs)
+        # Instantiate this as late as we can.
+        self._python_names = None
+
+    @property
+    def python_names(self):
+        if self._python_names is None:
+            self._python_names  = self._get_python_names(self.package_dirs)
+        return self._python_names
 
     @staticmethod
     def _get_package_dirs(instances):
