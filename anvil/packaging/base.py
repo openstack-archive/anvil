@@ -25,6 +25,7 @@ from anvil import exceptions as exc
 from anvil import log as logging
 from anvil.packaging.helpers import pip_helper
 from anvil import shell as sh
+from anvil import trace as tr
 from anvil import utils
 
 LOG = logging.getLogger(__name__)
@@ -92,6 +93,10 @@ class DependencyHandler(object):
         self.package_dirs = self._get_package_dirs(instances)
         # Instantiate this as late as we can.
         self._python_names = None
+        # Track what file we create so they can be cleaned up on uninstall.
+        trace_fn = tr.trace_filename(self.root_dir, 'deps')
+        self.tracewriter = tr.TraceWriter(trace_fn, break_if_there=False)
+        self.tracereader = tr.TraceReader(trace_fn)
 
     @property
     def python_names(self):
@@ -140,6 +145,17 @@ class DependencyHandler(object):
 
     def uninstall(self):
         pass
+
+    def destroy(self):
+        self.uninstall()
+        # Clear out any files touched.
+        if self.tracereader.exists():
+            for f in self.tracereader.files_touched():
+                sh.unlink(f)
+            for d in self.tracereader.dirs_made():
+                sh.deldir(d)
+            sh.unlink(self.tracereader.filename())
+            self.tracereader = None
 
     def clean_pip_requires(self, requires_files):
         # Fixup incompatible dependencies
