@@ -47,6 +47,10 @@ SUDO_GID = env.get_key('SUDO_GID')
 # Set only once
 IS_DRYRUN = None
 
+# Take over some functions directly from os.path
+
+getsize = os.path.getsize
+
 
 class Process(psutil.Process):
     def __str__(self):

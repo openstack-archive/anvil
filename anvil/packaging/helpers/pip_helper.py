@@ -15,14 +15,20 @@
 #    under the License.
 
 import copy
+import os
 import pkg_resources
+
+from pip import util as pip_util
+from pip import req as pip_req
 
 from anvil import log as logging
 from anvil import shell as sh
+from anvil import utils
 
 LOG = logging.getLogger(__name__)
 
 FREEZE_CMD = ['freeze', '--local']
+FILES_DETAILED = {}
 
 
 def create_requirement(name, version=None):
@@ -40,6 +46,39 @@ def create_requirement(name, version=None):
                 "Pip requirement version must be a string or numeric type")
         name = "%s%s" % (name, version)
     return pkg_resources.Requirement.parse(name)
+
+
+def get_archive_details(filename):
+    if not os.path.isfile(filename):
+        raise IOError("Can not detail non-existent file %s" % (filename))
+
+    # Check if we already got the details of this file previously
+    #
+    # A filename and size cache key should be good enough to match against
+    # most non-malicous files...
+    cache_key = "%s:%s" % (sh.basename(filename), sh.getsize(filename))
+    if cache_key in FILES_DETAILED:
+        return FILES_DETAILED[cache_key]
+
+    # Get pip to get us the egg-info.
+    with utils.tempdir() as td:
+        filename = sh.copy(filename, sh.joinpths(td, sh.basename(filename)))
+        extract_to = sh.mkdir(sh.joinpths(td, 'build'))
+        pip_util.unpack_file(filename, extract_to, content_type='', link='')
+        req = pip_req.InstallRequirement.from_line(extract_to)
+        req.source_dir = extract_to
+        req.run_egg_info()
+        # Selectively extract pieces of the install requirement
+        details = {
+            'req': req.req,
+            'dependencies': req.requirements,
+            'name': req.name,
+            'pkg_info': req.pkg_info,
+            'dependency_links': req.dependency_links,
+        }
+
+    FILES_DETAILED[cache_key] = details
+    return details
 
 
 def _skip_requirement(line):
