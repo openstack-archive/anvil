@@ -25,7 +25,8 @@ from anvil.components.configurators import base
 ROOT_CONF = "keystone.conf"
 LOGGING_CONF = "logging.conf"
 POLICY_JSON = 'policy.json'
-CONFIGS = [ROOT_CONF, LOGGING_CONF, POLICY_JSON]
+PASTE_CONFIG = 'keystone-paste.ini'
+CONFIGS = [ROOT_CONF, LOGGING_CONF, POLICY_JSON, PASTE_CONFIG]
 
 # PKI base files
 PKI_FILES = {
@@ -44,7 +45,8 @@ class KeystoneConfigurator(base.Configurator):
         self.config_adjusters = {ROOT_CONF: self._config_adjust_root,
                                  LOGGING_CONF: self._config_adjust_logging}
         self.source_configs = {LOGGING_CONF: 'logging.conf.sample',
-                               ROOT_CONF: 'keystone.conf.sample'}
+                               ROOT_CONF: 'keystone.conf.sample',
+                               PASTE_CONFIG: PASTE_CONFIG}
         self.config_dir = sh.joinpths(self.installer.get_option('app_dir'), 'etc')
 
     def _config_adjust_logging(self, config):
@@ -70,4 +72,3 @@ class KeystoneConfigurator(base.Configurator):
         config.remove('DEFAULT', 'log_config')
         config.add_with_section('sql', 'connection', self.fetch_dbdsn())
         config.add_with_section('ec2', 'driver', "keystone.contrib.ec2.backends.sql.Ec2")
-
