@@ -57,14 +57,21 @@ class DBInstaller(db.DBInstaller):
     def _configure_db_confs(self):
         LOG.info("Fixing up %s mysql configs.", colorizer.quote(self.distro.name))
         new_lines = []
+        found_storage_engine = False
         for line in sh.load_file(DBInstaller.MYSQL_CONF).splitlines():
             if line.startswith('skip-grant-tables'):
                 new_lines.append('#' + line)
             elif line.startswith('bind-address'):
                 new_lines.append('#' + line)
                 new_lines.append('bind-address = 0.0.0.0')
+            elif line.startswith('default-storage-engine'):
+                new_lines.append('#' + line)
+                new_lines.append('default-storage-engine = InnoDB')
+                found_storage_engine = True
             else:
                 new_lines.append(line)
+        if not found_storage_engine:
+            new_lines.append('default-storage-engine = InnoDB')
         sh.write_file_and_backup(DBInstaller.MYSQL_CONF, utils.joinlinesep(*new_lines))
 
 
