@@ -4,11 +4,6 @@
 ##
 ---
 endpoints:
--   service: swift
-    admin_url: "${swift.endpoints.admin.uri}/v1/AUTH_%(tenant_id)s"
-    internal_url: "$swift.endpoints.internal.uri"
-    public_url: "${swift.endpoints.public.uri}/v1/AUTH_%(tenant_id)s"
-    region: RegionOne
 -   service: ec2
     admin_url: "$nova.endpoints.ec2_admin.uri"
     internal_url: "$nova.endpoints.ec2_cloud.uri"
@@ -28,11 +23,6 @@ endpoints:
     admin_url: "${cinder.endpoints.admin.uri}/%(tenant_id)s"
     internal_url: "${cinder.endpoints.internal.uri}/%(tenant_id)s"
     public_url: "${cinder.endpoints.public.uri}/%(tenant_id)s"
-    region: RegionOne
--   service: s3
-    admin_url: "$nova.endpoints.s3.uri"
-    internal_url: "$nova.endpoints.s3.uri"
-    public_url: "$nova.endpoints.s3.uri"
     region: RegionOne
 -   service: keystone
     admin_url: "$keystone.endpoints.admin_templated.uri"
@@ -71,9 +61,6 @@ services:
 -   description: Object Storage Service
     name: swift
     type: object-store
--   description: S3 Service
-    name: s3
-    type: s3
 -   description: Cinder Service
     name: volume
     type: volume
@@ -128,13 +115,6 @@ users:
     - service
 -   email: quantum@example.com
     name: quantum
-    password: '$keystone.service_password'
-    roles:
-    - admin:service
-    tenants:
-    - service
--   email: swift@example.com
-    name: swift
     password: '$keystone.service_password'
     roles:
     - admin:service
