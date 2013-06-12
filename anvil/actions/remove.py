@@ -47,7 +47,7 @@ class RemoveAction(action.Action):
             ),
             [general_package],
             {general_package: instances[general_package]},
-            "package-uninstall",
+            "package-destroy",
             *removals
             )
 
