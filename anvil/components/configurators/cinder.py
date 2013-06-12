@@ -18,13 +18,11 @@ from anvil import shell as sh
 
 from anvil.components.configurators import base
 
-# Special generated conf
 API_CONF = 'cinder.conf'
-
-# Paste configuration
 PASTE_CONF = 'api-paste.ini'
+POLICY_CONF = 'policy.json'
+CONFIGS = [PASTE_CONF, API_CONF, POLICY_CONF]
 
-CONFIGS = [ PASTE_CONF, API_CONF ]
 
 class CinderConfigurator(base.Configurator):
 
