@@ -16,20 +16,25 @@
 
 from anvil import utils
 
+# v1 seems correct until bug 1190331 is fixed
+# where the cinderclient doesn't seem to know anything
+# beyond v1 unless told.
+VERSION = "v1"
+
+
 def get_shared_params(ip, api_host, api_port=8776, protocol='http', **kwargs):
     mp = {}
     mp['service_host'] = ip
 
     # Uri's of the various cinder endpoints
     mp['endpoints'] = {
-        'volume': {
-            'uri': utils.make_url(protocol, api_host, api_port, "v2"),
+        'admin': {
+            'uri': utils.make_url(protocol, api_host, api_port, VERSION),
             'port': api_port,
             'host': api_host,
             'protocol': protocol,
         },
-        'internal': {
-        }
     }
-
+    mp['endpoints']['internal'] = dict(mp['endpoints']['admin'])
+    mp['endpoints']['public'] = dict(mp['endpoints']['admin'])
     return mp
