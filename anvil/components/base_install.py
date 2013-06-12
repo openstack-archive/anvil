@@ -200,6 +200,9 @@ class PkgUninstallComponent(base.Component):
     def pre_uninstall(self):
         pass
 
+    def uninstall(self):
+        pass
+
     def _uninstall_files(self):
         files_touched = self.tracereader.files_touched()
         if files_touched:
