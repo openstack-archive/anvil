@@ -68,6 +68,7 @@ class PrepareAction(action.Action):
             "prepare",
             *removals
             )
+        removals += ["package-destroy"]
         dependency_handler_class = self.distro.dependency_handler_class
         dependency_handler = dependency_handler_class(self.distro,
                                                       self.root_dir,

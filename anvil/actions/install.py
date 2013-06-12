@@ -86,7 +86,7 @@ class InstallAction(action.Action):
             *removals
             )
 
-        removals += ["package-uninstall", 'uninstall']
+        removals += ["package-uninstall", 'uninstall', "package-destroy"]
         dependency_handler_class = self.distro.dependency_handler_class
         dependency_handler = dependency_handler_class(self.distro,
                                                       self.root_dir,
