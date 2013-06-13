@@ -79,6 +79,8 @@ class GitDownloader(Downloader):
             sh.execute(cmd, cwd=self.store_where)
             cmd = ["git", "reset", "--hard"]
             sh.execute(cmd, cwd=self.store_where)
+            cmd = ["git", "fetch", "origin"]
+            sh.execute(cmd, cwd=self.store_where)
         else:
             LOG.info("Downloading %s (%s) to %s.", colorizer.quote(uri), branch, colorizer.quote(self.store_where))
             cmd = ["git", "clone", uri, self.store_where]
@@ -87,6 +89,22 @@ class GitDownloader(Downloader):
             LOG.info("Adjusting to tag %s.", colorizer.quote(tag))
         else:
             LOG.info("Adjusting branch to %s.", colorizer.quote(branch))
+        # NOTE(aababilov): old openstack.common.setup reports all tag that
+        # contain HEAD as project's version. It breaks all RPM building
+        # process, so, we will delete all extra tags
+        cmd = ["git", "tag", "--contains", "HEAD"]
+        tag_names = [
+            i
+            for i in sh.execute(cmd, cwd=self.store_where)[0].splitlines()
+            if i and i != tag]
+        if not tag:
+            # when checking out to a branch, delete all
+            # the tags except the oldest
+            tag_names = tag_names[1:]
+        if tag_names:
+            LOG.info("Removing tags: %s", colorizer.quote(" ".join(tag_names)))
+            cmd = ["git", "tag", "-d"] + tag_names
+            sh.execute(cmd, cwd=self.store_where)
         # detach, drop new_branch if it exists, and checkout to new_branch
         # newer git allows branch resetting: git checkout -B $new_branch
         # so, all these are for compatibility with older RHEL git
