@@ -233,7 +233,7 @@ def build_map(arguments):
             value = value.strip()
             assert value
         except (IndexError, ValueError, AssertionError):
-            raise InstallationError("Bad specifier: `%s'" % value_spec)
+            raise InstallationError("Bad specifier: `%s'" % arg)
         else:
             result[key] = value
     return result
