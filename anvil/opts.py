@@ -121,24 +121,6 @@ def parse(previous_settings=None):
                                "installed for the components dependencies"))
     parser.add_option_group(pkg_group)
 
-    install_group = OptionGroup(parser, "Install specific options")
-    install_group.add_option('-c', "--only-configure",
-                                action="store_true",
-                                dest="only_configure",
-                                default=False,
-                                help=("when installing only perform the"
-                                      " download and install phases (default: %default)"))
-    parser.add_option_group(install_group)
-
-    uninstall_group = OptionGroup(parser, "Uninstall specific options")
-    uninstall_group.add_option("--purge",
-                                action="store_true",
-                                dest="purge_packages",
-                                default=False,
-                                help=("assume when a package is not marked as"
-                                      " removable that it can be removed (default: %default)"))
-    parser.add_option_group(uninstall_group)
-
     # Extract only what we care about, these will be passed
     # to the constructor of actions as arguments
     # so don't adjust the naming wily nilly...
@@ -152,12 +134,10 @@ def parse(previous_settings=None):
     values['action'] = (options.action or "")
     values['persona_fn'] = options.persona_fn
     values['verbose'] = options.verbose
-    values['only_configure'] = options.only_configure
     values['prompt_for_passwords'] = options.prompt_for_passwords
     values['show_amount'] = max(0, options.show_amount)
     values['store_passwords'] = options.store_passwords
     values['match_installed'] = options.match_installed
-    values['purge_packages'] = options.purge_packages
     values['keyring_path'] = options.keyring_path
     values['keyring_encrypted'] = options.keyring_encrypted
     return values
