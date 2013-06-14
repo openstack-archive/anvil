@@ -80,6 +80,7 @@ CORE_PLUGIN_CLASSES = {
     "quantum.plugins.linuxbridge.lb_quantum_plugin.LinuxBridgePluginV2",
 }
 
+
 class QuantumConfigurator(base.Configurator):
 
     # This db will be dropped and created

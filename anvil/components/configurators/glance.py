@@ -33,6 +33,7 @@ CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF,
 
 LOG = logging.getLogger(__name__)
 
+
 class GlanceConfigurator(base.Configurator):
 
     # This db will be dropped and created
@@ -47,6 +48,7 @@ class GlanceConfigurator(base.Configurator):
                                  LOGGING_CONF: self._config_adjust_logging}
         self.source_configs = {LOGGING_CONF: 'logging.cnf.sample'}
         self.config_dir = sh.joinpths(self.installer.get_option('app_dir'), 'etc')
+        self.img_dir = "/var/lib/glance/images"
 
     def _config_adjust_paste(self, config):
         for (k, v) in self._fetch_keystone_params().items():
@@ -65,8 +67,16 @@ class GlanceConfigurator(base.Configurator):
         gparams = ghelper.get_shared_params(**self.installer.options)
         config.add('bind_port', gparams['endpoints']['public']['port'])
 
+        def clean_image_storage(img_store_dir):
+            LOG.debug(("Ensuring file system store directory %r exists and is "
+                       "empty."), img_store_dir)
+            if sh.isdir(img_store_dir):
+                sh.deldir(img_store_dir)
+            sh.mkdirslist(img_store_dir, tracewriter=self.installer.tracewriter)
+
         config.add('default_store', 'file')
-        config.add('filesystem_store_datadir', "/var/lib/glance/images")
+        config.add('filesystem_store_datadir', self.img_dir)
+        clean_image_storage(self.img_dir)
 
     def _config_adjust_reg(self, config):
         self._config_adjust_api_reg(config)
@@ -83,7 +93,6 @@ class GlanceConfigurator(base.Configurator):
             'auth_host': params['endpoints']['admin']['host'],
             'auth_port': params['endpoints']['admin']['port'],
             'auth_protocol': params['endpoints']['admin']['protocol'],
-
             'auth_uri': params['endpoints']['public']['uri'],
             'admin_tenant_name': params['service_tenant'],
             'admin_user': params['service_user'],
