@@ -284,7 +284,7 @@ BuildArch: noarch
                     continue
                 # See if pip tried to download it but we already can satisfy
                 # it via yum and avoid building it in the first place...
-                (version, repo) = self._find_yum_match(yum_map, req, rpm_name)
+                (_version, repo) = self._find_yum_match(yum_map, req, rpm_name)
                 if not repo:
                     filtered_files.append(filename)
                 else:

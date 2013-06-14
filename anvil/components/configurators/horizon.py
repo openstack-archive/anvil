@@ -22,6 +22,7 @@ HORIZON_LOCAL_SETTINGS_CONF = "local_settings.py"
 HORIZON_APACHE_CONF = 'horizon_apache.conf'
 CONFIGS = [HORIZON_LOCAL_SETTINGS_CONF, HORIZON_APACHE_CONF]
 
+
 class HorizonConfigurator(base.Configurator):
 
     def __init__(self, installer):
@@ -44,6 +45,7 @@ class HorizonConfigurator(base.Configurator):
                                config_name)
         else:
             return super(HorizonConfigurator, self).target_config(config_name)
+
 
 class HorizonRhelConfigurator(HorizonConfigurator):
 

@@ -35,6 +35,7 @@ PKI_FILES = {
     'certfile': 'ssl/certs/signing_cert.pem',
 }
 
+
 class KeystoneConfigurator(base.Configurator):
 
     # This db will be dropped then created

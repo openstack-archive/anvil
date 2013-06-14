@@ -37,7 +37,8 @@ function find_code {
 function run_pep8 {
   echo "+ Running pep8 ..."
   files=$(find_code)
-  ignores="E202,E501,E128,E127,E126,E125,E124,E123,E121"
+  # See: http://pep8.readthedocs.org/en/latest/intro.html#error-codes
+  ignores="E121,E123,E124,E125,E126,E127,E128,E202,E501"
   output_filename="pep8.log"
   opts="--ignore=$ignores --repeat"
   pep8 ${opts} ${files} 2>&1 > $output_filename

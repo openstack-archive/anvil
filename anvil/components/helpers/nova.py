@@ -194,4 +194,3 @@ class NetworkCleaner(object):
     def clean(self):
         self._stop_dnsmasq()
         self._clean_iptables()
-

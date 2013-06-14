@@ -31,6 +31,23 @@ from anvil import utils
 
 LOG = logging.getLogger(__name__)
 
+OPENSTACK_PACKAGES = set([
+    "cinder",
+    "glance",
+    "horizon",
+    "keystone",
+    "nova",
+    "oslo.config",
+    "quantum",
+    "swift",
+    "python-cinderclient",
+    "python-glanceclient",
+    "python-keystoneclient",
+    "python-novaclient",
+    "python-quantumclient",
+    "python-swiftclient",
+])
+
 
 class InstallHelper(object):
     """Run pre and post install for a single package.
@@ -49,24 +66,6 @@ class InstallHelper(object):
         if cmds:
             LOG.info("Running post-install commands for package %s.", colorizer.quote(pkg['name']))
             utils.execute_template(*cmds, params=params)
-
-
-OPENSTACK_PACKAGES = set([
-    "cinder",
-    "glance",
-    "horizon",
-    "keystone",
-    "nova",
-    "oslo.config",
-    "quantum",
-    "swift",
-    "python-cinderclient",
-    "python-glanceclient",
-    "python-keystoneclient",
-    "python-novaclient",
-    "python-quantumclient",
-    "python-swiftclient",
-])
 
 
 class DependencyHandler(object):
@@ -102,7 +101,7 @@ class DependencyHandler(object):
     @property
     def python_names(self):
         if self._python_names is None:
-            self._python_names  = self._get_python_names(self.package_dirs)
+            self._python_names = self._get_python_names(self.package_dirs)
         return self._python_names
 
     @staticmethod
