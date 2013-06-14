@@ -196,13 +196,15 @@ class YumDependencyHandler(base.DependencyHandler):
 
     def _build_dependencies(self):
         package_files = self.download_dependencies()
-        package_files = sh.listdir(self.download_dir, files_only=True)
         if not package_files:
             LOG.info("No RPM packages of OpenStack dependencies to build")
             return
         for filename in package_files:
             LOG.info("Building RPM package from %s", filename)
-            cmdline = self.py2rpm_start_cmdline() + ["--", filename]
+            scripts_dir = sh.abspth(sh.joinpths(
+                settings.TEMPLATE_DIR, "packaging/scripts"))
+            cmdline = self.py2rpm_start_cmdline() + [
+                "--scripts-dir", scripts_dir, "--", filename]
             sh.execute_save_output(
                 cmdline,
                 out_filename=sh.joinpths(
