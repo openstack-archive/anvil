@@ -186,7 +186,7 @@ require()
 {
     local rpm_name=$1
     local py_name=$2
-    local always_build=$3
+    local always_build=$3 
     if [ -z "$rpm_name" -a -z "$py_name" ]; then
         echo "Please specify at RPM or Python package name"
         exit 1
@@ -210,7 +210,10 @@ needs_bootstrap()
 
 get_checksums()
 {
-    # used to tell if the file have changed
+    if [ ! -f "$BSCONF_FILE" ]; then
+        return 1
+    fi
+    # Used to tell if the file have changed
     echo $(md5sum "$BSCONF_FILE")
 }
 
