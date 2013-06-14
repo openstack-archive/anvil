@@ -260,10 +260,13 @@ class YumDependencyHandler(base.DependencyHandler):
         utils.log_iterable(sorted(package_base_names), logger=LOG,
                            header=("Building %s dependency RPM"
                                    " packages") % (len(package_files)))
+        scripts_dir = sh.abspth(sh.joinpths(settings.TEMPLATE_DIR, "packaging/scripts"))
         with utils.progress_bar(name='Building',
                                 max_am=len(package_files)) as p_bar:
             for (i, filename) in enumerate(sorted(package_files)):
-                cmdline = self.py2rpm_start_cmdline() + ["--", filename]
+                cmdline = self.py2rpm_start_cmdline()
+                cmdline.extend(["--scripts-dir", scripts_dir])
+                cmdline.extend(["--", filename])
                 build_filename = "py2rpm-%s.out" % sh.basename(filename)
                 out_filename = sh.joinpths(self.log_dir, build_filename)
                 sh.execute_save_output(cmdline, out_filename=out_filename,

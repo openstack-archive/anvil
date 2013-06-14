@@ -161,6 +161,11 @@ def create_parser():
         default=None,
         help="Specify a script for the INSTALL phase of RPM building")
     parser.add_argument(
+        "--scripts-dir",
+        metavar="<dir>",
+        default=None,
+        help="Specify a directory with scripts for packages")
+    parser.add_argument(
         "--arch-dependent", "-a",
         metavar="<Python package name>",
         nargs="+",
@@ -359,11 +364,17 @@ def build_rpm(options, filename):
     pkg_name = setup_py_one_line(source_dir, "--name")
     pkg_key = python_name_to_key(pkg_name)
     build_dir = options.rpm_base
+    if options.scripts_dir:
+        install_script = "%s/%s-install.sh" % (options.scripts_dir, pkg_key)
+        if not os.path.isfile(install_script):
+            install_script = options.install_script
+    else:
+        install_script = options.install_script
     cmdline = [
         sys.executable, setup_py, "bdist_rpm",
         "--rpm-base",  build_dir,
         "--source-only",
-        "--install-script", options.install_script,
+        "--install-script", install_script,
     ]
     if rpm_requires:
         cmdline += ["--requires",  rpm_requires]
