@@ -21,6 +21,7 @@
 import pkg_resources
 
 from anvil import colorizer
+from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
@@ -245,6 +246,7 @@ class DependencyHandler(object):
         pip_cache_dir = sh.joinpths(pip_dir, "cache")
         if clear_cache:
             sh.deldir(pip_cache_dir)
+        pip_ok = False
         for attempt in xrange(self.MAX_PIP_DOWNLOAD_ATTEMPTS):
             # NOTE(aababilov): pip has issues with already downloaded files
             sh.deldir(pip_download_dir)
@@ -270,12 +272,14 @@ class DependencyHandler(object):
                 sh.execute_save_output(cmdline, out_filename=out_filename)
             except:
                 LOG.info("pip failed")
-                pip_ok = False
             else:
                 pip_ok = True
             for filename in sh.listdir(pip_download_dir, files_only=True):
                 sh.move(filename, self.download_dir)
             if pip_ok:
                 break
-
+        if not pip_ok:
+            raise excp.DownloadException(
+                "pip downloading failed after %s attempts" %
+                self.MAX_PIP_DOWNLOAD_ATTEMPTS)
         return sh.listdir(self.download_dir, files_only=True)
