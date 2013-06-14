@@ -353,9 +353,8 @@ BuildArch: noarch
                       tracewriter=self.tracewriter)
 
     def _convert_names_python2rpm(self, python_names):
-        if not self.python_names:
+        if not python_names:
             return []
-
         cmdline = self.py2rpm_start_cmdline() + ["--convert"] + python_names
         rpm_names = []
         for name in sh.execute(cmdline)[0].splitlines():
