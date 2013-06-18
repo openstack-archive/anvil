@@ -275,7 +275,8 @@ class DependencyHandler(object):
             pkg_details = pip_helper.get_archive_details(filename)
             req = pkg_details['req']
             if req.key not in pip_names:
-                LOG.info("Dependency %s was automatically included.", req)
+                LOG.info("Dependency %s was automatically included.",
+                         colorizer.quote(req))
 
     def download_dependencies(self, clear_cache=False):
         """Download dependencies from `$deps_dir/download-requires`.

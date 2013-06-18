@@ -62,8 +62,6 @@ class PrepareAction(action.Action):
         dependency_handler = dependency_handler_class(self.distro,
                                                       self.root_dir,
                                                       instances.values())
-
-        general_package = "general"
         dependency_handler.package_start()
         self._run_phase(
             action.PhaseFunctors(

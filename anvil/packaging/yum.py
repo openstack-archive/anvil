@@ -231,7 +231,7 @@ class YumDependencyHandler(base.DependencyHandler):
                                                  package_rpm_names):
                 if req.key in no_pips:
                     LOG.info(("Dependency %s was downloaded additionally "
-                             "but it is disallowed."), req)
+                             "but it is disallowed."), colorizer.quote(req))
                     continue
                 if req.key in pips_keys:
                     filtered_files.append(filename)
@@ -244,7 +244,8 @@ class YumDependencyHandler(base.DependencyHandler):
                 else:
                     LOG.info(("Dependency %s was downloaded additionally "
                              "but it can be satisfied by %s from repository "
-                             "%s instead."), req, colorizer.quote(rpm_name),
+                             "%s instead."), colorizer.quote(req),
+                             colorizer.quote(rpm_name),
                              colorizer.quote(repo))
             return filtered_files
 
@@ -339,8 +340,10 @@ class YumDependencyHandler(base.DependencyHandler):
             "--define", "_topdir %s" % self.rpmbuild_dir,
             spec_filename,
         ]
-        sh.execute_save_output(
-            cmdline, sh.joinpths(self.log_dir, sh.basename(spec_filename)))
+        sh.execute_save_output(cmdline,
+                               sh.joinpths(self.log_dir,
+                                          sh.basename(spec_filename)),
+                               quiet=True)
 
     def _write_git_tarball(self, pkg_dir, spec_filename):
         cmdline = [
@@ -390,8 +393,8 @@ class YumDependencyHandler(base.DependencyHandler):
                     LOG.error("Bad client package name %s", name)
                     return
                 params["clientname"] = clientname
-                params["apiname"] = self.API_NAMES.get(
-                    clientname, clientname.title())
+                params["apiname"] = self.API_NAMES.get(clientname,
+                                                       clientname.title())
                 rpm_name = name
                 template_name = "python-commonclient.spec"
             elif component_name in self.SERVER_NAMES:
@@ -401,23 +404,23 @@ class YumDependencyHandler(base.DependencyHandler):
         else:
             rpm_name = component_name
             template_name = "%s.spec" % rpm_name
-            spec_filename = sh.joinpths(
-                settings.TEMPLATE_DIR,
-                self.SPEC_TEMPLATE_DIR,
-                template_name)
+            spec_filename = sh.joinpths(settings.TEMPLATE_DIR,
+                                        self.SPEC_TEMPLATE_DIR,
+                                        template_name)
             if not sh.isfile(spec_filename):
                 rpm_name = None
         if rpm_name:
             template_name = template_name or "%s.spec" % rpm_name
-            spec_filename = self._write_spec_file(
-                pkg_dir, rpm_name, template_name, params)
+            spec_filename = self._write_spec_file(pkg_dir, rpm_name,
+                                                  template_name, params)
             self._build_from_spec(pkg_dir, spec_filename)
         else:
             cmdline = self.py2rpm_start_cmdline() + ["--", pkg_dir]
-            sh.execute_save_output(
-                cmdline,
-                cwd=pkg_dir,
-                out_filename=sh.joinpths(self.log_dir, component_name))
+            sh.execute_save_output(cmdline,
+                                   cwd=pkg_dir,
+                                   out_filename=sh.joinpths(self.log_dir,
+                                                            component_name),
+                                   quiet=True)
 
     def _convert_names_python2rpm(self, python_names):
         if not python_names:
