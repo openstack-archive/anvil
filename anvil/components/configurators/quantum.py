@@ -15,8 +15,10 @@
 #    under the License.
 
 from anvil import shell as sh
+from anvil import importer
 
 from anvil.components.configurators import base
+
 
 # Special generated conf
 API_CONF = "quantum.conf"
@@ -26,59 +28,6 @@ PASTE_CONF = "api-paste.ini"
 
 CONFIGS = [PASTE_CONF, API_CONF]
 
-# build PLUGIN_CONFS with
-# for i in *; do
-#     echo '    "'$i'": ['
-#     for j in $i/*; do echo '        "plugins/'$j'",'; done
-#     echo "    ],"
-# done
-PLUGIN_CONFS = {
-    "bigswitch": [
-        "plugins/bigswitch/restproxy.ini",
-    ],
-    "brocade": [
-        "plugins/brocade/brocade.ini",
-    ],
-    "cisco": [
-        "plugins/cisco/cisco_plugins.ini",
-        "plugins/cisco/credentials.ini",
-        "plugins/cisco/db_conn.ini",
-        "plugins/cisco/l2network_plugin.ini",
-        "plugins/cisco/nexus.ini",
-    ],
-    "hyperv": [
-        "plugins/hyperv/hyperv_quantum_plugin.ini",
-    ],
-    "linuxbridge": [
-        "plugins/linuxbridge/linuxbridge_conf.ini",
-    ],
-    "metaplugin": [
-        "plugins/metaplugin/metaplugin.ini",
-    ],
-    "midonet": [
-        "plugins/midonet/midonet.ini",
-    ],
-    "nec": [
-        "plugins/nec/nec.ini",
-    ],
-    "nicira": [
-        "plugins/nicira/nvp.ini",
-    ],
-    "openvswitch": [
-        "plugins/openvswitch/ovs_quantum_plugin.ini",
-    ],
-    "plumgrid": [
-        "plugins/plumgrid/plumgrid.ini",
-    ],
-    "ryu": [
-        "plugins/ryu/ryu.ini",
-    ],
-}
-
-CORE_PLUGIN_CLASSES = {
-    "linuxbridge":
-    "quantum.plugins.linuxbridge.lb_quantum_plugin.LinuxBridgePluginV2",
-}
 
 
 class QuantumConfigurator(base.Configurator):
@@ -88,15 +37,19 @@ class QuantumConfigurator(base.Configurator):
 
     def __init__(self, installer):
         super(QuantumConfigurator, self).__init__(installer, CONFIGS)
-        self.config_adjusters = {PASTE_CONF: self._config_adjust_paste,
-                                API_CONF: self._config_adjust_api,
-                                PLUGIN_CONFS["linuxbridge"][0]: self._config_plugin_conf_linuxbridge}
         self.core_plugin = installer.get_option("core_plugin")
-        self.plugin_confs = PLUGIN_CONFS[self.core_plugin]
+        self.plugin_configurator = importer.import_entry_point(
+            "anvil.components.configurators.quantum_plugins.%s:%sConfigurator" %
+            (self.core_plugin, self.core_plugin.title()))(installer)
+        self.config_adjusters = {
+            PASTE_CONF: self._config_adjust_paste,
+            API_CONF: self._config_adjust_api,
+        }
+        self.config_adjusters.update(self.plugin_configurator.config_adjusters)
 
     @property
     def config_files(self):
-        return list(CONFIGS) + self.plugin_confs
+        return list(CONFIGS) + self.plugin_configurator.config_files
 
     def source_config(self, config_fn):
         if (config_fn.startswith("plugins") or
@@ -113,7 +66,7 @@ class QuantumConfigurator(base.Configurator):
             config.add(k, v)
 
     def _config_adjust_api(self, config):
-        config.add("core_plugin", CORE_PLUGIN_CLASSES[self.core_plugin])
+        config.add("core_plugin", self.plugin_configurator.PLUGIN_CLASS)
         config.add('auth_strategy', 'keystone')
         config.add("api_paste_config", self.target_config(PASTE_CONF))
         # TODO(aababilov): add debug to other services conf files
@@ -137,20 +90,6 @@ class QuantumConfigurator(base.Configurator):
         config.current_section = "keystone_authtoken"
         for (k, v) in self._fetch_keystone_params().items():
             config.add(k, v)
-
-    def _config_plugin_conf_linuxbridge(self, plugin_conf):
-        plugin_conf.add_with_section(
-            "VLANS",
-            "network_vlan_ranges",
-            self.installer.get_option("network_vlan_ranges"))
-        plugin_conf.add_with_section(
-            "DATABASE",
-            "sql_connection",
-            self.fetch_dbdsn())
-        plugin_conf.add_with_section(
-            "LINUX_BRIDGE",
-            "physical_interface_mappings",
-            self.installer.get_option("physical_interface_mappings"))
 
     def _fetch_keystone_params(self):
         params = self.get_keystone_params('quantum')
