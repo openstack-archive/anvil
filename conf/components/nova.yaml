@@ -69,7 +69,7 @@ instance_name_postfix: "%08x"
 instance_name_prefix: "instance-"
 
 # Defaults to $NOVA_DIR/instances if empty
-instances_path: ''
+instances_path: ""
 
 # This decides which firewall driver to use:
 # no-op for quantum

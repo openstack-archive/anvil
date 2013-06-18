@@ -10,14 +10,15 @@
 
 %global python_name quantum
 %global daemon_prefix openstack-quantum
+%global os_version $version
 
 %if ! (0%{?fedora} > 12 || 0%{?rhel} > 6)
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %endif
 
 Name:		openstack-quantum
-Version:        $version
-Release:        1%{?dist}
+Version:        %{os_version}$version_suffix
+Release:        $release%{?dist}
 Epoch:          $epoch
 Summary:	Virtual network service for OpenStack (quantum)
 
@@ -25,7 +26,7 @@ Group:		Applications/System
 License:	ASL 2.0
 URL:		http://launchpad.net/quantum/
 
-Source0:        %{python_name}-%{version}.tar.gz
+Source0:        %{python_name}-%{os_version}.tar.gz
 Source1:	quantum.logrotate
 Source2:	quantum-sudoers
 
@@ -276,7 +277,7 @@ networks using multiple other quantum plugins.
 
 #raw
 %prep
-%setup -q -n quantum-%{version}
+%setup -q -n quantum-%{os_version}
 
 find quantum -name \*.py -exec sed -i '/\/usr\/bin\/env python/d' {} \;
 
@@ -464,7 +465,7 @@ fi
 %exclude %{python_sitelib}/quantum/plugins/openvswitch
 %exclude %{python_sitelib}/quantum/plugins/plumgrid
 %exclude %{python_sitelib}/quantum/plugins/ryu
-%{python_sitelib}/quantum-%%{version}-*.egg-info
+%{python_sitelib}/quantum-%%{os_version}-*.egg-info
 
 
 %files -n openstack-quantum-bigswitch

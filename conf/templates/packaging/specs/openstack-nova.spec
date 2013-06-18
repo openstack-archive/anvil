@@ -7,22 +7,24 @@
 
 %global python_name nova
 %global daemon_prefix openstack-nova
+%global os_version ${version}
 
 %if ! (0%{?fedora} > 12 || 0%{?rhel} > 6)
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %endif
 
+
 Name:             openstack-nova
 Summary:          OpenStack Compute (nova)
-Version:          $version
-Release:          1%{?dist}
+Version:          %{os_version}$version_suffix
+Release:          $release%{?dist}
 Epoch:            $epoch
 
 Group:            Development/Languages
 License:          ASL 2.0
 Vendor:           OpenStack Foundation
 URL:              http://openstack.org/projects/compute/
-Source0:          %{python_name}-%{version}.tar.gz
+Source0:          %{python_name}-%{os_version}.tar.gz
 
 Source10:         openstack-nova-api.init
 Source11:         openstack-nova-cert.init
@@ -324,7 +326,7 @@ This package contains documentation files for %{name}.
 
 #raw
 %prep
-%setup0 -q -n %{python_name}-%{version}
+%setup0 -q -n %{python_name}-%{os_version}
 
 %build
 %{__python} setup.py build
@@ -589,7 +591,7 @@ fi
 %defattr(-,root,root,-)
 %doc LICENSE
 %{python_sitelib}/nova
-%{python_sitelib}/nova-%{version}-*.egg-info
+%{python_sitelib}/nova-%{os_version}-*.egg-info
 
 %if 0%{?with_doc}
 %files doc

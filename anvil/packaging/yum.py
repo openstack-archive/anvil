@@ -95,6 +95,19 @@ class YumDependencyHandler(base.DependencyHandler):
             ] + arch_dependent
         return cmdline
 
+    def _package_parameters(self, instance):
+        params = {}
+        params["release"] = instance.get_option("release", default_value="1")
+        if '-' in params["release"]:
+            # NOTE(imelnikov): "-" is prohibited in RPM releases
+            raise ValueError("Malformed package release: %r" % params["release"])
+
+        version_suffix = instance.get_option("version_suffix", default_value="")
+        if version_suffix and not version_suffix.startswith('.'):
+            version_suffix = '.' + version_suffix
+        params['version_suffix'] = version_suffix
+        return params
+
     def package_instance(self, instance):
         # clear before...
         sh.deldir(self.rpmbuild_dir)
@@ -108,7 +121,8 @@ class YumDependencyHandler(base.DependencyHandler):
         else:
             app_dir = instance.get_option("app_dir")
             if sh.isdir(app_dir):
-                self._build_openstack_package(app_dir)
+                params = self._package_parameters(instance)
+                self._build_openstack_package(app_dir, params)
                 self._move_rpms("anvil")
         # ...and after
         sh.deldir(self.rpmbuild_dir)
@@ -324,9 +338,9 @@ class YumDependencyHandler(base.DependencyHandler):
         ]
         sh.execute(cmdline, cwd=pkg_dir)
 
-    def _build_openstack_package(self, pkg_dir):
+    def _build_openstack_package(self, pkg_dir, params=None):
         component_name = self._get_component_name(pkg_dir)
-        params = {}
+        params = params or {}
         rpm_name = None
         template_name = None
         if sh.isfile(sh.joinpths(pkg_dir, "setup.py")):
