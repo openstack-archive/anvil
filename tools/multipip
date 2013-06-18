@@ -4,6 +4,7 @@ import argparse
 import distutils.spawn
 import logging
 import os
+import re
 import subprocess
 import sys
 
@@ -137,17 +138,24 @@ def parse_requirements(options):
     :return: tuple (all, ignored) of InstallRequirement
     """
     all_requirements = {}
+    skip_match = None
+    if options.skip_requirements_regex:
+        skip_match = re.compile(options.skip_requirements_regex)
     for req_spec in options.requirement_specs:
         try:
             req = install_requirement_parse(req_spec, "command line")
+            if skip_match and skip_match.search(req.req.key):
+                continue
             all_requirements.setdefault(req.req.key, []).append(req)
         except Exception as ex:
             logger.error("Cannot parse `%s': %s" % (req_spec, ex))
             sys.exit(BAD_REQUIREMENTS)
     for filename in options.requirements:
         try:
-            for req in pip.req.parse_requirements(filename, options=options):
+            for req in pip.req.parse_requirements(filename):
                 req = install_requirement_ensure_req_field(req)
+                if skip_match and skip_match.search(req.req.key):
+                    continue
                 all_requirements.setdefault(req.req.key, []).append(req)
         except Exception as ex:
             logger.error("Cannot parse `%s': %s" % (filename, ex))
