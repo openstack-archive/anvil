@@ -22,6 +22,7 @@ import rpm
 
 from anvil import colorizer
 from anvil import env
+from anvil import exceptions as excp
 from anvil import log as logging
 from anvil.packaging import base
 from anvil.packaging.helpers import pip_helper
@@ -115,7 +116,7 @@ class YumDependencyHandler(base.DependencyHandler):
             else:
                 app_dir = instance.get_option("app_dir")
                 if sh.isdir(app_dir):
-                    self._build_openstack_package(app_dir)
+                    self._build_openstack_package(instance)
                     self._move_rpms("anvil")
 
     def package_finish(self):
@@ -207,10 +208,6 @@ class YumDependencyHandler(base.DependencyHandler):
                 utils.log_iterable(sorted(repos[r]), logger=LOG, header=header)
         return pips_to_download
 
-    @staticmethod
-    def _get_component_name(pkg_dir):
-        return sh.basename(sh.dirname(pkg_dir))
-
     def _build_dependencies(self):
         (pips_downloaded, package_files) = self.download_dependencies()
 
@@ -273,9 +270,11 @@ class YumDependencyHandler(base.DependencyHandler):
                                        quiet=True)
                 p_bar.update(i + 1)
 
-    def _write_spec_file(self, pkg_dir, rpm_name, template_name, params):
-        egg_details = pip_helper.get_directory_details(pkg_dir)
-        requires_what = egg_details['dependencies']
+    def _write_spec_file(self, app_dir, rpm_name, template_name, params):
+        requires_what = []
+        if sh.isfile(sh.joinpths(app_dir, "setup.py")):
+            egg_info = pip_helper.get_directory_details(app_dir)
+            requires_what = egg_info['dependencies']
         params['requires'] = self._convert_names_python2rpm(requires_what)
         params["epoch"] = self.OPENSTACK_EPOCH
         content = utils.load_template(self.SPEC_TEMPLATE_DIR, template_name)[1]
@@ -304,20 +303,20 @@ class YumDependencyHandler(base.DependencyHandler):
             sh.write_file(target_filename,
                           utils.expand_template(common_init_content, params))
 
-    def _copy_sources(self, pkg_dir):
-        component_name = self._get_component_name(pkg_dir)
+    def _copy_sources(self, instance):
         other_sources_dir = sh.joinpths(settings.TEMPLATE_DIR,
-                                        "packaging/sources", component_name)
+                                        "packaging", "sources", instance.name)
         if sh.isdir(other_sources_dir):
             for filename in sh.listdir(other_sources_dir, files_only=True):
                 sh.copy(filename, self.rpm_sources_dir)
 
-    def _build_from_spec(self, pkg_dir, spec_filename):
-        if sh.isfile(sh.joinpths(pkg_dir, "setup.py")):
-            self._write_python_tarball(pkg_dir)
+    def _build_from_spec(self, instance, spec_filename):
+        app_dir = instance.get_option('app_dir')
+        if sh.isfile(sh.joinpths(app_dir, "setup.py")):
+            self._write_python_tarball(app_dir)
         else:
-            self._write_git_tarball(pkg_dir, spec_filename)
-        self._copy_sources(pkg_dir)
+            self._write_git_tarball(app_dir, spec_filename)
+        self._copy_sources(instance)
         self._copy_startup_scripts(spec_filename)
         cmdline = [
             self.rpmbuild_executable,
@@ -363,48 +362,65 @@ class YumDependencyHandler(base.DependencyHandler):
         ]
         sh.execute(cmdline, cwd=pkg_dir)
 
-    def _build_openstack_package(self, pkg_dir):
-        component_name = self._get_component_name(pkg_dir)
-        params = {}
+    @staticmethod
+    def _is_client(instance_name, egg_name):
+        for i in [instance_name, egg_name]:
+            if i and i.endswith("client"):
+                return True
+        return False
+
+    def _get_template_and_rpm_name(self, instance):
         rpm_name = None
         template_name = None
-        if sh.isfile(sh.joinpths(pkg_dir, "setup.py")):
-            egg_info = pip_helper.get_directory_details(pkg_dir)
-            name = egg_info['name']
-            params["version"] = egg_info["version"]
-            if component_name.endswith("client"):
-                clientname = utils.strip_prefix_suffix(name,
-                                                       "python-", "client")
-                if not clientname:
-                    LOG.error("Bad client package name %s", name)
-                    return
-                params["clientname"] = clientname
-                params["apiname"] = self.API_NAMES.get(clientname,
-                                                       clientname.title())
-                rpm_name = name
+        app_dir = instance.get_option('app_dir')
+        if sh.isfile(sh.joinpths(app_dir, "setup.py")):
+            egg_info = pip_helper.get_directory_details(app_dir)
+            egg_name = egg_info['name']
+            if self._is_client(instance.name, egg_name):
+                rpm_name = egg_name
                 template_name = "python-commonclient.spec"
-            elif component_name in self.SERVER_NAMES:
-                rpm_name = "openstack-%s" % name
+            elif instance.name in self.SERVER_NAMES:
+                rpm_name = "openstack-%s" % (egg_name)
             else:
-                rpm_name = self.TRANSLATION_NAMES.get(component_name)
+                rpm_name = self.TRANSLATION_NAMES.get(instance.name)
         else:
-            rpm_name = component_name
+            rpm_name = instance.name
             template_name = "%s.spec" % rpm_name
+        return (rpm_name, template_name)
+
+    def _build_openstack_package(self, instance):
+        params = {}
+        (rpm_name, template_name) = self._get_template_and_rpm_name(instance)
+        app_dir = instance.get_option('app_dir')
+        if sh.isfile(sh.joinpths(app_dir, "setup.py")):
+            egg_info = pip_helper.get_directory_details(app_dir)
+            egg_name = egg_info['name']
+            params["version"] = egg_info["version"]
+            if self._is_client(instance.name, egg_name):
+                client_name = utils.strip_prefix_suffix(egg_name,
+                                                        "python-", "client")
+                if not client_name:
+                    msg = "Bad client package name %s" % (egg_name)
+                    raise excp.PackageException(msg)
+                params["clientname"] = client_name
+                params["apiname"] = self.API_NAMES.get(client_name,
+                                                       client_name.title())
+        else:
             spec_filename = sh.joinpths(settings.TEMPLATE_DIR,
                                         self.SPEC_TEMPLATE_DIR, template_name)
             if not sh.isfile(spec_filename):
                 rpm_name = None
         if rpm_name:
             template_name = template_name or "%s.spec" % rpm_name
-            spec_filename = self._write_spec_file(pkg_dir, rpm_name,
+            spec_filename = self._write_spec_file(app_dir, rpm_name,
                                                   template_name, params)
-            self._build_from_spec(pkg_dir, spec_filename)
+            self._build_from_spec(instance, spec_filename)
         else:
-            cmdline = self.py2rpm_start_cmdline() + ["--", pkg_dir]
+            cmdline = self.py2rpm_start_cmdline() + ["--", app_dir]
             sh.execute_save_output(cmdline,
-                                   cwd=pkg_dir,
+                                   cwd=app_dir,
                                    out_filename=sh.joinpths(self.log_dir,
-                                                            component_name),
+                                                            instance.name),
                                    quiet=True)
 
     def _convert_names_python2rpm(self, python_names):
@@ -456,8 +472,6 @@ class YumDependencyHandler(base.DependencyHandler):
         if rpm_names:
             cmdline = ["yum", "install", "-y"] + sorted(set(rpm_names))
             sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
-            for name in rpm_names:
-                self.tracewriter.package_installed(name)
 
     def uninstall(self):
         super(YumDependencyHandler, self).uninstall()
@@ -465,11 +479,21 @@ class YumDependencyHandler(base.DependencyHandler):
         # Don't take out packages that anvil requires to run...
         no_remove = env.get_key('REQUIRED_PACKAGES', '').split()
         no_remove = sorted(set(no_remove))
-        rpm_names = []
+
+        scan_packages = []
         for inst in self.instances:
-            for p in inst.package_names():
-                if self.helper.is_installed(p) and p not in no_remove:
-                    rpm_names.append(p)
+            scan_packages.extend(inst.package_names())
+            (rpm_name, _template_name) = self._get_template_and_rpm_name(inst)
+            scan_packages.append(rpm_name)
+
+        rpm_names = []
+        for p in scan_packages:
+            if not p:
+                continue
+            if p in no_remove:
+                continue
+            if self.helper.is_installed(p):
+                rpm_names.append(p)
 
         if rpm_names:
             cmdline = ["yum", "remove", "--remove-leaves", "-y"]

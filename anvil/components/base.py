@@ -112,8 +112,9 @@ class Component(object):
                 names.add(pack["name"])
         except (AttributeError, KeyError):
             pass
-        daemon_to_package = self.distro._components[self.name].get(
-            "daemon_to_package", {})
+        daemon_to_package = self.get_option("daemon_to_package")
+        if not daemon_to_package:
+            daemon_to_package = {}
         for key in self.subsystem_names():
             try:
                 names.add(daemon_to_package[key])
