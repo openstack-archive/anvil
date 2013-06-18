@@ -40,19 +40,16 @@ subsystems:
     keystone:
     - all
     nova:
-    - api-ec2
-    - api-metadata
-    - api-os-compute
+    - api
     - cert
     - compute
     - conductor
-    - consoleauth
     - network
-    - novncproxy
     - scheduler
-    - xvpvncproxy
     cinder:
-    - all
+    - api
+    - scheduler
+    - volume
 supports:
 - rhel
 ...
