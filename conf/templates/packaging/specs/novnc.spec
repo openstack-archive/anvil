@@ -1,13 +1,16 @@
+
+%global os_version $version
+
 Name:           novnc
 Summary:        VNC client using HTML5 (Web Sockets, Canvas) with encryption support
 Epoch:          $epoch
-Version:        0.4
-Release:        1%{?dist}
+Version:        %{os_version}$version_suffix
+Release:        $release%{?dist}
 
 #raw
 License:        GPLv3
 URL:            https://github.com/kanaka/noVNC
-Source0:        https://github.com/downloads/kanaka/noVNC/novnc-%{version}.tar.gz
+Source0:        novnc-%{os_version}.tar.gz
 Source1:        openstack-nova-novncproxy.init
 Source2:        nova-novncproxy.1
 Source3:        novnc_server.1
@@ -35,7 +38,7 @@ Requires(preun): initscripts
 OpenStack Nova noVNC server that proxies VNC traffic over Websockets.
 
 %prep
-%setup -q
+%setup -q -n %{name}-%{os_version}
 
 # call the websockify executable
 sed -i 's/wsproxy\.py/websockify/' utils/launch.sh

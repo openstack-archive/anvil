@@ -6,21 +6,22 @@
 
 %global python_name cinder
 %global daemon_prefix openstack-cinder
+%global os_version $version
 
 %if ! (0%{?fedora} > 12 || 0%{?rhel} > 6)
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %endif
 
 Name:	          openstack-cinder
-Version:          $version
-Release:          1%{?dist}
+Version:          %{os_version}$version_suffix
+Release:          $release%{?dist}
 Epoch:            $epoch
 Summary:          OpenStack Volume service
 
 Group:            Applications/System
 License:          ASL 2.0
 URL:              http://www.openstack.org/software/openstack-storage/
-Source0:          %{python_name}-%{version}.tar.gz
+Source0:          %{python_name}-%{os_version}.tar.gz
 Source1:          cinder-sudoers
 Source2:          cinder.logrotate
 Source3:          cinder-tgt.conf
@@ -95,7 +96,7 @@ This package contains documentation files for cinder.
 
 #raw
 %prep
-%setup -q -n cinder-%{version}
+%setup -q -n cinder-%{os_version}
 
 # Ensure we don't access the net when building docs
 sed -i "/'sphinx.ext.intersphinx',/d" doc/source/conf.py
@@ -233,7 +234,7 @@ fi
 %files -n python-cinder
 %doc LICENSE
 %{python_sitelib}/cinder
-%{python_sitelib}/cinder-%{version}*.egg-info
+%{python_sitelib}/cinder-%{os_version}*.egg-info
 
 %if 0%{?with_doc}
 %files doc
