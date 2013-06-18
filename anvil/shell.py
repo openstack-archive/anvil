@@ -17,6 +17,7 @@
 # R0915: Too many statements
 # pylint: disable=R0915
 
+import contextlib
 import distutils.spawn
 import getpass
 import grp
@@ -195,6 +196,22 @@ def execute_save_output(cmd, out_filename, **kwargs):
         kwargs["stdout_fh"] = out
         kwargs["stderr_fh"] = out
         execute(cmd, **kwargs)
+
+
+@contextlib.contextmanager
+def remove_before_after(path):
+
+    def delete_it(path):
+        if isdir(path):
+            deldir(path)
+        if isfile(path):
+            unlink(path)
+
+    delete_it(path)
+    try:
+        yield path
+    finally:
+        delete_it(path)
 
 
 def abspth(path):

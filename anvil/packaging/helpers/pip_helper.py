@@ -28,7 +28,7 @@ from anvil import utils
 LOG = logging.getLogger(__name__)
 
 FREEZE_CMD = ['freeze', '--local']
-FILES_DETAILED = {}
+EGGS_DETAILED = {}
 
 
 def create_requirement(name, version=None):
@@ -48,36 +48,58 @@ def create_requirement(name, version=None):
     return pkg_resources.Requirement.parse(name)
 
 
+def get_directory_details(path):
+    if not sh.isdir(path):
+        raise IOError("Can not detail non-existent directory %s" % (path))
+
+    # Check if we already got the details of this dir previously
+    path = sh.abspth(path)
+    cache_key = "d:%s" % (sh.abspth(path))
+    if cache_key in EGGS_DETAILED:
+        return EGGS_DETAILED[cache_key]
+
+    req = pip_req.InstallRequirement.from_line(path)
+    req.source_dir = path
+    req.run_egg_info()
+
+    dependencies = []
+    for d in req.requirements():
+        if not d.startswith("-e") and d.find("#"):
+            d = d.split("#")[0]
+        d = d.strip()
+        if d:
+            dependencies.append(d)
+
+    details = {
+        'req': req.req,
+        'dependencies': dependencies,
+        'name': req.name,
+        'pkg_info': req.pkg_info(),
+        'dependency_links': req.dependency_links,
+        'version': req.installed_version,
+    }
+
+    EGGS_DETAILED[cache_key] = details
+    return details
+
+
 def get_archive_details(filename):
-    if not os.path.isfile(filename):
+    if not sh.isfile(filename):
         raise IOError("Can not detail non-existent file %s" % (filename))
 
     # Check if we already got the details of this file previously
-    #
-    # A filename and size cache key should be good enough to match against
-    # most non-malicous files...
-    cache_key = "%s:%s" % (sh.basename(filename), sh.getsize(filename))
-    if cache_key in FILES_DETAILED:
-        return FILES_DETAILED[cache_key]
+    cache_key = "f:%s:%s" % (sh.basename(filename), sh.getsize(filename))
+    if cache_key in EGGS_DETAILED:
+        return EGGS_DETAILED[cache_key]
 
     # Get pip to get us the egg-info.
     with utils.tempdir() as td:
         filename = sh.copy(filename, sh.joinpths(td, sh.basename(filename)))
         extract_to = sh.mkdir(sh.joinpths(td, 'build'))
         pip_util.unpack_file(filename, extract_to, content_type='', link='')
-        req = pip_req.InstallRequirement.from_line(extract_to)
-        req.source_dir = extract_to
-        req.run_egg_info()
-        # Selectively extract pieces of the install requirement
-        details = {
-            'req': req.req,
-            'dependencies': req.requirements,
-            'name': req.name,
-            'pkg_info': req.pkg_info,
-            'dependency_links': req.dependency_links,
-        }
+        details = get_directory_details(extract_to)
 
-    FILES_DETAILED[cache_key] = details
+    EGGS_DETAILED[cache_key] = details
     return details
 
 

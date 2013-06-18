@@ -65,7 +65,7 @@ class PrepareAction(action.Action):
         dependency_handler.package_start()
         self._run_phase(
             action.PhaseFunctors(
-                start=lambda i: LOG.info("Packing %s", colorizer.quote(i.name)),
+                start=lambda i: LOG.info("Packaging %s.", colorizer.quote(i.name)),
                 run=dependency_handler.package_instance,
                 end=None,
             ),

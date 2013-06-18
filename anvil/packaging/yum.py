@@ -104,22 +104,19 @@ class YumDependencyHandler(base.DependencyHandler):
         return cmdline
 
     def package_instance(self, instance):
-        # clear before...
-        sh.deldir(self.rpmbuild_dir)
-        for dirname in (sh.joinpths(self.rpmbuild_dir, "SPECS"),
-                        sh.joinpths(self.rpmbuild_dir, "SOURCES")):
-            sh.mkdir(dirname, recurse=True)
-        if instance.name == "general":
-            self._build_dependencies()
-            self._move_rpms("anvil-deps")
-            self._create_repo("anvil-deps")
-        else:
-            app_dir = instance.get_option("app_dir")
-            if sh.isdir(app_dir):
-                self._build_openstack_package(app_dir)
-                self._move_rpms("anvil")
-        # ...and after
-        sh.deldir(self.rpmbuild_dir)
+        with sh.remove_before_after(self.rpmbuild_dir):
+            for dirname in (sh.joinpths(self.rpmbuild_dir, "SPECS"),
+                            sh.joinpths(self.rpmbuild_dir, "SOURCES")):
+                sh.mkdirslist(dirname, tracewriter=self.tracewriter)
+            if instance.name == "general":
+                self._build_dependencies()
+                self._move_rpms("anvil-deps")
+                self._create_repo("anvil-deps")
+            else:
+                app_dir = instance.get_option("app_dir")
+                if sh.isdir(app_dir):
+                    self._build_openstack_package(app_dir)
+                    self._move_rpms("anvil")
 
     def package_finish(self):
         self._create_repo("anvil")
@@ -127,33 +124,38 @@ class YumDependencyHandler(base.DependencyHandler):
     def _move_rpms(self, repo_name):
         repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)
         src_repo_dir = "%s-sources" % repo_dir
-        sh.mkdir(repo_dir, recurse=True)
-        sh.mkdir(src_repo_dir, recurse=True)
-        for filename in sh.listdir(sh.joinpths(self.rpmbuild_dir, "RPMS"),
-                                   recursive=True, files_only=True):
-            sh.move(filename, repo_dir, force=True)
-        for filename in sh.listdir(sh.joinpths(self.rpmbuild_dir, "SRPMS"),
-                                   recursive=True, files_only=True):
-            sh.move(filename, src_repo_dir, force=True)
-        return repo_dir
+        for dirname in (repo_dir, src_repo_dir):
+            sh.mkdirslist(dirname, tracewriter=self.tracewriter)
+        for (src_dir, tgt_dir) in ([sh.joinpths(self.rpmbuild_dir, "RPMS"), repo_dir],
+                                   [sh.joinpths(self.rpmbuild_dir, "SRPMS"), src_repo_dir]):
+            rpms = []
+            for filename in sh.listdir(src_dir, recursive=True, files_only=True):
+                sh.move(filename, tgt_dir, force=True)
+                rpms.append(sh.basename(filename))
+            if rpms:
+                utils.log_iterable(rpms,
+                                   header="Moved %s rpms to %s" % (len(rpms),
+                                                                   tgt_dir),
+                                   logger=LOG)
 
     def _create_repo(self, repo_name):
         repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)
         src_repo_dir = "%s-sources" % repo_dir
-        for a_dir in repo_dir, src_repo_dir:
+        for a_dir in (repo_dir, src_repo_dir):
             cmdline = ["createrepo", a_dir]
-            LOG.info("Creating repo at %s" % a_dir)
+            LOG.info("Creating repo at %s", a_dir)
             sh.execute(cmdline)
         repo_filename = sh.joinpths(self.anvil_repo_dir, "%s.repo" % repo_name)
-        LOG.info("Writing %s" % repo_filename)
+        LOG.info("Writing %s", repo_filename)
         (_fn, content) = utils.load_template("packaging", "common.repo")
         params = {
             "repo_name": repo_name,
             "baseurl_bin": "file://%s" % repo_dir,
             "baseurl_src": "file://%s" % src_repo_dir
         }
-        sh.write_file(
-            repo_filename, utils.expand_template(content, params))
+        sh.write_file(repo_filename,
+                      utils.expand_template(content, params),
+                      tracewriter=self.tracewriter)
 
     def _get_yum_available(self):
         yum_map = {}
@@ -271,45 +273,16 @@ class YumDependencyHandler(base.DependencyHandler):
                                        quiet=True)
                 p_bar.update(i + 1)
 
-    @staticmethod
-    def _python_setup_py_get(pkg_dir, field):
-        """
-        :param field: e.g., "name" or "version"
-        """
-        cmdline = [sys.executable, "setup.py", "--%s" % field]
-        value = sh.execute(cmdline, cwd=pkg_dir)[0].splitlines()[-1].strip()
-        if not value:
-            LOG.error("Cannot determine %s for %s", field, pkg_dir)
-        return value
-
     def _write_spec_file(self, pkg_dir, rpm_name, template_name, params):
-
-        def load_requirements(filename):
-            if not sh.isfile(filename):
-                return []
-            requires = []
-            with open(filename, "r") as requires_file:
-                for line in requires_file.readlines():
-                    line = line.split("#", 1)[0].strip()
-                    if line:
-                        requires.append(line)
-            return requires
-
-        if not params.setdefault("requires", []):
-            # TODO(harlowja): get from egg-info???
-            requires_what = []
-            for filename in ["%s/tools/pip-requires" % pkg_dir,
-                             "%s/requirements.txt" % pkg_dir]:
-                requires_what.extend(load_requirements(filename))
-            requires_what = self._convert_names_python2rpm(requires_what)
-            if requires_what:
-                params["requires"] = requires_what
-
+        egg_details = pip_helper.get_directory_details(pkg_dir)
+        requires_what = egg_details['dependencies']
+        params['requires'] = self._convert_names_python2rpm(requires_what)
         params["epoch"] = self.OPENSTACK_EPOCH
         content = utils.load_template(self.SPEC_TEMPLATE_DIR, template_name)[1]
         spec_filename = sh.joinpths(self.rpmbuild_dir, "SPECS",
                                     "%s.spec" % rpm_name)
-        sh.write_file(spec_filename, utils.expand_template(content, params),
+        sh.write_file(spec_filename,
+                      utils.expand_template(content, params),
                       tracewriter=self.tracewriter)
         return spec_filename
 
@@ -396,8 +369,9 @@ class YumDependencyHandler(base.DependencyHandler):
         rpm_name = None
         template_name = None
         if sh.isfile(sh.joinpths(pkg_dir, "setup.py")):
-            name = self._python_setup_py_get(pkg_dir, "name")
-            params["version"] = self._python_setup_py_get(pkg_dir, "version")
+            egg_info = pip_helper.get_directory_details(pkg_dir)
+            name = egg_info['name']
+            params["version"] = egg_info["version"]
             if component_name.endswith("client"):
                 clientname = utils.strip_prefix_suffix(name,
                                                        "python-", "client")
