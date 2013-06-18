@@ -426,5 +426,6 @@ class YumDependencyHandler(base.DependencyHandler):
         for inst in self.instances:
             rpm_names |= inst.package_names()
         if rpm_names:
-            cmdline = ["yum", "remove", "--remove-leaves", "-y"] + rpm_names
+            cmdline = ["yum", "remove", "--remove-leaves", "-y"]
+            cmdline.extend(sorted(rpm_names))
             sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
