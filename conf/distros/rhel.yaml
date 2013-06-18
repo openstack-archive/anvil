@@ -70,6 +70,9 @@ components:
             - name: hp3parclient
         daemon_to_package:
             all: openstack-cinder
+            volume: openstack-cinder
+            scheduler: openstack-cinder
+            api: openstack-cinder
     cinder-client:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
@@ -211,13 +214,15 @@ components:
         # other components actually can't use. This sucks...
         -   name: paramiko
         daemon_to_package:
-            api-metadata: openstack-nova-api
-            api-ec2: openstack-nova-api
-            api-os-compute: openstack-nova-api
-            dhcpbridge: openstack-nova-network
-            xvpvncproxy: openstack-nova-console
-            spicehtml5proxy: openstack-nova-console
+            api: openstack-nova-api
+            conductor: openstack-nova-conductor
             consoleauth: openstack-nova-console
+            dhcpbridge: openstack-nova-network
+            network: openstack-nova-network
+            novncproxy: openstack-nova-novncproxy
+            scheduler: openstack-nova-scheduler
+            spicehtml5proxy: openstack-nova-console
+            xvpvncproxy: openstack-nova-console
     nova-client:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
