@@ -17,7 +17,6 @@ components:
 - quantum
 - openvswitch
 - cinder
-- novnc
 - nova
 - nova-client
 - django-openstack-auth
@@ -64,11 +63,14 @@ subsystems:
     - novncproxy
     - scheduler
     - xvpvncproxy
+    - spicehtml5proxy
     quantum:
     - server
     - agent
     cinder:
-    - all
+    - api
+    - scheduler
+    - volume
 supports:
 - rhel
 ...
