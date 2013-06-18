@@ -56,13 +56,16 @@ class YumDependencyHandler(base.DependencyHandler):
         "quantum": "Networking",
     }
     SERVER_NAMES = ["nova", "glance", "keystone", "quantum", "cinder"]
-    py2rpm_executable = sh.which("py2rpm", ["tools/"])
+    TRANSLATION_NAMES = {
+        'horizon': "python-django-horizon",
+    }
     REPO_FN = "anvil.repo"
     YUM_REPO_DIR = "/etc/yum.repos.d/"
     BANNED_PACKAGES = [
         'distribute',
         'setuptools',
     ]
+    py2rpm_executable = sh.which("py2rpm", ["tools/"])
     rpmbuild_executable = sh.which("rpmbuild")
 
     def __init__(self, distro, root_dir, instances):
@@ -279,28 +282,39 @@ class YumDependencyHandler(base.DependencyHandler):
         return value
 
     def _write_spec_file(self, pkg_dir, rpm_name, template_name, params):
+
+        def load_requirements(filename):
+            if not sh.isfile(filename):
+                return []
+            requires = []
+            with open(filename, "r") as requires_file:
+                for line in requires_file.readlines():
+                    line = line.split("#", 1)[0].strip()
+                    if line:
+                        requires.append(line)
+            return requires
+
         if not params.setdefault("requires", []):
-            requires_filename = "%s/tools/pip-requires" % pkg_dir
-            if sh.isfile(requires_filename):
-                requires_python = []
-                with open(requires_filename, "r") as requires_file:
-                    for line in requires_file.readlines():
-                        line = line.split("#", 1)[0].strip()
-                        if line:
-                            requires_python.append(line)
-                if requires_python:
-                    params["requires"] = self._convert_names_python2rpm(
-                        requires_python)
+            # TODO(harlowja): get from egg-info???
+            requires_what = []
+            for filename in ["%s/tools/pip-requires" % pkg_dir,
+                             "%s/requirements.txt" % pkg_dir]:
+                requires_what.extend(load_requirements(filename))
+            requires_what = self._convert_names_python2rpm(requires_what)
+            if requires_what:
+                params["requires"] = requires_what
+
         params["epoch"] = self.OPENSTACK_EPOCH
         content = utils.load_template(self.SPEC_TEMPLATE_DIR, template_name)[1]
-        spec_filename = sh.joinpths(
-            self.rpmbuild_dir, "SPECS", "%s.spec" % rpm_name)
-        sh.write_file(spec_filename, utils.expand_template(content, params))
+        spec_filename = sh.joinpths(self.rpmbuild_dir, "SPECS",
+                                    "%s.spec" % rpm_name)
+        sh.write_file(spec_filename, utils.expand_template(content, params),
+                      tracewriter=self.tracewriter)
         return spec_filename
 
     def _copy_startup_scripts(self, spec_filename):
-        common_init_content = utils.load_template(
-            "packaging", "common.init")[1]
+        common_init_content = utils.load_template("packaging",
+                                                  "common.init")[1]
         for src in rpm.spec(spec_filename).sources:
             script = sh.basename(src[0])
             if not (script.endswith(".init")):
@@ -308,20 +322,18 @@ class YumDependencyHandler(base.DependencyHandler):
             target_filename = sh.joinpths(self.rpm_sources_dir, script)
             if sh.isfile(target_filename):
                 continue
-            bin_name = utils.strip_prefix_suffix(
-                script, "openstack-", ".init")
+            bin_name = utils.strip_prefix_suffix(script, "openstack-", ".init")
             params = {
                 "bin": bin_name,
                 "package": bin_name.split("-", 1)[0],
             }
-            sh.write_file(
-                target_filename,
-                utils.expand_template(common_init_content, params))
+            sh.write_file(target_filename,
+                          utils.expand_template(common_init_content, params))
 
     def _copy_sources(self, pkg_dir):
         component_name = self._get_component_name(pkg_dir)
-        other_sources_dir = sh.joinpths(
-            settings.TEMPLATE_DIR, "packaging/sources", component_name)
+        other_sources_dir = sh.joinpths(settings.TEMPLATE_DIR,
+                                        "packaging/sources", component_name)
         if sh.isdir(other_sources_dir):
             for filename in sh.listdir(other_sources_dir, files_only=True):
                 sh.copy(filename, self.rpm_sources_dir)
@@ -351,8 +363,8 @@ class YumDependencyHandler(base.DependencyHandler):
         ]
         tar_base = sh.execute(cmdline, cwd=pkg_dir)[0].splitlines()[0].strip()
         # git 1.7.1 from RHEL doesn't understand --format=tar.gz
-        output_filename = sh.joinpths(
-            self.rpm_sources_dir, "%s.tar" % tar_base)
+        output_filename = sh.joinpths(self.rpm_sources_dir,
+                                      "%s.tar" % tar_base)
         cmdline = [
             "git",
             "archive",
@@ -384,33 +396,31 @@ class YumDependencyHandler(base.DependencyHandler):
             name = self._python_setup_py_get(pkg_dir, "name")
             params["version"] = self._python_setup_py_get(pkg_dir, "version")
             if component_name.endswith("client"):
-                clientname = utils.strip_prefix_suffix(
-                    name, "python-", "client")
+                clientname = utils.strip_prefix_suffix(name,
+                                                       "python-", "client")
                 if not clientname:
                     LOG.error("Bad client package name %s", name)
                     return
                 params["clientname"] = clientname
-                params["apiname"] = self.API_NAMES.get(
-                    clientname, clientname.title())
+                params["apiname"] = self.API_NAMES.get(clientname,
+                                                       clientname.title())
                 rpm_name = name
                 template_name = "python-commonclient.spec"
             elif component_name in self.SERVER_NAMES:
                 rpm_name = "openstack-%s" % name
-            elif component_name == "horizon":
-                rpm_name = "python-django-horizon"
+            else:
+                rpm_name = self.TRANSLATION_NAMES.get(component_name)
         else:
             rpm_name = component_name
             template_name = "%s.spec" % rpm_name
-            spec_filename = sh.joinpths(
-                settings.TEMPLATE_DIR,
-                self.SPEC_TEMPLATE_DIR,
-                template_name)
+            spec_filename = sh.joinpths(settings.TEMPLATE_DIR,
+                                        self.SPEC_TEMPLATE_DIR, template_name)
             if not sh.isfile(spec_filename):
                 rpm_name = None
         if rpm_name:
             template_name = template_name or "%s.spec" % rpm_name
-            spec_filename = self._write_spec_file(
-                pkg_dir, rpm_name, template_name, params)
+            spec_filename = self._write_spec_file(pkg_dir, rpm_name,
+                                                  template_name, params)
             self._build_from_spec(pkg_dir, spec_filename)
         else:
             cmdline = self.py2rpm_start_cmdline() + ["--", pkg_dir]
