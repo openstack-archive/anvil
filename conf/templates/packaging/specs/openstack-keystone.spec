@@ -5,6 +5,7 @@
 
 %global python_name keystone
 %global daemon_prefix openstack-keystone
+%global os_version $version
 
 %if ! (0%{?fedora} > 12 || 0%{?rhel} > 5)
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
@@ -12,15 +13,15 @@
 
 Name:           openstack-keystone
 Epoch:          1
-Version:        $version
-Release:        1%{?dist}
+Version:        %{os_version}$version_suffix
+Release:        $release%{?dist}
 Url:            http://www.openstack.org
 Summary:        Openstack Identity Service
 License:        Apache 2.0
 Vendor:         Openstack Foundation
 Group:          Applications/System
 
-Source0:        %{python_name}-%{version}.tar.gz
+Source0:        %{python_name}-%{os_version}.tar.gz
 Source1:        openstack-keystone-all.init
 
 BuildRoot:        %{_tmppath}/%{name}-%{version}-%{release}
@@ -74,7 +75,7 @@ This package contains the Keystone Python library.
 
 #raw
 %prep
-%setup -q -n %{python_name}-%{version}
+%setup -q -n %{python_name}-%{os_version}
 
 
 %build

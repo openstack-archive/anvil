@@ -5,6 +5,7 @@
 
 %global python_name glance
 %global daemon_prefix openstack-glance
+%global os_version $version
 
 %if ! (0%{?fedora} > 12 || 0%{?rhel} > 6)
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
@@ -12,15 +13,15 @@
 
 Name:             openstack-glance
 Epoch:            $epoch
-Version:          $version
-Release:          1%{?dist}
+Version:          %{os_version}$version_suffix
+Release:          $release%{?dist}
 Summary:          OpenStack Image Registry and Delivery Service
 
 Group:            Development/Languages
 License:          ASL 2.0
 Vendor:           OpenStack Foundation
 URL:              http://glance.openstack.org
-Source0:          %{python_name}-%{version}.tar.gz
+Source0:          %{python_name}-%{os_version}.tar.gz
 Source1:          openstack-glance-api.init
 Source2:          openstack-glance-registry.init
 Source3:          openstack-glance-scrubber.init
@@ -86,7 +87,7 @@ This package contains documentation files for glance.
 %endif
 
 %prep
-%setup -q -n %{python_name}-%{version}
+%setup -q -n %{python_name}-%{os_version}
 sed '/pysendfile/d' tools/pip-requires
 
 

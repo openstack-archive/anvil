@@ -12,17 +12,19 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %endif
 
+%global os_version $version
+
 Name:             python-${clientname}client
 Summary:          OpenStack ${clientname.title()} Client
-Version:          $version
-Release:          1%{?dist}
+Version:          %{os_version}$version_suffix
+Release:          $release%{?dist}
 Epoch:            $epoch
 
 Group:            Development/Languages
 License:          Apache 2.0
 Vendor:           OpenStack Foundation
 URL:              http://www.openstack.org
-Source0:          %{name}-%{version}.tar.gz
+Source0:          %{name}-%{os_version}.tar.gz
 
 BuildRoot:        %{_tmppath}/%{name}-%{version}-%{release}
 

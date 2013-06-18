@@ -104,16 +104,29 @@ class YumDependencyHandler(base.DependencyHandler):
             ] + arch_dependent
         return cmdline
 
+    def _package_parameters(self, instance):
+        params = {}
+        params["release"] = instance.get_option("release", default_value="1")
+        if '-' in params["release"]:
+            # NOTE(imelnikov): "-" is prohibited in RPM releases
+            raise ValueError("Malformed package release: %r" % params["release"])
+        version_suffix = instance.get_option("version_suffix", default_value="")
+        if version_suffix and not version_suffix.startswith('.'):
+            version_suffix = '.' + version_suffix
+        params['version_suffix'] = version_suffix
+        return params
+
     def package_instance(self, instance):
         with sh.remove_before_after(self.rpmbuild_dir):
             for dirname in (sh.joinpths(self.rpmbuild_dir, "SPECS"),
                             sh.joinpths(self.rpmbuild_dir, "SOURCES")):
                 sh.mkdirslist(dirname, tracewriter=self.tracewriter)
-            if instance.name == "general":
+            if instance.name in ["general"]:
                 self._build_dependencies()
                 self._move_rpms("anvil-deps")
                 self._create_repo("anvil-deps")
             else:
+                # Meta packages don't get built.
                 app_dir = instance.get_option("app_dir")
                 if sh.isdir(app_dir):
                     self._build_openstack_package(instance)
@@ -406,9 +419,8 @@ class YumDependencyHandler(base.DependencyHandler):
         return (rpm_name, template_name)
 
     def _build_openstack_package(self, instance):
-        params = {}
+        params = self._package_parameters(instance)
         (rpm_name, template_name) = self._get_template_and_rpm_name(instance)
-        app_dir = instance.get_option('app_dir')
         try:
             egg_name = instance.egg_info['name']
             params["version"] = instance.egg_info["version"]
@@ -426,6 +438,7 @@ class YumDependencyHandler(base.DependencyHandler):
                                         self.SPEC_TEMPLATE_DIR, template_name)
             if not sh.isfile(spec_filename):
                 rpm_name = None
+        app_dir = instance.get_option('app_dir')
         if rpm_name:
             template_name = template_name or "%s.spec" % rpm_name
             spec_filename = self._write_spec_file(instance, app_dir, rpm_name,

@@ -5,10 +5,12 @@
 # * Alan Pevec <apevec@redhat.com>
 # * Cole Robinson <crobinso@redhat.com>
 
+%global os_version $version
+
 Name:       python-django-horizon
-Version:    ${version}
+Version:    %{os_version}$version_suffix
+Release:    $release%{?dist}
 Epoch:      ${epoch}
-Release:    1%{?dist}
 Summary:    Django application for talking to Openstack
 
 Group:      Development/Libraries
@@ -16,7 +18,7 @@ Group:      Development/Libraries
 License:    ASL 2.0 and BSD
 URL:        http://horizon.openstack.org/
 BuildArch:  noarch
-Source0:    horizon-%{version}.tar.gz
+Source0:    horizon-%{os_version}.tar.gz
 Source1:    openstack-dashboard.conf
 Source2:    openstack-dashboard-httpd-2.4.conf
 
@@ -77,7 +79,7 @@ Documentation for the Django Horizon application for talking with Openstack
 
 #raw
 %prep
-%setup -q -n horizon-%{version}
+%setup -q -n horizon-%{os_version}
 
 # Don't access the net while building docs
 sed -i '/sphinx.ext.intersphinx/d' doc/source/conf.py
