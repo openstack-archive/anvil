@@ -17,22 +17,15 @@
 from anvil import colorizer
 from anvil import log
 
-from anvil.actions import base as action
+from anvil.actions import uninstall
 
 LOG = log.getLogger(__name__)
 
 
-class RemoveAction(action.Action):
-    @property
-    def lookup_name(self):
-        return 'uninstall'
-
-    def _order_components(self, components):
-        components = super(RemoveAction, self)._order_components(components)
-        components.reverse()
-        return components
-
+class RemoveAction(uninstall.UninstallAction):
     def _run(self, persona, component_order, instances):
+        super(RemoveAction, self)._run(persona, component_order, instances)
+
         removals = ['package-install', 'install']
         dependency_handler_class = self.distro.dependency_handler_class
         dependency_handler = dependency_handler_class(self.distro,
