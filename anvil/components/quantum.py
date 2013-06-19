@@ -26,11 +26,6 @@ from anvil.components.configurators import quantum as qconf
 
 LOG = logging.getLogger(__name__)
 
-# Sync db command
-# FIXME(aababilov)
-SYNC_DB_CMD = ["sudo", "-u", "quantum", "/usr/bin/quantum-db-manage",
-               "sync"]
-
 
 class QuantumPluginMixin(base.Component):
     def subsystem_names(self):
@@ -52,9 +47,11 @@ class QuantumInstaller(binstall.PythonInstallComponent, QuantumPluginMixin):
 
     def _sync_db(self):
         LOG.info("Syncing quantum to database: %s", colorizer.quote(self.configurator.DB_NAME))
-        #cmds = [{"cmd": SYNC_DB_CMD}]
-        #utils.execute_template(*cmds, cwd=self.bin_dir,
-        # params=self.config_params(None))
+        # TODO(aababilov): update db if required
+
+    def create_symlink_to_conf_file(self):
+        os.symlink(self.configurator.get_path_to_plugin_config,
+                   "/etc/quantum/plugin.ini")
 
 
 class QuantumUninstaller(binstall.PkgUninstallComponent, QuantumPluginMixin):

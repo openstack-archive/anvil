@@ -35,3 +35,7 @@ class OpenvswitchConfigurator(quantum_plugins.Configurator):
             "DATABASE",
             "sql_connection",
             self.fetch_dbdsn())
+
+    @property
+    def get_plugin_config_file_path(self):
+        return "plugins/%s/%s" % (self.core_plugin, name) % PLUGIN_CONF

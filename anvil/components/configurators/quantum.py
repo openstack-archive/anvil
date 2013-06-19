@@ -102,3 +102,7 @@ class QuantumConfigurator(base.Configurator):
             "admin_user": params["service_user"],
             "admin_password": params["service_password"],
         }
+
+    @property
+    def get_path_to_plugin_config(self):
+        return self.plugin_configurator.get_plugin_config_file_path

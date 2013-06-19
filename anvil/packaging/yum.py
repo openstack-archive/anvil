@@ -253,9 +253,15 @@ class YumDependencyHandler(base.DependencyHandler):
                 continue
             bin_name = utils.strip_prefix_suffix(
                 script, "openstack-", ".init")
+            if bin_name == "quantum-server":
+                daemon_args = ("'--config-file=/etc/quantum/plugin.ini"
+                               " --config-file=/etc/quantum/quantum.conf'")
+            else:
+                daemon_args = ""
             params = {
                 "bin": bin_name,
                 "package": bin_name.split("-", 1)[0],
+                "daemon_args": daemon_args,
             }
             sh.write_file(
                 target_filename,
