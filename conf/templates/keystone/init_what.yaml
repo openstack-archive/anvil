@@ -97,7 +97,6 @@ users:
     password: '$keystone.service_password'
     roles:
     - admin:service
-    - ResellerAdmin:service
     tenants:
     - service
 -   email: cinder@example.com
@@ -105,7 +104,6 @@ users:
     password: '$keystone.service_password'
     roles:
     - admin:service
-    - ResellerAdmin:service
     tenants:
     - service
 -   email: quantum@example.com
