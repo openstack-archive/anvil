@@ -189,9 +189,6 @@ class YumDependencyHandler(base.DependencyHandler):
 
     def filter_download_requires(self):
         yum_map = self._get_yum_available()
-        no_pips = [pkg_resources.Requirement.parse(name).key
-                  for name in self.python_names]
-
         pip_origins = {}
         for line in self.pips_to_install:
             req = pip_helper.extract_requirement(line)
@@ -200,9 +197,6 @@ class YumDependencyHandler(base.DependencyHandler):
         pips_to_download = []
         req_to_install = [pip_helper.extract_requirement(line)
                           for line in self.pips_to_install]
-        req_to_install = [req for req in req_to_install
-                          if req.key not in no_pips]
-
         requested_names = [req.key for req in req_to_install]
         rpm_to_install = self._convert_names_python2rpm(requested_names)
 
@@ -210,6 +204,7 @@ class YumDependencyHandler(base.DependencyHandler):
         for (req, rpm_name) in zip(req_to_install, rpm_to_install):
             (version, repo) = self._find_yum_match(yum_map, req, rpm_name)
             if not repo:
+                # We need the source requirement incase its a url.
                 pips_to_download.append(pip_origins[req.key])
             else:
                 satisfied_list.append((req, rpm_name, version, repo))

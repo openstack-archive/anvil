@@ -202,22 +202,23 @@ class DependencyHandler(object):
             self.pip_executable
         ]
         cmdline = cmdline + extra_pips + ["-r"] + requires_files
+        cmdline = (cmdline + ["--ignore-package"] +
+                   OPENSTACK_PACKAGES + self.python_names)
 
         output = sh.execute(cmdline, check_exit_code=False)
+        self.pips_to_install = list(utils.splitlines_not_empty(output[0]))
         conflict_descr = output[1].strip()
+
         forced_keys = set()
         if conflict_descr:
             for line in conflict_descr.splitlines():
                 LOG.warning(line)
                 if line.endswith(": incompatible requirements"):
                     forced_keys.add(line.split(":", 1)[0].lower())
-        self.pips_to_install = []
-        for line in utils.splitlines_not_empty(output[0]):
-            req = pip_helper.extract_requirement(line)
-            if req.key not in OPENSTACK_PACKAGES:
-                self.pips_to_install.append(line)
+
         sh.write_file(self.gathered_requires_filename,
                       "\n".join(self.pips_to_install))
+
         if not self.pips_to_install:
             LOG.error("No dependencies for OpenStack found."
                       "Something went wrong. Please check:")
@@ -236,17 +237,7 @@ class DependencyHandler(object):
                       "\n".join(str(req) for req in self.forced_packages))
 
     def filter_download_requires(self):
-        if not self.python_names:
-            return self.pips_to_install
-        cmdline = [
-            self.multipip_executable,
-            "--pip", self.pip_executable,
-        ] + self.pips_to_install + [
-            "--ignore-packages",
-        ] + self.python_names
-        output = sh.execute(cmdline)
-        pips_to_download = list(utils.splitlines_not_empty(output[0]))
-        return pips_to_download
+        return self.pips_to_install
 
     def _try_download_dependencies(self, attempt, pips_to_download,
                                    pip_download_dir,
