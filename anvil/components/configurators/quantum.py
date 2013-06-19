@@ -29,7 +29,6 @@ PASTE_CONF = "api-paste.ini"
 CONFIGS = [PASTE_CONF, API_CONF]
 
 
-
 class QuantumConfigurator(base.Configurator):
 
     # This db will be dropped and created

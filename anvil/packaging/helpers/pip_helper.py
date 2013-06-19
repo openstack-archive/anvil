@@ -15,7 +15,6 @@
 #    under the License.
 
 import copy
-import os
 import pkg_resources
 
 from pip import util as pip_util

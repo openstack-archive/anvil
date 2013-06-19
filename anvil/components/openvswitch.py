@@ -15,7 +15,6 @@
 #    under the License.
 
 from anvil import log as logging
-from anvil import shell as sh
 
 from anvil.components import base_runtime as bruntime
 

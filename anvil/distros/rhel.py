@@ -25,7 +25,6 @@ from anvil import cfg
 from anvil import colorizer
 from anvil import log as logging
 from anvil import shell as sh
-from anvil import utils
 
 from anvil.components import db
 from anvil.components import rabbit
