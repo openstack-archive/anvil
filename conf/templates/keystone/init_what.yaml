@@ -15,9 +15,9 @@ endpoints:
     public_url: "$nova.endpoints.ec2_cloud.uri"
     region: RegionOne
 -   service: network
-    admin_url: "$quantum.endpoints.admin.uri"
-    internal_url: "$quantum.endpoints.internal.uri"
-    public_url: "$quantum.endpoints.public.uri"
+    admin_url: "${quantum.endpoints.admin.uri}/%(tenant_id)s"
+    internal_url: "${quantum.endpoints.internal.uri}/%(tenant_id)s"
+    public_url: "${quantum.endpoints.public.uri}/%(tenant_id)s"
     region: RegionOne
 -   service: glance
     admin_url: "$glance.endpoints.admin.uri"

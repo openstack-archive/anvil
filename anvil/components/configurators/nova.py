@@ -260,13 +260,16 @@ class NovaConfigurator(base.Configurator):
         # FIXME(aababilov): error on KeyError
         nova_conf.add(
             "libvirt_vif_driver",
-            libvirt_vif_drivers[self.installer.get_option('quantum-core-plugin')])
+            libvirt_vif_drivers[self.installer.get_option('quantum_core_plugin')])
 
         # FIXME(aababilov): add for linuxbridge:
         nova_conf.add("libvirt_vif_type", "ethernet")
         nova_conf.add("connection_type", "libvirt")
         nova_conf.add("quantum_use_dhcp",
                       self.installer.get_bool_option('quantum-use-dhcp'))
+        nova_conf.add("security_group_api", "quantum")
+        nova_conf.add("service_quantum_metadata_proxy", "true")
+        nova_conf.add("quantum_metadata_proxy_shared_secret", "foo")
 
     def _configure_cells(self, nova_conf):
         cells_enabled = self.installer.get_bool_option('enable-cells')

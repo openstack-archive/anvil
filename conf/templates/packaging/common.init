@@ -16,6 +16,7 @@ prog=openstack-$bin
 exec="/usr/bin/$bin"
 pidfile="/var/run/$package/\$prog.pid"
 daemon_user=$package
+cmd_args=$args 
 
 #raw
 [ -e /etc/sysconfig/$prog ] && . /etc/sysconfig/$prog
@@ -25,7 +26,7 @@ lockfile=/var/lock/subsys/$prog
 start() {
     [ -x $exec ] || exit 5
     echo -n $"Starting $prog: "
-    daemon --user $daemon_user --pidfile $pidfile "$exec &>/dev/null & echo \$! > $pidfile"
+    daemon --user $daemon_user --pidfile $pidfile "$exec $cmd_args &>/dev/null & echo \$! > $pidfile"
     retval=$?
     echo
     [ $retval -eq 0 ] && touch $lockfile
