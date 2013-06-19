@@ -67,7 +67,10 @@ components:
             coverage: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
         pips:
-            - name: hp3parclient
+        - name: hp3parclient
+        # Need to ensure we pull in the mysql bindings since that what
+        # our recommended database configuration is.
+        -   name: MySQL-python
         daemon_to_package:
             all: openstack-cinder
             volume: openstack-cinder
@@ -157,6 +160,9 @@ components:
         # then ignores warlock's requirement
         -   name: jsonschema
             version: ">=0.7,<2"
+        # Need to ensure we pull in the mysql bindings since that what
+        # our recommended database configuration is.
+        -   name: MySQL-python
         daemon_to_package:
             api: openstack-glance
             registry: openstack-glance
@@ -192,6 +198,10 @@ components:
             uninstall: anvil.components.keystone:KeystoneUninstaller
         daemon_to_package:
             all: openstack-keystone
+        pips:
+        # Need to ensure we pull in the mysql bindings since that what
+        # our recommended database configuration is.
+        -   name: MySQL-python
     keystone-client:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
@@ -213,6 +223,9 @@ components:
         # installed in rhel uses a old version of crypto which
         # other components actually can't use. This sucks...
         -   name: paramiko
+        # Need to ensure we pull in the mysql bindings since that what
+        # our recommended database configuration is.
+        -   name: MySQL-python
         daemon_to_package:
             api: openstack-nova-api
             conductor: openstack-nova-conductor
@@ -273,6 +286,10 @@ components:
             l3-agent: openstack-quantum
             rpc-zmq-receiver: openstack-quantum
             server: openstack-quantum
+        pips:
+        # Need to ensure we pull in the mysql bindings since that what
+        # our recommended database configuration is.
+        -   name: MySQL-python
     quantum-client:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent

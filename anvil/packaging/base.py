@@ -125,16 +125,19 @@ class DependencyHandler(object):
     def package_start(self):
         requires_files = []
         extra_pips = []
-        for inst in self.instances:
+        for i in self.instances:
             try:
-                requires_files.extend(inst.requires_files)
+                requires_files.extend(i.requires_files)
             except AttributeError:
                 pass
-            for pkg in inst.get_option("pips") or []:
-                extra_pips.append(
-                    "%s%s" % (pkg["name"], pkg.get("version", "")))
+            # Ensure we include any extra pips that are desired.
+            i_extra_pips = i.get_option("pips") or []
+            for i_pip in i_extra_pips:
+                extra_req = pip_helper.create_requirement(i_pip['name'],
+                                                          i_pip.get('version'))
+                extra_pips.append(str(extra_req))
         requires_files = filter(sh.isfile, requires_files)
-        self.gather_pips_to_install(requires_files, extra_pips)
+        self.gather_pips_to_install(requires_files, sorted(set(extra_pips)))
         self.clean_pip_requires(requires_files)
 
     def package_instance(self, instance):

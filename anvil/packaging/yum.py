@@ -274,11 +274,20 @@ class YumDependencyHandler(base.DependencyHandler):
                                        quiet=True)
                 p_bar.update(i + 1)
 
-    def _write_spec_file(self, app_dir, rpm_name, template_name, params):
+    def _write_spec_file(self, instance, app_dir, rpm_name, template_name,
+                         params):
         requires_what = []
         if sh.isfile(sh.joinpths(app_dir, "setup.py")):
             egg_info = pip_helper.get_directory_details(app_dir)
-            requires_what = egg_info['dependencies']
+            requires_what.extend(egg_info['dependencies'])
+        # Ensure we include any extra pips that are desired.
+        extra_pips = instance.get_option('pips') or []
+        for i_pip in extra_pips:
+            extra_req = pip_helper.create_requirement(i_pip['name'],
+                                                      i_pip.get('version'))
+            extra_req = str(extra_req)
+            if extra_req not in requires_what:
+                requires_what.append(extra_req)
         params['requires'] = self._convert_names_python2rpm(requires_what)
         params["epoch"] = self.OPENSTACK_EPOCH
         content = utils.load_template(self.SPEC_TEMPLATE_DIR, template_name)[1]
@@ -330,7 +339,7 @@ class YumDependencyHandler(base.DependencyHandler):
         ]
         sh.execute_save_output(cmdline,
                                sh.joinpths(self.log_dir,
-                                          sh.basename(spec_filename)),
+                                           sh.basename(spec_filename)),
                                quiet=True)
 
     def _write_git_tarball(self, pkg_dir, spec_filename):
@@ -416,7 +425,7 @@ class YumDependencyHandler(base.DependencyHandler):
                 rpm_name = None
         if rpm_name:
             template_name = template_name or "%s.spec" % rpm_name
-            spec_filename = self._write_spec_file(app_dir, rpm_name,
+            spec_filename = self._write_spec_file(instance, app_dir, rpm_name,
                                                   template_name, params)
             self._build_from_spec(instance, spec_filename)
         else:
