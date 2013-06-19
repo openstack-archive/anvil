@@ -134,7 +134,7 @@ class DBInstaller(binstall.PkgInstallComponent):
                                    **dbhelper.get_shared_passwords(self))
 
 
-class DBRuntime(bruntime.ProgramRuntime):
+class DBRuntime(bruntime.ServiceRuntime):
     @property
     def applications(self):
         return [self.distro.get_command(self.get_option("type"), "daemon")[0]]
