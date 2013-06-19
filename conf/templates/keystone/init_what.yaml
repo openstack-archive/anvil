@@ -77,8 +77,8 @@ services:
 -   description: Cinder Service
     name: volume
     type: volume
--   description: Quantum Service
-    name: network
+-   description: Openstack Network Service
+    name: quantum
     type: network
 tenants:
 -   description: Admin tenant
