@@ -253,10 +253,17 @@ class YumDependencyHandler(base.DependencyHandler):
                 continue
             bin_name = utils.strip_prefix_suffix(
                 script, "openstack-", ".init")
+            
+            cmdline_args = ""
+            if bin_name == "quantum-server":
+                cmdline_args = '"--config-file=/etc/quantum/plugin.ini --config-file=/etc/quantum/quantum.conf"'
+                
             params = {
                 "bin": bin_name,
                 "package": bin_name.split("-", 1)[0],
+                "args": cmdline_args,
             }
+
             sh.write_file(
                 target_filename,
                 utils.expand_template(common_init_content, params))
@@ -427,5 +434,5 @@ class YumDependencyHandler(base.DependencyHandler):
             rpm_names |= inst.package_names()
         if rpm_names:
             cmdline = ["yum", "remove", "--remove-leaves", "-y"]
-            cmdline.extend(sorted(rpm_names))
+            cmdline = ["yum", "remove", "--remove-leaves", "-y"] + list(rpm_names)
             sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)

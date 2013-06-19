@@ -56,6 +56,9 @@ class QuantumInstaller(binstall.PythonInstallComponent, QuantumPluginMixin):
         #utils.execute_template(*cmds, cwd=self.bin_dir,
         # params=self.config_params(None))
 
+    def create_symlink_to_conf_file(self):
+        os.symlink(self.configurator.get_path_to_plugin_config(), "/etc/quantum/plugins.ini")
+
 
 class QuantumUninstaller(binstall.PkgUninstallComponent, QuantumPluginMixin):
     pass

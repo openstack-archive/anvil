@@ -97,8 +97,12 @@ class QuantumConfigurator(base.Configurator):
             "auth_port": params["endpoints"]["admin"]["port"],
             "auth_protocol": params["endpoints"]["admin"]["protocol"],
             # This uses the public uri not the admin one...
-            "auth_uri": params["endpoints"]["public"]["uri"],
+            "auth_uri": params["endpoints"]["admin"]["uri"],
             "admin_tenant_name": params["service_tenant"],
             "admin_user": params["service_user"],
             "admin_password": params["service_password"],
         }
+
+    def get_path_to_plugin_config(self):
+        return self.plugin_configurator.get_plugin_config_file_path
+

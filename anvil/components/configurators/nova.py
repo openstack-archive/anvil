@@ -245,24 +245,37 @@ class NovaConfigurator(base.Configurator):
         params['quantum'] = qhelper.get_shared_params(
             ip=self.installer.get_option('ip'),
             **self.installer.get_option('quantum'))
+        
+        quantum_keystone_params = self.get_keystone_params('quantum')
 
         nova_conf.add("network_api_class", "nova.network.quantumv2.api.API")
-        nova_conf.add("quantum_admin_username", params['service_user'])
-        nova_conf.add("quantum_admin_password", params['service_password'])
-        nova_conf.add("quantum_admin_auth_url", params['endpoints']['public']['uri'])
+        nova_conf.add("quantum_admin_username", quantum_keystone_params['service_user'])
+        nova_conf.add("quantum_admin_password", quantum_keystone_params['service_password'])
+        nova_conf.add("quantum_admin_auth_url", quantum_keystone_params['endpoints']['public']['uri'])
         nova_conf.add("quantum_auth_strategy", "keystone")
-        nova_conf.add("quantum_admin_tenant_name", params['service_tenant'])
+        nova_conf.add("quantum_admin_tenant_name", quantum_keystone_params['service_tenant'])
         nova_conf.add("quantum_url", params['quantum']['endpoints']['uri'])
-        libvirt_vif_drivers = {
-            "linuxbridge": "nova.virt.libvirt.vif.QuantumLinuxBridgeVIFDriver",
-            "openvswitch": "nova.virt.libvirt.vif.LibvirtHybridOVSBridgeDriver",
-        }
-        # FIXME(aababilov): error on KeyError
+        
+        quantum_core_plugin = self.installer.get_option('quantum_core_plugin')
+        
+        if quantum_core_plugin == 'linuxbridge':
+            self._configureLinuxBridge(nova_conf)
+        elif quantum_core_plugin == 'openvswitch':
+            self._configureOpenVSwitch(nova_conf)
+
+    def _configureOpenVSwitch(self, nova_conf):
         nova_conf.add(
             "libvirt_vif_driver",
-            libvirt_vif_drivers[self.installer.get_option('quantum-core-plugin')])
+            "nova.virt.libvirt.vif.LibvirtHybridOVSBridgeDriver")
 
-        # FIXME(aababilov): add for linuxbridge:
+        nova_conf.add("security_group_api", "quantum")
+        nova_conf.add("service_quantum_metadata_proxy", "true")
+        
+    def _configureLinuxBridge(self, nova_conf):
+        nova_conf.add(
+            "libvirt_vif_driver",
+            "nova.virt.libvirt.vif.QuantumLinuxBridgeVIFDriver")
+
         nova_conf.add("libvirt_vif_type", "ethernet")
         nova_conf.add("connection_type", "libvirt")
         nova_conf.add("quantum_use_dhcp",
@@ -285,6 +298,21 @@ class NovaConfigurator(base.Configurator):
             self._configure_quantum(nova_conf)
         else:
             nova_conf.add('network_manager', self.installer.get_option('network_manager'))
+            
+            # Special virt driver network settings
+            nova_conf.add('flat_network_bridge', self.installer.get_option('flat_network_bridge', default_value='br100'))
+            nova_conf.add('flat_injected', self.installer.get_bool_option('flat_injected'))
+            flat_interface = self.installer.get_option('flat_interface')
+            if flat_interface:
+                nova_conf.add('flat_interface', flat_interface)
+                
+            # The value for vlan_interface may default to the the current value
+            # of public_interface. We'll grab the value and keep it handy.
+            public_interface = self.installer.get_option('public_interface')
+            vlan_interface = self.installer.get_option('vlan_interface', default_value=public_interface)
+            nova_conf.add('public_interface', public_interface)
+            nova_conf.add('vlan_interface', vlan_interface)
+
 
         # Configs dhcp bridge stuff???
         # TODO(harlowja) why is this the same as the nova.conf?
@@ -293,22 +321,8 @@ class NovaConfigurator(base.Configurator):
         # Network prefix for the IP network that all the projects for future VM guests reside on. Example: 192.168.0.0/12
         nova_conf.add('fixed_range', self.installer.get_option('fixed_range'))
 
-        # The value for vlan_interface may default to the the current value
-        # of public_interface. We'll grab the value and keep it handy.
-        public_interface = self.installer.get_option('public_interface')
-        vlan_interface = self.installer.get_option('vlan_interface', default_value=public_interface)
-        nova_conf.add('public_interface', public_interface)
-        nova_conf.add('vlan_interface', vlan_interface)
-
         # This forces dnsmasq to update its leases table when an instance is terminated.
         nova_conf.add('force_dhcp_release', True)
-
-        # Special virt driver network settings
-        nova_conf.add('flat_network_bridge', self.installer.get_option('flat_network_bridge', default_value='br100'))
-        nova_conf.add('flat_injected', self.installer.get_bool_option('flat_injected'))
-        flat_interface = self.installer.get_option('flat_interface')
-        if flat_interface:
-            nova_conf.add('flat_interface', flat_interface)
 
     # Enables multihost (??)
     def _configure_multihost(self, nova_conf):
