@@ -63,12 +63,17 @@ class NovaUninstaller(binstall.PkgUninstallComponent):
     def __init__(self, *args, **kargs):
         binstall.PkgUninstallComponent.__init__(self, *args, **kargs)
         self.virsh = lv.Virsh(self.get_int_option('service_wait_seconds'), self.distro)
+        self.net_init_fn = sh.joinpths(self.get_option('trace_dir'), NET_INITED_FN)
 
     def pre_uninstall(self):
         if 'compute' in self.subsystems:
             self._clean_compute()
         if 'network' in self.subsystems:
             self._clean_net()
+
+    def unconfigure(self):
+        if sh.isfile(self.net_init_fn):
+            sh.unlink(self.net_init_fn)
 
     def _clean_net(self):
         try:
@@ -146,8 +151,7 @@ class NovaRuntime(bruntime.OpenStackRuntime):
         self.net_init_fn = sh.joinpths(self.get_option('trace_dir'), NET_INITED_FN)
 
     def _do_network_init(self):
-        ran_fn = self.net_init_fn
-        if not sh.isfile(ran_fn) and self.get_bool_option('do-network-init'):
+        if not sh.isfile(self.net_init_fn) and self.get_bool_option('do-network-init'):
             # Figure out the commands to run
             cmds = []
             mp = {}
@@ -171,8 +175,8 @@ class NovaRuntime(bruntime.OpenStackRuntime):
                 'cmds': cmds,
                 'replacements': mp,
             }
-            sh.write_file(ran_fn, utils.prettify_yaml(cmd_mp))
-            LOG.info("If you wish to re-run network initialization, delete %s", colorizer.quote(ran_fn))
+            sh.write_file(self.net_init_fn, utils.prettify_yaml(cmd_mp))
+            LOG.info("If you wish to re-run network initialization, delete %s", colorizer.quote(self.net_init_fn))
 
     def post_start(self):
         self._do_network_init()

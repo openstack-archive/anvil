@@ -93,6 +93,16 @@ class KeystoneInstaller(binstall.PythonInstallComponent):
         khelper.get_shared_passwords(self)
 
 
+class KeystoneUninstaller(binstall.PkgUninstallComponent):
+    def __init__(self, *args, **kargs):
+        binstall.PkgUninstallComponent.__init__(self, *args, **kargs)
+        self.init_fn = sh.joinpths(self.get_option('trace_dir'), INIT_WHAT_HAPPENED)
+
+    def unconfigure(self):
+        if sh.isfile(self.init_fn):
+            sh.unlink(self.init_fn)
+
+
 class KeystoneRuntime(bruntime.OpenStackRuntime):
     def __init__(self, *args, **kargs):
         bruntime.OpenStackRuntime.__init__(self, *args, **kargs)
