@@ -67,16 +67,17 @@ class GlanceConfigurator(base.Configurator):
         gparams = ghelper.get_shared_params(**self.installer.options)
         config.add('bind_port', gparams['endpoints']['public']['port'])
 
-        def clean_image_storage(img_store_dir):
-            LOG.debug(("Ensuring file system store directory %r exists and is "
-                       "empty."), img_store_dir)
+        def ensure_image_storage(img_store_dir):
             if sh.isdir(img_store_dir):
-                sh.deldir(img_store_dir)
-            sh.mkdirslist(img_store_dir, tracewriter=self.installer.tracewriter)
+                return
+            LOG.debug("Ensuring file system store directory %r exists.",
+                      img_store_dir)
+            sh.mkdirslist(img_store_dir,
+                          tracewriter=self.installer.tracewriter)
 
         config.add('default_store', 'file')
         config.add('filesystem_store_datadir', self.img_dir)
-        clean_image_storage(self.img_dir)
+        ensure_image_storage(self.img_dir)
 
     def _config_adjust_reg(self, config):
         self._config_adjust_api_reg(config)
