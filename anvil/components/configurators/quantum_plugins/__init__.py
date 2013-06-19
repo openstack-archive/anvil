@@ -36,3 +36,7 @@ class Configurator(base.Configurator):
     @property
     def config_files(self):
         return list(self.configs)
+
+    @property
+    def get_plugin_config_file_path(self):
+        return ""
