@@ -37,4 +37,10 @@ wanted_passwords:
   service_password: 'service authentication password'
   sql: "database user"
 
+# Require extra packages needed to run tests
+pips:
+    - name: "nose"
+      version: ">=1.3.0"
+    - name: "coverage"
+
 ...
