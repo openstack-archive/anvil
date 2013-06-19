@@ -173,10 +173,11 @@ class PkgUninstallComponent(base.Component):
 
     def _uninstall_files(self):
         files_touched = self.tracereader.files_touched()
-        if files_touched:
-            utils.log_iterable(files_touched, logger=LOG,
-                               header="Removing %s miscellaneous files" % (len(files_touched)))
-            for fn in files_touched:
+        files_alive = filter(sh.isfile, files_touched)
+        if files_alive:
+            utils.log_iterable(files_alive, logger=LOG,
+                               header="Removing %s miscellaneous files" % (len(files_alive)))
+            for fn in files_alive:
                 sh.unlink(fn)
 
     def _uninstall_dirs(self):
