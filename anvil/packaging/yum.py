@@ -460,6 +460,21 @@ class YumDependencyHandler(base.DependencyHandler):
                 pass
         return rpm_names
 
+    def _all_rpm_names(self):
+        # This file should have all the requirements (including test ones)
+        # that we need to install (and which should have been built as rpms
+        # in the previous build stages).
+        gathered_requires = sh.load_file(self.gathered_requires_filename).splitlines()
+        gathered_requires = [line.strip() for line in gathered_requires if line.strip()]
+        req_names = []
+        for line in gathered_requires:
+            req = pip_helper.extract_requirement(line)
+            req_names.append(req.key)
+        rpm_names = set(self._convert_names_python2rpm(req_names))
+        for inst in self.instances:
+            rpm_names |= inst.package_names()
+        return list(rpm_names)
+
     def install(self):
         super(YumDependencyHandler, self).install()
 
@@ -487,23 +502,9 @@ class YumDependencyHandler(base.DependencyHandler):
         cmdline = ["yum", "clean", "all"]
         sh.execute(cmdline)
 
-        scan_packages = []
-        for inst in self.instances:
-            scan_packages.extend(inst.package_names())
-            if not inst.get_bool_option('prebuilt'):
-                (rpm_name, _t) = self._get_template_and_rpm_name(inst)
-                scan_packages.append(rpm_name)
-
-        rpm_names = []
-        for p in scan_packages:
-            if not p:
-                continue
-            if p in self.nopackages:
-                continue
-            rpm_names.append(p)
-
+        rpm_names = self._all_rpm_names()
         if rpm_names:
-            cmdline = ["yum", "install", "-y"] + sorted(set(rpm_names))
+            cmdline = ["yum", "install", "-y"] + rpm_names
             sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
 
     def uninstall(self):
@@ -513,17 +514,9 @@ class YumDependencyHandler(base.DependencyHandler):
         no_remove = env.get_key('REQUIRED_PACKAGES', '').split()
         no_remove = sorted(set(no_remove))
 
-        scan_packages = []
-        for inst in self.instances:
-            scan_packages.extend(inst.package_names())
-            if not inst.get_bool_option('prebuilt'):
-                (rpm_name, _t) = self._get_template_and_rpm_name(inst)
-                scan_packages.append(rpm_name)
-
+        scan_packages = self._all_rpm_names()
         rpm_names = []
         for p in scan_packages:
-            if not p:
-                continue
             if p in no_remove:
                 continue
             if self.helper.is_installed(p):
