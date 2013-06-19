@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Approved+1: Ruby Loo <rloo@yahoo-inc.com>
+Code-Review+2: Ruby Loo <rloo@yahoo-inc.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 19 Jun 2013 19:10:16 +0000
+Reviewed-on: https://review.openstack.org/33686
+Project: stackforge/anvil
+Branch: refs/heads/stable/grizzly
