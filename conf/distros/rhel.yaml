@@ -189,7 +189,7 @@ components:
             running: anvil.components.keystone:KeystoneRuntime
             test: anvil.components.keystone:KeystoneTester
             coverage: anvil.components.keystone:KeystoneTester
-            uninstall: anvil.components.base_install:PkgUninstallComponent
+            uninstall: anvil.components.keystone:KeystoneUninstaller
         daemon_to_package:
             all: openstack-keystone
     keystone-client:
