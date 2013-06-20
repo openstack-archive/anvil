@@ -47,6 +47,15 @@ def create_requirement(name, version=None):
     return pkg_resources.Requirement.parse(name)
 
 
+def extract(line):
+    return pip_req.InstallRequirement.from_line(line)
+
+
+def extract_requirement(line):
+    req = extract(line)
+    return req.req
+
+
 def get_directory_details(path):
     if not sh.isdir(path):
         raise IOError("Can not detail non-existent directory %s" % (path))
@@ -57,7 +66,7 @@ def get_directory_details(path):
     if cache_key in EGGS_DETAILED:
         return EGGS_DETAILED[cache_key]
 
-    req = pip_req.InstallRequirement.from_line(path)
+    req = extract(path)
     req.source_dir = path
     req.run_egg_info()
 

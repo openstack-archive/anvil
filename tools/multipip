@@ -285,7 +285,7 @@ def join_requirements(options):
                     "pip freeze")
                 incompatible_requirement(frozen_req, joined_req)
                 joined_req = frozen_req
-        joined_requirements.append(joined_req.req)
+        joined_requirements.append(joined_req)
 
         segment_ok = False
         lower_version = None
@@ -323,7 +323,14 @@ def join_requirements(options):
 
 
 def print_requirements():
-    for req in sorted(joined_requirements, key=lambda x: x.key):
+    formatted_requirements = []
+    for req in joined_requirements:
+        if req.url:
+            req = "%s#egg=%s" % (req.url, req.req)
+        else:
+            req = str(req.req)
+        formatted_requirements.append(req)
+    for req in sorted(formatted_requirements):
         print req
 
 
