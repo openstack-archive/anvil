@@ -131,6 +131,9 @@ class DependencyHandler(object):
     def package_finish(self):
         pass
 
+    def build_binary(self):
+        pass
+
     def install(self):
         self.nopackages = []
         for inst in self.instances:

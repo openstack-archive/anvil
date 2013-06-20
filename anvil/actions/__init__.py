@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from anvil.actions import build
 from anvil.actions import prepare
 from anvil.actions import install
 from anvil.actions import restart
@@ -25,6 +26,7 @@ from anvil.actions import uninstall
 
 
 _NAMES_TO_RUNNER = {
+    'build': build.BuildAction,
     'prepare': prepare.PrepareAction,
     'install': install.InstallAction,
     'restart': restart.RestartAction,

@@ -24,21 +24,13 @@ require python-psutil
 require python-iniparse
 require pylint
 require createrepo
+require yum-utils
 require yum-plugin-remove-with-leaves
 
 # multipip dependencies
 require rpm-build
 require python-pip
 require python-setuptools
-
-# Build dependencies
-require libxml2-devel
-require libxslt-devel
-require mysql-devel
-require postgresql-devel
-require openldap-devel
-require sqlite-devel
-require dos2unix
 
 # This packages can be built from archives
 require python-cheetah Cheetah

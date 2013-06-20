@@ -47,6 +47,14 @@ Requires:   mod_wsgi
 Requires:   %{name} = %{epoch}:%{version}-%{release}
 
 BuildRequires: python-devel
+BuildRequires: python-django-openstack-auth
+BuildRequires: python-django-compressor
+BuildRequires: python-django-appconf
+BuildRequires: pytz
+BuildRequires: nodejs
+# NOTE(aababilov): nodejs-less is broken in EPEL
+# It has problems with npm(ycssmin)
+#BuildRequires: nodejs-less
 
 %description -n openstack-dashboard
 Openstack Dashboard is a web user interface for Openstack. The package
@@ -83,7 +91,6 @@ Documentation for the Django Horizon application for talking with Openstack
 sed -i '/sphinx.ext.intersphinx/d' doc/source/conf.py
 
 sed -i -e 's@^BIN_DIR.*$@BIN_DIR = "/usr/bin"@' \
-    -e 's@^less_binary.*$@less_binary = "/usr/lib/node_modules/less/bin/lessc"@' \
     -e 's@^LOGIN_URL.*$@LOGIN_URL = "/dashboard/auth/login/"@' \
     -e 's@^LOGOUT_URL.*$@LOGOUT_URL = "/dashboard/auth/logout/"@' \
     -e 's@^LOGIN_REDIRECT_URL.*$@LOGIN_REDIRECT_URL = "/dashboard"@' \
@@ -166,15 +173,24 @@ cp -a horizon/static/* %{buildroot}%{_datadir}/openstack-dashboard/static
 
 # compress css, js etc.
 cd %{buildroot}%{_datadir}/openstack-dashboard
-# TODO(aababilov): compress them
-#%{__python} manage.py collectstatic --noinput --pythonpath=../../lib/python2.7/site-packages/
-#%{__python} manage.py compress --pythonpath=../../lib/python2.7/site-packages/
+
+# use nodejs-less from buildroot
+sed -i -e 's@^less_binary.*$@less_binary = "%{buildroot}/usr/lib/node_modules/less/bin/lessc"@' \
+    openstack_dashboard/settings.py
 
 node_less_dir=%{buildroot}/usr/lib/node_modules/less
 mkdir -p "$node_less_dir"
 mv %{buildroot}%{python_sitelib}/bin/less "$node_less_dir/bin"
 mv %{buildroot}%{python_sitelib}/bin/lib "$node_less_dir/lib"
 rm -rf %{buildroot}%{python_sitelib}/bin/
+
+%{__python} manage.py collectstatic --noinput --pythonpath=../../lib/python2.7/site-packages/
+%{__python} manage.py compress --force --pythonpath=../../lib/python2.7/site-packages/
+
+# fix nodejs-less location
+sed -i -e 's@^less_binary.*$@less_binary = "/usr/lib/node_modules/less/bin/lessc"@' \
+    openstack_dashboard/settings.py
+
 
 %clean
 rm -rf %{buildroot}
