@@ -37,10 +37,13 @@ BuildArch:        noarch
 BuildRequires:    python-devel
 BuildRequires:    python-setuptools
 
+%if ! 0%{?usr_only}
 Requires(post):   chkconfig
 Requires(postun): initscripts
 Requires(preun):  chkconfig
 Requires(pre):    shadow-utils
+%endif
+
 Requires:         python-glance = %{epoch}:%{version}-%{release}
 
 %description
@@ -121,6 +124,7 @@ popd
 rm -fr doc/build/html/.doctrees doc/build/html/.buildinfo
 %endif
 
+%if ! 0%{?usr_only}
 # Setup directories
 install -d -m 755 %{buildroot}%{_sharedstatedir}/glance/images
 
@@ -143,12 +147,14 @@ install -d -m 755 %{buildroot}%{_localstatedir}/run/glance
 
 # Install log directory
 install -d -m 755 %{buildroot}%{_localstatedir}/log/glance
+%endif
 
 
 %clean
 rm -rf %{buildroot}
 
 
+%if ! 0%{?usr_only}
 %pre
 getent group glance >/dev/null || groupadd -r glance
 getent passwd glance >/dev/null || \
@@ -175,12 +181,15 @@ if [ $1 -ge 1 ] ; then
     done
     exit 0
 fi
+%endif
 
 
 %files
 %defattr(-,root,root,-)
-%doc README* LICENSE* HACKING* ChangeLog
+%doc README* LICENSE* HACKING* ChangeLog AUTHORS
 %{_bindir}/*
+
+%if ! 0%{?usr_only}
 %{_initrddir}/*
 %dir %{_sysconfdir}/glance
 %config(noreplace) %attr(-, root, glance) %{_sysconfdir}/glance/*
@@ -188,16 +197,19 @@ fi
 %dir %attr(0755, glance, nobody) %{_sharedstatedir}/glance
 %dir %attr(0755, glance, nobody) %{_localstatedir}/log/glance
 %dir %attr(0755, glance, nobody) %{_localstatedir}/run/glance
+%endif
 
 
 %files -n python-glance
 %{python_sitelib}/*
+
 
 %if 0%{?with_doc}
 %files doc
 %defattr(-,root,root,-)
 %doc doc/build/html
 %endif
+
 
 %changelog
 #end raw

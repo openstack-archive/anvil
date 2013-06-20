@@ -74,10 +74,11 @@ class DependencyHandler(object):
     MAX_PIP_DOWNLOAD_ATTEMPTS = 4
     multipip_executable = sh.which("multipip", ["tools/"])
 
-    def __init__(self, distro, root_dir, instances):
+    def __init__(self, distro, root_dir, instances, opts=None):
         self.distro = distro
         self.root_dir = root_dir
         self.instances = instances
+        self.opts = opts or {}
         self.deps_dir = sh.joinpths(self.root_dir, "deps")
         self.download_dir = sh.joinpths(self.deps_dir, "download")
         self.log_dir = sh.joinpths(self.deps_dir, "output")
@@ -88,8 +89,6 @@ class DependencyHandler(object):
         self.pip_executable = str(self.distro.get_command_config('pip'))
         self.pips_to_install = []
         self.forced_packages = []
-        # These packages conflict with our deps and must be removed
-        self.nopackages = env.get_key('CONFLICTING_PACKAGES', '').split()
         self.package_dirs = self._get_package_dirs(instances)
         # Instantiate this as late as we can.
         self._python_names = None
@@ -97,6 +96,13 @@ class DependencyHandler(object):
         trace_fn = tr.trace_filename(self.root_dir, 'deps')
         self.tracewriter = tr.TraceWriter(trace_fn, break_if_there=False)
         self.tracereader = tr.TraceReader(trace_fn)
+        self.requirements = {}
+        for key in ("build-requires", "requires", "conflicts"):
+            req_set = set()
+            for inst in self.instances:
+                req_set |= set(pkg["name"]
+                               for pkg in inst.get_option(key) or [])
+            self.requirements[key] = req_set
 
     @property
     def python_names(self):
@@ -143,11 +149,11 @@ class DependencyHandler(object):
     def package_finish(self):
         pass
 
+    def build_binary(self):
+        pass
+
     def install(self):
-        for inst in self.instances:
-            for pkg in inst.get_option("nopackages") or []:
-                if pkg['name'] not in self.nopackages:
-                    self.nopackages.append(pkg["name"])
+        pass
 
     def uninstall(self):
         pass
