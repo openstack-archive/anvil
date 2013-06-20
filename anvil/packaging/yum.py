@@ -476,11 +476,19 @@ class YumDependencyHandler(base.DependencyHandler):
         cmdline = ["yum", "clean", "all"]
         sh.execute(cmdline)
 
-        rpm_names = []
+        scan_packages = []
         for inst in self.instances:
-            for p in inst.package_names():
-                if p not in self.nopackages:
-                    rpm_names.append(p)
+            scan_packages.extend(inst.package_names())
+            (rpm_name, _t) = self._get_template_and_rpm_name(inst)
+            scan_packages.append(rpm_name)
+
+        rpm_names = []
+        for p in scan_packages:
+            if not p:
+                continue
+            if p in self.nopackages:
+                continue
+            rpm_names.append(p)
 
         if rpm_names:
             cmdline = ["yum", "install", "-y"] + sorted(set(rpm_names))
@@ -496,7 +504,7 @@ class YumDependencyHandler(base.DependencyHandler):
         scan_packages = []
         for inst in self.instances:
             scan_packages.extend(inst.package_names())
-            (rpm_name, _template_name) = self._get_template_and_rpm_name(inst)
+            (rpm_name, _t) = self._get_template_and_rpm_name(inst)
             scan_packages.append(rpm_name)
 
         rpm_names = []
