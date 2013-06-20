@@ -84,7 +84,6 @@ components:
             coverage: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
     db:
-        prebuilt: True
         action_classes:
             install: anvil.distros.rhel:DBInstaller
             running: anvil.components.db:DBRuntime
@@ -95,28 +94,13 @@ components:
         -   name: mysql
         -   name: mysql-server
     general:
-        prebuilt: True
         action_classes:
             install: anvil.components.pkglist:Installer
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.base_testing:EmptyTestingComponent
             coverage: anvil.components.base_testing:EmptyTestingComponent
             uninstall: anvil.components.pkglist:Uninstaller
-        packages:
-        # Shared system packages
-        -   name: coreutils
-            removable: false
-        -   name: curl
-            removable: false
-        -   name: dnsmasq-utils
-            removable: false
-        -   name: gawk
-            removable: false
-        -   name: git
-            removable: false
-        -   name: iputils
-            removable: false
-        # Needed to build the newer lxml version used by nova
+        build-requires:
         # Build time dependencies
         -   name: libxml2-devel
             removable: false
@@ -149,6 +133,15 @@ components:
             removable: false
         -   name: sqlite-devel
             removable: false
+        requires:
+        -   name: MySQL-python
+        # These packages conflict with our deps and must be removed
+        conflicts:
+        -   name: python-paste-deploy1.5
+        -   name: python-nose1.1
+        -   name: python-routes1.12
+        -   name: python-sphinx10
+        -   name: python-webob1.0
     glance:
         action_classes:
             install: anvil.components.glance:GlanceInstaller
@@ -300,7 +293,6 @@ components:
             coverage: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
     rabbit-mq:
-        prebuilt: True
         action_classes:
             install: anvil.components.rabbit:RabbitInstaller
             running: anvil.distros.rhel:RabbitRuntime

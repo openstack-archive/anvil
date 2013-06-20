@@ -15,9 +15,10 @@
 #    under the License.
 
 import collections
+import os
+import pkg_resources
 import sys
 
-import pkg_resources
 import rpm
 
 from anvil import colorizer
@@ -69,8 +70,8 @@ class YumDependencyHandler(base.DependencyHandler):
     py2rpm_executable = sh.which("py2rpm", ["tools/"])
     rpmbuild_executable = sh.which("rpmbuild")
 
-    def __init__(self, distro, root_dir, instances):
-        super(YumDependencyHandler, self).__init__(distro, root_dir, instances)
+    def __init__(self, distro, root_dir, instances, opts=None):
+        super(YumDependencyHandler, self).__init__(distro, root_dir, instances, opts)
         self.rpmbuild_dir = sh.joinpths(self.deps_dir, "rpmbuild")
         self.deps_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps")
         self.deps_src_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps-sources")
@@ -78,6 +79,17 @@ class YumDependencyHandler(base.DependencyHandler):
         self.helper = yum_helper.Helper()
         self.rpm_sources_dir = sh.joinpths(self.rpmbuild_dir, "SOURCES")
         self.anvil_repo_dir = sh.joinpths(self.root_dir, "repo")
+        self._no_remove = None
+
+    @property
+    def no_remove(self):
+        if self._no_remove is not None:
+            return self._no_remove
+        required = env.get_key('REQUIRED_PACKAGES', default_value='').split()
+        own_details = pip_helper.get_directory_details(os.getcwd())
+        required.extend(own_details['dependencies'])
+        self._no_remove = self._convert_names_python2rpm(required)
+        return self._no_remove
 
     def py2rpm_start_cmdline(self):
         cmdline = [
@@ -123,34 +135,69 @@ class YumDependencyHandler(base.DependencyHandler):
                 sh.mkdirslist(dirname, tracewriter=self.tracewriter)
             if instance.name in ["general"]:
                 self._build_dependencies()
-                self._move_rpms("anvil-deps")
-                self._create_repo("anvil-deps")
+                self._move_srpms("anvil-deps")
             else:
                 # Meta packages don't get built.
                 app_dir = instance.get_option("app_dir")
                 if sh.isdir(app_dir):
                     self._build_openstack_package(instance)
-                    self._move_rpms("anvil")
+                    self._move_srpms("anvil")
 
-    def package_finish(self):
-        self._create_repo("anvil")
+    @staticmethod
+    def _move_files(source_dir, target_dir):
+        if not sh.isdir(source_dir):
+            return
+        for filename in sh.listdir(source_dir,
+                                   recursive=True, files_only=True):
+            sh.move(filename, target_dir, force=True)
 
-    def _move_rpms(self, repo_name):
-        repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)
-        src_repo_dir = "%s-sources" % repo_dir
-        for dirname in (repo_dir, src_repo_dir):
-            sh.mkdirslist(dirname, tracewriter=self.tracewriter)
-        for (src_dir, tgt_dir) in ([sh.joinpths(self.rpmbuild_dir, "RPMS"), repo_dir],
-                                   [sh.joinpths(self.rpmbuild_dir, "SRPMS"), src_repo_dir]):
-            rpms = []
-            for filename in sh.listdir(src_dir, recursive=True, files_only=True):
-                sh.move(filename, tgt_dir, force=True)
-                rpms.append(sh.basename(filename))
-            if rpms:
-                utils.log_iterable(rpms,
-                                   header="Moved %s rpms to %s" % (len(rpms),
-                                                                   tgt_dir),
-                                   logger=LOG)
+    def build_binary(self):
+        build_requires = self.requirements["build-requires"]
+        if build_requires:
+            cmdline = ["yum", "install", "-y"] + list(build_requires)
+            sh.execute(cmdline)
+        ts = rpm.TransactionSet()
+        for repo_name in ("anvil-deps", "anvil"):
+            repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)
+            sh.mkdirslist(repo_dir, tracewriter=self.tracewriter)
+            src_repo_dir = sh.joinpths(self.anvil_repo_dir,
+                                       "%s-sources" % repo_name),
+            for srpm_filename in sh.listdir(src_repo_dir, files_only=True):
+                if not srpm_filename.endswith(".src.rpm"):
+                    continue
+                # Extract needed info from the source rpm directly.
+                with open(srpm_filename) as fd:
+                    hdr = ts.hdrFromFdno(fd)
+                bin_rpm_filename = "%s-%s-%s.%s.rpm" % (hdr[rpm.RPMTAG_NAME],
+                                                        hdr[rpm.RPMTAG_VERSION],
+                                                        hdr[rpm.RPMTAG_RELEASE],
+                                                        hdr[rpm.RPMTAG_ARCH])
+                # Woot it was already built!
+                if sh.isfile(sh.joinpths(repo_dir, bin_rpm_filename)):
+                    LOG.info("Found RPM package %s", bin_rpm_filename)
+                    continue
+                # Rebuild the rpm from the source rpm.
+                with remove_before_after(self.rpmbuild_dir):
+                    base_filename = sh.basename(srpm_filename)
+                    LOG.info("Building RPM package from %s", base_filename)
+                    cmdline = ["yum-builddep", "-q", "-y", srpm_filename]
+                    sh.execute(cmdline)
+                    cmdline = ["rpmbuild",
+                               "--define", "_topdir %s" % self.rpmbuild_dir,
+                               "--rebuild", srpm_filename]
+                    if self.opts.get("usr_only", False):
+                        cmdline.extend(["--define", "usr_only 1"])
+                    build_filename = sh.joinpths(self.log_dir,
+                                                 "rpmbuild-%s.out" % base_filename)
+                    sh.execute_save_output(cmdline, out_filename=build_filename)
+                    self._move_files(sh.joinpths(self.rpmbuild_dir, "RPMS"),
+                                     repo_dir)
+            self._create_repo(repo_name)
+
+    def _move_srpms(self, repo_name):
+        src_repo_dir = sh.joinpths(self.anvil_repo_dir, "%s-sources" % repo_name)
+        sh.mkdirslist(src_repo_dir, tracewriter=self.tracewriter)
+        self._move_files(sh.joinpths(self.rpmbuild_dir, "SRPMS"), src_repo_dir)
 
     def _create_repo(self, repo_name):
         repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)
@@ -165,11 +212,16 @@ class YumDependencyHandler(base.DependencyHandler):
         params = {
             "repo_name": repo_name,
             "baseurl_bin": "file://%s" % repo_dir,
-            "baseurl_src": "file://%s" % src_repo_dir
+            "baseurl_src": "file://%s" % src_repo_dir,
         }
         sh.write_file(repo_filename,
                       utils.expand_template(content, params),
                       tracewriter=self.tracewriter)
+        # Install *.repo file so that anvil deps will be available
+        # when building OpenStack
+        system_repo_filename = sh.joinpths(self.YUM_REPO_DIR, "%s.repo" % repo_name)
+        sh.copy(repo_filename, system_repo_filename)
+        self.tracewriter.file_touched(system_repo_filename)
 
     def _get_yum_available(self):
         yum_map = {}
@@ -269,28 +321,22 @@ class YumDependencyHandler(base.DependencyHandler):
         if not package_files:
             LOG.info("No RPM packages of OpenStack dependencies to build")
             return
-        package_base_names = [sh.basename(f) for f in package_files]
-        utils.log_iterable(sorted(package_base_names), logger=LOG,
-                           header=("Building %s dependency RPM"
-                                   " packages") % (len(package_files)))
-        scripts_dir = sh.abspth(sh.joinpths(settings.TEMPLATE_DIR,
-                                            "packaging", "scripts"))
-        with utils.progress_bar(name='Building',
-                                max_am=len(package_files)) as p_bar:
-            for (i, filename) in enumerate(sorted(package_files)):
-                cmdline = self.py2rpm_start_cmdline()
-                cmdline.extend(["--scripts-dir", scripts_dir])
-                cmdline.extend(["--", filename])
-                build_filename = "py2rpm-%s.out" % sh.basename(filename)
-                out_filename = sh.joinpths(self.log_dir, build_filename)
-                sh.execute_save_output(cmdline, out_filename=out_filename,
-                                       quiet=True)
-                p_bar.update(i + 1)
+        for filename in package_files:
+            LOG.info("Building SRPM package from %s", filename)
+            scripts_dir = sh.abspth(sh.joinpths(settings.TEMPLATE_DIR,
+                                                "packaging", "scripts"))
+            cmdline = self.py2rpm_start_cmdline()
+            cmdline.extend(["--scripts-dir", scripts_dir, "--source-only",
+                            "--", filename])
+            sh.execute(cmdline)
 
     def _write_spec_file(self, instance, rpm_name, template_name, params):
-        requires_what = []
+        requires_what = params.get('requires')
+        it not requires_what:
+            requires_what = []
+        requires_python = []
         try:
-            requires_what.extend(instance.egg_info['dependencies'])
+            requires_python.extend(instance.egg_info['dependencies'])
         except AttributeError:
             pass
         # Ensure we include any extra pips that are desired.
@@ -299,9 +345,11 @@ class YumDependencyHandler(base.DependencyHandler):
             extra_req = pip_helper.create_requirement(i_pip['name'],
                                                       i_pip.get('version'))
             extra_req = str(extra_req)
-            if extra_req not in requires_what:
-                requires_what.append(extra_req)
-        params['requires'] = self._convert_names_python2rpm(requires_what)
+            if extra_req not in requires_python:
+                requires_python.append(extra_req)
+        if requires_python:
+            requires_what.extend(self._convert_names_python2rpm(requires_what))
+        params['requires'] = requires_what
         params["epoch"] = self.OPENSTACK_EPOCH
         content = utils.load_template(self.SPEC_TEMPLATE_DIR, template_name)[1]
         spec_filename = sh.joinpths(self.rpmbuild_dir, "SPECS",
@@ -352,13 +400,14 @@ class YumDependencyHandler(base.DependencyHandler):
         self._copy_startup_scripts(spec_filename)
         cmdline = [
             self.rpmbuild_executable,
-            "-ba",
+            "-bs",
             "--define", "_topdir %s" % self.rpmbuild_dir,
             spec_filename,
         ]
+        build_filename = sh.joinpths(self.log_dir,
+                                     "rpmbuild-%s" % sh.basename(spec_filename))
         sh.execute_save_output(cmdline,
-                               sh.joinpths(self.log_dir,
-                                           sh.basename(spec_filename)),
+                               out_filename=build_filename,
                                quiet=True)
 
     def _write_git_tarball(self, pkg_dir, spec_filename):
@@ -418,6 +467,16 @@ class YumDependencyHandler(base.DependencyHandler):
             template_name = "%s.spec" % rpm_name
         return (rpm_name, template_name)
 
+    def _build_from_app_dir(self, instance):
+        app_dir = instance.get_option('app_dir')
+        cmdline = self.py2rpm_start_cmdline()
+        cmdline.extend(["--source-only", "--", app_dir])
+        build_filename = sh.joinpths(self.log_dir, "py2rpm-%s.out" % (instance.name))
+        sh.execute_save_output(cmdline,
+                               cwd=app_dir,
+                               out_filename=build_filename,
+                               quiet=True)
+
     def _build_openstack_package(self, instance):
         params = self._package_parameters(instance)
         patches = instance.list_patches("package")
@@ -450,13 +509,7 @@ class YumDependencyHandler(base.DependencyHandler):
                                                   template_name, params)
             self._build_from_spec(instance, spec_filename, patches)
         else:
-            app_dir = instance.get_option('app_dir')
-            cmdline = self.py2rpm_start_cmdline() + ["--", app_dir]
-            sh.execute_save_output(cmdline,
-                                   cwd=app_dir,
-                                   out_filename=sh.joinpths(self.log_dir,
-                                                            instance.name),
-                                   quiet=True)
+            self._build_from_app_dir(instance)
 
     def _convert_names_python2rpm(self, python_names):
         if not python_names:
@@ -482,6 +535,7 @@ class YumDependencyHandler(base.DependencyHandler):
             req = pip_helper.extract_requirement(line)
             req_names.append(req.key)
         rpm_names = set(self._convert_names_python2rpm(req_names))
+        rpm_names |= self.requirements["requires"]
         for inst in self.instances:
             rpm_names |= inst.package_names()
         return list(rpm_names)
@@ -489,20 +543,9 @@ class YumDependencyHandler(base.DependencyHandler):
     def install(self):
         super(YumDependencyHandler, self).install()
 
-        # Ensure we copy the local repo file name to the main repo so that
-        # yum will find it when installing packages.
-        for repo_name in "anvil", "anvil-deps":
-            repo_filename = sh.joinpths(
-                self.anvil_repo_dir, "%s.repo" % repo_name)
-            if sh.isfile(repo_filename):
-                sh.write_file(
-                    "%s/%s.repo" % (self.YUM_REPO_DIR, repo_name),
-                    sh.load_file(repo_filename),
-                    tracewriter=self.tracewriter)
-
-        # Erase it if its been previously installed.
+        # Erase conflicting packages
         cmdline = []
-        for p in self.nopackages:
+        for p in self.requirements["conflicts"]:
             if self.helper.is_installed(p):
                 cmdline.append(p)
 
@@ -521,14 +564,10 @@ class YumDependencyHandler(base.DependencyHandler):
     def uninstall(self):
         super(YumDependencyHandler, self).uninstall()
 
-        # Don't take out packages that anvil requires to run...
-        no_remove = env.get_key('REQUIRED_PACKAGES', '').split()
-        no_remove = sorted(set(no_remove))
-
         scan_packages = self._all_rpm_names()
         rpm_names = []
         for p in scan_packages:
-            if p in no_remove:
+            if p in self.no_remove:
                 continue
             if self.helper.is_installed(p):
                 rpm_names.append(p)
