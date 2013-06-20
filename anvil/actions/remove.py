@@ -27,7 +27,7 @@ class RemoveAction(uninstall.UninstallAction):
     def _run(self, persona, component_order, instances):
         super(RemoveAction, self)._run(persona, component_order, instances)
 
-        removals = ['package-install', 'install']
+        removals = ['package-install', 'install', 'package']
         dependency_handler_class = self.distro.dependency_handler_class
         dependency_handler = dependency_handler_class(self.distro,
                                                       self.root_dir,
