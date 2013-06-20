@@ -63,18 +63,24 @@ class PkgInstallComponent(base.Component):
             fetcher.download()
             return uris
 
-    def patch(self, section):
+    def list_patches(self, section):
         what_patches = self.get_option('patches', section)
-        (_from_uri, target_dir) = self._get_download_location()
         if not what_patches:
             what_patches = []
         canon_what_patches = []
         for path in what_patches:
             if sh.isdir(path):
-                canon_what_patches.extend(sorted(sh.listdir(path, files_only=True)))
+                patches = sorted(fn for fn in sh.listdir(path, files_only=True)
+                                 if fn.endswith('patch'))
+                canon_what_patches.extend(patches)
             elif sh.isfile(path):
                 canon_what_patches.append(path)
+        return canon_what_patches
+
+    def patch(self, section):
+        canon_what_patches = self.list_patches(section)
         if canon_what_patches:
+            (_from_uri, target_dir) = self._get_download_location()
             patcher.apply_patches(canon_what_patches, target_dir)
 
     def config_params(self, config_fn):
