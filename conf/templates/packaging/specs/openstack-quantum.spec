@@ -41,6 +41,10 @@ Source17:	quantum-ovs-cleanup.init
 Source18:	quantum-hyperv-agent.init
 Source19:	quantum-rpc-zmq-receiver.init
 
+#for $idx, $fn in enumerate($patches)
+Patch$idx: $fn
+#end for
+
 BuildArch:	noarch
 
 BuildRequires:	python-devel
@@ -275,9 +279,12 @@ networks.
 This package contains the quantum plugin that implements virtual
 networks using multiple other quantum plugins.
 
-#raw
 %prep
 %setup -q -n quantum-%{os_version}
+#for $idx, $fn in enumerate($patches)
+%patch$idx -p1
+#end for
+#raw
 
 find quantum -name \*.py -exec sed -i '/\/usr\/bin\/env python/d' {} \;
 

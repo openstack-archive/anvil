@@ -26,6 +26,10 @@ Vendor:           OpenStack Foundation
 URL:              http://www.openstack.org
 Source0:          %{name}-%{os_version}.tar.gz
 
+#for $idx, $fn in enumerate($patches)
+Patch$idx: $fn
+#end for
+
 BuildRoot:        %{_tmppath}/%{name}-%{version}-%{release}
 
 BuildArch:        noarch
@@ -44,7 +48,6 @@ Requires:        ${i}
 This is a client for the OpenStack $apiname API. There is a Python API (the
 ${clientname}client module), and a command-line script (${clientname}).
 
-#raw
 %if 0%{?enable_doc}
 %package doc
 Summary:        Documentation for %{name}
@@ -59,6 +62,10 @@ Documentation for %{name}.
 
 %prep
 %setup -q
+#for $idx, $fn in enumerate($patches)
+%patch$idx -p1
+#end for
+#raw
 if [ ! -f HACKING* ]; then
     touch HACKING
 fi
