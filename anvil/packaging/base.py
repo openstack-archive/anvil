@@ -72,10 +72,11 @@ class DependencyHandler(object):
     MAX_PIP_DOWNLOAD_ATTEMPTS = 4
     multipip_executable = sh.which("multipip", ["tools/"])
 
-    def __init__(self, distro, root_dir, instances):
+    def __init__(self, distro, root_dir, instances, opts=None):
         self.distro = distro
         self.root_dir = root_dir
         self.instances = instances
+        self.opts = opts or {}
 
         self.deps_dir = sh.joinpths(self.root_dir, "deps")
         self.download_dir = sh.joinpths(self.deps_dir, "download")
@@ -87,10 +88,16 @@ class DependencyHandler(object):
         self.pip_executable = str(self.distro.get_command_config('pip'))
         self.pips_to_install = []
         self.forced_packages = []
-        # these packages conflict with our deps and must be removed
-        self.nopackages = []
         self.package_dirs = self._get_package_dirs(instances)
         self.python_names = self._get_python_names(self.package_dirs)
+
+        self.requirements = {}
+        for key in ("build-requires", "requires", "conflicts"):
+            req_set = set()
+            for inst in self.instances:
+                req_set |= set(pkg["name"]
+                               for pkg in inst.get_option(key) or [])
+            self.requirements[key] = req_set
 
     @staticmethod
     def _get_package_dirs(instances):
@@ -131,11 +138,11 @@ class DependencyHandler(object):
     def package_finish(self):
         pass
 
+    def build_binary(self):
+        pass
+
     def install(self):
-        self.nopackages = []
-        for inst in self.instances:
-            for pkg in inst.get_option("nopackages") or []:
-                self.nopackages.append(pkg["name"])
+        pass
 
     def uninstall(self):
         pass

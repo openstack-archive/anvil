@@ -94,7 +94,7 @@ components:
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.base_testing:EmptyTestingComponent
             uninstall: anvil.components.pkglist:Uninstaller
-        packages:
+        build-requires:
         # Build time dependencies
         -   name: libxml2-devel
             removable: false
@@ -108,8 +108,10 @@ components:
             removable: false
         -   name: sqlite-devel
             removable: false
+        requires:
+        -   name: MySQL-python
         # these packages conflict with our deps and must be removed
-        nopackages:
+        conflicts:
         -   name: python-paste-deploy1.5
         -   name: python-nose1.1
         -   name: python-routes1.12
