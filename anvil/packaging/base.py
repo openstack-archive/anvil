@@ -101,7 +101,13 @@ class DependencyHandler(object):
     @property
     def python_names(self):
         if self._python_names is None:
-            self._python_names = self._get_python_names(self.package_dirs)
+            names = []
+            for i in self.instances:
+                try:
+                    names.append(i.egg_info['name'])
+                except AttributeError:
+                    pass
+            self._python_names = names
         return self._python_names
 
     @staticmethod
@@ -112,14 +118,6 @@ class DependencyHandler(object):
             if sh.isfile(sh.joinpths(app_dir, "setup.py")):
                 package_dirs.append(app_dir)
         return package_dirs
-
-    @staticmethod
-    def _get_python_names(package_dirs):
-        python_names = []
-        for pkg_dir in package_dirs:
-            pkg_details = pip_helper.get_directory_details(pkg_dir)
-            python_names.append(pkg_details['name'])
-        return python_names
 
     def package_start(self):
         requires_files = []
