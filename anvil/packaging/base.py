@@ -117,9 +117,8 @@ class DependencyHandler(object):
     def _get_python_names(package_dirs):
         python_names = []
         for pkg_dir in package_dirs:
-            cmdline = ["python", "setup.py", "--name"]
-            python_names.append(sh.execute(cmdline, cwd=pkg_dir)[0].
-                                splitlines()[-1].strip())
+            pkg_details = pip_helper.get_directory_details(pkg_dir)
+            python_names.append(pkg_details['name'])
         return python_names
 
     def package_start(self):
