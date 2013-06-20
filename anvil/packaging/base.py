@@ -180,7 +180,7 @@ class DependencyHandler(object):
             new_lines = []
             for line in old_lines:
                 try:
-                    req = pkg_resources.Requirement.parse(line)
+                    req = pip_helper.extract_requirement(line)
                     new_lines.append(str(forced_by_key[req.key]))
                 except:
                     # we don't force the package or it has a bad format
@@ -213,10 +213,11 @@ class DependencyHandler(object):
                 LOG.warning(line)
                 if line.endswith(": incompatible requirements"):
                     forced_keys.add(line.split(":", 1)[0].lower())
-        self.pips_to_install = [
-            pkg
-            for pkg in utils.splitlines_not_empty(output[0])
-            if pkg.lower() not in OPENSTACK_PACKAGES]
+        self.pips_to_install = []
+        for line in utils.splitlines_not_empty(output[0]):
+            req = pip_helper.extract_requirement(line)
+            if req.key not in OPENSTACK_PACKAGES:
+                self.pips_to_install.append(line)
         sh.write_file(self.gathered_requires_filename,
                       "\n".join(self.pips_to_install))
         if not self.pips_to_install:
@@ -229,8 +230,8 @@ class DependencyHandler(object):
                            logger=LOG,
                            header="Full known python dependency list")
         self.forced_packages = []
-        for pip in self.pips_to_install:
-            req = pkg_resources.Requirement.parse(pip)
+        for line in self.pips_to_install:
+            req = pip_helper.extract_requirement(line)
             if req.key in forced_keys:
                 self.forced_packages.append(req)
         sh.write_file(self.forced_requires_filename,
@@ -290,11 +291,9 @@ class DependencyHandler(object):
         download_requires_filename = sh.joinpths(self.deps_dir,
                                                  "download-requires")
         raw_pips_to_download = self.filter_download_requires()
-        pips_to_download = [pkg_resources.Requirement.parse(str(p.strip()))
-                            for p in raw_pips_to_download if p.strip()]
         sh.write_file(download_requires_filename,
-                      "\n".join(str(req) for req in pips_to_download))
-        if not pips_to_download:
+                      "\n".join(str(req) for req in raw_pips_to_download))
+        if not raw_pips_to_download:
             return ([], [])
         pip_dir = sh.joinpths(self.deps_dir, "pip")
         pip_download_dir = sh.joinpths(pip_dir, "download")
@@ -303,19 +302,19 @@ class DependencyHandler(object):
         if clear_cache:
             sh.deldir(pip_cache_dir)
         pip_failures = []
-        how_many = len(pips_to_download)
         for attempt in xrange(self.MAX_PIP_DOWNLOAD_ATTEMPTS):
             # NOTE(aababilov): pip has issues with already downloaded files
             sh.deldir(pip_download_dir)
             sh.mkdir(pip_download_dir, recurse=True)
             sh.deldir(pip_build_dir)
+            header = "Downloading %s python dependencies (attempt %s)"
+            header = header % (len(raw_pips_to_download), attempt)
             utils.log_iterable(sorted(raw_pips_to_download),
                                logger=LOG,
-                               header=("Downloading %s python dependencies "
-                                       "(attempt %s)" % (how_many, attempt)))
+                               header=header)
             failed = False
             try:
-                self._try_download_dependencies(attempt, pips_to_download,
+                self._try_download_dependencies(attempt, raw_pips_to_download,
                                                 pip_download_dir,
                                                 pip_cache_dir, pip_build_dir)
                 pip_failures = []
@@ -327,8 +326,10 @@ class DependencyHandler(object):
                 break
         if pip_failures:
             raise pip_failures[-1]
-        self._examine_download_dir(pips_to_download, pip_download_dir)
+        pips_downloaded = [pip_helper.extract_requirement(p)
+                           for p in raw_pips_to_download]
+        self._examine_download_dir(pips_downloaded, pip_download_dir)
         for filename in sh.listdir(pip_download_dir, files_only=True):
             sh.move(filename, self.download_dir)
         what_downloaded = sh.listdir(self.download_dir, files_only=True)
-        return (pips_to_download, what_downloaded)
+        return (pips_downloaded, what_downloaded)
