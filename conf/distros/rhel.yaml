@@ -84,6 +84,7 @@ components:
             coverage: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
     db:
+        prebuilt: True
         action_classes:
             install: anvil.distros.rhel:DBInstaller
             running: anvil.components.db:DBRuntime
@@ -94,6 +95,7 @@ components:
         -   name: mysql
         -   name: mysql-server
     general:
+        prebuilt: True
         action_classes:
             install: anvil.components.pkglist:Installer
             running: anvil.components.base_runtime:EmptyRuntime
@@ -298,6 +300,7 @@ components:
             coverage: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
     rabbit-mq:
+        prebuilt: True
         action_classes:
             install: anvil.components.rabbit:RabbitInstaller
             running: anvil.distros.rhel:RabbitRuntime
