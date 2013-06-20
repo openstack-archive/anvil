@@ -27,6 +27,10 @@ Source2:          openstack-glance-registry.init
 Source3:          openstack-glance-scrubber.init
 Source4:          openstack-glance.logrotate
 
+#for $idx, $fn in enumerate($patches)
+Patch$idx: $fn
+#end for
+
 BuildRoot:        %{_tmppath}/%{name}-%{version}-%{release}
 
 BuildArch:        noarch
@@ -88,6 +92,12 @@ This package contains documentation files for glance.
 
 %prep
 %setup -q -n %{python_name}-%{os_version}
+#end raw
+#for $idx, $fn in enumerate($patches)
+%patch$idx -p1
+#end for
+
+#raw
 sed '/pysendfile/d' tools/pip-requires
 
 

@@ -22,6 +22,10 @@ Source0:    horizon-%{os_version}.tar.gz
 Source1:    openstack-dashboard.conf
 Source2:    openstack-dashboard-httpd-2.4.conf
 
+#for $idx, $fn in enumerate($patches)
+Patch$idx: $fn
+#end for
+
 # additional provides to be consistent with other django packages
 Provides:   django-horizon = %{epoch}:%{version}-%{release}
 
@@ -77,9 +81,12 @@ BuildRequires: python-swiftclient
 Documentation for the Django Horizon application for talking with Openstack
 %endif
 
-#raw
 %prep
 %setup -q -n horizon-%{os_version}
+#for $idx, $fn in enumerate($patches)
+%patch$idx -p1
+#end for
+#raw
 
 # Don't access the net while building docs
 sed -i '/sphinx.ext.intersphinx/d' doc/source/conf.py

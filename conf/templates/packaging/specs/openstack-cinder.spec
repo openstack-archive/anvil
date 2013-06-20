@@ -31,6 +31,9 @@ Source11:         openstack-cinder-scheduler.init
 Source12:         openstack-cinder-volume.init
 Source13:         openstack-cinder-all.init
 
+#for $idx, $fn in enumerate($patches)
+Patch$idx: $fn
+#end for
 
 BuildArch:        noarch
 BuildRequires:    python-setuptools
@@ -94,9 +97,12 @@ access block storage volumes for use by Virtual Machine instances.
 This package contains documentation files for cinder.
 %endif
 
-#raw
 %prep
 %setup -q -n cinder-%{os_version}
+#for $idx, $fn in enumerate($patches)
+%patch$idx -p1
+#end for
+#raw
 
 # Ensure we don't access the net when building docs
 sed -i "/'sphinx.ext.intersphinx',/d" doc/source/conf.py

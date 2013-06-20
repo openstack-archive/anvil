@@ -287,8 +287,7 @@ class YumDependencyHandler(base.DependencyHandler):
                                        quiet=True)
                 p_bar.update(i + 1)
 
-    def _write_spec_file(self, instance, app_dir, rpm_name, template_name,
-                         params):
+    def _write_spec_file(self, instance, rpm_name, template_name, params):
         requires_what = []
         try:
             requires_what.extend(instance.egg_info['dependencies'])
@@ -337,13 +336,19 @@ class YumDependencyHandler(base.DependencyHandler):
             for filename in sh.listdir(other_sources_dir, files_only=True):
                 sh.copy(filename, self.rpm_sources_dir)
 
-    def _build_from_spec(self, instance, spec_filename):
-        app_dir = instance.get_option('app_dir')
-        if sh.isfile(sh.joinpths(app_dir, "setup.py")):
-            self._write_python_tarball(app_dir)
+    def _copy_patches(self, patches):
+        for filename in patches:
+            sh.copy(filename, self.rpm_sources_dir)
+
+    def _build_from_spec(self, instance, spec_filename, patches=None):
+        pkg_dir = instance.get_option('app_dir')
+        if sh.isfile(sh.joinpths(pkg_dir, "setup.py")):
+            self._write_python_tarball(pkg_dir)
         else:
-            self._write_git_tarball(app_dir, spec_filename)
+            self._write_git_tarball(pkg_dir, spec_filename)
         self._copy_sources(instance)
+        if patches:
+            self._copy_patches(patches)
         self._copy_startup_scripts(spec_filename)
         cmdline = [
             self.rpmbuild_executable,
@@ -415,6 +420,8 @@ class YumDependencyHandler(base.DependencyHandler):
 
     def _build_openstack_package(self, instance):
         params = self._package_parameters(instance)
+        patches = instance.list_patches("package")
+        params['patches'] = [sh.basename(fn) for fn in patches]
         (rpm_name, template_name) = self._get_template_and_rpm_name(instance)
         try:
             egg_name = instance.egg_info['name']
@@ -429,17 +436,21 @@ class YumDependencyHandler(base.DependencyHandler):
                 params["apiname"] = self.API_NAMES.get(client_name,
                                                        client_name.title())
         except AttributeError:
-            spec_filename = sh.joinpths(settings.TEMPLATE_DIR,
-                                        self.SPEC_TEMPLATE_DIR, template_name)
-            if not sh.isfile(spec_filename):
+            spec_filename = None
+            if template_name:
+                spec_filename = sh.joinpths(settings.TEMPLATE_DIR,
+                                            self.SPEC_TEMPLATE_DIR,
+                                            template_name)
+            if not spec_filename or not sh.isfile(spec_filename):
                 rpm_name = None
-        app_dir = instance.get_option('app_dir')
         if rpm_name:
-            template_name = template_name or "%s.spec" % rpm_name
-            spec_filename = self._write_spec_file(instance, app_dir, rpm_name,
+            if not template_name:
+                template_name = "%s.spec" % rpm_name
+            spec_filename = self._write_spec_file(instance, rpm_name,
                                                   template_name, params)
-            self._build_from_spec(instance, spec_filename)
+            self._build_from_spec(instance, spec_filename, patches)
         else:
+            app_dir = instance.get_option('app_dir')
             cmdline = self.py2rpm_start_cmdline() + ["--", app_dir]
             sh.execute_save_output(cmdline,
                                    cwd=app_dir,
