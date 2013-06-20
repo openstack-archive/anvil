@@ -14,29 +14,29 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+# pylint: disable=R0915
 from anvil.actions import base as action
-from anvil import colorizer
 from anvil import log
+
 
 LOG = log.getLogger(__name__)
 
 
-class CoverageAction(action.Action):
+class BuildAction(action.Action):
+    needs_sudo = True
+
+    def __init__(self, name, distro, root_dir, cli_opts):
+        action.Action.__init__(self, name, distro, root_dir, cli_opts)
+        self.usr_only = cli_opts.get('usr_only')
+
     @property
     def lookup_name(self):
-        return 'coverage'
+        return 'install'
 
     def _run(self, persona, component_order, instances):
-        results = self._run_phase(
-            action.PhaseFunctors(
-                start=lambda i: LOG.info('Show tests coverage for component %s.', colorizer.quote(i.name)),
-                run=lambda i: i.show_coverage(),
-                end=None,
-            ),
-            component_order,
-            instances,
-            None,
-            )
-        error = [component.name for (component, rc) in results.items() if rc]
-        if error:
-            raise RuntimeError("Coverage errors in '%s' components" % ", ".join(error))
+        dependency_handler_class = self.distro.dependency_handler_class
+        dependency_handler = dependency_handler_class(self.distro,
+                                                      self.root_dir,
+                                                      instances.values(),
+                                                      opts={"usr_only": self.usr_only})
+        dependency_handler.build_binary()

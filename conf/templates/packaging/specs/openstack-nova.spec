@@ -80,10 +80,12 @@ Group:            Applications/System
 
 Requires:         python-nova = %{epoch}:%{version}-%{release}
 
+%if ! 0%{?usr_only}
 Requires(post):   chkconfig
 Requires(postun): initscripts
 Requires(preun):  chkconfig
 Requires(pre):    shadow-utils
+%endif
 
 
 %description common
@@ -352,6 +354,7 @@ popd
 rm -fr doc/build/html/.doctrees doc/build/html/.buildinfo
 %endif
 
+%if ! 0%{?usr_only}
 # Setup directories
 install -d -m 755 %{buildroot}%{_sharedstatedir}/nova
 install -d -m 755 %{buildroot}%{_sharedstatedir}/nova/buckets
@@ -371,6 +374,10 @@ install -d -m 755 %{buildroot}%{_sharedstatedir}/nova/CA/{certs,crl,newcerts,pro
 touch %{buildroot}%{_sharedstatedir}/nova/CA/{cacert.pem,crl.pem,index.txt,openssl.cnf,serial}
 install -d -m 750 %{buildroot}%{_sharedstatedir}/nova/CA/private
 touch %{buildroot}%{_sharedstatedir}/nova/CA/private/cakey.pem
+
+# Clean CA directory
+find %{buildroot}%{_sharedstatedir}/nova/CA -name .gitignore -delete
+find %{buildroot}%{_sharedstatedir}/nova/CA -name .placeholder -delete
 
 # Install config files
 install -d -m 755 %{buildroot}%{_sysconfdir}/nova
@@ -404,6 +411,10 @@ install -p -D -m 644 %{SOURCE51} %{buildroot}%{_sysconfdir}/logrotate.d/%{name}
 # Install pid directory
 install -d -m 755 %{buildroot}%{_localstatedir}/run/nova
 
+install -d -m 755 %{buildroot}%{_sysconfdir}/polkit-1/localauthority/50-local.d
+install -p -D -m 644 %{SOURCE52} %{buildroot}%{_sysconfdir}/polkit-1/localauthority/50-local.d/50-nova.pkla
+%endif
+
 # Install template files
 install -p -D -m 644 nova/cloudpipe/client.ovpn.template %{buildroot}%{_datarootdir}/nova/client.ovpn.template
 install -p -D -m 644 nova/virt/interfaces.template %{buildroot}%{_datarootdir}/nova/interfaces.template
@@ -417,13 +428,6 @@ install -d -m 755 %{buildroot}%{_datarootdir}/nova/interfaces
 install -p -D -m 644 nova/virt/interfaces.template %{buildroot}%{_datarootdir}/nova/interfaces/interfaces.ubuntu.template
 install -p -D -m 644 %{SOURCE50} %{buildroot}%{_datarootdir}/nova/interfaces.template
 
-# Clean CA directory
-find %{buildroot}%{_sharedstatedir}/nova/CA -name .gitignore -delete
-find %{buildroot}%{_sharedstatedir}/nova/CA -name .placeholder -delete
-
-install -d -m 755 %{buildroot}%{_sysconfdir}/polkit-1/localauthority/50-local.d
-install -p -D -m 644 %{SOURCE52} %{buildroot}%{_sysconfdir}/polkit-1/localauthority/50-local.d/50-nova.pkla
-
 # Remove unneeded in production stuff
 rm -f %{buildroot}%{_bindir}/nova-debug
 rm -fr %{buildroot}%{python_sitelib}/nova/tests/
@@ -433,6 +437,7 @@ rm -f %{buildroot}/usr/share/doc/nova/README*
 
 # We currently use the equivalent file from the novnc package
 rm -f %{buildroot}%{_bindir}/nova-novncproxy
+
 
 %clean
 rm -rf %{buildroot}
@@ -452,6 +457,7 @@ if %{_sbindir}/selinuxenabled; then
 fi
 
 
+%if ! 0%{?usr_only}
 %pre common
 getent group nova >/dev/null || groupadd -r nova
 getent passwd nova >/dev/null || \
@@ -490,16 +496,18 @@ if [ \$1 -ge 1 ] ; then
     done
     exit 0
 fi
-
 #end for
+%endif
 #raw
 
 %files
-%doc LICENSE
+%doc README* LICENSE* HACKING* ChangeLog AUTHORS
 %{_bindir}/nova-all
 
 %files common
 %doc LICENSE
+
+%if ! 0%{?usr_only}
 %dir %{_sysconfdir}/nova
 %attr(-, root, nova) %{_sysconfdir}/nova/nova.conf.sample
 %attr(-, root, nova) %{_sysconfdir}/nova/logging_sample.conf
@@ -513,6 +521,7 @@ fi
 %dir %attr(0755, nova, root) %{_localstatedir}/log/nova
 %dir %attr(0755, nova, root) %{_localstatedir}/lock/nova
 %dir %attr(0755, nova, root) %{_localstatedir}/run/nova
+%endif
 
 %{_bindir}/nova-clear-rabbit-queues
 # TODO. zmq-receiver may need its own service?
@@ -523,6 +532,7 @@ fi
 %{_datarootdir}/nova
 #%{_mandir}/man1/nova*.1.gz
 
+%if ! 0%{?usr_only}
 %defattr(-, nova, nova, -)
 %dir %{_sharedstatedir}/nova
 %dir %{_sharedstatedir}/nova/buckets
@@ -531,26 +541,41 @@ fi
 %dir %{_sharedstatedir}/nova/keys
 %dir %{_sharedstatedir}/nova/networks
 %dir %{_sharedstatedir}/nova/tmp
+%endif
+
 
 %files compute
 %{_bindir}/nova-compute
 %{_bindir}/nova-baremetal-deploy-helper
 %{_bindir}/nova-baremetal-manage
-%{_initrddir}/%{daemon_prefix}-compute
 %{_datarootdir}/nova/rootwrap/compute.filters
+
+%if ! 0%{?usr_only}
+%{_initrddir}/%{daemon_prefix}-compute
+%endif
+
 
 %files network
 %{_bindir}/nova-network
 %{_bindir}/nova-dhcpbridge
-%{_initrddir}/%{daemon_prefix}-network
 %{_datarootdir}/nova/rootwrap/network.filters
+
+%if ! 0%{?usr_only}
+%{_initrddir}/%{daemon_prefix}-network
+%endif
+
 
 %files scheduler
 %{_bindir}/nova-scheduler
+
+%if ! 0%{?usr_only}
 %{_initrddir}/%{daemon_prefix}-scheduler
+%endif
+
 
 %files cert
 %{_bindir}/nova-cert
+%if ! 0%{?usr_only}
 %{_initrddir}/%{daemon_prefix}-cert
 %defattr(-, nova, nova, -)
 %dir %{_sharedstatedir}/nova/CA/
@@ -568,31 +593,50 @@ fi
 %ghost %config(missingok,noreplace) %verify(not md5 size mtime) %{_sharedstatedir}/nova/CA/serial
 %dir %attr(0750, -, -) %{_sharedstatedir}/nova/CA/private
 %ghost %config(missingok,noreplace) %verify(not md5 size mtime) %{_sharedstatedir}/nova/CA/private/cakey.pem
+%endif
+
 
 %files api
 %{_bindir}/nova-api*
-%{_initrddir}/openstack-nova-*api
 %{_datarootdir}/nova/rootwrap/api-metadata.filters
+
+%if ! 0%{?usr_only}
+%{_initrddir}/openstack-nova-*api
+%endif
+
 
 %files conductor
 %{_bindir}/nova-conductor
+
+%if ! 0%{?usr_only}
 %{_initrddir}/openstack-nova-conductor
+%endif
+
 
 %files objectstore
 %{_bindir}/nova-objectstore
+%if ! 0%{?usr_only}
 %{_initrddir}/%{daemon_prefix}-objectstore
+%endif
+
 
 %files console
 %{_bindir}/nova-console*
 %{_bindir}/nova-xvpvncproxy
 %{_bindir}/nova-spicehtml5proxy
+
+%if ! 0%{?usr_only}
 %{_initrddir}/openstack-nova-console*
 %{_initrddir}/openstack-nova-xvpvncproxy
 %{_initrddir}/openstack-nova-spicehtml5proxy
+%endif
 
 %files cells
 %{_bindir}/nova-cells
+
+%if ! 0%{?usr_only}
 %{_initrddir}/openstack-nova-cells
+%endif
 
 %files -n python-nova
 %defattr(-,root,root,-)

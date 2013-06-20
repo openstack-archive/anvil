@@ -1,46 +1,23 @@
 # -*- sh -*-
-STEPS="epel packages"
+STEPS="epel rpm_packages python_rpms"
 EPEL_RPM_URL="http://mirrors.kernel.org/fedora-epel/6/i386/epel-release-6-8.noarch.rpm"
 
 ## Bootstrap for Red Hat based distros
-conflicts python-paste-deploy1.5
-conflicts python-nose1.1
-conflicts python-routes1.12
-conflicts python-sphinx10
-conflicts python-webob1.0
+REQUIRES='
+    gcc
+    git
+    patch
+    python
+    python-devel
 
-## Package Requirements (Order matters!)
-require PyYAML
-require gcc
-require git
-require patch
-require python
-require python-devel
-require createrepo
-require yum-plugin-remove-with-leaves
+    createrepo
+    yum-utils
+    yum-plugin-remove-with-leaves
 
-# multipip dependencies
-require rpm-build
-require python-pip
-require python-setuptools
+    PyYAML
 
-# Build dependencies
-require libxml2-devel
-require libxslt-devel
-require mysql-devel
-require postgresql-devel
-require openldap-devel
-require sqlite-devel
-require dos2unix
-
-# This packages can be built from archives
-require python-cheetah Cheetah
-require python-keyring keyring
-require python-termcolor termcolor
-require python-setuptools-git setuptools-git
-
-# This one requires a newer version and the
-# current EPEL rpm doesn't provide a version
-# that will satisify the desired versions in OpenStack.
-require python-d2to1 d2to1 true
-require python-pbr pbr
+    rpm-build
+    python-pip
+    python-argparse
+    python-setuptools
+'
