@@ -7,7 +7,6 @@ Epoch:          $epoch
 Version:        %{os_version}$version_suffix
 Release:        $release%{?dist}
 
-#raw
 License:        GPLv3
 URL:            https://github.com/kanaka/noVNC
 Source0:        novnc-%{os_version}.tar.gz
@@ -15,6 +14,11 @@ Source1:        openstack-nova-novncproxy.init
 Source2:        nova-novncproxy.1
 Source3:        novnc_server.1
 
+#for $idx, $fn in enumerate($patches)
+Patch$idx: $fn
+#end for
+
+#raw
 BuildArch:      noarch
 BuildRequires:  python2-devel
 
@@ -39,6 +43,11 @@ OpenStack Nova noVNC server that proxies VNC traffic over Websockets.
 
 %prep
 %setup -q -n %{name}-%{os_version}
+#end raw
+#for $idx, $fn in enumerate($patches)
+%patch$idx -p1
+#end for
+#raw
 
 # call the websockify executable
 sed -i 's/wsproxy\.py/websockify/' utils/launch.sh

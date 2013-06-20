@@ -24,6 +24,10 @@ Group:          Applications/System
 Source0:        %{python_name}-%{os_version}.tar.gz
 Source1:        openstack-keystone-all.init
 
+#for $idx, $fn in enumerate($patches)
+Patch$idx: $fn
+#end for
+
 BuildRoot:        %{_tmppath}/%{name}-%{version}-%{release}
 
 BuildArch:        noarch
@@ -73,10 +77,12 @@ Keystone is a Python implementation of the OpenStack
 
 This package contains the Keystone Python library.
 
-#raw
 %prep
 %setup -q -n %{python_name}-%{os_version}
-
+#for $idx, $fn in enumerate($patches)
+%patch$idx -p1
+#end for
+#raw
 
 %build
 python setup.py build

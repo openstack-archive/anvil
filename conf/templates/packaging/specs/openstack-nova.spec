@@ -45,6 +45,10 @@ Source51:         nova.logrotate
 Source52:         nova-polkit.pkla
 Source53:         nova-sudoers
 
+#for $idx, $fn in enumerate($patches)
+Patch$idx: $fn
+#end for
+
 BuildRoot:        %{_tmppath}/%{name}-%{version}-%{release}
 
 BuildArch:        noarch
@@ -324,9 +328,12 @@ protocol, and the Redis KVS.
 This package contains documentation files for %{name}.
 %endif
 
-#raw
 %prep
 %setup0 -q -n %{python_name}-%{os_version}
+#for $idx, $fn in enumerate($patches)
+%patch$idx -p1
+#end for
+#raw
 
 %build
 %{__python} setup.py build

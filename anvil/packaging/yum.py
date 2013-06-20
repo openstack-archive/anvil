@@ -122,7 +122,8 @@ class YumDependencyHandler(base.DependencyHandler):
             app_dir = instance.get_option("app_dir")
             if sh.isdir(app_dir):
                 params = self._package_parameters(instance)
-                self._build_openstack_package(app_dir, params)
+                self._build_openstack_package(app_dir, params,
+                                              instance.list_patches("package"))
                 self._move_rpms("anvil")
         # ...and after
         sh.deldir(self.rpmbuild_dir)
@@ -283,12 +284,17 @@ class YumDependencyHandler(base.DependencyHandler):
             for filename in sh.listdir(other_sources_dir, files_only=True):
                 sh.copy(filename, self.rpm_sources_dir)
 
-    def _build_from_spec(self, pkg_dir, spec_filename):
+    def _copy_patches(self, patches):
+        for filename in patches:
+            sh.copy(filename, self.rpm_sources_dir)
+
+    def _build_from_spec(self, pkg_dir, spec_filename, patches=()):
         if sh.isfile(sh.joinpths(pkg_dir, "setup.py")):
             self._write_python_tarball(pkg_dir)
         else:
             self._write_git_tarball(pkg_dir, spec_filename)
         self._copy_sources(pkg_dir)
+        self._copy_patches(patches)
         self._copy_startup_scripts(spec_filename)
         cmdline = [
             self.rpmbuild_executable,
@@ -332,9 +338,11 @@ class YumDependencyHandler(base.DependencyHandler):
         ]
         sh.execute(cmdline, cwd=pkg_dir)
 
-    def _build_openstack_package(self, pkg_dir, params=None):
+    def _build_openstack_package(self, pkg_dir, params=None, patches=()):
         component_name = self._get_component_name(pkg_dir)
         params = params or {}
+        params['patches'] = [sh.basename(fn) for fn in patches]
+
         rpm_name = None
         template_name = None
         if sh.isfile(sh.joinpths(pkg_dir, "setup.py")):
@@ -368,7 +376,7 @@ class YumDependencyHandler(base.DependencyHandler):
             template_name = template_name or "%s.spec" % rpm_name
             spec_filename = self._write_spec_file(
                 pkg_dir, rpm_name, template_name, params)
-            self._build_from_spec(pkg_dir, spec_filename)
+            self._build_from_spec(pkg_dir, spec_filename, patches)
         else:
             cmdline = self.py2rpm_start_cmdline() + ["--", pkg_dir]
             sh.execute_save_output(
