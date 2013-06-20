@@ -112,14 +112,14 @@ def parse(previous_settings=None):
                             help="show SIZE 'details' when showing component status. " + suffixes)
     parser.add_option_group(status_group)
 
-    pkg_group = OptionGroup(parser, "Packaging specific options")
-    pkg_group.add_option('-m', "--match-installed",
-                         action="store_true",
-                         dest="match_installed",
-                         default=False,
-                         help=("when packaging attempt to use the versions that are "
-                               "installed for the components dependencies"))
-    parser.add_option_group(pkg_group)
+    build_group = OptionGroup(parser, "Build specific options")
+    build_group.add_option('-u', "--usr-only",
+                           action="store_true",
+                           dest="usr_only",
+                           default=False,
+                           help=("when packaging only store /usr directory"
+                                 " (default: %default)"))
+    parser.add_option_group(build_group)
 
     # Extract only what we care about, these will be passed
     # to the constructor of actions as arguments
@@ -134,10 +134,10 @@ def parse(previous_settings=None):
     values['action'] = (options.action or "")
     values['persona_fn'] = options.persona_fn
     values['verbose'] = options.verbose
+    values['usr_only'] = options.usr_only
     values['prompt_for_passwords'] = options.prompt_for_passwords
     values['show_amount'] = max(0, options.show_amount)
     values['store_passwords'] = options.store_passwords
-    values['match_installed'] = options.match_installed
     values['keyring_path'] = options.keyring_path
     values['keyring_encrypted'] = options.keyring_encrypted
     return values

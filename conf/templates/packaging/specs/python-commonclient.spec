@@ -66,6 +66,7 @@ Documentation for %{name}.
 %patch$idx -p1
 #end for
 #raw
+touch AUTHORS ChangeLog
 if [ ! -f HACKING* ]; then
     touch HACKING
 fi
@@ -92,7 +93,7 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
-%doc README* LICENSE* HACKING*
+%doc README* LICENSE* HACKING* ChangeLog AUTHORS
 %{python_sitelib}/*
 %{_bindir}/*
 

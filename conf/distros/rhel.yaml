@@ -66,11 +66,6 @@ components:
             test: anvil.components.base_testing:PythonTestingComponent
             coverage: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
-        pips:
-        - name: hp3parclient
-        # Need to ensure we pull in the mysql bindings since that what
-        # our recommended database configuration is.
-        -   name: MySQL-python
         daemon_to_package:
             all: openstack-cinder
             volume: openstack-cinder
@@ -84,7 +79,6 @@ components:
             coverage: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
     db:
-        prebuilt: True
         action_classes:
             install: anvil.distros.rhel:DBInstaller
             running: anvil.components.db:DBRuntime
@@ -95,28 +89,13 @@ components:
         -   name: mysql
         -   name: mysql-server
     general:
-        prebuilt: True
         action_classes:
             install: anvil.components.pkglist:Installer
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.base_testing:EmptyTestingComponent
             coverage: anvil.components.base_testing:EmptyTestingComponent
             uninstall: anvil.components.pkglist:Uninstaller
-        packages:
-        # Shared system packages
-        -   name: coreutils
-            removable: false
-        -   name: curl
-            removable: false
-        -   name: dnsmasq-utils
-            removable: false
-        -   name: gawk
-            removable: false
-        -   name: git
-            removable: false
-        -   name: iputils
-            removable: false
-        # Needed to build the newer lxml version used by nova
+        build-requires:
         # Build time dependencies
         -   name: libxml2-devel
             removable: false
@@ -149,6 +128,15 @@ components:
             removable: false
         -   name: sqlite-devel
             removable: false
+        requires:
+        -   name: MySQL-python
+        # These packages conflict with our deps and must be removed
+        conflicts:
+        -   name: python-paste-deploy1.5
+        -   name: python-nose1.1
+        -   name: python-routes1.12
+        -   name: python-sphinx10
+        -   name: python-webob1.0
     glance:
         action_classes:
             install: anvil.components.glance:GlanceInstaller
@@ -162,9 +150,6 @@ components:
         # then ignores warlock's requirement
         -   name: jsonschema
             version: ">=0.7,<2"
-        # Need to ensure we pull in the mysql bindings since that what
-        # our recommended database configuration is.
-        -   name: MySQL-python
         daemon_to_package:
             api: openstack-glance
             registry: openstack-glance
@@ -200,10 +185,6 @@ components:
             uninstall: anvil.components.keystone:KeystoneUninstaller
         daemon_to_package:
             all: openstack-keystone
-        pips:
-        # Need to ensure we pull in the mysql bindings since that what
-        # our recommended database configuration is.
-        -   name: MySQL-python
     keystone-client:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
@@ -225,9 +206,6 @@ components:
         # installed in rhel uses a old version of crypto which
         # other components actually can't use. This sucks...
         -   name: paramiko
-        # Need to ensure we pull in the mysql bindings since that what
-        # our recommended database configuration is.
-        -   name: MySQL-python
         daemon_to_package:
             api: openstack-nova-api
             conductor: openstack-nova-conductor
@@ -288,10 +266,6 @@ components:
             l3-agent: openstack-quantum
             rpc-zmq-receiver: openstack-quantum
             server: openstack-quantum
-        pips:
-        # Need to ensure we pull in the mysql bindings since that what
-        # our recommended database configuration is.
-        -   name: MySQL-python
     quantum-client:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
@@ -300,7 +274,6 @@ components:
             coverage: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
     rabbit-mq:
-        prebuilt: True
         action_classes:
             install: anvil.components.rabbit:RabbitInstaller
             running: anvil.distros.rhel:RabbitRuntime
