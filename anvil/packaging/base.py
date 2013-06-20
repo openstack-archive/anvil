@@ -213,12 +213,13 @@ class DependencyHandler(object):
                 LOG.warning(line)
                 if line.endswith(": incompatible requirements"):
                     forced_keys.add(line.split(":", 1)[0].lower())
-        self.pips_to_install = [
-            pkg
-            for pkg in utils.splitlines_not_empty(output[0])
-            if pkg.lower() not in OPENSTACK_PACKAGES]
+       self.pips_to_install = []
+       for pkg in utils.splitlines_not_empty(output[0]):
+           if pkg.lower() not in OPENSTACK_PACKAGES:
+               self.pips_to_install.append(pkg)
         sh.write_file(self.gathered_requires_filename,
                       "\n".join(self.pips_to_install))
+
         if not self.pips_to_install:
             LOG.error("No dependencies for OpenStack found."
                       "Something went wrong. Please check:")
