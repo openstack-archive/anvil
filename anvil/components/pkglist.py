@@ -18,12 +18,8 @@
 from anvil.components import base_install as binstall
 
 
-class Installer(binstall.PythonInstallComponent):
-    def _get_python_directories(self):
-        return {}
-
-    def _get_download_config(self):
-        return None
+class Installer(binstall.PkgInstallComponent):
+    pass
 
 
 class Uninstaller(binstall.PkgUninstallComponent):

@@ -277,9 +277,10 @@ class YumDependencyHandler(base.DependencyHandler):
     def _write_spec_file(self, instance, app_dir, rpm_name, template_name,
                          params):
         requires_what = []
-        if sh.isfile(sh.joinpths(app_dir, "setup.py")):
-            egg_info = pip_helper.get_directory_details(app_dir)
-            requires_what.extend(egg_info['dependencies'])
+        try:
+            requires_what.extend(instance.egg_info['dependencies'])
+        except AttributeError:
+            pass
         # Ensure we include any extra pips that are desired.
         extra_pips = instance.get_option('pips') or []
         for i_pip in extra_pips:
@@ -385,10 +386,8 @@ class YumDependencyHandler(base.DependencyHandler):
     def _get_template_and_rpm_name(self, instance):
         rpm_name = None
         template_name = None
-        app_dir = instance.get_option('app_dir')
-        if sh.isfile(sh.joinpths(app_dir, "setup.py")):
-            egg_info = pip_helper.get_directory_details(app_dir)
-            egg_name = egg_info['name']
+        try:
+            egg_name = instance.egg_info['name']
             if self._is_client(instance.name, egg_name):
                 rpm_name = egg_name
                 template_name = "python-commonclient.spec"
@@ -396,7 +395,7 @@ class YumDependencyHandler(base.DependencyHandler):
                 rpm_name = "openstack-%s" % (egg_name)
             else:
                 rpm_name = self.TRANSLATION_NAMES.get(instance.name)
-        else:
+        except AttributeError:
             rpm_name = instance.name
             template_name = "%s.spec" % rpm_name
         return (rpm_name, template_name)
@@ -405,10 +404,9 @@ class YumDependencyHandler(base.DependencyHandler):
         params = {}
         (rpm_name, template_name) = self._get_template_and_rpm_name(instance)
         app_dir = instance.get_option('app_dir')
-        if sh.isfile(sh.joinpths(app_dir, "setup.py")):
-            egg_info = pip_helper.get_directory_details(app_dir)
-            egg_name = egg_info['name']
-            params["version"] = egg_info["version"]
+        try:
+            egg_name = instance.egg_info['name']
+            params["version"] = instance.egg_info["version"]
             if self._is_client(instance.name, egg_name):
                 client_name = utils.strip_prefix_suffix(egg_name,
                                                         "python-", "client")
@@ -418,7 +416,7 @@ class YumDependencyHandler(base.DependencyHandler):
                 params["clientname"] = client_name
                 params["apiname"] = self.API_NAMES.get(client_name,
                                                        client_name.title())
-        else:
+        except AttributeError:
             spec_filename = sh.joinpths(settings.TEMPLATE_DIR,
                                         self.SPEC_TEMPLATE_DIR, template_name)
             if not sh.isfile(spec_filename):

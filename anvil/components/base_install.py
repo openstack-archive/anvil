@@ -20,6 +20,8 @@ from anvil import shell as sh
 from anvil import trace as tr
 from anvil import utils
 
+from anvil.packaging.helpers import pip_helper
+
 from anvil.components.configurators import base as conf
 
 LOG = logging.getLogger(__name__)
@@ -147,9 +149,17 @@ class PythonInstallComponent(PkgInstallComponent):
             self.requires_files.append(sh.joinpths(tools_dir, 'test-requires'))
             self.requires_files.append(sh.joinpths(app_dir,
                                                    'test-requirements.txt'))
+        self._egg_info = None
 
     def _get_download_config(self):
         return 'get_from'
+
+    @property
+    def egg_info(self):
+        if self._egg_info is None:
+            egg = pip_helper.get_directory_details(self.get_option('app_dir'))
+            self._egg_info = egg
+        return self._egg_info
 
 
 class PkgUninstallComponent(base.Component):
