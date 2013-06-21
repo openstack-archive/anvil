@@ -24,9 +24,6 @@ LOG = logging.getLogger(__name__)
 
 class OpenvswitchRuntime(bruntime.ServiceRuntime):
 
-    def __init__(self, *args, **kargs):
-        super(OpenvswitchRuntime, self).__init__(*args, **kargs)
-
     @property
     def applications(self):
         return ["openvswitch"]
