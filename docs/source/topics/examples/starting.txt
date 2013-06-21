@@ -3,7 +3,7 @@ INFO: @anvil.distro : Matched distro rhel for platform Linux-2.6.32-220.4.2.el6.
 ____ ___  ____ _  _ ____ ___ ____ ____ _  _
 |  | |__] |___ |\ | [__   |  |__| |    |_/
 |__| |    |___ | \| ___]  |  |  | |___ | \_
-           Anvil: | 2012.2-dev |           
+           Anvil: | 2012.2-dev |
 And now for something completely different!
 ---------------Action Runner---------------
 INFO: @anvil : Starting action start on Tue, 28 Aug 2012 23:28:30 for distro: rhel

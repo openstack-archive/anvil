@@ -25,13 +25,9 @@ class Configurator(base.Configurator):
     PLUGIN_CLASS = "quantum.plugins.UNKNOWN"
 
     def __init__(self, installer, configs, adjusters):
-        self.core_plugin = installer.get_option("core_plugin")
         super(Configurator, self).__init__(
-            installer,
-            ["plugins/%s/%s" % (self.core_plugin, name) for name in configs])
-        self.config_adjusters = dict(
-            ("plugins/%s/%s" % (self.core_plugin, key), value)
-            for key, value in adjusters.iteritems())
+            installer, configs)
+        self.config_adjusters = adjusters
 
     @property
     def config_files(self):
@@ -40,3 +36,15 @@ class Configurator(base.Configurator):
     @property
     def get_plugin_config_file_path(self):
         return ""
+
+
+class CorePluginConfigurator(Configurator):
+
+    def __init__(self, installer, configs, adjusters):
+        self.core_plugin = installer.get_option("core_plugin")
+        super(CorePluginConfigurator, self).__init__(
+            installer,
+            ["plugins/%s/%s" % (self.core_plugin, name) for name in configs],
+            dict(
+                ("plugins/%s/%s" % (self.core_plugin, key), value)
+                for key, value in adjusters.iteritems()))

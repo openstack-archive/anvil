@@ -5,8 +5,8 @@ INFO: @anvil.distro : Matched distro rhel for platform Linux-2.6.32-220.4.2.el6.
 | | | | |_) |  _| |  \| \___ \ | | / _ \| |   | ' /
 | |_| |  __/| |___| |\  |___) || |/ ___ \ |___| . \
  \___/|_|   |_____|_| \_|____/ |_/_/   \_\____|_|\_\
-               Anvil: | 2012.2-dev |                
-    And now for something completely different!     
+               Anvil: | 2012.2-dev |
+    And now for something completely different!
 -------------------Action Runner--------------------
 INFO: @anvil : Starting action install on Thu, 23 Aug 2012 17:31:07 for distro: rhel
 INFO: @anvil : Using persona: conf/personas/in-a-box/basic.yaml

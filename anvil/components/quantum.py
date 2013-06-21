@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import os
+
 from anvil import colorizer
 from anvil import log as logging
 
@@ -50,7 +52,7 @@ class QuantumInstaller(binstall.PythonInstallComponent, QuantumPluginMixin):
         # TODO(aababilov): update db if required
 
     def create_symlink_to_conf_file(self):
-        os.symlink(self.configurator.get_path_to_plugin_config,
+        os.symlink(self.configurator.get_path_to_core_plugin_config,
                    "/etc/quantum/plugin.ini")
 
 

@@ -1,11 +1,11 @@
-$ sudo ./smithy -a package  
+$ sudo ./smithy -a package
 INFO: @anvil.distro : Matched distro rhel for platform Linux-2.6.32-220.4.2.el6.YAHOO.20120217.x86_64-x86_64-with-redhat-6.2-Santiago
    _   ___  ___  _  __  ___ _____  _    __  _
  ,' \ / o |/ _/ / |/ /,' _//_  _/.' \ ,'_/ / //7
 / o |/ _,'/ _/ / || /_\ `.  / / / o // /_ /  ,'
 |_,'/_/  /___//_/|_//___,' /_/ /_n_/ |__//_/\\
-             Anvil: | 2012.2-dev |              
-  And now for something completely different!   
+             Anvil: | 2012.2-dev |
+  And now for something completely different!
 -----------------Action Runner------------------
 INFO: @anvil : Starting action package on Mon, 27 Aug 2012 23:48:44 for distro: rhel
 INFO: @anvil : Using persona: conf/personas/in-a-box/basic.yaml

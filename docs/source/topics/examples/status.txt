@@ -5,8 +5,8 @@ INFO: @anvil.distro : Matched distro rhel for platform Linux-2.6.32-220.4.2.el6.
 | | | | |_) |  _| |  \| \___ \ | | / _ \| |   | ' /
 | |_| |  __/| |___| |\  |___) || |/ ___ \ |___| . \
  \___/|_|   |_____|_| \_|____/ |_/_/   \_\____|_|\_\
-               Anvil: | 2012.2-dev |                
-    And now for something completely different!     
+               Anvil: | 2012.2-dev |
+    And now for something completely different!
 -------------------Action Runner--------------------
 INFO: @anvil : Starting action status on 2012-08-31T17:15:12.416296 for distro: rhel
 INFO: @anvil : Using persona: conf/personas/in-a-box/basic-web.yaml
@@ -79,7 +79,7 @@ INFO: @anvil.actions.status :     >> 2012-08-31 17:14:57 DEBUG glance.registry.c
 INFO: @anvil.actions.status :     >> Registry request GET /images/dc4e7d9a-e963-4264-9ee6-82a3d6577ae3/members HTTP 200 request id req-c02e82d4-0b5d-4f51-b30...
 INFO: @anvil.actions.status : |-- glance-registry is started.
 INFO: @anvil.actions.status :     >> ...eleted AS image_members_deleted, image_members.id AS image_members_id, image_members.image_id AS image_members_image_...
-INFO: @anvil.actions.status :     >> FROM image_members 
+INFO: @anvil.actions.status :     >> FROM image_members
 INFO: @anvil.actions.status :     >> WHERE image_members.image_id = %s AND image_members.deleted = %s
 INFO: @anvil.actions.status :     >> 2012-08-31 17:14:57 INFO sqlalchemy.engine.base.Engine [-] ('dc4e7d9a-e963-4264-9ee6-82a3d6577ae3', 0)
 INFO: @anvil.actions.status :     >> ('dc4e7d9a-e963-4264-9ee6-82a3d6577ae3', 0)
@@ -130,7 +130,7 @@ INFO: @anvil.actions.status :     >> Result was 0
 INFO: @anvil.actions.status :     >> 2012-08-31 17:14:51 DEBUG nova.network.linux_net [-] IPTablesManager.apply completed with success from (pid=24755) _appl...
 INFO: @anvil.actions.status :     >> IPTablesManager.apply completed with success
 INFO: @anvil.actions.status :     >> 2012-08-31 17:14:51 INFO nova.metadata.wsgi.server [-] (24755) wsgi starting up on http://0.0.0.0:8775/
-INFO: @anvil.actions.status :     >> 
+INFO: @anvil.actions.status :     >>
 INFO: @anvil.actions.status :     >> (24755) wsgi starting up on http://0.0.0.0:8775/
 INFO: @anvil.actions.status : |-- nova-consoleauth is started.
 INFO: @anvil.actions.status :     >> ...twork_topic : network
@@ -165,7 +165,7 @@ INFO: @anvil.actions.status :     >> compute_manager : nova.compute.manager.Comp
 INFO: @anvil.actions.status :     >> 2012-08-31 17:14:47 DEBUG nova.service [-] network_topic : network from (pid=24554) wait /home/harlowja/openstack/nova/a...
 INFO: @anvil.actions.status :     >> network_topic : network
 INFO: @anvil.actions.status :     >> 2012-08-31 17:14:47 INFO nova.XCP VNC Proxy.wsgi.server [-] (24554) wsgi starting up on http://0.0.0.0:6081/
-INFO: @anvil.actions.status :     >> 
+INFO: @anvil.actions.status :     >>
 INFO: @anvil.actions.status :     >> (24554) wsgi starting up on http://0.0.0.0:6081/
 INFO: @anvil.actions.status : |-- nova-compute is started.
 INFO: @anvil.actions.status :     >> ...i.pyc'>
@@ -176,7 +176,7 @@ INFO: @anvil.actions.status :     >> free_ram_mb: 1258
 INFO: @anvil.actions.status :     >> 2012-08-31 17:14:52 AUDIT nova.compute.resource_tracker [-] free_disk_gb: 135
 INFO: @anvil.actions.status :     >> free_disk_gb: 135
 INFO: @anvil.actions.status :     >> 2012-08-31 17:14:52 INFO nova.compute.resource_tracker [-] Compute_service record created for followsave.corp.yahoo.com ...
-INFO: @anvil.actions.status :     >> Compute_service record created for followsave.corp.yahoo.com 
+INFO: @anvil.actions.status :     >> Compute_service record created for followsave.corp.yahoo.com
 INFO: @anvil.actions.status :     >> 2012-08-31 17:14:52 INFO nova.openstack.common.rpc.common [-] Connected to AMQP server on 172.21.102.12:5672
 INFO: @anvil.actions.status :     >> Connected to AMQP server on 172.21.102.12:5672
 INFO: @anvil.actions.status :     >> 2012-08-31 17:14:52 DEBUG nova.service [-] Creating Consumer connection for Service compute from (pid=24556) start /home...

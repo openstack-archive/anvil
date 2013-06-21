@@ -22,7 +22,7 @@ PLUGIN_CONF = "ovs_quantum_plugin.ini"
 CONFIGS = [PLUGIN_CONF]
 
 
-class OpenvswitchConfigurator(quantum_plugins.Configurator):
+class OpenvswitchConfigurator(quantum_plugins.CorePluginConfigurator):
 
     PLUGIN_CLASS = "quantum.plugins.openvswitch.ovs_quantum_plugin.OVSQuantumPluginV2"
 
@@ -38,4 +38,4 @@ class OpenvswitchConfigurator(quantum_plugins.Configurator):
 
     @property
     def get_plugin_config_file_path(self):
-        return "plugins/%s/%s" % (self.core_plugin, name) % PLUGIN_CONF
+        return "plugins/%s/%s" % (self.core_plugin) % PLUGIN_CONF
