@@ -49,15 +49,15 @@ subsystems:
     - cert
     - compute
     - consoleauth
-    - network
-    - novncproxy
     - scheduler
     - xvpvncproxy
     quantum:
     - server
     - linuxbridge-agent
     cinder:
-    - all
+    - api
+    - scheduler
+    - volume
 supports:
 - rhel
 ...
