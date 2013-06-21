@@ -250,10 +250,10 @@ class NovaConfigurator(base.Configurator):
         nova_conf.add("network_api_class", "nova.network.quantumv2.api.API")
         nova_conf.add("quantum_admin_username", params['service_user'])
         nova_conf.add("quantum_admin_password", params['service_password'])
-        nova_conf.add("quantum_admin_auth_url", params['endpoints']['public']['uri'])
+        nova_conf.add("quantum_admin_auth_url", params['endpoints']['admin']['uri'])
         nova_conf.add("quantum_auth_strategy", "keystone")
         nova_conf.add("quantum_admin_tenant_name", params['service_tenant'])
-        nova_conf.add("quantum_url", params['quantum']['endpoints']['uri'])
+        nova_conf.add("quantum_url", params['quantum']['endpoints']['admin']['uri'])
         libvirt_vif_drivers = {
             "linuxbridge": "nova.virt.libvirt.vif.QuantumLinuxBridgeVIFDriver",
             "openvswitch": "nova.virt.libvirt.vif.LibvirtHybridOVSBridgeDriver",
