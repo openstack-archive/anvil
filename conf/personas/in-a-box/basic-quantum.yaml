@@ -13,6 +13,7 @@ components:
 - glance-client
 - cinder-client
 - quantum-client
+- swift-client
 - quantum
 - cinder
 - nova

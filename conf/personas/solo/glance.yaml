@@ -5,6 +5,7 @@ components:
 - keystone-client
 - glance
 - glance-client
+- swift-client
 options:
     glance:
         db-sync: false
@@ -16,4 +17,3 @@ subsystems:
 supports:
 - rhel
 ...
-
