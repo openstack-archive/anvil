@@ -390,6 +390,14 @@ class YumDependencyHandler(base.DependencyHandler):
                 pass
         return rpm_names
 
+    def _all_rpm_names(self):
+        req_names = [pkg_resources.Requirement.parse(pkg).key
+                     for pkg in open(self.gathered_requires_filename)]
+        rpm_names = set(self._convert_names_python2rpm(req_names))
+        for inst in self.instances:
+            rpm_names |= inst.package_names()
+        return list(rpm_names)
+
     def install(self):
         super(YumDependencyHandler, self).install()
         # Ensure we copy the local repo file name to the main repo so that
@@ -416,12 +424,9 @@ class YumDependencyHandler(base.DependencyHandler):
         cmdline = ["yum", "clean", "all"]
         sh.execute(cmdline)
 
-        rpm_names = set()
-        for inst in self.instances:
-            rpm_names |= inst.package_names()
-
+        rpm_names = self._all_rpm_names()
         if rpm_names:
-            cmdline = ["yum", "install", "-y"] + list(rpm_names)
+            cmdline = ["yum", "install", "-y"] + rpm_names
             sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
             for name in rpm_names:
                 self.tracewriter.package_installed(name)
@@ -436,9 +441,7 @@ class YumDependencyHandler(base.DependencyHandler):
             sh.unlink(self.tracereader.filename())
             self.tracereader = None
 
-        rpm_names = set()
-        for inst in self.instances:
-            rpm_names |= inst.package_names()
+        rpm_names = self._all_rpm_names()
         if rpm_names:
             cmdline = ["yum", "remove", "--remove-leaves", "-y"]
             cmdline.extend(sorted(rpm_names))
