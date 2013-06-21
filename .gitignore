@@ -1,22 +1,35 @@
-*.pyc
-.settings/
+# Python files
 .venv
-build/
-dist/
+*.pyc
+/build/
+/dist/
+.coverage
+*.egg-info
+
 doc/source/sourcecode
+
+# Metafiles
+AUTHORS
+ChangeLog
+TAGS
+
+# Backups
+*_flymake.*
+*~
+
+# IDE files
+.settings/
+*.komodoproject
+.metadata/
+.project
+.pydevproject
+
+# Temp and status files
 *.db
 .*.swp
 *.log
 *.pid
 pidfile
-*.komodoproject
-.coverage
 .DS_Store
-TAGS
 *.rc
-*_flymake.*
-*~
 .anvil_bootstrapped
-.metadata/
-.project
-.pydevproject
