@@ -15,7 +15,6 @@
 #    under the License.
 
 from anvil import log as logging
-from anvil import shell as sh
 
 from anvil.components import base_runtime as bruntime
 
@@ -24,9 +23,6 @@ LOG = logging.getLogger(__name__)
 
 
 class OpenvswitchRuntime(bruntime.ServiceRuntime):
-
-    def __init__(self, *args, **kargs):
-        super(OpenvswitchRuntime, self).__init__(*args, **kargs)
 
     @property
     def applications(self):
