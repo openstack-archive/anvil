@@ -38,11 +38,6 @@ if [ -z "$BOOT_FILES" ]; then
     BOOT_FILES="${PWD}/$BOOT_FN"
 fi
 
-conflicts() {
-    echo "Removing conflicting packages $(echo $@)"
-    yum erase $YUM_OPTS $@
-}
-
 find_pip()
 {
     if [ -n "$PIP_CMD" ]; then
@@ -84,38 +79,6 @@ cache_and_install_rpm_url()
     return $?
 }
 
-install_rpm()
-{
-    local rpm_path=$1
-    local py_name=$2
-
-    if [ -n "$rpm_path" ]; then
-        # install or update package
-        yum install $YUM_OPTS "$rpm_path" && return 0
-    fi
-    if [ -z "$py_name" ]; then
-        return 1
-    fi
-
-    # RPM is not available. Try to build it on fly
-    # First download it.
-    pip_tmp_dir=$(mktemp -d)
-    find_pip
-    pip_opts="$PIP_OPTS -U -I"
-    $PIP_CMD install $pip_opts $py_name --download "$pip_tmp_dir"
-
-    # Now build it
-    echo "Building RPM for $py_name"
-    rpm_names=$("$PY2RPM_CMD" "$pip_tmp_dir/"* 2>/dev/null |
-        awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)
-    rm -rf "$pip_tmp_dir"
-    if [ -z "$rpm_names" ]; then
-        echo "No binary RPM was built for $py_name"
-        return 1
-    fi
-    yum install $YUM_OPTS $rpm_names
-}
-
 bootstrap_epel()
 {
     [ -z "$EPEL_RPM_URL" ] && return 0
@@ -123,35 +86,69 @@ bootstrap_epel()
     return $?
 }
 
-bootstrap_packages()
+bootstrap_rpm_packages()
 {
-    [ -z "$PACKAGES" ] && return 0
-    for pkg in $PACKAGES; do
-        local rpm_name=$(echo $pkg | cut -d: -f1)
-        local py_name=$(echo $pkg | cut -d: -f2)
-        install_rpm $rpm_name $py_name
-        install_status=$?
-        if [ "$install_status" != 0 ]; then
-            echo "Error: Installation of package '$rpm_name' failed!"
-            return "$install_status"
-        fi
-    done
+    if [ -n "$CONFLICTS" ]; then
+        echo "Removing conflicting packages: $(echo $CONFLICTS)"
+        yum erase $YUM_OPTS $CONFLICTS
+    fi
+    if [ -n "$REQUIRES" ]; then
+        echo "Installing packages: $(echo $REQUIRES)"
+        yum install $YUM_OPTS $REQUIRES
+    fi
 }
 
-require()
+bootstrap_python_rpms()
 {
-    local rpm_name=$1
-    local py_name=$2
-    if [ -z "$rpm_name" -a -z "$py_name" ]; then
-        echo "Please specify at RPM or Python package name"
-        exit 1
+    local package_map=$(python -c 'import yaml
+try:
+    for k, v in yaml.safe_load(open("conf/distros/rhel.yaml"))["dependency_handler"]["package_map"].iteritems():
+        print "%s==%s" % (k, v)
+except:
+    pass
+')
+    # NOTE(aababilov): drop `<` and `<=` requirements because yum cannot
+    # handle them correctly
+    local python_names=$(cat requirements.txt test-requirements.txt |
+        sed -r -e 's/#.*$//' -e 's/,?<[ =.0-9]+//' | sort -u)
+    local rpm_names=$("$PY2RPM_CMD" --package-map $package_map --convert $python_names |
+        while read req pack; do echo $pack; done | sort -u)
+    # install all available RPMs
+    echo "Installing packages: $(echo $rpm_names)"
+    echo "$rpm_names" | xargs  -d '\n' yum install $YUM_OPTS
+    # build and install missing packages
+    local missing_python=""
+    for python_name in $python_names; do
+        rpm_name=$("$PY2RPM_CMD" --package-map $package_map --convert $python_name | awk '{print $2}' | sort -u)
+        if ! rpm -q $rpm_name &>/dev/null; then
+            missing_python="$missing_python $python_name"
+        fi
+    done
+    if [ -z "$missing_python" ]; then
+        return
     fi
-    PACKAGES="$PACKAGES $rpm_name:$py_name"
+    # Some RPMs are not available. Try to build them on fly
+    # First download them
+    local pip_tmp_dir=$(mktemp -d)
+    find_pip
+    local pip_opts="$PIP_OPTS -U -I"
+    echo "Downloading Python requirements:$missing_python"
+    $PIP_CMD install $pip_opts $missing_python --download "$pip_tmp_dir"
+    # Now build them
+    echo "Building RPMs for $missing_python"
+    local rpm_names=$("$PY2RPM_CMD"  --package-map $package_map -- "$pip_tmp_dir/"* 2>/dev/null |
+        awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)
+    rm -rf "$pip_tmp_dir"
+    if [ -z "$rpm_names" ]; then
+        echo "No binary RPMs were built for$missing_python"
+        return 1
+    fi
+    yum install $YUM_OPTS $rpm_names
 }
 
 needs_bootstrap()
 {
-    $BOOTSTRAP && return 0 
+    $BOOTSTRAP && return 0
     checksums=$(get_checksums)
     for i in $BOOT_FILES; do
         if [ -f $i ]; then
@@ -216,7 +213,7 @@ fi
 ARGS=""
 BOOTSTRAP=false
 
-# Ad-hoc getopt to handle long opts. 
+# Ad-hoc getopt to handle long opts.
 #
 # Smithy opts are consumed while those to anvil are copied through.
 while [ ! -z $1 ]; do
@@ -249,7 +246,7 @@ if [ "$(id -u)" != "0" ]; then
     echo "You must run '$SMITHY_NAME --bootstrap' with root privileges!" >&2
     exit 1
 fi
-if [ ! -f $BSCONF_FILE ]; then 
+if [ ! -f $BSCONF_FILE ]; then
     echo "Anvil has not been tested on distribution '$OSNAME'" >&2
     puke
 fi
