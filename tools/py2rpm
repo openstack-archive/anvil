@@ -2,6 +2,7 @@
 
 import argparse
 import distutils.spawn
+import email.parser
 import logging
 import re
 import os
@@ -39,6 +40,37 @@ requirements_section_re = re.compile(r'\[(.*?)\]')
 version_re = re.compile(r"^(.*[^.0])(\.0+)*$")
 setup_py = "setup.py"
 
+DEFAULT_SCRIPTS = {
+    "prep":
+    """%setup -n %{pkg_name}-%{unmangled_version} -n %{pkg_name}-%{unmangled_version}""",
+    "build":
+    """python setup.py build""",
+    "install":
+    """python setup.py install -O1 --root=$RPM_BUILD_ROOT --record=INSTALLED_FILES
+abspath_installed_files=$(readlink -f INSTALLED_FILES)
+(
+    cd $RPM_BUILD_ROOT
+    for i in usr/*/python*/site-packages/* usr/bin/*; do
+        if [ -e "$i" ]; then
+            sed -i "s@/$i/@DELETE_ME@" "$abspath_installed_files"
+            echo "/$i"
+        fi
+    done
+    if [ -d usr/man ]; then
+        rm -rf usr/share/man
+        mkdir -p usr/share
+        mv usr/man usr/share/
+        sed -i "s@/usr/man/@DELETE_ME@" "$abspath_installed_files"
+        for i in usr/share/man/*; do
+            echo "/$i/*"
+        done
+    fi
+) >> GATHERED_FILES
+{ sed '/^DELETE_ME/d' INSTALLED_FILES; cat GATHERED_FILES; } | sort -u > INSTALLED_FILES.tmp
+mv -f INSTALLED_FILES{.tmp,}""",
+    "clean":
+    """rm -rf $RPM_BUILD_ROOT""",
+}
 
 class InstallationError(Exception):
     pass
@@ -96,6 +128,22 @@ def egg_info_requirements(source_dir, extras=()):
             # Skip requirement for an extra we aren't requiring
             continue
         yield line
+
+
+def pkg_info(source_dir):
+    p = email.parser.FeedParser()
+    filename = egg_info_path(source_dir, "PKG-INFO")
+    if not os.path.exists(filename):
+        logger.warn('No PKG-INFO file found in %s' % source_dir)
+    else:
+        with open(filename, "r") as f:
+            for line in f.readlines():
+                # NOTE(aababilov): d2to1 has bad PKG-INFO
+                # that is fixed this way:
+                if line and not line[0].isspace() and not ":" in line:
+                    line = " " + line
+                p.feed(line)
+    return p.close()
 
 
 def setup_py_one_line(source_dir, command):
@@ -156,11 +204,6 @@ def create_parser():
         default=[source_dir],
         help="Source directories of packages (default: current directory)")
     parser.add_argument(
-        "--install-script",
-        metavar="<filename>",
-        default=None,
-        help="Specify a script for the INSTALL phase of RPM building")
-    parser.add_argument(
         "--scripts-dir",
         metavar="<dir>",
         default=None,
@@ -183,6 +226,11 @@ def create_parser():
         nargs="+",
         default=[],
         help="Forced RPM epochs for packages")
+    parser.add_argument(
+        "--release", "-r",
+        metavar="<number>",
+        default="0%{?dist}",
+        help="RPM release for generated packages")
     parser.add_argument(
         "--package-map", "-p",
         metavar="<Python package name == RPM name>",
@@ -253,6 +301,9 @@ import os
 def replacement_run(self):
     self.mkpath(self.egg_info)
     installer = self.distribution.fetch_build_egg
+    if self.distribution.has_ext_modules():
+        with open("%s/ext_modules.txt" % self.egg_info, "w") as f:
+            pass
     for ep in pkg_resources.iter_entry_points('egg_info.writers'):
         # require=False is the change we're making:
         writer = ep.load(require=False)
@@ -281,9 +332,7 @@ def trim_zeroes(version):
     return version
 
 
-def requires_and_conflicts(req_list, multiline):
-    global epoch_map
-
+def requires_and_conflicts(req_list):
     rpm_requires = ""
     rpm_conflicts = ""
     for line in req_list:
@@ -293,8 +342,7 @@ def requires_and_conflicts(req_list, multiline):
             continue
         rpm_name = python_key_to_rpm(req.key)
         if not req.specs:
-            if multiline:
-                rpm_requires += "\nRequires:"
+            rpm_requires += "\nRequires:"
             rpm_requires = "%s %s" % (
                 rpm_requires, rpm_name)
         for spec in req.specs:
@@ -306,41 +354,23 @@ def requires_and_conflicts(req_list, multiline):
             except KeyError:
                 pass
             if kind == "!=":
-                if multiline:
-                    rpm_conflicts += "\nConflicts:"
+                rpm_conflicts += "\nConflicts:"
                 rpm_conflicts = "%s %s = %s" % (
                     rpm_conflicts, rpm_name, version)
                 continue
             if kind == "==":
                 kind = "="
-            if multiline:
-                rpm_requires += "\nRequires:"
+            rpm_requires += "\nRequires:"
             rpm_requires = "%s %s %s %s" % (
                 rpm_requires, rpm_name, kind, version)
     return rpm_requires, rpm_conflicts
 
 
-def clean_summary(filename):
-    with open(filename, "rb") as fh:
-        contents = fh.read()
-
-    # Fix how summary is not supposed to be more than 1 line but sometimes
-    # seems to be.
-    def summary_cleaner(mtch):
-        summary = mtch.group(1)
-        summary = summary.strip()
-        summary = summary.replace("\n", " ")
-        summary = truncate(summary)
-        summary = summary.strip()
-        return summary + "\n" + mtch.group(2)
-
-    spec_headers = [h + ":" for h in headers]
-    spec_headers = "|".join(spec_headers)
-    contents = re.sub(re.compile(r"(^Summary:.*?)(" + spec_headers+ ")", re.M|re.S),
-                      summary_cleaner, contents)
-
-    with open(filename, "wb") as fh:
-        fh.write(contents)
+def one_line(line, max_len=80):
+    line = line.replace("\n", " ")
+    if max_len > 0:
+        return line[:max_len]
+    return line
 
 
 def build_rpm(options, filename):
@@ -358,77 +388,91 @@ def build_rpm(options, filename):
             "`%s' is not a regular file nor a directory" % filename)
 
     run_egg_info(source_dir, options)
+    info = pkg_info(source_dir)
     rpm_requires, rpm_conflicts = requires_and_conflicts(
-        egg_info_requirements(source_dir), multiline=False)
-
+        egg_info_requirements(source_dir))
+    # NOTE(aababilov): do not use info["name"] to get the name - it is
+    # the key (e.g., "nose-plugin"), not the name ("nose_plugin")
     pkg_name = setup_py_one_line(source_dir, "--name")
     pkg_key = python_name_to_key(pkg_name)
     build_dir = options.rpm_base
-    if options.scripts_dir:
-        install_script = "%s/%s-install.sh" % (options.scripts_dir, pkg_key)
-        if not os.path.isfile(install_script):
-            install_script = options.install_script
-    else:
-        install_script = options.install_script
-    cmdline = [
-        sys.executable, setup_py, "bdist_rpm",
-        "--rpm-base",  build_dir,
-        "--source-only",
-        "--install-script", install_script,
-    ]
-    if rpm_requires:
-        cmdline += ["--requires",  rpm_requires]
-    if rpm_conflicts:
-        cmdline += ["--conflicts",  rpm_conflicts]
-    call_subprocess(cmdline, cwd=source_dir, raise_on_returncode=False)
-
     rpm_name = python_key_to_rpm(pkg_key)
-    spec_name = os.path.join(build_dir, "SPECS", "%s.spec" % pkg_name)
-    if not os.path.exists(spec_name):
-        raise InstallationError("`%s' does not exist" % spec_name)
-    if rpm_name != pkg_name:
-        old_name = spec_name
-        spec_name = os.path.join(build_dir, "SPECS", "%s.spec" % rpm_name)
-        os.rename(old_name, spec_name)
-    cmdline = [
-        "sed", "-i",
-        "-e", "s/^Name:.*$/Name: %s/" % rpm_name,
-        "-e", "s/%{name}/%{pkg_name}/g",
-        "-e", "s/^%%define name.*$/%%define pkg_name %s/" % pkg_name,
-    ]
-    epoch = epoch_map.get(pkg_key, options.epoch)
-    if epoch is not None:
-        cmdline += [
-            "-e", "s/^Version:/Epoch: %s\\nVersion:/" % epoch,
+    version = one_line(info["version"])
+    for path in (os.path.join(build_dir, "SPECS"),
+                 os.path.join(build_dir, "SOURCES")):
+        if not os.path.isdir(path):
+            os.makedirs(path)
+    spec_name = os.path.join(build_dir, "SPECS", "%s.spec" % rpm_name)
+
+    if not archive_name:
+        cmdline = [
+            sys.executable, setup_py, "sdist",
         ]
-    if pkg_key in arch_dependent:
-        cmdline += [
-            "-e", "/^BuildArch/d",
-        ]
-    if archive_name:
-        cmdline += [
-            "-e",
-            "s/^Source0: .*$/Source0: %s/" % os.path.basename(archive_name)
-        ]
-        shutil.copy(archive_name,
-                    os.path.join(build_dir, "SOURCES"))
-    call_subprocess(cmdline + [spec_name])
-    cmdline = [
-        "sed", "-i", "-r",
-        "-e", "/%doc/s/ man[^ ]+//",
-    ]
-    call_subprocess(cmdline + [spec_name])
-    clean_summary(spec_name)
+        call_subprocess(cmdline, cwd=source_dir, raise_on_returncode=False)
+        archive_name = "%s/dist/%s-%s.tar.gz" % (source_dir, pkg_name, version)
+    shutil.copy(archive_name, os.path.join(build_dir, "SOURCES"))
+
+    with open(spec_name, "w") as spec_file:
+        print >> spec_file, "%define pkg_name", pkg_name
+        print >> spec_file, "%define rpm_name", rpm_name
+        print >> spec_file, "%define version", version.replace('-','_')
+        print >> spec_file, "%define release", options.release
+        print >> spec_file, "%define unmangled_version", version
+        print >> spec_file, ""
+        tags = []
+        tags.append(("Name", "%{rpm_name}"))
+        epoch = epoch_map.get(pkg_key, options.epoch)
+        if epoch is not None:
+            tags.append(("Epoch", epoch))
+        tags.append(("Version", "%{version}"))
+        tags.append(("Release", "%{release}"))
+        tags.append(("Summary", info["summary"]))
+        archive_name = os.path.basename(archive_name)
+        if archive_name == ("%s-%s.tar.gz" % (pkg_name, version)):
+            tags.append(("Source0", "%{pkg_name}-%{unmangled_version}.tar.gz"))
+        else:
+            tags.append(("Source0", archive_name))
+        tags.append(("License", info["license"]))
+        tags.append(("Group", "Development/Libraries"))
+        tags.append(("BuildRoot", "%{_tmppath}/%{pkg_name}-%{version}-%{release}-buildroot"))
+        tags.append(("Prefix", "%{_prefix}"))
+        if pkg_key not in arch_dependent:
+            if not os.path.exists(egg_info_path(source_dir, "ext_modules.txt")):
+                tags.append(("BuildArch", "noarch"))
+        tags.append(("Vendor", "%s <%s>" % (info["author"], info["author-email"])))
+        tags.append(("Url", info["home-page"]))
+        max_name_len = max(len(tag[0]) for tag in tags)
+        for tag in tags:
+            print >> spec_file, "%s:" % tag[0], " " * (
+                max_name_len -  len(tag[0]) + 1), one_line(tag[1], max_len=-1)
+        if rpm_requires:
+            print >> spec_file, rpm_requires
+        if rpm_conflicts:
+            print >> spec_file, rpm_conflicts
+        print >> spec_file, "\n%description\n", info["description"]
+
+        for script in "prep", "build", "install", "clean":
+            print >> spec_file, "\n\n%%%s" % script
+            if options.scripts_dir:
+                script_filename = "%s/%s-%s.sh" % (options.scripts_dir, pkg_key, script)
+                if os.path.isfile(script_filename):
+                    with open(script_filename) as f_in:
+                        print >> spec_file, f_in.read()
+            print >> spec_file, DEFAULT_SCRIPTS[script]
+        print >> spec_file, """
+
+%files -f INSTALLED_FILES
+%defattr(-,root,root)
+"""
 
     if options.source_only:
         rpmbuild_what = "-bs"
     else:
         rpmbuild_what = "-ba"
-    if rpmbuild_what:
-        call_subprocess(
-            [options.rpmbuild, rpmbuild_what,
-            "--define", "_topdir %s" % build_dir,
-            spec_name])
+    call_subprocess(
+        [options.rpmbuild, rpmbuild_what,
+         "--define", "_topdir %s" % build_dir,
+         spec_name])
     if temp_dir:
         shutil.rmtree(temp_dir)
 
@@ -446,44 +490,13 @@ def main():
     epoch_map = build_map(options.epoch_map)
 
     if options.convert:
-        rpm_requires, rpm_conflicts = requires_and_conflicts(
-            options.convert, multiline=True)
+        rpm_requires, rpm_conflicts = requires_and_conflicts(options.convert)
         if rpm_requires:
             print rpm_requires.strip()
         if rpm_conflicts:
             print rpm_conflicts.strip()
         return
 
-    install_script_content = """python setup.py install -O1 --root=$RPM_BUILD_ROOT --record=INSTALLED_FILES
-abspath_installed_files=$(readlink -f INSTALLED_FILES)
-(
-    cd $RPM_BUILD_ROOT
-    for i in usr/*/python*/site-packages/* usr/bin/*; do
-        if [ -e "$i" ]; then
-            sed -i "s@/$i/@DELETE_ME@" "$abspath_installed_files"
-            echo "/$i"
-        fi
-    done
-    if [ -d usr/man ]; then
-        rm -rf usr/share/man
-        mkdir -p usr/share
-        mv usr/man usr/share/
-        sed -i "s@/usr/man/@DELETE_ME@" "$abspath_installed_files"
-        for i in usr/share/man/*; do
-            echo "/$i/*"
-        done
-    fi
-) >> GATHERED_FILES
-{ sed '/^DELETE_ME/d' INSTALLED_FILES; cat GATHERED_FILES; } | sort -u > INSTALLED_FILES.tmp
-mv -f INSTALLED_FILES{.tmp,}
-"""
-    if not options.install_script:
-        tmp_install_script = tempfile.mkstemp()
-        options.install_script = tmp_install_script[1]
-        os.write(tmp_install_script[0], install_script_content)
-        os.close(tmp_install_script[0])
-    else:
-        tmp_install_script = None
     failed_pkgs = []
     for src in (os.path.abspath(sdir) for sdir in options.sources):
         try:
@@ -491,8 +504,6 @@ mv -f INSTALLED_FILES{.tmp,}
         except Exception as ex:
             failed_pkgs.append((src, ex))
             print >> sys.stderr, ex
-    if tmp_install_script:
-        os.unlink(tmp_install_script[1])
     if failed_pkgs:
         print >> sys.stderr, "These packages failed to build:"
         for descr in failed_pkgs:
