@@ -64,6 +64,7 @@ subsystems:
     quantum:
     - server
     - agent
+    - l3-agent
     cinder:
     - api
     - scheduler

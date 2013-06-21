@@ -54,7 +54,8 @@ subsystems:
     - xvpvncproxy
     quantum:
     - server
-    - linuxbridge-agent
+    - agent
+    - l3-agent
     cinder:
     - all
 supports:

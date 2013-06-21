@@ -256,6 +256,12 @@ class YumDependencyHandler(base.DependencyHandler):
             if bin_name == "quantum-server":
                 daemon_args = ("'--config-file=/etc/quantum/plugin.ini"
                                " --config-file=/etc/quantum/quantum.conf'")
+            elif bin_name == "quantum-l3-agent":
+                daemon_args = ("'--config-file=/etc/quantum/l3_agent.ini"
+                               " --config-file=/etc/quantum/quantum.conf'")
+            elif bin_name == "quantum-dhcp-agent":
+                daemon_args = ("'--config-file=/etc/quantum/dhcp_agent.ini"
+                               " --config-file=/etc/quantum/quantum.conf'")
             else:
                 daemon_args = ""
             params = {
