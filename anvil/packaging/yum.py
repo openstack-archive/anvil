@@ -168,15 +168,9 @@ class YumDependencyHandler(base.DependencyHandler):
                 yum_map.setdefault(provides[0], set()).add(
                     (pkg.version, pkg.repo))
 
-        nopips = [pkg_resources.Requirement.parse(name).key
-                  for name in self.python_names]
-
         pips_to_download = []
         req_to_install = [pkg_resources.Requirement.parse(pkg)
                           for pkg in self.pips_to_install]
-        req_to_install = [req for req in req_to_install
-                          if req.key not in nopips]
-
         requested_names = [req.key for req in req_to_install]
         rpm_to_install = self._convert_names_python2rpm(requested_names)
 
