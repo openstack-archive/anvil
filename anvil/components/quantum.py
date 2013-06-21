@@ -16,6 +16,7 @@
 
 from anvil import colorizer
 from anvil import log as logging
+from anvil import shell as sh
 
 from anvil.components import base
 from anvil.components import base_install as binstall
@@ -50,8 +51,9 @@ class QuantumInstaller(binstall.PythonInstallComponent, QuantumPluginMixin):
         # TODO(aababilov): update db if required
 
     def create_symlink_to_conf_file(self):
-        os.symlink(self.configurator.get_path_to_plugin_config,
-                   "/etc/quantum/plugin.ini")
+        sh.symlink(self.configurator.get_path_to_plugin_config,
+                   "/etc/quantum/plugin.ini",
+                   force=True)
 
 
 class QuantumUninstaller(binstall.PkgUninstallComponent, QuantumPluginMixin):
