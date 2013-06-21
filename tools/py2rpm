@@ -458,6 +458,7 @@ def build_rpm(options, filename):
                 if os.path.isfile(script_filename):
                     with open(script_filename) as f_in:
                         print >> spec_file, f_in.read()
+                    continue
             print >> spec_file, DEFAULT_SCRIPTS[script]
         print >> spec_file, """
 
