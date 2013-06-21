@@ -69,7 +69,8 @@ class ProgramRuntime(base.Component):
 
     def restart(self):
         # How many applications restarted
-        return 0
+        self.stop()
+        return self.start()
 
     def post_start(self):
         pass
