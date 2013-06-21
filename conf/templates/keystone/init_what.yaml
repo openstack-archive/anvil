@@ -9,7 +9,7 @@ endpoints:
     internal_url: "$nova.endpoints.ec2_cloud.uri"
     public_url: "$nova.endpoints.ec2_cloud.uri"
     region: RegionOne
--   service: network
+-   service: quantum
     admin_url: "$quantum.endpoints.admin.uri"
     internal_url: "$quantum.endpoints.internal.uri"
     public_url: "$quantum.endpoints.public.uri"

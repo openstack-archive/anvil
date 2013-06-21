@@ -22,7 +22,7 @@ PLUGIN_CONF = "ovs_quantum_plugin.ini"
 CONFIGS = [PLUGIN_CONF]
 
 
-class OpenvswitchConfigurator(quantum_plugins.Configurator):
+class OpenvswitchConfigurator(quantum_plugins.CorePluginConfigurator):
 
     PLUGIN_CLASS = "quantum.plugins.openvswitch.ovs_quantum_plugin.OVSQuantumPluginV2"
 
