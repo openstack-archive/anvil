@@ -59,8 +59,8 @@ class YumDependencyHandler(base.DependencyHandler):
     YUM_REPO_DIR = "/etc/yum.repos.d"
     rpmbuild_executable = sh.which("rpmbuild")
 
-    def __init__(self, distro, root_dir, instances):
-        super(YumDependencyHandler, self).__init__(distro, root_dir, instances)
+    def __init__(self, distro, root_dir, instances, opts=None):
+        super(YumDependencyHandler, self).__init__(distro, root_dir, instances, opts)
         self.rpmbuild_dir = sh.joinpths(self.deps_dir, "rpmbuild")
         # Track what file we create so they can be cleaned up on uninstall.
         trace_fn = tr.trace_filename(root_dir, 'deps')
@@ -130,6 +130,7 @@ class YumDependencyHandler(base.DependencyHandler):
                 if sh.isfile(sh.joinpths(repo_dir, bin_rpm_filename)):
                     LOG.info("Found RPM package %s", bin_rpm_filename)
                     continue
+                # clear before...
                 sh.deldir(self.rpmbuild_dir)
                 base_filename = sh.basename(srpm_filename)
                 LOG.info("Building RPM package from %s", base_filename)
@@ -144,6 +145,8 @@ class YumDependencyHandler(base.DependencyHandler):
                     "--define", "_topdir %s" % self.rpmbuild_dir,
                     "--rebuild",
                     srpm_filename]
+                if self.opts.get("usr_only", False):
+                    cmdline.extend(["--define", "usr_only 1"])
                 sh.execute_save_output(
                     cmdline,
                     out_filename=sh.joinpths(
@@ -152,6 +155,8 @@ class YumDependencyHandler(base.DependencyHandler):
                         self.rpmbuild_dir, "RPMS"),
                         recursive=True, files_only=True):
                     sh.move(filename, repo_dir, force=True)
+                # ...and after
+                sh.deldir(self.rpmbuild_dir)
             self._create_repo(repo_name)
 
     def _move_srpms(self, repo_name):

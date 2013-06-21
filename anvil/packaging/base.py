@@ -72,10 +72,11 @@ class DependencyHandler(object):
     MAX_PIP_DOWNLOAD_ATTEMPTS = 4
     multipip_executable = sh.which("multipip", ["tools/"])
 
-    def __init__(self, distro, root_dir, instances):
+    def __init__(self, distro, root_dir, instances, opts=None):
         self.distro = distro
         self.root_dir = root_dir
         self.instances = instances
+        self.opts = opts or {}
 
         self.deps_dir = sh.joinpths(self.root_dir, "deps")
         self.download_dir = sh.joinpths(self.deps_dir, "download")

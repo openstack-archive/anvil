@@ -39,10 +39,12 @@ Requires:         python-cinder = %{epoch}:%{version}-%{release}
 # as convenience
 Requires:         python-cinderclient
 
+%if ! 0%{?usr_only}
 Requires(post):   chkconfig
 Requires(preun):  chkconfig
 Requires(postun): chkconfig
 Requires(pre):    shadow-utils
+%endif
 
 Requires:         lvm2
 Requires:         scsi-target-utils
@@ -136,6 +138,7 @@ install -p -D -m 644 build/man/*.1 %{buildroot}%{_mandir}/man1/
 popd
 %endif
 
+%if ! 0%{?usr_only}
 # Setup directories
 install -d -m 755 %{buildroot}%{_sharedstatedir}/cinder
 install -d -m 755 %{buildroot}%{_sharedstatedir}/cinder/tmp
@@ -164,6 +167,7 @@ install -p -D -m 644 %{SOURCE2} %{buildroot}%{_sysconfdir}/logrotate.d/openstack
 
 # Install pid directory
 install -d -m 755 %{buildroot}%{_localstatedir}/run/cinder
+%endif
 
 # Install rootwrap files in /usr/share/cinder/rootwrap
 mkdir -p %{buildroot}%{_datarootdir}/cinder/rootwrap/
@@ -176,6 +180,7 @@ rm -fr %{buildroot}%{python_sitelib}/run_tests.*
 rm -f %{buildroot}/usr/share/doc/cinder/README*
 
 
+%if ! 0%{?usr_only}
 %pre
 getent group cinder >/dev/null || groupadd -r cinder
 getent passwd cinder >/dev/null || \
@@ -201,9 +206,19 @@ if [ $1 -ge 1 ] ; then
     done
     exit 0
 fi
+%endif
+
 
 %files
-%doc LICENSE
+%doc README* LICENSE* HACKING* ChangeLog AUTHORS
+%{_bindir}/cinder-*
+%{_datarootdir}/cinder
+%if 0%{?with_doc}
+%{_mandir}/man1/*
+%endif
+
+%if ! 0%{?usr_only}
+%{_initrddir}/*
 
 %dir %{_sysconfdir}/cinder
 %config(noreplace) %attr(-, root, cinder) %{_sysconfdir}/cinder/cinder.conf.sample
@@ -218,22 +233,16 @@ fi
 %dir %attr(0755, cinder, root) %{_localstatedir}/run/cinder
 %dir %attr(0755, cinder, root) %{_sysconfdir}/cinder/volumes
 
-%{_bindir}/cinder-*
-%{_initrddir}/*
-%{_datarootdir}/cinder
-
-%if 0%{?with_doc}
-%{_mandir}/man1/*
-%endif
-
 %defattr(-, cinder, cinder, -)
 %dir %{_sharedstatedir}/cinder
 %dir %{_sharedstatedir}/cinder/tmp
+%endif
 
 %files -n python-cinder
 %doc LICENSE
 %{python_sitelib}/cinder
 %{python_sitelib}/cinder-%{version}*.egg-info
+
 
 %if 0%{?with_doc}
 %files doc

@@ -29,10 +29,12 @@ BuildArch:        noarch
 BuildRequires:    python-devel
 BuildRequires:    python-setuptools
 
+%if ! 0%{?usr_only}
 Requires(post):   chkconfig
 Requires(postun): initscripts
 Requires(preun):  chkconfig
 Requires(pre):    shadow-utils
+%endif
 Requires:         python-keystone = %{epoch}:%{version}-%{release}
 
 %description
@@ -97,6 +99,7 @@ rm -fr doc/build/html/.doctrees doc/build/html/.buildinfo
 
 python setup.py install --prefix=%{_prefix} --root=%{buildroot}
 
+%if ! 0%{?usr_only}
 install -d -m 755 %{buildroot}%{_sysconfdir}/keystone
 install -m 644 etc/* %{buildroot}%{_sysconfdir}/keystone
 
@@ -105,6 +108,7 @@ install -d -m 755 %{buildroot}%{_localstatedir}/log/keystone
 install -d -m 755 %{buildroot}%{_localstatedir}/run/keystone
 
 install -p -D -m 755 %{SOURCE1} %{buildroot}%{_initrddir}/%{daemon_prefix}-all
+%endif
 
 %__rm -rf %{buildroot}%{py_sitelib}/{doc,tools}
 
@@ -113,6 +117,7 @@ install -p -D -m 755 %{SOURCE1} %{buildroot}%{_initrddir}/%{daemon_prefix}-all
 %__rm -rf %{buildroot}
 
 
+%if ! 0%{?usr_only}
 %pre
 getent group keystone >/dev/null || groupadd -r keystone
 getent passwd keystone >/dev/null || \
@@ -134,17 +139,21 @@ if [ $1 -ge 1 ] ; then
     /sbin/service %{daemon_prefix}-all condrestart &>/dev/null
     exit 0
 fi
+%endif
 
 
 %files
 %defattr(-,root,root,-)
-%doc README.rst HACKING.rst LICENSE
+%doc README* LICENSE* HACKING* ChangeLog AUTHORS
 %{_usr}/bin/*
+
+%if ! 0%{?usr_only}
 %config(noreplace) %{_sysconfdir}/keystone
 %dir %attr(0755, keystone, nobody) %{_sharedstatedir}/keystone
 %dir %attr(0755, keystone, nobody) %{_localstatedir}/log/keystone
 %dir %attr(0755, keystone, nobody) %{_localstatedir}/run/keystone
 %{_initrddir}/*
+%endif
 
 %if 0%{?with_doc}
 %files doc

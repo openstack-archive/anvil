@@ -57,6 +57,7 @@ Documentation for %{name}.
 
 %prep
 %setup -q
+touch AUTHORS ChangeLog
 if [ ! -f HACKING* ]; then
     touch HACKING
 fi
@@ -83,7 +84,7 @@ rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
-%doc README* LICENSE* HACKING*
+%doc README* LICENSE* HACKING* ChangeLog AUTHORS
 %{python_sitelib}/*
 %{_bindir}/*
 

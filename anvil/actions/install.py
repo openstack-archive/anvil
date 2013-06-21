@@ -27,10 +27,6 @@ LOG = log.getLogger(__name__)
 
 
 class InstallAction(action.Action):
-    def __init__(self, name, distro, root_dir, cli_opts):
-        action.Action.__init__(self, name, distro, root_dir, cli_opts)
-        self.only_configure = cli_opts.get('only_configure')
-
     @property
     def lookup_name(self):
         return 'install'

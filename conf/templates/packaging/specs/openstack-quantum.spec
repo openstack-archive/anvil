@@ -56,12 +56,13 @@ BuildRequires:	dos2unix
 Requires:	python-quantum = %{epoch}:%{version}-%{release}
 Requires:       python-keystone
 
+%if ! 0%{?usr_only}
 Requires(post):   chkconfig
 Requires(postun): initscripts
 Requires(preun):  chkconfig
 Requires(preun):  initscripts
 Requires(pre):    shadow-utils
-
+%endif
 
 %description
 Quantum is a virtual network service for Openstack. Just like
@@ -317,6 +318,7 @@ install -p -D -m 755 bin/quantum-* %{buildroot}%{_bindir}/
 install -d -m 755 %{buildroot}%{_datarootdir}/quantum/rootwrap
 mv %{buildroot}/usr/etc/quantum/rootwrap.d/*.filters %{buildroot}%{_datarootdir}/quantum/rootwrap
 
+%if ! 0%{?usr_only}
 # Move config files to proper location
 install -d -m 755 %{buildroot}%{_sysconfdir}/quantum
 mv %{buildroot}/usr/etc/quantum/* %{buildroot}%{_sysconfdir}/quantum
@@ -349,7 +351,6 @@ install -p -D -m 755 %{SOURCE18} %{buildroot}%{_initrddir}/%{daemon_prefix}-hype
 install -p -D -m 755 %{SOURCE19} %{buildroot}%{_initrddir}/%{daemon_prefix}-rpc-zmq-receiver
 
 # Setup directories
-install -d -m 755 %{buildroot}%{_datadir}/quantum
 install -d -m 755 %{buildroot}%{_sharedstatedir}/quantum
 install -d -m 755 %{buildroot}%{_localstatedir}/log/quantum
 install -d -m 755 %{buildroot}%{_localstatedir}/run/quantum
@@ -361,11 +362,15 @@ vendor = OpenStack LLC
 product = OpenStack Quantum
 package = %{release}
 EOF
+%else
+rm -rf %{buildroot}/usr/etc/
+%endif
 
 %clean
 rm -rf %{buildroot}
 
 
+%if ! 0%{?usr_only}
 %pre
 getent group quantum >/dev/null || groupadd -r quantum
 getent passwd quantum >/dev/null || \
@@ -398,11 +403,11 @@ if [ \$1 -ge 1 ] ; then
 fi
 
 #end for
+%endif
 #raw
 
 %files
-%doc LICENSE
-%doc README
+%doc README* LICENSE* HACKING* ChangeLog AUTHORS
 %{_bindir}/quantum-db-manage
 %{_bindir}/quantum-debug
 %{_bindir}/quantum-dhcp-agent
@@ -416,6 +421,13 @@ fi
 %{_bindir}/quantum-rpc-zmq-receiver
 %{_bindir}/quantum-server
 %{_bindir}/quantum-usage-audit
+%dir %{_datarootdir}/quantum
+%dir %{_datarootdir}/quantum/rootwrap
+%{_datarootdir}/quantum/rootwrap/dhcp.filters
+%{_datarootdir}/quantum/rootwrap/iptables-firewall.filters
+%{_datarootdir}/quantum/rootwrap/l3.filters
+%{_datarootdir}/quantum/rootwrap/lbaas-haproxy.filters
+%if ! 0%{?usr_only}
 %{_initrddir}/%{daemon_prefix}-server
 %{_initrddir}/%{daemon_prefix}-dhcp-agent
 %{_initrddir}/%{daemon_prefix}-l3-agent
@@ -436,13 +448,7 @@ fi
 %dir %attr(0755, quantum, quantum) %{_sharedstatedir}/quantum
 %dir %attr(0755, quantum, quantum) %{_localstatedir}/log/quantum
 %dir %attr(0755, quantum, quantum) %{_localstatedir}/run/quantum
-%dir %{_datarootdir}/quantum
-%dir %{_datarootdir}/quantum/rootwrap
-%{_datarootdir}/quantum/rootwrap/dhcp.filters
-%{_datarootdir}/quantum/rootwrap/iptables-firewall.filters
-%{_datarootdir}/quantum/rootwrap/l3.filters
-%{_datarootdir}/quantum/rootwrap/lbaas-haproxy.filters
-
+%endif
 
 %files -n python-quantum
 %doc LICENSE
@@ -464,23 +470,29 @@ fi
 %exclude %{python_sitelib}/quantum/plugins/openvswitch
 %exclude %{python_sitelib}/quantum/plugins/plumgrid
 %exclude %{python_sitelib}/quantum/plugins/ryu
-%{python_sitelib}/quantum-%%{version}-*.egg-info
+%{python_sitelib}/quantum-*.egg-info
 
 
 %files -n openstack-quantum-bigswitch
 %doc LICENSE
 %doc quantum/plugins/bigswitch/README
 %{python_sitelib}/quantum/plugins/bigswitch
+
+%if ! 0%{?usr_only}
 %dir %{_sysconfdir}/quantum/plugins/bigswitch
 %config(noreplace) %attr(0640, root, quantum) %{_sysconfdir}/quantum/plugins/bigswitch/*.ini
+%endif
 
 
 %files -n openstack-quantum-brocade
 %doc LICENSE
 %doc quantum/plugins/brocade/README.md
 %{python_sitelib}/quantum/plugins/brocade
+
+%if ! 0%{?usr_only}
 %dir %{_sysconfdir}/quantum/plugins/brocade
 %config(noreplace) %attr(0640, root, quantum) %{_sysconfdir}/quantum/plugins/brocade/*.ini
+%endif
 
 
 %files -n openstack-quantum-cisco
@@ -491,38 +503,50 @@ fi
 %{python_sitelib}/quantum/plugins/cisco/extensions/qos.py*
 %{python_sitelib}/quantum/plugins/cisco/extensions/_qos_view.py*
 %{python_sitelib}/quantum/plugins/cisco
+
+%if ! 0%{?usr_only}
 %dir %{_sysconfdir}/quantum/plugins/cisco
 %config(noreplace) %attr(0640, root, quantum) %{_sysconfdir}/quantum/plugins/cisco/*.ini
+%endif
 
 
 %files -n openstack-quantum-hyperv
 %doc LICENSE
 #%%doc quantum/plugins/hyperv/README
 %{_bindir}/quantum-hyperv-agent
-%{_initrddir}/%{daemon_prefix}-hyperv-agent
 %{python_sitelib}/quantum/plugins/hyperv
-%dir %{_sysconfdir}/quantum/plugins/hyperv
 %exclude %{python_sitelib}/quantum/plugins/hyperv/agent
+
+%if ! 0%{?usr_only}
+%{_initrddir}/%{daemon_prefix}-hyperv-agent
+%dir %{_sysconfdir}/quantum/plugins/hyperv
 %config(noreplace) %attr(0640, root, quantum) %{_sysconfdir}/quantum/plugins/hyperv/*.ini
+%endif
 
 
 %files -n openstack-quantum-linuxbridge
 %doc LICENSE
 %doc quantum/plugins/linuxbridge/README
 %{_bindir}/quantum-linuxbridge-agent
-%{_initrddir}/%{daemon_prefix}-linuxbridge-agent
 %{python_sitelib}/quantum/plugins/linuxbridge
 %{_datarootdir}/quantum/rootwrap/linuxbridge-plugin.filters
+
+%if ! 0%{?usr_only}
 %dir %{_sysconfdir}/quantum/plugins/linuxbridge
+%{_initrddir}/%{daemon_prefix}-linuxbridge-agent
 %config(noreplace) %attr(0640, root, quantum) %{_sysconfdir}/quantum/plugins/linuxbridge/*.ini
+%endif
 
 
 %files -n openstack-quantum-midonet
 %doc LICENSE
 #%%doc quantum/plugins/midonet/README
 %{python_sitelib}/quantum/plugins/midonet
+
+%if ! 0%{?usr_only}
 %dir %{_sysconfdir}/quantum/plugins/midonet
 %config(noreplace) %attr(0640, root, quantum) %{_sysconfdir}/quantum/plugins/midonet/*.ini
+%endif
 
 
 %files -n openstack-quantum-nicira
@@ -530,8 +554,11 @@ fi
 %doc quantum/plugins/nicira/nicira_nvp_plugin/README
 %{_bindir}/quantum-check-nvp-config
 %{python_sitelib}/quantum/plugins/nicira
+
+%if ! 0%{?usr_only}
 %dir %{_sysconfdir}/quantum/plugins/nicira
 %config(noreplace) %attr(0640, root, quantum) %{_sysconfdir}/quantum/plugins/nicira/*.ini
+%endif
 
 
 %files -n openstack-quantum-openvswitch
@@ -539,50 +566,66 @@ fi
 %doc quantum/plugins/openvswitch/README
 %{_bindir}/quantum-openvswitch-agent
 %{_bindir}/quantum-ovs-cleanup
+%{_datarootdir}/quantum/rootwrap/openvswitch-plugin.filters
+%{python_sitelib}/quantum/plugins/openvswitch
+
+%if ! 0%{?usr_only}
 %{_initrddir}/%{daemon_prefix}-openvswitch-agent
 %{_initrddir}/%{daemon_prefix}-ovs-cleanup
-%{python_sitelib}/quantum/plugins/openvswitch
-%{_datarootdir}/quantum/rootwrap/openvswitch-plugin.filters
 %dir %{_sysconfdir}/quantum/plugins/openvswitch
 %config(noreplace) %attr(0640, root, quantum) %{_sysconfdir}/quantum/plugins/openvswitch/*.ini
+%endif
 
 
 %files -n openstack-quantum-plumgrid
 %doc LICENSE
 %doc quantum/plugins/plumgrid/README
 %{python_sitelib}/quantum/plugins/plumgrid
+
+%if ! 0%{?usr_only}
 %dir %{_sysconfdir}/quantum/plugins/plumgrid
 %config(noreplace) %attr(0640, root, quantum) %{_sysconfdir}/quantum/plugins/plumgrid/*.ini
+%endif
 
 
 %files -n openstack-quantum-ryu
 %doc LICENSE
 %doc quantum/plugins/ryu/README
 %{_bindir}/quantum-ryu-agent
-%{_initrddir}/%{daemon_prefix}-ryu-agent
 %{python_sitelib}/quantum/plugins/ryu
 %{_datarootdir}/quantum/rootwrap/ryu-plugin.filters
+
+%if ! 0%{?usr_only}
+%{_initrddir}/%{daemon_prefix}-ryu-agent
 %dir %{_sysconfdir}/quantum/plugins/ryu
 %config(noreplace) %attr(0640, root, quantum) %{_sysconfdir}/quantum/plugins/ryu/*.ini
+%endif
 
 
 %files -n openstack-quantum-nec
 %doc LICENSE
 %doc quantum/plugins/nec/README
 %{_bindir}/quantum-nec-agent
-%{_initrddir}/%{daemon_prefix}-nec-agent
 %{python_sitelib}/quantum/plugins/nec
 %{_datarootdir}/quantum/rootwrap/nec-plugin.filters
+
+%if ! 0%{?usr_only}
+%{_initrddir}/%{daemon_prefix}-nec-agent
 %dir %{_sysconfdir}/quantum/plugins/nec
 %config(noreplace) %attr(0640, root, quantum) %{_sysconfdir}/quantum/plugins/nec/*.ini
+%endif
 
 
 %files -n openstack-quantum-metaplugin
 %doc LICENSE
 %doc quantum/plugins/metaplugin/README
 %{python_sitelib}/quantum/plugins/metaplugin
+
+%if ! 0%{?usr_only}
 %dir %{_sysconfdir}/quantum/plugins/metaplugin
 %config(noreplace) %attr(0640, root, quantum) %{_sysconfdir}/quantum/plugins/metaplugin/*.ini
+%endif
+
 
 %changelog
 #end raw
