@@ -16,14 +16,6 @@ require git
 require patch
 require python
 require python-devel
-require python-argparse
-require python-iso8601
-require python-netifaces
-require python-ordereddict
-require python-progressbar
-require python-psutil
-require python-iniparse
-require pylint
 require createrepo
 require yum-plugin-remove-with-leaves
 
