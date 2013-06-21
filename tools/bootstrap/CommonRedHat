@@ -1,30 +1,23 @@
 # -*- sh -*-
-STEPS="epel packages"
+STEPS="epel rpm_packages python_rpms"
 EPEL_RPM_URL="http://mirrors.kernel.org/fedora-epel/6/i386/epel-release-6-8.noarch.rpm"
 
 ## Bootstrap for Red Hat based distros
-conflicts 'python-paste-deploy1.5
-    python-nose1.1
-    python-routes1.12
-    python-sphinx10
-    python-webob1.0'
-## Package Requirements (Order matters!)
-require PyYAML
-require gcc
-require git
-require patch
-require python
-require python-devel
-require createrepo
-require yum-utils
-require yum-plugin-remove-with-leaves
+REQUIRES='
+    gcc
+    git
+    patch
+    python
+    python-devel
 
-# multipip dependencies
-require rpm-build
-require python-pip
-require python-setuptools
+    createrepo
+    yum-utils
+    yum-plugin-remove-with-leaves
 
-# This packages can be built from archives
-require python-cheetah Cheetah
-require python-keyring keyring
-require python-termcolor termcolor
+    PyYAML
+
+    rpm-build
+    python-pip
+    python-argparse
+    python-setuptools
+'

@@ -128,6 +128,11 @@ class YumDependencyHandler(base.DependencyHandler):
         sh.deldir(self.rpmbuild_dir)
 
     def build_binary(self):
+        build_requires = self.requirements["build-requires"]
+        if build_requires:
+            cmdline = ["yum", "install", "-y"] + list(build_requires)
+            sh.execute(cmdline)
+
         ts = rpm.TransactionSet()
         for repo_name in "anvil-deps", "anvil":
             repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)
@@ -193,6 +198,9 @@ class YumDependencyHandler(base.DependencyHandler):
         }
         sh.write_file(
             repo_filename, utils.expand_template(content, params))
+        # install *.repo file so that anvil deps will be available
+        # when building OpenStack
+        sh.copy(repo_filename, "%s/%s.repo" % (self.YUM_REPO_DIR, repo_name))
 
     def filter_download_requires(self):
         yum_map = {}
@@ -428,26 +436,16 @@ class YumDependencyHandler(base.DependencyHandler):
         req_names = [pkg_resources.Requirement.parse(pkg).key
                      for pkg in open(self.gathered_requires_filename)]
         rpm_names = set(self._convert_names_python2rpm(req_names))
+        rpm_names |= self.requirements["requires"]
         for inst in self.instances:
             rpm_names |= inst.package_names()
         return list(rpm_names)
 
     def install(self):
         super(YumDependencyHandler, self).install()
-        # Ensure we copy the local repo file name to the main repo so that
-        # yum will find it when installing packages.
-        for repo_name in "anvil", "anvil-deps":
-            repo_filename = sh.joinpths(
-                self.anvil_repo_dir, "%s.repo" % repo_name)
-            if sh.isfile(repo_filename):
-                sh.write_file(
-                    "%s/%s.repo" % (self.YUM_REPO_DIR, repo_name),
-                    sh.load_file(repo_filename),
-                    tracewriter=self.tracewriter)
-
-        # Erase it if its been previously installed.
+        # Erase conflicting packages
         cmdline = []
-        for p in self.nopackages:
+        for p in self.requirements["conflicts"]:
             if self.helper.is_installed(p):
                 cmdline.append(p)
 
