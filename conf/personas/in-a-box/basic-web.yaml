@@ -22,9 +22,6 @@ components:
 - django-openstack-auth
 - horizon
 options:
-    novnc:
-        # This is the nova component name (we need this to hook into the nova conf...)
-        nova-component: nova
     nova:
         db-sync: true
         do-network-init: true
@@ -57,7 +54,6 @@ subsystems:
     - compute
     - conductor
     - consoleauth
-    - novncproxy
     - scheduler
     - xvpvncproxy
     - spicehtml5proxy

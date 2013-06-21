@@ -49,7 +49,6 @@ subsystems:
     - cert
     - compute
     - consoleauth
-    - novncproxy
     - scheduler
     - xvpvncproxy
     quantum:
