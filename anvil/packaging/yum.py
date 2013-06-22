@@ -78,24 +78,49 @@ class YumDependencyHandler(base.DependencyHandler):
     def __init__(self, distro, root_dir, instances, opts=None):
         super(YumDependencyHandler, self).__init__(distro, root_dir, instances, opts)
         self.rpmbuild_dir = sh.joinpths(self.deps_dir, "rpmbuild")
-        self.deps_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps")
-        self.deps_src_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps-sources")
-        self.anvil_repo_filename = sh.joinpths(self.deps_dir, self.REPO_FN)
         self.helper = yum_helper.Helper()
         self.rpm_sources_dir = sh.joinpths(self.rpmbuild_dir, "SOURCES")
         self.anvil_repo_dir = sh.joinpths(self.root_dir, "repo")
         self._no_remove = None
 
+    @staticmethod
+    def _get_self_requirements():
+        required_pkgs = []
+        packages = env.get_key('REQUIRED_PACKAGES', default_value='')
+        for dep in packages.split():
+            dep = dep.strip()
+            if dep:
+                required_pkgs.append(dep)
+        required_pips = []
+        try:
+            own_details = pip_helper.get_directory_details(os.getcwd())
+            for dep in own_details['dependencies']:
+                req = pip_helper.extract_requirement(dep)
+                required_pips.append(req.key)
+        except:
+            pass
+        for filename in ('requirements.txt', 'test-requirements.txt'):
+            if not sh.isfile(filename):
+                continue
+            try:
+                contents = sh.load_file(filename)
+            except IOError:
+                contents = ''
+            for dep in pip_helper.parse_requirements(contents):
+                required_pips.append(dep.key)
+        return (required_pkgs, required_pips)
+
     @property
     def no_remove(self):
-        if self._no_remove is not None:
-            return self._no_remove
-        packages = env.get_key('REQUIRED_PACKAGES', default_value='').split()
-        own_details = pip_helper.get_directory_details(os.getcwd())
-        required_pips = own_details['dependencies']
-        no_remove = self._convert_names_python2rpm(required_pips)
-        no_remove.extend(packages)
-        self._no_remove = no_remove
+        if self._no_remove is None:
+            (required_pkgs, required_pips) = self._get_self_requirements()
+            for i in ("build-requires", 'requires'):
+                requires = self.requirements[i]
+                if requires:
+                    required_pkgs.extend(requires)
+            no_remove = self._convert_names_python2rpm(required_pips)
+            no_remove.extend(required_pkgs)
+            self._no_remove = sorted(set(no_remove))
         return self._no_remove
 
     def py2rpm_start_cmdline(self):
@@ -563,7 +588,7 @@ class YumDependencyHandler(base.DependencyHandler):
         rpm_names |= self.requirements["requires"]
         for inst in self.instances:
             rpm_names |= inst.package_names()
-        return list(rpm_names)
+        return sorted(list(rpm_names))
 
     def install(self):
         super(YumDependencyHandler, self).install()
@@ -583,6 +608,9 @@ class YumDependencyHandler(base.DependencyHandler):
 
         rpm_names = self._all_rpm_names()
         if rpm_names:
+            utils.log_iterable(rpm_names,
+                               header="Installing %s rpms" % (len(rpm_names)),
+                               logger=LOG)
             cmdline = ["yum", "install", "-y"] + rpm_names
             sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
 
@@ -598,8 +626,14 @@ class YumDependencyHandler(base.DependencyHandler):
                 rpm_names.append(p)
 
         if rpm_names:
-            cmdline = ["yum", "remove", "--remove-leaves", "-y"]
+            utils.log_iterable(rpm_names,
+                               header="Uninstalling %s rpms" % (len(rpm_names)),
+                               logger=LOG)
+            cmdline = ["yum", "clean", "all"]
+            sh.execute(cmdline)
+            cmdline = ["yum"]
             for p in self.no_remove:
-                cmdline.append("--exclude=%s" % (p))
-            cmdline.extend(sorted(set(rpm_names)))
+                cmdline.extend(["-x", p])
+            cmdline.extend(["-y", '--remove-leaves', "remove"])
+            cmdline.extend(rpm_names)
             sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)

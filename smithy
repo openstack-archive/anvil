@@ -149,9 +149,7 @@ except KeyError:
         while read req pack; do echo $pack; done | sort -u)
     # Install all available RPMs
     echo "Installing python requirement packages: $(echo $rpm_names)"
-    for rpm in $rpm_names; do
-        yum_install $rpm
-    done
+    echo "$rpm_names" | xargs  -d '\n' yum install $YUM_OPTS
     # Build and install missing packages
     local missing_python=""
     for python_name in $python_names; do
@@ -179,13 +177,8 @@ except KeyError:
         return 1
     fi
     echo "Installing missing python requirement packages: $(echo $rpm_names)"
-    for rpm in $rpm_names; do
-        yum_install "$rpm"
-        if [ "$?" != "0" ]; then
-            echo "Failed installing $rpm"
-            return 1
-        fi
-    done
+    yum install $YUM_OPTS $rpm_names
+    return $?
 }
 
 needs_bootstrap()
@@ -281,8 +274,9 @@ done
 # Source immediately so that we can export the needed variables.
 if [ -f "$BSCONF_FILE" ]; then
     source $BSCONF_FILE
-    export REQUIRED_PACKAGES="$REQUIRES"
 fi
+
+export REQUIRED_PACKAGES="$REQUIRES"
 
 if ! needs_bootstrap; then
     clean_pip
