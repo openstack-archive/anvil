@@ -599,7 +599,7 @@ class YumDependencyHandler(base.DependencyHandler):
 
         if rpm_names:
             cmdline = ["yum", "remove", "--remove-leaves", "-y"]
-            for p in no_remove:
+            for p in self.no_remove:
                 cmdline.append("--exclude=%s" % (p))
             cmdline.extend(sorted(set(rpm_names)))
             sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
