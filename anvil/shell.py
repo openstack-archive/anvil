@@ -144,8 +144,7 @@ def execute(cmd,
             stderr_fh = subprocess.PIPE
         try:
             obj = subprocess.Popen(execute_cmd, stdin=stdin_fh, stdout=stdout_fh, stderr=stderr_fh,
-                                   close_fds=True, cwd=cwd, shell=shell,
-                                   env=process_env)
+                                   close_fds=True, cwd=cwd, shell=shell, env=process_env)
             if process_input is not None:
                 result = obj.communicate(str(process_input))
             else:

@@ -1,6 +1,7 @@
 # -*- sh -*-
 STEPS="epel rpm_packages python_rpms"
 EPEL_RPM_URL="http://mirrors.kernel.org/fedora-epel/6/i386/epel-release-6-8.noarch.rpm"
+DISTRO_CONFIG=conf/distros/rhel.yaml
 
 ## Bootstrap for Red Hat based distros
 REQUIRES='
