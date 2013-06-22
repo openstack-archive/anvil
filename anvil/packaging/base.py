@@ -208,8 +208,9 @@ class DependencyHandler(object):
             self.pip_executable
         ]
         cmdline = cmdline + extra_pips + ["-r"] + requires_files
-        cmdline = (cmdline + ["--ignore-package"] +
-                   OPENSTACK_PACKAGES + self.python_names)
+        cmdline.extend(["--ignore-package"])
+        cmdline.extend(OPENSTACK_PACKAGES)
+        cmdline.extend(self.python_names)
 
         output = sh.execute(cmdline, check_exit_code=False)
         self.pips_to_install = list(utils.splitlines_not_empty(output[0]))
