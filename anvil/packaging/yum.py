@@ -67,6 +67,11 @@ class YumDependencyHandler(base.DependencyHandler):
         'distribute',
         'setuptools',
     ]
+    SRC_REPOS = {
+        'anvil': 'anvil-source',
+        "anvil-deps": "anvil-deps-source",
+    }
+    REPOS = ["anvil-deps", "anvil"]
     py2rpm_executable = sh.which("py2rpm", ["tools/"])
     rpmbuild_executable = sh.which("rpmbuild")
 
@@ -134,7 +139,7 @@ class YumDependencyHandler(base.DependencyHandler):
         with sh.remove_before_after(self.rpmbuild_dir):
             for dirname in (sh.joinpths(self.rpmbuild_dir, "SPECS"),
                             sh.joinpths(self.rpmbuild_dir, "SOURCES")):
-                sh.mkdirslist(dirname, tracewriter=self.tracewriter)
+                sh.mkdirslist(dirname)
             if instance.name in ["general"]:
                 self._build_dependencies()
                 self._move_srpms("anvil-deps")
@@ -149,62 +154,88 @@ class YumDependencyHandler(base.DependencyHandler):
     def _move_files(source_dir, target_dir):
         if not sh.isdir(source_dir):
             return
-        for filename in sh.listdir(source_dir,
-                                   recursive=True, files_only=True):
+        for filename in sh.listdir(source_dir, recursive=True, files_only=True):
             sh.move(filename, target_dir, force=True)
 
     def build_binary(self):
-        build_requires = self.requirements["build-requires"]
-        if build_requires:
-            cmdline = ["yum", "install", "-y"] + list(build_requires)
+
+        def _install_build_requirements():
+            build_requires = self.requirements["build-requires"]
+            if build_requires:
+                utils.log_iterable(sorted(build_requires),
+                                   header=("Installing %s build requirements" % len(build_requires)),
+                                   logger=LOG)
+                cmdline = ["yum", "install", "-y"] + list(build_requires)
+                sh.execute(cmdline)
+
+        def _is_src_rpm(filename):
+            return filename.endswith('.src.rpm')
+
+        def _build_single_binary(repo_dir, srpm_filename, rpmbuild_dir):
+            # Extract needed info from the source rpm directly.
+            ts = rpm.TransactionSet()
+            with open(srpm_filename) as fd:
+                hdr = ts.hdrFromFdno(fd)
+            bin_rpm_filename = "%s-%s-%s.%s.rpm" % (hdr[rpm.RPMTAG_NAME],
+                                                    hdr[rpm.RPMTAG_VERSION],
+                                                    hdr[rpm.RPMTAG_RELEASE],
+                                                    hdr[rpm.RPMTAG_ARCH])
+            if sh.isfile(sh.joinpths(repo_dir, bin_rpm_filename)):
+                return
+            # Rebuild the rpm from the source rpm.
+            base_filename = sh.basename(srpm_filename)
+            LOG.debug("Building RPM package from %s", base_filename)
+            cmdline = ["yum-builddep", "-q", "-y", srpm_filename]
             sh.execute(cmdline)
-        ts = rpm.TransactionSet()
-        for repo_name in ("anvil-deps", "anvil"):
+            cmdline = ["rpmbuild",
+                       "--define", "_topdir %s" % self.rpmbuild_dir,
+                       "--rebuild", srpm_filename]
+            if self.opts.get("usr_only", False):
+                cmdline.extend(["--define", "usr_only 1"])
+            out_filename = sh.joinpths(self.log_dir, "rpmbuild-build-%s.out" % base_filename)
+            sh.execute_save_output(cmdline, out_filename=out_filename, quiet=True)
+
+        _install_build_requirements()
+
+        for repo_name in self.REPOS:
             repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)
             sh.mkdirslist(repo_dir, tracewriter=self.tracewriter)
-            src_repo_dir = sh.joinpths(self.anvil_repo_dir,
-                                       "%s-sources" % repo_name),
-            for srpm_filename in sh.listdir(src_repo_dir, files_only=True):
-                if not srpm_filename.endswith(".src.rpm"):
-                    continue
-                # Extract needed info from the source rpm directly.
-                with open(srpm_filename) as fd:
-                    hdr = ts.hdrFromFdno(fd)
-                bin_rpm_filename = "%s-%s-%s.%s.rpm" % (hdr[rpm.RPMTAG_NAME],
-                                                        hdr[rpm.RPMTAG_VERSION],
-                                                        hdr[rpm.RPMTAG_RELEASE],
-                                                        hdr[rpm.RPMTAG_ARCH])
-                # Woot it was already built!
-                if sh.isfile(sh.joinpths(repo_dir, bin_rpm_filename)):
-                    LOG.info("Found RPM package %s", bin_rpm_filename)
-                    continue
-                # Rebuild the rpm from the source rpm.
-                with remove_before_after(self.rpmbuild_dir):
-                    base_filename = sh.basename(srpm_filename)
-                    LOG.info("Building RPM package from %s", base_filename)
-                    cmdline = ["yum-builddep", "-q", "-y", srpm_filename]
-                    sh.execute(cmdline)
-                    cmdline = ["rpmbuild",
-                               "--define", "_topdir %s" % self.rpmbuild_dir,
-                               "--rebuild", srpm_filename]
-                    if self.opts.get("usr_only", False):
-                        cmdline.extend(["--define", "usr_only 1"])
-                    build_filename = sh.joinpths(self.log_dir,
-                                                 "rpmbuild-%s.out" % base_filename)
-                    sh.execute_save_output(cmdline, out_filename=build_filename)
-                    self._move_files(sh.joinpths(self.rpmbuild_dir, "RPMS"),
-                                     repo_dir)
+            src_repo_dir = sh.joinpths(self.anvil_repo_dir, self.SRC_REPOS[repo_name])
+            if sh.isdir(src_repo_dir):
+                src_repo_files = sh.listdir(src_repo_dir, files_only=True)
+                src_repo_files = sorted([f for f in src_repo_files if _is_src_rpm(f)])
+            else:
+                src_repo_files = []
+            if not src_repo_files:
+                continue
+            src_repo_base_files = [sh.basename(f) for f in src_repo_files]
+            header = 'Building %s RPM packages from there SRPM backing files from repo %s'
+            header = header % (len(src_repo_files), self.SRC_REPOS[repo_name])
+            utils.log_iterable(src_repo_base_files, header=header, logger=LOG)
+            with utils.progress_bar(name='Building', max_am=len(src_repo_files)) as p_bar:
+                for (i, srpm_filename) in enumerate(src_repo_files):
+                    # Rebuild the rpm from the source rpm.
+                    with sh.remove_before_after(self.rpmbuild_dir):
+                        sh.mkdirslist(self.rpmbuild_dir)
+                        _build_single_binary(repo_dir, srpm_filename, self.rpmbuild_dir)
+                        self._move_files(sh.joinpths(self.rpmbuild_dir, "RPMS"), repo_dir)
+                    p_bar.update(i + 1)
+
+        for repo_name in self.REPOS:
             self._create_repo(repo_name)
 
     def _move_srpms(self, repo_name):
-        src_repo_dir = sh.joinpths(self.anvil_repo_dir, "%s-sources" % repo_name)
+        src_repo_name = self.SRC_REPOS[repo_name]
+        src_repo_dir = sh.joinpths(self.anvil_repo_dir, src_repo_name)
         sh.mkdirslist(src_repo_dir, tracewriter=self.tracewriter)
         self._move_files(sh.joinpths(self.rpmbuild_dir, "SRPMS"), src_repo_dir)
 
     def _create_repo(self, repo_name):
         repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)
-        src_repo_dir = "%s-sources" % repo_dir
+        src_repo_dir = sh.joinpths(self.anvil_repo_dir, self.SRC_REPOS[repo_name])
         for a_dir in (repo_dir, src_repo_dir):
+            if not sh.isdir(a_dir):
+                sh.mkdirslist(a_dir, tracewriter=self.tracewriter)
             cmdline = ["createrepo", a_dir]
             LOG.info("Creating repo at %s", a_dir)
             sh.execute(cmdline)
@@ -216,13 +247,13 @@ class YumDependencyHandler(base.DependencyHandler):
             "baseurl_bin": "file://%s" % repo_dir,
             "baseurl_src": "file://%s" % src_repo_dir,
         }
-        sh.write_file(repo_filename,
-                      utils.expand_template(content, params),
+        sh.write_file(repo_filename, utils.expand_template(content, params),
                       tracewriter=self.tracewriter)
         # Install *.repo file so that anvil deps will be available
         # when building OpenStack
         system_repo_filename = sh.joinpths(self.YUM_REPO_DIR, "%s.repo" % repo_name)
         sh.copy(repo_filename, system_repo_filename)
+        LOG.info("Copying to %s", system_repo_filename)
         self.tracewriter.file_touched(system_repo_filename)
 
     def _get_yum_available(self):
@@ -287,7 +318,7 @@ class YumDependencyHandler(base.DependencyHandler):
         yum_map = self._get_yum_available()
         pips_keys = set([p.key for p in pips_downloaded])
 
-        def filter_package_files(package_files):
+        def _filter_package_files(package_files):
             package_reqs = []
             package_keys = []
             for filename in package_files:
@@ -319,22 +350,30 @@ class YumDependencyHandler(base.DependencyHandler):
             return filtered_files
 
         LOG.info("Filtering %s downloaded files.", len(package_files))
-        package_files = filter_package_files(package_files)
+        package_files = _filter_package_files(package_files)
         if not package_files:
-            LOG.info("No RPM packages of OpenStack dependencies to build")
+            LOG.info("No SRPM package dependencies to build.")
             return
-        for filename in package_files:
-            LOG.info("Building SRPM package from %s", filename)
-            scripts_dir = sh.abspth(sh.joinpths(settings.TEMPLATE_DIR,
-                                                "packaging", "scripts"))
-            cmdline = self.py2rpm_start_cmdline()
-            cmdline.extend(["--scripts-dir", scripts_dir, "--source-only",
-                            "--", filename])
-            sh.execute(cmdline)
+        package_files = sorted(package_files)
+        base_package_files = [sh.basename(f) for f in package_files]
+        utils.log_iterable(base_package_files,
+                           header="Building %s SRPM packages" % (len(base_package_files)),
+                           logger=LOG)
+        with utils.progress_bar(name="Building", max_am=len(base_package_files)) as p_bar:
+            for (i, filename) in enumerate(package_files):
+                LOG.debug("Building SRPM package from %s", filename)
+                scripts_dir = sh.abspth(sh.joinpths(settings.TEMPLATE_DIR, "packaging", "scripts"))
+                cmdline = self.py2rpm_start_cmdline()
+                cmdline.extend(["--scripts-dir", scripts_dir,
+                                "--source-only",
+                                "--", filename])
+                out_filename = sh.joinpths(self.log_dir, "py2rpm-build-%s.out" % (sh.basename(filename)))
+                sh.execute_save_output(cmdline, out_filename=out_filename, quiet=True)
+                p_bar.update(i + 1)
 
     def _write_spec_file(self, instance, rpm_name, template_name, params):
         requires_what = params.get('requires')
-        it not requires_what:
+        if not requires_what:
             requires_what = []
         requires_python = []
         try:
@@ -347,8 +386,7 @@ class YumDependencyHandler(base.DependencyHandler):
         params["epoch"] = self.OPENSTACK_EPOCH
         content = utils.load_template(self.SPEC_TEMPLATE_DIR, template_name)[1]
         spec_filename = sh.joinpths(self.rpmbuild_dir, "SPECS", "%s.spec" % rpm_name)
-        sh.write_file(spec_filename,
-                      utils.expand_template(content, params),
+        sh.write_file(spec_filename, utils.expand_template(content, params),
                       tracewriter=self.tracewriter)
         return spec_filename
 
@@ -397,11 +435,8 @@ class YumDependencyHandler(base.DependencyHandler):
             "--define", "_topdir %s" % self.rpmbuild_dir,
             spec_filename,
         ]
-        build_filename = sh.joinpths(self.log_dir,
-                                     "rpmbuild-%s" % sh.basename(spec_filename))
-        sh.execute_save_output(cmdline,
-                               out_filename=build_filename,
-                               quiet=True)
+        out_filename = sh.joinpths(self.log_dir, "rpmbuild-%s.out" % instance.name)
+        sh.execute_save_output(cmdline, out_filename=out_filename, quiet=True)
 
     def _write_git_tarball(self, pkg_dir, spec_filename):
         cmdline = [
@@ -464,10 +499,8 @@ class YumDependencyHandler(base.DependencyHandler):
         app_dir = instance.get_option('app_dir')
         cmdline = self.py2rpm_start_cmdline()
         cmdline.extend(["--source-only", "--", app_dir])
-        build_filename = sh.joinpths(self.log_dir, "py2rpm-%s.out" % (instance.name))
-        sh.execute_save_output(cmdline,
-                               cwd=app_dir,
-                               out_filename=build_filename,
+        out_filename = sh.joinpths(self.log_dir, "py2rpm-build-%s.out" % (instance.name))
+        sh.execute_save_output(cmdline, cwd=app_dir, out_filename=out_filename,
                                quiet=True)
 
     def _build_openstack_package(self, instance):
@@ -479,8 +512,7 @@ class YumDependencyHandler(base.DependencyHandler):
             egg_name = instance.egg_info['name']
             params["version"] = instance.egg_info["version"]
             if self._is_client(instance.name, egg_name):
-                client_name = utils.strip_prefix_suffix(egg_name,
-                                                        "python-", "client")
+                client_name = utils.strip_prefix_suffix(egg_name, "python-", "client")
                 if not client_name:
                     msg = "Bad client package name %s" % (egg_name)
                     raise excp.PackageException(msg)

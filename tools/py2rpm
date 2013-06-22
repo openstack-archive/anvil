@@ -412,10 +412,15 @@ def build_rpm(options, filename):
         archive_name = "%s/dist/%s-%s.tar.gz" % (source_dir, pkg_name, version)
     shutil.copy(archive_name, os.path.join(build_dir, "SOURCES"))
 
+    # We need to do this so that when a package such as hacking depends on
+    # flake8 v2 that we don't go ahead and build a v2.0 version.
+    #
+    # Note(harlowja): Not sure why rpm seems to not understand these are the same...
+    cleaned_version = trim_zeroes(version.replace('-','_'))
     with open(spec_name, "w") as spec_file:
         print >> spec_file, "%define pkg_name", pkg_name
         print >> spec_file, "%define rpm_name", rpm_name
-        print >> spec_file, "%define version", version.replace('-','_')
+        print >> spec_file, "%define version", cleaned_version
         print >> spec_file, "%define release", options.release
         print >> spec_file, "%define unmangled_version", version
         print >> spec_file, ""
@@ -434,7 +439,7 @@ def build_rpm(options, filename):
             tags.append(("Source0", archive_name))
         tags.append(("License", info["license"]))
         tags.append(("Group", "Development/Libraries"))
-        tags.append(("BuildRoot", "%{_tmppath}/%{pkg_name}-%{version}-%{release}-buildroot"))
+        tags.append(("BuildRoot", "%{_tmppath}/%{pkg_name}-%{unmangled_version}-%{release}-buildroot"))
         tags.append(("Prefix", "%{_prefix}"))
         if pkg_key not in arch_dependent:
             if not os.path.exists(egg_info_path(source_dir, "ext_modules.txt")):

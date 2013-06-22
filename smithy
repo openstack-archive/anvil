@@ -57,10 +57,19 @@ find_pip()
     fi
 }
 
+clean_pip()
+{
+    # https://github.com/pypa/pip/issues/982
+    if [ -n "$SUDO_USER" ]; then
+        rm -rf /tmp/pip-build-$SUDO_USER
+    fi
+}
+
 rpm_is_installed()
 {
     local name="$(basename "$1")"
     rpm $RPM_OPTS "${name%.rpm}" &>/dev/null
+    return $?
 }
 
 cache_and_install_rpm_url()
@@ -98,45 +107,6 @@ yum_install()
     return $rc
 }
 
-install_rpm()
-{
-    local rpm_path=$1
-    local py_name=$2
-    local always_build=$3
-    if [ -n "$rpm_path" -a -z "$always_build" ]; then
-        yum_install "$rpm_path"
-        if rpm_is_installed "$rpm_path"; then
-            return 0
-        fi
-    fi
-    if [ -z "$py_name" ]; then
-        return 1
-    fi
-
-    # RPM is not available. Try to build it on fly
-    # First download it.
-    pip_tmp_dir=$(mktemp -d)
-    find_pip
-    pip_opts="$PIP_OPTS -U -I"
-    $PIP_CMD install $pip_opts "$py_name" --download "$pip_tmp_dir"
-
-    # Now build it
-    echo "Building RPM for $py_name"
-    rpm_names=$("$PY2RPM_CMD" "$pip_tmp_dir/"* 2>/dev/null |
-                awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u | grep -v "python-distribute")
-    rm -rf "$pip_tmp_dir"
-    if [ -z "$rpm_names" ]; then
-        echo "No binary RPM was built for $py_name"
-        return 1
-    fi
-    for pkg in $rpm_names; do
-        echo "Installing RPM $pkg"
-        if [ -f "$pkg" ]; then
-            yum_install "$pkg"
-        fi
-    done
-}
-
 bootstrap_epel()
 {
     [ -z "$EPEL_RPM_URL" ] && return 0
@@ -154,19 +124,23 @@ bootstrap_rpm_packages()
         echo "Installing packages: $(echo $REQUIRES)"
         for rpm in $REQUIRES; do
             yum_install "$rpm"
+            if [ "$?" != "0" ]; then
+                echo "Failed installing $rpm"
+                return 1
+            fi
         done
     fi
 }
 
 bootstrap_python_rpms()
 {
-    local package_map=$(python -c 'import yaml
+    local package_map=$(python -c "import yaml
 try:
-    for k, v in yaml.safe_load(open("conf/distros/rhel.yaml"))["dependency_handler"]["package_map"].iteritems():
-        print "%s==%s" % (k, v)
-except:
+    for k, v in yaml.safe_load(open('$DISTRO_CONFIG'))['dependency_handler']['package_map'].iteritems():
+        print '%s==%s' % (k, v)
+except KeyError:
     pass
-')
+")
     # NOTE(aababilov): drop `<` and `<=` requirements because yum cannot
     # handle them correctly
     local python_names=$(cat requirements.txt test-requirements.txt |
@@ -174,7 +148,7 @@ except:
     local rpm_names=$("$PY2RPM_CMD" --package-map $package_map --convert $python_names |
         while read req pack; do echo $pack; done | sort -u)
     # Install all available RPMs
-    echo "Installing packages: $(echo $rpm_names)"
+    echo "Installing python requirement packages: $(echo $rpm_names)"
     for rpm in $rpm_names; do
         yum_install $rpm
     done
@@ -182,32 +156,35 @@ except:
     local missing_python=""
     for python_name in $python_names; do
         rpm_name=$("$PY2RPM_CMD" --package-map $package_map --convert $python_name | awk '{print $2}' | sort -u)
-        if ! rpm -q $rpm_name &>/dev/null; then
+        if ! rpm_is_installed $rpm_name; then
             missing_python="$missing_python $python_name"
         fi
     done
     if [ -z "$missing_python" ]; then
         return
     fi
-    # Some RPMs are not available.
-    # Try to build them on fly.
+    # Some RPMs are not available, try to build them on fly.
     # First download them...
     local pip_tmp_dir=$(mktemp -d)
     find_pip
     local pip_opts="$PIP_OPTS -U -I"
-    echo "Downloading Python requirements:$missing_python"
+    echo "Downloading missing python requirements:$missing_python"
     $PIP_CMD install $pip_opts $missing_python --download "$pip_tmp_dir"
     # Now build them
     echo "Building RPMs for $missing_python"
     local rpm_names=$("$PY2RPM_CMD"  --package-map $package_map -- "$pip_tmp_dir/"* 2>/dev/null |
         awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)
-    rm -rf "$pip_tmp_dir" /tmp/pip-build-$SUDO_USER
     if [ -z "$rpm_names" ]; then
         echo "No binary RPMs were built for$missing_python"
         return 1
     fi
+    echo "Installing missing python requirement packages: $(echo $rpm_names)"
     for rpm in $rpm_names; do
         yum_install "$rpm"
+        if [ "$?" != "0" ]; then
+            echo "Failed installing $rpm"
+            return 1
+        fi
     done
 }
 
@@ -303,14 +280,14 @@ done
 
 # Source immediately so that we can export the needed variables.
 if [ -f "$BSCONF_FILE" ]; then
-    echo "Sourcing $BSCONF_FILE"
     source $BSCONF_FILE
+    export REQUIRED_PACKAGES="$REQUIRES"
 fi
 
-export REQUIRED_PACKAGES="$REQUIRES"
-
 if ! needs_bootstrap; then
+    clean_pip
     run_smithy
+    clean_pip
 elif ! $BOOTSTRAP; then
     echo "This system needs to be updated in order to run anvil!" >&2
     echo "Running 'sudo $SMITHY_NAME --bootstrap' will attempt to do so." >&2
@@ -338,6 +315,7 @@ fi
 
 echo "Bootstrapping $SHORTNAME $RELEASE"
 echo "Please wait..."
+clean_pip
 for step in ${STEPS:?"Error: STEPS is undefined!"}; do
     bootstrap_${step}
     if [ $? != 0 ]; then
@@ -345,6 +323,7 @@ for step in ${STEPS:?"Error: STEPS is undefined!"}; do
         exit 1
     fi
 done
+clean_pip
 
 # Write the checksums of the bootstrap file
 # which if new requirements are added will cause new checksums
