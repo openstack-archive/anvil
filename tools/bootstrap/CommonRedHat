@@ -16,6 +16,8 @@ REQUIRES="
     $BOOTSTRAP_REQUIRES
 
     gcc
+
+    make
     git
     patch
     python

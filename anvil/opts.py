@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import multiprocessing
+
 from optparse import IndentedHelpFormatter
 from optparse import (OptionParser, OptionGroup, OptionValueError)
 
@@ -98,6 +100,13 @@ def parse(previous_settings=None):
                           dest="action",
                           metavar="ACTION",
                           help="required action to perform: %s" % (_format_list(actions.names())))
+    base_group.add_option("-j", "--jobs",
+                          action="store",
+                          type="int",
+                          dest="jobs",
+                          default=multiprocessing.cpu_count() + 1,
+                          metavar="JOBS",
+                          help="number of building jobs to run simultaneously (default: %default)")
     base_group.add_option("-d", "--directory",
                           action="store",
                           type="string",
@@ -139,6 +148,7 @@ def parse(previous_settings=None):
     values['dir'] = (options.dir or "")
     values['dryrun'] = (options.dryrun or False)
     values['action'] = (options.action or "")
+    values['jobs'] = options.jobs
     values['persona_fn'] = options.persona_fn
     values['version_fn'] = options.version_fn
     values['verbose'] = options.verbose
