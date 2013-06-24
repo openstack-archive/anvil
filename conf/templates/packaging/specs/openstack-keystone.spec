@@ -12,7 +12,7 @@
 %endif
 
 Name:           openstack-keystone
-Epoch:          1
+Epoch:          $epoch
 Version:        %{os_version}$version_suffix
 Release:        $release%{?dist}
 Url:            http://www.openstack.org
