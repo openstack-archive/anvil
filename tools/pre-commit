@@ -3,11 +3,30 @@
 # install me this way:
 # cp pre-commit "$(git rev-parse --git-dir)/hooks/"
 
-git stash -q --keep-index
-trap 'git stash pop -q' EXIT
 
-STATUS=0
-FILES="$(git diff --cached --name-only --diff-filter=AM | grep -E '\.py$')"
+gitdir="$(readlink -f $(git rev-parse --git-dir))"
+
+tmpdir=
+cleanup_tmpdir()
+{
+        [ -z "$tmpdir" ] || rm -rf -- "$tmpdir"
+        exit "$@"
+}
+tmpdir=$(mktemp -dt "${0##*/}.XXXXXXXX")
+trap 'cleanup_tmpdir $?' EXIT
+trap 'clenaup_tmpdir 143' HUP INT QUIT PIPE TERM
+
+
+
+git checkout-index -a --prefix="$tmpdir/"
+cd "$tmpdir"
+
+indexed_files()
+{
+    git --git-dir="$gitdir" diff --cached --name-only --diff-filter=AM
+}
+
+FILES="$(indexed_files | grep -E '\.py$')"
 if [ -n "$FILES" ]; then
     pylint $FILES || STATUS=1
     if grep -nEH --color '(import pdb|pdb.set_trace)' $FILES; then
@@ -16,7 +35,7 @@ if [ -n "$FILES" ]; then
     fi
 fi
 
-FILES="$(git diff --cached --name-only --diff-filter=AM | grep -E '\.(py|html|js)$')"
+FILES="$(indexed_files | grep -E '\.(py|html|js)$')"
 if [ -n "$FILES" ]; then
     if grep -nEH --color '\s+$' $FILES; then
         echo "Please remove trailing spaces"
