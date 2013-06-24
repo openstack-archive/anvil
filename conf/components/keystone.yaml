@@ -13,11 +13,6 @@ service_host: "$(auto:ip)"
 service_port: 5000
 service_proto: http
 
-# Package time patches
-patches:
-  package:
-    - "conf/patches/keystone/"
-
 # Test exclusions...
 #
 # TODO(harlowja) these should probably be bugs...

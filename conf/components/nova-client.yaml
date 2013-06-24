@@ -4,11 +4,4 @@
 # Where we download this from...
 get_from: "git://github.com/openstack/python-novaclient.git?tag=2.13.0"
 
-patches:
-  # After check-out/download time patches
-  download:
-    # Temporarily fixes https://bugs.launchpad.net/python-glanceclient/+bug/1090592
-    # which appears in all clients
-    - "conf/patches/nova-client/fix-tag-version.patch"
-
 ...
