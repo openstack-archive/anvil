@@ -181,6 +181,11 @@ def create_parser():
         default=False,
         help="Only generate source RPM")
     parser.add_argument(
+        "--binary-only", "-b",
+        action="store_true",
+        default=False,
+        help="Only generate binary RPM")
+    parser.add_argument(
         "--rpm-base",
         metavar="<dir>",
         default=rpm_base,
@@ -473,6 +478,8 @@ def build_rpm(options, filename):
 
     if options.source_only:
         rpmbuild_what = "-bs"
+    elif options.binary_only:
+        rpmbuild_what = "-bb"
     else:
         rpmbuild_what = "-ba"
     call_subprocess(

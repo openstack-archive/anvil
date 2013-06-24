@@ -1,10 +1,20 @@
 # -*- sh -*-
-STEPS="epel rpm_packages python_rpms"
+STEPS="epel packages"
 EPEL_RPM_URL="http://mirrors.kernel.org/fedora-epel/6/i386/epel-release-6-8.noarch.rpm"
 DISTRO_CONFIG=conf/distros/rhel.yaml
 
 ## Bootstrap for Red Hat based distros
-REQUIRES='
+BOOTSTRAP_REQUIRES="
+    PyYAML
+
+    rpm-build
+    python-pip
+    python-argparse
+    python-setuptools
+"
+REQUIRES="
+    $BOOTSTRAP_REQUIRES
+
     gcc
     git
     patch
@@ -14,11 +24,4 @@ REQUIRES='
     createrepo
     yum-utils
     yum-plugin-remove-with-leaves
-
-    PyYAML
-
-    rpm-build
-    python-pip
-    python-argparse
-    python-setuptools
-'
+"

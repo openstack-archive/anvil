@@ -90,8 +90,7 @@ cache_and_install_rpm_url()
 
 yum_install()
 {
-    local rpm_path=$1
-    output=$(yum install $YUM_OPTS "$rpm_path" 2>&1)
+    output=$(yum install $YUM_OPTS "$@" 2>&1)
     rc=$?
     if [ -n "$output" ]; then
         if [[ ! "$output" =~ "Nothing to do" ]]; then
@@ -114,26 +113,31 @@ bootstrap_epel()
     return $?
 }
 
-bootstrap_rpm_packages()
+bootstrap_packages()
 {
+    CONFLICTS=$(python -c "import yaml
+try:
+    for i in yaml.safe_load(open('$DISTRO_CONFIG'))['components'].itervalues():
+        for j in i.get('conflicts', []):
+            print j.get('name')
+except KeyError:
+    pass
+" | sort -u)
     if [ -n "$CONFLICTS" ]; then
         echo "Removing conflicting packages: $(echo $CONFLICTS)"
         yum erase $YUM_OPTS $CONFLICTS
     fi
-    if [ -n "$REQUIRES" ]; then
-        echo "Installing packages: $(echo $REQUIRES)"
-        for rpm in $REQUIRES; do
-            yum_install "$rpm"
-            if [ "$?" != "0" ]; then
-                echo "Failed installing $rpm"
-                return 1
-            fi
-        done
+    # NOTE(aababilov): the latter operations require some packages,
+    # so, BOOTSTRAP_REQUIRES was introduced
+    if [ -n "$BOOTSTRAP_REQUIRES" ]; then
+        echo "Installing bootstrap requirements: $(echo $BOOTSTRAP_REQUIRES)"
+        if ! yum install $YUM_OPTS $BOOTSTRAP_REQUIRES; then
+            return 1
+        fi
     fi
-}
+    local spec_filename=~/rpmbuild/SPECS/anvil-deps.spec
+    install -D -m 644 conf/templates/packaging/specs/anvil-deps.spec "$spec_filename"
 
-bootstrap_python_rpms()
-{
     local package_map=$(python -c "import yaml
 try:
     for k, v in yaml.safe_load(open('$DISTRO_CONFIG'))['dependency_handler']['package_map'].iteritems():
@@ -141,51 +145,67 @@ try:
 except KeyError:
     pass
 ")
-    # NOTE(aababilov): drop `<` and `<=` requirements because yum cannot
-    # handle them correctly
-    local python_names=$(cat requirements.txt test-requirements.txt |
-        sed -r -e 's/#.*$//' -e 's/,?<[ =.0-9]+//' | sort -u)
-    local rpm_names=$("$PY2RPM_CMD" --package-map $package_map --convert $python_names |
-        while read req pack; do echo $pack; done | sort -u)
-    # Install all available RPMs
-    echo "Installing python requirement packages: $(echo $rpm_names)"
-    for rpm in $rpm_names; do
-        yum_install $rpm
-    done
+    local python_names=$(sed -r -e 's/#.*$//' requirements.txt test-requirements.txt)
+    local rpm_names="$("$PY2RPM_CMD" --package-map $package_map --convert $python_names |
+        sort -u)"
+
+    export template_version="$(awk '/^version/{ print $3 }' ./setup.cfg)"
+    export template_requires="$(
+        for i in $REQUIRES; do echo "Requires:    $i"; done;
+        echo "$rpm_names")"
+
+    perl -i -pe 's/\$(\w+)/$ENV{"template_$1"}/g' "$spec_filename"
+    deps_rpm=$(rpmbuild -bb "$spec_filename" 2>/dev/null |
+        awk '/^Wrote: /{ print $2 }')
+    if [ ! -e "$deps_rpm" ]; then
+        echo "Cannot build Anvil dependencies RPM"
+        return 1
+    fi
+    # NOTE(aababilov): if a package is installed, but doesn't belong to
+    # a repository, yum reports it as 'Unsatisfied dependency'
+    # That's not a problem: we will treat them as satisfying
+    missing_rpms="$(yum -q deplist "$deps_rpm" |
+        grep 'Unsatisfied' -B 1 |
+        awk '/dependency:/{ print $2 }')"
     # Build and install missing packages
     local missing_python=""
     for python_name in $python_names; do
-        rpm_name=$("$PY2RPM_CMD" --package-map $package_map --convert $python_name | awk '{print $2}' | sort -u)
-        if ! rpm_is_installed $rpm_name; then
+        rpm_name=$("$PY2RPM_CMD" --package-map $package_map --convert $python_name |
+            awk '{ print $2; exit }')
+        if ! rpm_is_installed "$rpm_name" && echo "$missing_rpms" | grep -q "^$rpm_name\$"; then
             missing_python="$missing_python $python_name"
         fi
     done
-    if [ -z "$missing_python" ]; then
-        return
-    fi
-    # Some RPMs are not available, try to build them on fly.
-    # First download them...
-    local pip_tmp_dir=$(mktemp -d)
-    find_pip
-    local pip_opts="$PIP_OPTS -U -I"
-    echo "Downloading missing python requirements:$missing_python"
-    $PIP_CMD install $pip_opts $missing_python --download "$pip_tmp_dir"
-    # Now build them
-    echo "Building RPMs for $missing_python"
-    local rpm_names=$("$PY2RPM_CMD"  --package-map $package_map -- "$pip_tmp_dir/"* 2>/dev/null |
-        awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)
-    if [ -z "$rpm_names" ]; then
-        echo "No binary RPMs were built for$missing_python"
-        return 1
-    fi
-    echo "Installing missing python requirement packages: $(echo $rpm_names)"
-    for rpm in $rpm_names; do
-        yum_install "$rpm"
-        if [ "$?" != "0" ]; then
-            echo "Failed installing $rpm"
+    ! rpm_is_installed anvil-deps || yum erase $YUM_OPTS anvil-deps
+    if [ -n "$missing_python" ]; then
+        # Some RPMs are not available, try to build them on fly.
+        # First download them...
+        local pip_tmp_dir=$(mktemp -d)
+        find_pip
+        local pip_opts="$PIP_OPTS -U -I"
+        echo "Downloading missing Python requirements:$missing_python"
+        $PIP_CMD install $pip_opts $missing_python --download "$pip_tmp_dir"
+        # Now build them
+        echo "Building RPMs for$missing_python"
+        local rpm_names=$("$PY2RPM_CMD" --binary-only --package-map $package_map -- "$pip_tmp_dir/"* 2>/dev/null |
+            awk '/^Wrote: /{ print $2 }')
+        rm -rf "$pip_tmp_dir"
+        if [ -z "$rpm_names" ]; then
+            echo "No binary RPMs were built for$missing_python"
             return 1
         fi
-    done
+        echo "Installing missing Python requirement packages:"
+        for i in $rpm_names; do
+            echo -e "\t"$i
+        done
+        # NOTE(aababilov): install the packages in one yum command
+        # because they can depend on each other
+        if ! yum_install $rpm_names; then
+            return 1
+        fi
+    fi
+    echo "Installing Anvil dependencies"
+    yum_install "$deps_rpm"
 }
 
 needs_bootstrap()
