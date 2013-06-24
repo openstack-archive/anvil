@@ -33,6 +33,7 @@ CONFIGS = [API_CONF, REG_CONF, API_PASTE_CONF,
 
 LOG = logging.getLogger(__name__)
 
+
 class GlanceConfigurator(base.Configurator):
 
     # This db will be dropped and created

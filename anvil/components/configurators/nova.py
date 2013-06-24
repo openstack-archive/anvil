@@ -37,6 +37,7 @@ CONFIGS = [PASTE_CONF, POLICY_CONF, LOGGING_CONF, API_CONF]
 
 LOG = logging.getLogger(__name__)
 
+
 class NovaConfigurator(base.Configurator):
 
     # This db will be dropped then created

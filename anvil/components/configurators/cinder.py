@@ -24,7 +24,8 @@ API_CONF = 'cinder.conf'
 # Paste configuration
 PASTE_CONF = 'api-paste.ini'
 
-CONFIGS = [ PASTE_CONF, API_CONF ]
+CONFIGS = [PASTE_CONF, API_CONF]
+
 
 class CinderConfigurator(base.Configurator):
 

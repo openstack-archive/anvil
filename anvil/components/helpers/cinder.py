@@ -16,6 +16,7 @@
 
 from anvil import utils
 
+
 def get_shared_params(ip, api_host, api_port=8776, protocol='http', **kwargs):
     mp = {}
     mp['service_host'] = ip
