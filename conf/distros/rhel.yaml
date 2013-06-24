@@ -79,6 +79,8 @@ components:
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
+        packages:
+        -   name: python-cinderclient
     db:
         action_classes:
             install: anvil.distros.rhel:DBInstaller
@@ -139,6 +141,8 @@ components:
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.glance_client:GlanceClientTester
             uninstall: anvil.components.base_install:PkgUninstallComponent
+        packages:
+        -   name: python-glanceclient
     horizon:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
@@ -167,6 +171,8 @@ components:
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
+        packages:
+        -   name: python-keystoneclient
     nova:
         action_classes:
             install: anvil.components.nova:NovaInstaller
@@ -196,6 +202,8 @@ components:
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
+        packages:
+        -   name: python-novaclient
     novnc:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
@@ -241,6 +249,8 @@ components:
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
+        packages:
+        -   name: python-quantumclient
     rabbit-mq:
         action_classes:
             install: anvil.components.rabbit:RabbitInstaller
@@ -268,6 +278,8 @@ components:
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
+        packages:
+        -   name: python-swiftclient
     openvswitch:
         action_classes:
             install: anvil.components.base_install:PkgInstallComponent
