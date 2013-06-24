@@ -32,9 +32,9 @@ LOG = logging.getLogger(__name__)
 # Environment to run tests
 DEFAULT_ENV = {
     'NOSE_WITH_OPENSTACK': '1',
-    'NOSE_OPENSTACK_RED':'0.05',
-    'NOSE_OPENSTACK_YELLOW':'0.025',
-    'NOSE_OPENSTACK_SHOW_ELAPSED':'1',
+    'NOSE_OPENSTACK_RED': '0.05',
+    'NOSE_OPENSTACK_YELLOW': '0.025',
+    'NOSE_OPENSTACK_SHOW_ELAPSED': '1',
 }
 
 

@@ -29,16 +29,9 @@ indexed_files()
 FILES="$(indexed_files | grep -E '\.py$')"
 if [ -n "$FILES" ]; then
     pylint $FILES || STATUS=1
+    pep8 --repeat --ignore=E501 $FILES || STATUS=1
     if grep -nEH --color '(import pdb|pdb.set_trace)' $FILES; then
         echo "Please remove pdb"
-        STATUS=1
-    fi
-fi
-
-FILES="$(indexed_files | grep -E '\.(py|html|js)$')"
-if [ -n "$FILES" ]; then
-    if grep -nEH --color '\s+$' $FILES; then
-        echo "Please remove trailing spaces"
         STATUS=1
     fi
 fi
