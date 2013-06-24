@@ -19,9 +19,8 @@ import contextlib
 import functools
 import urllib2
 
-from urlparse import parse_qs
-
 import progressbar
+import yaml
 
 from anvil import colorizer
 from anvil import log as logging
@@ -43,26 +42,34 @@ class Downloader(object):
 
 
 class GitDownloader(Downloader):
-    def __init__(self, distro, uri, store_where):
+    versions = {}
+
+    @staticmethod
+    def load_versions(filename):
+        # Don't use sh here so that we always
+        # read this (even if dry-run)
+        with open(filename, 'r') as fh:
+            GitDownloader.versions = yaml.safe_load(fh.read())
+
+    def __init__(self, uri, store_where, name, distro):
         Downloader.__init__(self, uri, store_where)
         self.distro = distro
+        self.name = name
 
     def download(self):
         branch = None
         tag = None
         uri = self.uri
-        if uri.find("?") != -1:
-            # If we use urlparser here it doesn't seem to work right??
-            # TODO(harlowja), why??
-            (uri, params) = uri.split("?", 1)
-            params = parse_qs(params)
-            if 'branch' in params:
-                branch = params['branch'][0].strip()
-            if 'tag' in params:
-                tag = params['tag'][0].strip()
-            uri = uri.strip()
-        if not branch:
-            branch = 'master'
+        try:
+            version = self.versions[self.name].split("=", 1)
+            if version[0] == "branch":
+                branch = version[1].strip()
+            elif version[0] == "tag":
+                tag = version[1].strip()
+        except (KeyError, IndexError):
+            pass
+        # ensure that we will download at least the master branch
+        branch = branch or "master"
         if tag:
             # Avoid 'detached HEAD state' message by moving to a
             # $tag-anvil branch for that tag

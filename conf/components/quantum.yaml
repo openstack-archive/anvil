@@ -2,7 +2,7 @@
 ---
 
 # Where we download this from...
-get_from: "git://github.com/openstack/quantum.git?branch=master"
+get_from: "git://github.com/openstack/quantum"
 
 # Host and ports for the different quantum services
 api_host: "$(auto:ip)"

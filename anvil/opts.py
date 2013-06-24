@@ -85,6 +85,13 @@ def parse(previous_settings=None):
                           default=sh.joinpths(settings.PERSONA_DIR, 'in-a-box', 'basic.yaml'),
                           metavar="FILE",
                           help="persona yaml file to apply (default: %default)")
+    base_group.add_option("-t", "--openstack-version",
+                          action="store",
+                          type="string",
+                          dest="version_fn",
+                          default=sh.joinpths(settings.VERSION_DIR, 'default.yaml'),
+                          metavar="FILE",
+                          help="version yaml file to apply (default: %default)")
     base_group.add_option("-a", "--action",
                           action="store",
                           type="string",
@@ -133,6 +140,7 @@ def parse(previous_settings=None):
     values['dryrun'] = (options.dryrun or False)
     values['action'] = (options.action or "")
     values['persona_fn'] = options.persona_fn
+    values['version_fn'] = options.version_fn
     values['verbose'] = options.verbose
     values['usr_only'] = options.usr_only
     values['prompt_for_passwords'] = options.prompt_for_passwords

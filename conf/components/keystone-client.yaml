@@ -2,7 +2,7 @@
 ---
 
 # Where we download this from...
-get_from: "git://github.com/openstack/python-keystoneclient.git?branch=master"
+get_from: "git://github.com/openstack/python-keystoneclient"
 
 # This code is out of compliance, so skip it...
 use_pep8: False

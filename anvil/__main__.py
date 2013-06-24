@@ -28,6 +28,7 @@ sys.path.insert(0, os.path.abspath(os.getcwd()))
 from anvil import actions
 from anvil import colorizer
 from anvil import distro
+from anvil import downloader
 from anvil import env
 from anvil import exceptions as excp
 from anvil import log as logging
@@ -62,12 +63,16 @@ def run(args):
     if runner_cls.needs_sudo:
         ensure_perms()
 
-    persona_fn = args.pop('persona_fn')
-    if not persona_fn:
-        raise excp.OptionException("No persona file name specified!")
-    if not sh.isfile(persona_fn):
-        raise excp.OptionException("Invalid persona file %r specified!" % (persona_fn))
+    def get_file_arg(name):
+        fn = args.pop("%s_fn" % name)
+        if not fn:
+            raise excp.OptionException("No %s file name specified!" % (name))
+        if not sh.isfile(fn):
+            raise excp.OptionException("Invalid %s file %s specified!" % (name, fn))
+        return fn
 
+    persona_fn = get_file_arg("persona")
+    version_fn = get_file_arg("version")
     # Determine + setup the root directory...
     # If not provided attempt to locate it via the environment control files
     args_root_dir = args.pop("dir")
@@ -102,6 +107,7 @@ def run(args):
     except Exception as e:
         raise excp.OptionException("Error loading persona file: %s due to %s" % (persona_fn, e))
 
+    downloader.GitDownloader.load_versions(version_fn)
     # Get the object we will be running with...
     runner = runner_cls(distro=dist,
                         root_dir=root_dir,

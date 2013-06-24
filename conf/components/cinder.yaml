@@ -2,7 +2,7 @@
 ---
 
 # Where we download this from...
-get_from: "git://github.com/openstack/cinder.git?branch=master"
+get_from: "git://github.com/openstack/cinder"
 
 # Host and ports for the different cinder services
 api_host: "$(auto:ip)"

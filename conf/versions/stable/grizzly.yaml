@@ -1,0 +1,17 @@
+cinder-client: tag=1.0.3
+cinder: tag=2013.1
+django-openstack-auth: tag=1.0.10
+glance-client: tag=0.9.0
+glance: tag=2013.1
+horizon: tag=2013.1
+keystone-client: tag=0.2.3
+keystone: tag=2013.1
+nova-client: tag=2.13.0
+nova: tag=2013.1
+novnc: branch=master
+openstack-client: tag=0.1
+oslo-config: tag=1.1.0
+oslo-incubator: tag=2013.1
+quantum-client: tag=2.2.1
+quantum: tag=2013.1
+swift-client: tag=1.3.0

@@ -59,7 +59,8 @@ class PkgInstallComponent(base.Component):
             # This is used to delete what is downloaded (done before
             # fetching to ensure its cleaned up even on download failures)
             self.tracewriter.download_happened(target_dir, from_uri)
-            fetcher = down.GitDownloader(self.distro, from_uri, target_dir)
+            fetcher = down.GitDownloader(
+                from_uri, target_dir, self.name, self.distro)
             fetcher.download()
             return uris
 

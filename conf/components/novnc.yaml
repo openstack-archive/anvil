@@ -2,6 +2,6 @@
 ---
 
 # Where we download this from...
-get_from: "git://github.com/kanaka/noVNC.git?branch=master"
+get_from: "git://github.com/kanaka/noVNC"
 
 ...

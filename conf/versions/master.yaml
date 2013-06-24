@@ -1,0 +1,17 @@
+cinder-client: branch=master
+cinder: branch=master
+django-openstack-auth: tag=1.0.10
+glance-client: branch=master
+glance: branch=master
+horizon: branch=master
+keystone-client: branch=master
+keystone: branch=master
+nova-client: branch=master
+nova: branch=master
+novnc: branch=master
+openstack-client: branch=master
+oslo-config: branch=master
+oslo-incubator: branch=master
+quantum-client: branch=master
+quantum: branch=master
+swift-client: branch=master
