@@ -6,6 +6,8 @@ DISTRO_CONFIG=conf/distros/rhel.yaml
 ## Bootstrap for Red Hat based distros
 REQUIRES='
     gcc
+
+    make
     git
     patch
     python

@@ -32,6 +32,7 @@ from anvil import env
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import opts
+from anvil.packaging import yum
 from anvil import persona
 from anvil import settings
 from anvil import shell as sh
@@ -102,6 +103,7 @@ def run(args):
     except Exception as e:
         raise excp.OptionException("Error loading persona file: %s due to %s" % (persona_fn, e))
 
+    yum.YumDependencyHandler.jobs = args["jobs"]
     # Get the object we will be running with...
     runner = runner_cls(distro=dist,
                         root_dir=root_dir,

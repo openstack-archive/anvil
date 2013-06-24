@@ -14,9 +14,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import re
 import copy
-import pkg_resources
 
+import pkg_resources
 from pip import util as pip_util
 from pip import req as pip_req
 
@@ -28,7 +29,7 @@ LOG = logging.getLogger(__name__)
 
 FREEZE_CMD = ['freeze', '--local']
 EGGS_DETAILED = {}
-
+PYTHON_KEY_VERSION_RE = re.compile("^(.+)-([0-9][0-9.a-zA-Z]*)$")
 
 def create_requirement(name, version=None):
     name = pkg_resources.safe_name(name.strip())
@@ -48,7 +49,15 @@ def create_requirement(name, version=None):
 
 
 def extract(line):
-    return pip_req.InstallRequirement.from_line(line)
+    req = pip_req.InstallRequirement.from_line(line)
+    # NOTE(aababilov): req.req.key can look like oslo.config-1.2.0a2,
+    # so, split it
+    if req.req:
+        match = PYTHON_KEY_VERSION_RE.match(req.req.key)
+        if match:
+            req.req = pkg_resources.Requirement.parse(
+                "%s>=%s" % (match.group(1), match.group(2)))
+    return req
 
 
 def extract_requirement(line):
