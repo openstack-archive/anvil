@@ -13,13 +13,6 @@ verbose: True
 image_urls:
 - "http://download.cirros-cloud.net/0.3.1/cirros-0.3.1-x86_64-disk.img"
 
-patches:
-  # After check-out/download time patches
-  download: []
-  # At packaging time patches
-  package:
-    - "conf/patches/glance/"
-
 # Test exclusions...
 #
 # TODO(harlowja) these should probably be bugs...

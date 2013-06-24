@@ -8,11 +8,4 @@ exclude_tests:
     - "test_ssl_cert_mismatch"
     - "test_ssl_cert_subject_alt_name"
 
-patches:
-  # After check-out/download time patches
-  download:
-    # Temporarily fixes https://bugs.launchpad.net/python-glanceclient/+bug/1090592
-    # which appears in all clients
-    - "conf/patches/glance-client/fix-tag-version.patch"
-
 ...

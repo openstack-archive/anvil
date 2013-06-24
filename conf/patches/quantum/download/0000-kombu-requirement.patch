@@ -1,0 +1,13 @@
+diff --git a/tools/pip-requires b/tools/pip-requires
+index 7ed4a43..bd47095 100644
+--- a/tools/pip-requires
++++ b/tools/pip-requires
+@@ -8,7 +8,7 @@ eventlet>=0.9.17
+ greenlet>=0.3.1
+ httplib2
+ iso8601>=0.1.4
+-kombu==1.0.4
++kombu>=1.0.4
+ netaddr
+ python-quantumclient>=2.2.0,<3.0.0
+ pyudev
