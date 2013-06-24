@@ -122,11 +122,6 @@ vncserver_listen: 127.0.0.1
 vncserver_proxyclient_address: ""
 xvpvncproxy_url: "http://$(auto:ip):6081/console"
 
-# Package time patches
-patches:
-  package:
-    - "conf/patches/nova/"
-
 # Test exclusions...
 #
 # TODO(harlowja) these should probably be bugs...
