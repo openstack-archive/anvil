@@ -116,6 +116,19 @@ bootstrap_epel()
 
 bootstrap_rpm_packages()
 {
+    # NOTE(aababilov): the latter operations require some packages,
+    # so, begin from installation
+    if [ -n "$REQUIRES" ]; then
+        echo "Installing packages: $(echo $REQUIRES)"
+        for rpm in $REQUIRES; do
+            yum_install "$rpm"
+            if [ "$?" != "0" ]; then
+                echo "Failed installing $rpm"
+                return 1
+            fi
+        done
+    fi
+
     CONFLICTS=$(python -c "import yaml
 packages = set()
 try:
@@ -131,16 +144,6 @@ for pkg in packages:
     if [ -n "$CONFLICTS" ]; then
         echo "Removing conflicting packages: $(echo $CONFLICTS)"
         yum erase $YUM_OPTS $CONFLICTS
-    fi
-    if [ -n "$REQUIRES" ]; then
-        echo "Installing packages: $(echo $REQUIRES)"
-        for rpm in $REQUIRES; do
-            yum_install "$rpm"
-            if [ "$?" != "0" ]; then
-                echo "Failed installing $rpm"
-                return 1
-            fi
-        done
     fi
 }
 
