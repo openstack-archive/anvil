@@ -116,6 +116,18 @@ bootstrap_epel()
 
 bootstrap_rpm_packages()
 {
+    CONFLICTS=$(python -c "import yaml
+packages = set()
+try:
+    for i in yaml.safe_load(open('$DISTRO_CONFIG'))['components'].itervalues():
+        for j in i.get('conflicts', []):
+            packages.add(j.get('name'))
+except KeyError:
+    pass
+for pkg in packages:
+    if pkg:
+        print pkg
+")
     if [ -n "$CONFLICTS" ]; then
         echo "Removing conflicting packages: $(echo $CONFLICTS)"
         yum erase $YUM_OPTS $CONFLICTS
