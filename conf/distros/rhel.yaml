@@ -18,6 +18,7 @@ dependency_handler:
         pyparsing: pyparsing
         pysendfile: pysendfile
         pytz: pytz
+        PyYAML: PyYAML
         sqlalchemy-migrate: python-migrate
     arch_dependent:
     -   selenium
