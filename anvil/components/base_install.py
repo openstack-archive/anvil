@@ -16,6 +16,7 @@ from anvil.components import base
 from anvil import downloader as down
 from anvil import log as logging
 from anvil import patcher
+from anvil import settings
 from anvil import shell as sh
 from anvil import trace as tr
 from anvil import utils
@@ -64,7 +65,8 @@ class PkgInstallComponent(base.Component):
     def list_patches(self, section):
         what_patches = self.get_option('patches', section)
         if not what_patches:
-            what_patches = []
+            what_patches = [sh.joinpths(settings.CONFIG_DIR, 'patches',
+                                        self.name, section)]
         canon_what_patches = []
         for path in what_patches:
             if sh.isdir(path):
