@@ -18,10 +18,7 @@
 # R0921: Abstract class not referenced
 #pylint: disable=R0902,R0921
 
-import pkg_resources
-
 from anvil import colorizer
-from anvil import env
 from anvil import exceptions as exc
 from anvil import log as logging
 from anvil.packaging.helpers import pip_helper
@@ -87,6 +84,7 @@ class DependencyHandler(object):
         self.forced_requires_filename = sh.joinpths(
             self.deps_dir, "forced-requires")
         self.pip_executable = str(self.distro.get_command_config('pip'))
+        # list of requirement strings
         self.pips_to_install = []
         self.forced_packages = []
         self.package_dirs = self._get_package_dirs(instances)
@@ -244,6 +242,10 @@ class DependencyHandler(object):
                       "\n".join(str(req) for req in self.forced_packages))
 
     def filter_download_requires(self):
+        """
+        :returns: a list of all requirements that must be downloaded
+        :rtype: list of str
+        """
         return self.pips_to_install
 
     def _try_download_dependencies(self, attempt, pips_to_download,
@@ -259,7 +261,7 @@ class DependencyHandler(object):
             "--build", pip_build_dir,
         ]
         cmdline.extend(sorted(pips_to_download))
-        download_filename = "pip-download-attempt-%s.out"
+        download_filename = "pip-download-attempt-%s.log"
         download_filename = download_filename % (attempt)
         out_filename = sh.joinpths(self.log_dir, download_filename)
         sh.execute_save_output(cmdline, out_filename=out_filename)
@@ -276,13 +278,29 @@ class DependencyHandler(object):
                 LOG.info("Dependency %s was automatically included.",
                          colorizer.quote(req))
 
-    def download_dependencies(self, clear_cache=False):
-        """Download dependencies from `$deps_dir/download-requires`.
+    @staticmethod
+    def _requirements_satisfied(pips_list, download_dir):
+        downloaded_req = [
+            pip_helper.get_archive_details(filename)["req"]
+            for filename in sh.listdir(download_dir, files_only=True)]
+        downloaded_req = dict(
+            (req.key, req.specs[0][1])
+            for req in downloaded_req)
+        for req_str in pips_list:
+            req = pip_helper.extract_requirement(req_str)
+            try:
+                downloaded_version = downloaded_req[req.key]
+            except KeyError:
+                return False
+            else:
+                if downloaded_version not in req:
+                    return False
+        return True
 
-        :param clear_cache: clear `$deps_dir/cache` dir (pip can work incorrectly
-            when it has a cache)
+    def download_dependencies(self):
+        """Download dependencies from `$deps_dir/download-requires`.
         """
-        sh.deldir(self.download_dir)
+        # NOTE(aababilov): do not drop download_dir - it can be reused
         sh.mkdirslist(self.download_dir, tracewriter=self.tracewriter)
         download_requires_filename = sh.joinpths(self.deps_dir,
                                                  "download-requires")
@@ -291,41 +309,49 @@ class DependencyHandler(object):
                       "\n".join(str(req) for req in raw_pips_to_download))
         if not raw_pips_to_download:
             return ([], [])
-        pip_dir = sh.joinpths(self.deps_dir, "pip")
-        pip_download_dir = sh.joinpths(pip_dir, "download")
-        pip_build_dir = sh.joinpths(pip_dir, "build")
-        pip_cache_dir = sh.joinpths(pip_dir, "cache")
-        if clear_cache:
-            sh.deldir(pip_cache_dir)
-        pip_failures = []
-        for attempt in xrange(self.MAX_PIP_DOWNLOAD_ATTEMPTS):
-            # NOTE(aababilov): pip has issues with already downloaded files
-            sh.deldir(pip_download_dir)
-            sh.mkdir(pip_download_dir, recurse=True)
-            sh.deldir(pip_build_dir)
-            header = "Downloading %s python dependencies (attempt %s)"
-            header = header % (len(raw_pips_to_download), attempt)
-            utils.log_iterable(sorted(raw_pips_to_download),
-                               logger=LOG,
-                               header=header)
-            failed = False
-            try:
-                self._try_download_dependencies(attempt, raw_pips_to_download,
-                                                pip_download_dir,
-                                                pip_cache_dir, pip_build_dir)
-                pip_failures = []
-            except exc.ProcessExecutionError as e:
-                LOG.exception("Failed downloading python dependencies")
-                pip_failures.append(e)
-                failed = True
-            if not failed:
-                break
-        if pip_failures:
-            raise pip_failures[-1]
+        downloaded_flag_file = sh.joinpths(self.deps_dir, "pip-downloaded")
+        # NOTE(aababilov): user could have changed persona, so,
+        # check that all requirements are downloaded
+        if sh.isfile(downloaded_flag_file) and self._requirements_satisfied(
+                raw_pips_to_download, self.download_dir):
+            LOG.info("All python dependencies have been already downloaded")
+        else:
+            pip_dir = sh.joinpths(self.deps_dir, "pip")
+            pip_download_dir = sh.joinpths(pip_dir, "download")
+            pip_build_dir = sh.joinpths(pip_dir, "build")
+            # NOTE(aababilov): do not clean the cache, it is always useful
+            pip_cache_dir = sh.joinpths(self.deps_dir, "pip-cache")
+            pip_failures = []
+            for attempt in xrange(self.MAX_PIP_DOWNLOAD_ATTEMPTS):
+                # NOTE(aababilov): pip has issues with already downloaded files
+                sh.deldir(pip_dir)
+                sh.mkdir(pip_download_dir, recurse=True)
+                header = "Downloading %s python dependencies (attempt %s)"
+                header = header % (len(raw_pips_to_download), attempt)
+                utils.log_iterable(sorted(raw_pips_to_download),
+                                   logger=LOG,
+                                   header=header)
+                failed = False
+                try:
+                    self._try_download_dependencies(attempt, raw_pips_to_download,
+                                                    pip_download_dir,
+                                                    pip_cache_dir, pip_build_dir)
+                    pip_failures = []
+                except exc.ProcessExecutionError as e:
+                    LOG.exception("Failed downloading python dependencies")
+                    pip_failures.append(e)
+                    failed = True
+                if not failed:
+                    break
+            for filename in sh.listdir(pip_download_dir, files_only=True):
+                sh.move(filename, self.download_dir, force=True)
+            sh.deldir(pip_dir)
+            if pip_failures:
+                raise pip_failures[-1]
+            with open(downloaded_flag_file, "w"):
+                pass
         pips_downloaded = [pip_helper.extract_requirement(p)
                            for p in raw_pips_to_download]
-        self._examine_download_dir(pips_downloaded, pip_download_dir)
-        for filename in sh.listdir(pip_download_dir, files_only=True):
-            sh.move(filename, self.download_dir)
+        self._examine_download_dir(pips_downloaded, self.download_dir)
         what_downloaded = sh.listdir(self.download_dir, files_only=True)
         return (pips_downloaded, what_downloaded)
