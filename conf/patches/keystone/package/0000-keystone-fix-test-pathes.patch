@@ -1,0 +1,44 @@
+diff --git a/keystone/test.py b/keystone/test.py
+index afe7725..0169ff2 100644
+--- a/keystone/test.py
++++ b/keystone/test.py
+@@ -47,9 +47,9 @@ eventlet.patcher.monkey_patch(all=False, socket=True, time=True,
+                               thread=do_monkeypatch)
+ 
+ LOG = logging.getLogger(__name__)
+-ROOTDIR = os.path.dirname(os.path.abspath(os.curdir))
+-VENDOR = os.path.join(ROOTDIR, 'vendor')
+-TESTSDIR = os.path.join(ROOTDIR, 'tests')
++TESTSDIR = '/usr/lib/python2.6/site-packages/keystone/tests/'
++ROOTDIR = os.path.join(TESTSDIR, 'assets')
++VENDOR = os.path.expanduser('~/.keystone-unit-tests/vendor/')
+ ETCDIR = os.path.join(ROOTDIR, 'etc')
+ CONF = config.CONF
+ DRIVERS = {}
+@@ -88,6 +88,12 @@ def checkout_vendor(repo, rev):
+     if name.endswith('.git'):
+         name = name[:-4]
+ 
++    try:
++        os.makedirs(VENDOR, mode=0700)
++    except OSError, e:
++        if e.errno != os.errno.EEXIST:
++            raise
++
+     working_dir = os.getcwd()
+     revdir = os.path.join(VENDOR, '%s-%s' % (name, rev.replace('/', '_')))
+     modcheck = os.path.join(VENDOR, '.%s-%s' % (name, rev.replace('/', '_')))
+diff --git a/tests/test_overrides.conf b/tests/test_overrides.conf
+index 0e41fd3..f0dd0e5 100644
+--- a/tests/test_overrides.conf
++++ b/tests/test_overrides.conf
+@@ -12,6 +12,6 @@ template_file = default_catalog.templates
+ driver = keystone.trust.backends.kvs.Trust
+ 
+ [signing]
+-certfile = ../examples/pki/certs/signing_cert.pem
+-keyfile = ../examples/pki/private/signing_key.pem
+-ca_certs = ../examples/pki/certs/cacert.pem
++certfile = keystone/tests/assets/examples/pki/certs/signing_cert.pem
++keyfile = keystone/tests/assets/examples/pki/private/signing_key.pem
++ca_certs = keystone/tests/assets/examples/pki/certs/cacert.pem

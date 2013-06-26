@@ -49,6 +49,31 @@ Keystone is a Python implementation of the OpenStack
 This package contains the Keystone daemon.
 
 
+%if ! 0%{?no_tests}
+%package -n python-%{python_name}-tests
+Summary:          Tests for Keystone
+Group:            Development/Libraries
+
+Requires:         %{name} = %{epoch}:%{version}-%{release}
+Requires:         python-%{python_name} = %{epoch}:%{version}-%{release}
+
+Requires:         python-nose
+Requires:         python-openstack-nose-plugin
+Requires:         python-nose-exclude
+
+#for $i in $test_requires
+Requires:         ${i}
+#end for
+
+%description -n python-%{python_name}-tests
+Keystone is a Python implementation of the OpenStack
+(http://www.openstack.org) identity service API.
+
+This package contains unit and functional tests for Keystone, with
+simple runner (%{python_name}-run-unit-tests).
+%endif
+
+
 %if 0%{?with_doc}
 
 %package doc
@@ -106,6 +131,7 @@ rm -fr doc/build/html/.doctrees doc/build/html/.buildinfo
 
 python setup.py install --prefix=%{_prefix} --root=%{buildroot}
 
+
 %if ! 0%{?usr_only}
 install -d -m 755 %{buildroot}%{_sysconfdir}/keystone
 install -m 644 etc/* %{buildroot}%{_sysconfdir}/keystone
@@ -118,6 +144,39 @@ install -p -D -m 755 %{SOURCE1} %{buildroot}%{_initrddir}/%{daemon_prefix}-all
 %endif
 
 %__rm -rf %{buildroot}%{py_sitelib}/{doc,tools}
+
+%if ! 0%{?no_tests}
+
+# Copy tests and test assets
+install -d -m 755 %{buildroot}%{python_sitelib}/%{python_name}/tests/assets/
+cp -a tests %{buildroot}%{python_sitelib}/%{python_name}/
+cp -a etc examples %{buildroot}%{python_sitelib}/%{python_name}/tests/assets/
+
+chown -R root:root %{buildroot}%{python_sitelib}/%{python_name}/tests
+find %{buildroot}%{python_sitelib}/%{python_name}/tests -type d | xargs chmod 0755
+find %{buildroot}%{python_sitelib}/%{python_name}/tests -type f | xargs chmod 0644
+
+
+# Make simple test runner
+cat > %{buildroot}%{_bindir}/%{python_name}-run-unit-tests << EOF
+#!/bin/bash
+export NOSE_WITH_OPENSTACK=1
+export NOSE_OPENSTACK_RED=0.05
+export NOSE_OPENSTACK_YELLOW=0.025
+export NOSE_OPENSTACK_SHOW_ELAPSED=1
+
+cd %{python_sitelib}
+exec nosetests --openstack-color --verbosity=2 --detailed-errors \
+#end raw
+#for i in $exclude_tests
+    --exclude "${i}" \\
+#end for
+#raw
+    %{python_name}/tests "\$@"
+
+EOF
+chmod 0755 %{buildroot}%{_bindir}/%{python_name}-run-unit-tests
+%endif
 
 
 %clean
@@ -162,6 +221,15 @@ fi
 %{_initrddir}/*
 %endif
 
+%if ! 0%{?no_tests}
+%files -n python-%{python_name}-tests
+%{python_sitelib}/%{python_name}/test.py*
+%{python_sitelib}/%{python_name}/tests
+# TODO(imelnikov): this tests don't work:
+%exclude %{python_sitelib}/%{python_name}/tests/test_keystoneclient*
+%{_bindir}/%{python_name}-run-unit-tests
+%endif
+
 %if 0%{?with_doc}
 %files doc
 %defattr(-,root,root,-)
@@ -172,7 +240,8 @@ fi
 %defattr(-,root,root,-)
 %doc LICENSE
 %{python_sitelib}/*
-
+%exclude %{python_sitelib}/%{python_name}/tests
+%exclude %{python_sitelib}/%{python_name}/test.py*
 
 %changelog
 #endraw

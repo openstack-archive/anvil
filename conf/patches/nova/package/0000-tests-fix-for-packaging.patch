@@ -1,0 +1,86 @@
+diff --git a/nova/tests/baremetal/test_nova_baremetal_deploy_helper.py b/nova/tests/baremetal/test_nova_baremetal_deploy_helper.py
+index 7ec7fd0..bcf2a45 100644
+--- a/nova/tests/baremetal/test_nova_baremetal_deploy_helper.py
++++ b/nova/tests/baremetal/test_nova_baremetal_deploy_helper.py
+@@ -28,12 +28,7 @@ from nova import test
+ from nova.tests.baremetal.db import base as bm_db_base
+ from nova.virt.baremetal import db as bm_db
+ 
+-TOPDIR = os.path.normpath(os.path.join(
+-                            os.path.dirname(os.path.abspath(__file__)),
+-                            os.pardir,
+-                            os.pardir,
+-                            os.pardir))
+-BMDH_PATH = os.path.join(TOPDIR, 'bin', 'nova-baremetal-deploy-helper')
++BMDH_PATH = '/usr/bin/nova-baremetal-deploy-helper'
+ 
+ sys.dont_write_bytecode = True
+ bmdh = imp.load_source('bmdh', BMDH_PATH)
+diff --git a/nova/tests/baremetal/test_nova_baremetal_manage.py b/nova/tests/baremetal/test_nova_baremetal_manage.py
+index 74e0841..36959c0 100644
+--- a/nova/tests/baremetal/test_nova_baremetal_manage.py
++++ b/nova/tests/baremetal/test_nova_baremetal_manage.py
+@@ -22,12 +22,7 @@ import sys
+ 
+ from nova.tests.baremetal.db import base as bm_db_base
+ 
+-TOPDIR = os.path.normpath(os.path.join(
+-                            os.path.dirname(os.path.abspath(__file__)),
+-                            os.pardir,
+-                            os.pardir,
+-                            os.pardir))
+-BM_MAN_PATH = os.path.join(TOPDIR, 'bin', 'nova-baremetal-manage')
++BM_MAN_PATH = '/usr/bin/nova-baremetal-manage'
+ 
+ sys.dont_write_bytecode = True
+ bm_man = imp.load_source('bm_man', BM_MAN_PATH)
+diff --git a/nova/tests/conf_fixture.py b/nova/tests/conf_fixture.py
+index e2ea18f..fbe68e5 100644
+--- a/nova/tests/conf_fixture.py
++++ b/nova/tests/conf_fixture.py
+@@ -47,7 +47,7 @@ class ConfFixture(fixtures.Fixture):
+         super(ConfFixture, self).setUp()
+ 
+         self.conf.set_default('api_paste_config',
+-                              paths.state_path_def('etc/nova/api-paste.ini'))
++                              paths.state_path_def('nova/tests/assets/etc/nova/api-paste.ini'))
+         self.conf.set_default('compute_driver', 'nova.virt.fake.FakeDriver')
+         self.conf.set_default('fake_network', True)
+         self.conf.set_default('fake_rabbit', True)
+diff --git a/nova/tests/integrated/test_api_samples.py b/nova/tests/integrated/test_api_samples.py
+index 073f36f..3cd3eea 100644
+--- a/nova/tests/integrated/test_api_samples.py
++++ b/nova/tests/integrated/test_api_samples.py
+@@ -280,14 +280,7 @@ class ApiSampleTestBase(integrated_helpers._IntegratedTestBase):
+         else:
+             template_data = self._read_template(name)
+ 
+-        if (self.generate_samples and
+-            not os.path.exists(self._get_sample(name))):
+-            self._write_sample(name, response_data)
+-            sample_data = response_data
+-        else:
+-            with file(self._get_sample(name)) as sample:
+-                sample_data = sample.read()
+-
++        sample_data = response_data
+         try:
+             template_data = self._objectify(template_data)
+             response_data = self._objectify(response_data)
+diff --git a/nova/tests/test_nova_manage.py b/nova/tests/test_nova_manage.py
+index 49f9f32..b4ab295 100644
+--- a/nova/tests/test_nova_manage.py
++++ b/nova/tests/test_nova_manage.py
+@@ -27,11 +27,7 @@ from nova import test
+ from nova.tests.db import fakes as db_fakes
+ 
+ 
+-TOPDIR = os.path.normpath(os.path.join(
+-                            os.path.dirname(os.path.abspath(__file__)),
+-                            os.pardir,
+-                            os.pardir))
+-NOVA_MANAGE_PATH = os.path.join(TOPDIR, 'bin', 'nova-manage')
++NOVA_MANAGE_PATH = '/usr/bin/nova-manage'
+ 
+ sys.dont_write_bytecode = True
+ nova_manage = imp.load_source('nova_manage', NOVA_MANAGE_PATH)

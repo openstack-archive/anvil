@@ -74,6 +74,32 @@ access block storage volumes for use by Virtual Machine instances.
 
 This package contains the cinder Python library.
 
+
+%if ! 0%{?no_tests}
+%package -n python-%{python_name}-tests
+Summary:          Tests for Cinder
+Group:            Development/Libraries
+
+Requires:         %{name} = %{epoch}:%{version}-%{release}
+Requires:         python-%{python_name} = %{epoch}:%{version}-%{release}
+
+Requires:         python-nose
+Requires:         python-openstack-nose-plugin
+Requires:         python-nose-exclude
+
+#for $i in $test_requires
+Requires:         ${i}
+#end for
+
+%description -n python-%{python_name}-tests
+OpenStack Volume (codename Cinder) provides services to manage and
+access block storage volumes for use by Virtual Machine instances.
+
+This package contains unit and functional tests for Cinder, with
+simple runner (%{python_name}-run-unit-tests).
+%endif
+
+
 %if 0%{?with_doc}
 %package doc
 Summary:          Documentation for OpenStack Volume
@@ -124,6 +150,29 @@ sed -i '/setup_requires/d; /install_requires/d; /dependency_links/d' setup.py
 
 %install
 %{__python} setup.py install -O1 --skip-build --root %{buildroot}
+
+%if ! 0%{?no_tests}
+# Make simple test runner
+cat > %{buildroot}%{_bindir}/%{python_name}-run-unit-tests << EOF
+#!/bin/bash
+export NOSE_WITH_OPENSTACK=1
+export NOSE_OPENSTACK_RED=0.05
+export NOSE_OPENSTACK_YELLOW=0.025
+export NOSE_OPENSTACK_SHOW_ELAPSED=1
+
+cd %{python_sitelib}
+exec nosetests --openstack-color --verbosity=2 --detailed-errors \
+#end raw
+#for i in $exclude_tests
+    --exclude "${i}" \\
+#end for
+#raw
+    %{python_name}/tests "\$@"
+
+EOF
+chmod 0755 %{buildroot}%{_bindir}/%{python_name}-run-unit-tests
+%endif
+
 
 # docs generation requires everything to be installed first
 export PYTHONPATH="$PWD:$PYTHONPATH"
@@ -182,7 +231,6 @@ install -p -D -m 644 etc/cinder/rootwrap.d/* %{buildroot}%{_datarootdir}/cinder/
 
 # Remove unneeded in production stuff
 rm -f %{buildroot}%{_bindir}/cinder-debug
-rm -fr %{buildroot}%{python_sitelib}/cinder/tests/
 rm -fr %{buildroot}%{python_sitelib}/run_tests.*
 rm -f %{buildroot}/usr/share/doc/cinder/README*
 
@@ -250,6 +298,12 @@ fi
 %{python_sitelib}/cinder
 %{python_sitelib}/cinder-%{os_version}*.egg-info
 
+%if ! 0%{?no_tests}
+%files -n python-%{python_name}-tests
+%{python_sitelib}/%{python_name}/tests
+%{python_sitelib}/%{python_name}/test.py*
+%{_bindir}/%{python_name}-run-unit-tests
+%endif
 
 %if 0%{?with_doc}
 %files doc
