@@ -20,6 +20,42 @@ exclude_tests:
   # These seem to require swift, not always installed...
   - test_swift_store
 
+# Exclude tests in packaged runner
+#
+# TODO(imelnikov): look why this tests are broken when run
+#   not from git root and fix them upstream or with package patches
+package_exclude_tests:
+  - test_api_response_when_image_deleted_from_filesystem
+  - test_cache_index
+  - test_cache_manage_delete_cached_images
+  - test_cache_manage_get_cached_images
+  - test_cache_middleware_transparent_v1
+  - test_cache_middleware_transparent_v2
+  - test_cache_remote_image
+  - test_copy_from_http_exists
+  - test_delayed_delete
+  - test_get_head_simple_post
+  - test_image_direct_url_not_visible
+  - test_image_direct_url_visible
+  - test_image_lifecycle
+  - test_permissions
+  - test_queue
+  - test_queue_and_prefetch
+  - test_queued_process_flow
+  - test_scrubber_app
+  - test_size_greater_2G_mysql
+  - test_user_not_authorized
+  - test_decrypt_locations_on_get
+  - test_decrypt_locations_on_list
+  - test_encryption
+  - test_encrypt_locations_on_add
+  - test_encrypt_locations_on_save
+  - test_load_paste_app
+  - test_load_paste_app_with_paste_config_file
+  - test_load_paste_app_with_paste_flavor
+  - test_version_control_existing_db
+  - test_walk_versions
+
 # Interactions with keystone are via the following settings
 paste_flavor: 'keystone'
 
