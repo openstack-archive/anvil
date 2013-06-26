@@ -501,10 +501,13 @@ class YumDependencyHandler(base.DependencyHandler):
             template_name = "%s.spec" % rpm_name
         return (rpm_name, template_name)
 
-    def _build_from_app_dir(self, instance):
+    def _build_from_app_dir(self, instance, params):
         app_dir = instance.get_option('app_dir')
         cmdline = self.py2rpm_start_cmdline()
-        cmdline.extend(["--source-only", "--", app_dir])
+        cmdline.extend(["--source-only"])
+        if 'release' in params:
+            cmdline.extend(["--release", params["release"]])
+        cmdline.extend(["--", app_dir])
         out_filename = sh.joinpths(self.log_dir, "py2rpm-build-%s.log" % (instance.name))
         sh.execute_save_output(cmdline, cwd=app_dir, out_filename=out_filename,
                                quiet=True)
@@ -540,7 +543,7 @@ class YumDependencyHandler(base.DependencyHandler):
                                                   template_name, params)
             self._build_from_spec(instance, spec_filename, patches)
         else:
-            self._build_from_app_dir(instance)
+            self._build_from_app_dir(instance, params)
 
     def _convert_names_python2rpm(self, python_names):
         if not python_names:
