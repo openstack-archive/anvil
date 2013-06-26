@@ -1,0 +1,18 @@
+diff --git a/glance/tests/unit/test_glance_replicator.py b/glance/tests/unit/test_glance_replicator.py
+index 693971f..7a00325 100644
+--- a/glance/tests/unit/test_glance_replicator.py
++++ b/glance/tests/unit/test_glance_replicator.py
+@@ -28,12 +28,7 @@ import fixtures
+ from glance.tests import utils as test_utils
+ 
+ 
+-TOPDIR = os.path.normpath(os.path.join(
+-                            os.path.dirname(os.path.abspath(__file__)),
+-                            os.pardir,
+-                            os.pardir,
+-                            os.pardir))
+-GLANCE_REPLICATOR_PATH = os.path.join(TOPDIR, 'bin', 'glance-replicator')
++GLANCE_REPLICATOR_PATH = '/usr/bin/glance-replicator'
+ 
+ sys.dont_write_bytecode = True
+ glance_replicator = imp.load_source('glance_replicator',
