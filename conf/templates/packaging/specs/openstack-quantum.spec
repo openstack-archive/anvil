@@ -11,6 +11,8 @@
 %global python_name quantum
 %global daemon_prefix openstack-quantum
 %global os_version $version
+%global no_tests $no_tests
+%global tests_data_dir %{_datarootdir}/%{python_name}-tests
 
 %if ! (0%{?fedora} > 12 || 0%{?rhel} > 6)
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
@@ -280,6 +282,43 @@ networks.
 This package contains the quantum plugin that implements virtual
 networks using multiple other quantum plugins.
 
+
+%if ! 0%{?no_tests}
+%package -n python-%{python_name}-tests
+Summary:          Tests for Quantum
+Group:            Development/Libraries
+
+Requires:         %{name} = %{epoch}:%{version}-%{release}
+Requires:         %{name}-bigswitch = %{epoch}:%{version}-%{release}
+Requires:         %{name}-brocade = %{epoch}:%{version}-%{release}
+Requires:         %{name}-cisco = %{epoch}:%{version}-%{release}
+Requires:         %{name}-hyperv = %{epoch}:%{version}-%{release}
+Requires:         %{name}-linuxbridge = %{epoch}:%{version}-%{release}
+Requires:         %{name}-midonet = %{epoch}:%{version}-%{release}
+Requires:         %{name}-nicira = %{epoch}:%{version}-%{release}
+Requires:         %{name}-openvswitch = %{epoch}:%{version}-%{release}
+Requires:         %{name}-plumgrid = %{epoch}:%{version}-%{release}
+Requires:         %{name}-ryu = %{epoch}:%{version}-%{release}
+Requires:         %{name}-nec = %{epoch}:%{version}-%{release}
+Requires:         %{name}-metaplugin = %{epoch}:%{version}-%{release}
+Requires:         python-%{python_name} = %{epoch}:%{version}-%{release}
+
+Requires:         python-nose
+Requires:         python-openstack-nose-plugin
+Requires:         python-nose-exclude
+
+#for $i in $test_requires
+Requires:         ${i}
+#end for
+
+%description -n python-%{python_name}-tests
+Quantum provides an API to dynamically request and configure virtual
+networks.
+
+This package contains unit and functional tests for Quantum, with
+simple runner (%{python_name}-run-unit-tests).
+%endif
+
 %prep
 %setup -q -n quantum-%{os_version}
 #for $idx, $fn in enumerate($patches)
@@ -310,12 +349,16 @@ sed -i '/setup_requires/d; /install_requires/d; /dependency_links/d' setup.py
 rm -rf %{buildroot}
 %{__python} setup.py install -O1 --skip-build --root %{buildroot}
 
+%if ! 0%{?no_tests}
+#end raw
+#include $part_fn("install_tests.sh")
+#raw
+%endif
+
 # Remove unused files
 rm -rf %{buildroot}%{python_sitelib}/bin
 rm -rf %{buildroot}%{python_sitelib}/doc
 rm -rf %{buildroot}%{python_sitelib}/tools
-rm -rf %{buildroot}%{python_sitelib}/quantum/tests
-rm -rf %{buildroot}%{python_sitelib}/quantum/plugins/*/tests
 rm -f %{buildroot}%{python_sitelib}/quantum/plugins/*/run_tests.*
 rm %{buildroot}/usr/etc/init.d/quantum-server
 
@@ -462,6 +505,7 @@ fi
 %doc LICENSE
 %doc README
 %{python_sitelib}/quantum
+%exclude %{python_sitelib}/quantum/tests
 %exclude %{python_sitelib}/quantum/plugins/cisco/extensions/_credential_view.py*
 %exclude %{python_sitelib}/quantum/plugins/cisco/extensions/credential.py*
 %exclude %{python_sitelib}/quantum/plugins/cisco/extensions/qos.py*
@@ -485,6 +529,7 @@ fi
 %doc LICENSE
 %doc quantum/plugins/bigswitch/README
 %{python_sitelib}/quantum/plugins/bigswitch
+%exclude %{python_sitelib}/quantum/plugins/bigswitch/tests
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/quantum/plugins/bigswitch
@@ -496,6 +541,7 @@ fi
 %doc LICENSE
 %doc quantum/plugins/brocade/README.md
 %{python_sitelib}/quantum/plugins/brocade
+%exclude %{python_sitelib}/quantum/plugins/brocade/tests
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/quantum/plugins/brocade
@@ -506,11 +552,8 @@ fi
 %files -n openstack-quantum-cisco
 %doc LICENSE
 %doc quantum/plugins/cisco/README
-%{python_sitelib}/quantum/plugins/cisco/extensions/_credential_view.py*
-%{python_sitelib}/quantum/plugins/cisco/extensions/credential.py*
-%{python_sitelib}/quantum/plugins/cisco/extensions/qos.py*
-%{python_sitelib}/quantum/plugins/cisco/extensions/_qos_view.py*
 %{python_sitelib}/quantum/plugins/cisco
+%exclude %{python_sitelib}/quantum/plugins/cisco/tests
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/quantum/plugins/cisco
@@ -634,6 +677,11 @@ fi
 %config(noreplace) %attr(0640, root, quantum) %{_sysconfdir}/quantum/plugins/metaplugin/*.ini
 %endif
 
+%if ! 0%{?no_tests}
+%files -n python-%{python_name}-tests
+%{tests_data_dir}
+%{_bindir}/%{python_name}-run-unit-tests
+%endif
 
 %changelog
 #end raw
