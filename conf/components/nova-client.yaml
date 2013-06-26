@@ -4,4 +4,9 @@
 # Where we download this from...
 get_from: "git://github.com/openstack/python-novaclient.git?tag=2.13.0"
 
+# NOTE(imelnikov): tracked at
+#  https://bugs.launchpad.net/python-novaclient/+bug/1166464
+exclude_tests:
+  - test_password
+
 ...

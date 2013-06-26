@@ -13,8 +13,9 @@
 %endif
 
 %global os_version $version
+%global modname ${clientname}client
 
-Name:             python-${clientname}client
+Name:             python-%{modname}
 Summary:          OpenStack ${clientname.title()} Client
 Version:          %{os_version}$version_suffix
 Release:          $release%{?dist}
@@ -47,6 +48,27 @@ Requires:        ${i}
 %description
 This is a client for the OpenStack $apiname API. There is a Python API (the
 ${clientname}client module), and a command-line script (${clientname}).
+
+
+%if ! 0%{?no_tests}
+%package tests
+Summary:          Tests for OpenStack ${clientname.title()} Client
+Group:            Development/Libraries
+
+Requires:         %{name} = %{epoch}:%{version}-%{release}
+Requires:         python-nose
+Requires:         python-openstack-nose-plugin
+Requires:         python-nose-exclude
+
+#for $i in $test_requires
+Requires:         ${i}
+#end for
+
+%description tests
+This package contains unit and functional tests for OpenStack
+${clientname.title()} Client, with runner.
+%endif
+
 
 %if 0%{?enable_doc}
 %package doc
@@ -82,10 +104,43 @@ rm -rf %{buildroot}
 # keystoneclient writes a strange catalog
 rm -rf %{buildroot}/%{_usr}/*client
 
+if [ -d tests ]; then
+    cp -a tests %{buildroot}%{python_sitelib}/%{modname}/tests
+    find %{buildroot}%{python_sitelib}/%{modname}/tests -type d | xargs chmod 0755
+    find %{buildroot}%{python_sitelib}/%{modname}/tests -type f | while read filename; do
+        chmod 0644 "$filename"
+        sed -i \
+            -e "s,^from \(tests.* import\),from %{modname}.\1,g" \
+            -e "s,^import tests,import %{modname}.tests,g" \
+            "$filename"
+    done
+fi
+
 %if 0%{?enable_doc}
 make -C docs html PYTHONPATH=%{buildroot}%{python_sitelib}
 %endif
 
+%if ! 0%{?no_tests}
+# Make simple test runner
+cat > %{buildroot}%{_bindir}/%{modname}-run-unit-tests << EOF
+#!/bin/bash
+export NOSE_WITH_OPENSTACK=1
+export NOSE_OPENSTACK_RED=0.05
+export NOSE_OPENSTACK_YELLOW=0.025
+export NOSE_OPENSTACK_SHOW_ELAPSED=1
+
+cd %{python_sitelib}
+exec nosetests --openstack-color --verbosity=2 --detailed-errors \
+#end raw
+#for i in $exclude_tests
+    --exclude "${i}" \\
+#end for
+#raw
+    %{modname}/tests "\$@"
+
+EOF
+chmod 0755 %{buildroot}%{_bindir}/%{modname}-run-unit-tests
+%endif
 
 %clean
 rm -rf %{buildroot}
@@ -95,8 +150,15 @@ rm -rf %{buildroot}
 %defattr(-,root,root,-)
 %doc README* LICENSE* HACKING* ChangeLog AUTHORS
 %{python_sitelib}/*
+%exclude %{python_sitelib}/%{modname}/tests
 %{_bindir}/*
+%exclude %{_bindir}/%{modname}-run-unit-tests
 
+%if ! 0%{?no_tests}
+%files tests
+%{python_sitelib}/%{modname}/tests
+%{_bindir}/%{modname}-run-unit-tests
+%endif
 
 %if 0%{?enable_doc}
 %files doc
