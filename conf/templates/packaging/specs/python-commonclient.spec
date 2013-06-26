@@ -8,13 +8,17 @@
     apiname - Identity, Compute, etc. (first uppercase)
     requires - list of requirements for python-* package
 *#
+
+%global python_name ${clientname}client
+%global os_version $version
+%global no_tests $no_tests
+%global tests_data_dir %{_datarootdir}/%{python_name}-tests/
+
 %if ! (0%{?fedora} > 12 || 0%{?rhel} > 5)
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %endif
 
-%global os_version $version
-
-Name:             python-${clientname}client
+Name:             python-%{python_name}
 Summary:          OpenStack ${clientname.title()} Client
 Version:          %{os_version}$version_suffix
 Release:          $release%{?dist}
@@ -47,6 +51,27 @@ Requires:        ${i}
 %description
 This is a client for the OpenStack $apiname API. There is a Python API (the
 ${clientname}client module), and a command-line script (${clientname}).
+
+
+%if ! 0%{?no_tests}
+%package tests
+Summary:          Tests for OpenStack ${clientname.title()} Client
+Group:            Development/Libraries
+
+Requires:         %{name} = %{epoch}:%{version}-%{release}
+Requires:         python-nose
+Requires:         python-openstack-nose-plugin
+Requires:         python-nose-exclude
+
+#for $i in $test_requires
+Requires:         ${i}
+#end for
+
+%description tests
+This package contains unit and functional tests for OpenStack
+${clientname.title()} Client, with runner.
+%endif
+
 
 %if 0%{?enable_doc}
 %package doc
@@ -86,6 +111,11 @@ rm -rf %{buildroot}/%{_usr}/*client
 make -C docs html PYTHONPATH=%{buildroot}%{python_sitelib}
 %endif
 
+%if ! 0%{?no_tests}
+#end raw
+#include $part_fn("install_tests.sh")
+#raw
+%endif
 
 %clean
 rm -rf %{buildroot}
@@ -96,7 +126,13 @@ rm -rf %{buildroot}
 %doc README* LICENSE* HACKING* ChangeLog AUTHORS
 %{python_sitelib}/*
 %{_bindir}/*
+%exclude %{_bindir}/%{python_name}-run-unit-tests
 
+%if ! 0%{?no_tests}
+%files tests
+%{tests_data_dir}
+%{_bindir}/%{python_name}-run-unit-tests
+%endif
 
 %if 0%{?enable_doc}
 %files doc

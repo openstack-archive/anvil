@@ -1,0 +1,12 @@
+diff --git a/tools/test-requires b/tools/test-requires
+index 1318ecd..d76d8b5 100644
+--- a/tools/test-requires
++++ b/tools/test-requires
+@@ -1,6 +1,7 @@
+ # Packages needed for dev testing
+ distribute>=0.6.24
+ 
++importlib
+ coverage>=3.6
+ discover
+ feedparser
