@@ -13,7 +13,7 @@ index 82ca730..939a8a6 100644
  setuptools.setup(
      name="python-keystoneclient",
 -    version=setup.get_post_version('keystoneclient'),
-+    version=setup.get_post_version('keystoneclient').splitlines()[-1].strip(),
++    version=setup.get_post_version('keystoneclient').splitlines()[0].strip(),
      description="Client library for OpenStack Identity API (Keystone)",
      long_description=read('README.rst'),
      url='https://github.com/openstack/python-keystoneclient',
