@@ -313,8 +313,43 @@ protocol, and the Redis KVS.
 
 This package contains the %{name} Python library.
 
-%if 0%{?with_doc}
 
+%if ! 0%{?no_tests}
+%package -n python-%{python_name}-tests
+Summary:          Tests for Nova
+Group:            Development/Libraries
+
+Requires:         %{name} = %{epoch}:%{version}-%{release}
+Requires:         %{name}-common = %{epoch}:%{version}-%{release}
+Requires:         %{name}-compute = %{epoch}:%{version}-%{release}
+Requires:         %{name}-network = %{epoch}:%{version}-%{release}
+Requires:         %{name}-scheduler = %{epoch}:%{version}-%{release}
+Requires:         %{name}-cert = %{epoch}:%{version}-%{release}
+Requires:         %{name}-api = %{epoch}:%{version}-%{release}
+Requires:         %{name}-conductor = %{epoch}:%{version}-%{release}
+Requires:         %{name}-objectstore = %{epoch}:%{version}-%{release}
+Requires:         %{name}-console = %{epoch}:%{version}-%{release}
+Requires:         %{name}-cells = %{epoch}:%{version}-%{release}
+Requires:         python-%{python_name} = %{epoch}:%{version}-%{release}
+
+Requires:         python-nose
+Requires:         python-openstack-nose-plugin
+Requires:         python-nose-exclude
+
+#for $i in $test_requires
+Requires:         ${i}
+#end for
+
+%description -n python-%{python_name}-tests
+Nova is a cloud computing fabric controller (the main part
+of an IaaS system).
+
+This package contains unit and functional tests for Nova, with
+simple runner (%{python_name}-run-unit-tests).
+%endif
+
+
+%if 0%{?with_doc}
 %package doc
 Summary:          Documentation for %{name}
 Group:            Documentation
@@ -430,7 +465,6 @@ install -p -D -m 644 %{SOURCE50} %{buildroot}%{_datarootdir}/nova/interfaces.tem
 
 # Remove unneeded in production stuff
 rm -f %{buildroot}%{_bindir}/nova-debug
-rm -fr %{buildroot}%{python_sitelib}/nova/tests/
 rm -fr %{buildroot}%{python_sitelib}/run_tests.*
 rm -f %{buildroot}%{_bindir}/nova-combined
 rm -f %{buildroot}/usr/share/doc/nova/README*
@@ -438,6 +472,35 @@ rm -f %{buildroot}/usr/share/doc/nova/README*
 # We currently use the equivalent file from the novnc package
 rm -f %{buildroot}%{_bindir}/nova-novncproxy
 
+%if ! 0%{?no_tests}
+# Copy of config files
+install -d -m 755  %{buildroot}%{python_sitelib}/%{python_name}/tests/assets/etc/nova/
+install -p -D -m 640 etc/nova/api-paste.ini %{buildroot}%{python_sitelib}/%{python_name}/tests/assets/etc/nova/
+install -p -D -m 640 etc/nova/policy.json %{buildroot}%{python_sitelib}/%{python_name}/tests/assets/etc/nova/
+install -p -D -m 640 etc/nova/rootwrap.conf %{buildroot}%{python_sitelib}/%{python_name}/tests/assets/etc/nova/
+install -p -D -m 640 etc/nova/nova.conf.sample %{buildroot}%{python_sitelib}/%{python_name}/tests/assets/etc/nova/
+install -p -D -m 640 etc/nova/logging_sample.conf %{buildroot}%{python_sitelib}/%{python_name}/tests/assets/etc/nova/
+
+# Make simple test runner
+cat > %{buildroot}%{_bindir}/%{python_name}-run-unit-tests << EOF
+#!/bin/bash
+export NOSE_WITH_OPENSTACK=1
+export NOSE_OPENSTACK_RED=0.05
+export NOSE_OPENSTACK_YELLOW=0.025
+export NOSE_OPENSTACK_SHOW_ELAPSED=1
+
+cd %{python_sitelib}
+exec nosetests --openstack-color --verbosity=2 --detailed-errors \
+#end raw
+#for i in $exclude_tests
+    --exclude "${i}" \\
+#end for
+#raw
+    %{python_name}/tests "\$@"
+
+EOF
+chmod 0755 %{buildroot}%{_bindir}/%{python_name}-run-unit-tests
+%endif
 
 %clean
 rm -rf %{buildroot}
@@ -642,7 +705,14 @@ fi
 %defattr(-,root,root,-)
 %doc LICENSE
 %{python_sitelib}/nova
+%exclude %{python_sitelib}/%{python_name}/tests
 %{python_sitelib}/nova-%{os_version}-*.egg-info
+
+%if ! 0%{?no_tests}
+%files -n python-%{python_name}-tests
+%{python_sitelib}/%{python_name}/tests
+%{_bindir}/%{python_name}-run-unit-tests
+%endif
 
 %if 0%{?with_doc}
 %files doc
