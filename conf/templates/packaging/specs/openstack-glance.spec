@@ -6,6 +6,7 @@
 %global python_name glance
 %global daemon_prefix openstack-glance
 %global os_version $version
+%global tests_data_dir %{_datarootdir}/%{python_name}-tests
 
 %if ! (0%{?fedora} > 12 || 0%{?rhel} > 6)
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
@@ -65,12 +66,35 @@ Group:            Applications/System
 Requires:	  ${i}
 #end for
 
-#raw
 %description -n   python-glance
 OpenStack Image Service (code-named Glance) provides discovery, registration,
 and delivery services for virtual disk images.
 
 This package contains the glance Python library.
+
+
+%if ! 0%{?no_tests}
+%package -n python-glance-tests
+Summary:          Tests for Glance
+Group:            Development/Libraries
+
+Requires:         openstack-glance = %{epoch}:%{version}-%{release}
+Requires:         python-glance = %{epoch}:%{version}-%{release}
+Requires:         python-nose
+Requires:         python-openstack-nose-plugin
+Requires:         python-nose-exclude
+
+#for $i in $test_requires
+Requires:         ${i}
+#end for
+
+%description -n python-glance-tests
+OpenStack Image Service (code-named Glance) provides discovery, registration,
+and delivery services for virtual disk images.
+
+This package contains the Glance unit and functional tests, with simple
+runner (glance-run-unit-tests).
+%endif
 
 %if 0%{?with_doc}
 %package doc
@@ -95,14 +119,19 @@ This package contains documentation files for glance.
 
 %prep
 %setup -q -n %{python_name}-%{os_version}
-#end raw
 #for $idx, $fn in enumerate($patches)
 %patch$idx -p1
 #end for
 
 #raw
-sed '/pysendfile/d' tools/pip-requires
 
+# make tests run real installed binaries
+find glance/tests -name '*.py' | while read filename; do
+    sed -i \
+        -e "s,\./bin/glance,%{_bindir}/glance,g" \
+        -e "s,\('\|\"\)bin/glance,\1%{_bindir}/glance,g" \
+        "$filename"
+done
 
 %build
 %{__python} setup.py build
@@ -110,9 +139,6 @@ sed '/pysendfile/d' tools/pip-requires
 %install
 rm -rf %{buildroot}
 %{__python} setup.py install -O1 --skip-build --root %{buildroot}
-
-# Delete tests
-rm -fr %{buildroot}%{python_sitelib}/tests
 
 %if 0%{?with_doc}
 export PYTHONPATH="$PWD:$PYTHONPATH"
@@ -149,6 +175,11 @@ install -d -m 755 %{buildroot}%{_localstatedir}/run/glance
 install -d -m 755 %{buildroot}%{_localstatedir}/log/glance
 %endif
 
+%if ! 0%{?no_tests}
+#end raw
+#include $part_fn("install_tests.sh")
+#raw
+%endif
 
 %clean
 rm -rf %{buildroot}
@@ -188,6 +219,7 @@ fi
 %defattr(-,root,root,-)
 %doc README* LICENSE* HACKING* ChangeLog AUTHORS
 %{_bindir}/*
+%exclude %{_bindir}/glance-run-unit-tests
 
 %if ! 0%{?usr_only}
 %{_initrddir}/*
@@ -199,17 +231,21 @@ fi
 %dir %attr(0755, glance, nobody) %{_localstatedir}/run/glance
 %endif
 
-
 %files -n python-glance
 %{python_sitelib}/*
+%exclude %{python_sitelib}/glance/tests
 
+%if ! 0%{?no_tests}
+%files -n python-%{python_name}-tests
+%{tests_data_dir}
+%{_bindir}/%{python_name}-run-unit-tests
+%endif
 
 %if 0%{?with_doc}
 %files doc
 %defattr(-,root,root,-)
 %doc doc/build/html
 %endif
-
 
 %changelog
 #end raw
