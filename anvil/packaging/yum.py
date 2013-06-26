@@ -22,6 +22,7 @@ import rpm
 
 from anvil import log as logging
 from anvil.packaging import base
+from anvil.packaging.helpers import pip_helper
 from anvil.packaging.helpers import yum_helper
 from anvil import settings
 from anvil import shell as sh
@@ -106,6 +107,12 @@ class YumDependencyHandler(base.DependencyHandler):
         if version_suffix and not version_suffix.startswith('.'):
             version_suffix = '.' + version_suffix
         params['version_suffix'] = version_suffix
+
+        test_exclusions = set(instance.get_option("exclude_tests",
+                                                  default_value=()))
+        test_exclusions.update(instance.get_option("package_exclude_tests",
+                                                   default_value=()))
+        params["exclude_tests"] = sorted(test_exclusions)
         return params
 
     def package_instance(self, instance):
@@ -272,19 +279,24 @@ class YumDependencyHandler(base.DependencyHandler):
             LOG.error("Cannot determine %s for %s", field, pkg_dir)
         return value
 
+    def _parse_requires_file(self, requires_filename):
+        result = []
+        if sh.isfile(requires_filename):
+            requires_python = pip_helper.parse_requirements(
+                open(requires_filename, "r").read())
+            if requires_python:
+                result = self._convert_names_python2rpm(
+                    [r.key for r in requires_python])
+        return result
+
     def _write_spec_file(self, pkg_dir, rpm_name, template_name, params):
         if not params.setdefault("requires", []):
-            requires_filename = "%s/tools/pip-requires" % pkg_dir
-            if sh.isfile(requires_filename):
-                requires_python = []
-                with open(requires_filename, "r") as requires_file:
-                    for line in requires_file.readlines():
-                        line = line.split("#", 1)[0].strip()
-                        if line:
-                            requires_python.append(line)
-                if requires_python:
-                    params["requires"] = self._convert_names_python2rpm(
-                        requires_python)
+            params["requires"] = self._parse_requires_file(
+                sh.joinpths(pkg_dir, "tools", "pip-requires"))
+        if not params.setdefault("test_requires", []):
+            params['test_requires'] = self._parse_requires_file(
+                sh.joinpths(pkg_dir, "tools", "test-requires"))
+
         params["epoch"] = self.OPENSTACK_EPOCH
         content = utils.load_template(self.SPEC_TEMPLATE_DIR, template_name)[1]
         spec_filename = sh.joinpths(
