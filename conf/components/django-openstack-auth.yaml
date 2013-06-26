@@ -4,4 +4,6 @@
 # Where we download this from...
 get_from: git://github.com/gabrielhurley/django_openstack_auth.git?tag=1.0.10
 
+# NOTE(imelnikov): nosetests can't be used to test this package
+package_tests: false
 ...
