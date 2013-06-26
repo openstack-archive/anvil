@@ -420,7 +420,9 @@ class YumDependencyHandler(base.DependencyHandler):
             self._build_from_spec(pkg_dir, spec_filename, patches)
         else:
             cmdline = self.py2rpm_start_cmdline() + [
-                "--source-only", "--", pkg_dir]
+                "--source-only",
+                "--release", params["release"],
+                "--", pkg_dir]
             sh.execute(cmdline, cwd=pkg_dir)
 
     def _convert_names_python2rpm(self, python_names):
