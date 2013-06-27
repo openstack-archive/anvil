@@ -28,7 +28,7 @@ we can add in your own distribution support.
     are bootstrapping rhel (and how we are detecting rhel) for an example.
 
 **conf/distros**
-  This set of yaml files contains defintions for what packages, 
+  This set of yaml files contains definitions for what packages, 
   what pip to package mappings and what code entrypoints are used
   when setting up a given component. The critical key here is the
   ``platform_pattern`` key which is used as a regular expression to

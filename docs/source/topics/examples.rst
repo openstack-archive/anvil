@@ -5,6 +5,11 @@
 Examples
 ========
 
+Pre-installing
+--------------
+
+See [Getting started! pre-setup] [gs] section to make the right preparation.
+
 Bootstrapping
 -------------
 
@@ -150,4 +155,5 @@ Uninstalling
    :language: none
    :linenos:
 
-   
+
+[gs]: /en/latest/topics/gettingstarted.html#pre-setup

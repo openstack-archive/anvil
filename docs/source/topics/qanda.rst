@@ -9,7 +9,7 @@ How do I cause the anvil dependencies to be reinstalled?
 
 Anvil bootstraps itself via shell script (if you look at the code
 in the file ``smithy`` you will see that it is actually a bash
-script). 
+script).
 
 This bootstrapping occurs to ensure that anvils pypi/rpm/deb
 dependencies are installed before anvil can actually be used. 
@@ -20,7 +20,7 @@ and at ``$PWD/.anvil_bootstrapped`` to cause bootstrapping to occur again.
 Another way to make this happen temporarily is to use the following:
 
 ::
-    
+
     sudo BOOT_FILES=/dev/null ./smithy
 
 This will make anvil think those files are coming from ``/dev/null``
@@ -49,7 +49,7 @@ An example of this, lets adjust nova to use the ``stable/essex`` branch.
     # Where we download this from...
     get_from: "git://github.com/openstack/nova.git?branch=stable/essex"
 
-    
+
 - The special keywords here are ``branch=``
   and ``tag=`` which are ways for anvil to parse out which branch/tag
   you desire. 
@@ -57,7 +57,7 @@ An example of this, lets adjust nova to use the ``stable/essex`` branch.
   - **Note:** this is not git official syntax
   - **Note:** tag overrides branch (so you can't really include both)
 
-     
+
 `OMG` the images take forever to download!
 ------------------------------------------
 
