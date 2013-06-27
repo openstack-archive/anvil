@@ -81,9 +81,9 @@ instances won’t have a `tty`_).
 
 ::
 
-    $ sudo visudo 
+    $ sudo visudo
 
-Then comment out line:
+Then comment out line
 
 ::
 
@@ -95,32 +95,32 @@ Also disable selinux:
 
      $ sudo vi /etc/sysconfig/selinux
 
-Change *SELINUX=enforcing* to *SELINUX=disabled* then reboot.
+Change `SELINUX=enforcing` to `SELINUX=disabled` then reboot.
 
 ::
 
      $ sudo reboot
 
-Also to avoid qemu errors please follow the solution @ https://bugs.launchpad.net/anvil/+bug/985786
-which will ensure that the ``qemu`` user can write to your instances directory. If needed edit ``conf/components/nova.yaml``
-and also adjust the ``instances_path`` option.
-
-This can be typically solved by running the following (and then updating the ``instances_path`` option)
+Create specifc user to isolate all the Anvil processes from root user
 
 ::
 
-    $ sudo mkdir -pv /home/openstack
-    $ sudo chmod -R a+rwx /home/openstack
+    $ sudo useradd <username>
+    $ sudo passwd <username>
 
-Also as documented at http://docs.openstack.org/essex/openstack-compute/admin/content/qemu.html#fixes-rhel-qemu
-please run the following (**after** installation).
+Set user as sudoer
 
 ::
 
-    $ setsebool -P virt_use_execmem on
-    $ sudo ln -s /usr/libexec/qemu-kvm /usr/bin/qemu-system-x86_64
-    $ sudo service libvirtd restart
+    $ sudo visudo
 
+Add `<username>     ALL=(ALL)       ALL`
+
+Make all the rest of actions as <username> user
+
+::
+
+    $ sudo su - <username>
 
 Get git!
 --------
@@ -138,6 +138,8 @@ We’ll grab the latest version of ANVIL via git:
 ::
 
     $ git clone git://github.com/stackforge/anvil.git
+    $ cd anvil
+    $ git fetch origin <stable/version>
 
 
 Configuration
@@ -145,8 +147,10 @@ Configuration
 
 Any configuration to be updated should now be done.
 
-Please edit the corresponding files in ``conf/components/`` or ``conf/components/personas``
+Please edit the corresponding yaml files in ``conf/components/`` or ``conf/components/personas``
 to fit your desired configuration of nova/glance and the other OpenStack components.
+You can use ``-p <conf/components/required_file.yaml>`` option with following commands
+to use configuration files.
 
 If you are using a ``FlatManager`` and RH/Fedora then you might want to read and follow:
 
@@ -178,7 +182,8 @@ rpm packages being built (and a repository setup from those components) that
 will allow you to reliably and repeatly install the OpenStack components and
 there dependencies as ANVIL figures out how to prepare your desired components (if you
 desire more informational output add a ``-v`` to that
-command).
+command). Use ``-p`` option to specify yaml configuration file from `conf/` subdirectories.
+Without specified conf file command will execute with conf/personas/in-a-box/basic.yaml
 
 Installing
 ----------
@@ -193,6 +198,23 @@ You should see a set of distribution packages and/or pips being
 installed and configuration files being written as ANVIL figures out how to
 install your desired components from the prepared packages built in the last
 step (if you desire more informational output add a ``-v`` to that command).
+``-p`` option is actual too. You can specify conf file just like in ``prepare`` action.
+Without specified conf file command will execute with conf/personas/in-a-box/basic.yaml
+
+
+Also to avoid qemu errors please follow the solution @ https://bugs.launchpad.net/anvil/+bug/985786
+which will ensure that the ``qemu`` user can write to your instances directory. If needed edit ``conf/components/nova.yaml``
+and also adjust the ``instances_path`` option.
+
+Also as documented at http://docs.openstack.org/essex/openstack-compute/admin/content/qemu.html#fixes-rhel-qemu
+please run the following (**after** installation).
+
+::
+
+    $ setsebool -P virt_use_execmem on # optional
+    $ sudo ln -s /usr/libexec/qemu-kvm /usr/bin/qemu-system-x86_64
+    $ sudo service libvirtd restart
+
 
 Testing
 ----------

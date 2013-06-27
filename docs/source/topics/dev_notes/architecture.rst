@@ -21,7 +21,7 @@ setup toolkit. Since the existing `devstack <http://devstack.org/>`_ did (and st
 does not support very well) complex intercomponent (and interpackage management system) dependencies
 and installing/packaging/starting/stopping/uninstalling of OpenStack components.
 
-To solve this problem it was thought that there could be a toolkit that could handle this better. 
+To solve this problem it was thought that there could be a toolkit that could handle this better.
 It would also be in Python the language of choice for the rest of the OpenStack components thus making
 it easier to understand for programmers who are already working in OpenStack code. Thus *devstack2* was
 born which was later renamed *devstack.py* and after a  little while once again got renamed to *anvil*.
@@ -57,13 +57,13 @@ Anvil is designed to have the following set of software components:
     * Unconfiguring
     * Pre-uninstalling
     * Uninstalling previously installed packages
-    * Post-uninstalling 
+    * Post-uninstalling
 
   * Starting
 
     * Pre-starting
     * Starting
-    * Post-starting 
+    * Post-starting
 
   * Stopping
   * Testing
@@ -123,6 +123,3 @@ Anvil is designed to have the following set of software components:
   (if the component supports this concept) as well as which distribution the persona supports (if
   there is a desire to restrict a given persona to a given distribution this field can be
   used to accomplish that goal).
-
-
- 
