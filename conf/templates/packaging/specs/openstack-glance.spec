@@ -194,7 +194,8 @@ fi
 %dir %{_sysconfdir}/glance
 %config(noreplace) %attr(-, root, glance) %{_sysconfdir}/glance/*
 %config(noreplace) %attr(-, root, glance) %{_sysconfdir}/logrotate.d/openstack-glance
-%dir %attr(0755, glance, nobody) %{_sharedstatedir}/glance
+%dir %attr(0755, glance, nobody) %{_localstatedir}/lib/glance
+%dir %attr(0755, glance, nobody) %{_localstatedir}/lib/glance/images
 %dir %attr(0755, glance, nobody) %{_localstatedir}/log/glance
 %dir %attr(0755, glance, nobody) %{_localstatedir}/run/glance
 %endif
