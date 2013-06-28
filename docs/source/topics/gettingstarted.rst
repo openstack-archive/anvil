@@ -174,11 +174,22 @@ Now prepare *OpenStacks* components by running the following:
 
 You should see a corresponding OpenStack repositories getting downloaded using
 git, python setups occurring and configuration files being written as well as
-rpm packages being built (and a repository setup from those components) that
-will allow you to reliably and repeatly install the OpenStack components and
-there dependencies as ANVIL figures out how to prepare your desired components (if you
-desire more informational output add a ``-v`` to that
-command).
+source rpm packages being built and a repository setup from those components (if you
+desire more informational output add a ``-v`` to that command).
+
+Building
+--------
+
+Now build *OpenStacks* components by running the following:
+
+::
+
+    sudo ./smithy -a build
+
+You should see a corresponding OpenStack components and dependencies at this
+stage being packaged into rpm files and two repositories being setup for you.
+One will be the dependencies that the OpenStack components need to run and the
+other will be the OpenStack components themselves.
 
 Installing
 ----------
