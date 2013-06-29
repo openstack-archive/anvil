@@ -29,5 +29,5 @@ $(BUILDDEP_MARK):
 %.mark: $(SRC_REPO_DIR)/% $(BUILDDEP_MARK)
 	@$(RPMBUILD) $(RPMBUILD_FLAGS) -- $< &> $(LOGS_DIR)/rpmbuild-$*.log
 	@touch "$@"
-	@echo "$* is processed"
+	@echo "$* has been processed."
 #end raw

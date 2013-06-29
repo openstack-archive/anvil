@@ -15,11 +15,14 @@
 #    under the License.
 
 import collections
+import contextlib
 import os
+import pkg_resources
 import sys
 
-import pkg_resources
+import gzip
 import rpm
+import tarfile
 
 from anvil import colorizer
 from anvil import env
@@ -189,10 +192,8 @@ class YumDependencyHandler(base.DependencyHandler):
             if not src_repo_files:
                 continue
             src_repo_base_files = [sh.basename(f) for f in src_repo_files]
-            header = 'Building %s RPM packages from their SRPMs for repo %s using %s jobs'
-            header = header % (len(src_repo_files), self.SRC_REPOS[repo_name], self.jobs)
-            utils.log_iterable(src_repo_base_files, header=header, logger=LOG)
-
+            LOG.info('Building %s RPM packages from their SRPMs for repo %s using %s jobs',
+                     len(src_repo_files), self.SRC_REPOS[repo_name], self.jobs)
             makefile_name = sh.joinpths(self.deps_dir, "binary-%s.mk" % repo_name)
             marks_dir = sh.joinpths(self.deps_dir, "marks-binary")
             sh.mkdirslist(marks_dir)
@@ -370,11 +371,7 @@ class YumDependencyHandler(base.DependencyHandler):
         sh.write_file(makefile_name,
                       utils.expand_template(content, params),
                       tracewriter=self.tracewriter)
-        base_package_files = [sh.basename(f) for f in package_files]
-        utils.log_iterable(base_package_files,
-                           header="Building %s SRPM packages using %s jobs" %
-                           (len(package_files), self.jobs),
-                           logger=LOG)
+        LOG.info("Building %s SRPM packages using %s jobs", len(package_files), self.jobs)
         self._execute_make(makefile_name, marks_dir)
 
     def _write_spec_file(self, instance, rpm_name, template_name, params):
@@ -428,7 +425,11 @@ class YumDependencyHandler(base.DependencyHandler):
     def _build_from_spec(self, instance, spec_filename, patches=None):
         pkg_dir = instance.get_option('app_dir')
         if sh.isfile(sh.joinpths(pkg_dir, "setup.py")):
-            self._write_python_tarball(pkg_dir)
+            self._write_python_tarball(instance, pkg_dir,
+                                       ['doc',  # Without this one our rpm doc build won't work
+                                        'README.rst',  # Without this one pbr won't work (thus killing setup.py)
+                                        'babel.cfg',  # Without this one we won't be able to build i8ln translations
+                                       ])
         else:
             self._write_git_tarball(pkg_dir, spec_filename)
         self._copy_sources(instance)
@@ -467,15 +468,48 @@ class YumDependencyHandler(base.DependencyHandler):
         cmdline = ["gzip", output_filename]
         sh.execute(cmdline)
 
-    def _write_python_tarball(self, pkg_dir):
+    def _write_python_tarball(self, instance, pkg_dir, ensure_dirs=None):
+
+        def prefix_exists(text, in_what):
+            for t in in_what:
+                if t.startswith(text):
+                    return True
+            return False
+
+        pkg_name = instance.egg_info['name']
+        version = instance.egg_info['version']
+        base_name = "%s-%s" % (pkg_name, version)
         cmdline = [
             sys.executable,
             "setup.py",
             "sdist",
-            "--formats", "gztar",
+            "--formats=tar",
             "--dist-dir", self.rpm_sources_dir,
         ]
-        sh.execute(cmdline, cwd=pkg_dir)
+        out_filename = sh.joinpths(self.log_dir, "sdist-%s.log" % (instance.name))
+        sh.execute_save_output(cmdline, cwd=pkg_dir, out_filename=out_filename, quiet=True)
+        archive_name = sh.joinpths(self.rpm_sources_dir, "%s.tar" % (base_name))
+        if ensure_dirs:
+            with contextlib.closing(tarfile.open(archive_name, 'r')) as tfh:
+                tar_entries = [t.path for t in tfh.getmembers()]
+            missing_paths = {}
+            for p in ensure_dirs:
+                tar_path = sh.joinpths(base_name, p)
+                source_path = sh.joinpths(pkg_dir, p)
+                if not prefix_exists(tar_path, tar_entries) and sh.exists(source_path):
+                    missing_paths[tar_path] = source_path
+            if missing_paths:
+                utils.log_iterable(sorted(missing_paths.keys()),
+                                   logger=LOG,
+                                   header='%s paths were not archived and will now be' % (len(missing_paths)))
+                with contextlib.closing(tarfile.open(archive_name, 'a')) as tfh:
+                    for (tar_path, source_path) in missing_paths.items():
+                        tfh.add(source_path, tar_path)
+        gz_archive_name = "%s.gz" % (archive_name)
+        with contextlib.closing(gzip.open(gz_archive_name, 'wb')) as tz:
+            with open(archive_name, 'rb') as fh:
+                tz.write(fh.read())
+        sh.unlink(archive_name)
 
     @staticmethod
     def _is_client(instance_name, egg_name):
