@@ -77,6 +77,7 @@ class DependencyHandler(object):
         self.instances = instances
         self.opts = opts or {}
         self.deps_dir = sh.joinpths(self.root_dir, "deps")
+        self.downloaded_flag_file = sh.joinpths(self.deps_dir, "pip-downloaded")
         self.download_dir = sh.joinpths(self.deps_dir, "download")
         self.log_dir = sh.joinpths(self.deps_dir, "output")
         self.gathered_requires_filename = sh.joinpths(
@@ -309,11 +310,10 @@ class DependencyHandler(object):
                       "\n".join(str(req) for req in raw_pips_to_download))
         if not raw_pips_to_download:
             return ([], [])
-        downloaded_flag_file = sh.joinpths(self.deps_dir, "pip-downloaded")
         # NOTE(aababilov): user could have changed persona, so,
         # check that all requirements are downloaded
-        if sh.isfile(downloaded_flag_file) and self._requirements_satisfied(
-                raw_pips_to_download, self.download_dir):
+        if (sh.isfile(self.downloaded_flag_file) and
+            self._requirements_satisfied(raw_pips_to_download, self.download_dir)):
             LOG.info("All python dependencies have been already downloaded")
         else:
             pip_dir = sh.joinpths(self.deps_dir, "pip")
@@ -348,8 +348,8 @@ class DependencyHandler(object):
             sh.deldir(pip_dir)
             if pip_failures:
                 raise pip_failures[-1]
-            with open(downloaded_flag_file, "w"):
-                pass
+            sh.touch_file(self.downloaded_flag_file, die_if_there=False,
+                          quiet=True, tracewriter=self.tracewriter)
         pips_downloaded = [pip_helper.extract_requirement(p)
                            for p in raw_pips_to_download]
         self._examine_download_dir(pips_downloaded, self.download_dir)
