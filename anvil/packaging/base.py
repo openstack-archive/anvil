@@ -77,6 +77,7 @@ class DependencyHandler(object):
         self.instances = instances
         self.opts = opts or {}
         self.deps_dir = sh.joinpths(self.root_dir, "deps")
+        self.downloaded_flag_file = sh.joinpths(self.deps_dir, "pip-downloaded")
         self.download_dir = sh.joinpths(self.deps_dir, "download")
         self.log_dir = sh.joinpths(self.deps_dir, "output")
         self.gathered_requires_filename = sh.joinpths(
@@ -302,18 +303,16 @@ class DependencyHandler(object):
         """
         # NOTE(aababilov): do not drop download_dir - it can be reused
         sh.mkdirslist(self.download_dir, tracewriter=self.tracewriter)
-        download_requires_filename = sh.joinpths(self.deps_dir,
-                                                 "download-requires")
+        download_requires_filename = sh.joinpths(self.deps_dir, "download-requires")
         raw_pips_to_download = self.filter_download_requires()
         sh.write_file(download_requires_filename,
                       "\n".join(str(req) for req in raw_pips_to_download))
         if not raw_pips_to_download:
             return ([], [])
-        downloaded_flag_file = sh.joinpths(self.deps_dir, "pip-downloaded")
         # NOTE(aababilov): user could have changed persona, so,
         # check that all requirements are downloaded
-        if sh.isfile(downloaded_flag_file) and self._requirements_satisfied(
-                raw_pips_to_download, self.download_dir):
+        if (sh.isfile(self.downloaded_flag_file) and
+            self._requirements_satisfied(raw_pips_to_download, self.download_dir)):
             LOG.info("All python dependencies have been already downloaded")
         else:
             pip_dir = sh.joinpths(self.deps_dir, "pip")
@@ -325,7 +324,7 @@ class DependencyHandler(object):
             for attempt in xrange(self.MAX_PIP_DOWNLOAD_ATTEMPTS):
                 # NOTE(aababilov): pip has issues with already downloaded files
                 sh.deldir(pip_dir)
-                sh.mkdir(pip_download_dir, recurse=True)
+                sh.mkdirslist(pip_download_dir, tracewriter=self.tracewriter)
                 header = "Downloading %s python dependencies (attempt %s)"
                 header = header % (len(raw_pips_to_download), attempt)
                 utils.log_iterable(sorted(raw_pips_to_download),
@@ -348,8 +347,8 @@ class DependencyHandler(object):
             sh.deldir(pip_dir)
             if pip_failures:
                 raise pip_failures[-1]
-            with open(downloaded_flag_file, "w"):
-                pass
+            sh.touch_file(self.downloaded_flag_file, die_if_there=False,
+                          quiet=True, tracewriter=self.tracewriter)
         pips_downloaded = [pip_helper.extract_requirement(p)
                            for p in raw_pips_to_download]
         self._examine_download_dir(pips_downloaded, self.download_dir)
