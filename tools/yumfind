@@ -1,0 +1,40 @@
+#!/usr/bin/python
+
+import warnings
+warnings.filterwarnings("ignore")
+
+import logging
+import pkg_resources
+import sys
+
+from yum import YumBase
+
+
+if __name__ == '__main__':
+    pkg_name = sys.argv[1]
+    py_name = sys.argv[2]
+    req = pkg_resources.Requirement.parse(py_name)
+
+    base = YumBase()
+    base.doConfigSetup(debuglevel=-1, errorlevel=-1)
+    pkgs = base.doPackageLists(patterns=[pkg_name], ignore_case=True)
+    all_pkgs = list(pkgs.available)
+    all_pkgs.extend(pkgs.installed)
+
+    yum_map = {}
+    for pkg in all_pkgs:
+        for provides in pkg.provides:
+            pkg_info = (pkg.version, pkg.repo, str(pkg))
+            yum_map.setdefault(provides[0], set()).add(pkg_info)
+
+    match = None
+    yum_versions = yum_map.get(pkg_name, [])
+    for (version, repo, pkg) in yum_versions:
+            if version in req:
+                match = pkg
+
+    if match:
+        print(match)
+        sys.exit(0)
+    else:
+        sys.exit(1)
