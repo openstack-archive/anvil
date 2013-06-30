@@ -21,12 +21,15 @@ def get_shared_params(ip, api_host, api_port=9696, protocol='http', **kwargs):
     mp = {}
     mp['service_host'] = ip
 
-    # Uri's of the various quantum endpoints
+    # Uri's of the http/https endpoints
     mp['endpoints'] = {
-        'uri': utils.make_url(protocol, api_host, api_port),
-        'port': api_port,
-        'host': api_host,
-        'protocol': protocol,
+        'admin': {
+            'uri': utils.make_url(protocol, api_host, api_port),
+            'port': api_port,
+            'host': api_host,
+            'protocol': protocol,
+        },
     }
-
+    mp['endpoints']['internal'] = dict(mp['endpoints']['admin'])
+    mp['endpoints']['public'] = dict(mp['endpoints']['admin'])
     return mp

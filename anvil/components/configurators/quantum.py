@@ -18,6 +18,8 @@ from anvil import shell as sh
 from anvil import importer
 
 from anvil.components.configurators import base
+from anvil.components.configurators.quantum_plugins import l3
+from anvil.components.configurators.quantum_plugins import dhcp
 
 
 # Special generated conf
@@ -37,18 +39,27 @@ class QuantumConfigurator(base.Configurator):
     def __init__(self, installer):
         super(QuantumConfigurator, self).__init__(installer, CONFIGS)
         self.core_plugin = installer.get_option("core_plugin")
-        self.plugin_configurator = importer.import_entry_point(
-            "anvil.components.configurators.quantum_plugins.%s:%sConfigurator" %
-            (self.core_plugin, self.core_plugin.title()))(installer)
+        self.plugin_configurators = {
+            'core_plugin': importer.import_entry_point(
+                "anvil.components.configurators.quantum_plugins.%s:%sConfigurator" %
+                (self.core_plugin, self.core_plugin.title()))(installer),
+            'l3': l3.L3Configurator(installer),
+            'dhcp': dhcp.DhcpConfigurator(installer),
+        }
+
         self.config_adjusters = {
             PASTE_CONF: self._config_adjust_paste,
             API_CONF: self._config_adjust_api,
         }
-        self.config_adjusters.update(self.plugin_configurator.config_adjusters)
+        for plugin_configurator in self.plugin_configurators.values():
+            self.config_adjusters.update(plugin_configurator.config_adjusters)
 
     @property
     def config_files(self):
-        return list(CONFIGS) + self.plugin_configurator.config_files
+        config_files = list(CONFIGS)
+        for plugin_configurator in self.plugin_configurators.values():
+            config_files.extend(plugin_configurator.config_files)
+        return config_files
 
     def source_config(self, config_fn):
         if (config_fn.startswith("plugins") or
@@ -65,7 +76,7 @@ class QuantumConfigurator(base.Configurator):
             config.add(k, v)
 
     def _config_adjust_api(self, config):
-        config.add("core_plugin", self.plugin_configurator.PLUGIN_CLASS)
+        config.add("core_plugin", self.plugin_configurators['core_plugin'].PLUGIN_CLASS)
         config.add('auth_strategy', 'keystone')
         config.add("api_paste_config", self.target_config(PASTE_CONF))
         # TODO(aababilov): add debug to other services conf files
@@ -97,8 +108,12 @@ class QuantumConfigurator(base.Configurator):
             "auth_port": params["endpoints"]["admin"]["port"],
             "auth_protocol": params["endpoints"]["admin"]["protocol"],
             # This uses the public uri not the admin one...
-            "auth_uri": params["endpoints"]["public"]["uri"],
+            "auth_uri": params["endpoints"]["admin"]["uri"],
             "admin_tenant_name": params["service_tenant"],
             "admin_user": params["service_user"],
             "admin_password": params["service_password"],
         }
+
+    @property
+    def get_path_to_core_plugin_config(self):
+        return self.plugin_configurators['core_plugin'].get_plugin_config_file_path

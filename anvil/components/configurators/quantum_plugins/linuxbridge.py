@@ -22,7 +22,7 @@ PLUGIN_CONF = "linuxbridge_conf.ini"
 CONFIGS = [PLUGIN_CONF]
 
 
-class LinuxbridgeConfigurator(quantum_plugins.Configurator):
+class LinuxbridgeConfigurator(quantum_plugins.CorePluginConfigurator):
 
     PLUGIN_CLASS = "quantum.plugins.linuxbridge.lb_quantum_plugin.LinuxBridgePluginV2"
 
