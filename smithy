@@ -7,6 +7,7 @@ cd "$(dirname "$0")"
 
 VERBOSE="${VERBOSE:-0}"
 PY2RPM_CMD="$PWD/tools/py2rpm"
+YUMFIND_CMD="$PWD/tools/yumfind"
 
 YUM_OPTS="--assumeyes --nogpgcheck"
 PIP_CMD=""
@@ -156,51 +157,54 @@ try:
 except KeyError:
     pass
 ")
-    # NOTE(aababilov): drop `<` and `<=` requirements because yum cannot
-    # handle them correctly
-    local python_names=$(cat requirements.txt test-requirements.txt |
-        sed -r -e 's/#.*$//' -e 's/,?<[ =.0-9]+//' | sort -u)
-    local rpm_names=$("$PY2RPM_CMD" --package-map $package_map --convert $python_names |
-        while read req pack; do echo $pack; done | sort -u)
-    # Install all available RPMs
-    echo "Installing python requirement packages: $(echo $rpm_names)"
-    for rpm in $rpm_names; do
-        yum_install $rpm
-    done
-    # Build and install missing packages
-    local missing_python=""
-    for python_name in $python_names; do
-        rpm_name=$("$PY2RPM_CMD" --package-map $package_map --convert $python_name | awk '{print $2}' | sort -u)
-        if ! rpm_is_installed $rpm_name; then
-            missing_python="$missing_python $python_name"
+    local python_names=$(cat requirements.txt test-requirements.txt | sed -r -e 's/#.*$//' | sort -u)
+    echo "Attemping to install python requirements: $(echo $python_names)"
+    local missing_packages=""
+    local found_packages=""
+    for name in $python_names; do
+        local pkg_name=$("$PY2RPM_CMD" --package-map $package_map --convert "$name" | while read req pack; do echo $pack; done  | head -n1 | tr -s ' ' | cut -d' ' -f1)
+        local yum_name=$("$YUMFIND_CMD" "$pkg_name" "$name")
+        if [ -n "$yum_name" ]; then
+            found_packages="$found_packages $yum_name"
+        else
+            missing_packages="$missing_packages $name"
         fi
     done
-    if [ -z "$missing_python" ]; then
-        return
+    if [ -n "$found_packages" ]; then
+        echo "Attemping to install python requirements found as packages: $(echo $found_packages)"
+        yum install $YUM_OPTS $found_packages
+        if [ "$?" != "0" ]; then
+            echo "Failed installing $(echo $found_packages)"
+            return 1
+        fi
     fi
-    # Some RPMs are not available, try to build them on fly.
-    # First download them...
+    if [ -z "$missing_packages" ]; then
+        return 0
+    fi
+    echo "Building missing python requirements: $(echo $missing_packages)"
     local pip_tmp_dir=$(mktemp -d)
     find_pip
     local pip_opts="$PIP_OPTS -U -I"
-    echo "Downloading missing python requirements:$missing_python"
-    $PIP_CMD install $pip_opts $missing_python --download "$pip_tmp_dir"
-    # Now build them
-    echo "Building RPMs for $missing_python"
+    echo "Downloading..."
+    $PIP_CMD install $pip_opts $missing_packages --download "$pip_tmp_dir"
+    echo "Building RPMs..."
     local rpm_names=$("$PY2RPM_CMD"  --package-map $package_map -- "$pip_tmp_dir/"* 2>/dev/null |
         awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)
     if [ -z "$rpm_names" ]; then
-        echo "No binary RPMs were built for$missing_python"
+        echo "No binary RPMs were built!"
         return 1
     fi
-    echo "Installing missing python requirement packages: $(echo $rpm_names)"
+    local rpm_base_names=""
     for rpm in $rpm_names; do
-        yum_install "$rpm"
-        if [ "$?" != "0" ]; then
-            echo "Failed installing $rpm"
-            return 1
-        fi
+        rpm_base_names="$rpm_base_names $(basename $rpm)"
     done
+    echo "Installing missing python requirement packages: $(echo $rpm_base_names)"
+    yum install $YUM_OPTS $rpm_names
+    if [ "$?" != "0" ]; then
+        echo "Failed installing $(echo $rpm_base_names)"
+        return 1
+    fi
+    return 0
 }
 
 needs_bootstrap()
