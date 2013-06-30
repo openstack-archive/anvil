@@ -547,12 +547,17 @@ class YumDependencyHandler(base.DependencyHandler):
             return []
         cmdline = self.py2rpm_start_cmdline() + ["--convert"] + python_names
         rpm_names = []
-        for name in sh.execute(cmdline)[0].splitlines():
-            # name is "Requires: rpm-name"
-            try:
-                rpm_names.append(name.split(":", 1)[1].strip())
-            except IndexError:
-                pass
+        for line in sh.execute(cmdline)[0].splitlines():
+            # format is "Requires: rpm-name <=> X"
+            if not line.startswith("Requires:"):
+                continue
+            line = line[len("Requires:"):].strip()
+            positions = [line.find(">"), line.find("<"), line.find("=")]
+            positions = sorted([p for p in positions if p != -1])
+            if positions:
+                line = line[0:positions[0]].strip()
+            if line and line not in rpm_names:
+                rpm_names.append(line)
         return rpm_names
 
     def _all_rpm_names(self):
