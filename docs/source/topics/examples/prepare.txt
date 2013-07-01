@@ -1,14 +1,14 @@
 $ ./smithy -a prepare
-  ___  ___ ___ _  _ ___ _____ _   ___ _  __
- / _ \| _ \ __| \| / __|_   _/_\ / __| |/ /
-| (_) |  _/ _|| .` \__ \ | |/ _ \ (__| ' <
- \___/|_| |___|_|\_|___/ |_/_/ \_\___|_|\_\
-           Anvil: | 2013.1-dev |           
-       Let us get on with the show!        
----------------Action Runner---------------
+  _  ___ ___  _  _  __  ___  _   __  _  _
+ / \| o \ __|| \| |/ _||_ _|/ \ / _|| |//
+( o )  _/ _| | \\ |\_ \ | || o ( (_ |  (
+ \_/|_| |___||_|\_||__/ |_||_n_|\__||_|\\
+          Anvil: | 2013.1-dev |          
+And now for something completely different!
+--------------Action Runner--------------
 INFO: @anvil : Creating anvil directory at path: /home/harlowja/openstack
-INFO: @anvil.distro : Matched distro rhel for platform Linux-2.6.32-220.23.1.el6.YAHOO.20120713.x86_64-x86_64-with-redhat-6.2-Santiago
-INFO: @anvil : Starting action prepare on 2013-06-10T17:35:29.041245 for distro: rhel
+INFO: @anvil.distro : Matched distro rhel for platform Linux-2.6.32-358.6.2.el6.YAHOO.20130516.x86_64-x86_64-with-redhat-6.4-Santiago
+INFO: @anvil : Starting action prepare on 2013-07-01T01:15:22.185470 for distro: rhel
 INFO: @anvil : Using persona: conf/personas/in-a-box/basic.yaml
 INFO: @anvil : In root directory: /home/harlowja/openstack
 INFO: @anvil.actions.base : Processing components for action prepare.
@@ -28,6 +28,12 @@ INFO: @anvil.actions.base : |-- nova
 INFO: @anvil.actions.base : |-- nova-client
 INFO: @anvil.actions.base : Booting up your components.
 INFO: @anvil.actions.base : Reading passwords using a unencrypted keyring @ /etc/anvil/passwords.cfg
+Enter a secret to use for the service authentication password [or press enter to get a generated one]: 
+Enter a secret to use for the rabbit user [or press enter to get a generated one]: 
+Enter a secret to use for the keystone admin user [or press enter to get a generated one]: 
+Enter a secret to use for the service admin token [or press enter to get a generated one]: 
+Enter a secret to use for the database user [or press enter to get a generated one]: 
+INFO: @anvil.actions.base : Saving 5 passwords using a unencrypted keyring @ /etc/anvil/passwords.cfg
 INFO: @anvil.actions.base : Verifying that the components are ready to rock-n-roll.
 INFO: @anvil.actions.base : Warming up component configurations.
 INFO: @anvil.actions.prepare : Downloading general.
@@ -109,30 +115,16 @@ INFO: @anvil.actions.prepare : Post-download patching cinder-client.
 INFO: @anvil.actions.prepare : Post-download patching quantum-client.
 INFO: @anvil.actions.prepare : Post-download patching nova.
 INFO: @anvil.actions.prepare : Post-download patching nova-client.
-INFO: @anvil.actions.prepare : Preparing general.
-INFO: @anvil.actions.prepare : Preparing db.
-INFO: @anvil.actions.prepare : Preparing rabbit-mq.
-INFO: @anvil.actions.prepare : Preparing oslo-config.
-INFO: @anvil.actions.prepare : Preparing keystone.
-INFO: @anvil.actions.prepare : Preparing keystone-client.
-INFO: @anvil.actions.prepare : Preparing glance.
-INFO: @anvil.actions.prepare : Preparing cinder.
-INFO: @anvil.actions.prepare : Preparing glance-client.
-INFO: @anvil.actions.prepare : Preparing cinder-client.
-INFO: @anvil.actions.prepare : Preparing quantum-client.
-INFO: @anvil.actions.prepare : Preparing nova.
-INFO: @anvil.actions.prepare : Preparing nova-client.
-INFO: @anvil.actions.prepare : Packing OpenStack and its dependencies
 INFO: @anvil.packaging.base : Full known python dependency list:
 INFO: @anvil.packaging.base : |-- Cheetah>=2.4.4
 INFO: @anvil.packaging.base : |-- WebOb==1.2.3
 INFO: @anvil.packaging.base : |-- amqplib>=0.6.1
-INFO: @anvil.packaging.base : |-- anyjson>=0.2.4
+INFO: @anvil.packaging.base : |-- anyjson>=0.3.3
 INFO: @anvil.packaging.base : |-- argparse
 INFO: @anvil.packaging.base : |-- babel>=0.9.6
 INFO: @anvil.packaging.base : |-- boto
 INFO: @anvil.packaging.base : |-- cliff-tablib>=1.0
-INFO: @anvil.packaging.base : |-- cliff>=1.3.2
+INFO: @anvil.packaging.base : |-- cliff>=1.4
 INFO: @anvil.packaging.base : |-- coverage>=3.6
 INFO: @anvil.packaging.base : |-- d2to1>=0.2.10,<0.3
 INFO: @anvil.packaging.base : |-- discover
@@ -146,9 +138,9 @@ INFO: @anvil.packaging.base : |-- hacking>=0.5.3,<0.6
 INFO: @anvil.packaging.base : |-- hp3parclient>=1.0.0
 INFO: @anvil.packaging.base : |-- httplib2
 INFO: @anvil.packaging.base : |-- iso8601>=0.1.4
-INFO: @anvil.packaging.base : |-- jsonschema>=0.7,<2
+INFO: @anvil.packaging.base : |-- jsonschema
 INFO: @anvil.packaging.base : |-- keyring
-INFO: @anvil.packaging.base : |-- kombu>=1.0.4
+INFO: @anvil.packaging.base : |-- kombu>2.4.7
 INFO: @anvil.packaging.base : |-- lockfile>=0.8
 INFO: @anvil.packaging.base : |-- lxml>=2.3
 INFO: @anvil.packaging.base : |-- mock>=0.8.0
@@ -156,18 +148,17 @@ INFO: @anvil.packaging.base : |-- mox==0.5.3
 INFO: @anvil.packaging.base : |-- mysql-python
 INFO: @anvil.packaging.base : |-- netaddr>=0.7.6
 INFO: @anvil.packaging.base : |-- netifaces
-INFO: @anvil.packaging.base : |-- nose
 INFO: @anvil.packaging.base : |-- nose-exclude
+INFO: @anvil.packaging.base : |-- nose>=1.3.0
 INFO: @anvil.packaging.base : |-- nosehtmloutput>=0.0.3
 INFO: @anvil.packaging.base : |-- nosexcover
 INFO: @anvil.packaging.base : |-- openstack.nose-plugin>=0.7
-INFO: @anvil.packaging.base : |-- oslo.config>=1.1.0
 INFO: @anvil.packaging.base : |-- pam>=0.1.4
 INFO: @anvil.packaging.base : |-- paramiko>=1.8.0
 INFO: @anvil.packaging.base : |-- passlib
 INFO: @anvil.packaging.base : |-- paste
 INFO: @anvil.packaging.base : |-- pastedeploy>=1.5.0
-INFO: @anvil.packaging.base : |-- pbr>=0.5.10,<0.6
+INFO: @anvil.packaging.base : |-- pbr>=0.5.16,<0.6
 INFO: @anvil.packaging.base : |-- pep8==1.4.5
 INFO: @anvil.packaging.base : |-- prettytable>=0.6,<0.8
 INFO: @anvil.packaging.base : |-- psycopg2
@@ -183,7 +174,7 @@ INFO: @anvil.packaging.base : |-- python-ldap==2.3.13
 INFO: @anvil.packaging.base : |-- python-memcached
 INFO: @anvil.packaging.base : |-- python-subunit
 INFO: @anvil.packaging.base : |-- qpid-python
-INFO: @anvil.packaging.base : |-- requests>=1.0.0
+INFO: @anvil.packaging.base : |-- requests>=1.1,<1.2.1
 INFO: @anvil.packaging.base : |-- routes>=1.12.3
 INFO: @anvil.packaging.base : |-- setuptools-git>=0.4
 INFO: @anvil.packaging.base : |-- simplejson>=2.0.9
@@ -191,7 +182,7 @@ INFO: @anvil.packaging.base : |-- six
 INFO: @anvil.packaging.base : |-- sphinx>=1.1.2
 INFO: @anvil.packaging.base : |-- sqlalchemy-migrate>=0.7.2
 INFO: @anvil.packaging.base : |-- sqlalchemy>=0.7.8,<=0.7.9
-INFO: @anvil.packaging.base : |-- stevedore>=0.7
+INFO: @anvil.packaging.base : |-- stevedore>=0.9
 INFO: @anvil.packaging.base : |-- suds>=0.4
 INFO: @anvil.packaging.base : |-- testrepository>=0.0.13
 INFO: @anvil.packaging.base : |-- testscenarios<0.5
@@ -202,215 +193,209 @@ INFO: @anvil.packaging.base : |-- websockify<0.4
 INFO: @anvil.packaging.base : |-- webtest
 INFO: @anvil.packaging.base : |-- wsgiref>=0.1.2
 INFO: @anvil.packaging.base : |-- xattr>=0.6.0
-INFO: @anvil.packaging.yum : Building openstack-deps RPM
+INFO: @anvil.actions.prepare : Packaging general.
 Loaded plugins: kabi, presto, remove-with-leaves, versionlock
 Loading support for Red Hat kernel ABI
 INFO: @anvil.packaging.yum : 7 Python packages are already available as RPMs from repository base:
 INFO: @anvil.packaging.yum : |-- mysql-python as MySQL-python-1.2.3
-INFO: @anvil.packaging.yum : |-- nose as python-nose-0.10.4
 INFO: @anvil.packaging.yum : |-- pyasn1 as python-pyasn1-0.0.12a
 INFO: @anvil.packaging.yum : |-- pyopenssl as pyOpenSSL-0.10
+INFO: @anvil.packaging.yum : |-- python-memcached as python-memcached-1.43
 INFO: @anvil.packaging.yum : |-- simplejson>=2.0.9 as python-simplejson-2.0.9
 INFO: @anvil.packaging.yum : |-- suds>=0.4 as python-suds-0.4.1
 INFO: @anvil.packaging.yum : |-- webtest as python-webtest-1.2
-INFO: @anvil.packaging.yum : 21 Python packages are already available as RPMs from repository epel:
+INFO: @anvil.packaging.yum : 19 Python packages are already available as RPMs from repository epel:
 INFO: @anvil.packaging.yum : |-- amqplib>=0.6.1 as python-amqplib-0.6.1
-INFO: @anvil.packaging.yum : |-- anyjson>=0.2.4 as python-anyjson-0.3.1
 INFO: @anvil.packaging.yum : |-- eventlet>=0.9.17 as python-eventlet-0.9.17
-INFO: @anvil.packaging.yum : |-- feedparser as python-feedparser-5.0.1
+INFO: @anvil.packaging.yum : |-- feedparser as python-feedparser-5.1.2
 INFO: @anvil.packaging.yum : |-- fixtures>=0.3.12 as python-fixtures-0.3.12
 INFO: @anvil.packaging.yum : |-- greenlet>=0.3.1 as python-greenlet-0.3.1
 INFO: @anvil.packaging.yum : |-- httplib2 as python-httplib2-0.7.7
-INFO: @anvil.packaging.yum : |-- kombu>=1.0.4 as python-kombu-1.1.3
+INFO: @anvil.packaging.yum : |-- jsonschema as python-jsonschema-0.2
 INFO: @anvil.packaging.yum : |-- lockfile>=0.8 as python-lockfile-0.8
 INFO: @anvil.packaging.yum : |-- mock>=0.8.0 as python-mock-0.8.0
 INFO: @anvil.packaging.yum : |-- mox==0.5.3 as python-mox-0.5.3
 INFO: @anvil.packaging.yum : |-- passlib as python-passlib-1.5.3
-INFO: @anvil.packaging.yum : |-- prettytable>=0.6,<0.8 as python-prettytable-0.6.1
 INFO: @anvil.packaging.yum : |-- pyparsing>=1.5.6,<2.0 as pyparsing-1.5.6
 INFO: @anvil.packaging.yum : |-- pysendfile==2.0.0 as pysendfile-2.0.0
-INFO: @anvil.packaging.yum : |-- requests>=1.0.0 as python-requests-1.1.0
-INFO: @anvil.packaging.yum : |-- six as python-six-1.1.0
-INFO: @anvil.packaging.yum : |-- stevedore>=0.7 as python-stevedore-0.8
+INFO: @anvil.packaging.yum : |-- python-subunit as python-subunit-0.0.12
+INFO: @anvil.packaging.yum : |-- testrepository>=0.0.13 as python-testrepository-0.0.15
+INFO: @anvil.packaging.yum : |-- testscenarios<0.5 as python-testscenarios-0.4
 INFO: @anvil.packaging.yum : |-- testtools>=0.9.29 as python-testtools-0.9.30
 INFO: @anvil.packaging.yum : |-- unittest2 as python-unittest2-0.5.1
 INFO: @anvil.packaging.yum : |-- websockify<0.4 as python-websockify-0.2.0
-INFO: @anvil.packaging.yum : 7 Python packages are already available as RPMs from repository installed:
+INFO: @anvil.packaging.yum : 13 Python packages are already available as RPMs from repository installed:
+INFO: @anvil.packaging.yum : |-- Cheetah>=2.4.4 as python-cheetah-2.4.4
 INFO: @anvil.packaging.yum : |-- argparse as python-argparse-1.2.1
 INFO: @anvil.packaging.yum : |-- boto as python-boto-2.5.2
 INFO: @anvil.packaging.yum : |-- d2to1>=0.2.10,<0.3 as python-d2to1-0.2.10
+INFO: @anvil.packaging.yum : |-- distribute>=0.6.24 as python-setuptools-0.6.46
 INFO: @anvil.packaging.yum : |-- iso8601>=0.1.4 as python-iso8601-0.1.4
 INFO: @anvil.packaging.yum : |-- keyring as python-keyring-0.7
 INFO: @anvil.packaging.yum : |-- netifaces as python-netifaces-0.5
+INFO: @anvil.packaging.yum : |-- pbr>=0.5.16,<0.6 as python-pbr-0.5.17
+INFO: @anvil.packaging.yum : |-- prettytable>=0.6,<0.8 as python-prettytable-0.6.1
+INFO: @anvil.packaging.yum : |-- requests>=1.1,<1.2.1 as python-requests-1.1.0
 INFO: @anvil.packaging.yum : |-- setuptools-git>=0.4 as python-setuptools-git-1.0b1
-INFO: @anvil.packaging.yum : 3 Python packages are already available as RPMs from repository updates:
+INFO: @anvil.packaging.yum : |-- six as python-six-1.1.0
+INFO: @anvil.packaging.yum : 1 Python packages are already available as RPMs from repository updates:
 INFO: @anvil.packaging.yum : |-- paste as python-paste-1.7.4
+INFO: @anvil.packaging.yum : 1 Python packages are already available as RPMs from repository updates-i686:
 INFO: @anvil.packaging.yum : |-- psycopg2 as python-psycopg2-2.0.14
-INFO: @anvil.packaging.yum : |-- python-memcached as python-memcached-1.43
-INFO: @anvil.packaging.base : Downloading 39 python dependencies (attempt 0):
-INFO: @anvil.packaging.base : |-- Cheetah>=2.4.4
+INFO: @anvil.packaging.base : Downloading 36 python dependencies (attempt 0):
 INFO: @anvil.packaging.base : |-- WebOb==1.2.3
+INFO: @anvil.packaging.base : |-- anyjson>=0.3.3
 INFO: @anvil.packaging.base : |-- babel>=0.9.6
 INFO: @anvil.packaging.base : |-- cliff-tablib>=1.0
-INFO: @anvil.packaging.base : |-- cliff>=1.3.2
+INFO: @anvil.packaging.base : |-- cliff>=1.4
 INFO: @anvil.packaging.base : |-- coverage>=3.6
 INFO: @anvil.packaging.base : |-- discover
-INFO: @anvil.packaging.base : |-- distribute>=0.6.24
 INFO: @anvil.packaging.base : |-- flake8==2.0
 INFO: @anvil.packaging.base : |-- hacking>=0.5.3,<0.6
 INFO: @anvil.packaging.base : |-- hp3parclient>=1.0.0
-INFO: @anvil.packaging.base : |-- jsonschema>=0.7,<2
+INFO: @anvil.packaging.base : |-- kombu>2.4.7
 INFO: @anvil.packaging.base : |-- lxml>=2.3
 INFO: @anvil.packaging.base : |-- netaddr>=0.7.6
 INFO: @anvil.packaging.base : |-- nose-exclude
+INFO: @anvil.packaging.base : |-- nose>=1.3.0
 INFO: @anvil.packaging.base : |-- nosehtmloutput>=0.0.3
 INFO: @anvil.packaging.base : |-- nosexcover
 INFO: @anvil.packaging.base : |-- openstack.nose-plugin>=0.7
 INFO: @anvil.packaging.base : |-- pam>=0.1.4
 INFO: @anvil.packaging.base : |-- paramiko>=1.8.0
 INFO: @anvil.packaging.base : |-- pastedeploy>=1.5.0
-INFO: @anvil.packaging.base : |-- pbr>=0.5.10,<0.6
 INFO: @anvil.packaging.base : |-- pep8==1.4.5
 INFO: @anvil.packaging.base : |-- pycrypto>=2.1.0alpha1
 INFO: @anvil.packaging.base : |-- pyflakes==0.7.2
 INFO: @anvil.packaging.base : |-- pylint==0.25.2
 INFO: @anvil.packaging.base : |-- pysqlite
 INFO: @anvil.packaging.base : |-- python-ldap==2.3.13
-INFO: @anvil.packaging.base : |-- python-subunit
 INFO: @anvil.packaging.base : |-- qpid-python
 INFO: @anvil.packaging.base : |-- routes>=1.12.3
 INFO: @anvil.packaging.base : |-- sphinx>=1.1.2
 INFO: @anvil.packaging.base : |-- sqlalchemy-migrate>=0.7.2
 INFO: @anvil.packaging.base : |-- sqlalchemy>=0.7.8,<=0.7.9
-INFO: @anvil.packaging.base : |-- testrepository>=0.0.13
-INFO: @anvil.packaging.base : |-- testscenarios<0.5
+INFO: @anvil.packaging.base : |-- stevedore>=0.9
 INFO: @anvil.packaging.base : |-- warlock>=0.7.0,<2
 INFO: @anvil.packaging.base : |-- wsgiref>=0.1.2
 INFO: @anvil.packaging.base : |-- xattr>=0.6.0
-INFO: @anvil.shell : You can watch progress in another terminal with
-INFO: @anvil.shell :     tail -f /home/harlowja/openstack/deps/output/pip-download-attempt-0.out
-INFO: @anvil.packaging.base : Validating 67 files that were downloaded.
-INFO: @anvil.packaging.base : Dependency termcolor==1.1.0 was automatically included.
-INFO: @anvil.packaging.base : Dependency mccabe==0.2.1 was automatically included.
-INFO: @anvil.packaging.base : Dependency repoze.lru==0.6 was automatically included.
-INFO: @anvil.packaging.base : Dependency Jinja2==2.7 was automatically included.
-INFO: @anvil.packaging.base : Dependency fixtures==0.3.12 was automatically included.
-INFO: @anvil.packaging.base : Dependency d2to1==0.2.10 was automatically included.
-INFO: @anvil.packaging.base : Dependency tablib==0.9.11 was automatically included.
-INFO: @anvil.packaging.base : Dependency Markdown==2.3.1 was automatically included.
-INFO: @anvil.packaging.base : Dependency jsonpatch==1.0 was automatically included.
-INFO: @anvil.packaging.base : Dependency decorator==3.4.0 was automatically included.
-INFO: @anvil.packaging.base : Dependency docutils==0.10 was automatically included.
-INFO: @anvil.packaging.base : Dependency unittest2==0.5.1 was automatically included.
-INFO: @anvil.packaging.base : Dependency httplib2==0.8 was automatically included.
-INFO: @anvil.packaging.base : Dependency pyparsing==1.5.7 was automatically included.
-INFO: @anvil.packaging.base : Dependency extras==0.0.3 was automatically included.
-INFO: @anvil.packaging.base : Dependency python-mimeparse==0.1.4 was automatically included.
-INFO: @anvil.packaging.base : Dependency jsonpointer==1.0 was automatically included.
-INFO: @anvil.packaging.base : Dependency Pygments==1.6 was automatically included.
-INFO: @anvil.packaging.base : Dependency logilab-astng==0.24.3 was automatically included.
-INFO: @anvil.packaging.base : Dependency prettytable==0.7.2 was automatically included.
-INFO: @anvil.packaging.base : Dependency Tempita==0.5.1 was automatically included.
+INFO: @anvil.shell : You can watch progress in another terminal with:
+INFO: @anvil.shell :     tail -f /home/harlowja/openstack/deps/output/pip-download-attempt-0.log
+INFO: @anvil.packaging.base : Validating 64 files that were downloaded.
+INFO: @anvil.packaging.base : Dependency jsonschema==2.0.0 was automatically included.
 INFO: @anvil.packaging.base : Dependency setuptools-git==1.0b1 was automatically included.
-INFO: @anvil.packaging.base : Dependency logilab-common==0.59.1 was automatically included.
+INFO: @anvil.packaging.base : Dependency repoze.lru==0.6 was automatically included.
 INFO: @anvil.packaging.base : Dependency cmd2==0.6.5.1 was automatically included.
-INFO: @anvil.packaging.base : Dependency testtools==0.9.30 was automatically included.
-INFO: @anvil.packaging.base : Dependency colorama==0.2.5 was automatically included.
-INFO: @anvil.packaging.base : Dependency nose==1.3.0 was automatically included.
+INFO: @anvil.packaging.base : Dependency Pygments==1.6 was automatically included.
+INFO: @anvil.packaging.base : Dependency decorator==3.4.0 was automatically included.
+INFO: @anvil.packaging.base : Dependency httplib2==0.8 was automatically included.
+INFO: @anvil.packaging.base : Dependency prettytable==0.7.2 was automatically included.
+INFO: @anvil.packaging.base : Dependency importlib==1.0.2 was automatically included.
+INFO: @anvil.packaging.base : Dependency Jinja2==2.7 was automatically included.
+INFO: @anvil.packaging.base : Dependency jsonpatch==1.1 was automatically included.
+INFO: @anvil.packaging.base : Dependency docutils==0.10 was automatically included.
+INFO: @anvil.packaging.base : Dependency termcolor==1.1.0 was automatically included.
+INFO: @anvil.packaging.base : Dependency logilab-common==0.59.1 was automatically included.
+INFO: @anvil.packaging.base : Dependency unittest2==0.5.1 was automatically included.
+INFO: @anvil.packaging.base : Dependency logilab-astng==0.24.3 was automatically included.
+INFO: @anvil.packaging.base : Dependency jsonpointer==1.0 was automatically included.
+INFO: @anvil.packaging.base : Dependency pyparsing==1.5.7 was automatically included.
+INFO: @anvil.packaging.base : Dependency amqp==1.0.12 was automatically included.
+INFO: @anvil.packaging.base : Dependency d2to1==0.2.10 was automatically included.
+INFO: @anvil.packaging.base : Dependency ordereddict==1.1 was automatically included.
+INFO: @anvil.packaging.base : Dependency tablib==0.9.11 was automatically included.
 INFO: @anvil.packaging.base : Dependency MarkupSafe==0.18 was automatically included.
-INFO: @anvil.packaging.yum : Filtering 67 downloaded files.
-INFO: @anvil.packaging.yum : Dependency termcolor==1.1.0 was downloaded additionally but it can be satisfied by python-termcolor from repository installed instead.
-INFO: @anvil.packaging.yum : Dependency fixtures==0.3.12 was downloaded additionally but it can be satisfied by python-fixtures from repository epel instead.
-INFO: @anvil.packaging.yum : Dependency d2to1==0.2.10 was downloaded additionally but it can be satisfied by python-d2to1 from repository installed instead.
-INFO: @anvil.packaging.yum : Dependency unittest2==0.5.1 was downloaded additionally but it can be satisfied by python-unittest2 from repository epel instead.
-INFO: @anvil.packaging.yum : Dependency distribute==0.6.45 was downloaded additionally but it is disallowed.
-INFO: @anvil.packaging.yum : Dependency python-mimeparse==0.1.4 was downloaded additionally but it can be satisfied by python-mimeparse from repository epel instead.
+INFO: @anvil.packaging.base : Dependency colorama==0.2.5 was automatically included.
+INFO: @anvil.packaging.base : Dependency distribute==0.6.46 was automatically included.
+INFO: @anvil.packaging.base : Dependency Tempita==0.5.1 was automatically included.
+INFO: @anvil.packaging.base : Dependency mccabe==0.2.1 was automatically included.
+INFO: @anvil.packaging.base : Dependency pbr==0.5.17 was automatically included.
+INFO: @anvil.packaging.yum : Filtering 64 downloaded files.
 INFO: @anvil.packaging.yum : Dependency setuptools-git==1.0b1 was downloaded additionally but it can be satisfied by python-setuptools-git from repository installed instead.
-INFO: @anvil.packaging.yum : Dependency testtools==0.9.30 was downloaded additionally but it can be satisfied by python-testtools from repository epel instead.
-INFO: @anvil.packaging.yum : Building 59 dependency RPM packages:
-INFO: @anvil.packaging.yum : |-- Babel-0.9.6.zip
-INFO: @anvil.packaging.yum : |-- Cheetah-2.4.4.tar.gz
-INFO: @anvil.packaging.yum : |-- Jinja2-2.7.tar.gz
-INFO: @anvil.packaging.yum : |-- Markdown-2.3.1.tar.gz
-INFO: @anvil.packaging.yum : |-- MarkupSafe-0.18.tar.gz
-INFO: @anvil.packaging.yum : |-- PasteDeploy-1.5.0.tar.gz
-INFO: @anvil.packaging.yum : |-- Pygments-1.6.tar.gz
-INFO: @anvil.packaging.yum : |-- Routes-1.13.tar.gz
-INFO: @anvil.packaging.yum : |-- SQLAlchemy-0.7.9.tar.gz
-INFO: @anvil.packaging.yum : |-- Sphinx-1.2b1.tar.gz
-INFO: @anvil.packaging.yum : |-- Tempita-0.5.1.tar.gz
-INFO: @anvil.packaging.yum : |-- WebOb-1.2.3.tar.gz
-INFO: @anvil.packaging.yum : |-- cliff-1.3.3.tar.gz
-INFO: @anvil.packaging.yum : |-- cliff-tablib-1.0.tar.gz
-INFO: @anvil.packaging.yum : |-- cmd2-0.6.5.1.tar.gz
-INFO: @anvil.packaging.yum : |-- colorama-0.2.5.tar.gz
-INFO: @anvil.packaging.yum : |-- coverage-3.6.tar.gz
-INFO: @anvil.packaging.yum : |-- decorator-3.4.0.tar.gz
-INFO: @anvil.packaging.yum : |-- discover-0.4.0.tar.gz
-INFO: @anvil.packaging.yum : |-- docutils-0.10.tar.gz
-INFO: @anvil.packaging.yum : |-- extras-0.0.3.tar.gz
-INFO: @anvil.packaging.yum : |-- flake8-2.0.tar.gz
-INFO: @anvil.packaging.yum : |-- hacking-0.5.4.tar.gz
-INFO: @anvil.packaging.yum : |-- hp3parclient-1.0.0.tar.gz
-INFO: @anvil.packaging.yum : |-- httplib2-0.8.tar.gz
-INFO: @anvil.packaging.yum : |-- jsonpatch-1.0.tar.gz
-INFO: @anvil.packaging.yum : |-- jsonpointer-1.0.tar.gz
-INFO: @anvil.packaging.yum : |-- jsonschema-1.3.0.tar.gz
-INFO: @anvil.packaging.yum : |-- logilab-astng-0.24.3.tar.gz
-INFO: @anvil.packaging.yum : |-- logilab-common-0.59.1.tar.gz
-INFO: @anvil.packaging.yum : |-- lxml-3.2.1.tar.gz
-INFO: @anvil.packaging.yum : |-- mccabe-0.2.1.tar.gz
-INFO: @anvil.packaging.yum : |-- netaddr-0.7.10.zip
-INFO: @anvil.packaging.yum : |-- nose-1.3.0.tar.gz
-INFO: @anvil.packaging.yum : |-- nose-exclude-0.1.9.tar.gz
-INFO: @anvil.packaging.yum : |-- nosehtmloutput-0.0.4.tar.gz
-INFO: @anvil.packaging.yum : |-- nosexcover-1.0.8.tar.gz
-INFO: @anvil.packaging.yum : |-- openstack.nose_plugin-0.11.tar.gz
-INFO: @anvil.packaging.yum : |-- pam-0.1.4.tar.gz
-INFO: @anvil.packaging.yum : |-- paramiko-1.10.1.tar.gz
-INFO: @anvil.packaging.yum : |-- pbr-0.5.14.tar.gz
-INFO: @anvil.packaging.yum : |-- pep8-1.4.5.tar.gz
-INFO: @anvil.packaging.yum : |-- prettytable-0.7.2.zip
-INFO: @anvil.packaging.yum : |-- pycrypto-2.6.tar.gz
-INFO: @anvil.packaging.yum : |-- pyflakes-0.7.2.tar.gz
-INFO: @anvil.packaging.yum : |-- pylint-0.25.2.tar.gz
-INFO: @anvil.packaging.yum : |-- pyparsing-1.5.7.tar.gz
-INFO: @anvil.packaging.yum : |-- pysqlite-2.6.3.tar.gz
-INFO: @anvil.packaging.yum : |-- python-ldap-2.3.13.tar.gz
-INFO: @anvil.packaging.yum : |-- python-subunit-0.0.12.tar.gz
-INFO: @anvil.packaging.yum : |-- qpid-python-0.20.tar.gz
-INFO: @anvil.packaging.yum : |-- repoze.lru-0.6.tar.gz
-INFO: @anvil.packaging.yum : |-- sqlalchemy-migrate-0.7.2.tar.gz
-INFO: @anvil.packaging.yum : |-- tablib-0.9.11.tar.gz
-INFO: @anvil.packaging.yum : |-- testrepository-0.0.15.tar.gz
-INFO: @anvil.packaging.yum : |-- testscenarios-0.4.tar.gz
-INFO: @anvil.packaging.yum : |-- warlock-1.0.0.tar.gz
-INFO: @anvil.packaging.yum : |-- wsgiref-0.1.2.zip
-INFO: @anvil.packaging.yum : |-- xattr-0.6.4.tar.gz
-Building:  54% |#####################################################################################                                                                         | ETA:  0:02:45
-Building: 100% |##############################################################################################################################################################| Time: 0:05:21
-INFO: @anvil.packaging.yum : Building 10 OpenStack RPM packages:
-INFO: @anvil.packaging.yum : |-- cinder
-INFO: @anvil.packaging.yum : |-- cinder-client
-INFO: @anvil.packaging.yum : |-- glance
-INFO: @anvil.packaging.yum : |-- glance-client
-INFO: @anvil.packaging.yum : |-- keystone
-INFO: @anvil.packaging.yum : |-- keystone-client
-INFO: @anvil.packaging.yum : |-- nova
-INFO: @anvil.packaging.yum : |-- nova-client
-INFO: @anvil.packaging.yum : |-- oslo-config
-INFO: @anvil.packaging.yum : |-- quantum-client
-Building: 100% |##############################################################################################################################################################| Time: 0:03:49
-INFO: @anvil.packaging.yum : Creating repo at /home/harlowja/openstack/deps/openstack-deps
-INFO: @anvil.packaging.yum : Creating repo at /home/harlowja/openstack/deps/openstack-deps-sources
-INFO: @anvil.packaging.yum : Writing anvil.repo to /home/harlowja/openstack/deps/anvil.repo
+INFO: @anvil.packaging.yum : Dependency importlib==1.0.2 was downloaded additionally but it can be satisfied by python-importlib from repository epel instead.
+INFO: @anvil.packaging.yum : Dependency termcolor==1.1.0 was downloaded additionally but it can be satisfied by python-termcolor from repository installed instead.
+INFO: @anvil.packaging.yum : Dependency unittest2==0.5.1 was downloaded additionally but it can be satisfied by python-unittest2 from repository epel instead.
+INFO: @anvil.packaging.yum : Dependency d2to1==0.2.10 was downloaded additionally but it can be satisfied by python-d2to1 from repository installed instead.
+INFO: @anvil.packaging.yum : Dependency ordereddict==1.1 was downloaded additionally but it can be satisfied by python-ordereddict from repository installed instead.
+INFO: @anvil.packaging.yum : Dependency distribute==0.6.46 was downloaded additionally but it is disallowed.
+INFO: @anvil.packaging.yum : Dependency pbr==0.5.17 was downloaded additionally but it can be satisfied by python-pbr from repository installed instead.
+INFO: @anvil.packaging.yum : Building 56 SRPM packages using 5 jobs
+anyjson-0.3.3.tar.gz has been processed.
+amqp-1.0.12.tar.gz has been processed.
+cliff-1.4.tar.gz has been processed.
+cliff-tablib-1.0.tar.gz has been processed.
+cmd2-0.6.5.1.tar.gz has been processed.
+colorama-0.2.5.zip has been processed.
+Babel-0.9.6.zip has been processed.
+decorator-3.4.0.tar.gz has been processed.
+coverage-3.6.tar.gz has been processed.
+discover-0.4.0.tar.gz has been processed.
+hp3parclient-1.0.0.tar.gz has been processed.
+flake8-2.0.tar.gz has been processed.
+hacking-0.5.6.tar.gz has been processed.
+httplib2-0.8.tar.gz has been processed.
+jsonpointer-1.0.tar.gz has been processed.
+docutils-0.10.tar.gz has been processed.
+Jinja2-2.7.tar.gz has been processed.
+jsonpatch-1.1.tar.gz has been processed.
+logilab-astng-0.24.3.tar.gz has been processed.
+jsonschema-2.0.0.zip has been processed.
+logilab-common-0.59.1.tar.gz has been processed.
+kombu-2.5.12.tar.gz has been processed.
+mccabe-0.2.1.tar.gz has been processed.
+MarkupSafe-0.18.tar.gz has been processed.
+netaddr-0.7.10.zip has been processed.
+nose-exclude-0.1.9.tar.gz has been processed.
+nose-1.3.0.tar.gz has been processed.
+nosexcover-1.0.8.tar.gz has been processed.
+openstack.nose_plugin-0.11.tar.gz has been processed.
+pam-0.1.4.tar.gz has been processed.
+lxml-3.2.1.tar.gz has been processed.
+PasteDeploy-1.5.0.tar.gz has been processed.
+pep8-1.4.5.tar.gz has been processed.
+paramiko-1.10.1.tar.gz has been processed.
+pyflakes-0.7.2.tar.gz has been processed.
+prettytable-0.7.2.zip has been processed.
+pycrypto-2.6.tar.gz has been processed.
+nosehtmloutput-0.0.4.tar.gz has been processed.
+pyparsing-1.5.7.tar.gz has been processed.
+pysqlite-2.6.3.tar.gz has been processed.
+pylint-0.25.2.tar.gz has been processed.
+Pygments-1.6.tar.gz has been processed.
+python-ldap-2.3.13.tar.gz has been processed.
+repoze.lru-0.6.tar.gz has been processed.
+qpid-python-0.20.tar.gz has been processed.
+Routes-1.13.tar.gz has been processed.
+sqlalchemy-migrate-0.7.2.tar.gz has been processed.
+stevedore-0.9.1.tar.gz has been processed.
+Sphinx-1.2b1.tar.gz has been processed.
+SQLAlchemy-0.7.9.tar.gz has been processed.
+Tempita-0.5.1.tar.gz has been processed.
+warlock-1.0.1.tar.gz has been processed.
+WebOb-1.2.3.tar.gz has been processed.
+wsgiref-0.1.2.zip has been processed.
+xattr-0.6.4.tar.gz has been processed.
+tablib-0.9.11.tar.gz has been processed.
+INFO: @anvil.actions.prepare : Packaging db.
+INFO: @anvil.actions.prepare : Packaging rabbit-mq.
+INFO: @anvil.actions.prepare : Packaging oslo-config.
+INFO: @anvil.actions.prepare : Packaging keystone.
+INFO: @anvil.actions.prepare : Packaging keystone-client.
+INFO: @anvil.actions.prepare : Packaging glance.
+INFO: @anvil.actions.prepare : Packaging cinder.
+INFO: @anvil.actions.prepare : Packaging glance-client.
+INFO: @anvil.actions.prepare : Packaging cinder-client.
+INFO: @anvil.actions.prepare : Packaging quantum-client.
+INFO: @anvil.actions.prepare : Packaging nova.
+INFO: @anvil.actions.prepare : Packaging nova-client.
 INFO: @anvil.actions.base : Tearing down your components.
-INFO: @anvil : It took 891.834 seconds or 14.86 minutes to complete action prepare.
- ______________
-/ Say no more, \
-| Nudge nudge  |
-\ wink wink.   /
- --------------
+INFO: @anvil : It took 248.131 seconds or 4.14 minutes to complete action prepare.
+ ____________________
+/ Australia!         \
+| Australia!         |
+| Australia!         |
+\ We love you, amen. /
+ --------------------
         \   ^__^
          \  (oo)\_______
             (__)\       )\/\

@@ -30,6 +30,19 @@ Preparing
    :language: none
    :linenos:
 
+
+Building
+--------
+
+::
+
+     $ sudo ./smithy -a build
+
+
+.. literalinclude:: examples/build.txt
+   :language: none
+   :linenos:
+
 Installing
 ----------
 
