@@ -267,7 +267,7 @@ class YumDependencyHandler(base.DependencyHandler):
         LOG.info("Copying to %s", system_repo_filename)
         self.tracewriter.file_touched(system_repo_filename)
 
-    def _get_yum_available():
+    def _get_yum_available(self):
         yum_map = collections.defaultdict(list)
         for pkg in self.helper.get_available():
             for provides in pkg.provides:
