@@ -267,13 +267,12 @@ class YumDependencyHandler(base.DependencyHandler):
         LOG.info("Copying to %s", system_repo_filename)
         self.tracewriter.file_touched(system_repo_filename)
 
-    def _get_yum_available(self):
-        yum_map = {}
+    def _get_yum_available():
+        yum_map = collections.defaultdict(list)
         for pkg in self.helper.get_available():
             for provides in pkg.provides:
-                pkg_info = (pkg.version, pkg.repo)
-                yum_map.setdefault(provides[0], set()).add(pkg_info)
-        return yum_map
+                yum_map[provides[0]].append((pkg.version, pkg.repo))
+        return dict(yum_map)
 
     @staticmethod
     def _find_yum_match(yum_map, req, rpm_name):

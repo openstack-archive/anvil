@@ -64,7 +64,7 @@ class Helper(object):
 
     def get_available(self):
         base = Helper._get_yum_base()
-        pkgs = base.doPackageLists()
+        pkgs = base.doPackageLists(showdups=True)
         avail = list(pkgs.available)
         avail.extend(pkgs.installed)
         return avail

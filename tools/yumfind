@@ -3,7 +3,7 @@
 import warnings
 warnings.filterwarnings("ignore")
 
-import logging
+import os
 import pkg_resources
 import sys
 
@@ -11,13 +11,18 @@ from yum import YumBase
 
 
 if __name__ == '__main__':
+    if len(sys.argv) != 3:
+        print("%s package-name python-name" % (os.path.basename(sys.argv[0])))
+        sys.exit(1)
+
     pkg_name = sys.argv[1]
     py_name = sys.argv[2]
     req = pkg_resources.Requirement.parse(py_name)
 
     base = YumBase()
     base.doConfigSetup(debuglevel=-1, errorlevel=-1)
-    pkgs = base.doPackageLists(patterns=[pkg_name], ignore_case=True)
+    pkgs = base.doPackageLists(patterns=[pkg_name], ignore_case=True,
+                               showdups=True)
     all_pkgs = list(pkgs.available)
     all_pkgs.extend(pkgs.installed)
 
