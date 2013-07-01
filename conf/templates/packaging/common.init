@@ -2,6 +2,7 @@
 #*
     bin - as it is in /usr/bin (nova-api, keystone-all)
     package - directory in /etc (nova, keystone)
+    daemon_args - additional args for daemon (e.g., --config-file)
 *#
 #
 # $bin
@@ -16,6 +17,7 @@ prog=openstack-$bin
 exec="/usr/bin/$bin"
 pidfile="/var/run/$package/\$prog.pid"
 daemon_user=$package
+daemon_args=$daemon_args
 
 #raw
 [ -e /etc/sysconfig/$prog ] && . /etc/sysconfig/$prog
@@ -25,7 +27,7 @@ lockfile=/var/lock/subsys/$prog
 start() {
     [ -x $exec ] || exit 5
     echo -n $"Starting $prog: "
-    daemon --user $daemon_user --pidfile $pidfile "$exec &>/dev/null & echo \$! > $pidfile"
+    daemon --user $daemon_user --pidfile $pidfile "$exec $daemon_args &>/dev/null & echo \$! > $pidfile"
     retval=$?
     echo
     [ $retval -eq 0 ] && touch $lockfile
