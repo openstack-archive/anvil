@@ -31,6 +31,7 @@ FREEZE_CMD = ['freeze', '--local']
 EGGS_DETAILED = {}
 PYTHON_KEY_VERSION_RE = re.compile("^(.+)-([0-9][0-9.a-zA-Z]*)$")
 
+
 def create_requirement(name, version=None):
     name = pkg_resources.safe_name(name.strip())
     if not name:
