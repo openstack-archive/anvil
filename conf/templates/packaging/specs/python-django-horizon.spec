@@ -193,8 +193,14 @@ mv %{buildroot}%{python_sitelib}/bin/less "$node_less_dir/bin"
 mv %{buildroot}%{python_sitelib}/bin/lib "$node_less_dir/lib"
 rm -rf %{buildroot}%{python_sitelib}/bin/
 
+#NOTE(aababilov): temporarily drop dependency on OpenStack client packages during RPM building
+mkdir tmp_settings
+cp openstack_dashboard/settings.py* tmp_settings/
+sed -i -e '/import exceptions/d' -e '/exceptions\./d' openstack_dashboard/settings.py
 %{__python} manage.py collectstatic --noinput --pythonpath=../../lib/python2.7/site-packages/
 %{__python} manage.py compress --force --pythonpath=../../lib/python2.7/site-packages/
+mv tmp_settings/* openstack_dashboard/
+rm -rf tmp_settings
 
 # fix nodejs-less location
 sed -i -e 's@^less_binary.*$@less_binary = "/usr/lib/node_modules/less/bin/lessc"@' \
