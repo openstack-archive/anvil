@@ -73,6 +73,7 @@ class NovaConfigurator(base.Configurator):
         nova_conf.add('verbose', self.installer.get_bool_option('log_verbose'))
         nova_conf.add('state_path', '/var/lib/nova')
         nova_conf.add('log_dir', '/var/log/nova')
+        nova_conf.add('bindir', '/usr/bin')
 
         # Allow destination machine to match source for resize.
         nova_conf.add('allow_resize_to_same_host', True)
