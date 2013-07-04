@@ -20,7 +20,6 @@ import os
 import pkg_resources
 import sys
 
-import gzip
 import rpm
 import tarfile
 
@@ -489,8 +488,8 @@ class YumDependencyHandler(base.DependencyHandler):
             "HEAD",
         ]
         sh.execute(cmdline, cwd=pkg_dir)
-        cmdline = ["gzip", output_filename]
-        sh.execute(cmdline)
+        sh.gzip(output_filename)
+        sh.unlink(output_filename)
 
     def _write_python_tarball(self, instance, pkg_dir, ensure_exists=None):
 
@@ -529,10 +528,7 @@ class YumDependencyHandler(base.DependencyHandler):
                 with contextlib.closing(tarfile.open(archive_name, 'a')) as tfh:
                     for (tar_path, source_path) in missing_paths.items():
                         tfh.add(source_path, tar_path)
-        gz_archive_name = "%s.gz" % (archive_name)
-        with contextlib.closing(gzip.open(gz_archive_name, 'wb')) as tz:
-            with open(archive_name, 'rb') as fh:
-                tz.write(fh.read())
+        sh.gzip(archive_name)
         sh.unlink(archive_name)
 
     @staticmethod
