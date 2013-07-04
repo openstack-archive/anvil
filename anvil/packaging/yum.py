@@ -670,7 +670,7 @@ class YumDependencyHandler(base.DependencyHandler):
                 rpm_names.append(p)
 
         if rpm_names:
-            cmdline = ["yum", "remove", "--remove-leaves", "-y"]
+            cmdline = ["yum", "remove", "-y"]
             for p in self.no_remove:
                 cmdline.append("--exclude=%s" % (p))
             cmdline.extend(sorted(set(rpm_names)))
