@@ -108,10 +108,13 @@ class YumDependencyHandler(base.DependencyHandler):
         if self._no_remove is not None:
             return self._no_remove
         packages = env.get_key('REQUIRED_PACKAGES', default_value='').split()
-        own_details = pip_helper.get_directory_details(os.getcwd())
-        required_pips = own_details['dependencies']
-        no_remove = self._convert_names_python2rpm(required_pips)
-        no_remove.extend(packages)
+        no_remove = list(set(packages))
+        try:
+            own_details = pip_helper.get_directory_details(os.getcwd())
+            required_pips = own_details['dependencies']
+            no_remove.extend(self._convert_names_python2rpm(required_pips))
+        except Exception as e:
+            LOG.warn("Failed getting anvils python dependencies: %s", e)
         self._no_remove = no_remove
         return self._no_remove
 
