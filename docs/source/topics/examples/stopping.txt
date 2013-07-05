@@ -1,14 +1,12 @@
 $ sudo ./smithy  -a stop
-  ___  ____  _____ _   _ ____ _____  _    ____ _  __
- / _ \|  _ \| ____| \ | / ___|_   _|/ \  / ___| |/ /
-| | | | |_) |  _| |  \| \___ \ | | / _ \| |   | ' /
-| |_| |  __/| |___| |\  |___) || |/ ___ \ |___| . \
- \___/|_|   |_____|_| \_|____/ |_/_/   \_\____|_|\_\
-               Anvil: | 2013.1-dev |                
-    And now for something completely different!     
--------------------Action Runner--------------------
-INFO: @anvil.distro : Matched distro rhel for platform Linux-2.6.32-220.23.1.el6.YAHOO.20120713.x86_64-x86_64-with-redhat-6.2-Santiago
-INFO: @anvil : Starting action stop on 2013-06-03T17:54:57.363035 for distro: rhel
+____ ___  ____ _  _ ____ ___ ____ ____ _  _
+|  | |__] |___ |\ | [__   |  |__| |    |_/
+|__| |    |___ | \| ___]  |  |  | |___ | \_
+           Anvil: | 2013.1-dev |           
+       Let us get on with the show!        
+---------------Action Runner---------------
+INFO: @anvil.distro : Matched distro rhel for platform Linux-2.6.32-358.6.2.el6.YAHOO.20130516.x86_64-x86_64-with-redhat-6.4-Santiago
+INFO: @anvil : Starting action stop on 2013-07-05T05:16:51.069851 for distro: rhel
 INFO: @anvil : Using persona: conf/personas/in-a-box/basic.yaml
 INFO: @anvil : In root directory: /home/harlowja/openstack
 INFO: @anvil.actions.base : Processing components for action stop.
@@ -33,20 +31,13 @@ INFO: @anvil.actions.base : Warming up component configurations.
 INFO: @anvil.actions.stop : Stopping nova-client.
 INFO: @anvil.actions.stop : Stopped 0 items.
 INFO: @anvil.actions.stop : Stopping nova.
-INFO: @anvil.components.base_runtime : Stopped 12 programs started under nova component:
-INFO: @anvil.components.base_runtime : |-- nova-api-metadata
-INFO: @anvil.components.base_runtime : |-- nova-compute
-INFO: @anvil.components.base_runtime : |-- nova-network
-INFO: @anvil.components.base_runtime : |-- nova-conductor
-INFO: @anvil.components.base_runtime : |-- nova-dhcpbridge
-INFO: @anvil.components.base_runtime : |-- nova-api-ec2
-INFO: @anvil.components.base_runtime : |-- nova-scheduler
-INFO: @anvil.components.base_runtime : |-- nova-api-os-compute
-INFO: @anvil.components.base_runtime : |-- nova-cert
-INFO: @anvil.components.base_runtime : |-- nova-novncproxy
-INFO: @anvil.components.base_runtime : |-- nova-xvpvncproxy
-INFO: @anvil.components.base_runtime : |-- nova-consoleauth
-INFO: @anvil.actions.stop : Stopped 12 items.
+INFO: @anvil.components.base_runtime : Stopping program compute under component nova.
+INFO: @anvil.components.base_runtime : Stopping program network under component nova.
+INFO: @anvil.components.base_runtime : Stopping program conductor under component nova.
+INFO: @anvil.components.base_runtime : Stopping program cert under component nova.
+INFO: @anvil.components.base_runtime : Stopping program api under component nova.
+INFO: @anvil.components.base_runtime : Stopping program scheduler under component nova.
+INFO: @anvil.actions.stop : Stopped 6 items.
 INFO: @anvil.actions.stop : Stopping quantum-client.
 INFO: @anvil.actions.stop : Stopped 0 items.
 INFO: @anvil.actions.stop : Stopping cinder-client.
@@ -54,30 +45,29 @@ INFO: @anvil.actions.stop : Stopped 0 items.
 INFO: @anvil.actions.stop : Stopping glance-client.
 INFO: @anvil.actions.stop : Stopped 0 items.
 INFO: @anvil.actions.stop : Stopping cinder.
-INFO: @anvil.components.base_runtime : Stopped 1 programs started under cinder component:
-INFO: @anvil.components.base_runtime : |-- cinder-all
-INFO: @anvil.actions.stop : Stopped 1 items.
+INFO: @anvil.components.base_runtime : Stopping program api under component cinder.
+INFO: @anvil.components.base_runtime : Stopping program scheduler under component cinder.
+INFO: @anvil.actions.stop : Stopped 2 items.
 INFO: @anvil.actions.stop : Stopping glance.
-INFO: @anvil.components.base_runtime : Stopped 2 programs started under glance component:
-INFO: @anvil.components.base_runtime : |-- glance-api
-INFO: @anvil.components.base_runtime : |-- glance-registry
+INFO: @anvil.components.base_runtime : Stopping program api under component glance.
+INFO: @anvil.components.base_runtime : Stopping program registry under component glance.
 INFO: @anvil.actions.stop : Stopped 2 items.
 INFO: @anvil.actions.stop : Stopping keystone-client.
 INFO: @anvil.actions.stop : Stopped 0 items.
 INFO: @anvil.actions.stop : Stopping keystone.
-INFO: @anvil.components.base_runtime : Stopped 1 programs started under keystone component:
-INFO: @anvil.components.base_runtime : |-- keystone-all
+INFO: @anvil.components.base_runtime : Stopping program all under component keystone.
 INFO: @anvil.actions.stop : Stopped 1 items.
 INFO: @anvil.actions.stop : Stopping oslo-config.
 INFO: @anvil.actions.stop : Stopped 0 items.
 INFO: @anvil.actions.stop : Stopping rabbit-mq.
 INFO: @anvil.actions.stop : Stopped 1 items.
 INFO: @anvil.actions.stop : Stopping db.
+INFO: @anvil.components.base_runtime : Stopping program mysqld under component db.
 INFO: @anvil.actions.stop : Stopped 1 items.
 INFO: @anvil.actions.stop : Stopping general.
 INFO: @anvil.actions.stop : Stopped 0 items.
 INFO: @anvil.actions.base : Tearing down your components.
-INFO: @anvil : It took 19.074 seconds or 0.32 minutes to complete action stop.
+INFO: @anvil : It took 8.009 seconds or 0.13 minutes to complete action stop.
  ___________
 / You shine \
 | out like  |

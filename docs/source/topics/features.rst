@@ -99,3 +99,7 @@ Package tracking and building
 * Creation of a single rpm of your installation. This freezes what is needed for that release to a known set of packages and dependencies.
 * Automatically building and/or including all needed dependencies.
 * Includes application of your distributions native packages (when applicable).
+
+.. _OpenStack: http://openstack.org/
+.. _daemon: http://en.wikipedia.org/wiki/Daemon_(computing)
+.. _pypi: http://pypi.python.org/pypi
