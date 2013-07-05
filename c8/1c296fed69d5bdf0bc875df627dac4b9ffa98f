@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Approved+1: Alessio Ababilov <ilovegnulinux@gmail.com>
+Code-Review+2: Alessio Ababilov <ilovegnulinux@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 05 Jul 2013 09:21:00 +0000
+Reviewed-on: https://review.openstack.org/34522
+Project: stackforge/anvil
+Branch: refs/heads/stable/grizzly
