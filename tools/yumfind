@@ -26,17 +26,7 @@ import sys
 from yum import YumBase
 
 
-if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        print("%s package-name python-name" % (os.path.basename(sys.argv[0])))
-        sys.exit(1)
-
-    pkg_name = sys.argv[1]
-    py_name = sys.argv[2]
-    req = pkg_resources.Requirement.parse(py_name)
-
-    base = YumBase()
-    base.doConfigSetup(debuglevel=-1, errorlevel=-1)
+def find_matches(base, pkg_name, py_req):
     pkgs = base.doPackageLists(patterns=[pkg_name], ignore_case=True,
                                showdups=True)
     all_pkgs = list(pkgs.available)
@@ -45,19 +35,31 @@ if __name__ == '__main__':
     yum_map = {}
     for pkg in all_pkgs:
         for provides in pkg.provides:
-            pkg_info = (pkg.version, pkg.repo, pkg)
+            pkg_info = (pkg.version, pkg)
             yum_map.setdefault(provides[0], set()).add(pkg_info)
 
     matches = []
     yum_versions = yum_map.get(pkg_name, [])
-    for (version, repo, pkg) in yum_versions:
-            if version in req:
-                matches.append(pkg)
+    for (version, pkg) in yum_versions:
+        if version in py_req:
+            matches.append(pkg)
+    return matches
 
-    if matches:
-        # Pick the newest match.
-        match = sorted(matches)[-1]
-        print(match)
-        sys.exit(0)
-    else:
+
+if __name__ == '__main__':
+    arg_c = len(sys.argv) - 1
+    if arg_c < 2 or (arg_c % 2) != 0:
+        print("Usage: %s package-name python-name [package-name python-name] ..." % (os.path.basename(sys.argv[0])))
         sys.exit(1)
+    arg_v = sys.argv[1:]
+    base = YumBase()
+    base.doConfigSetup(debuglevel=-1, errorlevel=-1)
+    for (pkg_name, py_name) in zip(arg_v[0::2], arg_v[1::2]):
+        matches = find_matches(base, pkg_name,
+                               pkg_resources.Requirement.parse(py_name))
+        if matches:
+            # Pick the newest match.
+            print(sorted(matches)[-1])
+        else:
+            # Nothing found.
+            print("")
