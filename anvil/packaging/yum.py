@@ -641,22 +641,23 @@ class YumDependencyHandler(base.DependencyHandler):
         super(YumDependencyHandler, self).install()
 
         # Erase conflicting packages
-        cmdline = []
-        for p in self.requirements["conflicts"]:
+        actions = []
+        for p in sorted(self.requirements["conflicts"]):
             if self.helper.is_installed(p):
-                cmdline.append(p)
+                actions.append("erase %s" % (p))
+        self.helper.run_transaction(actions)
 
-        if cmdline:
-            cmdline = ["yum", "erase", "-y"] + cmdline
-            sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
-
+        # For some reason yum shell can't handle this correctly.
         cmdline = ["yum", "clean", "all"]
         sh.execute(cmdline)
 
+        # Install new ones
+        actions = []
         rpm_names = self._all_rpm_names()
         if rpm_names:
-            cmdline = ["yum", "install", "-y"] + rpm_names
-            sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
+            for r in sorted(rpm_names):
+                actions.append("install %s" % (r))
+            self.helper.run_transaction(actions)
 
     def uninstall(self):
         super(YumDependencyHandler, self).uninstall()
@@ -670,8 +671,14 @@ class YumDependencyHandler(base.DependencyHandler):
                 rpm_names.append(p)
 
         if rpm_names:
-            cmdline = ["yum", "remove", "--remove-leaves", "-y"]
-            for p in self.no_remove:
-                cmdline.append("--exclude=%s" % (p))
-            cmdline.extend(sorted(set(rpm_names)))
-            sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
+            # Erase old ones.
+            actions = []
+            for r in sorted(rpm_names):
+                actions.append("erase %s" % (r))
+            actions.append("run")
+            # Ensure things we need to run are still there.
+            actions.append("# These are needed so we don't remove dependencies we need.")
+            for p in sorted(self.no_remove):
+                actions.append("install %s" % (p))
+            actions.append("run")
+            self.helper.run_transaction(actions)

@@ -19,6 +19,15 @@ from yum import YumBase
 
 from yum.packages import PackageObject
 
+import sys
+import tempfile
+
+from anvil import log as logging
+from anvil import shell as sh
+from anvil import utils
+
+LOG = logging.getLogger(__name__)
+
 
 class Requirement(object):
     def __init__(self, name, version):
@@ -61,6 +70,39 @@ class Helper(object):
             return True
         else:
             return False
+
+    def run_transaction(self, actions):
+        if not actions:
+            return
+        base_actions = [
+            'config assumeyes 1',
+        ]
+        if LOG.logger.isEnabledFor(logging.DEBUG):
+            base_actions.extend([
+                'config debuglevel 2',
+                'config errorlevel 2',
+            ])
+        else:
+            base_actions.extend([
+                'config debuglevel -1',
+                'config errorlevel -1',
+            ])
+        actions = base_actions + list(actions)
+        with tempfile.NamedTemporaryFile(suffix=".txn") as fh:
+            for a in actions:
+                fh.write("%s\n" % (a.strip()))
+            if 'run' not in actions:
+                fh.write("run\n")
+            if 'exit' not in actions:
+                fh.write("exit\n")
+            fh.flush()
+            fh.seek(0)
+            contents = fh.read().splitlines()
+            utils.log_iterable(contents,
+                               header="Running yum shell with",
+                               logger=LOG)
+            cmdline = ['yum', 'shell', fh.name]
+            sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
 
     def get_available(self):
         base = Helper._get_yum_base()
