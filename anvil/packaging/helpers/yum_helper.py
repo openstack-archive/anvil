@@ -19,6 +19,11 @@ from yum import YumBase
 
 from yum.packages import PackageObject
 
+import sys
+import tempfile
+
+from anvil import shell as sh
+
 
 class Requirement(object):
     def __init__(self, name, version):
@@ -61,6 +66,21 @@ class Helper(object):
             return True
         else:
             return False
+
+    def run_transaction(self, actions, cmd_options=None):
+        with tempfile.NamedTemporaryFile(suffix=".txn") as fh:
+            for a in actions:
+                fh.write("%s\n" % (a.strip()))
+            if 'run' not in actions:
+                fh.write("run\n")
+            if 'exit' not in actions:
+                fh.write("exit\n")
+            fh.flush()
+            cmdline = ['yum', '-y']
+            if cmd_options:
+                cmdline.extend(cmd_options)
+            cmdline.extend(['shell', fh.name])
+            sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
 
     def get_available(self):
         base = Helper._get_yum_base()

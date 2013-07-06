@@ -641,22 +641,17 @@ class YumDependencyHandler(base.DependencyHandler):
         super(YumDependencyHandler, self).install()
 
         # Erase conflicting packages
-        cmdline = []
+        actions = []
         for p in self.requirements["conflicts"]:
             if self.helper.is_installed(p):
-                cmdline.append(p)
-
-        if cmdline:
-            cmdline = ["yum", "erase", "-y"] + cmdline
-            sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
-
-        cmdline = ["yum", "clean", "all"]
-        sh.execute(cmdline)
+                actions.append("erase %s" % (p))
+        actions.append("clean all")
 
         rpm_names = self._all_rpm_names()
         if rpm_names:
-            cmdline = ["yum", "install", "-y"] + rpm_names
-            sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
+            for r in rpm_names:
+                actions.append("install %s" % (r))
+            self.helper.run_transaction(actions)
 
     def uninstall(self):
         super(YumDependencyHandler, self).uninstall()
@@ -670,8 +665,10 @@ class YumDependencyHandler(base.DependencyHandler):
                 rpm_names.append(p)
 
         if rpm_names:
-            cmdline = ["yum", "remove", "--remove-leaves", "-y"]
+            actions = []
+            options = []
             for p in self.no_remove:
-                cmdline.append("--exclude=%s" % (p))
-            cmdline.extend(sorted(set(rpm_names)))
-            sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
+                options.append("--exclude=%s" % (p))
+            for r in sorted(set(rpm_names)):
+                actions.append("erase %s" % (r))
+            self.helper.run_transaction(actions, cmd_options=options)
