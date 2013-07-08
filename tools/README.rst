@@ -95,6 +95,20 @@ builds RPMs (current directory is used by default)::
     ...
 
 
+yyoom
+-----
+
+`yyoom` uses yum API to provide nice command-line interface to package
+management. It is able to install and remove packages in the same
+transaction (see `yyoom transaction --help`), list available or installed
+packages and a bit more. It writes results of its work to standard output
+in JSON.
+
+`yyoom` is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
 git-changelog
 -------------
 This tool generates a pretty software's changelog from git history.
