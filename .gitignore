@@ -3,6 +3,7 @@
 *.pyc
 /build/
 /dist/
+/tools/yyoomc
 .coverage
 *.egg-info
 
