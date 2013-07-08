@@ -14,47 +14,42 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-# See http://yum.baseurl.org/api/yum-3.2.26/yum-module.html
-from yum import YumBase
+import sys
+import json
 
-from yum.packages import PackageObject
+from contextlib import contextmanager
 
+from anvil import log as logging
+from anvil import shell as sh
 
-class Requirement(object):
-    def __init__(self, name, version):
-        self.name = str(name)
-        self.version = version
-
-    def __str__(self):
-        name = self.name
-        if self.version is not None:
-            name += "-%s" % (self.version)
-        return name
-
-    @property
-    def package(self):
-        # Form a 'fake' rpm package that
-        # can be used to compare against
-        # other rpm packages using the
-        # standard rpm routines
-        my_pkg = PackageObject()
-        my_pkg.name = self.name
-        if self.version is not None:
-            my_pkg.version = str(self.version)
-        return my_pkg
+LOG = logging.getLogger(__name__)
 
 
 class Helper(object):
-    # Cache of yumbase object
-    _yum_base = None
+
+    def __init__(self):
+        self._installed = None
+        self._available = None
 
     @staticmethod
-    def _get_yum_base():
-        if Helper._yum_base is None:
-            _yum_base = YumBase()
-            _yum_base.setCacheDir(force=True)
-            Helper._yum_base = _yum_base
-        return Helper._yum_base
+    def _yyoom(arglist):
+        executable = sh.which("yyoom", ["tools/"])
+        cmdline = [executable]
+        if LOG.logger.isEnabledFor(logging.DEBUG):
+            cmdline.append('--verbose')
+        cmdline.extend(arglist)
+        out = sh.execute(cmdline, stderr_fh=sys.stderr)[0].strip()
+        if out:
+            return json.loads(out)
+        return None
+
+    @staticmethod
+    def _trace_installed_packages(tracewriter, data):
+        if tracewriter is None or not data:
+            return
+        for action in data:
+            if action['action_type'] == 'install':
+                tracewriter.package_installed(action['name'])
 
     def is_installed(self, name):
         if len(self.get_installed(name)):
@@ -63,18 +58,38 @@ class Helper(object):
             return False
 
     def get_available(self):
-        base = Helper._get_yum_base()
-        pkgs = base.doPackageLists()
-        avail = list(pkgs.available)
-        avail.extend(pkgs.installed)
-        return avail
+        if self._available is None:
+            self._available = self._yyoom(['list', 'available'])
+        return self._available
 
     def get_installed(self, name):
-        base = Helper._get_yum_base()
-        pkgs = base.doPackageLists(pkgnarrow='installed',
-                                   ignore_case=True, patterns=[name])
-        if pkgs.installed:
-            whats_installed = list(pkgs.installed)
-        else:
-            whats_installed = []
-        return whats_installed
+        if self._installed is None:
+            self._installed = self._yyoom(['list', 'installed'])
+        return [item for item in self._installed
+                if item['name'] == name]
+
+    def builddep(self, srpm_path, tracewriter=None):
+        data = self._yyoom(['builddep', srpm_path])
+        self._trace_installed_packages(tracewriter, data)
+
+    def clean(self):
+        self._yyoom(['cleanall'])
+
+    def transaction(self, install_pkgs=(), remove_pkgs=(), tracewriter=None):
+        if not install_pkgs and not remove_pkgs:
+            return
+
+        # reset the caches:
+        self._installed = None
+        self._available = None
+
+        cmdline = ['transaction']
+        for pkg in install_pkgs:
+            cmdline.append('--install')
+            cmdline.append(pkg)
+        for pkg in remove_pkgs:
+            cmdline.append('--erase')
+            cmdline.append(pkg)
+
+        data = self._yyoom(cmdline)
+        self._trace_installed_packages(tracewriter, data)
