@@ -16,7 +16,6 @@
 
 import collections
 import contextlib
-import os
 import pkg_resources
 import sys
 
@@ -25,7 +24,6 @@ import rpm
 import tarfile
 
 from anvil import colorizer
-from anvil import env
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil.packaging import base
@@ -103,18 +101,6 @@ class YumDependencyHandler(base.DependencyHandler):
         self.anvil_repo_dir = sh.joinpths(self.root_dir, "repo")
         self._no_remove = None
 
-    @property
-    def no_remove(self):
-        if self._no_remove is not None:
-            return self._no_remove
-        packages = env.get_key('REQUIRED_PACKAGES', default_value='').split()
-        own_details = pip_helper.get_directory_details(os.getcwd())
-        required_pips = own_details['dependencies']
-        no_remove = self._convert_names_python2rpm(required_pips)
-        no_remove.extend(packages)
-        self._no_remove = no_remove
-        return self._no_remove
-
     def py2rpm_start_cmdline(self):
         cmdline = [
             self.py2rpm_executable,
@@ -178,20 +164,13 @@ class YumDependencyHandler(base.DependencyHandler):
             sh.move(filename, target_dir, force=True)
 
     def build_binary(self):
-
-        def _install_build_requirements():
-            build_requires = self.requirements["build-requires"]
-            if build_requires:
-                utils.log_iterable(sorted(build_requires),
-                                   header=("Installing %s build requirements" % len(build_requires)),
-                                   logger=LOG)
-                cmdline = ["yum", "install", "-y"] + list(build_requires)
-                sh.execute(cmdline)
-
         def _is_src_rpm(filename):
             return filename.endswith('.src.rpm')
 
-        _install_build_requirements()
+        LOG.info("Installing build requirements")
+        self.helper.transaction(
+            install_pkgs=self.requirements["build-requires"],
+            tracewriter=self.tracewriter)
 
         for repo_name in self.REPOS:
             repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)
@@ -269,8 +248,8 @@ class YumDependencyHandler(base.DependencyHandler):
     def _get_yum_available(self):
         yum_map = collections.defaultdict(list)
         for pkg in self.helper.get_available():
-            for provides in pkg.provides:
-                yum_map[provides[0]].append((pkg.version, pkg.repo))
+            for provides in pkg['provides']:
+                yum_map[provides[0]].append((pkg['version'], pkg['repo']))
         return dict(yum_map)
 
     @staticmethod
@@ -638,39 +617,18 @@ class YumDependencyHandler(base.DependencyHandler):
 
     def install(self):
         super(YumDependencyHandler, self).install()
+        self.helper.clean()
 
         # Erase conflicting packages
-        cmdline = []
-        for p in self.requirements["conflicts"]:
-            if self.helper.is_installed(p):
-                cmdline.append(p)
-
-        if cmdline:
-            cmdline = ["yum", "erase", "-y"] + cmdline
-            sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
-
-        cmdline = ["yum", "clean", "all"]
-        sh.execute(cmdline)
-
-        rpm_names = self._all_rpm_names()
-        if rpm_names:
-            cmdline = ["yum", "install", "-y"] + rpm_names
-            sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
+        remove_pkgs = [pkg_name
+                       for pkg_name in self.requirements["conflicts"]
+                       if self.helper.is_installed(pkg_name)]
+        self.helper.transaction(install_pkgs=self._all_rpm_names(),
+                                remove_pkgs=remove_pkgs,
+                                tracewriter=self.tracewriter)
 
     def uninstall(self):
         super(YumDependencyHandler, self).uninstall()
-
-        scan_packages = self._all_rpm_names()
-        rpm_names = []
-        for p in scan_packages:
-            if p in self.no_remove:
-                continue
-            if self.helper.is_installed(p):
-                rpm_names.append(p)
-
-        if rpm_names:
-            cmdline = ["yum", "remove", "--remove-leaves", "-y"]
-            for p in self.no_remove:
-                cmdline.append("--exclude=%s" % (p))
-            cmdline.extend(sorted(set(rpm_names)))
-            sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
+        if self.tracereader.exists():
+            remove_pkgs = self.tracereader.packages_installed()
+            self.helper.transaction(remove_pkgs=remove_pkgs)

@@ -1,0 +1,291 @@
+#!/usr/bin/python
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Library General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+# Copyright 2005 Duke University
+# Parts Copyright 2007 Red Hat, Inc
+
+"""YYOOM: a package management utility
+
+Using Yum API instead of /usr/bin/yum provides several interesting
+capabilities, some of which we are desperate to use, including:
+- installing and removing packages in same transaction;
+- JSON output.
+"""
+
+
+import argparse
+import json
+import logging
+import os
+import sys
+import yum
+
+from contextlib import contextmanager
+
+LOG = logging.getLogger('yum-tool')
+OUTPUT = None
+
+
+def _setup_output():
+    """Do some nasty manipulations with fds
+
+    Yum internals may sometimes write to stdout, just out of a sudden.
+    To prevent this output form interfering with our JSON, we save
+    current stdout to other fd via os.dup, and replace fd 1 with
+    /dev/null opened for writing.
+    """
+    global OUTPUT
+    # save current stdout for later use
+    OUTPUT = os.fdopen(os.dup(sys.stdout.fileno()), 'wb')
+    # close the stream
+    sys.stdout.close()
+    # open /dev/null -- all writes to stdout from now on will go there
+    devnull_fd = os.open(os.devnull, os.O_WRONLY)
+    if devnull_fd != 1:
+        os.dup2(devnull_fd, 1)
+        os.close(devnull_fd)
+    sys.stdout = os.fdopen(1, 'w')
+
+
+def _write_output(data):
+    """Dump given object as pretty json"""
+    OUTPUT.write(json.dumps(data, indent=4,
+                            separators=(',', ': '),
+                            sort_keys=True) + '\n')
+
+
+def _package_info(pkg, **kwargs):
+    if isinstance(pkg, basestring):
+        result = dict(name=pkg, **kwargs)
+    else:
+        result = dict(
+            name=pkg.name,
+            epoch=pkg.epoch,
+            version=pkg.version,
+            release=pkg.release,
+            provides=pkg.provides,
+            repo=str(pkg.repo),
+            arch=pkg.arch,
+            **kwargs
+        )
+    return result
+
+
+class _RPMCallback(yum.rpmtrans.RPMBaseCallback):
+    """Listen to events from RPM transactions"""
+
+    def __init__(self):
+        self.seen = []
+
+    def event(self, package, action, te_current, te_total,
+              ts_current, ts_total):
+        pass
+
+    def scriptout(self, package, msg):
+        if not msg or not LOG.isEnabledFor(logging.INFO):
+            return
+        for line in msg.splitlines():
+            line = line.strip()
+            if line:
+                LOG.info("%s: %s", package, line)
+
+    def errorlog(self, msg):
+        LOG.error("%s", msg)
+
+    def filelog(self, package, action):
+        action_data = _package_info(package, action_code=action)
+        if action in yum.constants.TS_INSTALL_STATES:
+            action_data['action_type'] = 'install'
+        elif action in yum.constants.TS_REMOVE_STATES:
+            action_data['action_type'] = 'erase'
+        else:
+            action_data['action_type'] = 'other'
+        self.seen.append(action_data)
+        LOG.info("Performed %(action_type)s (code %(action_code)s) on %(name)s"
+                 % action_data)
+
+
+def _run(yum_base, options):
+    """Handler of `transaction` command
+
+    Installs and erases packages, prints what was done in JSON
+    """
+    LOG.debug('Erasing packages: %s', options.erase)
+    LOG.debug('Installing packages: %s', options.install)
+    callback = _RPMCallback()
+    with _transaction(yum_base, callback):
+        for name in options.erase or ():
+            yum_base.remove(name=name)
+        for name in options.install or ():
+            yum_base.install(name=name)
+    _write_output(callback.seen)
+
+
+def _list(yum_base, options):
+    """Handler of `list` command"""
+    pkgnarrow = options.what[0] if len(options.what) == 1 else 'all'
+    lists = yum_base.doPackageLists(pkgnarrow=pkgnarrow, showdups=True)
+    LOG.debug("Got packages for '%s': %s installed, %s available,"
+              "%s available for reinstall, %s extras",
+              pkgnarrow, len(lists.installed), len(lists.available),
+              len(lists.reinstall_available), len(lists.extras))
+
+    result = []
+    if 'installed' in options.what:
+        result.extend(_package_info(pkg, status='installed')
+                      for pkg in lists.installed)
+    if 'available' in options.what:
+        result.extend(_package_info(pkg, status='available')
+                      for pkg in lists.available)
+        result.extend(_package_info(pkg, status='available')
+                      for pkg in lists.reinstall_available)
+    if 'extras' in options.what:
+        result.extend(_package_info(pkg, status='installed')
+                      for pkg in lists.extras)
+    _write_output(result)
+
+
+def _cleanall(yum_base, options):
+    """Handler of `cleanall` command"""
+    LOG.info("Running yum cleanup")
+    code = sum((
+        _run_yum_api('packages clean up', yum_base.cleanPackages),
+        _run_yum_api('headers clean up', yum_base.cleanHeaders),
+        _run_yum_api('metadata clean up', yum_base.cleanMetadata),
+        _run_yum_api('sqlite clean up', yum_base.cleanSqlite),
+        _run_yum_api('rpm db clean up', yum_base.cleanRpmDB),
+    ))
+    return code
+
+
+def _builddep(yum_base, options):
+    """Handler of `builddep` command
+
+    Installs build dependencies for given package, prints what was done
+    in JSON.
+    """
+    LOG.info("Installing build dependencies for package %s", options.srpm)
+    srpm = yum.packages.YumLocalPackage(yum_base.ts, options.srpm)
+    callback = _RPMCallback()
+    with _transaction(yum_base, callback):
+        for req in srpm.requiresList():
+            LOG.debug('Processing dependency: %s', req)
+            if not (
+                req.startswith('rpmlib(') or
+                yum_base.returnInstalledPackagesByDep(req)
+            ):
+                pkg = yum_base.returnPackageByDep(req)
+                LOG.debug('Installing %s', pkg)
+                yum_base.install(pkg)
+    _write_output(callback.seen)
+
+
+def _parse_arguments(args):
+    parser = argparse.ArgumentParser(prog=args[0])
+    parser.add_argument('--verbose', '-v', action='store_true',
+                        help='verbose operation')
+    # TODO(imelnikov): --format
+    subparsers = parser.add_subparsers(title='subcommands')
+
+    parser_list = subparsers.add_parser('list', help='list packages')
+    parser_list.add_argument('what', nargs='+',
+                             choices=('installed', 'available', 'extras'),
+                             help='what packages to list')
+    parser_list.set_defaults(func=_list)
+
+    parser_run = subparsers.add_parser('transaction',
+                                       help='install or remove packages')
+    parser_run.set_defaults(func=_run)
+    parser_run.add_argument('--install', '-i', action='append',
+                            metavar='package',
+                            help='install package')
+    parser_run.add_argument('--erase', '-e', action='append',
+                            metavar='package',
+                            help='erase package')
+
+    parser_builddep = subparsers.add_parser(
+            'builddep', help='install build dependencies of srpm')
+    parser_builddep.add_argument('srpm', help='path to source RPM package')
+    parser_builddep.set_defaults(func=_builddep)
+
+    parser_cleanall = subparsers.add_parser('cleanall', help='clean all')
+    parser_cleanall.set_defaults(func=_cleanall)
+    return parser.parse_args(args[1:])
+
+
+def _setup_logging(verbose=True):
+    """Initialize logging"""
+    # setup logging -- put messages to stderr
+    handler = logging.StreamHandler(sys.stderr)
+    handler.setFormatter(logging.Formatter('YYOOM %(levelname)s: %(message)s'))
+    root_logger = logging.getLogger()
+    root_logger.addHandler(handler)
+    root_logger.setLevel(logging.DEBUG if verbose else logging.INFO)
+
+
+def _get_yum_base():
+    base = yum.YumBase()
+    base.setCacheDir(force=True)
+    return base
+
+
+def _run_yum_api(name, func, ok_codes=(0,), *args, **kwargs):
+    code, results = func(*args, **kwargs)
+    for msg in results:
+        LOG.debug(msg)
+    if code not in ok_codes:
+        LOG.error('%s failed', name.title())
+    return code
+
+
+@contextmanager
+def _transaction(base, callback):
+    """Manage Yum transactions
+
+    Locks and unlocks Yum database, builds and processes transaction
+    on __exit__.
+    """
+    try:
+        base.doLock()
+        yield
+        code = _run_yum_api('building transaction',
+                            base.buildTransaction, ok_codes=(0, 2))
+        if code == 0:
+            LOG.debug('Nothing to do')
+        elif code == 2:
+            base.processTransaction(rpmTestDisplay=callback,
+                                    rpmDisplay=callback)
+        else:
+            raise RuntimeError("Transaction failed: %s" % code)
+    finally:
+        del base.tsInfo
+        del base.ts
+        base.doUnlock()
+
+
+def main(args):
+    options = _parse_arguments(args)
+    try:
+        _setup_output()
+        _setup_logging(options.verbose)
+        return options.func(_get_yum_base(), options) or 0
+    except Exception as e:
+        if options.verbose:
+            raise  # let python runtime write stacktrace
+        sys.stderr.write("Failed: %s\n" % e)
+        return 1
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
