@@ -138,10 +138,17 @@ class ServiceRuntime(ProgramRuntime):
 
     def start(self):
         amount = 0
+        failed_programs = set()
         for program in self.applications:
             if not self.status_app(program):
                 if self.start_app(program):
                     amount += 1
+                else:
+                    failed_programs.add(program)
+        if failed_programs:
+            raise RuntimeError('Failed to start %s for component %s'
+                               % (', '.join(sorted(failed_programs)),
+                                  self.name))
         return amount
 
     def start_app(self, program):
