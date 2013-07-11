@@ -201,7 +201,6 @@ class TraceReader(object):
 
     def packages_installed(self):
         lines = self.read()
-        pkgs_installed = list()
         pkg_list = list()
         for (cmd, action) in lines:
             if cmd == PKG_INSTALL and len(action):

@@ -204,7 +204,6 @@ class YumDependencyHandler(base.DependencyHandler):
                 src_repo_files = []
             if not src_repo_files:
                 continue
-            src_repo_base_files = [sh.basename(f) for f in src_repo_files]
             LOG.info('Building %s RPM packages from their SRPMs for repo %s using %s jobs',
                      len(src_repo_files), self.SRC_REPOS[repo_name], self.jobs)
             makefile_name = sh.joinpths(self.deps_dir, "binary-%s.mk" % repo_name)
