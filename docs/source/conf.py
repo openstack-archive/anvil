@@ -1,4 +1,5 @@
-import sys, os
+import os
+import sys
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -9,7 +10,6 @@ sys.path.insert(0, os.path.abspath('./'))
 sys.path.insert(0, os.path.abspath('.'))
 
 from anvil import version as anvil_version
-from anvil import settings as anvil_settings
 
 # Supress warnings for docs that aren't used yet
 #unused_docs = [
