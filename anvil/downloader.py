@@ -117,6 +117,7 @@ class GitDownloader(Downloader):
             cmd = ["git", "tag", "-d"] + tag_names
             sh.execute(cmd, cwd=self.store_where)
 
+
 class UrlLibDownloader(Downloader):
     def __init__(self, uri, store_where, **kargs):
         Downloader.__init__(self, uri, store_where)

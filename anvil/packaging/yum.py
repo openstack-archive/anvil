@@ -181,7 +181,7 @@ class YumDependencyHandler(base.DependencyHandler):
                 sh.execute_save_output(
                     cmdline,
                     out_filename=sh.joinpths(
-                    self.log_dir, "rpmbuild-%s.out" % base_filename))
+                            self.log_dir, "rpmbuild-%s.out" % base_filename))
                 for filename in sh.listdir(sh.joinpths(
                         self.rpmbuild_dir, "RPMS"),
                         recursive=True, files_only=True):

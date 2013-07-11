@@ -60,7 +60,6 @@ class PythonTestingComponent(base.Component):
     def _get_test_command(self):
         # See: http://docs.openstack.org/developer/nova/devref/unit_tests.html
         # And: http://wiki.openstack.org/ProjectTestingInterface
-        app_dir = self.get_option('app_dir')
 
         cmd = ['coverage', 'run', '/usr/bin/nosetests']
         # See: $ man nosetests
