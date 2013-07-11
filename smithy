@@ -315,7 +315,7 @@ fi
 
 ## Bootstrap smithy
 if [ "$(id -u)" != "0" ]; then
-    echo "You must run '$SMITHY_NAME --bootstrap' with root privileges!" >&2
+    echo "You must run '$SMITHY_NAME --bootstrap' with root privileges!!" >&2
     exit 1
 fi
 
