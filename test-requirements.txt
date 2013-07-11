@@ -1,1 +1,5 @@
-pylint
+# Install bounded pep8/pyflakes first, then let flake8 install
+pep8==1.4.5
+pyflakes==0.7.2
+flake8==2.0
+pylint==0.25.2
