@@ -35,35 +35,13 @@ import yum
 from contextlib import contextmanager
 
 LOG = logging.getLogger('yum-tool')
-OUTPUT = None
-
-
-def _setup_output():
-    """Do some nasty manipulations with fds
-
-    Yum internals may sometimes write to stdout, just out of a sudden.
-    To prevent this output form interfering with our JSON, we save
-    current stdout to other fd via os.dup, and replace fd 1 with
-    /dev/null opened for writing.
-    """
-    global OUTPUT
-    # save current stdout for later use
-    OUTPUT = os.fdopen(os.dup(sys.stdout.fileno()), 'wb')
-    # close the stream
-    sys.stdout.close()
-    # open /dev/null -- all writes to stdout from now on will go there
-    devnull_fd = os.open(os.devnull, os.O_WRONLY)
-    if devnull_fd != 1:
-        os.dup2(devnull_fd, 1)
-        os.close(devnull_fd)
-    sys.stdout = os.fdopen(1, 'w')
 
 
 def _write_output(data):
     """Dump given object as pretty json"""
-    OUTPUT.write(json.dumps(data, indent=4,
-                            separators=(',', ': '),
-                            sort_keys=True) + '\n')
+    print(json.dumps(data, indent=4,
+                     separators=(',', ': '),
+                     sort_keys=True) + '\n')
 
 
 def _package_info(pkg, **kwargs):
@@ -237,6 +215,7 @@ def _setup_logging(verbose=True):
 
 def _get_yum_base():
     base = yum.YumBase()
+    base.doConfigSetup(debuglevel=-1, errorlevel=-1)
     base.setCacheDir(force=True)
     return base
 
@@ -278,7 +257,6 @@ def _transaction(base, callback):
 def main(args):
     options = _parse_arguments(args)
     try:
-        _setup_output()
         _setup_logging(options.verbose)
         return options.func(_get_yum_base(), options) or 0
     except Exception as e:
