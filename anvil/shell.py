@@ -21,6 +21,7 @@ import contextlib
 import distutils.spawn
 import getpass
 import grp
+import gzip as gz
 import os
 import pwd
 import resource
@@ -211,6 +212,17 @@ def remove_before_after(path):
         yield path
     finally:
         delete_it(path)
+
+
+def gzip(file_name, gz_archive_name=None):
+    if not isfile(file_name):
+        raise IOError("Can not gzip non-existent file: %s" % (file_name))
+    if not gz_archive_name:
+        gz_archive_name = "%s.gz" % (file_name)
+    with contextlib.closing(gz.open(gz_archive_name, 'wb')) as tz:
+        with open(file_name, 'rb') as fh:
+            tz.write(fh.read())
+        return gz_archive_name
 
 
 def abspth(path):
