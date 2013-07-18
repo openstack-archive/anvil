@@ -1,5 +1,7 @@
 #!/bin/bash
 
+locale -a | grep -e "^en_US$" && export LANG="en_US"
+
 shopt -s nocasematch
 
 SMITHY_NAME=$(readlink -f "$0")
