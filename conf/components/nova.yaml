@@ -123,10 +123,13 @@ volume_group: nova-volumes
 volume_name_postfix: "%08x"
 volume_name_prefix: "volume-"
 
-# Package time patches
 patches:
+  # After check-out/download time patches
+  download:
+    - "conf/patches/nova/download/"
+  # At packaging time patches
   package:
-    - "conf/patches/nova/"
+    - "conf/patches/nova/package/"
 
 # Needed for setting up your database
 db:
