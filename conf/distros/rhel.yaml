@@ -13,6 +13,7 @@ commands:
     git:
         checkout: git checkout
         clone: git clone
+        commitpatch: git add -A; git commit -m "anvil download patches"
     libvirt:
         restart: service libvirtd restart
         status: service libvirtd status

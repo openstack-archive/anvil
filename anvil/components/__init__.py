@@ -137,6 +137,9 @@ class PkgInstallComponent(component.Component):
                 canon_what_patches.append(path)
         if canon_what_patches:
             patcher.apply_patches(canon_what_patches, target_dir)
+            LOG.debug("Commit changes")
+            cmd = self.distro.get_command_config('git', 'commitpatch')
+            sh.execute(cmd, shell=True, cwd=target_dir)
 
     def config_params(self, config_fn):
         mp = dict(self.params)
