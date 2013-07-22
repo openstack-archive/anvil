@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Approved+1: Joshua Harlow <harlowja@gmail.com>
+Code-Review+2: Joshua Harlow <harlowja@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Mon, 22 Jul 2013 19:52:55 +0000
+Reviewed-on: https://review.openstack.org/38195
+Project: stackforge/anvil
+Branch: refs/heads/stable/folsom
