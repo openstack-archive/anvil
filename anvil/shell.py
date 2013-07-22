@@ -487,11 +487,8 @@ def touch_file(fn, die_if_there=True, quiet=False, file_size=0, tracewriter=None
 
 
 def load_file(fn):
-    data = ""
-    if not is_dry_run():
-        with open(fn, "r") as fh:
-            data = fh.read()
-    return data
+    with open(fn, "rb") as fh:
+        return fh.read()
 
 
 def mkdir(path, recurse=True):
