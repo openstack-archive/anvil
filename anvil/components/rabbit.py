@@ -83,7 +83,7 @@ class RabbitRuntime(bruntime.ProgramRuntime):
             self._run_action('start')
             return 1
         else:
-            return 0
+            raise RuntimeError('Failed to start rabbit-mq')
 
     @property
     def applications(self):
