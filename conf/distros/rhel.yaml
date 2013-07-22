@@ -19,6 +19,9 @@ commands:
         status: service libvirtd status
         # This is just used to check that libvirt will work with a given protocol
         verify: virsh -c $VIRT_PROTOCOL uri
+    dbus:
+        restart: service messagebus restart
+        status: service messagebus status
     mysql:
         # NOTE: we aren't stopping any sql injection...
         create_db: mysql --user=$USER --password=$PASSWORD -e
@@ -405,6 +408,8 @@ components:
                 -   name: libguestfs-mount
                     removable: false
                 -   name: libguestfs-tools
+                    removable: false
+                -   name: dbus
                     removable: false
                 -   name: libvirt
                     removable: false
