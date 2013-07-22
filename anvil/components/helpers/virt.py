@@ -76,8 +76,9 @@ class Virsh(object):
             LOG.warn("Could not clear out libvirt domain %s due to: %s", colorizer.quote(dom_name), e)
 
     def restart_service(self):
-        cmd = self.distro.get_command('libvirt', 'restart')
-        sh.execute(*cmd, run_as_root=True)
+        for srv in ('messagebus', 'libvirt'):
+            cmd = self.distro.get_command(srv, 'restart')
+            sh.execute(*cmd, run_as_root=True)
 
     def wait_active(self):
         # TODO(harlowja) fix this by using the component wait active...
