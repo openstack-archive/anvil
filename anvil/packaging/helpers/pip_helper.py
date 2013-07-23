@@ -57,7 +57,7 @@ def uncache():
 
 def _list_installed(pip_how):
     cmd = [str(pip_how)] + FREEZE_CMD
-    (stdout, _stderr) = sh.execute(*cmd)
+    (stdout, _stderr) = sh.execute(*cmd, run_as_root=True)
     installed = []
     for line in stdout.splitlines():
         line = line.strip()
