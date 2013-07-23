@@ -24,21 +24,21 @@ LOG = logging.getLogger(__name__)
 
 
 class Helper(object):
+    yyoom_executable = sh.which("yyoom", ["tools/"])
 
     def __init__(self):
         self._installed = None
         self._available = None
 
-    @staticmethod
-    def _yyoom(arglist):
-        executable = sh.which("yyoom", ["tools/"])
-        cmdline = [executable]
+    def _yyoom(self, arglist):
+        cmdline = [self.yyoom_executable]
         if LOG.logger.isEnabledFor(logging.DEBUG):
             cmdline.append('--verbose')
         cmdline.extend(arglist)
-        out = sh.execute(cmdline, stderr_fh=sys.stderr)[0].strip()
-        if out:
-            return json.loads(out)
+        (stdout, _stderr) = sh.execute(cmdline, stderr_fh=sys.stderr)
+        stdout = stdout.strip()
+        if stdout:
+            return json.loads(stdout)
         return None
 
     @staticmethod
@@ -67,19 +67,23 @@ class Helper(object):
                 if item['name'] == name]
 
     def builddep(self, srpm_path, tracewriter=None):
-        data = self._yyoom(['builddep', srpm_path])
-        self._trace_installed_packages(tracewriter, data)
+        self._trace_installed_packages(tracewriter,
+                                       self._yyoom(['builddep', srpm_path]))
+
+    def _reset(self):
+        # reset the caches:
+        self._installed = None
+        self._available = None
 
     def clean(self):
-        self._yyoom(['cleanall'])
+        try:
+            self._yyoom(['cleanall'])
+        finally:
+            self._reset()
 
     def transaction(self, install_pkgs=(), remove_pkgs=(), tracewriter=None):
         if not install_pkgs and not remove_pkgs:
             return
-
-        # reset the caches:
-        self._installed = None
-        self._available = None
 
         cmdline = ['transaction']
         for pkg in install_pkgs:
@@ -89,5 +93,7 @@ class Helper(object):
             cmdline.append('--erase')
             cmdline.append(pkg)
 
-        data = self._yyoom(cmdline)
-        self._trace_installed_packages(tracewriter, data)
+        try:
+            self._trace_installed_packages(tracewriter, self._yyoom(cmdline))
+        finally:
+            self._reset()
