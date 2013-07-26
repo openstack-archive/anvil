@@ -79,11 +79,24 @@ class RabbitInstaller(binstall.PkgInstallComponent):
 
 class RabbitRuntime(bruntime.ProgramRuntime):
     def start(self):
-        if self.statii()[0].status != bruntime.STATUS_STARTED:
-            self._run_action('start')
+
+        def is_active():
+            status = self.statii()[0].status
+            if status == bruntime.STATUS_STARTED:
+                return True
+            return False
+
+        if is_active():
             return 1
-        else:
-            raise RuntimeError('Failed to start rabbit-mq')
+
+        self._run_action('start')
+        for sleep_secs in utils.ExponentialBackoff(1.3, 4):
+            LOG.info("Sleeping for %s seconds, rabbit-mq is still not active.",
+                     sleep_secs)
+            sh.sleep(sleep_secs)
+            if is_active():
+                return 1
+        raise RuntimeError('Failed to start rabbit-mq')
 
     @property
     def applications(self):
