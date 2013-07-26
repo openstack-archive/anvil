@@ -238,6 +238,8 @@ def _setup_logging(verbose=True):
 def _get_yum_base():
     base = yum.YumBase()
     base.setCacheDir(force=True)
+    # See: http://lists.baseurl.org/pipermail/yum-devel/2013-January/009873.html
+    base._override_sigchecks=True
     return base
 
 
