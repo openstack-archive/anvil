@@ -136,7 +136,7 @@ except:
     $PIP_CMD install $pip_opts $missing_python --download "$pip_tmp_dir"
     # Now build them
     echo "Building RPMs for $missing_python"
-    local rpm_names=$("$PY2RPM_CMD"  --package-map $package_map -- "$pip_tmp_dir/"* 2>/dev/null |
+    local rpm_names=$("$PY2RPM_CMD"  --package-map $package_map --scripts-dir "conf/templates/packaging/scripts" -- "$pip_tmp_dir/"* 2>/dev/null |
         awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)
     rm -rf "$pip_tmp_dir" /tmp/pip-build-$SUDO_USER
     if [ -z "$rpm_names" ]; then
