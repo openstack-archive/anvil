@@ -1,9 +1,0 @@
----
-components:
-# Order matters here!
-- general
-- db
-supports:
-- rhel
-...
-
