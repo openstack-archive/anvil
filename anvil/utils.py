@@ -93,7 +93,7 @@ LOG = logging.getLogger(__name__)
 
 
 class ExponentialBackoff(object):
-    def __init__(self, start, attempts):
+    def __init__(self, attempts=5, start=1.3):
         self.start = start
         self.attempts = attempts
 
@@ -168,7 +168,7 @@ def wait_for_url(url, max_attempts=5):
 
     excps = []
     attempts = 0
-    for sleep_time in ExponentialBackoff(1.3, max_attempts):
+    for sleep_time in ExponentialBackoff(attempts=max_attempts):
         attempts += 1
         try:
             with contextlib.closing(urllib2.urlopen(urllib2.Request(url))) as req:
