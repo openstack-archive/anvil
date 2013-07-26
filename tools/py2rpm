@@ -18,20 +18,6 @@ import pkg_resources
 
 logger = logging.getLogger()
 
-headers = [
-    'Name',
-    'Version',
-    'Release',
-    'Copyright',
-    'Source',
-    'URL',
-    'Packager',
-    'BuildRoot',
-    'License',
-    'Prefix',
-    'Group',
-]
-
 package_map = {}
 arch_dependent = set()
 epoch_map = {}
