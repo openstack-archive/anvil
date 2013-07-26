@@ -22,6 +22,7 @@ dependency_handler:
         sqlalchemy-migrate: python-migrate
     arch_dependent:
     -   selenium
+    -   xattr
 commands:
     service:
         restart: service NAME restart
