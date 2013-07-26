@@ -1,6 +1,6 @@
 #!/bin/bash
 
-locale -a | grep -e "^en_US$" && export LANG="en_US"
+locale -a | grep -q -e "^en_US$" && export LANG="en_US"
 
 shopt -s nocasematch
 
