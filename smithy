@@ -190,7 +190,7 @@ except KeyError:
     echo "Downloading..."
     $PIP_CMD install $pip_opts $missing_packages --download "$pip_tmp_dir"
     echo "Building RPMs..."
-    local rpm_names=$("$PY2RPM_CMD"  --package-map $package_map -- "$pip_tmp_dir/"* 2>/dev/null |
+    local rpm_names=$("$PY2RPM_CMD"  --package-map $package_map --scripts-dir "conf/templates/packaging/scripts" -- "$pip_tmp_dir/"* 2>/dev/null |
         awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)
     if [ -z "$rpm_names" ]; then
         echo "No binary RPMs were built!"
