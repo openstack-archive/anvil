@@ -1,6 +1,0 @@
-# Settings for component quantum-client
----
-
-get_from: "git://github.com/openstack/python-quantumclient.git?tag=2.2.3"
-
-...

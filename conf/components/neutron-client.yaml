@@ -1,0 +1,6 @@
+# Settings for component neutron-client
+---
+
+get_from: "git://github.com/openstack/python-neutronclient.git?branch=master"
+
+...

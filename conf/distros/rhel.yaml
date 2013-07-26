@@ -196,6 +196,13 @@ components:
             test: anvil.components.base_testing:PythonTestingComponent
             coverage: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
+    neutron-client:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
     nova:
         action_classes:
             install: anvil.components.nova:NovaInstaller
@@ -270,13 +277,6 @@ components:
             l3-agent: openstack-quantum
             rpc-zmq-receiver: openstack-quantum
             server: openstack-quantum
-    quantum-client:
-        action_classes:
-            install: anvil.components.base_install:PythonInstallComponent
-            running: anvil.components.base_runtime:EmptyRuntime
-            test: anvil.components.base_testing:PythonTestingComponent
-            coverage: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PkgUninstallComponent
     rabbit-mq:
         action_classes:
             install: anvil.components.rabbit:RabbitInstaller

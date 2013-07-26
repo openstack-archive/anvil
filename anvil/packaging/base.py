@@ -41,7 +41,7 @@ OPENSTACK_PACKAGES = set([
     "python-glanceclient",
     "python-keystoneclient",
     "python-novaclient",
-    "python-quantumclient",
+    "python-neutronclient",
     "python-swiftclient",
 ])
 

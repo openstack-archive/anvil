@@ -13,7 +13,7 @@ components:
 # Clients used by nova (+ others)
 - glance-client
 - cinder-client
-- quantum-client
+- neutron-client
 - nova
 - nova-client
 options:
