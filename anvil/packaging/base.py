@@ -262,9 +262,8 @@ class DependencyHandler(object):
             "--build", pip_build_dir,
         ]
         cmdline.extend(sorted(pips_to_download))
-        download_filename = "pip-download-attempt-%s.log"
-        download_filename = download_filename % (attempt)
-        out_filename = sh.joinpths(self.log_dir, download_filename)
+        out_filename = sh.joinpths(self.log_dir,
+                                   "pip-download-attempt-%s.log" % (attempt))
         sh.execute_save_output(cmdline, out_filename=out_filename)
 
     def _examine_download_dir(self, pips_to_download, pip_download_dir):
