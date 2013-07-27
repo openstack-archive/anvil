@@ -19,6 +19,9 @@
 import warnings
 warnings.filterwarnings("ignore")
 
+from optparse import OptionParser
+
+import json
 import os
 import pkg_resources
 import sys
@@ -47,19 +50,47 @@ def find_matches(base, pkg_name, py_req):
 
 
 if __name__ == '__main__':
-    arg_c = len(sys.argv) - 1
-    if arg_c < 2 or (arg_c % 2) != 0:
-        print("Usage: %s package-name python-name [package-name python-name] ..." % (os.path.basename(sys.argv[0])))
-        sys.exit(1)
-    arg_v = sys.argv[1:]
+    parser = OptionParser()
+    parser.add_option("-p", dest="packages", action="append",
+                      help="rpm-name,python-requirement to attempt to match",
+                      metavar="RPM-REQ")
+    parser.add_option("-j", '--json', dest="is_json", action="store_true",
+                      default=False,
+                      help="output the package details in json"
+                           " (which is easier to parse)")
+    (options, args) = parser.parse_args()
+    if not options.packages:
+        parser.error("Option 'packages' is required")
+    examine_what = []
+    for p in options.packages:
+        try:
+            (rpm_name, python_req) = p.split(",", 1)
+            rpm_name = rpm_name.strip()
+            python_req = python_req.strip()
+            if not python_req:
+                python_req = rpm_name
+            examine_what.append((rpm_name, python_req))
+        except ValueError:
+            p = p.strip()
+            examine_what.append((p, p))
     base = YumBase()
     base.doConfigSetup(debuglevel=-1, errorlevel=-1)
-    for (pkg_name, py_name) in zip(arg_v[0::2], arg_v[1::2]):
+    for (pkg_name, py_name) in examine_what:
         matches = find_matches(base, pkg_name,
                                pkg_resources.Requirement.parse(py_name))
         if matches:
             # Pick the newest match.
-            print(sorted(matches)[-1])
+            pkg = sorted(matches)[-1]
+            if options.is_json:
+                print(json.dumps({
+                    'arch': pkg.arch,
+                    'epoch': pkg.epoch,
+                    'name': pkg.name,
+                    'release': pkg.release,
+                    'version': pkg.version,
+                }))
+            else:
+                print(pkg)
         else:
             # Nothing found.
             print("")
