@@ -184,12 +184,8 @@ def execute(cmd,
 def execute_save_output(cmd, out_filename, **kwargs):
     kwargs = kwargs.copy()
     mkdirslist(dirname(out_filename))
-    quiet = kwargs.pop('quiet', False)
-    log_how = LOG.info
-    if quiet:
-        log_how = LOG.debug
-    log_how("You can watch progress in another terminal with:")
-    log_how("    tail -f %s" % out_filename)
+    LOG.info("You can watch progress in another terminal with:")
+    LOG.info("    tail -f %s", out_filename)
     with open(out_filename, "wb") as out:
         out.write("Running: %s\n\n" % (cmd))
         out.flush()
