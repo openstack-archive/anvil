@@ -13,5 +13,5 @@ all: $(MARKS)
 %.mark: $(DOWNLOADS_DIR)/%
 	@$(PY2RPM) $(PY2RPM_FLAGS) -- $^ &> $(LOGS_DIR)/py2rpm-$*.log
 	@touch "$@"
-	@echo "$* has been processed."
+	@echo "$*"
 #end raw
