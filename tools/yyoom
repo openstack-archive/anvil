@@ -29,12 +29,13 @@ import argparse
 import json
 import logging
 import os
+import re
 import sys
 import yum
 
 from contextlib import contextmanager
 
-LOG = logging.getLogger('yum-tool')
+LOG = logging.getLogger('yyoom')
 OUTPUT = None
 
 
@@ -122,14 +123,28 @@ def _run(yum_base, options):
 
     Installs and erases packages, prints what was done in JSON
     """
+
+    def parse_package(p):
+        pkg_info = {}
+        try:
+            (name, version) = p.split(',', 1)
+            pkg_info['name'] = name
+            if version:
+                pkg_info['version'] = version
+        except ValueError:
+            pkg_info['name'] = p
+        return pkg_info
+
     LOG.debug('Erasing packages: %s', options.erase)
     LOG.debug('Installing packages: %s', options.install)
     callback = _RPMCallback()
     with _transaction(yum_base, callback):
-        for name in options.erase or ():
-            yum_base.remove(name=name)
-        for name in options.install or ():
-            yum_base.install(name=name)
+        for pkg in options.erase or ():
+            pkg = parse_package(pkg)
+            yum_base.remove(**pkg)
+        for pkg in options.install or ():
+            pkg = parse_package(pkg)
+            yum_base.install(**pkg)
     _write_output(callback.seen)
 
 
@@ -239,7 +254,7 @@ def _get_yum_base():
     base = yum.YumBase()
     base.setCacheDir(force=True)
     # See: http://lists.baseurl.org/pipermail/yum-devel/2013-January/009873.html
-    base._override_sigchecks=True
+    base._override_sigchecks = True
     return base
 
 
