@@ -184,12 +184,8 @@ def execute(cmd,
 def execute_save_output(cmd, out_filename, **kwargs):
     kwargs = kwargs.copy()
     mkdirslist(dirname(out_filename))
-    quiet = kwargs.pop('quiet', False)
-    log_how = LOG.info
-    if quiet:
-        log_how = LOG.debug
-    log_how("You can watch progress in another terminal with:")
-    log_how("    tail -f %s" % out_filename)
+    LOG.info("You can watch progress in another terminal with:")
+    LOG.info("    tail -f %s", out_filename)
     with open(out_filename, "wb") as out:
         out.write("Running: %s\n\n" % (cmd))
         out.flush()
@@ -273,7 +269,7 @@ def fileperms(path):
     return (os.stat(path).st_mode & 0777)
 
 
-def listdir(path, recursive=False, dirs_only=False, files_only=False):
+def listdir(path, recursive=False, dirs_only=False, files_only=False, filter_func=None):
     path = abspth(path)
     all_contents = []
     if not recursive:
@@ -289,6 +285,8 @@ def listdir(path, recursive=False, dirs_only=False, files_only=False):
         all_contents = [f for f in all_contents if isdir(f)]
     if files_only:
         all_contents = [f for f in all_contents if isfile(f)]
+    if filter_func:
+        all_contents = [f for f in all_contents if filter_func(f)]
     return all_contents
 
 
