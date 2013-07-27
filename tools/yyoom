@@ -34,7 +34,7 @@ import yum
 
 from contextlib import contextmanager
 
-LOG = logging.getLogger('yum-tool')
+LOG = logging.getLogger('yyoom')
 OUTPUT = None
 
 
@@ -117,19 +117,44 @@ class _RPMCallback(yum.rpmtrans.RPMBaseCallback):
                  % action_data)
 
 
+def log_list(items, title=''):
+    if not items:
+        return
+    if title:
+        if not title.endswith(':'):
+            title = str(title) + ":"
+        LOG.info(title)
+    for i in items:
+        LOG.info("  - %s" % (i))
+
+
 def _run(yum_base, options):
     """Handler of `transaction` command
 
     Installs and erases packages, prints what was done in JSON
     """
-    LOG.debug('Erasing packages: %s', options.erase)
-    LOG.debug('Installing packages: %s', options.install)
+
+    def parse_package(p):
+        pkg_info = {}
+        try:
+            (name, version) = p.split(',', 1)
+            pkg_info['name'] = name
+            if version:
+                pkg_info['version'] = version
+        except ValueError:
+            pkg_info['name'] = p
+        return pkg_info
+
+    log_list(options.erase, title='Erasing packages:')
+    log_list(options.install, title='Installing packages:')
     callback = _RPMCallback()
     with _transaction(yum_base, callback):
-        for name in options.erase or ():
-            yum_base.remove(name=name)
-        for name in options.install or ():
-            yum_base.install(name=name)
+        for pkg in options.erase or ():
+            pkg = parse_package(pkg)
+            yum_base.remove(**pkg)
+        for pkg in options.install or ():
+            pkg = parse_package(pkg)
+            yum_base.install(**pkg)
     _write_output(callback.seen)
 
 
@@ -239,7 +264,7 @@ def _get_yum_base():
     base = yum.YumBase()
     base.setCacheDir(force=True)
     # See: http://lists.baseurl.org/pipermail/yum-devel/2013-January/009873.html
-    base._override_sigchecks=True
+    base._override_sigchecks = True
     return base
 
 
