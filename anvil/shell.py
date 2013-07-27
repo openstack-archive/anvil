@@ -18,21 +18,20 @@
 # pylint: disable=R0915
 
 import contextlib
-import distutils.spawn
 import getpass
 import grp
 import gzip as gz
 import os
 import pwd
-import resource
 import shutil
 import signal
 import socket
 import subprocess
-import sys
 import time
 
-import psutil  # http://code.google.com/p/psutil/wiki/Documentation
+import distutils.spawn
+
+import psutil
 
 import anvil
 from anvil import env
@@ -49,9 +48,19 @@ SUDO_GID = env.get_key('SUDO_GID')
 # Set only once
 IS_DRYRUN = None
 
-# Take over some functions directly from os.path
-
+# Take over some functions directly from os.path/os/... so that we don't have
+# to type as many long function names to access these.
 getsize = os.path.getsize
+exists = os.path.exists
+basename = os.path.basename
+dirname = os.path.dirname
+canon_path = os.path.realpath
+prompt = raw_input
+isfile = os.path.isfile
+isdir = os.path.isdir
+islink = os.path.islink
+geteuid = os.geteuid
+getegid = os.getegid
 
 
 class Process(psutil.Process):
@@ -184,12 +193,8 @@ def execute(cmd,
 def execute_save_output(cmd, out_filename, **kwargs):
     kwargs = kwargs.copy()
     mkdirslist(dirname(out_filename))
-    quiet = kwargs.pop('quiet', False)
-    log_how = LOG.info
-    if quiet:
-        log_how = LOG.debug
-    log_how("You can watch progress in another terminal with:")
-    log_how("    tail -f %s" % out_filename)
+    LOG.info("You can watch progress in another terminal with:")
+    LOG.info("    tail -f %s", out_filename)
     with open(out_filename, "wb") as out:
         out.write("Running: %s\n\n" % (cmd))
         out.flush()
@@ -240,10 +245,6 @@ def hostname(default='localhost'):
         return default
 
 
-def isuseable(path, options=os.W_OK | os.R_OK | os.X_OK):
-    return os.access(path, options)
-
-
 # Useful for doing progress bars that get told the current progress
 # for the transfer ever chunk via the chunk callback function that
 # will be called after each chunk has been written...
@@ -273,12 +274,12 @@ def fileperms(path):
     return (os.stat(path).st_mode & 0777)
 
 
-def listdir(path, recursive=False, dirs_only=False, files_only=False):
+def listdir(path, recursive=False, dirs_only=False, files_only=False, filter_func=None):
     path = abspth(path)
     all_contents = []
     if not recursive:
         all_contents = os.listdir(path)
-        all_contents = [os.path.join(path, f) for f in all_contents]
+        all_contents = [joinpths(path, f) for f in all_contents]
     else:
         for (root, dirs, files) in os.walk(path):
             for d in dirs:
@@ -289,19 +290,9 @@ def listdir(path, recursive=False, dirs_only=False, files_only=False):
         all_contents = [f for f in all_contents if isdir(f)]
     if files_only:
         all_contents = [f for f in all_contents if isfile(f)]
+    if filter_func:
+        all_contents = [f for f in all_contents if filter_func(f)]
     return all_contents
-
-
-def isfile(fn):
-    return os.path.isfile(fn)
-
-
-def isdir(path):
-    return os.path.isdir(path)
-
-
-def islink(path):
-    return os.path.islink(path)
 
 
 def joinpths(*paths):
@@ -404,59 +395,6 @@ def kill(pid, max_try=4, wait_time=1):
         return (True, i_attempts + k_attempts)
     else:
         return (False, i_attempts + k_attempts)
-
-
-def fork(program, app_dir, pid_fn, stdout_fn, stderr_fn, *args):
-    if is_dry_run():
-        return
-    # First child, not the real program
-    pid = os.fork()
-    if pid == 0:
-        # Upon return the calling process shall be the session
-        # leader of this new session,
-        # shall be the process group leader of a new process group,
-        # and shall have no controlling terminal.
-        os.setsid()
-        pid = os.fork()
-        # Fork to get daemon out - this time under init control
-        # and now fully detached (no shell possible)
-        if pid == 0:
-            # Move to where application should be
-            if app_dir:
-                os.chdir(app_dir)
-            # Close other fds (or try)
-            (_soft, hard) = resource.getrlimit(resource.RLIMIT_NOFILE)
-            mkfd = hard
-            if mkfd == resource.RLIM_INFINITY:
-                mkfd = 2048  # Is this defined anywhere??
-            for fd in range(0, mkfd):
-                try:
-                    os.close(fd)
-                except OSError:
-                    # Not open, thats ok
-                    pass
-            # Now adjust stderr and stdout
-            if stdout_fn:
-                stdoh = open(stdout_fn, "w")
-                os.dup2(stdoh.fileno(), sys.stdout.fileno())
-            if stderr_fn:
-                stdeh = open(stderr_fn, "w")
-                os.dup2(stdeh.fileno(), sys.stderr.fileno())
-            # Now exec...
-            # Note: The arguments to the child process should
-            # start with the name of the command being run
-            prog_little = basename(program)
-            actualargs = [prog_little] + list(args)
-            os.execlp(program, *actualargs)
-        else:
-            # Write out the child pid
-            contents = "%s\n" % (pid)
-            write_file(pid_fn, contents, quiet=True)
-            # Not exit or sys.exit, this is recommended
-            # since it will do the right cleanups that we want
-            # not calling any atexit functions, which would
-            # be bad right now
-            os._exit(0)
 
 
 def is_running(pid):
@@ -575,26 +513,6 @@ def symlink(source, link, force=True, tracewriter=None):
             tracewriter.symlink_made(link)
 
 
-def exists(path):
-    return os.path.exists(path)
-
-
-def basename(path):
-    return os.path.basename(path)
-
-
-def dirname(path):
-    return os.path.dirname(path)
-
-
-def canon_path(path):
-    return os.path.realpath(path)
-
-
-def prompt(prompt_str):
-    return raw_input(prompt_str)
-
-
 def user_exists(username):
     all_users = pwd.getpwall()
     for info in all_users:
@@ -624,9 +542,13 @@ def getuid(username):
 
 def gethomedir(user=None):
     if not user:
-        user = getuser()
-    home_dir = os.path.expanduser("~%s" % (user))
-    return home_dir
+        try:
+            user = getuser()
+        except (KeyError, ValueError):
+            pass
+    if not user:
+        user = ''
+    return os.path.expanduser("~%s" % (user))
 
 
 def getgid(groupname):
@@ -652,17 +574,12 @@ def unlink(path, ignore_errors=True):
                 pass
 
 
-def copy(src, dst):
+def copy(src, dst, tracewriter=None):
     LOG.debug("Copying: %r => %r" % (src, dst))
     if not is_dry_run():
         shutil.copy(src, dst)
-    return dst
-
-
-def copytree(src, dst):
-    LOG.debug("Copying full tree: %r => %r" % (src, dst))
-    if not is_dry_run():
-        shutil.copytree(src, dst)
+    if tracewriter:
+        tracewriter.file_touched(dst)
     return dst
 
 
@@ -723,18 +640,6 @@ def root_mode(quiet=True):
             LOG.warn(msg)
         else:
             raise excp.PermException(msg)
-
-
-def is_executable(fn):
-    return isfile(fn) and isuseable(fn, options=os.X_OK)
-
-
-def geteuid():
-    return os.geteuid()
-
-
-def getegid():
-    return os.getegid()
 
 
 def sleep(winks):
