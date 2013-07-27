@@ -23,11 +23,10 @@ $(BUILDDEP_MARK):
 		$(YUM_BUILDDEP) $(YUM_BUILDDEP_FLAGS) $$pkg; \
 	done &> $(LOGS_DIR)/yum-builddep-$(REPO_NAME).log
 	@touch "$@"
-	@echo "Build requirements are installed"
 
 
 %.mark: $(SRC_REPO_DIR)/% $(BUILDDEP_MARK)
 	@$(RPMBUILD) $(RPMBUILD_FLAGS) -- $< &> $(LOGS_DIR)/rpmbuild-$*.log
 	@touch "$@"
-	@echo "$* has been processed."
+	@echo "$*"
 #end raw
