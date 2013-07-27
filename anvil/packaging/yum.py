@@ -64,6 +64,7 @@ class YumInstallHelper(base.InstallHelper):
 class YumDependencyHandler(base.DependencyHandler):
     OPENSTACK_EPOCH = 2
     SPEC_TEMPLATE_DIR = "packaging/specs"
+    RPM_BUILD_FLAGS_TEMPLATE = "--rebuild --define '_topdir %s'"
     API_NAMES = {
         "nova": "Compute",
         "glance": "Image",
@@ -97,7 +98,7 @@ class YumDependencyHandler(base.DependencyHandler):
         self.deps_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps")
         self.deps_src_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps-sources")
         self.anvil_repo_filename = sh.joinpths(self.deps_dir, self.REPO_FN)
-        self.helper = yum_helper.Helper()
+        self.helper = yum_helper.Helper(self.log_dir)
         self.rpm_sources_dir = sh.joinpths(self.rpmbuild_dir, "SOURCES")
         self.anvil_repo_dir = sh.joinpths(self.root_dir, "repo")
         self._no_remove = None
@@ -119,8 +120,7 @@ class YumDependencyHandler(base.DependencyHandler):
                 "--package-map",
             ] + ["%s==%s" % (key, value)
                  for key, value in package_map.iteritems()]
-        arch_dependent = self.distro._dependency_handler.get(
-            "arch_dependent", [])
+        arch_dependent = self.distro._dependency_handler.get("arch_dependent", [])
         if arch_dependent:
             cmdline += [
                 "--arch-dependent",
@@ -165,54 +165,68 @@ class YumDependencyHandler(base.DependencyHandler):
             sh.move(filename, target_dir, force=True)
 
     def build_binary(self):
-        def _is_src_rpm(filename):
-            return filename.endswith('.src.rpm')
 
-        LOG.info("Installing build requirements")
-        self.helper.transaction(
-            install_pkgs=self.requirements["build-requires"],
-            tracewriter=self.tracewriter)
+        def is_src_rpm(path):
+            if not path:
+                return False
+            if not sh.isfile(path):
+                return False
+            if not path.lower().endswith('.src.rpm'):
+                return False
+            return True
+
+        def list_src_rpms(path):
+            path_files = []
+            if sh.isdir(path):
+                path_files = sh.listdir(path, filter_func=is_src_rpm)
+            return sorted(path_files)
+
+        build_requirements = self.requirements.get("build-requires")
+        if build_requirements:
+            utils.log_iterable(build_requirements,
+                               header="Installing build requirements",
+                               logger=LOG)
+            self.helper.transaction(install_pkgs=build_requirements,
+                                    tracewriter=self.tracewriter)
 
         for repo_name in self.REPOS:
             repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)
-            sh.mkdirslist(repo_dir, tracewriter=self.tracewriter)
+            if not sh.isdir(repo_dir):
+                sh.mkdirslist(repo_dir, tracewriter=self.tracewriter)
             src_repo_dir = sh.joinpths(self.anvil_repo_dir, self.SRC_REPOS[repo_name])
-            if sh.isdir(src_repo_dir):
-                src_repo_files = sh.listdir(src_repo_dir, files_only=True)
-                src_repo_files = sorted([f for f in src_repo_files if _is_src_rpm(f)])
-            else:
-                src_repo_files = []
+            src_repo_files = list_src_rpms(src_repo_dir)
             if not src_repo_files:
                 continue
-            LOG.info('Building %s RPM packages from their SRPMs for repo %s using %s jobs',
-                     len(src_repo_files), self.SRC_REPOS[repo_name], self.jobs)
-            makefile_name = sh.joinpths(self.deps_dir, "binary-%s.mk" % repo_name)
+            utils.log_iterable(src_repo_files,
+                               header=('Building %s RPM packages from their'
+                                      ' SRPMs for repo %s using %s jobs') %
+                                      (len(src_repo_files), self.SRC_REPOS[repo_name], self.jobs),
+                               logger=LOG)
+            makefile_path = sh.joinpths(self.deps_dir, "binary-%s.mk" % repo_name)
             marks_dir = sh.joinpths(self.deps_dir, "marks-binary")
-            sh.mkdirslist(marks_dir, tracewriter=self.tracewriter)
-            (_fn, content) = utils.load_template("packaging/makefiles", "binary.mk")
-            rpmbuild_flags = ("--rebuild --define '_topdir %s'" % self.rpmbuild_dir)
+            if not sh.isdir(marks_dir):
+                sh.mkdirslist(marks_dir, tracewriter=self.tracewriter)
+            rpmbuild_flags = self.RPM_BUILD_FLAGS_TEMPLATE % self.rpmbuild_dir
             if self.opts.get("usr_only", False):
-                rpmbuild_flags += "--define 'usr_only 1'"
+                rpmbuild_flags += " --define 'usr_only 1'"
             params = {
                 "SRC_REPO_DIR": src_repo_dir,
                 "RPMBUILD_FLAGS": rpmbuild_flags,
                 "LOGS_DIR": self.log_dir,
             }
-            sh.write_file(makefile_name,
-                          utils.expand_template(content, params),
+            (_fn, content) = utils.load_template(sh.joinpths("packaging", "makefiles"), "binary.mk")
+            sh.write_file(makefile_path, utils.expand_template(content, params),
                           tracewriter=self.tracewriter)
             with sh.remove_before_after(self.rpmbuild_dir):
                 self._create_rpmbuild_subdirs()
-                self._execute_make(makefile_name, marks_dir)
-                self._move_files(sh.joinpths(self.rpmbuild_dir, "RPMS"),
-                                 repo_dir)
+                self._execute_make(makefile_path, marks_dir)
+                self._move_files(sh.joinpths(self.rpmbuild_dir, "RPMS"), repo_dir)
             self._create_repo(repo_name)
 
     def _execute_make(self, filename, marks_dir):
-        sh.execute(
-            ["make", "-f", filename, "-j", str(self.jobs)],
-            cwd=marks_dir,
-            stdout_fh=sys.stdout, stderr_fh=sys.stderr)
+        cmdline = ["make", "-f", filename, "-j", str(self.jobs)]
+        out_filename = sh.joinpths(self.log_dir, "%s.log" % sh.basename(filename))
+        sh.execute_save_output(cmdline, cwd=marks_dir, out_filename=out_filename)
 
     def _move_srpms(self, repo_name):
         src_repo_name = self.SRC_REPOS[repo_name]
@@ -239,18 +253,20 @@ class YumDependencyHandler(base.DependencyHandler):
         }
         sh.write_file(repo_filename, utils.expand_template(content, params),
                       tracewriter=self.tracewriter)
-        # Install *.repo file so that anvil deps will be available
-        # when building OpenStack
+        # NOTE(harlowja): Install *.repo file so that anvil deps will be available
+        # when building openstack core project packages.
         system_repo_filename = sh.joinpths(self.YUM_REPO_DIR, "%s.repo" % repo_name)
-        sh.copy(repo_filename, system_repo_filename)
-        LOG.info("Copying to %s", system_repo_filename)
-        self.tracewriter.file_touched(system_repo_filename)
+        sh.copy(repo_filename, system_repo_filename, tracewriter=self.tracewriter)
+        LOG.info("Copied to %s", system_repo_filename)
 
     def _get_yum_available(self):
         yum_map = collections.defaultdict(list)
         for pkg in self.helper.get_available():
             for provides in pkg['provides']:
                 yum_map[provides[0]].append((pkg['version'], pkg['repo']))
+        # Note(harlowja): this is done to remove the default lists
+        # that each entry would previously provide, converting the defaultdict
+        # into a normal dict.
         return dict(yum_map)
 
     @staticmethod
@@ -347,10 +363,9 @@ class YumDependencyHandler(base.DependencyHandler):
             if filename not in filtered_package_files:
                 sh.unlink(filename)
         package_files = filtered_package_files
-        makefile_name = sh.joinpths(self.deps_dir, "deps.mk")
-        marks_dir = sh.joinpths(self.deps_dir, "marks-deps")
-        sh.mkdirslist(marks_dir, tracewriter=self.tracewriter)
-        (_fn, content) = utils.load_template("packaging/makefiles", "source.mk")
+
+        # Now build them into SRPM rpm files.
+        (_fn, content) = utils.load_template(sh.joinpths("packaging", "makefiles"), "source.mk")
         scripts_dir = sh.abspth(sh.joinpths(settings.TEMPLATE_DIR, "packaging", "scripts"))
         py2rpm_options = self.py2rpm_start_cmdline()[1:] + [
             "--scripts-dir", scripts_dir,
@@ -363,11 +378,16 @@ class YumDependencyHandler(base.DependencyHandler):
             "PY2RPM": self.py2rpm_executable,
             "PY2RPM_FLAGS": " ".join(py2rpm_options),
         }
-        sh.write_file(makefile_name,
-                      utils.expand_template(content, params),
+        marks_dir = sh.joinpths(self.deps_dir, "marks-deps")
+        if not sh.isdir(marks_dir):
+            sh.mkdirslist(marks_dir, tracewriter=self.tracewriter)
+        makefile_path = sh.joinpths(self.deps_dir, "deps.mk")
+        sh.write_file(makefile_path, utils.expand_template(content, params),
                       tracewriter=self.tracewriter)
-        LOG.info("Building %s SRPM packages using %s jobs", len(package_files), self.jobs)
-        self._execute_make(makefile_name, marks_dir)
+        utils.log_iterable(package_files,
+                           header="Building %s SRPM packages using %s jobs" % (len(package_files), self.jobs),
+                           logger=LOG)
+        self._execute_make(makefile_path, marks_dir)
 
     def _write_spec_file(self, instance, rpm_name, template_name, params):
         requires_what = params.get('requires')
@@ -434,7 +454,7 @@ class YumDependencyHandler(base.DependencyHandler):
         if sh.isfile(sh.joinpths(pkg_dir, "setup.py")):
             self._write_python_tarball(instance, pkg_dir, ENSURE_NOT_MISSING)
         else:
-            self._write_git_tarball(pkg_dir, spec_filename)
+            self._write_git_tarball(instance, pkg_dir, spec_filename)
         self._copy_sources(instance)
         if patches:
             self._copy_patches(patches)
@@ -446,9 +466,9 @@ class YumDependencyHandler(base.DependencyHandler):
             spec_filename,
         ]
         out_filename = sh.joinpths(self.log_dir, "rpmbuild-%s.log" % instance.name)
-        sh.execute_save_output(cmdline, out_filename=out_filename, quiet=True)
+        sh.execute_save_output(cmdline, out_filename=out_filename)
 
-    def _write_git_tarball(self, pkg_dir, spec_filename):
+    def _write_git_tarball(self, instance, pkg_dir, spec_filename):
         cmdline = [
             "rpm",
             "-q",
@@ -456,9 +476,9 @@ class YumDependencyHandler(base.DependencyHandler):
             "--qf", "%{NAME}-%{VERSION}\n"
         ]
         tar_base = sh.execute(cmdline, cwd=pkg_dir)[0].splitlines()[0].strip()
-        # git 1.7.1 from RHEL doesn't understand --format=tar.gz
-        output_filename = sh.joinpths(self.rpm_sources_dir,
-                                      "%s.tar" % tar_base)
+
+        # NOTE(harlowja): git 1.7.1 from RHEL doesn't understand --format=tar.gz
+        output_filename = sh.joinpths(self.rpm_sources_dir, "%s.tar" % tar_base)
         cmdline = [
             "git",
             "archive",
@@ -467,7 +487,8 @@ class YumDependencyHandler(base.DependencyHandler):
             "--output=%s" % output_filename,
             "HEAD",
         ]
-        sh.execute(cmdline, cwd=pkg_dir)
+        out_filename = sh.joinpths(self.log_dir, "git-tar-%s.log" % instance.name)
+        sh.execute_save_output(cmdline, cwd=pkg_dir, out_filename=out_filename)
         sh.gzip(output_filename)
         sh.unlink(output_filename)
 
@@ -490,7 +511,7 @@ class YumDependencyHandler(base.DependencyHandler):
             "--dist-dir", self.rpm_sources_dir,
         ]
         out_filename = sh.joinpths(self.log_dir, "sdist-%s.log" % (instance.name))
-        sh.execute_save_output(cmdline, cwd=pkg_dir, out_filename=out_filename, quiet=True)
+        sh.execute_save_output(cmdline, cwd=pkg_dir, out_filename=out_filename)
         archive_name = sh.joinpths(self.rpm_sources_dir, "%s.tar" % (base_name))
         if ensure_exists:
             with contextlib.closing(tarfile.open(archive_name, 'r')) as tfh:
@@ -543,8 +564,7 @@ class YumDependencyHandler(base.DependencyHandler):
             cmdline.extend(["--release", params["release"]])
         cmdline.extend(["--", app_dir])
         out_filename = sh.joinpths(self.log_dir, "py2rpm-build-%s.log" % (instance.name))
-        sh.execute_save_output(cmdline, cwd=app_dir, out_filename=out_filename,
-                               quiet=True)
+        sh.execute_save_output(cmdline, cwd=app_dir, out_filename=out_filename)
 
     def _build_openstack_package(self, instance):
         params = self._package_parameters(instance)
