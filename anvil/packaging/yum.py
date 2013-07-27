@@ -16,6 +16,7 @@
 
 import collections
 import contextlib
+import json
 import pkg_resources
 import sys
 
@@ -87,6 +88,7 @@ class YumDependencyHandler(base.DependencyHandler):
     REPOS = ["anvil-deps", "anvil"]
     py2rpm_executable = sh.which("py2rpm", ["tools/"])
     rpmbuild_executable = sh.which("rpmbuild")
+    yumfind_executable = sh.which("yumfind", ["tools/"])
     jobs = 2
 
     def __init__(self, distro, root_dir, instances, opts=None):
@@ -377,7 +379,7 @@ class YumDependencyHandler(base.DependencyHandler):
         except AttributeError:
             pass
         if requires_python:
-            requires_what.extend(self._convert_names_python2rpm(requires_python))
+            requires_what.extend(self._convert_names_python2rpm(requires_python, False))
         params['requires'] = requires_what
         params["epoch"] = self.OPENSTACK_EPOCH
         content = utils.load_template(self.SPEC_TEMPLATE_DIR, template_name)[1]
@@ -577,7 +579,7 @@ class YumDependencyHandler(base.DependencyHandler):
         else:
             self._build_from_app_dir(instance, params)
 
-    def _convert_names_python2rpm(self, python_names):
+    def _convert_names_python2rpm(self, python_names, only_name=True):
         if not python_names:
             return []
         cmdline = self.py2rpm_start_cmdline() + ["--convert"] + python_names
@@ -587,10 +589,11 @@ class YumDependencyHandler(base.DependencyHandler):
             if not line.startswith("Requires:"):
                 continue
             line = line[len("Requires:"):].strip()
-            positions = [line.find(">"), line.find("<"), line.find("=")]
-            positions = sorted([p for p in positions if p != -1])
-            if positions:
-                line = line[0:positions[0]].strip()
+            if only_name:
+                positions = [line.find(">"), line.find("<"), line.find("=")]
+                positions = sorted([p for p in positions if p != -1])
+                if positions:
+                    line = line[0:positions[0]].strip()
             if line and line not in rpm_names:
                 rpm_names.append(line)
         return rpm_names
@@ -602,14 +605,48 @@ class YumDependencyHandler(base.DependencyHandler):
         gathered_requires = sh.load_file(self.gathered_requires_filename).splitlines()
         gathered_requires = [line.strip() for line in gathered_requires if line.strip()]
         req_names = []
+        reqs = []
         for line in gathered_requires:
             req = pip_helper.extract_requirement(line)
+            if req.key in req_names:
+                continue
             req_names.append(req.key)
-        rpm_names = set(self._convert_names_python2rpm(req_names))
-        rpm_names |= self.requirements["requires"]
+            reqs.append(req)
+        rpm_names = self._convert_names_python2rpm(req_names)
+
+        # Ensure we select the right versions that is required and not a
+        # version that doesn't match the requirements.
+        all_rpms = []
+
+        for (rpm_name, req) in zip(rpm_names, reqs):
+            cmd = [self.yumfind_executable]
+            cmd.extend(['-p', "%s,%s" % (rpm_name, req), '-j'])
+            matched = sh.execute(cmd)[0].strip()
+            if not matched:
+                msg = ("Could not find available rpm package '%s' matching"
+                       " requirement: %s")
+                raise exc.DependencyException(msg % (rpm_name, req))
+            else:
+                pkg = json.loads(matched)
+                all_rpms.add((pkg['name'], pkg['version']))
+
+        for name in self.requirements["requires"]:
+            all_rpms.append((name, None))
         for inst in self.instances:
-            rpm_names |= inst.package_names()
-        return list(rpm_names)
+            for name in inst.package_names():
+                all_rpms.append((name, None))
+
+        just_names = []
+        just_rpms = []
+        for (name, ver) in all_rpms:
+            if name in just_names:
+                continue
+            pkg = str(name)
+            if ver is not None:
+                pkg = "%s,%s" % (pkg, ver)
+            just_rpms.append(pkg)
+            just_names.append(name)
+        return list(sorted(just_rpms))
 
     def install(self):
         super(YumDependencyHandler, self).install()
