@@ -14,7 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import sys
 import json
 
 from anvil import log as logging
@@ -26,16 +25,17 @@ LOG = logging.getLogger(__name__)
 class Helper(object):
     yyoom_executable = sh.which("yyoom", ["tools/"])
 
-    def __init__(self):
+    def __init__(self, log_dir):
         self._installed = None
         self._available = None
+        self._log_dir = log_dir
 
-    def _yyoom(self, arglist):
-        cmdline = [self.yyoom_executable]
-        if LOG.logger.isEnabledFor(logging.DEBUG):
-            cmdline.append('--verbose')
+    def _yyoom(self, arglist, cmd_type):
+        cmdline = [self.yyoom_executable, '--verbose']
         cmdline.extend(arglist)
-        (stdout, _stderr) = sh.execute(cmdline, stderr_fh=sys.stderr)
+        out_filename = sh.joinpths(self._log_dir, "yyoom-%s.log" % (cmd_type))
+        (stdout, _) = sh.execute_save_output2(cmdline,
+                                              stderr_filename=out_filename)
         stdout = stdout.strip()
         if stdout:
             return json.loads(stdout)
@@ -57,18 +57,19 @@ class Helper(object):
 
     def get_available(self):
         if self._available is None:
-            self._available = self._yyoom(['list', 'available'])
+            self._available = self._yyoom(['list', 'available'], 'list-available')
         return self._available
 
     def get_installed(self, name):
         if self._installed is None:
-            self._installed = self._yyoom(['list', 'installed'])
+            self._installed = self._yyoom(['list', 'installed'], 'list-installed')
         return [item for item in self._installed
                 if item['name'] == name]
 
     def builddep(self, srpm_path, tracewriter=None):
         self._trace_installed_packages(tracewriter,
-                                       self._yyoom(['builddep', srpm_path]))
+                                       self._yyoom(['builddep', srpm_path],
+                                                   'builddep-%s' % (sh.basename(srpm_path))))
 
     def _reset(self):
         # reset the caches:
@@ -77,7 +78,7 @@ class Helper(object):
 
     def clean(self):
         try:
-            self._yyoom(['cleanall'])
+            self._yyoom(['cleanall'], 'cleanall')
         finally:
             self._reset()
 
@@ -94,6 +95,12 @@ class Helper(object):
             cmdline.append(pkg)
 
         try:
-            self._trace_installed_packages(tracewriter, self._yyoom(cmdline))
+            cmd_type = 'transaction'
+            if install_pkgs:
+                cmd_type += "-install"
+            if remove_pkgs:
+                cmd_type += "-remove"
+            self._trace_installed_packages(tracewriter,
+                                           self._yyoom(cmdline, cmd_type))
         finally:
             self._reset()
