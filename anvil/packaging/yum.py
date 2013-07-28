@@ -636,7 +636,6 @@ class YumDependencyHandler(base.DependencyHandler):
 
         # Ensure we select the right versions that is required and not a
         # version that doesn't match the requirements.
-        cmd = [self.yumfind_executable, '-j']
         preq_rpms = []
         just_names = []
         preq_formatted = []
@@ -648,7 +647,6 @@ class YumDependencyHandler(base.DependencyHandler):
                 preq_formatted.append(str(rpm_name))
             else:
                 preq_formatted.append("%s,%s" % (rpm_name, py_req))
-            cmd.extend(['-p', preq_formatted[-1]])
             preq_rpms.append((rpm_name, py_req))
             just_names.append(rpm_name)
 
@@ -669,8 +667,12 @@ class YumDependencyHandler(base.DependencyHandler):
         for rpm_name in self.requirements["requires"]:
             capture_rpm(rpm_name, None)
 
+        cmd = [self.yumfind_executable, '-j']
+        preq_formatted = sorted(preq_formatted)
+        for p in preq_formatted:
+            cmd.extend(['-p', p])
         utils.log_iterable(preq_formatted,
-                           header="Validating %s required packages are still available" % (len(preq_rpms)),
+                           header="Validating %s required packages are still available" % (len(preq_formatted)),
                            logger=LOG)
         the_rpms = []
         for i, matched in enumerate(sh.execute(cmd)[0].splitlines()):
