@@ -86,6 +86,14 @@ class YumDependencyHandler(base.DependencyHandler):
         'anvil': 'anvil-source',
         "anvil-deps": "anvil-deps-source",
     }
+    DAEMON_ARGS = {
+        "quantum-server": ("'--config-file=/etc/quantum/plugin.ini"
+                           " --config-file=/etc/quantum/quantum.conf'"),
+        "quantum-l3-agent": ("'--config-file=/etc/quantum/l3_agent.ini"
+                             " --config-file=/etc/quantum/quantum.conf'"),
+        "quantum-dhcp-agent": ("'--config-file=/etc/quantum/dhcp_agent.ini"
+                               " --config-file=/etc/quantum/quantum.conf'"),
+    }
     REPOS = ["anvil-deps", "anvil"]
     py2rpm_executable = sh.which("py2rpm", ["tools/"])
     rpmbuild_executable = sh.which("rpmbuild")
@@ -419,17 +427,7 @@ class YumDependencyHandler(base.DependencyHandler):
             if sh.isfile(target_filename):
                 continue
             bin_name = utils.strip_prefix_suffix(script, "openstack-", ".init")
-            if bin_name == "quantum-server":
-                daemon_args = ("'--config-file=/etc/quantum/plugin.ini"
-                               " --config-file=/etc/quantum/quantum.conf'")
-            elif bin_name == "quantum-l3-agent":
-                daemon_args = ("'--config-file=/etc/quantum/l3_agent.ini"
-                               " --config-file=/etc/quantum/quantum.conf'")
-            elif bin_name == "quantum-dhcp-agent":
-                daemon_args = ("'--config-file=/etc/quantum/dhcp_agent.ini"
-                               " --config-file=/etc/quantum/quantum.conf'")
-            else:
-                daemon_args = ""
+            daemon_args = self.DAEMON_ARGS.get(bin_name, '')
             params = {
                 "bin": bin_name,
                 "package": bin_name.split("-", 1)[0],
