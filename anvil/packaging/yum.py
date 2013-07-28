@@ -639,27 +639,36 @@ class YumDependencyHandler(base.DependencyHandler):
         cmd = [self.yumfind_executable, '-j']
         preq_rpms = []
         just_names = []
-        for (rpm_name, req) in zip(rpm_names, reqs):
-            if rpm_name in just_names:
-                continue
-            cmd.extend(['-p', "%s,%s" % (rpm_name, req)])
-            preq_rpms.append((rpm_name, req))
-            just_names.append(rpm_name)
-        for rpm_name in self.requirements["requires"]:
-            if rpm_name in just_names:
-                continue
-            cmd.extend(['-p', str(rpm_name)])
-            preq_rpms.append((rpm_name, None))
-            just_names.append(rpm_name)
-        for inst in self.instances:
-            for rpm_name in inst.package_names():
-                if rpm_name in just_names:
-                    continue
-                cmd.extend(['-p', str(rpm_name)])
-                preq_rpms.append((rpm_name, None))
-                just_names.append(rpm_name)
+        preq_formatted = []
 
-        LOG.info("Validating %s dependencies are still available.", len(preq_rpms))
+        def capture_rpm(rpm_name, py_req):
+            if rpm_name in just_names:
+                return
+            if not py_req:
+                preq_formatted.append(str(rpm_name))
+            else:
+                preq_formatted.append("%s,%s" % (rpm_name, py_req))
+            cmd.extend(['-p', preq_formatted[-1]])
+            preq_rpms.append((rpm_name, py_req))
+            just_names.append(rpm_name)
+
+        for (rpm_name, req) in zip(rpm_names, reqs):
+            capture_rpm(rpm_name, req)
+        for rpm_name in self.requirements["requires"]:
+            capture_rpm(rpm_name, None)
+        for inst in self.instances:
+            try:
+                egg_name = inst.egg_info['name']
+                if self._is_client(inst.name, egg_name):
+                    capture_rpm(egg_name, None)
+            except AttributeError:
+                pass
+            for rpm_name in inst.package_names():
+                capture_rpm(rpm_name, None)
+
+        utils.log_iterable(preq_formatted,
+                           header="Validating %s required packages are still available" % (len(preq_rpms)),
+                           logger=LOG)
         the_rpms = []
         for i, matched in enumerate(sh.execute(cmd)[0].splitlines()):
             matched = matched.strip()
@@ -674,7 +683,7 @@ class YumDependencyHandler(base.DependencyHandler):
                 raise excp.DependencyException(msg)
             else:
                 the_rpms.append((pkg['name'], pkg['version']))
-        LOG.info("All %s dependencies are still available!", len(the_rpms))
+        LOG.info("All %s required packages are still available!", len(the_rpms))
 
         # Now format correctly
         just_rpms = []
