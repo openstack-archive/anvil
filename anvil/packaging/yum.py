@@ -19,8 +19,6 @@ import contextlib
 import json
 import pkg_resources
 import sys
-
-import rpm
 import tarfile
 
 from anvil import colorizer
@@ -97,6 +95,7 @@ class YumDependencyHandler(base.DependencyHandler):
     REPOS = ["anvil-deps", "anvil"]
     py2rpm_executable = sh.which("py2rpm", ["tools/"])
     rpmbuild_executable = sh.which("rpmbuild")
+    specprint_executable = sh.which('specprint', ["tools/"])
     yumfind_executable = sh.which("yumfind", ["tools/"])
     jobs = 2
 
@@ -419,8 +418,11 @@ class YumDependencyHandler(base.DependencyHandler):
     def _copy_startup_scripts(self, spec_filename):
         common_init_content = utils.load_template("packaging",
                                                   "common.init")[1]
-        for src in rpm.spec(spec_filename).sources:
-            script = sh.basename(src[0])
+        cmd = [self.specprint_executable]
+        cmd.extend(['-f', spec_filename])
+        spec_details = json.loads(sh.execute(cmd)[0])
+        for src in spec_details.get('sources', []):
+            script = sh.basename(src)
             if not (script.endswith(".init")):
                 continue
             target_filename = sh.joinpths(self.rpm_sources_dir, script)

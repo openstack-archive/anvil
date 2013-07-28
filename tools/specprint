@@ -1,0 +1,70 @@
+#!/usr/bin/python
+
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Library General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+#
+# Parts Copyright 2007 Red Hat, Inc
+
+import os
+import warnings
+warnings.filterwarnings("ignore")
+
+try:
+    import simplejson as json
+except ImportError:
+    import json
+
+from optparse import OptionParser
+
+import rpm
+
+SKIP_HEADERS = ['changelogtext']
+
+
+def analyze_spec(spec_filename):
+    spec_filename = os.path.abspath(spec_filename)
+    try:
+        spec = rpm.spec(spec_filename)
+    except ValueError as e:
+        # NOTE(harlowja): translate the inability to open, which the rpm
+        # library appears to throw as valueerror into ioerror (for some
+        # odd/unknown reason).
+        raise IOError(str(e).strip() + ": " + spec_filename)
+    headers = {}
+    for code, name in rpm.tagnames.items():
+        name = name.lower().strip()
+        if not name or name in SKIP_HEADERS:
+            continue
+        value = spec.sourceHeader[code]
+        if value:
+            headers[name] = value
+    sources = [s[0] for s in spec.sources]
+    return {
+        'path': spec_filename,
+        'sources': sources,
+        'headers': headers,
+    }
+
+
+if __name__ == '__main__':
+    parser = OptionParser()
+    parser.add_option("-f", '--file', dest="file", action="store",
+                      help="spec file to analyze",
+                      metavar="FILE")
+    (options, args) = parser.parse_args()
+    if not options.file:
+        parser.error("Option 'file/f' is required")
+    if not os.path.isfile(options.file):
+        parser.error("Valid file is required")
+    print(json.dumps(analyze_spec(options.file), sort_keys=True, indent=4))
