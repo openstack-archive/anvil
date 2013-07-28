@@ -654,17 +654,20 @@ class YumDependencyHandler(base.DependencyHandler):
 
         for (rpm_name, req) in zip(rpm_names, reqs):
             capture_rpm(rpm_name, req)
-        for rpm_name in self.requirements["requires"]:
-            capture_rpm(rpm_name, None)
         for inst in self.instances:
             try:
                 egg_name = inst.egg_info['name']
                 if self._is_client(inst.name, egg_name):
-                    capture_rpm(egg_name, None)
+                    rpm_name = egg_name
+                else:
+                    rpm_name = "openstack-%s" % (egg_name)
+                capture_rpm(rpm_name, inst.egg_info['req'])
             except AttributeError:
                 pass
             for rpm_name in inst.package_names():
                 capture_rpm(rpm_name, None)
+        for rpm_name in self.requirements["requires"]:
+            capture_rpm(rpm_name, None)
 
         utils.log_iterable(preq_formatted,
                            header="Validating %s required packages are still available" % (len(preq_rpms)),
