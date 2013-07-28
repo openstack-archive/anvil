@@ -10,12 +10,19 @@ cd "$(dirname "$0")"
 VERBOSE="${VERBOSE:-0}"
 PY2RPM_CMD="$PWD/tools/py2rpm"
 YUMFIND_CMD="$PWD/tools/yumfind"
+PIP_CMD=""
 
 YUM_OPTS="--assumeyes --nogpgcheck"
-PIP_CMD=""
 PIP_OPTS=""
 RPM_OPTS=""
 CURL_OPTS=""
+
+# Colors
+ESC_SEQ="\x1b["
+COL_RESET=$ESC_SEQ"39;49;00m"
+COL_GREEN=$ESC_SEQ"32;01m"
+COL_RED=$ESC_SEQ"31;01m"
+COL_YELLOW=$ESC_SEQ"33;01m"
 
 if [ "$VERBOSE" == "0" ]; then
     YUM_OPTS="$YUM_OPTS -q"
@@ -55,7 +62,7 @@ find_pip()
         fi
     done
     if [ -z "$PIP_CMD" ]; then
-        echo "pip or pip-python not found"
+        echo -e "${COL_RED}pip/pip-python${COL_RESET} command not found!"
         exit 1
     fi
 }
@@ -84,30 +91,11 @@ cache_and_install_rpm_url()
         return
     fi
     if [ ! -f "$cachedir/$rpm" ]; then
-        echo "Downloading $rpm to $cachedir..."
+        echo -e "Downloading ${COL_GREEN}${rpm}${COL_RESET} to ${COL_GREEN}${cachedir}${COL_RESET}."
         curl $CURL_OPTS $url -o "$cachedir/$rpm" || return 1
     fi
-    yum_install "$cachedir/$rpm"
+    yum install $YUM_OPTS "$cachedir/$rpm"
     return $?
-}
-
-yum_install()
-{
-    local rpm_path=$1
-    output=$(yum install $YUM_OPTS "$rpm_path" 2>&1)
-    rc=$?
-    if [ -n "$output" ]; then
-        if [[ ! "$output" =~ "Nothing to do" ]]; then
-            echo $output
-        fi
-    fi
-    if [ "$rc" != "0" ]; then
-        if [[ "$output" =~ "Nothing to do" ]]; then
-            # Not really a problem.
-            return 0
-        fi
-    fi
-    return $rc
 }
 
 bootstrap_epel()
@@ -117,21 +105,30 @@ bootstrap_epel()
     return $?
 }
 
+dump_list()
+{
+    for var in "$@"; do
+        for name in $var; do
+            echo "  - $name"
+        done
+    done
+}
+
 bootstrap_rpm_packages()
 {
     # NOTE(aababilov): the latter operations require some packages,
     # so, begin from installation
     if [ -n "$REQUIRES" ]; then
-        echo "Installing packages: $(echo $REQUIRES)"
-        for rpm in $REQUIRES; do
-            yum_install "$rpm"
-            if [ "$?" != "0" ]; then
-                echo "Failed installing $rpm"
-                return 1
-            fi
-        done
+        echo "Installing packages:"
+        dump_list "$REQUIRES"
+        yum install $YUM_OPTS $REQUIRES
+        if [ "$?" != "0" ]; then
+            echo -e "${COL_RED}Failed installing!${COL_RESET}"
+            return 1
+        fi
     fi
 
+    # Remove any known conflicting packages
     CONFLICTS=$(python -c "import yaml
 packages = set()
 try:
@@ -145,7 +142,8 @@ for pkg in packages:
         print pkg
 ")
     if [ -n "$CONFLICTS" ]; then
-        echo "Removing conflicting packages: $(echo $CONFLICTS)"
+        echo -e "Removing ${COL_YELLOW}conflicting${COL_RESET} packages:"
+        dump_list "$CONFLICTS"
         yum erase $YUM_OPTS $CONFLICTS
     fi
 }
@@ -160,7 +158,6 @@ except KeyError:
     pass
 ")
     local python_names=$(cat requirements.txt test-requirements.txt | sed -r -e 's/#.*$//' | sort -u)
-    echo "Attemping to install python requirements: $(echo $python_names)"
     local missing_packages=""
     local found_packages=""
     for name in $python_names; do
@@ -173,17 +170,19 @@ except KeyError:
         fi
     done
     if [ -n "$found_packages" ]; then
-        echo "Attemping to install python requirements found as packages: $(echo $found_packages)"
+        echo -e "Installing ${COL_GREEN}available${COL_RESET} python requirements found as packages:"
+        dump_list "$found_packages"
         yum install $YUM_OPTS $found_packages
         if [ "$?" != "0" ]; then
-            echo "Failed installing $(echo $found_packages)"
+            echo -e "${COL_RED}Failed installing!${COL_RESET}"
             return 1
         fi
     fi
     if [ -z "$missing_packages" ]; then
         return 0
     fi
-    echo "Building missing python requirements: $(echo $missing_packages)"
+    echo -e "Building ${COL_YELLOW}missing${COL_RESET} python requirements:"
+    dump_list "$missing_packages"
     local pip_tmp_dir=$(mktemp -d)
     find_pip
     local pip_opts="$PIP_OPTS -U -I"
@@ -193,17 +192,18 @@ except KeyError:
     local rpm_names=$("$PY2RPM_CMD"  --package-map $package_map --scripts-dir "conf/templates/packaging/scripts" -- "$pip_tmp_dir/"* 2>/dev/null |
         awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)
     if [ -z "$rpm_names" ]; then
-        echo "No binary RPMs were built!"
+        echo -e "${COL_RED}No binary RPMs were built!${COL_RESET}"
         return 1
     fi
     local rpm_base_names=""
     for rpm in $rpm_names; do
         rpm_base_names="$rpm_base_names $(basename $rpm)"
     done
-    echo "Installing missing python requirement packages: $(echo $rpm_base_names)"
+    echo "Installing ${COL_YELLOW}missing${COL_RESET} python requirement packages:"
+    dump_list "$rpm_base_names"
     yum install $YUM_OPTS $rpm_names
     if [ "$?" != "0" ]; then
-        echo "Failed installing $(echo $rpm_base_names)"
+        echo -e "${COL_RED}Failed installing!${COL_RESET}"
         return 1
     fi
     return 0
@@ -243,7 +243,7 @@ puke()
     if [[ "$cleaned_force" == "yes" ]]; then
         run_smithy
     else
-        echo "To run anyway set FORCE=yes and rerun." >&2
+        echo -e "To run anyway set ${COL_YELLOW}FORCE=yes${COL_RESET} and rerun." >&2
         exit 1
     fi
 }
@@ -359,5 +359,6 @@ if [ -n "$SUDO_UID" -a -n "SUDO_GID" ]; then
     chown -c "$SUDO_UID:$SUDO_GID" /etc/anvil /usr/share/anvil
 fi
 
-echo "Success! Bootstrapped for $SHORTNAME $RELEASE"
+echo -e "${COL_GREEN}Success!${COL_RESET}"
+echo "Bootstrapped for $SHORTNAME $RELEASE"
 exit 0
