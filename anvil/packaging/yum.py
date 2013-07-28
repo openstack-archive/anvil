@@ -639,27 +639,32 @@ class YumDependencyHandler(base.DependencyHandler):
         cmd = [self.yumfind_executable, '-j']
         preq_rpms = []
         just_names = []
-        for (rpm_name, req) in zip(rpm_names, reqs):
+
+        def capture_rpm(rpm_name, req):
             if rpm_name in just_names:
-                continue
-            cmd.extend(['-p', "%s,%s" % (rpm_name, req)])
+                return
+            if not req:
+                cmd.extend(['-p', str(rpm_name)])
+            else:
+                cmd.extend(['-p', "%s,%s" % (rpm_name, req)])
             preq_rpms.append((rpm_name, req))
             just_names.append(rpm_name)
-        for rpm_name in self.requirements["requires"]:
-            if rpm_name in just_names:
-                continue
-            cmd.extend(['-p', str(rpm_name)])
-            preq_rpms.append((rpm_name, None))
-            just_names.append(rpm_name)
-        for inst in self.instances:
-            for rpm_name in inst.package_names():
-                if rpm_name in just_names:
-                    continue
-                cmd.extend(['-p', str(rpm_name)])
-                preq_rpms.append((rpm_name, None))
-                just_names.append(rpm_name)
 
-        LOG.info("Validating %s dependencies are still available.", len(preq_rpms))
+        for (rpm_name, req) in zip(rpm_names, reqs):
+            capture_rpm(rpm_name, req)
+        for rpm_name in self.requirements["requires"]:
+            capture_rpm(rpm_name, None)
+        for inst in self.instances:
+            try:
+                egg_name = inst.egg_info['name']
+                if self._is_client(inst.name, egg_name):
+                    capture_rpm(egg_name, None)
+            except AttributeError:
+                pass
+            for rpm_name in inst.package_names():
+                capture_rpm(rpm_name, None)
+
+        LOG.info("Validating %s required packages are still available.", len(preq_rpms))
         the_rpms = []
         for i, matched in enumerate(sh.execute(cmd)[0].splitlines()):
             matched = matched.strip()
@@ -674,7 +679,7 @@ class YumDependencyHandler(base.DependencyHandler):
                 raise excp.DependencyException(msg)
             else:
                 the_rpms.append((pkg['name'], pkg['version']))
-        LOG.info("All %s dependencies are still available!", len(the_rpms))
+        LOG.info("All %s required packages are still available!", len(the_rpms))
 
         # Now format correctly
         just_rpms = []
