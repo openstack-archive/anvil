@@ -638,38 +638,49 @@ class YumDependencyHandler(base.DependencyHandler):
         # version that doesn't match the requirements.
         LOG.info("Validating dependencies are still available and satisfied.")
         cmd = [self.yumfind_executable, '-j']
+        preq_rpms = []
+        just_names = []
         for (rpm_name, req) in zip(rpm_names, reqs):
+            if rpm_name in just_names:
+                continue
             cmd.extend(['-p', "%s,%s" % (rpm_name, req)])
+            preq_rpms.append((rpm_name, req))
+            just_names.append(rpm_name)
+        for rpm_name in self.requirements["requires"]:
+            if rpm_name in just_names:
+                continue
+            cmd.extend(['-p', str(rpm_name)])
+            preq_rpms.append((rpm_name, None))
+            just_names.append(rpm_name)
+        for inst in self.instances:
+            for rpm_name in inst.package_names():
+                if rpm_name in just_names:
+                    continue
+                cmd.extend(['-p', str(rpm_name)])
+                preq_rpms.append((rpm_name, None))
+                just_names.append(rpm_name)
+
         all_rpms = []
         for i, matched in enumerate(sh.execute(cmd)[0].splitlines()):
             matched = matched.strip()
             if not matched:
-                rpm_name = rpm_names[i]
-                req = reqs[i]
-                msg = ("Could not find available rpm package '%s' matching"
-                       " requirement: %s")
-                raise excp.DependencyException(msg % (rpm_name, req))
+                rpm_name, py_req = all_preq_rpms[i]
+                msg = "Could not find available rpm package '%s'" % (rpm_name)
+                if py_req:
+                    msg += " matching requirement '%s'" % (py_req)
+                raise excp.DependencyException(msg)
             else:
                 pkg = json.loads(matched)
                 all_rpms.append((pkg['name'], pkg['version']))
+        LOG.info("Dependencies are still available!")
 
-        for name in self.requirements["requires"]:
-            all_rpms.append((name, None))
-        for inst in self.instances:
-            for name in inst.package_names():
-                all_rpms.append((name, None))
-
-        # Ensure we don't have duplicates
-        just_names = []
+        # Now format correctly
         just_rpms = []
         for (name, ver) in all_rpms:
-            if name in just_names:
-                continue
             pkg = str(name)
-            if ver is not None:
+            if ver:
                 pkg = "%s,%s" % (pkg, ver)
             just_rpms.append(pkg)
-            just_names.append(name)
         return list(sorted(just_rpms))
 
     def install(self):
