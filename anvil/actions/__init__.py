@@ -30,7 +30,7 @@ _NAMES_TO_RUNNER = {
     'build': build.BuildAction,
     'install': install.InstallAction,
     'prepare': prepare.PrepareAction,
-    'remove': remove.RemoveAction,
+    'purge': remove.RemoveAction,
     'restart': restart.RestartAction,
     'start': start.StartAction,
     'status': status.StatusAction,
