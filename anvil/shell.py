@@ -81,6 +81,13 @@ def is_dry_run():
     return bool(IS_DRYRUN)
 
 
+
+def _truncate(text, max_len):
+    if len(text) < max_len:
+        return text
+    return str(text[0:max_len]) + "..."
+
+
 # Originally borrowed from nova computes execute...
 def execute(cmd,
             process_input=None,
@@ -122,9 +129,10 @@ def execute(cmd,
         execute_cmd = str_cmd
 
     if not shell:
-        LOG.debug('Running cmd: %r' % (execute_cmd))
+        LOG.info('Running cmd: %r', _truncate(execute_cmd, 60))
     else:
-        LOG.debug('Running shell cmd: %r' % (execute_cmd))
+        LOG.info('Running shell cmd: %r', _truncate(execute_cmd, 60))
+    LOG.debug('Full cmd: %r', execute_cmd)
 
     if process_input is not None:
         LOG.debug('With stdin: %s' % (process_input))
