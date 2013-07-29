@@ -229,7 +229,7 @@ class DependencyHandler(object):
             LOG.error("No dependencies for OpenStack found."
                       "Something went wrong. Please check:")
             LOG.error("'%s'" % "' '".join(cmdline))
-            raise RuntimeError("No dependencies for OpenStack found")
+            raise exc.DependencyException("No dependencies for OpenStack found")
 
         utils.log_iterable(sorted(self.pips_to_install),
                            logger=LOG,
