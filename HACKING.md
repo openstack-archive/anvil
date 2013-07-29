@@ -26,8 +26,6 @@ This will suffice until a more *official* documentation site can be made.
 * Please also attempt to run [pylint] all code submitted.
 * Please also attempt to run the [yaml] validation if you adjust any [yaml] files in the `conf` directory.
 
-Use: ``./checks.sh`` to aid in running the 3 checks listed.
-
 ## Environment Variables
 
 * The ``OS_*`` environment variables should be the only ones used for all authentication to OpenStack clients as documented in the [CLI Auth] wiki page.
