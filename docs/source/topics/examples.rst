@@ -5,10 +5,10 @@
 Examples
 ========
 
-Pre-installing
---------------
+Preparing your own
+------------------
 
-See [Getting started! pre-setup] [gs] section to make the right preparation.
+**See:** :ref:`getting-started` to make the right preparation.
 
 Bootstrapping
 -------------
@@ -155,5 +155,14 @@ Uninstalling
    :language: none
    :linenos:
 
+Purging
+-------
 
-[gs]: /en/latest/topics/gettingstarted.html#pre-setup
+::
+
+     $ sudo ./smithy -a purge
+
+
+.. literalinclude:: examples/purge.txt
+   :language: none
+   :linenos:

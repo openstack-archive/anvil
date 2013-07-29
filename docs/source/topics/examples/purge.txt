@@ -1,0 +1,123 @@
+$ sudo ./smithy -a purge
+_____  ___    ___    _   _  ___   _____  _____  ___    _   _
+(  _  )(  _`\ (  _`\ ( ) ( )(  _`\(_   _)(  _  )(  _`\ ( ) ( )
+| ( ) || |_) )| (_(_)| `\| || (_(_) | |  | (_) || ( (_)| |/'/'
+| | | || ,__/'|  _)_ | , ` |`\__ \  | |  |  _  || |  _ | , <
+| (_) || |    | (_( )| |`\ |( )_) | | |  | | | || (_( )| |\`\
+(_____)(_)    (____/'(_) (_)`\____) (_)  (_) (_)(____/'(_) (_)
+                    Anvil: | 2013.1-dev |                     
+                 Let us get on with the show!                 
+------------------------Action Runner-------------------------
+INFO: @anvil.distro : Matched distro rhel for platform Linux-2.6.32-358.6.2.el6.YAHOO.20130516.x86_64-x86_64-with-redhat-6.4-Santiago
+INFO: @anvil : Starting action purge on 2013-07-29T02:58:26.817385 for distro: rhel
+INFO: @anvil : Using persona: conf/personas/in-a-box/basic.yaml
+INFO: @anvil : In root directory: /home/harlowja/openstack
+INFO: @anvil.actions.base : Processing components for action purge.
+INFO: @anvil.actions.base : Activating in the following order:
+INFO: @anvil.actions.base : |-- nova-client
+INFO: @anvil.actions.base : |-- nova
+INFO: @anvil.actions.base : |-- neutron-client
+INFO: @anvil.actions.base : |-- cinder-client
+INFO: @anvil.actions.base : |-- glance-client
+INFO: @anvil.actions.base : |-- cinder
+INFO: @anvil.actions.base : |-- glance
+INFO: @anvil.actions.base : |-- keystone-client
+INFO: @anvil.actions.base : |-- keystone
+INFO: @anvil.actions.base : |-- oslo-config
+INFO: @anvil.actions.base : |-- rabbit-mq
+INFO: @anvil.actions.base : |-- db
+INFO: @anvil.actions.base : |-- general
+INFO: @anvil.actions.base : Booting up your components.
+INFO: @anvil.actions.base : Reading passwords using a unencrypted keyring @ /etc/anvil/passwords.cfg
+INFO: @anvil.actions.base : Verifying that the components are ready to rock-n-roll.
+INFO: @anvil.actions.base : Warming up component configurations.
+INFO: @anvil.actions.remove : Destroying packages
+INFO: @anvil.shell : You can watch progress in another terminal with:
+INFO: @anvil.shell :     tail -f /home/harlowja/openstack/deps/output/yyoom-transaction-remove.log
+INFO: @anvil.actions.remove : Uninstalling nova-client.
+INFO: @anvil.actions.remove : Uninstalling nova.
+INFO: @anvil.actions.remove : Uninstalling neutron-client.
+INFO: @anvil.actions.remove : Uninstalling cinder-client.
+INFO: @anvil.actions.remove : Uninstalling glance-client.
+INFO: @anvil.actions.remove : Uninstalling cinder.
+INFO: @anvil.actions.remove : Uninstalling glance.
+INFO: @anvil.actions.remove : Uninstalling keystone-client.
+INFO: @anvil.actions.remove : Uninstalling keystone.
+INFO: @anvil.actions.remove : Uninstalling oslo-config.
+INFO: @anvil.actions.remove : Uninstalling rabbit-mq.
+INFO: @anvil.actions.remove : Uninstalling db.
+INFO: @anvil.actions.remove : Uninstalling general.
+INFO: @anvil.actions.remove : Post-uninstalling nova-client.
+INFO: @anvil.components.base_install : Removing 3 created directories:
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/nova-client/traces
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/nova-client/app
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/nova-client
+INFO: @anvil.actions.remove : Post-uninstalling nova.
+INFO: @anvil.components.base_install : Removing 3 miscellaneous files:
+INFO: @anvil.components.base_install : |-- /etc/nova/nova.conf
+INFO: @anvil.components.base_install : |-- /etc/nova/nova-api-paste.ini
+INFO: @anvil.components.base_install : |-- /etc/nova/logging.conf
+INFO: @anvil.components.base_install : Removing 3 created directories:
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/nova/traces
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/nova/app
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/nova
+INFO: @anvil.actions.remove : Post-uninstalling neutron-client.
+INFO: @anvil.components.base_install : Removing 3 created directories:
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/neutron-client/traces
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/neutron-client/app
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/neutron-client
+INFO: @anvil.actions.remove : Post-uninstalling cinder-client.
+INFO: @anvil.components.base_install : Removing 3 created directories:
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/cinder-client/traces
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/cinder-client/app
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/cinder-client
+INFO: @anvil.actions.remove : Post-uninstalling glance-client.
+INFO: @anvil.components.base_install : Removing 3 created directories:
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/glance-client/traces
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/glance-client/app
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/glance-client
+INFO: @anvil.actions.remove : Post-uninstalling cinder.
+INFO: @anvil.components.base_install : Removing 1 miscellaneous files:
+INFO: @anvil.components.base_install : |-- /etc/cinder/cinder.conf
+INFO: @anvil.components.base_install : Removing 3 created directories:
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/cinder/traces
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/cinder/app
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/cinder
+INFO: @anvil.actions.remove : Post-uninstalling glance.
+INFO: @anvil.components.base_install : Removing 1 miscellaneous files:
+INFO: @anvil.components.base_install : |-- /etc/glance/logging.conf
+INFO: @anvil.components.base_install : Removing 3 created directories:
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/glance/traces
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/glance/app
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/glance
+INFO: @anvil.actions.remove : Post-uninstalling keystone-client.
+INFO: @anvil.components.base_install : Removing 3 created directories:
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/keystone-client/traces
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/keystone-client/app
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/keystone-client
+INFO: @anvil.actions.remove : Post-uninstalling keystone.
+INFO: @anvil.components.base_install : Removing 2 miscellaneous files:
+INFO: @anvil.components.base_install : |-- /etc/keystone/logging.conf
+INFO: @anvil.components.base_install : |-- /etc/keystone/keystone.conf
+INFO: @anvil.components.base_install : Removing 3 created directories:
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/keystone/traces
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/keystone/app
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/keystone
+INFO: @anvil.actions.remove : Post-uninstalling oslo-config.
+INFO: @anvil.components.base_install : Removing 3 created directories:
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/oslo-config/traces
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/oslo-config/app
+INFO: @anvil.components.base_install : |-- /home/harlowja/openstack/oslo-config
+INFO: @anvil.actions.remove : Post-uninstalling rabbit-mq.
+INFO: @anvil.actions.remove : Post-uninstalling db.
+INFO: @anvil.actions.remove : Post-uninstalling general.
+INFO: @anvil.actions.base : Tearing down your components.
+INFO: @anvil : It took 3.047 seconds or 0.05 minutes to complete action purge.
+ ______________________________
+< I'm a lumberjack and I'm OK. >
+ ------------------------------
+        \   ^__^
+         \  (oo)\_______
+            (__)\       )\/\
+                ||----w |
+                ||     ||

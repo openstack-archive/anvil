@@ -8,7 +8,7 @@ $ sudo ./smithy -a install
     And now for something completely different!     
 -------------------Action Runner--------------------
 INFO: @anvil.distro : Matched distro rhel for platform Linux-2.6.32-358.6.2.el6.YAHOO.20130516.x86_64-x86_64-with-redhat-6.4-Santiago
-INFO: @anvil : Starting action install on 2013-07-01T01:32:51.302157 for distro: rhel
+INFO: @anvil : Starting action install on 2013-07-29T02:50:53.680181 for distro: rhel
 INFO: @anvil : Using persona: conf/personas/in-a-box/basic.yaml
 INFO: @anvil : In root directory: /home/harlowja/openstack
 INFO: @anvil.actions.base : Processing components for action install.
@@ -23,7 +23,7 @@ INFO: @anvil.actions.base : |-- glance
 INFO: @anvil.actions.base : |-- cinder
 INFO: @anvil.actions.base : |-- glance-client
 INFO: @anvil.actions.base : |-- cinder-client
-INFO: @anvil.actions.base : |-- quantum-client
+INFO: @anvil.actions.base : |-- neutron-client
 INFO: @anvil.actions.base : |-- nova
 INFO: @anvil.actions.base : |-- nova-client
 INFO: @anvil.actions.base : Booting up your components.
@@ -40,357 +40,113 @@ INFO: @anvil.actions.install : Preinstalling glance.
 INFO: @anvil.actions.install : Preinstalling cinder.
 INFO: @anvil.actions.install : Preinstalling glance-client.
 INFO: @anvil.actions.install : Preinstalling cinder-client.
-INFO: @anvil.actions.install : Preinstalling quantum-client.
+INFO: @anvil.actions.install : Preinstalling neutron-client.
 INFO: @anvil.actions.install : Preinstalling nova.
 INFO: @anvil.actions.install : Preinstalling nova-client.
 INFO: @anvil.actions.install : Installing packages
-Loaded plugins: aliases, changelog, downloadonly, kabi, presto, remove-with-leaves, security, tmprepo, verify, versionlock
-Loading support for Red Hat kernel ABI
-........
-Package mysql-5.1.69-1.el6_4.x86_64 already installed and latest version
-Package python-boto-2.5.2-3.el6.noarch already installed and latest version
-Package python-six-1.1.0-2.el6.noarch already installed and latest version
-Package python-requests-1.1.0-3.el6.noarch already installed and latest version
-Package matching python-setuptools-0.6.10-3.el6.noarch already installed. Checking for update.
-Package python-d2to1-0.2.10-1.el6.noarch already installed and latest version
-Package matching python-pbr-0.5.11-2.el6.noarch already installed. Checking for update.
-Package python-netifaces-0.5-1.el6.x86_64 already installed and latest version
-Package python-keyring-0.7-1.el6.noarch already installed and latest version
-Package matching python-cheetah-2.4.1-1.el6.x86_64 already installed. Checking for update.
-Package python-argparse-1.2.1-2.el6.noarch already installed and latest version
-Package python-iso8601-0.1.4-2.el6.noarch already installed and latest version
-Resolving Dependencies
-......
---> Running transaction check
-......
-......
-......
-Dependencies Resolved
-
-=====================================================================================================================================================================================
- Package                                             Arch                          Version                                                   Repository                         Size
-=====================================================================================================================================================================================
-Installing:
- MySQL-python                                        x86_64                        1.2.3-0.3.c1.1.el6                                        base                               86 k
- mysql-server                                        x86_64                        5.1.69-1.el6_4                                            updates                           8.7 M
- openstack-cinder                                    noarch                        2:2013.2.a252.g066a676-1.el6                              anvil                             202 k
- openstack-glance                                    noarch                        2:2013.2.a63.gfaff611-1.el6                               anvil                             287 k
- openstack-keystone                                  noarch                        2:2013.2.b1.140.g6362fb7-1.el6                            anvil                             303 k
- openstack-nova-api                                  noarch                        2:2013.2.a1581.g1515fa7-1.el6                             anvil                             5.4 k
- openstack-nova-cert                                 noarch                        2:2013.2.a1581.g1515fa7-1.el6                             anvil                             8.2 k
- openstack-nova-compute                              noarch                        2:2013.2.a1581.g1515fa7-1.el6                             anvil                             7.1 k
- openstack-nova-conductor                            noarch                        2:2013.2.a1581.g1515fa7-1.el6                             anvil                             3.9 k
- openstack-nova-network                              noarch                        2:2013.2.a1581.g1515fa7-1.el6                             anvil                             5.6 k
- openstack-nova-scheduler                            noarch                        2:2013.2.a1581.g1515fa7-1.el6                             anvil                             4.3 k
- pyOpenSSL                                           x86_64                        0.10-2.el6                                                base                              212 k
- pyflakes                                            noarch                        0.7.2-0.el6                                               anvil-deps                         62 k
- pyparsing                                           noarch                        1.5.7-0.el6                                               anvil-deps                         68 k
- pysendfile                                          x86_64                        2.0.0-3.el6                                               epel                              9.3 k
- python-amqplib                                      noarch                        0.6.1-2.el6                                               epel                               65 k
- python-anyjson                                      noarch                        0.3.3-0.el6                                               anvil-deps                         10 k
- python-babel                                        noarch                        0.9.6-0.el6                                               anvil-deps                        1.3 M
- python-cliff                                        noarch                        1.4-0.el6                                                 anvil-deps                         28 k
- python-cliff-tablib                                 noarch                        1-0.el6                                                   anvil-deps                        6.4 k
- python-coverage                                     x86_64                        3.6-0.el6                                                 anvil-deps                        153 k
- python-discover                                     noarch                        0.4-0.el6                                                 anvil-deps                         23 k
- python-eventlet                                     noarch                        0.9.17-2.el6                                              epel                              262 k
- python-feedparser                                   noarch                        5.1.2-2.el6                                               epel                              106 k
- python-fixtures                                     noarch                        0.3.12-1.el6                                              epel                               69 k
- python-flake8                                       noarch                        2-0.el6                                                   anvil-deps                         27 k
- python-greenlet                                     x86_64                        0.3.1-12.el6                                              epel                               22 k
- python-hacking                                      noarch                        0.5.6-0.el6                                               anvil-deps                         36 k
- python-hp3parclient                                 noarch                        1-0.el6                                                   anvil-deps                         19 k
- python-httplib2                                     noarch                        0.8-0.el6                                                 anvil-deps                         66 k
- python-jsonschema                                   noarch                        2-0.el6                                                   anvil-deps                         57 k
- python-kombu                                        noarch                        2.5.12-0.el6                                              anvil-deps                        349 k
- python-ldap                                         x86_64                        2.3.13-0.el6                                              anvil-deps                        100 k
- python-lockfile                                     noarch                        0.8-3.el6                                                 epel                               17 k
- python-lxml                                         x86_64                        3.2.1-0.el6                                               anvil-deps                        699 k
- python-memcached                                    noarch                        1.43-6.el6                                                base                               32 k
- python-migrate                                      noarch                        0.7.2-0.el6                                               anvil-deps                        177 k
- python-mock                                         noarch                        0.8.0-2.el6                                               epel                               92 k
- python-mox                                          noarch                        0.5.3-2.el6                                               epel                               35 k
- python-netaddr                                      noarch                        0.7.10-0.el6                                              anvil-deps                        1.1 M
- python-nose                                         noarch                        1.3-0.el6                                                 anvil-deps                        258 k
- python-nose-exclude                                 noarch                        0.1.9-0.el6                                               anvil-deps                         10 k
- python-nosehtmloutput                               noarch                        0.0.4-0.el6                                               anvil-deps                         16 k
- python-nosexcover                                   noarch                        1.0.8-0.el6                                               anvil-deps                        7.4 k
- python-openstack-nose-plugin                        noarch                        0.11-0.el6                                                anvil-deps                         12 k
- python-pam                                          noarch                        0.1.4-0.el6                                               anvil-deps                        7.1 k
- python-passlib                                      noarch                        1.5.3-1.el6                                               epel                              290 k
- python-paste                                        noarch                        1.7.4-2.el6                                               updates                           758 k
- python-paste-deploy                                 noarch                        1.5-0.el6                                                 anvil-deps                         32 k
- python-pep8                                         noarch                        1.4.5-0.el6                                               anvil-deps                         61 k
- python-psycopg2                                     x86_64                        2.0.14-2.el6                                              updates                           100 k
- python-pyasn1                                       noarch                        0.0.12a-1.el6                                             base                               70 k
- python-pysqlite                                     x86_64                        2.6.3-0.el6                                               anvil-deps                         75 k
- python-qpid-python                                  noarch                        0.20-0.el6                                                anvil-deps                        394 k
- python-routes                                       noarch                        1.13-0.el6                                                anvil-deps                         50 k
- python-simplejson                                   x86_64                        2.0.9-3.1.el6                                             base                              126 k
- python-sphinx                                       noarch                        1.2b1-0.el6                                               anvil-deps                        1.1 M
- python-sqlalchemy                                   x86_64                        0.7.9-0.el6                                               anvil-deps                        1.2 M
- python-stevedore                                    noarch                        0.9.1-0.el6                                               anvil-deps                         32 k
- python-subunit                                      noarch                        0.0.12-5.el6                                              epel                               80 k
- python-suds                                         noarch                        0.4.1-3.el6                                               base                              218 k
- python-testrepository                               noarch                        0.0.15-4.el6                                              epel                              170 k
- python-testscenarios                                noarch                        0.4-2.el6                                                 epel                               31 k
- python-testtools                                    noarch                        0.9.30-1.el6                                              epel                              319 k
- python-unittest2                                    noarch                        0.5.1-3.el6                                               epel                              138 k
- python-warlock                                      noarch                        1.0.1-0.el6                                               anvil-deps                        8.7 k
- python-webob                                        noarch                        1.2.3-0.el6                                               anvil-deps                        129 k
- python-websockify                                   noarch                        0.2.0-4.el6                                               epel                               52 k
- python-webtest                                      noarch                        1.2-2.el6                                                 base                               55 k
- python-wsgiref                                      noarch                        0.1.2-0.el6                                               anvil-deps                         32 k
- python-xattr                                        x86_64                        0.6.4-0.el6                                               anvil-deps                         18 k
- rabbitmq-server                                     noarch                        2.6.1-1.el6                                               epel                              1.1 M
-Updating:
- pylint                                              noarch                        0.25.2-0.el6                                              anvil-deps                        375 k
- python-crypto                                       x86_64                        2.6-0.el6                                                 anvil-deps                        474 k
- python-paramiko                                     noarch                        1.10.1-0.el6                                              anvil-deps                        209 k
- python-prettytable                                  noarch                        0.7.2-0.el6                                               anvil-deps                         27 k
-Installing for dependencies:
- SDL                                                 x86_64                        1.2.14-3.el6                                              base                              193 k
- augeas-libs                                         x86_64                        0.9.0-4.el6                                               base                              317 k
- btrfs-progs                                         x86_64                        0.20-0.2.git91d9eec.el6                                   updates                           298 k
- celt051                                             x86_64                        0.5.1.3-0.el6                                             base                               50 k
- dnsmasq                                             x86_64                        2.48-13.el6                                               updates                           149 k
- dnsmasq-utils                                       x86_64                        2.48-13.el6                                               updates                            16 k
- ebtables                                            x86_64                        2.0.9-6.el6                                               base                               95 k
- erlang                                              x86_64                        R14B-04.2.el6                                             epel                               26 k
- erlang-appmon                                       x86_64                        R14B-04.2.el6                                             epel                              144 k
- erlang-asn1                                         x86_64                        R14B-04.2.el6                                             epel                              993 k
- erlang-common_test                                  x86_64                        R14B-04.2.el6                                             epel                              508 k
- erlang-compiler                                     x86_64                        R14B-04.2.el6                                             epel                              987 k
- erlang-cosEvent                                     x86_64                        R14B-04.2.el6                                             epel                              148 k
- erlang-cosEventDomain                               x86_64                        R14B-04.2.el6                                             epel                              113 k
- erlang-cosFileTransfer                              x86_64                        R14B-04.2.el6                                             epel                              167 k
- erlang-cosNotification                              x86_64                        R14B-04.2.el6                                             epel                              718 k
- erlang-cosProperty                                  x86_64                        R14B-04.2.el6                                             epel                              161 k
- erlang-cosTime                                      x86_64                        R14B-04.2.el6                                             epel                              106 k
- erlang-cosTransactions                              x86_64                        R14B-04.2.el6                                             epel                              164 k
- erlang-crypto                                       x86_64                        R14B-04.2.el6                                             epel                               50 k
- erlang-debugger                                     x86_64                        R14B-04.2.el6                                             epel                              440 k
- erlang-dialyzer                                     x86_64                        R14B-04.2.el6                                             epel                              567 k
- erlang-diameter                                     x86_64                        R14B-04.2.el6                                             epel                              449 k
- erlang-docbuilder                                   x86_64                        R14B-04.2.el6                                             epel                              192 k
- erlang-edoc                                         x86_64                        R14B-04.2.el6                                             epel                              301 k
- erlang-erl_docgen                                   x86_64                        R14B-04.2.el6                                             epel                              109 k
- erlang-erl_interface                                x86_64                        R14B-04.2.el6                                             epel                              149 k
- erlang-erts                                         x86_64                        R14B-04.2.el6                                             epel                              2.0 M
- erlang-et                                           x86_64                        R14B-04.2.el6                                             epel                              197 k
- erlang-eunit                                        x86_64                        R14B-04.2.el6                                             epel                              139 k
- erlang-examples                                     x86_64                        R14B-04.2.el6                                             epel                              832 k
- erlang-gs                                           x86_64                        R14B-04.2.el6                                             epel                              608 k
- erlang-hipe                                         x86_64                        R14B-04.2.el6                                             epel                              1.0 M
- erlang-ic                                           x86_64                        R14B-04.2.el6                                             epel                              845 k
- erlang-inets                                        x86_64                        R14B-04.2.el6                                             epel                              749 k
- erlang-inviso                                       x86_64                        R14B-04.2.el6                                             epel                              154 k
- erlang-jinterface                                   x86_64                        R14B-04.2.el6                                             epel                               95 k
- erlang-kernel                                       x86_64                        R14B-04.2.el6                                             epel                              1.0 M
- erlang-megaco                                       x86_64                        R14B-04.2.el6                                             epel                              7.8 M
- erlang-mnesia                                       x86_64                        R14B-04.2.el6                                             epel                              662 k
- erlang-observer                                     x86_64                        R14B-04.2.el6                                             epel                              205 k
- erlang-odbc                                         x86_64                        R14B-04.2.el6                                             epel                               59 k
- erlang-orber                                        x86_64                        R14B-04.2.el6                                             epel                              909 k
- erlang-os_mon                                       x86_64                        R14B-04.2.el6                                             epel                              104 k
- erlang-otp_mibs                                     x86_64                        R14B-04.2.el6                                             epel                               28 k
- erlang-parsetools                                   x86_64                        R14B-04.2.el6                                             epel                              164 k
- erlang-percept                                      x86_64                        R14B-04.2.el6                                             epel                              140 k
- erlang-pman                                         x86_64                        R14B-04.2.el6                                             epel                              105 k
- erlang-public_key                                   x86_64                        R14B-04.2.el6                                             epel                              402 k
- erlang-reltool                                      x86_64                        R14B-04.2.el6                                             epel                              296 k
- erlang-runtime_tools                                x86_64                        R14B-04.2.el6                                             epel                              210 k
- erlang-sasl                                         x86_64                        R14B-04.2.el6                                             epel                              263 k
- erlang-snmp                                         x86_64                        R14B-04.2.el6                                             epel                              1.5 M
- erlang-ssh                                          x86_64                        R14B-04.2.el6                                             epel                              361 k
- erlang-ssl                                          x86_64                        R14B-04.2.el6                                             epel                              378 k
- erlang-stdlib                                       x86_64                        R14B-04.2.el6                                             epel                              2.1 M
- erlang-syntax_tools                                 x86_64                        R14B-04.2.el6                                             epel                              317 k
- erlang-test_server                                  x86_64                        R14B-04.2.el6                                             epel                              272 k
- erlang-toolbar                                      x86_64                        R14B-04.2.el6                                             epel                               49 k
- erlang-tools                                        x86_64                        R14B-04.2.el6                                             epel                              535 k
- erlang-tv                                           x86_64                        R14B-04.2.el6                                             epel                              377 k
- erlang-typer                                        x86_64                        R14B-04.2.el6                                             epel                               58 k
- erlang-webtool                                      x86_64                        R14B-04.2.el6                                             epel                               45 k
- erlang-wx                                           x86_64                        R14B-04.2.el6                                             epel                              2.4 M
- erlang-xmerl                                        x86_64                        R14B-04.2.el6                                             epel                              939 k
- febootstrap-supermin-helper                         x86_64                        3.12-2.el6                                                updates                           332 k
- flac                                                x86_64                        1.2.1-6.1.el6                                             base                              243 k
- gnutls-utils                                        x86_64                        2.8.5-10.el6_4.2                                          updates                           100 k
- gpxe-roms-qemu                                      noarch                        0.9.7-6.9.el6                                             base                              219 k
- hivex                                               x86_64                        1.3.3-4.2.el6                                             updates                            89 k
- libasyncns                                          x86_64                        0.8-1.1.el6                                               base                               24 k
- libguestfs                                          x86_64                        1:1.16.34-2.el6                                           updates                           1.5 M
- libguestfs-tools-c                                  x86_64                        1:1.16.34-2.el6                                           updates                           850 k
- libibverbs                                          x86_64                        1.1.6-5.el6                                               updates                            45 k
- librdmacm                                           x86_64                        1.0.17-0.git4b5c1aa.el6                                   updates                            47 k
- libsndfile                                          x86_64                        1.0.20-5.el6                                              base                              233 k
- libvirt                                             x86_64                        0.10.2-18.el6_4.8                                         updates                           2.3 M
- libvirt-client                                      x86_64                        0.10.2-18.el6_4.8                                         updates                           4.0 M
- libvirt-python                                      x86_64                        0.10.2-18.el6_4.8                                         updates                           463 k
- lzo                                                 x86_64                        2.03-3.1.el6                                              base                               55 k
- lzop                                                x86_64                        1.02-0.9.rc1.el6                                          base                               50 k
- netcf-libs                                          x86_64                        0.1.9-3.el6                                               updates                            52 k
- numad                                               x86_64                        0.5-8.20121015git.el6                                     updates                            27 k
- openstack-nova-common                               noarch                        2:2013.2.a1581.g1515fa7-1.el6                             anvil                              38 k
- perl-Config-General                                 noarch                        2.44-1.el6                                                base                               68 k
- perl-DBD-MySQL                                      x86_64                        4.013-3.el6                                               base                              134 k
- perl-hivex                                          x86_64                        1.3.3-4.2.el6                                             updates                            38 k
- pulseaudio-libs                                     x86_64                        0.9.21-14.el6_3                                           updates                           462 k
- python-amqp                                         noarch                        1.0.12-0.el6                                              anvil-deps                         63 k
- python-cinder                                       noarch                        2:2013.2.a252.g066a676-1.el6                              anvil                             1.0 M
- python-cinderclient                                 noarch                        2:1.0.4.49.g273a829-1.el6                                 anvil                             162 k
- python-cmd2                                         noarch                        0.6.5.1-0.el6                                             anvil-deps                         37 k
- python-colorama                                     noarch                        0.2.5-0.el6                                               anvil-deps                         30 k
- python-decorator                                    noarch                        3.4-0.el6                                                 anvil-deps                         14 k
- python-docutils                                     noarch                        0.10-0.el6                                                anvil-deps                        751 k
- python-extras                                       noarch                        0.0.3-2.el6                                               epel                               13 k
- python-glance                                       noarch                        2:2013.2.a63.gfaff611-1.el6                               anvil                             875 k
- python-glanceclient                                 noarch                        2:0.9.0.43.gd8a537c-1.el6                                 anvil                             113 k
- python-importlib                                    noarch                        1.0.2-1.el6                                               epel                              6.3 k
- python-jinja2                                       noarch                        2.7-0.el6                                                 anvil-deps                        319 k
- python-jsonpatch                                    noarch                        1.1-0.el6                                                 anvil-deps                         11 k
- python-jsonpointer                                  noarch                        1-0.el6                                                   anvil-deps                        7.1 k
- python-keystone                                     noarch                        2:2013.2.b1.140.g6362fb7-1.el6                            anvil                             381 k
- python-keystoneclient                               noarch                        2:0.3.0.12.g9ee038f-1.el6                                 anvil                             192 k
- python-markupsafe                                   x86_64                        0.18-0.el6                                                anvil-deps                         25 k
- python-mccabe                                       noarch                        0.2.1-0.el6                                               anvil-deps                         14 k
- python-mimeparse                                    noarch                        0.1.4-1.el6                                               epel                              9.1 k
- python-nova                                         noarch                        2:2013.2.a1581.g1515fa7-1.el6                             anvil                             2.6 M
- python-oslo-config                                  noarch                        2:1.2.0.a34.g08203f6-1                                    anvil                              39 k
- python-quantumclient                                noarch                        2:2.2.2.13.g8218cd1-1.el6                                 anvil                             144 k
- python-repoze-lru                                   noarch                        0.6-0.el6                                                 anvil-deps                         22 k
- python-swiftclient                                  noarch                        1.4.0-1.el6                                               epel                               48 k
- python-tablib                                       noarch                        0.9.11.20120702git752443f-5.el6                           epel                              763 k
- python-tempita                                      noarch                        0.5.1-0.el6                                               anvil-deps                         30 k
- qemu-img                                            x86_64                        2:0.12.1.2-2.355.el6_4.5                                  updates                           471 k
- qemu-kvm                                            x86_64                        2:0.12.1.2-2.355.el6_4.5                                  updates                           1.3 M
- radvd                                               x86_64                        1.6-1.el6                                                 base                               75 k
- scsi-target-utils                                   x86_64                        1.0.24-3.el6_4                                            updates                           172 k
- seabios                                             x86_64                        0.6.1.2-26.el6                                            updates                            91 k
- sgabios-bin                                         noarch                        0-0.3.20110621svn.el6                                     base                              6.6 k
- spice-server                                        x86_64                        0.12.0-12.el6_4.1                                         updates                           326 k
- usbredir                                            x86_64                        0.5.1-1.el6                                               updates                            40 k
- vgabios                                             noarch                        0.6b-3.7.el6                                              updates                            42 k
- wxBase                                              x86_64                        2.8.12-1.el6                                              epel                              576 k
- wxGTK                                               x86_64                        2.8.12-1.el6                                              epel                              2.9 M
- wxGTK-gl                                            x86_64                        2.8.12-1.el6                                              epel                               31 k
- yajl                                                x86_64                        1.0.7-3.el6                                               base                               27 k
-Updating for dependencies:
- gnutls                                              i686                          2.8.5-10.el6_4.2                                          updates                           340 k
- gnutls                                              x86_64                        2.8.5-10.el6_4.2                                          updates                           346 k
- gnutls-devel                                        i686                          2.8.5-10.el6_4.2                                          updates                           1.1 M
- gnutls-devel                                        x86_64                        2.8.5-10.el6_4.2                                          updates                           1.1 M
- python-logilab-astng                                noarch                        0.24.3-0.el6                                              anvil-deps                        198 k
- python-logilab-common                               noarch                        0.59.1-0.el6                                              anvil-deps                        393 k
- python-pygments                                     noarch                        1.6-0.el6                                                 anvil-deps                        900 k
-
-Transaction Summary
-=====================================================================================================================================================================================
-Install     199 Package(s)
-Upgrade      11 Package(s)
-
-Total download size: 87 M
-Downloading Packages:
-......
-......
-Running rpm_check_debug
-Running Transaction Test
-Transaction Test Succeeded
-Running Transaction
-......
-......
-Installed:
-  MySQL-python.x86_64 0:1.2.3-0.3.c1.1.el6                                                   mysql-server.x86_64 0:5.1.69-1.el6_4                                                    
-  openstack-cinder.noarch 2:2013.2.a252.g066a676-1.el6                                       openstack-glance.noarch 2:2013.2.a63.gfaff611-1.el6                                     
-  openstack-keystone.noarch 2:2013.2.b1.140.g6362fb7-1.el6                                   openstack-nova-api.noarch 2:2013.2.a1581.g1515fa7-1.el6                                 
-  openstack-nova-cert.noarch 2:2013.2.a1581.g1515fa7-1.el6                                   openstack-nova-compute.noarch 2:2013.2.a1581.g1515fa7-1.el6                             
-  openstack-nova-conductor.noarch 2:2013.2.a1581.g1515fa7-1.el6                              openstack-nova-network.noarch 2:2013.2.a1581.g1515fa7-1.el6                             
-  openstack-nova-scheduler.noarch 2:2013.2.a1581.g1515fa7-1.el6                              pyOpenSSL.x86_64 0:0.10-2.el6                                                           
-  pyflakes.noarch 0:0.7.2-0.el6                                                              pyparsing.noarch 0:1.5.7-0.el6                                                          
-  pysendfile.x86_64 0:2.0.0-3.el6                                                            python-amqplib.noarch 0:0.6.1-2.el6                                                     
-  python-anyjson.noarch 0:0.3.3-0.el6                                                        python-babel.noarch 0:0.9.6-0.el6                                                       
-  python-cliff.noarch 0:1.4-0.el6                                                            python-cliff-tablib.noarch 0:1-0.el6                                                    
-  python-coverage.x86_64 0:3.6-0.el6                                                         python-discover.noarch 0:0.4-0.el6                                                      
-  python-eventlet.noarch 0:0.9.17-2.el6                                                      python-feedparser.noarch 0:5.1.2-2.el6                                                  
-  python-fixtures.noarch 0:0.3.12-1.el6                                                      python-flake8.noarch 0:2-0.el6                                                          
-  python-greenlet.x86_64 0:0.3.1-12.el6                                                      python-hacking.noarch 0:0.5.6-0.el6                                                     
-  python-hp3parclient.noarch 0:1-0.el6                                                       python-httplib2.noarch 0:0.8-0.el6                                                      
-  python-jsonschema.noarch 0:2-0.el6                                                         python-kombu.noarch 0:2.5.12-0.el6                                                      
-  python-ldap.x86_64 0:2.3.13-0.el6                                                          python-lockfile.noarch 0:0.8-3.el6                                                      
-  python-lxml.x86_64 0:3.2.1-0.el6                                                           python-memcached.noarch 0:1.43-6.el6                                                    
-  python-migrate.noarch 0:0.7.2-0.el6                                                        python-mock.noarch 0:0.8.0-2.el6                                                        
-  python-mox.noarch 0:0.5.3-2.el6                                                            python-netaddr.noarch 0:0.7.10-0.el6                                                    
-  python-nose.noarch 0:1.3-0.el6                                                             python-nose-exclude.noarch 0:0.1.9-0.el6                                                
-  python-nosehtmloutput.noarch 0:0.0.4-0.el6                                                 python-nosexcover.noarch 0:1.0.8-0.el6                                                  
-  python-openstack-nose-plugin.noarch 0:0.11-0.el6                                           python-pam.noarch 0:0.1.4-0.el6                                                         
-  python-passlib.noarch 0:1.5.3-1.el6                                                        python-paste.noarch 0:1.7.4-2.el6                                                       
-  python-paste-deploy.noarch 0:1.5-0.el6                                                     python-pep8.noarch 0:1.4.5-0.el6                                                        
-  python-psycopg2.x86_64 0:2.0.14-2.el6                                                      python-pyasn1.noarch 0:0.0.12a-1.el6                                                    
-  python-pysqlite.x86_64 0:2.6.3-0.el6                                                       python-qpid-python.noarch 0:0.20-0.el6                                                  
-  python-routes.noarch 0:1.13-0.el6                                                          python-simplejson.x86_64 0:2.0.9-3.1.el6                                                
-  python-sphinx.noarch 0:1.2b1-0.el6                                                         python-sqlalchemy.x86_64 0:0.7.9-0.el6                                                  
-  python-stevedore.noarch 0:0.9.1-0.el6                                                      python-subunit.noarch 0:0.0.12-5.el6                                                    
-  python-suds.noarch 0:0.4.1-3.el6                                                           python-testrepository.noarch 0:0.0.15-4.el6                                             
-  python-testscenarios.noarch 0:0.4-2.el6                                                    python-testtools.noarch 0:0.9.30-1.el6                                                  
-  python-unittest2.noarch 0:0.5.1-3.el6                                                      python-warlock.noarch 0:1.0.1-0.el6                                                     
-  python-webob.noarch 0:1.2.3-0.el6                                                          python-websockify.noarch 0:0.2.0-4.el6                                                  
-  python-webtest.noarch 0:1.2-2.el6                                                          python-wsgiref.noarch 0:0.1.2-0.el6                                                     
-  python-xattr.x86_64 0:0.6.4-0.el6                                                          rabbitmq-server.noarch 0:2.6.1-1.el6                                                    
-
-Dependency Installed:
-  SDL.x86_64 0:1.2.14-3.el6                                 augeas-libs.x86_64 0:0.9.0-4.el6                           btrfs-progs.x86_64 0:0.20-0.2.git91d9eec.el6                  
-  celt051.x86_64 0:0.5.1.3-0.el6                            dnsmasq.x86_64 0:2.48-13.el6                               dnsmasq-utils.x86_64 0:2.48-13.el6                            
-  ebtables.x86_64 0:2.0.9-6.el6                             erlang.x86_64 0:R14B-04.2.el6                              erlang-appmon.x86_64 0:R14B-04.2.el6                          
-  erlang-asn1.x86_64 0:R14B-04.2.el6                        erlang-common_test.x86_64 0:R14B-04.2.el6                  erlang-compiler.x86_64 0:R14B-04.2.el6                        
-  erlang-cosEvent.x86_64 0:R14B-04.2.el6                    erlang-cosEventDomain.x86_64 0:R14B-04.2.el6               erlang-cosFileTransfer.x86_64 0:R14B-04.2.el6                 
-  erlang-cosNotification.x86_64 0:R14B-04.2.el6             erlang-cosProperty.x86_64 0:R14B-04.2.el6                  erlang-cosTime.x86_64 0:R14B-04.2.el6                         
-  erlang-cosTransactions.x86_64 0:R14B-04.2.el6             erlang-crypto.x86_64 0:R14B-04.2.el6                       erlang-debugger.x86_64 0:R14B-04.2.el6                        
-  erlang-dialyzer.x86_64 0:R14B-04.2.el6                    erlang-diameter.x86_64 0:R14B-04.2.el6                     erlang-docbuilder.x86_64 0:R14B-04.2.el6                      
-  erlang-edoc.x86_64 0:R14B-04.2.el6                        erlang-erl_docgen.x86_64 0:R14B-04.2.el6                   erlang-erl_interface.x86_64 0:R14B-04.2.el6                   
-  erlang-erts.x86_64 0:R14B-04.2.el6                        erlang-et.x86_64 0:R14B-04.2.el6                           erlang-eunit.x86_64 0:R14B-04.2.el6                           
-  erlang-examples.x86_64 0:R14B-04.2.el6                    erlang-gs.x86_64 0:R14B-04.2.el6                           erlang-hipe.x86_64 0:R14B-04.2.el6                            
-  erlang-ic.x86_64 0:R14B-04.2.el6                          erlang-inets.x86_64 0:R14B-04.2.el6                        erlang-inviso.x86_64 0:R14B-04.2.el6                          
-  erlang-jinterface.x86_64 0:R14B-04.2.el6                  erlang-kernel.x86_64 0:R14B-04.2.el6                       erlang-megaco.x86_64 0:R14B-04.2.el6                          
-  erlang-mnesia.x86_64 0:R14B-04.2.el6                      erlang-observer.x86_64 0:R14B-04.2.el6                     erlang-odbc.x86_64 0:R14B-04.2.el6                            
-  erlang-orber.x86_64 0:R14B-04.2.el6                       erlang-os_mon.x86_64 0:R14B-04.2.el6                       erlang-otp_mibs.x86_64 0:R14B-04.2.el6                        
-  erlang-parsetools.x86_64 0:R14B-04.2.el6                  erlang-percept.x86_64 0:R14B-04.2.el6                      erlang-pman.x86_64 0:R14B-04.2.el6                            
-  erlang-public_key.x86_64 0:R14B-04.2.el6                  erlang-reltool.x86_64 0:R14B-04.2.el6                      erlang-runtime_tools.x86_64 0:R14B-04.2.el6                   
-  erlang-sasl.x86_64 0:R14B-04.2.el6                        erlang-snmp.x86_64 0:R14B-04.2.el6                         erlang-ssh.x86_64 0:R14B-04.2.el6                             
-  erlang-ssl.x86_64 0:R14B-04.2.el6                         erlang-stdlib.x86_64 0:R14B-04.2.el6                       erlang-syntax_tools.x86_64 0:R14B-04.2.el6                    
-  erlang-test_server.x86_64 0:R14B-04.2.el6                 erlang-toolbar.x86_64 0:R14B-04.2.el6                      erlang-tools.x86_64 0:R14B-04.2.el6                           
-  erlang-tv.x86_64 0:R14B-04.2.el6                          erlang-typer.x86_64 0:R14B-04.2.el6                        erlang-webtool.x86_64 0:R14B-04.2.el6                         
-  erlang-wx.x86_64 0:R14B-04.2.el6                          erlang-xmerl.x86_64 0:R14B-04.2.el6                        febootstrap-supermin-helper.x86_64 0:3.12-2.el6               
-  flac.x86_64 0:1.2.1-6.1.el6                               gnutls-utils.x86_64 0:2.8.5-10.el6_4.2                     gpxe-roms-qemu.noarch 0:0.9.7-6.9.el6                         
-  hivex.x86_64 0:1.3.3-4.2.el6                              libasyncns.x86_64 0:0.8-1.1.el6                            libguestfs.x86_64 1:1.16.34-2.el6                             
-  libguestfs-tools-c.x86_64 1:1.16.34-2.el6                 libibverbs.x86_64 0:1.1.6-5.el6                            librdmacm.x86_64 0:1.0.17-0.git4b5c1aa.el6                    
-  libsndfile.x86_64 0:1.0.20-5.el6                          libvirt.x86_64 0:0.10.2-18.el6_4.8                         libvirt-client.x86_64 0:0.10.2-18.el6_4.8                     
-  libvirt-python.x86_64 0:0.10.2-18.el6_4.8                 lzo.x86_64 0:2.03-3.1.el6                                  lzop.x86_64 0:1.02-0.9.rc1.el6                                
-  netcf-libs.x86_64 0:0.1.9-3.el6                           numad.x86_64 0:0.5-8.20121015git.el6                       openstack-nova-common.noarch 2:2013.2.a1581.g1515fa7-1.el6    
-  perl-Config-General.noarch 0:2.44-1.el6                   perl-DBD-MySQL.x86_64 0:4.013-3.el6                        perl-hivex.x86_64 0:1.3.3-4.2.el6                             
-  pulseaudio-libs.x86_64 0:0.9.21-14.el6_3                  python-amqp.noarch 0:1.0.12-0.el6                          python-cinder.noarch 2:2013.2.a252.g066a676-1.el6             
-  python-cinderclient.noarch 2:1.0.4.49.g273a829-1.el6      python-cmd2.noarch 0:0.6.5.1-0.el6                         python-colorama.noarch 0:0.2.5-0.el6                          
-  python-decorator.noarch 0:3.4-0.el6                       python-docutils.noarch 0:0.10-0.el6                        python-extras.noarch 0:0.0.3-2.el6                            
-  python-glance.noarch 2:2013.2.a63.gfaff611-1.el6          python-glanceclient.noarch 2:0.9.0.43.gd8a537c-1.el6       python-importlib.noarch 0:1.0.2-1.el6                         
-  python-jinja2.noarch 0:2.7-0.el6                          python-jsonpatch.noarch 0:1.1-0.el6                        python-jsonpointer.noarch 0:1-0.el6                           
-  python-keystone.noarch 2:2013.2.b1.140.g6362fb7-1.el6     python-keystoneclient.noarch 2:0.3.0.12.g9ee038f-1.el6     python-markupsafe.x86_64 0:0.18-0.el6                         
-  python-mccabe.noarch 0:0.2.1-0.el6                        python-mimeparse.noarch 0:0.1.4-1.el6                      python-nova.noarch 2:2013.2.a1581.g1515fa7-1.el6              
-  python-oslo-config.noarch 2:1.2.0.a34.g08203f6-1          python-quantumclient.noarch 2:2.2.2.13.g8218cd1-1.el6      python-repoze-lru.noarch 0:0.6-0.el6                          
-  python-swiftclient.noarch 0:1.4.0-1.el6                   python-tablib.noarch 0:0.9.11.20120702git752443f-5.el6     python-tempita.noarch 0:0.5.1-0.el6                           
-  qemu-img.x86_64 2:0.12.1.2-2.355.el6_4.5                  qemu-kvm.x86_64 2:0.12.1.2-2.355.el6_4.5                   radvd.x86_64 0:1.6-1.el6                                      
-  scsi-target-utils.x86_64 0:1.0.24-3.el6_4                 seabios.x86_64 0:0.6.1.2-26.el6                            sgabios-bin.noarch 0:0-0.3.20110621svn.el6                    
-  spice-server.x86_64 0:0.12.0-12.el6_4.1                   usbredir.x86_64 0:0.5.1-1.el6                              vgabios.noarch 0:0.6b-3.7.el6                                 
-  wxBase.x86_64 0:2.8.12-1.el6                              wxGTK.x86_64 0:2.8.12-1.el6                                wxGTK-gl.x86_64 0:2.8.12-1.el6                                
-  yajl.x86_64 0:1.0.7-3.el6                                
-
-Updated:
-  pylint.noarch 0:0.25.2-0.el6           python-crypto.x86_64 0:2.6-0.el6           python-paramiko.noarch 0:1.10.1-0.el6           python-prettytable.noarch 0:0.7.2-0.el6          
-
-Dependency Updated:
-  gnutls.i686 0:2.8.5-10.el6_4.2                 gnutls.x86_64 0:2.8.5-10.el6_4.2                gnutls-devel.i686 0:2.8.5-10.el6_4.2     gnutls-devel.x86_64 0:2.8.5-10.el6_4.2    
-  python-logilab-astng.noarch 0:0.24.3-0.el6     python-logilab-common.noarch 0:0.59.1-0.el6     python-pygments.noarch 0:1.6-0.el6      
-
-Complete!
+INFO: @anvil.shell : You can watch progress in another terminal with:
+INFO: @anvil.shell :     tail -f /home/harlowja/openstack/deps/output/yyoom-cleanall.log
+INFO: @anvil.shell : You can watch progress in another terminal with:
+INFO: @anvil.shell :     tail -f /home/harlowja/openstack/deps/output/yyoom-list-installed.log
+INFO: @anvil.packaging.yum : Validating 95 required packages are still available:
+INFO: @anvil.packaging.yum : |-- MySQL-python,mysql-python
+INFO: @anvil.packaging.yum : |-- mysql
+INFO: @anvil.packaging.yum : |-- mysql-server
+INFO: @anvil.packaging.yum : |-- openstack-cinder,cinder==2013.2.a77.g9f0bb80
+INFO: @anvil.packaging.yum : |-- openstack-glance,glance==2013.2.a32.g0484ca2
+INFO: @anvil.packaging.yum : |-- openstack-keystone,keystone==2013.2.a249.g97a5b49
+INFO: @anvil.packaging.yum : |-- openstack-nova,nova==2013.2.a2343.g6a3f5fd
+INFO: @anvil.packaging.yum : |-- openstack-nova-api
+INFO: @anvil.packaging.yum : |-- openstack-nova-cert
+INFO: @anvil.packaging.yum : |-- openstack-nova-compute
+INFO: @anvil.packaging.yum : |-- openstack-nova-conductor
+INFO: @anvil.packaging.yum : |-- openstack-nova-network
+INFO: @anvil.packaging.yum : |-- openstack-nova-scheduler
+INFO: @anvil.packaging.yum : |-- pyOpenSSL,pyopenssl
+INFO: @anvil.packaging.yum : |-- pyflakes,pyflakes==0.7.2
+INFO: @anvil.packaging.yum : |-- pylint,pylint==0.25.2
+INFO: @anvil.packaging.yum : |-- pyparsing,pyparsing>=1.5.7,<2.0
+INFO: @anvil.packaging.yum : |-- pysendfile,pysendfile==2.0.0
+INFO: @anvil.packaging.yum : |-- python-amqplib,amqplib>=0.6.1
+INFO: @anvil.packaging.yum : |-- python-anyjson,anyjson>=0.3.3
+INFO: @anvil.packaging.yum : |-- python-argparse,argparse
+INFO: @anvil.packaging.yum : |-- python-babel,babel>=0.9.6
+INFO: @anvil.packaging.yum : |-- python-boto,boto
+INFO: @anvil.packaging.yum : |-- python-cheetah,Cheetah>=2.4.4
+INFO: @anvil.packaging.yum : |-- python-cinderclient,python-cinderclient==1.0.4.70.g878098d
+INFO: @anvil.packaging.yum : |-- python-cliff,cliff>=1.4
+INFO: @anvil.packaging.yum : |-- python-cliff-tablib,cliff-tablib>=1.0
+INFO: @anvil.packaging.yum : |-- python-coverage,coverage>=3.6
+INFO: @anvil.packaging.yum : |-- python-crypto,pycrypto>=2.1.0alpha1
+INFO: @anvil.packaging.yum : |-- python-d2to1,d2to1>=0.2.10,<0.3
+INFO: @anvil.packaging.yum : |-- python-discover,discover
+INFO: @anvil.packaging.yum : |-- python-eventlet,eventlet>=0.12.0
+INFO: @anvil.packaging.yum : |-- python-feedparser,feedparser
+INFO: @anvil.packaging.yum : |-- python-fixtures,fixtures>=0.3.12
+INFO: @anvil.packaging.yum : |-- python-flake8,flake8==2.0
+INFO: @anvil.packaging.yum : |-- python-glanceclient,python-glanceclient==0.9.0.59.g8d7411d
+INFO: @anvil.packaging.yum : |-- python-greenlet,greenlet>=0.3.2
+INFO: @anvil.packaging.yum : |-- python-hacking,hacking>=0.5.6,<0.6
+INFO: @anvil.packaging.yum : |-- python-hp3parclient,hp3parclient>=1.0.0
+INFO: @anvil.packaging.yum : |-- python-httplib2,httplib2
+INFO: @anvil.packaging.yum : |-- python-iso8601,iso8601>=0.1.4
+INFO: @anvil.packaging.yum : |-- python-jsonschema,jsonschema
+INFO: @anvil.packaging.yum : |-- python-keyring,keyring
+INFO: @anvil.packaging.yum : |-- python-keystoneclient,python-keystoneclient==0.3.1.28.gc74401a
+INFO: @anvil.packaging.yum : |-- python-kombu,kombu>2.4.7
+INFO: @anvil.packaging.yum : |-- python-ldap,python-ldap==2.3.13
+INFO: @anvil.packaging.yum : |-- python-lockfile,lockfile>=0.8
+INFO: @anvil.packaging.yum : |-- python-lxml,lxml>=2.3
+INFO: @anvil.packaging.yum : |-- python-memcached,python-memcached
+INFO: @anvil.packaging.yum : |-- python-migrate,sqlalchemy-migrate>=0.7.2
+INFO: @anvil.packaging.yum : |-- python-mock,mock>=0.8.0
+INFO: @anvil.packaging.yum : |-- python-mox,mox==0.5.3
+INFO: @anvil.packaging.yum : |-- python-netaddr,netaddr>=0.7.6
+INFO: @anvil.packaging.yum : |-- python-netifaces,netifaces
+INFO: @anvil.packaging.yum : |-- python-neutronclient,python-neutronclient==2.2.4.11.g31e9374
+INFO: @anvil.packaging.yum : |-- python-nose,nose>=1.3.0
+INFO: @anvil.packaging.yum : |-- python-nose-exclude,nose-exclude
+INFO: @anvil.packaging.yum : |-- python-nosehtmloutput,nosehtmloutput>=0.0.3
+INFO: @anvil.packaging.yum : |-- python-nosexcover,nosexcover
+INFO: @anvil.packaging.yum : |-- python-novaclient,python-novaclient==2.13.0.139.g2a45c75
+INFO: @anvil.packaging.yum : |-- python-openstack-nose-plugin,openstack.nose-plugin>=0.7
+INFO: @anvil.packaging.yum : |-- python-oslo-sphinx,oslo.sphinx
+INFO: @anvil.packaging.yum : |-- python-pam,pam>=0.1.4
+INFO: @anvil.packaging.yum : |-- python-paramiko,paramiko>=1.8.0
+INFO: @anvil.packaging.yum : |-- python-passlib,passlib
+INFO: @anvil.packaging.yum : |-- python-paste,paste
+INFO: @anvil.packaging.yum : |-- python-paste-deploy,pastedeploy>=1.5.0
+INFO: @anvil.packaging.yum : |-- python-pbr,pbr>=0.5.16,<0.6
+INFO: @anvil.packaging.yum : |-- python-pep8,pep8==1.4.5
+INFO: @anvil.packaging.yum : |-- python-prettytable,prettytable>=0.6,<0.8
+INFO: @anvil.packaging.yum : |-- python-psycopg2,psycopg2
+INFO: @anvil.packaging.yum : |-- python-pyasn1,pyasn1
+INFO: @anvil.packaging.yum : |-- python-pysqlite,pysqlite
+INFO: @anvil.packaging.yum : |-- python-qpid-python,qpid-python
+INFO: @anvil.packaging.yum : |-- python-requests,requests>=1.1,<1.2.1
+INFO: @anvil.packaging.yum : |-- python-routes,routes>=1.12.3
+INFO: @anvil.packaging.yum : |-- python-setuptools-git,setuptools-git>=0.4
+INFO: @anvil.packaging.yum : |-- python-simplejson,simplejson>=2.0.9
+INFO: @anvil.packaging.yum : |-- python-six,six
+INFO: @anvil.packaging.yum : |-- python-sphinx,sphinx>=1.1.2
+INFO: @anvil.packaging.yum : |-- python-sqlalchemy,sqlalchemy>=0.7.8,<=0.7.9
+INFO: @anvil.packaging.yum : |-- python-stevedore,stevedore>=0.10
+INFO: @anvil.packaging.yum : |-- python-subunit,python-subunit
+INFO: @anvil.packaging.yum : |-- python-suds,suds>=0.4
+INFO: @anvil.packaging.yum : |-- python-testrepository,testrepository>=0.0.17
+INFO: @anvil.packaging.yum : |-- python-testscenarios,testscenarios<0.5
+INFO: @anvil.packaging.yum : |-- python-testtools,testtools>=0.9.32
+INFO: @anvil.packaging.yum : |-- python-unittest2,unittest2
+INFO: @anvil.packaging.yum : |-- python-warlock,warlock>=0.7.0,<2
+INFO: @anvil.packaging.yum : |-- python-webob,WebOb==1.2.3
+INFO: @anvil.packaging.yum : |-- python-websockify,websockify<0.4
+INFO: @anvil.packaging.yum : |-- python-webtest,webtest
+INFO: @anvil.packaging.yum : |-- python-wsgiref,wsgiref>=0.1.2
+INFO: @anvil.packaging.yum : |-- python-xattr,xattr>=0.6.0
+INFO: @anvil.packaging.yum : |-- rabbitmq-server
+INFO: @anvil.packaging.yum : All 95 required packages are still available!
+INFO: @anvil.shell : You can watch progress in another terminal with:
+INFO: @anvil.shell :     tail -f /home/harlowja/openstack/deps/output/yyoom-transaction-install.log
 INFO: @anvil.actions.install : Configuring general.
 INFO: @anvil.actions.install : Configuring db.
 INFO: @anvil.actions.install : Configuring rabbit-mq.
@@ -417,7 +173,7 @@ INFO: @anvil.components.base_install : |-- cinder.conf
 INFO: @anvil.components.base_install : |-- policy.json
 INFO: @anvil.actions.install : Configuring glance-client.
 INFO: @anvil.actions.install : Configuring cinder-client.
-INFO: @anvil.actions.install : Configuring quantum-client.
+INFO: @anvil.actions.install : Configuring neutron-client.
 INFO: @anvil.actions.install : Configuring nova.
 INFO: @anvil.components.base_install : Configuring 4 files:
 INFO: @anvil.components.base_install : |-- nova-api-paste.ini
@@ -437,6 +193,7 @@ INFO: @anvil.components.base_runtime : Starting program mysqld under component d
 INFO: @anvil.components.helpers.db : Giving user root full control of all databases.
 INFO: @anvil.actions.install : Post-installing rabbit-mq.
 INFO: @anvil.components.rabbit : Setting up your rabbit-mq guest password.
+INFO: @anvil.components.rabbit : Sleeping for 1.3 seconds, rabbit-mq is still not active.
 INFO: @anvil.components.rabbit : Restarting so that your rabbit-mq password is reflected.
 INFO: @anvil.actions.install : Post-installing oslo-config.
 INFO: @anvil.actions.install : Post-installing keystone.
@@ -454,7 +211,7 @@ INFO: @anvil.components.helpers.db : Creating mysql database: cinder (utf8)
 INFO: @anvil.components.cinder : Syncing cinder to database: cinder
 INFO: @anvil.actions.install : Post-installing glance-client.
 INFO: @anvil.actions.install : Post-installing cinder-client.
-INFO: @anvil.actions.install : Post-installing quantum-client.
+INFO: @anvil.actions.install : Post-installing neutron-client.
 INFO: @anvil.actions.install : Post-installing nova.
 INFO: @anvil.components.helpers.db : Dropping mysql database: nova
 INFO: @anvil.components.helpers.db : Creating mysql database: nova (utf8)
@@ -462,32 +219,26 @@ INFO: @anvil.components.nova : Syncing nova to database named: nova
 INFO: @anvil.actions.install : Post-installing nova-client.
 INFO: @anvil.actions.base : Tearing down your components.
 INFO: @anvil.actions.install : Wrote to /etc/anvil/install.rc 16 exports:
-INFO: @anvil.actions.install : |-- export OS_PASSWORD=8dcc17e35da6dcdff5f2
+INFO: @anvil.actions.install : |-- export OS_PASSWORD=a70dd04c5f902cfac1ce
 INFO: @anvil.actions.install : |-- export OS_TENANT_NAME=admin
 INFO: @anvil.actions.install : |-- export OS_USERNAME=admin
-INFO: @anvil.actions.install : |-- export OS_AUTH_URL='http://10.88.179.134:5000/v2.0'
-INFO: @anvil.actions.install : |-- export KEYSTONE_ADMIN_URI='http://10.88.179.134:35357/v2.0'
-INFO: @anvil.actions.install : |-- export KEYSTONE_INTERNAL_URI='http://10.88.179.134:5000/v2.0'
-INFO: @anvil.actions.install : |-- export KEYSTONE_PUBLIC_URI='http://10.88.179.134:5000/v2.0'
-INFO: @anvil.actions.install : |-- export GLANCE_ADMIN_URI='http://10.88.179.134:9292'
-INFO: @anvil.actions.install : |-- export GLANCE_INTERNAL_URI='http://10.88.179.134:9292'
-INFO: @anvil.actions.install : |-- export GLANCE_REGISTRY_URI='http://10.88.179.134:9191'
-INFO: @anvil.actions.install : |-- export GLANCE_PUBLIC_URI='http://10.88.179.134:9292'
+INFO: @anvil.actions.install : |-- export OS_AUTH_URL='http://10.88.172.240:5000/v2.0'
+INFO: @anvil.actions.install : |-- export KEYSTONE_ADMIN_URI='http://10.88.172.240:35357/v2.0'
+INFO: @anvil.actions.install : |-- export KEYSTONE_INTERNAL_URI='http://10.88.172.240:5000/v2.0'
+INFO: @anvil.actions.install : |-- export KEYSTONE_PUBLIC_URI='http://10.88.172.240:5000/v2.0'
+INFO: @anvil.actions.install : |-- export GLANCE_ADMIN_URI='http://10.88.172.240:9292'
+INFO: @anvil.actions.install : |-- export GLANCE_INTERNAL_URI='http://10.88.172.240:9292'
+INFO: @anvil.actions.install : |-- export GLANCE_REGISTRY_URI='http://10.88.172.240:9191'
+INFO: @anvil.actions.install : |-- export GLANCE_PUBLIC_URI='http://10.88.172.240:9292'
 INFO: @anvil.actions.install : |-- export OS_COMPUTE_API_VERSION='1.1'
-INFO: @anvil.actions.install : |-- export NOVA_S3_URI='http://10.88.179.134:3333'
-INFO: @anvil.actions.install : |-- export NOVA_EC2_ADMIN_URI='http://10.88.179.134:8773/services/Admin'
-INFO: @anvil.actions.install : |-- export NOVA_EC2_CLOUD_URI='http://10.88.179.134:8773/services/Cloud'
-INFO: @anvil.actions.install : |-- export NOVA_API_URI='http://10.88.179.134:8774/v2'
-INFO: @anvil : It took 146.413 seconds or 2.44 minutes to complete action install.
- ___________
-/ You shine \
-| out like  |
-| a shaft   |
-| of gold   |
-| when all  |
-| around is |
-\ dark.     /
- -----------
+INFO: @anvil.actions.install : |-- export NOVA_S3_URI='http://10.88.172.240:3333'
+INFO: @anvil.actions.install : |-- export NOVA_EC2_ADMIN_URI='http://10.88.172.240:8773/services/Admin'
+INFO: @anvil.actions.install : |-- export NOVA_EC2_CLOUD_URI='http://10.88.172.240:8773/services/Cloud'
+INFO: @anvil.actions.install : |-- export NOVA_API_URI='http://10.88.172.240:8774/v2'
+INFO: @anvil : It took 147.418 seconds or 2.46 minutes to complete action install.
+ __________
+< Success! >
+ ----------
         \   ^__^
          \  (oo)\_______
             (__)\       )\/\
