@@ -178,8 +178,7 @@ Now prepare *OpenStacks* components by running the following:
 
 You should see a corresponding OpenStack repositories getting downloaded using
 git, python setups occurring and configuration files being written as well as
-source rpm packages being built and a repository setup from those components (if you
-desire more informational output add a ``-v`` to that command).
+source rpm packages being built and a repository setup from those components [#verbose]_.
 
 Building
 --------
@@ -191,8 +190,8 @@ Now build *OpenStacks* components by running the following:
     sudo ./smithy -a build
 
 You should see a corresponding OpenStack components and dependencies at this
-stage being packaged into rpm files and two repositories being setup for you.
-One will be the dependencies that the OpenStack components need to run and the
+stage being packaged into rpm files and two repositories being setup for you [#verbose]_.
+One repository will be the dependencies that the OpenStack components need to run and the
 other will be the OpenStack components themselves.
 
 Installing
@@ -207,12 +206,12 @@ Now install *OpenStacks* components by running the following:
 You should see a set of distribution packages and/or pips being
 installed and configuration files being written as ANVIL figures out how to
 install your desired components from the prepared packages built in the last
-step (if you desire more informational output add a ``-v`` to that command).
-``-p`` option is actual too. You can specify conf file just like in ``prepare`` action.
-Without specified conf file command will execute with conf/personas/in-a-box/basic.yaml
+step [#verbose]_.
 
+**Note:** You can specify conf file just like in the ``prepare`` action.
+Without a specified conf file the command will execute with ``conf/personas/in-a-box/basic.yaml``
 
-Also to avoid qemu errors please follow the solution @ https://bugs.launchpad.net/anvil/+bug/985786
+**Note:** Also to avoid qemu errors please follow the solution @ https://bugs.launchpad.net/anvil/+bug/985786
 which will ensure that the ``qemu`` user can write to your instances directory. If needed edit ``conf/components/nova.yaml``
 and also adjust the ``instances_path`` option.
 
@@ -235,13 +234,13 @@ Now (if you choose) you can run each *OpenStack* components unit tests by runnin
 
     sudo ./smithy -a test
 
-You should see a set of unit tests being ran (ideally with zero failures).
+You should see a set of unit tests being ran (ideally with zero failures) [#verbose]_.
 
 Starting
 --------
 
 Now that you have installed *OpenStack* you can now start your
-*OpenStack* components by running the following.
+*OpenStack* components by running the following [#verbose]_.
 
 ::
 
@@ -289,15 +288,15 @@ EC2 apis run the following to get your EC2 certs:
 It broke?
 ~~~~~~~~~
 
-First run the following to check the status of each component.
+First run the following to check the status of each component [#verbose]_.
 
 ::
 
     sudo ./smithy -a status
 
 If you do not see all green status then you should run the following and see
-if any of the ``stderr`` and ``stdout`` files will give you more information
-about what is occuring
+if any of the ``/var/log/nova,glance,keystone,cinder,...`` log files will give you more information
+about what is occuring.
 
 ::
 
@@ -317,11 +316,10 @@ the following:
 
     sudo ./smithy -a stop
 
-You should see a set of stop actions happening and ``stderr`` and
-``stdout`` and ``pid`` files being removed (if you desire more
-informational output add a ``-v`` or a ``-vv`` to that command). This
-ensures the above a daemon that was started is now killed. A good way to
-check if it killed everything correctly is to run the following.
+You should see a set of stop actions happening [#verbose]_. This
+ensures the above a daemon that was started is now killed. 
+
+**Note:** A good way to check if it killed everything correctly is to run the following.
 
 ::
 
@@ -331,23 +329,34 @@ check if it killed everything correctly is to run the following.
 There should be no entries like ``nova``, ``glance``, ``apache``,
 ``httpd``. If there are then the stop may have not occurred correctly.
 If this is the case run again with a ``-v`` or a ``-vv`` or check the
-``stderr``, ``stdout``, ``pid`` files for any useful information on what
+``/var/log/nova,glance,keystone,cinder,...`` files for any useful information on what
 is happening.
 
 Uninstalling
 ------------
 
-Once you have stopped (if you have started it) *OpenStack* services you
+Once you have installed and stopped *OpenStack* services you
 can uninstall them by running the following:
 
 ::
 
     sudo ./smithy -a uninstall
 
+You should see a set of packages being removed [#verbose]_.
+
+Purging
+-------
+
+Once you have uninstalled *OpenStack* services you
+can purge the whole anvil installation by running the following:
+
+::
+
+    sudo ./smithy -a purge
+
 You should see a set of packages, configuration and directories, being
-removed (if you desire more informational output add a ``-v`` or a
-``-vv`` to that command). On completion the directory specified at
-~/openstack be empty.
+removed [#verbose]_. On completion the directory specified at
+~/openstack should be empty.
 
 Issues
 ======
@@ -358,3 +367,4 @@ Please report issues/bugs to https://launchpad.net/anvil. Much appreciated!
 .. _PID: http://en.wikipedia.org/wiki/Process_identifier
 .. _tty: http://linux.die.net/man/4/tty
 .. _apache: https://httpd.apache.org/
+.. [#verbose] If you desire more informational output add a ``-v`` or a ``-vv`` to the command.

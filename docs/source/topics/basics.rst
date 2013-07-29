@@ -6,4 +6,3 @@ Basics
    :maxdepth: 2
 
    gettingstarted
-   solvedproblems

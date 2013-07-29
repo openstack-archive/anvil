@@ -13,8 +13,8 @@ ANVIL Documentation
    :maxdepth: 3
 
    topics/features
-   topics/docs
    topics/basics
+   topics/docs
    topics/qanda
    topics/bugshugscode
    topics/examples
