@@ -22,7 +22,7 @@ from anvil.components import base
 from anvil.components import base_install as binstall
 from anvil.components import base_runtime as bruntime
 
-from anvil.components.configurators import quantum as qconf
+from anvil.components.configurators import neutron as nconf
 
 
 LOG = logging.getLogger(__name__)
@@ -33,20 +33,20 @@ SYNC_DB_CMD = ["sudo", "-u", "quantum", "/usr/bin/quantum-db-manage",
                "sync"]
 
 
-class QuantumPluginMixin(base.Component):
+class NeutronPluginMixin(base.Component):
     def subsystem_names(self):
         core_plugin = self.get_option("core_plugin")
         return [(name if name != "agent" else "%s-agent" % (core_plugin))
                 for name in self.subsystems.iterkeys()]
 
 
-class QuantumInstaller(binstall.PythonInstallComponent, QuantumPluginMixin):
+class NeutronInstaller(binstall.PythonInstallComponent, NeutronPluginMixin):
     def __init__(self, *args, **kargs):
-        super(QuantumInstaller, self).__init__(*args, **kargs)
-        self.configurator = qconf.QuantumConfigurator(self)
+        super(NeutronInstaller, self).__init__(*args, **kargs)
+        self.configurator = nconf.NeutronConfigurator(self)
 
     def post_install(self):
-        super(QuantumInstaller, self).post_install()
+        super(NeutronInstaller, self).post_install()
         if self.get_bool_option("db-sync"):
             self.configurator.setup_db()
             self._sync_db()
@@ -61,9 +61,9 @@ class QuantumInstaller(binstall.PythonInstallComponent, QuantumPluginMixin):
                    force=True)
 
 
-class QuantumUninstaller(binstall.PkgUninstallComponent, QuantumPluginMixin):
+class NeutronUninstaller(binstall.PkgUninstallComponent, NeutronPluginMixin):
     pass
 
 
-class QuantumRuntime(bruntime.OpenStackRuntime, QuantumPluginMixin):
+class NeutronRuntime(bruntime.OpenStackRuntime, NeutronPluginMixin):
     pass

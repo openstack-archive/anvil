@@ -68,7 +68,7 @@ class YumDependencyHandler(base.DependencyHandler):
         "glance": "Image",
         "keystone": "Identity",
         "cinder": "Volume",
-        "quantum": "Networking",
+        "neutron": "Networking",
     }
     SERVER_NAMES = ["nova", "glance", "keystone", "quantum", "cinder"]
     TRANSLATION_NAMES = {

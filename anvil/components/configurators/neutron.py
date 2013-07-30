@@ -31,17 +31,17 @@ PASTE_CONF = "api-paste.ini"
 CONFIGS = [PASTE_CONF, API_CONF]
 
 
-class QuantumConfigurator(base.Configurator):
+class NeutronConfigurator(base.Configurator):
 
     # This db will be dropped and created
     DB_NAME = "quantum"
 
     def __init__(self, installer):
-        super(QuantumConfigurator, self).__init__(installer, CONFIGS)
+        super(NeutronConfigurator, self).__init__(installer, CONFIGS)
         self.core_plugin = installer.get_option("core_plugin")
         self.plugin_configurators = {
             'core_plugin': importer.import_entry_point(
-                "anvil.components.configurators.quantum_plugins.%s:%sConfigurator" %
+                "anvil.components.configurators.neutron_plugins.%s:%sConfigurator" %
                 (self.core_plugin, self.core_plugin.title()))(installer),
             'l3': l3.L3Configurator(installer),
             'dhcp': dhcp.DhcpConfigurator(installer),

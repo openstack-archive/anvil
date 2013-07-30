@@ -13,7 +13,7 @@ components:
 - glance-client
 - cinder-client
 - neutron-client
-- quantum
+- neutron
 - cinder
 - nova
 - nova-client
@@ -25,8 +25,8 @@ options:
         enable-spice: false
         local-conductor: false
         mq-type: "rabbit"
-        quantum-core-plugin: linuxbridge
-        quantum-enabled: true
+        neutron-core-plugin: linuxbridge
+        neutron-enabled: true
     glance:
         db-sync: true
         load-images: true
@@ -36,7 +36,7 @@ options:
         enable-pki: false
     cinder:
         db-sync: true
-    quantum:
+    neutron:
         db-sync: true
 subsystems:
     glance:
@@ -51,7 +51,7 @@ subsystems:
     - consoleauth
     - scheduler
     - xvpvncproxy
-    quantum:
+    neutron:
     - server
     - agent
     - l3-agent
