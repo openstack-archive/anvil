@@ -1,4 +1,4 @@
-# Settings for component oslo.config
+# Settings for component oslo-incubator
 ---
 
 get_from: "git://github.com/openstack/oslo-incubator.git?branch=master"

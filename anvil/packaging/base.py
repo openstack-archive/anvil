@@ -35,7 +35,7 @@ OPENSTACK_PACKAGES = set([
     "keystone",
     "nova",
     "oslo.config",
-    "quantum",
+    "neutron",
     "swift",
     "python-cinderclient",
     "python-glanceclient",
