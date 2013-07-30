@@ -262,13 +262,13 @@ components:
             test: anvil.components.base_testing:PythonTestingComponent
             coverage: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
-    quantum:
+    neutron:
         action_classes:
-            install: anvil.components.quantum:QuantumInstaller
-            running: anvil.components.quantum:QuantumRuntime
+            install: anvil.components.neutron:NeutronInstaller
+            running: anvil.components.neutron:NeutronRuntime
             test: anvil.components.base_testing:PythonTestingComponent
             coverage: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.quantum:QuantumUninstaller
+            uninstall: anvil.components.neutron:NeutronUninstaller
         daemon_to_package:
             linuxbridge-agent: openstack-quantum-linuxbridge
             openvswitch-agent: openstack-quantum-openvswitch

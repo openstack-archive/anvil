@@ -14,7 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil.components.configurators import quantum_plugins
+from anvil.components.configurators import neutron_plugins
 
 # Special generated conf
 PLUGIN_CONF = "dhcp_agent.ini"
@@ -22,7 +22,7 @@ PLUGIN_CONF = "dhcp_agent.ini"
 CONFIGS = [PLUGIN_CONF]
 
 
-class DhcpConfigurator(quantum_plugins.Configurator):
+class DhcpConfigurator(neutron_plugins.Configurator):
 
     def __init__(self, installer):
         super(DhcpConfigurator, self).__init__(

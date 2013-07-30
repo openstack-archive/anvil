@@ -19,7 +19,7 @@ from anvil import exceptions
 from anvil import utils
 from anvil import log as logging
 
-from anvil.components.helpers import quantum as qhelper
+from anvil.components.helpers import neutron as neu_helper
 from anvil.components.helpers import virt as lv
 
 from anvil.components.configurators import base
@@ -29,6 +29,10 @@ PASTE_CONF = 'nova-api-paste.ini'
 POLICY_CONF = 'policy.json'
 LOGGING_CONF = "logging.conf"
 CONFIGS = [PASTE_CONF, POLICY_CONF, LOGGING_CONF, API_CONF]
+LIBVIRT_VIF_DRIVERS = {
+    "linuxbridge": "nova.virt.libvirt.vif.QuantumLinuxBridgeVIFDriver",
+    "openvswitch": "nova.virt.libvirt.vif.LibvirtHybridOVSBridgeDriver",
+}
 
 LOG = logging.getLogger(__name__)
 
@@ -237,11 +241,11 @@ class NovaConfigurator(base.Configurator):
         nova_conf.add('vncserver_listen', self.installer.get_option('vncserver_listen', default_value='127.0.0.1'))
         nova_conf.add('vncserver_proxyclient_address', self.installer.get_option('vncserver_proxyclient_address', default_value='127.0.0.1'))
 
-    def _configure_quantum(self, nova_conf):
+    def _configure_neutron(self, nova_conf):
         params = self.get_keystone_params('nova')
-        params['quantum'] = qhelper.get_shared_params(
+        params['neutron'] = neu_helper.get_shared_params(
             ip=self.installer.get_option('ip'),
-            **self.installer.get_option('quantum'))
+            **self.installer.get_option('neutron'))
 
         nova_conf.add("network_api_class", "nova.network.quantumv2.api.API")
         nova_conf.add("quantum_admin_username", params['service_user'])
@@ -249,21 +253,18 @@ class NovaConfigurator(base.Configurator):
         nova_conf.add("quantum_admin_auth_url", params['endpoints']['admin']['uri'])
         nova_conf.add("quantum_auth_strategy", "keystone")
         nova_conf.add("quantum_admin_tenant_name", params['service_tenant'])
-        nova_conf.add("quantum_url", params['quantum']['endpoints']['admin']['uri'])
-        libvirt_vif_drivers = {
-            "linuxbridge": "nova.virt.libvirt.vif.QuantumLinuxBridgeVIFDriver",
-            "openvswitch": "nova.virt.libvirt.vif.LibvirtHybridOVSBridgeDriver",
-        }
+        nova_conf.add("quantum_url", params['neutron']['endpoints']['admin']['uri'])
+
         # FIXME(aababilov): error on KeyError
-        nova_conf.add(
-            "libvirt_vif_driver",
-            libvirt_vif_drivers[self.installer.get_option('quantum-core-plugin')])
+        quantum_core_plugin = self.installer.get_option('quantum-core-plugin')
+        nova_conf.add("libvirt_vif_driver",
+                      LIBVIRT_VIF_DRIVERS[quantum_core_plugin])
 
         # FIXME(aababilov): add for linuxbridge:
         nova_conf.add("libvirt_vif_type", "ethernet")
         nova_conf.add("connection_type", "libvirt")
         nova_conf.add("quantum_use_dhcp",
-                      self.installer.get_bool_option('quantum-use-dhcp'))
+                      self.installer.get_bool_option('neutron-use-dhcp'))
 
     def _configure_cells(self, nova_conf):
         cells_enabled = self.installer.get_bool_option('enable-cells')
@@ -278,8 +279,8 @@ class NovaConfigurator(base.Configurator):
         nova_conf.add_with_section('conductor', 'use_local', conductor_local)
 
     def _configure_network_settings(self, nova_conf):
-        if self.installer.get_bool_option('quantum-enabled'):
-            self._configure_quantum(nova_conf)
+        if self.installer.get_bool_option('neutron-enabled'):
+            self._configure_neutron(nova_conf)
         else:
             nova_conf.add('network_manager', self.installer.get_option('network_manager'))
 

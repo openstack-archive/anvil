@@ -14,7 +14,7 @@ components:
 - cinder-client
 - neutron-client
 - swift-client # Seems only needed for horizon?
-- quantum
+- neutron
 - openvswitch
 - cinder
 - nova
@@ -29,8 +29,8 @@ options:
         enable-cells: false
         enable-spice: false
         local-conductor: false
-        quantum-enabled: true
-        quantum-core-plugin: linuxbridge
+        neutron-enabled: true
+        neutron-core-plugin: linuxbridge
     glance:
         db-sync: true
         load-images: true
@@ -42,7 +42,7 @@ options:
         make-blackhole: true
     cinder:
         db-sync: true
-    quantum:
+    neutron:
         db-sync: true
 subsystems:
     glance:
@@ -60,7 +60,7 @@ subsystems:
     - scheduler
     - xvpvncproxy
     - spicehtml5proxy
-    quantum:
+    neutron:
     - server
     - agent
     - l3-agent

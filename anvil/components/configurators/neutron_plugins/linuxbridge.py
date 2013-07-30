@@ -14,7 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil.components.configurators import quantum_plugins
+from anvil.components.configurators import neutron_plugins
 
 # Special generated conf
 PLUGIN_CONF = "linuxbridge_conf.ini"
@@ -22,7 +22,7 @@ PLUGIN_CONF = "linuxbridge_conf.ini"
 CONFIGS = [PLUGIN_CONF]
 
 
-class LinuxbridgeConfigurator(quantum_plugins.CorePluginConfigurator):
+class LinuxbridgeConfigurator(neutron_plugins.CorePluginConfigurator):
 
     PLUGIN_CLASS = "quantum.plugins.linuxbridge.lb_quantum_plugin.LinuxBridgePluginV2"
 
