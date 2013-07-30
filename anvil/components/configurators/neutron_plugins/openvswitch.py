@@ -14,7 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil.components.configurators import quantum_plugins
+from anvil.components.configurators import neutron_plugins
 
 # Special generated conf
 PLUGIN_CONF = "ovs_quantum_plugin.ini"
@@ -22,7 +22,7 @@ PLUGIN_CONF = "ovs_quantum_plugin.ini"
 CONFIGS = [PLUGIN_CONF]
 
 
-class OpenvswitchConfigurator(quantum_plugins.CorePluginConfigurator):
+class OpenvswitchConfigurator(neutron_plugins.CorePluginConfigurator):
 
     PLUGIN_CLASS = "quantum.plugins.openvswitch.ovs_quantum_plugin.OVSQuantumPluginV2"
 

@@ -1,10 +1,10 @@
-# Settings for component quantum-client
+# Settings for component neutron
 ---
 
 # Where we download this from...
-get_from: "git://github.com/openstack/quantum.git?branch=master"
+get_from: "git://github.com/openstack/neutron.git?branch=master"
 
-# Host and ports for the different quantum services
+# Host and ports for the different neutron services
 api_host: "$(auto:ip)"
 api_port: 9696
 protocol: http

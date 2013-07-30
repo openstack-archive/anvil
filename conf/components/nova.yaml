@@ -94,9 +94,10 @@ network_manager: nova.network.manager.FlatDHCPManager
 # Interface for public IP addresses
 public_interface: eth0
 
-quantum:
-  api_host: "$(quantum:api_host)"
-  api_port: "$(quantum:api_port)"
+# Needed settings from neutron config
+neutron:
+  api_host: "$(neutron:api_host)"
+  api_port: "$(neutron:api_port)"
 
 # Currently novaclient needs you to specify the *compute api* version.
 nova_version: "1.1"
