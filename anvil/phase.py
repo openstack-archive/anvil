@@ -18,7 +18,7 @@ from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
 
-from contextlib import contextmanager
+import contextlib
 
 LOG = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class PhaseRecorder(object):
     def _format_contents(self, contents):
         return utils.prettify_yaml(contents)
 
-    @contextmanager
+    @contextlib.contextmanager
     def mark(self, what):
         contents = self.list_phases()
         contents[what] = utils.iso8601()
@@ -69,7 +69,7 @@ class NullPhaseRecorder(object):
     def __init__(self):
         pass
 
-    @contextmanager
+    @contextlib.contextmanager
     def mark(self, what):
         yield what
 

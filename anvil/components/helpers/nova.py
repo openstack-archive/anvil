@@ -21,8 +21,8 @@ import weakref
 from anvil import shell as sh
 from anvil import utils
 
-from anvil.components.helpers import virt as lv
 from anvil.components.configurators import nova as nconf
+from anvil.components.helpers import virt as lv
 
 
 def get_shared_params(ip, protocol,
