@@ -69,7 +69,6 @@ class DependencyHandler(object):
     """Basic class for handler of OpenStack dependencies.
     """
     MAX_PIP_DOWNLOAD_ATTEMPTS = 4
-    multipip_executable = sh.which("multipip", ["tools/"])
 
     def __init__(self, distro, root_dir, instances, opts=None):
         self.distro = distro
@@ -84,6 +83,7 @@ class DependencyHandler(object):
             self.deps_dir, "pip-requires")
         self.forced_requires_filename = sh.joinpths(
             self.deps_dir, "forced-requires")
+        self.multipip_executable = sh.which("multipip", ["tools/"])
         self.pip_executable = str(self.distro.get_command_config('pip'))
         # list of requirement strings
         self.pips_to_install = []

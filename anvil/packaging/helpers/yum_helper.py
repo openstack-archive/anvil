@@ -23,9 +23,9 @@ LOG = logging.getLogger(__name__)
 
 
 class Helper(object):
-    yyoom_executable = sh.which("yyoom", ["tools/"])
 
     def __init__(self, log_dir):
+        self.yyoom_executable = sh.which("yyoom", ["tools/"])
         self._installed = None
         self._available = None
         self._log_dir = log_dir
