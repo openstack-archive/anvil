@@ -15,9 +15,7 @@
 #    under the License.
 
 import multiprocessing
-
-from optparse import IndentedHelpFormatter
-from optparse import (OptionParser, OptionGroup, OptionValueError)
+import optparse
 
 from anvil import actions
 from anvil import settings
@@ -35,15 +33,15 @@ def _size_cb(option, opt_str, value, parser):
     try:
         parser.values.show_amount = utils.to_bytes(value)
     except (TypeError, ValueError) as e:
-        raise OptionValueError("Invalid value for %s due to %s" % (opt_str, e))
+        raise optparse.OptionValueError("Invalid value for %s due to %s" % (opt_str, e))
 
 
 def parse(previous_settings=None):
 
     version_str = "%s v%s" % ('anvil', version.version_string())
-    help_formatter = IndentedHelpFormatter(width=120)
-    parser = OptionParser(version=version_str, formatter=help_formatter,
-                          prog='smithy')
+    help_formatter = optparse.IndentedHelpFormatter(width=120)
+    parser = optparse.OptionParser(version=version_str, formatter=help_formatter,
+                                   prog='smithy')
 
     # Root options
     parser.add_option("-v", "--verbose",
@@ -79,7 +77,7 @@ def parse(previous_settings=None):
                       help="do not save the users passwords into the users keyring")
 
     # Install/start/stop/uninstall specific options
-    base_group = OptionGroup(parser, "Action specific options")
+    base_group = optparse.OptionGroup(parser, "Action specific options")
     base_group.add_option("-p", "--persona",
                           action="store",
                           type="string",
@@ -111,7 +109,7 @@ def parse(previous_settings=None):
     suffixes = ("Known suffixes 'K' (kilobyte, 1024),"
                 " 'M' (megabyte, 1024k), 'G' (gigabyte, 1024M)"
                 " are supported, 'B' is the default and is ignored")
-    status_group = OptionGroup(parser, "Status specific options")
+    status_group = optparse.OptionGroup(parser, "Status specific options")
     status_group.add_option('-s', "--show",
                             action="callback",
                             dest="show_amount",
@@ -121,7 +119,7 @@ def parse(previous_settings=None):
                             help="show SIZE 'details' when showing component status. " + suffixes)
     parser.add_option_group(status_group)
 
-    build_group = OptionGroup(parser, "Build specific options")
+    build_group = optparse.OptionGroup(parser, "Build specific options")
     build_group.add_option('-u', "--usr-only",
                            action="store_true",
                            dest="usr_only",

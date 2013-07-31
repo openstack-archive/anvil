@@ -23,12 +23,15 @@ LOG = logging.getLogger(__name__)
 
 
 class Helper(object):
-    yyoom_executable = sh.which("yyoom", ["tools/"])
 
     def __init__(self, log_dir):
+        # Executables we require to operate
+        self.yyoom_executable = sh.which("yyoom", ["tools/"])
+        # Executable logs will go into this directory
+        self._log_dir = log_dir
+        # Caches of installed and available packages
         self._installed = None
         self._available = None
-        self._log_dir = log_dir
 
     def _yyoom(self, arglist, cmd_type):
         cmdline = [self.yyoom_executable, '--verbose']

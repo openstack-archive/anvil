@@ -69,25 +69,28 @@ class DependencyHandler(object):
     """Basic class for handler of OpenStack dependencies.
     """
     MAX_PIP_DOWNLOAD_ATTEMPTS = 4
-    multipip_executable = sh.which("multipip", ["tools/"])
 
     def __init__(self, distro, root_dir, instances, opts=None):
         self.distro = distro
         self.root_dir = root_dir
         self.instances = instances
         self.opts = opts or {}
+        # Various paths we will use while operating
         self.deps_dir = sh.joinpths(self.root_dir, "deps")
         self.downloaded_flag_file = sh.joinpths(self.deps_dir, "pip-downloaded")
         self.download_dir = sh.joinpths(self.deps_dir, "download")
         self.log_dir = sh.joinpths(self.deps_dir, "output")
-        self.gathered_requires_filename = sh.joinpths(
-            self.deps_dir, "pip-requires")
-        self.forced_requires_filename = sh.joinpths(
-            self.deps_dir, "forced-requires")
-        self.pip_executable = str(self.distro.get_command_config('pip'))
-        # list of requirement strings
+        self.gathered_requires_filename = sh.joinpths(self.deps_dir, "pip-requires")
+        self.forced_requires_filename = sh.joinpths(self.deps_dir, "forced-requires")
+        # Executables we require to operate
+        self.multipip_executable = sh.which("multipip", ["tools/"])
+        self.pip_executable = self.distro.get_command_config('pip')
+        if not self.pip_executable:
+            self.pip_executable = sh.which("pip")
+        # List of requirements
         self.pips_to_install = []
         self.forced_packages = []
+        # Instances to there app directory (with a setup.py inside)
         self.package_dirs = self._get_package_dirs(instances)
         # Instantiate this as late as we can.
         self._python_names = None
@@ -185,7 +188,7 @@ class DependencyHandler(object):
                 try:
                     req = pip_helper.extract_requirement(line)
                     new_lines.append(str(forced_by_key[req.key]))
-                except:
+                except Exception:
                     # we don't force the package or it has a bad format
                     new_lines.append(line)
             contents = "# Cleaned on %s\n\n%s\n" % (
@@ -243,7 +246,8 @@ class DependencyHandler(object):
                       "\n".join(str(req) for req in self.forced_packages))
 
     def filter_download_requires(self):
-        """
+        """Shrinks the pips that were downloaded into a smaller set.
+
         :returns: a list of all requirements that must be downloaded
         :rtype: list of str
         """
