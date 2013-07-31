@@ -18,8 +18,11 @@ from anvil import colorizer
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
+from anvil import utils
 
 from anvil.components import base
+
+import time
 
 LOG = logging.getLogger(__name__)
 
@@ -91,19 +94,19 @@ class ProgramRuntime(base.Component):
         # How many applications stopped
         return 0
 
-    # TODO(harlowja): seems like this could be a mixin?
-    def wait_active(self, between_wait=1, max_attempts=5):
+    def wait_active(self, max_attempts=5):
         # Attempt to wait until all potentially started applications
         # are actually started (for whatever defintion of started is applicable)
         # for up to a given amount of attempts and wait time between attempts.
         num_started = len(self.subsystems)
 
-        def waiter(try_num):
-            LOG.info("Waiting %s seconds for component %s programs to start.", between_wait, colorizer.quote(self.name))
+        def waiter(between_wait):
+            LOG.info("Waiting %.2f seconds for component %s programs to start.", between_wait, colorizer.quote(self.name))
             LOG.info("Please wait...")
             sh.sleep(between_wait)
 
-        for i in range(0, max_attempts):
+        start_time = time.time()
+        for wait_time in utils.ExponentialBackoff(attempts=max_attempts):
             statii = self.statii()
             if len(statii) >= num_started:  # >= if someone reports more than started...
                 not_worked = []
@@ -116,10 +119,11 @@ class ProgramRuntime(base.Component):
                 # Eck less applications were found with status then what were started!
                 LOG.warn("%s less applications reported status than were actually started!",
                          num_started - len(statii))
-            waiter(i + 1)
+            waiter(wait_time)
 
-        tot_time = max(0, (between_wait * max_attempts))
-        raise excp.StatusException("Failed waiting %s seconds for component %r programs to become active..."
+        end_time = time.time()
+        tot_time = end_time - start_time
+        raise excp.StatusException("Failed waiting %.2f seconds for component %r programs to become active..."
                                    % (tot_time, self.name))
 
 
