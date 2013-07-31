@@ -93,21 +93,24 @@ class YumDependencyHandler(base.DependencyHandler):
                                " --config-file=/etc/quantum/quantum.conf'"),
     }
     REPOS = ["anvil-deps", "anvil"]
-    py2rpm_executable = sh.which("py2rpm", ["tools/"])
-    rpmbuild_executable = sh.which("rpmbuild")
-    specprint_executable = sh.which('specprint', ["tools/"])
-    yumfind_executable = sh.which("yumfind", ["tools/"])
-    jobs = 2
+    JOBS = 2
 
     def __init__(self, distro, root_dir, instances, opts=None):
         super(YumDependencyHandler, self).__init__(distro, root_dir, instances, opts)
+        # Various paths we will use while operating
         self.rpmbuild_dir = sh.joinpths(self.deps_dir, "rpmbuild")
         self.deps_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps")
         self.deps_src_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps-sources")
         self.anvil_repo_filename = sh.joinpths(self.deps_dir, self.REPO_FN)
-        self.helper = yum_helper.Helper(self.log_dir)
         self.rpm_sources_dir = sh.joinpths(self.rpmbuild_dir, "SOURCES")
         self.anvil_repo_dir = sh.joinpths(self.root_dir, "repo")
+        # Executables we require to operate
+        self.py2rpm_executable = sh.which("py2rpm", ["tools/"])
+        self.rpmbuild_executable = sh.which("rpmbuild")
+        self.specprint_executable = sh.which('specprint', ["tools/"])
+        self.yumfind_executable = sh.which("yumfind", ["tools/"])
+        # We inspect yum for packages, this helper allows us to do this.
+        self.helper = yum_helper.Helper(self.log_dir)
         self._no_remove = None
 
     def py2rpm_start_cmdline(self):
@@ -207,7 +210,7 @@ class YumDependencyHandler(base.DependencyHandler):
             utils.log_iterable(src_repo_files,
                                header=('Building %s RPM packages from their'
                                       ' SRPMs for repo %s using %s jobs') %
-                                      (len(src_repo_files), self.SRC_REPOS[repo_name], self.jobs),
+                                      (len(src_repo_files), self.SRC_REPOS[repo_name], self.JOBS),
                                logger=LOG)
             makefile_path = sh.joinpths(self.deps_dir, "binary-%s.mk" % repo_name)
             marks_dir = sh.joinpths(self.deps_dir, "marks-binary")
@@ -231,7 +234,7 @@ class YumDependencyHandler(base.DependencyHandler):
             self._create_repo(repo_name)
 
     def _execute_make(self, filename, marks_dir):
-        cmdline = ["make", "-f", filename, "-j", str(self.jobs)]
+        cmdline = ["make", "-f", filename, "-j", str(self.JOBS)]
         out_filename = sh.joinpths(self.log_dir, "%s.log" % sh.basename(filename))
         sh.execute_save_output(cmdline, cwd=marks_dir, out_filename=out_filename)
 
@@ -392,7 +395,7 @@ class YumDependencyHandler(base.DependencyHandler):
         sh.write_file(makefile_path, utils.expand_template(content, params),
                       tracewriter=self.tracewriter)
         utils.log_iterable(package_files,
-                           header="Building %s SRPM packages using %s jobs" % (len(package_files), self.jobs),
+                           header="Building %s SRPM packages using %s jobs" % (len(package_files), self.JOBS),
                            logger=LOG)
         self._execute_make(makefile_path, marks_dir)
 

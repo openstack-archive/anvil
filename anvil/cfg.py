@@ -16,14 +16,11 @@
 
 # This one doesn't keep comments but does seem to work better
 import ConfigParser
-from ConfigParser import (NoSectionError, NoOptionError)
-
 import re
+import StringIO
 
 # This one keeps comments but has some weirdness with it
 import iniparse
-
-from StringIO import StringIO
 
 from anvil import log as logging
 from anvil import shell as sh
@@ -39,7 +36,7 @@ class StringiferMixin(object):
         pass
 
     def stringify(self, fn=None):
-        outputstream = StringIO()
+        outputstream = StringIO.StringIO()
         self.write(outputstream)
         contents = utils.add_header(fn, outputstream.getvalue())
         return contents
@@ -58,16 +55,16 @@ class ConfigHelperMixin(object):
         value = self.DEF_BASE
         try:
             value = super(ConfigHelperMixin, self).get(section, option)
-        except NoSectionError:
+        except ConfigParser.NoSectionError:
             pass
-        except NoOptionError:
+        except ConfigParser.NoOptionError:
             pass
         return value
 
     def _template_value(self, option, value):
         if not self.templatize_values:
             return value
-        tpl_value = StringIO()
+        tpl_value = StringIO.StringIO()
         safe_value = str(option)
         for c in ['-', ' ', '\t', ':', '$', '%', '(', ')']:
             safe_value = safe_value.replace(c, '_')

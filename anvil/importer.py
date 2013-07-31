@@ -36,9 +36,7 @@ def construct_entry_point(fullname, *args, **kwargs):
 
 
 def partition(fullname):
-    """
-    The name should be in dotted.path:ClassName syntax.
-    """
+    """The name should be in dotted.path:ClassName syntax."""
     if ':' not in fullname:
         raise ValueError('Invalid entry point specifier %r' % fullname)
     (module_name, _sep, classname) = fullname.partition(':')
@@ -46,9 +44,7 @@ def partition(fullname):
 
 
 def import_entry_point(fullname):
-    """
-    Given a name import the class and return it.
-    """
+    """Given a name import the class and return it."""
     (module_name, classname) = partition(fullname)
     try:
         import_module(module_name)
