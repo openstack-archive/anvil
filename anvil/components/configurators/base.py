@@ -17,8 +17,8 @@
 import io
 import weakref
 
-from anvil import shell as sh
 from anvil import cfg
+from anvil import shell as sh
 from anvil import utils
 
 from anvil.components.helpers import db as dbhelper

@@ -18,8 +18,7 @@ import abc
 import contextlib
 import functools
 import urllib2
-
-from urlparse import parse_qs
+import urlparse
 
 import progressbar
 
@@ -55,7 +54,7 @@ class GitDownloader(Downloader):
             # If we use urlparser here it doesn't seem to work right??
             # TODO(harlowja), why??
             (uri, params) = uri.split("?", 1)
-            params = parse_qs(params)
+            params = urlparse.parse_qs(params)
             if 'branch' in params:
                 branch = params['branch'][0].strip()
             if 'tag' in params:

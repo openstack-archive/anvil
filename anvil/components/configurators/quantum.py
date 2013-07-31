@@ -14,13 +14,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import shell as sh
 from anvil import importer
+from anvil import shell as sh
 
 from anvil.components.configurators import base
-from anvil.components.configurators.quantum_plugins import l3
 from anvil.components.configurators.quantum_plugins import dhcp
-
+from anvil.components.configurators.quantum_plugins import l3
 
 # Special generated conf
 API_CONF = "quantum.conf"
