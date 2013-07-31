@@ -74,9 +74,7 @@ def create_db(distro, dbtype, user, pw, dbname, **kwargs):
 
 
 def grant_permissions(dbtype, distro, user, pw, restart_func=None):
-    """
-    Grant permissions on the database.
-    """
+    """Grant permissions on the database."""
     dbactions = distro.get_command_config(dbtype, quiet=True)
     if dbactions:
         grant_cmd = distro.get_command(dbtype, 'grant_all')

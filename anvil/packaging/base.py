@@ -69,9 +69,6 @@ class DependencyHandler(object):
     """Basic class for handler of OpenStack dependencies.
     """
     MAX_PIP_DOWNLOAD_ATTEMPTS = 4
-    multipip_executable = sh.which("multipip", ["tools/"])
-    pip_executable = sh.which_first(['pip-python', 'pip'])
-    pipdownload_executable = sh.which("pip-download", ["tools"])
 
     def __init__(self, distro, root_dir, instances, opts=None):
         self.distro = distro
@@ -86,7 +83,11 @@ class DependencyHandler(object):
         self.gathered_requires_filename = sh.joinpths(self.deps_dir, "pip-requires")
         self.forced_requires_filename = sh.joinpths(self.deps_dir, "forced-requires")
         self.download_requires_filename = sh.joinpths(self.deps_dir, "download-requires")
-        # List of requirement strings
+        # Executables we require to operate
+        self.multipip_executable = sh.which("multipip", ["tools/"])
+        self.pip_executable = sh.which_first(['pip-python', 'pip'])
+        self.pipdownload_executable = sh.which("pip-download", ["tools/"])
+        # List of requirements
         self.pips_to_install = []
         self.forced_packages = []
         # Instances to there app directory (with a setup.py inside)
@@ -184,7 +185,7 @@ class DependencyHandler(object):
                 try:
                     req = pip_helper.extract_requirement(line)
                     new_lines.append(str(forced_by_key[req.key]))
-                except:
+                except Exception:
                     # we don't force the package or it has a bad format
                     new_lines.append(line)
             contents = "# Cleaned on %s\n\n%s\n" % (utils.iso8601(), "\n".join(new_lines))
@@ -241,7 +242,8 @@ class DependencyHandler(object):
                       "\n".join(str(req) for req in self.forced_packages))
 
     def filter_download_requires(self):
-        """
+        """Shrinks the pips that were downloaded into a smaller set.
+
         :returns: a list of all requirements that must be downloaded
         :rtype: list of str
         """

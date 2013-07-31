@@ -83,9 +83,9 @@ class Initializer(object):
                 tenant_name = t
                 if not role_name or not tenant_name:
                     raise RuntimeError("Role or tenant name missing for user %s" % (name))
-                if not role_name in roles_made:
+                if role_name not in roles_made:
                     raise RuntimeError("Role %s not previously created for user %s" % (role_name, name))
-                if not tenant_name in tenants_made:
+                if tenant_name not in tenants_made:
                     raise RuntimeError("Tenant %s not previously created for user %s" % (tenant_name, name))
                 user_role = {
                     'user': user,

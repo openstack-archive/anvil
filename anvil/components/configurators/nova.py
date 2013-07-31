@@ -14,10 +14,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import shell as sh
 from anvil import exceptions
-from anvil import utils
 from anvil import log as logging
+from anvil import shell as sh
+from anvil import utils
 
 from anvil.components.helpers import quantum as qhelper
 from anvil.components.helpers import virt as lv
@@ -56,10 +56,10 @@ class NovaConfigurator(base.Configurator):
             config.add_with_section('filter:authtoken', k, v)
 
     def _config_adjust_api(self, nova_conf):
-        ''' This method has the smarts to build the configuration file based on
-            various runtime values. A useful reference for figuring out this
-            is at http://docs.openstack.org/diablo/openstack-compute/admin/content/ch_configuring-openstack-compute.html
-            See also: https://github.com/openstack/nova/blob/master/etc/nova/nova.conf.sample
+        '''This method has the smarts to build the configuration file based on
+           various runtime values. A useful reference for figuring out this
+           is at http://docs.openstack.org/diablo/openstack-compute/admin/content/ch_configuring-openstack-compute.html
+           See also: https://github.com/openstack/nova/blob/master/etc/nova/nova.conf.sample
         '''
 
         # Used more than once so we calculate it ahead of time
@@ -333,16 +333,16 @@ class NovaConfigurator(base.Configurator):
         public_interface = self.installer.get_option('public_interface')
         vlan_interface = self.installer.get_option('vlan_interface', default_value=public_interface)
         known_interfaces = utils.get_interfaces()
-        if not public_interface in known_interfaces:
+        if public_interface not in known_interfaces:
             msg = "Public interface %r is not a known interface (is it one of %s??)" % (public_interface, ", ".join(known_interfaces))
             raise exceptions.ConfigException(msg)
-        if not vlan_interface in known_interfaces:
+        if vlan_interface not in known_interfaces:
             msg = "VLAN interface %r is not a known interface (is it one of %s??)" % (vlan_interface, ", ".join(known_interfaces))
             raise exceptions.ConfigException(msg)
         # Driver specific interface checks
         drive_canon = utils.canon_virt_driver(self.installer.get_option('virt_driver'))
         if drive_canon == 'libvirt':
             flat_interface = self.installer.get_option('flat_interface')
-            if flat_interface and not flat_interface in known_interfaces:
+            if flat_interface and flat_interface not in known_interfaces:
                 msg = "Libvirt flat interface %s is not a known interface (is it one of %s??)" % (flat_interface, ", ".join(known_interfaces))
                 raise exceptions.ConfigException(msg)
