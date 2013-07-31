@@ -20,10 +20,10 @@ from ConfigParser import (NoSectionError, NoOptionError)
 
 import re
 
+from StringIO import StringIO
+
 # This one keeps comments but has some weirdness with it
 import iniparse
-
-from StringIO import StringIO
 
 from anvil import log as logging
 from anvil import shell as sh

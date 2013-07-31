@@ -390,8 +390,7 @@ def tempdir(**kwargs):
 
 
 def get_host_ip(default_ip='127.0.0.1'):
-    """
-    Returns the actual ip of the local machine.
+    """Returns the actual ip of the local machine.
 
     This code figures out what source address would be used if some traffic
     were to be sent out to some well known address on the Internet. In this

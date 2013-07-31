@@ -34,19 +34,17 @@ from anvil import log as logging
 from anvil import opts
 from anvil.packaging import yum
 from anvil import persona
+from anvil import pprint
 from anvil import settings
 from anvil import shell as sh
 from anvil import utils
-
-from anvil.pprint import center_text
 
 
 LOG = logging.getLogger()
 
 
 def run(args):
-    """
-    Starts the execution after args have been parsed and logging has been setup.
+    """Starts the execution after args have been parsed and logging has been setup.
     """
 
     LOG.debug("CLI arguments are:")
@@ -80,7 +78,7 @@ def run(args):
     root_dir = sh.abspth(root_dir)
 
     (repeat_string, line_max_len) = utils.welcome()
-    print(center_text("Action Runner", repeat_string, line_max_len))
+    print(pprint.center_text("Action Runner", repeat_string, line_max_len))
 
     # !!
     # Here on out we should be using the logger (and not print)!!
@@ -176,10 +174,9 @@ def ensure_perms():
 
 
 def main():
-    """
-    Starts the execution of without
-    injecting variables into the global namespace. Ensures that
-    logging is setup and that sudo access is available and in-use.
+    """Starts the execution of anvil without injecting variables into
+    the global namespace. Ensures that logging is setup and that sudo access
+    is available and in-use.
 
     Arguments: N/A
     Returns: 1 for success, 0 for failure and 2 for permission change failure.
@@ -241,6 +238,6 @@ if __name__ == "__main__":
     if return_code != 2:
         try:
             sh.root_mode(quiet=False)
-        except:
+        except Exception:
             pass
     sys.exit(return_code)

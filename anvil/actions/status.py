@@ -22,8 +22,10 @@ from anvil.actions import base as action
 
 LOG = log.getLogger(__name__)
 
-from anvil.components.base_runtime import (STATUS_INSTALLED, STATUS_STARTED,
-                              STATUS_STOPPED, STATUS_UNKNOWN)
+from anvil.components.base_runtime import STATUS_INSTALLED
+from anvil.components.base_runtime import STATUS_STARTED
+from anvil.components.base_runtime import STATUS_STOPPED
+from anvil.components.base_runtime import STATUS_UNKNOWN
 
 STATUS_COLOR_MAP = {
     STATUS_INSTALLED: 'green',

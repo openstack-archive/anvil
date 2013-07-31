@@ -22,9 +22,6 @@
 import logging
 import sys
 
-from logging.handlers import SysLogHandler
-from logging.handlers import WatchedFileHandler
-
 from anvil import colorizer
 
 
@@ -57,8 +54,6 @@ Formatter = logging.Formatter
 
 # Handlers
 StreamHandler = logging.StreamHandler
-WatchedFileHandler = WatchedFileHandler
-SysLogHandler = SysLogHandler
 
 
 class TermFormatter(logging.Formatter):
