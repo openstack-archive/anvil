@@ -177,9 +177,7 @@ class Action(object):
         return opts
 
     def _construct_instances(self, persona):
-        """
-        Create component objects for each component in the persona.
-        """
+        """Create component objects for each component in the persona."""
         persona_subsystems = persona.wanted_subsystems or {}
         persona_opts = persona.component_options or {}
         wanted_components = persona.wanted_components or []
@@ -259,9 +257,7 @@ class Action(object):
         return sh.joinpths(self.phase_dir, "%s.phases" % (phase_name))
 
     def _run_phase(self, functors, component_order, instances, phase_name, *inv_phase_names):
-        """
-        Run a given 'functor' across all of the components, in order.
-        """
+        """Run a given 'functor' across all of the components, in order."""
         # All the results for each component end up in here
         # in the order in which they ran...
         component_results = OrderedDict()

@@ -104,8 +104,7 @@ class Unpacker(object):
         return False
 
     def _find_pieces(self, files, files_location):
-        """
-        Match files against the patterns in KERNEL_CHECKS,
+        """Match files against the patterns in KERNEL_CHECKS,
         RAMDISK_CHECKS, and ROOT_CHECKS to determine which files
         contain which image parts.
         """
@@ -137,8 +136,7 @@ class Unpacker(object):
                 return sh.pipe_in_out(mfh, ofh)
 
     def _describe(self, root_fn, ramdisk_fn, kernel_fn):
-        """
-        Make an "info" dict that describes the path, disk format, and
+        """Make an "info" dict that describes the path, disk format, and
         container format of each component of an image.
         """
         info = dict()
@@ -206,8 +204,7 @@ class Unpacker(object):
                                 header="Found %s images from a %s" % (len(pieces), src_type))
 
     def _unpack_dir(self, dir_path):
-        """
-        Pick through a directory to figure out which files are which
+        """Pick through a directory to figure out which files are which
         image pieces, and create a dict that describes them.
         """
         potential_files = set()

@@ -42,16 +42,12 @@ _RUNNER_TO_NAMES = dict((v, k) for k, v in _NAMES_TO_RUNNER.items())
 
 
 def names():
-    """
-    Returns a list of the available action names.
-    """
+    """Returns a list of the available action names."""
     return list(sorted(_NAMES_TO_RUNNER.keys()))
 
 
 def class_for(action):
-    """
-    Given an action name, look up the factory for that action runner.
-    """
+    """Given an action name, look up the factory for that action runner."""
     try:
         return _NAMES_TO_RUNNER[action]
     except KeyError:

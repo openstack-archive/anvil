@@ -25,11 +25,11 @@ from anvil.components import base_install as binstall
 from anvil.components import base_runtime as bruntime
 from anvil.components import base_testing as btesting
 
+from anvil.components.helpers import cinder as chelper
 from anvil.components.helpers import glance as ghelper
 from anvil.components.helpers import keystone as khelper
 from anvil.components.helpers import nova as nhelper
 from anvil.components.helpers import quantum as qhelper
-from anvil.components.helpers import cinder as chelper
 
 from anvil.components.configurators import keystone as kconf
 
