@@ -16,14 +16,15 @@
 
 # This one doesn't keep comments but does seem to work better
 import ConfigParser
-from ConfigParser import (NoSectionError, NoOptionError)
+from ConfigParser import NoOptionError
+from ConfigParser import NoSectionError
 
 import re
 
+from StringIO import StringIO
+
 # This one keeps comments but has some weirdness with it
 import iniparse
-
-from StringIO import StringIO
 
 from anvil import log as logging
 from anvil import shell as sh

@@ -14,12 +14,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import re
 import copy
-
 import pkg_resources
-from pip import util as pip_util
+import re
+
 from pip import req as pip_req
+from pip import util as pip_util
 
 from anvil import log as logging
 from anvil import shell as sh

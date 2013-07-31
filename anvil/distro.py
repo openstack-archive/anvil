@@ -49,7 +49,7 @@ class Distro(object):
         self._components = components
 
     def get_command_config(self, key, *more_keys, **kargs):
-        """ Gets a end object for a given set of keys """
+        """Gets a end object for a given set of keys """
         root = self._commands
         acutal_keys = [key] + list(more_keys)
         run_over_keys = acutal_keys[0:-1]

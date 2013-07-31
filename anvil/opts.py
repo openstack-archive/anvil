@@ -17,7 +17,9 @@
 import multiprocessing
 
 from optparse import IndentedHelpFormatter
-from optparse import (OptionParser, OptionGroup, OptionValueError)
+from optparse import OptionGroup
+from optparse import OptionParser
+from optparse import OptionValueError
 
 from anvil import actions
 from anvil import settings

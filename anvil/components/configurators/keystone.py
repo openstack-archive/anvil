@@ -14,8 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil import utils
 from anvil import shell as sh
+from anvil import utils
 
 from anvil.components.helpers import keystone as khelper
 
