@@ -101,7 +101,6 @@ This package contains documentation files for glance.
 #end for
 
 #raw
-sed '/pysendfile/d' tools/pip-requires
 
 
 %build
