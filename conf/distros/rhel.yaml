@@ -48,8 +48,6 @@ commands:
         set_pwd: mysql --user=$USER --password=$OLD_PASSWORD -e
                  "USE mysql; UPDATE user SET password=PASSWORD('$NEW_PASSWORD') WHERE User='$USER';  FLUSH PRIVILEGES;"
         daemon: mysqld
-    # Pip command varies depending on the distro
-    pip: pip-python
     # Where component symlinks will go, the component name will become a directory
     # under this directory where its configuration files will be connected to there
     # actual location.

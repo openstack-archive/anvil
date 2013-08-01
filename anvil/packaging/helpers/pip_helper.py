@@ -149,28 +149,22 @@ def parse_requirements(contents, adjust=False):
 
 
 class Helper(object):
-    # Cache of whats installed
-    _installed_cache = {}
-
-    def __init__(self, call_how):
-        if not isinstance(call_how, (basestring, str)):
-            # Assume u are passing in a distro object
-            self._pip_how = str(call_how.get_command_config('pip'))
-        else:
-            self._pip_how = call_how
+    def __init__(self):
+        self._pip_executable = sh.which_first(['pip-python', 'pip'])
+        self._installed_cache = None
 
     def _list_installed(self):
-        cmd = [self._pip_how] + FREEZE_CMD
+        cmd = [self._pip_executable] + FREEZE_CMD
         (stdout, _stderr) = sh.execute(cmd)
         return parse_requirements(stdout, True)
 
     def uncache(self):
-        Helper._installed_cache.pop(self._pip_how, None)
+        self._installed_cache = None
 
     def whats_installed(self):
-        if not (self._pip_how in Helper._installed_cache):
-            Helper._installed_cache[self._pip_how] = self._list_installed()
-        return copy.copy(Helper._installed_cache[self._pip_how])
+        if self._installed_cache is None:
+            self._installed_cache = self._list_installed()
+        return copy.copy(self._installed_cache)
 
     def is_installed(self, name):
         if self.get_installed(name):
