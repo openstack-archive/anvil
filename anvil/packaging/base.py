@@ -85,7 +85,7 @@ class DependencyHandler(object):
             self.deps_dir, "pip-requires")
         self.forced_requires_filename = sh.joinpths(
             self.deps_dir, "forced-requires")
-        self.pip_executable = str(self.distro.get_command_config('pip'))
+        self.pip_executable = sh.which_first(['pip-python', 'pip'])
         self.pips_to_install = []
         self.forced_packages = []
         self.package_dirs = self._get_package_dirs(instances)
