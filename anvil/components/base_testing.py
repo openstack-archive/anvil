@@ -46,7 +46,7 @@ class EmptyTestingComponent(base.Component):
 class PythonTestingComponent(base.Component):
     def __init__(self, *args, **kargs):
         base.Component.__init__(self, *args, **kargs)
-        self.helper = pip_helper.Helper(self.distro)
+        self.helper = pip_helper.Helper()
 
     def _get_test_exclusions(self):
         return self.get_option('exclude_tests', default_value=[])
