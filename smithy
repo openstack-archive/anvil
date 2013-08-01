@@ -17,12 +17,22 @@ PIP_OPTS=""
 RPM_OPTS=""
 CURL_OPTS=""
 
-# Colors
-ESC_SEQ="\x1b["
-COL_RESET=$ESC_SEQ"39;49;00m"
-COL_GREEN=$ESC_SEQ"32;01m"
-COL_RED=$ESC_SEQ"31;01m"
-COL_YELLOW=$ESC_SEQ"33;01m"
+# Colors supported??
+COLOR_SUPPORT=`tput colors`
+
+if [ $COLOR_SUPPORT -ge 8 ]; then
+    ESC_SEQ="\x1b["
+    COL_RESET=$ESC_SEQ"39;49;00m"
+    COL_GREEN=$ESC_SEQ"32;01m"
+    COL_RED=$ESC_SEQ"31;01m"
+    COL_YELLOW=$ESC_SEQ"33;01m"
+else
+    ESC_SEQ=""
+    COL_RESET=""
+    COL_GREEN=""
+    COL_RED=""
+    COL_YELLOW=""
+fi
 
 if [ "$VERBOSE" == "0" ]; then
     YUM_OPTS="$YUM_OPTS -q"
