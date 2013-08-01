@@ -688,15 +688,39 @@ def sleep(winks):
         time.sleep(winks)
 
 
-def which(name, additional_dirs=None):
-    full_name = distutils.spawn.find_executable(name)
-    if full_name:
+def which_first(bin_names, additional_dirs=None, ensure_executable=True):
+    assert bin_names, 'Binary names required'
+    for b in bin_names:
+        try:
+            return which(b,
+                         additional_dirs=additional_dirs,
+                         ensure_executable=ensure_executable)
+        except excp.FileException:
+            pass
+    bin_names = ", ".join(bin_names)
+    raise excp.FileException("Can't find any of %s" % bin_names)
+
+
+def which(bin_name, additional_dirs=None, ensure_executable=True):
+
+    def check_it(path):
+        if not path:
+            return False
+        if not isfile(path):
+            return False
+        if ensure_executable and not os.access(path, os.X_OK):
+            return False
+        return True
+
+    full_name = distutils.spawn.find_executable(bin_name)
+    if check_it(full_name):
         return full_name
-    for dir_name in additional_dirs or []:
-        full_name = joinpths(
-            dirname(dirname(abspth(anvil.__file__))),
-            dir_name,
-            name)
-        if isfile(full_name):
+    if not additional_dirs:
+        additional_dirs = []
+    for dir_name in additional_dirs:
+        full_name = joinpths(dirname(dirname(abspth(anvil.__file__))),
+                             dir_name,
+                             bin_name)
+        if check_it(full_name):
             return full_name
-    raise excp.FileException("Cannot find %s" % name)
+    raise excp.FileException("Can't find %s" % bin_name)
