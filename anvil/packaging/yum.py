@@ -62,7 +62,6 @@ class YumInstallHelper(base.InstallHelper):
 class YumDependencyHandler(base.DependencyHandler):
     OPENSTACK_EPOCH = 2
     SPEC_TEMPLATE_DIR = "packaging/specs"
-    RPM_BUILD_FLAGS_TEMPLATE = "--rebuild --define '_topdir %s'"
     API_NAMES = {
         "nova": "Compute",
         "glance": "Image",
@@ -165,10 +164,12 @@ class YumDependencyHandler(base.DependencyHandler):
                     self._move_srpms("anvil")
 
     @staticmethod
-    def _move_files(source_dir, target_dir):
+    def _move_rpm_files(source_dir, target_dir):
         if not sh.isdir(source_dir):
             return
         for filename in sh.listdir(source_dir, recursive=True, files_only=True):
+            if not filename.lower().endswith(".rpm"):
+                continue
             sh.move(filename, target_dir, force=True)
 
     def build_binary(self):
@@ -213,13 +214,14 @@ class YumDependencyHandler(base.DependencyHandler):
             marks_dir = sh.joinpths(self.deps_dir, "marks-binary")
             if not sh.isdir(marks_dir):
                 sh.mkdirslist(marks_dir, tracewriter=self.tracewriter)
-            rpmbuild_flags = self.RPM_BUILD_FLAGS_TEMPLATE % self.rpmbuild_dir
+            rpmbuild_flags = "--rebuild"
             if self.opts.get("usr_only", False):
                 rpmbuild_flags += " --define 'usr_only 1'"
             params = {
                 "SRC_REPO_DIR": src_repo_dir,
                 "RPMBUILD_FLAGS": rpmbuild_flags,
                 "LOGS_DIR": self.log_dir,
+                'RPMTOP_DIR': self.rpmbuild_dir,
             }
             (_fn, content) = utils.load_template(sh.joinpths("packaging", "makefiles"), "binary.mk")
             sh.write_file(makefile_path, utils.expand_template(content, params),
@@ -227,7 +229,9 @@ class YumDependencyHandler(base.DependencyHandler):
             with sh.remove_before_after(self.rpmbuild_dir):
                 self._create_rpmbuild_subdirs()
                 self._execute_make(makefile_path, marks_dir)
-                self._move_files(sh.joinpths(self.rpmbuild_dir, "RPMS"), repo_dir)
+                for d in sh.listdir(self.rpmbuild_dir, dirs_only=True):
+                    self._move_rpm_files(sh.joinpths(d, "RPMS"), repo_dir)
+                self._move_rpm_files(sh.joinpths(self.rpmbuild_dir, "RPMS"), repo_dir)
             self._create_repo(repo_name)
 
     def _execute_make(self, filename, marks_dir):
@@ -239,7 +243,7 @@ class YumDependencyHandler(base.DependencyHandler):
         src_repo_name = self.SRC_REPOS[repo_name]
         src_repo_dir = sh.joinpths(self.anvil_repo_dir, src_repo_name)
         sh.mkdirslist(src_repo_dir, tracewriter=self.tracewriter)
-        self._move_files(sh.joinpths(self.rpmbuild_dir, "SRPMS"), src_repo_dir)
+        self._move_rpm_files(sh.joinpths(self.rpmbuild_dir, "SRPMS"), src_repo_dir)
 
     def _create_repo(self, repo_name):
         repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)

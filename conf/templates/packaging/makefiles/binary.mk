@@ -2,6 +2,7 @@ SRC_REPO_DIR := $SRC_REPO_DIR
 LOGS_DIR := $LOGS_DIR
 RPMBUILD := rpmbuild
 RPMBUILD_FLAGS := $RPMBUILD_FLAGS
+RPMTOP_DIR := $RPMTOP_DIR
 
 #raw
 YUM_BUILDDEP := yum-builddep
@@ -26,7 +27,10 @@ $(BUILDDEP_MARK):
 
 
 %.mark: $(SRC_REPO_DIR)/% $(BUILDDEP_MARK)
-	@$(RPMBUILD) $(RPMBUILD_FLAGS) -- $< &> $(LOGS_DIR)/rpmbuild-$*.log
+	@echo "Building for $< in $(RPMTOP_DIR)/$*"
+	@rm -rf "$(RPMTOP_DIR)/$*"
+	@mkdir -p "$(RPMTOP_DIR)/$*"
+	@$(RPMBUILD) $(RPMBUILD_FLAGS) --define '_topdir $(RPMTOP_DIR)/$*' -- $< &> $(LOGS_DIR)/rpmbuild-$*.log
 	@touch "$@"
-	@echo "$*"
+	@echo "Created $*"
 #end raw
