@@ -62,7 +62,7 @@ class YumInstallHelper(base.InstallHelper):
 class YumDependencyHandler(base.DependencyHandler):
     OPENSTACK_EPOCH = 2
     SPEC_TEMPLATE_DIR = "packaging/specs"
-    RPM_BUILD_FLAGS_TEMPLATE = "--rebuild --define '_topdir %s'"
+    RPM_BUILD_FLAGS_TEMPLATE = "--rebuild"
     API_NAMES = {
         "nova": "Compute",
         "glance": "Image",
@@ -213,20 +213,22 @@ class YumDependencyHandler(base.DependencyHandler):
             marks_dir = sh.joinpths(self.deps_dir, "marks-binary")
             if not sh.isdir(marks_dir):
                 sh.mkdirslist(marks_dir, tracewriter=self.tracewriter)
-            rpmbuild_flags = self.RPM_BUILD_FLAGS_TEMPLATE % self.rpmbuild_dir
+            rpmbuild_flags = self.RPM_BUILD_FLAGS_TEMPLATE
             if self.opts.get("usr_only", False):
                 rpmbuild_flags += " --define 'usr_only 1'"
             params = {
                 "SRC_REPO_DIR": src_repo_dir,
                 "RPMBUILD_FLAGS": rpmbuild_flags,
                 "LOGS_DIR": self.log_dir,
+                'RPMTOP_DIR': self.rpmbuild_dir,
             }
             (_fn, content) = utils.load_template(sh.joinpths("packaging", "makefiles"), "binary.mk")
             sh.write_file(makefile_path, utils.expand_template(content, params),
                           tracewriter=self.tracewriter)
             with sh.remove_before_after(self.rpmbuild_dir):
-                self._create_rpmbuild_subdirs()
                 self._execute_make(makefile_path, marks_dir)
+                for d in sh.listdir(self.rpmbuild_dir, dirs_only=True):
+                    self._move_files(sh.joinpths(d, "RPMS"), repo_dir)
                 self._move_files(sh.joinpths(self.rpmbuild_dir, "RPMS"), repo_dir)
             self._create_repo(repo_name)
 
@@ -369,7 +371,7 @@ class YumDependencyHandler(base.DependencyHandler):
         for filename in package_files:
             if filename not in filtered_package_files:
                 sh.unlink(filename)
-        package_files = filtered_package_files
+        package_files = sorted(filtered_package_files)
 
         # Now build them into SRPM rpm files.
         (_fn, content) = utils.load_template(sh.joinpths("packaging", "makefiles"), "source.mk")
