@@ -369,7 +369,7 @@ class YumDependencyHandler(base.DependencyHandler):
         for filename in package_files:
             if filename not in filtered_package_files:
                 sh.unlink(filename)
-        package_files = filtered_package_files
+        package_files = sorted(filtered_package_files)
 
         # Now build them into SRPM rpm files.
         (_fn, content) = utils.load_template(sh.joinpths("packaging", "makefiles"), "source.mk")
