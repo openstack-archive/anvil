@@ -127,6 +127,97 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
 
+specprint
+---------
+
+`specprint` uses the rpm API to provide a interface to printing the details
+of an rpm spec file in a easy to parse format. It writes results of its work to 
+standard output in JSON (which is much easier to use from other programs)::
+
+    $ ./tools/specprint -f python.spec
+    {
+        "headers": {
+            "arch": "x86_64",
+            "description": "Python is an interpreted, interactive, object-oriented programmin....",
+            "evr": "2.7.5-3.el6",
+            "group": "Development/Languages",
+            "headeri18ntable": [
+                "C"
+            ],
+            "license": "Python",
+            "name": "python",
+            "nevr": "python-2.7.5-3.el6",
+            "nevra": "python-2.7.5-3.el6.x86_64",
+            "nvr": "python-2.7.5-3.el6",
+            "nvra": "python-2.7.5-3.el6.x86_64",
+            "os": "linux",
+            "release": "3.el6",
+            "requires": [
+                "autoconf",
+                "bluez-libs-devel",
+                "bzip2",
+                "bzip2-devel",
+                "expat-devel",
+                "findutils",
+                "gcc-c++",
+                "gdbm-devel",
+                "glibc-devel",
+                "gmp-devel",
+                "libdb-devel",
+                "libffi-devel",
+                "libGL-devel",
+                "libX11-devel",
+                "ncurses-devel",
+                "openssl-devel",
+                "pkgconfig",
+                "readline-devel",
+                "sqlite-devel",
+                "systemtap-sdt-devel",
+                "tar",
+                "tcl-devel",
+                "tix-devel",
+                "tk-devel",
+                "valgrind-devel",
+                "zlib-devel"
+            ],
+            "summary": "An interpreted, interactive, object-oriented programming language",
+            "url": "http://www.python.org/",
+            "version": "2.7.5"
+        },
+        "path": "/home/harlowja/anvil/python.spec",
+        "sources": [
+            "05000-autotool-intermediates.patch",
+            "00184-ctypes-should-build-with-libffi-multilib-wrapper.patch",
+            "00181-allow-arbitrary-timeout-in-condition-wait.patch",
+            "00180-python-add-support-for-ppc64p7.patch",
+            ....
+            "00055-systemtap.patch",
+            "python-2.6.4-distutils-rpath.patch",
+            "python-2.6-rpath.patch",
+            "python-2.7rc1-socketmodule-constants2.patch",
+            "python-2.7rc1-socketmodule-constants.patch",
+            "python-2.7rc1-binutils-no-dep.patch",
+            "python-2.5.1-sqlite-encoding.patch",
+            "python-2.5.1-plural-fix.patch",
+            "python-2.5-cflags.patch",
+            "00001-pydocnogui.patch",
+            "python-2.7.1-config.patch",
+            "pynche",
+            "macros.python2",
+            "pyfuntop.stp",
+            "systemtap-example.stp",
+            "libpython.stp",
+            "pythondeps.sh",
+            "http://www.python.org/ftp/python/2.7.5/Python-2.7.5.tar.xz"
+        ]
+    }
+
+`specprint` is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+
 git-changelog
 -------------
 This tool generates a pretty software's changelog from git history.

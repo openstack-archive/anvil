@@ -17,6 +17,7 @@
 # Parts Copyright 2007 Red Hat, Inc
 
 import os
+import re
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -29,7 +30,13 @@ from optparse import OptionParser
 
 import rpm
 
-SKIP_HEADERS = ['changelogtext']
+# These headers are not so useful for anvils use-case
+SKIP_HEADERS_RE = [
+    re.compile(r"^changelog(.*)", re.I),
+    re.compile(r"^fs(.*)", re.I),
+    re.compile(r"^requireflags(.*)", re.I),
+    re.compile(r"^requireversion(.*)", re.I),
+]
 
 
 def analyze_spec(spec_filename):
@@ -44,7 +51,14 @@ def analyze_spec(spec_filename):
     headers = {}
     for code, name in rpm.tagnames.items():
         name = name.lower().strip()
-        if not name or name in SKIP_HEADERS:
+        if not name:
+            continue
+        skip_name = False
+        for r in SKIP_HEADERS_RE:
+            if r.match(name):
+                skip_name = True
+                break
+        if skip_name:
             continue
         value = spec.sourceHeader[code]
         if value:
