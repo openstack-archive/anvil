@@ -1,0 +1,7 @@
+# Settings for component trove-client
+---
+
+# Where we download this from...
+get_from: "git://github.com/openstack/python-troveclient.git?branch=master"
+
+...
