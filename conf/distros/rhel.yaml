@@ -139,6 +139,11 @@ components:
         -   name: python-routes1.12
         -   name: python-sphinx10
         -   name: python-webob1.0
+        # Require extra packages needed to run tests
+        pips:
+            - name: "nose"
+              version: ">=1.3.0"
+            - name: "coverage"
     glance:
         action_classes:
             install: anvil.components.glance:GlanceInstaller
@@ -148,10 +153,13 @@ components:
             uninstall: anvil.components.base_install:PkgUninstallComponent
         pips:
         # warlock requires jsonschema>=0.7,<2
-        # pip downloads jsonschema-2.0 and
-        # then ignores warlock's requirement
+        # pip downloads jsonschema-2.0 and then ignores warlock's requirement
         -   name: jsonschema
             version: ">=0.7,<2"
+        # pip setup and download of xattr>=0.7 seems to have problems find cffi
+        # so lets just use an restrict the upper bound until this is fixed upstream
+        -   name: xattr
+            version: ">=0.6.0,<0.7"
         daemon_to_package:
             api: openstack-glance
             registry: openstack-glance
