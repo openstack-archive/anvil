@@ -69,7 +69,7 @@ class YumDependencyHandler(base.DependencyHandler):
         "cinder": "Volume",
         "quantum": "Networking",
     }
-    SERVER_NAMES = ["nova", "glance", "keystone", "quantum", "cinder"]
+    SERVER_NAMES = ["nova", "glance", "keystone", "quantum", "cinder", "trove"]
     TRANSLATION_NAMES = {
         'horizon': "python-django-horizon",
     }
