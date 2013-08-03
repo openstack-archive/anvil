@@ -28,6 +28,7 @@ from anvil import utils
 
 LOG = logging.getLogger(__name__)
 
+# TODO: get rid of me...
 OPENSTACK_PACKAGES = set([
     "cinder",
     "glance",
@@ -35,15 +36,21 @@ OPENSTACK_PACKAGES = set([
     "keystone",
     "nova",
     "oslo.config",
-    "quantum",
-    "swift",
     "python-cinderclient",
     "python-glanceclient",
     "python-keystoneclient",
-    "python-novaclient",
     "python-neutronclient",
+    "python-novaclient",
     "python-swiftclient",
+    "python-troveclient",
+    "quantum",
+    "swift",
+    "trove",
 ])
+SKIP_PACKAGE_NAMES = [
+    # Until https://review.openstack.org/#/c/40048/ is merged
+    'pyton-troveclient',
+]
 
 
 class InstallHelper(object):
@@ -209,6 +216,7 @@ class DependencyHandler(object):
         cmdline = cmdline + extra_pips + ["-r"] + requires_files
         cmdline.extend(["--ignore-package"])
         cmdline.extend(OPENSTACK_PACKAGES)
+        cmdline.extend(SKIP_PACKAGE_NAMES)
         cmdline.extend(self.python_names)
 
         output = sh.execute(cmdline, check_exit_code=False)
