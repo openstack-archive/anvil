@@ -1,0 +1,7 @@
+# Settings for component trove
+---
+
+# Where we download this from...
+get_from: "git://github.com/openstack/trove.git?branch=master"
+
+...
