@@ -62,6 +62,8 @@ class YumInstallHelper(base.InstallHelper):
 class YumDependencyHandler(base.DependencyHandler):
     OPENSTACK_EPOCH = 2
     SPEC_TEMPLATE_DIR = "packaging/specs"
+    # TODO(harlowja): get rid of these static lists/mappings from code and move
+    # them to configuration (or elsewhere).
     API_NAMES = {
         "nova": "Compute",
         "glance": "Image",
@@ -69,7 +71,7 @@ class YumDependencyHandler(base.DependencyHandler):
         "cinder": "Volume",
         "quantum": "Networking",
     }
-    SERVER_NAMES = ["nova", "glance", "keystone", "quantum", "cinder"]
+    SERVER_NAMES = ["nova", "glance", "keystone", "quantum", "cinder", "trove"]
     TRANSLATION_NAMES = {
         'horizon': "python-django-horizon",
     }
