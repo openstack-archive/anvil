@@ -1,0 +1,56 @@
+---
+components:
+# Order matters here!
+- general
+- db
+- rabbit-mq
+- oslo-config
+- keystone
+# Client used by many components
+- keystone-client
+- glance
+- cinder
+# Clients used by nova (+ others)
+- glance-client
+- cinder-client
+- neutron-client
+- nova
+- nova-client
+- trove
+options:
+    nova:
+        db-sync: true
+        do-network-init: true
+        mq-type: "rabbit"
+        enable-cells: false
+        enable-spice: false
+        local-conductor: false
+    glance:
+        db-sync: true
+        load-images: true
+    keystone:
+        db-sync: true
+        do-init: true
+        enable-pki: false
+    cinder:
+        db-sync: true
+subsystems:
+    glance:
+    - api
+    - registry
+    keystone:
+    - all
+    nova:
+    - api
+    - cert
+    - compute
+    - conductor
+    - network
+    - scheduler
+    cinder:
+    - api
+    - scheduler
+    - volume
+supports:
+- rhel
+...
