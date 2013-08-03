@@ -158,6 +158,7 @@ components:
             version: ">=0.7,<2"
         # pip setup and download of xattr>=0.7 seems to have problems find cffi
         # so lets just use an restrict the upper bound until this is fixed upstream
+        # see: https://github.com/xattr/xattr/issues/16
         -   name: xattr
             version: ">=0.6.0,<0.7"
         daemon_to_package:
