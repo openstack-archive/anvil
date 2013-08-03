@@ -98,13 +98,32 @@ builds RPMs (current directory is used by default)::
 yyoom
 -----
 
-`yyoom` uses yum API to provide nice command-line interface to package
+`yyoom` uses the yum API to provide nice command-line interface to package
 management. It is able to install and remove packages in the same
 transaction (see `yyoom transaction --help`), list available or installed
 packages and a bit more. It writes results of its work to standard output
-in JSON.
+in JSON (which is much easier to use from other programs).
 
 `yyoom` is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+yumfind
+-------
+
+`yumfind` uses the yum API to provide a interface to finding packages in the
+yum repository that may match a given name or a given name with a set of python
+requirements. It writes results of its work to standard output
+in JSON or in rpm package name format (see `yumfind --help`)::
+
+    $ ./tools/yumfind -p 'python-setuptools,setuptools>0.8,<1'
+    python-setuptools-0.9.8-0.el6.noarch
+        
+    $ ./tools/yumfind -p 'python-setuptools,setuptools>0.8,<1' -j
+    {"release": "0.el6", "epoch": "0", "version": "0.9.8", "arch": "noarch", "name": "python-setuptools"}
+
+`yumfind` is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
@@ -118,6 +137,12 @@ build-install-node-from-source.sh
 ---------------------------------
 
 Helps build latest `node.js` from source into rpms.
+
+
+build-openvswitch.sh
+--------------------
+
+Helps build latest `openvswitch` from source into rpms.
 
 clean-pip
 ---------
@@ -137,7 +162,7 @@ Helper tool to upload images to glance using your anvil settings.
 validate-yaml
 -------------
 
-Validates yaml is formatted correctly.
+Validates a yaml file is formatted correctly.
 
 yaml-pretty
 -----------
