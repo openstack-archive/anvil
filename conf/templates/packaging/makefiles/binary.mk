@@ -28,6 +28,7 @@ $(BUILDDEP_MARK):
 
 %.mark: $(SRC_REPO_DIR)/% $(BUILDDEP_MARK)
 	@echo "Building for $< in $(RPMTOP_DIR)/$*"
+	@echo "Output for build being placed in $(LOGS_DIR)/rpmbuild-$*.log"
 	@rm -rf "$(RPMTOP_DIR)/$*"
 	@mkdir -p "$(RPMTOP_DIR)/$*"
 	@$(RPMBUILD) $(RPMBUILD_FLAGS) --define '_topdir $(RPMTOP_DIR)/$*' -- $< &> $(LOGS_DIR)/rpmbuild-$*.log

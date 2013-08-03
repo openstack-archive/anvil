@@ -11,6 +11,8 @@ all: $(MARKS)
 
 
 %.mark: $(DOWNLOADS_DIR)/%
+	@echo "Building source rpm for $^"
+	@echo "Output for build being placed in $(LOGS_DIR)/py2rpm-$*.log"
 	@$(PY2RPM) $(PY2RPM_FLAGS) -- $^ &> $(LOGS_DIR)/py2rpm-$*.log
 	@touch "$@"
 	@echo "$*"
