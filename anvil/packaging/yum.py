@@ -678,20 +678,32 @@ class YumDependencyHandler(base.DependencyHandler):
         utils.log_iterable(preq_formatted,
                            header="Validating %s required packages are still available" % (len(preq_formatted)),
                            logger=LOG)
-        the_rpms = []
-        for i, matched in enumerate(sh.execute(cmd)[0].splitlines()):
+
+        rpms_located = []
+        rpm_names_located = set()
+        for matched in sh.execute(cmd)[0].splitlines():
             matched = matched.strip()
-            pkg = None
             if matched:
                 pkg = json.loads(matched)
-            if not pkg:
-                rpm_name, py_req = preq_rpms[i]
-                msg = "Could not find available rpm package '%s'" % (rpm_name)
-                if py_req:
-                    msg += " matching requirement '%s'" % (py_req)
-                raise excp.DependencyException(msg)
-            else:
-                the_rpms.append((pkg['name'], pkg['version']))
+                if isinstance(pkg, dict):
+                    rpm_names_located.add(pkg['name'])
+                    rpms_located.append((pkg['name'], pkg['version']))
+
+        rpm_names_missing = set(just_names) - rpm_names_located
+        if rpm_names_missing:
+            # Include the python version required information (if applicable)
+            missing_formatted = []
+            for n in sorted(rpm_names_missing):
+                for (n2, py_req) in preq_rpms:
+                    if n2 == n:
+                        if py_req:
+                            missing_formatted.append("%s,%s" % (n2, py_req))
+                        else:
+                            missing_formatted.append("%s" % (n2))
+                        break
+            msg = "Could not find available rpm packages: %s"
+            msg = msg % (", ".join(missing_formatted))
+            raise excp.DependencyException(msg)
         LOG.info("All %s required packages are still available!", len(the_rpms))
 
         # Now format correctly
