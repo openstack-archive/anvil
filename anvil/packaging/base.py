@@ -71,6 +71,7 @@ class DependencyHandler(object):
     MAX_PIP_DOWNLOAD_ATTEMPTS = 4
     multipip_executable = sh.which("multipip", ["tools/"])
     pip_executable = sh.which_first(['pip-python', 'pip'])
+    pipdownload_executable = sh.which("pip-download", ["tools"])
 
     def __init__(self, distro, root_dir, instances, opts=None):
         self.distro = distro
@@ -81,10 +82,9 @@ class DependencyHandler(object):
         self.downloaded_flag_file = sh.joinpths(self.deps_dir, "pip-downloaded")
         self.download_dir = sh.joinpths(self.deps_dir, "download")
         self.log_dir = sh.joinpths(self.deps_dir, "output")
-        self.gathered_requires_filename = sh.joinpths(
-            self.deps_dir, "pip-requires")
-        self.forced_requires_filename = sh.joinpths(
-            self.deps_dir, "forced-requires")
+        self.gathered_requires_filename = sh.joinpths(self.deps_dir, "pip-requires")
+        self.forced_requires_filename = sh.joinpths(self.deps_dir, "forced-requires")
+        self.download_requires_filename = sh.joinpths(self.deps_dir, "download-requires")
         # list of requirement strings
         self.pips_to_install = []
         self.forced_packages = []
@@ -249,19 +249,13 @@ class DependencyHandler(object):
         """
         return self.pips_to_install
 
-    def _try_download_dependencies(self, attempt, pips_to_download,
-                                   pip_download_dir,
-                                   pip_cache_dir,
-                                   pip_build_dir):
-        pips_to_download = [str(p) for p in pips_to_download]
+    def _try_download_dependencies(self, attempt, pips_to_download, pip_download_dir):
         cmdline = [
-            self.pip_executable,
-            "install",
-            "--download", pip_download_dir,
-            "--download-cache", pip_cache_dir,
-            "--build", pip_build_dir,
+            self.pipdownload_executable,
+            '-d', pip_download_dir,
+            '-v',
         ]
-        cmdline.extend(sorted(pips_to_download))
+        cmdline.extend(sorted([str(p) for p in pips_to_download]))
         out_filename = sh.joinpths(self.log_dir,
                                    "pip-download-attempt-%s.log" % (attempt))
         sh.execute_save_output(cmdline, out_filename=out_filename)
@@ -302,10 +296,9 @@ class DependencyHandler(object):
         """
         # NOTE(aababilov): do not drop download_dir - it can be reused
         sh.mkdirslist(self.download_dir, tracewriter=self.tracewriter)
-        download_requires_filename = sh.joinpths(self.deps_dir, "download-requires")
         raw_pips_to_download = self.filter_download_requires()
-        sh.write_file(download_requires_filename,
-                      "\n".join(str(req) for req in raw_pips_to_download))
+        sh.write_file(self.download_requires_filename,
+                      "\n".join([str(req) for req in raw_pips_to_download]))
         if not raw_pips_to_download:
             return ([], [])
         # NOTE(aababilov): user could have changed persona, so,
@@ -314,26 +307,18 @@ class DependencyHandler(object):
             self._requirements_satisfied(raw_pips_to_download, self.download_dir)):
             LOG.info("All python dependencies have been already downloaded")
         else:
-            pip_dir = sh.joinpths(self.deps_dir, "pip")
-            pip_download_dir = sh.joinpths(pip_dir, "download")
-            pip_build_dir = sh.joinpths(pip_dir, "build")
-            # NOTE(aababilov): do not clean the cache, it is always useful
-            pip_cache_dir = sh.joinpths(self.deps_dir, "pip-cache")
             pip_failures = []
             for attempt in xrange(self.MAX_PIP_DOWNLOAD_ATTEMPTS):
                 # NOTE(aababilov): pip has issues with already downloaded files
-                sh.deldir(pip_dir)
-                sh.mkdirslist(pip_download_dir, tracewriter=self.tracewriter)
+                for filename in sh.listdir(self.download_dir, files_only=True):
+                    sh.unlink(filename)
                 header = "Downloading %s python dependencies (attempt %s)"
-                header = header % (len(raw_pips_to_download), attempt)
-                utils.log_iterable(sorted(raw_pips_to_download),
-                                   logger=LOG,
-                                   header=header)
+                header = header % (len(raw_pips_to_download), attempt + 1)
+                utils.log_iterable(sorted(raw_pips_to_download), logger=LOG, header=header)
                 failed = False
                 try:
                     self._try_download_dependencies(attempt, raw_pips_to_download,
-                                                    pip_download_dir,
-                                                    pip_cache_dir, pip_build_dir)
+                                                    self.download_dir)
                     pip_failures = []
                 except exc.ProcessExecutionError as e:
                     LOG.exception("Failed downloading python dependencies")
@@ -341,15 +326,11 @@ class DependencyHandler(object):
                     failed = True
                 if not failed:
                     break
-            for filename in sh.listdir(pip_download_dir, files_only=True):
-                sh.move(filename, self.download_dir, force=True)
-            sh.deldir(pip_dir)
             if pip_failures:
                 raise pip_failures[-1]
+            # NOTE(harlowja): Mark that we completed downloading successfully
             sh.touch_file(self.downloaded_flag_file, die_if_there=False,
                           quiet=True, tracewriter=self.tracewriter)
-        pips_downloaded = [pip_helper.extract_requirement(p)
-                           for p in raw_pips_to_download]
+        pips_downloaded = [pip_helper.extract_requirement(p) for p in raw_pips_to_download]
         self._examine_download_dir(pips_downloaded, self.download_dir)
-        what_downloaded = sh.listdir(self.download_dir, files_only=True)
-        return (pips_downloaded, what_downloaded)
+        return (pips_downloaded, sh.listdir(self.download_dir, files_only=True))
