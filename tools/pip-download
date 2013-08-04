@@ -56,17 +56,18 @@ def find_pip():
     raise RuntimeError("Unable to find pip via any of %s commands" % (PIP_CMDS))
 
 
-def execute_download(options, deps, download_dir, cache_dir):
+def execute_download(options, deps, download_dir, cache_dir, build_dir):
     cmd = [find_pip()]
     if options.verbose:
         cmd.extend(['-v'])
     else:
         cmd.extend(['-q'])
     cmd.extend(['install', '-I', '-U',
-                '--download', download_dir])
+                '--download', download_dir,
+                '--build', build_dir,
+                '--download-cache', cache_dir])
     if SUPPORTS_EXISTS:
         cmd.extend(['--exists-action', 'w'])
-    cmd.extend(['--download-cache', cache_dir])
     cmd.extend([str(d) for d in deps])
     call(cmd)
 
@@ -90,8 +91,8 @@ def extract_requirement(source_dir):
     return req
 
 
-def perform_download(options, deps, extract_dir, download_dir, cache_dir):
-    execute_download(options, deps, download_dir, cache_dir)
+def perform_download(options, deps, download_dir, extract_dir, cache_dir, build_dir):
+    execute_download(options, deps, download_dir, cache_dir, build_dir)
     files_examined = {}
     for basename in os.listdir(download_dir):
         if basename.startswith("."):
@@ -169,10 +170,17 @@ if __name__ == '__main__':
         raise IOError("Download requirement/s expected")
     extract_dir = os.path.join(download_dir, '.extract')
     cache_dir = os.path.join(download_dir, '.cache')
-    for d in [download_dir, extract_dir, cache_dir]:
+    build_dir = os.path.join(download_dir, '.build')
+    # Clear out the build & extraction directory if it exists so we don't
+    # conflict with previous build or extraction attempts.
+    for d in [extract_dir, build_dir]:
+        if os.path.isdir(d):
+            shutil.rmtree(d)
+    for d in [download_dir, extract_dir, cache_dir, build_dir]:
         if not os.path.isdir(d):
             os.makedirs(d)
-    downloaded = perform_download(options, list(packages), extract_dir, download_dir, cache_dir)
+    downloaded = perform_download(options, list(packages),
+                                  download_dir, extract_dir, cache_dir, build_dir)
     evict_equivalent(options, downloaded)
     for filename in sorted(downloaded.keys()):
         print("Saved %s" % (filename))
