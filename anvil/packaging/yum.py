@@ -75,10 +75,6 @@ class YumDependencyHandler(base.DependencyHandler):
     }
     REPO_FN = "anvil.repo"
     YUM_REPO_DIR = "/etc/yum.repos.d/"
-    BANNED_PACKAGES = [
-        'distribute',
-        'setuptools',
-    ]
     SRC_REPOS = {
         'anvil': 'anvil-source',
         "anvil-deps": "anvil-deps-source",
@@ -100,13 +96,15 @@ class YumDependencyHandler(base.DependencyHandler):
 
     def __init__(self, distro, root_dir, instances, opts=None):
         super(YumDependencyHandler, self).__init__(distro, root_dir, instances, opts)
+        # Various paths we will use while operating
         self.rpmbuild_dir = sh.joinpths(self.deps_dir, "rpmbuild")
         self.deps_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps")
         self.deps_src_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps-sources")
         self.anvil_repo_filename = sh.joinpths(self.deps_dir, self.REPO_FN)
-        self.helper = yum_helper.Helper(self.log_dir)
         self.rpm_sources_dir = sh.joinpths(self.rpmbuild_dir, "SOURCES")
         self.anvil_repo_dir = sh.joinpths(self.root_dir, "repo")
+        # We inspect yum for packages, this helper allows us to do this.
+        self.helper = yum_helper.Helper(self.log_dir)
         self._no_remove = None
 
     def py2rpm_start_cmdline(self):
@@ -330,7 +328,6 @@ class YumDependencyHandler(base.DependencyHandler):
         # build or can satisfy by other means
         no_pips = [pkg_resources.Requirement.parse(name).key
                    for name in self.python_names]
-        no_pips.extend(self.BANNED_PACKAGES)
         yum_map = self._get_yum_available()
         pips_keys = set([p.key for p in pips_downloaded])
 
