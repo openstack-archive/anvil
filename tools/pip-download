@@ -82,7 +82,7 @@ def extract_requirement(source_dir):
     # Remove old egg-infos since it appears that pip will not work if there
     # are previous egg-info directories existing in the source directory.
     source_dir = os.path.abspath(source_dir)
-    for egg_d in glob.glob(os.path.join(source_dir, "*egg-info")):
+    for egg_d in glob.glob(os.path.join(source_dir, "*.egg-info")):
         shutil.rmtree(egg_d)
     req = pip_req.InstallRequirement.from_line(source_dir)
     req.source_dir = source_dir
