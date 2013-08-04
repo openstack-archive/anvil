@@ -10,10 +10,9 @@ cd "$(dirname "$0")"
 VERBOSE="${VERBOSE:-0}"
 PY2RPM_CMD="$PWD/tools/py2rpm"
 YUMFIND_CMD="$PWD/tools/yumfind"
-PIP_CMD=""
+PIPDOWNLOAD_CMD="$PWD/tools/pip-download"
 
 YUM_OPTS="--assumeyes --nogpgcheck"
-PIP_OPTS=""
 RPM_OPTS=""
 CURL_OPTS=""
 
@@ -36,7 +35,6 @@ fi
 
 if [ "$VERBOSE" == "0" ]; then
     YUM_OPTS="$YUM_OPTS -q"
-    PIP_OPTS="-q"
     RPM_OPTS="-q"
     CURL_OPTS="-s"
 fi
@@ -57,25 +55,6 @@ if [ -z "$BOOT_FILES" ]; then
     BOOT_FN=".anvil_bootstrapped"
     BOOT_FILES="${PWD}/$BOOT_FN"
 fi
-
-find_pip()
-{
-    if [ -n "$PIP_CMD" ]; then
-        return
-    fi
-    # Handle how RHEL likes to rename it.
-    PIP_CMD=""
-    for name in pip pip-python; do
-        if which "$name" &>/dev/null; then
-            PIP_CMD=$name
-            break
-        fi
-    done
-    if [ -z "$PIP_CMD" ]; then
-        echo -e "${COL_RED}pip/pip-python${COL_RESET} command not found!"
-        exit 1
-    fi
-}
 
 clean_pip()
 {
@@ -195,10 +174,8 @@ except KeyError:
     echo -e "Building ${COL_YELLOW}missing${COL_RESET} python requirements:"
     dump_list "$missing_packages"
     local pip_tmp_dir=$(mktemp -d)
-    find_pip
-    local pip_opts="$PIP_OPTS -U -I"
     echo "Downloading..."
-    $PIP_CMD install $pip_opts $missing_packages --download "$pip_tmp_dir"
+    $PIPDOWNLOAD_CMD -d "$pip_tmp_dir" $missing_packages | grep "^Saved"
     echo "Building RPMs..."
     local rpm_names=$("$PY2RPM_CMD"  --package-map $package_map --scripts-dir "conf/templates/packaging/scripts" -- "$pip_tmp_dir/"* 2>/dev/null |
         awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)

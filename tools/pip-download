@@ -1,0 +1,160 @@
+#!/usr/bin/python
+
+# vim: tabstop=4 shiftwidth=4 softtabstop=4
+
+#    Copyright (C) 2012 Yahoo! Inc. All Rights Reserved.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+
+from distutils.version import LooseVersion
+
+import collections
+import distutils
+import optparse
+import os
+import subprocess
+
+from pip import req as pip_req
+from pip import util as pip_util
+
+PIP_CMDS = ['pip-python', 'pip']
+ARCHIVE_EXTS = ['.zip', '.tgz', '.tbz', '.tar.gz', '.tar', '.gz', '.bz2']
+
+
+def call(cmd):
+    proc = subprocess.Popen(cmd, stderr=None, stdin=None, stdout=None)
+    ret = proc.communicate()
+    if proc.returncode != 0:
+        raise RuntimeError("Failed running %s" % (" ".join(cmd)))
+    return ret
+
+
+def find_pip():
+    for pp in PIP_CMDS:
+        bin_name = distutils.spawn.find_executable(pp)
+        if bin_name:
+            return bin_name
+    raise RuntimeError("Unable to find pip via any of %s commands" % (PIP_CMDS))
+
+
+def download_list(options, deps, download_dir, cache_dir):
+    cmd = [find_pip()]
+    if options.verbose:
+        cmd.extend(['-v'])
+    else:
+        cmd.extend(['-q'])
+    cmd.extend(['install', '-I', '-U',
+                '--download', download_dir,
+                '--exists-action', 'w',
+                '--download-cache', cache_dir])
+    cmd.extend([str(d) for d in deps])
+    call(cmd)
+
+
+def remove_archive_ext(path):
+    for i in ARCHIVE_EXTS:
+        if path.endswith(i):
+            path = path[0:-len(i)]
+    return path
+
+
+def extract_requirement(path, source_dir):
+    req = pip_req.InstallRequirement.from_line(path)
+    req.source_dir = source_dir
+    req.run_egg_info()
+    return req
+
+
+def perform_download(options, deps, extract_dir, download_dir, cache_dir):
+    download_list(options, deps, download_dir, cache_dir)
+    files_examined = {}
+    for basename in os.listdir(download_dir):
+        if basename.startswith("."):
+            continue
+        filename = os.path.join(download_dir, basename)
+        if not os.path.isfile(filename):
+            continue
+        untar_dir = os.path.join(extract_dir, remove_archive_ext(basename))
+        if not os.path.isdir(untar_dir):
+            if options.verbose:
+                print("Extracting %s -> %s" % (filename, untar_dir))
+            pip_util.unpack_file(filename, untar_dir, content_type='', link='')
+        if options.verbose:
+            print("Examining %s" % (untar_dir))
+        files_examined[filename] = extract_requirement(filename, untar_dir)
+    return files_examined
+
+
+def evict_equivalent(options, downloaded):
+
+    def ver_comp(item1, item2):
+        if item1[1] < item2[1]:
+            return -1
+        if item1[1] > item2[1]:
+            return 1
+        return 0
+
+    duplicates = collections.defaultdict(list)
+    for (filename, req) in downloaded.items():
+        duplicates[req.name].append((filename, req))
+    dups_found = 0
+    for (name, matches) in duplicates.items():
+        if len(matches) > 1:
+            dups_found += 1
+    if not dups_found:
+        return
+    if options.verbose:
+        print("%s duplicate found..." % (dups_found))
+    for (name, matches) in duplicates.items():
+        if len(matches) <= 1:
+            continue
+        versions = []
+        for (filename, req) in matches:
+            if options.verbose:
+                print("Duplicate %s at %s with version %s" % (name, filename, req.installed_version))
+            versions.append((filename, LooseVersion(req.installed_version)))
+        selected_filename = list(sorted(versions, cmp=ver_comp))[-1][0]
+        if options.verbose:
+            print('Keeping %s' % (selected_filename))
+        for (filename, req) in matches:
+            if filename != selected_filename:
+                if options.verbose:
+                    print("Deleting %s" % (filename))
+                os.unlink(filename)
+                downloaded.pop(filename)
+
+
+if __name__ == '__main__':
+    usage = "usage: %prog [options] req req ..."
+    parser = optparse.OptionParser(usage=usage)
+    parser.add_option("-d", action="store", dest="download_dir",
+                      help='directory to download dependencies too', metavar="DIR")
+    parser.add_option("-v", '--verbose', action="store_true", help='enable verbose output',
+                     dest="verbose", default=False)
+    (options, args) = parser.parse_args()
+    download_dir = options.download_dir
+    if not options.download_dir:
+        raise IOError("Download directory required")
+    if not os.path.isdir(download_dir):
+        raise IOError("Download directory '%s' not found" % (download_dir))
+    if not args:
+        raise IOError("Download requirement/s expected")
+    extract_dir = os.path.join(download_dir, '.extract')
+    cache_dir = os.path.join(download_dir, '.cache')
+    for d in [extract_dir, cache_dir]:
+        if not os.path.isdir(d):
+            os.makedirs(d)
+    downloaded = perform_download(options, list(args), extract_dir, download_dir, cache_dir)
+    evict_equivalent(options, downloaded)
+    for filename in sorted(downloaded.keys()):
+        print("Saved %s" % (filename))
