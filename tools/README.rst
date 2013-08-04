@@ -127,6 +127,23 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
 
+pip-download
+------------
+
+`pip-download` is a small helper utility that interacts with pip and the pip API to
+download packages into a given directory (using a common extraction and download
+cache subdirectories). It also automatically prunes duplicated downloads if they
+are of the same project name (which pip appears to do sometimes, such as in the distribute
+and setuptools fiasco). This avoids helps avoid needless download duplication::
+
+    $ ./tools/pip-download -d /tmp/e 'setuptools>0.8' 'flake8'
+    Saved /tmp/e/flake8-2.0.tar.gz
+    Saved /tmp/e/mccabe-0.2.1.tar.gz
+    Saved /tmp/e/pep8-1.4.6.tar.gz
+    Saved /tmp/e/pyflakes-0.7.3.tar.gz
+    Saved /tmp/e/setuptools-0.9.8.tar.gz
+
+
 specprint
 ---------
 
