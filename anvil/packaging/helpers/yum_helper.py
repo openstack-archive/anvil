@@ -53,21 +53,24 @@ class Helper(object):
                 tracewriter.package_installed(action['name'])
 
     def is_installed(self, name):
-        if len(self.get_installed(name)):
+        matches = self.find_installed(name)
+        if len(matches):
             return True
-        else:
-            return False
+        return False
 
-    def get_available(self):
+    def find_installed(self, name):
+        installed = self.list_installed()
+        return [item for item in installed if item['name'] == name]
+
+    def list_available(self):
         if self._available is None:
             self._available = self._yyoom(['list', 'available'], 'list-available')
-        return self._available
+        return list(self._available)
 
-    def get_installed(self, name):
+    def list_installed(self):
         if self._installed is None:
             self._installed = self._yyoom(['list', 'installed'], 'list-installed')
-        return [item for item in self._installed
-                if item['name'] == name]
+        return list(self._installed)
 
     def builddep(self, srpm_path, tracewriter=None):
         self._trace_installed_packages(tracewriter,
