@@ -277,9 +277,12 @@ class YumDependencyHandler(base.DependencyHandler):
         sh.copy(repo_filename, system_repo_filename, tracewriter=self.tracewriter)
         LOG.info("Copied to %s", system_repo_filename)
 
-    def _get_yum_available(self):
+    def _get_known_yum_packages(self):
         yum_map = collections.defaultdict(list)
-        for pkg in self.helper.get_available():
+        known_pkgs = []
+        known_pkgs.extend(self.helper.get_available())
+        known_pkgs.extend(self.helper.get_installed())
+        for pkg in known_pkgs:
             for provides in pkg['provides']:
                 yum_map[provides[0]].append((pkg['version'], pkg['repo']))
         # Note(harlowja): this is done to remove the default lists
@@ -296,7 +299,7 @@ class YumDependencyHandler(base.DependencyHandler):
         return (None, None)
 
     def filter_download_requires(self):
-        yum_map = self._get_yum_available()
+        yum_map = self._get_known_yum_packages()
         pip_origins = {}
         for line in self.pips_to_install:
             req = pip_helper.extract_requirement(line)
@@ -337,7 +340,7 @@ class YumDependencyHandler(base.DependencyHandler):
         # build or can satisfy by other means
         no_pips = [pkg_resources.Requirement.parse(name).key
                    for name in self.python_names]
-        yum_map = self._get_yum_available()
+        yum_map = self._get_known_yum_packages()
         pips_keys = set([p.key for p in pips_downloaded])
 
         def _filter_package_files(package_files):
