@@ -9,6 +9,7 @@ dependency_handler:
         django: Django
         distribute: python-setuptools
         mysql-python: MySQL-python
+        numpy: numpy
         pam: python-pam
         pastedeploy: python-paste-deploy
         pycrypto: python-crypto
