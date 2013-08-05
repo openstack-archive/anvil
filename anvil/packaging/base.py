@@ -168,17 +168,14 @@ class DependencyHandler(object):
             for d in self.tracereader.dirs_made():
                 sh.deldir(d)
             sh.unlink(self.tracereader.filename())
-            self.tracereader = None
 
     def clean_pip_requires(self, requires_files):
         # Fixup incompatible dependencies
         if not (requires_files and self.forced_packages):
             return
-        utils.log_iterable(
-            sorted(requires_files),
-            logger=LOG,
-            header="Adjusting %s pip 'requires' files" %
-            (len(requires_files)))
+        utils.log_iterable(sorted(requires_files),
+                           logger=LOG,
+                           header="Adjusting %s pip 'requires' files" % (len(requires_files)))
         forced_by_key = dict((pkg.key, pkg) for pkg in self.forced_packages)
         for fn in requires_files:
             old_lines = sh.load_file(fn).splitlines()
@@ -190,8 +187,7 @@ class DependencyHandler(object):
                 except:
                     # we don't force the package or it has a bad format
                     new_lines.append(line)
-            contents = "# Cleaned on %s\n\n%s\n" % (
-                utils.iso8601(), "\n".join(new_lines))
+            contents = "# Cleaned on %s\n\n%s\n" % (utils.iso8601(), "\n".join(new_lines))
             sh.write_file_and_backup(fn, contents)
 
     def gather_pips_to_install(self, requires_files, extra_pips=None):
@@ -265,8 +261,7 @@ class DependencyHandler(object):
     def _examine_download_dir(self, pips_to_download, pip_download_dir):
         pip_names = set([p.key for p in pips_to_download])
         what_downloaded = sh.listdir(pip_download_dir, files_only=True)
-        LOG.info("Validating %s files that were downloaded.",
-                 len(what_downloaded))
+        LOG.info("Validating %s files that were downloaded.", len(what_downloaded))
         for filename in what_downloaded:
             pkg_details = pip_helper.get_archive_details(filename)
             req = pkg_details['req']
@@ -276,12 +271,9 @@ class DependencyHandler(object):
 
     @staticmethod
     def _requirements_satisfied(pips_list, download_dir):
-        downloaded_req = [
-            pip_helper.get_archive_details(filename)["req"]
-            for filename in sh.listdir(download_dir, files_only=True)]
-        downloaded_req = dict(
-            (req.key, req.specs[0][1])
-            for req in downloaded_req)
+        downloaded_req = [pip_helper.get_archive_details(filename)["req"]
+                          for filename in sh.listdir(download_dir, files_only=True)]
+        downloaded_req = dict((req.key, req.specs[0][1]) for req in downloaded_req)
         for req_str in pips_list:
             req = pip_helper.extract_requirement(req_str)
             try:
