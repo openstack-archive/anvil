@@ -134,7 +134,7 @@ pip-download
 download packages into a given directory (using a common extraction and download
 cache subdirectories). It also automatically prunes duplicated downloads if they
 are of the same project name (which pip appears to do sometimes, such as in the distribute
-and setuptools fiasco). This avoids helps avoid needless download duplication::
+and setuptools fiasco). This helps avoid needless duplication::
 
     $ ./tools/pip-download -d /tmp/e 'setuptools>0.8' 'flake8'
     Saved /tmp/e/flake8-2.0.tar.gz
