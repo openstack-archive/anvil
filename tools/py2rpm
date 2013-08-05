@@ -4,9 +4,9 @@ import argparse
 import distutils.spawn
 import email.parser
 import logging
-import re
 import os
 import os.path
+import re
 import shutil
 import subprocess
 import sys
@@ -58,6 +58,7 @@ mv -f INSTALLED_FILES{.tmp,}""",
     """rm -rf $RPM_BUILD_ROOT""",
 }
 
+
 class InstallationError(Exception):
     pass
 
@@ -70,7 +71,7 @@ def python_key_to_rpm(python_name):
     python_name = python_name.lower()
     try:
         return package_map[python_name]
-    except:
+    except KeyError:
         pass
     python_name = python_name.replace("_", "-").replace(".", "-")
     if python_name.startswith("python-"):
@@ -329,7 +330,7 @@ def requires_and_conflicts(req_list):
     for line in req_list:
         try:
             req = pkg_resources.Requirement.parse(line)
-        except:
+        except Exception:
             continue
         rpm_name = python_key_to_rpm(req.key)
         if not req.specs:
@@ -407,7 +408,7 @@ def build_rpm(options, filename):
     # flake8 v2 that we don't go ahead and build a v2.0 version.
     #
     # Note(harlowja): Not sure why rpm seems to not understand these are the same...
-    cleaned_version = trim_zeroes(version.replace('-','_'))
+    cleaned_version = trim_zeroes(version.replace('-', '_'))
     with open(spec_name, "w") as spec_file:
         print >> spec_file, "%define pkg_name", pkg_name
         print >> spec_file, "%define rpm_name", rpm_name
@@ -440,7 +441,7 @@ def build_rpm(options, filename):
         max_name_len = max(len(tag[0]) for tag in tags)
         for tag in tags:
             print >> spec_file, "%s:" % tag[0], " " * (
-                max_name_len -  len(tag[0]) + 1), one_line(tag[1], max_len=-1)
+                max_name_len - len(tag[0]) + 1), one_line(tag[1], max_len=-1)
         if rpm_requires:
             print >> spec_file, rpm_requires
         if rpm_conflicts:

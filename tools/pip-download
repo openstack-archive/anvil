@@ -16,7 +16,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from distutils.version import (StrictVersion, LooseVersion)
+from distutils.version import LooseVersion
+from distutils.version import StrictVersion
 
 import collections
 import distutils
