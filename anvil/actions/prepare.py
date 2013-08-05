@@ -28,6 +28,7 @@ class PrepareAction(action.Action):
 
     def __init__(self, name, distro, root_dir, cli_opts):
         action.Action.__init__(self, name, distro, root_dir, cli_opts)
+        self.jobs = cli_opts.get('jobs')
 
     @property
     def lookup_name(self):
@@ -61,7 +62,8 @@ class PrepareAction(action.Action):
         dependency_handler_class = self.distro.dependency_handler_class
         dependency_handler = dependency_handler_class(self.distro,
                                                       self.root_dir,
-                                                      instances.values())
+                                                      instances.values(),
+                                                      opts={"jobs": self.jobs})
         dependency_handler.package_start()
         self._run_phase(
             action.PhaseFunctors(

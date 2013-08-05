@@ -106,6 +106,15 @@ class YumDependencyHandler(base.DependencyHandler):
         self.yumfind_executable = sh.which("yumfind", ["tools/"])
         # We inspect yum for packages, this helper allows us to do this.
         self.helper = yum_helper.Helper(self.log_dir)
+        # See if we are requested to run at a higher make parallelism level
+        self._jobs = self.JOBS
+        if 'jobs' in self.opts:
+            try:
+                self._jobs = int(self.opts.get('jobs', self.JOBS))
+                if self._jobs <= 0:
+                    self._jobs = self.JOBS
+            except (TypeError, ValueError):
+                pass
 
     def py2rpm_start_cmdline(self):
         cmdline = [
@@ -206,7 +215,7 @@ class YumDependencyHandler(base.DependencyHandler):
             utils.log_iterable(src_repo_files,
                                header=('Building %s RPM packages from their'
                                       ' SRPMs for repo %s using %s jobs') %
-                                      (len(src_repo_files), self.SRC_REPOS[repo_name], self.JOBS),
+                                      (len(src_repo_files), self.SRC_REPOS[repo_name], self._jobs),
                                logger=LOG)
             makefile_path = sh.joinpths(self.deps_dir, "binary-%s.mk" % repo_name)
             marks_dir = sh.joinpths(self.deps_dir, "marks-binary")
@@ -233,7 +242,7 @@ class YumDependencyHandler(base.DependencyHandler):
             self._create_repo(repo_name)
 
     def _execute_make(self, filename, marks_dir):
-        cmdline = ["make", "-f", filename, "-j", str(self.JOBS)]
+        cmdline = ["make", "-f", filename, "-j", str(self._jobs)]
         out_filename = sh.joinpths(self.log_dir, "%s.log" % sh.basename(filename))
         sh.execute_save_output(cmdline, cwd=marks_dir, out_filename=out_filename)
 
@@ -393,7 +402,7 @@ class YumDependencyHandler(base.DependencyHandler):
         sh.write_file(makefile_path, utils.expand_template(content, params),
                       tracewriter=self.tracewriter)
         utils.log_iterable(package_files,
-                           header="Building %s SRPM packages using %s jobs" % (len(package_files), self.JOBS),
+                           header="Building %s SRPM packages using %s jobs" % (len(package_files), self._jobs),
                            logger=LOG)
         self._execute_make(makefile_path, marks_dir)
 

@@ -28,6 +28,7 @@ class BuildAction(action.Action):
     def __init__(self, name, distro, root_dir, cli_opts):
         action.Action.__init__(self, name, distro, root_dir, cli_opts)
         self.usr_only = cli_opts.get('usr_only')
+        self.jobs = cli_opts.get('jobs')
 
     @property
     def lookup_name(self):
@@ -38,5 +39,6 @@ class BuildAction(action.Action):
         dependency_handler = dependency_handler_class(self.distro,
                                                       self.root_dir,
                                                       instances.values(),
-                                                      opts={"usr_only": self.usr_only})
+                                                      opts={"usr_only": self.usr_only,
+                                                            "jobs": self.jobs})
         dependency_handler.build_binary()
