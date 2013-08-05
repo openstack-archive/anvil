@@ -23,9 +23,7 @@ from optparse import OptionParser
 
 import collections
 import json
-import os
 import pkg_resources
-import sys
 
 from yum import YumBase
 

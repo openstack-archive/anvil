@@ -3,14 +3,12 @@
 import argparse
 import distutils.spawn
 import logging
-import os
 import re
 import subprocess
 import sys
 
 import pip.index
 import pip.req
-from pip.vcs import git, mercurial, subversion, bazaar
 import pkg_resources
 
 
@@ -201,19 +199,16 @@ def join_one_requirement(req_list):
     """
     if len(req_list) == 1:
         return req_list[0]
-    req_strict = None
     lower_bound_str = None
     lower_bound_version = None
-    lower_bound_req = None
     upper_bound_str = None
     upper_bound_version = None
-    upper_bound_req = None
     conflicts = []
     for req in req_list:
         for spec in req.req.specs:
             if spec[0] == "==":
                 return req
-            spec_str = "%s%s"  % spec
+            spec_str = "%s%s" % spec
             if spec[0] == "!=":
                 conflicts.append(spec_str)
                 continue
@@ -225,15 +220,13 @@ def join_one_requirement(req_list):
                     (strict_check and version == lower_bound_version)):
                     lower_bound_version = version
                     lower_bound_str = spec_str
-                    lower_bound_req = req
             else:
                 if (not upper_bound_version or (version < upper_bound_version) or
                     (strict_check and version == upper_bound_version)):
                     upper_bound_version = version
                     upper_bound_str = spec_str
-                    upper_bound_req = req
+    req_key = req_list[0].req.key
     if lower_bound_version and upper_bound_version:
-        bad_bounds = False
         if lower_bound_version > upper_bound_version:
             upper_bound_str = None
         if lower_bound_version == upper_bound_version:
@@ -244,7 +237,6 @@ def join_one_requirement(req_list):
             else:
                 upper_bound_str = None
     req_specs = []
-    req_key = req_list[0].req.key
     if lower_bound_str:
         req_specs.append(lower_bound_str)
     if upper_bound_str:
@@ -304,7 +296,7 @@ def join_requirements(options):
                 conflicts.append(parsed)
         if exact_version:
             for req in req_list:
-                if not exact_version in req.req:
+                if exact_version not in req.req:
                     incompatible_requirement(joined_req, req)
         else:
             for req in req_list:
