@@ -14,7 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import copy
 import pkg_resources
 import re
 
@@ -153,7 +152,7 @@ class Helper(object):
         self._pip_executable = sh.which_first(['pip-python', 'pip'])
         self._installed_cache = None
 
-    def _list_installed(self):
+    def _get_installed(self):
         cmd = [self._pip_executable] + FREEZE_CMD
         (stdout, _stderr) = sh.execute(cmd)
         return parse_requirements(stdout, True)
@@ -161,21 +160,21 @@ class Helper(object):
     def uncache(self):
         self._installed_cache = None
 
-    def whats_installed(self):
+    def list_installed(self):
         if self._installed_cache is None:
-            self._installed_cache = self._list_installed()
-        return copy.copy(self._installed_cache)
+            self._installed_cache = self._get_installed()
+        return list(self._installed_cache)
 
     def is_installed(self, name):
-        if self.get_installed(name):
+        matches = self.find_installed(name)
+        if len(matches):
             return True
         return False
 
-    def get_installed(self, name):
-        whats_there = self.whats_installed()
+    def find_installed(self, name):
         wanted_package = create_requirement(name)
-        for whats_installed in whats_there:
-            if not (wanted_package.key == whats_installed.key):
-                continue
-            return whats_installed
-        return None
+        matches = []
+        for pkg in self.list_installed():
+            if pkg.key == wanted_package.key:
+                matches.append(pkg)
+        return matches
