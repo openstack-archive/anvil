@@ -78,14 +78,6 @@ class YumDependencyHandler(base.DependencyHandler):
         'anvil': 'anvil-source',
         "anvil-deps": "anvil-deps-source",
     }
-    DAEMON_ARGS = {
-        "quantum-server": ("'--config-file=/etc/quantum/plugin.ini"
-                           " --config-file=/etc/quantum/quantum.conf'"),
-        "quantum-l3-agent": ("'--config-file=/etc/quantum/l3_agent.ini"
-                             " --config-file=/etc/quantum/quantum.conf'"),
-        "quantum-dhcp-agent": ("'--config-file=/etc/quantum/dhcp_agent.ini"
-                               " --config-file=/etc/quantum/quantum.conf'"),
-    }
     REPOS = ["anvil-deps", "anvil"]
     JOBS = 2
 
@@ -426,11 +418,12 @@ class YumDependencyHandler(base.DependencyHandler):
                       tracewriter=self.tracewriter)
         return spec_filename
 
-    def _copy_startup_scripts(self, spec_filename):
+    def _copy_startup_scripts(self, instance, spec_filename):
         common_init_content = utils.load_template("packaging",
                                                   "common.init")[1]
         cmd = [self.specprint_executable]
         cmd.extend(['-f', spec_filename])
+        daemon_args = instance.get_option('daemon_args', default_value={})
         spec_details = json.loads(sh.execute(cmd)[0])
         for src in spec_details.get('sources', []):
             script = sh.basename(src)
@@ -440,11 +433,10 @@ class YumDependencyHandler(base.DependencyHandler):
             if sh.isfile(target_filename):
                 continue
             bin_name = utils.strip_prefix_suffix(script, "openstack-", ".init")
-            daemon_args = self.DAEMON_ARGS.get(bin_name, '')
             params = {
                 "bin": bin_name,
                 "package": bin_name.split("-", 1)[0],
-                "daemon_args": daemon_args,
+                "daemon_args": daemon_args.get(bin_name, ''),
             }
             sh.write_file(target_filename,
                           utils.expand_template(common_init_content, params))
@@ -469,7 +461,7 @@ class YumDependencyHandler(base.DependencyHandler):
         self._copy_sources(instance)
         if patches:
             self._copy_patches(patches)
-        self._copy_startup_scripts(spec_filename)
+        self._copy_startup_scripts(instance, spec_filename)
         cmdline = [
             self.rpmbuild_executable,
             "-bs",
