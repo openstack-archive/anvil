@@ -73,7 +73,6 @@ class YumDependencyHandler(base.DependencyHandler):
     TRANSLATION_NAMES = {
         'horizon': "python-django-horizon",
     }
-    REPO_FN = "anvil.repo"
     YUM_REPO_DIR = "/etc/yum.repos.d/"
     SRC_REPOS = {
         'anvil': 'anvil-source',
@@ -96,7 +95,6 @@ class YumDependencyHandler(base.DependencyHandler):
         self.rpmbuild_dir = sh.joinpths(self.deps_dir, "rpmbuild")
         self.deps_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps")
         self.deps_src_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps-sources")
-        self.anvil_repo_filename = sh.joinpths(self.deps_dir, self.REPO_FN)
         self.rpm_sources_dir = sh.joinpths(self.rpmbuild_dir, "SOURCES")
         self.anvil_repo_dir = sh.joinpths(self.root_dir, "repo")
         # Executables we require to operate
