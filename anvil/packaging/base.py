@@ -18,6 +18,8 @@
 # R0921: Abstract class not referenced
 #pylint: disable=R0902,R0921
 
+import collections
+
 from anvil import colorizer
 from anvil import exceptions as exc
 from anvil import log as logging
@@ -208,19 +210,29 @@ class DependencyHandler(object):
         cmdline.extend(OPENSTACK_PACKAGES)
         cmdline.extend(self.python_names)
 
-        output = sh.execute(cmdline, check_exit_code=False)
-        self.pips_to_install = list(utils.splitlines_not_empty(output[0]))
-        conflict_descr = output[1].strip()
+        stdout, stderr = sh.execute(cmdline, check_exit_code=False)
+        self.pips_to_install = list(utils.splitlines_not_empty(stdout))
+        sh.write_file(self.gathered_requires_filename, "\n".join(self.pips_to_install))
+        utils.log_iterable(sorted(self.pips_to_install), logger=LOG,
+                           header="Full known python dependency list")
 
-        forced_keys = set()
-        if conflict_descr:
-            for line in conflict_descr.splitlines():
-                LOG.warning(line)
+        incompatibles = collections.defaultdict(list)
+        if stderr:
+            current_name = ''
+            for line in stderr.strip().splitlines():
                 if line.endswith(": incompatible requirements"):
-                    forced_keys.add(line.split(":", 1)[0].lower())
-
-        sh.write_file(self.gathered_requires_filename,
-                      "\n".join(self.pips_to_install))
+                    current_name = line.split(":", 1)[0].lower().strip()
+                    if current_name not in incompatibles:
+                        incompatibles[current_name] = []
+                else:
+                    incompatibles[current_name].append(line)
+            for (name, lines) in incompatibles.items():
+                if not name:
+                    continue
+                LOG.warn("Incompatible requirements found for %s",
+                         colorizer.quote(name, quote_color='red'))
+                for line in lines:
+                    LOG.warn(line)
 
         if not self.pips_to_install:
             LOG.error("No dependencies for OpenStack found."
@@ -228,16 +240,14 @@ class DependencyHandler(object):
             LOG.error("'%s'" % "' '".join(cmdline))
             raise exc.DependencyException("No dependencies for OpenStack found")
 
-        utils.log_iterable(sorted(self.pips_to_install),
-                           logger=LOG,
-                           header="Full known python dependency list")
+        # Translate those that we altered requirements for into a set of forced
+        # requirements file (and associated list).
         self.forced_packages = []
-        for line in self.pips_to_install:
-            req = pip_helper.extract_requirement(line)
-            if req.key in forced_keys:
+        for req in [pip_helper.extract_requirement(line) for line in self.pips_to_install]:
+            if req.key in incompatibles:
                 self.forced_packages.append(req)
         sh.write_file(self.forced_requires_filename,
-                      "\n".join(str(req) for req in self.forced_packages))
+                      "\n".join([str(req) for req in self.forced_packages]))
 
     def filter_download_requires(self):
         """Shrinks the pips that were downloaded into a smaller set.
