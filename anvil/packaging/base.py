@@ -142,8 +142,8 @@ class DependencyHandler(object):
                                                           i_pip.get('version'))
                 extra_pips.append(str(extra_req))
         requires_files = filter(sh.isfile, requires_files)
-        self.gather_pips_to_install(requires_files, sorted(set(extra_pips)))
-        self.clean_pip_requires(requires_files)
+        self._gather_pips_to_install(requires_files, sorted(set(extra_pips)))
+        self._clean_pip_requires(requires_files)
 
     def package_instance(self, instance):
         pass
@@ -170,7 +170,7 @@ class DependencyHandler(object):
                 sh.deldir(d)
             sh.unlink(self.tracereader.filename())
 
-    def clean_pip_requires(self, requires_files):
+    def _clean_pip_requires(self, requires_files):
         # Fixup incompatible dependencies
         if not (requires_files and self.forced_packages):
             return
@@ -191,7 +191,7 @@ class DependencyHandler(object):
             contents = "# Cleaned on %s\n\n%s\n" % (utils.iso8601(), "\n".join(new_lines))
             sh.write_file_and_backup(fn, contents)
 
-    def gather_pips_to_install(self, requires_files, extra_pips=None):
+    def _gather_pips_to_install(self, requires_files, extra_pips=None):
         """Analyze requires_files and extra_pips.
 
         Updates `self.forced_packages` and `self.pips_to_install`.
@@ -249,7 +249,7 @@ class DependencyHandler(object):
         sh.write_file(self.forced_requires_filename,
                       "\n".join([str(req) for req in self.forced_packages]))
 
-    def filter_download_requires(self):
+    def _filter_download_requires(self):
         """Shrinks the pips that were downloaded into a smaller set.
 
         :returns: a list of all requirements that must be downloaded
@@ -299,7 +299,7 @@ class DependencyHandler(object):
         """Download dependencies from `$deps_dir/download-requires`."""
         # NOTE(aababilov): do not drop download_dir - it can be reused
         sh.mkdirslist(self.download_dir, tracewriter=self.tracewriter)
-        pips_to_download = self.filter_download_requires()
+        pips_to_download = self._filter_download_requires()
         sh.write_file(self.download_requires_filename,
                       "\n".join([str(req) for req in pips_to_download]))
         if not pips_to_download:
