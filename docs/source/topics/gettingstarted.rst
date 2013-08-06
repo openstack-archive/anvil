@@ -152,10 +152,19 @@ to fit your desired configuration of nova/glance and the other OpenStack compone
 You can use ``-p <conf/components/required_file.yaml>`` option with following commands
 to use configuration files.
 
-If you are using a ``FlatManager`` and RH/Fedora then you might want to read and follow:
+Networking notes for those on RedHat/CentOS/Fedora
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-http://www.techotopia.com/index.php/Creating_an_RHEL_5_KVM_Networked_Bridge_Interface
+If you are planning on using the `FlatManager`_ then you might want to read and follow:
 
+* http://www.techotopia.com/index.php/Creating_an_RHEL_5_KVM_Networked_Bridge_Interface
+
+Respository notes for those with RedHat subscriptions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To enable the needed repositories for various requirements please also run::
+
+    sudo subscription-manager repos --enable rhel-6-server-optional-rpms
 
 Pre-installing
 --------------
@@ -363,6 +372,7 @@ Issues
 
 Please report issues/bugs to https://launchpad.net/anvil. Much appreciated!
 
+.. _FlatManager: http://docs.openstack.org/trunk/openstack-compute/admin/content/configuring-flat-networking.html
 .. _euca2ools: http://open.eucalyptus.com/wiki/Euca2oolsGuide
 .. _PID: http://en.wikipedia.org/wiki/Process_identifier
 .. _tty: http://linux.die.net/man/4/tty
