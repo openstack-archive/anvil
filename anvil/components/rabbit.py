@@ -24,8 +24,6 @@ from anvil import utils
 from anvil.components import base_install as binstall
 from anvil.components import base_runtime as bruntime
 
-from anvil.components.helpers import rabbit as rhelper
-
 LOG = logging.getLogger(__name__)
 
 # Default password (guest)
@@ -57,16 +55,13 @@ class RabbitInstaller(binstall.PkgInstallComponent):
         binstall.PkgInstallComponent.__init__(self, *args, **kargs)
         self.runtime = self.siblings.get('running')
 
-    def warm_configs(self):
-        rhelper.get_shared_passwords(self)
-
     def _setup_pw(self):
         user_id = self.get_option('user_id')
         LOG.info("Setting up your rabbit-mq %s password.", colorizer.quote(user_id))
         self.runtime.start()
         self.runtime.wait_active()
         cmd = list(self.distro.get_command('rabbit-mq', 'change_password'))
-        cmd += [user_id, rhelper.get_shared_passwords(self)['pw']]
+        cmd += [user_id, self.get_password('rabbit')]
         sh.execute(cmd)
         LOG.info("Restarting so that your rabbit-mq password is reflected.")
         self.runtime.restart()

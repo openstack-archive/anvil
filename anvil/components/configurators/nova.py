@@ -138,7 +138,11 @@ class NovaConfigurator(base.Configurator):
         nova_conf.add('s3_host', hostip)
 
         # How is your message queue setup?
-        self.setup_rpc(nova_conf, 'nova.rpc.impl_kombu')
+        mq_type = utils.canon_mq_type(self.get_option('mq-type'))
+        rpc_backend = 'nova.rpc.impl_kombu'
+        if mq_type == 'qpid':
+            rpc_backend = 'nova.rpc.impl_qpid'
+        self.setup_rpc(nova_conf, rpc_backend=rpc_backend, mq_type=mq_type)
 
         # The USB tablet device is meant to improve mouse behavior in
         # the VNC console, but it has the side effect of increasing
