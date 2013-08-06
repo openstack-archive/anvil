@@ -6,8 +6,8 @@ install_helper: anvil.packaging.yum:YumInstallHelper
 dependency_handler:
     name: anvil.packaging.yum:YumDependencyHandler
     package_map:
-        django: Django
         distribute: python-setuptools
+        django: Django
         mysql-python: MySQL-python
         numpy: numpy
         pam: python-pam
@@ -19,8 +19,9 @@ dependency_handler:
         pyparsing: pyparsing
         pysendfile: pysendfile
         pytz: pytz
-        PyYAML: PyYAML
         sqlalchemy-migrate: python-migrate
+        qpid-python: python-qpid # Why is this one backwards :-/
+        PyYAML: PyYAML
     arch_dependent:
     -   selenium
     -   xattr
@@ -285,6 +286,29 @@ components:
             l3-agent: openstack-quantum
             rpc-zmq-receiver: openstack-quantum
             server: openstack-quantum
+    qpid:
+      action_classes:
+        install: anvil.components.base_install:PkgInstallComponent
+        test: anvil.components.base_testing:EmptyTestingComponent
+        uninstall: anvil.components.base_install:PkgUninstallComponent
+        running: anvil.components.base_runtime:EmptyRuntime
+      packages:
+        -   name: qpid-cpp-client
+        -   name: qpid-tools
+        -   name: qpid-cpp-server
+            # Disable rabbitmq as these rabbitmq & qpidd conflict
+            pre-install:
+            -   cmd:
+                - service
+                - rabbitmq-server
+                - stop
+                ignore_failure: true
+            # Also stop it from starting on boot (if rebooted)
+            -   cmd:
+                - chkconfig
+                - rabbitmq-server
+                - 'off'
+                ignore_failure: true
     rabbit-mq:
         action_classes:
             install: anvil.components.rabbit:RabbitInstaller
