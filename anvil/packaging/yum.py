@@ -112,7 +112,7 @@ class YumDependencyHandler(base.DependencyHandler):
             except (TypeError, ValueError):
                 pass
 
-    def py2rpm_start_cmdline(self):
+    def _py2rpm_start_cmdline(self):
         cmdline = [
             self.py2rpm_executable,
             "--rpm-base",
@@ -294,7 +294,7 @@ class YumDependencyHandler(base.DependencyHandler):
                 return (version, repo)
         return (None, None)
 
-    def filter_download_requires(self):
+    def _filter_download_requires(self):
         yum_map = self._get_known_yum_packages()
         pip_origins = {}
         for line in self.pips_to_install:
@@ -383,7 +383,7 @@ class YumDependencyHandler(base.DependencyHandler):
         # Now build them into SRPM rpm files.
         (_fn, content) = utils.load_template(sh.joinpths("packaging", "makefiles"), "source.mk")
         scripts_dir = sh.abspth(sh.joinpths(settings.TEMPLATE_DIR, "packaging", "scripts"))
-        py2rpm_options = self.py2rpm_start_cmdline()[1:] + [
+        py2rpm_options = self._py2rpm_start_cmdline()[1:] + [
             "--scripts-dir", scripts_dir,
             "--source-only",
             "--rpm-base", self.rpmbuild_dir,
@@ -567,7 +567,7 @@ class YumDependencyHandler(base.DependencyHandler):
 
     def _build_from_app_dir(self, instance, params):
         app_dir = instance.get_option('app_dir')
-        cmdline = self.py2rpm_start_cmdline()
+        cmdline = self._py2rpm_start_cmdline()
         cmdline.extend(["--source-only"])
         if 'release' in params:
             cmdline.extend(["--release", params["release"]])
@@ -611,7 +611,7 @@ class YumDependencyHandler(base.DependencyHandler):
     def _convert_names_python2rpm(self, python_names, only_name=True):
         if not python_names:
             return []
-        cmdline = self.py2rpm_start_cmdline() + ["--convert"] + python_names
+        cmdline = self._py2rpm_start_cmdline() + ["--convert"] + python_names
         rpm_names = []
         for line in sh.execute(cmdline)[0].splitlines():
             # format is "Requires: rpm-name <=> X"
