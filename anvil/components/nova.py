@@ -25,7 +25,6 @@ from anvil.components import base_runtime as bruntime
 
 from anvil.components.configurators import nova as nconf
 from anvil.components.helpers import nova as nhelper
-from anvil.components.helpers import rabbit as rhelper
 from anvil.components.helpers import virt as lv
 
 LOG = logging.getLogger(__name__)
@@ -109,11 +108,6 @@ class NovaInstaller(binstall.PythonInstallComponent):
     def verify(self):
         binstall.PythonInstallComponent.verify(self)
         self.configurator.verify()
-
-    def warm_configs(self):
-        mq_type = utils.canon_mq_type(self.get_option('mq-type'))
-        if mq_type == 'rabbit':
-            rhelper.get_shared_passwords(self)
 
     def _sync_db(self):
         LOG.info("Syncing nova to database named: %s", colorizer.quote(self.configurator.DB_NAME))
