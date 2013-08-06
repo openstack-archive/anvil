@@ -1,5 +1,5 @@
 # -*- sh -*-
-STEPS="epel rpm_packages python_rpms"
+STEPS="epel rpm_packages python_rpms selinux"
 EPEL_RPM_URL="http://mirrors.kernel.org/fedora-epel/6/i386/epel-release-6-8.noarch.rpm"
 DISTRO_CONFIG=conf/distros/rhel.yaml
 
