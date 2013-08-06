@@ -47,8 +47,7 @@ OPENSTACK_PACKAGES = set([
 
 
 class InstallHelper(object):
-    """Run pre and post install for a single package.
-    """
+    """Run pre and post install for a single package."""
     def __init__(self, distro):
         self.distro = distro
 
@@ -66,8 +65,7 @@ class InstallHelper(object):
 
 
 class DependencyHandler(object):
-    """Basic class for handler of OpenStack dependencies.
-    """
+    """Basic class for handler of OpenStack dependencies."""
     MAX_PIP_DOWNLOAD_ATTEMPTS = 4
 
     def __init__(self, distro, root_dir, instances, opts=None):
@@ -288,8 +286,7 @@ class DependencyHandler(object):
         return True
 
     def download_dependencies(self):
-        """Download dependencies from `$deps_dir/download-requires`.
-        """
+        """Download dependencies from `$deps_dir/download-requires`."""
         # NOTE(aababilov): do not drop download_dir - it can be reused
         sh.mkdirslist(self.download_dir, tracewriter=self.tracewriter)
         pips_to_download = self.filter_download_requires()

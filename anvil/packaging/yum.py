@@ -49,13 +49,11 @@ ENSURE_NOT_MISSING = [
 
 class YumInstallHelper(base.InstallHelper):
     def pre_install(self, pkg, params=None):
-        """pre-install is handled in openstack-deps %pre script.
-        """
+        """pre-install is handled in openstack-deps %pre script."""
         pass
 
     def post_install(self, pkg, params=None):
-        """post-install is handled in openstack-deps %post script.
-        """
+        """post-install is handled in openstack-deps %post script."""
         pass
 
 

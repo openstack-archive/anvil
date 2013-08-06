@@ -104,8 +104,7 @@ class Component(object):
         return self.subsystems.keys()
 
     def package_names(self):
-        """Return a set of names of all packages for this component.
-        """
+        """Return a set of names of all packages for this component."""
         names = set()
         try:
             for pack in self.packages:
