@@ -23,6 +23,8 @@ from anvil import utils
 
 from anvil.components.helpers import db as dbhelper
 from anvil.components.helpers import keystone as khelper
+
+# TODO(harlowja): get rid of this being a hard dependency.
 from anvil.components.helpers import rabbit as rhelper
 
 
@@ -79,18 +81,20 @@ class Configurator(object):
     def setup_rpc(self, conf, rpc_backend=None):
         # How is your message queue setup?
         mq_type = utils.canon_mq_type(self.installer.get_option('mq-type'))
+        if rpc_backend:
+            conf.add('rpc_backend', rpc_backend)
         if mq_type == 'rabbit':
-            conf.add(
-                'rabbit_host',
-                self.installer.get_option(
-                    'rabbit', 'host',
-                    default_value=self.installer.get_option('ip')))
-            conf.add('rabbit_password',
-                     rhelper.get_shared_passwords(self.installer)['pw'])
-            conf.add('rabbit_userid',
-                     self.installer.get_option('rabbit', 'user_id'))
-            if rpc_backend:
-                conf.add('rpc_backend', rpc_backend)
+            conf.add('rabbit_host',
+                     self.installer.get_option('rabbit', 'host',
+                                               default_value=self.installer.get_option('ip')))
+            conf.add('rabbit_password', self.installer.get_password('rabbit')
+            conf.add('rabbit_userid', self.installer.get_option('rabbit', 'user_id'))
+        elif mq_type == 'qpid':
+            conf.add('qpid_hostname',
+                     self.installer.get_option('qpid', 'host',
+                                               default_value=self.installer.get_option('ip')))
+            conf.add('qpid_password', self.installer.get_password('qpid')
+            conf.add('qpid_username', self.installer.get_option('qpid', 'user_id'))
 
     def fetch_dbdsn(self):
         return dbhelper.fetch_dbdsn(
