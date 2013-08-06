@@ -138,6 +138,17 @@ for pkg in packages:
     fi
 }
 
+bootstrap_selinux()
+{
+    # See if selinux is on.
+    if [ `getenforce` == "Enforcing" ]; then
+        # Ensure all yum api interacting binaries are ok to be used
+        echo "Enabling selinux for yum like binaries."
+        chcon -h "system_u:object_r:rpm_exec_t:s0" "$YUMFIND_CMD"
+        chcon -h "system_u:object_r:rpm_exec_t:s0" "$PWD/tools/yyoom"
+    fi
+}
+
 bootstrap_python_rpms()
 {
     local package_map=$(python -c "import yaml
