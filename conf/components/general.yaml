@@ -29,9 +29,13 @@ rabbit:
   user_id: "$(rabbit-mq:user_id)"
   host: "$(rabbit-mq:host)"
 
+# Qpid mq hookins
+qpid:
+  user_id: "$(qpid:user_id)"
+  host: "$(qpid:host)"
+
 # This is needed to allow installs based on personas
 wanted_passwords:
-  rabbit: 'rabbit user'
   service_token: 'service admin token'
   admin_password: 'keystone admin user'
   service_password: 'service authentication password'
