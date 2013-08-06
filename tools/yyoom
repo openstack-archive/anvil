@@ -59,6 +59,16 @@ def _setup_output():
     sys.stdout = os.fdopen(1, 'w')
 
 
+def _handle_output(callback):
+    _write_output(callback.seen)
+    if len(callback.failed_on):
+        failures = []
+        for action_data in callback.failed_on:
+            msg = "failed %(action_type)s (code %(action_code)s) on %(name)s"
+            failures.append(msg % action_data)
+        raise RuntimeError("Failed: %s" % (", ".join(failures)))
+
+
 def _write_output(data):
     """Dump given object as pretty json"""
     OUTPUT.write(json.dumps(data, indent=4,
@@ -88,6 +98,7 @@ class _RPMCallback(yum.rpmtrans.RPMBaseCallback):
 
     def __init__(self):
         self.seen = []
+        self.failed_on = []
 
     def event(self, package, action, te_current, te_total,
               ts_current, ts_total):
@@ -115,6 +126,8 @@ class _RPMCallback(yum.rpmtrans.RPMBaseCallback):
         self.seen.append(action_data)
         LOG.info("Performed %(action_type)s (code %(action_code)s) on %(name)s"
                  % action_data)
+        if action_data['action_code'] == yum.constants.TS_FAILED:
+            self.failed_on.append(action_data)
 
 
 def log_list(items, title=''):
@@ -155,7 +168,7 @@ def _run(yum_base, options):
         for pkg in options.install or ():
             pkg = parse_package(pkg)
             yum_base.install(**pkg)
-    _write_output(callback.seen)
+    _handle_output(callback)
 
 
 def _list(yum_base, options):
@@ -214,7 +227,7 @@ def _builddep(yum_base, options):
                 pkg = yum_base.returnPackageByDep(req)
                 LOG.debug('Installing %s', pkg)
                 yum_base.install(pkg)
-    _write_output(callback.seen)
+    _handle_output(callback)
 
 
 def _parse_arguments(args):
