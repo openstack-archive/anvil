@@ -28,6 +28,19 @@ import pkg_resources
 from yum import YumBase
 
 
+def format_rpm(pkg):
+    details = {
+        'arch': pkg.arch,
+        'epoch': pkg.epoch,
+        'name': pkg.name,
+        'release': pkg.release,
+        'version': pkg.version,
+    }
+    if hasattr(pkg, 'repo') and pkg.repo:
+        details['repo'] = pkg.repo.name
+    return details
+
+
 def parse_py_req(text):
     if not text:
         return None
@@ -86,13 +99,7 @@ if __name__ == '__main__':
             # Pick the newest match.
             pkg = sorted(matches)[-1]
             if options.is_json:
-                print(json.dumps({
-                    'arch': pkg.arch,
-                    'epoch': pkg.epoch,
-                    'name': pkg.name,
-                    'release': pkg.release,
-                    'version': pkg.version,
-                }))
+                print(json.dumps(format_rpm(pkg)))
             else:
                 print(pkg)
         else:

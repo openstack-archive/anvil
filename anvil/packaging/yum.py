@@ -688,7 +688,7 @@ class YumDependencyHandler(base.DependencyHandler):
                 pkg = json.loads(matched)
                 if isinstance(pkg, dict):
                     rpm_names_located.add(pkg['name'])
-                    rpms_located.append((pkg['name'], pkg['version']))
+                    rpms_located.append(pkg)
 
         rpm_names_missing = desired_rpm_names - rpm_names_located
         if rpm_names_missing:
@@ -709,8 +709,9 @@ class YumDependencyHandler(base.DependencyHandler):
 
         LOG.info("All %s required packages are still available!", len(desired_rpms))
         desired_rpms = []
-        for (name, version) in rpms_located:
-            desired_rpms.append("%s,%s" % (name, version))
+        for pkg in rpms_located:
+            LOG.debug("Found %s", pkg)
+            desired_rpms.append("%s,%s" % (pkg['name'], pkg['version']))
         return list(sorted(desired_rpms))
 
     def install(self):
