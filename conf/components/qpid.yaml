@@ -1,0 +1,12 @@
+# Settings for component qpid
+---
+# Where is qpid located?
+host: "$(auto:ip)"
+
+# Which qpid user should be used
+user_id: guest
+
+wanted_passwords:
+  qpid: 'qpid user'
+
+...
