@@ -66,6 +66,16 @@ def _write_output(data):
                             sort_keys=True) + '\n')
 
 
+
+def _action_type_from_code(action):
+    if action in yum.constants.TS_INSTALL_STATES:
+        return 'install'
+    elif action in yum.constants.TS_REMOVE_STATES:
+        return 'erase'
+    else:
+        return 'other'
+
+
 def _package_info(pkg, **kwargs):
     if isinstance(pkg, basestring):
         result = dict(name=pkg, **kwargs)
@@ -86,9 +96,6 @@ def _package_info(pkg, **kwargs):
 class _RPMCallback(yum.rpmtrans.RPMBaseCallback):
     """Listen to events from RPM transactions"""
 
-    def __init__(self):
-        self.seen = []
-
     def event(self, package, action, te_current, te_total,
               ts_current, ts_total):
         pass
@@ -105,16 +112,25 @@ class _RPMCallback(yum.rpmtrans.RPMBaseCallback):
         LOG.error("%s", msg)
 
     def filelog(self, package, action):
-        action_data = _package_info(package, action_code=action)
-        if action in yum.constants.TS_INSTALL_STATES:
-            action_data['action_type'] = 'install'
-        elif action in yum.constants.TS_REMOVE_STATES:
-            action_data['action_type'] = 'erase'
-        else:
-            action_data['action_type'] = 'other'
-        self.seen.append(action_data)
-        LOG.info("Performed %(action_type)s (code %(action_code)s) on %(name)s"
-                 % action_data)
+        if not LOG.isEnabledFor(logging.INFO):
+            return
+        LOG.info("Performed %(action_type)s (code %(action)s) on %(package)s",
+                 dict(package=package,
+                      action=action,
+                      aciton_type=_action_type_from_code(action)))
+
+
+class _OutputtingRPMCallback(_RPMCallback):
+
+    def yyoom_post_transaction(self, base, _code):
+        output = []
+        for txmbr in base.tsInfo:
+            action_type = _action_type_from_code(txmbr.output_state)
+            info = _package_info(txmbr.po,
+                                 action_code=txmbr.output_state,
+                                 action_type=action_type)
+            output.append(info)
+        _write_output(output)
 
 
 def log_list(items, title=''):
@@ -147,15 +163,13 @@ def _run(yum_base, options):
 
     log_list(options.erase, title='Erasing packages:')
     log_list(options.install, title='Installing packages:')
-    callback = _RPMCallback()
-    with _transaction(yum_base, callback):
+    with _transaction(yum_base, _OutputtingRPMCallback()):
         for pkg in options.erase or ():
             pkg = parse_package(pkg)
             yum_base.remove(**pkg)
         for pkg in options.install or ():
             pkg = parse_package(pkg)
             yum_base.install(**pkg)
-    _write_output(callback.seen)
 
 
 def _list(yum_base, options):
@@ -203,8 +217,7 @@ def _builddep(yum_base, options):
     """
     LOG.info("Installing build dependencies for package %s", options.srpm)
     srpm = yum.packages.YumLocalPackage(yum_base.ts, options.srpm)
-    callback = _RPMCallback()
-    with _transaction(yum_base, callback):
+    with _transaction(yum_base, _OutputtingRPMCallback):
         for req in srpm.requiresList():
             LOG.debug('Processing dependency: %s', req)
             if not (
@@ -214,7 +227,6 @@ def _builddep(yum_base, options):
                 pkg = yum_base.returnPackageByDep(req)
                 LOG.debug('Installing %s', pkg)
                 yum_base.install(pkg)
-    _write_output(callback.seen)
 
 
 def _parse_arguments(args):
@@ -296,6 +308,10 @@ def _transaction(base, callback):
                                     rpmDisplay=callback)
         else:
             raise RuntimeError("Transaction failed: %s" % code)
+
+        post_cb = getattr(callback, 'yyoom_post_transaction', None)
+        if post_cb:
+            post_cb(base, code)
     finally:
         del base.tsInfo
         del base.ts
