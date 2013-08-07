@@ -81,7 +81,7 @@ BuildRequires: python-dateutil
 BuildRequires: python-glanceclient
 BuildRequires: python-keystoneclient
 BuildRequires: python-novaclient
-BuildRequires: python-quantumclient
+BuildRequires: python-neutronclient
 BuildRequires: python-cinderclient
 BuildRequires: python-swiftclient
 

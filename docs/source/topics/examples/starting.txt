@@ -24,7 +24,7 @@ INFO: @anvil.actions.base : |-- glance
 INFO: @anvil.actions.base : |-- cinder
 INFO: @anvil.actions.base : |-- glance-client
 INFO: @anvil.actions.base : |-- cinder-client
-INFO: @anvil.actions.base : |-- quantum-client
+INFO: @anvil.actions.base : |-- neutron-client
 INFO: @anvil.actions.base : |-- nova
 INFO: @anvil.actions.base : |-- nova-client
 INFO: @anvil.actions.base : Booting up your components.
@@ -59,7 +59,7 @@ INFO: @anvil.actions.start : Starting glance-client.
 INFO: @anvil.actions.start : Start 0 applications
 INFO: @anvil.actions.start : Starting cinder-client.
 INFO: @anvil.actions.start : Start 0 applications
-INFO: @anvil.actions.start : Starting quantum-client.
+INFO: @anvil.actions.start : Starting neutron-client.
 INFO: @anvil.actions.start : Start 0 applications
 INFO: @anvil.actions.start : Starting nova.
 INFO: @anvil.components.base_runtime : Starting program compute under component nova.
@@ -103,7 +103,7 @@ INFO: @anvil.components.helpers.glance : Installed image named cirros-0.3.1-x86_
 INFO: @anvil.actions.start : Post-starting cinder.
 INFO: @anvil.actions.start : Post-starting glance-client.
 INFO: @anvil.actions.start : Post-starting cinder-client.
-INFO: @anvil.actions.start : Post-starting quantum-client.
+INFO: @anvil.actions.start : Post-starting neutron-client.
 INFO: @anvil.actions.start : Post-starting nova.
 INFO: @anvil.components.nova : Creating your nova network to be used with instances.
 INFO: @anvil.components.nova : If you wish to re-run network initialization, delete /home/harlowja/openstack/nova/traces/nova.network.inited.yaml

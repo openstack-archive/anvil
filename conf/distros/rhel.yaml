@@ -276,21 +276,21 @@ components:
             test: anvil.components.base_testing:PythonTestingComponent
             coverage: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
-    quantum:
+    neutron:
         action_classes:
-            install: anvil.components.quantum:QuantumInstaller
-            running: anvil.components.quantum:QuantumRuntime
+            install: anvil.components.neutron:NeutronInstaller
+            running: anvil.components.neutron:NeutronRuntime
             test: anvil.components.base_testing:PythonTestingComponent
             coverage: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.quantum:QuantumUninstaller
+            uninstall: anvil.components.neutron:NeutronUninstaller
         daemon_to_package:
-            linuxbridge-agent: openstack-quantum-linuxbridge
-            openvswitch-agent: openstack-quantum-openvswitch
-            ovs-cleanup: openstack-quantum-openvswitch
-            dhcp-agent: openstack-quantum
-            l3-agent: openstack-quantum
-            rpc-zmq-receiver: openstack-quantum
-            server: openstack-quantum
+            linuxbridge-agent: openstack-neutron-linuxbridge
+            openvswitch-agent: openstack-neutron-openvswitch
+            ovs-cleanup: openstack-neutron-openvswitch
+            dhcp-agent: openstack-neutron
+            l3-agent: openstack-neutron
+            rpc-zmq-receiver: openstack-neutron
+            server: openstack-neutron
     qpid:
         action_classes:
           install: anvil.components.qpid:QpidInstaller

@@ -23,7 +23,7 @@ INFO: @anvil.actions.base : |-- glance
 INFO: @anvil.actions.base : |-- cinder
 INFO: @anvil.actions.base : |-- glance-client
 INFO: @anvil.actions.base : |-- cinder-client
-INFO: @anvil.actions.base : |-- quantum-client
+INFO: @anvil.actions.base : |-- neutron-client
 INFO: @anvil.actions.base : |-- nova
 INFO: @anvil.actions.base : |-- nova-client
 INFO: @anvil.actions.base : Booting up your components.
@@ -45,7 +45,7 @@ INFO: @anvil.actions.status : |-- api is started.
 INFO: @anvil.actions.status : |-- scheduler is started.
 INFO: @anvil.actions.status : Status of glance-client is installed.
 INFO: @anvil.actions.status : Status of cinder-client is installed.
-INFO: @anvil.actions.status : Status of quantum-client is installed.
+INFO: @anvil.actions.status : Status of neutron-client is installed.
 INFO: @anvil.actions.status : Status of nova is:
 INFO: @anvil.actions.status : |-- compute is started.
 INFO: @anvil.actions.status : |-- network is started.

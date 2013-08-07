@@ -13,7 +13,7 @@ INFO: @anvil.actions.base : Processing components for action stop.
 INFO: @anvil.actions.base : Activating in the following order:
 INFO: @anvil.actions.base : |-- nova-client
 INFO: @anvil.actions.base : |-- nova
-INFO: @anvil.actions.base : |-- quantum-client
+INFO: @anvil.actions.base : |-- neutron-client
 INFO: @anvil.actions.base : |-- cinder-client
 INFO: @anvil.actions.base : |-- glance-client
 INFO: @anvil.actions.base : |-- cinder
@@ -38,7 +38,7 @@ INFO: @anvil.components.base_runtime : Stopping program cert under component nov
 INFO: @anvil.components.base_runtime : Stopping program api under component nova.
 INFO: @anvil.components.base_runtime : Stopping program scheduler under component nova.
 INFO: @anvil.actions.stop : Stopped 6 items.
-INFO: @anvil.actions.stop : Stopping quantum-client.
+INFO: @anvil.actions.stop : Stopping neutron-client.
 INFO: @anvil.actions.stop : Stopped 0 items.
 INFO: @anvil.actions.stop : Stopping cinder-client.
 INFO: @anvil.actions.stop : Stopped 0 items.

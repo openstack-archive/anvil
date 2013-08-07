@@ -48,7 +48,7 @@ python-pep8.spec
 python-prettytable.spec
 python-pygments.spec
 python-pysqlite.spec
-python-quantumclient.spec
+python-neutronclient.spec
 python-repoze-lru.spec
 python-routes.spec
 python-setuptools-git.spec
