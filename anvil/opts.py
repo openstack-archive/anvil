@@ -14,7 +14,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from StringIO import StringIO
+
 import multiprocessing
+import textwrap
 
 from optparse import IndentedHelpFormatter
 from optparse import OptionGroup
@@ -26,6 +29,34 @@ from anvil import settings
 from anvil import shell as sh
 from anvil import utils
 from anvil import version
+
+OVERVIEW = """Overview: Anvil is a forging tool to help build OpenStack components
+and there dependencies into a complete system. It git checkouts the components, builds
+there dependencies and the components themselves into packages. It can then install
+from the repositories it creates using the packages it made, perform configuration
+and then start, stop and uninstalls the components and there associated packages."""
+
+STEPS = """Steps: To correctly ensure your experience is ideal please make sure
+you go through the following steps when running."""
+
+STEP_SECTIONS = {
+    'installing': [
+        './smithy -a prepare',
+        './smithy -a build',
+        './smithy -a install',
+        './smithy -a start',
+        './smithy -a status',
+    ],
+    'uninstalling': [
+        './smithy -a stop',
+        './smithy -a uninstall',
+    ],
+    'purging': [
+        './smithy -a stop',
+        './smithy -a uninstall',
+        './smithy -a purge',
+    ],
+}
 
 
 def _format_list(in_list):
@@ -40,10 +71,39 @@ def _size_cb(option, opt_str, value, parser):
         raise OptionValueError("Invalid value for %s due to %s" % (opt_str, e))
 
 
+class SmithyHelpFormatter(IndentedHelpFormatter):
+    def _wrap_it(self, text):
+        return textwrap.fill(text, width=self.width,
+                             initial_indent="", subsequent_indent="  ")
+
+    def format_epilog(self, epilog):
+        buf = StringIO()
+        buf.write(IndentedHelpFormatter.format_epilog(self, epilog))
+        buf.write("\n")
+        buf.write(self._wrap_it('For further information check out: '
+                                'http://anvil.readthedocs.org'))
+        buf.write("\n")
+        return buf.getvalue()
+
+    def format_usage(self, usage):
+        buf = StringIO()
+        buf.write(IndentedHelpFormatter.format_usage(self, usage))
+        buf.write("\n")
+        buf.write(self._wrap_it(OVERVIEW))
+        buf.write("\n\n")
+        buf.write(self._wrap_it(STEPS))
+        buf.write("\n\n")
+        for k in sorted(STEP_SECTIONS.keys()):
+            buf.write("%s:\n" % (k.title()))
+            for line in STEP_SECTIONS[k]:
+                buf.write("  %s\n" % (line))
+        return buf.getvalue()
+
+
 def parse(previous_settings=None):
 
     version_str = "%s v%s" % ('anvil', version.version_string())
-    help_formatter = IndentedHelpFormatter(width=120)
+    help_formatter = SmithyHelpFormatter(width=120)
     parser = OptionParser(version=version_str, formatter=help_formatter,
                           prog='smithy')
 
