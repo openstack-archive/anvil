@@ -16,7 +16,7 @@ BuildRoot: %{_tmppath}/%{pkg_name}-%{version}-%{release}-buildroot
 Prefix: %{_prefix}
 BuildArch: noarch
 Vendor: OpenStack <nova@lists.launchpad.net>
-Requires:  python-sqlalchemy >= 0.7.8 python-sqlalchemy < 0.7.99 python-cheetah >= 2.4.4 python-amqplib >= 0.6.1 python-anyjson >= 0.2.4 python-argparse python-boto python-eventlet >= 0.9.17 python-kombu >= 1.0.4 python-lxml >= 2.3 python-routes >= 1.12.3 python-webob = 1.2.3 python-greenlet >= 0.3.1 python-pastedeploy >= 1.5 python-paste python-sqlalchemy-migrate >= 0.7.2 python-netaddr >= 0.7.6 python-suds >= 0.4 python-paramiko python-pyasn1 python-babel >= 0.9.6 python-iso8601 >= 0.1.4 python-httplib2 python-setuptools-git >= 0.4 python-cinderclient >= 2:1.0.1 python-quantumclient >= 2:2.2 python-quantumclient < 2:3 python-glanceclient >= 2:0.5 python-glanceclient < 2:2 python-keystoneclient >= 2:0.2 python-stevedore >= 0.7 python-websockify < 0.4 python-oslo-config >= 2:1.1
+Requires:  python-sqlalchemy >= 0.7.8 python-sqlalchemy < 0.7.99 python-cheetah >= 2.4.4 python-amqplib >= 0.6.1 python-anyjson >= 0.2.4 python-argparse python-boto python-eventlet >= 0.9.17 python-kombu >= 1.0.4 python-lxml >= 2.3 python-routes >= 1.12.3 python-webob = 1.2.3 python-greenlet >= 0.3.1 python-pastedeploy >= 1.5 python-paste python-sqlalchemy-migrate >= 0.7.2 python-netaddr >= 0.7.6 python-suds >= 0.4 python-paramiko python-pyasn1 python-babel >= 0.9.6 python-iso8601 >= 0.1.4 python-httplib2 python-setuptools-git >= 0.4 python-cinderclient >= 2:1.0.1 python-neutronclient >= 2:2.2 python-neutronclient < 2:3 python-glanceclient >= 2:0.5 python-glanceclient < 2:2 python-keystoneclient >= 2:0.2 python-stevedore >= 0.7 python-websockify < 0.4 python-oslo-config >= 2:1.1
 Url: http://www.openstack.org/
 
 %description

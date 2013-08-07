@@ -43,9 +43,9 @@ nova:
   ec2_admin_port: "$(nova:ec2_admin_port)"
   protocol: "$(nova:protocol)"
 
-quantum:
-  api_host: "$(quantum:api_host)"
-  api_port: "$(quantum:api_port)"
+neutron:
+  api_host: "$(neutron:api_host)"
+  api_port: "$(neutron:api_port)"
 
 cinder:
   api_host: "$(cinder:api_host)"

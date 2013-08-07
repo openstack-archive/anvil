@@ -1,3 +1,0 @@
-Defaults:quantum !requiretty
-
-quantum ALL = (root) NOPASSWD: SETENV: /usr/bin/quantum-rootwrap

@@ -14,20 +14,20 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil.components.configurators import quantum_plugins
+from anvil.components.configurators import neutron_plugins
 
 # Special generated conf
-PLUGIN_CONF = "ovs_quantum_plugin.ini"
+PLUGIN_CONF = "linuxbridge_conf.ini"
 
 CONFIGS = [PLUGIN_CONF]
 
 
-class OpenvswitchConfigurator(quantum_plugins.CorePluginConfigurator):
+class LinuxbridgeConfigurator(neutron_plugins.CorePluginConfigurator):
 
-    PLUGIN_CLASS = "quantum.plugins.openvswitch.ovs_quantum_plugin.OVSQuantumPluginV2"
+    PLUGIN_CLASS = "neutron.plugins.linuxbridge.lb_neutron_plugin.LinuxBridgePluginV2"
 
     def __init__(self, installer):
-        super(OpenvswitchConfigurator, self).__init__(
+        super(LinuxbridgeConfigurator, self).__init__(
             installer, CONFIGS, {PLUGIN_CONF: self._config_adjust_plugin})
 
     def _config_adjust_plugin(self, plugin_conf):
@@ -35,7 +35,15 @@ class OpenvswitchConfigurator(quantum_plugins.CorePluginConfigurator):
             "DATABASE",
             "sql_connection",
             self.fetch_dbdsn())
-
-    @property
-    def get_plugin_config_file_path(self):
-        return "plugins/%s/%s" % (self.core_plugin, PLUGIN_CONF)
+        plugin_conf.add_with_section(
+            "VLANS",
+            "network_vlan_ranges",
+            self.installer.get_option("network_vlan_ranges"))
+        plugin_conf.add_with_section(
+            "DATABASE",
+            "sql_connection",
+            self.fetch_dbdsn())
+        plugin_conf.add_with_section(
+            "LINUX_BRIDGE",
+            "physical_interface_mappings",
+            self.installer.get_option("physical_interface_mappings"))

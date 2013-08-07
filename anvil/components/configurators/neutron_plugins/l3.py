@@ -14,37 +14,34 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil.components.configurators import quantum_plugins
+from anvil.components.configurators import neutron_plugins
 
 # Special generated conf
-PLUGIN_CONF = "dhcp_agent.ini"
+PLUGIN_CONF = "l3_agent.ini"
 
 CONFIGS = [PLUGIN_CONF]
 
 
-class DhcpConfigurator(quantum_plugins.Configurator):
+class L3Configurator(neutron_plugins.Configurator):
 
     def __init__(self, installer):
-        super(DhcpConfigurator, self).__init__(
+        super(L3Configurator, self).__init__(
             installer, CONFIGS, {PLUGIN_CONF: self._config_adjust_plugin})
 
     def _config_adjust_plugin(self, plugin_conf):
-        params = self.get_keystone_params('quantum')
-        plugin_conf.add("dhcp_agent_manager", "quantuquantum.agent.dhcp_agent.DhcpAgentWithStateReport")
-        plugin_conf.add("dhcp_driver", "quantum.agent.linux.dhcp.Dnsmasq")
-
+        params = self.get_keystone_params('neutron')
+        plugin_conf.add("l3_agent_manager", "neutron.agent.l3_agent.L3NATAgentWithStateReport")
+        plugin_conf.add("external_network_bridge", "br-ex")
         plugin_conf.add("admin_password", params["service_password"])
         plugin_conf.add("admin_user", params["service_user"])
         plugin_conf.add("admin_tenant_name", params["service_tenant"])
         plugin_conf.add("auth_url", params["endpoints"]["admin"]["uri"])
-
-        plugin_conf.add("root_helper", "sudo quantum-rootwrap /etc/quantum/rootwrap.conf")
-        plugin_conf.add("use_namespaces", "True")
+        plugin_conf.add("root_helper", "sudo neutron-rootwrap /etc/neutron/rootwrap.conf")
+        plugin_conf.add("use_namespaces", "False")
         plugin_conf.add("debug", "False")
         plugin_conf.add("verbose", "True")
-
         if self.installer.get_option("core_plugin") == 'openvswitch':
-            plugin_conf.add("interface_driver", "quantum.agent.linux.interface.OVSInterfaceDriver")
+            plugin_conf.add("interface_driver", "neutron.agent.linux.interface.OVSInterfaceDriver")
 
     @property
     def get_plugin_config_file_path(self):
