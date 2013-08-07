@@ -72,6 +72,8 @@ def _action_type_from_code(action):
         return 'install'
     elif action in yum.constants.TS_REMOVE_STATES:
         return 'erase'
+    elif action == yum.constants.TS_FAILED:
+        return 'error'
     else:
         return 'other'
 
@@ -299,19 +301,28 @@ def _transaction(base, callback):
     try:
         base.doLock()
         yield
+
         code = _run_yum_api('building transaction',
                             base.buildTransaction, ok_codes=(0, 2))
+
+        failed = []
         if code == 0:
             LOG.debug('Nothing to do')
         elif code == 2:
             base.processTransaction(rpmTestDisplay=callback,
                                     rpmDisplay=callback)
+            failed = [txmbr for txmbr in base.tsInfo
+                      if txmbr.output_state == yum.constants.TS_FAILED]
         else:
             raise RuntimeError("Transaction failed: %s" % code)
 
         post_cb = getattr(callback, 'yyoom_post_transaction', None)
         if post_cb:
             post_cb(base, code)
+        if failed:
+            raise RuntimeError("Operation failed for %s" %
+                               ', '.join(txmbr.name for txmbr in failed))
+
     finally:
         del base.tsInfo
         del base.ts
