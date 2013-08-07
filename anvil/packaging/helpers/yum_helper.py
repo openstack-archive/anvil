@@ -14,12 +14,26 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import sys
 import json
 
 from anvil import log as logging
+from anvil import exceptions as excp
 from anvil import shell as sh
 
 LOG = logging.getLogger(__name__)
+
+
+def _parse_json(value):
+    """Load JSON from string
+
+    If string is whitespace-only, returns None
+    """
+    value = value.strip()
+    if value:
+        return json.loads(value)
+    else:
+        return None
 
 
 class Helper(object):
@@ -39,18 +53,39 @@ class Helper(object):
         out_filename = sh.joinpths(self._log_dir, "yyoom-%s.log" % (cmd_type))
         (stdout, _) = sh.execute_save_output2(cmdline,
                                               stderr_filename=out_filename)
-        stdout = stdout.strip()
-        if stdout:
-            return json.loads(stdout)
-        return None
+        return _parse_json(stdout)
+
+    def _traced_yyoom(self, arglist, cmd_type, tracewriter):
+        try:
+            data = self._yyoom(arglist, cmd_type)
+        except excp.ProcessExecutionError:
+            ex_type, ex, ex_tb = sys.exc_info()
+            try:
+                data = _parse_json(ex.stdout)
+            except Exception as e:
+                LOG.error("Failed to parse YYOOM output: %s", e)
+            else:
+                self._handle_transaction_data(tracewriter, data)
+            raise ex_type, ex, ex_tb
+        self._handle_transaction_data(tracewriter, data)
 
     @staticmethod
-    def _trace_installed_packages(tracewriter, data):
-        if tracewriter is None or not data:
+    def _handle_transaction_data(tracewriter, data):
+        if not data:
             return
-        for action in data:
-            if action['action_type'] == 'install':
-                tracewriter.package_installed(action['name'])
+        try:
+            if tracewriter:
+                for action in data:
+                    if action['action_type'] == 'install':
+                        tracewriter.package_installed(action['name'])
+            failed_names = [action['name']
+                            for action in data
+                            if action['action_type'] == 'error']
+        except Exception as e:
+            LOG.error("Failed to handle transaction data: %s", e)
+        else:
+            if failed_names:
+                raise RuntimeError("Yum failed on %s" % ", ".join(failed_names))
 
     def is_installed(self, name):
         matches = self.find_installed(name)
@@ -73,9 +108,8 @@ class Helper(object):
         return list(self._installed)
 
     def builddep(self, srpm_path, tracewriter=None):
-        self._trace_installed_packages(tracewriter,
-                                       self._yyoom(['builddep', srpm_path],
-                                                   'builddep-%s' % (sh.basename(srpm_path))))
+        self._traced_yyoom(['builddep', srpm_path],
+                           'builddep-%s' % sh.basename(srpm_path), tracewriter)
 
     def _reset(self):
         # reset the caches:
@@ -106,7 +140,7 @@ class Helper(object):
                 cmd_type += "-install"
             if remove_pkgs:
                 cmd_type += "-remove"
-            self._trace_installed_packages(tracewriter,
-                                           self._yyoom(cmdline, cmd_type))
+
+            self._traced_yyoom(cmdline, cmd_type, tracewriter)
         finally:
             self._reset()
