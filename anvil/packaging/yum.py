@@ -117,17 +117,17 @@ class YumDependencyHandler(base.DependencyHandler):
                "--epoch-map",
             ] + ["%s==%s" % (name, self.OPENSTACK_EPOCH)
                  for name in self.python_names]
-        package_map = self.distro._dependency_handler.get("package_map", {})
+        package_map = self.distro.get_dependency_config("package_map")
         if package_map:
             cmdline += [
                 "--package-map",
             ] + ["%s==%s" % (key, value)
                  for key, value in package_map.iteritems()]
-        arch_dependent = self.distro._dependency_handler.get("arch_dependent", [])
+        arch_dependent = self.distro.get_dependency_config("arch_dependent")
         if arch_dependent:
             cmdline += [
                 "--arch-dependent",
-            ] + arch_dependent
+            ] + list(arch_dependent)
         return cmdline
 
     def _package_parameters(self, instance):
