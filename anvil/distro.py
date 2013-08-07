@@ -48,14 +48,9 @@ class Distro(object):
         self._commands = commands
         self._components = components
 
-    def get_command_config(self, key, *more_keys, **kargs):
-        """Gets a end object for a given set of keys """
-        root = self._commands
-        acutal_keys = [key] + list(more_keys)
-        run_over_keys = acutal_keys[0:-1]
-        end_key = acutal_keys[-1]
-        quiet = kargs.get('quiet', False)
-        for k in run_over_keys:
+    def _fetch_value(self, root, keys, quiet):
+        end_key = keys[-1]
+        for k in keys[0:-1]:
             if quiet:
                 root = root.get(k)
                 if root is None:
@@ -69,11 +64,24 @@ class Distro(object):
             end_value = root.get(end_key)
         return end_value
 
-    def get_command(self, key, *more_keys, **kargs):
+    def get_dependency_config(self, key, *more_keys, **kwargs):
+        root = dict(self._dependency_handler)
+        # Don't allow access to the dependency handler class name (people
+        # should be using the property instead.
+        root.pop('name', None)
+        keys = [key] + list(more_keys)
+        return self._fetch_value(root, keys, kwargs.get('quiet', False))
+
+    def get_command_config(self, key, *more_keys, **kwargs):
+        root = dict(self._commands)
+        keys = [key] + list(more_keys)
+        return self._fetch_value(root, keys, kwargs.get('quiet', False))
+
+    def get_command(self, key, *more_keys, **kwargs):
         """Retrieves a string for running a command from the setup
         and splits it to return a list.
         """
-        val = self.get_command_config(key, *more_keys, **kargs)
+        val = self.get_command_config(key, *more_keys, **kwargs)
         if not val:
             return []
         else:
