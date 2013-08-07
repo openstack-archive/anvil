@@ -343,6 +343,20 @@ components:
             test: anvil.components.base_testing:PythonTestingComponent
             coverage: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
+    trove:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+    trove-client:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
     openvswitch:
         action_classes:
             install: anvil.components.base_install:PkgInstallComponent
