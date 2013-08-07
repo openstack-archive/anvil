@@ -18,11 +18,11 @@ from anvil import importer
 from anvil import shell as sh
 
 from anvil.components.configurators import base
-from anvil.components.configurators.quantum_plugins import dhcp
-from anvil.components.configurators.quantum_plugins import l3
+from anvil.components.configurators.neutron_plugins import dhcp
+from anvil.components.configurators.neutron_plugins import l3
 
 # Special generated conf
-API_CONF = "quantum.conf"
+API_CONF = "neutron.conf"
 
 # Config files/sections
 PASTE_CONF = "api-paste.ini"
@@ -30,17 +30,17 @@ PASTE_CONF = "api-paste.ini"
 CONFIGS = [PASTE_CONF, API_CONF]
 
 
-class QuantumConfigurator(base.Configurator):
+class NeutronConfigurator(base.Configurator):
 
     # This db will be dropped and created
-    DB_NAME = "quantum"
+    DB_NAME = "neutron"
 
     def __init__(self, installer):
-        super(QuantumConfigurator, self).__init__(installer, CONFIGS)
+        super(NeutronConfigurator, self).__init__(installer, CONFIGS)
         self.core_plugin = installer.get_option("core_plugin")
         self.plugin_configurators = {
             'core_plugin': importer.import_entry_point(
-                "anvil.components.configurators.quantum_plugins.%s:%sConfigurator" %
+                "anvil.components.configurators.neutron_plugins.%s:%sConfigurator" %
                 (self.core_plugin, self.core_plugin.title()))(installer),
             'l3': l3.L3Configurator(installer),
             'dhcp': dhcp.DhcpConfigurator(installer),
@@ -63,7 +63,7 @@ class QuantumConfigurator(base.Configurator):
     def source_config(self, config_fn):
         if (config_fn.startswith("plugins") or
                 config_fn.startswith("rootwrap.d")):
-            real_fn = "quantum/%s" % config_fn
+            real_fn = "neutron/%s" % config_fn
         else:
             real_fn = config_fn
         fn = sh.joinpths(self.installer.get_option("app_dir"), "etc", real_fn)
@@ -80,8 +80,8 @@ class QuantumConfigurator(base.Configurator):
         config.add("api_paste_config", self.target_config(PASTE_CONF))
         # TODO(aababilov): add debug to other services conf files
         config.add('debug', self.installer.get_bool_option("debug"))
-        config.add("log_file", "quantum-server.log")
-        config.add("log_dir", "/var/log/quantum")
+        config.add("log_file", "neutron-server.log")
+        config.add("log_dir", "/var/log/neutron")
 
         # Setup the interprocess locking directory
         # (don't put me on shared storage)
@@ -91,17 +91,17 @@ class QuantumConfigurator(base.Configurator):
         sh.mkdirslist(lock_path, tracewriter=self.installer.tracewriter)
         config.add('lock_path', lock_path)
 
-        self.setup_rpc(config, 'quantum.openstack.common.rpc.impl_kombu')
+        self.setup_rpc(config, 'neutron.openstack.common.rpc.impl_kombu')
 
         config.current_section = "AGENT"
-        config.add("root_helper", "sudo quantum-rootwrap /etc/quantum/rootwrap.conf")
+        config.add("root_helper", "sudo neutron-rootwrap /etc/neutron/rootwrap.conf")
 
         config.current_section = "keystone_authtoken"
         for (k, v) in self._fetch_keystone_params().items():
             config.add(k, v)
 
     def _fetch_keystone_params(self):
-        params = self.get_keystone_params('quantum')
+        params = self.get_keystone_params('neutron')
         return {
             "auth_host": params["endpoints"]["admin"]["host"],
             "auth_port": params["endpoints"]["admin"]["port"],

@@ -1,0 +1,24 @@
+# Settings for component neutron-client
+---
+
+# Where we download this from...
+get_from: "git://github.com/openstack/neutron.git?branch=master"
+
+# Host and ports for the different neutron services
+api_host: "$(auto:ip)"
+api_port: 9696
+protocol: http
+
+core_plugin: openvswitch
+
+network_vlan_ranges: physnet1:100:299
+physical_interface_mappings: physnet1:100:299
+
+# When building a package for the neutron the arguments to the individual daemons
+# will be expanded to include the following runtime arguments.
+daemon_args:
+  neutron-server: "'--config-file=/etc/neutron/plugin.ini --config-file=/etc/neutron/neutron.conf'"
+  neutron-l3-agent: "'--config-file=/etc/neutron/l3_agent.ini --config-file=/etc/neutron/neutron.conf'"
+  neutron-dhcp-agent: "'--config-file=/etc/neutron/dhcp_agent.ini --config-file=/etc/neutron/neutron.conf'"
+
+...

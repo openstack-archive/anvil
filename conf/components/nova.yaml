@@ -94,9 +94,9 @@ network_manager: nova.network.manager.FlatDHCPManager
 # Interface for public IP addresses
 public_interface: eth0
 
-quantum:
-  api_host: "$(quantum:api_host)"
-  api_port: "$(quantum:api_port)"
+neutron:
+  api_host: "$(neutron:api_host)"
+  api_port: "$(neutron:api_port)"
 
 # Currently novaclient needs you to specify the *compute api* version.
 nova_version: "1.1"
@@ -124,8 +124,8 @@ xvpvncproxy_url: "http://$(auto:ip):6081/console"
 #
 # TODO(harlowja) these should probably be bugs...
 exclude_tests:
-  # Disable since quantumclient is not always installed.
-  - test_quantumv2
+  # Disable since neutronclient is not always installed.
+  - test_neutronv2
   # Will fail if ipv6 turned off
   - test_service_random_port_with_ipv6
   - test_start_random_port_with_ipv6

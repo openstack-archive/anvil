@@ -47,7 +47,7 @@ OPENSTACK_PACKAGES = set([
     "python-novaclient",
     "python-swiftclient",
     "python-troveclient",
-    "quantum",
+    "neutron",
     "swift",
     "trove",
 ])

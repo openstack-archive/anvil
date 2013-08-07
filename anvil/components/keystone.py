@@ -29,7 +29,7 @@ from anvil.components.helpers import cinder as chelper
 from anvil.components.helpers import glance as ghelper
 from anvil.components.helpers import keystone as khelper
 from anvil.components.helpers import nova as nhelper
-from anvil.components.helpers import quantum as qhelper
+from anvil.components.helpers import neutron as qhelper
 
 from anvil.components.configurators import keystone as kconf
 
@@ -130,7 +130,7 @@ class KeystoneRuntime(bruntime.OpenStackRuntime):
             params['keystone'] = khelper.get_shared_params(**utils.merge_dicts(self.options, khelper.get_shared_passwords(self)))
             params['glance'] = ghelper.get_shared_params(ip=self.get_option('ip'), **self.get_option('glance'))
             params['nova'] = nhelper.get_shared_params(ip=self.get_option('ip'), **self.get_option('nova'))
-            params['quantum'] = qhelper.get_shared_params(ip=self.get_option('ip'), **self.get_option('quantum'))
+            params['neutron'] = qhelper.get_shared_params(ip=self.get_option('ip'), **self.get_option('neutron'))
             params['cinder'] = chelper.get_shared_params(ip=self.get_option('ip'), **self.get_option('cinder'))
             wait_urls = [
                 params['keystone']['endpoints']['admin']['uri'],

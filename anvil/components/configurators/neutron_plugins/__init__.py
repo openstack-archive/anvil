@@ -19,8 +19,8 @@ from anvil.components.configurators import base
 
 class Configurator(base.Configurator):
 
-    DB_NAME = "quantum"
-    PLUGIN_CLASS = "quantum.plugins.UNKNOWN"
+    DB_NAME = "neutron"
+    PLUGIN_CLASS = "neutron.plugins.UNKNOWN"
 
     def __init__(self, installer, configs, adjusters):
         super(Configurator, self).__init__(

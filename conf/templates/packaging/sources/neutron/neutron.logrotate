@@ -1,6 +1,6 @@
 compress
 
-/var/log/quantum/*.log {
+/var/log/neutron/*.log {
     weekly
     rotate 4
     missingok
