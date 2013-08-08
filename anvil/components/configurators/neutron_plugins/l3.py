@@ -31,7 +31,6 @@ class L3Configurator(neutron_plugins.Configurator):
 
     def _config_adjust_plugin(self, plugin_conf):
         params = self.get_keystone_params('neutron')
-        plugin_conf.add("l3_agent_manager", "neutron.agent.l3_agent.L3NATAgentWithStateReport")
         plugin_conf.add("external_network_bridge", "br-ex")
         plugin_conf.add("admin_password", params["service_password"])
         plugin_conf.add("admin_user", params["service_user"])
