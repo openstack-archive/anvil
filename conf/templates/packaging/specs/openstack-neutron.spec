@@ -190,6 +190,37 @@ This package contains the neutron plugin that implements virtual
 networks using MidoNet from Midokura.
 
 
+%package -n openstack-neutron-ml2
+Summary:	Neutron ML2 plugin
+Group:		Applications/System
+
+Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
+Requires:       python-stevedore >= 0.9
+
+
+%description -n openstack-neutron-ml2
+Neutron provides an API to dynamically request and configure virtual
+networks.
+
+This package includes the Modular Layer 2 (ml2) Neutron plugin.
+
+
+%package -n openstack-neutron-mlnx
+Summary:	Neutron Mellanox plugin
+Group:		Applications/System
+
+Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
+
+
+%description -n openstack-neutron-mlnx
+Neutron provides an API to dynamically request and configure virtual
+networks.
+
+This package contains Neutron plugin that adds support for Mellanox
+embedded switch functionality as part of the VPI (Ethernet/InfiniBand)
+HCA.
+
+
 %package -n openstack-neutron-nicira
 Summary:	Neutron Nicira plugin
 Group:		Applications/System
@@ -320,7 +351,7 @@ rm -f %{buildroot}%{python_sitelib}/neutron/plugins/*/run_tests.*
 rm %{buildroot}/usr/etc/init.d/neutron-server
 
 # Install execs
-install -p -D -m 755 bin/neutron-* %{buildroot}%{_bindir}/
+install -p -D -m 755 bin/* %{buildroot}%{_bindir}/
 
 # Move rootwrap files to proper location
 install -d -m 755 %{buildroot}%{_datarootdir}/neutron/rootwrap
@@ -415,20 +446,20 @@ fi
 #raw
 
 %files
-%doc README* LICENSE* HACKING* ChangeLog AUTHORS
-%{_bindir}/neutron-db-manage
-%{_bindir}/neutron-debug
-%{_bindir}/neutron-dhcp-agent
-%{_bindir}/neutron-dhcp-agent-dnsmasq-lease-update
-%{_bindir}/neutron-l3-agent
-%{_bindir}/neutron-lbaas-agent
-%{_bindir}/neutron-metadata-agent
-%{_bindir}/neutron-netns-cleanup
-%{_bindir}/neutron-ns-metadata-proxy
-%{_bindir}/neutron-rootwrap
-%{_bindir}/neutron-rpc-zmq-receiver
-%{_bindir}/neutron-server
-%{_bindir}/neutron-usage-audit
+%doc README* LICENSE HACKING* ChangeLog AUTHORS
+%{_bindir}/*-db-manage
+%{_bindir}/*-debug
+%{_bindir}/*-dhcp-agent
+%{_bindir}/*-dhcp-agent-dnsmasq-lease-update
+%{_bindir}/*-l3-agent
+%{_bindir}/*-lbaas-agent
+%{_bindir}/*-metadata-agent
+%{_bindir}/*-netns-cleanup
+%{_bindir}/*-ns-metadata-proxy
+%{_bindir}/*-rootwrap
+%{_bindir}/*-rpc-zmq-receiver
+%{_bindir}/*-server
+%{_bindir}/*-usage-audit
 %dir %{_datarootdir}/neutron
 %dir %{_datarootdir}/neutron/rootwrap
 %{_datarootdir}/neutron/rootwrap/dhcp.filters
@@ -460,12 +491,8 @@ fi
 
 %files -n python-neutron
 %doc LICENSE
-%doc README
 %{python_sitelib}/neutron
-%exclude %{python_sitelib}/neutron/plugins/cisco/extensions/_credential_view.py*
-%exclude %{python_sitelib}/neutron/plugins/cisco/extensions/credential.py*
-%exclude %{python_sitelib}/neutron/plugins/cisco/extensions/qos.py*
-%exclude %{python_sitelib}/neutron/plugins/cisco/extensions/_qos_view.py*
+%{python_sitelib}/quantum
 %exclude %{python_sitelib}/neutron/plugins/bigswitch
 %exclude %{python_sitelib}/neutron/plugins/brocade
 %exclude %{python_sitelib}/neutron/plugins/cisco
@@ -474,6 +501,8 @@ fi
 %exclude %{python_sitelib}/neutron/plugins/metaplugin
 %exclude %{python_sitelib}/neutron/plugins/midonet
 %exclude %{python_sitelib}/neutron/plugins/nec
+%exclude %{python_sitelib}/neutron/plugins/ml2
+%exclude %{python_sitelib}/neutron/plugins/mlnx
 %exclude %{python_sitelib}/neutron/plugins/nicira
 %exclude %{python_sitelib}/neutron/plugins/openvswitch
 %exclude %{python_sitelib}/neutron/plugins/plumgrid
@@ -506,10 +535,6 @@ fi
 %files -n openstack-neutron-cisco
 %doc LICENSE
 %doc neutron/plugins/cisco/README
-%{python_sitelib}/neutron/plugins/cisco/extensions/_credential_view.py*
-%{python_sitelib}/neutron/plugins/cisco/extensions/credential.py*
-%{python_sitelib}/neutron/plugins/cisco/extensions/qos.py*
-%{python_sitelib}/neutron/plugins/cisco/extensions/_qos_view.py*
 %{python_sitelib}/neutron/plugins/cisco
 
 %if ! 0%{?usr_only}
@@ -521,7 +546,7 @@ fi
 %files -n openstack-neutron-hyperv
 %doc LICENSE
 #%%doc neutron/plugins/hyperv/README
-%{_bindir}/neutron-hyperv-agent
+%{_bindir}/*-hyperv-agent
 %{python_sitelib}/neutron/plugins/hyperv
 %exclude %{python_sitelib}/neutron/plugins/hyperv/agent
 
@@ -535,7 +560,7 @@ fi
 %files -n openstack-neutron-linuxbridge
 %doc LICENSE
 %doc neutron/plugins/linuxbridge/README
-%{_bindir}/neutron-linuxbridge-agent
+%{_bindir}/*-linuxbridge-agent
 %{python_sitelib}/neutron/plugins/linuxbridge
 %{_datarootdir}/neutron/rootwrap/linuxbridge-plugin.filters
 
@@ -556,11 +581,31 @@ fi
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/midonet/*.ini
 %endif
 
+%files -n openstack-neutron-ml2
+%doc LICENSE
+%doc neutron/plugins/ml2/README
+%{python_sitelib}/neutron/plugins/ml2
+
+%if ! 0%{?usr_only}
+%dir %{_sysconfdir}/neutron/plugins/ml2
+%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/ml2/*.ini
+%endif
+
+%files -n openstack-neutron-mlnx
+%doc LICENSE
+%doc neutron/plugins/mlnx/README
+%{_bindir}/*-mlnx-agent
+%{python_sitelib}/neutron/plugins/mlnx
+
+%if ! 0%{?usr_only}
+%dir %{_sysconfdir}/neutron/plugins/mlnx
+%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/mlnx/*.ini
+%endif
 
 %files -n openstack-neutron-nicira
 %doc LICENSE
-%doc neutron/plugins/nicira/nicira_nvp_plugin/README
-%{_bindir}/neutron-check-nvp-config
+%doc neutron/plugins/nicira/README
+%{_bindir}/*-check-nvp-config
 %{python_sitelib}/neutron/plugins/nicira
 
 %if ! 0%{?usr_only}
@@ -572,8 +617,9 @@ fi
 %files -n openstack-neutron-openvswitch
 %doc LICENSE
 %doc neutron/plugins/openvswitch/README
-%{_bindir}/neutron-openvswitch-agent
-%{_bindir}/neutron-ovs-cleanup
+%{_bindir}/*-openvswitch-agent
+%{_bindir}/*-ovs-cleanup
+%{_bindir}/*-rootwrap-xen-dom0
 %{_datarootdir}/neutron/rootwrap/openvswitch-plugin.filters
 %{python_sitelib}/neutron/plugins/openvswitch
 
@@ -599,7 +645,7 @@ fi
 %files -n openstack-neutron-ryu
 %doc LICENSE
 %doc neutron/plugins/ryu/README
-%{_bindir}/neutron-ryu-agent
+%{_bindir}/*-ryu-agent
 %{python_sitelib}/neutron/plugins/ryu
 %{_datarootdir}/neutron/rootwrap/ryu-plugin.filters
 
@@ -613,7 +659,7 @@ fi
 %files -n openstack-neutron-nec
 %doc LICENSE
 %doc neutron/plugins/nec/README
-%{_bindir}/neutron-nec-agent
+%{_bindir}/*-nec-agent
 %{python_sitelib}/neutron/plugins/nec
 %{_datarootdir}/neutron/rootwrap/nec-plugin.filters
 
