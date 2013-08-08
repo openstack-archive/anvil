@@ -50,13 +50,14 @@ class NeutronInstaller(binstall.PythonInstallComponent, NeutronPluginMixin):
         if self.get_bool_option("db-sync"):
             self.configurator.setup_db()
             self._sync_db()
+        self.create_symlink_to_conf_file()
 
     def _sync_db(self):
         LOG.info("Syncing neutron to database: %s", colorizer.quote(self.configurator.DB_NAME))
         # TODO(aababilov): update db if required
 
     def create_symlink_to_conf_file(self):
-        sh.symlink(self.configurator.get_path_to_plugin_config,
+        sh.symlink(self.configurator.path_to_plugin_config,
                    "/etc/neutron/plugin.ini",
                    force=True)
 

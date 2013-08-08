@@ -47,3 +47,7 @@ class LinuxbridgeConfigurator(neutron_plugins.CorePluginConfigurator):
             "LINUX_BRIDGE",
             "physical_interface_mappings",
             self.installer.get_option("physical_interface_mappings"))
+
+    @property
+    def path_to_plugin_config(self):
+        return self._config_path(PLUGIN_CONF)

@@ -15,6 +15,7 @@
 #    under the License.
 
 from anvil.components.configurators import base
+from anvil import shell as sh
 
 
 class Configurator(base.Configurator):
@@ -23,26 +24,24 @@ class Configurator(base.Configurator):
     PLUGIN_CLASS = "neutron.plugins.UNKNOWN"
 
     def __init__(self, installer, configs, adjusters):
-        super(Configurator, self).__init__(
-            installer, configs)
+        super(Configurator, self).__init__(installer, configs)
         self.config_adjusters = adjusters
 
-    @property
-    def config_files(self):
-        return list(self.configs)
-
-    @property
-    def get_plugin_config_file_path(self):
-        return ""
+    def _config_path(self, name):
+        return sh.joinpths('plugins', self.core_plugin, name)
 
 
+#pylint: disable=R0921
 class CorePluginConfigurator(Configurator):
 
     def __init__(self, installer, configs, adjusters):
         self.core_plugin = installer.get_option("core_plugin")
         super(CorePluginConfigurator, self).__init__(
             installer,
-            ["plugins/%s/%s" % (self.core_plugin, name) for name in configs],
-            dict(
-                ("plugins/%s/%s" % (self.core_plugin, key), value)
-                for key, value in adjusters.iteritems()))
+            [self._config_path(name) for name in configs],
+            dict((self._config_path(name), value)
+                 for key, value in adjusters.iteritems()))
+
+    @property
+    def path_to_plugin_config(self):
+        raise NotImplementedError
