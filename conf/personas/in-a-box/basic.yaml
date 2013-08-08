@@ -32,6 +32,7 @@ options:
         do-init: true
         enable-pki: false
     cinder:
+        mq-type: rabbit
         db-sync: true
 subsystems:
     glance:
