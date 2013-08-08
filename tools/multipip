@@ -287,7 +287,7 @@ def join_requirements(options):
         for parsed, trans, op, ver in joined_req.req.index:
             if op[0] == ">":
                 lower_version = parsed
-                lower_strict = len(op) == 2
+                lower_strict = len(op) == 1
             elif op[0] == "<":
                 segment_ok = True
             elif op[0] == "=":
