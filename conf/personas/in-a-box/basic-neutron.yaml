@@ -24,7 +24,7 @@ options:
         enable-cells: false
         enable-spice: false
         local-conductor: false
-        mq-type: "rabbit"
+        mq-type: rabbit
         neutron-core-plugin: linuxbridge
         neutron-enabled: true
     glance:
@@ -36,8 +36,10 @@ options:
         enable-pki: false
     cinder:
         db-sync: true
+        mq-type: rabbit
     neutron:
         db-sync: true
+        mq-type: rabbit
 subsystems:
     glance:
     - api

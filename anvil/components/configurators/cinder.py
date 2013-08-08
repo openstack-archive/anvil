@@ -23,6 +23,11 @@ PASTE_CONF = 'api-paste.ini'
 POLICY_CONF = 'policy.json'
 CONFIGS = [PASTE_CONF, API_CONF, POLICY_CONF]
 
+MQ_BACKENDS = {
+    'qpid': 'cinder.openstack.common.rpc.impl_qpid',
+    'rabbit': 'cinder.openstack.common.rpc.impl_kombu',
+}
+
 
 class CinderConfigurator(base.Configurator):
 
@@ -44,7 +49,7 @@ class CinderConfigurator(base.Configurator):
 
     def _config_adjust_api(self, config):
         config.add('log_dir', '/var/log/cinder')
-        self.setup_rpc(config)
+        self.setup_rpc(config, rpc_backends=MQ_BACKENDS)
         # Setup your sql connection
         config.add('sql_connection', self.fetch_dbdsn())
         # Auth will be using keystone

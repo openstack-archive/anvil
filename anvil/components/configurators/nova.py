@@ -29,7 +29,7 @@ PASTE_CONF = 'nova-api-paste.ini'
 POLICY_CONF = 'policy.json'
 LOGGING_CONF = "logging.conf"
 CONFIGS = [PASTE_CONF, POLICY_CONF, LOGGING_CONF, API_CONF]
-MQ_BACKEND = {
+MQ_BACKENDS = {
     'qpid': 'nova.rpc.impl_qpid',
     'rabbit': 'nova.rpc.impl_kombu',
 }
@@ -143,13 +143,7 @@ class NovaConfigurator(base.Configurator):
         nova_conf.add('s3_host', hostip)
 
         # How is your message queue setup?
-        raw_mq_type = self.installer.get_option('mq-type')
-        if not raw_mq_type:
-            raise exceptions.ConfigException("Nova requires a message queue to operate, "
-                                             "please specify a 'mq-type' in configuration.")
-        mq_type = utils.canon_mq_type(raw_mq_type)
-        rpc_backend = MQ_BACKEND.get(mq_type, 'nova.rpc.impl_kombu')
-        self.setup_rpc(nova_conf, rpc_backend=rpc_backend, mq_type=mq_type)
+        self.setup_rpc(nova_conf, rpc_backends=MQ_BACKENDS)
 
         # The USB tablet device is meant to improve mouse behavior in
         # the VNC console, but it has the side effect of increasing

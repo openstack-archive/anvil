@@ -20,7 +20,7 @@ options:
     nova:
         db-sync: true
         do-network-init: true
-        mq-type: "qpid"
+        mq-type: qpid
         enable-cells: false
         enable-spice: false
         local-conductor: false
@@ -32,6 +32,7 @@ options:
         do-init: true
         enable-pki: false
     cinder:
+        mq-type: qpid
         db-sync: true
 subsystems:
     glance:
