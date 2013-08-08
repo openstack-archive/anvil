@@ -45,7 +45,3 @@ class DhcpConfigurator(neutron_plugins.Configurator):
 
         if self.installer.get_option("core_plugin") == 'openvswitch':
             plugin_conf.add("interface_driver", "neutron.agent.linux.interface.OVSInterfaceDriver")
-
-    @property
-    def get_plugin_config_file_path(self):
-        return PLUGIN_CONF
