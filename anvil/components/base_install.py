@@ -134,13 +134,20 @@ class PkgInstallComponent(base.Component):
 
     def configure(self):
         files = self._configure_files()
-        conf_dir = "/etc/%s" % self.name
-        if sh.isdir(conf_dir):
-            sh.execute(
-                ["chown", "-R",
-                 "%s:%s" % (self.name, self.name),
-                 conf_dir],
-                check_exit_code=False)
+        if sh.isdir(self.cfg_dir):
+            uid = None
+            gid = None
+            try:
+                uid = sh.getuid(self.name)
+                gid = sh.getgid(self.name)
+            except (KeyError, AttributeError):
+                LOG.warn("Unable to find uid & gid for user & group %s", self.name)
+            if uid is not None and gid is not None:
+                try:
+                    sh.chown_r(self.cfg_dir, uid, gid)
+                except Exception as e:
+                    LOG.warn("Failed to change the ownership of %s to %s:%s due to: %s",
+                             self.cfg_dir, uid, gid, e)
         return files
 
 
