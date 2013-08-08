@@ -19,7 +19,7 @@ from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
 
-from anvil.components.helpers import neutron as qhelper
+from anvil.components.helpers import neutron as net_helper
 from anvil.components.helpers import virt as lv
 
 from anvil.components.configurators import base
@@ -244,7 +244,7 @@ class NovaConfigurator(base.Configurator):
 
     def _configure_neutron(self, nova_conf):
         params = self.get_keystone_params('nova')
-        params['neutron'] = qhelper.get_shared_params(
+        params['neutron'] = net_helper.get_shared_params(
             ip=self.installer.get_option('ip'),
             **self.installer.get_option('neutron'))
 
