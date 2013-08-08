@@ -31,7 +31,6 @@ class DhcpConfigurator(neutron_plugins.Configurator):
 
     def _config_adjust_plugin(self, plugin_conf):
         params = self.get_keystone_params('neutron')
-        plugin_conf.add("dhcp_agent_manager", "quantuneutron.agent.dhcp_agent.DhcpAgentWithStateReport")
         plugin_conf.add("dhcp_driver", "neutron.agent.linux.dhcp.Dnsmasq")
 
         plugin_conf.add("admin_password", params["service_password"])
