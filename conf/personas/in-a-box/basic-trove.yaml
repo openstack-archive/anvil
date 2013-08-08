@@ -22,7 +22,7 @@ options:
     nova:
         db-sync: true
         do-network-init: true
-        mq-type: "rabbit"
+        mq-type: rabbit
         enable-cells: false
         enable-spice: false
         local-conductor: false
@@ -34,6 +34,7 @@ options:
         do-init: true
         enable-pki: false
     cinder:
+        mq-type: rabbit
         db-sync: true
 subsystems:
     glance:

@@ -17,6 +17,15 @@
 from anvil import importer
 from anvil import shell as sh
 
+
+# NOTE(imelnikov) used by plugin configurators, so should defined
+# before that configurators are imported.
+MQ_BACKENDS = {
+    'qpid': 'neutron.openstack.common.rpc.impl_qpid',
+    'rabbit': 'neutron.openstack.common.rpc.impl_kombu',
+}
+
+
 from anvil.components.configurators import base
 from anvil.components.configurators.neutron_plugins import dhcp
 from anvil.components.configurators.neutron_plugins import l3
@@ -91,7 +100,7 @@ class NeutronConfigurator(base.Configurator):
         sh.mkdirslist(lock_path, tracewriter=self.installer.tracewriter)
         config.add('lock_path', lock_path)
 
-        self.setup_rpc(config, 'neutron.openstack.common.rpc.impl_kombu')
+        self.setup_rpc(config, rpc_backends=MQ_BACKENDS)
 
         config.current_section = "AGENT"
         config.add("root_helper", "sudo neutron-rootwrap /etc/neutron/rootwrap.conf")
