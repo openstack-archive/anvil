@@ -114,5 +114,5 @@ class NeutronConfigurator(base.Configurator):
         }
 
     @property
-    def get_path_to_core_plugin_config(self):
-        return self.plugin_configurators['core_plugin'].get_plugin_config_file_path
+    def path_to_plugin_config(self):
+        return self.plugin_configurators['core_plugin'].path_to_plugin_config

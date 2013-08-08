@@ -37,5 +37,5 @@ class OpenvswitchConfigurator(neutron_plugins.CorePluginConfigurator):
             self.fetch_dbdsn())
 
     @property
-    def get_plugin_config_file_path(self):
-        return "plugins/%s/%s" % (self.core_plugin, PLUGIN_CONF)
+    def path_to_plugin_config(self):
+        return self._config_path(PLUGIN_CONF)
