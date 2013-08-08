@@ -30,6 +30,11 @@ Source0:          %{name}-%{os_version}.tar.gz
 Patch$idx: $fn
 #end for
 
+#if $clientname == 'neutron'
+Provides:       python-quantumclient = %{epoch}:%{version}-%{release}
+Obsoletes:      python-quantumclient < %{epoch}:%{version}-%{release}
+#end if
+
 BuildRoot:        %{_tmppath}/%{name}-%{version}-%{release}
 
 BuildArch:        noarch
