@@ -18,6 +18,7 @@ import io
 import weakref
 
 from anvil import cfg
+from anvil import exceptions
 from anvil import shell as sh
 from anvil import utils
 
@@ -75,21 +76,33 @@ class Configurator(object):
     def target_config(self, config_fn):
         return sh.joinpths(self.installer.cfg_dir, config_fn)
 
-    def setup_rpc(self, conf, rpc_backend=None, mq_type=None):
+    def setup_rpc(self, conf, rpc_backends=None, mq_type=None):
         # How is your message queue setup?
         if not mq_type:
             raw_mq_type = self.installer.get_option('mq-type')
             if raw_mq_type:
                 mq_type = utils.canon_mq_type(raw_mq_type)
-        if rpc_backend:
-            conf.add('rpc_backend', rpc_backend)
+        if not mq_type:
+            msg = ("%s requires a message queue to operate. "
+                   "Please specify a 'mq-type' in configuration."
+                   % self.installer.name.title())
+            raise exceptions.ConfigException(msg)
+
+        if rpc_backends is not None:
+            try:
+                conf.add('rpc_backend', rpc_backends[mq_type])
+            except KeyError:
+                msg = ("%s does not support mq type %s."
+                       % (self.installer.name.title(), mq_type))
+                raise exceptions.ConfigException(msg)
+
         if mq_type == 'rabbit':
             conf.add('rabbit_host',
                      self.installer.get_option('rabbit', 'host',
                                                default_value=self.installer.get_option('ip')))
             conf.add('rabbit_password', self.installer.get_password('rabbit'))
             conf.add('rabbit_userid', self.installer.get_option('rabbit', 'user_id'))
-        if mq_type == 'qpid':
+        elif mq_type == 'qpid':
             conf.add('qpid_hostname',
                      self.installer.get_option('qpid', 'host',
                                                default_value=self.installer.get_option('ip')))

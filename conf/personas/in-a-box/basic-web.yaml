@@ -42,8 +42,10 @@ options:
         make-blackhole: true
     cinder:
         db-sync: true
+        mq-type: rabbit
     neutron:
         db-sync: true
+        mq-type: rabbit
 subsystems:
     glance:
     - api
