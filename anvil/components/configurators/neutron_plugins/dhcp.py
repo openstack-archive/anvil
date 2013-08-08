@@ -15,6 +15,7 @@
 #    under the License.
 
 from anvil.components.configurators import neutron_plugins
+from anvil.components.configurators.neutron import MQ_BACKENDS
 
 # Special generated conf
 PLUGIN_CONF = "dhcp_agent.ini"
@@ -42,6 +43,8 @@ class DhcpConfigurator(neutron_plugins.Configurator):
         plugin_conf.add("use_namespaces", "True")
         plugin_conf.add("debug", "False")
         plugin_conf.add("verbose", "True")
+
+        self.setup_rpc(plugin_conf, rpc_backends=MQ_BACKENDS)
 
         if self.installer.get_option("core_plugin") == 'openvswitch':
             plugin_conf.add("interface_driver", "neutron.agent.linux.interface.OVSInterfaceDriver")

@@ -15,6 +15,7 @@
 #    under the License.
 
 from anvil.components.configurators import neutron_plugins
+from anvil.components.configurators.neutron import MQ_BACKENDS
 
 # Special generated conf
 PLUGIN_CONF = "ovs_neutron_plugin.ini"
@@ -31,6 +32,7 @@ class OpenvswitchConfigurator(neutron_plugins.CorePluginConfigurator):
             installer, CONFIGS, {PLUGIN_CONF: self._config_adjust_plugin})
 
     def _config_adjust_plugin(self, plugin_conf):
+        self.setup_rpc(plugin_conf, rpc_backends=MQ_BACKENDS)
         plugin_conf.add_with_section(
             "DATABASE",
             "sql_connection",
