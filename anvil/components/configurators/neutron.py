@@ -89,7 +89,7 @@ class NeutronConfigurator(base.Configurator):
         config.add("api_paste_config", self.target_config(PASTE_CONF))
         # TODO(aababilov): add debug to other services conf files
         config.add('debug', self.installer.get_bool_option("debug"))
-        config.add("log_file", "neutron-server.log")
+        config.add("log_file", "")
         config.add("log_dir", "/var/log/neutron")
 
         # Setup the interprocess locking directory
