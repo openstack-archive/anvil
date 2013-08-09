@@ -192,6 +192,15 @@ def parse(previous_settings=None):
                                  " (default: %default)"))
     parser.add_option_group(build_group)
 
+    test_group = OptionGroup(parser, "Test specific options")
+    test_group.add_option('-i', "--ignore-failures",
+                           action="store_true",
+                           dest="ignore_test_failures",
+                           default=False,
+                           help=("when running tests ignore component test failures"
+                                 " (default: %default)"))
+    parser.add_option_group(test_group)
+
     # Extract only what we care about, these will be passed
     # to the constructor of actions as arguments
     # so don't adjust the naming wily nilly...
@@ -212,4 +221,5 @@ def parse(previous_settings=None):
     values['store_passwords'] = options.store_passwords
     values['keyring_path'] = options.keyring_path
     values['keyring_encrypted'] = options.keyring_encrypted
+    values['ignore_test_failures'] = options.ignore_test_failures
     return values

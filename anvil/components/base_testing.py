@@ -57,6 +57,7 @@ class PythonTestingComponent(base.Component):
         base.Component.__init__(self, *args, **kargs)
         self.helper = pip_helper.Helper()
         self.test_type = self.get_option('test_type', default_value='').lower().strip()
+        self.ignore_test_failures = kargs.get('ignore_test_failures', False)
 
     def _get_test_exclusions(self):
         return self.get_option('exclude_tests', default_value=[])
@@ -164,7 +165,7 @@ class PythonTestingComponent(base.Component):
             sh.execute(cmd, stdout_fh=sys.stdout, stderr_fh=sys.stdout,
                        cwd=app_dir, env_overrides=env)
         except excp.ProcessExecutionError as e:
-            if self.get_bool_option("ignore-test-failures", default_value=False):
+            if self.ignore_test_failures:
                 LOG.warn("Ignoring test failure of component %s: %s", colorizer.quote(self.name), e)
             else:
                 raise
