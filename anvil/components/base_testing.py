@@ -38,6 +38,15 @@ DEFAULT_ENV = {
 }
 
 
+def _using_testr(test_type, app_dir):
+    if test_type == 'testr':
+        return True
+    for i in ['.testr.conf', '.testrepository']:
+        if sh.exists(sh.joinpths(app_dir, i)):
+            return True
+    return False
+
+
 class EmptyTestingComponent(base.Component):
     def run_tests(self):
         return
@@ -47,6 +56,7 @@ class PythonTestingComponent(base.Component):
     def __init__(self, *args, **kargs):
         base.Component.__init__(self, *args, **kargs)
         self.helper = pip_helper.Helper()
+        self.test_type = self.get_option('test_type', default_value='').lower().strip()
 
     def _get_test_exclusions(self):
         return self.get_option('exclude_tests', default_value=[])
@@ -54,37 +64,54 @@ class PythonTestingComponent(base.Component):
     def _get_test_dir_exclusions(self):
         return self.get_option('exclude_tests_dir', default_value=[])
 
-    def _use_run_tests(self):
-        return True
+    def _get_pre_test_command(self):
+        app_dir = self.get_option('app_dir')
+        if (_using_testr(self.test_type, app_dir) and
+            not sh.isdir(sh.joinpths(app_dir, '.testrepository'))):
+            return ['testr', 'init']
+        return None
 
     def _get_test_command(self):
         # See: http://docs.openstack.org/developer/nova/devref/unit_tests.html
         # And: http://wiki.openstack.org/ProjectTestingInterface
+        # And: https://wiki.openstack.org/wiki/Testr
 
-        cmd = ['coverage', 'run', '/usr/bin/nosetests']
-        # See: $ man nosetests
+        def get_testr_cmd():
+            # See: https://testrepository.readthedocs.org
+            #
+            # NOTE(harlowja): it appears that testr doesn't seem to support all
+            # the 'advanced' features (exclusion, coverage?, verbosity, xunit) as
+            # nose. Need to verify this...
+            return ['testr', 'run']
 
-        if not colorizer.color_enabled():
-            cmd.append('--openstack-nocolor')
+        def get_nose_cmd():
+            # See: $ man nosetests
+            cmd = ['coverage', 'run', '/usr/bin/nosetests']
+            if not colorizer.color_enabled():
+                cmd.append('--openstack-nocolor')
+            else:
+                cmd.append('--openstack-color')
+            if self.get_bool_option("verbose", default_value=True):
+                cmd.append('--verbosity=2')
+                cmd.append('--detailed-errors')
+            else:
+                cmd.append('--verbosity=1')
+                cmd.append('--openstack-num-slow=0')
+            for e in self._get_test_exclusions():
+                cmd.append('--exclude=%s' % (e))
+            for e in self._get_test_dir_exclusions():
+                cmd.append('--exclude-dir=%s' % (e))
+            xunit_fn = self.get_option("xunit_filename")
+            if xunit_fn:
+                cmd.append("--with-xunit")
+                cmd.append("--xunit-file=%s" % (xunit_fn))
+            return cmd
+
+        if _using_testr(self.test_type, self.get_option('app_dir')):
+            return get_testr_cmd()
         else:
-            cmd.append('--openstack-color')
-
-        if self.get_bool_option("verbose", default_value=True):
-            cmd.append('--verbosity=2')
-            cmd.append('--detailed-errors')
-        else:
-            cmd.append('--verbosity=1')
-            cmd.append('--openstack-num-slow=0')
-        for e in self._get_test_exclusions():
-            cmd.append('--exclude=%s' % (e))
-        for e in self._get_test_dir_exclusions():
-            cmd.append('--exclude-dir=%s' % (e))
-        xunit_fn = self.get_option("xunit_filename")
-        if xunit_fn:
-            cmd.append("--with-xunit")
-            cmd.append("--xunit-file=%s" % (xunit_fn))
-        LOG.debug("Running tests: %s" % cmd)
-        return cmd
+            # Assume nose will work then.
+            return get_nose_cmd()
 
     def _get_env(self):
         env_addons = DEFAULT_ENV.copy()
@@ -119,9 +146,17 @@ class PythonTestingComponent(base.Component):
             LOG.warn("Unable to find application directory at %s, can not run %s tests.",
                      colorizer.quote(app_dir), colorizer.quote(self.name))
             return
+        pre_cmd = self._get_pre_test_command()
         cmd = self._get_test_command()
         env = self._get_env()
         try:
+            if pre_cmd:
+                LOG.info("Running test setup via: %s",
+                         utils.truncate_text(" ".join(pre_cmd), 80))
+                sh.execute(pre_cmd, stdout_fh=sys.stdout, stderr_fh=sys.stdout,
+                           cwd=app_dir, env_overrides=env)
+            LOG.info("Running tests via: %s",
+                     utils.truncate_text(" ".join(pre_cmd), 80))
             sh.execute(cmd, stdout_fh=sys.stdout, stderr_fh=sys.stdout,
                        cwd=app_dir, env_overrides=env)
         except excp.ProcessExecutionError as e:
