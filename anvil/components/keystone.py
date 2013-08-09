@@ -108,18 +108,6 @@ class KeystoneRuntime(bruntime.OpenStackRuntime):
         bruntime.OpenStackRuntime.__init__(self, *args, **kargs)
         self.init_fn = sh.joinpths(self.get_option('trace_dir'), INIT_WHAT_HAPPENED)
 
-    def _filter_init(self, init_what):
-        endpoints = init_what['endpoints']
-        adjusted_endpoints = []
-        # TODO(harlowja) make this better and based off of config...
-        for endpoint in endpoints:
-            if endpoint['service'] in ['swift', 'network']:
-                continue
-            else:
-                adjusted_endpoints.append(endpoint)
-        init_what['endpoints'] = adjusted_endpoints
-        return init_what
-
     def post_start(self):
         if not sh.isfile(self.init_fn) and self.get_bool_option('do-init'):
             self.wait_active()
@@ -139,7 +127,7 @@ class KeystoneRuntime(bruntime.OpenStackRuntime):
             for url in wait_urls:
                 utils.wait_for_url(url)
             init_what = utils.load_yaml_text(contents)
-            init_what = utils.expand_template_deep(self._filter_init(init_what), params)
+            init_what = utils.expand_template_deep(init_what, params)
             khelper.Initializer(params['keystone']['service_token'],
                                 params['keystone']['endpoints']['admin']['uri']).initialize(**init_what)
             # Writing this makes sure that we don't init again
