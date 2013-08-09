@@ -358,6 +358,6 @@ if [ -n "$SUDO_UID" -a -n "SUDO_GID" ]; then
     chown -c "$SUDO_UID:$SUDO_GID" /etc/anvil /usr/share/anvil
 fi
 
-echo -e "${COL_GREEN}Success!${COL_RESET}"
 echo "Bootstrapped for $SHORTNAME $RELEASE"
-exit 0
+ARGS="-a moo"
+run_smithy
