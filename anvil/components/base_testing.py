@@ -164,7 +164,7 @@ class PythonTestingComponent(base.Component):
             sh.execute(cmd, stdout_fh=sys.stdout, stderr_fh=sys.stdout,
                        cwd=app_dir, env_overrides=env)
         except excp.ProcessExecutionError as e:
-            if self.get_bool_option("ignore-test-failures", default_value=False):
+            if self.get_bool_option("ignore_test_failures", default_value=False):
                 LOG.warn("Ignoring test failure of component %s: %s", colorizer.quote(self.name), e)
             else:
                 raise
