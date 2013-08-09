@@ -60,31 +60,47 @@ class PythonTestingComponent(base.Component):
     def _get_test_command(self):
         # See: http://docs.openstack.org/developer/nova/devref/unit_tests.html
         # And: http://wiki.openstack.org/ProjectTestingInterface
+        # And: https://wiki.openstack.org/wiki/Testr
 
-        cmd = ['coverage', 'run', '/usr/bin/nosetests']
-        # See: $ man nosetests
+        def get_testr_cmd():
+            # See: https://testrepository.readthedocs.org
+            return ['testr', 'run']
 
-        if not colorizer.color_enabled():
-            cmd.append('--openstack-nocolor')
+        def get_nose_cmd():
+            # See: $ man nosetests
+            cmd = ['coverage', 'run', '/usr/bin/nosetests']
+            if not colorizer.color_enabled():
+                cmd.append('--openstack-nocolor')
+            else:
+                cmd.append('--openstack-color')
+            if self.get_bool_option("verbose", default_value=True):
+                cmd.append('--verbosity=2')
+                cmd.append('--detailed-errors')
+            else:
+                cmd.append('--verbosity=1')
+                cmd.append('--openstack-num-slow=0')
+            for e in self._get_test_exclusions():
+                cmd.append('--exclude=%s' % (e))
+            for e in self._get_test_dir_exclusions():
+                cmd.append('--exclude-dir=%s' % (e))
+            xunit_fn = self.get_option("xunit_filename")
+            if xunit_fn:
+                cmd.append("--with-xunit")
+                cmd.append("--xunit-file=%s" % (xunit_fn))
+            return cmd
+
+        test_type = self.get_option('test_type', default_value='').lower().strip()
+        if test_type == 'nose':
+            return get_nose_cmd()
+        elif test_type == 'testr':
+            return get_testr_cmd()
         else:
-            cmd.append('--openstack-color')
-
-        if self.get_bool_option("verbose", default_value=True):
-            cmd.append('--verbosity=2')
-            cmd.append('--detailed-errors')
-        else:
-            cmd.append('--verbosity=1')
-            cmd.append('--openstack-num-slow=0')
-        for e in self._get_test_exclusions():
-            cmd.append('--exclude=%s' % (e))
-        for e in self._get_test_dir_exclusions():
-            cmd.append('--exclude-dir=%s' % (e))
-        xunit_fn = self.get_option("xunit_filename")
-        if xunit_fn:
-            cmd.append("--with-xunit")
-            cmd.append("--xunit-file=%s" % (xunit_fn))
-        LOG.debug("Running tests: %s" % cmd)
-        return cmd
+            app_dir = self.get_option('app_dir')
+            if sh.isfile(sh.joinpths(app_dir, '.testr.conf')):
+                return get_testr_cmd()
+            else:
+                # Assume nose will work then.
+                return get_nose_cmd()
 
     def _get_env(self):
         env_addons = DEFAULT_ENV.copy()
@@ -122,6 +138,7 @@ class PythonTestingComponent(base.Component):
         cmd = self._get_test_command()
         env = self._get_env()
         try:
+            LOG.debug("Running tests via: %s", cmd)
             sh.execute(cmd, stdout_fh=sys.stdout, stderr_fh=sys.stdout,
                        cwd=app_dir, env_overrides=env)
         except excp.ProcessExecutionError as e:
