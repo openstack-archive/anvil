@@ -158,6 +158,7 @@ try:
 except KeyError:
     pass
 ")
+    echo -e "Bootstrapping ${COL_GREEN}python${COL_RESET} rpms."
     local python_names=$(cat requirements.txt test-requirements.txt | sed -r -e 's/#.*$//' | sort -u)
     local missing_packages=""
     local found_packages=""
