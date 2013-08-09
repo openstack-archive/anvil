@@ -61,6 +61,9 @@ BuildRequires:	dos2unix
 Requires:	python-neutron = %{epoch}:%{version}-%{release}
 Requires:       python-keystone
 
+Provides:       openstack-quantum = %{epoch}:%{version}-%{release}
+Obsoletes:      openstack-quantum < %{epoch}:%{version}-%{release}
+
 %if ! 0%{?usr_only}
 Requires(post):   chkconfig
 Requires(postun): initscripts
@@ -83,6 +86,9 @@ capabilities (e.g., QoS, ACLs, network monitoring, etc.)
 Summary:	Neutron Python libraries
 Group:		Applications/System
 
+Provides:       python-quantum = %{epoch}:%{version}-%{release}
+Obsoletes:      python-quantum < %{epoch}:%{version}-%{release}
+
 Requires:	sudo
 #for $i in $requires
 Requires:	${i}
@@ -100,6 +106,9 @@ This package contains the neutron Python library.
 Summary:	Neutron Big Switch plugin
 Group:		Applications/System
 
+Provides:       openstack-quantum-bigswitch = %{epoch}:%{version}-%{release}
+Obsoletes:      openstack-quantum-bigswitch < %{epoch}:%{version}-%{release}
+
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
 
 
@@ -116,6 +125,10 @@ Networks Controller.
 Summary:	Neutron Brocade plugin
 Group:		Applications/System
 
+Provides:       openstack-quantum-brocade = %{epoch}:%{version}-%{release}
+Obsoletes:      openstack-quantum-brocade < %{epoch}:%{version}-%{release}
+
+
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
 
 
@@ -130,6 +143,9 @@ networks using Brocade VCS switches running NOS.
 %package -n openstack-neutron-cisco
 Summary:	Neutron Cisco plugin
 Group:		Applications/System
+
+Provides:       openstack-quantum-cisco = %{epoch}:%{version}-%{release}
+Obsoletes:      openstack-quantum-cisco < %{epoch}:%{version}-%{release}
 
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
 Requires:	python-configobj
@@ -147,6 +163,9 @@ networks using Cisco UCS and Nexus.
 Summary:	Neutron Hyper-V plugin
 Group:		Applications/System
 
+Provides:       openstack-quantum-hyperv = %{epoch}:%{version}-%{release}
+Obsoletes:      openstack-quantum-hyperv < %{epoch}:%{version}-%{release}
+
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
 
 
@@ -161,6 +180,9 @@ networks using Microsoft Hyper-V.
 %package -n openstack-neutron-linuxbridge
 Summary:	Neutron linuxbridge plugin
 Group:		Applications/System
+
+Provides:       openstack-quantum-linuxbridge = %{epoch}:%{version}-%{release}
+Obsoletes:      openstack-quantum-linuxbridge < %{epoch}:%{version}-%{release}
 
 Requires:	bridge-utils
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
@@ -179,6 +201,10 @@ networks as VLANs using Linux bridging.
 Summary:	Neutron MidoNet plugin
 Group:		Applications/System
 
+Provides:       openstack-quantum-midonet = %{epoch}:%{version}-%{release}
+Obsoletes:      openstack-quantum-midonet < %{epoch}:%{version}-%{release}
+
+
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
 
 
@@ -194,6 +220,9 @@ networks using MidoNet from Midokura.
 Summary:	Neutron ML2 plugin
 Group:		Applications/System
 
+Provides:       openstack-quantum-ml2 = %{epoch}:%{version}-%{release}
+Obsoletes:      openstack-quantum-ml2 < %{epoch}:%{version}-%{release}
+
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
 Requires:       python-stevedore >= 0.9
 
@@ -208,6 +237,9 @@ This package includes the Modular Layer 2 (ml2) Neutron plugin.
 %package -n openstack-neutron-mlnx
 Summary:	Neutron Mellanox plugin
 Group:		Applications/System
+
+Provides:       openstack-quantum-mlnx = %{epoch}:%{version}-%{release}
+Obsoletes:      openstack-quantum-mlnx < %{epoch}:%{version}-%{release}
 
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
 
@@ -225,6 +257,9 @@ HCA.
 Summary:	Neutron Nicira plugin
 Group:		Applications/System
 
+Provides:       openstack-quantum-nicira = %{epoch}:%{version}-%{release}
+Obsoletes:      openstack-quantum-nicira < %{epoch}:%{version}-%{release}
+
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
 
 
@@ -239,6 +274,9 @@ networks using Nicira NVP.
 %package -n openstack-neutron-openvswitch
 Summary:	Neutron openvswitch plugin
 Group:		Applications/System
+
+Provides:       openstack-quantum-openvswitch = %{epoch}:%{version}-%{release}
+Obsoletes:      openstack-quantum-openvswitch < %{epoch}:%{version}-%{release}
 
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
 Requires:	openvswitch
@@ -256,6 +294,9 @@ networks using Open vSwitch.
 Summary:	Neutron PLUMgrid plugin
 Group:		Applications/System
 
+Provides:       openstack-quantum-plumgrid = %{epoch}:%{version}-%{release}
+Obsoletes:      openstack-quantum-plumgrid < %{epoch}:%{version}-%{release}
+
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
 
 
@@ -270,6 +311,9 @@ networks using the PLUMgrid platform.
 %package -n openstack-neutron-ryu
 Summary:	Neutron Ryu plugin
 Group:		Applications/System
+
+Provides:       openstack-quantum-ryu = %{epoch}:%{version}-%{release}
+Obsoletes:      openstack-quantum-ryu < %{epoch}:%{version}-%{release}
 
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
 
@@ -286,6 +330,9 @@ networks using the Ryu Network Operating System.
 Summary:	Neutron NEC plugin
 Group:		Applications/System
 
+Provides:       openstack-quantum-nec = %{epoch}:%{version}-%{release}
+Obsoletes:      openstack-quantum-nec < %{epoch}:%{version}-%{release}
+
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
 
 
@@ -300,6 +347,9 @@ networks using the NEC OpenFlow controller.
 %package -n openstack-neutron-metaplugin
 Summary:	Neutron meta plugin
 Group:		Applications/System
+
+Provides:       openstack-quantum-metaplugin = %{epoch}:%{version}-%{release}
+Obsoletes:      openstack-quantum-metaplugin < %{epoch}:%{version}-%{release}
 
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
 
