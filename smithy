@@ -151,6 +151,7 @@ bootstrap_selinux()
 
 bootstrap_python_rpms()
 {
+    echo -e "Bootstrapping ${COL_GREEN}python${COL_RESET} rpms."
     local package_map=$(python -c "import yaml
 try:
     for k, v in yaml.safe_load(open('$DISTRO_CONFIG'))['dependency_handler']['package_map'].iteritems():
