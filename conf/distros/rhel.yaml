@@ -27,10 +27,10 @@ dependency_handler:
     -   xattr
 commands:
     service:
-        restart: service NAME restart
-        start: service NAME start
-        status: service NAME status
-        stop: service NAME stop
+        restart: service $NAME restart
+        start: service $NAME start
+        status: service $NAME status
+        stop: service $NAME stop
     apache:
         daemon: httpd
     libvirt:

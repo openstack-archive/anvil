@@ -134,8 +134,8 @@ class EmptyRuntime(ProgramRuntime):
 class ServiceRuntime(ProgramRuntime):
     def get_command(self, command, program):
         program = self.daemon_name(program)
-        return [(arg if arg != "NAME" else program)
-                for arg in self.distro.get_command("service", command)]
+        cmd_template = self.distro.get_command("service", command)
+        return utils.expand_template_deep(cmd_template, {'NAME': program})
 
     def daemon_name(self, program):
         return program
