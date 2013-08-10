@@ -16,6 +16,7 @@
 
 from anvil import log as logging
 from anvil import shell as sh
+from anvil import utils
 
 from anvil.components import base_install as binstall
 from anvil.components import base_runtime as bruntime
@@ -35,9 +36,9 @@ class QpidUninstaller(binstall.PkgUninstallComponent):
         try:
             LOG.debug("Attempting to delete the qpid user '%s' and their associated password.",
                       user_name)
-            cmd = self.distro.get_command('qpid', 'delete_user')
+            cmd_template = self.distro.get_command('qpid', 'delete_user')
+            cmd = utils.expand_template_deep(cmd_template, {'USER': user_name})
             if cmd:
-                cmd.extend([user_name])
                 sh.execute(cmd)
         except IOError:
             LOG.warn(("Could not delete the user/password. You might have to manually "
@@ -51,9 +52,9 @@ class QpidInstaller(binstall.PkgInstallComponent):
         try:
             LOG.debug("Attempting to create the qpid user '%s' and their associated password.",
                       user_name)
-            cmd = self.distro.get_command('qpid', 'create_user')
+            cmd_template = self.distro.get_command('qpid', 'create_user')
+            cmd = utils.expand_template_deep(cmd_template, {'USER': user_name})
             if cmd:
-                cmd.extend([user_name])
                 sh.execute(cmd, process_input=self.get_password('qpid'))
         except IOError:
             LOG.warn(("Could not create the user/password. You might have to manually "
