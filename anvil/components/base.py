@@ -16,6 +16,7 @@
 
 from anvil import exceptions as excp
 from anvil import log as logging
+from anvil import shell as sh
 from anvil import type_utils as tu
 from anvil import utils
 
@@ -49,8 +50,11 @@ class Component(object):
         # How we get any passwords we need
         self.passwords = passwords
 
-        self.bin_dir = "/usr/bin"
-        self.cfg_dir = "/etc/%s" % self.name
+        # Where our binaries will be located
+        self.bin_dir = "/usr/bin/"
+
+        # Where configuration will be written
+        self.cfg_dir = sh.joinpths("/etc/", self.name)
 
     def get_password(self, option):
         pw_val = self.passwords.get(option)
