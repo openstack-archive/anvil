@@ -56,8 +56,8 @@ commands:
     base_link_dir: /etc
     qpid:
         # See: http://qpid.apache.org/books/trunk/AMQP-Messaging-Broker-CPP-Book/html/chap-Messaging_User_Guide-Security.html
-        create_user: saslpasswd2 -c -p -f /var/lib/qpidd/qpidd.sasldb -u QPID
-        delete_user: saslpasswd2 -d -f /var/lib/qpidd/qpidd.sasldb -u QPID
+        create_user: saslpasswd2 -c -p -f /var/lib/qpidd/qpidd.sasldb -u QPID $USER
+        delete_user: saslpasswd2 -d -f /var/lib/qpidd/qpidd.sasldb -u QPID $USER
         daemon: qpidd
     rabbit-mq:
         change_password: rabbitmqctl change_password
