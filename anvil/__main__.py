@@ -18,6 +18,7 @@
 #    under the License.
 
 import os
+import re
 import sys
 import time
 import traceback as tb
@@ -53,8 +54,9 @@ def run(args):
     # Keep the old args around so we have the full set to write out
     saved_args = dict(args)
     action = args.pop("action", '').strip().lower()
-    if action == 'moo':
+    if re.match(r"^moo[o]*$", action):
         return
+
     try:
         runner_cls = actions.class_for(action)
     except Exception as ex:
