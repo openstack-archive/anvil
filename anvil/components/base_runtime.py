@@ -137,6 +137,27 @@ class ServiceRuntime(ProgramRuntime):
         cmd_template = self.distro.get_command("service", command)
         return utils.expand_template_deep(cmd_template, {'NAME': program})
 
+    def _get_details(self, program, status):
+        if status != STATUS_STARTED:
+            return None
+        daemon_program = self.daemon_name(program)
+        # TODO(harlowja): we can likely figure this out in a different manner,
+        # but for now try a bunch of likely paths and select the first path that
+        # exists and is readable as the location of the log file of the program.
+        log_paths = [
+            sh.joinpths('/var/log/', self.name, "%s.log" % (daemon_program)),
+            sh.joinpths('/var/log/', self.name, "%s.log" % (program)),
+            sh.joinpths('/var/log/', self.name, "%s-%s.log" % (self.name, program)),
+            sh.joinpths('/var/log/', self.name, "%s-%s.log" % (self.name, daemon_program)),
+        ]
+        for path in log_paths:
+            if sh.isfile(path):
+                try:
+                    return sh.load_file(path)
+                except (OSError, IOError):
+                    pass
+        return None
+
     def daemon_name(self, program):
         return program
 
@@ -204,9 +225,10 @@ class ServiceRuntime(ProgramRuntime):
             status = (STATUS_STARTED
                       if self.status_app(program)
                       else STATUS_STOPPED)
+            details = self._get_details(program, status)
             statii.append(ProgramStatus(name=program,
                                         status=status,
-                                        details={}))
+                                        details=details))
         return statii
 
 
