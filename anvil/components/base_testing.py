@@ -83,7 +83,7 @@ class PythonTestingComponent(base.Component):
             # NOTE(harlowja): it appears that testr doesn't seem to support all
             # the 'advanced' features (exclusion, coverage?, verbosity, xunit) as
             # nose. Need to verify this...
-            return ['testr', 'run']
+            return ['testr', 'run', '--parallel']
 
         def get_nose_cmd():
             # See: $ man nosetests
