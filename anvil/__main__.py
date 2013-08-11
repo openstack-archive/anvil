@@ -69,15 +69,8 @@ def run(args):
     if not sh.isfile(persona_fn):
         raise excp.OptionException("Invalid persona file %r specified!" % (persona_fn))
 
-    # Determine + setup the root directory...
-    # If not provided attempt to locate it via the environment control files
-    args_root_dir = args.pop("dir")
-    root_dir = env.get_key('INSTALL_ROOT')
-    if not root_dir:
-        root_dir = args_root_dir
-    if not root_dir:
-        root_dir = sh.joinpths(sh.gethomedir(), 'openstack')
-    root_dir = sh.abspth(root_dir)
+    # Determine the root directory...
+    root_dir = sh.abspth(args.pop("dir"))
 
     (repeat_string, line_max_len) = utils.welcome()
     print(pprint.center_text("Action Runner", repeat_string, line_max_len))
