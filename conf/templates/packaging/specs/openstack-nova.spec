@@ -8,6 +8,8 @@
 %global python_name nova
 %global daemon_prefix openstack-nova
 %global os_version ${version}
+%global no_tests $no_tests
+%global tests_data_dir %{_datarootdir}/%{python_name}-tests
 
 %if ! (0%{?fedora} > 12 || 0%{?rhel} > 6)
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
@@ -311,8 +313,41 @@ redundant and scalable cloud computing platform.
 
 This package contains the %{name} Python library.
 
-%if 0%{?with_doc}
 
+%if ! 0%{?no_tests}
+%package -n python-%{python_name}-tests
+Summary:          Tests for Nova
+Group:            Development/Libraries
+
+# Bring in all subpackages:
+Requires:         %{name} = %{epoch}:%{version}-%{release}
+Requires:         %{name}-common = %{epoch}:%{version}-%{release}
+Requires:         %{name}-compute = %{epoch}:%{version}-%{release}
+Requires:         %{name}-network = %{epoch}:%{version}-%{release}
+Requires:         %{name}-scheduler = %{epoch}:%{version}-%{release}
+Requires:         %{name}-cert = %{epoch}:%{version}-%{release}
+Requires:         %{name}-api = %{epoch}:%{version}-%{release}
+Requires:         %{name}-conductor = %{epoch}:%{version}-%{release}
+Requires:         %{name}-objectstore = %{epoch}:%{version}-%{release}
+Requires:         %{name}-console = %{epoch}:%{version}-%{release}
+Requires:         %{name}-cells = %{epoch}:%{version}-%{release}
+Requires:         python-%{python_name} = %{epoch}:%{version}-%{release}
+
+# Test requirements:
+#for $i in $test_requires
+Requires:         ${i}
+#end for
+
+%description -n python-%{python_name}-tests
+Nova is a cloud computing fabric controller (the main part
+of an IaaS system).
+
+This package contains unit and functional tests for Nova, with
+simple runner (%{python_name}-make-test-env).
+%endif
+
+
+%if 0%{?with_doc}
 %package doc
 Summary:          Documentation for %{name}
 Group:            Documentation
@@ -430,7 +465,6 @@ install -p -D -m 644 %{SOURCE50} %{buildroot}%{_datarootdir}/nova/interfaces.tem
 
 # Remove unneeded in production stuff
 rm -f %{buildroot}%{_bindir}/nova-debug
-rm -fr %{buildroot}%{python_sitelib}/nova/tests/
 rm -fr %{buildroot}%{python_sitelib}/run_tests.*
 rm -f %{buildroot}%{_bindir}/nova-combined
 rm -f %{buildroot}/usr/share/doc/nova/README*
@@ -438,6 +472,11 @@ rm -f %{buildroot}/usr/share/doc/nova/README*
 # We currently use the equivalent file from the novnc package
 rm -f %{buildroot}%{_bindir}/nova-novncproxy
 
+%if ! 0%{?no_tests}
+#end raw
+#include $part_fn("install_tests.sh")
+#raw
+%endif
 
 %clean
 rm -rf %{buildroot}
@@ -642,7 +681,14 @@ fi
 %defattr(-,root,root,-)
 %doc LICENSE
 %{python_sitelib}/nova
+%exclude %{python_sitelib}/%{python_name}/tests
 %{python_sitelib}/nova-%{os_version}-*.egg-info
+
+%if ! 0%{?no_tests}
+%files -n python-%{python_name}-tests
+%{tests_data_dir}
+%{_bindir}/%{python_name}-make-test-env
+%endif
 
 %if 0%{?with_doc}
 %files doc
