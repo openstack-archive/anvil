@@ -3,4 +3,8 @@
 # Where we download this from...
 get_from: "git://github.com/openstack/horizon.git?branch=master"
 
+# NOTE(imelnikov): could not make this work on my test machine
+tests_package:
+    enabled: false
+
 ...

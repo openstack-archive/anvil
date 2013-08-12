@@ -21,4 +21,12 @@ daemon_args:
   neutron-l3-agent: "'--config-file=/etc/neutron/l3_agent.ini --config-file=/etc/neutron/neutron.conf'"
   neutron-dhcp-agent: "'--config-file=/etc/neutron/dhcp_agent.ini --config-file=/etc/neutron/neutron.conf'"
 
+exclude_tests:
+  - test_exceptions_notimplemented
+
+tests_package:
+    exclude_from_env:
+      # NOTE(imelnikov): we don't package hyperv agent,
+      #   so we should exclude its tests
+      - "*hyperv_quantum_agent*"
 ...
