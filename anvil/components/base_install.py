@@ -135,6 +135,10 @@ class PythonInstallComponent(PkgInstallComponent):
             sh.joinpths(tools_dir, 'pip-requires'),
             sh.joinpths(app_dir, 'requirements.txt'),
         ]
+        self.test_requires_files = [
+            sh.joinpths(tools_dir, 'test-requires'),
+            sh.joinpths(app_dir, 'test-requirements.txt'),
+        ]
         if self.get_bool_option('use_tests_requires', default_value=True):
             self.requires_files.append(sh.joinpths(tools_dir, 'test-requires'))
             self.requires_files.append(sh.joinpths(app_dir,
@@ -166,7 +170,11 @@ class PythonInstallComponent(PkgInstallComponent):
 
     @property
     def egg_info(self):
-        return pip_helper.get_directory_details(self.get_option('app_dir'))
+        egg_info = pip_helper.get_directory_details(self.get_option('app_dir')).copy()
+        read_reqs = pip_helper.read_requirement_files
+        egg_info['dependencies'] = read_reqs(self.requires_files)
+        egg_info['test_dependencies'] = read_reqs(self.test_requires_files)
+        return egg_info
 
 
 class PkgUninstallComponent(base.Component):

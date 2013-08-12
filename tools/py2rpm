@@ -52,12 +52,59 @@ abspath_installed_files=$(readlink -f INSTALLED_FILES)
         done
     fi
 ) >> GATHERED_FILES
-{ sed '/^DELETE_ME/d' INSTALLED_FILES; cat GATHERED_FILES; } | sort -u > INSTALLED_FILES.tmp
-mv -f INSTALLED_FILES{.tmp,}""",
+sed '/^DELETE_ME/d' INSTALLED_FILES >> GATHERED_FILES
+sort -u GATHERED_FILES > INSTALLED_FILES
+""",
     "clean":
     """rm -rf $RPM_BUILD_ROOT""",
 }
 
+DEFAULT_TESTS_SCRIPTS = {
+    "install": """
+install -d -m 755 %{buildroot}%{tests_data_dir}
+tar -cf "%{buildroot}%{tests_data_dir}/test_env.tar" \
+    --exclude-vcs  --exclude ./%{pkg_path} \
+    --exclude './build*' --exclude './bin' --exclude './smoketest*' \
+    .
+if [ -d "./%{pkg_path}/tests" ]; then
+    tar -rf "%{buildroot}%{tests_data_dir}/test_env.tar" \
+        ./%{pkg_path}/tests
+fi
+if [ -r "./%{pkg_path}/test.py" ]; then
+    tar -rf "%{buildroot}%{tests_data_dir}/test_env.tar" \
+        ./%{pkg_path}/test.py
+fi
+gzip -9 "%{buildroot}%{tests_data_dir}/test_env.tar"
+
+
+# Make simple test runner
+install -d -m 755 %{buildroot}%{_bindir}
+cat > %{buildroot}%{_bindir}/%{pkg_name}-make-test-env <<"EOF"
+#!/bin/bash
+
+set -e
+
+if [ -z "$1" ] || [ "$1" == "--help" ] ; then
+    echo "Usage: $0 [dir]"
+    echo "       $0 --tmpdir"
+fi
+
+if [ "$1" == "--tmpdir" ]; then
+    target_dir=$(mktemp -dt "${0##*/}.XXXXXXXX")
+    echo "Created temporary directory: $target_dir"
+else
+    target_dir="$1"
+fi
+
+cd "$target_dir"
+tar -xzf "%{tests_data_dir}/test_env.tar.gz"
+cp -a %{python_sitelib}/%{pkg_path} `dirname %{pkg_path}`
+ln -s /usr/bin ./bin
+
+EOF
+chmod 0755 %{buildroot}%{_bindir}/%{pkg_name}-make-test-env
+"""
+}
 
 class InstallationError(Exception):
     pass
@@ -104,9 +151,9 @@ def egg_info_lines(source_dir, filename):
         return f.readlines()
 
 
-def egg_info_requirements(source_dir, extras=()):
+def egg_info_requirements(source_dir, extras=(), filename='requires.txt'):
     in_extra = None
-    for line in egg_info_lines(source_dir, 'requires.txt'):
+    for line in egg_info_lines(source_dir, filename):
         match = requirements_section_re.match(line.lower())
         if match:
             in_extra = match.group(1)
@@ -229,6 +276,11 @@ def create_parser():
         nargs="+",
         default=[],
         help="Correspondence between Python and RPM package names")
+    parser.add_argument(
+        "--with-tests",
+        action="store_true",
+        default=False,
+        help="Add subpackage with tests")
     return parser
 
 
@@ -302,6 +354,9 @@ def replacement_run(self):
         if writer:
             writer(self, ep.name, os.path.join(self.egg_info,ep.name))
     self.find_sources()
+    if self.distribution.tests_require:
+        with open(os.path.join(self.egg_info, 'test-requires.txt'), 'w') as f:
+            f.write('\\n'.join(self.distribution.tests_require))
 egg_info.egg_info.run = replacement_run
 exec(compile(open(__file__).read().replace('\\r\\n', '\\n'), __file__, 'exec'))
 """
@@ -324,13 +379,15 @@ def trim_zeroes(version):
     return version
 
 
-def requires_and_conflicts(req_list):
+def requires_and_conflicts(req_list, skip_req_names=()):
     rpm_requires = ""
     rpm_conflicts = ""
     for line in req_list:
         try:
             req = pkg_resources.Requirement.parse(line)
         except Exception:
+            continue
+        if req.key in skip_req_names:
             continue
         rpm_name = python_key_to_rpm(req.key)
         if not req.specs:
@@ -383,6 +440,9 @@ def build_rpm(options, filename):
     info = pkg_info(source_dir)
     rpm_requires, rpm_conflicts = requires_and_conflicts(
         egg_info_requirements(source_dir))
+    test_rpm_requires, test_rpm_conflicts = requires_and_conflicts(
+        egg_info_requirements(source_dir, filename="test-requires.txt"),
+        skip_req_names=('sphinx', 'setuptools', 'setuptools-git', 'docutils'))
     # NOTE(aababilov): do not use info["name"] to get the name - it is
     # the key (e.g., "nose-plugin"), not the name ("nose_plugin")
     pkg_name = setup_py_one_line(source_dir, "--name")
@@ -411,10 +471,14 @@ def build_rpm(options, filename):
     cleaned_version = trim_zeroes(version.replace('-', '_'))
     with open(spec_name, "w") as spec_file:
         print >> spec_file, "%define pkg_name", pkg_name
+        print >> spec_file, "%define pkg_path", os.path.join(*pkg_name.split('.'))
         print >> spec_file, "%define rpm_name", rpm_name
         print >> spec_file, "%define version", cleaned_version
         print >> spec_file, "%define release", options.release
         print >> spec_file, "%define unmangled_version", version
+        if options.with_tests:
+            print >> spec_file, ("%define tests_data_dir "
+                                 "%{_datarootdir}/%{pkg_name}-tests")
         print >> spec_file, ""
         tags = []
         tags.append(("Name", "%{rpm_name}"))
@@ -448,6 +512,21 @@ def build_rpm(options, filename):
             print >> spec_file, rpm_conflicts
         print >> spec_file, "\n%description\n", info["description"]
 
+        if options.with_tests:
+            print >> spec_file, "\n%package tests"
+            print >> spec_file, "Group: Development/Libraries"
+            print >> spec_file, "Summary: tests for %{name}"
+            for req in ("%{name} = %{epoch}:%{version}-%{release}",
+                        "python-nose",
+                        "python-openstack-nose-plugin",
+                        "python-nose-exclude"):
+                print >> spec_file, "Requires:", req
+            print >> spec_file, test_rpm_requires
+            print >> spec_file, test_rpm_conflicts
+            print >> spec_file, "\n%description tests"
+            print >> spec_file, "Tests for %{name}"
+
+
         for script in "prep", "build", "install", "clean":
             print >> spec_file, "\n\n%%%s" % script
             if options.scripts_dir:
@@ -457,11 +536,17 @@ def build_rpm(options, filename):
                         print >> spec_file, f_in.read()
                     continue
             print >> spec_file, DEFAULT_SCRIPTS[script]
+            if options.with_tests and script in DEFAULT_TESTS_SCRIPTS:
+                print >> spec_file, DEFAULT_TESTS_SCRIPTS[script]
         print >> spec_file, """
 
 %files -f INSTALLED_FILES
 %defattr(-,root,root)
 """
+        if options.with_tests:
+            print >> spec_file, "\n%files tests"
+            print >> spec_file, "%{_bindir}/%{pkg_name}-make-test-env"
+            print >> spec_file, "%{tests_data_dir}"
 
     if options.source_only:
         rpmbuild_what = "-bs"

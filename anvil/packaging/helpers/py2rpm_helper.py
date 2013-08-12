@@ -107,10 +107,13 @@ class Helper(object):
                            logger=LOG)
         self._execute_make(makefile_path, marks_dir, jobs)
 
-    def build_srpm(self, source, log_filename, release=None):
+    def build_srpm(self, source, log_filename,
+                   release=None, with_tests=False):
         cmdline = self._start_cmdline() + ["--source-only"]
         if release is not None:
             cmdline.extend(["--release", release])
+        if with_tests:
+            cmdline.append("--with-tests")
         cmdline.extend(["--", source])
         out_filename = sh.joinpths(self._log_dir,
                                    "py2rpm-build-%s.log" % log_filename)

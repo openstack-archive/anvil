@@ -6,6 +6,8 @@
 %global python_name trove
 %global daemon_prefix openstack-trove
 %global os_version $version
+%global no_tests $no_tests
+%global tests_data_dir %{_datarootdir}/%{python_name}-tests
 
 %if ! (0%{?fedora} > 12 || 0%{?rhel} > 5)
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
@@ -86,6 +88,28 @@ of handling complex administrative tasks.
 
 This package contains the Trove Python library.
 
+
+%if ! 0%{?no_tests}
+%package -n python-%{python_name}-tests
+Summary:          Tests for Trove
+Group:            Development/Libraries
+
+Requires:         %{name} = %{epoch}:%{version}-%{release}
+Requires:         python-%{python_name} = %{epoch}:%{version}-%{release}
+
+# Test requirements:
+#for $i in $test_requires
+Requires:         ${i}
+#end for
+
+%description -n python-%{python_name}-tests
+Trove is Database as a Service for OpenStack.
+
+This package contains unit and functional tests for Trove, with
+simple runner (%{python_name}-make-test-env).
+%endif
+
+
 %prep
 %setup -q -n %{python_name}-%{os_version}
 #for $idx, $fn in enumerate($patches)
@@ -132,6 +156,12 @@ install -p -D -m 755 %{SOURCE1} %{buildroot}%{_initrddir}/%{daemon_prefix}-serve
 %endif
 
 %__rm -rf %{buildroot}%{py_sitelib}/{doc,tools}
+
+%if ! 0%{?no_tests}
+#end raw
+#include $part_fn("install_tests.sh")
+#raw
+%endif
 
 
 %clean
@@ -190,6 +220,11 @@ fi
 %doc LICENSE
 %{python_sitelib}/*
 
+%if ! 0%{?no_tests}
+%files -n python-%{python_name}-tests
+%{tests_data_dir}
+%{_bindir}/%{python_name}-make-test-env
+%endif
 
 %changelog
 #endraw
