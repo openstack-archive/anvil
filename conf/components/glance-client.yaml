@@ -9,4 +9,10 @@ exclude_tests:
     - "test_ssl_cert_mismatch"
     - "test_ssl_cert_subject_alt_name"
 
+# NOTE(imelnikov): tracked at
+#  https://bugs.launchpad.net/python-glanceclient/+bug/1174396
+exclude_tests:
+  - test_ssl_cert_mismatch
+  - test_ssl_cert_subject_alt_name
+
 ...

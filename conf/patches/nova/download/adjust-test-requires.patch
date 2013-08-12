@@ -1,0 +1,12 @@
+diff --git a/test-requirements.txt b/test-requirements.txt
+index 2e5b146..d7def86 100644
+--- a/test-requirements.txt
++++ b/test-requirements.txt
+@@ -3,6 +3,7 @@ coverage>=3.6
+ discover
+ feedparser
+ fixtures>=0.3.12
++importlib
+ mox==0.5.3
+ MySQL-python
+ psycopg2

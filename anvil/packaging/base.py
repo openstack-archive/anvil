@@ -137,17 +137,16 @@ class DependencyHandler(object):
         requires_files = []
         extra_pips = []
         for i in self.instances:
-            try:
-                requires_files.extend(i.requires_files)
-            except AttributeError:
-                pass
+            requires_files.extend(getattr(i, 'requires_files', ()))
+            if i.get_bool_option('use_tests_requires', default_value=True):
+                requires_files.extend(getattr(i, 'test_requires_files', ()))
+
             # Ensure we include any extra pips that are desired.
             i_extra_pips = i.get_option("pips") or []
             for i_pip in i_extra_pips:
                 extra_req = pip_helper.create_requirement(i_pip['name'],
                                                           i_pip.get('version'))
                 extra_pips.append(str(extra_req))
-        requires_files = filter(sh.isfile, requires_files)
         self._gather_pips_to_install(requires_files, sorted(set(extra_pips)))
         self._clean_pip_requires(requires_files)
 

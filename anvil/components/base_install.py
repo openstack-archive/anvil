@@ -157,13 +157,18 @@ class PythonInstallComponent(PkgInstallComponent):
         app_dir = self.get_option('app_dir')
         tools_dir = sh.joinpths(app_dir, 'tools')
         self.requires_files = [
-            sh.joinpths(tools_dir, 'pip-requires'),
-            sh.joinpths(app_dir, 'requirements.txt'),
+            filename
+            for filename in (sh.joinpths(tools_dir, 'pip-requires'),
+                             sh.joinpths(app_dir, 'requirements.txt'))
+            if sh.isfile(filename)
         ]
-        if self.get_bool_option('use_tests_requires', default_value=True):
-            self.requires_files.append(sh.joinpths(tools_dir, 'test-requires'))
-            self.requires_files.append(sh.joinpths(app_dir,
-                                                   'test-requirements.txt'))
+        self.test_requires_files = [
+            filename
+            for filename in (sh.joinpths(tools_dir, 'test-requires'),
+                             sh.joinpths(app_dir, 'test-requirements.txt'))
+            if sh.isfile(filename)
+        ]
+
         self._egg_info = None
 
     def _get_download_config(self):
@@ -173,7 +178,11 @@ class PythonInstallComponent(PkgInstallComponent):
     def egg_info(self):
         if self._egg_info is None:
             egg = pip_helper.get_directory_details(self.get_option('app_dir'))
-            self._egg_info = egg
+            self._egg_info = egg.copy()
+
+        read_reqs = pip_helper.read_requirement_files
+        self._egg_info['dependencies'] = read_reqs(self.requires_files)
+        self._egg_info['test_dependencies'] = read_reqs(self.requires_files)
         return self._egg_info
 
 

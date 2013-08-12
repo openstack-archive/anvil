@@ -1,0 +1,13 @@
+diff --git a/test-requirements.txt b/test-requirements.txt
+index 84ec717..e41fa8d 100644
+--- a/test-requirements.txt
++++ b/test-requirements.txt
+@@ -22,8 +22,6 @@ psutil>=0.6.1,<1.0
+ 
+ # Optional packages that should be installed when testing
+ MySQL-python
+-psycopg2
+-pysendfile==2.0.0
+ qpid-python
+ xattr>=0.4
+ 

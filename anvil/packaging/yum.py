@@ -140,6 +140,16 @@ class YumDependencyHandler(base.DependencyHandler):
         if version_suffix and not version_suffix.startswith('.'):
             version_suffix = '.' + version_suffix
         params['version_suffix'] = version_suffix
+        tests_package = instance.get_option('tests_package', default_value={})
+
+        params["no_tests"] = 0 if tests_package.get('enabled', True) else 1
+        test_exclusions = set(instance.get_option("exclude_tests",
+                                                  default_value=()))
+        test_exclusions.update(tests_package.get("exclude_tests", ()))
+        params["exclude_tests"] = sorted(test_exclusions)
+        params["exclude_from_test_env"] = ['./bin', './build*']
+        params["exclude_from_test_env"].extend(
+                tests_package.get("exclude_from_env", ()))
         return params
 
     def _create_rpmbuild_subdirs(self):
@@ -408,18 +418,25 @@ class YumDependencyHandler(base.DependencyHandler):
         self._execute_make(makefile_path, marks_dir)
 
     def _write_spec_file(self, instance, rpm_name, template_name, params):
-        requires_what = params.get('requires')
-        if not requires_what:
-            requires_what = []
-        requires_python = []
-        try:
-            requires_python.extend(instance.egg_info['dependencies'])
-        except AttributeError:
-            pass
-        if requires_python:
-            requires_what.extend(self._convert_names_python2rpm(requires_python, False))
-        params['requires'] = requires_what
+        requires_what = params.get('requires', [])
+        test_requires_what = params.get('test_requires', [])
+        egg_info = getattr(instance, 'egg_info', None)
+        if egg_info:
+            def ei_names(key):
+                requires_python = [str(req) for req in egg_info[key]]
+                return self._convert_names_python2rpm(requires_python, False)
+
+            requires_what.extend(ei_names('dependencies'))
+            test_requires_what.extend(ei_names('test_dependencies'))
+
+        params["requires"] = requires_what
+        params["test_requires"] = test_requires_what
         params["epoch"] = self.OPENSTACK_EPOCH
+        params["part_fn"] = lambda filename: sh.joinpths(
+                settings.TEMPLATE_DIR,
+                self.SPEC_TEMPLATE_DIR,
+                filename)
+
         content = utils.load_template(self.SPEC_TEMPLATE_DIR, template_name)[1]
         spec_filename = sh.joinpths(self.rpmbuild_dir, "SPECS", "%s.spec" % rpm_name)
         sh.write_file(spec_filename, utils.expand_template(content, params),
@@ -571,6 +588,8 @@ class YumDependencyHandler(base.DependencyHandler):
         app_dir = instance.get_option('app_dir')
         cmdline = self._py2rpm_start_cmdline()
         cmdline.extend(["--source-only"])
+        if not params["no_tests"]:
+            cmdline.append("--with-tests")
         if 'release' in params:
             cmdline.extend(["--release", params["release"]])
         cmdline.extend(["--", app_dir])
