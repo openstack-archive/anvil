@@ -124,31 +124,37 @@ def get_archive_details(filename):
     return details
 
 
+SKIP_LINES = ('#', '-e', '-f', 'http://', 'https://')
+
+
 def _skip_requirement(line):
-    # Skip blank lines or comment lines
-    if not len(line):
-        return True
-    if line.startswith("#"):
-        return True
-    # Skip editables also...
-    if line.lower().startswith('-e'):
-        return True
-    # Skip http types also...
-    if line.lower().startswith('http://'):
-        return True
-    return False
+    return not len(line) or any(line.startswith(a) for a in SKIP_LINES)
+
+
+OPESTACK_TARBALLS_RE = re.compile(r'http://tarballs.openstack.org/([^/]+)/')
 
 
 def parse_requirements(contents, adjust=False):
     lines = []
     for line in contents.splitlines():
         line = line.strip()
+        if 'http://' in line:
+            m = OPESTACK_TARBALLS_RE.search(line)
+            if m:
+                line = m.group(1)
         if not _skip_requirement(line):
             lines.append(line)
-    requires = []
-    for req in pkg_resources.parse_requirements(lines):
-        requires.append(req)
-    return requires
+    return pkg_resources.parse_requirements(lines)
+
+
+def read_requirement_files(files):
+    result = []
+    for filename in files:
+        if sh.isfile(filename):
+            LOG.debug('Parsing requirements from %s', filename)
+            with open(filename) as f:
+                result.extend(parse_requirements(f.read()))
+    return result
 
 
 class Helper(object):

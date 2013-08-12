@@ -7,6 +7,8 @@
 %global python_name cinder
 %global daemon_prefix openstack-cinder
 %global os_version $version
+%global no_tests $no_tests
+%global tests_data_dir %{_datarootdir}/%{python_name}-tests
 
 %if ! (0%{?fedora} > 12 || 0%{?rhel} > 6)
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
@@ -74,6 +76,29 @@ access block storage volumes for use by Virtual Machine instances.
 
 This package contains the cinder Python library.
 
+
+%if ! 0%{?no_tests}
+%package -n python-%{python_name}-tests
+Summary:          Tests for Cinder
+Group:            Development/Libraries
+
+Requires:         %{name} = %{epoch}:%{version}-%{release}
+Requires:         python-%{python_name} = %{epoch}:%{version}-%{release}
+
+# Test requirements:
+#for $i in $test_requires
+Requires:         ${i}
+#end for
+
+%description -n python-%{python_name}-tests
+OpenStack Volume (codename Cinder) provides services to manage and
+access block storage volumes for use by Virtual Machine instances.
+
+This package contains unit and functional tests for Cinder, with
+simple runner (%{python_name}-make-test-env).
+%endif
+
+
 %if 0%{?with_doc}
 %package doc
 Summary:          Documentation for OpenStack Volume
@@ -124,6 +149,12 @@ sed -i '/setup_requires/d; /install_requires/d; /dependency_links/d' setup.py
 
 %install
 %{__python} setup.py install -O1 --skip-build --root %{buildroot}
+
+%if ! 0%{?no_tests}
+#end raw
+#include $part_fn("install_tests.sh")
+#raw
+%endif
 
 # docs generation requires everything to be installed first
 export PYTHONPATH="$PWD:$PYTHONPATH"
@@ -182,8 +213,9 @@ install -p -D -m 644 etc/cinder/rootwrap.d/* %{buildroot}%{_datarootdir}/cinder/
 
 # Remove unneeded in production stuff
 rm -f %{buildroot}%{_bindir}/cinder-debug
+rm -f %{buildroot}%{python_sitelib}/cinder/test.py*
 rm -fr %{buildroot}%{python_sitelib}/cinder/tests/
-rm -fr %{buildroot}%{python_sitelib}/run_tests.*
+rm -f %{buildroot}%{python_sitelib}/run_tests.*
 rm -f %{buildroot}/usr/share/doc/cinder/README*
 
 
@@ -250,6 +282,11 @@ fi
 %{python_sitelib}/cinder
 %{python_sitelib}/cinder-%{os_version}*.egg-info
 
+%if ! 0%{?no_tests}
+%files -n python-%{python_name}-tests
+%{tests_data_dir}
+%{_bindir}/%{python_name}-make-test-env
+%endif
 
 %if 0%{?with_doc}
 %files doc

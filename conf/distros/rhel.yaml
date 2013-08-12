@@ -246,6 +246,10 @@ components:
         # installed in rhel uses a old version of crypto which
         # other components actually can't use. This sucks...
         -   name: paramiko
+        test_requires:
+        # NOTE(imelnikov): nova testcases require importlib, which was not part
+        # of python standard library as of python 2.6.
+        - importlib
         daemon_to_package:
             api: openstack-nova-api
             conductor: openstack-nova-conductor
