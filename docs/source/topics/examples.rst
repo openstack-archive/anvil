@@ -5,11 +5,6 @@
 Examples
 ========
 
-Preparing your own
-------------------
-
-**See:** :ref:`getting-started` to make the right preparation.
-
 Bootstrapping
 -------------
 

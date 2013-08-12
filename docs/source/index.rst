@@ -10,11 +10,10 @@ ANVIL Documentation
 ----
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    topics/summary
-   topics/features
-   topics/basics
+   topics/gettingstarted
    topics/docs
    topics/qanda
    topics/bugshugscode

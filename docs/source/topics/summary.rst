@@ -22,4 +22,11 @@ The distinguishing part from devstack_ (besides being written in python and not
 shell), is that after building those packages  (currently rpms) the same packages
 can be used later (or at the same time) to  actually deploy at a larger scale with.
 
+----
+
+.. toctree::
+
+   features
+
+
 .. _devstack: http://www.devstack.org/
