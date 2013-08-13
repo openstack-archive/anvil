@@ -17,11 +17,13 @@
 import collections
 import contextlib
 import json
+import os
 import pkg_resources
 import sys
 import tarfile
 
 from anvil import colorizer
+from anvil import env
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil.packaging import base
@@ -89,6 +91,9 @@ class YumDependencyHandler(base.DependencyHandler):
         self.deps_src_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps-sources")
         self.rpm_sources_dir = sh.joinpths(self.rpmbuild_dir, "SOURCES")
         self.anvil_repo_dir = sh.joinpths(self.root_dir, "repo")
+        # Anvils package dependencies which must not be removed (or anvil
+        # will stop working and require a bootstrap to occur again).
+        self._runtime_deps = None
         # Executables we require to operate
         self.py2rpm_executable = sh.which("py2rpm", ["tools/"])
         self.rpmbuild_executable = sh.which("rpmbuild")
@@ -726,8 +731,41 @@ class YumDependencyHandler(base.DependencyHandler):
                                 remove_pkgs=remove_pkgs,
                                 tracewriter=self.tracewriter)
 
+    def _anvils_package_dependencies(self):
+        if self._runtime_deps is not None:
+            return self._runtime_deps
+        my_deps = []
+        # This key should be automatically populated by smithy when the needed
+        # dependencies are read in and installed during smithy running.
+        for name in env.get_key('REQUIRED_PACKAGES', '').split():
+            name = name.strip()
+            if name:
+                my_deps.append(name)
+        # Convert any python dependencies anvil has into rpm names.
+        py_reqs = []
+        for fn in ('requirements.txt', 'test-requirements.txt',):
+            try:
+                py_reqs.extend(pip_helper.parse_requirements(sh.load_file(fn)))
+            except IOError:
+                pass
+        try:
+            for line in pip_helper.get_directory_details(os.getcwd())['dependencies']:
+                py_reqs.append(pip_helper.extract_requirement(line))
+        except Exception:
+            pass
+        my_deps.extend(self._convert_names_python2rpm([p.key for p in py_reqs]))
+        self._runtime_deps = set(my_deps)
+        return self._runtime_deps
+
     def uninstall(self):
         super(YumDependencyHandler, self).uninstall()
         if self.tracereader.exists():
-            remove_pkgs = self.tracereader.packages_installed()
+            no_removes = self._anvils_package_dependencies()
+            remove_pkgs = []
+            for p in self.tracereader.packages_installed():
+                if p in no_removes:
+                    LOG.debug("Not removing %s even though it was recorded as being"
+                              " installed/upgraded since it is an anvil runtime dependency.", p)
+                else:
+                    remove_pkgs.append(p)
             self.helper.transaction(remove_pkgs=remove_pkgs)
