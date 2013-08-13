@@ -25,6 +25,7 @@ from optparse import OptionParser
 from optparse import OptionValueError
 
 from anvil import actions
+from anvil import env
 from anvil import settings
 from anvil import shell as sh
 from anvil import utils
@@ -100,6 +101,13 @@ class SmithyHelpFormatter(IndentedHelpFormatter):
         return buf.getvalue()
 
 
+def _get_default_dir():
+    root_dir = env.get_key('INSTALL_ROOT')
+    if root_dir:
+        return root_dir
+    return sh.joinpths(sh.gethomedir(), 'openstack')
+
+
 def parse(previous_settings=None):
 
     version_str = "%s v%s" % ('anvil', version.version_string())
@@ -167,7 +175,8 @@ def parse(previous_settings=None):
                           type="string",
                           dest="dir",
                           metavar="DIR",
-                          help=("empty root DIR or DIR with existing components"))
+                          default=_get_default_dir(),
+                          help=("empty root DIR or DIR with existing components (default: %default)"))
     parser.add_option_group(base_group)
 
     suffixes = ("Known suffixes 'K' (kilobyte, 1024),"
