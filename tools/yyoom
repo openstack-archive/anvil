@@ -68,7 +68,9 @@ def _write_output(data):
 
 
 def _action_type_from_code(action):
-    if action in yum.constants.TS_INSTALL_STATES:
+    if action == yum.constants.TS_UPDATE:
+        return 'upgrade'
+    elif action in yum.constants.TS_INSTALL_STATES:
         return 'install'
     elif action in yum.constants.TS_REMOVE_STATES:
         return 'erase'
@@ -119,7 +121,7 @@ class _RPMCallback(yum.rpmtrans.RPMBaseCallback):
         LOG.info("Performed %(action_type)s (code %(action)s) on %(package)s",
                  dict(package=package,
                       action=action,
-                      aciton_type=_action_type_from_code(action)))
+                      action_type=_action_type_from_code(action)))
 
 
 class _OutputtingRPMCallback(_RPMCallback):
