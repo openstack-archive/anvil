@@ -73,11 +73,14 @@ class Helper(object):
     def _handle_transaction_data(tracewriter, data):
         if not data:
             return
+        failed_names = None
         try:
             if tracewriter:
                 for action in data:
                     if action['action_type'] == 'install':
                         tracewriter.package_installed(action['name'])
+                    elif action['action_type'] == 'upgrade':
+                        tracewriter.package_upgraded(action['name'])
             failed_names = [action['name']
                             for action in data
                             if action['action_type'] == 'error']

@@ -36,6 +36,27 @@ from contextlib import contextmanager
 
 LOG = logging.getLogger('yyoom')
 OUTPUT = None
+ACTION_TYPE_MAP = None
+
+
+def _get_action_type_map():
+    global ACTION_TYPE_MAP
+    if ACTION_TYPE_MAP is not None:
+        return ACTION_TYPE_MAP
+    # Yum has a mapping that sometimes really isn't that accurate enough
+    # for our needs, so make a mapping that will suit our needs instead.
+    ACTION_TYPE_MAP = {
+        yum.constants.TS_UPDATE: 'upgrade',
+        yum.constants.TS_OBSOLETING: 'upgrade',
+        yum.constants.TS_FAILED: 'error',
+    }
+    for i in yum.constants.TS_INSTALL_STATES:
+        if i not in ACTION_TYPE_MAP:
+            ACTION_TYPE_MAP[i] = 'install'
+    for i in yum.constants.TS_REMOVE_STATES:
+        if i not in ACTION_TYPE_MAP:
+            ACTION_TYPE_MAP[i] = 'erase'
+    return ACTION_TYPE_MAP
 
 
 def _setup_output():
@@ -68,14 +89,8 @@ def _write_output(data):
 
 
 def _action_type_from_code(action):
-    if action in yum.constants.TS_INSTALL_STATES:
-        return 'install'
-    elif action in yum.constants.TS_REMOVE_STATES:
-        return 'erase'
-    elif action == yum.constants.TS_FAILED:
-        return 'error'
-    else:
-        return 'other'
+    a_mapping = _get_action_type_map()
+    return a_mapping.get(action, 'other')
 
 
 def _package_info(pkg, **kwargs):
@@ -119,7 +134,7 @@ class _RPMCallback(yum.rpmtrans.RPMBaseCallback):
         LOG.info("Performed %(action_type)s (code %(action)s) on %(package)s",
                  dict(package=package,
                       action=action,
-                      aciton_type=_action_type_from_code(action)))
+                      action_type=_action_type_from_code(action)))
 
 
 class _OutputtingRPMCallback(_RPMCallback):

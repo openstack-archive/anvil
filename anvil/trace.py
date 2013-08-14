@@ -27,6 +27,7 @@ DOWNLOADED = "DOWNLOADED"
 FILE_TOUCHED = "FILE_TOUCHED"
 PIP_INSTALL = 'PIP_INSTALL'
 PKG_INSTALL = "PKG_INSTALL"
+PKG_UPGRADE = "PKG_UPGRADE"
 SYMLINK_MAKE = "SYMLINK_MAKE"
 
 
@@ -85,6 +86,10 @@ class TraceWriter(object):
     def package_installed(self, pkg_name):
         self._start()
         self.trace(PKG_INSTALL, pkg_name)
+
+    def package_upgraded(self, pkg_name):
+        self._start()
+        self.trace(PKG_UPGRADE, pkg_name)
 
     def app_started(self, name, info_fn, how):
         self._start()
