@@ -20,7 +20,7 @@ all: $(MARKS)
 # package names are given, so, pass them one by one
 $(BUILDDEP_MARK):
 	@echo "Installing build requirements for $(REPO_NAME)"
-	@for pkg in $(SRC_REPO_DIR)/*; do                    \
+	@for pkg in $(SRC_REPO_DIR)/*.src.rpm ; do           \
 		$(YUM_BUILDDEP) $(YUM_BUILDDEP_FLAGS) $$pkg; \
 	done &> $(LOGS_DIR)/yum-builddep-$(REPO_NAME).log
 	@touch "$@"
