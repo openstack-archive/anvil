@@ -500,7 +500,6 @@ fi
 %{_bindir}/*-db-manage
 %{_bindir}/*-debug
 %{_bindir}/*-dhcp-agent
-%{_bindir}/*-dhcp-agent-dnsmasq-lease-update
 %{_bindir}/*-l3-agent
 %{_bindir}/*-lbaas-agent
 %{_bindir}/*-metadata-agent
