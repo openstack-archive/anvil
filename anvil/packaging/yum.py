@@ -663,7 +663,7 @@ class YumDependencyHandler(base.DependencyHandler):
                 req = None
                 rpm_name = None
                 try:
-                    (rpm_name, _) = self._get_template_and_rpm_name(inst)
+                    (rpm_name, _tpl) = self._get_template_and_rpm_name(inst)
                     req = inst.egg_info['req']
                 except AttributeError:
                     pass

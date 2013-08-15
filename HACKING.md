@@ -47,17 +47,19 @@ Documentation should all be written in [markdown] or [rst]. Although github does
 1. Do not write "except:", use "except Exception:" at the very least
 1. Include your name with TODOs as in "#TODO(termie)"
 1. Do not name anything the same name as a built-in or reserved word
+1. Do not use the '_' as a single character variable as it is used with
+the [gettext] module and can lead to confusion if used for other purposes.
 
 ### Imports
 
-1. Do not import objects, only modules
+1. Do not import objects, only modules (not strictly enforced)
 1. Do not import more than one module per line
 1. Do not make relative imports
 1. Order your imports by the full module path
-1. Organize your imports in lexical order (TBD)
+1. Organize your imports in lexical order
 
 
-
+[gettext]: http://docs.python.org/2/library/gettext.html
 [CLI Auth]: http://wiki.openstack.org/CLIAuth
 [yaml]: http://en.wikipedia.org/wiki/YAML
 [pep8]: http://www.python.org/dev/peps/pep-0008/
