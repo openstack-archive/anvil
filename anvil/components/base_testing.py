@@ -15,12 +15,14 @@
 #    under the License.
 
 import sys
+import tempfile
 
 from anvil import cfg
 from anvil import colorizer
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
+from anvil import type_utils as tu
 from anvil import utils
 
 from anvil.components import base
@@ -77,15 +79,43 @@ class PythonTestingComponent(base.Component):
         # And: http://wiki.openstack.org/ProjectTestingInterface
         # And: https://wiki.openstack.org/wiki/Testr
 
-        def get_testr_cmd():
+        def execute(cmd, capture=False):
+            if capture:
+                return sh.execute(cmd, cwd=self.get_option('app_dir'),
+                                  env_overrides=self._get_env())
+            else:
+                return sh.execute(cmd, cwd=self.get_option('app_dir'),
+                                  env_overrides=self._get_env(),
+                                  stdout_fh=sys.stdout, stderr_fh=sys.stdout)
+
+        def run_testr():
             # See: https://testrepository.readthedocs.org
             #
             # NOTE(harlowja): it appears that testr doesn't seem to support all
-            # the 'advanced' features (exclusion, coverage?, verbosity, xunit) as
+            # the 'advanced' features (coverage?, verbosity, xunit) as
             # nose. Need to verify this...
-            return ['testr', 'run', '--parallel']
+            exclusions = self._get_test_exclusions()
+            if exclusions:
+                cmd = ['testr', 'list-tests', self.get_option('app_dir')]
+                (stdout, _stderr) = execute(cmd, True)
+                test_lines = []
+                for line in stdout.splitlines():
+                    excluded = False
+                    for e in exclusions:
+                        if e and line.endswith(e):
+                            excluded = True
+                            break
+                    if not excluded:
+                        test_lines.append(line)
+                with tempfile.NamedTemporaryFile(suffix=".list") as fh:
+                    fh.write("\n".join(test_lines))
+                    fh.flush()
+                    cmd = ['testr', 'run', '--load-list', fh.name, '--parallel']
+                    execute(cmd)
+            else:
+                execute(['testr', 'run', '--parallel'])
 
-        def get_nose_cmd():
+        def run_nose():
             # See: $ man nosetests
             cmd = ['coverage', 'run', '/usr/bin/nosetests']
             if not colorizer.color_enabled():
@@ -106,13 +136,13 @@ class PythonTestingComponent(base.Component):
             if xunit_fn:
                 cmd.append("--with-xunit")
                 cmd.append("--xunit-file=%s" % (xunit_fn))
-            return cmd
+            execute(cmd)
 
         if _using_testr(self.test_type, self.get_option('app_dir')):
-            return get_testr_cmd()
+            return run_testr
         else:
             # Assume nose will work then.
-            return get_nose_cmd()
+            return run_nose
 
     def _get_env(self):
         env_addons = DEFAULT_ENV.copy()
@@ -147,23 +177,14 @@ class PythonTestingComponent(base.Component):
             LOG.warn("Unable to find application directory at %s, can not run %s tests.",
                      colorizer.quote(app_dir), colorizer.quote(self.name))
             return
-        pre_cmd = self._get_pre_test_command()
-        cmd = self._get_test_command()
-        if not cmd:
-            LOG.warn("Unable to determine test command for %s, can not run tests.",
+        runner_func = self._get_test_runner()
+        if not runner_func:
+            LOG.warn("Unable to determine test runner for %s, can not run tests.",
                      colorizer.quote(self.name))
             return
-        env = self._get_env()
         try:
-            if pre_cmd:
-                LOG.info("Running test setup via: %s",
-                         utils.truncate_text(" ".join(pre_cmd), 80))
-                sh.execute(pre_cmd, stdout_fh=sys.stdout, stderr_fh=sys.stdout,
-                           cwd=app_dir, env_overrides=env)
-            LOG.info("Running tests via: %s",
-                     utils.truncate_text(" ".join(cmd), 80))
-            sh.execute(cmd, stdout_fh=sys.stdout, stderr_fh=sys.stdout,
-                       cwd=app_dir, env_overrides=env)
+            LOG.info("Running tests via: %s", tu.obj_name(runner_func))
+            runner_func()
         except excp.ProcessExecutionError as e:
             if self.ignore_test_failures:
                 LOG.warn("Ignoring test failure of component %s: %s", colorizer.quote(self.name), e)
