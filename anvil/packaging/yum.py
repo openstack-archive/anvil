@@ -141,8 +141,9 @@ class YumDependencyHandler(base.DependencyHandler):
     def build_binary(self):
         build_requires = self.requirements["build-requires"]
         if build_requires:
-            cmdline = ["yum", "install", "-y"] + list(build_requires)
-            sh.execute(cmdline)
+            build_requires = list(build_requires)
+            self.helper.transaction(install_pkgs=build_requires,
+                                    tracewriter=self.tracewriter)
 
         ts = rpm.TransactionSet()
         for repo_name in "anvil-deps", "anvil":
@@ -165,12 +166,7 @@ class YumDependencyHandler(base.DependencyHandler):
                 sh.deldir(self.rpmbuild_dir)
                 base_filename = sh.basename(srpm_filename)
                 LOG.info("Building RPM package from %s", base_filename)
-                cmdline = [
-                    "yum-builddep",
-                    "-q",
-                    "-y",
-                    srpm_filename]
-                sh.execute(cmdline)
+                self.helper.builddep(srpm_filename, self.tracewriter)
                 cmdline = [
                     "rpmbuild",
                     "--define", "_topdir %s" % self.rpmbuild_dir,
@@ -220,10 +216,10 @@ class YumDependencyHandler(base.DependencyHandler):
 
     def filter_download_requires(self):
         yum_map = {}
-        for pkg in yum_helper.Helper().get_available():
-            for provides in pkg.provides:
+        for pkg in self.helper.get_available():
+            for provides in pkg['provides']:
                 yum_map.setdefault(provides[0], set()).add(
-                    (pkg.version, pkg.repo))
+                    (pkg['version'], pkg['repo']))
 
         pips_to_download = []
         req_to_install = [pkg_resources.Requirement.parse(pkg)
@@ -481,25 +477,17 @@ class YumDependencyHandler(base.DependencyHandler):
 
     def install(self):
         super(YumDependencyHandler, self).install()
+        self.helper.clean()  # repositories might have been changed
         # Erase conflicting packages
-        cmdline = []
+
+        remove_pkgs = []
         for p in self.requirements["conflicts"]:
             if self.helper.is_installed(p):
-                cmdline.append(p)
+                remove_pkgs.append(p)
 
-        if cmdline:
-            cmdline = ["yum", "erase", "-y"] + cmdline
-            sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
-
-        cmdline = ["yum", "clean", "all"]
-        sh.execute(cmdline)
-
-        rpm_names = self._all_rpm_names()
-        if rpm_names:
-            cmdline = ["yum", "install", "-y"] + rpm_names
-            sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
-            for name in rpm_names:
-                self.tracewriter.package_installed(name)
+        self.helper.transaction(install_pkgs=self._all_rpm_names(),
+                                remove_pkgs=remove_pkgs,
+                                tracewriter=self.tracewriter)
 
     def uninstall(self):
         super(YumDependencyHandler, self).uninstall()
@@ -508,11 +496,7 @@ class YumDependencyHandler(base.DependencyHandler):
                 sh.unlink(f)
             for d in self.tracereader.dirs_made():
                 sh.deldir(d)
+            remove_pkgs = self.tracereader.packages_installed()
+            self.helper.transaction(remove_pkgs=remove_pkgs)
             sh.unlink(self.tracereader.filename())
             self.tracereader = None
-
-        rpm_names = self._all_rpm_names()
-        if rpm_names:
-            cmdline = ["yum", "remove", "--remove-leaves", "-y"]
-            cmdline.extend(sorted(rpm_names))
-            sh.execute(cmdline, stdout_fh=sys.stdout, stderr_fh=sys.stderr)
