@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Approved+1: Nikita Savin <nsavin@yahoo-inc.com>
+Code-Review+2: Nikita Savin <nsavin@yahoo-inc.com>
+Submitted-by: Jenkins
+Submitted-at: Mon, 19 Aug 2013 01:53:08 +0000
+Reviewed-on: https://review.openstack.org/42097
+Project: stackforge/anvil
+Branch: refs/heads/stable/grizzly
