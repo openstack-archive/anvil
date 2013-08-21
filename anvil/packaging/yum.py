@@ -148,6 +148,15 @@ class YumDependencyHandler(base.DependencyHandler):
                 continue
             sh.move(filename, target_dir, force=True)
 
+    def post_bootstrap(self):
+        bs_rpmbuild_dir = sh.joinpths('.bootstrap', 'rpmbuild')
+        if sh.isdir(bs_rpmbuild_dir):
+            LOG.info("Moving RPMS build on bootstrap to deps repo")
+            self._move_srpms("anvil-deps", bs_rpmbuild_dir)
+            self._move_rpm_files(bs_rpmbuild_dir,
+                                 sh.joinpths(self.anvil_repo_dir, 'anvil-deps'))
+            sh.deldir(bs_rpmbuild_dir)
+
     def build_binary(self):
         build_requires = self.requirements["build-requires"]
         if build_requires:
@@ -192,9 +201,11 @@ class YumDependencyHandler(base.DependencyHandler):
                 sh.deldir(self.rpmbuild_dir)
             self._create_repo(repo_name)
 
-    def _move_srpms(self, repo_name):
+    def _move_srpms(self, repo_name, rpmbuild_dir=None):
+        if rpmbuild_dir is None:
+            rpmbuild_dir = self.rpmbuild_dir
         src_repo_dir = sh.joinpths(self.anvil_repo_dir, "%s-sources" % repo_name)
-        self._move_rpm_files(sh.joinpths(self.rpmbuild_dir, "SRPMS"), src_repo_dir)
+        self._move_rpm_files(sh.joinpths(rpmbuild_dir, "SRPMS"), src_repo_dir)
 
     def _create_repo(self, repo_name):
         repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)

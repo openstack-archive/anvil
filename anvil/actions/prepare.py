@@ -34,6 +34,9 @@ class PrepareAction(action.Action):
         return 'install'
 
     def _run(self, persona, component_order, instances):
+        dependency_handler = self.distro.dependency_handler_class(
+            self.distro, self.root_dir, instances.values())
+        dependency_handler.post_bootstrap()
         removals = []
         self._run_phase(
             action.PhaseFunctors(
@@ -57,8 +60,6 @@ class PrepareAction(action.Action):
             "download-patch",
             *removals
             )
-        dependency_handler = self.distro.dependency_handler_class(
-            self.distro, self.root_dir, instances.values())
         dependency_handler.package_start()
         self._run_phase(
             action.PhaseFunctors(
