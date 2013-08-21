@@ -138,6 +138,16 @@ class YumDependencyHandler(base.DependencyHandler):
         # ...and after
         sh.deldir(self.rpmbuild_dir)
 
+     def _move_rpm_files(self, source_dir, target_dir):
+         if not sh.isdir(source_dir):
+             return
+         if not sh.isdir(target_dir):
+             sh.mkdirslist(target_dir, tracewriter=self.tracewriter)
+         for filename in sh.listdir(source_dir, recursive=True, files_only=True):
+             if not filename.lower().endswith(".rpm"):
+                 continue
+             sh.move(filename, target_dir, force=True)
+
     def build_binary(self):
         build_requires = self.requirements["build-requires"]
         if build_requires:
@@ -148,7 +158,6 @@ class YumDependencyHandler(base.DependencyHandler):
         ts = rpm.TransactionSet()
         for repo_name in "anvil-deps", "anvil":
             repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)
-            sh.mkdir(repo_dir, recurse=True)
             for srpm_filename in sh.listdir(
                     sh.joinpths(self.anvil_repo_dir, "%s-sources" % repo_name),
                     files_only=True):
@@ -178,20 +187,14 @@ class YumDependencyHandler(base.DependencyHandler):
                     cmdline,
                     out_filename=sh.joinpths(
                             self.log_dir, "rpmbuild-%s.out" % base_filename))
-                for filename in sh.listdir(sh.joinpths(
-                        self.rpmbuild_dir, "RPMS"),
-                        recursive=True, files_only=True):
-                    sh.move(filename, repo_dir, force=True)
+                self._move_rpm_files(sh.joinpths(self.rpmbuild_dir, "RPMS"), repo_dir)
                 # ...and after
                 sh.deldir(self.rpmbuild_dir)
             self._create_repo(repo_name)
 
     def _move_srpms(self, repo_name):
         src_repo_dir = sh.joinpths(self.anvil_repo_dir, "%s-sources" % repo_name)
-        sh.mkdir(src_repo_dir, recurse=True)
-        for filename in sh.listdir(sh.joinpths(self.rpmbuild_dir, "SRPMS"),
-                                   recursive=True, files_only=True):
-            sh.move(filename, src_repo_dir, force=True)
+        self._move_rpm_files(sh.joinpths(self.rpmbuild_dir, "SRPMS"), src_repo_dir)
 
     def _create_repo(self, repo_name):
         repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)
