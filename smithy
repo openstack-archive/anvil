@@ -160,6 +160,7 @@ except KeyError:
     pass
 ")
     local python_names=$(cat requirements.txt test-requirements.txt | sed -r -e 's/#.*$//' | sort -u)
+    local bootstrap_dir="$(readlink -f ./.bootstrap/)"
     local missing_packages=""
     local found_packages=""
     for name in $python_names; do
@@ -185,11 +186,13 @@ except KeyError:
     fi
     echo -e "Building ${COL_YELLOW}missing${COL_RESET} python requirements:"
     dump_list "$missing_packages"
-    local pip_tmp_dir=$(mktemp -d)
+    local pip_tmp_dir="$bootstrap_dir/pip-download"
+    mkdir -p "$pip_tmp_dir"
+
     echo "Downloading..."
     $PIPDOWNLOAD_CMD -d "$pip_tmp_dir" $missing_packages | grep "^Saved"
     echo "Building RPMs..."
-    local rpm_names=$("$PY2RPM_CMD"  --package-map $package_map --scripts-dir "conf/templates/packaging/scripts" -- "$pip_tmp_dir/"* 2>/dev/null |
+    local rpm_names=$("$PY2RPM_CMD"  --package-map $package_map --scripts-dir "conf/templates/packaging/scripts" --rpm-base "$bootstrap_dir/rpmbuild" -- "$pip_tmp_dir/"* 2>/dev/null |
         awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)
     if [ -z "$rpm_names" ]; then
         echo -e "${COL_RED}No binary RPMs were built!${COL_RESET}"
@@ -206,6 +209,8 @@ except KeyError:
         echo -e "${COL_RED}Failed installing!${COL_RESET}"
         return 1
     fi
+    rm -rf "$pip_tmp_dir"
+    rm -rf "$bootstrap_dir/rpmbuild/"{BUILD,SOURCES,SPECS,BUILDROOT}
     return 0
 }
 
@@ -357,6 +362,7 @@ done
 mkdir -p -v /etc/anvil /usr/share/anvil
 if [ -n "$SUDO_UID" -a -n "SUDO_GID" ]; then
     chown -c "$SUDO_UID:$SUDO_GID" /etc/anvil /usr/share/anvil
+    [ -d .bootstrap ] && chown -R "$SUDO_UID:$SUDO_GID" .bootstrap
 fi
 
 echo "Bootstrapped for $SHORTNAME $RELEASE"

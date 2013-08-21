@@ -160,17 +160,26 @@ class YumDependencyHandler(base.DependencyHandler):
                     self._build_openstack_package(instance)
                     self._move_srpms("anvil")
 
-    @staticmethod
-    def _move_rpm_files(source_dir, target_dir):
+    def _move_rpm_files(self, source_dir, target_dir):
         if not sh.isdir(source_dir):
             return
+        if not sh.isdir(target_dir):
+            sh.mkdirslist(target_dir, tracewriter=self.tracewriter)
         for filename in sh.listdir(source_dir, recursive=True, files_only=True):
             if not filename.lower().endswith(".rpm"):
                 continue
             sh.move(filename, target_dir, force=True)
 
-    def build_binary(self):
+    def post_bootstrap(self):
+        bs_rpmbuild_dir = sh.joinpths('.bootstrap', 'rpmbuild')
+        if sh.isdir(bs_rpmbuild_dir):
+            LOG.info("Moving RPMS build on bootstrap to deps repo")
+            self._move_srpms("anvil-deps", bs_rpmbuild_dir)
+            self._move_rpm_files(bs_rpmbuild_dir,
+                                 sh.joinpths(self.anvil_repo_dir, 'anvil-deps'))
+            sh.deldir(bs_rpmbuild_dir)
 
+    def build_binary(self):
         def is_src_rpm(path):
             if not path:
                 return False
@@ -195,9 +204,6 @@ class YumDependencyHandler(base.DependencyHandler):
                                     tracewriter=self.tracewriter)
 
         for repo_name in self.REPOS:
-            repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)
-            if not sh.isdir(repo_dir):
-                sh.mkdirslist(repo_dir, tracewriter=self.tracewriter)
             src_repo_dir = sh.joinpths(self.anvil_repo_dir, self.SRC_REPOS[repo_name])
             src_repo_files = list_src_rpms(src_repo_dir)
             if not src_repo_files:
@@ -226,6 +232,7 @@ class YumDependencyHandler(base.DependencyHandler):
             with sh.remove_before_after(self.rpmbuild_dir):
                 self._create_rpmbuild_subdirs()
                 self._execute_make(makefile_path, marks_dir)
+                repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)
                 for d in sh.listdir(self.rpmbuild_dir, dirs_only=True):
                     self._move_rpm_files(sh.joinpths(d, "RPMS"), repo_dir)
                 self._move_rpm_files(sh.joinpths(self.rpmbuild_dir, "RPMS"), repo_dir)
@@ -236,11 +243,12 @@ class YumDependencyHandler(base.DependencyHandler):
         out_filename = sh.joinpths(self.log_dir, "%s.log" % sh.basename(filename))
         sh.execute_save_output(cmdline, cwd=marks_dir, out_filename=out_filename)
 
-    def _move_srpms(self, repo_name):
+    def _move_srpms(self, repo_name, rpmbuild_dir=None):
+        if rpmbuild_dir is None:
+            rpmbuild_dir = self.rpmbuild_dir
         src_repo_name = self.SRC_REPOS[repo_name]
         src_repo_dir = sh.joinpths(self.anvil_repo_dir, src_repo_name)
-        sh.mkdirslist(src_repo_dir, tracewriter=self.tracewriter)
-        self._move_rpm_files(sh.joinpths(self.rpmbuild_dir, "SRPMS"), src_repo_dir)
+        self._move_rpm_files(sh.joinpths(rpmbuild_dir, "SRPMS"), src_repo_dir)
 
     def _create_repo(self, repo_name):
         repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)
