@@ -113,6 +113,7 @@ except:
         sed -r -e 's/#.*$//' -e 's/,?<[ =.0-9]+//' | sort -u)
     local rpm_names=$("$PY2RPM_CMD" --package-map $package_map --convert $python_names |
         while read req pack; do echo $pack; done | sort -u)
+    local bootstrap_dir=$(readlink -f ./.bootstrap)
     # install all available RPMs
     echo "Installing packages: $(echo $rpm_names)"
     echo "$rpm_names" | xargs  -d '\n' yum install $YUM_OPTS
@@ -129,16 +130,18 @@ except:
     fi
     # Some RPMs are not available. Try to build them on fly
     # First download them
-    local pip_tmp_dir=$(mktemp -d)
+    local pip_tmp_dir="$bootstrap_dir/pip-download"
+    mkdir -p "$pip_tmp_dir"
     find_pip
     local pip_opts="$PIP_OPTS -U -I"
     echo "Downloading Python requirements:$missing_python"
     $PIP_CMD install $pip_opts $missing_python --download "$pip_tmp_dir"
     # Now build them
     echo "Building RPMs for $missing_python"
-    local rpm_names=$("$PY2RPM_CMD"  --package-map $package_map --scripts-dir "conf/templates/packaging/scripts" -- "$pip_tmp_dir/"* 2>/dev/null |
+    local rpm_names=$("$PY2RPM_CMD"  --package-map $package_map --scripts-dir "conf/templates/packaging/scripts" --rpm-base "$bootstrap_dir/rpmbuild"  -- "$pip_tmp_dir/"* 2>/dev/null |
         awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)
     rm -rf "$pip_tmp_dir" /tmp/pip-build-$SUDO_USER
+    rm -rf "$bootstrap_dir/rpmbuild/"{BUILD,SOURCES,SPECS,BUILDROOT}
     if [ -z "$rpm_names" ]; then
         echo "No binary RPMs were built for$missing_python"
         return 1
@@ -283,6 +286,7 @@ done
 mkdir -pv /etc/anvil /usr/share/anvil
 if [ -n "$SUDO_UID" -a -n "SUDO_GID" ]; then
     chown -c "$SUDO_UID:$SUDO_GID" /etc/anvil /usr/share/anvil
+    [ -d .bootstrap ] && chown -R "$SUDO_UID:$SUDO_GID" .bootstrap
 fi
 
 echo "Success! Bootstrapped for $SHORTNAME $RELEASE"
