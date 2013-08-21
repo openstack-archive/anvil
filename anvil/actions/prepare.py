@@ -35,6 +35,13 @@ class PrepareAction(action.Action):
         return 'install'
 
     def _run(self, persona, component_order, instances):
+        dependency_handler_class = self.distro.dependency_handler_class
+        dependency_handler = dependency_handler_class(self.distro,
+                                                      self.root_dir,
+                                                      instances.values(),
+                                                      opts={"jobs": self.jobs})
+        dependency_handler.post_bootstrap()
+
         removals = []
         self._run_phase(
             action.PhaseFunctors(
@@ -59,11 +66,6 @@ class PrepareAction(action.Action):
             *removals
             )
         removals += ["package-destroy"]
-        dependency_handler_class = self.distro.dependency_handler_class
-        dependency_handler = dependency_handler_class(self.distro,
-                                                      self.root_dir,
-                                                      instances.values(),
-                                                      opts={"jobs": self.jobs})
         dependency_handler.package_start()
         self._run_phase(
             action.PhaseFunctors(
