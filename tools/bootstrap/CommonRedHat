@@ -9,6 +9,7 @@ REQUIRES='
     patch
     python
     python-devel
+    libffi-devel
 
     createrepo
     yum-utils
