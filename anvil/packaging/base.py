@@ -276,7 +276,7 @@ class DependencyHandler(object):
             else:
                 pip_ok = True
             for filename in sh.listdir(pip_download_dir, files_only=True):
-                sh.move(filename, self.download_dir)
+                sh.move(filename, self.download_dir, force=True)
             if pip_ok:
                 break
         if not pip_ok:
