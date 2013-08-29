@@ -140,7 +140,7 @@ except:
     echo "Building RPMs for $missing_python"
     local rpm_names=$("$PY2RPM_CMD"  --package-map $package_map --scripts-dir "conf/templates/packaging/scripts" --rpm-base "$bootstrap_dir/rpmbuild"  -- "$pip_tmp_dir/"* 2>/dev/null |
         awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)
-    rm -rf "$pip_tmp_dir" /tmp/pip-build-$SUDO_USER
+    rm -rf "$pip_tmp_dir"
     rm -rf "$bootstrap_dir/rpmbuild/"{BUILD,SOURCES,SPECS,BUILDROOT}
     if [ -z "$rpm_names" ]; then
         echo "No binary RPMs were built for$missing_python"
@@ -254,6 +254,8 @@ if [ ! -f $BSCONF_FILE ]; then
     puke
 fi
 
+rm -rf "/tmp/pip-build-$USER"
+
 echo "Sourcing $BSCONF_FILE"
 source $BSCONF_FILE
 MIN_RELEASE=${MIN_RELEASE:?"Error: MIN_RELEASE is undefined!"}
@@ -288,6 +290,7 @@ if [ -n "$SUDO_UID" -a -n "SUDO_GID" ]; then
     chown -c "$SUDO_UID:$SUDO_GID" /etc/anvil /usr/share/anvil
     [ -d .bootstrap ] && chown -R "$SUDO_UID:$SUDO_GID" .bootstrap
 fi
+rm -rf "/tmp/pip-build-$USER"
 
 echo "Success! Bootstrapped for $SHORTNAME $RELEASE"
 exit 0
