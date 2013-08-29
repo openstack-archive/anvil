@@ -213,6 +213,8 @@ class YumDependencyHandler(base.DependencyHandler):
         repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)
         src_repo_dir = "%s-sources" % repo_dir
         for a_dir in repo_dir, src_repo_dir:
+            if not sh.isdir(a_dir):
+                sh.mkdirslist(a_dir, tracewriter=self.tracewriter)
             cmdline = ["createrepo", a_dir]
             LOG.info("Creating repo at %s" % a_dir)
             sh.execute(cmdline)
