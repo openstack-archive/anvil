@@ -28,6 +28,7 @@ import signal
 import socket
 import subprocess
 import sys
+import tempfile
 import time
 
 import psutil  # http://code.google.com/p/psutil/wiki/Documentation
@@ -744,3 +745,15 @@ def which(bin_name, additional_dirs=None, ensure_executable=True):
         if check_it(full_name):
             return full_name
     raise excp.FileException("Can't find %s" % bin_name)
+
+
+def remove_pip_build_dir():
+    """Remove pip temp build directory
+
+    Pip leaves its temp build directory (/tmp/pip-build-$USER),
+    owned by current user. This causes problems in some setups,
+    e.g. when sudo does not reset $USER.
+    """
+    pip_build_path = joinpths(tempfile.gettempdir(),
+                              'pip-build-%s' % getpass.getuser())
+    deldir(pip_build_path, quiet=True)

@@ -136,7 +136,7 @@ class DependencyHandler(object):
         pass
 
     def package_finish(self):
-        pass
+        sh.remove_pip_build_dir()
 
     def post_bootstrap(self):
         pass
