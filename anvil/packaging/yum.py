@@ -139,10 +139,12 @@ class YumDependencyHandler(base.DependencyHandler):
         sh.deldir(self.rpmbuild_dir)
 
     def _move_rpm_files(self, source_dir, target_dir):
-        if not sh.isdir(source_dir):
-            return
+        # NOTE(imelnikov): we should create target_dir even if we have
+        #  nothing to move, because later we rely on its existence
         if not sh.isdir(target_dir):
             sh.mkdirslist(target_dir, tracewriter=self.tracewriter)
+        if not sh.isdir(source_dir):
+            return
         for filename in sh.listdir(source_dir, recursive=True, files_only=True):
             if not filename.lower().endswith(".rpm"):
                 continue
