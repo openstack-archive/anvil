@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Approved+1: Ivan Melnikov <imelnikov@griddynamics.com>
+Code-Review+2: Ivan Melnikov <imelnikov@griddynamics.com>
+Submitted-by: Jenkins
+Submitted-at: Thu, 29 Aug 2013 10:45:54 +0000
+Reviewed-on: https://review.openstack.org/43695
+Project: stackforge/anvil
+Branch: refs/heads/stable/grizzly
