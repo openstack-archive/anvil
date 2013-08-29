@@ -18,7 +18,9 @@
 # R0921: Abstract class not referenced
 #pylint: disable=R0902,R0921
 
+import getpass
 import pkg_resources
+import utils
 
 from anvil import colorizer
 from anvil import exceptions as excp
@@ -136,7 +138,7 @@ class DependencyHandler(object):
         pass
 
     def package_finish(self):
-        pass
+        sh.remove_pip_build_dir()
 
     def post_bootstrap(self):
         pass
