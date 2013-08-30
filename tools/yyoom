@@ -289,12 +289,20 @@ def _setup_logging(verbose=True):
     root_logger.setLevel(logging.DEBUG if verbose else logging.INFO)
 
 
+class YyoomBase(yum.YumBase):
+
+    def _askForGPGKeyImport(self, po, userid, hexkeyid):
+        """Tell yum to import GPG keys if needed
+
+        Fixes: https://bugs.launchpad.net/anvil/+bug/1210657
+        Fixes: https://bugs.launchpad.net/anvil/+bug/1218728
+        """
+        return True
+
+
 def _get_yum_base():
-    base = yum.YumBase()
+    base = YyoomBase()
     base.setCacheDir(force=True)
-    # Fixes: https://bugs.launchpad.net/anvil/+bug/1210657
-    # See: http://lists.baseurl.org/pipermail/yum-devel/2013-January/009873.html
-    base._override_sigchecks = True
     return base
 
 
