@@ -491,6 +491,23 @@ class YumDependencyHandler(base.DependencyHandler):
         rpm_names |= self.requirements["requires"]
         for inst in self.instances:
             rpm_names |= inst.package_names()
+        # NOTE(harlowja): Ensure that the client packages get installed, even
+        # if they aren't dependencies of the above requirements or in 
+        # package_names of the instances.
+        client_names = []
+        for inst in self.instances:
+            app_dir = inst.get_option("app_dir")
+            if not app_dir or not sh.isdir(app_dir):
+                continue
+            component_name = self._get_component_name(app_dir)
+            if component_name.endswith("client"):
+                try:
+                    py_name = self._python_setup_py_get(app_dir, "name")
+                    client_names.append(py_name)
+                except Exception:
+                    pass
+        client_rpm_names = set(self._convert_names_python2rpm(client_names))
+        rpm_names |= client_rpm_names
         return list(rpm_names)
 
     def install(self):
