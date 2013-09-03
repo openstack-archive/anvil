@@ -31,32 +31,71 @@ import logging
 import os
 import sys
 import yum
+import functools
 
 from contextlib import contextmanager
 
+
 LOG = logging.getLogger('yyoom')
 OUTPUT = None
-ACTION_TYPE_MAP = None
+ACTION_TYPE_MAP = {
+    yum.constants.TS_INSTALL: 'install',
+    yum.constants.TS_TRUEINSTALL: 'install',
+    yum.constants.TS_UPDATE: 'upgrade',
+    yum.constants.TS_OBSOLETING: 'upgrade',
+    yum.constants.TS_ERASE: 'erase',
+    yum.constants.TS_OBSOLETED: 'erase',
+    yum.constants.TS_UPDATED: 'erase',
+    yum.constants.TS_FAILED: 'error'
+}
 
 
-def _get_action_type_map():
-    global ACTION_TYPE_MAP
-    if ACTION_TYPE_MAP is not None:
-        return ACTION_TYPE_MAP
-    # Yum has a mapping that sometimes really isn't that accurate enough
-    # for our needs, so make a mapping that will suit our needs instead.
-    ACTION_TYPE_MAP = {
-        yum.constants.TS_UPDATE: 'upgrade',
-        yum.constants.TS_OBSOLETING: 'upgrade',
-        yum.constants.TS_FAILED: 'error',
-    }
-    for i in yum.constants.TS_INSTALL_STATES:
-        if i not in ACTION_TYPE_MAP:
-            ACTION_TYPE_MAP[i] = 'install'
-    for i in yum.constants.TS_REMOVE_STATES:
-        if i not in ACTION_TYPE_MAP:
-            ACTION_TYPE_MAP[i] = 'erase'
-    return ACTION_TYPE_MAP
+def _extended_yum_raises(method):
+    """Decorator to extend error messages when manipulating packages with yum.
+    """
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        try:
+            return method(self, *args, **kwargs)
+        except yum.Errors.YumBaseError as e:
+            data = dict(
+                method_name=method.__name__,
+                args=[str(arg) for arg in args],
+                kwargs='\n'.join('    %s: %s' % item
+                                 for item in sorted(kwargs.items())))
+            details = yum.i18n._("\nDetails:\n"
+                                 "  method name: %(method_name)s\n"
+                                 "  arguments: %(args)s\n"
+                                 "  keyword arguments:\n%(kwargs)s")
+            e.value += details % data
+            raise
+
+    return wrapper
+
+
+class _YyoomBase(yum.YumBase):
+
+    def __init__(self, *args, **kwargs):
+        """Reintroduced init to preset some settings.
+        """
+        super(_YyoomBase, self).__init__(*args, **kwargs)
+        self.setCacheDir(force=True)
+
+    def _askForGPGKeyImport(self, po, userid, hexkeyid):
+        """Tell yum to import GPG keys if needed.
+
+        Fixes: https://bugs.launchpad.net/anvil/+bug/1210657
+        Fixes: https://bugs.launchpad.net/anvil/+bug/1218728
+        """
+        return True
+
+    @_extended_yum_raises
+    def install(self, po=None, **kwargs):
+        return super(_YyoomBase, self).install(po, **kwargs)
+
+    @_extended_yum_raises
+    def remove(self, po=None, **kwargs):
+        return super(_YyoomBase, self).remove(po, **kwargs)
 
 
 def _setup_output():
@@ -87,10 +126,13 @@ def _write_output(data):
                             sort_keys=True) + '\n')
 
 
-
 def _action_type_from_code(action):
-    a_mapping = _get_action_type_map()
-    return a_mapping.get(action, 'other')
+    """Return value according to action code in dictionary mapping Yum states.
+
+    Yum has a mapping that sometimes really isn't that accurate enough
+    for our needs, so make a mapping that will suit our needs instead.
+    """
+    return ACTION_TYPE_MAP.get(action, 'other')
 
 
 def _package_info(pkg, **kwargs):
@@ -253,29 +295,34 @@ def _parse_arguments(args):
     # TODO(imelnikov): --format
     subparsers = parser.add_subparsers(title='subcommands')
 
+    # Arg: list
     parser_list = subparsers.add_parser('list', help='list packages')
     parser_list.add_argument('what', nargs='+',
                              choices=('installed', 'available', 'extras'),
                              help='what packages to list')
     parser_list.set_defaults(func=_list)
 
+    # Arg: transaction
     parser_run = subparsers.add_parser('transaction',
                                        help='install or remove packages')
-    parser_run.set_defaults(func=_run)
     parser_run.add_argument('--install', '-i', action='append',
                             metavar='package',
                             help='install package')
     parser_run.add_argument('--erase', '-e', action='append',
                             metavar='package',
                             help='erase package')
+    parser_run.set_defaults(func=_run)
 
+    # Arg: srpm
     parser_builddep = subparsers.add_parser(
-            'builddep', help='install build dependencies of srpm')
+        'builddep', help='install build dependencies of srpm')
     parser_builddep.add_argument('srpm', help='path to source RPM package')
     parser_builddep.set_defaults(func=_builddep)
 
+    # Arg: cleanall
     parser_cleanall = subparsers.add_parser('cleanall', help='clean all')
     parser_cleanall.set_defaults(func=_cleanall)
+
     return parser.parse_args(args[1:])
 
 
@@ -287,23 +334,6 @@ def _setup_logging(verbose=True):
     root_logger = logging.getLogger()
     root_logger.addHandler(handler)
     root_logger.setLevel(logging.DEBUG if verbose else logging.INFO)
-
-
-class YyoomBase(yum.YumBase):
-
-    def _askForGPGKeyImport(self, po, userid, hexkeyid):
-        """Tell yum to import GPG keys if needed
-
-        Fixes: https://bugs.launchpad.net/anvil/+bug/1210657
-        Fixes: https://bugs.launchpad.net/anvil/+bug/1218728
-        """
-        return True
-
-
-def _get_yum_base():
-    base = YyoomBase()
-    base.setCacheDir(force=True)
-    return base
 
 
 def _run_yum_api(name, func, ok_codes=(0,), *args, **kwargs):
@@ -358,12 +388,15 @@ def main(args):
     try:
         _setup_output()
         _setup_logging(options.verbose)
-        return options.func(_get_yum_base(), options) or 0
+        yum_base = _YyoomBase()
+        return options.func(yum_base, options) or 0
+
     except Exception as e:
         if options.verbose:
             raise  # let python runtime write stacktrace
         sys.stderr.write("Failed: %s\n" % e)
         return 1
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))
