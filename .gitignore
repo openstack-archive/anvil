@@ -25,6 +25,12 @@ TAGS
 .project
 .pydevproject
 
+# PyCharm IDE files
+.idea/
+pycharm-debug.egg
+pycharm-debug.py
+
+
 # Temp and status files
 *.db
 .*.swp
