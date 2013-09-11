@@ -300,7 +300,7 @@ def _parse_arguments(args):
     parser_list.add_argument('what', nargs='+',
                              choices=('installed', 'available', 'extras'),
                              help='what packages to list')
-    parser_list.set_defaults(func=_list)
+    parser_list.set_defaults(func=_list, operation='List')
 
     # Arg: transaction
     parser_run = subparsers.add_parser('transaction',
@@ -311,17 +311,17 @@ def _parse_arguments(args):
     parser_run.add_argument('--erase', '-e', action='append',
                             metavar='package',
                             help='erase package')
-    parser_run.set_defaults(func=_run)
+    parser_run.set_defaults(func=_run, operation='Transaction')
 
     # Arg: srpm
     parser_builddep = subparsers.add_parser(
         'builddep', help='install build dependencies of srpm')
     parser_builddep.add_argument('srpm', help='path to source RPM package')
-    parser_builddep.set_defaults(func=_builddep)
+    parser_builddep.set_defaults(func=_builddep, operation='Builddep')
 
     # Arg: cleanall
     parser_cleanall = subparsers.add_parser('cleanall', help='clean all')
-    parser_cleanall.set_defaults(func=_cleanall)
+    parser_cleanall.set_defaults(func=_cleanall, operation='Cleanall')
 
     return parser.parse_args(args[1:])
 
@@ -385,16 +385,16 @@ def _transaction(base, callback):
 
 def main(args):
     options = _parse_arguments(args)
+    _setup_output()
+    _setup_logging(options.verbose)
     try:
-        _setup_output()
-        _setup_logging(options.verbose)
         yum_base = _YyoomBase()
         return options.func(yum_base, options) or 0
-
     except Exception as e:
         if options.verbose:
-            raise  # let python runtime write stacktrace
-        sys.stderr.write("Failed: %s\n" % e)
+            LOG.exception("%s failed", options.operation)
+        else:
+            LOG.error("%s failed: %s", options.operation, e)
         return 1
 
 
