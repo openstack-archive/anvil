@@ -503,12 +503,14 @@ fi
 %{_bindir}/*-l3-agent
 %{_bindir}/*-lbaas-agent
 %{_bindir}/*-metadata-agent
+%{_bindir}/*-metering-agent
 %{_bindir}/*-netns-cleanup
 %{_bindir}/*-ns-metadata-proxy
 %{_bindir}/*-rootwrap
 %{_bindir}/*-rpc-zmq-receiver
 %{_bindir}/*-server
 %{_bindir}/*-usage-audit
+%{_bindir}/*-vpn-agent
 %dir %{_datarootdir}/neutron
 %dir %{_datarootdir}/neutron/rootwrap
 %{_datarootdir}/neutron/rootwrap/dhcp.filters
@@ -522,13 +524,15 @@ fi
 %{_initrddir}/%{daemon_prefix}-rpc-zmq-receiver
 %dir %{_sysconfdir}/neutron
 %{_sysconfdir}/neutron/release
+%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/policy.json
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/api-paste.ini
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/dhcp_agent.ini
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/l3_agent.ini
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/metadata_agent.ini
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/lbaas_agent.ini
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/policy.json
+%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/metadata_agent.ini
+%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/metering_agent.ini
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/neutron.conf
+%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/vpn_agent.ini
 %config(noreplace) %{_sysconfdir}/neutron/rootwrap.conf
 %dir %{_sysconfdir}/neutron/plugins
 %config(noreplace) %{_sysconfdir}/logrotate.d/*
