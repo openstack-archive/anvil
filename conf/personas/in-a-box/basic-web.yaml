@@ -13,7 +13,7 @@ components:
 - glance-client
 - cinder-client
 - neutron-client
-- swift-client # Seems only needed for horizon?
+- swift-client
 - neutron
 - openvswitch
 - cinder
