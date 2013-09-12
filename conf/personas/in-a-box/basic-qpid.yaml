@@ -9,6 +9,8 @@ components:
 # Client used by many components
 - keystone-client
 - glance
+# Client used by cinder
+- swift-client
 - cinder
 # Clients used by nova (+ others)
 - glance-client
