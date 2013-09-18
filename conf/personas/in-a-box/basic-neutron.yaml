@@ -13,6 +13,7 @@ components:
 - glance-client
 - cinder-client
 - neutron-client
+- swift-client
 - neutron
 - cinder
 - nova
