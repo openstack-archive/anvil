@@ -88,8 +88,8 @@ class DependencyHandler(object):
         self.pip_executable = sh.which_first(['pip-python', 'pip'])
         self.pips_to_install = []
         self.forced_packages = []
-        self.package_dirs = self._get_package_dirs(instances)
-        self.python_names = self._get_python_names(self.package_dirs)
+        self._package_dirs = None
+        self._python_names = None
 
         self.requirements = {}
         for key in ("build-requires", "requires", "conflicts"):
@@ -98,6 +98,18 @@ class DependencyHandler(object):
                 req_set |= set(pkg["name"]
                                for pkg in inst.get_option(key) or [])
             self.requirements[key] = req_set
+
+    @property
+    def python_names(self):
+        if not self._python_names:
+            self._python_names = self._get_python_names(self.package_dirs)
+        return self._python_names
+
+    @property
+    def package_dirs(self):
+        if not self._package_dirs:
+            self._package_dirs = self._get_package_dirs(self.instances)
+        return self._package_dirs
 
     @staticmethod
     def _get_package_dirs(instances):
