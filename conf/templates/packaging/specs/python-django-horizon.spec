@@ -50,17 +50,15 @@ Group:      Applications/System
 
 Requires:   httpd
 Requires:   mod_wsgi
+Requires:   python-lesscpy
 Requires:   %{name} = %{epoch}:%{version}-%{release}
 
 BuildRequires: python-devel
 BuildRequires: python-django-openstack-auth
 BuildRequires: python-django-compressor
 BuildRequires: python-django-appconf
-BuildRequires: pytz
-BuildRequires: nodejs
-# NOTE(aababilov): nodejs-less is broken in EPEL
-# It has problems with npm(ycssmin)
-#BuildRequires: nodejs-less
+BuildRequires: python-lesscpy
+BuildRequires: python-lockfile
 
 %description -n openstack-dashboard
 Openstack Dashboard is a web user interface for Openstack. The package
@@ -112,6 +110,32 @@ find . -name "django*.po" -exec rm -f '{}' \;
 %build
 %{__python} setup.py build
 
+cp openstack_dashboard/local/local_settings.py.example openstack_dashboard/local/local_settings.py
+
+#NOTE(aababilov): temporarily drop dependency on OpenStack client packages during RPM building
+mkdir tmp_settings
+cp openstack_dashboard/settings.py* tmp_settings/
+sed -i -e '/import exceptions/d' -e '/exceptions\./d' \
+    -e '/import policy/d' -e '/policy\./d' \
+    openstack_dashboard/settings.py
+%{__python} manage.py collectstatic --noinput
+%{__python} manage.py compress --force
+mv tmp_settings/* openstack_dashboard/
+rm -rf tmp_settings
+
+
+export PYTHONPATH="$PWD:$PYTHONPATH"
+%if 0%{?with_doc}
+%if 0%{?rhel}==6
+sphinx-1.0-build -b html doc/source html
+%else
+sphinx-build -b html doc/source html
+%endif
+# Fix hidden-file-or-dir warnings
+rm -fr html/.doctrees html/.buildinfo
+%endif
+
+
 %install
 rm -rf %{buildroot}
 
@@ -125,18 +149,6 @@ install -m 0644 -D -p %{SOURCE1} %{buildroot}%{_sysconfdir}/httpd/conf.d/opensta
 install -m 0644 -D -p %{SOURCE2} %{buildroot}%{_sysconfdir}/httpd/conf.d/openstack-dashboard.conf
 %endif
 
-export PYTHONPATH="$PWD:$PYTHONPATH"
-%if 0%{?with_doc}
-%if 0%{?rhel}==6
-sphinx-1.0-build -b html doc/source html
-%else
-sphinx-build -b html doc/source html
-%endif
-%endif
-
-# Fix hidden-file-or-dir warnings
-rm -fr html/.doctrees html/.buildinfo
-
 install -d -m 755 %{buildroot}%{_datadir}/openstack-dashboard
 install -d -m 755 %{buildroot}%{_sharedstatedir}/openstack-dashboard
 install -d -m 755 %{buildroot}%{_sysconfdir}/openstack-dashboard
@@ -146,7 +158,6 @@ mv %{buildroot}%{python_sitelib}/openstack_dashboard \
    %{buildroot}%{_datadir}/openstack-dashboard
 mv manage.py %{buildroot}%{_datadir}/openstack-dashboard
 rm -rf %{buildroot}%{python_sitelib}/openstack_dashboard
-
 
 # Move config to /etc, symlink it back to /usr/share
 mv %{buildroot}%{_datadir}/openstack-dashboard/openstack_dashboard/local/local_settings.py.example %{buildroot}%{_sysconfdir}/openstack-dashboard/local_settings
@@ -180,35 +191,12 @@ mkdir -p %{buildroot}%{_datadir}/openstack-dashboard/static
 cp -a openstack_dashboard/static/* %{buildroot}%{_datadir}/openstack-dashboard/static
 cp -a horizon/static/* %{buildroot}%{_datadir}/openstack-dashboard/static
 
-# compress css, js etc.
-cd %{buildroot}%{_datadir}/openstack-dashboard
-
-# use nodejs-less from buildroot
-sed -i -e 's@^less_binary.*$@less_binary = "%{buildroot}/usr/lib/node_modules/less/bin/lessc"@' \
-    openstack_dashboard/settings.py
-
-node_less_dir=%{buildroot}/usr/lib/node_modules/less
-mkdir -p "$node_less_dir"
-mv %{buildroot}%{python_sitelib}/bin/less "$node_less_dir/bin"
-mv %{buildroot}%{python_sitelib}/bin/lib "$node_less_dir/lib"
-rm -rf %{buildroot}%{python_sitelib}/bin/
-
-%{__python} manage.py collectstatic --noinput --pythonpath=../../lib/python2.7/site-packages/
-%{__python} manage.py compress --force --pythonpath=../../lib/python2.7/site-packages/
-
-# fix nodejs-less location
-sed -i -e 's@^less_binary.*$@less_binary = "/usr/lib/node_modules/less/bin/lessc"@' \
-    openstack_dashboard/settings.py
-
-
 %clean
 rm -rf %{buildroot}
-
 
 %files
 %doc LICENSE README.rst
 %{python_sitelib}/*
-/usr/lib/node_modules/less
 
 
 %files -n openstack-dashboard
