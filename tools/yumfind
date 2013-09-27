@@ -28,11 +28,12 @@ import pkg_resources
 from yum import YumBase
 
 
-def format_rpm(pkg):
+def format_rpm(pkg, rpm_name):
     details = {
         'arch': pkg.arch,
         'epoch': pkg.epoch,
         'name': pkg.name,
+        'req_name': rpm_name,
         'release': pkg.release,
         'version': pkg.version,
     }
@@ -47,8 +48,8 @@ def parse_py_req(text):
     return pkg_resources.Requirement.parse(text)
 
 
-def find_matches(base, rpm_name, py_req=None):
-    rpms = base.doPackageLists(patterns=[rpm_name], ignore_case=True,
+def build_yum_map(base):
+    rpms = base.doPackageLists(ignore_case=True,
                                showdups=True)
     all_rpms = []
     all_rpms.extend(rpms.available)
@@ -60,7 +61,11 @@ def find_matches(base, rpm_name, py_req=None):
     for rpm in all_rpms:
         for provides in rpm.provides:
             yum_map[provides[0]].append((rpm.version, rpm))
+    return dict(yum_map)
 
+
+
+def find_matches(yum_map, rpm_name, py_req=None):
     rpm_matches = []
     for (version, rpm) in yum_map.get(rpm_name, []):
         if py_req is None or version in py_req:
@@ -92,14 +97,15 @@ if __name__ == '__main__':
             examine_what.append((rpm_name, None))
     base = YumBase()
     base.doConfigSetup(debuglevel=-1, errorlevel=-1)
+    yum_map = build_yum_map(base)
     for (rpm_name, py_req) in examine_what:
         req = parse_py_req(py_req)
-        matches = find_matches(base, rpm_name, req)
+        matches = find_matches(yum_map, rpm_name, req)
         if matches:
             # Pick the newest match.
             pkg = sorted(matches)[-1]
             if options.is_json:
-                print(json.dumps(format_rpm(pkg)))
+                print(json.dumps(format_rpm(pkg, rpm_name)))
             else:
                 print(pkg)
         else:

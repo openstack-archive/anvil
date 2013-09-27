@@ -697,7 +697,7 @@ class YumDependencyHandler(base.DependencyHandler):
             if matched:
                 pkg = json.loads(matched)
                 if isinstance(pkg, dict):
-                    rpm_names_located.add(pkg['name'])
+                    rpm_names_located.add(pkg['req_name'])
                     rpms_located.append(pkg)
 
         rpm_names_missing = desired_rpm_names - rpm_names_located
