@@ -9,8 +9,10 @@ components:
 - keystone
 - keystone-client
 - glance
-- glance-client
+- ceilometer-client
 - cinder-client
+- glance-client
+- heat-client
 - neutron-client
 - swift-client
 - neutron

@@ -66,6 +66,13 @@ commands:
         status: service rabbitmq-server status
         stop: service rabbitmq-server stop
 components:
+    ceilometer-client:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
     cinder:
         action_classes:
             install: anvil.components.cinder:CinderInstaller
@@ -178,6 +185,13 @@ components:
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.glance_client:GlanceClientTester
             coverage: anvil.components.glance_client:GlanceClientTester
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+    heat-client:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
     horizon:
         action_classes:
