@@ -59,7 +59,7 @@ class UninstallAction(action.Action):
             *removals
             )
 
-        removals += ['package-install']
+        removals += ['package-install', 'package-install-all-deps']
         general_package = "general"
         dependency_handler = self.distro.dependency_handler_class(
             self.distro, self.root_dir, instances.values())

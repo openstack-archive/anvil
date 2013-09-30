@@ -28,9 +28,26 @@ class TestAction(action.Action):
         return 'test'
 
     def _run(self, persona, component_order, instances):
+        dependency_handler_class = self.distro.dependency_handler_class
+        dependency_handler = dependency_handler_class(self.distro,
+                                                      self.root_dir,
+                                                      instances.values())
+        general_package = "general"
         self._run_phase(
             action.PhaseFunctors(
-                start=lambda i: LOG.info('Running tests of component %s.', colorizer.quote(i.name)),
+                start=lambda i: LOG.info("Installing packages"),
+                run=lambda i: dependency_handler.install_all_deps(),
+                end=None,
+            ),
+            [general_package],
+            {general_package: instances[general_package]},
+            "package-install-all-deps"
+            # no removals
+            )
+        self._run_phase(
+            action.PhaseFunctors(
+                start=lambda i: LOG.info('Running tests of component %s.',
+                                         colorizer.quote(i.name)),
                 run=lambda i: i.run_tests(),
                 end=None,
             ),

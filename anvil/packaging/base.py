@@ -163,7 +163,10 @@ class DependencyHandler(object):
     def build_binary(self):
         pass
 
-    def install(self):
+    def install(self, general):
+        pass
+
+    def install_all_deps(self):
         pass
 
     def uninstall(self):

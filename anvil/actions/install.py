@@ -78,7 +78,7 @@ class InstallAction(action.Action):
         self._run_phase(
             action.PhaseFunctors(
                 start=lambda i: LOG.info("Installing packages"),
-                run=lambda i: dependency_handler.install(),
+                run=dependency_handler.install,
                 end=None,
             ),
             [general_package],

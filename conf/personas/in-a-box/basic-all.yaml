@@ -24,6 +24,8 @@ components:
 - django-openstack-auth
 - horizon
 options:
+    general:
+        install-all-deps: false
     nova:
         db-sync: true
         do-network-init: true

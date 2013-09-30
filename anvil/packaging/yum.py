@@ -631,7 +631,7 @@ class YumDependencyHandler(base.DependencyHandler):
                 rpm_names.append(line)
         return rpm_names
 
-    def _all_rpm_names(self):
+    def _desired_rpms_from_deps(self):
         # This file should have all the requirements (including test ones)
         # that we need to install (and which should have been built as rpms
         # in the previous build stages).
@@ -646,12 +646,40 @@ class YumDependencyHandler(base.DependencyHandler):
             req_names.append(req.key)
             reqs.append(req)
         rpm_names = self._convert_names_python2rpm(req_names)
+        return zip(rpm_names, reqs)
 
+    def _desired_rpms_from_instances(self):
+        result = []
+        need_names = []
+        for inst in self.instances:
+            if sh.isdir(inst.get_option("app_dir")):
+                req = None
+                rpm_name = None
+                try:
+                    (rpm_name, _tpl) = self._get_template_and_rpm_name(inst)
+                    req = str(inst.egg_info['req'])
+                    if rpm_name is not None:
+                        result.append((rpm_name, req))
+                    else:
+                        need_names.append(req)
+                except AttributeError:
+                    pass
+            for rpm_name in inst.package_names():
+                result.append((rpm_name, None))
+        if need_names:
+            needed_rpm_names = self._convert_names_python2rpm(need_names)
+            result.extend(zip(needed_rpm_names, need_names))
+        result.extend((rpm_name, None) for rpm_name in self.requirements["requires"])
+        return result
+
+    def _get_rpm_names(self, from_deps=True, from_instances=True):
         # Ensure we select the right versions that is required and not a
         # version that doesn't match the requirements.
         desired_rpms = []
-        desired_rpm_names = set()
-        desired_rpms_formatted = []
+        if from_deps:
+            desired_rpms.extend(self._desired_rpms_from_deps())
+        if from_instances:
+            desired_rpms.extend(self._desired_rpms_from_instances())
 
         def format_name(rpm_name, py_req):
             full_name = str(rpm_name).strip()
@@ -659,32 +687,11 @@ class YumDependencyHandler(base.DependencyHandler):
                 full_name += ",%s" % (py_req)
             return full_name
 
-        def capture_rpm(rpm_name, py_req):
-            if rpm_name in desired_rpm_names or not rpm_name:
-                return
-            desired_rpms_formatted.append(format_name(rpm_name, py_req))
-            desired_rpms.append((rpm_name, py_req))
-            desired_rpm_names.add(rpm_name)
-
-        for (rpm_name, req) in zip(rpm_names, reqs):
-            capture_rpm(rpm_name, req)
-        for inst in self.instances:
-            if sh.isdir(inst.get_option("app_dir")):
-                req = None
-                rpm_name = None
-                try:
-                    (rpm_name, _tpl) = self._get_template_and_rpm_name(inst)
-                    req = inst.egg_info['req']
-                except AttributeError:
-                    pass
-                capture_rpm(rpm_name, req)
-            for rpm_name in inst.package_names():
-                capture_rpm(rpm_name, None)
-        for rpm_name in self.requirements["requires"]:
-            capture_rpm(rpm_name, None)
+        desired_rpms_formatted = sorted(format_name(rpm_name, py_req)
+                                        for rpm_name, py_req in desired_rpms)
+        desired_rpm_names = set(rpm_name for rpm_name, _py_req in desired_rpms)
 
         cmd = [self.yumfind_executable, '-j']
-        desired_rpms_formatted = sorted(desired_rpms_formatted)
         for p in desired_rpms_formatted:
             cmd.extend(['-p', p])
         header = "Validating %s required packages are still available" % (len(desired_rpms))
@@ -724,16 +731,27 @@ class YumDependencyHandler(base.DependencyHandler):
             desired_rpms.append("%s,%s" % (pkg['name'], pkg['version']))
         return list(sorted(desired_rpms))
 
-    def install(self):
-        super(YumDependencyHandler, self).install()
+    def install(self, general):
+        super(YumDependencyHandler, self).install(general)
         self.helper.clean()
+
+        install_all_deps = general.get_bool_option('install-all-deps', True)
+        install_pkgs = self._get_rpm_names(from_deps=install_all_deps,
+                                           from_instances=True)
 
         # Erase conflicting packages
         remove_pkgs = [pkg_name
                        for pkg_name in self.requirements["conflicts"]
                        if self.helper.is_installed(pkg_name)]
-        self.helper.transaction(install_pkgs=self._all_rpm_names(),
+        self.helper.transaction(install_pkgs=install_pkgs,
                                 remove_pkgs=remove_pkgs,
+                                tracewriter=self.tracewriter)
+
+    def install_all_deps(self):
+        super(YumDependencyHandler, self).install_all_deps()
+        self.helper.clean()
+        install_pkgs = self._get_rpm_names(from_deps=True, from_instances=False)
+        self.helper.transaction(install_pkgs=install_pkgs,
                                 tracewriter=self.tracewriter)
 
     def uninstall(self):
