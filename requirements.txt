@@ -1,12 +1,12 @@
+pbr>=0.5.21,<1.0
+
 argparse
 cheetah>=2.4.4
-d2to1>=0.2.10,<0.3
 iniparse
 iso8601>=0.1.4
 keyring>=1.6.1,<2.0
 netifaces>=0.5
 ordereddict
-pbr>=0.5.16,<0.6
 progressbar
 psutil
 pyyaml>=3.1.0
