@@ -93,7 +93,6 @@ class YumDependencyHandler(base.DependencyHandler):
         self.py2rpm_executable = sh.which("py2rpm", ["tools/"])
         self.rpmbuild_executable = sh.which("rpmbuild")
         self.specprint_executable = sh.which('specprint', ["tools/"])
-        self.yumfind_executable = sh.which("yumfind", ["tools/"])
         # We inspect yum for packages, this helper allows us to do this.
         self.helper = yum_helper.Helper(self.log_dir)
         # See if we are requested to run at a higher make parallelism level
@@ -684,52 +683,14 @@ class YumDependencyHandler(base.DependencyHandler):
         def format_name(rpm_name, py_req):
             full_name = str(rpm_name).strip()
             if py_req is not None:
-                full_name += ",%s" % (py_req)
+                if not isinstance(py_req, pkg_resources.Requirement):
+                    py_req = pkg_resources.Requirement.parse(str(py_req))
+                full_name += ','.join(''.join(x) for x in py_req.specs)
             return full_name
 
-        desired_rpms_formatted = sorted(format_name(rpm_name, py_req)
-                                        for rpm_name, py_req in desired_rpms)
-        desired_rpm_names = set(rpm_name for rpm_name, _py_req in desired_rpms)
+        return sorted(format_name(rpm_name, py_req)
+                      for rpm_name, py_req in desired_rpms)
 
-        cmd = [self.yumfind_executable, '-j']
-        for p in desired_rpms_formatted:
-            cmd.extend(['-p', p])
-        header = "Validating %s required packages are still available" % (len(desired_rpms))
-        utils.log_iterable(desired_rpms_formatted, header=header, logger=LOG)
-
-        rpms_located = []
-        rpm_names_located = set()
-        for matched in sh.execute(cmd)[0].splitlines():
-            matched = matched.strip()
-            if matched:
-                pkg = json.loads(matched)
-                if isinstance(pkg, dict):
-                    rpm_names_located.add(pkg['req_name'])
-                    rpms_located.append(pkg)
-
-        rpm_names_missing = desired_rpm_names - rpm_names_located
-        if rpm_names_missing:
-            # Include the python version required information (if applicable)
-            missing_formatted = []
-            for n in sorted(rpm_names_missing):
-                source_found = False
-                for (n2, py_req) in desired_rpms:
-                    if n2 == n:
-                        missing_formatted.append(format_name(n2, py_req))
-                        source_found = True
-                        break
-                if not source_found:
-                    missing_formatted.append(format_name(n, None))
-            msg = "Could not find available rpm packages: %s"
-            msg = msg % (", ".join(missing_formatted))
-            raise excp.DependencyException(msg)
-
-        LOG.info("All %s required packages are still available!", len(desired_rpms))
-        desired_rpms = []
-        for pkg in rpms_located:
-            LOG.debug("Found %s", pkg)
-            desired_rpms.append("%s,%s" % (pkg['name'], pkg['version']))
-        return list(sorted(desired_rpms))
 
     def install(self, general):
         super(YumDependencyHandler, self).install(general)
