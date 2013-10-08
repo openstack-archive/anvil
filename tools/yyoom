@@ -32,6 +32,8 @@ import os
 import sys
 import yum
 import functools
+import collections
+import pkg_resources
 
 from contextlib import contextmanager
 
@@ -203,13 +205,37 @@ def log_list(items, title=''):
         LOG.info("  - %s" % (i))
 
 
+def build_yum_map(base):
+    rpms = base.doPackageLists(ignore_case=True,
+                               showdups=True)
+    all_rpms = []
+    for name in ('available', 'installed', 'extras', 'reinstall_available'):
+        all_rpms.extend(getattr(rpms, name, []))
+
+    yum_map = collections.defaultdict(list)
+    for rpm in all_rpms:
+        for provides in rpm.provides:
+            yum_map[provides[0]].append((rpm.version, rpm))
+    return dict(yum_map)
+
+
+def _find_package(yum_map, pkg_req):
+    """Find most suitable package in YUM packages map"""
+    req = pkg_resources.Requirement.parse(pkg_req)
+    matches = [rpm
+               for (version, rpm) in yum_map.get(req.project_name, [])
+               if version in req]
+    if matches:
+        pkg = sorted(matches)[-1]
+        return dict(name=pkg.name, version=pkg.version)
+
+
 def _run(yum_base, options):
     """Handler of `transaction` command
 
     Installs and erases packages, prints what was done in JSON
     """
-
-    def parse_package(p):
+    def _parse_package(p):
         pkg_info = {}
         try:
             (name, version) = p.split(',', 1)
@@ -224,11 +250,14 @@ def _run(yum_base, options):
     log_list(options.install, title='Installing packages:')
     with _transaction(yum_base, _OutputtingRPMCallback()):
         for pkg in options.erase or ():
-            pkg = parse_package(pkg)
+            pkg = _parse_package(pkg)
             yum_base.remove(**pkg)
-        for pkg in options.install or ():
-            pkg = parse_package(pkg)
-            yum_base.install(**pkg)
+        if options.install is not None:
+            yum_map = build_yum_map(yum_base)
+            for pkg in options.install:
+                pkg = _find_package(yum_map, pkg)
+                if pkg is not None:
+                    yum_base.install(**pkg)
 
 
 def _list(yum_base, options):

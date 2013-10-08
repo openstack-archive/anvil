@@ -9,10 +9,11 @@ cd "$(dirname "$0")"
 
 VERBOSE="${VERBOSE:-0}"
 PY2RPM_CMD="$PWD/tools/py2rpm"
-YUMFIND_CMD="$PWD/tools/yumfind"
+YYOOM_CMD="$PWD/tools/yyoom"
 PIPDOWNLOAD_CMD="$PWD/tools/pip-download"
 
 YUM_OPTS="--assumeyes --nogpgcheck"
+YYOOM_OPTS="--verbose"
 RPM_OPTS=""
 CURL_OPTS=""
 
@@ -35,6 +36,7 @@ fi
 
 if [ "$VERBOSE" == "0" ]; then
     YUM_OPTS="$YUM_OPTS -q"
+    YYOOM_OPTS=""
     RPM_OPTS="-q"
     CURL_OPTS="-s"
 fi
@@ -144,8 +146,7 @@ bootstrap_selinux()
     if [ `getenforce` == "Enforcing" ]; then
         # Ensure all yum api interacting binaries are ok to be used
         echo "Enabling selinux for yum like binaries."
-        chcon -h "system_u:object_r:rpm_exec_t:s0" "$YUMFIND_CMD"
-        chcon -h "system_u:object_r:rpm_exec_t:s0" "$PWD/tools/yyoom"
+        chcon -h "system_u:object_r:rpm_exec_t:s0" "$YYOOM_CMD"
     fi
 }
 
@@ -161,57 +162,56 @@ except KeyError:
 ")
     local python_names=$(cat requirements.txt test-requirements.txt | sed -r -e 's/#.*$//' | sort -u)
     local bootstrap_dir="$(readlink -f ./.bootstrap/)"
-    local missing_packages=""
-    local found_packages=""
+    local yyoom_cmd="transaction"
     for name in $python_names; do
-        local pkg_name=$("$PY2RPM_CMD" --package-map $package_map --convert "$name" | while read req pack; do echo $pack; done  | head -n1 | tr -s ' ' | cut -d' ' -f1)
-        local yum_name=$("$YUMFIND_CMD" -p "$pkg_name,$name")
-        if [ -n "$yum_name" ]; then
-            found_packages="$found_packages $yum_name"
-        else
-            missing_packages="$missing_packages $name"
-        fi
+        local specs=$(echo $name | awk 'match($0, "((=|>|<|!).*$)", res) {print res[1]}')
+        local pkg_name=$("$PY2RPM_CMD" --package-map $package_map --convert "$name" | awk 'NR==1 {print $2}')
+        yyoom_cmd+=" --install $pkg_name$specs"
     done
-    if [ -n "$found_packages" ]; then
-        echo -e "Installing ${COL_GREEN}available${COL_RESET} python requirements found as packages:"
-        dump_list "$found_packages"
-        yum install $YUM_OPTS $found_packages
-        if [ "$?" != "0" ]; then
-            echo -e "${COL_RED}Failed installing!${COL_RESET}"
-            return 1
-        fi
-    fi
-    if [ -z "$missing_packages" ]; then
-        return 0
-    fi
-    echo -e "Building ${COL_YELLOW}missing${COL_RESET} python requirements:"
-    dump_list "$missing_packages"
-    local pip_tmp_dir="$bootstrap_dir/pip-download"
-    mkdir -p "$pip_tmp_dir"
-
-    echo "Downloading..."
-    $PIPDOWNLOAD_CMD -d "$pip_tmp_dir" $missing_packages | grep "^Saved"
-    echo "Building RPMs..."
-    local rpm_names=$("$PY2RPM_CMD"  --package-map $package_map --scripts-dir "conf/templates/packaging/scripts" --rpm-base "$bootstrap_dir/rpmbuild" -- "$pip_tmp_dir/"* 2>/dev/null |
-        awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)
-    if [ -z "$rpm_names" ]; then
-        echo -e "${COL_RED}No binary RPMs were built!${COL_RESET}"
-        return 1
-    fi
-    local rpm_base_names=""
-    for rpm in $rpm_names; do
-        rpm_base_names="$rpm_base_names $(basename $rpm)"
-    done
-    echo -e "Installing ${COL_YELLOW}missing${COL_RESET} python requirement packages:"
-    dump_list "$rpm_base_names"
-    yum install $YUM_OPTS $rpm_names
-    if [ "$?" != "0" ]; then
-        echo -e "${COL_RED}Failed installing!${COL_RESET}"
-        return 1
-    fi
-    rm -rf "$pip_tmp_dir"
-    rm -rf "$bootstrap_dir/rpmbuild/"{BUILD,SOURCES,SPECS,BUILDROOT}
+    local yyoom_res=$("$YYOOM_CMD" $YYOOM_OPTS $yyoom_cmd)
     return 0
+    # How to get and handle missing packages?
+    #if [ -n "$found_packages" ]; then
+    #    echo -e "Installing ${COL_GREEN}available${COL_RESET} python requirements found as packages:"
+    #    dump_list "$found_packages"
+    #    yum install $YUM_OPTS $found_packages
+    #    if [ "$?" != "0" ]; then
+    #        echo -e "${COL_RED}Failed installing!${COL_RESET}"
+    #        return 1
+    #    fi
+    #fi
+    #if [ -z "$missing_packages" ]; then
+    #    return 0
+    #fi
+    #echo -e "Building ${COL_YELLOW}missing${COL_RESET} python requirements:"
+    #dump_list "$missing_packages"
+    #return 0
+    #local pip_tmp_dir="$bootstrap_dir/pip-download"
+    #mkdir -p "$pip_tmp_dir"
+
+    #echo "Downloading..."
+    #$PIPDOWNLOAD_CMD -d "$pip_tmp_dir" $missing_packages | grep "^Saved"
+    #echo "Building RPMs..."
+    #local rpm_names=$("$PY2RPM_CMD"  --package-map $package_map --scripts-dir "conf/templates/packaging/scripts" --rpm-base "$bootstrap_dir/rpmbuild" -- "$pip_tmp_dir/"* 2>/dev/null |
+    #    awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)
+    #if [ -z "$rpm_names" ]; then
+    #    echo -e "${COL_RED}No binary RPMs were built!${COL_RESET}"
+    #    return 1
+    #fi
+    #local rpm_base_names=""
+    #for rpm in $rpm_names; do
+    #    rpm_base_names="$rpm_base_names $(basename $rpm)"
+    #done
+    #echo -e "Installing ${COL_YELLOW}missing${COL_RESET} python requirement packages:"
+    #dump_list "$rpm_base_names"
+    #yum install $YUM_OPTS $rpm_names
+    #if [ "$?" != "0" ]; then
+    #    echo -e "${COL_RED}Failed installing!${COL_RESET}"
+    #    return 1
+    #fi
+    #rm -rf "$pip_tmp_dir"
+    #rm -rf "$bootstrap_dir/rpmbuild/"{BUILD,SOURCES,SPECS,BUILDROOT}
+    #return 0
 }
 
 needs_bootstrap()
@@ -289,18 +289,18 @@ BOOTSTRAP=false
 # Smithy opts are consumed while those to anvil are copied through.
 while [ ! -z $1 ]; do
     case "$1" in
-        '--bootstrap')
-	    BOOTSTRAP=true
-	    shift
-	    ;;
-	'--force')
-	    FORCE=yes
-	    shift
-	    ;;
-	*)
-	    ARGS="$ARGS $1"
-	    shift
-	    ;;
+    '--bootstrap')
+        BOOTSTRAP=true
+        shift
+        ;;
+    '--force')
+        FORCE=yes
+        shift
+        ;;
+    *)
+        ARGS="$ARGS $1"
+        shift
+        ;;
     esac
 done
 
