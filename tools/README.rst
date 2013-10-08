@@ -109,24 +109,6 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
 
-yumfind
--------
-
-`yumfind` uses the yum API to provide a interface to finding packages in the
-yum repository that may match a given name or a given name with a set of python
-requirements. It writes results of its work to standard output
-in JSON or in rpm package name format (see `yumfind --help`)::
-
-    $ ./tools/yumfind -p 'python-setuptools,setuptools>0.8,<1'
-    python-setuptools-0.9.8-0.el6.noarch
-    $ ./tools/yumfind -p 'python-setuptools,setuptools>0.8,<1' -j
-    {"release": "0.el6", "epoch": "0", "version": "0.9.8", "arch": "noarch", "name": "python-setuptools"}
-
-`yumfind` is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
 pip-download
 ------------
 

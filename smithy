@@ -9,10 +9,11 @@ cd "$(dirname "$0")"
 
 VERBOSE="${VERBOSE:-0}"
 PY2RPM_CMD="$PWD/tools/py2rpm"
-YUMFIND_CMD="$PWD/tools/yumfind"
+YYOOM_CMD="$PWD/tools/yyoom"
 PIPDOWNLOAD_CMD="$PWD/tools/pip-download"
 
 YUM_OPTS="--assumeyes --nogpgcheck"
+YYOOM_OPTS="--verbose"
 RPM_OPTS=""
 CURL_OPTS=""
 
@@ -35,6 +36,7 @@ fi
 
 if [ "$VERBOSE" == "0" ]; then
     YUM_OPTS="$YUM_OPTS -q"
+    YYOOM_OPTS=""
     RPM_OPTS="-q"
     CURL_OPTS="-s"
 fi
@@ -144,8 +146,7 @@ bootstrap_selinux()
     if [ `getenforce` == "Enforcing" ]; then
         # Ensure all yum api interacting binaries are ok to be used
         echo "Enabling selinux for yum like binaries."
-        chcon -h "system_u:object_r:rpm_exec_t:s0" "$YUMFIND_CMD"
-        chcon -h "system_u:object_r:rpm_exec_t:s0" "$PWD/tools/yyoom"
+        chcon -h "system_u:object_r:rpm_exec_t:s0" "$YYOOM_CMD"
     fi
 }
 
@@ -161,29 +162,38 @@ except KeyError:
 ")
     local python_names=$(cat requirements.txt test-requirements.txt | sed -r -e 's/#.*$//' | sort -u)
     local bootstrap_dir="$(readlink -f ./.bootstrap/)"
-    local missing_packages=""
-    local found_packages=""
-    for name in $python_names; do
-        local pkg_name=$("$PY2RPM_CMD" --package-map $package_map --convert "$name" | while read req pack; do echo $pack; done  | head -n1 | tr -s ' ' | cut -d' ' -f1)
-        local yum_name=$("$YUMFIND_CMD" -p "$pkg_name,$name")
-        if [ -n "$yum_name" ]; then
-            found_packages="$found_packages $yum_name"
-        else
-            missing_packages="$missing_packages $name"
-        fi
+    local transaction_cmd="transaction --skip-missing"
+    local install_packages=""
+    declare -A rpm_python_map
+    for python_name in $python_names; do
+        local specs=$(echo $python_name | awk 'match($0, "((=|>|<|!).*$)", res) {print res[1]}')
+        local rpm_name=$("$PY2RPM_CMD" --package-map $package_map --convert "$python_name" |
+                         awk 'NR==1 {print $2}')
+        rpm_python_map[$rpm_name]=$python_name
+        install_packages="$install_packages $rpm_name$specs"
+        transaction_cmd+=" --install $rpm_name$specs"
     done
-    if [ -n "$found_packages" ]; then
-        echo -e "Installing ${COL_GREEN}available${COL_RESET} python requirements found as packages:"
-        dump_list "$found_packages"
-        yum install $YUM_OPTS $found_packages
-        if [ "$?" != "0" ]; then
-            echo -e "${COL_RED}Failed installing!${COL_RESET}"
-            return 1
-        fi
+
+    echo -e "Installing ${COL_GREEN}python${COL_RESET} requirements:"
+    dump_list "$install_packages"
+    local yyoom_res=$("$YYOOM_CMD" $YYOOM_OPTS $transaction_cmd)
+    if [ -z "$yyoom_res" ]; then
+        return 0
     fi
+    local missing_rpms=$(echo $yyoom_res | python -c "import sys, json
+for item in json.load(sys.stdin):
+    if item.get('action_type') == 'missing':
+        print(item['name'])
+")
+    local missing_packages=""
+    for rpm in $missing_rpms; do
+        missing_packages="$missing_packages ${rpm_python_map[$rpm]}"
+    done
+
     if [ -z "$missing_packages" ]; then
         return 0
     fi
+
     echo -e "Building ${COL_YELLOW}missing${COL_RESET} python requirements:"
     dump_list "$missing_packages"
     local pip_tmp_dir="$bootstrap_dir/pip-download"
@@ -289,18 +299,18 @@ BOOTSTRAP=false
 # Smithy opts are consumed while those to anvil are copied through.
 while [ ! -z $1 ]; do
     case "$1" in
-        '--bootstrap')
-	    BOOTSTRAP=true
-	    shift
-	    ;;
-	'--force')
-	    FORCE=yes
-	    shift
-	    ;;
-	*)
-	    ARGS="$ARGS $1"
-	    shift
-	    ;;
+    '--bootstrap')
+        BOOTSTRAP=true
+        shift
+        ;;
+    '--force')
+        FORCE=yes
+        shift
+        ;;
+    *)
+        ARGS="$ARGS $1"
+        shift
+        ;;
     esac
 done
 
