@@ -32,6 +32,8 @@ import os
 import sys
 import yum
 import functools
+import collections
+import pkg_resources
 
 from contextlib import contextmanager
 
@@ -181,8 +183,7 @@ class _RPMCallback(yum.rpmtrans.RPMBaseCallback):
 
 class _OutputtingRPMCallback(_RPMCallback):
 
-    def yyoom_post_transaction(self, base, _code):
-        output = []
+    def yyoom_post_transaction(self, base, _code, output=[]):
         for txmbr in base.tsInfo:
             action_type = _action_type_from_code(txmbr.output_state)
             info = _package_info(txmbr.po,
@@ -203,32 +204,57 @@ def log_list(items, title=''):
         LOG.info("  - %s" % (i))
 
 
+def build_yum_map(base):
+    rpms = base.doPackageLists(ignore_case=True,
+                               showdups=True)
+    all_rpms = []
+    for name in ('available', 'installed', 'extras', 'reinstall_available'):
+        all_rpms.extend(getattr(rpms, name, []))
+
+    yum_map = collections.defaultdict(list)
+    for rpm in all_rpms:
+        for provides in rpm.provides:
+            yum_map[provides[0]].append((rpm.version, rpm))
+    return dict(yum_map)
+
+
+def _find_package(yum_map, pkg_req, output, skip_missing=False):
+    """Find most suitable package in YUM packages map"""
+    req = pkg_resources.Requirement.parse(pkg_req)
+    pkg_name = req.project_name
+    matches = [rpm
+               for (version, rpm) in yum_map.get(pkg_name, [])
+               if version in req]
+    if matches:
+        return max(matches)
+
+    if skip_missing:
+        output.append(_package_info(pkg_name,
+                                    action_type="missing",
+                                    requirement=pkg_req,
+                                    action=None))
+    else:
+        raise yum.Errors.InstallError("The '%s' package not found." % pkg_name)
+
+
 def _run(yum_base, options):
     """Handler of `transaction` command
 
     Installs and erases packages, prints what was done in JSON
     """
-
-    def parse_package(p):
-        pkg_info = {}
-        try:
-            (name, version) = p.split(',', 1)
-            pkg_info['name'] = name
-            if version:
-                pkg_info['version'] = version
-        except ValueError:
-            pkg_info['name'] = p
-        return pkg_info
-
     log_list(options.erase, title='Erasing packages:')
     log_list(options.install, title='Installing packages:')
-    with _transaction(yum_base, _OutputtingRPMCallback()):
-        for pkg in options.erase or ():
-            pkg = parse_package(pkg)
-            yum_base.remove(**pkg)
-        for pkg in options.install or ():
-            pkg = parse_package(pkg)
-            yum_base.install(**pkg)
+    output = []
+    with _transaction(yum_base, _OutputtingRPMCallback(), output):
+        yum_map = build_yum_map(yum_base)
+        for pkg_name in options.erase or ():
+            pkg = _find_package(yum_map, pkg_name, output, options.skip_missing)
+            if pkg is not None and pkg in yum_base.rpmdb.returnPackages():
+                yum_base.remove(pkg)
+        for pkg_name in options.install or ():
+            pkg = _find_package(yum_map, pkg_name, output, options.skip_missing)
+            if pkg is not None:
+                yum_base.install(pkg)
 
 
 def _list(yum_base, options):
@@ -311,6 +337,9 @@ def _parse_arguments(args):
     parser_run.add_argument('--erase', '-e', action='append',
                             metavar='package',
                             help='erase package')
+    parser_run.add_argument('--skip-missing', action='store_true',
+                            default=False,
+                            help='do not fail on missing packages')
     parser_run.set_defaults(func=_run, operation='Transaction')
 
     # Arg: srpm
@@ -346,7 +375,7 @@ def _run_yum_api(name, func, ok_codes=(0,), *args, **kwargs):
 
 
 @contextmanager
-def _transaction(base, callback):
+def _transaction(base, callback, output):
     """Manage Yum transactions
 
     Locks and unlocks Yum database, builds and processes transaction
@@ -372,7 +401,7 @@ def _transaction(base, callback):
 
         post_cb = getattr(callback, 'yyoom_post_transaction', None)
         if post_cb:
-            post_cb(base, code)
+            post_cb(base, code, output)
         if failed:
             raise RuntimeError("Operation failed for %s" %
                                ', '.join(txmbr.name for txmbr in failed))
