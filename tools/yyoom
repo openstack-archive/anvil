@@ -32,6 +32,8 @@ import os
 import sys
 import yum
 import functools
+import collections
+import pkg_resources
 
 from contextlib import contextmanager
 
@@ -181,6 +183,11 @@ class _RPMCallback(yum.rpmtrans.RPMBaseCallback):
 
 class _OutputtingRPMCallback(_RPMCallback):
 
+    def __init__(self, skip_missing=False):
+        _RPMCallback.__init__(self)
+        self._skip_missing = skip_missing
+        self._missing = []
+
     def yyoom_post_transaction(self, base, _code):
         output = []
         for txmbr in base.tsInfo:
@@ -189,7 +196,17 @@ class _OutputtingRPMCallback(_RPMCallback):
                                  action_code=txmbr.output_state,
                                  action_type=action_type)
             output.append(info)
-        _write_output(output)
+        _write_output(output + self._missing)
+
+    def yyoom_on_missing_package(self, pkg_req):
+        if not self._skip_missing:
+            raise yum.Errors.InstallError("The '%s' package not found." % pkg_req)
+
+        req = pkg_resources.Requirement.parse(pkg_req)
+        self._missing.append(_package_info(req.unsafe_name,
+                                           action_type="missing",
+                                           requirement=pkg_req,
+                                           action=None))
 
 
 def log_list(items, title=''):
@@ -203,32 +220,54 @@ def log_list(items, title=''):
         LOG.info("  - %s" % (i))
 
 
+def build_yum_map(base):
+    rpms = base.doPackageLists(ignore_case=True,
+                               showdups=True)
+    all_rpms = []
+    for name in ('available', 'installed', 'extras', 'reinstall_available'):
+        all_rpms.extend(getattr(rpms, name, []))
+
+    yum_map = collections.defaultdict(list)
+    for rpm in all_rpms:
+        for provides in rpm.provides:
+            yum_map[provides[0]].append((rpm.version, rpm))
+    return dict(yum_map)
+
+
+def _find_packages(yum_map, pkg_req):
+    """Find suitable packages in YUM packages map"""
+    req = pkg_resources.Requirement.parse(pkg_req)
+    matches = [rpm
+               for (version, rpm) in yum_map.get(req.unsafe_name, [])
+               if version in req]
+    if matches:
+        return matches
+
+
 def _run(yum_base, options):
     """Handler of `transaction` command
 
     Installs and erases packages, prints what was done in JSON
     """
-
-    def parse_package(p):
-        pkg_info = {}
-        try:
-            (name, version) = p.split(',', 1)
-            pkg_info['name'] = name
-            if version:
-                pkg_info['version'] = version
-        except ValueError:
-            pkg_info['name'] = p
-        return pkg_info
-
     log_list(options.erase, title='Erasing packages:')
     log_list(options.install, title='Installing packages:')
-    with _transaction(yum_base, _OutputtingRPMCallback()):
-        for pkg in options.erase or ():
-            pkg = parse_package(pkg)
-            yum_base.remove(**pkg)
-        for pkg in options.install or ():
-            pkg = parse_package(pkg)
-            yum_base.install(**pkg)
+    with _transaction(yum_base,
+                      _OutputtingRPMCallback(options.skip_missing)) as cb:
+        yum_map = build_yum_map(yum_base)
+        for pkg_name in options.erase or ():
+            matches = _find_packages(yum_map, pkg_name)
+            if matches is None:
+                cb.yyoom_on_missing_package(pkg_name)
+            installed_packages = yum_base.rpmdb.returnPackages()
+            for package in matches:
+                if package in installed_packages:
+                    yum_base.remove(package)
+        for pkg_name in options.install or ():
+            matches = _find_packages(yum_map, pkg_name)
+            if matches is None:
+                cb.yyoom_on_missing_package(pkg_name)
+            else:
+                yum_base.install(max(matches))
 
 
 def _list(yum_base, options):
@@ -311,6 +350,9 @@ def _parse_arguments(args):
     parser_run.add_argument('--erase', '-e', action='append',
                             metavar='package',
                             help='erase package')
+    parser_run.add_argument('--skip-missing', action='store_true',
+                            default=False,
+                            help='do not fail on missing packages')
     parser_run.set_defaults(func=_run, operation='Transaction')
 
     # Arg: srpm
@@ -354,7 +396,7 @@ def _transaction(base, callback):
     """
     try:
         base.doLock()
-        yield
+        yield callback
 
         code = _run_yum_api('building transaction',
                             base.buildTransaction, ok_codes=(0, 2))
