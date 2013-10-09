@@ -165,6 +165,7 @@ except KeyError:
     local found_packages=""
     for name in $python_names; do
         local pkg_name=$("$PY2RPM_CMD" --package-map $package_map --convert "$name" | while read req pack; do echo $pack; done  | head -n1 | tr -s ' ' | cut -d' ' -f1)
+        echo " - Searching for match for $pkg_name"
         local yum_name=$("$YUMFIND_CMD" -p "$pkg_name,$name")
         if [ -n "$yum_name" ]; then
             found_packages="$found_packages $yum_name"
