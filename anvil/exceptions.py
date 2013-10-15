@@ -108,3 +108,37 @@ class ProcessExecutionError(IOError):
                                             self.exit_code, self.stdout,
                                             self.stderr))
         IOError.__init__(self, message)
+
+
+class YamlException(ConfigException):
+    pass
+
+
+class YamlOptionNotFoundException(YamlException):
+    """Raised by YamlRefLoader if reference option not found."""
+    def __init__(self, conf, opt, ref_conf, ref_opt):
+        msg = "In `{0}`=>`{1}: '$({2}:{3})'` " \
+              "reference option `{3}` not found." \
+              .format(conf, opt, ref_conf, ref_opt)
+        super(YamlOptionNotFoundException, self).__init__(msg)
+
+
+class YamlConfigNotFoundException(YamlException):
+    """Raised by YamlRefLoader if config source not found."""
+    def __init__(self, path):
+        msg = "Could not find (open) yaml source {0}.".format(path)
+        super(YamlConfigNotFoundException, self).__init__(msg)
+
+
+class YamlLoopException(YamlException):
+    """Raised by YamlRefLoader if reference loop found."""
+    def __init__(self, conf, opt, ref_stack):
+        prettified_stack = "".join(map(
+            lambda (i, (c, o)): "\n%s`%s`=>`%s`" % (" " * i, str(c), str(o)),
+            enumerate(ref_stack))
+        )
+        msg = "In `{0}`=>`{1}` reference loop found.\n" \
+              "Reference stack is:{2}." \
+              .format(conf, opt, prettified_stack)
+
+        super(YamlLoopException, self).__init__(msg)
