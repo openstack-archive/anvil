@@ -27,6 +27,7 @@ from anvil import log as logging
 from anvil.packaging import base
 from anvil.packaging.helpers import pip_helper
 from anvil.packaging.helpers import yum_helper
+from anvil.packaging.helpers import py2rpm_helper
 from anvil import settings
 from anvil import shell as sh
 from anvil import utils
@@ -58,7 +59,6 @@ class YumInstallHelper(base.InstallHelper):
 
 
 class YumDependencyHandler(base.DependencyHandler):
-    OPENSTACK_EPOCH = 2
     SPEC_TEMPLATE_DIR = "packaging/specs"
     # TODO(harlowja): get rid of these static lists/mappings from code and move
     # them to configuration (or elsewhere).
@@ -90,7 +90,6 @@ class YumDependencyHandler(base.DependencyHandler):
         self.rpm_sources_dir = sh.joinpths(self.rpmbuild_dir, "SOURCES")
         self.anvil_repo_dir = sh.joinpths(self.root_dir, "repo")
         # Executables we require to operate
-        self.py2rpm_executable = sh.which("py2rpm", ["tools/"])
         self.rpmbuild_executable = sh.which("rpmbuild")
         self.specprint_executable = sh.which('specprint', ["tools/"])
         # We inspect yum for packages, this helper allows us to do this.
@@ -105,29 +104,17 @@ class YumDependencyHandler(base.DependencyHandler):
             except (TypeError, ValueError):
                 pass
 
-    def _py2rpm_start_cmdline(self):
-        cmdline = [
-            self.py2rpm_executable,
-            "--rpm-base",
-            self.rpmbuild_dir,
-        ]
-        if self.python_names:
-            cmdline += [
-               "--epoch-map",
-            ] + ["%s==%s" % (name, self.OPENSTACK_EPOCH)
-                 for name in self.python_names]
+    @property
+    def py2rpm_helper(self):
         package_map = self.distro.get_dependency_config("package_map")
-        if package_map:
-            cmdline += [
-                "--package-map",
-            ] + ["%s==%s" % (key, value)
-                 for key, value in package_map.iteritems()]
         arch_dependent = self.distro.get_dependency_config("arch_dependent")
-        if arch_dependent:
-            cmdline += [
-                "--arch-dependent",
-            ] + list(arch_dependent)
-        return cmdline
+        return py2rpm_helper.Helper(python_names=self.python_names,
+                                    package_map=package_map,
+                                    arch_dependent=arch_dependent,
+                                    rpmbuild_dir=self.rpmbuild_dir,
+                                    download_dir=self.download_dir,
+                                    deps_dir=self.deps_dir,
+                                    log_dir=self.log_dir)
 
     def _package_parameters(self, instance):
         params = {}
@@ -232,17 +219,14 @@ class YumDependencyHandler(base.DependencyHandler):
                           tracewriter=self.tracewriter)
             with sh.remove_before_after(self.rpmbuild_dir):
                 self._create_rpmbuild_subdirs()
-                self._execute_make(makefile_path, marks_dir)
+                self.py2rpm_helper.execute_make(filename=makefile_path,
+                                                marks_dir=marks_dir,
+                                                jobs=self._jobs)
                 repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)
                 for d in sh.listdir(self.rpmbuild_dir, dirs_only=True):
                     self._move_rpm_files(sh.joinpths(d, "RPMS"), repo_dir)
                 self._move_rpm_files(sh.joinpths(self.rpmbuild_dir, "RPMS"), repo_dir)
             self._create_repo(repo_name)
-
-    def _execute_make(self, filename, marks_dir):
-        cmdline = ["make", "-f", filename, "-j", str(self._jobs)]
-        out_filename = sh.joinpths(self.log_dir, "%s.log" % sh.basename(filename))
-        sh.execute_save_output(cmdline, cwd=marks_dir, out_filename=out_filename)
 
     def _move_srpms(self, repo_name, rpmbuild_dir=None):
         if rpmbuild_dir is None:
@@ -308,7 +292,7 @@ class YumDependencyHandler(base.DependencyHandler):
         req_to_install = [pip_helper.extract_requirement(line)
                           for line in self.pips_to_install]
         requested_names = [req.key for req in req_to_install]
-        rpm_to_install = self._convert_names_python2rpm(requested_names)
+        rpm_to_install = self.py2rpm_helper.convert_names_to_rpm(requested_names)
 
         satisfied_list = []
         for (req, rpm_name) in zip(req_to_install, rpm_to_install):
@@ -349,7 +333,7 @@ class YumDependencyHandler(base.DependencyHandler):
                 package_details = pip_helper.get_archive_details(filename)
                 package_reqs.append(package_details['req'])
                 package_keys.append(package_details['req'].key)
-            package_rpm_names = self._convert_names_python2rpm(package_keys)
+            package_rpm_names = self.py2rpm_helper.convert_names_to_rpm(package_keys)
             filtered_files = []
             for (filename, req, rpm_name) in zip(package_files, package_reqs,
                                                  package_rpm_names):
@@ -384,29 +368,9 @@ class YumDependencyHandler(base.DependencyHandler):
         package_files = sorted(filtered_package_files)
 
         # Now build them into SRPM rpm files.
-        (_fn, content) = utils.load_template(sh.joinpths("packaging", "makefiles"), "source.mk")
-        scripts_dir = sh.abspth(sh.joinpths(settings.TEMPLATE_DIR, "packaging", "scripts"))
-        py2rpm_options = self._py2rpm_start_cmdline()[1:] + [
-            "--scripts-dir", scripts_dir,
-            "--source-only",
-            "--rpm-base", self.rpmbuild_dir,
-        ]
-        params = {
-            "DOWNLOADS_DIR": self.download_dir,
-            "LOGS_DIR": self.log_dir,
-            "PY2RPM": self.py2rpm_executable,
-            "PY2RPM_FLAGS": " ".join(py2rpm_options),
-        }
-        marks_dir = sh.joinpths(self.deps_dir, "marks-deps")
-        if not sh.isdir(marks_dir):
-            sh.mkdirslist(marks_dir, tracewriter=self.tracewriter)
-        makefile_path = sh.joinpths(self.deps_dir, "deps.mk")
-        sh.write_file(makefile_path, utils.expand_template(content, params),
-                      tracewriter=self.tracewriter)
-        utils.log_iterable(package_files,
-                           header="Building %s SRPM packages using %s jobs" % (len(package_files), self._jobs),
-                           logger=LOG)
-        self._execute_make(makefile_path, marks_dir)
+        self.py2rpm_helper.build_srpm(package_files=package_files,
+                                      tracewriter=self.tracewriter,
+                                      jobs=self._jobs)
 
     def _write_spec_file(self, instance, rpm_name, template_name, params):
         requires_what = params.get('requires')
@@ -418,9 +382,10 @@ class YumDependencyHandler(base.DependencyHandler):
         except AttributeError:
             pass
         if requires_python:
-            requires_what.extend(self._convert_names_python2rpm(requires_python, False))
+            requires_what.extend(
+                self.py2rpm_helper.convert_names_to_rpm(requires_python, False))
         params['requires'] = requires_what
-        params["epoch"] = self.OPENSTACK_EPOCH
+        params["epoch"] = self.py2rpm_helper.OPENSTACK_EPOCH
         content = utils.load_template(self.SPEC_TEMPLATE_DIR, template_name)[1]
         spec_filename = sh.joinpths(self.rpmbuild_dir, "SPECS", "%s.spec" % rpm_name)
         sh.write_file(spec_filename, utils.expand_template(content, params),
@@ -568,16 +533,6 @@ class YumDependencyHandler(base.DependencyHandler):
             template_name = "%s.spec" % rpm_name
         return (rpm_name, template_name)
 
-    def _build_from_app_dir(self, instance, params):
-        app_dir = instance.get_option('app_dir')
-        cmdline = self._py2rpm_start_cmdline()
-        cmdline.extend(["--source-only"])
-        if 'release' in params:
-            cmdline.extend(["--release", params["release"]])
-        cmdline.extend(["--", app_dir])
-        out_filename = sh.joinpths(self.log_dir, "py2rpm-build-%s.log" % (instance.name))
-        sh.execute_save_output(cmdline, cwd=app_dir, out_filename=out_filename)
-
     def _build_openstack_package(self, instance):
         params = self._package_parameters(instance)
         patches = instance.list_patches("package")
@@ -609,26 +564,9 @@ class YumDependencyHandler(base.DependencyHandler):
                                                   template_name, params)
             self._build_from_spec(instance, spec_filename, patches)
         else:
-            self._build_from_app_dir(instance, params)
-
-    def _convert_names_python2rpm(self, python_names, only_name=True):
-        if not python_names:
-            return []
-        cmdline = self._py2rpm_start_cmdline() + ["--convert"] + python_names
-        rpm_names = []
-        for line in sh.execute(cmdline)[0].splitlines():
-            # format is "Requires: rpm-name <=> X"
-            if not line.startswith("Requires:"):
-                continue
-            line = line[len("Requires:"):].strip()
-            if only_name:
-                positions = [line.find(">"), line.find("<"), line.find("=")]
-                positions = sorted([p for p in positions if p != -1])
-                if positions:
-                    line = line[0:positions[0]].strip()
-            if line and line not in rpm_names:
-                rpm_names.append(line)
-        return rpm_names
+            self.py2rpm_helper.build_from_app_dir(instance_name=instance.name,
+                                                  app_dir=instance.get_option("app_dir"),
+                                                  release=params.get("release"))
 
     def _desired_rpms_from_deps(self):
         # This file should have all the requirements (including test ones)
@@ -644,7 +582,7 @@ class YumDependencyHandler(base.DependencyHandler):
                 continue
             req_names.append(req.key)
             reqs.append(req)
-        rpm_names = self._convert_names_python2rpm(req_names)
+        rpm_names = self.py2rpm_helper.convert_names_to_rpm(req_names)
         return zip(rpm_names, reqs)
 
     def _desired_rpms_from_instances(self):
@@ -666,7 +604,7 @@ class YumDependencyHandler(base.DependencyHandler):
             for rpm_name in inst.package_names():
                 result.append((rpm_name, None))
         if need_names:
-            needed_rpm_names = self._convert_names_python2rpm(need_names)
+            needed_rpm_names = self.py2rpm_helper.convert_names_to_rpm(need_names)
             result.extend(zip(needed_rpm_names, need_names))
         result.extend((rpm_name, None) for rpm_name in self.requirements["requires"])
         return result
