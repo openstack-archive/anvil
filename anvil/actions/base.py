@@ -56,9 +56,9 @@ class Action(object):
         self.root_dir = root_dir
         # Action phases are tracked in this directory
         self.phase_dir = sh.joinpths(root_dir, 'phases')
-        # Yamls are 'interpolated' using this instance at the given
-        # component directory where component configuration will be found...
-        self.interpolator = cfg.YamlInterpolator(settings.COMPONENT_CONF_DIR)
+        # Yamls are loaded (with its reference links) using this instance at the
+        # given component directory where component configuration will be found.
+        self.config_loader = cfg.YamlRefLoader(settings.COMPONENT_CONF_DIR)
         # Keyring/pw settings + cache
         self.passwords = {}
         self.keyring_path = cli_opts.pop('keyring_path')
@@ -173,7 +173,7 @@ class Action(object):
     def _get_interpolated_options(self, name):
         opts = {}
         for c in self._get_interpolated_names(name):
-            opts.update(self.interpolator.extract(c))
+            opts.update(self.config_loader.load(c))
         return opts
 
     def _construct_instances(self, persona):
