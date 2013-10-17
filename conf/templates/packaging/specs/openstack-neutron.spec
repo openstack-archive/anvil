@@ -73,13 +73,13 @@ Requires(pre):    shadow-utils
 %endif
 
 %description
-Neutron is a virtual network service for Openstack. Just like
-OpenStack Nova provides an API to dynamically request and configure
-virtual servers, Neutron provides an API to dynamically request and
-configure virtual networks. These networks connect "interfaces" from
-other OpenStack services (e.g., virtual NICs from Nova VMs). The
-Neutron API supports extensions to provide advanced network
-capabilities (e.g., QoS, ACLs, network monitoring, etc.)
+Neutron is a virtual network service for Openstack. Just like OpenStack
+Nova provides an API to dynamically request and configure virtual
+servers, Neutron provides an API to dynamically request and configure
+virtual networks. These networks connect "interfaces" from other
+OpenStack services (e.g., virtual NICs from Nova VMs). The Neutron API
+supports extensions to provide advanced network capabilities (e.g., QoS,
+ACLs, network monitoring, etc.)
 
 
 %package -n python-neutron
@@ -231,7 +231,9 @@ Requires:       python-stevedore >= 0.9
 Neutron provides an API to dynamically request and configure virtual
 networks.
 
-This package includes the Modular Layer 2 (ml2) Neutron plugin.
+This package contains a neutron plugin that allows the use of drivers to
+support separately extensible sets of network types and the mechanisms
+for accessing those types.
 
 
 %package -n openstack-neutron-mlnx
@@ -248,7 +250,7 @@ Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
 Neutron provides an API to dynamically request and configure virtual
 networks.
 
-This package contains Neutron plugin that adds support for Mellanox
+This plugin implements Quantum v2 APIs with support for Mellanox
 embedded switch functionality as part of the VPI (Ethernet/InfiniBand)
 HCA.
 
