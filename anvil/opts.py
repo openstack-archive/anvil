@@ -32,13 +32,13 @@ from anvil import utils
 from anvil import version
 
 OVERVIEW = """Overview: Anvil is a forging tool to help build OpenStack components
-and there dependencies into a complete system. It git checkouts the components, builds
-there dependencies and the components themselves into packages. It can then install
-from the repositories it creates using the packages it made, perform configuration
-and then start, stop and uninstall the components and there associated packages."""
+and their dependencies into a complete system. It git checkouts the components and
+builds them and their dependencies into packages. It can then install components
+from the repositories it created with packages it made, perform configuration
+and then start, stop and uninstall the components and their associated packages."""
 
-STEPS = """Steps: To correctly ensure your ideal customer experience please make sure
-you go through the following steps when running."""
+STEPS = """Steps: For smooth experience please make sure you go through the
+following steps when running."""
 
 STEP_SECTIONS = {
     'installing': [
