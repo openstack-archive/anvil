@@ -50,8 +50,9 @@ Requires:        ${i}
 #end for
 
 %description
-This is a client for the OpenStack $apiname API. There is a Python API (the
-${clientname}client module), and a command-line script (${clientname}).
+This is a client for the OpenStack $apiname API. There's a Python API
+(the ${clientname}client module), and a command-line script (${clientname}).
+Each implements 100% of the OpenStack $apiname API.
 
 %if 0%{?enable_doc}
 %package doc

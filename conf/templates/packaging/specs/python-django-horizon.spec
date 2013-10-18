@@ -63,8 +63,8 @@ BuildRequires: python-lockfile
 %description -n openstack-dashboard
 Openstack Dashboard is a web user interface for Openstack. The package
 provides a reference implementation using the Django Horizon project,
-mostly consisting of JavaScript and CSS to tie it altogether as a standalone
-site.
+mostly consisting of JavaScript and CSS to tie it altogether as a
+standalone site.
 
 %if 0%{?with_doc}
 %package doc
@@ -84,7 +84,8 @@ BuildRequires: python-cinderclient
 BuildRequires: python-swiftclient
 
 %description doc
-Documentation for the Django Horizon application for talking with Openstack
+Documentation for the Django Horizon application for talking with
+Openstack
 %endif
 
 %prep

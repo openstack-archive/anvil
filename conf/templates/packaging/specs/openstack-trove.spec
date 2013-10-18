@@ -44,7 +44,10 @@ Requires(pre):    shadow-utils
 Requires:         python-trove = %{epoch}:%{version}-%{release}
 
 %description
-Trove is Database as a Service for OpenStack.
+Trove is Database as a Service for Openstack. It's designed to run
+entirely on OpenStack, with the goal of allowing users to quickly and
+easily utilize the features of a relational database without the burden
+of handling complex administrative tasks.
 
 This package contains the Trove daemon.
 
@@ -57,7 +60,10 @@ Group:            Documentation
 Requires:         %{name} = %{epoch}:%{version}-%{release}
 
 %description doc
-Trove is Database as a Service for OpenStack.
+Trove is Database as a Service for Openstack. It's designed to run
+entirely on OpenStack, with the goal of allowing users to quickly and
+easily utilize the features of a relational database without the burden
+of handling complex administrative tasks.
 
 This package contains documentation for Trove.
 
@@ -73,7 +79,10 @@ Requires:        ${i}
 #end for
 
 %description -n  python-trove
-Trove is Database as a Service for OpenStack.
+Trove is Database as a Service for Openstack. It's designed to run
+entirely on OpenStack, with the goal of allowing users to quickly and
+easily utilize the features of a relational database without the burden
+of handling complex administrative tasks.
 
 This package contains the Trove Python library.
 

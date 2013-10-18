@@ -39,7 +39,8 @@ Requires(preun): chkconfig
 Requires(preun): initscripts
 
 %description -n openstack-nova-novncproxy
-OpenStack Nova noVNC server that proxies VNC traffic over Websockets.
+This package contains the Nova noVNC Proxy service that can
+proxy VNC traffic over browser websockets connections.
 
 %prep
 %setup -q -n %{name}-%{os_version}

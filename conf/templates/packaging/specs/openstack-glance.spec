@@ -47,13 +47,14 @@ Requires(pre):    shadow-utils
 Requires:         python-glance = %{epoch}:%{version}-%{release}
 
 %description
-OpenStack Image Service (code-named Glance) provides discovery, registration,
-and delivery services for virtual disk images. The Image Service API server
-provides a standard REST interface for querying information about virtual disk
-images stored in a variety of back-end stores, including OpenStack Object
-Storage. Clients can register new virtual disk images with the Image Service,
-query for information on publicly available disk images, and use the Image
-Service client library for streaming virtual disk images.
+OpenStack Image Service (code-named Glance) provides discovery,
+registration, and delivery services for virtual disk images. The Image
+Service API server provides a standard REST interface for querying
+information about virtual disk images stored in a variety of back-end
+stores, including OpenStack Object Storage. Clients can register new
+virtual disk images with the Image Service, query for information on
+publicly available disk images, and use the Image Service client library
+for streaming virtual disk images.
 
 This package contains the API and registry servers.
 
@@ -67,8 +68,8 @@ Requires:	  ${i}
 
 #raw
 %description -n   python-glance
-OpenStack Image Service (code-named Glance) provides discovery, registration,
-and delivery services for virtual disk images.
+OpenStack Image Service (code-named Glance) provides discovery,
+registration, and delivery services for virtual disk images.
 
 This package contains the glance Python library.
 
@@ -86,8 +87,8 @@ BuildRequires:    python-daemon
 BuildRequires:    python-eventlet
 
 %description      doc
-OpenStack Image Service (code-named Glance) provides discovery, registration,
-and delivery services for virtual disk images.
+OpenStack Image Service (code-named Glance) provides discovery,
+registration, and delivery services for virtual disk images.
 
 This package contains documentation files for glance.
 
