@@ -506,7 +506,6 @@ class YumDependencyHandler(base.DependencyHandler):
         return False
 
     def _get_template_and_rpm_name(self, instance):
-        rpm_name = None
         template_name = None
         try:
             egg_name = instance.egg_info['name']
@@ -557,65 +556,40 @@ class YumDependencyHandler(base.DependencyHandler):
                                           log_filename=instance.name,
                                           release=params.get("release"))
 
-    def _desired_rpms_from_deps(self):
-        # This file should have all the requirements (including test ones)
-        # that we need to install (and which should have been built as rpms
-        # in the previous build stages).
-        gathered_requires = sh.load_file(self.gathered_requires_filename).splitlines()
-        gathered_requires = [line.strip() for line in gathered_requires if line.strip()]
-        req_names = []
-        reqs = []
-        for line in gathered_requires:
-            req = pip_helper.extract_requirement(line)
-            if req.key in req_names:
-                continue
-            req_names.append(req.key)
-            reqs.append(req)
-        rpm_names = self.py2rpm_helper.convert_names_to_rpm(req_names)
-        return zip(rpm_names, reqs)
-
-    def _desired_rpms_from_instances(self):
-        result = []
-        need_names = []
-        for inst in self.instances:
-            if sh.isdir(inst.get_option("app_dir")):
-                req = None
-                rpm_name = None
-                try:
-                    (rpm_name, _tpl) = self._get_template_and_rpm_name(inst)
-                    req = str(inst.egg_info['req'])
-                    if rpm_name is not None:
-                        result.append((rpm_name, req))
-                    else:
-                        need_names.append(req)
-                except AttributeError:
-                    pass
-            for rpm_name in inst.package_names():
-                result.append((rpm_name, None))
-        if need_names:
-            needed_rpm_names = self.py2rpm_helper.convert_names_to_rpm(need_names)
-            result.extend(zip(needed_rpm_names, need_names))
-        result.extend((rpm_name, None) for rpm_name in self.requirements["requires"])
-        return result
-
     def _get_rpm_names(self, from_deps=True, from_instances=True):
-        # Ensure we select the right versions that is required and not a
-        # version that doesn't match the requirements.
         desired_rpms = []
-        if from_deps:
-            desired_rpms.extend(self._desired_rpms_from_deps())
+        py_reqs = set()
         if from_instances:
-            desired_rpms.extend(self._desired_rpms_from_instances())
+            inst_packages = list(self.requirements["requires"])
+            for inst in self.instances:
+                if sh.isdir(inst.get_option("app_dir")):
+                    try:
+                        rpm_name, _ = self._get_template_and_rpm_name(inst)
+                        py_req = inst.egg_info['req']
+                        if rpm_name is not None:
+                            desired_rpms.append((rpm_name, py_req))
+                        else:
+                            py_reqs.add(py_req)
+                    except AttributeError:
+                        pass
+                inst_packages.extend(inst.package_names())
+            for rpm_name in inst_packages:
+                desired_rpms.append((rpm_name, None))
+        if from_deps:
+            requires = sh.load_file(self.gathered_requires_filename).splitlines()
+            for line in [line.strip() for line in requires if line.strip()]:
+                py_reqs.add(pip_helper.extract_requirement(line))
 
-        def format_name(rpm_name, py_req):
+        rpm_names = self.py2rpm_helper.convert_names_to_rpm(map(str, py_reqs))
+        desired_rpms.extend(zip(rpm_names, py_reqs))
+
+        def _format_name(rpm_name, py_req):
             full_name = str(rpm_name).strip()
             if py_req is not None:
-                if not isinstance(py_req, pkg_resources.Requirement):
-                    py_req = pkg_resources.Requirement.parse(str(py_req))
                 full_name += ','.join(''.join(x) for x in py_req.specs)
             return full_name
 
-        return sorted(format_name(rpm_name, py_req)
+        return sorted(_format_name(rpm_name, py_req)
                       for rpm_name, py_req in desired_rpms)
 
     def install(self, general):
