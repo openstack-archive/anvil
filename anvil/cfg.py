@@ -18,7 +18,6 @@
 import ConfigParser
 from ConfigParser import NoOptionError
 from ConfigParser import NoSectionError
-
 import re
 
 from StringIO import StringIO
@@ -26,11 +25,11 @@ from StringIO import StringIO
 # This one keeps comments but has some weirdness with it
 import iniparse
 
+from anvil import exceptions
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
 
-INTERP_PAT = r"\s*\$\(([\w\d-]+):([\w\d-]+)\)\s*"
 
 LOG = logging.getLogger(__name__)
 
@@ -164,141 +163,200 @@ class DefaultConf(object):
         self.backing.remove_option(section, key)
 
 
-class YamlInterpolator(object):
-    def __init__(self, base):
-        self.included = {}
-        self.interpolated = {}
-        self.base = base
-        self.auto_specials = {
-            'ip': utils.get_host_ip,
-            'home': sh.gethomedir,
-            'hostname': sh.hostname,
+# Todo: inject all config merges into class below
+#class YamlMergeLoader(object):
+#
+#    def __init__(self, path):
+#        self._merge_order = ('general',)
+#        self._base_loader = YamlRefLoader(path)
+#
+#    def load(self, distro, component, persona, cli):
+#
+#        distro_opts = distro.options
+#        general_component_opts = self._base_loader.load('general')
+#        component_specific_opts = self._base_loader.load(component)
+#        persona_component_opts = persona.component_options.get(component, {})
+#        persona_global_opts = persona.component_options.get('global', {})
+#        cli_opts = cli
+#
+#        merged_opts = utils.merge_dicts(
+#            distro_opts,
+#            general_component_opts,
+#            component_specific_opts,
+#            persona_component_opts,
+#            persona_global_opts,
+#            cli_opts,
+#        )
+#
+#        return merged_opts
+
+
+class YamlRefLoader(object):
+    """Reference loader for *.yaml configs.
+
+    Holds usual safe loading of the *.yaml files, caching, resolving and getting
+    all reference links and transforming all data to python built-in types.
+
+    Let's describe some basics.
+    In this context reference means value which formatted just like:
+    opt: "$(source:option)" , or
+    opt: "some-additional-data-$(source:option)-some-postfix-data", where:
+        opt    - base option name
+        source - other source config (i.e. other *.yaml file) from which we
+                 should get 'option'
+        option - option name in 'source'
+    In other words it means that loader will try to find and read 'option' from
+    'source'.
+
+    Any source config also allows:
+        References to itself via it's name (opt: "$(source:opt)",
+        in file - source.yaml)
+
+        References to auto parameters (opt: $(auto:ip), will insert current ip).
+        'auto' allows next options: 'ip', 'hostname' and 'home'
+
+        Implicit and multi references just like
+        s.yaml => opt: "here 3 opts: $(source:opt), $(source2:opt) and $(auto:ip)".
+
+    Exception cases:
+      * if reference 'option' does not exist than YamlOptionException is raised
+      * if config 'source' does not exist than YamlConfException is raised
+      * if reference loop found than YamlLoopException is raised
+
+    Config file example:
+    (file sample.yaml)
+
+    reference: "$(source:option)"
+    ip: "$(auto:ip)"
+    self_ref: "$(sample:ip)"  # this will equal ip option.
+    opt: "http://$(auto:ip)/"
+    """
+
+    def __init__(self, path):
+        self._conf_ext = '.yaml'
+        self._ref_pattern = re.compile(r"\$\(([\w\d-]+)\:([\w\d-]+)\)")
+        self._predefined_refs = {
+            'auto': {
+                'ip': utils.get_host_ip,
+                'home': sh.gethomedir,
+                'hostname': sh.hostname,
+            }
         }
+        self._path = path     # path to root directory with configs
+        self._cached = {}     # buffer to save already loaded configs
+        self._processed = {}  # buffer to save already processed configs
+        self._ref_stack = []  # stack for controlling reference loop
 
-    def _interpolate_iterable(self, what):
-        if isinstance(what, (set)):
-            n_what = set()
-            for v in what:
-                n_what.add(self._interpolate(v))
-            return n_what
-        else:
-            n_what = []
-            for v in what:
-                n_what.append(self._interpolate(v))
-            if isinstance(what, (tuple)):
-                n_what = tuple(n_what)
-            return n_what
+    def _process_string(self, value):
+        """Processing string (and reference links) values via regexp."""
+        processed = value
 
-    def _interpolate_dictionary(self, what):
-        n_what = {}
-        for (k, v) in what.iteritems():
-            n_what[k] = self._interpolate(v)
-        return n_what
+        # Process each reference in value (one by one)
+        for match in self._ref_pattern.finditer(value):
+            ref_conf, ref_opt = match.groups()
+            val = self._load_option(ref_conf, ref_opt)
 
-    def _include_dictionary(self, what):
-        n_what = {}
-        for (k, value) in what.iteritems():
-            n_what[k] = self._do_include(value)
-        return n_what
+            if match.group(0) == value:
+                return val
+            else:
+                processed = re.sub(self._ref_pattern, str(val), processed, count=1)
+        return processed
 
-    def _include_iterable(self, what):
-        if isinstance(what, (set)):
-            n_what = set()
-            for v in what:
-                n_what.add(self._do_include(v))
-            return n_what
-        else:
-            n_what = []
-            for v in what:
-                n_what.append(self._do_include(v))
-            if isinstance(what, (tuple)):
-                n_what = tuple(n_what)
-            return n_what
+    def _process_dict(self, value):
+        """Process dictionary values."""
+        processed = utils.OrderedDict()
+        for opt, val in sorted(value.items()):
+            res = self._process(val)
+            processed[opt] = res
 
-    def _interpolate(self, value):
-        new_value = value
-        if value and isinstance(value, (basestring, str)):
-            new_value = self._interpolate_string(value)
-        elif isinstance(value, (dict)):
-            new_value = self._interpolate_dictionary(value)
+        return processed
+
+    def _process_iterable(self, value):
+        """Process list, set or tuple values."""
+        processed = []
+        for item in value:
+            processed.append(self._process(item))
+
+        return processed
+
+    def _process_asis(self, value):
+        """Process built-in values."""
+        return value
+
+    def _process(self, value):
+        """Base recursive method for processing references."""
+        if isinstance(value, basestring):
+            processed = self._process_string(value)
+        elif isinstance(value, dict):
+            processed = self._process_dict(value)
         elif isinstance(value, (list, set, tuple)):
-            new_value = self._interpolate_iterable(value)
-        return new_value
+            processed = self._process_iterable(value)
+        else:
+            processed = self._process_asis(value)
 
-    def _interpolate_string(self, what):
-        if not re.search(INTERP_PAT, what):
-            # Leave it alone if the sub won't do
-            # anything to begin with
-            return what
+        return processed
 
-        def replacer(match):
-            who = match.group(1).strip()
-            key = match.group(2).strip()
-            (is_special, special_value) = self._process_special(who, key)
-            if is_special:
-                return special_value
-            if who not in self.interpolated:
-                self.interpolated[who] = self.included[who]
-                self.interpolated[who] = self._interpolate(self.included[who])
-            return str(self.interpolated[who][key])
+    def _cache(self, conf):
+        """Cache config file into memory to avoid re-reading it from disk."""
+        if conf not in self._cached:
+            path = sh.joinpths(self._path, conf + self._conf_ext)
+            if not sh.isfile(path):
+                raise exceptions.YamlConfigNotFoundException(path)
 
-        return re.sub(INTERP_PAT, replacer, what)
+            # Todo (vnovikov): may be it makes sense to reintroduce load_yaml
+            # for returning OrderedDict with the same order as options placement
+            # in source yaml file...
+            self._cached[conf] = utils.load_yaml(path) or {}
 
-    def _process_special(self, who, key):
-        if who and who.lower() in ['auto']:
-            if key not in self.auto_specials:
-                raise KeyError("Unknown auto key %r" % (key))
-            functor = self.auto_specials[key]
-            return (True, functor())
-        return (False, None)
+    def _precache(self):
+        """Cache and process predefined auto-references"""
+        for conf, options in self._predefined_refs.items():
+            if conf not in self._processed:
+                processed = dict((option, functor())
+                                 for option, functor in options.items())
+                self._cached[conf] = processed
+                self._processed[conf] = processed
 
-    def _include_string(self, what):
-        if not re.search(INTERP_PAT, what):
-            # Leave it alone if the sub won't do
-            # anything to begin with
-            return what
+    def _load_option(self, conf, opt):
+        try:
+            return self._processed[conf][opt]
+        except KeyError:
+            if (conf, opt) in self._ref_stack:
+                raise exceptions.YamlLoopException(conf, opt, self._ref_stack)
+            self._ref_stack.append((conf, opt))
 
-        def replacer(match):
-            who = match.group(1).strip()
-            key = match.group(2).strip()
-            (is_special, special_value) = self._process_special(who, key)
-            if is_special:
-                return special_value
-            # Process there includes and then
-            # fetch the value that should have been
-            # populated
-            self._process_includes(who)
-            return str(self.included[who][key])
+            self._cache(conf)
+            try:
+                raw_value = self._cached[conf][opt]
+            except KeyError:
+                try:
+                    cur_conf, cur_opt = self._ref_stack[-1]
+                except IndexError:
+                    cur_conf, cur_opt = None, None
+                raise exceptions.YamlOptionNotFoundException(
+                    cur_conf, cur_opt, conf, opt
+                )
+            result = self._process(raw_value)
+            self._processed.setdefault(conf, {})[opt] = result
 
-        return re.sub(INTERP_PAT, replacer, what)
+            self._ref_stack.pop()
+            return result
 
-    def _do_include(self, value):
-        new_value = value
-        if value and isinstance(value, (basestring, str)):
-            new_value = self._include_string(value)
-        elif isinstance(value, (dict)):
-            new_value = self._include_dictionary(value)
-        elif isinstance(value, (list, set, tuple)):
-            new_value = self._include_iterable(value)
-        return new_value
-
-    def _process_includes(self, root):
-        if root in self.included:
-            return
-        pth = sh.joinpths(self.base, "%s.yaml" % (root))
-        if not sh.isfile(pth):
-            self.included[root] = {}
-            return
-        self.included[root] = utils.load_yaml(pth)
-        self.included[root] = self._do_include(self.included[root])
-
-    def extract(self, root):
-        if root in self.interpolated:
-            return self.interpolated[root]
-        self._process_includes(root)
-        self.interpolated[root] = self.included[root]
-        self.interpolated[root] = self._interpolate(self.interpolated[root])
-        return self.interpolated[root]
+    def load(self, conf):
+        """Load config `conf` from same yaml file with and resolve all
+        references.
+        """
+        self._precache()
+        self._cache(conf)
+        # NOTE(imelnikov): some confs may be partially processed, so
+        # we have to ensure all the options got loaded.
+        for opt in self._cached[conf].iterkeys():
+            self._load_option(conf, opt)
+        # TODO(imelnikov: can we really restore original order here?
+        self._processed[conf] = utils.OrderedDict(
+            sorted(self._processed.get(conf, {}).iteritems())
+        )
+        return self._processed[conf]
 
 
 def create_parser(cfg_cls, component, fns=None):
