@@ -270,6 +270,108 @@ class TestYamlRefLoader(unittest.TestCase):
         ])
         self.assertEqual(processed, should_be)
 
+    def test_load__complex_reference_no_x(self):
+        self.sample = """
+        stable: 9
+
+        ref0: "$(sample:stable)"
+        ref1: "$(sample2:stable)"
+        ref2: "$(sample2:ref1)"
+        ref3: "$(sample2:ref2)"
+        ref4: "$(sample2:ref3)"
+        ref5: "$(sample3:ref1)"
+
+        sample:
+            stable: "$(sample:stable)"
+            ref0: "$(sample:ref0)"
+            ref1: "$(sample:ref1)"
+
+        sample2:
+          stable: "$(sample2:stable)"
+          ref3: "$(sample2:ref3)"
+
+        sample3:
+          stable: "$(sample3:stable)"
+          ref1: "$(sample3:ref1)"
+
+        list:
+          - "$(sample:sample2)"
+          - "$(sample:sample3)"
+
+        dict:
+          sample3: "$(sample:sample3)"
+          sample2: "$(sample:sample2)"
+        """
+
+        self.sample2 = """
+        stable: 10
+        ref1: "$(sample:stable)"
+        ref2: "$(sample3:stable)"
+        ref3: "$(sample3:ref1)"
+        ref4: "$(sample2:stable)"
+        """
+
+        self.sample3 = """
+        stable: 11
+        ref1: "$(sample:stable)"
+        """
+        self._write_samples()
+
+        processed = self.loader.load('sample')
+
+        self.assertTrue(isinstance(processed, utils.OrderedDict))
+        #self.assertEqual(len(processed), 11)
+        self.assertEqual(processed['stable'], 9)
+        self.assertEqual(processed['ref0'], 9)
+        self.assertEqual(processed['ref1'], 10)
+        self.assertEqual(processed['ref2'], 9)
+        self.assertEqual(processed['ref3'], 11)
+        self.assertEqual(processed['ref4'], 9)
+        self.assertEqual(processed['ref5'], 9)
+
+        sample = utils.OrderedDict([
+            ('ref0', 9),
+            ('ref1', 10),
+            ('stable', 9),
+        ])
+        self.assertEqual(processed['sample'], sample)
+
+        sample2 = utils.OrderedDict([
+            ('ref3', 9),
+            ('stable', 10),
+        ])
+        self.assertEqual(processed['sample2'], sample2)
+
+        sample3 = utils.OrderedDict([
+            ('ref1', 9),
+            ('stable', 11),
+        ])
+        self.assertEqual(processed['sample3'], sample3)
+
+        self.assertEqual(processed['list'], [sample2, sample3])
+        self.assertEqual(
+            processed['dict'],
+            utils.OrderedDict([
+                ('sample2', sample2),
+                ('sample3', sample3),
+            ])
+        )
+
+        processed = self.loader.load('sample2')
+
+        self.assertEquals(processed, {
+            'stable': 10,
+            'ref1': 9,
+            'ref2': 11,
+            'ref3': 9,
+            'ref4': 10,
+        })
+
+        processed = self.loader.load('sample3')
+        self.assertEqual(len(processed), 2)
+        self.assertEqual(processed['stable'], 11)
+        self.assertEqual(processed['ref1'], 9)
+
     def test_load__complex_reference(self):
         # Fixme: changing `x_list` to `list` causes incorrect values. fix
         # this order influence.
@@ -362,12 +464,13 @@ class TestYamlRefLoader(unittest.TestCase):
 
         processed = self.loader.load('sample2')
 
-        self.assertEqual(len(processed), 5)
-        self.assertEqual(processed['stable'], 10)
-        self.assertEqual(processed['ref1'], 9)
-        self.assertEqual(processed['ref2'], 11)
-        self.assertEqual(processed['ref3'], 9)
-        self.assertEqual(processed['ref4'], 10)
+        self.assertEquals(processed, {
+            'stable': 10,
+            'ref1': 9,
+            'ref2': 11,
+            'ref3': 9,
+            'ref4': 10,
+        })
 
         processed = self.loader.load('sample3')
         self.assertEqual(len(processed), 2)

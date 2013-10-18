@@ -255,76 +255,56 @@ class YamlRefLoader(object):
         self._processed = {}  # buffer to save already processed configs
         self._ref_stack = []  # stack for controlling reference loop
 
-    def _process_string(self, conf, option, value):
+    def _process_string(self, value):
         """Processing string (and reference links) values via regexp."""
-        processed = value
-
         # search string value for references
         matches = re.findall(self._ref_pattern, value)
 
-        if matches:
-            # Checking reference stack and appending pair of the current
-            # (config, option) to it.
-            if (conf, option) in self._ref_stack:
-                raise exceptions.YamlLoopException(conf, option, self._ref_stack)
-
-            self._ref_stack.append((conf, option))
+        if not matches:
+            return value
 
         # Process each reference in value (one by one)
-        for ref_conf, ref_opt in matches:
-            self._cache(ref_conf)
+        processed = value
+        for match in self._ref_pattern.finditer(value):
+            ref_conf = match.group(1)
+            ref_opt = match.group(2)
+            val = self._load_option(ref_conf, ref_opt)
 
-            if ref_opt not in self._cached[ref_conf]:
-                raise exceptions.YamlOptionNotFoundException(
-                    conf, option, ref_conf, ref_opt
-                )
-
-            val = self._process(ref_conf, ref_opt,
-                                self._cached[ref_conf][ref_opt])
-
-            # Note (vnovikov): do checking replacements count to make re.sub
-            # working (it's needed to correct process non-string reference
-            # values).
-            if len(matches) != 1:
-                processed = re.sub(self._ref_pattern, str(val), processed, count=1)
+            if match.group(0) == value:
+                return val
             else:
-                processed = val
-
-        if matches:
-            self._ref_stack.pop()
-
-        self._cached[conf][option] = processed
+                processed = re.sub(self._ref_pattern, str(val), processed, count=1)
         return processed
 
-    def _process_dict(self, conf, option, value):
+    def _process_dict(self, value):
         """Process dictionary values."""
         #import copy
         processed = utils.OrderedDict()
         for opt, val in sorted(value.items()):
-            res = self._process(conf, opt, val)
+            res = self._process(val)
             processed[opt] = res
         #return copy.deepcopy(processed)
         return processed
 
-    def _process_iterable(self, conf, option, value):
+    def _process_iterable(self, value):
         """Process list, set or tuple values."""
         processed = []
         for item in value:
-            processed.append(self._process(conf, option, item))
+            processed.append(self._process(item))
         return processed
 
     def _process_asis(self, value):
         """Process built-in values."""
         return value
 
-    def _process(self, conf, option, value):
+    def _process(self, value):
         """Base recursive method for processing references."""
         if isinstance(value, basestring):
-            processed = self._process_string(conf, option, value)
+            processed = self._process_string(value)
         elif isinstance(value, dict):
-            processed = self._process_dict(conf, option, value)
+            processed = self._process_dict(value)
         elif isinstance(value, (list, set, tuple)):
-            processed = self._process_iterable(conf, option, value)
+            processed = self._process_iterable(value)
         else:
             processed = self._process_asis(value)
 
@@ -345,26 +325,52 @@ class YamlRefLoader(object):
     def _precache(self):
         """Cache and process predefined auto-references"""
         for conf, options in self._predefined_refs.items():
+            if conf not in self._processed:
+                processed = dict((option, functor())
+                                 for option, functor in options.items())
+                self._cached[conf] = processed
+                self._processed[conf] = processed
 
-            if conf in self._processed:
-                return
+    def _load_option(self, conf, opt):
+        try:
+            return self._processed[conf][opt]
+        except KeyError:
+            if (conf, opt) in self._ref_stack:
+                raise exceptions.YamlLoopException(conf, opt, self._ref_stack)
+            self._ref_stack.append((conf, opt))
 
-            self._cached[conf] = {}
-            for option, functor in options.items():
-                self._cached[conf][option] = functor()
+            self._cache(conf)
+            try:
+                raw_value = self._cached[conf][opt]
+            except KeyError:
+                try:
+                    cur_conf, cur_opt = self._ref_stack[-1]
+                except IndexError:
+                    cur_conf, cur_opt = None, None
+                raise exceptions.YamlOptionNotFoundException(
+                    cur_conf, cur_opt, conf, opt)
+            result = self._process(raw_value)
+            self._processed.setdefault(conf, {})[opt] = result
 
-            self._processed[conf] = self._cached[conf]
+            self._ref_stack.remove((conf, opt))
+            return result
 
     def load(self, conf):
         """Load config `conf` from same yaml file with and resolve all
         references.
         """
         self._precache()
-
-        if conf not in self._processed:
-            self._cache(conf)
-            self._processed[conf] = self._process(conf, None, self._cached[conf])
-
+        self._cache(conf)
+        try:
+            # NOTE(imelnikov): some confs may be partially processed, so
+            # we have to ensure all the options got loaded.
+            for opt in self._cached[conf].iterkeys():
+                self._load_option(conf, opt)
+        except Exception:
+            self._processed.pop(conf, None)
+            raise
+        # TODO(imelnikov: can we really restore original order here?
+        self._processed[conf] = utils.OrderedDict(sorted(self._processed.get(conf, {}).iteritems()))
         return self._processed[conf]
 
 
