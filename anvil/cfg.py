@@ -27,6 +27,7 @@ import iniparse
 
 from anvil import exceptions
 from anvil import log as logging
+from anvil import settings
 from anvil import shell as sh
 from anvil import utils
 
@@ -163,32 +164,58 @@ class DefaultConf(object):
         self.backing.remove_option(section, key)
 
 
-# TODO(vnovikov): inject all config merges into class below
-#class YamlMergeLoader(object):
-#
-#    def __init__(self, path):
-#        self._merge_order = ('general',)
-#        self._base_loader = YamlRefLoader(path)
-#
-#    def load(self, distro, component, persona, cli):
-#
-#        distro_opts = distro.options
-#        general_component_opts = self._base_loader.load('general')
-#        component_specific_opts = self._base_loader.load(component)
-#        persona_component_opts = persona.component_options.get(component, {})
-#        persona_global_opts = persona.component_options.get('global', {})
-#        cli_opts = cli
-#
-#        merged_opts = utils.merge_dicts(
-#            distro_opts,
-#            general_component_opts,
-#            component_specific_opts,
-#            persona_component_opts,
-#            persona_global_opts,
-#            cli_opts,
-#        )
-#
-#        return merged_opts
+class YamlMergeLoader(object):
+    """Holds merging process component options (based on Yaml reference loader).
+    """
+
+    def __init__(self, root_dir):
+        self._root_dir = root_dir
+        self._base_loader = YamlRefLoader(settings.COMPONENT_CONF_DIR)
+
+    def _get_dir_opts(self, component):
+        component_dir = sh.joinpths(self._root_dir, component)
+        trace_dir = sh.joinpths(component_dir, 'traces')
+        app_dir = sh.joinpths(component_dir, 'app')
+        return {
+            'app_dir': app_dir,
+            'component_dir': component_dir,
+            'root_dir': self._root_dir,
+            'trace_dir': trace_dir,
+        }
+
+    def _apply_persona(self, component, persona):
+        """Apply persona specific and global options according to component.
+
+        Include the general.yaml in each applying since it typically contains
+        useful shared settings.
+        """
+
+        for conf in ('general', component):
+            if persona is not None:
+                persona_specific = persona.component_options.get(component, {})
+                persona_global = persona.component_options.get('global', {})
+
+                self._base_loader.update_cache(conf, persona_specific)
+                self._base_loader.update_cache(conf, persona_global)
+
+    def load(self, distro, component, persona=None):
+        # NOTE (vnovikov): applying takes place before loading reference links
+        self._apply_persona(component, persona)
+
+        dir_opts = self._get_dir_opts(component)
+        distro_opts = distro.options
+        general_component_opts = self._base_loader.load('general')
+        component_specific_opts = self._base_loader.load(component)
+
+        # NOTE (vnovikov): merge order is the same as arguments order below.
+        merged_opts = utils.merge_dicts(
+            dir_opts,
+            distro_opts,
+            general_component_opts,
+            component_specific_opts,
+        )
+
+        return merged_opts
 
 
 class YamlRefLoader(object):
@@ -296,18 +323,6 @@ class YamlRefLoader(object):
 
         return processed
 
-    def _cache(self, conf):
-        """Cache config file into memory to avoid re-reading it from disk."""
-        if conf not in self._cached:
-            path = sh.joinpths(self._path, conf + self._conf_ext)
-            if not sh.isfile(path):
-                raise exceptions.YamlConfigNotFoundException(path)
-
-            # TODO(vnovikov): may be it makes sense to reintroduce load_yaml
-            # for returning OrderedDict with the same order as options placement
-            # in source yaml file...
-            self._cached[conf] = utils.load_yaml(path) or {}
-
     def _precache(self):
         """Cache and process predefined auto-references"""
         for conf, options in self._predefined_refs.items():
@@ -341,6 +356,24 @@ class YamlRefLoader(object):
 
             self._ref_stack.pop()
             return result
+
+    def _cache(self, conf):
+        """Cache config file into memory to avoid re-reading it from disk."""
+        if conf not in self._cached:
+            path = sh.joinpths(self._path, conf + self._conf_ext)
+            if not sh.isfile(path):
+                raise exceptions.YamlConfigNotFoundException(path)
+
+            self._cached[conf] = utils.load_yaml(path) or {}
+
+    def update_cache(self, conf, dict2update):
+        self._cache(conf)
+        #for k, v in dict2update.items():
+        #    self._cached[conf][k] = v
+
+        # NOTE (vnovikov): should remove obsolete processed data
+        self._cached[conf].update(dict2update)
+        self._processed[conf] = {}
 
     def load(self, conf):
         """Load config `conf` from same yaml file with and resolve all

@@ -506,3 +506,45 @@ class TestYamlRefLoader(unittest.TestCase):
 
         self.assertRaises(exceptions.YamlLoopException,
                           self.loader.load, 'sample')
+
+    def test_update_cache(self):
+        self.sample = """
+        stable: 9
+
+        reference: "$(sample2:stable)"
+        reference2: "$(sample2:stable)"
+        reference3: "$(sample2:stable2)"
+        """
+
+        self.sample2 = """
+        stable: 10
+        stable2: 11
+        """
+
+        self._write_samples()
+
+        self.loader.update_cache('sample', dict(reference=20))
+        self.loader.update_cache('sample2', dict(stable=21))
+
+        processed = self.loader.load('sample')
+        self.assertEqual(processed['stable'], 9)
+        self.assertEqual(processed['reference'], 20)
+        self.assertEqual(processed['reference2'], 21)
+        self.assertEqual(processed['reference3'], 11)
+
+    def test_update_cache__few_times(self):
+        self.sample = "stable: '$(sample2:stable)'"
+        self.sample2 = "stable: 10"
+
+        self._write_samples()
+
+        processed = self.loader.load('sample')
+        self.assertEqual(processed['stable'], 10)
+
+        self.loader.update_cache('sample', dict(stable=11))
+        processed = self.loader.load('sample')
+        self.assertEqual(processed['stable'], 11)
+
+        self.loader.update_cache('sample', dict(stable=12))
+        processed = self.loader.load('sample')
+        self.assertEqual(processed['stable'], 12)
