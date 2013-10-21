@@ -1,3 +1,4 @@
+import mock
 import os
 import shutil
 import tempfile
@@ -506,3 +507,130 @@ class TestYamlRefLoader(unittest.TestCase):
 
         self.assertRaises(exceptions.YamlLoopException,
                           self.loader.load, 'sample')
+
+    def test_update_cache(self):
+        self.sample = """
+        stable: 9
+
+        reference: "$(sample2:stable)"
+        reference2: "$(sample2:stable)"
+        reference3: "$(sample2:stable2)"
+        """
+
+        self.sample2 = """
+        stable: 10
+        stable2: 11
+        """
+
+        self._write_samples()
+
+        self.loader.update_cache('sample', dict(reference=20))
+        self.loader.update_cache('sample2', dict(stable=21))
+
+        processed = self.loader.load('sample')
+        self.assertEqual(processed['stable'], 9)
+        self.assertEqual(processed['reference'], 20)
+        self.assertEqual(processed['reference2'], 21)
+        self.assertEqual(processed['reference3'], 11)
+
+    def test_update_cache__few_times(self):
+        self.sample = "stable: '$(sample2:stable)'"
+        self.sample2 = "stable: 10"
+
+        self._write_samples()
+
+        processed = self.loader.load('sample')
+        self.assertEqual(processed['stable'], 10)
+
+        self.loader.update_cache('sample', dict(stable=11))
+        processed = self.loader.load('sample')
+        self.assertEqual(processed['stable'], 11)
+
+        self.loader.update_cache('sample', dict(stable=12))
+        processed = self.loader.load('sample')
+        self.assertEqual(processed['stable'], 12)
+
+
+class TestYamlMergeLoader(unittest.TestCase):
+
+    def setUp(self):
+        super(TestYamlMergeLoader, self).setUp()
+
+        class Distro(object):
+
+            def __init__(self):
+                self.options = {
+                    'unique-distro': True,
+                    'redefined-in-general': 0,
+                    'redefined-in-component': 0
+                }
+
+        class Persona(object):
+
+            def __init__(self):
+                self.component_options = {
+                    'component': {
+                        'unique-specific': True,
+                        'redefined-in-specific': 1
+                    }
+                }
+
+        self.general = ""
+        self.component = ""
+        self.distro = Distro()
+        self.persona = Persona()
+
+        self.temp_dir = tempfile.mkdtemp()
+
+        with mock.patch('anvil.settings.COMPONENT_CONF_DIR', self.temp_dir):
+            self.loader = cfg.YamlMergeLoader(self.temp_dir)
+
+    def tearDown(self):
+        super(TestYamlMergeLoader, self).tearDown()
+
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def _write_samples(self):
+        with open(os.path.join(self.temp_dir, 'general.yaml'), 'w') as f:
+            f.write(self.general)
+
+        with open(os.path.join(self.temp_dir, 'component.yaml'), 'w') as f:
+            f.write(self.component)
+
+    def test_load(self):
+        self.general = """
+        unique-general: True
+        redefined-in-general: 1
+        redefined-in-component: 1
+        """
+
+        self.component = """
+        unique-component: True
+        redefined-in-component: 2
+        redefined-in-specific: 0
+        """
+
+        self._write_samples()
+
+        merged = self.loader.load(self.distro, 'component', self.persona)
+        should_be = utils.OrderedDict([
+            ('app_dir', os.path.join(self.temp_dir, 'component', 'app')),
+            ('component_dir', os.path.join(self.temp_dir, 'component')),
+            ('root_dir', os.path.join(self.temp_dir)),
+            ('trace_dir', os.path.join(self.temp_dir, 'component', 'traces')),
+
+            ('unique-distro', True),
+            ('redefined-in-general', 1),
+            ('redefined-in-component', 2),
+            ('redefined-in-specific', 1),
+
+            ('unique-general', True),
+            ('unique-specific', True),
+            ('unique-component', True),
+        ])
+        self.assertEqual(merged, should_be)
+
+        # yet once loading with changed values.
+        self.persona.component_options['component']['redefined-in-specific'] = 2
+        merged = self.loader.load(self.distro, 'component', self.persona)
+        self.assertEqual(merged['redefined-in-specific'], 2)

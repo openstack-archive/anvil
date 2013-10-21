@@ -36,11 +36,11 @@ fixed_range: "10.0.0.0/24"
 # Used however you want - ensure you know nova's conf file format if you use this!
 extra_flags: ""
 
-# DHCP Warning: If your flat interface device uses DHCP, there will be a hiccup while the network 
-# is moved from the flat interface to the flat network bridge. This will happen when you launch 
+# DHCP Warning: If your flat interface device uses DHCP, there will be a hiccup while the network
+# is moved from the flat interface to the flat network bridge. This will happen when you launch
 # your first instance. Upon launch you will lose all connectivity to the node, and the vm launch will probably fail.
 #
-# If you are running on a single node and don't need to access the VMs from devices other than 
+# If you are running on a single node and don't need to access the VMs from devices other than
 # that node, you can set the flat interface to the same value as FLAT_NETWORK_BRIDGE.
 # This will stop the network hiccup from occurring.
 
@@ -83,8 +83,8 @@ libvirt_type: "qemu"
 # This is just a firewall based on iptables, for non-libvirt usage
 basic_firewall_driver: nova.virt.firewall.IptablesFirewallDriver
 
-# Multi-host is a mode where each compute node runs its own network node. 
-# This allows network operations and routing for a VM to occur on the server 
+# Multi-host is a mode where each compute node runs its own network node.
+# This allows network operations and routing for a VM to occur on the server
 # that is running the VM - removing a SPOF and bandwidth bottleneck.
 multi_host: False
 
