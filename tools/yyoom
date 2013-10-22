@@ -254,19 +254,27 @@ def _run(yum_base, options):
     with _transaction(yum_base,
                       _OutputtingRPMCallback(options.skip_missing)) as cb:
         yum_map = build_yum_map(yum_base)
+        # erase packages
         for pkg_name in options.erase or ():
             matches = _find_packages(yum_map, pkg_name)
             if matches is None:
                 cb.yyoom_on_missing_package(pkg_name)
-            installed_packages = yum_base.rpmdb.returnPackages()
-            for package in matches:
-                if package in installed_packages:
-                    yum_base.remove(package)
+            else:
+                installed_packages = yum_base.rpmdb.returnPackages()
+                for package in matches:
+                    if package in installed_packages:
+                        yum_base.remove(package)
+        # install packages
         for pkg_name in options.install or ():
             matches = _find_packages(yum_map, pkg_name)
             if matches is None:
                 cb.yyoom_on_missing_package(pkg_name)
             else:
+                # try to install package from preferred repositories,
+                # if not found - install from default ones
+                repo_matches = [m for m in matches
+                                if m.repoid in options.prefer_repo]
+                matches = repo_matches if repo_matches else matches
                 yum_base.install(max(matches))
 
 
@@ -353,6 +361,10 @@ def _parse_arguments(args):
     parser_run.add_argument('--skip-missing', action='store_true',
                             default=False,
                             help='do not fail on missing packages')
+    parser_run.add_argument('--prefer-repo', '-r', action='append',
+                            metavar='repository',
+                            default=[],
+                            help='preferred repository name')
     parser_run.set_defaults(func=_run, operation='Transaction')
 
     # Arg: srpm
