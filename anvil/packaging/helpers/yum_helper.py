@@ -38,11 +38,13 @@ def _parse_json(value):
 
 class Helper(object):
 
-    def __init__(self, log_dir):
+    def __init__(self, log_dir, repos):
         # Executables we require to operate
         self.yyoom_executable = sh.which("yyoom", ["tools/"])
         # Executable logs will go into this directory
         self._log_dir = log_dir
+        # Preferred repositories names
+        self._repos = repos
         # Caches of installed and available packages
         self._installed = None
         self._available = None
@@ -136,6 +138,9 @@ class Helper(object):
         for pkg in remove_pkgs:
             cmdline.append('--erase')
             cmdline.append(pkg)
+        for repo in self._repos:
+            cmdline.append('--repo')
+            cmdline.append(repo)
 
         try:
             cmd_type = 'transaction'
