@@ -399,6 +399,9 @@ install -p -D -m 755 %{SOURCE26} %{buildroot}%{_initrddir}/%{daemon_prefix}-cond
 install -p -D -m 755 %{SOURCE27} %{buildroot}%{_initrddir}/%{daemon_prefix}-cells
 install -p -D -m 755 %{SOURCE28} %{buildroot}%{_initrddir}/%{daemon_prefix}-spicehtml5proxy
 
+#fix metadata-api bin name
+sed -i s?exec=\"/usr/bin/nova-metadata-api\"?exec=\"/usr/bin/nova-api-metadata\"? %{buildroot}%{_initrddir}/%{daemon_prefix}-metadata-api
+
 # Install sudoers
 install -p -D -m 440 %{SOURCE53} %{buildroot}%{_sysconfdir}/sudoers.d/nova
 
