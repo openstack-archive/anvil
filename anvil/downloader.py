@@ -17,6 +17,7 @@
 import abc
 import contextlib
 import functools
+import re
 import urllib2
 import urlparse
 
@@ -88,22 +89,6 @@ class GitDownloader(Downloader):
             LOG.info("Adjusting to tag %s.", colorizer.quote(tag))
         else:
             LOG.info("Adjusting branch to %s.", colorizer.quote(branch))
-        # NOTE(aababilov): old openstack.common.setup reports all tag that
-        # contain HEAD as project's version. It breaks all RPM building
-        # process, so, we will delete all extra tags
-        cmd = ["git", "tag", "--contains", "HEAD"]
-        tag_names = [
-            i
-            for i in sh.execute(cmd, cwd=self.store_where)[0].splitlines()
-            if i and i != tag]
-        if not tag:
-            # when checking out to a branch, delete all
-            # the tags except the oldest
-            tag_names = tag_names[1:]
-        if tag_names:
-            LOG.info("Removing tags: %s", colorizer.quote(" ".join(tag_names)))
-            cmd = ["git", "tag", "-d"] + tag_names
-            sh.execute(cmd, cwd=self.store_where)
         # detach, drop new_branch if it exists, and checkout to new_branch
         # newer git allows branch resetting: git checkout -B $new_branch
         # so, all these are for compatibility with older RHEL git
@@ -115,6 +100,28 @@ class GitDownloader(Downloader):
         sh.execute(cmd, cwd=self.store_where, check_exit_code=False)
         cmd = ["git", "checkout"] + checkout_what
         sh.execute(cmd, cwd=self.store_where)
+        # NOTE(aababilov): old openstack.common.setup reports all tag that
+        # contain HEAD as project's version. It breaks all RPM building
+        # process, so, we will delete all extra tags
+        cmd = ["git", "tag", "--contains", "HEAD"]
+        tag_names = [
+            i
+            for i in sh.execute(cmd, cwd=self.store_where)[0].splitlines()
+            if i and i != tag]
+        # Making sure we are not removing tag with the same commit reference
+        # as for a branch. Otherwise this will make repository broken.
+        cmd = ["git", "show-ref", "--tags", "--dereference"] + tag_names
+        for line in sh.execute(cmd, cwd=self.store_where)[0].splitlines():
+            res = re.search("(.+)\s+refs/tags/(.+)\^\{\}$", line)
+            if res is None:
+                continue
+            ref, tag_name = res.groups()
+            if ref == git_head and tag_name in tag_names:
+                tag_names.remove(tag_name)
+        if tag_names:
+            LOG.info("Removing tags: %s", colorizer.quote(" ".join(tag_names)))
+            cmd = ["git", "tag", "-d"] + tag_names
+            sh.execute(cmd, cwd=self.store_where)
 
 
 class UrlLibDownloader(Downloader):
@@ -155,3 +162,4 @@ class UrlLibDownloader(Downloader):
         finally:
             if p_bar:
                 p_bar.finish()
+
