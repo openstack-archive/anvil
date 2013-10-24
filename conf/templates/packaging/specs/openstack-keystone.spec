@@ -114,7 +114,7 @@ install -d -m 755 %{buildroot}%{_sharedstatedir}/keystone
 install -d -m 755 %{buildroot}%{_localstatedir}/log/keystone
 install -d -m 755 %{buildroot}%{_localstatedir}/run/keystone
 
-install -p -D -m 755 %{SOURCE1} %{buildroot}%{_initrddir}/%{daemon_prefix}-all
+install -p -D -m 755 %{SOURCE1} %{buildroot}%{_initrddir}/%{daemon_prefix}
 %endif
 
 %__rm -rf %{buildroot}%{py_sitelib}/{doc,tools}
@@ -135,15 +135,15 @@ exit 0
 
 %preun
 if [ $1 = 0 ] ; then
-    /sbin/service %{daemon_prefix}-all stop &>/dev/null
-    /sbin/chkconfig --del %{daemon_prefix}-all
+    /sbin/service %{daemon_prefix} stop &>/dev/null
+    /sbin/chkconfig --del %{daemon_prefix}
     exit 0
 fi
 
 %postun
 if [ $1 -ge 1 ] ; then
     # Package upgrade, not uninstall
-    /sbin/service %{daemon_prefix}-all condrestart &>/dev/null
+    /sbin/service %{daemon_prefix} condrestart &>/dev/null
     exit 0
 fi
 %endif
