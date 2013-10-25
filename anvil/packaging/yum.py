@@ -94,7 +94,7 @@ class YumDependencyHandler(base.DependencyHandler):
         self.rpmbuild_executable = sh.which("rpmbuild")
         self.specprint_executable = sh.which('specprint', ["tools/"])
         # We inspect yum for packages, this helper allows us to do this.
-        self.helper = yum_helper.Helper(self.log_dir)
+        self.helper = yum_helper.Helper(self.log_dir, self.REPOS)
         # See if we are requested to run at a higher make parallelism level
         self._jobs = self.JOBS
         if 'jobs' in self.opts:
