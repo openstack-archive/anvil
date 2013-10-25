@@ -25,17 +25,12 @@ from anvil import importer
 from anvil import log as logging
 from anvil import passwords as pw
 from anvil import phase
-from anvil import settings
 from anvil import shell as sh
 from anvil import utils
 
 from anvil.utils import OrderedDict
 
 LOG = logging.getLogger(__name__)
-
-# Include the general yaml during all interpolation
-# actions since it typically contains useful shared settings...
-BASE_YAML_INTERP = ('general', )
 
 
 class PhaseFunctors(object):
@@ -56,9 +51,11 @@ class Action(object):
         self.root_dir = root_dir
         # Action phases are tracked in this directory
         self.phase_dir = sh.joinpths(root_dir, 'phases')
+
         # Yamls are loaded (with its reference links) using this instance at the
         # given component directory where component configuration will be found.
-        self.config_loader = cfg.YamlRefLoader(settings.COMPONENT_CONF_DIR)
+        self.config_loader = cfg.YamlMergeLoader(root_dir)
+
         # Keyring/pw settings + cache
         self.passwords = {}
         self.keyring_path = cli_opts.pop('keyring_path')
@@ -118,21 +115,6 @@ class Action(object):
         # Duplicate the list to avoid problems if it is updated later.
         return copy.copy(components)
 
-    def _get_component_dirs(self, component):
-        component_dir = sh.joinpths(self.root_dir, component)
-        trace_dir = sh.joinpths(component_dir, 'traces')
-        app_dir = sh.joinpths(component_dir, 'app')
-        return {
-            'app_dir': app_dir,
-            'component_dir': component_dir,
-            'root_dir': self.root_dir,
-            'trace_dir': trace_dir,
-        }
-
-    def _merge_options(self, name, distro_opts, component_opts, persona_opts):
-        return utils.merge_dicts(self._get_component_dirs(name),
-                                 distro_opts, component_opts, persona_opts)
-
     def _merge_subsystems(self, distro_subsystems, desired_subsystems):
         subsystems = {}
         for subsystem_name in desired_subsystems:
@@ -163,23 +145,9 @@ class Action(object):
             sibling_instances[action][name] = a_sibling
         return there_siblings
 
-    def _get_interpolated_names(self, name):
-        # Return which sources that will be interpolated from
-        # Note(harlowja): if one of the bases here pulls in
-        # another yaml, it will be done automatically so this
-        # list is more of the starting list and not the end list...
-        return list(BASE_YAML_INTERP) + [name]
-
-    def _get_interpolated_options(self, name):
-        opts = {}
-        for c in self._get_interpolated_names(name):
-            opts.update(self.config_loader.load(c))
-        return opts
-
     def _construct_instances(self, persona):
         """Create component objects for each component in the persona."""
         persona_subsystems = persona.wanted_subsystems or {}
-        persona_opts = persona.component_options or {}
         wanted_components = persona.wanted_components or []
         # All siblings for the current persona
         instances = {}
@@ -203,10 +171,8 @@ class Action(object):
             sibling_params['siblings'] = {}  # This gets adjusted during construction
             sibling_params['passwords'] = self.passwords
             sibling_params['distro'] = self.distro
-            sibling_params['options'] = self._merge_options(c,
-                                                            component_opts=self._get_interpolated_options(c),
-                                                            distro_opts=d_component.options,
-                                                            persona_opts={})
+            sibling_params['options'] = self.config_loader.load(d_component, c)
+
             LOG.debug("Constructing %r %s siblings...", c, len(d_component.siblings))
             my_siblings = self._construct_siblings(c, d_component.siblings, sibling_params, sibling_instances)
             # Now inject the full options and create the target instance
@@ -214,10 +180,8 @@ class Action(object):
             # siblings get...
             instance_params = dict(sibling_params)
             instance_params['instances'] = instances
-            instance_params['options'] = self._merge_options(c,
-                                                             component_opts=self._get_interpolated_options(c),
-                                                             distro_opts=d_component.options,
-                                                             persona_opts=persona_opts.get(c, {}))
+            instance_params['options'] = self.config_loader.load(d_component, c,
+                                                                 persona)
             instance_params['siblings'] = my_siblings
             instance_params = utils.merge_dicts(instance_params, self.cli_opts, preserve=True)
             instances[c] = importer.construct_entry_point(d_component.entry_point, **instance_params)
