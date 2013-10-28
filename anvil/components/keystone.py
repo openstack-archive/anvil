@@ -108,6 +108,13 @@ class KeystoneRuntime(bruntime.OpenStackRuntime):
         bruntime.OpenStackRuntime.__init__(self, *args, **kargs)
         self.init_fn = sh.joinpths(self.get_option('trace_dir'), INIT_WHAT_HAPPENED)
 
+    def daemon_name(self, program):
+        # NOTE(harlowja): 'all' just runs the keystone service due to change in service
+        # name from 'all' to without the '-all' part, so we need to reflect that here.
+        if program in ('all',):
+            return "openstack-%s" % (self.name)
+        return super(KeystoneRuntime, self).daemon_name(program)
+
     def post_start(self):
         if not sh.isfile(self.init_fn) and self.get_bool_option('do-init'):
             self.wait_active()
