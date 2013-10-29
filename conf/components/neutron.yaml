@@ -1,9 +1,6 @@
 # Settings for component neutron-client
 ---
 
-# Where we download this from...
-get_from: "git://github.com/openstack/neutron.git?branch=master"
-
 # Host and ports for the different neutron services
 api_host: "$(auto:ip)"
 api_port: 9696

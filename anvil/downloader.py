@@ -19,7 +19,6 @@ import contextlib
 import functools
 import re
 import urllib2
-import urlparse
 
 import progressbar
 
@@ -33,9 +32,9 @@ LOG = logging.getLogger(__name__)
 class Downloader(object):
     __metaclass__ = abc.ABCMeta
 
-    def __init__(self, uri, store_where):
-        self.uri = uri
-        self.store_where = store_where
+    def __init__(self, uri, dst):
+        self._uri = uri
+        self._dst = dst
 
     @abc.abstractmethod
     def download(self):
@@ -43,47 +42,38 @@ class Downloader(object):
 
 
 class GitDownloader(Downloader):
-    def __init__(self, distro, uri, store_where):
-        Downloader.__init__(self, uri, store_where)
-        self.distro = distro
+
+    def __init__(self, uri, dst, **kwargs):
+        Downloader.__init__(self, uri, dst)
+        self._branch = kwargs.get('branch', 'master')
+        self._tag = str(kwargs.get('tag'))
 
     def download(self):
-        branch = None
-        tag = None
-        uri = self.uri
-        if uri.find("?") != -1:
-            # If we use urlparser here it doesn't seem to work right??
-            # TODO(harlowja), why??
-            (uri, params) = uri.split("?", 1)
-            params = urlparse.parse_qs(params)
-            if 'branch' in params:
-                branch = params['branch'][0].strip()
-            if 'tag' in params:
-                tag = params['tag'][0].strip()
-            uri = uri.strip()
-        if not branch:
-            branch = 'master'
-        if tag:
+        branch = self._branch
+        tag = self._tag
+        if self._tag:
             # Avoid 'detached HEAD state' message by moving to a
             # $tag-anvil branch for that tag
-            new_branch = "%s-%s" % (tag, 'anvil')
+            new_branch = "%s-%s" % (self._tag, 'anvil')
             checkout_what = [tag, '-b', new_branch]
         else:
             # Set it up to track the remote branch correctly
             new_branch = branch
             checkout_what = ['-t', '-b', new_branch, 'origin/%s' % branch]
-        if sh.isdir(self.store_where) and sh.isdir(sh.joinpths(self.store_where, '.git')):
-            LOG.info("Existing git directory located at %s, leaving it alone.", colorizer.quote(self.store_where))
+        if sh.isdir(self._dst) and sh.isdir(sh.joinpths(self._dst, '.git')):
+            LOG.info("Existing git directory located at %s, leaving it alone.",
+                     colorizer.quote(self._dst))
             # do git clean -xdfq and git reset --hard to undo possible changes
             cmd = ["git", "clean", "-xdfq"]
-            sh.execute(cmd, cwd=self.store_where)
+            sh.execute(cmd, cwd=self._dst)
             cmd = ["git", "reset", "--hard"]
-            sh.execute(cmd, cwd=self.store_where)
+            sh.execute(cmd, cwd=self._dst)
             cmd = ["git", "fetch", "origin"]
-            sh.execute(cmd, cwd=self.store_where)
+            sh.execute(cmd, cwd=self._dst)
         else:
-            LOG.info("Downloading %s (%s) to %s.", colorizer.quote(uri), branch, colorizer.quote(self.store_where))
-            cmd = ["git", "clone", uri, self.store_where]
+            LOG.info("Downloading %s (%s) to %s.", colorizer.quote(self._uri),
+                     branch, colorizer.quote(self._dst))
+            cmd = ["git", "clone", self._uri, self._dst]
             sh.execute(cmd)
         if tag:
             LOG.info("Adjusting to tag %s.", colorizer.quote(tag))
@@ -93,35 +83,36 @@ class GitDownloader(Downloader):
         # newer git allows branch resetting: git checkout -B $new_branch
         # so, all these are for compatibility with older RHEL git
         cmd = ["git", "rev-parse", "HEAD"]
-        git_head = sh.execute(cmd, cwd=self.store_where)[0].strip()
+        git_head = sh.execute(cmd, cwd=self._dst)[0].strip()
         cmd = ["git", "checkout", git_head]
-        sh.execute(cmd, cwd=self.store_where)
+        sh.execute(cmd, cwd=self._dst)
         cmd = ["git", "branch", "-D", new_branch]
-        sh.execute(cmd, cwd=self.store_where, check_exit_code=False)
+        sh.execute(cmd, cwd=self._dst, check_exit_code=False)
         cmd = ["git", "checkout"] + checkout_what
-        sh.execute(cmd, cwd=self.store_where)
+        sh.execute(cmd, cwd=self._dst)
         # NOTE(aababilov): old openstack.common.setup reports all tag that
         # contain HEAD as project's version. It breaks all RPM building
         # process, so, we will delete all extra tags
         cmd = ["git", "tag", "--contains", "HEAD"]
         tag_names = [
             i
-            for i in sh.execute(cmd, cwd=self.store_where)[0].splitlines()
+            for i in sh.execute(cmd, cwd=self._dst)[0].splitlines()
             if i and i != tag]
         # Making sure we are not removing tag with the same commit reference
         # as for a branch. Otherwise this will make repository broken.
-        cmd = ["git", "show-ref", "--tags", "--dereference"] + tag_names
-        for line in sh.execute(cmd, cwd=self.store_where)[0].splitlines():
-            res = re.search("(.+)\s+refs/tags/(.+)\^\{\}$", line)
-            if res is None:
-                continue
-            ref, tag_name = res.groups()
-            if ref == git_head and tag_name in tag_names:
-                tag_names.remove(tag_name)
+        if tag_names:
+            cmd = ["git", "show-ref", "--tags", "--dereference"] + tag_names
+            for line in sh.execute(cmd, cwd=self._dst)[0].splitlines():
+                res = re.search("(.+)\s+refs/tags/(.+)\^\{\}$", line)
+                if res is None:
+                    continue
+                ref, tag_name = res.groups()
+                if ref == git_head and tag_name in tag_names:
+                    tag_names.remove(tag_name)
         if tag_names:
             LOG.info("Removing tags: %s", colorizer.quote(" ".join(tag_names)))
             cmd = ["git", "tag", "-d"] + tag_names
-            sh.execute(cmd, cwd=self.store_where)
+            sh.execute(cmd, cwd=self._dst)
 
 
 class UrlLibDownloader(Downloader):
@@ -140,7 +131,8 @@ class UrlLibDownloader(Downloader):
         return progressbar.ProgressBar(widgets=widgets, maxval=size)
 
     def download(self):
-        LOG.info('Downloading using urllib2: %s to %s.', colorizer.quote(self.uri), colorizer.quote(self.store_where))
+        LOG.info('Downloading using urllib2: %s to %s.',
+                 colorizer.quote(self._uri), colorizer.quote(self._dst))
         p_bar = None
 
         def update_bar(progress_bar, bytes_down):
@@ -148,7 +140,7 @@ class UrlLibDownloader(Downloader):
                 progress_bar.update(bytes_down)
 
         try:
-            with contextlib.closing(urllib2.urlopen(self.uri, timeout=self.timeout)) as conn:
+            with contextlib.closing(urllib2.urlopen(self._uri, timeout=self.timeout)) as conn:
                 c_len = conn.headers.get('content-length')
                 if c_len is not None:
                     try:
@@ -156,9 +148,9 @@ class UrlLibDownloader(Downloader):
                         p_bar.start()
                     except ValueError:
                         pass
-                with open(self.store_where, 'wb') as ofh:
-                    return (self.store_where, sh.pipe_in_out(conn, ofh,
-                                                             chunk_cb=functools.partial(update_bar, p_bar)))
+                with open(self._dst, 'wb') as ofh:
+                    return (self._dst, sh.pipe_in_out(conn, ofh,
+                                                      chunk_cb=functools.partial(update_bar, p_bar)))
         finally:
             if p_bar:
                 p_bar.finish()
