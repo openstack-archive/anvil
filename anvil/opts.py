@@ -163,6 +163,14 @@ def parse(previous_settings=None):
                           dest="action",
                           metavar="ACTION",
                           help="required action to perform: %s" % (_format_list(actions.names())))
+    base_group.add_option("-o", "--origins",
+                          action="store",
+                          type="string",
+                          dest="origins_fn",
+                          default=sh.joinpths(settings.ORIGINS_DIR, 'master.yaml'),
+                          metavar="FILE",
+                          help="yaml file describing where to get openstack sources "
+                               "from (default: %default)")
     base_group.add_option("-j", "--jobs",
                           action="store",
                           type="int",
@@ -223,6 +231,7 @@ def parse(previous_settings=None):
     values['action'] = (options.action or "")
     values['jobs'] = options.jobs
     values['persona_fn'] = options.persona_fn
+    values['origins_fn'] = options.origins_fn
     values['verbose'] = options.verbose
     values['usr_only'] = options.usr_only
     values['prompt_for_passwords'] = options.prompt_for_passwords
