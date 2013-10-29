@@ -1,7 +1,4 @@
 # Settings for component ceilometer-client
 ---
 
-# Where we download this from...
-get_from: "git://github.com/openstack/python-ceilometerclient.git?branch=master"
-
 ...

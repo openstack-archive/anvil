@@ -1,9 +1,6 @@
 # Settings for component glance-client
 ---
 
-# Where we download this from...
-get_from: "git://github.com/openstack/python-glanceclient.git?branch=master"
-
 # These seem to require swift, not always installed...
 exclude_tests:
     - "test_ssl_cert_mismatch"

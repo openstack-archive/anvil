@@ -1,7 +1,4 @@
 # Settings for component django-openstack-auth
 ---
 
-# Where we download this from...
-get_from: "git://github.com/openstack/django_openstack_auth.git?branch=master"
-
 ...
