@@ -1,5 +1,6 @@
 # Settings for component general
 ---
+
 ip: "$(auto:ip)"
 
 # How many seconds to wait until a service comes online before using it.

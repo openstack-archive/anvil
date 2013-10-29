@@ -1,13 +1,9 @@
 # Settings for component cinder
 ---
 
-# Where we download this from...
-get_from: "git://github.com/openstack/cinder.git?branch=master"
-
 # Host and ports for the different cinder services
 api_host: "$(auto:ip)"
 api_port: 8776
 protocol: http
-
 
 ...

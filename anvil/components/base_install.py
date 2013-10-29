@@ -20,6 +20,7 @@ from anvil import settings
 from anvil import shell as sh
 from anvil import trace as tr
 from anvil import utils
+import yaml
 
 from anvil.packaging.helpers import pip_helper
 
@@ -35,34 +36,8 @@ class PkgInstallComponent(base.Component):
         self.tracewriter = tr.TraceWriter(trace_fn, break_if_there=False)
         self.configurator = conf.Configurator(self)
 
-    def _get_download_config(self):
-        return None
-
-    def _get_download_location(self):
-        key = self._get_download_config()
-        if not key:
-            return (None, None)
-        uri = self.get_option(key, default_value='').strip()
-        if not uri:
-            raise ValueError(("Could not find uri in config to download "
-                              "from option %s") % (key))
-        return (uri, self.get_option('app_dir'))
-
     def download(self):
-        (from_uri, target_dir) = self._get_download_location()
-        if not from_uri and not target_dir:
-            return []
-        else:
-            uris = [from_uri]
-            utils.log_iterable(uris, logger=LOG,
-                               header="Downloading from %s uris" % (len(uris)))
-            sh.mkdirslist(target_dir, tracewriter=self.tracewriter)
-            # This is used to delete what is downloaded (done before
-            # fetching to ensure its cleaned up even on download failures)
-            self.tracewriter.download_happened(target_dir, from_uri)
-            fetcher = down.GitDownloader(self.distro, from_uri, target_dir)
-            fetcher.download()
-            return uris
+        return []
 
     def list_patches(self, section):
         what_patches = self.get_option('patches', section)
@@ -82,7 +57,7 @@ class PkgInstallComponent(base.Component):
     def patch(self, section):
         canon_what_patches = self.list_patches(section)
         if canon_what_patches:
-            (_from_uri, target_dir) = self._get_download_location()
+            target_dir = self.get_option('app_dir')
             patcher.apply_patches(canon_what_patches, target_dir)
 
     def config_params(self, config_fn):
@@ -165,9 +140,30 @@ class PythonInstallComponent(PkgInstallComponent):
             self.requires_files.append(sh.joinpths(app_dir,
                                                    'test-requirements.txt'))
         self._egg_info = None
+        self._origin_fn = kargs.get('origin_fn')
 
-    def _get_download_config(self):
-        return 'get_from'
+    def download(self):
+        """Download sources needed to build the component, if any."""
+        target_dir = self.get_option('app_dir')
+        with open(self._origin_fn, 'r') as fh:
+            download_cfg = yaml.safe_load(fh.read()).get(self.name, {})
+        if not target_dir or not download_cfg:
+            return []
+
+        uri = download_cfg.pop('repo')
+        if not uri:
+            raise ValueError(("Could not find repo uri for %r component from the %r "
+                              "config file." % (self.name, self._origin_fn)))
+
+        uris = [uri]
+        utils.log_iterable(uris, logger=LOG,
+                           header="Downloading from %s uris" % (len(uris)))
+        sh.mkdirslist(target_dir, tracewriter=self.tracewriter)
+        # This is used to delete what is downloaded (done before
+        # fetching to ensure its cleaned up even on download failures)
+        self.tracewriter.download_happened(target_dir, uri)
+        down.GitDownloader(uri, target_dir, **download_cfg).download()
+        return uris
 
     @property
     def egg_info(self):

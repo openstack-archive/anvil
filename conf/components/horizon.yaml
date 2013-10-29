@@ -1,6 +1,4 @@
 # Settings for component horizon
 ---
-# Where we download this from...
-get_from: "git://github.com/openstack/horizon.git?branch=master"
 
 ...
