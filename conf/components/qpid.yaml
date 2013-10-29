@@ -1,5 +1,6 @@
 # Settings for component qpid
 ---
+
 # Where is qpid located?
 host: "$(auto:ip)"
 
