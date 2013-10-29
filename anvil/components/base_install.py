@@ -12,6 +12,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import yaml
 from anvil.components import base
 from anvil import downloader as down
 from anvil import log as logging
@@ -35,34 +36,31 @@ class PkgInstallComponent(base.Component):
         self.tracewriter = tr.TraceWriter(trace_fn, break_if_there=False)
         self.configurator = conf.Configurator(self)
 
-    def _get_download_config(self):
-        return None
+    def _get_download_config(self, filename, component):
+        return {}
 
-    def _get_download_location(self):
-        key = self._get_download_config()
-        if not key:
-            return (None, None)
-        uri = self.get_option(key, default_value='').strip()
-        if not uri:
-            raise ValueError(("Could not find uri in config to download "
-                              "from option %s") % (key))
-        return (uri, self.get_option('app_dir'))
-
-    def download(self):
-        (from_uri, target_dir) = self._get_download_location()
-        if not from_uri and not target_dir:
+    def download(self, source_fn):
+        """Download sources needed to build the component, if any."""
+        target_dir = self.get_option('app_dir')
+        download_cfg = self._get_download_config(source_fn, self.name)
+        if not target_dir or not download_cfg:
             return []
-        else:
-            uris = [from_uri]
-            utils.log_iterable(uris, logger=LOG,
-                               header="Downloading from %s uris" % (len(uris)))
-            sh.mkdirslist(target_dir, tracewriter=self.tracewriter)
-            # This is used to delete what is downloaded (done before
-            # fetching to ensure its cleaned up even on download failures)
-            self.tracewriter.download_happened(target_dir, from_uri)
-            fetcher = down.GitDownloader(self.distro, from_uri, target_dir)
-            fetcher.download()
-            return uris
+
+        uri = download_cfg.pop('repo')
+        if not uri:
+            raise ValueError(("Could not find repo uri for %r component from the %r "
+                              "config file." % (self.name, source_fn)))
+
+        uris = [uri]
+        utils.log_iterable(uris, logger=LOG,
+                           header="Downloading from %s uris" % (len(uris)))
+        sh.mkdirslist(target_dir, tracewriter=self.tracewriter)
+        # This is used to delete what is downloaded (done before
+        # fetching to ensure its cleaned up even on download failures)
+        self.tracewriter.download_happened(target_dir, uri)
+        fetcher = down.GitDownloader(uri, target_dir, **download_cfg)
+        fetcher.download()
+        return uris
 
     def list_patches(self, section):
         what_patches = self.get_option('patches', section)
@@ -82,7 +80,7 @@ class PkgInstallComponent(base.Component):
     def patch(self, section):
         canon_what_patches = self.list_patches(section)
         if canon_what_patches:
-            (_from_uri, target_dir) = self._get_download_location()
+            target_dir = self.get_option('app_dir')
             patcher.apply_patches(canon_what_patches, target_dir)
 
     def config_params(self, config_fn):
@@ -166,8 +164,9 @@ class PythonInstallComponent(PkgInstallComponent):
                                                    'test-requirements.txt'))
         self._egg_info = None
 
-    def _get_download_config(self):
-        return 'get_from'
+    def _get_download_config(self, filename, component):
+        with open(filename, 'r') as fh:
+            return yaml.safe_load(fh.read()).get(component, {})
 
     @property
     def egg_info(self):

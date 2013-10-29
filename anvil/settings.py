@@ -21,6 +21,7 @@ import os
 CONFIG_DIR = 'conf'
 COMPONENT_CONF_DIR = os.path.join(CONFIG_DIR, "components")
 DISTRO_DIR = os.path.join(CONFIG_DIR, "distros")
+MESSAGING_DIR = os.path.join(CONFIG_DIR, "messages")
 PERSONA_DIR = os.path.join(CONFIG_DIR, "personas")
 TEMPLATE_DIR = os.path.join(CONFIG_DIR, "templates")
-MESSAGING_DIR = os.path.join(CONFIG_DIR, "messages")
+SOURCE_DIR = os.path.join(CONFIG_DIR, "sources")

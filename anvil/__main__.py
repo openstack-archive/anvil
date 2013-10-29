@@ -64,11 +64,20 @@ def run(args):
     if runner_cls.needs_sudo:
         ensure_perms()
 
+    # Check persona file exists
     persona_fn = args.pop('persona_fn')
     if not persona_fn:
         raise excp.OptionException("No persona file name specified!")
     if not sh.isfile(persona_fn):
         raise excp.OptionException("Invalid persona file %r specified!" % (persona_fn))
+
+    # Check source file exists
+    source_fn = args.pop('source_fn')
+    if not source_fn:
+        raise excp.OptionException("No source file name specified!")
+    if not sh.isfile(source_fn):
+        raise excp.OptionException("Invalid source file %r specified!" % (source_fn))
+    args['source_fn'] = sh.abspth(source_fn)
 
     # Determine the root directory...
     root_dir = sh.abspth(args.pop("dir"))
@@ -111,6 +120,7 @@ def run(args):
              colorizer.quote(action), colorizer.quote(utils.iso8601()),
              colorizer.quote(dist.name))
     LOG.info("Using persona: %s", colorizer.quote(persona_fn))
+    LOG.info("Using source: %s", colorizer.quote(source_fn))
     LOG.info("In root directory: %s", colorizer.quote(root_dir))
 
     start_time = time.time()

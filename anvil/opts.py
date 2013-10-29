@@ -163,6 +163,13 @@ def parse(previous_settings=None):
                           dest="action",
                           metavar="ACTION",
                           help="required action to perform: %s" % (_format_list(actions.names())))
+    base_group.add_option("-o", "--source",
+                          action="store",
+                          type="string",
+                          dest="source_fn",
+                          default=sh.joinpths(settings.SOURCE_DIR, 'master.yaml'),
+                          metavar="FILE",
+                          help="source yaml file to apply (default: %default)")
     base_group.add_option("-j", "--jobs",
                           action="store",
                           type="int",
@@ -223,6 +230,7 @@ def parse(previous_settings=None):
     values['action'] = (options.action or "")
     values['jobs'] = options.jobs
     values['persona_fn'] = options.persona_fn
+    values['source_fn'] = options.source_fn
     values['verbose'] = options.verbose
     values['usr_only'] = options.usr_only
     values['prompt_for_passwords'] = options.prompt_for_passwords

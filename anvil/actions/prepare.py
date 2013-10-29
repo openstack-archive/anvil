@@ -46,7 +46,7 @@ class PrepareAction(action.Action):
         self._run_phase(
             action.PhaseFunctors(
                 start=lambda i: LOG.info('Downloading %s.', colorizer.quote(i.name)),
-                run=lambda i: i.download(),
+                run=lambda i: i.download(self.cli_opts['source_fn']),
                 end=lambda i, result: LOG.info("Performed %s downloads.", len(result))
             ),
             component_order,

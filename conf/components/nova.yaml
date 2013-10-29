@@ -1,9 +1,6 @@
 # Settings for component nova
 ---
 
-# Where we download this from...
-get_from: "git://github.com/openstack/nova.git?branch=master"
-
 # Host and ports for the different nova services
 api_host: "$(auto:ip)"
 api_port: 8774

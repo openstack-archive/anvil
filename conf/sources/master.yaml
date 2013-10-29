@@ -1,0 +1,63 @@
+ceilometer-client:
+  repo: git://github.com/openstack/python-ceilometerclient.git
+  branch: master
+cinder-client:
+  repo: git://github.com/openstack/python-cinderclient.git
+  branch: master
+cinder:
+  repo: git://github.com/openstack/cinder.git
+  branch: master
+django-openstack-auth:
+  repo: git://github.com/openstack/django_openstack_auth.git
+  branch: master
+glance-client:
+  repo: git://github.com/openstack/python-glanceclient.git
+  branch: master
+glance:
+  repo: git://github.com/openstack/glance.git
+  branch: master
+heat-client:
+  repo: git://github.com/openstack/python-heatclient.git
+  branch: master
+horizon:
+  repo: git://github.com/openstack/horizon.git
+  branch: master
+keystone-client:
+  repo: git://github.com/openstack/python-keystoneclient.git
+  branch: master
+keystone:
+  repo: git://github.com/openstack/keystone.git
+  branch: master
+nova-client:
+  repo: git://github.com/openstack/python-novaclient.git
+  branch: master
+nova:
+  repo: git://github.com/openstack/nova.git
+  branch: master
+novnc:
+  repo: git://github.com/kanaka/noVNC.git
+  branch: master
+openstack-client:
+  repo: git://github.com/openstack/python-openstackclient.git
+  branch: master
+oslo-config:
+  repo: git://github.com/openstack/oslo.config.git
+  branch: master
+oslo-incubator:
+  repo: git://github.com/openstack/oslo-incubator.git
+  branch: master
+neutron-client:
+  repo: git://github.com/openstack/python-neutronclient.git
+  branch: master
+neutron:
+  repo: git://github.com/openstack/neutron.git
+  branch: master
+swift-client:
+  repo: git://github.com/openstack/python-swiftclient.git
+  branch: master
+trove-client:
+  repo: git://github.com/openstack/python-troveclient.git
+  branch: master
+trove:
+  repo: git://github.com/openstack/trove.git
+  branch: master

@@ -1,7 +1,5 @@
 # Settings for component glance
 ---
-# Where we download this from...
-get_from: "git://github.com/openstack/glance.git?branch=master"
 
 host: "$(auto:ip)"
 api_port: 9292
@@ -30,4 +28,5 @@ image_cache_dir: "/usr/share/anvil/glance/images"
 
 # Used by install section in the specfile (conflicts with the client binary...)
 remove_file: "/bin/rm -rf %{buildroot}/usr/bin/glance"
+
 ...
