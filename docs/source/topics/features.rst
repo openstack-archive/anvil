@@ -8,12 +8,13 @@ Features
 Configurations
 --------------
 
-A set of configuration files (in yaml format) that shows common/component/distribution configurations.
+A set of configuration files (in yaml format) that shows common/component/distribution/origins configurations.
 All the yaml configuration files could be found in:
 
 * conf/templates/keystone/
 * conf/components/
 * conf/distros/
+* conf/origins/
 * subdirectories of conf/personas/
 
 

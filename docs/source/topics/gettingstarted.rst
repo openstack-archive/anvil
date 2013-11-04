@@ -152,6 +152,9 @@ to fit your desired configuration of nova/glance and the other OpenStack compone
 You can use ``-p <conf/components/required_file.yaml>`` option with following commands
 to use configuration files.
 
+To specify which versions of OpenStack components you want to install select or edit origins configuration
+file from ``<conf/origins/>`` and use it as follows ``-o <conf/origins/origins_file.yaml>``.
+
 Networking notes for those on RedHat/CentOS/Fedora
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
