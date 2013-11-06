@@ -46,15 +46,18 @@ class GitDownloader(Downloader):
     def __init__(self, uri, dst, **kwargs):
         Downloader.__init__(self, uri, dst)
         self._branch = kwargs.get('branch', 'master')
-        self._tag = str(kwargs.get('tag'))
+        try:
+            self._tag = str(kwargs['tag'])
+        except KeyError:
+            self._tag = None
 
     def download(self):
         branch = self._branch
         tag = self._tag
-        if self._tag:
+        if tag:
             # Avoid 'detached HEAD state' message by moving to a
             # $tag-anvil branch for that tag
-            new_branch = "%s-%s" % (self._tag, 'anvil')
+            new_branch = "%s-%s" % (tag, 'anvil')
             checkout_what = [tag, '-b', new_branch]
         else:
             # Set it up to track the remote branch correctly
