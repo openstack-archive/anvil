@@ -46,20 +46,20 @@ class GitDownloader(Downloader):
     def __init__(self, uri, dst, **kwargs):
         Downloader.__init__(self, uri, dst)
         self._branch = kwargs.get('branch', 'master')
-        self._tag = str(kwargs.get('tag'))
+        self._tag = kwargs.get('tag')
 
     def download(self):
         branch = self._branch
         tag = self._tag
-        if self._tag:
-            # Avoid 'detached HEAD state' message by moving to a
-            # $tag-anvil branch for that tag
-            new_branch = "%s-%s" % (self._tag, 'anvil')
-            checkout_what = [tag, '-b', new_branch]
-        else:
+        if tag is None:
             # Set it up to track the remote branch correctly
             new_branch = branch
             checkout_what = ['-t', '-b', new_branch, 'origin/%s' % branch]
+        else:
+            # Avoid 'detached HEAD state' message by moving to a
+            # $tag-anvil branch for that tag
+            new_branch = "%s-%s" % (self._tag, 'anvil')
+            checkout_what = ['%s' % tag, '-b', new_branch]
         if sh.isdir(self._dst) and sh.isdir(sh.joinpths(self._dst, '.git')):
             LOG.info("Existing git directory located at %s, leaving it alone.",
                      colorizer.quote(self._dst))
