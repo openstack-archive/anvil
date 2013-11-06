@@ -1,3 +1,6 @@
+ceilometer:
+  repo: git://github.com/openstack/ceilometer.git
+  branch: stable/havana
 ceilometer-client:
   repo: git://github.com/openstack/python-ceilometerclient.git
   tag: 1.0.6
@@ -19,6 +22,9 @@ glance:
 heat-client:
   repo: git://github.com/openstack/python-heatclient.git
   tag: 0.2.5
+heat:
+  repo: git://github.com/openstack/heat.git
+  branch: stable/havana
 horizon:
   repo: git://github.com/openstack/horizon.git
   branch: stable/havana
