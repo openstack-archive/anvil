@@ -1,3 +1,6 @@
+ceilometer:
+  repo: git://github.com/openstack/ceilometer.git
+  branch: master
 ceilometer-client:
   repo: git://github.com/openstack/python-ceilometerclient.git
   branch: master
@@ -18,6 +21,9 @@ glance:
   branch: master
 heat-client:
   repo: git://github.com/openstack/python-heatclient.git
+  branch: master
+heat:
+  repo: git://github.com/openstack/heat.git
   branch: master
 horizon:
   repo: git://github.com/openstack/horizon.git
