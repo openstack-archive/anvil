@@ -65,6 +65,7 @@ Group:            Applications/System
 #for $i in $requires
 Requires:	  ${i}
 #end for
+Requires:         pyOpenSSL >= 0.11
 
 #raw
 %description -n   python-glance

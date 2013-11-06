@@ -34,8 +34,10 @@ LOG = logging.getLogger(__name__)
 # which we should be able to take in via configuration or other automatic
 # process
 OPENSTACK_PACKAGES = set([
+    "ceilometer",
     "cinder",
     "glance",
+    "heat",
     "horizon",
     "keystone",
     "nova",

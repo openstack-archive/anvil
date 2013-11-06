@@ -379,4 +379,31 @@ components:
             running: anvil.components.openvswitch:OpenvswitchRuntime
             test: anvil.components.base_testing:EmptyTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
+    heat:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:EmptyTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+        daemon_to_package:
+            api: openstack-heat-api
+            api-cfn: openstack-heat-api-cfn
+            api-cloudwatch: openstack-heat-api-cloudwatch
+            engine: openstack-heat-engine
+    ceilometer:
+        pip:
+        -   name: wsme
+            version: ">=0.5b5,<0.5b6"
+        -   name: flask
+            version: ">=0.10,<1"
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:EmptyTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+        daemon_to_package:
+            api: openstack-ceilometer-api
+            central: openstack-ceilometer-central
+            collector: openstack-ceilometer-collector
+            compute: openstack-ceilometer-compute
 ...
