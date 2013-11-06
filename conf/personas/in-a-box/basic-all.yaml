@@ -24,6 +24,8 @@ components:
 - trove-client
 - django-openstack-auth
 - horizon
+- heat
+- ceilometer
 options:
     general:
         install-all-deps: false
@@ -42,6 +44,9 @@ options:
         db-sync: true
         do-init: true
         enable-pki: false
+    heat: {}
+    ceilometer:
+        db-sync: true
     horizon:
         make-blackhole: true
     cinder:
@@ -72,6 +77,16 @@ subsystems:
     - api
     - scheduler
     - volume
+    heat:
+    - api
+    - api-cfn
+    - api-cloudwatch
+    - engine
+    ceilometer:
+    - api
+    - collector
+    - compute
+    - central
 supports:
 - rhel
 ...
