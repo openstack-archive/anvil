@@ -33,11 +33,14 @@ LOG = logging.getLogger(__name__)
 # TODO(harlowja): get rid of static lists in code files for these names
 # which we should be able to take in via configuration or other automatic
 # process
-OPENSTACK_PACKAGES = set([
+OPENSTACK_PACKAGES = frozenset([
+    "ceilometer",
     "cinder",
     "glance",
+    "heat",
     "horizon",
     "keystone",
+    "neutron",
     "nova",
     "oslo.config",
     "python-cinderclient",
@@ -47,7 +50,6 @@ OPENSTACK_PACKAGES = set([
     "python-novaclient",
     "python-swiftclient",
     "python-troveclient",
-    "neutron",
     "swift",
     "trove",
 ])
