@@ -256,7 +256,7 @@ class NovaConfigurator(base.Configurator):
         nova_conf.add("neutron_admin_tenant_name", params['service_tenant'])
         nova_conf.add("neutron_url", params['neutron']['endpoints']['admin']['uri'])
         libvirt_vif_drivers = {
-            "linuxbridge": "nova.virt.libvirt.vif.NeutronLinuxBridgeVIFDriver",
+            "linuxbridge": "nova.virt.libvirt.vif.LibvirtGenericVIFDriver",
             "openvswitch": "nova.virt.libvirt.vif.LibvirtHybridOVSBridgeDriver",
         }
         # FIXME(aababilov): error on KeyError

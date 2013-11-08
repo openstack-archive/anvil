@@ -37,7 +37,7 @@ class L3Configurator(neutron_plugins.Configurator):
         plugin_conf.add("admin_tenant_name", params["service_tenant"])
         plugin_conf.add("auth_url", params["endpoints"]["admin"]["uri"])
         plugin_conf.add("root_helper", "sudo neutron-rootwrap /etc/neutron/rootwrap.conf")
-        plugin_conf.add("use_namespaces", "False")
+        plugin_conf.add("use_namespaces", "True")
         plugin_conf.add("debug", "False")
         plugin_conf.add("verbose", "True")
         self.setup_rpc(plugin_conf, rpc_backends=MQ_BACKENDS)
