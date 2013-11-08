@@ -255,20 +255,8 @@ class NovaConfigurator(base.Configurator):
         nova_conf.add("neutron_auth_strategy", "keystone")
         nova_conf.add("neutron_admin_tenant_name", params['service_tenant'])
         nova_conf.add("neutron_url", params['neutron']['endpoints']['admin']['uri'])
-        libvirt_vif_drivers = {
-            "linuxbridge": "nova.virt.libvirt.vif.NeutronLinuxBridgeVIFDriver",
-            "openvswitch": "nova.virt.libvirt.vif.LibvirtHybridOVSBridgeDriver",
-        }
-        # FIXME(aababilov): error on KeyError
-        nova_conf.add(
-            "libvirt_vif_driver",
-            libvirt_vif_drivers[self.installer.get_option('neutron-core-plugin')])
-
-        # FIXME(aababilov): add for linuxbridge:
-        nova_conf.add("libvirt_vif_type", "ethernet")
-        nova_conf.add("connection_type", "libvirt")
-        nova_conf.add("neutron_use_dhcp",
-                      self.installer.get_bool_option('neutron-use-dhcp'))
+        nova_conf.add("libvirt_vif_driver",
+                      "nova.virt.libvirt.vif.LibvirtGenericVIFDriver")
 
     def _configure_cells(self, nova_conf):
         cells_enabled = self.installer.get_bool_option('enable-cells')

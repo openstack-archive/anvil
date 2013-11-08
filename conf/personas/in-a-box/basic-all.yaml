@@ -60,13 +60,13 @@ subsystems:
     - api
     - cert
     - compute
-    - consoleauth
+    - conductor
     - scheduler
-    - xvpvncproxy
     neutron:
     - server
     - agent
     - l3-agent
+    - dhcp-agent
     cinder:
     - api
     - scheduler
