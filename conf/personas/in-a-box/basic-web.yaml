@@ -34,7 +34,6 @@ options:
         enable-spice: false
         local-conductor: false
         neutron-enabled: true
-        neutron-core-plugin: linuxbridge
     glance:
         db-sync: true
         load-images: true
