@@ -7,6 +7,7 @@ api_port: 9696
 protocol: http
 
 core_plugin: openvswitch
+use_namespaces: True
 
 network_vlan_ranges: physnet1:100:299
 physical_interface_mappings: physnet1:100:299
