@@ -2,6 +2,6 @@
 ---
 
 # Where we download this from...
-get_from: "git://github.com/openstack/python-cinderclient.git?tag=1.0.3"
+get_from: "git://github.com/openstack/python-cinderclient.git?tag=1.0.4"
 
 ...
