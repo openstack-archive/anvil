@@ -30,6 +30,7 @@ from anvil import log as logging
 from anvil import settings
 from anvil import shell as sh
 from anvil import utils
+from iniparse import ini
 
 
 LOG = logging.getLogger(__name__)
@@ -122,10 +123,97 @@ class BuiltinConfigParser(ConfigHelperMixin, ConfigParser.RawConfigParser, Strin
                 self.read(f)
 
 
-class RewritableConfigParser(ConfigHelperMixin, iniparse.RawConfigParser, StringiferMixin):
+class AnvilConfigParser(iniparse.RawConfigParser):
+    """Extends RawConfigParser with the following functionality:
+    1. All commented options with related comments belong to
+    their own section, but not to the global scope. This is
+    needed to insert new options into proper position after
+    same commented option in the section, if present.
+    2. Override set option behavior to insert option right
+    after same commented option, if present, otherwise insert
+    in the section beginning.
+    """
+
+    def readfp(self, fp, filename=None):
+        super(AnvilConfigParser, self).readfp(fp, filename)
+        self._on_after_file_read()
+
+    def set(self, section, option, value):
+        """Overrides option set behavior."""
+        try:
+            self._set_section_option(self.data[section], option, value)
+        except KeyError:
+            raise NoSectionError(section)
+
+    def _on_after_file_read(self):
+        """This function is called after reading config file
+        to move all commented lines into section they belong to,
+        otherwise such commented lines are placed on top level,
+        that is not very suitable for us.
+        """
+        curr_section = None
+        pending_lines = []
+        remove_lines = []
+        option_regex = re.compile(r'^[;#]\s*[^:=\s[][^:=]*[:=]\s*.*$')
+        for line_obj in self.data._data.contents:
+            if isinstance(line_obj, ini.LineContainer):
+                curr_section = line_obj
+                pending_lines = []
+            else:
+                if curr_section is not None:
+                    pending_lines.append(line_obj)
+                    # if line is commented option - add it and all
+                    # pending lines into current section
+                    if option_regex.match(line_obj.line) is not None:
+                        curr_section.extend(pending_lines)
+                        remove_lines.extend(pending_lines)
+                        pending_lines = []
+
+        for line_obj in remove_lines:
+            self.data._data.contents.remove(line_obj)
+
+    @staticmethod
+    def _set_section_option(section, key, value):
+        """This function is used to override the __setitem__ behavior
+        of the INISection to search suitable place to insert new
+        option if it doesn't exist. The 'suitable' place is
+        considered to be after same commented option, if present,
+        otherwise new option is placed at the section beginning.
+        """
+        if section._optionxform:
+            xkey = section._optionxform(key)
+        else:
+            xkey = key
+        if xkey in section._compat_skip_empty_lines:
+            section._compat_skip_empty_lines.remove(xkey)
+
+        regexp = re.compile(r'^[;#]\s*%s\s*[:=]\s*.*$' % xkey)
+        if xkey not in section._options:
+            # create a dummy object - value may have multiple lines
+            obj = ini.LineContainer(ini.OptionLine(key, ''))
+
+            # search for the line index to insert after
+            section_lines = section._lines[-1].contents
+            #line_idx = len(section_lines)
+            line_idx = 0
+            for idx, line_obj in reversed(list(enumerate(section_lines))):
+                if not isinstance(line_obj, ini.LineContainer):
+                    line = line_obj.line
+                    if line is not None and regexp.match(line) is not None:
+                        line_idx = idx
+                        break
+
+            # insert new parameter object on the next line after
+            # commented option, otherwise insert it at the beginning
+            section_lines.insert(line_idx + 1, obj)
+            section._options[xkey] = obj
+        section._options[xkey].value = value
+
+
+class RewritableConfigParser(ConfigHelperMixin, AnvilConfigParser, StringiferMixin):
     def __init__(self, fns=None, templatize_values=False):
         ConfigHelperMixin.__init__(self, templatize_values)
-        iniparse.RawConfigParser.__init__(self)
+        AnvilConfigParser.__init__(self)
         StringiferMixin.__init__(self)
         # Make option names case sensitive
         # See: http://docs.python.org/library/configparser.html#ConfigParser.RawConfigParser.optionxform
