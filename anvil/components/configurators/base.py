@@ -17,8 +17,8 @@
 import io
 import weakref
 
-from anvil import cfg
 from anvil import exceptions
+from anvil import ini_parser
 from anvil import shell as sh
 from anvil import utils
 
@@ -51,9 +51,10 @@ class Configurator(object):
             if isinstance(contents, unicode):
                 contents = contents.encode("utf-8")
             with io.BytesIO(contents) as stream:
-                config = cfg.create_parser(cfg.RewritableConfigParser, self.installer)
+                config = ini_parser.create_parser(
+                    ini_parser.RewritableConfigParser, self.installer)
                 config.readfp(stream)
-                adjuster(cfg.DefaultConf(config))
+                adjuster(ini_parser.DefaultConf(config))
                 contents = config.stringify(name)
         return contents
 
