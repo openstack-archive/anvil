@@ -10,6 +10,7 @@ dependency_handler:
         distribute: python-setuptools
         m2crypto: m2crypto
         mysql-python: MySQL-python
+        numpy: numpy
         pam: python-pam
         pastedeploy: python-paste-deploy
         pycrypto: python-crypto
