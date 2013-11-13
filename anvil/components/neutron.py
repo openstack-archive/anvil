@@ -15,6 +15,7 @@
 #    under the License.
 
 from anvil import colorizer
+from anvil import exceptions
 from anvil import log as logging
 from anvil import shell as sh
 
@@ -44,6 +45,23 @@ class NeutronInstaller(binstall.PythonInstallComponent, NeutronPluginMixin):
     def __init__(self, *args, **kargs):
         super(NeutronInstaller, self).__init__(*args, **kargs)
         self.configurator = qconf.NeutronConfigurator(self)
+
+    def pre_install(self):
+        # Check if network namespaces are supported.
+        if self.get_option("use_namespaces", default_value=True):
+            try:
+                # "ip netns" command is used for network namespace management.
+                # We are trying to execute this command and if it was executed
+                # successfully then network namespaces support is enabled.
+                sh.execute(["ip", "netns"])
+            except exceptions.ProcessExecutionError:
+                raise exceptions.InstallException(
+                    "Network namespaces are not supported in your system. "
+                    "Please, install kernel and iproute with network "
+                    "namespaces support. To install them from RDO you can "
+                    "use the following script: "
+                    "./tools/install-neutron-ns-packages.sh")
+        super(NeutronInstaller, self).pre_install()
 
     def post_install(self):
         super(NeutronInstaller, self).post_install()
