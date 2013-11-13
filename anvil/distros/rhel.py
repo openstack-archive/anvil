@@ -21,8 +21,8 @@ Platform-specific logic for RedHat Enterprise Linux components.
 
 import re
 
-from anvil import cfg
 from anvil import colorizer
+from anvil import ini_parser
 from anvil import log as logging
 from anvil import shell as sh
 
@@ -39,7 +39,7 @@ class DBInstaller(db.DBInstaller):
 
     def _configure_db_confs(self):
         LOG.info("Fixing up %s mysql configs.", colorizer.quote(self.distro.name))
-        my_cnf = cfg.RewritableConfigParser(fns=[DBInstaller.MYSQL_CONF])
+        my_cnf = ini_parser.RewritableConfigParser(fns=[DBInstaller.MYSQL_CONF])
         my_cnf.remove_option('mysqld', 'skip-grant-tables')
         my_cnf.set('mysqld', 'default-storage-engine', 'InnoDB')
         my_cnf.set('mysqld', 'bind-address', '0.0.0.0')

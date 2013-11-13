@@ -16,9 +16,9 @@
 
 import sys
 
-from anvil import cfg
 from anvil import colorizer
 from anvil import exceptions as excp
+from anvil import ini_parser
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
@@ -120,7 +120,7 @@ class PythonTestingComponent(base.Component):
         if sh.isfile(tox_fn):
             # Suck out some settings from the tox file
             try:
-                tox_cfg = cfg.BuiltinConfigParser(fns=[tox_fn])
+                tox_cfg = ini_parser.BuiltinConfigParser(fns=[tox_fn])
                 env_values = tox_cfg.get('testenv', 'setenv') or ''
                 for env_line in env_values.splitlines():
                     env_line = env_line.strip()
