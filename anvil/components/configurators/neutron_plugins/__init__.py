@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from anvil.components.configurators.neutron import MQ_BACKENDS
 from anvil.components.configurators import base
 from anvil import shell as sh
 
@@ -26,9 +27,17 @@ class Configurator(base.Configurator):
     def __init__(self, installer, configs, adjusters):
         super(Configurator, self).__init__(installer, configs)
         self.config_adjusters = adjusters
+        self.core_plugin = installer.get_option("core_plugin")
 
-    def _config_path(self, name):
-        return sh.joinpths('plugins', self.core_plugin, name)
+    def _config_adjust_plugin(self, plugin_conf):
+        params = self.get_keystone_params('neutron')
+        plugin_conf.add("admin_password", params["service_password"])
+        plugin_conf.add("admin_user", params["service_user"])
+        plugin_conf.add("admin_tenant_name", params["service_tenant"])
+        plugin_conf.add("auth_url", params["endpoints"]["admin"]["uri"])
+
+        plugin_conf.add("debug", self.installer.get_bool_option("debug"))
+        plugin_conf.add("verbose", self.installer.get_bool_option("verbose"))
 
 
 class CorePluginConfigurator(Configurator):
@@ -39,7 +48,17 @@ class CorePluginConfigurator(Configurator):
             installer,
             [self._config_path(name) for name in configs],
             dict((self._config_path(name), value)
-                 for key, value in adjusters.iteritems()))
+                 for name, value in adjusters.iteritems()))
+
+    def _config_adjust_plugin(self, plugin_conf):
+        self.setup_rpc(plugin_conf, rpc_backends=MQ_BACKENDS)
+        plugin_conf.add_with_section(
+            "DATABASE",
+            "sql_connection",
+            self.fetch_dbdsn())
+
+    def _config_path(self, name):
+        return sh.joinpths('plugins', self.core_plugin, name)
 
     @property
     def path_to_plugin_config(self):

@@ -14,7 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil.components.configurators.neutron import MQ_BACKENDS
 from anvil.components.configurators import neutron_plugins
 
 # Special generated conf
@@ -30,13 +29,6 @@ class OpenvswitchConfigurator(neutron_plugins.CorePluginConfigurator):
     def __init__(self, installer):
         super(OpenvswitchConfigurator, self).__init__(
             installer, CONFIGS, {PLUGIN_CONF: self._config_adjust_plugin})
-
-    def _config_adjust_plugin(self, plugin_conf):
-        self.setup_rpc(plugin_conf, rpc_backends=MQ_BACKENDS)
-        plugin_conf.add_with_section(
-            "DATABASE",
-            "sql_connection",
-            self.fetch_dbdsn())
 
     @property
     def path_to_plugin_config(self):

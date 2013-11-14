@@ -14,7 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil.components.configurators.neutron import MQ_BACKENDS
 from anvil.components.configurators import neutron_plugins
 
 # Special generated conf
@@ -32,19 +31,11 @@ class LinuxbridgeConfigurator(neutron_plugins.CorePluginConfigurator):
             installer, CONFIGS, {PLUGIN_CONF: self._config_adjust_plugin})
 
     def _config_adjust_plugin(self, plugin_conf):
-        self.setup_rpc(plugin_conf, rpc_backends=MQ_BACKENDS)
-        plugin_conf.add_with_section(
-            "DATABASE",
-            "sql_connection",
-            self.fetch_dbdsn())
+        super(LinuxbridgeConfigurator, self)._config_adjust_plugin(plugin_conf)
         plugin_conf.add_with_section(
             "VLANS",
             "network_vlan_ranges",
             self.installer.get_option("network_vlan_ranges"))
-        plugin_conf.add_with_section(
-            "DATABASE",
-            "sql_connection",
-            self.fetch_dbdsn())
         plugin_conf.add_with_section(
             "LINUX_BRIDGE",
             "physical_interface_mappings",

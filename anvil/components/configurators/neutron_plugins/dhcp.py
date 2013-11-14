@@ -30,20 +30,13 @@ class DhcpConfigurator(neutron_plugins.Configurator):
             installer, CONFIGS, {PLUGIN_CONF: self._config_adjust_plugin})
 
     def _config_adjust_plugin(self, plugin_conf):
-        params = self.get_keystone_params('neutron')
+        super(DhcpConfigurator, self)._config_adjust_plugin(plugin_conf)
+
         plugin_conf.add("dhcp_driver", "neutron.agent.linux.dhcp.Dnsmasq")
-
-        plugin_conf.add("admin_password", params["service_password"])
-        plugin_conf.add("admin_user", params["service_user"])
-        plugin_conf.add("admin_tenant_name", params["service_tenant"])
-        plugin_conf.add("auth_url", params["endpoints"]["admin"]["uri"])
-
         plugin_conf.add("root_helper", "sudo neutron-rootwrap /etc/neutron/rootwrap.conf")
         plugin_conf.add("use_namespaces", "True")
-        plugin_conf.add("debug", "False")
-        plugin_conf.add("verbose", "True")
 
         self.setup_rpc(plugin_conf, rpc_backends=MQ_BACKENDS)
 
-        if self.installer.get_option("core_plugin") == 'openvswitch':
+        if self.core_plugin == 'openvswitch':
             plugin_conf.add("interface_driver", "neutron.agent.linux.interface.OVSInterfaceDriver")
