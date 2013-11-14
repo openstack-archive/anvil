@@ -14,25 +14,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil.components.configurators import neutron_plugins
-
-# Special generated conf
-PLUGIN_CONF = "metadata_agent.ini"
-
-CONFIGS = [PLUGIN_CONF]
+from anvil.components.configurators.neutron_plugins import base
 
 
-class MetadataConfigurator(neutron_plugins.Configurator):
+class MetadataConfigurator(base.AgentConfigurator):
 
-    def __init__(self, installer):
-        super(MetadataConfigurator, self).__init__(
-            installer, CONFIGS, {PLUGIN_CONF: self._config_adjust_plugin})
-
-    def _config_adjust_plugin(self, plugin_conf):
-        params = self.get_keystone_params('neutron')
-        plugin_conf.add("admin_password", params["service_password"])
-        plugin_conf.add("admin_user", params["service_user"])
-        plugin_conf.add("admin_tenant_name", params["service_tenant"])
-        plugin_conf.add("auth_url", params["endpoints"]["admin"]["uri"])
-        plugin_conf.add("debug", "False")
-        plugin_conf.add("verbose", "True")
+    PLUGIN_CONF = "metadata_agent.ini"
