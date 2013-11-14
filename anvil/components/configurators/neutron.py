@@ -66,7 +66,7 @@ class NeutronConfigurator(base.Configurator):
 
     @property
     def config_files(self):
-        config_files = list(CONFIGS)
+        config_files = list(self.configs)
         for plugin_configurator in self.plugin_configurators.values():
             config_files.extend(plugin_configurator.config_files)
         return config_files
