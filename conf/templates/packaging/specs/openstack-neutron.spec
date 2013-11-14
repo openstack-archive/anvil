@@ -444,6 +444,7 @@ install -p -D -m 755 %{SOURCE19} %{buildroot}%{_initrddir}/%{daemon_prefix}-rpc-
 # Setup directories
 install -d -m 755 %{buildroot}%{_sharedstatedir}/neutron
 install -d -m 755 %{buildroot}%{_localstatedir}/log/neutron
+install -d -m 755 %{buildroot}%{_localstatedir}/lock/neutron
 install -d -m 755 %{buildroot}%{_localstatedir}/run/neutron
 
 # Install version info file
@@ -541,6 +542,7 @@ fi
 %config(noreplace) %{_sysconfdir}/sudoers.d/neutron
 %dir %attr(0755, neutron, neutron) %{_sharedstatedir}/neutron
 %dir %attr(0755, neutron, neutron) %{_localstatedir}/log/neutron
+%dir %attr(0755, neutron, neutron) %{_localstatedir}/lock/neutron
 %dir %attr(0755, neutron, neutron) %{_localstatedir}/run/neutron
 %endif
 

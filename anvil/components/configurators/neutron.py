@@ -94,11 +94,7 @@ class NeutronConfigurator(base.Configurator):
 
         # Setup the interprocess locking directory
         # (don't put me on shared storage)
-        lock_path = self.installer.get_option('lock_path')
-        if not lock_path:
-            lock_path = sh.joinpths(self.installer.get_option('component_dir'), 'locks')
-        sh.mkdirslist(lock_path, tracewriter=self.installer.tracewriter)
-        config.add('lock_path', lock_path)
+        config.add('lock_path', '/var/lock/neutron')
 
         self.setup_rpc(config, rpc_backends=MQ_BACKENDS)
 
