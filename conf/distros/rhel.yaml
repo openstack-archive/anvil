@@ -298,11 +298,12 @@ components:
             coverage: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.neutron:NeutronUninstaller
         daemon_to_package:
-            linuxbridge-agent: openstack-neutron-linuxbridge
-            openvswitch-agent: openstack-neutron-openvswitch
-            ovs-cleanup: openstack-neutron-openvswitch
             dhcp-agent: openstack-neutron
             l3-agent: openstack-neutron
+            linuxbridge-agent: openstack-neutron-linuxbridge
+            metadata-agent: openstack-neutron
+            openvswitch-agent: openstack-neutron-openvswitch
+            ovs-cleanup: openstack-neutron-openvswitch
             rpc-zmq-receiver: openstack-neutron
             server: openstack-neutron
     qpid:

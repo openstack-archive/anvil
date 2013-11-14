@@ -40,6 +40,7 @@ Source16:	neutron-l3-agent.init
 Source17:	neutron-ovs-cleanup.init
 Source18:	neutron-hyperv-agent.init
 Source19:	neutron-rpc-zmq-receiver.init
+Source20:	neutron-metadata-agent.init
 
 #for $idx, $fn in enumerate($patches)
 Patch$idx: $fn
@@ -440,6 +441,7 @@ install -p -D -m 755 %{SOURCE16} %{buildroot}%{_initrddir}/%{daemon_prefix}-l3-a
 install -p -D -m 755 %{SOURCE17} %{buildroot}%{_initrddir}/%{daemon_prefix}-ovs-cleanup
 install -p -D -m 755 %{SOURCE18} %{buildroot}%{_initrddir}/%{daemon_prefix}-hyperv-agent
 install -p -D -m 755 %{SOURCE19} %{buildroot}%{_initrddir}/%{daemon_prefix}-rpc-zmq-receiver
+install -p -D -m 755 %{SOURCE20} %{buildroot}%{_initrddir}/%{daemon_prefix}-metadata-agent
 
 # Setup directories
 install -d -m 755 %{buildroot}%{_sharedstatedir}/neutron
@@ -524,6 +526,7 @@ fi
 %{_initrddir}/%{daemon_prefix}-server
 %{_initrddir}/%{daemon_prefix}-dhcp-agent
 %{_initrddir}/%{daemon_prefix}-l3-agent
+%{_initrddir}/%{daemon_prefix}-metadata-agent
 %{_initrddir}/%{daemon_prefix}-rpc-zmq-receiver
 %dir %{_sysconfdir}/neutron
 %{_sysconfdir}/neutron/release

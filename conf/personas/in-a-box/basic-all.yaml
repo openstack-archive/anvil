@@ -65,6 +65,7 @@ subsystems:
     - server
     - agent
     - l3-agent
+    - metadata-agent
     - dhcp-agent
     cinder:
     - api
