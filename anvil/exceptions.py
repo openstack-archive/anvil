@@ -133,10 +133,9 @@ class YamlConfigNotFoundException(YamlException):
 class YamlLoopException(YamlException):
     """Raised by YamlRefLoader if reference loop found."""
     def __init__(self, conf, opt, ref_stack):
-        prettified_stack = "".join(map(
-            lambda (i, (c, o)): "\n%s`%s`=>`%s`" % (" " * i, str(c), str(o)),
-            enumerate(ref_stack))
-        )
+        prettified_stack = "".join(
+            "\n%s`%s`=>`%s`" % (" " * i, c, o)
+            for i, (c, o) in enumerate(ref_stack))
         msg = "In `{0}`=>`{1}` reference loop found.\n" \
               "Reference stack is:{2}." \
               .format(conf, opt, prettified_stack)

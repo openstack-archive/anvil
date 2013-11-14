@@ -106,7 +106,7 @@ class GitDownloader(Downloader):
         if tag_names:
             cmd = ["git", "show-ref", "--tags", "--dereference"] + tag_names
             for line in sh.execute(cmd, cwd=self._dst)[0].splitlines():
-                res = re.search("(.+)\s+refs/tags/(.+)\^\{\}$", line)
+                res = re.search(r"(.+)\s+refs/tags/(.+)\^\{\}$", line)
                 if res is None:
                     continue
                 ref, tag_name = res.groups()
