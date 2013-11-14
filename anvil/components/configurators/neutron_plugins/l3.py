@@ -17,30 +17,20 @@
 from anvil.components.configurators.neutron import MQ_BACKENDS
 from anvil.components.configurators import neutron_plugins
 
-# Special generated conf
-PLUGIN_CONF = "l3_agent.ini"
 
-CONFIGS = [PLUGIN_CONF]
+class L3Configurator(neutron_plugins.AgentConfigurator):
 
+    PLUGIN_CONF = "l3_agent.ini"
 
-class L3Configurator(neutron_plugins.Configurator):
+    def _adjust_plugin_config(self, plugin_conf):
+        super(L3Configurator, self)._adjust_plugin_config(plugin_conf)
 
-    def __init__(self, installer):
-        super(L3Configurator, self).__init__(
-            installer, CONFIGS, {PLUGIN_CONF: self._config_adjust_plugin})
-
-    def _config_adjust_plugin(self, plugin_conf):
-        params = self.get_keystone_params('neutron')
         plugin_conf.add("external_network_bridge", "br-ex")
-        plugin_conf.add("admin_password", params["service_password"])
-        plugin_conf.add("admin_user", params["service_user"])
-        plugin_conf.add("admin_tenant_name", params["service_tenant"])
-        plugin_conf.add("auth_url", params["endpoints"]["admin"]["uri"])
         plugin_conf.add("root_helper", "sudo neutron-rootwrap /etc/neutron/rootwrap.conf")
         plugin_conf.add("use_namespaces", self.installer.get_option("use_namespaces",
                                                                     default_value=True))
-        plugin_conf.add("debug", "False")
-        plugin_conf.add("verbose", "True")
+
         self.setup_rpc(plugin_conf, rpc_backends=MQ_BACKENDS)
-        if self.installer.get_option("core_plugin") == 'openvswitch':
+
+        if self.core_plugin == 'openvswitch':
             plugin_conf.add("interface_driver", "neutron.agent.linux.interface.OVSInterfaceDriver")
