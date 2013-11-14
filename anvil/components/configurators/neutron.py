@@ -29,6 +29,7 @@ MQ_BACKENDS = {
 from anvil.components.configurators import base
 from anvil.components.configurators.neutron_plugins import dhcp
 from anvil.components.configurators.neutron_plugins import l3
+from anvil.components.configurators.neutron_plugins import metadata
 
 # Special generated conf
 API_CONF = "neutron.conf"
@@ -52,6 +53,7 @@ class NeutronConfigurator(base.Configurator):
                 "anvil.components.configurators.neutron_plugins.%s:%sConfigurator" %
                 (self.core_plugin, self.core_plugin.title()))(installer),
             'l3': l3.L3Configurator(installer),
+            'metadata': metadata.MetadataConfigurator(installer),
             'dhcp': dhcp.DhcpConfigurator(installer),
         }
 

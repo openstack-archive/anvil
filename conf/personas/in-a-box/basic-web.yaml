@@ -69,6 +69,7 @@ subsystems:
     - server
     - agent
     - l3-agent
+    - metadata-agent
     cinder:
     - api
     - scheduler
