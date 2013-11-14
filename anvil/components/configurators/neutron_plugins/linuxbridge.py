@@ -14,42 +14,24 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from anvil.components.configurators.neutron import MQ_BACKENDS
 from anvil.components.configurators import neutron_plugins
-
-# Special generated conf
-PLUGIN_CONF = "linuxbridge_conf.ini"
-
-CONFIGS = [PLUGIN_CONF]
 
 
 class LinuxbridgeConfigurator(neutron_plugins.CorePluginConfigurator):
 
+    PLUGIN_CONF = "linuxbridge_conf.ini"
     PLUGIN_CLASS = "neutron.plugins.linuxbridge.lb_neutron_plugin.LinuxBridgePluginV2"
 
     def __init__(self, installer):
-        super(LinuxbridgeConfigurator, self).__init__(
-            installer, CONFIGS, {PLUGIN_CONF: self._config_adjust_plugin})
+        super(LinuxbridgeConfigurator, self).__init__(installer)
 
-    def _config_adjust_plugin(self, plugin_conf):
-        self.setup_rpc(plugin_conf, rpc_backends=MQ_BACKENDS)
-        plugin_conf.add_with_section(
-            "DATABASE",
-            "sql_connection",
-            self.fetch_dbdsn())
+    def _adjust_plugin_config(self, plugin_conf):
+        super(LinuxbridgeConfigurator, self)._adjust_plugin_config(plugin_conf)
         plugin_conf.add_with_section(
             "VLANS",
             "network_vlan_ranges",
             self.installer.get_option("network_vlan_ranges"))
         plugin_conf.add_with_section(
-            "DATABASE",
-            "sql_connection",
-            self.fetch_dbdsn())
-        plugin_conf.add_with_section(
             "LINUX_BRIDGE",
             "physical_interface_mappings",
             self.installer.get_option("physical_interface_mappings"))
-
-    @property
-    def path_to_plugin_config(self):
-        return self._config_path(PLUGIN_CONF)
