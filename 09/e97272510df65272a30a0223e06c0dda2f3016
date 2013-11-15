@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Code-Review+2: Joshua Harlow <harlowja@gmail.com>
+Approved+1: Ivan Melnikov <imelnikov@griddynamics.com>
+Submitted-by: Jenkins
+Submitted-at: Fri, 15 Nov 2013 07:24:46 +0000
+Reviewed-on: https://review.openstack.org/56194
+Project: stackforge/anvil
+Branch: refs/heads/master
