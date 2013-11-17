@@ -100,7 +100,7 @@ class NeutronConfigurator(base.Configurator):
 
         self.setup_rpc(config, rpc_backends=MQ_BACKENDS)
 
-        config.current_section = "AGENT"
+        config.current_section = "agent"
         config.add("root_helper", "sudo neutron-rootwrap /etc/neutron/rootwrap.conf")
 
         config.current_section = "keystone_authtoken"
