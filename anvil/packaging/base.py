@@ -202,6 +202,9 @@ class DependencyHandler(object):
                     new_lines.append(line)
             contents = "# Cleaned on %s\n\n%s\n" % (utils.iso8601(), "\n".join(new_lines))
             sh.write_file_and_backup(fn, contents)
+        # NOTE(imelnikov): after updating requirement lists we should re-fetch
+        # data from them again, so we drop pip helper caches here:
+        pip_helper.drop_caches()
 
     def _gather_pips_to_install(self, requires_files, extra_pips=None):
         """Analyze requires_files and extra_pips.

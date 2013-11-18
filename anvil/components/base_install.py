@@ -139,7 +139,6 @@ class PythonInstallComponent(PkgInstallComponent):
             self.requires_files.append(sh.joinpths(tools_dir, 'test-requires'))
             self.requires_files.append(sh.joinpths(app_dir,
                                                    'test-requirements.txt'))
-        self._egg_info = None
         self._origins_fn = kargs['origins_fn']
 
     def download(self):
@@ -167,10 +166,7 @@ class PythonInstallComponent(PkgInstallComponent):
 
     @property
     def egg_info(self):
-        if self._egg_info is None:
-            egg = pip_helper.get_directory_details(self.get_option('app_dir'))
-            self._egg_info = egg
-        return self._egg_info
+        return pip_helper.get_directory_details(self.get_option('app_dir'))
 
 
 class PkgUninstallComponent(base.Component):
