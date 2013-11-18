@@ -100,6 +100,10 @@ def get_directory_details(path):
     return details
 
 
+def drop_caches():
+    EGGS_DETAILED.clear()
+
+
 def get_archive_details(filename):
     if not sh.isfile(filename):
         raise IOError("Can not detail non-existent file %s" % (filename))
