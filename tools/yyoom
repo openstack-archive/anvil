@@ -31,11 +31,73 @@ import logging
 import os
 import sys
 import yum
+import functools
+import collections
+import pkg_resources
 
 from contextlib import contextmanager
 
-LOG = logging.getLogger('yum-tool')
+
+LOG = logging.getLogger('yyoom')
 OUTPUT = None
+ACTION_TYPE_MAP = {
+    yum.constants.TS_INSTALL: 'install',
+    yum.constants.TS_TRUEINSTALL: 'install',
+    yum.constants.TS_UPDATE: 'upgrade',
+    yum.constants.TS_OBSOLETING: 'upgrade',
+    yum.constants.TS_ERASE: 'erase',
+    yum.constants.TS_OBSOLETED: 'erase',
+    yum.constants.TS_UPDATED: 'erase',
+    yum.constants.TS_FAILED: 'error'
+}
+
+
+def _extended_yum_raises(method):
+    """Decorator to extend error messages when manipulating packages with yum.
+    """
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        try:
+            return method(self, *args, **kwargs)
+        except yum.Errors.YumBaseError as e:
+            data = dict(
+                method_name=method.__name__,
+                args=[str(arg) for arg in args],
+                kwargs='\n'.join('    %s: %s' % item
+                                 for item in sorted(kwargs.items())))
+            details = yum.i18n._("\nDetails:\n"
+                                 "  method name: %(method_name)s\n"
+                                 "  arguments: %(args)s\n"
+                                 "  keyword arguments:\n%(kwargs)s")
+            e.value += details % data
+            raise
+
+    return wrapper
+
+
+class _YyoomBase(yum.YumBase):
+
+    def __init__(self, *args, **kwargs):
+        """Reintroduced init to preset some settings.
+        """
+        super(_YyoomBase, self).__init__(*args, **kwargs)
+        self.setCacheDir(force=True)
+
+    def _askForGPGKeyImport(self, po, userid, hexkeyid):
+        """Tell yum to import GPG keys if needed.
+
+        Fixes: https://bugs.launchpad.net/anvil/+bug/1210657
+        Fixes: https://bugs.launchpad.net/anvil/+bug/1218728
+        """
+        return True
+
+    @_extended_yum_raises
+    def install(self, po=None, **kwargs):
+        return super(_YyoomBase, self).install(po, **kwargs)
+
+    @_extended_yum_raises
+    def remove(self, po=None, **kwargs):
+        return super(_YyoomBase, self).remove(po, **kwargs)
 
 
 def _setup_output():
@@ -66,6 +128,15 @@ def _write_output(data):
                             sort_keys=True) + '\n')
 
 
+def _action_type_from_code(action):
+    """Return value according to action code in dictionary mapping Yum states.
+
+    Yum has a mapping that sometimes really isn't that accurate enough
+    for our needs, so make a mapping that will suit our needs instead.
+    """
+    return ACTION_TYPE_MAP.get(action, 'other')
+
+
 def _package_info(pkg, **kwargs):
     if isinstance(pkg, basestring):
         result = dict(name=pkg, **kwargs)
@@ -86,9 +157,6 @@ def _package_info(pkg, **kwargs):
 class _RPMCallback(yum.rpmtrans.RPMBaseCallback):
     """Listen to events from RPM transactions"""
 
-    def __init__(self):
-        self.seen = []
-
     def event(self, package, action, te_current, te_total,
               ts_current, ts_total):
         pass
@@ -105,16 +173,75 @@ class _RPMCallback(yum.rpmtrans.RPMBaseCallback):
         LOG.error("%s", msg)
 
     def filelog(self, package, action):
-        action_data = _package_info(package, action_code=action)
-        if action in yum.constants.TS_INSTALL_STATES:
-            action_data['action_type'] = 'install'
-        elif action in yum.constants.TS_REMOVE_STATES:
-            action_data['action_type'] = 'erase'
-        else:
-            action_data['action_type'] = 'other'
-        self.seen.append(action_data)
-        LOG.info("Performed %(action_type)s (code %(action_code)s) on %(name)s"
-                 % action_data)
+        if not LOG.isEnabledFor(logging.INFO):
+            return
+        LOG.info("Performed %(action_type)s (code %(action)s) on %(package)s",
+                 dict(package=package,
+                      action=action,
+                      action_type=_action_type_from_code(action)))
+
+
+class _OutputtingRPMCallback(_RPMCallback):
+
+    def __init__(self, skip_missing=False):
+        _RPMCallback.__init__(self)
+        self._skip_missing = skip_missing
+        self._missing = []
+
+    def yyoom_post_transaction(self, base, _code):
+        output = []
+        for txmbr in base.tsInfo:
+            action_type = _action_type_from_code(txmbr.output_state)
+            info = _package_info(txmbr.po,
+                                 action_code=txmbr.output_state,
+                                 action_type=action_type)
+            output.append(info)
+        _write_output(output + self._missing)
+
+    def yyoom_on_missing_package(self, pkg_req):
+        if not self._skip_missing:
+            raise yum.Errors.InstallError("The '%s' package not found." % pkg_req)
+
+        req = pkg_resources.Requirement.parse(pkg_req)
+        self._missing.append(_package_info(req.unsafe_name,
+                                           action_type="missing",
+                                           requirement=pkg_req,
+                                           action=None))
+
+
+def log_list(items, title=''):
+    if not items:
+        return
+    if title:
+        if not title.endswith(':'):
+            title = str(title) + ":"
+        LOG.info(title)
+    for i in items:
+        LOG.info("  - %s" % (i))
+
+
+def build_yum_map(base):
+    rpms = base.doPackageLists(ignore_case=True,
+                               showdups=True)
+    all_rpms = []
+    for name in ('available', 'installed', 'extras', 'reinstall_available'):
+        all_rpms.extend(getattr(rpms, name, []))
+
+    yum_map = collections.defaultdict(list)
+    for rpm in all_rpms:
+        for provides in rpm.provides:
+            yum_map[provides[0]].append((rpm.version, rpm))
+    return dict(yum_map)
+
+
+def _find_packages(yum_map, pkg_req):
+    """Find suitable packages in YUM packages map"""
+    req = pkg_resources.Requirement.parse(pkg_req)
+    matches = [rpm
+               for (version, rpm) in yum_map.get(req.unsafe_name, [])
+               if version in req]
+    if matches:
+        return matches
 
 
 def _run(yum_base, options):
@@ -122,15 +249,33 @@ def _run(yum_base, options):
 
     Installs and erases packages, prints what was done in JSON
     """
-    LOG.debug('Erasing packages: %s', options.erase)
-    LOG.debug('Installing packages: %s', options.install)
-    callback = _RPMCallback()
-    with _transaction(yum_base, callback):
-        for name in options.erase or ():
-            yum_base.remove(name=name)
-        for name in options.install or ():
-            yum_base.install(name=name)
-    _write_output(callback.seen)
+    log_list(options.erase, title='Erasing packages:')
+    log_list(options.install, title='Installing packages:')
+    with _transaction(yum_base,
+                      _OutputtingRPMCallback(options.skip_missing)) as cb:
+        yum_map = build_yum_map(yum_base)
+        # erase packages
+        for pkg_name in options.erase or ():
+            matches = _find_packages(yum_map, pkg_name)
+            if matches is None:
+                cb.yyoom_on_missing_package(pkg_name)
+            else:
+                installed_packages = yum_base.rpmdb.returnPackages()
+                for package in matches:
+                    if package in installed_packages:
+                        yum_base.remove(package)
+        # install packages
+        for pkg_name in options.install or ():
+            matches = _find_packages(yum_map, pkg_name)
+            if matches is None:
+                cb.yyoom_on_missing_package(pkg_name)
+            else:
+                # try to install package from preferred repositories,
+                # if not found - install from default ones
+                repo_matches = [m for m in matches
+                                if m.repoid in options.prefer_repo]
+                matches = repo_matches if repo_matches else matches
+                yum_base.install(max(matches))
 
 
 def _list(yum_base, options):
@@ -178,8 +323,7 @@ def _builddep(yum_base, options):
     """
     LOG.info("Installing build dependencies for package %s", options.srpm)
     srpm = yum.packages.YumLocalPackage(yum_base.ts, options.srpm)
-    callback = _RPMCallback()
-    with _transaction(yum_base, callback):
+    with _transaction(yum_base, _OutputtingRPMCallback()):
         for req in srpm.requiresList():
             LOG.debug('Processing dependency: %s', req)
             if not (
@@ -189,7 +333,6 @@ def _builddep(yum_base, options):
                 pkg = yum_base.returnPackageByDep(req)
                 LOG.debug('Installing %s', pkg)
                 yum_base.install(pkg)
-    _write_output(callback.seen)
 
 
 def _parse_arguments(args):
@@ -199,29 +342,41 @@ def _parse_arguments(args):
     # TODO(imelnikov): --format
     subparsers = parser.add_subparsers(title='subcommands')
 
+    # Arg: list
     parser_list = subparsers.add_parser('list', help='list packages')
     parser_list.add_argument('what', nargs='+',
                              choices=('installed', 'available', 'extras'),
                              help='what packages to list')
-    parser_list.set_defaults(func=_list)
+    parser_list.set_defaults(func=_list, operation='List')
 
+    # Arg: transaction
     parser_run = subparsers.add_parser('transaction',
                                        help='install or remove packages')
-    parser_run.set_defaults(func=_run)
     parser_run.add_argument('--install', '-i', action='append',
                             metavar='package',
                             help='install package')
     parser_run.add_argument('--erase', '-e', action='append',
                             metavar='package',
                             help='erase package')
+    parser_run.add_argument('--skip-missing', action='store_true',
+                            default=False,
+                            help='do not fail on missing packages')
+    parser_run.add_argument('--prefer-repo', '-r', action='append',
+                            metavar='repository',
+                            default=[],
+                            help='preferred repository name')
+    parser_run.set_defaults(func=_run, operation='Transaction')
 
+    # Arg: srpm
     parser_builddep = subparsers.add_parser(
-            'builddep', help='install build dependencies of srpm')
+        'builddep', help='install build dependencies of srpm')
     parser_builddep.add_argument('srpm', help='path to source RPM package')
-    parser_builddep.set_defaults(func=_builddep)
+    parser_builddep.set_defaults(func=_builddep, operation='Builddep')
 
+    # Arg: cleanall
     parser_cleanall = subparsers.add_parser('cleanall', help='clean all')
-    parser_cleanall.set_defaults(func=_cleanall)
+    parser_cleanall.set_defaults(func=_cleanall, operation='Cleanall')
+
     return parser.parse_args(args[1:])
 
 
@@ -233,23 +388,6 @@ def _setup_logging(verbose=True):
     root_logger = logging.getLogger()
     root_logger.addHandler(handler)
     root_logger.setLevel(logging.DEBUG if verbose else logging.INFO)
-
-
-class YyoomBase(yum.YumBase):
-
-    def _askForGPGKeyImport(self, po, userid, hexkeyid):
-        """Tell yum to import GPG keys if needed
-
-        Fixes: https://bugs.launchpad.net/anvil/+bug/1210657
-        Fixes: https://bugs.launchpad.net/anvil/+bug/1218728
-        """
-        return True
-
-
-def _get_yum_base():
-    base = YyoomBase()
-    base.setCacheDir(force=True)
-    return base
 
 
 def _run_yum_api(name, func, ok_codes=(0,), *args, **kwargs):
@@ -270,16 +408,29 @@ def _transaction(base, callback):
     """
     try:
         base.doLock()
-        yield
+        yield callback
+
         code = _run_yum_api('building transaction',
                             base.buildTransaction, ok_codes=(0, 2))
+
+        failed = []
         if code == 0:
             LOG.debug('Nothing to do')
         elif code == 2:
             base.processTransaction(rpmTestDisplay=callback,
                                     rpmDisplay=callback)
+            failed = [txmbr for txmbr in base.tsInfo
+                      if txmbr.output_state == yum.constants.TS_FAILED]
         else:
             raise RuntimeError("Transaction failed: %s" % code)
+
+        post_cb = getattr(callback, 'yyoom_post_transaction', None)
+        if post_cb:
+            post_cb(base, code)
+        if failed:
+            raise RuntimeError("Operation failed for %s" %
+                               ', '.join(txmbr.name for txmbr in failed))
+
     finally:
         del base.tsInfo
         del base.ts
@@ -288,15 +439,18 @@ def _transaction(base, callback):
 
 def main(args):
     options = _parse_arguments(args)
+    _setup_output()
+    _setup_logging(options.verbose)
     try:
-        _setup_output()
-        _setup_logging(options.verbose)
-        return options.func(_get_yum_base(), options) or 0
+        yum_base = _YyoomBase()
+        return options.func(yum_base, options) or 0
     except Exception as e:
         if options.verbose:
-            raise  # let python runtime write stacktrace
-        sys.stderr.write("Failed: %s\n" % e)
+            LOG.exception("%s failed", options.operation)
+        else:
+            LOG.error("%s failed: %s", options.operation, e)
         return 1
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))
