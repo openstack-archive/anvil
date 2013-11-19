@@ -304,7 +304,7 @@ class YumDependencyHandler(base.DependencyHandler):
                 open(requires_filename, "r").read())
             if requires_python:
                 result = self._convert_names_python2rpm(
-                    [r.key for r in requires_python if r.key not in (
+                    [str(r) for r in requires_python if r.key not in (
                         'setuptools', 'setuptools-git', 'sphinx', 'docutils')])
         return result
 
@@ -485,9 +485,15 @@ class YumDependencyHandler(base.DependencyHandler):
         return rpm_names
 
     def _all_rpm_names(self):
-        req_names = [pkg_resources.Requirement.parse(pkg).key
-                     for pkg in open(self.gathered_requires_filename)]
-        rpm_names = set(self._convert_names_python2rpm(req_names))
+        gathered_reqs = [pkg_resources.Requirement.parse(pkg)
+                         for pkg in open(self.gathered_requires_filename)]
+        gathered_rpm_names = self._convert_names_python2rpm(
+            [r.key for r in gathered_reqs])
+        gathered_specs = dict(
+            (rpm_name, ','.join('%s%s' % s for s in r.specs))
+            for rpm_name, r in zip(gathered_rpm_names, gathered_reqs))
+
+        rpm_names = set(gathered_rpm_names)
         rpm_names |= self.requirements["requires"]
         for inst in self.instances:
             rpm_names |= inst.package_names()
@@ -508,7 +514,8 @@ class YumDependencyHandler(base.DependencyHandler):
                     pass
         client_rpm_names = set(self._convert_names_python2rpm(client_names))
         rpm_names |= client_rpm_names
-        return list(rpm_names)
+        return ['%s%s' % (name, gathered_specs.get(name, ''))
+                for name in rpm_names]
 
     def install(self):
         super(YumDependencyHandler, self).install()
