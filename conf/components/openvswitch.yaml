@@ -1,0 +1,9 @@
+# Settings for component openvswitch
+---
+
+# List of bridges to manage
+bridges:
+  - br-int
+  - br-ex
+
+...
