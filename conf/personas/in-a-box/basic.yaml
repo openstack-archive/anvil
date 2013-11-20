@@ -22,10 +22,10 @@ options:
     nova:
         db-sync: true
         do-network-init: true
-        mq-type: "rabbit"
         enable-cells: false
         enable-spice: false
         local-conductor: false
+        mq-type: rabbit
     glance:
         db-sync: true
         load-images: true

@@ -25,7 +25,8 @@ class L3Configurator(base.AgentConfigurator):
     def _adjust_plugin_config(self, plugin_conf):
         super(L3Configurator, self)._adjust_plugin_config(plugin_conf)
 
-        plugin_conf.add("external_network_bridge", "br-ex")
+        plugin_conf.add("external_network_bridge",
+                        self.installer.get_option("external_bridge"))
         plugin_conf.add("root_helper", "sudo neutron-rootwrap /etc/neutron/rootwrap.conf")
         plugin_conf.add("use_namespaces", self.installer.get_option("use_namespaces",
                                                                     default_value=True))
