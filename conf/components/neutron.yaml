@@ -12,6 +12,9 @@ use_namespaces: True
 network_vlan_ranges: physnet1:100:299
 physical_interface_mappings: physnet1:100:299
 
+external_bridge: br-ex
+integration_bridge: br-int
+
 # When building a package for the neutron the arguments to the individual daemons
 # will be expanded to include the following runtime arguments.
 daemon_args:

@@ -15,6 +15,7 @@ components:
 - heat-client
 - neutron-client
 - swift-client
+- openvswitch
 - neutron
 - cinder
 - nova
