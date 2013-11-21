@@ -146,5 +146,5 @@ class Virsh(object):
                         header="Found %s old domains to destroy" % (len(kill_domains)))
                     for domain in sorted(kill_domains):
                         self._destroy_domain(libvirt, ch, domain)
-            except libvirt.libvirtError, e:
+            except libvirt.libvirtError as e:
                 LOG.warn("Could not clear out libvirt domains due to: %s", e)

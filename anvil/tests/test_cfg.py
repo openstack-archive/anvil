@@ -389,7 +389,7 @@ class TestYamlRefLoader(unittest.TestCase):
 
         processed = self.loader.load('sample2')
 
-        self.assertEquals(processed, {
+        self.assertEqual(processed, {
             'stable': 10,
             'ref1': 9,
             'ref2': 11,

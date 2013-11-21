@@ -78,7 +78,7 @@ class TestAnvilConfigParser(unittest.TestCase):
 
         # 7 global scope elements
         global_elements = self.config_parser.data._data.contents
-        self.assertEquals(len(global_elements), 7)
+        self.assertEqual(len(global_elements), 7)
 
     def test_readfp_comments_one_section(self):
         ini = """
@@ -93,11 +93,11 @@ class TestAnvilConfigParser(unittest.TestCase):
 
         # 3 global scope elements
         global_elements = self.config_parser.data._data.contents
-        self.assertEquals(len(global_elements), 3)
+        self.assertEqual(len(global_elements), 3)
 
         # 6 lines in default section
         default_section = global_elements[1]
-        self.assertEquals(len(default_section.contents), 6)
+        self.assertEqual(len(default_section.contents), 6)
 
     def test_readfp_comments_several_section(self):
         ini = """
@@ -114,15 +114,15 @@ class TestAnvilConfigParser(unittest.TestCase):
 
         # 5 global scope elements
         global_elements = self.config_parser.data._data.contents
-        self.assertEquals(len(global_elements), 5)
+        self.assertEqual(len(global_elements), 5)
 
         # 3 lines in default section
         default_section = global_elements[1]
-        self.assertEquals(len(default_section.contents), 3)
+        self.assertEqual(len(default_section.contents), 3)
 
         # 4 lines in another section
         another_section = global_elements[3]
-        self.assertEquals(len(another_section.contents), 4)
+        self.assertEqual(len(another_section.contents), 4)
 
     def test_readfp_no_sections(self):
         ini = """
@@ -136,7 +136,7 @@ class TestAnvilConfigParser(unittest.TestCase):
 
         # 7 global scope elements
         global_elements = self.config_parser.data._data.contents
-        self.assertEquals(len(global_elements), 7)
+        self.assertEqual(len(global_elements), 7)
 
     def test_readfp_with_global_comment(self):
         ini = """
@@ -154,15 +154,15 @@ option2 = value2
 
         # 7 global scope elements
         global_elements = self.config_parser.data._data.contents
-        self.assertEquals(len(global_elements), 7)
+        self.assertEqual(len(global_elements), 7)
 
         # 3 lines in default section
         default_section = global_elements[1]
-        self.assertEquals(len(default_section.contents), 3)
+        self.assertEqual(len(default_section.contents), 3)
 
         # 3 lines in another section
         another_section = global_elements[5]
-        self.assertEquals(len(another_section.contents), 3)
+        self.assertEqual(len(another_section.contents), 3)
 
     def test_set_one_option_simple(self):
         ini = """
@@ -181,7 +181,7 @@ option1 = True
 
         output = StringIO.StringIO()
         self.config_parser.write(output)
-        self.assertEquals(output.getvalue(), pattern)
+        self.assertEqual(output.getvalue(), pattern)
 
     def test_set_one_option_same_commented(self):
         ini = """
@@ -212,7 +212,7 @@ option1 = True
 
         output = StringIO.StringIO()
         self.config_parser.write(output)
-        self.assertEquals(output.getvalue(), pattern)
+        self.assertEqual(output.getvalue(), pattern)
 
     def test_set_one_option_non_existent(self):
         ini = """
@@ -231,7 +231,7 @@ option3 = False
 
         output = StringIO.StringIO()
         self.config_parser.write(output)
-        self.assertEquals(output.getvalue(), pattern)
+        self.assertEqual(output.getvalue(), pattern)
 
     def test_set_several_options_complex(self):
         ini = """
@@ -254,4 +254,4 @@ option2 = False
 
         output = StringIO.StringIO()
         self.config_parser.write(output)
-        self.assertEquals(output.getvalue(), pattern)
+        self.assertEqual(output.getvalue(), pattern)

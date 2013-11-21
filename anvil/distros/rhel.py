@@ -64,7 +64,7 @@ class RabbitRuntime(rabbit.RabbitRuntime):
             # Seems like we need root perms to list that directory...
             for fn in sh.listdir(base_dir):
                 if re.match("(.*?)(err|log)$", fn, re.I):
-                    sh.chmod(sh.joinpths(base_dir, fn), 0666)
+                    sh.chmod(sh.joinpths(base_dir, fn), 0o666)
 
     def start(self):
         self._fix_log_dir()

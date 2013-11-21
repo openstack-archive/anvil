@@ -312,7 +312,7 @@ def shellquote(text):
 
 
 def fileperms(path):
-    return (os.stat(path).st_mode & 0777)
+    return (os.stat(path).st_mode & 0o777)
 
 
 def listdir(path, recursive=False, dirs_only=False, files_only=False, filter_func=None):
