@@ -176,12 +176,17 @@ except KeyError:
 
     echo -e "Installing ${COL_GREEN}python${COL_RESET} requirements:"
     dump_list "$install_packages"
-    local yyoom_res=$("$YYOOM_CMD" $YYOOM_OPTS $transaction_cmd) || return 1
-    local missing_rpms=$(echo $yyoom_res | python -c "import sys, json
+
+    # NOTE(imelnikov): if we declare local variable and specify its value
+    # at the same statement, exit code from subshell is lost.
+    local yyoom_res;
+    yyoom_res=$("$YYOOM_CMD" $YYOOM_OPTS $transaction_cmd) || return 1
+    local missing_rpms;
+    missing_rpms=$(echo $yyoom_res | python -c "import sys, json
 for item in json.load(sys.stdin):
     if item.get('action_type') == 'missing':
         print(item['name'])
-")
+") || return 2
     local missing_packages=""
     for rpm in $missing_rpms; do
         missing_packages="$missing_packages ${rpm_python_map[$rpm]}"
@@ -198,7 +203,8 @@ for item in json.load(sys.stdin):
     echo "Downloading..."
     $PIPDOWNLOAD_CMD -d "$pip_tmp_dir" $missing_packages | grep "^Saved"
     echo "Building RPMs..."
-    local rpm_names=$("$PY2RPM_CMD"  --package-map $package_map --scripts-dir "conf/templates/packaging/scripts" --rpm-base "$bootstrap_dir/rpmbuild" -- "$pip_tmp_dir/"* 2>/dev/null |
+    local rpm_names;
+    rpm_names=$("$PY2RPM_CMD"  --package-map $package_map --scripts-dir "conf/templates/packaging/scripts" --rpm-base "$bootstrap_dir/rpmbuild" -- "$pip_tmp_dir/"* 2>/dev/null |
         awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)
     if [ -z "$rpm_names" ]; then
         echo -e "${COL_RED}No binary RPMs were built!${COL_RESET}"
