@@ -323,7 +323,7 @@ def _builddep(yum_base, options):
     """
     LOG.info("Installing build dependencies for package %s", options.srpm)
     srpm = yum.packages.YumLocalPackage(yum_base.ts, options.srpm)
-    with _transaction(yum_base, _OutputtingRPMCallback):
+    with _transaction(yum_base, _OutputtingRPMCallback()):
         for req in srpm.requiresList():
             LOG.debug('Processing dependency: %s', req)
             if not (
