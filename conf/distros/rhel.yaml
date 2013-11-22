@@ -51,6 +51,9 @@ commands:
         set_pwd: mysql --user=$USER --password=$OLD_PASSWORD -e
                  "USE mysql; UPDATE user SET password=PASSWORD('$NEW_PASSWORD') WHERE User='$USER';  FLUSH PRIVILEGES;"
         daemon: mysqld
+    openvswitch:
+        add_bridge: ovs-vsctl --may-exist add-br $NAME
+        del_bridge: ovs-vsctl --if-exists del-br $NAME
     # Where component symlinks will go, the component name will become a directory
     # under this directory where its configuration files will be connected to there
     # actual location.
@@ -277,6 +280,14 @@ components:
             test: anvil.components.openstack_client:OpenStackClientTester
             coverage: anvil.components.openstack_client:OpenStackClientTester
             uninstall: anvil.components.base_install:PkgUninstallComponent
+    openvswitch:
+        action_classes:
+            install: anvil.components.openvswitch:OpenvswitchInstaller
+            running: anvil.components.openvswitch:OpenvswitchRuntime
+            test: anvil.components.base_testing:EmptyTestingComponent
+            uninstall: anvil.components.openvswitch:OpenvswitchUninstaller
+        packages:
+        -   name: openvswitch
     oslo-config:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
@@ -372,11 +383,5 @@ components:
             running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.base_testing:PythonTestingComponent
             coverage: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PkgUninstallComponent
-    openvswitch:
-        action_classes:
-            install: anvil.components.base_install:PkgInstallComponent
-            running: anvil.components.openvswitch:OpenvswitchRuntime
-            test: anvil.components.base_testing:EmptyTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
 ...

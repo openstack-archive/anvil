@@ -24,3 +24,9 @@ class OpenvswitchConfigurator(base.CorePluginConfigurator):
 
     def __init__(self, installer):
         super(OpenvswitchConfigurator, self).__init__(installer)
+
+    def _adjust_plugin_config(self, plugin_conf):
+        super(OpenvswitchConfigurator, self)._adjust_plugin_config(plugin_conf)
+
+        plugin_conf.add("integration_bridge",
+                        self.installer.get_option("integration_bridge"))
