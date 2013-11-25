@@ -103,7 +103,13 @@ sed -i -e 's@^BIN_DIR.*$@BIN_DIR = "/usr/bin"@' \
     -e 's@^LOGOUT_URL.*$@LOGOUT_URL = "/dashboard/auth/logout/"@' \
     -e 's@^LOGIN_REDIRECT_URL.*$@LOGIN_REDIRECT_URL = "/dashboard"@' \
     -e 's@^DEBUG.*$@DEBUG = False@' \
+    -e '/^COMPRESS_ENABLED.*$/a COMPRESS_OFFLINE = True' \
     openstack_dashboard/settings.py
+
+# Correct "local_settings.py.example" config file
+sed -i -e 's@^#\?ALLOWED_HOSTS.*$@ALLOWED_HOSTS = ["horizon.example.com", "localhost"]@' \
+    -e 's@^LOCAL_PATH.*$@LOCAL_PATH = "/tmp"@' \
+    openstack_dashboard/local/local_settings.py.example
 
 # remove unnecessary .po files
 find . -name "django*.po" -exec rm -f '{}' \;
@@ -188,9 +194,10 @@ cat djangojs.lang >> horizon.lang
 %endif
 
 # copy static files to %{_datadir}/openstack-dashboard/static
-mkdir -p %{buildroot}%{_datadir}/openstack-dashboard/static
+install -d -m 755 %{buildroot}%{_datadir}/openstack-dashboard/static
 cp -a openstack_dashboard/static/* %{buildroot}%{_datadir}/openstack-dashboard/static
 cp -a horizon/static/* %{buildroot}%{_datadir}/openstack-dashboard/static
+cp -a static/* %{buildroot}%{_datadir}/openstack-dashboard/static
 
 %clean
 rm -rf %{buildroot}
