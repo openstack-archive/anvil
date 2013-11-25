@@ -2,10 +2,10 @@ python setup.py install -O1 --root=$RPM_BUILD_ROOT --record=INSTALLED_FILES
 
 # remove driver parts for other architectures
 %ifnarch %ix86
-rm -rf %{python_sitelib}/selenium/webdriver/firefox/x86
+rm -rf %{buildroot}%{python_sitelib}/selenium/webdriver/firefox/x86
 %endif
 %ifnarch x86_64
-rm -rf %{python_sitelib}/selenium/webdriver/firefox/amd64
+rm -rf %{buildroot}%{python_sitelib}/selenium/webdriver/firefox/amd64
 %endif
 
 abspath_installed_files=$(readlink -f INSTALLED_FILES)
