@@ -139,10 +139,6 @@ class PythonInstallComponent(PkgInstallComponent):
             sh.joinpths(tools_dir, 'test-requires'),
             sh.joinpths(app_dir, 'test-requirements.txt'),
         ]
-        if self.get_bool_option('use_tests_requires', default_value=True):
-            self.requires_files.append(sh.joinpths(tools_dir, 'test-requires'))
-            self.requires_files.append(sh.joinpths(app_dir,
-                                                   'test-requirements.txt'))
         self._origins_fn = kargs['origins_fn']
 
     def download(self):
