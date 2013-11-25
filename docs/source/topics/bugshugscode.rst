@@ -19,6 +19,11 @@ Please visit as often as you want at the following urls:
 
 Help and developer work/time is always much appreciated!
 
+IRC
+===
+
+You can also usually find us on ``#openstack-anvil`` on `freenode`_.
+
 Source code
 ===========
 
@@ -50,3 +55,4 @@ Feel free to hack but please try to follow the `hacking guidelines`_.
 .. _apache version 2.0 license: https://github.com/stackforge/anvil/blob/master/LICENSE
 .. _launchpad’s issue tracking system: http://launchpad.net/anvil
 .. _hacking guidelines: https://github.com/stackforge/anvil/blob/master/HACKING.md
+.. _freenode: http://freenode.net/irc_servers.shtml
