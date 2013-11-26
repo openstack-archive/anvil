@@ -160,7 +160,7 @@ try:
 except KeyError:
     pass
 ")
-    local python_names=$(cat requirements.txt test-requirements.txt | sed -r -e 's/#.*$//' | sort -u)
+    local python_names=$(cat requirements.txt | sed -r -e 's/#.*$//' | sort -u)
     local bootstrap_dir="$(readlink -f ./.bootstrap/)"
     local transaction_cmd="transaction --skip-missing"
     local install_packages=""
