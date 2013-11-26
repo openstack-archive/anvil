@@ -87,6 +87,7 @@ set -e
 if [ -z "$1" ] || [ "$1" == "--help" ] ; then
     echo "Usage: $0 [dir]"
     echo "       $0 --tmpdir"
+    exit 1
 fi
 
 if [ "$1" == "--tmpdir" ]; then
