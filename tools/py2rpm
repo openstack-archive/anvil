@@ -373,16 +373,19 @@ exec(compile(open(__file__).read().replace('\\r\\n', '\\n'), __file__, 'exec'))
 
 
 def trim_zeroes(version):
-    """RPM mishandles versions like "0.8.0". Make it happy."""
+    """Trim zeroes from the and of a version"""
     match = version_re.match(version)
     if match:
         return match.group(1)
     return version
 
 
+_DOT_ZEROES_TAIL = '.0' * 10
+
+
 def requires_and_conflicts(req_list, skip_req_names=()):
-    rpm_requires = ""
-    rpm_conflicts = ""
+    rpm_requires = []
+    rpm_conflicts = []
     for line in req_list:
         try:
             req = pkg_resources.Requirement.parse(line)
@@ -392,28 +395,50 @@ def requires_and_conflicts(req_list, skip_req_names=()):
             continue
         rpm_name = python_key_to_rpm(req.key)
         if not req.specs:
-            rpm_requires += "\nRequires:"
-            rpm_requires = "%s %s" % (
-                rpm_requires, rpm_name)
-        for spec in req.specs:
-            # kind in ("==", "<=", ">=", "!=")
-            kind = spec[0]
-            version = trim_zeroes(spec[1])
+            rpm_requires.append(rpm_name)
+        for kind, version in req.specs:
             try:
                 version = "%s:%s" % (epoch_map[req.key], version)
             except KeyError:
                 pass
+            # NOTE(imelnikov): rpm and pip compare versions differently, and
+            # this used to lead to lots problems, pain and sorrows. The most
+            # visible outcome of the difference is that from rpm's point of
+            # view version '2' != '2.0', as well as '2.0' != '2.0.0', but for
+            # pip it's same version.
+            #
+            # Current workaround for this works as follows: if python module
+            # requires module of some version, (like 2.0.0), the actual rpm
+            # version of the module will have the same non-zero beginning and
+            # some '.0's at the end ('2', '2.0', '2.0.0', '2.0.0.0' ...). Thus,
+            # we can calculate lower bound for requirement by trimming '.0'
+            # from the version (we get '2'), and then set upper bound to lower
+            # bound + tail of '.0' repeated several times.  Luckily, '2.0' and
+            # '2.00' is the same version for rpm.
+
+            lower_version = trim_zeroes(version)
+            upper_version = '%s%s' % (lower_version, _DOT_ZEROES_TAIL)
             if kind == "!=":
-                rpm_conflicts += "\nConflicts:"
-                rpm_conflicts = "%s %s = %s" % (
-                    rpm_conflicts, rpm_name, version)
-                continue
-            if kind == "==":
-                kind = "="
-            rpm_requires += "\nRequires:"
-            rpm_requires = "%s %s %s %s" % (
-                rpm_requires, rpm_name, kind, version)
-    return rpm_requires, rpm_conflicts
+                # NOTE(imelnikov): we can't conflict with ranges, so we
+                # put version as is and with trimmed zeroes just in case
+                rpm_conflicts.append('%s == %s' % (rpm_name, version))
+                if version != lower_version:
+                    rpm_conflicts.append('%s == %s' % (rpm_name, lower_version))
+            elif kind == '==':
+                rpm_requires.extend((
+                    '%s >= %s' % (rpm_name, lower_version),
+                    '%s <= %s' % (rpm_name, upper_version)
+                ))
+            elif kind in ('<=', '<'):
+                rpm_requires.append('%s <= %s' % (rpm_name, upper_version))
+            elif kind in ('>=', '>'):
+                rpm_requires.append('%s >= %s' % (rpm_name, lower_version))
+            else:
+                raise ValueError('Invalid requirement kind: %r' % kind)
+
+    rpm_requires_str = ''.join("\nRequires: %s" % req for req in rpm_requires)
+    rpm_conflicts_str = ''.join("\nConflicts: %s" % req for req in rpm_conflicts)
+    return rpm_requires_str, rpm_conflicts_str
 
 
 def one_line(line, max_len=80):
@@ -465,11 +490,7 @@ def build_rpm(options, filename):
         archive_name = "%s/dist/%s-%s.tar.gz" % (source_dir, pkg_name, version)
     shutil.copy(archive_name, os.path.join(build_dir, "SOURCES"))
 
-    # We need to do this so that when a package such as hacking depends on
-    # flake8 v2 that we don't go ahead and build a v2.0 version.
-    #
-    # Note(harlowja): Not sure why rpm seems to not understand these are the same...
-    cleaned_version = trim_zeroes(version.replace('-', '_'))
+    cleaned_version = version.replace('-', '_')
     with open(spec_name, "w") as spec_file:
         print >> spec_file, "%define pkg_name", pkg_name
         print >> spec_file, "%define pkg_path", os.path.join(*pkg_name.split('.'))
