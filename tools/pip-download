@@ -16,36 +16,71 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from distutils.version import LooseVersion
-from distutils.version import StrictVersion
-
-import collections
 import distutils
 import glob
 import optparse
 import os
-import pkg_resources
-import shutil
 import subprocess
+import sys
+import thread
+import threading
+import time
 
+from pip import download as pip_down
 from pip import req as pip_req
 from pip import util as pip_util
 
-PIP_CMDS = ['pip-python', 'pip']
-ARCHIVE_EXTS = ['.zip', '.tgz', '.tbz', '.tar.gz', '.tar', '.gz', '.bz2']
+PIP_CMDS = (
+    "pip-%s" % (".".join([str(s) for s in sys.version_info[0:2]])),
+    'pip-python',
+    'pip',
+)
+ARCHIVE_EXTS = (
+    '.zip', '.tgz', '.tbz',
+    '.tar.gz', '.tar', '.gz', '.bz2',
+    '.pybundle', '.whl',
+)
 
-# The support for wiping existing downloads was added in 1.1
-if LooseVersion(pkg_resources.get_distribution("pip").version) < LooseVersion('1.1'):
-    SUPPORTS_EXISTS = False
-else:
-    SUPPORTS_EXISTS = True
+
+class Spinner(threading.Thread):
+    def __init__(self, wait_time=0.15, stream=sys.stdout):
+        super(Spinner, self).__init__()
+        self.daemon = True
+        self.death_event = threading.Event()
+        self.wait_time = float(wait_time)
+        self.stream = stream
+
+    def run(self):
+        if not self.stream.isatty():
+            tpl = "%s"
+            selectors = (".",)
+        else:
+            tpl = "\b%s"
+            selectors = ('-', '\\', '|', '/')
+        try:
+            index = 0
+            has_output_something = False
+            selector_count = len(selectors)
+            while not self.death_event.is_set():
+                self.stream.write(tpl % selectors[index])
+                self.stream.flush()
+                has_output_something = True
+                if selector_count > 1:
+                    index = (index + 1) % selector_count
+                time.sleep(self.wait_time)
+            if has_output_something:
+                self.stream.write("\n")
+                self.stream.flush()
+        except KeyboardInterrupt:
+            thread.interrupt_main()
 
 
 def call(cmd):
     proc = subprocess.Popen(cmd, stderr=None, stdin=None, stdout=None)
     ret = proc.communicate()
     if proc.returncode != 0:
-        raise RuntimeError("Failed running %s" % (" ".join(cmd)))
+        raise RuntimeError("Failed running command: %s\n"
+                           "Exit code: %s" % (" ".join(cmd), proc.returncode))
     return ret
 
 
@@ -54,7 +89,8 @@ def find_pip():
         bin_name = distutils.spawn.find_executable(pp)
         if bin_name:
             return bin_name
-    raise RuntimeError("Unable to find pip via any of %s commands" % (PIP_CMDS))
+    raise RuntimeError("Unable to find pip via any of %s commands"
+                       % list(PIP_CMDS))
 
 
 def execute_download(options, deps, download_dir, cache_dir, build_dir):
@@ -67,8 +103,6 @@ def execute_download(options, deps, download_dir, cache_dir, build_dir):
                 '--download', download_dir,
                 '--build', build_dir,
                 '--download-cache', cache_dir])
-    if SUPPORTS_EXISTS:
-        cmd.extend(['--exists-action', 'w'])
     cmd.extend([str(d) for d in deps])
     call(cmd)
 
@@ -85,103 +119,110 @@ def extract_requirement(source_dir):
     # are previous egg-info directories existing in the source directory.
     source_dir = os.path.abspath(source_dir)
     for egg_d in glob.glob(os.path.join(source_dir, "*.egg-info")):
-        shutil.rmtree(egg_d)
+        pip_util.rmtree(egg_d)
     req = pip_req.InstallRequirement.from_line(source_dir)
     req.source_dir = source_dir
     req.run_egg_info()
     return req
 
 
-def perform_download(options, deps, download_dir, extract_dir, cache_dir, build_dir):
-    execute_download(options, deps, download_dir, cache_dir, build_dir)
-    files_examined = {}
-    for basename in os.listdir(download_dir):
+def examine_file(filename, extract_dir):
+    if not os.path.isfile(filename):
+        raise IOError("Can not extract missing file: %s" % (filename))
+    if not os.path.isdir(extract_dir):
+        raise IOError("Can not extract to missing dir: %s" % (extract_dir))
+    basename = os.path.basename(filename)
+    untar_dir = os.path.join(extract_dir, remove_archive_extensions(basename))
+    if os.path.isdir(untar_dir):
+        pip_util.rmtree(untar_dir)
+    pip_util.unpack_file(filename, untar_dir, content_type='', link='')
+    return extract_requirement(untar_dir)
+
+
+def iter_archives_in(base_dir):
+    for basename in os.listdir(base_dir):
         if basename.startswith("."):
             continue
-        filename = os.path.join(download_dir, basename)
+        if not pip_down.is_archive_file(basename):
+            continue
+        filename = os.path.join(base_dir, basename)
         if not os.path.isfile(filename):
             continue
-        untar_dir = os.path.join(extract_dir, remove_archive_extensions(basename))
-        if not os.path.isdir(untar_dir):
-            if options.verbose:
-                print("Extracting %s -> %s" % (filename, untar_dir))
-            pip_util.unpack_file(filename, untar_dir, content_type='', link='')
-        if options.verbose:
-            print("Examining %s" % (untar_dir))
-        files_examined[filename] = extract_requirement(untar_dir)
+        yield filename
+
+
+def perform_download(options, deps,
+                     download_dir, extract_dir, cache_dir, build_dir):
+    execute_download(options, deps, download_dir, cache_dir, build_dir)
+    files_examined = {}
+    for filename in iter_archives_in(download_dir):
+        files_examined[filename] = examine_file(filename, extract_dir)
     return files_examined
 
 
-def evict_equivalent(options, downloaded):
-
-    def ver_comp(name_req1, name_req2):
-        file1, req1 = name_req1
-        file2, req2 = name_req2
-        if file1 == file2:
-            return 0
-        try:
-            return cmp(StrictVersion(req1.installed_version),
-                       StrictVersion(req2.installed_version))
-        except ValueError:
-            return cmp(LooseVersion(req1.installed_version),
-                       LooseVersion(req2.installed_version))
-
-    duplicates = collections.defaultdict(list)
-    for (filename, req) in downloaded.items():
-        duplicates[req.name].append((filename, req))
-    dups_found = 0
-    for (name, matches) in duplicates.items():
-        if len(matches) > 1:
-            dups_found += 1
-    if not dups_found:
+def print_header(text):
+    if not text:
         return
-    if options.verbose:
-        print("%s duplicate found..." % (dups_found))
-    for (name, matches) in duplicates.items():
-        if len(matches) <= 1:
-            continue
-        versions = []
-        for (filename, req) in matches:
-            if options.verbose:
-                print("Duplicate %s at %s with version %s" % (name, filename, req.installed_version))
-            versions.append((filename, req))
-        selected_filename, selected_req = list(sorted(versions, cmp=ver_comp))[-1]
-        if options.verbose:
-            print('Keeping %s with version %s' % (selected_filename, selected_req.installed_version))
-        for (filename, req) in matches:
-            if filename != selected_filename:
-                if options.verbose:
-                    print("Deleting %s" % (filename))
-                os.unlink(filename)
-                downloaded.pop(filename)
+    print("-" * len(text))
+    print(text)
+    print("-" * len(text))
 
 
-if __name__ == '__main__':
+def main():
     usage = "usage: %prog [options] req req2 ..."
     parser = optparse.OptionParser(usage=usage)
     parser.add_option("-d", action="store", dest="download_dir",
-                      help='directory to download dependencies too', metavar="DIR")
-    parser.add_option("-v", '--verbose', action="store_true", help='enable verbose output',
-                     dest="verbose", default=False)
+                      help='directory to download dependencies too',
+                      metavar="DIR")
+    parser.add_option("-n", "--no-wipe", action="store_false", dest="wipe",
+                      help='do not clear old downloaded items', default=True)
+    parser.add_option("-v", '--verbose', action="store_true",
+                      help='enable verbose output',
+                      dest="verbose", default=False)
     (options, packages) = parser.parse_args()
+
     download_dir = options.download_dir
     if not options.download_dir:
-        raise IOError("Download directory required")
+        parser.error("Download directory required")
     if not packages:
-        raise IOError("Download requirement/s expected")
+        parser.error("Download requirement/s expected")
+
+    # Clear out the build & extraction directory if it exists so we don't
+    # conflict with previous build or extraction attempts.
     extract_dir = os.path.join(download_dir, '.extract')
     cache_dir = os.path.join(download_dir, '.cache')
     build_dir = os.path.join(download_dir, '.build')
-    # Clear out the build & extraction directory if it exists so we don't
-    # conflict with previous build or extraction attempts.
-    for d in [extract_dir, build_dir]:
+    for d in (extract_dir, build_dir):
         if os.path.isdir(d):
-            shutil.rmtree(d)
-    for d in [download_dir, extract_dir, cache_dir, build_dir]:
+            pip_util.rmtree(d)
+    for d in (download_dir, extract_dir, cache_dir, build_dir):
         if not os.path.isdir(d):
             os.makedirs(d)
+
+    # Clear out the previously existing files so that we don't have conflicts
+    # with the files we are about to download.
+    if options.wipe:
+        existing_files = list(iter_archives_in(download_dir))
+        if existing_files:
+            print_header("Cleaning")
+            for path in sorted(existing_files):
+                print(" - %s (X)" % (os.path.basename(path)))
+                os.unlink(path)
+
+    print_header("Downloading")
+    s = Spinner()
+    s.start()
     downloaded = perform_download(options, list(packages),
-                                  download_dir, extract_dir, cache_dir, build_dir)
-    evict_equivalent(options, downloaded)
+                                  download_dir, extract_dir, cache_dir,
+                                  build_dir)
+    s.death_event.set()
+    s.join()
+
+    print_header("Saved")
     for filename in sorted(downloaded.keys()):
-        print("Saved %s" % (filename))
+        print(" - %s (%s)" % (os.path.basename(filename),
+                              downloaded[filename].req))
+
+
+if __name__ == '__main__':
+    main()
