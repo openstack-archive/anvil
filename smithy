@@ -200,8 +200,7 @@ for item in json.load(sys.stdin):
     local pip_tmp_dir="$bootstrap_dir/pip-download"
     mkdir -p "$pip_tmp_dir"
 
-    echo "Downloading..."
-    $PIPDOWNLOAD_CMD -d "$pip_tmp_dir" $missing_packages | grep "^Saved"
+    $PIPDOWNLOAD_CMD -d "$pip_tmp_dir" $missing_packages
     echo "Building RPMs..."
     local rpm_names;
     rpm_names=$("$PY2RPM_CMD"  --package-map $package_map --scripts-dir "conf/templates/packaging/scripts" --rpm-base "$bootstrap_dir/rpmbuild" -- "$pip_tmp_dir/"* 2>/dev/null |
