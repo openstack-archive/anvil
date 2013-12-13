@@ -43,6 +43,7 @@ OPENSTACK_PACKAGES = frozenset([
     "neutron",
     "nova",
     "oslo.config",
+    "oslo.messaging",
     "python-cinderclient",
     "python-glanceclient",
     "python-keystoneclient",

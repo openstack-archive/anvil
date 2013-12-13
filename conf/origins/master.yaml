@@ -52,6 +52,9 @@ oslo-config:
 oslo-incubator:
   repo: git://github.com/openstack/oslo-incubator.git
   branch: master
+oslo-messaging:
+  repo: git://github.com/openstack/oslo.messaging.git
+  branch: master
 neutron-client:
   repo: git://github.com/openstack/python-neutronclient.git
   branch: master

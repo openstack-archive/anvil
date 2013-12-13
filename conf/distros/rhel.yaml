@@ -306,6 +306,13 @@ components:
             test: anvil.components.base_testing:PythonTestingComponent
             coverage: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
+    oslo-messaging:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
     neutron:
         action_classes:
             install: anvil.components.neutron:NeutronInstaller
