@@ -30,31 +30,6 @@ from anvil import utils
 
 LOG = logging.getLogger(__name__)
 
-# TODO(harlowja): get rid of static lists in code files for these names
-# which we should be able to take in via configuration or other automatic
-# process
-OPENSTACK_PACKAGES = frozenset([
-    "ceilometer",
-    "cinder",
-    "glance",
-    "heat",
-    "horizon",
-    "keystone",
-    "neutron",
-    "nova",
-    "oslo.config",
-    "python-cinderclient",
-    "python-glanceclient",
-    "python-keystoneclient",
-    "python-neutronclient",
-    "python-novaclient",
-    "python-swiftclient",
-    "python-troveclient",
-    "swift",
-    "trove",
-])
-SKIP_PACKAGE_NAMES = []
-
 
 class InstallHelper(object):
     """Run pre and post install for a single package."""
@@ -224,9 +199,12 @@ class DependencyHandler(object):
         ]
         cmdline = cmdline + extra_pips + ["-r"] + requires_files
         cmdline.extend(["--ignore-package"])
-        cmdline.extend(OPENSTACK_PACKAGES)
-        cmdline.extend(SKIP_PACKAGE_NAMES)
-        cmdline.extend(self.python_names)
+        ignore_pip_names = set(self.python_names)
+        distro_ignores = self.distro.get_dependency_config('ignore_pip_names',
+                                                           quiet=True)
+        if distro_ignores:
+            ignore_pip_names.update([str(n) for n in distro_ignores])
+        cmdline.extend(ignore_pip_names)
 
         stdout, stderr = sh.execute(cmdline, check_exit_code=False)
         self.pips_to_install = list(utils.splitlines_not_empty(stdout))
