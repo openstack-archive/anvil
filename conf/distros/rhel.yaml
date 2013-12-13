@@ -23,9 +23,17 @@ dependency_handler:
         sqlalchemy-migrate: python-migrate
         qpid-python: python-qpid # Why is this one backwards :-/
         PyYAML: PyYAML
+    build_name_map:
+        horizon: python-django-horizon
+    api_name_map:
+        cinder: Volume
+        glance: Image
+        keystone: Identity
+        neutron: Networking
+        nova: Compute
     arch_dependent:
-    -   selenium
-    -   xattr
+    - selenium
+    - xattr
 commands:
     service:
         restart: service $NAME restart
