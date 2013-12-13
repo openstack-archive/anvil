@@ -24,8 +24,27 @@ dependency_handler:
         qpid-python: python-qpid # Why is this one backwards :-/
         PyYAML: PyYAML
     arch_dependent:
-    -   selenium
-    -   xattr
+    - selenium
+    - xattr
+    ignore_pip_names:
+    - ceilometer
+    - cinder
+    - glance
+    - heat
+    - horizon
+    - keystone
+    - neutron
+    - nova
+    - oslo.config
+    - python-cinderclient
+    - python-glanceclient
+    - python-keystoneclient
+    - python-neutronclient
+    - python-novaclient
+    - python-swiftclient
+    - python-troveclient
+    - swift
+    - trove
 commands:
     service:
         restart: service $NAME restart
@@ -300,6 +319,13 @@ components:
             coverage: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.base_install:PkgUninstallComponent
     oslo-incubator:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+    oslo-messaging:
         action_classes:
             install: anvil.components.base_install:PythonInstallComponent
             running: anvil.components.base_runtime:EmptyRuntime
