@@ -6,6 +6,10 @@ api_host: "$(auto:ip)"
 api_port: 9696
 protocol: http
 
+# Used for associating the client package with a human understandable
+# name in its package description (not a code-name, like neutron).
+api_name: "Networking"
+
 core_plugin: openvswitch
 use_namespaces: True
 
