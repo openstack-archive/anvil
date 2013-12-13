@@ -61,28 +61,6 @@ class YumInstallHelper(base.InstallHelper):
 class YumDependencyHandler(base.DependencyHandler):
     OPENSTACK_EPOCH = 2
     SPEC_TEMPLATE_DIR = "packaging/specs"
-    # TODO(harlowja): get rid of these static lists/mappings from code and move
-    # them to configuration (or elsewhere).
-    API_NAMES = {
-        "nova": "Compute",
-        "glance": "Image",
-        "keystone": "Identity",
-        "cinder": "Volume",
-        "neutron": "Networking",
-    }
-    SERVER_NAMES = [
-        "ceilometer",
-        "cinder",
-        "glance",
-        "heat",
-        "keystone",
-        "neutron",
-        "nova",
-        "trove",
-    ]
-    TRANSLATION_NAMES = {
-        'horizon': "python-django-horizon",
-    }
     YUM_REPO_DIR = "/etc/yum.repos.d/"
     SRC_REPOS = {
         'anvil': 'anvil-source',
@@ -518,56 +496,74 @@ class YumDependencyHandler(base.DependencyHandler):
         sh.gzip(archive_name)
         sh.unlink(archive_name)
 
-    @staticmethod
-    def _is_client(instance_name, egg_name):
-        for i in [instance_name, egg_name]:
-            if i and i.endswith("client"):
-                return True
-        return False
-
-    def _get_template_and_rpm_name(self, instance):
-        template_name = None
+    def _find_template_and_rpm_name(self, instance, instance_name):
+        search_names = [
+            [
+                instance_name,
+                "%s.spec" % instance_name,
+            ],
+        ]
         try:
             egg_name = instance.egg_info['name']
-            if self._is_client(instance.name, egg_name):
-                rpm_name = egg_name
-                template_name = "python-commonclient.spec"
-            elif instance.name in self.SERVER_NAMES:
-                rpm_name = "openstack-%s" % (egg_name)
-            else:
-                rpm_name = self.TRANSLATION_NAMES.get(instance.name)
+            if utils.any_ends('client', instance.name, egg_name, instance_name):
+                search_names.extend([
+                    [
+                        egg_name,
+                        "python-commonclient.spec",
+                    ],
+                ])
+            search_names.extend([
+                [
+                    "openstack-%s" % (egg_name),
+                    "openstack-%s.spec" % (egg_name),
+                ],
+                [
+                    egg_name,
+                    "%s.spec" % (egg_name),
+                ],
+            ])
         except AttributeError:
-            rpm_name = instance.name
-            template_name = "%s.spec" % rpm_name
-        return (rpm_name, template_name)
+            pass
+
+        # Return the first that exists (if any from this list)
+        for (rpm_name, template_name) in search_names:
+            spec_filename = sh.joinpths(settings.TEMPLATE_DIR,
+                                        self.SPEC_TEMPLATE_DIR, template_name)
+            if sh.isfile(spec_filename):
+                return (rpm_name, template_name)
+        return (None, None)
 
     def _build_openstack_package(self, instance):
+        api_name_map = self.distro.get_dependency_config("api_name_map",
+                                                         quiet=True)
+        if not api_name_map:
+            api_name_map = {}
+        build_name_map = self.distro.get_dependency_config("build_name_map",
+                                                           quiet=True)
+        if not build_name_map:
+            build_name_map = {}
+
         params = self._package_parameters(instance)
         patches = instance.list_patches("package")
         params['patches'] = [sh.basename(fn) for fn in patches]
-        (rpm_name, template_name) = self._get_template_and_rpm_name(instance)
+
+        instance_name = build_name_map.get(instance.name, instance.name)
+        (rpm_name, template_name) = self._find_template_and_rpm_name(instance, instance_name)
         try:
             egg_name = instance.egg_info['name']
             params["version"] = instance.egg_info["version"]
-            if self._is_client(instance.name, egg_name):
+            if utils.any_ends('client', instance.name, egg_name, instance_name):
                 client_name = utils.strip_prefix_suffix(egg_name, "python-", "client")
                 if not client_name:
                     msg = "Bad client package name %s" % (egg_name)
                     raise excp.PackageException(msg)
                 params["clientname"] = client_name
-                params["apiname"] = self.API_NAMES.get(client_name,
-                                                       client_name.title())
+                params["apiname"] = api_name_map.get(client_name,
+                                                     client_name.title())
         except AttributeError:
-            spec_filename = None
-            if template_name:
-                spec_filename = sh.joinpths(settings.TEMPLATE_DIR,
-                                            self.SPEC_TEMPLATE_DIR,
-                                            template_name)
-            if not spec_filename or not sh.isfile(spec_filename):
-                rpm_name = None
-        if rpm_name:
-            if not template_name:
-                template_name = "%s.spec" % rpm_name
+            pass
+
+        if all((rpm_name, template_name)):
             spec_filename = self._write_spec_file(instance, rpm_name,
                                                   template_name, params)
             self._build_from_spec(instance, spec_filename, patches)

@@ -555,6 +555,13 @@ def welcome(prog_name='Anvil', version_text=version.version_string()):
     return ("-", real_max)
 
 
+def any_ends(endswith, *search_over):
+    for i in search_over:
+        if i and i.endswith(endswith):
+            return True
+    return False
+
+
 def splitlines_not_empty(text):
     for line in text.splitlines():
         line = line.strip()
