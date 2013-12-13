@@ -6,6 +6,7 @@ components:
 - db
 - rabbit-mq
 - oslo-config
+- oslo-messaging
 - keystone
 - keystone-client
 - glance
