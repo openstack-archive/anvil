@@ -102,7 +102,7 @@ def run(args):
     # Load + verify the person
     try:
         persona_obj = persona.load(persona_fn)
-        persona_obj.verify(dist)
+        persona_obj.verify(dist, args['origins_fn'])
     except Exception as e:
         raise excp.OptionException("Error loading persona file: %s due to %s" % (persona_fn, e))
 

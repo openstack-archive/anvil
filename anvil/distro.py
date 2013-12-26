@@ -22,13 +22,12 @@ import platform
 import re
 import shlex
 
-import yaml
-
 from anvil import colorizer
 from anvil import exceptions as excp
 from anvil import importer
 from anvil import log as logging
 from anvil import shell as sh
+from anvil import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -145,12 +144,8 @@ def load(path):
     for fn in input_files:
         LOG.debug("Attempting to load distro definition from %r", fn)
         try:
-            # Don't use sh here so that we always
-            # read this (even if dry-run)
-            with open(fn, 'r') as fh:
-                contents = fh.read()
-                cls_kvs = yaml.safe_load(contents)
-                distro_possibles.append(Distro(**cls_kvs))
-        except (IOError, yaml.YAMLError) as err:
+            cls_kvs = utils.load_yaml(fn)
+        except Exception as err:
             LOG.warning('Could not load distro definition from %r: %s', fn, err)
+        distro_possibles.append(Distro(**cls_kvs))
     return _match_distro(distro_possibles)
