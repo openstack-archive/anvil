@@ -77,8 +77,8 @@ class Helper(object):
                 positions = sorted([p for p in positions if p != -1])
                 if positions:
                     line = line[0:positions[0]].strip()
-            if line and line not in rpm_names:
-                rpm_names.append(line)
+        assert len(python_names) == len(rpm_names), (
+            "Some package names were lost during conversion")
         return rpm_names
 
     def build_all_srpms(self, package_files, tracewriter, jobs):
