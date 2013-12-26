@@ -20,7 +20,6 @@ from anvil import settings
 from anvil import shell as sh
 from anvil import trace as tr
 from anvil import utils
-import yaml
 
 from anvil.packaging.helpers import pip_helper
 
@@ -144,8 +143,7 @@ class PythonInstallComponent(PkgInstallComponent):
     def download(self):
         """Download sources needed to build the component, if any."""
         target_dir = self.get_option('app_dir')
-        with open(self._origins_fn, 'r') as fh:
-            download_cfg = yaml.safe_load(fh.read()).get(self.name, {})
+        download_cfg = utils.load_yaml(self._origins_fn).get(self.name, {})
         if not target_dir or not download_cfg:
             return []
 
