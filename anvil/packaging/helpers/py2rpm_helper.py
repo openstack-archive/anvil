@@ -78,7 +78,12 @@ class Helper(object):
                 if positions:
                     line = line[0:positions[0]].strip()
             rpm_names.append(line)
-        assert len(python_names) == len(rpm_names), (
+        # NOTE(harlowja): <= here since a rpm name may be included twice
+        # since rpm handles version naming differently than python does
+        #
+        # For example: "pbr>=0.5.21,<1.0" results in the following rpm version
+        # dependencies, ['python-pbr >= 0.5.21', 'python-pbr <= 1.0.0.0...']
+        assert len(python_names) <= len(rpm_names), (
             "Some package names were lost during conversion")
         return rpm_names
 
