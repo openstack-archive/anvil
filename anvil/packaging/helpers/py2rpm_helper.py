@@ -67,24 +67,30 @@ class Helper(object):
             return []
         cmdline = self._start_cmdline() + ["--convert"] + python_names
         rpm_names = []
+        receive_names = set()
         for line in sh.execute(cmdline)[0].splitlines():
-            # format is "Requires: rpm-name <=> X"
-            if not line.startswith("Requires:"):
-                continue
-            line = line[len("Requires:"):].strip()
-            if only_name:
-                positions = [line.find(">"), line.find("<"), line.find("=")]
-                positions = sorted([p for p in positions if p != -1])
-                if positions:
-                    line = line[0:positions[0]].strip()
-            rpm_names.append(line)
-        # NOTE(harlowja): <= here since a rpm name may be included twice
-        # since rpm handles version naming differently than python does
-        #
-        # For example: "pbr>=0.5.21,<1.0" results in the following rpm version
-        # dependencies, ['python-pbr >= 0.5.21', 'python-pbr <= 1.0.0.0...']
-        assert len(python_names) <= len(rpm_names), (
-            "Some package names were lost during conversion")
+            # NOTE(harlowja): format is "Requires: rpm-name <=> X" or when
+            # the original requirement is denoted by the following comment
+            # lines "# Source: python-requirement" (used to make sure all
+            # requirements sent in come back out).
+            if line.startswith("Requires:"):
+                line = line[len("Requires:"):].strip()
+                if only_name:
+                    positions = [line.find(">"), line.find("<"), line.find("=")]
+                    positions = sorted([p for p in positions if p != -1])
+                    if positions:
+                        line = line[0:positions[0]].strip()
+                if line:
+                    rpm_names.append(line)
+            elif line.startswith("# Source:"):
+                line = line[len("# Source:"):].strip()
+                if line:
+                    receive_names.add(line)
+
+        missing_names = set(python_names) - receive_names
+        if missing_names:
+            raise AssertionError("%s package names were lost during"
+                                 " conversion" % (missing_names))
         return rpm_names
 
     def build_all_srpms(self, package_files, tracewriter, jobs):

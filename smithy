@@ -168,7 +168,7 @@ except KeyError:
     for python_name in $python_names; do
         local specs=$(echo $python_name | awk 'match($0, "((=|>|<|!).*$)", res) {print res[1]}')
         local rpm_name=$("$PY2RPM_CMD" --package-map $package_map --convert "$python_name" |
-                         awk 'NR==1 {print $2}')
+                         awk '/^Requires:/ {print $2; exit }')
         rpm_python_map[$rpm_name]=$python_name
         install_packages="$install_packages $rpm_name$specs"
         transaction_cmd+=" --install $rpm_name$specs"

@@ -23,4 +23,5 @@ REQUIRES='
     python-pip
     python-argparse
     python-setuptools
+    python-six
 '
