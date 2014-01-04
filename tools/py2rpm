@@ -12,6 +12,8 @@ import subprocess
 import sys
 import tempfile
 
+import six
+
 import pip.util
 import pkg_resources
 
@@ -386,6 +388,7 @@ _DOT_ZEROES_TAIL = '.0' * 10
 def requires_and_conflicts(req_list, skip_req_names=()):
     rpm_requires = []
     rpm_conflicts = []
+    rpm_mapping = {}
     for line in req_list:
         try:
             req = pkg_resources.Requirement.parse(line)
@@ -396,6 +399,8 @@ def requires_and_conflicts(req_list, skip_req_names=()):
         rpm_name = python_key_to_rpm(req.key)
         if not req.specs:
             rpm_requires.append(rpm_name)
+            rpm_mapping[rpm_name] = req
+            continue
         for kind, version in req.specs:
             try:
                 version = "%s:%s" % (epoch_map[req.key], version)
@@ -422,23 +427,38 @@ def requires_and_conflicts(req_list, skip_req_names=()):
                 # NOTE(imelnikov): we can't conflict with ranges, so we
                 # put version as is and with trimmed zeroes just in case
                 rpm_conflicts.append('%s == %s' % (rpm_name, version))
+                rpm_mapping[rpm_conflicts[-1]] = req
                 if version != lower_version:
                     rpm_conflicts.append('%s == %s' % (rpm_name, lower_version))
+                    rpm_mapping[rpm_conflicts[-1]] = req
             elif kind == '==':
                 rpm_requires.extend((
                     '%s >= %s' % (rpm_name, lower_version),
                     '%s <= %s' % (rpm_name, upper_version)
                 ))
+                rpm_mapping[rpm_requires[-1]] = req
+                rpm_mapping[rpm_requires[-2]] = req
             elif kind in ('<=', '<'):
                 rpm_requires.append('%s <= %s' % (rpm_name, upper_version))
+                rpm_mapping[rpm_requires[-1]] = req
             elif kind in ('>=', '>'):
                 rpm_requires.append('%s >= %s' % (rpm_name, lower_version))
+                rpm_mapping[rpm_requires[-1]] = req
             else:
                 raise ValueError('Invalid requirement kind: %r' % kind)
 
-    rpm_requires_str = ''.join("\nRequires: %s" % req for req in rpm_requires)
-    rpm_conflicts_str = ''.join("\nConflicts: %s" % req for req in rpm_conflicts)
-    return rpm_requires_str, rpm_conflicts_str
+    rpm_requires_str = six.StringIO()
+    for req in rpm_requires:
+        rpm_requires_str.write("# Source: %s\n" % (rpm_mapping[req]))
+        rpm_requires_str.write("Requires: %s\n\n" % (req))
+
+    rpm_conflicts_str = six.StringIO()
+    for req in rpm_conflicts:
+        rpm_conflicts_str.write("# Source: %s\n" % (rpm_mapping[req]))
+        rpm_conflicts_str.write("Conflicts: %s\n\n" % (req))
+        rpm_conflicts_str.write("\n\n")
+
+    return rpm_requires_str.getvalue(), rpm_conflicts_str.getvalue()
 
 
 def one_line(line, max_len=80):
