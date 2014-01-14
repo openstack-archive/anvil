@@ -297,10 +297,11 @@ class YumDependencyHandler(base.DependencyHandler):
         req_to_install = [pip_helper.extract_requirement(line)
                           for line in self.pips_to_install]
         requested_names = [req.key for req in req_to_install]
-        rpm_to_install = self.py2rpm_helper.convert_names_to_rpm(requested_names)
+        rpm_names = self.py2rpm_helper.names_to_rpm_names(requested_names)
 
         satisfied_list = []
-        for (req, rpm_name) in zip(req_to_install, rpm_to_install):
+        for req in req_to_install:
+            rpm_name = rpm_names[req.key]
             (version, repo) = self._find_yum_match(yum_map, req, rpm_name)
             if not repo:
                 # We need the source requirement incase its a url.
@@ -333,15 +334,15 @@ class YumDependencyHandler(base.DependencyHandler):
 
         def _filter_package_files(package_files):
             package_reqs = []
-            package_keys = []
             for filename in package_files:
                 package_details = pip_helper.get_archive_details(filename)
                 package_reqs.append(package_details['req'])
-                package_keys.append(package_details['req'].key)
-            package_rpm_names = self.py2rpm_helper.convert_names_to_rpm(package_keys)
+            package_rpm_names = self.py2rpm_helper.names_to_rpm_names(
+                [req.key for req in package_reqs])
+
             filtered_files = []
-            for (filename, req, rpm_name) in zip(package_files, package_reqs,
-                                                 package_rpm_names):
+            for filename, req in zip(package_files, package_reqs):
+                rpm_name = package_rpm_names[req.key]
                 if req.key in no_pips:
                     LOG.info(("Dependency %s was downloaded additionally "
                              "but it is disallowed."), colorizer.quote(req))
@@ -383,7 +384,7 @@ class YumDependencyHandler(base.DependencyHandler):
         if egg_info:
             def ei_names(key):
                 requires_python = [str(req) for req in egg_info[key]]
-                return self.py2rpm_helper.convert_names_to_rpm(requires_python, False)
+                return self.py2rpm_helper.names_to_rpm_requires(requires_python)
 
             requires_what.extend(ei_names('dependencies'))
             test_requires_what.extend(ei_names('test_dependencies'))
@@ -605,9 +606,9 @@ class YumDependencyHandler(base.DependencyHandler):
             for line in [line.strip() for line in requires if line.strip()]:
                 py_reqs.add(pip_helper.extract_requirement(line))
 
-        py_reqs = list(py_reqs)
-        rpm_names = self.py2rpm_helper.convert_names_to_rpm(map(str, py_reqs))
-        desired_rpms.extend(zip(rpm_names, py_reqs))
+        rpm_names = self.py2rpm_helper.names_to_rpm_names([req.key
+                                                           for req in py_reqs])
+        desired_rpms.extend((rpm_names[req.key], req) for req in py_reqs)
 
         def _format_name(rpm_name, py_req):
             full_name = str(rpm_name).strip()
