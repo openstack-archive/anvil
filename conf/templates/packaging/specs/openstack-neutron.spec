@@ -556,12 +556,7 @@ fi
 %{_bindir}/*-server
 %{_bindir}/*-usage-audit
 %{_bindir}/*-vpn-agent
-%dir %{_datarootdir}/neutron
-%dir %{_datarootdir}/neutron/rootwrap
-%{_datarootdir}/neutron/rootwrap/dhcp.filters
-%{_datarootdir}/neutron/rootwrap/iptables-firewall.filters
-%{_datarootdir}/neutron/rootwrap/l3.filters
-%{_datarootdir}/neutron/rootwrap/lbaas-haproxy.filters
+%{_datarootdir}/neutron
 %if ! 0%{?usr_only}
 %{_initrddir}/%{daemon_prefix}-server
 %{_initrddir}/%{daemon_prefix}-dhcp-agent
