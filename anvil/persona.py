@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import six
+
 from anvil import log as logging
 from anvil import utils
 
@@ -30,11 +32,14 @@ class Persona(object):
         self.component_options = kargs.get('options') or {}
 
     def verify(self, distro, origins_fn):
-        # Filter components out that are not in origins file
-        available_components = set(utils.load_yaml(origins_fn).iterkeys())
-        available_components.add('general')
+        # Filter out components that are disabled in origins file
+        disabled_components = set(key
+                                  for key, value in six.iteritems(
+                                      utils.load_yaml(origins_fn))
+                                  if value.get('disabled'))
+
         self.wanted_components = [c for c in self.wanted_components
-                                  if c in available_components]
+                                  if c not in disabled_components]
 
         # Some sanity checks against the given distro/persona
         d_name = distro.name
