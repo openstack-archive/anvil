@@ -12,7 +12,7 @@ supported).
 Diving in!
 ----------
 
-First you have to have a little background on `anvil` and 
+First you have to have a little background on `anvil` and
 how it operates. So let's dive in and learn a little on how
 we can add in your own distribution support.
 
@@ -20,7 +20,7 @@ we can add in your own distribution support.
   The main shell script that bootstraps the needed dependencies
   for anvil to be able to start (including items such as termcolor,
   progressbar and netifaces). The code here is written in bash shell
-  script so that it can execute in an environment without the 
+  script so that it can execute in an environment without the
   needed prerequisites.
 
     **When to adjust:** Adjust the bootstrapping functions in this file to install
@@ -28,7 +28,7 @@ we can add in your own distribution support.
     are bootstrapping rhel (and how we are detecting rhel) for an example.
 
 **conf/distros**
-  This set of yaml files contains definitions for what packages, 
+  This set of yaml files contains definitions for what packages,
   what pip to package mappings and what code entrypoints are used
   when setting up a given component. The critical key here is the
   ``platform_pattern`` key which is used as a regular expression to
@@ -54,20 +54,20 @@ we can add in your own distribution support.
 **anvil/distros**
   These are typically subclasses of components that may override generic functionality to correct
   for a given distribution doing or requiring something different to occur before/after or during
-  an install or other action. 
+  an install or other action.
 
   **When to adjust:** Feel free to add-on your own subclasses here as needed to handle any special actions
-  that your new distribution may require and make sure you reference those classes/entrypoints 
+  that your new distribution may require and make sure you reference those classes/entrypoints
   in your **conf/distros** yaml file so that the correct subclass will be used. The rhel distro has a good set
   of examples that overload various key points so that rhel can work correctly.
 
 **anvil/packaging**
   The modules in this folder will be referenced in your **conf/distros** yaml file and will control
   how to install packages (i.e. using yum and pip) and how to uninstall those same packages. This code will also
-  get activated when a 'package' action occurs which currently will cause the necessary actions to occur to 
+  get activated when a 'package' action occurs which currently will cause the necessary actions to occur to
   create a RPM ``spec`` file which can be used with the ``rpmbuild`` command.
 
   **When to adjust:**  If needed it should be simple to look at the packaging interface and add your own.
   After adding make sure you reference them in your **conf/distros** yaml file so that the correct subclass will be used. If you are going
   to want to create package files from the installed code then you will need to hook-in to a file similar
-  to the RPM module that exists there. 
+  to the RPM module that exists there.
