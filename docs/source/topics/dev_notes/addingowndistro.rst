@@ -5,7 +5,7 @@ Adding your own distribution
 ====
 
 This little ``HOWTO`` can be used by those who wish to
-add-on to anvil to be able to support there own distribution
+add-on to anvil to be able to support their own distribution
 or unsupported operating system (so that it can be
 supported).
 
@@ -13,17 +13,17 @@ Diving in!
 ----------
 
 First you have to have a little background on `anvil` and 
-how it operates. So lets dive in and learn a little on how
+how it operates. So let's dive in and learn a little on how
 we can add in your own distribution support.
 
 **smithy**
   The main shell script that bootstraps the needed dependencies
   for anvil to be able to start (including items such as termcolor,
   progressbar and netifaces). The code here is written in bash shell
-  script so that it can execute in an enviornment without the 
+  script so that it can execute in an environment without the 
   needed prerequisites.
 
-    **When to adjust:** Adjust the boot strapping functions in this file to install
+    **When to adjust:** Adjust the bootstrapping functions in this file to install
     any needed prerequisites for your operating system to run anvil. Look at how we
     are bootstrapping rhel (and how we are detecting rhel) for an example.
 
@@ -35,14 +35,15 @@ we can add in your own distribution support.
   determine if the provided yaml file will work in the given running
   distribution. Other keys are used to identify which packaging class
   to use (ie ``packager_name``) and how to map a component name to
-  its action classes (ie ``action_classes/install`` will be constructed
+  its action classes (i.e. ``action_classes/install`` will be constructed
   when an install action occurs). The ``commands`` section can be used to
   `house` arbitrary commands which may vary between operating systems (such
   as the ``pip`` executable name)
 
     **When to adjust the distro:** If a suitable distribution already exists (which may be the case
     for many rhel variants), just go ahead and add-on to the regular expression your pattern. Ensure
-    that your regular expressionmatches the output of the following command: ``python -c "import platform; print(platform.platform())"``
+    that your regular expression matches the output of the following command:
+    ``python -c "import platform; print(platform.platform())"``
     which is what anvil uses internally to match a given yaml file to a given distribution.
 
     **When to add a new file:** If no suitable distribution exists (which may be the case
@@ -62,11 +63,11 @@ we can add in your own distribution support.
 
 **anvil/packaging**
   The modules in this folder will be referenced in your **conf/distros** yaml file and will control
-  how to install packages (ie using yum and pip) and how to uninstall those same packages. This code will also
+  how to install packages (i.e. using yum and pip) and how to uninstall those same packages. This code will also
   get activated when a 'package' action occurs which currently will cause the necessary actions to occur to 
-  create a rpm ``spec`` file which can be used with the ``rpmbuild`` command.
+  create a RPM ``spec`` file which can be used with the ``rpmbuild`` command.
 
   **When to adjust:**  If needed it should be simple to look at the packaging interface and add your own.
   After adding make sure you reference them in your **conf/distros** yaml file so that the correct subclass will be used. If you are going
   to want to create package files from the installed code then you will need to hook-in to a file similar
-  to the rpm module that exists there. 
+  to the RPM module that exists there. 
