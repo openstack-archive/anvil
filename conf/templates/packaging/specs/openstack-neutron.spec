@@ -556,7 +556,13 @@ fi
 %{_bindir}/*-server
 %{_bindir}/*-usage-audit
 %{_bindir}/*-vpn-agent
+
 %{_datarootdir}/neutron
+%exclude %{_datarootdir}/neutron/rootwrap/linuxbridge-plugin.filters
+%exclude %{_datarootdir}/neutron/rootwrap/openvswitch-plugin.filters
+%exclude %{_datarootdir}/neutron/rootwrap/ryu-plugin.filters
+%exclude %{_datarootdir}/neutron/rootwrap/nec-plugin.filters
+
 %if ! 0%{?usr_only}
 %{_initrddir}/%{daemon_prefix}-server
 %{_initrddir}/%{daemon_prefix}-dhcp-agent
@@ -566,14 +572,8 @@ fi
 %dir %{_sysconfdir}/neutron
 %{_sysconfdir}/neutron/release
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/policy.json
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/api-paste.ini
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/dhcp_agent.ini
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/l3_agent.ini
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/lbaas_agent.ini
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/metadata_agent.ini
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/metering_agent.ini
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/neutron.conf
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/vpn_agent.ini
+%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/*.ini
 %config(noreplace) %{_sysconfdir}/neutron/rootwrap.conf
 %dir %{_sysconfdir}/neutron/plugins
 %config(noreplace) %{_sysconfdir}/logrotate.d/*
