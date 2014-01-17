@@ -14,6 +14,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import collections
+
+import six
+
 from anvil import log as logging
 from anvil import settings
 from anvil import shell as sh
@@ -62,36 +66,52 @@ class Helper(object):
         out_filename = sh.joinpths(self._log_dir, "%s.log" % sh.basename(filename))
         sh.execute_save_output(cmdline, cwd=marks_dir, out_filename=out_filename)
 
-    def convert_names_to_rpm(self, python_names, only_name=True):
+    def _convert_names_to_rpm(self, python_names, only_name):
         if not python_names:
-            return []
+            return {}
         cmdline = self._start_cmdline() + ["--convert"] + python_names
-        rpm_names = []
-        receive_names = set()
+        result = collections.defaultdict(set)
+        current_source = None
         for line in sh.execute(cmdline)[0].splitlines():
             # NOTE(harlowja): format is "Requires: rpm-name <=> X" or when
             # the original requirement is denoted by the following comment
-            # lines "# Source: python-requirement" (used to make sure all
-            # requirements sent in come back out).
+            # lines "# Source: python-requirement"
             if line.startswith("Requires:"):
-                line = line[len("Requires:"):].strip()
+                line = line[len("Requires:"):]
                 if only_name:
                     positions = [line.find(">"), line.find("<"), line.find("=")]
                     positions = sorted([p for p in positions if p != -1])
                     if positions:
-                        line = line[0:positions[0]].strip()
-                if line:
-                    rpm_names.append(line)
+                        line = line[0:positions[0]]
+                result[current_source].add(line.strip())
             elif line.startswith("# Source:"):
-                line = line[len("# Source:"):].strip()
-                if line:
-                    receive_names.add(line)
+                current_source = line[len("# Source:"):].strip()
 
-        missing_names = set(python_names) - receive_names
+        missing_names = set(python_names) - set(result.keys())
         if missing_names:
-            raise AssertionError("%s package names were lost during"
-                                 " conversion" % (missing_names))
-        return rpm_names
+            raise AssertionError("Python names were lost during conversion: %s"
+                                 % ', '.join(sorted(missing_names)))
+        extra_names = set(result.keys()) - set(python_names)
+        if extra_names:
+            raise AssertionError("Extra python names were found during conversion: %s"
+                                 % ', '.join(sorted(extra_names)))
+        return result
+
+    def names_to_rpm_names(self, python_names):
+        mapping = self._convert_names_to_rpm(python_names, only_name=True)
+        result = {}
+        for k, v in six.iteritems(mapping):
+            assert len(v) == 1, ('There should be exactly one RPM name for '
+                                 'python module %s, but we have: %s'
+                                 % (k, sorted(v)))
+            result[k] = v.pop()
+        return result
+
+    def names_to_rpm_requires(self, python_names):
+        mapping = self._convert_names_to_rpm(python_names, only_name=False)
+        return [req
+                for value in six.itervalues(mapping)
+                for req in value]
 
     def build_all_srpms(self, package_files, tracewriter, jobs):
         (_fn, content) = utils.load_template(sh.joinpths("packaging", "makefiles"), "source.mk")
