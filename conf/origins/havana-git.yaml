@@ -67,3 +67,5 @@ trove-client:
 trove:
   repo: git://github.com/openstack/trove.git
   branch: stable/havana
+oslo-messaging:
+  disabled: True
