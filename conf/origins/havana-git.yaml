@@ -1,0 +1,69 @@
+ceilometer:
+  repo: git://github.com/openstack/ceilometer.git
+  branch: stable/havana
+ceilometer-client:
+  repo: git://github.com/openstack/python-ceilometerclient.git
+  tag: 1.0.6
+cinder-client:
+  repo: git://github.com/openstack/python-cinderclient.git
+  tag: 1.0.6
+cinder:
+  repo: git://github.com/openstack/cinder.git
+  branch: stable/havana
+django-openstack-auth:
+  repo: git://github.com/openstack/django_openstack_auth.git
+  tag: 1.1.3
+glance-client:
+  repo: git://github.com/openstack/python-glanceclient.git
+  tag: 0.11.0
+glance:
+  repo: git://github.com/openstack/glance.git
+  branch: stable/havana
+heat-client:
+  repo: git://github.com/openstack/python-heatclient.git
+  tag: 0.2.5
+heat:
+  repo: git://github.com/openstack/heat.git
+  branch: stable/havana
+horizon:
+  repo: git://github.com/openstack/horizon.git
+  branch: stable/havana
+keystone-client:
+  repo: git://github.com/openstack/python-keystoneclient.git
+  tag: 0.4.1
+keystone:
+  repo: git://github.com/openstack/keystone.git
+  branch: stable/havana
+nova-client:
+  repo: git://github.com/openstack/python-novaclient.git
+  tag: 2.15.0
+nova:
+  repo: git://github.com/openstack/nova.git
+  branch: stable/havana
+novnc:
+  repo: git://github.com/kanaka/noVNC.git
+  branch: master
+openstack-client:
+  repo: git://github.com/openstack/python-openstackclient.git
+  tag: 0.2.2
+oslo-config:
+  repo: git://github.com/openstack/oslo.config.git
+  branch: stable/havana
+oslo-incubator:
+  repo: git://github.com/openstack/oslo-incubator.git
+  branch: stable/havana
+neutron-client:
+  repo: git://github.com/openstack/python-neutronclient.git
+  tag: 2.3.1
+neutron:
+  repo: git://github.com/openstack/neutron.git
+  branch: stable/havana
+swift-client:
+  repo: git://github.com/openstack/python-swiftclient.git
+  tag: 1.8.0
+trove-client:
+  repo: git://github.com/openstack/python-troveclient.git
+  tag: 0.1.4
+trove:
+  repo: git://github.com/openstack/trove.git
+  branch: stable/havana
