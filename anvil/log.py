@@ -54,6 +54,7 @@ Formatter = logging.Formatter
 
 # Handlers
 StreamHandler = logging.StreamHandler
+FileHandler = logging.FileHandler
 
 
 class TermFormatter(logging.Formatter):
@@ -100,11 +101,18 @@ class TermAdapter(logging.LoggerAdapter):
         logging.LoggerAdapter.__init__(self, logger, dict())
 
 
-def setupLogging(log_level, format='%(levelname)s: @%(name)s : %(message)s'):
+def setupLogging(log_level, quiet=True,
+                 format='%(levelname)s: @%(name)s : %(message)s',
+                 log_name='/var/log/anvil.log'):
     root_logger = getLogger().logger
-    console_logger = StreamHandler(sys.stdout)
-    console_logger.setFormatter(TermFormatter(format))
-    root_logger.addHandler(console_logger)
+    log_formatter = TermFormatter(format)
+    if not quiet:
+        console_logger = StreamHandler(sys.stdout)
+        console_logger.setFormatter(log_formatter)
+        root_logger.addHandler(console_logger)
+    file_logger = FileHandler(log_name)
+    file_logger.setFormatter(log_formatter)
+    root_logger.addHandler(file_logger)
     root_logger.setLevel(log_level)
 
 
