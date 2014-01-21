@@ -371,8 +371,10 @@ for i in $BOOT_FILES; do
 done
 
 mkdir -p -v /etc/anvil /usr/share/anvil
+touch /var/log/anvil.log
 if [ -n "$SUDO_UID" -a -n "SUDO_GID" ]; then
-    chown -c "$SUDO_UID:$SUDO_GID" /etc/anvil /usr/share/anvil
+    chown -c "$SUDO_UID:$SUDO_GID" /etc/anvil /usr/share/anvil \
+        /var/log/anvil.log
     [ -d .bootstrap ] && chown -R "$SUDO_UID:$SUDO_GID" .bootstrap
 fi
 
