@@ -137,6 +137,11 @@ def parse(previous_settings=None):
                       dest="keyring_encrypted",
                       default=False,
                       help=("use a encrypted keyring file (default: %default)"))
+    parser.add_option('-q', "--quite",
+                      action="store_true",
+                      dest="quite",
+                      default=False,
+                      help=("write log only to file (default: %default)"))
     parser.add_option("--no-prompt-passwords",
                       action="store_false",
                       dest="prompt_for_passwords",
@@ -240,4 +245,5 @@ def parse(previous_settings=None):
     values['keyring_path'] = options.keyring_path
     values['keyring_encrypted'] = options.keyring_encrypted
     values['ignore_test_failures'] = options.ignore_test_failures
+    values['quite'] = options.quite
     return values

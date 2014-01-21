@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#, quite!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 # vim: tabstop=4 shiftwidth=4 softtabstop=4
@@ -161,7 +161,7 @@ def store_current_settings(c_settings):
     try:
         # Remove certain keys that just shouldn't be saved
         to_save = dict(c_settings)
-        for k in ['action', 'verbose', 'dryrun']:
+        for k in ['action', 'verbose', 'dryrun', 'quite']:
             if k in c_settings:
                 to_save.pop(k, None)
         with open("/etc/anvil/settings.yaml", 'w') as fh:
@@ -195,7 +195,8 @@ def main():
     log_level = logging.INFO
     if args['verbose'] or args['dryrun']:
         log_level = logging.DEBUG
-    logging.setupLogging(log_level)
+    quite = args['quite']
+    logging.setupLogging(log_level, quite)
     LOG.debug("Log level is: %s" % (logging.getLevelName(log_level)))
 
     def print_exc(exc):
