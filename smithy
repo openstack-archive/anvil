@@ -18,9 +18,9 @@ RPM_OPTS=""
 CURL_OPTS=""
 
 # Colors supported??
-COLOR_SUPPORT=`tput colors`
+COLOR_SUPPORT=$(tput colors)
 
-if [ $COLOR_SUPPORT -ge 8 ]; then
+if [ "$COLOR_SUPPORT" -ge 8 ]; then
     ESC_SEQ="\x1b["
     COL_RESET=$ESC_SEQ"39;49;00m"
     COL_GREEN=$ESC_SEQ"32;01m"
@@ -44,7 +44,7 @@ fi
 # Source in our variables (or overrides)
 source ".anvilrc"
 if [ -n "$SUDO_USER" ]; then
-    USER_HOME=$(getent passwd $SUDO_USER | cut -d: -f6)
+    USER_HOME=$(getent passwd "$SUDO_USER" | cut -d: -f6)
     if [ -n "$USER_HOME" ]; then
         HOME_RC="${USER_HOME}/.anvilrc"
         if [ -f "$HOME_RC" ]; then
@@ -62,13 +62,13 @@ clean_pip()
 {
     # https://github.com/pypa/pip/issues/982
     if [ -n "$SUDO_USER" ]; then
-        rm -rf /tmp/pip-build-$SUDO_USER
+        rm -rf "/tmp/pip-build-$SUDO_USER"
     fi
 }
 
 rpm_is_installed()
 {
-    local name="$(basename "$1")"
+    local name=$(basename "$1")
     rpm $RPM_OPTS "${name%.rpm}" &>/dev/null
     return $?
 }
@@ -77,13 +77,13 @@ cache_and_install_rpm_url()
 {
     url=${1:?"Error: rpm uri is undefined!"}
     cachedir=${RPM_CACHEDIR:-'/tmp'}
-    rpm=$(basename $url)
+    rpm=$(basename "$url")
     if rpm_is_installed "$rpm"; then
         return
     fi
     if [ ! -f "$cachedir/$rpm" ]; then
         echo -e "Downloading ${COL_GREEN}${rpm}${COL_RESET} to ${COL_GREEN}${cachedir}${COL_RESET}"
-        curl $CURL_OPTS $url -o "$cachedir/$rpm" || return 1
+        curl $CURL_OPTS "$url" -o "$cachedir/$rpm" || return 1
     fi
     echo -e "Installing ${COL_GREEN}$cachedir/$rpm${COL_RESET}"
     yum install $YUM_OPTS "$cachedir/$rpm"
@@ -93,7 +93,7 @@ cache_and_install_rpm_url()
 bootstrap_epel()
 {
     [ -z "$EPEL_RPM_URL" ] && return 0
-    cache_and_install_rpm_url $EPEL_RPM_URL
+    cache_and_install_rpm_url "$EPEL_RPM_URL"
     return $?
 }
 
@@ -119,7 +119,7 @@ bootstrap_rpm_packages()
     # so, begin from installation
     if [ -n "$REQUIRES" ]; then
         echo -e "Installing ${COL_GREEN}system${COL_RESET} packages:"
-        dump_list "$REQUIRES"
+        dump_list $REQUIRES
         yum install $YUM_OPTS $REQUIRES
         if [ "$?" != "0" ]; then
             echo -e "${COL_RED}Failed installing!${COL_RESET}"
@@ -150,7 +150,7 @@ for pkg in packages:
 bootstrap_selinux()
 {
     # See if selinux is on.
-    if [ `getenforce` == "Enforcing" ]; then
+    if [ "$(getenforce)" == "Enforcing" ]; then
         # Ensure all yum api interacting binaries are ok to be used
         echo "Enabling selinux for yum like binaries."
         chcon -h "system_u:object_r:rpm_exec_t:s0" "$YYOOM_CMD"
@@ -167,16 +167,16 @@ try:
 except KeyError:
     pass
 ")
-    local python_names=$(cat requirements.txt | sed -r -e 's/#.*$//' | sort -u)
-    local bootstrap_dir="$(readlink -f ./.bootstrap/)"
+    local python_names=$(sed -r -e 's/#.*$//' requirements.txt | sort -u)
+    local bootstrap_dir=$(readlink -f ./.bootstrap/)
     local transaction_cmd="transaction --skip-missing"
     local install_packages=""
     declare -A rpm_python_map
     for python_name in $python_names; do
-        local specs=$(echo $python_name | awk 'match($0, "((=|>|<|!).*$)", res) {print res[1]}')
+        local specs=$(echo "$python_name" | awk 'match($0, "((=|>|<|!).*$)", res) {print res[1]}')
         local rpm_name=$("$PY2RPM_CMD" --package-map $package_map --convert "$python_name" |
                          awk '/^Requires:/ {print $2; exit }')
-        rpm_python_map[$rpm_name]=$python_name
+        rpm_python_map["$rpm_name"]="$python_name"
         install_packages="$install_packages $rpm_name$specs"
         transaction_cmd+=" --install $rpm_name$specs"
     done
@@ -186,10 +186,10 @@ except KeyError:
 
     # NOTE(imelnikov): if we declare local variable and specify its value
     # at the same statement, exit code from subshell is lost.
-    local yyoom_res;
+    local yyoom_res
     yyoom_res=$("$YYOOM_CMD" $YYOOM_OPTS $transaction_cmd) || return 1
-    local missing_rpms;
-    missing_rpms=$(echo $yyoom_res | python -c "import sys, json
+    local missing_rpms
+    missing_rpms=$(echo "$yyoom_res" | python -c "import sys, json
 for item in json.load(sys.stdin):
     if item.get('action_type') == 'missing':
         print(item['name'])
@@ -209,7 +209,7 @@ for item in json.load(sys.stdin):
 
     $PIPDOWNLOAD_CMD -d "$pip_tmp_dir" $missing_packages
     echo "Building RPMs..."
-    local rpm_names;
+    local rpm_names
     rpm_names=$("$PY2RPM_CMD"  --package-map $package_map --scripts-dir "conf/templates/packaging/scripts" --rpm-base "$bootstrap_dir/rpmbuild" -- "$pip_tmp_dir/"* 2>/dev/null |
         awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)
     if [ -z "$rpm_names" ]; then
@@ -218,7 +218,7 @@ for item in json.load(sys.stdin):
     fi
     local rpm_base_names=""
     for rpm in $rpm_names; do
-        rpm_base_names="$rpm_base_names $(basename $rpm)"
+        rpm_base_names="$rpm_base_names $(basename "$rpm")"
     done
     echo -e "Installing ${COL_YELLOW}missing${COL_RESET} python requirement packages:"
     dump_list "$rpm_base_names"
@@ -234,11 +234,12 @@ for item in json.load(sys.stdin):
 
 needs_bootstrap()
 {
+    local contents checksums
     $BOOTSTRAP && return 0
     checksums=$(get_checksums)
     for i in $BOOT_FILES; do
-        if [ -f $i ]; then
-            contents=`cat $i`
+        if [ -f "$i" ]; then
+            contents=$(cat $i)
             [ "$contents" = "$checksums" ] && return 1
         fi
     done
@@ -256,13 +257,13 @@ get_checksums()
 
 run_smithy()
 {
-    PYTHON=`which python`
-    exec $PYTHON anvil $ARGS
+    PYTHON=$(which python)
+    exec "$PYTHON" anvil $ARGS
 }
 
 puke()
 {
-    cleaned_force=$(echo $FORCE | sed -e 's/\([A-Z]\)/\L\1/g;s/\s//g')
+    cleaned_force=$(echo "$FORCE" | sed -e 's/\([A-Z]\)/\L\1/g;s/\s//g')
     if [[ "$cleaned_force" == "yes" ]]; then
         run_smithy
     else
@@ -273,10 +274,9 @@ puke()
 
 ## Identify which bootstrap configuration file to use: either set
 ## explicitly (BSCONF_FILE) or determined based on the os distribution:
-BSCONF_DIR=${BSCONF_DIR:-$(dirname $(readlink -f "$0"))/tools/bootstrap}
+BSCONF_DIR="${BSCONF_DIR:-$(dirname $(readlink -f "$0"))/tools/bootstrap}"
 get_os_info(){
-    OS=`uname`
-    if [ "${OS}" = "Linux" ] ; then
+    if [ "$(uname)" = "Linux" ] ; then
         if [ -f /etc/redhat-release ] ; then
             PKG="rpm"
             OSNAME=`cat /etc/redhat-release`
@@ -305,7 +305,7 @@ BOOTSTRAP=false
 # Ad-hoc getopt to handle long opts.
 #
 # Smithy opts are consumed while those to anvil are copied through.
-while [ ! -z $1 ]; do
+while [ "$#" != 0 ]; do
     case "$1" in
     '--bootstrap')
         BOOTSTRAP=true
@@ -324,7 +324,7 @@ done
 
 # Source immediately so that we can export the needed variables.
 if [ -f "$BSCONF_FILE" ]; then
-    source $BSCONF_FILE
+    source "$BSCONF_FILE"
     export REQUIRED_PACKAGES="$REQUIRES"
 fi
 
@@ -360,7 +360,7 @@ echo "Bootstrapping $SHORTNAME $RELEASE"
 echo "Please wait..."
 clean_pip
 for step in ${STEPS:?"Error: STEPS is undefined!"}; do
-    bootstrap_${step}
+    "bootstrap_${step}"
     if [ $? != 0 ]; then
         echo "Bootstrapping $SHORTNAME $RELEASE failed." >&2
         exit 1
@@ -373,7 +373,7 @@ clean_pip
 # and a new dependency install...
 checksum=$(get_checksums)
 for i in $BOOT_FILES; do
-    echo -e $checksum > $i
+    echo -e "$checksum" > "$i"
 done
 
 mkdir -p -v /etc/anvil /usr/share/anvil
