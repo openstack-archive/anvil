@@ -339,6 +339,8 @@ def _parse_arguments(args):
     parser = argparse.ArgumentParser(prog=args[0])
     parser.add_argument('--verbose', '-v', action='store_true',
                         help='verbose operation')
+    parser.add_argument('--log-file', '-l')
+    parser.add_argument('--quiet', '-q', action='store_true')
     # TODO(imelnikov): --format
     subparsers = parser.add_subparsers(title='subcommands')
 
@@ -380,14 +382,25 @@ def _parse_arguments(args):
     return parser.parse_args(args[1:])
 
 
-def _setup_logging(verbose=True):
+def _setup_logging(verbose=True, logfile=None, quiet=False):
     """Initialize logging"""
     # setup logging -- put messages to stderr
     handler = logging.StreamHandler(sys.stderr)
     handler.setFormatter(logging.Formatter('YYOOM %(levelname)s: %(message)s'))
+    if quiet:
+        loglevel = logging.ERROR
+    elif verbose:
+        loglevel = logging.DEBUG
+    else:
+        loglevel = logging.INFO
+    handler.setLevel(loglevel)
     root_logger = logging.getLogger()
     root_logger.addHandler(handler)
-    root_logger.setLevel(logging.DEBUG if verbose else logging.INFO)
+    # Setup logfile if we have one
+    if logfile:
+        file_handler = logging.FileHandler(logfile)
+        file_handler.setLevel(logging.DEBUG)
+        root_logger.addHandler(file_handler)
 
 
 def _run_yum_api(name, func, ok_codes=(0,), *args, **kwargs):
@@ -440,7 +453,7 @@ def _transaction(base, callback):
 def main(args):
     options = _parse_arguments(args)
     _setup_output()
-    _setup_logging(options.verbose)
+    _setup_logging(options.verbose, options.log_file, options.quiet)
     try:
         yum_base = _YyoomBase()
         return options.func(yum_base, options) or 0
