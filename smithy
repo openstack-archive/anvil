@@ -106,6 +106,13 @@ dump_list()
     done
 }
 
+greatest_version()
+{
+    for arg in "$@"; do
+        echo "$arg"
+    done | sort --version-sort --reverse | head -n1
+}
+
 bootstrap_rpm_packages()
 {
     # NOTE(aababilov): the latter operations require some packages,
@@ -344,8 +351,7 @@ fi
 
 MIN_RELEASE=${MIN_RELEASE:?"Error: MIN_RELEASE is undefined!"}
 SHORTNAME=${SHORTNAME:?"Error: SHORTNAME is undefined!"}
-BC_OK=$(echo "$RELEASE < $MIN_RELEASE" | bc)
-if [ "$BC_OK" == "1" ]; then
+if [ "$RELEASE" != "$(greatest_version "$RELEASE" "$MIN_RELEASE")" ]; then
     echo "This script must be run on $SHORTNAME $MIN_RELEASE+ and not $SHORTNAME $RELEASE." >&2
     puke
 fi
