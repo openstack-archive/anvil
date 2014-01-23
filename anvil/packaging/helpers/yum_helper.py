@@ -15,6 +15,7 @@
 #    under the License.
 
 import json
+import os
 import sys
 
 from anvil import exceptions as excp
@@ -43,6 +44,10 @@ class Helper(object):
         self.yyoom_executable = sh.which("yyoom", ["tools/"])
         # Executable logs will go into this directory
         self._log_dir = log_dir
+        # Just check that directory where we shall write logs actually exist
+        if log_dir and not os.path.exists(log_dir):
+            # And create it if not
+            os.makedirs(log_dir)
         # Preferred repositories names
         self._repos = repos
         # Caches of installed and available packages
@@ -50,11 +55,10 @@ class Helper(object):
         self._available = None
 
     def _yyoom(self, arglist, cmd_type):
-        cmdline = [self.yyoom_executable, '--verbose']
-        cmdline.extend(arglist)
         out_filename = sh.joinpths(self._log_dir, "yyoom-%s.log" % (cmd_type))
-        (stdout, _) = sh.execute_save_output2(cmdline,
-                                              stderr_filename=out_filename)
+        cmdline = [self.yyoom_executable, '--verbose', '--log-file', out_filename, '--quite']
+        cmdline.extend(arglist)
+        (stdout, _) = sh.execute(cmdline, stderr_fh=sys.stderr)
         return _parse_json(stdout)
 
     def _traced_yyoom(self, arglist, cmd_type, tracewriter):
