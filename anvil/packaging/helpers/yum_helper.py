@@ -50,11 +50,10 @@ class Helper(object):
         self._available = None
 
     def _yyoom(self, arglist, cmd_type):
-        cmdline = [self.yyoom_executable, '--verbose']
-        cmdline.extend(arglist)
         out_filename = sh.joinpths(self._log_dir, "yyoom-%s.log" % (cmd_type))
-        (stdout, _) = sh.execute_save_output2(cmdline,
-                                              stderr_filename=out_filename)
+        cmdline = [self.yyoom_executable, '--verbose', '--log-file', out_filename, '--quite']
+        cmdline.extend(arglist)
+        (stdout, _) = sh.execute(cmdline)
         return _parse_json(stdout)
 
     def _traced_yyoom(self, arglist, cmd_type, tracewriter):
