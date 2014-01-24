@@ -17,6 +17,7 @@
 import unittest
 
 from anvil import downloader
+from anvil import exceptions
 
 
 class TestGitDownloader(unittest.TestCase):
@@ -31,6 +32,7 @@ class TestGitDownloader(unittest.TestCase):
         self.assertEqual(d._dst, self._dst)
         self.assertEqual(d._branch, 'master')
         self.assertEqual(d._tag, None)
+        self.assertEqual(d._sha1, None)
 
     def test_constructor_branch(self):
         branch = 'stable/havana'
@@ -38,25 +40,41 @@ class TestGitDownloader(unittest.TestCase):
                                      branch=branch)
         self.assertEqual(d._branch, branch)
         self.assertEqual(d._tag, None)
+        self.assertEqual(d._sha1, None)
 
     def test_constructor_tag(self):
         tag = '1.0.6'
         d = downloader.GitDownloader(self._uri, self._dst,
                                      tag=tag)
-        self.assertEqual(d._branch, 'master')
         self.assertEqual(d._tag, tag)
+        self.assertEqual(d._sha1, None)
 
     def test_constructor_float_tag(self):
         tag = 2013.2
         d = downloader.GitDownloader(self._uri, self._dst,
                                      tag=tag)
-        self.assertEqual(d._branch, 'master')
         self.assertEqual(d._tag, str(tag))
+        self.assertEqual(d._sha1, None)
 
     def test_constructor_branch_and_tag(self):
         branch = 'stable/havana'
         tag = 2013.2
         d = downloader.GitDownloader(self._uri, self._dst,
                                      branch=branch, tag=tag)
-        self.assertEqual(d._branch, branch)
         self.assertEqual(d._tag, str(tag))
+        self.assertEqual(d._sha1, None)
+
+    def test_constructor_sha1(self):
+        sha1 = 'abcd1234'
+        d = downloader.GitDownloader(self._uri, self._dst,
+                                     sha1=sha1)
+        self.assertEqual(d._tag, None)
+        self.assertEqual(d._sha1, 'abcd1234')
+
+    def test_constructor_raises_exception(self):
+        sha1 = 'abcd1234'
+        tag = 2013.2
+        kwargs = {"tag": tag, "sha1": sha1}
+        self.assertRaises(exceptions.ConfigException,
+                            downloader.GitDownloader,
+                            self._uri, self._dst, **kwargs)
