@@ -2,7 +2,6 @@
 
 from optparse import OptionParser
 
-import getpass
 import os
 import sys
 import yaml
@@ -17,10 +16,10 @@ if os.path.exists(os.path.join(possible_topdir,
     sys.path.insert(0, possible_topdir)
 
 
-from anvil import log as logging
-from anvil import importer
-from anvil import passwords
 from anvil.components.helpers import keystone
+from anvil import importer
+from anvil import log as logging
+from anvil import passwords
 from anvil import utils
 
 
@@ -41,7 +40,7 @@ def replace_services_endpoints(token, options):
     current_services = client.services.list()
 
     def filter_resource(r):
-        raw = dict(r.__dict__) # Can't access the raw attrs, arg...
+        raw = dict(r.__dict__)  # Can't access the raw attrs, arg...
         raw_cleaned = {}
         for k, v in raw.items():
             if k == 'manager' or k.startswith('_'):
