@@ -3,10 +3,10 @@
 ## Tool to run the nova config generating code and spit out a dummy
 ## version.  Useful for testing that code in isolation.
 
+import atexit
 import os
 import sys
 import tempfile
-import atexit
 
 possible_topdir = os.path.normpath(os.path.join(os.path.abspath(sys.argv[0]),
                                    os.pardir,
@@ -18,10 +18,9 @@ if os.path.exists(os.path.join(possible_topdir,
     sys.path.insert(0, possible_topdir)
 
 from anvil.components.helpers.nova import ConfConfigurator
-from anvil.trace import TraceWriter
-
-from anvil import utils
 from anvil import shell as sh
+from anvil.trace import TraceWriter
+from anvil import utils
 
 DUMMY_FILE = tempfile.mktemp()
 
@@ -74,7 +73,6 @@ class DummyInstaller(object):
 
     def __init__(self):
         self.tracewriter = TraceWriter(DUMMY_FILE)
-
 
 
 d = DummyInstaller()
