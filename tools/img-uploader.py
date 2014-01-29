@@ -2,7 +2,6 @@
 
 from optparse import OptionParser
 
-import getpass
 import os
 import sys
 
@@ -16,9 +15,8 @@ if os.path.exists(os.path.join(possible_topdir,
     sys.path.insert(0, possible_topdir)
 
 
-from anvil import log as logging
 from anvil.components.helpers import glance
-
+from anvil import log as logging
 from anvil import passwords
 
 
