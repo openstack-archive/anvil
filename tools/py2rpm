@@ -545,9 +545,11 @@ def build_rpm(options, filename):
         tags.append(("Vendor", "%s <%s>" % (info["author"], info["author-email"])))
         tags.append(("Url", info["home-page"]))
         max_name_len = max(len(tag[0]) for tag in tags)
-        for tag in tags:
-            print >> spec_file, "%s:" % tag[0], " " * (
-                max_name_len - len(tag[0]) + 1), one_line(tag[1], max_len=-1)
+        for tag_name, tag_value in tags:
+            if not tag_value:
+                tag_value = 'Unknown'
+            print >> spec_file, "%s:" % tag_name, " " * (
+                max_name_len - len(tag_name) + 1), one_line(tag_value, max_len=-1)
         if rpm_requires:
             print >> spec_file, rpm_requires
         if rpm_conflicts:
