@@ -23,6 +23,7 @@ import urllib2
 import progressbar
 
 from anvil import colorizer
+from anvil import exceptions
 from anvil import log as logging
 from anvil import shell as sh
 
@@ -45,20 +46,31 @@ class GitDownloader(Downloader):
 
     def __init__(self, uri, dst, **kwargs):
         Downloader.__init__(self, uri, dst)
-        self._branch = kwargs.get('branch', 'master')
-        try:
-            self._tag = str(kwargs['tag'])
-        except KeyError:
-            self._tag = None
+        self._branch = self._get_string_from_dict(kwargs, 'branch')
+        self._tag = self._get_string_from_dict(kwargs, 'tag')
+        self._sha1 = self._get_string_from_dict(kwargs, 'sha1')
+        git_sources = len([a for a in (self._tag, self._sha1, self._branch) if a])
+        if git_sources > 1:
+            raise exceptions.ConfigException('Too many sources. Please, '
+                                             'specify only one of tag/SHA1/branch.')
+        if not git_sources:
+            self._branch = 'master'
+
+    def _get_string_from_dict(self, params, key):
+        value = params.get(key)
+        if value:
+            value = str(value)
+        return value
 
     def download(self):
         branch = self._branch
         tag = self._tag
-        if tag:
+        start_point = self._sha1 or self._tag
+        if start_point:
             # Avoid 'detached HEAD state' message by moving to a
             # $tag-anvil branch for that tag
-            new_branch = "%s-%s" % (tag, 'anvil')
-            checkout_what = [tag, '-b', new_branch]
+            new_branch = "%s-%s" % (start_point[:8], 'anvil')
+            checkout_what = [start_point, '-b', new_branch]
         else:
             # Set it up to track the remote branch correctly
             new_branch = branch
@@ -78,7 +90,9 @@ class GitDownloader(Downloader):
                      branch, colorizer.quote(self._dst))
             cmd = ["git", "clone", self._uri, self._dst]
             sh.execute(cmd)
-        if tag:
+        if self._sha1:
+            LOG.info("Adjusting to SHA1 %s.", colorizer.quote(self._sha1))
+        elif tag:
             LOG.info("Adjusting to tag %s.", colorizer.quote(tag))
         else:
             LOG.info("Adjusting branch to %s.", colorizer.quote(branch))
