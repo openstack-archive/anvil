@@ -26,6 +26,7 @@ dependency_handler:
     arch_dependent:
     -   selenium
     -   xattr
+    -   PuLP
 commands:
     service:
         restart: service $NAME restart
