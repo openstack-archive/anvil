@@ -46,10 +46,11 @@ class Helper(object):
             "--rpm-base",
             self._rpmbuild_dir
         ]
-        cmdline += [
-            "--epoch-map"
-        ] + ["%s==%s" % (key, value)
-             for key, value in self._epoch_map.iteritems()]
+        if self._epoch_map:
+            cmdline += [
+                "--epoch-map"
+            ] + ["%s==%s" % (key, value)
+                 for key, value in self._epoch_map.iteritems()]
         if self._package_map:
             cmdline += [
                 "--package-map",
