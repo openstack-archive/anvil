@@ -23,6 +23,7 @@ dependency_handler:
         sqlalchemy-migrate: python-migrate
         qpid-python: python-qpid # Why is this one backwards :-/
         PyYAML: PyYAML
+        pyzmq: python-zmq
     arch_dependent:
     - selenium
     - xattr
@@ -407,6 +408,13 @@ components:
             api-cfn: openstack-heat-api-cfn
             api-cloudwatch: openstack-heat-api-cloudwatch
             engine: openstack-heat-engine
+    global-requirements:
+        action_classes:
+            install: anvil.components.global_requirements:GlobalRequirements
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
     ceilometer:
         pip:
         -   name: wsme
