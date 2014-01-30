@@ -16,10 +16,14 @@
 
 from anvil import exceptions as excp
 from anvil import log as logging
+from anvil import patcher
+from anvil import settings
 from anvil import shell as sh
+from anvil import trace as tr
 from anvil import type_utils as tu
 from anvil import utils
 
+from anvil.components.configurators import base as conf
 
 LOG = logging.getLogger(__name__)
 
@@ -124,3 +128,35 @@ class Component(object):
             except KeyError:
                 names.add("openstack-%s-%s" % (self.name, key))
         return names
+
+
+class BasicComponent(Component):
+    def __init__(self, *args, **kargs):
+        super(BasicComponent, self).__init__(*args, **kargs)
+        trace_fn = tr.trace_filename(self.get_option('trace_dir'), 'created')
+        self.tracewriter = tr.TraceWriter(trace_fn, break_if_there=False)
+        self.configurator = conf.Configurator(self)
+
+    def download(self):
+        return []
+
+    def list_patches(self, section):
+        what_patches = self.get_option('patches', section)
+        if not what_patches:
+            what_patches = [sh.joinpths(settings.CONFIG_DIR, 'patches',
+                                        self.name, section)]
+        canon_what_patches = []
+        for path in what_patches:
+            if sh.isdir(path):
+                patches = sorted(fn for fn in sh.listdir(path, files_only=True)
+                                 if fn.endswith('patch'))
+                canon_what_patches.extend(patches)
+            elif sh.isfile(path):
+                canon_what_patches.append(path)
+        return canon_what_patches
+
+    def patch(self, section):
+        canon_what_patches = self.list_patches(section)
+        if canon_what_patches:
+            target_dir = self.get_option('app_dir')
+            patcher.apply_patches(canon_what_patches, target_dir)
