@@ -67,5 +67,8 @@ trove-client:
 trove:
   repo: git://github.com/openstack/trove.git
   branch: stable/havana
+global-requirements:
+  repo: git://github.com/openstack/requirements.git
+  branch: stable/havana
 oslo-messaging:
   disabled: True
