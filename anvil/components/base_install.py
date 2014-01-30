@@ -15,49 +15,46 @@
 from anvil.components import base
 from anvil import downloader as down
 from anvil import log as logging
-from anvil import patcher
-from anvil import settings
 from anvil import shell as sh
 from anvil import trace as tr
 from anvil import utils
 
 from anvil.packaging.helpers import pip_helper
 
-from anvil.components.configurators import base as conf
-
 LOG = logging.getLogger(__name__)
 
 
-class PkgInstallComponent(base.Component):
+class InstallableMixin(base.Component):
     def __init__(self, *args, **kargs):
-        super(PkgInstallComponent, self).__init__(*args, **kargs)
-        trace_fn = tr.trace_filename(self.get_option('trace_dir'), 'created')
-        self.tracewriter = tr.TraceWriter(trace_fn, break_if_there=False)
-        self.configurator = conf.Configurator(self)
+        super(InstallableMixin, self).__init__(*args, **kargs)
 
-    def download(self):
-        return []
+    def pre_install(self):
+        pkgs = self.packages
+        for p in pkgs:
+            installer = self.distro.install_helper_class(distro=self.distro)
+            installer.pre_install(p, self.params)
 
-    def list_patches(self, section):
-        what_patches = self.get_option('patches', section)
-        if not what_patches:
-            what_patches = [sh.joinpths(settings.CONFIG_DIR, 'patches',
-                                        self.name, section)]
-        canon_what_patches = []
-        for path in what_patches:
-            if sh.isdir(path):
-                patches = sorted(fn for fn in sh.listdir(path, files_only=True)
-                                 if fn.endswith('patch'))
-                canon_what_patches.extend(patches)
-            elif sh.isfile(path):
-                canon_what_patches.append(path)
-        return canon_what_patches
+    def post_install(self):
+        pkgs = self.packages
+        for p in pkgs:
+            installer = self.distro.install_helper_class(distro=self.distro)
+            installer.post_install(p, self.params)
 
-    def patch(self, section):
-        canon_what_patches = self.list_patches(section)
-        if canon_what_patches:
-            target_dir = self.get_option('app_dir')
-            patcher.apply_patches(canon_what_patches, target_dir)
+
+class PythonComponent(base.BasicComponent):
+    def __init__(self, *args, **kargs):
+        super(PythonComponent, self).__init__(*args, **kargs)
+        app_dir = self.get_option('app_dir')
+        tools_dir = sh.joinpths(app_dir, 'tools')
+        self.requires_files = [
+            sh.joinpths(tools_dir, 'pip-requires'),
+            sh.joinpths(app_dir, 'requirements.txt'),
+        ]
+        self.test_requires_files = [
+            sh.joinpths(tools_dir, 'test-requires'),
+            sh.joinpths(app_dir, 'test-requirements.txt'),
+        ]
+        self._origins_fn = kargs['origins_fn']
 
     def config_params(self, config_fn):
         mp = dict(self.params)
@@ -78,67 +75,6 @@ class PkgInstallComponent(base.Component):
                 LOG.debug("Extending package list with packages for subsystem: %r", name)
                 pkg_list.extend(values.get('packages'))
         return pkg_list
-
-    def pre_install(self):
-        pkgs = self.packages
-        for p in pkgs:
-            installer = self.distro.install_helper_class(distro=self.distro)
-            installer.pre_install(p, self.params)
-
-    def post_install(self):
-        pkgs = self.packages
-        for p in pkgs:
-            installer = self.distro.install_helper_class(distro=self.distro)
-            installer.post_install(p, self.params)
-
-    def _configure_files(self):
-        config_fns = self.configurator.config_files
-        if config_fns:
-            utils.log_iterable(config_fns, logger=LOG,
-                               header="Configuring %s files" % (len(config_fns)))
-            for fn in config_fns:
-                tgt_fn = self.configurator.target_config(fn)
-                sh.mkdirslist(sh.dirname(tgt_fn), tracewriter=self.tracewriter)
-                (source_fn, contents) = self.configurator.source_config(fn)
-                LOG.debug("Configuring file %s ---> %s.", (source_fn), (tgt_fn))
-                contents = self.configurator.config_param_replace(fn, contents, self.config_params(fn))
-                contents = self.configurator.config_adjust(contents, fn)
-                sh.write_file(tgt_fn, contents, tracewriter=self.tracewriter)
-        return len(config_fns)
-
-    def configure(self):
-        files = self._configure_files()
-        if sh.isdir(self.cfg_dir):
-            uid = None
-            gid = None
-            try:
-                uid = sh.getuid(self.name)
-                gid = sh.getgid(self.name)
-            except (KeyError, AttributeError):
-                LOG.warn("Unable to find uid & gid for user & group %s", self.name)
-            if uid is not None and gid is not None:
-                try:
-                    sh.chown_r(self.cfg_dir, uid, gid)
-                except Exception as e:
-                    LOG.warn("Failed to change the ownership of %s to %s:%s due to: %s",
-                             self.cfg_dir, uid, gid, e)
-        return files
-
-
-class PythonInstallComponent(PkgInstallComponent):
-    def __init__(self, *args, **kargs):
-        PkgInstallComponent.__init__(self, *args, **kargs)
-        app_dir = self.get_option('app_dir')
-        tools_dir = sh.joinpths(app_dir, 'tools')
-        self.requires_files = [
-            sh.joinpths(tools_dir, 'pip-requires'),
-            sh.joinpths(app_dir, 'requirements.txt'),
-        ]
-        self.test_requires_files = [
-            sh.joinpths(tools_dir, 'test-requires'),
-            sh.joinpths(app_dir, 'test-requirements.txt'),
-        ]
-        self._origins_fn = kargs['origins_fn']
 
     def download(self):
         """Download sources needed to build the component, if any."""
@@ -169,6 +105,14 @@ class PythonInstallComponent(PkgInstallComponent):
         egg_info['dependencies'] = read_reqs(self.requires_files)
         egg_info['test_dependencies'] = read_reqs(self.test_requires_files)
         return egg_info
+
+
+class PkgInstallComponent(base.BasicComponent, InstallableMixin):
+    pass
+
+
+class PythonInstallComponent(PythonComponent, InstallableMixin):
+    pass
 
 
 class PkgUninstallComponent(base.Component):

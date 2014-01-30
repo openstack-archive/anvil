@@ -19,6 +19,9 @@ glance-client:
 glance:
   repo: git://github.com/openstack/glance.git
   branch: master
+global-requirements:
+  repo: git://github.com/openstack/requirements.git
+  branch: master
 heat-client:
   repo: git://github.com/openstack/python-heatclient.git
   branch: master

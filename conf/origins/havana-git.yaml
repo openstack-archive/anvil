@@ -19,6 +19,9 @@ glance-client:
 glance:
   repo: git://github.com/openstack/glance.git
   branch: stable/havana
+global-requirements:
+  repo: git://github.com/openstack/requirements.git
+  branch: stable/havana
 heat-client:
   repo: git://github.com/openstack/python-heatclient.git
   tag: 0.2.5
