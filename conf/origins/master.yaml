@@ -70,3 +70,6 @@ trove-client:
 trove:
   repo: git://github.com/openstack/trove.git
   branch: master
+global-requirements:
+  repo: git://github.com/openstack/requirements.git
+  branch: master
