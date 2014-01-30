@@ -67,5 +67,7 @@ trove-client:
 trove:
   repo: git://github.com/openstack/trove.git
   tag: 2013.2.1
+global-requirements:
+  repo: git://github.com/openstack/requirements.git
 oslo-messaging:
   disabled: True

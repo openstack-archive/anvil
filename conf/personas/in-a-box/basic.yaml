@@ -4,6 +4,7 @@ components:
 - general
 - db
 - rabbit-mq
+- global-requirements
 - oslo-config
 - oslo-messaging
 - keystone
