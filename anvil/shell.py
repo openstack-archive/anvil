@@ -179,7 +179,7 @@ def execute(cmd,
     else:
         # Log it anyway
         if rc not in check_exit_code:
-            LOG.debug("A failure may of just happened when running command %r [%s] (%s, %s)",
+            LOG.debug("A failure may have just happened when running command %r [%s] (%s, %s)",
                       str_cmd, rc, stdout, stderr)
         # See if a requested storage place was given for stderr/stdout
         for name, handle in ((stdout_fn, stdout), (stderr_fn, stderr)):
