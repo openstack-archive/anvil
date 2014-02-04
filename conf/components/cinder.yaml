@@ -6,4 +6,8 @@ api_host: "$(auto:ip)"
 api_port: 8776
 protocol: http
 
+# Used for associating the client package with a human understandable
+# name in its package description (not a code-name, like cinder).
+api_name: "Volume"
+
 ...

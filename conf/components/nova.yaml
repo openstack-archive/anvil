@@ -117,6 +117,10 @@ vncserver_listen: 127.0.0.1
 vncserver_proxyclient_address: ""
 xvpvncproxy_url: "http://$(auto:ip):6081/console"
 
+# Used for associating the client package with a human understandable
+# name in its package description (not a code-name, like nova).
+api_name: "Compute"
+
 # Test exclusions...
 #
 # TODO(harlowja) these should probably be bugs...

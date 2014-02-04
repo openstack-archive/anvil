@@ -29,4 +29,8 @@ image_cache_dir: "/usr/share/anvil/glance/images"
 # Used by install section in the specfile (conflicts with the client binary...)
 remove_file: "/bin/rm -rf %{buildroot}/usr/bin/glance"
 
+# Used for associating the client package with a human understandable
+# name in its package description (not a code-name, like glance).
+api_name: "Image"
+
 ...

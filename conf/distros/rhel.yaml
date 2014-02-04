@@ -24,9 +24,9 @@ dependency_handler:
         qpid-python: python-qpid # Why is this one backwards :-/
         PyYAML: PyYAML
     arch_dependent:
-    -   selenium
-    -   xattr
-    -   PuLP
+    - selenium
+    - xattr
+    - PuLP
 commands:
     service:
         restart: service $NAME restart

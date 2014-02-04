@@ -11,6 +11,10 @@ service_host: "$(auto:ip)"
 service_port: 5000
 service_proto: http
 
+# Used for associating the client package with a human understandable
+# name in its package description (not a code-name, like keystone).
+api_name: "Identity"
+
 # Test exclusions...
 #
 # TODO(harlowja) these should probably be bugs...
