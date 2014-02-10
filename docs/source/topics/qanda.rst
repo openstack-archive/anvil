@@ -51,12 +51,13 @@ An example of this, lets adjust ``nova`` to use the ``stable/essex`` branch.
         branch: stable/essex
 
 - Component origin parameters are:
-  - ``repo: <repo_url>`` - required
-  - ``branch: <branch>`` - optional
-  - ``tag: <tag>`` - optional
+    - ``repo: <repo_url>`` - required
+    - ``branch: <branch>`` - optional
+    - ``tag: <tag>`` - optional
+
   If no branch nor tag parameters were specified then ``branch: master`` is used by default.
 
-  - **Note:** tag overrides branch (so you can't really include both)
+  **Note:** tag overrides branch (so you can't really include both)
 
 
 `OMG` the images take forever to download!

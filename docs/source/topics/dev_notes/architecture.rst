@@ -103,7 +103,7 @@ Anvil is designed to have the following set of software components:
   configuration driven (code when you need it but avoid it if you can).
   Distributions as seen by the ``conf/distros`` folder specify
   distribution-specific *configuration* that can be referenced by standard keys by a given
-  component. Each component also receives additonal configuration (accessible via a components
+  component. Each component also receives additional configuration (accessible via a components
   ``get_option`` function) via the yaml files specified in ``conf/components`` which
   provides for a way to have configuration that is not distribution specific but instead
   is component specific (say for configuring *nova* to use kvm instead of qemu). This
