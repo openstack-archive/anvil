@@ -18,15 +18,15 @@ import mock
 import os
 import shutil
 import tempfile
-import unittest
 
 from anvil import cfg
 from anvil import exceptions
 from anvil import shell
+from anvil import test
 from anvil import utils
 
 
-class TestYamlRefLoader(unittest.TestCase):
+class TestYamlRefLoader(test.TestCase):
 
     def setUp(self):
         super(TestYamlRefLoader, self).setUp()
@@ -567,7 +567,7 @@ class TestYamlRefLoader(unittest.TestCase):
         self.assertEqual(processed['stable'], 12)
 
 
-class TestYamlMergeLoader(unittest.TestCase):
+class TestYamlMergeLoader(test.TestCase):
 
     def setUp(self):
         super(TestYamlMergeLoader, self).setUp()

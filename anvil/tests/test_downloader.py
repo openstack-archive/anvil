@@ -14,15 +14,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import unittest
-
 from anvil import downloader
 from anvil import exceptions
+from anvil import test
 
 
-class TestGitDownloader(unittest.TestCase):
+class TestGitDownloader(test.TestCase):
 
     def setUp(self):
+        super(TestGitDownloader, self).setUp()
         self._uri = 'https://github.com/stackforge/anvil.git'
         self._dst = '/root/anvil'
         self._sha1 = '0a4d55a8d778e5022fab701977c5d840bbc486d0'

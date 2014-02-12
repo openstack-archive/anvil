@@ -84,29 +84,17 @@ class DependencyException(AnvilException):
 
 
 class ProcessExecutionError(IOError):
-    def __init__(self, stdout=None, stderr=None,
-                 exit_code=None, cmd=None,
+    def __init__(self, cmd, stdout='', stderr='', exit_code=None,
                  description=None):
-        self.exit_code = exit_code
-        self.stderr = stderr
-        self.stdout = stdout
-        self.cmd = cmd
-        self.description = description
-        if not self.cmd:
-            self.cmd = '-'
-        if not self.description:
-            self.description = 'Unexpected error while running command.'
-        if not isinstance(self.exit_code, (long, int)):
-            self.exit_code = '-'
-        if not self.stderr:
-            self.stderr = ''
-        if not self.stdout:
-            self.stdout = ''
-        message = ('%s\nCommand: %s\n'
-                    'Exit code: %s\nStdout: %r\n'
-                    'Stderr: %r' % (self.description, self.cmd,
-                                            self.exit_code, self.stdout,
-                                            self.stderr))
+        if not isinstance(exit_code, (long, int)):
+            exit_code = '-'
+        if not description:
+            description = 'Unexpected error while running command.'
+        message = ('%s\n' % description +
+                   'Command: %s\n' % cmd +
+                   'Exit code: %s\n' % exit_code +
+                   'Stdout: %s\n' % stdout +
+                   'Stderr: %s' % stderr)
         IOError.__init__(self, message)
 
 
