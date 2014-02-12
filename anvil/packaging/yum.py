@@ -431,7 +431,7 @@ class YumDependencyHandler(base.DependencyHandler):
             spec_filename,
         ]
         out_filename = sh.joinpths(self.log_dir, "rpmbuild-%s.log" % instance.name)
-        sh.execute_save_output(cmdline, out_filename=out_filename)
+        sh.execute(cmdline, save_output=out_filename)
 
     def _write_git_tarball(self, instance, pkg_dir, spec_filename):
         cmdline = [
@@ -453,7 +453,7 @@ class YumDependencyHandler(base.DependencyHandler):
             "HEAD",
         ]
         out_filename = sh.joinpths(self.log_dir, "git-tar-%s.log" % instance.name)
-        sh.execute_save_output(cmdline, cwd=pkg_dir, out_filename=out_filename)
+        sh.execute(cmdline, cwd=pkg_dir, save_output=out_filename)
         sh.gzip(output_filename)
         sh.unlink(output_filename)
 
@@ -476,7 +476,7 @@ class YumDependencyHandler(base.DependencyHandler):
             "--dist-dir", self.rpm_sources_dir,
         ]
         out_filename = sh.joinpths(self.log_dir, "sdist-%s.log" % (instance.name))
-        sh.execute_save_output(cmdline, cwd=pkg_dir, out_filename=out_filename)
+        sh.execute(cmdline, cwd=pkg_dir, save_output=out_filename)
         archive_name = sh.joinpths(self.rpm_sources_dir, "%s.tar" % (base_name))
         if ensure_exists:
             with contextlib.closing(tarfile.open(archive_name, 'r')) as tfh:

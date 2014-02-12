@@ -84,30 +84,27 @@ class DependencyException(AnvilException):
 
 
 class ProcessExecutionError(IOError):
-    def __init__(self, stdout=None, stderr=None,
-                 exit_code=None, cmd=None,
-                 description=None):
-        self.exit_code = exit_code
-        self.stderr = stderr
-        self.stdout = stdout
-        self.cmd = cmd
-        self.description = description
-        if not self.cmd:
-            self.cmd = '-'
-        if not self.description:
-            self.description = 'Unexpected error while running command.'
-        if not isinstance(self.exit_code, (long, int)):
-            self.exit_code = '-'
-        if not self.stderr:
-            self.stderr = ''
-        if not self.stdout:
-            self.stdout = ''
-        message = ('%s\nCommand: %s\n'
-                    'Exit code: %s\nStdout: %r\n'
-                    'Stderr: %r' % (self.description, self.cmd,
-                                            self.exit_code, self.stdout,
-                                            self.stderr))
+    def __init__(self, cmd, stdout='', stderr='', exit_code=None,
+                 description=None, stdout_tail=5):
+        self._cmd = cmd
+        self._stdout = self._tail(stdout, stdout_tail)
+        self._stderr = stderr
+        self._exit_code = exit_code
+        if not isinstance(self._exit_code, (long, int)):
+            self._exit_code = '-'
+        self._description = description
+        if not self._description:
+            self._description = 'Unexpected error while running command.'
+        message = ('%s\nCommand: %s\nExit code: %s\nStdout: %r\nStderr: %r' %
+                   (self._description, self._cmd, self._exit_code,
+                    self._stdout, self._stderr))
         IOError.__init__(self, message)
+
+    @staticmethod
+    def _tail(text, count):
+        if text is not None:
+            return ''.join(text.splitlines(True)[-count:])
+        return text
 
 
 class YamlException(ConfigException):
