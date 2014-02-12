@@ -426,16 +426,15 @@ def kill(pid, max_try=4, wait_time=1):
     if not is_running(pid) or is_dry_run():
         return (True, 0)
     proc = Process(pid)
-    # Try the nicer sig-int first...
-    (killed, i_attempts) = _attempt_kill(proc, signal.SIGINT, int(max_try / 2), wait_time)
+    # Try the nicer sig-int first.
+    (killed, i_attempts) = _attempt_kill(proc, signal.SIGINT,
+                                         int(max_try / 2), wait_time)
     if killed:
         return (True, i_attempts)
-    # Get agressive and try sig-kill....
-    (killed, k_attempts) = _attempt_kill(proc, signal.SIGKILL, int(max_try / 2), wait_time)
-    if killed:
-        return (True, i_attempts + k_attempts)
-    else:
-        return (False, i_attempts + k_attempts)
+    # Get aggressive and try sig-kill.
+    (killed, k_attempts) = _attempt_kill(proc, signal.SIGKILL,
+                                         int(max_try / 2), wait_time)
+    return (killed, i_attempts + k_attempts)
 
 
 def is_running(pid):
