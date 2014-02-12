@@ -15,20 +15,20 @@
 #    under the License.
 
 import StringIO
-import unittest
 
 from anvil import ini_parser
+from anvil import test
 
 
-class TestAnvilConfigParser(unittest.TestCase):
+class TestAnvilConfigParser(test.TestCase):
 
     def setUp(self):
         super(TestAnvilConfigParser, self).setUp()
         self.config_parser = ini_parser.AnvilConfigParser()
 
     def _read_ini(self, ini):
-        steam = StringIO.StringIO(ini)
-        self.config_parser.readfp(steam)
+        stream = StringIO.StringIO(ini)
+        self.config_parser.readfp(stream)
 
     def test_commented_option_regexp_simple(self):
         regexp = self.config_parser.option_regex

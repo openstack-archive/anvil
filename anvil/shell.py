@@ -81,167 +81,119 @@ def is_dry_run():
     return bool(IS_DRYRUN)
 
 
-# Originally borrowed from nova computes execute...
+# Originally borrowed from nova compute execute.
 def execute(cmd,
             process_input=None,
             check_exit_code=True,
             cwd=None,
             shell=False,
             env_overrides=None,
-            stdout_fh=None,
-            stderr_fh=None,
-            stdout_fn=None,
-            stderr_fn=None,
-            trace_writer=None):
-    """Helper method to execute command.
+            stdout_fh=subprocess.PIPE,
+            stderr_fh=subprocess.PIPE):
+    """Helper method to execute a command through subprocess.
 
-    :param cmd:             Passed to subprocess.Popen
-    :param process_input:   Send to opened process
-    :param check_exit_code: Single `bool`, `int`, or `list` of allowed exit
-                            codes.  By default, only 0 exit code is allowed.
-                            Raise :class:`exceptions.ProcessExecutionError`
-                            unless program exits with one of these code
-
-    :returns: a tuple, (stdout, stderr) from the spawned process, or None if
-              the command fails
+    :param cmd:             Command passed to subprocess.Popen.
+    :param process_input:   Input send to opened process.
+    :param check_exit_code: Specifies whether to check process return code.
+                            If return code is other then `0` - exception will
+                            be raised.
+    :param cwd:             The child's current directory will be changed to
+                            `cwd` before it is executed.
+    :param shell:           Specifies whether to use the shell as the program
+                            to execute.
+    :param env_overrides:   Process environment parameters to override.
+    :param stdout_fh:       Stdout file handler.
+    :param stderr_fh:       Stderr file handler.
+    :returns:               A tuple, (stdout, stderr) from the spawned process,
+                            or None if the command fails.
+    :raises:                :class:`exceptions.ProcessExecutionError` when
+                            process ends with other then `0` return code.
     """
-    if isinstance(check_exit_code, (bool)):
-        ignore_exit_code = not check_exit_code
-        check_exit_code = [0]
-    elif isinstance(check_exit_code, (int)):
-        check_exit_code = [check_exit_code]
+    # Ensure all string args (i.e. for those that send ints, etc.).
+    cmd = map(str, cmd)
 
-    # Ensure all string args (ie for those that send ints and such...)
-    execute_cmd = [str(c) for c in cmd]
-
-    # From the docs it seems a shell command must be a string??
-    # TODO(harlowja) this might not really be needed?
-    str_cmd = " ".join(shellquote(word) for word in cmd)
-
+    # NOTE(skudriashev): If shell is True, it is recommended to pass args as a
+    # string rather than as a sequence.
+    str_cmd = subprocess.list2cmdline(cmd)
     if shell:
-        execute_cmd = str_cmd
-
-    if not shell:
-        LOG.debug('Running cmd: %r' % (execute_cmd))
+        cmd = str_cmd
+        LOG.debug('Running shell cmd: %r' % cmd)
     else:
-        LOG.debug('Running shell cmd: %r' % (execute_cmd))
+        LOG.debug('Running cmd: %r' % cmd)
 
     if process_input is not None:
-        LOG.debug('With stdin: %s' % (process_input))
+        process_input = str(process_input)
+        LOG.debug('Process input: %s' % process_input)
+
     if cwd:
-        LOG.debug("In working directory: %r" % (cwd))
+        LOG.debug('Process working directory: %r' % cwd)
 
-    if stdout_fn is not None and stdout_fh is not None:
-        LOG.warn("Stdout file handles and stdout file names can not be used simultaneously!")
-    if stderr_fn is not None and stderr_fh is not None:
-        LOG.warn("Stderr file handles and stderr file names can not be used simultaneously!")
-
+    # Override process environment in needed.
     process_env = None
     if env_overrides and len(env_overrides):
         process_env = env.get()
-        for (k, v) in env_overrides.items():
+        for k, v in env_overrides.items():
             process_env[k] = str(v)
 
-    rc = None
+    # Run command process.
     result = ("", "")
     if is_dry_run():
         rc = 0
     else:
-        stdin_fh = subprocess.PIPE
-        if stdout_fn or (stdout_fh is None):
-            stdout_fh = subprocess.PIPE
-        if stderr_fn or (stderr_fh is None):
-            stderr_fh = subprocess.PIPE
         try:
-            obj = subprocess.Popen(execute_cmd, stdin=stdin_fh, stdout=stdout_fh, stderr=stderr_fh,
-                                   close_fds=True, cwd=cwd, shell=shell, env=process_env)
-            if process_input is not None:
-                result = obj.communicate(str(process_input))
-            else:
-                result = obj.communicate()
+            obj = subprocess.Popen(cmd, stdin=subprocess.PIPE,
+                                   stdout=stdout_fh, stderr=stderr_fh,
+                                   close_fds=True, shell=shell, cwd=cwd,
+                                   env=process_env)
+            result = obj.communicate(process_input)
         except OSError as e:
-            raise excp.ProcessExecutionError(description="%s: [%s, %s]" % (e, e.errno, e.strerror),
-                                             cmd=str_cmd)
-        rc = obj.returncode
-
-    if stdout_fh != subprocess.PIPE:
-        stdout = "<redirected to %s>" % (stdout_fn or stdout_fh)
-    else:
-        stdout = result[0] or ""
-    if stderr_fh != subprocess.PIPE:
-        stderr = "<redirected to %s>" % (stderr_fn or stderr_fh)
-    else:
-        stderr = result[1] or ""
-
-    if (not ignore_exit_code) and (rc not in check_exit_code):
-        raise excp.ProcessExecutionError(exit_code=rc, stdout=stdout,
-                                         stderr=stderr, cmd=str_cmd)
-    else:
-        # Log it anyway
-        if rc not in check_exit_code:
-            LOG.debug("A failure may have just happened when running command %r [%s] (%s, %s)",
-                      str_cmd, rc, stdout, stderr)
-        # See if a requested storage place was given for stderr/stdout
-        for name, handle in ((stdout_fn, stdout), (stderr_fn, stderr)):
-            if name:
-                write_file(name, handle)
-                if trace_writer:
-                    trace_writer.file_touched(name)
-        return (stdout, stderr)
-
-
-def execute_save_output2(cmd, **kwargs):
-    kwargs = kwargs.copy()
-
-    watch_open = []
-    save_stdout = False
-    stdout_filename = kwargs.pop('stdout_filename', None)
-    if stdout_filename:
-        save_stdout = True
-        mkdirslist(dirname(stdout_filename))
-        watch_open.append(stdout_filename)
-    is_same = False
-    save_stderr = False
-    stderr_filename = kwargs.pop('stderr_filename', None)
-    if stderr_filename:
-        save_stderr = True
-        if stdout_filename == stderr_filename and save_stdout:
-            is_same = True
+            raise excp.ProcessExecutionError(
+                cmd=str_cmd,
+                description="%s: [%s, %s]" % (e, e.errno, e.strerror)
+            )
         else:
-            mkdirslist(dirname(stderr_filename))
-            watch_open.append(stderr_filename)
+            rc = obj.returncode
 
-    was_opened = []
-    try:
-        if save_stdout:
-            out = open(stdout_filename, "wb")
-            was_opened.append(out)
-            kwargs["stdout_fh"] = out
-        if save_stderr:
-            if is_same:
-                kwargs["stderr_fh"] = kwargs["stdout_fh"]
-            else:
-                out = open(stderr_filename, "wb")
-                was_opened.append(out)
-                kwargs["stderr_fh"] = out
-        if watch_open:
-            LOG.info("You can watch progress in another terminal with:")
-            for p in watch_open:
-                LOG.info("    tail -f %s", p)
-        return execute(cmd, **kwargs)
-    finally:
-        for fh in was_opened:
-            try:
-                fh.close()
-            except IOError:
-                pass
+    # Handle process exit code.
+    stdout = result[0] or ""
+    stderr = result[1] or ""
+    if rc != 0 and check_exit_code:
+        # NOTE(skudriashev): Print full output to the debug log, since only
+        # tail will be shown in the exception.
+        if stdout_fh == subprocess.PIPE:
+            LOG.debug("Command stdout: %s" % stdout)
+            stdout = "<redirected to debug log>\n...\n%s" % tail(stdout)
+        else:
+            stdout = "<redirected to %s>" % stdout_fh
+        if stderr_fh == subprocess.PIPE:
+            LOG.debug("Command stderr: %s" % stderr)
+            stderr = "<redirected to debug log>\n...\n%s" % tail(stderr)
+        else:
+            stderr = "<redirected to %s>" % stderr_fh
+
+        raise excp.ProcessExecutionError(cmd=str_cmd, stdout=stdout,
+                                         stderr=stderr, exit_code=rc)
+
+    return stdout, stderr
 
 
-def execute_save_output(cmd, out_filename, **kwargs):
+def execute_save_output(cmd, file_name, **kwargs):
+    """Helper method to execute a command through subprocess and save stdout
+    and stderr into file."""
     kwargs = kwargs.copy()
-    kwargs['stderr_filename'] = out_filename
-    kwargs['stdout_filename'] = out_filename
-    execute_save_output2(cmd, **kwargs)
+    mkdirslist(dirname(file_name))
+    with open(file_name, 'wb') as fh:
+        LOG.info("You can watch progress in another terminal with:")
+        LOG.info("    tail -f %s", file_name)
+        return execute(cmd, stdout_fh=fh, stderr_fh=fh, **kwargs)
+
+
+def tail(text, count=5):
+    if text is not None:
+        lines = text.splitlines(True)
+        if len(lines) > count:
+            return ''.join(lines[-count:])
+    return text
 
 
 @contextlib.contextmanager

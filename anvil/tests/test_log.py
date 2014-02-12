@@ -16,12 +16,12 @@
 
 import os
 import tempfile
-import unittest
 
 from anvil import log
+from anvil import test
 
 
-class TestLog(unittest.TestCase):
+class TestLog(test.TestCase):
     def setUp(self):
         super(TestLog, self).setUp()
         self.test_logger = log.getLogger().logger
