@@ -39,10 +39,10 @@ class TestYamlRefLoader(unittest.TestCase):
         self.loader = cfg.YamlRefLoader(self.temp_dir)
 
     def tearDown(self):
-        super(TestYamlRefLoader, self).tearDown()
-
         shutil.rmtree(self.temp_dir, ignore_errors=True)
         del self.loader
+
+        super(TestYamlRefLoader, self).tearDown()
 
     def _write_samples(self):
         with open(os.path.join(self.temp_dir, 'sample.yaml'), 'w') as f:

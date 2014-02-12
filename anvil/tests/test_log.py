@@ -29,9 +29,9 @@ class TestLog(unittest.TestCase):
         self.log_name = tempfile.mkstemp()[1]
 
     def tearDown(self):
-        super(TestLog, self).tearDown()
         if os.path.isfile(self.log_name):
             os.remove(self.log_name)
+        super(TestLog, self).tearDown()
 
     def test_logger_has_two_handlers(self):
         log.setupLogging(log.INFO, log_name=self.log_name)

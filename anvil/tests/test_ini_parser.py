@@ -26,10 +26,6 @@ class TestAnvilConfigParser(unittest.TestCase):
         super(TestAnvilConfigParser, self).setUp()
         self.config_parser = ini_parser.AnvilConfigParser()
 
-    def tearDown(self):
-        super(TestAnvilConfigParser, self).tearDown()
-        del self.config_parser
-
     def _read_ini(self, ini):
         steam = StringIO.StringIO(ini)
         self.config_parser.readfp(steam)
