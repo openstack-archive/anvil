@@ -86,8 +86,8 @@ class GitDownloader(Downloader):
             cmd = ["git", "fetch", "origin"]
             sh.execute(cmd, cwd=self._dst)
         else:
-            LOG.info("Downloading %s (%s) to %s.", colorizer.quote(self._uri),
-                     branch, colorizer.quote(self._dst))
+            LOG.info("Downloading %s to %s.", colorizer.quote(self._uri),
+                     colorizer.quote(self._dst))
             cmd = ["git", "clone", self._uri, self._dst]
             sh.execute(cmd)
         if self._sha1:
