@@ -26,8 +26,8 @@ LOG = logging.getLogger(__name__)
 
 # Sync db command
 SYNC_DB_CMD = ['sudo', '-u', 'cinder', '/usr/bin/cinder-manage',
-                # Available commands:
-                'db', 'sync']
+               # Available commands:
+               'db', 'sync']
 
 
 class CinderInstaller(binstall.PythonInstallComponent):

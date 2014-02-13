@@ -188,6 +188,6 @@ class NovaRuntime(bruntime.OpenStackRuntime):
                 LOG.info("Libvirt virtualization type %s seems to be working and running.", colorizer.quote(virt_type))
             except excp.ProcessExecutionError as e:
                 msg = ("Libvirt type %r does not seem to be active or configured correctly, "
-                        "perhaps you should be using %r instead: %s" %
-                        (virt_type, lv.DEF_VIRT_TYPE, e))
+                       "perhaps you should be using %r instead: %s" %
+                       (virt_type, lv.DEF_VIRT_TYPE, e))
                 raise excp.StartException(msg)
