@@ -194,7 +194,7 @@ class YumDependencyHandler(base.DependencyHandler):
                 continue
             utils.log_iterable(src_repo_files,
                                header=('Building %s RPM packages from their'
-                                      ' SRPMs for repo %s using %s jobs') %
+                                       ' SRPMs for repo %s using %s jobs') %
                                       (len(src_repo_files), self.SRC_REPOS[repo_name], self._jobs),
                                logger=LOG)
             rpmbuild_flags = "--rebuild"

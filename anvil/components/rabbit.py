@@ -112,10 +112,10 @@ class RabbitRuntime(bruntime.ProgramRuntime):
             st = bruntime.STATUS_STARTED
         return [
             bruntime.ProgramStatus(status=st,
-                               details={
-                                   'STDOUT': sysout,
-                                   'STDERR': stderr,
-                               }),
+                                   details={
+                                       'STDOUT': sysout,
+                                       'STDERR': stderr
+                                   })
         ]
 
     def _run_action(self, action, check_exit_code=True):
