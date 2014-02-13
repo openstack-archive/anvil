@@ -1,10 +1,8 @@
 # Python files
-.venv
 *.pyc
 /build/
 /dist/
 /tools/yyoomc
-.coverage
 *.egg-info
 
 doc/source/sourcecode
@@ -30,6 +28,14 @@ TAGS
 pycharm-debug.egg
 pycharm-debug.py
 
+# Unit test / coverage reports
+.coverage
+.tox
+nosetests.xml
+.venv
+cover
+.testrepository
+htmlcov
 
 # Temp and status files
 *.db
