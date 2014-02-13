@@ -123,8 +123,8 @@ class DBInstaller(binstall.PkgInstallComponent):
                     cmds = [{'cmd': pwd_cmd}]
                     utils.execute_template(*cmds, params=params)
         except IOError:
-            LOG.warn(("Couldn't set your db password. It might have already been "
-                       "set by a previous process."))
+            LOG.warn(("Couldn't set your db password. It might have already "
+                      "been set by a previous process."))
 
         # Ensure access granted
         dbhelper.grant_permissions(dbtype,

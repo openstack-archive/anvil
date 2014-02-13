@@ -206,7 +206,7 @@ class Unpacker(object):
             pieces.append("%s (kernel image)" % (colorizer.quote(kernel_fn)))
         if pieces:
             utils.log_iterable(pieces, logger=LOG,
-                                header="Found %s images from a %s" % (len(pieces), src_type))
+                               header="Found %s images from a %s" % (len(pieces), src_type))
 
     def _unpack_dir(self, dir_path):
         """Pick through a directory to figure out which files are which
@@ -444,7 +444,7 @@ class UploadService(object):
                 LOG.exception('Failed fetching needed clients for image calls due to: %s', e)
                 return am_installed
             utils.log_iterable(urls, logger=LOG,
-                                header="Attempting to download+extract+upload %s images" % len(urls))
+                               header="Attempting to download+extract+upload %s images" % len(urls))
             for url in urls:
                 try:
                     img_handle = Image(client, url,

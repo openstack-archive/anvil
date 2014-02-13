@@ -35,7 +35,7 @@ def get_token():
 
 def replace_services_endpoints(token, options):
     client = importer.construct_entry_point("keystoneclient.v2_0.client:Client",
-                                             token=token, endpoint=options.keystone_uri)
+                                            token=token, endpoint=options.keystone_uri)
     current_endpoints = client.endpoints.list()
     current_services = client.services.list()
 
