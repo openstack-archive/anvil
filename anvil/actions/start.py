@@ -39,7 +39,7 @@ class StartAction(action.Action):
             instances,
             "pre-start",
             *removals
-            )
+        )
         removals += ['stopped']
         self._run_phase(
             action.PhaseFunctors(
@@ -51,7 +51,7 @@ class StartAction(action.Action):
             instances,
             "start",
             *removals
-            )
+        )
         self._run_phase(
             action.PhaseFunctors(
                 start=lambda i: LOG.info('Post-starting %s.', colorizer.quote(i.name)),
@@ -62,4 +62,4 @@ class StartAction(action.Action):
             instances,
             "post-start",
             *removals
-            )
+        )

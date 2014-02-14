@@ -44,7 +44,7 @@ class UninstallAction(action.Action):
             instances,
             'unconfigure',
             *removals
-            )
+        )
 
         removals += ['post-install']
         self._run_phase(
@@ -57,7 +57,7 @@ class UninstallAction(action.Action):
             instances,
             'pre-uninstall',
             *removals
-            )
+        )
 
         removals += ['package-install', 'package-install-all-deps']
         general_package = "general"
@@ -73,4 +73,4 @@ class UninstallAction(action.Action):
             {general_package: instances[general_package]},
             "package-uninstall",
             *removals
-            )
+        )

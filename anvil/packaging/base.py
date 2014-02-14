@@ -302,7 +302,7 @@ class DependencyHandler(object):
         # NOTE(aababilov): user could have changed persona, so,
         # check that all requirements are downloaded
         if (sh.isfile(self.downloaded_flag_file) and
-            self._requirements_satisfied(pips_to_download, self.download_dir)):
+                self._requirements_satisfied(pips_to_download, self.download_dir)):
             LOG.info("All python dependencies have been already downloaded")
         else:
             pip_failures = []

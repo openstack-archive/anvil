@@ -68,7 +68,7 @@ class PythonTestingComponent(base.Component):
     def _get_pre_test_command(self):
         app_dir = self.get_option('app_dir')
         if (_using_testr(self.test_type, app_dir) and
-            not sh.isdir(sh.joinpths(app_dir, '.testrepository'))):
+                not sh.isdir(sh.joinpths(app_dir, '.testrepository'))):
             return ['testr', 'init']
         return None
 
