@@ -43,7 +43,7 @@ class RemoveAction(uninstall.UninstallAction):
             {general_package: instances[general_package]},
             "package-destroy",
             *removals
-            )
+        )
 
         removals += ['prepare', 'download', "download-patch"]
         self._run_phase(
@@ -56,7 +56,7 @@ class RemoveAction(uninstall.UninstallAction):
             instances,
             'uninstall',
             *removals
-            )
+        )
 
         removals += ['pre-install', 'post-install']
         self._run_phase(
@@ -69,4 +69,4 @@ class RemoveAction(uninstall.UninstallAction):
             instances,
             'post-uninstall',
             *removals
-            )
+        )

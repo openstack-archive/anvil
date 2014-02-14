@@ -53,7 +53,7 @@ class PrepareAction(action.Action):
             instances,
             "download",
             *removals
-            )
+        )
         self._run_phase(
             action.PhaseFunctors(
                 start=lambda i: LOG.info('Post-download patching %s.', colorizer.quote(i.name)),
@@ -64,7 +64,7 @@ class PrepareAction(action.Action):
             instances,
             "download-patch",
             *removals
-            )
+        )
         removals += ["package-destroy"]
         dependency_handler.package_start()
         self._run_phase(
@@ -77,5 +77,5 @@ class PrepareAction(action.Action):
             instances,
             "package",
             *removals
-            )
+        )
         dependency_handler.package_finish()

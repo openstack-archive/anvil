@@ -67,7 +67,7 @@ class InstallAction(action.Action):
             instances,
             "pre-install",
             *removals
-            )
+        )
 
         removals += ["package-uninstall", 'uninstall', "package-destroy"]
         dependency_handler_class = self.distro.dependency_handler_class
@@ -85,7 +85,7 @@ class InstallAction(action.Action):
             {general_package: instances[general_package]},
             "package-install",
             *removals
-            )
+        )
 
         removals += ['unconfigure']
         self._run_phase(
@@ -98,7 +98,7 @@ class InstallAction(action.Action):
             instances,
             "configure",
             *removals
-            )
+        )
 
         self._run_phase(
             action.PhaseFunctors(
@@ -110,4 +110,4 @@ class InstallAction(action.Action):
             instances,
             "post-install",
             *removals
-            )
+        )

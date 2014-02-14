@@ -44,8 +44,8 @@ def main():
                       action='append', help="image archive file or uri to upload to glance")
     (options, args) = parser.parse_args()
     # Why can't i iterate over this, sad...
-    if (not options.user or not options.tenant or not options.glance_uri
-        or not options.keystone_uri or not options.images):
+    if (not options.user or not options.tenant or not options.glance_uri or
+            not options.keystone_uri or not options.images):
         parser.error("options are missing, please try -h")
     logging.setupLogging(logging.DEBUG)
     params = {

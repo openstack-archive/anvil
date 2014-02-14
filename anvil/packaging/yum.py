@@ -121,7 +121,7 @@ class YumDependencyHandler(base.DependencyHandler):
         params["no_tests"] = 0 if tests_package.get('enabled', True) else 1
         params["exclude_from_test_env"] = ['./bin', './build*']
         params["exclude_from_test_env"].extend(
-                tests_package.get("exclude_from_env", ()))
+            tests_package.get("exclude_from_env", ()))
         return params
 
     def _create_rpmbuild_subdirs(self):
@@ -370,9 +370,9 @@ class YumDependencyHandler(base.DependencyHandler):
         params["test_requires"] = test_requires_what
         params["epoch"] = self.OPENSTACK_EPOCH
         params["part_fn"] = lambda filename: sh.joinpths(
-                settings.TEMPLATE_DIR,
-                self.SPEC_TEMPLATE_DIR,
-                filename)
+            settings.TEMPLATE_DIR,
+            self.SPEC_TEMPLATE_DIR,
+            filename)
 
         content = utils.load_template(self.SPEC_TEMPLATE_DIR, template_name)[1]
         spec_filename = sh.joinpths(self.rpmbuild_dir, "SPECS", "%s.spec" % rpm_name)

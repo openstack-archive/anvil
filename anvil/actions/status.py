@@ -102,4 +102,4 @@ class StatusAction(action.Action):
             component_order,
             instances,
             None,
-            )
+        )

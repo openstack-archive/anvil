@@ -44,4 +44,4 @@ class StopAction(action.Action):
             instances,
             "stopped",
             *removals
-            )
+        )

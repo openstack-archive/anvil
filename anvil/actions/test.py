@@ -43,7 +43,7 @@ class TestAction(action.Action):
             {general_package: instances[general_package]},
             "package-install-all-deps"
             # no removals
-            )
+        )
         self._run_phase(
             action.PhaseFunctors(
                 start=lambda i: LOG.info('Running tests of component %s.',
@@ -54,4 +54,4 @@ class TestAction(action.Action):
             component_order,
             instances,
             None,
-            )
+        )
