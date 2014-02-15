@@ -230,7 +230,8 @@ class RewritableConfigParser(ConfigHelperMixin, AnvilConfigParser, StringiferMix
 
 class DefaultConf(object):
     """This class represents the data/format of the config file with
-    a large DEFAULT section"""
+    a large DEFAULT section.
+    """
 
     current_section = "DEFAULT"
 
