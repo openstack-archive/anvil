@@ -190,7 +190,7 @@ class YamlRefLoader(object):
         return processed
 
     def _precache(self):
-        """Cache and process predefined auto-references"""
+        """Cache and process predefined auto-references."""
         for conf, options in self._predefined_refs.items():
             if conf not in self._processed:
                 processed = dict((option, functor())
