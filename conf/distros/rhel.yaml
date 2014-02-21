@@ -19,6 +19,7 @@ dependency_handler:
         pyopenssl: pyOpenSSL
         pyparsing: pyparsing
         pysendfile: pysendfile
+        IPy: python-IPy
         pytz: pytz
         sqlalchemy-migrate: python-migrate
         qpid-python: python-qpid # Why is this one backwards :-/
