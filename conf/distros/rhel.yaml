@@ -8,6 +8,7 @@ dependency_handler:
     package_map:
         distribute: python-setuptools
         django: Django
+        IPy: python-IPy
         m2crypto: m2crypto
         mysql-python: MySQL-python
         numpy: numpy
