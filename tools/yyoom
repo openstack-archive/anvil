@@ -379,7 +379,7 @@ def _parse_arguments(args):
     parser_cleanall = subparsers.add_parser('cleanall', help='clean all')
     parser_cleanall.set_defaults(func=_cleanall, operation='Cleanall')
 
-    return parser.parse_args(args[1:])
+    return parser.parse_args(args[1:] or ['--help'])
 
 
 def _setup_logging(verbose=True, logfile=None, quiet=False):
