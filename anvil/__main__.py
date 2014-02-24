@@ -225,7 +225,7 @@ def main():
     except excp.PermException as e:
         print_exc(e)
         print(("This program should be running via %s as it performs some root-only commands is it not?")
-                % (colorizer.quote('sudo', quote_color='red')))
+              % (colorizer.quote('sudo', quote_color='red')))
         return 2
     except excp.OptionException as e:
         print_exc(e)
