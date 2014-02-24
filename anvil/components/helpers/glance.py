@@ -111,8 +111,13 @@ class Unpacker(object):
         kernel_fn = None
         ramdisk_fn = None
         img_fn = None
-        utils.log_iterable(files, logger=LOG,
-              header="Looking at %s files from %s to find the kernel/ramdisk/root images" % (len(files), colorizer.quote(files_location)))
+        utils.log_iterable(
+            files,
+            logger=LOG,
+            header="Looking at %s files from %s to find the "
+                   "kernel/ramdisk/root images" %
+                   (len(files), colorizer.quote(files_location))
+        )
 
         for fn in files:
             if self._pat_checker(fn, KERNEL_CHECKS):

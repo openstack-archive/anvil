@@ -185,7 +185,7 @@ class ServiceRuntime(ProgramRuntime):
             sh.execute(start_cmd, shell=True)
         except excp.ProcessExecutionError:
             LOG.error("Failed to start program %s under component %s.",
-                 colorizer.quote(program), self.name)
+                      colorizer.quote(program), self.name)
             return False
         return True
 
@@ -205,7 +205,7 @@ class ServiceRuntime(ProgramRuntime):
             sh.execute(stop_cmd, shell=True)
         except excp.ProcessExecutionError:
             LOG.error("Failed to stop program %s under component %s.",
-                 colorizer.quote(program), self.name)
+                      colorizer.quote(program), self.name)
             return False
         return True
 

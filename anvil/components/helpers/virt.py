@@ -142,8 +142,9 @@ class Virsh(object):
                     if domain.startswith(inst_prefix):
                         kill_domains.append(domain)
                 if kill_domains:
-                    utils.log_iterable(kill_domains, logger=LOG,
-                        header="Found %s old domains to destroy" % (len(kill_domains)))
+                    header = ("Found %s old domains to destroy" %
+                              len(kill_domains))
+                    utils.log_iterable(kill_domains, logger=LOG, header=header)
                     for domain in sorted(kill_domains):
                         self._destroy_domain(libvirt, ch, domain)
             except libvirt.libvirtError as e:
