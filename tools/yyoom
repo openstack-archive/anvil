@@ -396,6 +396,7 @@ def _setup_logging(verbose=True, logfile=None, quiet=False):
     handler.setLevel(loglevel)
     root_logger = logging.getLogger()
     root_logger.addHandler(handler)
+    root_logger.setLevel(logging.DEBUG)
     # Setup logfile if we have one
     if logfile:
         file_handler = logging.FileHandler(logfile)
