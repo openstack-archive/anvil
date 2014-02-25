@@ -63,6 +63,8 @@ class DependencyHandler(object):
         self.downloaded_flag_file = sh.joinpths(self.deps_dir, "pip-downloaded")
         self.download_dir = sh.joinpths(self.deps_dir, "download")
         self.log_dir = sh.joinpths(self.deps_dir, "output")
+        sh.mkdir(self.log_dir, recurse=True)
+
         self.gathered_requires_filename = sh.joinpths(self.deps_dir, "pip-requires")
         self.forced_requires_filename = sh.joinpths(self.deps_dir, "forced-requires")
         self.download_requires_filename = sh.joinpths(self.deps_dir, "download-requires")
