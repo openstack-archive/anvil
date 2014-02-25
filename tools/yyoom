@@ -26,14 +26,16 @@ capabilities, some of which we are desperate to use, including:
 
 
 import argparse
+import collections
+import functools
 import json
 import logging
 import os
-import sys
-import yum
-import functools
-import collections
 import pkg_resources
+import subprocess
+import sys
+
+import yum
 
 from contextlib import contextmanager
 
@@ -400,6 +402,8 @@ def _setup_logging(verbose=True, logfile=None, quiet=False):
     # Setup logfile if we have one
     if logfile:
         file_handler = logging.FileHandler(logfile)
+        file_handler.setFormatter(
+            logging.Formatter('%(asctime)s %(levelname)s: %(message)s'))
         file_handler.setLevel(logging.DEBUG)
         root_logger.addHandler(file_handler)
 
@@ -455,15 +459,19 @@ def main(args):
     options = _parse_arguments(args)
     _setup_output()
     _setup_logging(options.verbose, options.log_file, options.quiet)
+    LOG.debug('Running YOOM %s', options.operation)
+    LOG.debug('Command line: %s', subprocess.list2cmdline(args))
     try:
         yum_base = _YyoomBase()
-        return options.func(yum_base, options) or 0
+        code = options.func(yum_base, options) or 0
     except Exception as e:
         if options.verbose:
             LOG.exception("%s failed", options.operation)
         else:
             LOG.error("%s failed: %s", options.operation, e)
-        return 1
+        code = 1
+    LOG.debug('Exiting, code=%s', code)
+    return code
 
 
 if __name__ == '__main__':
