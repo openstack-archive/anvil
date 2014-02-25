@@ -26,5 +26,5 @@ daemon_args:
   neutron-l3-agent: "'--config-file=/etc/neutron/l3_agent.ini --config-file=/etc/neutron/neutron.conf'"
   neutron-dhcp-agent: "'--config-file=/etc/neutron/dhcp_agent.ini --config-file=/etc/neutron/neutron.conf'"
   neutron-metadata-agent: "'--config-file=/etc/neutron/metadata_agent.ini --config-file=/etc/neutron/neutron.conf'"
-
+  neutron-openvswitch-agent: "'--config-file=/etc/neutron/plugins/openvswitch/ovs_neutron_plugin.ini --config-file=/etc/neutron/neutron.conf'"
 ...
