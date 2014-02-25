@@ -331,7 +331,6 @@ fi
 if ! needs_bootstrap; then
     clean_pip
     run_smithy
-    clean_pip
 elif ! $BOOTSTRAP; then
     echo "This system needs to be updated in order to run anvil!" >&2
     echo "Running 'sudo $SMITHY_NAME --bootstrap' will attempt to do so." >&2
