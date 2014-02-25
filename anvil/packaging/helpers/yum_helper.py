@@ -41,28 +41,24 @@ class Helper(object):
     def __init__(self, log_dir, repos):
         # Executables we require to operate
         self.yyoom_executable = sh.which("yyoom", ["tools/"])
-        # Executable logs will go into this directory
-        self._log_dir = log_dir
+        # Executable logs will go into this file
+        self._log_file = sh.joinpths(self._log_dir, "yyoom.log")
         # Preferred repositories names
         self._repos = repos
         # Caches of installed and available packages
         self._installed = None
         self._available = None
 
-    def _yyoom(self, arglist, cmd_type):
-        # Just check that directory where we shall write logs actually exist
-        if self._log_dir:
-            # And create it if not
-            sh.mkdir(self._log_dir, recurse=True)
-        out_filename = sh.joinpths(self._log_dir, "yyoom-%s.log" % (cmd_type))
-        cmdline = [self.yyoom_executable, '--verbose', '--log-file', out_filename, '--quiet']
+    def _yyoom(self, arglist):
+        cmdline = [self.yyoom_executable, '--quiet',
+                   '--log-file', self._log_file]
         cmdline.extend(arglist)
         (stdout, _) = sh.execute(cmdline, stderr_fh=sys.stderr)
         return _parse_json(stdout)
 
-    def _traced_yyoom(self, arglist, cmd_type, tracewriter):
+    def _traced_yyoom(self, arglist, tracewriter):
         try:
-            data = self._yyoom(arglist, cmd_type)
+            data = self._yyoom(arglist)
         except excp.ProcessExecutionError:
             ex_type, ex, ex_tb = sys.exc_info()
             try:
@@ -107,17 +103,17 @@ class Helper(object):
 
     def list_available(self):
         if self._available is None:
-            self._available = self._yyoom(['list', 'available'], 'list-available')
+            self._available = self._yyoom(['list', 'available'])
         return list(self._available)
 
     def list_installed(self):
         if self._installed is None:
-            self._installed = self._yyoom(['list', 'installed'], 'list-installed')
+            self._installed = self._yyoom(['list', 'installed'])
         return list(self._installed)
 
     def builddep(self, srpm_path, tracewriter=None):
         self._traced_yyoom(['builddep', srpm_path],
-                           'builddep-%s' % sh.basename(srpm_path), tracewriter)
+                           tracewriter)
 
     def _reset(self):
         # reset the caches:
@@ -126,7 +122,7 @@ class Helper(object):
 
     def clean(self):
         try:
-            self._yyoom(['cleanall'], 'cleanall')
+            self._yyoom(['cleanall'])
         finally:
             self._reset()
 
@@ -146,12 +142,6 @@ class Helper(object):
             cmdline.append(repo)
 
         try:
-            cmd_type = 'transaction'
-            if install_pkgs:
-                cmd_type += "-install"
-            if remove_pkgs:
-                cmd_type += "-remove"
-
-            self._traced_yyoom(cmdline, cmd_type, tracewriter)
+            self._traced_yyoom(cmdline, tracewriter)
         finally:
             self._reset()
