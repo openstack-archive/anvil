@@ -26,9 +26,10 @@ dependency_handler:
         PyYAML: PyYAML
         pyzmq: python-zmq
     arch_dependent:
+    - PuLP
+    - cryptography
     - selenium
     - xattr
-    - PuLP
 commands:
     service:
         restart: service $NAME restart
