@@ -108,7 +108,8 @@ fi
 %install
 rm -rf %{buildroot}
 
-%{__python} setup.py install -O1 --skip-build --root %{buildroot}
+%{__python} setup.py install -O1 --skip-build --root=%{buildroot}
+
 # keystoneclient writes a strange catalog
 rm -rf %{buildroot}/%{_usr}/*client
 
@@ -129,6 +130,14 @@ rm -rf %{buildroot}
 %files
 %defattr(-,root,root,-)
 %doc README* LICENSE* HACKING* ChangeLog AUTHORS
+
+#end raw
+
+#if $clientname == 'swift'
+%doc %{_mandir}/man1/*
+#end if
+
+#raw
 %{python_sitelib}/*
 %{_bindir}/*
 %exclude %{_bindir}/%{python_name}-make-test-env
@@ -144,7 +153,6 @@ rm -rf %{buildroot}
 %defattr(-,root,root,-)
 %doc docs/_build/html
 %endif
-
 
 %changelog
 #end raw
