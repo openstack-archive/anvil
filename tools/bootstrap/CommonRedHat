@@ -13,6 +13,7 @@ REQUIRES='
     python
     python-devel
     libffi-devel
+    openssl-devel
 
     createrepo
     yum-utils
