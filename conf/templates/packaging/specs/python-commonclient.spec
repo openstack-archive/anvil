@@ -96,10 +96,6 @@ Documentation for %{name}.
 %patch$idx -p1
 #end for
 #raw
-touch AUTHORS ChangeLog
-if [ ! -f HACKING* ]; then
-    touch HACKING
-fi
 
 %build
 %{__python} setup.py build
@@ -122,13 +118,26 @@ make -C docs html PYTHONPATH=%{buildroot}%{python_sitelib}
 #raw
 %endif
 
+# collect doc files
+echo -n > doc_files.txt
+
+if ls "%{buildroot}%{_mandir}"/man*/* > /dev/null ; then
+    # NOTE(imelnikov): manual pages are automatically compressed
+    # after %%install, so we have to include them by glob
+    echo "%%doc %{_mandir}/man*/*" >> doc_files.txt
+fi
+
+for file in README* LICENSE* HACKING* ChangeLog AUTHORS; do
+    [ -f "$file" ] && echo "%%doc $file" >> doc_files.txt
+done
+
+
 %clean
 rm -rf %{buildroot}
 
 
-%files
+%files -f doc_files.txt
 %defattr(-,root,root,-)
-%doc README* LICENSE* HACKING* ChangeLog AUTHORS
 %{python_sitelib}/*
 %{_bindir}/*
 %exclude %{_bindir}/%{python_name}-make-test-env
