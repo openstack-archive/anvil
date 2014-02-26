@@ -263,7 +263,7 @@ class DependencyHandler(object):
         cmdline.extend(sorted([str(p) for p in pips_to_download]))
         out_filename = sh.joinpths(self.log_dir,
                                    "pip-download-attempt-%s.log" % (attempt))
-        sh.execute_save_output(cmdline, out_filename=out_filename)
+        sh.execute_save_output(cmdline, out_filename)
 
     def _examine_download_dir(self, pips_to_download, pip_download_dir):
         pip_names = set([p.key for p in pips_to_download])

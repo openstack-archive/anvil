@@ -65,7 +65,7 @@ class Helper(object):
     def _execute_make(self, filename, marks_dir, jobs):
         cmdline = ["make", "-f", filename, "-j", str(jobs)]
         out_filename = sh.joinpths(self._log_dir, "%s.log" % sh.basename(filename))
-        sh.execute_save_output(cmdline, cwd=marks_dir, out_filename=out_filename)
+        sh.execute_save_output(cmdline, out_filename, cwd=marks_dir)
 
     def _convert_names_to_rpm(self, python_names, only_name):
         if not python_names:
@@ -150,7 +150,7 @@ class Helper(object):
         cmdline.extend(["--", source])
         out_filename = sh.joinpths(self._log_dir,
                                    "py2rpm-build-%s.log" % log_filename)
-        sh.execute_save_output(cmdline, cwd=source, out_filename=out_filename)
+        sh.execute_save_output(cmdline, out_filename, cwd=source)
 
     def build_all_binaries(self, repo_name, src_repo_dir, rpmbuild_flags,
                            tracewriter, jobs):
