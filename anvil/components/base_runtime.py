@@ -96,7 +96,7 @@ class ProgramRuntime(base.Component):
 
     def wait_active(self, max_attempts=5):
         # Attempt to wait until all potentially started applications
-        # are actually started (for whatever defintion of started is applicable)
+        # are actually started (for whatever definition of started is applicable)
         # for up to a given amount of attempts and wait time between attempts.
         num_started = len(self.subsystems)
 

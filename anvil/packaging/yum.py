@@ -282,7 +282,7 @@ class YumDependencyHandler(base.DependencyHandler):
             rpm_name = rpm_names[req.key]
             (version, repo) = self._find_yum_match(yum_map, req, rpm_name)
             if not repo:
-                # We need the source requirement incase its a url.
+                # We need the source requirement in case it's a url.
                 pips_to_download.append(pip_origins[req.key])
             else:
                 satisfied_list.append((req, rpm_name, version, repo))
