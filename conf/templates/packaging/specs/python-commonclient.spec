@@ -96,10 +96,6 @@ Documentation for %{name}.
 %patch$idx -p1
 #end for
 #raw
-touch AUTHORS ChangeLog
-if [ ! -f HACKING* ]; then
-    touch HACKING
-fi
 
 %build
 %{__python} setup.py build
@@ -122,13 +118,17 @@ make -C docs html PYTHONPATH=%{buildroot}%{python_sitelib}
 #raw
 %endif
 
+for file in README* LICENSE* HACKING* ChangeLog AUTHORS "%{buildroot}%{_mandir}"/man*/*; do
+    [ -f "$file" ] && echo "%%doc $file" >> doc_files.txt
+done
+
+
 %clean
 rm -rf %{buildroot}
 
 
-%files
+%files -f doc_files.txt
 %defattr(-,root,root,-)
-%doc README* LICENSE* HACKING* ChangeLog AUTHORS
 %{python_sitelib}/*
 %{_bindir}/*
 %exclude %{_bindir}/%{python_name}-make-test-env
