@@ -48,11 +48,14 @@ abspath_installed_files=$(readlink -f INSTALLED_FILES)
         rm -rf usr/share/man
         mkdir -p usr/share
         mv usr/man usr/share/
-        sed -i "s@/usr/man/@DELETE_ME@" "$abspath_installed_files"
-        for i in usr/share/man/*; do
-            echo "/$i/*"
-        done
     fi
+    sed -i "s@/usr/man/@DELETE_ME@" "$abspath_installed_files"
+    sed -i "s@/usr/share/man/@DELETE_ME@" "$abspath_installed_files"
+    for i in usr/share/man/*; do
+        if [ -d "$i" ]; then
+            echo "%%doc /$i/*"
+        fi
+    done
 ) >> GATHERED_FILES
 sed '/^DELETE_ME/d' INSTALLED_FILES >> GATHERED_FILES
 sort -u GATHERED_FILES > INSTALLED_FILES
