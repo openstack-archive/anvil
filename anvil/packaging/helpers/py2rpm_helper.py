@@ -122,10 +122,11 @@ class Helper(object):
             "--source-only",
             "--rpm-base", self._rpmbuild_dir
         ]
+        executable = " ".join(self._start_cmdline()[0:1])
         params = {
             "DOWNLOADS_DIR": self._download_dir,
             "LOGS_DIR": self._log_dir,
-            "PY2RPM": self._py2rpm_executable,
+            "PY2RPM": executable,
             "PY2RPM_FLAGS": " ".join(cmdline)
         }
         marks_dir = sh.joinpths(self._deps_dir, "marks-deps")

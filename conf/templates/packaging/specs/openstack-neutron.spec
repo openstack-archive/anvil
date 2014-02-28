@@ -52,6 +52,7 @@ BuildArch:	noarch
 
 BuildRequires:	python-devel
 BuildRequires:	python-setuptools
+BuildRequires:	python-pbr
 # Build require these parallel versions
 # as setup.py build imports neutron.openstack.common.setup
 # which will then check for these
