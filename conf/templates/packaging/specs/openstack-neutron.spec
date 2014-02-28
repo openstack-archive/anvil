@@ -366,6 +366,20 @@ networks.
 This package contains the neutron plugin that implements virtual
 networks using multiple other neutron plugins.
 
+#if $at_least('2014.1.a146.g79fbeb7')
+%package -n openstack-neutron-vmware-nsx
+Summary:       Neutron VMWare NSX support
+Group:         Applications/System
+
+Requires:      openstack-neutron = %{version}-%{release}
+
+%description -n openstack-neutron-vmware-nsx
+Neutron provides an API to dynamically request and configure virtual
+networks.
+
+This package adds VMWare NSX support for Neutron,
+#end if
+
 
 %if ! 0%{?no_tests}
 %package -n python-%{python_name}-tests
@@ -538,7 +552,6 @@ fi
 
 #end for
 %endif
-#raw
 
 %files
 %doc README* LICENSE HACKING* ChangeLog AUTHORS
@@ -643,7 +656,6 @@ fi
 
 %files -n openstack-neutron-hyperv
 %doc LICENSE
-#%%doc neutron/plugins/hyperv/README
 %{_bindir}/*-hyperv-agent
 %{python_sitelib}/neutron/plugins/hyperv
 %exclude %{python_sitelib}/neutron/plugins/hyperv/agent
@@ -671,7 +683,6 @@ fi
 
 %files -n openstack-neutron-midonet
 %doc LICENSE
-#%%doc neutron/plugins/midonet/README
 %{python_sitelib}/neutron/plugins/midonet
 
 %if ! 0%{?usr_only}
@@ -767,6 +778,13 @@ fi
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/nec/*.ini
 %endif
 
+#if $at_least('2014.1.a146.g79fbeb7')
+%files -n openstack-neutron-vmware-nsx
+%doc LICENSE
+%{_bindir}/neutron*nsx-*
+%dir %{_sysconfdir}/neutron/plugins/vmware
+%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/vmware/*.ini
+#end if
 
 %files -n openstack-neutron-metaplugin
 %doc LICENSE
@@ -785,4 +803,3 @@ fi
 %endif
 
 %changelog
-#end raw
