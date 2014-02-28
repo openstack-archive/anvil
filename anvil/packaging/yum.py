@@ -244,6 +244,7 @@ class YumDependencyHandler(base.DependencyHandler):
         LOG.info("Copied to %s", system_repo_filename)
 
     def _get_known_yum_packages(self):
+        LOG.info("Determining which yum packages are available or installed...")
         yum_map = collections.defaultdict(list)
         pkgs = []
         pkgs.extend(self.helper.list_available())
@@ -307,6 +308,7 @@ class YumDependencyHandler(base.DependencyHandler):
         # build or can satisfy by other means
         no_pips = [pkg_resources.Requirement.parse(name).key
                    for name in self.python_names]
+        no_pips.extend(self.ignore_pips)
         yum_map = self._get_known_yum_packages()
         pips_keys = set([p.key for p in pips_downloaded])
 

@@ -35,6 +35,7 @@ BuildRoot:        %{_tmppath}/%{name}-%{version}-%{release}
 BuildArch:        noarch
 BuildRequires:    python-devel
 BuildRequires:    python-setuptools
+BuildRequires:    python-pbr
 
 %if ! 0%{?usr_only}
 Requires(post):   chkconfig
