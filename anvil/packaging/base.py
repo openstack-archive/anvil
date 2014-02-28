@@ -19,6 +19,7 @@
 #pylint: disable=R0902,R0921
 
 import collections
+import sys
 
 from anvil import colorizer
 from anvil import exceptions as exc
@@ -64,14 +65,23 @@ class DependencyHandler(object):
         self.download_dir = sh.joinpths(self.deps_dir, "download")
         self.log_dir = sh.joinpths(self.deps_dir, "output")
         sh.mkdir(self.log_dir, recurse=True)
-
         self.gathered_requires_filename = sh.joinpths(self.deps_dir, "pip-requires")
         self.forced_requires_filename = sh.joinpths(self.deps_dir, "forced-requires")
         self.download_requires_filename = sh.joinpths(self.deps_dir, "download-requires")
         # Executables we require to operate
         self.multipip_executable = sh.which("multipip", ["tools/"])
-        self.pip_executable = sh.which_first(['pip-python', 'pip'])
-        self.pipdownload_executable = sh.which("pip-download", ["tools/"])
+        # Attempt to use the pip that is included with the virtualenv, prefer
+        # it over the systems pip (which will also exist). It probably does not
+        # matter but lets just use the pip in the venv that we are running with.
+        pip_executable = None
+        for pip in ['pip-python', 'pip']:
+            path = sh.joinpths(sh.dirname(sys.executable), pip)
+            if sh.exists(path):
+                pip_executable = path
+                break
+        if not pip_executable:
+            pip_executable = sh.which_first(['pip-python', 'pip'])
+        self.pip_executable = pip_executable
         # List of requirements
         self.pips_to_install = []
         self.forced_packages = []
@@ -90,6 +100,12 @@ class DependencyHandler(object):
                 req_set |= set(pkg["name"]
                                for pkg in inst.get_option(key) or [])
             self.requirements[key] = req_set
+        # These pip names we will ignore from being converted/analyzed...
+        ignore_pips = self.distro.get_dependency_config("ignoreable_pips", quiet=True)
+        if not ignore_pips:
+            self.ignore_pips = set()
+        else:
+            self.ignore_pips = set(ignore_pips)
 
     @property
     def python_names(self):
@@ -182,7 +198,7 @@ class DependencyHandler(object):
             contents = "# Cleaned on %s\n\n%s\n" % (utils.iso8601(), "\n".join(new_lines))
             sh.write_file_and_backup(fn, contents)
         # NOTE(imelnikov): after updating requirement lists we should re-fetch
-        # data from them again, so we drop pip helper caches here:
+        # data from them again, so we drop pip helper caches here.
         pip_helper.drop_caches()
 
     def _gather_pips_to_install(self, requires_files, extra_pips=None):
@@ -199,10 +215,7 @@ class DependencyHandler(object):
         cmdline = cmdline + extra_pips + ["-r"] + requires_files
 
         ignore_pip_names = set(self.python_names)
-        more_ignores = self.distro.get_dependency_config('ignore_pip_names',
-                                                         quiet=True)
-        if more_ignores:
-            ignore_pip_names.update([str(n) for n in more_ignores])
+        ignore_pip_names.update(self.ignore_pips)
         if ignore_pip_names:
             cmdline.extend(["--ignore-package"])
             cmdline.extend(ignore_pip_names)
@@ -255,10 +268,24 @@ class DependencyHandler(object):
         return self.pips_to_install
 
     def _try_download_dependencies(self, attempt, pips_to_download, pip_download_dir):
+        # Clean out any previous paths that we don't want around.
+        for path in ['.build']:
+            path = sh.joinpths(pip_download_dir, path)
+            if sh.isdir(path):
+                sh.deldir(path)
+            sh.mkdir(path)
+        # Ensure certain directories exist that we want to exist (but we don't
+        # want to delete them run after run).
+        for path in ['.cache']:
+            path = sh.joinpths(pip_download_dir, path)
+            if not sh.isdir(path):
+                sh.mkdir(path)
         cmdline = [
-            self.pipdownload_executable,
-            '-d', pip_download_dir,
-            '-v',
+            self.pip_executable, '-v',
+            'install', '-I', '-U',
+            '--download', pip_download_dir,
+            '--build', sh.joinpths(pip_download_dir, '.build'),
+            '--download-cache', sh.joinpths(pip_download_dir, '.cache'),
         ]
         cmdline.extend(sorted([str(p) for p in pips_to_download]))
         out_filename = sh.joinpths(self.log_dir,
