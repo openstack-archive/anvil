@@ -39,6 +39,7 @@ BuildArch:        noarch
 BuildRequires:    python2-devel
 BuildRequires:    python-setuptools
 BuildRequires:    python-sphinx
+BuildRequires:    python-pbr
 
 Requires:         %{name}-common = %{version}-%{release}
 Requires:         %{name}-engine = %{version}-%{release}

@@ -39,6 +39,7 @@ Patch$idx: $fn
 
 BuildArch:        noarch
 BuildRequires:    python-setuptools
+BuildRequires:    python-pbr
 
 Requires:         python-cinder = %{epoch}:%{version}-%{release}
 

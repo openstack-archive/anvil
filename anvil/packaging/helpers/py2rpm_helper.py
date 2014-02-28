@@ -25,6 +25,19 @@ from anvil import utils
 
 LOG = logging.getLogger(__name__)
 
+# TODO(harlowja): setuptools can go in as setuptools but get converted
+# to distribute as its source, which is a lie, for now fix this with a
+# hack until we can fix it with a better solution.
+#
+# The reason for this seems to be when py2rpm is executed with the system
+# and not the venv python that the current RHEL distribute actually claims
+# the name setuptools as its own. If we execute py2rpm with the venv python
+# then this won't happen, but then if we run the building of the rpms with
+# the venv python it breaks...
+SOURCE_RENAMES = {
+    'distribute': 'setuptools',
+}
+
 
 class Helper(object):
 
@@ -87,6 +100,7 @@ class Helper(object):
                 result[current_source].add(line.strip())
             elif line.startswith("# Source:"):
                 current_source = line[len("# Source:"):].strip()
+                current_source = SOURCE_RENAMES.get(current_source, current_source)
 
         missing_names = set(python_names) - set(result.keys())
         if missing_names:
@@ -122,10 +136,11 @@ class Helper(object):
             "--source-only",
             "--rpm-base", self._rpmbuild_dir
         ]
+        executable = " ".join(self._start_cmdline()[0:1])
         params = {
             "DOWNLOADS_DIR": self._download_dir,
             "LOGS_DIR": self._log_dir,
-            "PY2RPM": self._py2rpm_executable,
+            "PY2RPM": executable,
             "PY2RPM_FLAGS": " ".join(cmdline)
         }
         marks_dir = sh.joinpths(self._deps_dir, "marks-deps")
