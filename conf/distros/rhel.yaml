@@ -6,7 +6,6 @@ install_helper: anvil.packaging.yum:YumInstallHelper
 dependency_handler:
     name: anvil.packaging.yum:YumDependencyHandler
     package_map:
-        distribute: python-setuptools
         django: Django
         IPy: python-IPy
         m2crypto: m2crypto
@@ -25,6 +24,8 @@ dependency_handler:
         qpid-python: python-qpid # Why is this one backwards :-/
         PyYAML: PyYAML
         pyzmq: python-zmq
+    ignoreable_pips:
+    - distribute # distribute has been replaced by setuptools
     arch_dependent:
     - PuLP
     - cryptography

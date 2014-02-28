@@ -19,6 +19,7 @@
 #pylint: disable=R0902,R0921
 
 import collections
+import sys
 
 from anvil import colorizer
 from anvil import exceptions as exc
@@ -64,14 +65,20 @@ class DependencyHandler(object):
         self.download_dir = sh.joinpths(self.deps_dir, "download")
         self.log_dir = sh.joinpths(self.deps_dir, "output")
         sh.mkdir(self.log_dir, recurse=True)
-
         self.gathered_requires_filename = sh.joinpths(self.deps_dir, "pip-requires")
         self.forced_requires_filename = sh.joinpths(self.deps_dir, "forced-requires")
         self.download_requires_filename = sh.joinpths(self.deps_dir, "download-requires")
         # Executables we require to operate
         self.multipip_executable = sh.which("multipip", ["tools/"])
-        self.pip_executable = sh.which_first(['pip-python', 'pip'])
-        self.pipdownload_executable = sh.which("pip-download", ["tools/"])
+        pip_executable = None
+        for p in ['pip-python', 'pip']:
+            p = sh.joinpths(sh.dirname(sys.executable), p)
+            if sh.exists(p):
+                pip_executable = p
+                break
+        if not pip_executable:
+            pip_executable = sh.which_first(['pip-python', 'pip'])
+        self.pip_executable = pip_executable
         # List of requirements
         self.pips_to_install = []
         self.forced_packages = []
@@ -90,6 +97,12 @@ class DependencyHandler(object):
                 req_set |= set(pkg["name"]
                                for pkg in inst.get_option(key) or [])
             self.requirements[key] = req_set
+        # These pip names we will ignore from being converted/analyzed...
+        ignore_pips = self.distro.get_dependency_config("ignoreable_pips", quiet=True)
+        if not ignore_pips:
+            self.ignore_pips = set()
+        else:
+            self.ignore_pips = set(ignore_pips)
 
     @property
     def python_names(self):
@@ -193,16 +206,14 @@ class DependencyHandler(object):
         """
         extra_pips = extra_pips or []
         cmdline = [
+            sys.executable,
             self.multipip_executable,
             "--pip", self.pip_executable,
         ]
         cmdline = cmdline + extra_pips + ["-r"] + requires_files
 
         ignore_pip_names = set(self.python_names)
-        more_ignores = self.distro.get_dependency_config('ignore_pip_names',
-                                                         quiet=True)
-        if more_ignores:
-            ignore_pip_names.update([str(n) for n in more_ignores])
+        ignore_pip_names.update(self.ignore_pips)
         if ignore_pip_names:
             cmdline.extend(["--ignore-package"])
             cmdline.extend(ignore_pip_names)
@@ -255,10 +266,22 @@ class DependencyHandler(object):
         return self.pips_to_install
 
     def _try_download_dependencies(self, attempt, pips_to_download, pip_download_dir):
+        # Clean out any previous paths that we don't want around.
+        for base in ['.build']:
+            path = sh.joinpths(pip_download_dir, base)
+            if sh.isdir(path):
+                sh.deldir(path)
+            sh.mkdir(path)
+        # Ensure certain directories exist that we want.
+        for path in [pip_download_dir, sh.joinpths(pip_download_dir, '.cache')]:
+            if not sh.isdir(path):
+                sh.mkdir(path)
         cmdline = [
-            self.pipdownload_executable,
-            '-d', pip_download_dir,
-            '-v',
+            self.pip_executable, '-v',
+            'install', '-I', '-U',
+            '--download', pip_download_dir,
+            '--build', sh.joinpths(pip_download_dir, '.build'),
+            '--download-cache', sh.joinpths(pip_download_dir, '.cache'),
         ]
         cmdline.extend(sorted([str(p) for p in pips_to_download]))
         out_filename = sh.joinpths(self.log_dir,

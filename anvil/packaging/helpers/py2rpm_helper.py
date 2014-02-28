@@ -15,6 +15,7 @@
 #    under the License.
 
 import collections
+import sys
 
 import six
 
@@ -42,6 +43,7 @@ class Helper(object):
 
     def _start_cmdline(self):
         cmdline = [
+            sys.executable,
             self._py2rpm_executable,
             "--rpm-base",
             self._rpmbuild_dir
@@ -117,15 +119,16 @@ class Helper(object):
     def build_all_srpms(self, package_files, tracewriter, jobs):
         (_fn, content) = utils.load_template(sh.joinpths("packaging", "makefiles"), "source.mk")
         scripts_dir = sh.abspth(sh.joinpths(settings.TEMPLATE_DIR, "packaging", "scripts"))
-        cmdline = self._start_cmdline()[1:] + [
+        cmdline = self._start_cmdline()[2:] + [
             "--scripts-dir", scripts_dir,
             "--source-only",
             "--rpm-base", self._rpmbuild_dir
         ]
+        executable = " ".join(self._start_cmdline()[0:2])
         params = {
             "DOWNLOADS_DIR": self._download_dir,
             "LOGS_DIR": self._log_dir,
-            "PY2RPM": self._py2rpm_executable,
+            "PY2RPM": executable,
             "PY2RPM_FLAGS": " ".join(cmdline)
         }
         marks_dir = sh.joinpths(self._deps_dir, "marks-deps")
