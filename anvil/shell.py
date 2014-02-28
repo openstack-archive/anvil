@@ -40,6 +40,11 @@ from anvil import log as logging
 
 LOG = logging.getLogger(__name__)
 
+
+# Leave this many lines when truncating output by default
+_TRUNCATED_OUTPUT_LINES = 7
+
+
 # Locally stash these so that they can not be changed
 # by others after this is first fetched...
 SUDO_UID = env.get_key('SUDO_UID')
@@ -166,7 +171,7 @@ def execute(cmd,
     return stdout, stderr
 
 
-def _redirected(output, stream, count=5):
+def _redirected(output, stream, count=_TRUNCATED_OUTPUT_LINES):
     """Prepare stream output before it can be passed to exception to be raised.
     Add information of where output was redirected (if was).
     """
@@ -175,7 +180,8 @@ def _redirected(output, stream, count=5):
         if len(lines) > count:
             LOG.debug(output)
             output_tail = ''.join(lines[-count:])
-            output = "<redirected to debug log>\n...\n%s" % output_tail
+            output = ("<truncated, look to debug log for full output>\n%s"
+                      % output_tail)
     else:
         output = "<redirected to %s>" % stream.name
     return output
@@ -187,10 +193,15 @@ def execute_save_output(cmd, file_name, **kwargs):
     """
     kwargs = kwargs.copy()
     mkdirslist(dirname(file_name))
-    with open(file_name, 'wb') as fh:
-        LOG.info("You can watch progress in another terminal with:")
-        LOG.info("    tail -f %s", file_name)
-        return execute(cmd, stdout_fh=fh, stderr_fh=fh, **kwargs)
+    try:
+        with open(file_name, 'wb') as fh:
+            return execute(cmd, stdout_fh=fh, stderr_fh=fh, **kwargs)
+    except excp.ProcessExecutionError:
+        with open(file_name) as fh:
+            # TODO(imelnikov): optimize this for larger files
+            lines = list(fh)[-_TRUNCATED_OUTPUT_LINES:]
+        LOG.debug('Last lines from %s:\n%s', file_name, ''.join(lines))
+        raise
 
 
 @contextlib.contextmanager

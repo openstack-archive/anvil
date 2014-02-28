@@ -114,8 +114,9 @@ class TestShell(test.MockTestCase):
     def test_execute_bad_return_code_with_tail(self):
         self.popen_inst_mock.returncode = 1
         self.popen_inst_mock.communicate.return_value = (
-            '1\n2\n3\n4\n5\n6\n7\n8\n', '')
-        stdout = '<redirected to debug log>\n...\n4\n5\n6\n7\n8\n'
+            '0\n1\n2\n3\n4\n5\n6\n7\n8\n', '')
+        stdout = ('<truncated, look to debug log for full output>\n'
+                  '2\n3\n4\n5\n6\n7\n8\n')
         self.assertRaisesRegexp(exc.ProcessExecutionError,
                                 "Unexpected error while running command.\n"
                                 "Command: %s\n"
