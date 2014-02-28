@@ -56,6 +56,7 @@ BuildRoot:        %{_tmppath}/%{name}-%{version}-%{release}
 BuildArch:        noarch
 BuildRequires:    python-devel
 BuildRequires:    python-setuptools
+BuildRequires:    python-pbr
 
 Requires:         %{name}-compute = %{epoch}:%{version}-%{release}
 Requires:         %{name}-cert = %{epoch}:%{version}-%{release}

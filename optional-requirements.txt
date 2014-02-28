@@ -1,0 +1,5 @@
+# Used by internal setup helpers (since we run in a venv we won't have access
+# to the installed helpers). These will work just fine though for the setup
+# usage.
+python-keystoneclient
+python-glanceclient

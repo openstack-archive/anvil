@@ -135,11 +135,16 @@ class KeystoneRuntime(bruntime.OpenStackRuntime):
                 utils.wait_for_url(url)
             init_what = utils.load_yaml_text(contents)
             init_what = utils.expand_template_deep(init_what, params)
-            khelper.Initializer(params['keystone']['service_token'],
-                                params['keystone']['endpoints']['admin']['uri']).initialize(**init_what)
-            # Writing this makes sure that we don't init again
-            sh.write_file(self.init_fn, utils.prettify_yaml(init_what))
-            LOG.info("If you wish to re-run initialization, delete %s", colorizer.quote(self.init_fn))
+            try:
+                init_how = khelper.Initializer(params['keystone']['service_token'],
+                                               params['keystone']['endpoints']['admin']['uri'])
+                init_how.initialize(**init_what)
+            except RuntimeError:
+                LOG.exception("Failed to initialize keystone, is the keystone client library available?")
+            else:
+                # Writing this makes sure that we don't init again
+                sh.write_file(self.init_fn, utils.prettify_yaml(init_what))
+                LOG.info("If you wish to re-run initialization, delete %s", colorizer.quote(self.init_fn))
 
 
 class KeystoneTester(btesting.PythonTestingComponent):
