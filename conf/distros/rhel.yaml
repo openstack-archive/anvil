@@ -25,6 +25,8 @@ dependency_handler:
         qpid-python: python-qpid # Why is this one backwards :-/
         PyYAML: PyYAML
         pyzmq: python-zmq
+    ignoreable_pips:
+    - distribute # distribute has been replaced by setuptools
     arch_dependent:
     - PuLP
     - cryptography
