@@ -1,5 +1,5 @@
 # -*- sh -*-
-STEPS="selinux epel rpm_packages python_rpms"
+STEPS="selinux epel rpm_packages virtualenv"
 EPEL_RPM_URL="http://mirrors.kernel.org/fedora-epel/6/i386/epel-release-6-8.noarch.rpm"
 DISTRO_CONFIG=conf/distros/rhel.yaml
 
@@ -18,11 +18,17 @@ REQUIRES='
     createrepo
     yum-utils
 
-    PyYAML
-
     rpm-build
     python-pip
+    python-virtualenv
+
     python-argparse
-    python-setuptools
     python-six
+'
+CONFLICTS='
+    python-paste-deploy1.5
+    python-nose1.1
+    python-routes1.12
+    python-sphinx10
+    python-webob1.0
 '

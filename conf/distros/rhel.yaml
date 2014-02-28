@@ -25,6 +25,8 @@ dependency_handler:
         qpid-python: python-qpid # Why is this one backwards :-/
         PyYAML: PyYAML
         pyzmq: python-zmq
+    ignoreable_pips:
+    - distribute # distribute has been replaced by setuptools
     arch_dependent:
     - PuLP
     - cryptography
@@ -154,13 +156,6 @@ components:
             removable: false
         requires:
         -   name: MySQL-python
-        # These packages conflict with our deps and must be removed
-        conflicts:
-        -   name: python-paste-deploy1.5
-        -   name: python-nose1.1
-        -   name: python-routes1.12
-        -   name: python-sphinx10
-        -   name: python-webob1.0
         # Require extra packages needed to run tests
         pips:
             - name: "nose"

@@ -1,6 +1,7 @@
-pbr>=0.5.21,<1.0
-
-argparse
+# Anvil should not depend on anything that will cause issues when running
+# egg_info on the downloaded dependencies, pbr seems to be the one case that
+# currently causes an issue (since it is not directly used for anvil runtime
+# it is placed in test-requirements for the time being).
 cheetah>=2.4.4
 iniparse
 iso8601>=0.1.8
