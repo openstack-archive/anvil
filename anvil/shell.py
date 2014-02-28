@@ -349,7 +349,7 @@ def _attempt_kill(proc, signal_type, max_try, wait_time):
     try:
         if not proc.is_running():
             return (True, 0)
-    except psutil.error.NoSuchProcess:
+    except psutil.NoSuchProcess:
         return (True, 0)
     # Be a little more forceful...
     killed = False
@@ -361,7 +361,7 @@ def _attempt_kill(proc, signal_type, max_try, wait_time):
             proc.send_signal(signal_type)
             LOG.debug("Sleeping for %s seconds before next attempt to kill process %s" % (wait_time, proc))
             sleep(wait_time)
-        except psutil.error.NoSuchProcess:
+        except psutil.NoSuchProcess:
             killed = True
             break
         except Exception as e:
@@ -391,7 +391,7 @@ def is_running(pid):
         return True
     try:
         return Process(pid).is_running()
-    except psutil.error.NoSuchProcess:
+    except psutil.NoSuchProcess:
         return False
 
 
