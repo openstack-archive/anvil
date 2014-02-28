@@ -8,37 +8,20 @@ SMITHY_NAME=$(readlink -f "$0")
 cd "$(dirname "$0")"
 
 VERBOSE="${VERBOSE:-0}"
-PY2RPM_CMD="$PWD/tools/py2rpm"
-YYOOM_CMD="$PWD/tools/yyoom"
-PIPDOWNLOAD_CMD="$PWD/tools/pip-download"
-
 YUM_OPTS="--assumeyes --nogpgcheck"
-YYOOM_OPTS="--verbose"
 RPM_OPTS=""
 CURL_OPTS=""
-
-# Colors supported??
-COLOR_SUPPORT=$(tput colors)
-
-if [ "$COLOR_SUPPORT" -ge 8 ]; then
-    ESC_SEQ="\x1b["
-    COL_RESET=$ESC_SEQ"39;49;00m"
-    COL_GREEN=$ESC_SEQ"32;01m"
-    COL_RED=$ESC_SEQ"31;01m"
-    COL_YELLOW=$ESC_SEQ"33;01m"
-else
-    ESC_SEQ=""
-    COL_RESET=""
-    COL_GREEN=""
-    COL_RED=""
-    COL_YELLOW=""
-fi
+VENV_OPTS="--no-site-packages"
+VENV_DIR="$PWD/.venv"
+PIP_OPTS=""
 
 if [ "$VERBOSE" == "0" ]; then
     YUM_OPTS="$YUM_OPTS -q"
     YYOOM_OPTS=""
     RPM_OPTS="-q"
     CURL_OPTS="-s"
+    PIP_OPTS="-q"
+    VENV_OPTS="$VENV_OPTS -q"
 fi
 
 # Source in our variables (or overrides)
@@ -53,10 +36,30 @@ if [ -n "$SUDO_USER" ]; then
     fi
 fi
 
-if [ -z "$BOOT_FILES" ]; then
-    BOOT_FN=".anvil_bootstrapped"
-    BOOT_FILES="${PWD}/$BOOT_FN"
-fi
+dump_list()
+{
+    for var in "$@"; do
+        for name in $var; do
+            echo "  - $name"
+        done
+    done
+}
+
+bootstrap_rpm_packages()
+{
+    # NOTE(aababilov): the latter operations require some packages,
+    # so, begin from installation
+    if [ -n "$REQUIRES" ]; then
+        echo -e "Installing system packages:"
+        dump_list $REQUIRES
+        yum install $YUM_OPTS $REQUIRES
+        if [ "$?" != "0" ]; then
+            echo -e "Failed installing!"
+            return 1
+        fi
+    fi
+    return 0
+}
 
 clean_pip()
 {
@@ -64,6 +67,58 @@ clean_pip()
     if [ -n "$SUDO_USER" ]; then
         rm -rf "/tmp/pip-build-$SUDO_USER"
     fi
+}
+
+bootstrap_epel()
+{
+    [ -z "$EPEL_RPM_URL" ] && return 0
+    cache_and_install_rpm_url "$EPEL_RPM_URL"
+    return $?
+}
+
+bootstrap_virtualenv()
+{
+    echo "Setting up virtualenv in $VENV_DIR"
+    virtualenv $VENV_OPTS "$VENV_DIR"
+    local pip="$VENV_DIR/bin/pip"
+    echo "Installing anvil dependencies in $VENV_DIR"
+    $pip $PIP_OPTS install -r requirements.txt -r test-requirements.txt
+}
+
+bootstrap_selinux()
+{
+    # See if selinux is on.
+    if [ "$(getenforce)" == "Enforcing" ]; then
+        # Ensure all yum api interacting binaries are ok to be used
+        echo "Enabling selinux for yum like binaries."
+        chcon -h "system_u:object_r:rpm_exec_t:s0" "$YYOOM_CMD"
+    fi
+}
+
+run_smithy()
+{
+    PYTHON="$VENV_DIR/bin/python"
+    exec "$PYTHON" anvil $ARGS
+}
+
+puke()
+{
+    cleaned_force=$(echo "$FORCE" | sed -e 's/\([A-Z]\)/\L\1/g;s/\s//g')
+    if [[ "$cleaned_force" == "yes" ]]; then
+        run_smithy
+    else
+        echo -e "To run anyway set FORCE=yes and rerun." >&2
+        exit 1
+    fi
+}
+
+needs_bootstrap()
+{
+    $BOOTSTRAP && return 0
+    if [ ! -d "$VENV_DIR" ]; then
+        return 0
+    fi
+    return 1
 }
 
 rpm_is_installed()
@@ -82,28 +137,12 @@ cache_and_install_rpm_url()
         return
     fi
     if [ ! -f "$cachedir/$rpm" ]; then
-        echo -e "Downloading ${COL_GREEN}${rpm}${COL_RESET} to ${COL_GREEN}${cachedir}${COL_RESET}"
+        echo -e "Downloading ${rpm} to ${cachedir}"
         curl $CURL_OPTS "$url" -o "$cachedir/$rpm" || return 1
     fi
-    echo -e "Installing ${COL_GREEN}$cachedir/$rpm${COL_RESET}"
+    echo -e "Installing $cachedir/$rpm"
     yum install $YUM_OPTS "$cachedir/$rpm"
     return $?
-}
-
-bootstrap_epel()
-{
-    [ -z "$EPEL_RPM_URL" ] && return 0
-    cache_and_install_rpm_url "$EPEL_RPM_URL"
-    return $?
-}
-
-dump_list()
-{
-    for var in "$@"; do
-        for name in $var; do
-            echo "  - $name"
-        done
-    done
 }
 
 greatest_version()
@@ -111,165 +150,6 @@ greatest_version()
     for arg in "$@"; do
         echo "$arg"
     done | sort --version-sort --reverse | head -n1
-}
-
-bootstrap_rpm_packages()
-{
-    # NOTE(aababilov): the latter operations require some packages,
-    # so, begin from installation
-    if [ -n "$REQUIRES" ]; then
-        echo -e "Installing ${COL_GREEN}system${COL_RESET} packages:"
-        dump_list $REQUIRES
-        yum install $YUM_OPTS $REQUIRES
-        if [ "$?" != "0" ]; then
-            echo -e "${COL_RED}Failed installing!${COL_RESET}"
-            return 1
-        fi
-    fi
-
-    # Remove any known conflicting packages
-    CONFLICTS=$(python -c "import yaml
-packages = set()
-try:
-    for i in yaml.safe_load(open('$DISTRO_CONFIG'))['components'].itervalues():
-        for j in i.get('conflicts', []):
-            packages.add(j.get('name'))
-except KeyError:
-    pass
-for pkg in packages:
-    if pkg:
-        print pkg
-")
-    if [ -n "$CONFLICTS" ]; then
-        echo -e "Removing ${COL_YELLOW}conflicting${COL_RESET} packages:"
-        dump_list "$CONFLICTS"
-        yum erase $YUM_OPTS $CONFLICTS
-    fi
-}
-
-bootstrap_selinux()
-{
-    # See if selinux is on.
-    if [ "$(getenforce)" == "Enforcing" ]; then
-        # Ensure all yum api interacting binaries are ok to be used
-        echo "Enabling selinux for yum like binaries."
-        chcon -h "system_u:object_r:rpm_exec_t:s0" "$YYOOM_CMD"
-    fi
-}
-
-bootstrap_python_rpms()
-{
-    echo -e "Bootstrapping ${COL_GREEN}python${COL_RESET} rpms."
-    local package_map=$(python -c "import yaml
-try:
-    for k, v in yaml.safe_load(open('$DISTRO_CONFIG'))['dependency_handler']['package_map'].iteritems():
-        print '%s==%s' % (k, v)
-except KeyError:
-    pass
-")
-    local python_names=$(sed -r -e 's/#.*$//' requirements.txt | sort -u)
-    local bootstrap_dir=$(readlink -f ./.bootstrap/)
-    local transaction_cmd="transaction --skip-missing"
-    local install_packages=""
-    declare -A rpm_python_map
-    for python_name in $python_names; do
-        local specs=$(echo "$python_name" | awk 'match($0, "((=|>|<|!).*$)", res) {print res[1]}')
-        local rpm_name=$("$PY2RPM_CMD" --package-map $package_map --convert "$python_name" |
-                         awk '/^Requires:/ {print $2; exit }')
-        rpm_python_map["$rpm_name"]="$python_name"
-        install_packages="$install_packages $rpm_name$specs"
-        transaction_cmd+=" --install $rpm_name$specs"
-    done
-
-    echo -e "Installing ${COL_GREEN}python${COL_RESET} requirements:"
-    dump_list "$install_packages"
-
-    # NOTE(imelnikov): if we declare local variable and specify its value
-    # at the same statement, exit code from subshell is lost.
-    local yyoom_res
-    yyoom_res=$("$YYOOM_CMD" $YYOOM_OPTS $transaction_cmd) || return 1
-    local missing_rpms
-    missing_rpms=$(echo "$yyoom_res" | python -c "import sys, json
-for item in json.load(sys.stdin):
-    if item.get('action_type') == 'missing':
-        print(item['name'])
-") || return 2
-    local missing_packages=""
-    for rpm in $missing_rpms; do
-        missing_packages="$missing_packages ${rpm_python_map[$rpm]}"
-    done
-
-    if [ -z "$missing_packages" ]; then
-        return 0
-    fi
-    echo -e "Building ${COL_YELLOW}missing${COL_RESET} python requirements:"
-    dump_list "$missing_packages"
-    local pip_tmp_dir="$bootstrap_dir/pip-download"
-    mkdir -p "$pip_tmp_dir"
-
-    $PIPDOWNLOAD_CMD -d "$pip_tmp_dir" $missing_packages
-    echo "Building RPMs..."
-    local rpm_names
-    rpm_names=$("$PY2RPM_CMD"  --package-map $package_map --scripts-dir "conf/templates/packaging/scripts" --rpm-base "$bootstrap_dir/rpmbuild" -- "$pip_tmp_dir/"* 2>/dev/null |
-        awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)
-    if [ -z "$rpm_names" ]; then
-        echo -e "${COL_RED}No binary RPMs were built!${COL_RESET}"
-        return 1
-    fi
-    local rpm_base_names=""
-    for rpm in $rpm_names; do
-        rpm_base_names="$rpm_base_names $(basename "$rpm")"
-    done
-    echo -e "Installing ${COL_YELLOW}missing${COL_RESET} python requirement packages:"
-    dump_list "$rpm_base_names"
-    yum install $YUM_OPTS $rpm_names
-    if [ "$?" != "0" ]; then
-        echo -e "${COL_RED}Failed installing!${COL_RESET}"
-        return 1
-    fi
-    rm -rf "$pip_tmp_dir"
-    rm -rf "$bootstrap_dir/rpmbuild/"{BUILD,SOURCES,SPECS,BUILDROOT}
-    return 0
-}
-
-needs_bootstrap()
-{
-    local contents checksums
-    $BOOTSTRAP && return 0
-    checksums=$(get_checksums)
-    for i in $BOOT_FILES; do
-        if [ -f "$i" ]; then
-            contents=$(cat $i)
-            [ "$contents" = "$checksums" ] && return 1
-        fi
-    done
-    return 0
-}
-
-get_checksums()
-{
-    if [ ! -f "$BSCONF_FILE" ]; then
-        return 1
-    fi
-    # Used to tell if the file have changed
-    echo $(md5sum "$BSCONF_FILE")
-}
-
-run_smithy()
-{
-    PYTHON=$(which python)
-    exec "$PYTHON" anvil $ARGS
-}
-
-puke()
-{
-    cleaned_force=$(echo "$FORCE" | sed -e 's/\([A-Z]\)/\L\1/g;s/\s//g')
-    if [[ "$cleaned_force" == "yes" ]]; then
-        run_smithy
-    else
-        echo -e "To run anyway set ${COL_YELLOW}FORCE=yes${COL_RESET} and rerun." >&2
-        exit 1
-    fi
 }
 
 ## Identify which bootstrap configuration file to use: either set
@@ -325,7 +205,6 @@ done
 # Source immediately so that we can export the needed variables.
 if [ -f "$BSCONF_FILE" ]; then
     source "$BSCONF_FILE"
-    export REQUIRED_PACKAGES="$REQUIRES"
 fi
 
 if ! needs_bootstrap; then
@@ -366,14 +245,6 @@ for step in ${STEPS:?"Error: STEPS is undefined!"}; do
     fi
 done
 clean_pip
-
-# Write the checksums of the bootstrap file
-# which if new requirements are added will cause new checksums
-# and a new dependency install...
-checksum=$(get_checksums)
-for i in $BOOT_FILES; do
-    echo -e "$checksum" > "$i"
-done
 
 mkdir -p -v /etc/anvil /usr/share/anvil
 touch /var/log/anvil.log
