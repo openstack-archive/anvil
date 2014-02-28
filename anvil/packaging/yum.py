@@ -373,6 +373,9 @@ class YumDependencyHandler(base.DependencyHandler):
             settings.TEMPLATE_DIR,
             self.SPEC_TEMPLATE_DIR,
             filename)
+        parsed_version = pkg_resources.parse_version(params["version"])
+        params["at_least"] = lambda arg: (
+            pkg_resources.parse_version(arg) <= parsed_version)
 
         content = utils.load_template(self.SPEC_TEMPLATE_DIR, template_name)[1]
         spec_filename = sh.joinpths(self.rpmbuild_dir, "SPECS", "%s.spec" % rpm_name)
