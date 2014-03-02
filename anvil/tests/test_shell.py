@@ -115,15 +115,16 @@ class TestShell(test.MockTestCase):
         self.popen_inst_mock.returncode = 1
         self.popen_inst_mock.communicate.return_value = (
             '0\n1\n2\n3\n4\n5\n6\n7\n8\n', '')
-        stdout = ('<truncated, look to debug log for full output>\n'
-                  '2\n3\n4\n5\n6\n7\n8\n')
+        stdout = ('2\n3\n4\n5\n6\n7\n8')
+        expected = (
+            "Unexpected error while running command.\n"
+            "Command: %s\n"
+            "Exit code: 1\n"
+            "Stdout: %s \(see debug log for more details...\)\n"
+            "Stderr: " % (self.str_cmd, stdout)
+        )
         self.assertRaisesRegexp(exc.ProcessExecutionError,
-                                "Unexpected error while running command.\n"
-                                "Command: %s\n"
-                                "Exit code: 1\n"
-                                "Stdout: %s\n"
-                                "Stderr: " % (self.str_cmd, stdout),
-                                sh.execute, self.cmd)
+                                expected, sh.execute, self.cmd)
 
     @mock.patch.object(sh, 'mkdirslist')
     def test_execute_save_output(self, mocked_mkdirslist):
