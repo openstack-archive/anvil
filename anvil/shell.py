@@ -41,14 +41,14 @@ from anvil import log as logging
 LOG = logging.getLogger(__name__)
 
 
-# Leave this many lines when truncating output by default
-_TRUNCATED_OUTPUT_LINES = 7
-
-
 # Locally stash these so that they can not be changed
 # by others after this is first fetched...
 SUDO_UID = env.get_key('SUDO_UID')
 SUDO_GID = env.get_key('SUDO_GID')
+
+# Tail this many lines from a file when executed and output is being
+# piped to said file.
+_TRUNCATED_OUTPUT_LINES = 7
 
 # Set only once
 IS_DRYRUN = None
@@ -140,19 +140,26 @@ def execute(cmd,
             process_env[k] = str(v)
 
     # Run command process.
+    exec_kwargs = {
+        'stdin': subprocess.PIPE,
+        'stdout': stdout_fh,
+        'stderr': stderr_fh,
+        'close_fds': True,
+        'shell': shell,
+        'cwd': cwd,
+        'env': process_env,
+    }
     result = ("", "")
     if is_dry_run():
         rc = 0
     else:
         try:
-            obj = subprocess.Popen(cmd, stdin=subprocess.PIPE,
-                                   stdout=stdout_fh, stderr=stderr_fh,
-                                   close_fds=True, shell=shell, cwd=cwd,
-                                   env=process_env)
+            obj = subprocess.Popen(cmd, **exec_kwargs)
             result = obj.communicate(process_input)
         except OSError as e:
             raise excp.ProcessExecutionError(
-                cmd=str_cmd,
+                str_cmd,
+                exec_kwargs=exec_kwargs,
                 description="%s: [%s, %s]" % (e, e.errno, e.strerror)
             )
         else:
@@ -163,28 +170,16 @@ def execute(cmd,
     stderr = result[1] or ""
     if rc != 0 and check_exit_code:
         # Raise exception if return code is not `0`.
-        raise excp.ProcessExecutionError(cmd=str_cmd,
-                                         stdout=_redirected(stdout, stdout_fh),
-                                         stderr=_redirected(stderr, stderr_fh),
-                                         exit_code=rc)
-
+        e = excp.ProcessExecutionError(str_cmd,
+                                       exec_kwargs=exec_kwargs,
+                                       stdout=stdout,
+                                       stderr=stderr,
+                                       exit_code=rc,
+                                       where_output="debug log")
+        LOG.debug("Stdout: %s", e.stdout)
+        LOG.debug("Stderr: %s", e.stderr)
+        raise e
     return stdout, stderr
-
-
-def _redirected(output, stream, count=_TRUNCATED_OUTPUT_LINES):
-    """Prepare stream output before it can be passed to exception to be raised.
-    Add information of where output was redirected (if was).
-    """
-    if stream == subprocess.PIPE:
-        lines = output.splitlines(True)
-        if len(lines) > count:
-            LOG.debug(output)
-            output_tail = ''.join(lines[-count:])
-            output = ("<truncated, look to debug log for full output>\n%s"
-                      % output_tail)
-    else:
-        output = "<redirected to %s>" % stream.name
-    return output
 
 
 def execute_save_output(cmd, file_name, **kwargs):
@@ -197,11 +192,16 @@ def execute_save_output(cmd, file_name, **kwargs):
         with open(file_name, 'wb') as fh:
             return execute(cmd, stdout_fh=fh, stderr_fh=fh, **kwargs)
     except excp.ProcessExecutionError:
-        with open(file_name) as fh:
-            # TODO(imelnikov): optimize this for larger files
-            lines = list(fh)[-_TRUNCATED_OUTPUT_LINES:]
-        LOG.debug('Last lines from %s:\n%s', file_name, ''.join(lines))
-        raise
+        with excp.reraise() as e:
+            try:
+                # TODO(imelnikov): optimize this for larger files
+                with open(file_name, 'rb') as fh:
+                    content = fh.read().splitlines(True)
+            except IOError:
+                pass
+            else:
+                LOG.debug('Last lines from %s:\n%s', file_name,
+                          "".join(content[-_TRUNCATED_OUTPUT_LINES:]))
 
 
 @contextlib.contextmanager
