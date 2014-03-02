@@ -14,6 +14,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import contextlib
+import subprocess
+import sys
+
+import six
+
+# Leave this many lines when truncating output by default
+TRUNCATED_OUTPUT_LINES = 7
+
 
 class AnvilException(Exception):
     pass
@@ -84,18 +93,64 @@ class DependencyException(AnvilException):
 
 
 class ProcessExecutionError(IOError):
-    def __init__(self, cmd, stdout='', stderr='', exit_code=None,
-                 description=None):
+    MESSAGE_TPL = (
+        '%(description)s\n'
+        'Command: %(command)s\n'
+        'Exit code: %(exit_code)s\n'
+        'Stdout: %(stdout)s\n'
+        'Stderr: %(stderr)s'
+    )
+
+    def __init__(self, cmd, exec_kwargs=None,
+                 stdout='', stderr='', exit_code=None, description=None):
         if not isinstance(exit_code, (long, int)):
             exit_code = '-'
         if not description:
             description = 'Unexpected error while running command.'
-        message = ('%s\n' % description +
-                   'Command: %s\n' % cmd +
-                   'Exit code: %s\n' % exit_code +
-                   'Stdout: %s\n' % stdout +
-                   'Stderr: %s' % stderr)
+        if not exec_kwargs:
+            exec_kwargs = {}
+        message = self.MESSAGE_TPL % {
+            'exit_code': exit_code,
+            'command': cmd,
+            'description': description,
+            'stdout': self._t(exec_kwargs.get('stdout'), stdout),
+            'stderr': self._t(exec_kwargs.get('stderr'), stderr),
+        }
         IOError.__init__(self, message)
+        self._exec_kwargs = exec_kwargs
+        self._stdout = stdout
+        self._stderr = stderr
+
+    @staticmethod
+    def _t(stream, output, truncate_len=TRUNCATED_OUTPUT_LINES):
+        if stream != subprocess.PIPE and stream is not None:
+            return "<redirected to %s>" % stream.name
+        if truncate_len < 0 or output is None:
+            return output
+        lines = output.splitlines(True)
+        if len(lines) > truncate_len:
+            output_tail = ''.join(lines[-truncate_len:])
+            output = ("<truncated, look to debug log for full output>\n%s"
+                      % output_tail)
+        return output
+
+    def stdout(self, truncate=True):
+        if not truncate:
+            truncate_len = -1
+        else:
+            truncate_len = TRUNCATED_OUTPUT_LINES
+        return self._t(self._exec_kwargs.get('stdout'),
+                       self._stdout,
+                       truncate_len=truncate_len)
+
+    def stderr(self, truncate=True):
+        if not truncate:
+            truncate_len = -1
+        else:
+            truncate_len = TRUNCATED_OUTPUT_LINES
+        return self._t(self._exec_kwargs.get('stderr'),
+                       self._stderr,
+                       truncate_len=truncate_len)
 
 
 class YamlException(ConfigException):
@@ -129,3 +184,14 @@ class YamlLoopException(YamlException):
               .format(conf, opt, prettified_stack)
 
         super(YamlLoopException, self).__init__(msg)
+
+
+@contextlib.contextmanager
+def reraise():
+    ex_type, ex, ex_tb = sys.exc_info()
+    try:
+        yield ex
+    except Exception:
+        raise
+    else:
+        six.reraise(ex_type, ex, ex_tb)
