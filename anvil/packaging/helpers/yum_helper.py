@@ -60,14 +60,13 @@ class Helper(object):
         try:
             data = self._yyoom(arglist)
         except excp.ProcessExecutionError:
-            ex_type, ex, ex_tb = sys.exc_info()
-            try:
-                data = _parse_json(ex.stdout)
-            except Exception as e:
-                LOG.error("Failed to parse YYOOM output: %s", e)
-            else:
-                self._handle_transaction_data(tracewriter, data)
-            raise ex_type, ex, ex_tb
+            with excp.reraise() as ex:
+                try:
+                    data = _parse_json(ex.stdout)
+                except Exception:
+                    LOG.exception("Failed to parse YYOOM output")
+                else:
+                    self._handle_transaction_data(tracewriter, data)
         self._handle_transaction_data(tracewriter, data)
 
     @staticmethod
@@ -85,11 +84,11 @@ class Helper(object):
             failed_names = [action['name']
                             for action in data
                             if action['action_type'] == 'error']
-        except Exception as e:
-            LOG.error("Failed to handle transaction data: %s", e)
+        except Exception:
+            LOG.exception("Failed to handle YYOOM transaction data")
         else:
             if failed_names:
-                raise RuntimeError("Yum failed on %s" % ", ".join(failed_names))
+                raise RuntimeError("YYOOM failed on %s" % ", ".join(failed_names))
 
     def is_installed(self, name):
         matches = self.find_installed(name)
