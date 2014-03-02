@@ -41,10 +41,12 @@ class TestProcessExecutionError(test.TestCase):
     def test_stdout(self):
         err = exc.ProcessExecutionError(self.cmd, stdout=self.stdout)
         self.assertExceptionMessage(err, cmd=self.cmd, stdout=self.stdout)
+        self.assertEqual(self.stdout, err.stdout)
 
     def test_stdout_empty(self):
         err = exc.ProcessExecutionError(self.cmd, stdout='')
         self.assertExceptionMessage(err, cmd=self.cmd, stdout='')
+        self.assertEqual('', err.stdout)
 
     def test_stdout_none(self):
         err = exc.ProcessExecutionError(self.cmd, stdout=None)
@@ -53,6 +55,7 @@ class TestProcessExecutionError(test.TestCase):
     def test_stderr(self):
         err = exc.ProcessExecutionError(self.cmd, stderr=self.stderr)
         self.assertExceptionMessage(err, cmd=self.cmd, stderr=self.stderr)
+        self.assertEqual(self.stderr, err.stderr)
 
     def test_stderr_none(self):
         err = exc.ProcessExecutionError(self.cmd, stderr=None)
@@ -76,6 +79,38 @@ class TestProcessExecutionError(test.TestCase):
         description = 'custom description'
         err = exc.ProcessExecutionError(self.cmd, description=description)
         self.assertExceptionMessage(err, self.cmd, description=description)
+
+
+class TestReraise(test.TestCase):
+    def test_reraise_exception(self):
+        buff = []
+
+        def failure():
+            raise IOError("Broken")
+
+        def activate():
+            try:
+                failure()
+            except Exception:
+                with exc.reraise():
+                    buff.append(1)
+
+        self.assertRaises(IOError, activate)
+        self.assertEqual([1], buff)
+
+    def test_override_reraise_exception(self):
+
+        def failure():
+            raise IOError("Broken")
+
+        def activate():
+            try:
+                failure()
+            except Exception:
+                with exc.reraise():
+                    raise RuntimeError("Really broken")
+
+        self.assertRaises(RuntimeError, activate)
 
 
 class TestYamlException(test.TestCase):
