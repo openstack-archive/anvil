@@ -115,8 +115,7 @@ class TestShell(test.MockTestCase):
         self.popen_inst_mock.returncode = 1
         self.popen_inst_mock.communicate.return_value = (
             '0\n1\n2\n3\n4\n5\n6\n7\n8\n', '')
-        stdout = ('<truncated, look to debug log for full output>\n'
-                  '2\n3\n4\n5\n6\n7\n8\n')
+        stdout = ('2\n3\n4\n5\n6\n7\n8\n')
         self.assertRaisesRegexp(exc.ProcessExecutionError,
                                 "Unexpected error while running command.\n"
                                 "Command: %s\n"

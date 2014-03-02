@@ -14,6 +14,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import contextlib
+import subprocess
+import sys
+
+import six
+
 
 class AnvilException(Exception):
     pass
@@ -84,18 +90,65 @@ class DependencyException(AnvilException):
 
 
 class ProcessExecutionError(IOError):
-    def __init__(self, cmd, stdout='', stderr='', exit_code=None,
-                 description=None):
+    MESSAGE_TPL = (
+        '%(description)s\n'
+        'Command: %(command)s\n'
+        'Exit code: %(exit_code)s\n'
+        'Stdout: %(stdout)s\n'
+        'Stderr: %(stderr)s'
+    )
+
+    # Truncate stdout/stderr to this many chars when creating a process execution
+    # error since we don't want the full output in the exception message (it can
+    # be accessed via properties instead).
+    TRUNCATED_OUTPUT_LINES = 7
+
+    @classmethod
+    def _truncate_lines(cls, content):
+        if not content:
+            return content
+        lines = content.splitlines(True)
+        if len(lines) > cls.TRUNCATED_OUTPUT_LINES:
+            return "".join(lines[-cls.TRUNCATED_OUTPUT_LINES:])
+        return content
+
+    def __init__(self, cmd, exec_kwargs=None,
+                 stdout='', stderr='', exit_code=None, description=None):
         if not isinstance(exit_code, (long, int)):
             exit_code = '-'
         if not description:
             description = 'Unexpected error while running command.'
-        message = ('%s\n' % description +
-                   'Command: %s\n' % cmd +
-                   'Exit code: %s\n' % exit_code +
-                   'Stdout: %s\n' % stdout +
-                   'Stderr: %s' % stderr)
+        if not exec_kwargs:
+            exec_kwargs = {}
+        trunc_stdout = self._truncate_lines(
+            self._format(exec_kwargs.get('stdout'), stdout))
+        trunc_stderr = self._truncate_lines(
+            self._format(exec_kwargs.get('stderr'), stderr))
+        message = self.MESSAGE_TPL % {
+            'exit_code': exit_code,
+            'command': cmd,
+            'description': description,
+            'stdout': trunc_stdout,
+            'stderr': trunc_stderr,
+        }
         IOError.__init__(self, message)
+        self._exec_kwargs = exec_kwargs
+        self._stdout = stdout
+        self._stderr = stderr
+
+    @staticmethod
+    def _format(stream, output):
+        if stream != subprocess.PIPE and stream is not None:
+            return "<redirected to %s>" % stream.name
+        return output
+
+    @property
+    def stdout(self):
+        return self._format(self._exec_kwargs.get('stdout'), self._stdout)
+
+    @property
+    def stderr(self):
+        return self._format(self._exec_kwargs.get('stderr'), self._stderr)
 
 
 class YamlException(ConfigException):
@@ -129,3 +182,14 @@ class YamlLoopException(YamlException):
               .format(conf, opt, prettified_stack)
 
         super(YamlLoopException, self).__init__(msg)
+
+
+@contextlib.contextmanager
+def reraise():
+    ex_type, ex, ex_tb = sys.exc_info()
+    try:
+        yield ex
+    except Exception:
+        raise
+    else:
+        six.reraise(ex_type, ex, ex_tb)
