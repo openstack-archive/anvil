@@ -14,6 +14,11 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import contextlib
+import sys
+
+import six
+
 
 class AnvilException(Exception):
     pass
@@ -96,6 +101,8 @@ class ProcessExecutionError(IOError):
                    'Stdout: %s\n' % stdout +
                    'Stderr: %s' % stderr)
         IOError.__init__(self, message)
+        self.stdout = stdout
+        self.stderr = stderr
 
 
 class YamlException(ConfigException):
@@ -129,3 +136,14 @@ class YamlLoopException(YamlException):
               .format(conf, opt, prettified_stack)
 
         super(YamlLoopException, self).__init__(msg)
+
+
+@contextlib.contextmanager
+def reraise():
+    ex_type, ex, ex_tb = sys.exc_info()
+    try:
+        yield ex
+    except Exception:
+        raise
+    else:
+        six.reraise(ex_type, ex, ex_tb)
