@@ -501,33 +501,20 @@ class YumDependencyHandler(base.DependencyHandler):
         sh.unlink(archive_name)
 
     def _find_template_and_rpm_name(self, instance, build_name):
-        search_names = [
-            [
-                build_name,
-                "%s.spec" % build_name,
-            ],
-        ]
+        search_names = [(build_name, "%s.spec" % build_name)]
+
         try:
             egg_name = instance.egg_info['name']
-            if any(s.endswith("client") for s in (instance.name, egg_name, build_name)):
-                search_names.extend([
-                    [
-                        egg_name,
-                        "python-commonclient.spec",
-                    ],
-                ])
-            search_names.extend([
-                [
-                    "openstack-%s" % (egg_name),
-                    "openstack-%s.spec" % (egg_name),
-                ],
-                [
-                    egg_name,
-                    "%s.spec" % (egg_name),
-                ],
-            ])
         except AttributeError:
             pass
+        else:
+            if any(s.endswith("client")
+                   for s in (instance.name, egg_name, build_name)):
+                search_names.append([egg_name, "python-commonclient.spec"])
+            search_names.extend([
+                ("openstack-%s" % (egg_name), "openstack-%s.spec" % (egg_name)),
+                (egg_name, "%s.spec" % (egg_name)),
+            ])
 
         # Return the first that exists (if any from this list)
         for (rpm_name, template_name) in search_names:
@@ -547,16 +534,18 @@ class YumDependencyHandler(base.DependencyHandler):
         try:
             egg_name = instance.egg_info['name']
             params["version"] = instance.egg_info["version"]
-            if any(s.endswith("client") for s in (instance.name, egg_name, build_name)):
+        except AttributeError:
+            pass
+        else:
+            if any(s.endswith("client")
+                   for s in (instance.name, egg_name, build_name)):
                 client_name = utils.strip_prefix_suffix(egg_name, "python-", "client")
                 if not client_name:
                     msg = "Bad client package name %s" % (egg_name)
                     raise excp.PackageException(msg)
                 params["clientname"] = client_name
-                params["apiname"] = instance.get_option('api_name',
-                                                        default_value=client_name.title())
-        except AttributeError:
-            pass
+                params["apiname"] = instance.get_option(
+                    'api_name', default_value=client_name.title())
 
         if all((rpm_name, template_name)):
             spec_filename = self._write_spec_file(instance, rpm_name,
@@ -575,20 +564,20 @@ class YumDependencyHandler(base.DependencyHandler):
         if from_instances:
             inst_packages = list(self.requirements["requires"])
             for inst in self.instances:
+                inst_packages.extend(inst.package_names())
                 if sh.isdir(inst.get_option("app_dir")):
                     try:
-                        rpm_name, _ = self._find_template_and_rpm_name(
-                            inst, inst.get_option('build_name',
-                                                  default_value=inst.name)
-                        )
                         py_req = inst.egg_info['req']
+                    except AttributeError:
+                        pass
+                    else:
+                        rpm_name, _ = self._find_template_and_rpm_name(
+                            inst, inst.get_option('build_name', default_value=inst.name)
+                        )
                         if rpm_name is not None:
                             desired_rpms.append((rpm_name, py_req))
                         else:
                             py_reqs.add(py_req)
-                    except AttributeError:
-                        pass
-                inst_packages.extend(inst.package_names())
             for rpm_name in inst_packages:
                 desired_rpms.append((rpm_name, None))
         if from_deps:
