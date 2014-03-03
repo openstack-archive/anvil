@@ -58,7 +58,7 @@ class DummyInstaller(object):
         elif utils.has_any(option, 'extra_flags', 'extra_opts', 'instances_path'):
             return ''
         else:
-            # Make a fake dictionary hierachy
+            # Make a fake dictionary hierarchy
             src = make_fakey([option] + list(options))
         return utils.get_deep(src, [option] + list(options))
 
