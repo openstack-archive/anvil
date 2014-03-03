@@ -63,7 +63,7 @@ swift-client:
   tag: 2.0.2
 trove-client:
   repo: git://github.com/openstack/python-troveclient.git
-  tag: 1.0.3
+  tag: 0.1.4
 trove:
   repo: git://github.com/openstack/trove.git
   tag: 2013.2.2
