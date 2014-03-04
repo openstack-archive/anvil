@@ -111,14 +111,18 @@ class Component(object):
     def subsystem_names(self):
         return self.subsystems.keys()
 
+    @property
+    def packages(self):
+        return []
+
     def package_names(self):
         """Return a set of names of all packages for this component."""
         names = set()
-        try:
-            for pack in self.packages:
+        for pack in self.packages:
+            try:
                 names.add(pack["name"])
-        except (AttributeError, KeyError):
-            pass
+            except KeyError:
+                pass
         daemon_to_package = self.get_option("daemon_to_package")
         if not daemon_to_package:
             daemon_to_package = {}
