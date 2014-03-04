@@ -155,36 +155,3 @@ def read_requirement_files(files):
             with open(filename) as f:
                 result.extend(parse_requirements(f.read()))
     return result
-
-
-class Helper(object):
-    def __init__(self):
-        self._pip_executable = sh.which_first(['pip-python', 'pip'])
-        self._installed_cache = None
-
-    def _get_installed(self):
-        cmd = [self._pip_executable] + FREEZE_CMD
-        (stdout, _stderr) = sh.execute(cmd)
-        return parse_requirements(stdout, True)
-
-    def uncache(self):
-        self._installed_cache = None
-
-    def list_installed(self):
-        if self._installed_cache is None:
-            self._installed_cache = self._get_installed()
-        return list(self._installed_cache)
-
-    def is_installed(self, name):
-        matches = self.find_installed(name)
-        if len(matches):
-            return True
-        return False
-
-    def find_installed(self, name):
-        wanted_pkg = create_requirement(name)
-        matches = []
-        for pkg in self.list_installed():
-            if pkg.key == wanted_pkg.key:
-                matches.append(pkg)
-        return matches

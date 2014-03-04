@@ -24,7 +24,6 @@ from anvil import shell as sh
 from anvil import utils
 
 from anvil.components import base
-from anvil.packaging.helpers import pip_helper
 
 LOG = logging.getLogger(__name__)
 
@@ -55,7 +54,6 @@ class EmptyTestingComponent(base.Component):
 class PythonTestingComponent(base.Component):
     def __init__(self, *args, **kargs):
         base.Component.__init__(self, *args, **kargs)
-        self.helper = pip_helper.Helper()
         self.test_type = self.get_option('test_type', default_value='').lower().strip()
         self.ignore_test_failures = kargs.get('ignore_test_failures', False)
 
