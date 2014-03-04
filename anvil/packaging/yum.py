@@ -577,7 +577,10 @@ class YumDependencyHandler(base.DependencyHandler):
             for inst in self.instances:
                 if sh.isdir(inst.get_option("app_dir")):
                     try:
-                        rpm_name, _ = self._get_template_and_rpm_name(inst)
+                        rpm_name, _ = self._find_template_and_rpm_name(
+                            inst, inst.get_option('build_name',
+                                                  default_value=inst.name)
+                        )
                         py_req = inst.egg_info['req']
                         if rpm_name is not None:
                             desired_rpms.append((rpm_name, py_req))
