@@ -1,4 +1,4 @@
-python setup.py install -O1 --root=$RPM_BUILD_ROOT --record=INSTALLED_FILES
+%{__python} setup.py install -O1 --root=$RPM_BUILD_ROOT --record=INSTALLED_FILES
 
 abspath_installed_files=$(readlink -f INSTALLED_FILES)
 (

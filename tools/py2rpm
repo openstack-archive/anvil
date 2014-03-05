@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import argparse
 import distutils.spawn
@@ -32,9 +32,9 @@ DEFAULT_SCRIPTS = {
     "prep":
     """%setup -n %{pkg_name}-%{unmangled_version} -n %{pkg_name}-%{unmangled_version}""",
     "build":
-    """python setup.py build""",
+    """%{__python} setup.py build""",
     "install":
-    """python setup.py install -O1 --root=$RPM_BUILD_ROOT --record=INSTALLED_FILES
+    """%{__python} setup.py install -O1 --root=$RPM_BUILD_ROOT --record=INSTALLED_FILES
 abspath_installed_files=$(readlink -f INSTALLED_FILES)
 (
     cd $RPM_BUILD_ROOT

@@ -118,7 +118,7 @@ simple runner (%{python_name}-make-test-env).
 #raw
 
 %build
-python setup.py build
+%{__python} setup.py build
 
 
 %install
@@ -135,7 +135,7 @@ popd
 rm -fr doc/build/html/.doctrees doc/build/html/.buildinfo
 %endif
 
-python setup.py install --prefix=%{_prefix} --root=%{buildroot}
+%{__python} setup.py install --prefix=%{_prefix} --root=%{buildroot}
 
 %if ! 0%{?usr_only}
 
