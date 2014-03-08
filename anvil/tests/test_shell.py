@@ -14,8 +14,9 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import mock
 import subprocess
+
+import mock
 
 from anvil import exceptions as exc
 from anvil import shell as sh
@@ -132,14 +133,16 @@ class TestShell(test.MockTestCase):
         file_name = 'output.txt'
         with mock.patch.object(sh, 'open', mock.mock_open(),
                                create=True) as fh_mock:
-            fh_mock.return_value.name = file_name
-            self.assertRaisesRegexp(
-                exc.ProcessExecutionError,
-                "Unexpected error while running command.\n"
-                "Command: %s\n"
-                "Exit code: 1\n"
-                "Stdout: <redirected to %s>\n"
-                "Stderr: <redirected to %s>" % (self.str_cmd, file_name,
-                                                file_name),
-                sh.execute_save_output, self.cmd, file_name
-            )
+            with mock.patch.object(sh, 'getsize') as size_mock:
+                size_mock.return_value = 0
+                fh_mock.return_value.name = file_name
+                self.assertRaisesRegexp(
+                    exc.ProcessExecutionError,
+                    "Unexpected error while running command.\n"
+                    "Command: %s\n"
+                    "Exit code: 1\n"
+                    "Stdout: <redirected to %s>\n"
+                    "Stderr: <redirected to %s>" % (self.str_cmd, file_name,
+                                                    file_name),
+                    sh.execute_save_output, self.cmd, file_name
+                )
