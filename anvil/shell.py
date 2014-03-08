@@ -17,6 +17,7 @@
 # R0915: Too many statements
 # pylint: disable=R0915
 
+import collections
 import contextlib
 import getpass
 import grp
@@ -194,14 +195,14 @@ def execute_save_output(cmd, file_name, **kwargs):
     except excp.ProcessExecutionError:
         with excp.reraise():
             try:
-                # TODO(imelnikov): optimize this for larger files
                 with open(file_name, 'rb') as fh:
-                    content = fh.read().splitlines(True)
+                    lines = collections.deque(fh,
+                                              maxlen=_TRUNCATED_OUTPUT_LINES)
+                content = "".join(lines)
             except IOError:
                 pass
             else:
-                LOG.debug('Last lines from %s:\n%s', file_name,
-                          "".join(content[-_TRUNCATED_OUTPUT_LINES:]))
+                LOG.debug('Last lines from %s:\n%s', file_name, content)
 
 
 @contextlib.contextmanager
