@@ -1,10 +1,8 @@
 #!/usr/bin/python
 
 import argparse
-import distutils.spawn
 import logging
 import re
-import subprocess
 import sys
 
 import pip.index
@@ -50,29 +48,11 @@ def create_parser():
         default=False,
         help="Print debug information")
     parser.add_argument(
-        "--ignore-installed", "-i",
-        action="store_true",
-        default=False,
-        help="Ignore installed packages")
-    parser.add_argument(
         "--ignore-packages",
         nargs="*",
         default=[],
         metavar="<requirement specifier>",
         help="Ignore listed packages")
-    parser.add_argument(
-        "--frozen", "-f",
-        action="store_true",
-        default=False,
-        help="Make requirements meet installed packages (taken from pip freeze)")
-    pip_executable = (distutils.spawn.find_executable("pip") or
-                      distutils.spawn.find_executable("pip-python"))
-    parser.add_argument(
-        "--pip",
-        metavar="<filename>",
-        default=pip_executable,
-        help="Full or short name of pip executable (default: %s)" %
-        pip_executable)
     return parser
 
 
@@ -81,10 +61,6 @@ def setup_logging(options):
     handler = logging.StreamHandler(sys.stderr)
     logger.addHandler(handler)
     logger.setLevel(level)
-
-
-incompatibles = set()
-joined_requirements = []
 
 
 def install_requirement_ensure_req_field(req):
@@ -116,7 +92,7 @@ def install_requirement_parse(line, comes_from):
     return install_requirement_ensure_req_field(req)
 
 
-def incompatible_requirement(chosen, conflicting):
+def incompatible_requirement(chosen, conflicting, incompatibles):
     if chosen.req.key not in incompatibles:
         incompatibles.add(chosen.req.key)
         print >> sys.stderr, "%s: incompatible requirements" % chosen.req.key
@@ -167,23 +143,6 @@ def parse_requirements(options):
             logger.error("Cannot parse `%s': %s" % (req_spec, ex))
             sys.exit(BAD_REQUIREMENTS)
     return all_requirements, ignored_requirements
-
-
-def installed_packages(options):
-    pip_cmdline = [
-        options.pip,
-        "freeze",
-    ]
-    (package_list, _) = subprocess.Popen(
-        pip_cmdline, stdout=subprocess.PIPE).communicate()
-
-    pkg_list = []
-    for line in package_list.splitlines():
-        try:
-            pkg_list.append(install_requirement_parse(line, "pip freeze").req)
-        except Exception:
-            pass
-    return pkg_list
 
 
 def join_one_requirement(req_list):
@@ -248,35 +207,15 @@ def join_one_requirement(req_list):
 
 
 def join_requirements(options):
-    global joined_requirements
     all_requirements, ignored_requirements = parse_requirements(options)
     skip_keys = set(pkg.req.key for pkg in ignored_requirements)
-    installed_by_key = {}
-    installed_requrements = []
-    if options.ignore_installed or options.frozen:
-        installed_requrements = installed_packages(options)
-    if options.ignore_installed:
-        skip_keys |= set(pkg.key for pkg in installed_requrements)
-    if options.frozen:
-        installed_by_key = dict((pkg.key, pkg) for pkg in installed_requrements)
 
+    incompatibles = set()
+    joined_requirements = []
     for req_key, req_list in all_requirements.iteritems():
         if req_key in skip_keys:
             continue
         joined_req = join_one_requirement(req_list)
-        try:
-            installed_req = installed_by_key[req_key]
-            installed_version = installed_req.index[0][0]
-        except (KeyError, IndexError):
-            pass
-        else:
-            if installed_version not in joined_req.req:
-                frozen_req = pip.req.InstallRequirement.from_line(
-                    "%s>=%s" % (installed_req.project_name,
-                                installed_req.specs[0][1]),
-                    "pip freeze")
-                incompatible_requirement(frozen_req, joined_req)
-                joined_req = frozen_req
         joined_requirements.append(joined_req)
 
         segment_ok = False
@@ -297,24 +236,28 @@ def join_requirements(options):
         if exact_version:
             for req in req_list:
                 if exact_version not in req.req:
-                    incompatible_requirement(joined_req, req)
+                    incompatible_requirement(joined_req, req,
+                                             incompatibles)
         else:
             for req in req_list:
                 for parsed, trans, op, ver in req.req.index:
                     if op[0] == "=":
                         if parsed in conflicts:
-                            incompatible_requirement(joined_req, req)
+                            incompatible_requirement(joined_req, req,
+                                                     incompatibles)
                             break
                     elif not segment_ok and op[0] == "<":
                         # analyse lower bound: x >= A or x > A
                         if (lower_version > parsed or (
                                 lower_version == parsed and
                                 (lower_strict or len(op) != 2))):
-                            incompatible_requirement(joined_req, req)
+                            incompatible_requirement(joined_req, req,
+                                                     incompatibles)
                             break
+    return (joined_requirements, incompatibles)
 
 
-def print_requirements():
+def print_requirements(joined_requirements):
     formatted_requirements = []
     for req in joined_requirements:
         if req.url:
@@ -330,8 +273,8 @@ def main():
     parser = create_parser()
     options = parser.parse_args()
     setup_logging(options)
-    join_requirements(options)
-    print_requirements()
+    joined_requirements, incompatibles = join_requirements(options)
+    print_requirements(joined_requirements)
     if incompatibles:
         sys.exit(INCOMPATIBLE_REQUIREMENTS)
 
