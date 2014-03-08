@@ -192,10 +192,7 @@ class DependencyHandler(object):
         Writes requirements to `self.gathered_requires_filename`.
         """
         extra_pips = extra_pips or []
-        cmdline = [
-            self.multipip_executable,
-            "--pip", self.pip_executable,
-        ]
+        cmdline = [self.multipip_executable]
         cmdline = cmdline + extra_pips + ["-r"] + requires_files
 
         ignore_pip_names = set(self.python_names)
