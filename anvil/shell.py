@@ -73,6 +73,79 @@ class Process(psutil.Process):
         return "%s (%s)" % (self.pid, self.name)
 
 
+class ReverseFile(object):
+    """Reads a file in reverse."""
+    BUFFER_SIZE = 512
+
+    def __init__(self, filename):
+        self._handle = open(filename, 'rb')
+        self._filename = filename
+        self._size = getsize(filename)
+        self._left = self._size
+        self._closed = False
+
+    def _buffer(self):
+        if self._closed:
+            raise ValueError('I/O operation on closed file')
+        if self._left <= 0:
+            return ""
+        end_pos = self._left
+        start_pos = max(0, end_pos - self.BUFFER_SIZE)
+        self._handle.seek(start_pos, 0)
+        buf = self._handle.read(end_pos - start_pos)
+        self._left -= self.BUFFER_SIZE
+        return buf
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.close()
+
+    @property
+    def size(self):
+        return self._size
+
+    @property
+    def name(self):
+        return self._filename
+
+    def close(self):
+        self._handle.close()
+        self._closed = True
+
+    def readlines(self, include_newline=False, include_last_newline=True):
+        content = self._buffer()
+        newline_count = 0
+        while True:
+            idx = content.rfind("\n")
+            while idx == -1:
+                tmp_content = self._buffer()
+                if not tmp_content:
+                    break
+                content = tmp_content + content
+                idx = content.rfind("\n")
+            if idx == -1:
+                yield content
+                break
+            else:
+                rest = content[0:idx]
+                if not include_newline:
+                    line = content[idx + 1:]
+                else:
+                    line = content[idx:]
+                skip = False
+                if not include_last_newline and newline_count == 0:
+                    if include_newline and line == "\n":
+                        skip = True
+                    if not include_newline and line == "":
+                        skip = True
+                if not skip:
+                    yield line
+                newline_count += 1
+                content = rest
+
+
 def set_dry_run(on_off):
     global IS_DRYRUN
     if not isinstance(on_off, (bool)):
@@ -194,14 +267,18 @@ def execute_save_output(cmd, file_name, **kwargs):
     except excp.ProcessExecutionError:
         with excp.reraise():
             try:
-                # TODO(imelnikov): optimize this for larger files
-                with open(file_name, 'rb') as fh:
-                    content = fh.read().splitlines(True)
+                lines = []
+                with ReverseFile(file_name) as fh:
+                    for line in fh.readlines(include_last_newline=False,
+                                             include_newline=True):
+                        lines.append(line)
+                        if len(lines) == _TRUNCATED_OUTPUT_LINES:
+                            break
+                content = "".join(lines)
             except IOError:
                 pass
             else:
-                LOG.debug('Last lines from %s:\n%s', file_name,
-                          "".join(content[-_TRUNCATED_OUTPUT_LINES:]))
+                LOG.debug('Last lines from %s:\n%s', file_name, content)
 
 
 @contextlib.contextmanager
