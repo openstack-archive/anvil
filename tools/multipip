@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+from __future__ import print_function
+
 import argparse
 import logging
 import re
@@ -96,18 +98,132 @@ def install_requirement_parse(line, comes_from):
     return install_requirement_ensure_req_field(req)
 
 
-def incompatible_requirement(chosen, conflicting, incompatibles):
-    if chosen.req.key not in incompatibles:
-        incompatibles.add(chosen.req.key)
-        print >> sys.stderr, "%s: incompatible requirements" % chosen.req.key
-        print >> sys.stderr, "Choosing:"
-        print >> sys.stderr, ("\t%s: %s" %
-                              (chosen.comes_from,
-                               install_requirement_str(chosen)))
-        print >> sys.stderr, "Conflicting:"
-    print >> sys.stderr, ("\t%s: %s" %
-                          (conflicting.comes_from,
-                           install_requirement_str(conflicting)))
+def score(versioned):
+    if not versioned:
+        return sys.maxint
+    if len(versioned) == 1:
+        return 0
+    not_allowed = set()
+    exacts = set()
+    for (bound, version) in versioned:
+        if bound == "!=":
+            not_allowed.add(version)
+        if bound == "==":
+            exacts.add(version)
+    score = 0
+    for version in exacts:
+        for (bound, version2) in versioned:
+            if version != version2:
+                score += 1
+    for version in not_allowed:
+        for (bound, version2) in versioned:
+            if bound in ["!=", ">", "<"]:
+                continue
+            if version2 == version:
+                score += 1
+    for (bound, version) in versioned:
+        if bound in [">=", ">"]:
+            for (bound2, version2) in versioned:
+                if (bound2, version2) == (bound, version):
+                    continue
+                if bound2 == "<" and version2 < version:
+                    score += 1
+                if bound2 == "<=" and bound == ">" and version2 <= version:
+                    score += 1
+                if bound2 == "==" and bound == "<" and version2 >= version:
+                    score += 1
+        if bound in ["<=", "<"]:
+            for (bound2, version2) in versioned:
+                if (bound2, version2) == (bound, version):
+                    continue
+                if bound2 == ">" and version2 > version:
+                    score += 1
+                if bound2 == ">=" and bound == "<" and version2 >= version:
+                    score += 1
+                if bound2 == "==" and bound == ">" and version2 <= version:
+                    score += 1
+    return score
+
+
+def _memoized_score(versioned, scored):
+    versioned = tuple(versioned)
+    for saved, saved_score in scored:
+        if saved == versioned:
+            return (True, saved_score)
+    s = score(versioned)
+    scored.append((versioned, s))
+    return (False, s)
+
+
+def _recursive_score(versioned, scored):
+    memoized, best_score = _memoized_score(versioned, scored)
+    best_match = list(versioned)
+    if memoized:
+        return (best_score, best_match)
+    for i, _spec in enumerate(versioned):
+        tmp_versioned = list(versioned)
+        tmp_versioned.pop(i)
+        tmp_score, tmp_match = _recursive_score(tmp_versioned, scored)
+        if tmp_score < best_score:
+            best_match = list(tmp_match)
+            best_score = tmp_score
+    return (best_score, best_match)
+
+
+def find_best_match(versioned):
+    scored = []
+    _recursive_score(versioned, scored)
+
+    def score_sort(item1, item2):
+        c = cmp(item1[1], item2[1])
+        if c == 0:
+            return cmp(item1[0], item2[0])
+        return c
+
+    # Find the lowest score with the highest number of elements.
+    scored = list(sorted(scored, cmp=score_sort))
+    min_score = sys.maxint
+    for saved, saved_score in scored:
+        if saved_score < min_score:
+            min_score = saved_score
+    max_elems = -1
+    best_match = []
+    for saved, saved_score in scored:
+        if min_score == saved_score:
+            if len(saved) > max_elems:
+                best_match = list(saved)
+                max_elems = len(saved)
+    baddies = set()
+    for saved_specs, _saved_score in scored:
+        for spec in saved_specs:
+            if spec not in best_match:
+                baddies.add(spec)
+    return (best_match, baddies)
+
+
+def match(name, specs):
+    versions = {}
+
+    def reform(specs):
+        pieces = []
+        for (bound, version) in specs:
+            pieces.append("%s%s" % (bound, str(versions[version])))
+        spec = "%s%s" % (name, ",".join(pieces))
+        return pip.req.InstallRequirement.from_line(spec, 'compiled')
+
+    versioned = set()
+    for (bound, version) in specs:
+        v = pkg_resources.parse_version(version)
+        versioned.add((bound, v))
+        versions[v] = version
+    versioned = list(versioned)
+    initial_score = score(versioned)
+    if initial_score == 0:
+        return (reform(versioned), [])
+    else:
+        best_match, incompat_versions = find_best_match(versioned)
+        incompats = [reform([s]) for s in incompat_versions]
+        return (reform(best_match), incompats)
 
 
 def parse_requirements(options):
@@ -146,115 +262,21 @@ def parse_requirements(options):
     return all_requirements, ignored_requirements
 
 
-def join_one_requirement(req_list):
-    """Join requirement list for one package together.
-
-    Possible returns:
-    * ==A - exact version (even when there are conflicts)
-    * >=?A,<=?B,(!=C)+ - line segment (no conflicts detected)
-    * >=?A,(!=C)+ - more than (also when conflicts detected)
-
-    :param:req_list list of pip.req.InstallRequirement
-    :return: pip.req.InstallRequirement
-    """
-    if len(req_list) == 1:
-        return req_list[0]
-    lower_bound_str = None
-    lower_bound_version = None
-    upper_bound_str = None
-    upper_bound_version = None
-    conflicts = []
-    for req in req_list:
-        for spec in req.req.specs:
-            if spec[0] == "==":
-                return req
-            spec_str = "%s%s" % spec
-            if spec[0] == "!=":
-                conflicts.append(spec_str)
-                continue
-            version = pkg_resources.parse_version(spec[1])
-            # strict_check is < or >, not <= or >=
-            strict_check = len(spec[0]) == 1
-            if spec[0][0] == ">":
-                if (not lower_bound_version or (version > lower_bound_version) or
-                    (strict_check and version == lower_bound_version)):
-                    lower_bound_version = version
-                    lower_bound_str = spec_str
-            else:
-                if (not upper_bound_version or (version < upper_bound_version) or
-                    (strict_check and version == upper_bound_version)):
-                    upper_bound_version = version
-                    upper_bound_str = spec_str
-    req_key = req_list[0].req.key
-    if lower_bound_version and upper_bound_version:
-        if lower_bound_version > upper_bound_version:
-            upper_bound_str = None
-        if lower_bound_version == upper_bound_version:
-            if lower_bound_str[1] == "=" and upper_bound_str[1] == "=":
-                return pip.req.InstallRequirement.from_line(
-                    "%s==%s" % (req_key, upper_bound_str[2:]),
-                    "compiled")
-            else:
-                upper_bound_str = None
-    req_specs = []
-    if lower_bound_str:
-        req_specs.append(lower_bound_str)
-    if upper_bound_str:
-        req_specs.append(upper_bound_str)
-    req_specs.extend(conflicts)
-    return pip.req.InstallRequirement.from_line(
-        "%s%s" % (req_key, ",".join(req_specs)),
-        "compiled")
-
-
 def join_requirements(options):
     all_requirements, ignored_requirements = parse_requirements(options)
     skip_keys = set(pkg.req.key for pkg in ignored_requirements)
 
-    incompatibles = set()
+    incompatibles = {}
     joined_requirements = []
     for req_key, req_list in all_requirements.iteritems():
         if req_key in skip_keys:
             continue
-        joined_req = join_one_requirement(req_list)
-        joined_requirements.append(joined_req)
-
-        segment_ok = False
-        lower_version = None
-        lower_strict = False
-        exact_version = None
-        conflicts = []
-        for parsed, trans, op, ver in joined_req.req.index:
-            if op[0] == ">":
-                lower_version = parsed
-                lower_strict = len(op) == 1
-            elif op[0] == "<":
-                segment_ok = True
-            elif op[0] == "=":
-                exact_version = parsed
-            else:
-                conflicts.append(parsed)
-        if exact_version:
-            for req in req_list:
-                if exact_version not in req.req:
-                    incompatible_requirement(joined_req, req,
-                                             incompatibles)
-        else:
-            for req in req_list:
-                for parsed, trans, op, ver in req.req.index:
-                    if op[0] == "=":
-                        if parsed in conflicts:
-                            incompatible_requirement(joined_req, req,
-                                                     incompatibles)
-                            break
-                    elif not segment_ok and op[0] == "<":
-                        # analyse lower bound: x >= A or x > A
-                        if (lower_version > parsed or (
-                                lower_version == parsed and
-                                (lower_strict or len(op) != 2))):
-                            incompatible_requirement(joined_req, req,
-                                                     incompatibles)
-                            break
+        specs = []
+        for req in req_list:
+            specs.extend(req.req.specs)
+        best_match, incompats = match(req_key, specs)
+        joined_requirements.append(best_match)
+        incompatibles[req_key] = incompats
     return (joined_requirements, incompatibles)
 
 
@@ -267,7 +289,18 @@ def print_requirements(joined_requirements):
             req = str(req.req)
         formatted_requirements.append(req)
     for req in sorted(formatted_requirements):
-        print req
+        print(req)
+
+
+def print_incompatibles(incompatibles):
+    for req_key in sorted(incompatibles.keys()):
+        print("%s: incompatible requirements" % req_key,
+              file=sys.stderr)
+        print("Conflicting:", file=sys.stderr)
+        for conflicting in incompatibles[req_key]:
+            print("\t%s: %s" % (conflicting.comes_from,
+                                install_requirement_str(conflicting)),
+                  file=sys.stderr)
 
 
 def main():
@@ -279,6 +312,7 @@ def main():
     except RequirementException as ex:
         logger.error("Requirement failure: %s", ex)
         sys.exit(BAD_REQUIREMENTS)
+    print_incompatibles(incompatibles)
     print_requirements(joined_requirements)
     if incompatibles:
         sys.exit(INCOMPATIBLE_REQUIREMENTS)
