@@ -17,6 +17,7 @@
 # R0915: Too many statements
 # pylint: disable=R0915
 
+import collections
 import contextlib
 import getpass
 import grp
@@ -198,8 +199,7 @@ def execute_save_output(cmd, file_name, **kwargs):
             return execute(cmd, stdout_fh=fh, stderr_fh=fh, **kwargs)
     except excp.ProcessExecutionError:
         with open(file_name) as fh:
-            # TODO(imelnikov): optimize this for larger files
-            lines = list(fh)[-_TRUNCATED_OUTPUT_LINES:]
+            lines = collections.deque(fh, maxlen=_TRUNCATED_OUTPUT_LINES)
         LOG.debug('Last lines from %s:\n%s', file_name, ''.join(lines))
         raise
 
