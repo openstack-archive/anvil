@@ -140,9 +140,6 @@ class DependencyHandler(object):
     def package_finish(self):
         pass
 
-    def post_bootstrap(self):
-        pass
-
     def build_binary(self):
         pass
 
