@@ -19,6 +19,8 @@
 #pylint: disable=R0902,R0921
 
 import collections
+from distutils import version as d_version
+import pkg_resources
 
 from anvil import colorizer
 from anvil import exceptions as exc
@@ -141,6 +143,9 @@ class DependencyHandler(object):
         pass
 
     def build_binary(self):
+        pass
+
+    def post_bootstrap(self):
         pass
 
     def install(self, general):
@@ -269,6 +274,15 @@ class DependencyHandler(object):
             '--build', sh.joinpths(pip_download_dir, '.build'),
             '--download-cache', sh.joinpths(pip_download_dir, '.cache'),
         ]
+        # Don't download wheels...
+        #
+        # See: https://github.com/pypa/pip/issues/1439
+        try:
+            pip_version = pkg_resources.get_distribution('pip').version
+            if d_version.StrictVersion(pip_version) >= d_version.StrictVersion('1.5'):
+                cmdline.append("--no-use-wheel")
+        except Exception:
+            pass
         cmdline.extend(sorted([str(p) for p in pips_to_download]))
         out_filename = sh.joinpths(self.log_dir,
                                    "pip-download-attempt-%s.log" % (attempt))
