@@ -10,11 +10,15 @@ cd "$(dirname "$0")"
 VERBOSE="${VERBOSE:-0}"
 YUM_OPTS="--assumeyes --nogpgcheck"
 CURL_OPTS=""
+
 VENV_OPTS="--no-site-packages"
 VENV_DIR="$PWD/.venv"
 VENV_ACTIVATE="$VENV_DIR/bin/activate"
-PIP="$VENV_DIR/bin/pip"
+VENV_PIP="$VENV_DIR/bin/pip"
+
 YYOOM_CMD="$PWD/tools/yyoom"
+PY2RPM_CMD="$PWD/tools/py2rpm"
+BOOTSTRAP_DIR="$PWD/.bootstrap"
 
 if [ "$VERBOSE" == "0" ]; then
     YUM_OPTS="$YUM_OPTS -q"
@@ -68,24 +72,87 @@ yum_remove()
 bootstrap_rpm_packages()
 {
     if [ -n "$REQUIRES" ]; then
-        echo -e "Installing system packages:"
+        echo "Installing system packages:"
         dump_list $REQUIRES
         echo "Please wait..."
         yum_install $REQUIRES
         if [ "$?" != "0" ]; then
-            echo -e "Failed installing!"
+            echo "Failed installing!"
             return 1
         fi
     fi
     if [ -n "$CONFLICTS" ]; then
-        echo -e "Removing conflicting system packages:"
+        echo "Removing conflicting system packages:"
         dump_list $CONFLICTS
         echo "Please wait..."
         yum_remove $CONFLICTS
         if [ "$?" != "0" ]; then
-            echo -e "Failed removing!"
+            echo "Failed removing!"
             return 1
         fi
+    fi
+    return 0
+}
+
+bootstrap_update_pip()
+{
+    if [ -z "$PIP_DESIRED" ]; then
+        return 0
+    fi
+    echo "Upgrading pip to be >= $PIP_DESIRED"
+    local pip_version=$(python -c "import pkg_resources
+print(pkg_resources.get_distribution('pip').version)
+")
+    local new_enough=$(python -c "from distutils import version
+print(int(version.StrictVersion('$pip_version') >= version.StrictVersion('$PIP_DESIRED')))
+")
+    if [ "$new_enough" == "1" ]; then
+        echo "Installed pip $pip_version is new enough."
+        return 0
+    fi
+    echo "Please wait..."
+    # We need to do this version check to avoid the newer pips from downloading
+    # wheel files (which it appears to have defaulted to doing in >= 1.5)...
+    #
+    # See: https://github.com/pypa/pip/issues/1439 for a bug which may change
+    # this back to not downloading wheel files
+    local wheel_enabled=$(python -c "from distutils import version
+print(int(version.StrictVersion('$pip_version') >= version.StrictVersion('1.5')))
+")
+    local pip_opts="-d $BOOTSTRAP_DIR/downloads"
+    if [ "$wheel_enabled" == "1" ]; then
+        pip_opts="$pip_opts --no-use-wheel"
+    fi
+    rm -rf $BOOTSTRAP_DIR
+    mkdir -p $BOOTSTRAP_DIR/downloads $BOOTSTRAP_DIR/rpmbuild
+    echo "Downloading pip >= $PIP_DESIRED"
+    echo "Please wait..."
+    if [ "$VERBOSE" == "0" ]; then
+        pip install $pip_opts "pip>=$PIP_DESIRED" > /dev/null 2>&1
+    else
+        pip install $pip_opts "pip>=$PIP_DESIRED"
+    fi
+    if [ "$?" != "0" ]; then
+        echo "Failed downloading pip>=$PIP_DESIRED"
+        return 1
+    fi
+    unsudo $BOOTSTRAP_DIR
+    echo "Building downloaded pip into an rpm..."
+    echo "Please wait..."
+    local rpm_names=$("$PY2RPM_CMD" --scripts-dir "conf/templates/packaging/scripts" --rpm-base \
+                      "$BOOTSTRAP_DIR/rpmbuild" -- "$BOOTSTRAP_DIR/downloads/"*.tar.gz 2>/dev/null | \
+                      awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)
+    if [ -z "$rpm_names" ]; then
+        echo "No RPMs were built!"
+        return 1
+    fi
+    unsudo $BOOTSTRAP_DIR
+    echo "Installing built RPMs..."
+    echo "Please wait..."
+    yum_install $rpm_names
+    if [ "$?" != "0" ]; then
+        echo "Failed installing!"
+        return 1
     fi
     return 0
 }
@@ -129,15 +196,15 @@ bootstrap_virtualenv()
     echo "Setting up virtualenv in $VENV_DIR"
     virtualenv $VENV_OPTS "$VENV_DIR" || return 1
     unsudo $VENV_DIR
-    local deps=$(cat requirements.txt optional-requirements.txt | grep -v '^$\|^\s*\#' | sort)
+    local deps=$(cat requirements.txt | grep -v '^$\|^\s*\#' | sort)
     if [ -n "$deps" ]; then
         echo "Installing anvil dependencies in $VENV_DIR"
         dump_list $deps
         echo "Please wait..."
         if [ "$VERBOSE" == "0" ]; then
-            $PIP install -r requirements.txt -r optional-requirements.txt > /dev/null 2>&1
+            $VENV_PIP install -r requirements.txt > /dev/null 2>&1
         else
-            $PIP install -v -r requirements.txt -r optional-requirements.txt
+            $VENV_PIP install -v -r requirements.txt
         fi
         if [ "$?" != "0" ]; then
             return 1
@@ -169,7 +236,7 @@ puke()
     if [ "$cleaned_force" == "yes" ]; then
         run_smithy
     else
-        echo -e "To run anyway set FORCE=yes and rerun." >&2
+        echo "To run anyway set FORCE=yes and rerun." >&2
         exit 1
     fi
 }
@@ -180,7 +247,7 @@ needs_bootstrap()
     if [ "$BOOTSTRAP" == "true" ]; then
         return 0
     fi
-    if [ ! -d "$VENV_DIR" -o ! -f "$VENV_ACTIVATE" -o ! -f "$PIP" ]; then
+    if [ ! -d "$VENV_DIR" -o ! -f "$VENV_ACTIVATE" -o ! -f "$VENV_PIP" ]; then
         return 0
     fi
     return 1
@@ -205,10 +272,10 @@ cache_and_install_rpm_url()
         return 0
     fi
     if [ ! -f "$cachedir/$rpm" ]; then
-        echo -e "Downloading ${rpm} to ${cachedir}"
+        echo "Downloading ${rpm} to ${cachedir}"
         curl $CURL_OPTS "$url" -o "$cachedir/$rpm" || return 1
     fi
-    echo -e "Installing $cachedir/$rpm"
+    echo "Installing $cachedir/$rpm"
     yum_install "$cachedir/$rpm"
     return $?
 }

@@ -1,5 +1,5 @@
 # -*- sh -*-
-STEPS="selinux epel rpm_packages virtualenv"
+STEPS="selinux epel rpm_packages update_pip virtualenv"
 EPEL_RPM_URL="http://mirrors.kernel.org/fedora-epel/6/i386/epel-release-6-8.noarch.rpm"
 DISTRO_CONFIG=conf/distros/rhel.yaml
 
@@ -31,3 +31,9 @@ CONFLICTS='
     python-sphinx10
     python-webob1.0
 '
+
+## RHEL has way to old of a pip version, we need to force and upgrade to at
+## least this version.
+##
+## See https://bugs.launchpad.net/pbr/+bug/1296310
+PIP_DESIRED="1.4.1"
