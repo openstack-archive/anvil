@@ -23,6 +23,7 @@ import os
 import random
 import re
 import socket
+import sys
 import tempfile
 import urllib2
 
@@ -220,6 +221,29 @@ def merge_dicts(*dicts, **kwargs):
             else:
                 merged[k] = v
     return merged
+
+
+def retry(attempts, delay, func, *args, **kwargs):
+    func_name = "??"
+    try:
+        func_name = func.__name__
+    except AttributeError:
+        pass
+    delay = max(0, delay)
+    attempts = max(1, attempts)
+    failures = []
+    for i in range(0, attempts):
+        kwargs['attempt'] = i + 1
+        try:
+            return func(*args, **kwargs)
+        except Exception:
+            failures.append(sys.exc_info())
+            if i + 1 < attempts:
+                LOG.info("Waiting %s seconds before calling `%s` again", delay, func_name)
+                sh.sleep(delay)
+    if failures:
+        exc_type, exc, exc_tb = failures[-1]
+        raise exc_type, exc, exc_tb
 
 
 def make_url(scheme, host, port=None, path='', params='', query='', fragment=''):
