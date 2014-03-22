@@ -19,8 +19,6 @@
 #pylint: disable=R0902,R0921
 
 import collections
-from distutils import version as d_version
-import pkg_resources
 
 from anvil import colorizer
 from anvil import exceptions as exc
@@ -54,6 +52,7 @@ class InstallHelper(object):
 class DependencyHandler(object):
     """Basic class for handler of OpenStack dependencies."""
     MAX_PIP_DOWNLOAD_ATTEMPTS = 4
+    PIP_DOWNLOAD_DELAY = 10
 
     def __init__(self, distro, root_dir, instances, opts=None):
         self.distro = distro
@@ -71,7 +70,6 @@ class DependencyHandler(object):
         self.download_requires_filename = sh.joinpths(self.deps_dir, "download-requires")
         # Executables we require to operate
         self.multipip_executable = sh.which("multipip", ["tools/"])
-        self.pip_executable = sh.which_first(['pip', 'pip-python'])
         # List of requirements
         self.pips_to_install = []
         self.forced_packages = []
@@ -255,38 +253,10 @@ class DependencyHandler(object):
         return self.pips_to_install
 
     def _try_download_dependencies(self, attempt, pips_to_download, pip_download_dir):
-        # Clean out any previous paths that we don't want around.
-        for path in ['.build']:
-            path = sh.joinpths(pip_download_dir, path)
-            if sh.isdir(path):
-                sh.deldir(path)
-            sh.mkdir(path)
-        # Ensure certain directories exist that we want to exist (but we don't
-        # want to delete them run after run).
-        for path in ['.cache']:
-            path = sh.joinpths(pip_download_dir, path)
-            if not sh.isdir(path):
-                sh.mkdir(path)
-        cmdline = [
-            self.pip_executable, '-v',
-            'install', '-I', '-U',
-            '--download', pip_download_dir,
-            '--build', sh.joinpths(pip_download_dir, '.build'),
-            '--download-cache', sh.joinpths(pip_download_dir, '.cache'),
-        ]
-        # Don't download wheels...
-        #
-        # See: https://github.com/pypa/pip/issues/1439
-        try:
-            pip_version = pkg_resources.get_distribution('pip').version
-            if d_version.StrictVersion(pip_version) >= d_version.StrictVersion('1.5'):
-                cmdline.append("--no-use-wheel")
-        except Exception:
-            pass
-        cmdline.extend(sorted([str(p) for p in pips_to_download]))
         out_filename = sh.joinpths(self.log_dir,
                                    "pip-download-attempt-%s.log" % (attempt))
-        sh.execute_save_output(cmdline, out_filename)
+        pip_helper.download_dependencies(pip_download_dir, pips_to_download,
+                                         out_filename)
 
     def _examine_download_dir(self, pips_to_download, pip_download_dir):
         pip_names = set([p.key for p in pips_to_download])
@@ -330,27 +300,15 @@ class DependencyHandler(object):
                 self._requirements_satisfied(pips_to_download, self.download_dir)):
             LOG.info("All python dependencies have been already downloaded")
         else:
-            pip_failures = []
-            for attempt in xrange(self.MAX_PIP_DOWNLOAD_ATTEMPTS):
-                # NOTE(aababilov): pip has issues with already downloaded files
-                for filename in sh.listdir(self.download_dir, files_only=True):
-                    sh.unlink(filename)
+            def do_download(attempt):
                 header = "Downloading %s python dependencies (attempt %s)"
-                header = header % (len(pips_to_download), attempt + 1)
+                header = header % (len(pips_to_download), attempt)
                 utils.log_iterable(sorted(pips_to_download), logger=LOG, header=header)
-                failed = False
-                try:
-                    self._try_download_dependencies(attempt + 1, pips_to_download,
-                                                    self.download_dir)
-                    pip_failures = []
-                except exc.ProcessExecutionError as e:
-                    LOG.exception("Failed downloading python dependencies")
-                    pip_failures.append(e)
-                    failed = True
-                if not failed:
-                    break
-            if pip_failures:
-                raise pip_failures[-1]
+                output_filename = sh.joinpths(self.log_dir,
+                                              "pip-download-attempt-%s.log" % (attempt))
+                pip_helper.download_dependencies(self.download_dir, pips_to_download,
+                                                 output_filename)
+            utils.retry(self.MAX_PIP_DOWNLOAD_ATTEMPTS, self.PIP_DOWNLOAD_DELAY, do_download)
             # NOTE(harlowja): Mark that we completed downloading successfully
             sh.touch_file(self.downloaded_flag_file, die_if_there=False,
                           quiet=True, tracewriter=self.tracewriter)
