@@ -143,6 +143,9 @@ class DependencyHandler(object):
     def build_binary(self):
         pass
 
+    def post_bootstrap(self):
+        pass
+
     def install(self, general):
         pass
 
