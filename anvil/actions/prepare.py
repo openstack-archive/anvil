@@ -40,6 +40,7 @@ class PrepareAction(action.Action):
                                                       self.root_dir,
                                                       instances.values(),
                                                       opts={"jobs": self.jobs})
+        dependency_handler.post_bootstrap()
         removals = []
         self._run_phase(
             action.PhaseFunctors(

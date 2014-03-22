@@ -202,6 +202,15 @@ class YumDependencyHandler(base.DependencyHandler):
                 self._move_rpm_files(sh.joinpths(self.rpmbuild_dir, "RPMS"), repo_dir)
             self._create_repo(repo_name)
 
+    def post_bootstrap(self):
+        bs_rpmbuild_dir = sh.joinpths('.bootstrap', 'rpmbuild')
+        if sh.isdir(bs_rpmbuild_dir):
+            LOG.info("Moving RPMS build on bootstrap to deps repo")
+            self._move_srpms("anvil-deps", bs_rpmbuild_dir)
+            self._move_rpm_files(bs_rpmbuild_dir,
+                                 sh.joinpths(self.anvil_repo_dir, 'anvil-deps'))
+            sh.deldir(bs_rpmbuild_dir)
+
     def _move_srpms(self, repo_name, rpmbuild_dir=None):
         if rpmbuild_dir is None:
             rpmbuild_dir = self.rpmbuild_dir
