@@ -1,5 +1,5 @@
 # -*- sh -*-
-STEPS="selinux epel rpm_packages virtualenv"
+STEPS="selinux epel rpm_packages virtualenv upgrade_packages"
 EPEL_RPM_URL="http://mirrors.kernel.org/fedora-epel/6/i386/epel-release-6-8.noarch.rpm"
 DISTRO_CONFIG=conf/distros/rhel.yaml
 
@@ -30,4 +30,7 @@ CONFLICTS='
     python-routes1.12
     python-sphinx10
     python-webob1.0
+'
+UPGRADE='
+    pip>=1.4.1
 '

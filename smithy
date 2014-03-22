@@ -10,11 +10,13 @@ cd "$(dirname "$0")"
 VERBOSE="${VERBOSE:-0}"
 YUM_OPTS="--assumeyes --nogpgcheck"
 CURL_OPTS=""
-VENV_OPTS="--no-site-packages"
+VENV_OPTS="--system-site-packages"
 VENV_DIR="$PWD/.venv"
 VENV_ACTIVATE="$VENV_DIR/bin/activate"
-PIP="$VENV_DIR/bin/pip"
+VENV_PIP="$VENV_DIR/bin/pip"
 YYOOM_CMD="$PWD/tools/yyoom"
+PY2RPM_CMD="$PWD/tools/py2rpm"
+BOOTSTRAP_DIR="$PWD/.bootstrap"
 
 if [ "$VERBOSE" == "0" ]; then
     YUM_OPTS="$YUM_OPTS -q"
@@ -90,6 +92,40 @@ bootstrap_rpm_packages()
     return 0
 }
 
+bootstrap_upgrade_packages()
+{
+    if [ -n "$UPGRADE" ]; then
+        echo -e "Upgrading system python packages rpms:"
+        dump_list $UPGRADE
+        echo "Please wait..."
+        rm -rf $BOOTSTRAP_DIR
+        mkdir -p $BOOTSTRAP_DIR/downloads $BOOTSTRAP_DIR/rpmbuild
+        if [ "$VERBOSE" == "0" ]; then
+            pip install --no-use-wheel -d $BOOTSTRAP_DIR/downloads $UPGRADE > /dev/null 2>&1
+        else
+            pip install --no-use-wheel -d $BOOTSTRAP_DIR/downloads $UPGRADE
+        fi
+        if [ "$?" != "0" ]; then
+            echo -e "Failed downloading packages to be upgraded!"
+            return 1
+        fi
+        unsudo $BOOTSTRAP_DIR
+        rpm_names=$("$PY2RPM_CMD" --scripts-dir "conf/templates/packaging/scripts" --rpm-base \
+                    "$BOOTSTRAP_DIR/rpmbuild" -- "$BOOTSTRAP_DIR/downloads/"*.tar.gz 2>/dev/null | \
+                    awk '/^Wrote: /{ print $2 }' | grep -v '.src.rpm' | sort -u)
+        if [ -z "$rpm_names" ]; then
+            echo -e "No binary RPMs were built!"
+            return 1
+        fi
+        yum_install $rpm_names
+        if [ "$?" != "0" ]; then
+            echo -e "Failed installing!"
+            return 1
+        fi
+    fi
+    return 0
+}
+
 clean_pip()
 {
     # See: https://github.com/pypa/pip/issues/982
@@ -109,7 +145,7 @@ bootstrap_epel()
     return $?
 }
 
-unsudo()
+unsudo() 
 {
     # If a sudo user is active the given files/directories will be changed to
     # be owned by that user instead of the current root user, if no sudo user
@@ -129,15 +165,15 @@ bootstrap_virtualenv()
     echo "Setting up virtualenv in $VENV_DIR"
     virtualenv $VENV_OPTS "$VENV_DIR" || return 1
     unsudo $VENV_DIR
-    local deps=$(cat requirements.txt optional-requirements.txt | grep -v '^$\|^\s*\#' | sort)
+    local deps=$(cat requirements.txt | grep -v '^$\|^\s*\#' | sort)
     if [ -n "$deps" ]; then
         echo "Installing anvil dependencies in $VENV_DIR"
         dump_list $deps
         echo "Please wait..."
         if [ "$VERBOSE" == "0" ]; then
-            $PIP install -r requirements.txt -r optional-requirements.txt > /dev/null 2>&1
+            $VENV_PIP install -r requirements.txt > /dev/null 2>&1
         else
-            $PIP install -v -r requirements.txt -r optional-requirements.txt
+            $VENV_PIP install -v -r requirements.txt
         fi
         if [ "$?" != "0" ]; then
             return 1
@@ -180,7 +216,7 @@ needs_bootstrap()
     if [ "$BOOTSTRAP" == "true" ]; then
         return 0
     fi
-    if [ ! -d "$VENV_DIR" -o ! -f "$VENV_ACTIVATE" -o ! -f "$PIP" ]; then
+    if [ ! -d "$VENV_DIR" -o ! -f "$VENV_ACTIVATE" -o ! -f "$VENV_PIP" ]; then
         return 0
     fi
     return 1
