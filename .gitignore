@@ -45,4 +45,4 @@ htmlcov
 pidfile
 .DS_Store
 *.rc
-.anvil_bootstrapped
+.bootstrap
