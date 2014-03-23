@@ -69,7 +69,7 @@ class YumDependencyHandler(base.DependencyHandler):
     REPOS = ["anvil-deps", "anvil"]
     JOBS = 2
 
-    def __init__(self, distro, root_dir, instances, opts=None):
+    def __init__(self, distro, root_dir, instances, opts):
         super(YumDependencyHandler, self).__init__(distro, root_dir, instances, opts)
         # Various paths we will use while operating
         self.rpmbuild_dir = sh.joinpths(self.deps_dir, "rpmbuild")
@@ -83,14 +83,10 @@ class YumDependencyHandler(base.DependencyHandler):
         # We inspect yum for packages, this helper allows us to do this.
         self.helper = yum_helper.Helper(self.log_dir, self.REPOS)
         # See if we are requested to run at a higher make parallelism level
-        self._jobs = self.JOBS
-        if 'jobs' in self.opts:
-            try:
-                self._jobs = int(self.opts.get('jobs', self.JOBS))
-                if self._jobs <= 0:
-                    self._jobs = self.JOBS
-            except (TypeError, ValueError):
-                pass
+        try:
+            self.jobs = max(self.JOBS, int(self.opts.get('jobs')))
+        except (TypeError, ValueError):
+            self.jobs = self.JOBS
 
     @property
     def py2rpm_helper(self):
@@ -186,7 +182,7 @@ class YumDependencyHandler(base.DependencyHandler):
             utils.log_iterable(src_repo_files,
                                header=('Building %s RPM packages from their'
                                        ' SRPMs for repo %s using %s jobs') %
-                                      (len(src_repo_files), self.SRC_REPOS[repo_name], self._jobs),
+                                      (len(src_repo_files), self.SRC_REPOS[repo_name], self.jobs),
                                logger=LOG)
             rpmbuild_flags = "--rebuild"
             if self.opts.get("usr_only", False):
@@ -195,7 +191,7 @@ class YumDependencyHandler(base.DependencyHandler):
                 self._create_rpmbuild_subdirs()
                 self.py2rpm_helper.build_all_binaries(repo_name, src_repo_dir,
                                                       rpmbuild_flags, self.tracewriter,
-                                                      self._jobs)
+                                                      self.jobs)
                 repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)
                 for d in sh.listdir(self.rpmbuild_dir, dirs_only=True):
                     self._move_rpm_files(sh.joinpths(d, "RPMS"), repo_dir)
@@ -346,7 +342,7 @@ class YumDependencyHandler(base.DependencyHandler):
         # Now build them into SRPM rpm files.
         self.py2rpm_helper.build_all_srpms(package_files=package_files,
                                            tracewriter=self.tracewriter,
-                                           jobs=self._jobs)
+                                           jobs=self.jobs)
 
     def _write_spec_file(self, instance, rpm_name, template_name, params):
         requires_what = params.get('requires', [])

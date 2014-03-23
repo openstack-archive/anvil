@@ -36,12 +36,6 @@ class TestShell(test.MockTestCase):
         self.popen_inst_mock.returncode = 0
         self.popen_inst_mock.communicate.return_value = self.result
 
-    def test_execute_dry_run(self):
-        sh.IS_DRYRUN = True
-        self.assertEqual(sh.execute(self.cmd), ('', ''))
-        self.assertEqual(self.master_mock.mock_calls, [])
-        sh.IS_DRYRUN = False
-
     def test_execute_default_params(self):
         result = sh.execute(self.cmd)
         master_mock_calls = [

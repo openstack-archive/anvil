@@ -51,9 +51,6 @@ SUDO_GID = env.get_key('SUDO_GID')
 # piped to said file.
 _TRUNCATED_OUTPUT_LINES = 7
 
-# Set only once
-IS_DRYRUN = None
-
 # Take over some functions directly from os.path/os/... so that we don't have
 # to type as many long function names to access these.
 getsize = os.path.getsize
@@ -72,19 +69,6 @@ getegid = os.getegid
 class Process(psutil.Process):
     def __str__(self):
         return "%s (%s)" % (self.pid, self.name)
-
-
-def set_dry_run(on_off):
-    global IS_DRYRUN
-    if not isinstance(on_off, (bool)):
-        raise TypeError("Dry run value must be a boolean")
-    if IS_DRYRUN is not None:
-        raise RuntimeError("Dry run value has already been previously set to '%s'" % (IS_DRYRUN))
-    IS_DRYRUN = on_off
-
-
-def is_dry_run():
-    return bool(IS_DRYRUN)
 
 
 # Originally borrowed from nova compute execute.
@@ -151,20 +135,17 @@ def execute(cmd,
         'env': process_env,
     }
     result = ("", "")
-    if is_dry_run():
-        rc = 0
+    try:
+        obj = subprocess.Popen(cmd, **exec_kwargs)
+        result = obj.communicate(process_input)
+    except OSError as e:
+        raise excp.ProcessExecutionError(
+            str_cmd,
+            exec_kwargs=exec_kwargs,
+            description="%s: [%s, %s]" % (e, e.errno, e.strerror)
+        )
     else:
-        try:
-            obj = subprocess.Popen(cmd, **exec_kwargs)
-            result = obj.communicate(process_input)
-        except OSError as e:
-            raise excp.ProcessExecutionError(
-                str_cmd,
-                exec_kwargs=exec_kwargs,
-                description="%s: [%s, %s]" % (e, e.errno, e.strerror)
-            )
-        else:
-            rc = obj.returncode
+        rc = obj.returncode
 
     # Handle process exit code.
     stdout = result[0] or ""
@@ -319,8 +300,7 @@ def chown(path, uid, gid):
     if uid == -1 and gid == -1:
         return 0
     LOG.debug("Changing ownership of %r to %s:%s" % (path, uid, gid))
-    if not is_dry_run():
-        os.chown(path, uid, gid)
+    os.chown(path, uid, gid)
     return 1
 
 
@@ -384,7 +364,7 @@ def _attempt_kill(proc, signal_type, max_try, wait_time):
 
 
 def kill(pid, max_try=4, wait_time=1):
-    if not is_running(pid) or is_dry_run():
+    if not is_running(pid):
         return (True, 0)
     proc = Process(pid)
     # Try the nicer sig-int first.
@@ -399,8 +379,6 @@ def kill(pid, max_try=4, wait_time=1):
 
 
 def is_running(pid):
-    if is_dry_run():
-        return True
     try:
         return Process(pid).is_running()
     except psutil.error.NoSuchProcess:
@@ -423,11 +401,10 @@ def append_file(fn, text, flush=True, quiet=False):
     if not quiet:
         LOG.debug("Appending to file %r (%d bytes) (flush=%s)", fn, len(text), (flush))
         LOG.debug(">> %s" % (text))
-    if not is_dry_run():
-        with open(fn, "a") as f:
-            f.write(text)
-            if flush:
-                f.flush()
+    with open(fn, "a") as f:
+        f.write(text)
+        if flush:
+            f.flush()
     return fn
 
 
@@ -435,14 +412,13 @@ def write_file(fn, text, flush=True, quiet=False, tracewriter=None):
     if not quiet:
         LOG.debug("Writing to file %r (%d bytes) (flush=%s)", fn, len(text), (flush))
         LOG.debug("> %s" % (text))
-    if not is_dry_run():
-        mkdirslist(dirname(fn), tracewriter=tracewriter)
-        with open(fn, "w") as fh:
-            if isinstance(text, unicode):
-                text = text.encode("utf-8")
-            fh.write(text)
-            if flush:
-                fh.flush()
+    mkdirslist(dirname(fn), tracewriter=tracewriter)
+    with open(fn, "w") as fh:
+        if isinstance(text, unicode):
+            text = text.encode("utf-8")
+        fh.write(text)
+        if flush:
+            fh.flush()
     if tracewriter:
         tracewriter.file_touched(fn)
 
@@ -451,12 +427,11 @@ def touch_file(fn, die_if_there=True, quiet=False, file_size=0, tracewriter=None
     if not isfile(fn):
         if not quiet:
             LOG.debug("Touching and truncating file %r (truncate size=%s)", fn, file_size)
-        if not is_dry_run():
-            mkdirslist(dirname(fn), tracewriter=tracewriter)
-            with open(fn, "w") as fh:
-                fh.truncate(file_size)
-            if tracewriter:
-                tracewriter.file_touched(fn)
+        mkdirslist(dirname(fn), tracewriter=tracewriter)
+        with open(fn, "w") as fh:
+            fh.truncate(file_size)
+        if tracewriter:
+            tracewriter.file_touched(fn)
     else:
         if die_if_there:
             msg = "Can not touch & truncate file %r since it already exists" % (fn)
@@ -472,20 +447,17 @@ def mkdir(path, recurse=True):
     if not isdir(path):
         if recurse:
             LOG.debug("Recursively creating directory %r" % (path))
-            if not is_dry_run():
-                os.makedirs(path)
+            os.makedirs(path)
         else:
             LOG.debug("Creating directory %r" % (path))
-            if not is_dry_run():
-                os.mkdir(path)
+            os.mkdir(path)
     return path
 
 
 def deldir(path):
     if isdir(path):
         LOG.debug("Recursively deleting directory tree starting at %r" % (path))
-        if not is_dry_run():
-            shutil.rmtree(path)
+        shutil.rmtree(path)
 
 
 def rmdir(path, quiet=True):
@@ -493,8 +465,7 @@ def rmdir(path, quiet=True):
         return
     try:
         LOG.debug("Deleting directory %r with the cavet that we will fail if it's not empty." % (path))
-        if not is_dry_run():
-            os.rmdir(path)
+        os.rmdir(path)
         LOG.debug("Deleted directory %r" % (path))
     except OSError:
         if not quiet:
@@ -506,12 +477,11 @@ def rmdir(path, quiet=True):
 def symlink(source, link, force=True, tracewriter=None):
     LOG.debug("Creating symlink from %r => %r" % (link, source))
     mkdirslist(dirname(link), tracewriter=tracewriter)
-    if not is_dry_run():
-        if force and (exists(link) and islink(link)):
-            unlink(link, True)
-        os.symlink(source, link)
-        if tracewriter:
-            tracewriter.symlink_made(link)
+    if force and (exists(link) and islink(link)):
+        unlink(link, True)
+    os.symlink(source, link)
+    if tracewriter:
+        tracewriter.symlink_made(link)
 
 
 def user_exists(username):
@@ -561,20 +531,18 @@ def getgroupname():
 
 def unlink(path, ignore_errors=True):
     LOG.debug("Unlinking (removing) %r" % (path))
-    if not is_dry_run():
-        try:
-            os.unlink(path)
-        except OSError:
-            if not ignore_errors:
-                raise
-            else:
-                pass
+    try:
+        os.unlink(path)
+    except OSError:
+        if not ignore_errors:
+            raise
+        else:
+            pass
 
 
 def copy(src, dst, tracewriter=None):
     LOG.debug("Copying: %r => %r" % (src, dst))
-    if not is_dry_run():
-        shutil.copy(src, dst)
+    shutil.copy(src, dst)
     if tracewriter:
         tracewriter.file_touched(dst)
     return dst
@@ -582,13 +550,12 @@ def copy(src, dst, tracewriter=None):
 
 def move(src, dst, force=False):
     LOG.debug("Moving: %r => %r" % (src, dst))
-    if not is_dry_run():
-        if force:
-            if isdir(dst):
-                dst = joinpths(dst, basename(src))
-            if isfile(dst):
-                unlink(dst)
-        shutil.move(src, dst)
+    if force:
+        if isdir(dst):
+            dst = joinpths(dst, basename(src))
+        if isfile(dst):
+            unlink(dst)
+    shutil.move(src, dst)
     return dst
 
 
@@ -611,8 +578,7 @@ def write_file_and_backup(path, contents, bk_ext='org'):
 
 def chmod(fname, mode):
     LOG.debug("Applying chmod: %r to %o" % (fname, mode))
-    if not is_dry_run():
-        os.chmod(fname, mode)
+    os.chmod(fname, mode)
     return fname
 
 
@@ -625,27 +591,10 @@ def got_root():
     return True
 
 
-def root_mode(quiet=True):
-    root_uid = 0
-    root_gid = 0
-    try:
-        os.setreuid(0, root_uid)
-        os.setregid(0, root_gid)
-    except OSError as e:
-        msg = "Cannot escalate permissions to (uid=%s, gid=%s): %s" % (root_uid, root_gid, e)
-        if quiet:
-            LOG.warn(msg)
-        else:
-            raise excp.PermException(msg)
-
-
 def sleep(winks):
     if winks <= 0:
         return
-    if is_dry_run():
-        LOG.debug("Not really sleeping for: %s seconds" % (winks))
-    else:
-        time.sleep(winks)
+    time.sleep(winks)
 
 
 def which_first(bin_names, additional_dirs=None, ensure_executable=True):
