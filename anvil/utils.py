@@ -19,10 +19,12 @@
 
 import contextlib
 import glob
+import json
 import os
 import random
 import re
 import socket
+import sys
 import tempfile
 import urllib2
 
@@ -38,6 +40,7 @@ from urlparse import urlunparse
 
 import netifaces
 import progressbar
+import six
 import yaml
 
 from Cheetah.Template import Template
@@ -138,6 +141,17 @@ def expand_template_deep(root, params):
     return root
 
 
+def parse_json(text):
+    """Load JSON from string
+
+    If string is whitespace-only, returns None
+    """
+    if len(text.strip()):
+        return json.loads(text)
+    else:
+        return None
+
+
 def load_yaml(path):
     return load_yaml_text(sh.load_file(path))
 
@@ -155,40 +169,52 @@ def has_any(text, *look_for):
     return False
 
 
-def wait_for_url(url, max_attempts=5):
-    LOG.info("Waiting for url %s to become active (max_attempts=%s)",
-             colorizer.quote(url), max_attempts)
+def wait_for_url(url, max_attempts=5,
+                 on_start=None, on_wait=None, on_success=None):
+    if max_attempts <= 0:
+        raise ValueError("Wait maximum attempts must be > 0")
 
-    def waiter(sleep_secs):
+    def log_start():
+        LOG.info("Waiting for url %s to become active (max_attempts=%s)",
+                 colorizer.quote(url), max_attempts)
+
+    def log_wait(sleep_secs):
         LOG.info("Sleeping for %s seconds, %s is still not active.", sleep_secs, colorizer.quote(url))
-        sh.sleep(sleep_secs)
+        return sleep_secs
 
-    def success(attempts):
+    def log_success(attempts):
         LOG.info("Url %s became active after %s attempts!", colorizer.quote(url), attempts)
 
-    excps = []
-    attempts = 0
-    for sleep_time in ExponentialBackoff(attempts=max_attempts):
-        attempts += 1
+    if not on_wait:
+        on_wait = log_wait
+    if not on_success:
+        on_success = log_success
+    if not on_start:
+        on_start = log_start
+
+    failures = []
+    for i, sleep_time in enumerate(ExponentialBackoff(attempts=max_attempts)):
+        if i == 0:
+            on_start()
         try:
             with contextlib.closing(urllib2.urlopen(urllib2.Request(url))) as req:
                 req.read()
-                success(attempts)
-                return
+                on_success(i + 1)
+                return url
         except urllib2.HTTPError as e:
+            failures.append(sys.exc_info())
             if e.code in range(200, 600):
                 # Should be ok, at least its responding...
                 # although potentially incorrectly...
-                success(attempts)
-                return
+                on_success(i + 1)
+                return url
             else:
-                excps.append(e)
-                waiter(sleep_time)
-        except IOError as e:
-            excps.append(e)
-            waiter(sleep_time)
-    if excps:
-        raise excps[-1]
+                sh.sleep(on_wait(sleep_time))
+        except IOError:
+            failures.append(sys.exc_info())
+            sh.sleep(on_wait(sleep_time))
+    exc_type, exc, exc_tb = failures[-1]
+    six.reraise(exc_type, exc, exc_tb)
 
 
 def add_header(fn, contents, adjusted=True):
