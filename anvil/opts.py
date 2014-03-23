@@ -121,12 +121,6 @@ def parse(previous_settings=None):
                       dest="verbose",
                       default=False,
                       help="make the output logging verbose")
-    parser.add_option("--dryrun",
-                      action="store_true",
-                      dest="dryrun",
-                      default=False,
-                      help=("perform ACTION but do not actually run any of the commands"
-                            " that would normally complete ACTION"))
     parser.add_option('-k', "--keyring",
                       action="store",
                       dest="keyring_path",
@@ -227,7 +221,6 @@ def parse(previous_settings=None):
     (options, _args) = parser.parse_args()
     values = {}
     values['dir'] = (options.dir or "")
-    values['dryrun'] = (options.dryrun or False)
     values['action'] = (options.action or "")
     values['jobs'] = options.jobs
     values['persona_fn'] = options.persona_fn
