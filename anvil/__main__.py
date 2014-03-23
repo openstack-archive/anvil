@@ -89,10 +89,6 @@ def run(args):
     # Here on out we should be using the logger (and not print)!!
     # !!
 
-    # Stash the dryrun value (if any)
-    if 'dryrun' in args:
-        sh.set_dry_run(args['dryrun'])
-
     # Ensure the anvil dirs are there if others are about to use it...
     ensure_anvil_dirs(root_dir)
 
@@ -161,7 +157,7 @@ def store_current_settings(c_settings):
     try:
         # Remove certain keys that just shouldn't be saved
         to_save = dict(c_settings)
-        for k in ['action', 'verbose', 'dryrun']:
+        for k in ['action', 'verbose']:
             if k in c_settings:
                 to_save.pop(k, None)
         with open("/etc/anvil/settings.yaml", 'w') as fh:
@@ -193,7 +189,7 @@ def main():
 
     # Configure logging levels
     log_level = logging.INFO
-    if args['verbose'] or args['dryrun']:
+    if args['verbose']:
         log_level = logging.DEBUG
     logging.setupLogging(log_level)
     LOG.debug("Log level is: %s" % (logging.getLevelName(log_level)))
@@ -238,12 +234,4 @@ def main():
 
 
 if __name__ == "__main__":
-    return_code = main()
-    # Switch back to root mode for anything
-    # that needs to run in that mode for cleanups and etc...
-    if return_code != 2:
-        try:
-            sh.root_mode(quiet=False)
-        except Exception:
-            pass
-    sys.exit(return_code)
+    sys.exit(main())

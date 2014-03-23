@@ -14,26 +14,15 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import json
 import sys
 
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
+from anvil import utils
 
 LOG = logging.getLogger(__name__)
 
-
-def _parse_json(value):
-    """Load JSON from string
-
-    If string is whitespace-only, returns None
-    """
-    value = value.strip()
-    if value:
-        return json.loads(value)
-    else:
-        return None
 
 
 class Helper(object):
@@ -54,7 +43,7 @@ class Helper(object):
                    '--log-file', self._log_file]
         cmdline.extend(arglist)
         (stdout, _) = sh.execute(cmdline, stderr_fh=sys.stderr)
-        return _parse_json(stdout)
+        return utils.parse_json(stdout)
 
     def _traced_yyoom(self, arglist, tracewriter):
         try:
@@ -62,7 +51,7 @@ class Helper(object):
         except excp.ProcessExecutionError:
             with excp.reraise() as ex:
                 try:
-                    data = _parse_json(ex.stdout)
+                    data = utils.parse_json(ex.stdout)
                 except Exception:
                     LOG.exception("Failed to parse YYOOM output")
                 else:
