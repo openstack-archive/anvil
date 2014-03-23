@@ -1,6 +1,8 @@
-include AUTHORS
-include ChangeLog
+include README.rst
+include HACKING.md
+include requirements.txt
+include test-requirements.txt
+
 exclude .gitignore
 exclude .gitreview
-
 global-exclude *.pyc
