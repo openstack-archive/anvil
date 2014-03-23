@@ -1,16 +1,5 @@
-# Install bounded pep8/pyflakes first, then let flake8 install
-pep8==1.4.5
-pyflakes>=0.7.2,<0.7.4
-flake8==2.0
 pylint==0.25.2
 hacking>=0.8.0,<0.9
 mock>=1.0
-# This is only needed for running anvils setup.py which is not done
-# during running of anvil, but is done during testing or package
-# creation...
-#
-# Using it in the created virtualenv causes conflict with
-# other openstack packages (running there setup.py egg_info will break)
-# so placing it here means that we will avoid such conflicts in the first
-# place.
-pbr>=0.5.21,<1.0
+nose
+testtools>=0.9.34

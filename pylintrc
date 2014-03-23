@@ -12,8 +12,7 @@ profile=no
 
 # Add <file or directory> to the black list. It should be a base name, not a
 # path. You may set this option multiple times.
-
-# ignore=
+ignore=anvil/tests/
 
 # Pickle collected data for later comparisons.
 persistent=yes
@@ -270,4 +269,4 @@ max-attributes=12
 min-public-methods=0
 
 # Maximum number of public methods for a class (see R0904).
-max-public-methods=80
+max-public-methods=100
