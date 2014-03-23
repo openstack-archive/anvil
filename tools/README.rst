@@ -109,22 +109,6 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
 
-pip-download
-------------
-
-`pip-download` is a small helper utility that interacts with pip and the pip API to
-download packages into a given directory (using a common extraction and download
-cache subdirectories). It also automatically prunes duplicated downloads if they
-are of the same project name (which pip appears to do sometimes, such as in the distribute
-and setuptools fiasco). This helps avoid needless duplication::
-
-    $ ./tools/pip-download -d /tmp/e 'setuptools>0.8' 'flake8'
-    Saved /tmp/e/flake8-2.0.tar.gz
-    Saved /tmp/e/mccabe-0.2.1.tar.gz
-    Saved /tmp/e/pep8-1.4.6.tar.gz
-    Saved /tmp/e/pyflakes-0.7.3.tar.gz
-    Saved /tmp/e/setuptools-0.9.8.tar.gz
-
 
 specprint
 ---------
@@ -217,11 +201,6 @@ the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
 
 
-git-changelog
--------------
-This tool generates a pretty software's changelog from git history.
-
-
 build-install-node-from-source.sh
 ---------------------------------
 
@@ -233,11 +212,6 @@ build-openvswitch.sh
 
 Helps build latest `openvswitch` from source into rpms.
 
-clean-pip
----------
-
-This utility removes package installed by pip but not by rpm.
-
 clear-dns.sh
 ------------
 
@@ -247,23 +221,3 @@ img-uploader
 ------------
 
 Helper tool to upload images to glance using your anvil settings.
-
-validate-yaml
--------------
-
-Validates a yaml file is formatted correctly.
-
-yaml-pretty
------------
-
-Pretty prints yaml into a standard format.
-
-resize.sh
----------
-
-Resizes a images filesystem using guestfish.
-
-euca.sh
--------
-
-Creates ec2 keys for usage with nova.
