@@ -89,10 +89,6 @@ def run(args):
     # Here on out we should be using the logger (and not print)!!
     # !!
 
-    # Stash the dryrun value (if any)
-    if 'dryrun' in args:
-        sh.set_dry_run(args['dryrun'])
-
     # Ensure the anvil dirs are there if others are about to use it...
     ensure_anvil_dirs(root_dir)
 
@@ -238,12 +234,4 @@ def main():
 
 
 if __name__ == "__main__":
-    return_code = main()
-    # Switch back to root mode for anything
-    # that needs to run in that mode for cleanups and etc...
-    if return_code != 2:
-        try:
-            sh.root_mode(quiet=False)
-        except Exception:
-            pass
-    sys.exit(return_code)
+    sys.exit(main())
