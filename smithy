@@ -133,15 +133,15 @@ bootstrap_virtualenv()
     echo "Setting up virtualenv in $VENV_DIR"
     virtualenv $VENV_OPTS "$VENV_DIR" || return 1
     unsudo $VENV_DIR
-    local deps=$(cat requirements.txt optional-requirements.txt | grep -v '^$\|^\s*\#' | sort)
+    local deps=$(cat requirements.txt | grep -v '^$\|^\s*\#' | sort)
     if [ -n "$deps" ]; then
         echo "Installing anvil dependencies in $VENV_DIR"
         dump_list $deps
         echo "Please wait..."
         if [ "$VERBOSE" == "0" ]; then
-            $PIP install -r requirements.txt -r optional-requirements.txt > /dev/null 2>&1
+            $PIP install -r requirements.txt > /dev/null 2>&1
         else
-            $PIP install -v -r requirements.txt -r optional-requirements.txt
+            $PIP install -v -r requirements.txt
         fi
         if [ "$?" != "0" ]; then
             return 1
