@@ -18,6 +18,7 @@ from anvil import colorizer
 from anvil import log
 
 from anvil.actions import base as action
+from anvil.actions import states
 
 LOG = log.getLogger(__name__)
 
@@ -33,6 +34,7 @@ class TestAction(action.Action):
                                                       self.root_dir,
                                                       instances.values(),
                                                       self.cli_opts)
+        removals = states.reverts("package-install-all-deps")
         general_package = "general"
         self._run_phase(
             action.PhaseFunctors(
@@ -42,8 +44,8 @@ class TestAction(action.Action):
             ),
             [general_package],
             {general_package: instances[general_package]},
-            "package-install-all-deps"
-            # no removals
+            "package-install-all-deps",
+            *removals
         )
         self._run_phase(
             action.PhaseFunctors(

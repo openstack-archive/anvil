@@ -16,6 +16,7 @@
 
 # pylint: disable=R0915
 from anvil.actions import base as action
+from anvil.actions import states
 from anvil import colorizer
 from anvil import log
 
@@ -36,7 +37,7 @@ class PrepareAction(action.Action):
                                                       self.root_dir,
                                                       instances.values(),
                                                       self.cli_opts)
-        removals = []
+        removals = states.reverts("download")
         self._run_phase(
             action.PhaseFunctors(
                 start=lambda i: LOG.info('Downloading %s.', colorizer.quote(i.name)),
@@ -48,6 +49,7 @@ class PrepareAction(action.Action):
             "download",
             *removals
         )
+        removals.extend(states.reverts("download-patch"))
         self._run_phase(
             action.PhaseFunctors(
                 start=lambda i: LOG.info('Post-download patching %s.', colorizer.quote(i.name)),
@@ -60,8 +62,8 @@ class PrepareAction(action.Action):
             *removals
         )
         dependency_handler.package_start()
+        removals.extend(states.reverts("package"))
         try:
-            removals += ["package-destroy"]
             self._run_phase(
                 action.PhaseFunctors(
                     start=lambda i: LOG.info("Packaging %s.", colorizer.quote(i.name)),
