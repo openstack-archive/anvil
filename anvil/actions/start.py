@@ -18,6 +18,7 @@ from anvil import colorizer
 from anvil import log
 
 from anvil.actions import base as action
+from anvil.actions import states
 
 LOG = log.getLogger(__name__)
 
@@ -28,7 +29,7 @@ class StartAction(action.Action):
         return 'running'
 
     def _run(self, persona, component_order, instances):
-        removals = []
+        removals = states.reverts("pre-start")
         self._run_phase(
             action.PhaseFunctors(
                 start=None,
@@ -40,7 +41,7 @@ class StartAction(action.Action):
             "pre-start",
             *removals
         )
-        removals += ['stopped']
+        removals.extend(states.reverts('start'))
         self._run_phase(
             action.PhaseFunctors(
                 start=lambda i: LOG.info('Starting %s.', i.name),
@@ -52,6 +53,7 @@ class StartAction(action.Action):
             "start",
             *removals
         )
+        removals.extend(states.reverts('post-start'))
         self._run_phase(
             action.PhaseFunctors(
                 start=lambda i: LOG.info('Post-starting %s.', colorizer.quote(i.name)),

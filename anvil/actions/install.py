@@ -17,6 +17,7 @@
 from StringIO import StringIO
 
 from anvil.actions import base as action
+from anvil.actions import states
 from anvil import colorizer
 from anvil import log
 from anvil import shell as sh
@@ -61,7 +62,7 @@ class InstallAction(action.Action):
                                                       self.root_dir,
                                                       instances.values(),
                                                       self.cli_opts)
-        removals = ['pre-uninstall', 'post-uninstall']
+        removals = states.reverts("pre-install")
         self._run_phase(
             action.PhaseFunctors(
                 start=lambda i: LOG.info('Preinstalling %s.', colorizer.quote(i.name)),
@@ -73,7 +74,7 @@ class InstallAction(action.Action):
             "pre-install",
             *removals
         )
-        removals += ["package-uninstall", 'uninstall', "package-destroy"]
+        removals.extend(states.reverts("package-install"))
         general_package = "general"
         self._run_phase(
             action.PhaseFunctors(
@@ -86,7 +87,7 @@ class InstallAction(action.Action):
             "package-install",
             *removals
         )
-        removals += ['unconfigure']
+        removals.extend(states.reverts("configure"))
         self._run_phase(
             action.PhaseFunctors(
                 start=lambda i: LOG.info('Configuring %s.', colorizer.quote(i.name)),
@@ -98,6 +99,7 @@ class InstallAction(action.Action):
             "configure",
             *removals
         )
+        removals.extend(states.reverts("post-install"))
         self._run_phase(
             action.PhaseFunctors(
                 start=lambda i: LOG.info('Post-installing %s.', colorizer.quote(i.name)),
