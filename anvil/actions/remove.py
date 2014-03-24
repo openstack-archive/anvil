@@ -26,12 +26,12 @@ LOG = log.getLogger(__name__)
 class RemoveAction(uninstall.UninstallAction):
     def _run(self, persona, component_order, instances):
         super(RemoveAction, self)._run(persona, component_order, instances)
-
-        removals = ['package-install', 'install', 'package']
         dependency_handler_class = self.distro.dependency_handler_class
         dependency_handler = dependency_handler_class(self.distro,
                                                       self.root_dir,
-                                                      instances.values())
+                                                      instances.values(),
+                                                      self.cli_opts)
+        removals = ['package-install', 'install', 'package']
         general_package = "general"
         self._run_phase(
             action.PhaseFunctors(
@@ -44,7 +44,6 @@ class RemoveAction(uninstall.UninstallAction):
             "package-destroy",
             *removals
         )
-
         removals += ['prepare', 'download', "download-patch"]
         self._run_phase(
             action.PhaseFunctors(
@@ -57,7 +56,6 @@ class RemoveAction(uninstall.UninstallAction):
             'uninstall',
             *removals
         )
-
         removals += ['pre-install', 'post-install']
         self._run_phase(
             action.PhaseFunctors(

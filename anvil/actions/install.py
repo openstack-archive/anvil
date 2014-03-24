@@ -56,6 +56,11 @@ class InstallAction(action.Action):
                                logger=LOG)
 
     def _run(self, persona, component_order, instances):
+        dependency_handler_class = self.distro.dependency_handler_class
+        dependency_handler = dependency_handler_class(self.distro,
+                                                      self.root_dir,
+                                                      instances.values(),
+                                                      self.cli_opts)
         removals = ['pre-uninstall', 'post-uninstall']
         self._run_phase(
             action.PhaseFunctors(
@@ -68,12 +73,7 @@ class InstallAction(action.Action):
             "pre-install",
             *removals
         )
-
         removals += ["package-uninstall", 'uninstall', "package-destroy"]
-        dependency_handler_class = self.distro.dependency_handler_class
-        dependency_handler = dependency_handler_class(self.distro,
-                                                      self.root_dir,
-                                                      instances.values())
         general_package = "general"
         self._run_phase(
             action.PhaseFunctors(
@@ -86,7 +86,6 @@ class InstallAction(action.Action):
             "package-install",
             *removals
         )
-
         removals += ['unconfigure']
         self._run_phase(
             action.PhaseFunctors(
@@ -99,7 +98,6 @@ class InstallAction(action.Action):
             "configure",
             *removals
         )
-
         self._run_phase(
             action.PhaseFunctors(
                 start=lambda i: LOG.info('Post-installing %s.', colorizer.quote(i.name)),

@@ -26,10 +26,6 @@ LOG = log.getLogger(__name__)
 class PrepareAction(action.Action):
     needs_sudo = False
 
-    def __init__(self, name, distro, root_dir, cli_opts):
-        action.Action.__init__(self, name, distro, root_dir, cli_opts)
-        self.jobs = cli_opts.get('jobs')
-
     @property
     def lookup_name(self):
         return 'install'
@@ -39,7 +35,7 @@ class PrepareAction(action.Action):
         dependency_handler = dependency_handler_class(self.distro,
                                                       self.root_dir,
                                                       instances.values(),
-                                                      opts={"jobs": self.jobs})
+                                                      self.cli_opts)
         removals = []
         self._run_phase(
             action.PhaseFunctors(
@@ -63,17 +59,19 @@ class PrepareAction(action.Action):
             "download-patch",
             *removals
         )
-        removals += ["package-destroy"]
         dependency_handler.package_start()
-        self._run_phase(
-            action.PhaseFunctors(
-                start=lambda i: LOG.info("Packaging %s.", colorizer.quote(i.name)),
-                run=dependency_handler.package_instance,
-                end=None,
-            ),
-            component_order,
-            instances,
-            "package",
-            *removals
-        )
-        dependency_handler.package_finish()
+        try:
+            removals += ["package-destroy"]
+            self._run_phase(
+                action.PhaseFunctors(
+                    start=lambda i: LOG.info("Packaging %s.", colorizer.quote(i.name)),
+                    run=dependency_handler.package_instance,
+                    end=None,
+                ),
+                component_order,
+                instances,
+                "package",
+                *removals
+            )
+        finally:
+            dependency_handler.package_finish()

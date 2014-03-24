@@ -31,7 +31,8 @@ class TestAction(action.Action):
         dependency_handler_class = self.distro.dependency_handler_class
         dependency_handler = dependency_handler_class(self.distro,
                                                       self.root_dir,
-                                                      instances.values())
+                                                      instances.values(),
+                                                      self.cli_opts)
         general_package = "general"
         self._run_phase(
             action.PhaseFunctors(

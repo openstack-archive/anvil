@@ -53,7 +53,7 @@ class DependencyHandler(object):
     """Basic class for handler of OpenStack dependencies."""
     MAX_PIP_DOWNLOAD_ATTEMPTS = 4
 
-    def __init__(self, distro, root_dir, instances, opts=None):
+    def __init__(self, distro, root_dir, instances, opts):
         self.distro = distro
         self.root_dir = root_dir
         self.instances = instances
