@@ -18,6 +18,7 @@ from anvil import colorizer
 from anvil import log
 
 from anvil.actions import base as action
+from anvil.actions import states
 
 LOG = log.getLogger(__name__)
 
@@ -33,7 +34,7 @@ class StopAction(action.Action):
         return components
 
     def _run(self, persona, component_order, instances):
-        removals = ['pre-start', 'start', 'post-start']
+        removals = list(states.ACTIONS['stopped'])
         self._run_phase(
             action.PhaseFunctors(
                 start=lambda i: LOG.info('Stopping %s.', colorizer.quote(i.name)),

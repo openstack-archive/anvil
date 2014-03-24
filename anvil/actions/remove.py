@@ -18,6 +18,7 @@ from anvil import colorizer
 from anvil import log
 
 from anvil.actions import base as action
+from anvil.actions import states
 from anvil.actions import uninstall
 
 LOG = log.getLogger(__name__)
@@ -31,7 +32,7 @@ class RemoveAction(uninstall.UninstallAction):
                                                       self.root_dir,
                                                       instances.values(),
                                                       self.cli_opts)
-        removals = ['package-install', 'install', 'package']
+        removals = list(states.ACTIONS["package-destroy"])
         general_package = "general"
         self._run_phase(
             action.PhaseFunctors(
@@ -44,7 +45,7 @@ class RemoveAction(uninstall.UninstallAction):
             "package-destroy",
             *removals
         )
-        removals += ['prepare', 'download', "download-patch"]
+        removals.extend(states.ACTIONS['uninstall'])
         self._run_phase(
             action.PhaseFunctors(
                 start=lambda i: LOG.info('Uninstalling %s.', colorizer.quote(i.name)),
@@ -56,7 +57,7 @@ class RemoveAction(uninstall.UninstallAction):
             'uninstall',
             *removals
         )
-        removals += ['pre-install', 'post-install']
+        removals.extend(states.ACTIONS['post-uninstall'])
         self._run_phase(
             action.PhaseFunctors(
                 start=lambda i: LOG.info('Post-uninstalling %s.', colorizer.quote(i.name)),
