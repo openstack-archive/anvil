@@ -10,7 +10,11 @@ cd "$(dirname "$0")"
 VERBOSE="${VERBOSE:-0}"
 YUM_OPTS="--assumeyes --nogpgcheck"
 CURL_OPTS=""
-VENV_OPTS="--no-site-packages"
+
+# Give access to the system packages so that when clients get installed
+# after installation that the virtualenv can access them to do things like
+# install images, setup keystone...
+VENV_OPTS="--system-site-packages"
 VENV_DIR="$PWD/.venv"
 VENV_ACTIVATE="$VENV_DIR/bin/activate"
 PIP="$VENV_DIR/bin/pip"
