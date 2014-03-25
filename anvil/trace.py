@@ -25,7 +25,6 @@ CFG_WRITING_FILE = "CFG_WRITING_FILE"
 DIR_MADE = "DIR_MADE"
 DOWNLOADED = "DOWNLOADED"
 FILE_TOUCHED = "FILE_TOUCHED"
-PIP_INSTALL = 'PIP_INSTALL'
 PKG_INSTALL = "PKG_INSTALL"
 PKG_UPGRADE = "PKG_UPGRADE"
 SYMLINK_MAKE = "SYMLINK_MAKE"
@@ -69,10 +68,6 @@ class TraceWriter(object):
         what['target'] = tgt
         what['from'] = uri
         self.trace(DOWNLOADED, json.dumps(what))
-
-    def pip_installed(self, pip_info):
-        self._start()
-        self.trace(PIP_INSTALL, json.dumps(pip_info))
 
     def dirs_made(self, *dirs):
         self._start()
@@ -190,19 +185,6 @@ class TraceReader(object):
             if cmd == SYMLINK_MAKE and len(action):
                 links.append(action)
         return links
-
-    def pips_installed(self):
-        lines = self.read()
-        pips_installed = list()
-        pip_list = list()
-        for (cmd, action) in lines:
-            if cmd == PIP_INSTALL and len(action):
-                pip_list.append(action)
-        for pip_data in pip_list:
-            pip_info_full = json.loads(pip_data)
-            if type(pip_info_full) is dict:
-                pips_installed.append(pip_info_full)
-        return pips_installed
 
     def packages_installed(self):
         lines = self.read()
