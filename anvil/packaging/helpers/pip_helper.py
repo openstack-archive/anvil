@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from distutils import version as dist_version
 import pkg_resources
 import re
 
@@ -26,9 +27,12 @@ from anvil import utils
 
 LOG = logging.getLogger(__name__)
 
-FREEZE_CMD = ['freeze', '--local']
 EGGS_DETAILED = {}
 PYTHON_KEY_VERSION_RE = re.compile("^(.+)-([0-9][0-9.a-zA-Z]*)$")
+PIP_VERSION = pkg_resources.get_distribution('pip').version
+PIP_EXECUTABLE = sh.which_first(['pip', 'pip-python'])
+OPENSTACK_TARBALLS_RE = re.compile(r'http://tarballs.openstack.org/([^/]+)/')
+SKIP_LINES = ('#', '-e', '-f', 'http://', 'https://')
 
 
 def create_requirement(name, version=None):
@@ -124,14 +128,8 @@ def get_archive_details(filename):
     return details
 
 
-SKIP_LINES = ('#', '-e', '-f', 'http://', 'https://')
-
-
 def _skip_requirement(line):
     return not len(line) or any(line.startswith(a) for a in SKIP_LINES)
-
-
-OPESTACK_TARBALLS_RE = re.compile(r'http://tarballs.openstack.org/([^/]+)/')
 
 
 def parse_requirements(contents, adjust=False):
@@ -139,7 +137,7 @@ def parse_requirements(contents, adjust=False):
     for line in contents.splitlines():
         line = line.strip()
         if 'http://' in line:
-            m = OPESTACK_TARBALLS_RE.search(line)
+            m = OPENSTACK_TARBALLS_RE.search(line)
             if m:
                 line = m.group(1)
         if not _skip_requirement(line):
@@ -155,3 +153,38 @@ def read_requirement_files(files):
             with open(filename) as f:
                 result.extend(parse_requirements(f.read()))
     return result
+
+
+def download_dependencies(download_dir, pips_to_download, output_filename):
+    if not pips_to_download:
+        return
+    # NOTE(aababilov): pip has issues with already downloaded files
+    if sh.isdir(download_dir):
+        for filename in sh.listdir(download_dir, files_only=True):
+            sh.unlink(filename)
+    else:
+        sh.mkdir(download_dir)
+    # Clean out any previous paths that we don't want around.
+    build_path = sh.joinpths(download_dir, ".build")
+    if sh.isdir(build_path):
+        sh.deldir(build_path)
+    sh.mkdir(build_path)
+    # Ensure certain directories exist that we want to exist (but we don't
+    # want to delete them run after run).
+    cache_path = sh.joinpths(download_dir, ".cache")
+    if not sh.isdir(cache_path):
+        sh.mkdir(cache_path)
+    cmdline = [
+        PIP_EXECUTABLE, '-v',
+        'install', '-I', '-U',
+        '--download', download_dir,
+        '--build', build_path,
+        '--download-cache', cache_path,
+    ]
+    # Don't download wheels...
+    #
+    # See: https://github.com/pypa/pip/issues/1439
+    if dist_version.StrictVersion(PIP_VERSION) >= dist_version.StrictVersion('1.5'):
+        cmdline.append("--no-use-wheel")
+    cmdline.extend([str(p) for p in pips_to_download])
+    sh.execute_save_output(cmdline, output_filename)

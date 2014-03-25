@@ -218,6 +218,32 @@ def wait_for_url(url, max_attempts=5,
     six.reraise(exc_type, exc, exc_tb)
 
 
+def retry(attempts, delay, func, *args, **kwargs):
+    if delay < 0:
+        raise ValueError("delay must be >= 0")
+    if attempts < 0:
+        raise ValueError("attempts must be >= 0")
+    func_name = "??"
+    try:
+        func_name = func.__name__
+    except AttributeError:
+        pass
+    failures = []
+    attempts = int(attempts) + 1
+    for i in range(0, attempts):
+        kwargs['attempt'] = i + 1
+        try:
+            return func(*args, **kwargs)
+        except Exception:
+            failures.append(sys.exc_info())
+            if i + 1 < attempts and delay > 0:
+                LOG.info("Waiting %s seconds before calling `%s` again",
+                         delay, func_name)
+                sh.sleep(delay)
+    exc_type, exc, exc_tb = failures[-1]
+    six.reraise(exc_type, exc, exc_tb)
+
+
 def add_header(fn, contents, adjusted=True):
     lines = []
     if not fn:
