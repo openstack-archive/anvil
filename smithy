@@ -113,6 +113,31 @@ bootstrap_epel()
     return $?
 }
 
+bootstrap_repos()
+{
+    # Installs other repositories that will allow for installation of packages
+    # from places other than epel. This allows for anvil to find dependencies
+    # from other places (so anvil can avoid building those dependencies in the
+    # first place).
+    [ -z "$REPO_URLS" ] && return 0
+    [ -z "$REPO_DIR" ] && return 0
+    for repo_url in $REPO_URLS; do
+        echo "Installing repo file from $repo_url -> $REPO_DIR"
+        local base_filename=$(basename $repo_url)
+        local output_filename="$REPO_DIR/$base_filename"
+        if [ "$VERBOSE" == "0" ]; then
+            wget -q "$repo_url" -O "$output_filename"
+        else
+            wget "$repo_url" -O "$output_filename"
+        fi
+        if [ "$?" != "0" ]; then
+            echo -e "Failed downloading $repo_url -> $output_filename"
+            return 1
+        fi
+    done
+    return 0
+}
+
 unsudo()
 {
     # If a sudo user is active the given files/directories will be changed to
