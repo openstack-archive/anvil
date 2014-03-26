@@ -113,6 +113,22 @@ bootstrap_epel()
     return $?
 }
 
+bootstrap_rdo()
+{
+    # Installs the repository that will allow for installation of packages
+    # from rdo, see http://openstack.redhat.com/Repositories for information
+    # about what is rdo.
+    [ -z "$RDO_REPO_URL" ] && return 0
+    echo "Installing yum repo file from $RDO_REPO_URL -> /etc/yum.repos.d/"
+    local output_filename="/etc/yum.repos.d/$(basename $RDO_REPO_URL)"
+    if [ "$VERBOSE" == "0" ]; then
+        wget -q $RDO_REPO_URL -O $output_filename
+    else
+        wget $RDO_REPO_URL -O $output_filename
+    fi
+    return $?
+}
+
 unsudo()
 {
     # If a sudo user is active the given files/directories will be changed to

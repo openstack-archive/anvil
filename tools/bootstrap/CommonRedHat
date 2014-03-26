@@ -1,7 +1,11 @@
 # -*- sh -*-
-STEPS="selinux epel rpm_packages virtualenv"
+STEPS="selinux epel rdo rpm_packages virtualenv"
 EPEL_RPM_URL="http://mirrors.kernel.org/fedora-epel/6/i386/epel-release-6-8.noarch.rpm"
 DISTRO_CONFIG=conf/distros/rhel.yaml
+
+## Uncomment the following to allow for additional dependencies to be found
+## using the packages built by redhat in there rdo repository
+# RDO_REPO_URL="http://repos.fedorapeople.org/repos/openstack/openstack-havana/epel-openstack-havana.repo"
 
 ## Bootstrap for Red Hat based distros
 REQUIRES='
