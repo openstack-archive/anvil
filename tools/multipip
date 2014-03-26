@@ -198,12 +198,16 @@ def best_match(req_key, req_list):
     """Attempts to find the versions which will work the best for the given
     requirement specification list.
     """
+    def fetch_specs(req):
+        try:
+            specs = req.req.specs
+        except (AttributeError, TypeError):
+            specs = []
+        return tuple(specs)
+
     all_specs = []
-    req_specs = []
     for req in req_list:
-        if req.req.specs:
-            all_specs.extend(req.req.specs)
-            req_specs.append((req, tuple(req.req.specs)))
+        all_specs.extend(fetch_specs(req))
     if not all_specs:
         return (req_list[0], [])
 
@@ -215,24 +219,45 @@ def best_match(req_key, req_list):
             c = cmp(op1, op2)
         return c
 
-    def reform(specs, versions, default_source='compiled'):
+    def reform(specs, versions):
         # Covert the parsed versions back into the string versions so that
         # we can return that as matches (instead of the comparable versions).
-        tmp_specs = []
+        cleaned_specs = []
         for (op, version) in specs:
-            tmp_specs.append((op, versions[version]))
+            cleaned_specs.append((op, versions[version]))
         # Try to see if any of the requirements that we had actually had this
         # exact spec, if so then just return that as the requirement, if not
         # create a requirement instead.
-        specs = tuple(tmp_specs)
-        for (req, req_spec) in req_specs:
-            if specs == req_spec:
+        specs = tuple(cleaned_specs)
+        for req in req_list:
+            if fetch_specs(req) == specs:
                 return req
         spec_pieces = []
         for (op, version) in specs:
             spec_pieces.append("%s%s" % (op, version))
         spec = "%s%s" % (req_key, ",".join(spec_pieces))
-        return pip.req.InstallRequirement.from_line(spec, default_source)
+        return pip.req.InstallRequirement.from_line(spec, 'compiled')
+
+    def reform_incompatibles(incompatible_specs, versions):
+        causes = []
+        for (op, version) in incompatible_specs:
+            matches = 0
+            version = versions[version]
+            for req in req_list:
+                matched = False
+                for (op2, version2) in fetch_specs(req):
+                    if (op2, version2) == (op, version):
+                        matched = True
+                        break
+                if matched:
+                    causes.append(req)
+                    matches += 1
+            if not matches:
+                spec_pieces = "%s%s" % (op, version)
+                spec = "%s%s" % (req_key, spec_pieces)
+                causes.append(pip.req.InstallRequirement.from_line(spec,
+                                                                   "compiled conflict"))
+        return causes
 
     versions = {}
     versioned = set()
@@ -243,13 +268,12 @@ def best_match(req_key, req_list):
     versioned = list(sorted(versioned, cmp=spec_sort))
     initial_score = conflict_scorer(versioned)
     if initial_score == 0:
-        return (reform(versioned, versions), [])
+        incompatibles = []
+        match = versioned
     else:
         match, incompatibles = find_best_match(versioned, conflict_scorer)
-        incompatibles = [reform([s], versions,
-                                default_source='compiled conflict')
-                         for s in incompatibles]
-        return (reform(match, versions), incompatibles)
+    return (reform(match, versions),
+            reform_incompatibles(incompatibles, versions))
 
 
 def parse_requirements(options):
