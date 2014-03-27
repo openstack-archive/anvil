@@ -250,7 +250,8 @@ def best_match(req_key, req_list):
                         matched = True
                         break
                 if matched:
-                    causes.append(req)
+                    if req not in causes:
+                        causes.append(req)
                     matches += 1
             if not matches:
                 spec_pieces = "%s%s" % (op, version)
