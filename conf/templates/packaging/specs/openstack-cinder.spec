@@ -187,10 +187,12 @@ install -d -m 755 %{buildroot}%{_localstatedir}/log/cinder
 install -d -m 755 %{buildroot}%{_sysconfdir}/cinder
 install -d -m 755 %{buildroot}%{_sysconfdir}/cinder/volumes
 install -p -D -m 644 %{SOURCE3} %{buildroot}%{_sysconfdir}/tgt/conf.d/cinder.conf
-install -p -D -m 640 etc/cinder/cinder.conf.sample %{buildroot}%{_sysconfdir}/cinder/
-install -p -D -m 640 etc/cinder/rootwrap.conf %{buildroot}%{_sysconfdir}/cinder/
-install -p -D -m 640 etc/cinder/api-paste.ini %{buildroot}%{_sysconfdir}/cinder/
-install -p -D -m 640 etc/cinder/policy.json %{buildroot}%{_sysconfdir}/cinder/
+install -d -m 755 %{buildroot}%{_sysconfdir}/cinder
+for i in etc/cinder/*; do
+    if [ ! -d $i ] ; then
+        install -p -D -m 644 $i  %{buildroot}%{_sysconfdir}/cinder/
+    fi
+done
 
 # Install initscripts for services
 install -p -D -m 755 %{SOURCE10} %{buildroot}%{_initrddir}/%{daemon_prefix}-api
@@ -261,10 +263,7 @@ fi
 %{_initrddir}/*
 
 %dir %{_sysconfdir}/cinder
-%config(noreplace) %attr(-, root, cinder) %{_sysconfdir}/cinder/cinder.conf.sample
-%config(noreplace) %attr(-, root, cinder) %{_sysconfdir}/cinder/api-paste.ini
-%config(noreplace) %attr(-, root, cinder) %{_sysconfdir}/cinder/rootwrap.conf
-%config(noreplace) %attr(-, root, cinder) %{_sysconfdir}/cinder/policy.json
+%config(noreplace) %attr(-, root, cinder) %{_sysconfdir}/cinder/*
 %config(noreplace) %{_sysconfdir}/logrotate.d/openstack-cinder
 %config(noreplace) %{_sysconfdir}/sudoers.d/cinder
 %config(noreplace) %{_sysconfdir}/tgt/conf.d/cinder.conf
