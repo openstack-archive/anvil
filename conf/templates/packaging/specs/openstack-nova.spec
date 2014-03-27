@@ -414,11 +414,9 @@ find %{buildroot}%{_sharedstatedir}/nova/CA -name .placeholder -delete
 
 # Install config files
 install -d -m 755 %{buildroot}%{_sysconfdir}/nova
-install -p -D -m 640 etc/nova/api-paste.ini %{buildroot}%{_sysconfdir}/nova/
-install -p -D -m 640 etc/nova/policy.json %{buildroot}%{_sysconfdir}/nova/
-install -p -D -m 640 etc/nova/rootwrap.conf %{buildroot}%{_sysconfdir}/nova/
-install -p -D -m 640 etc/nova/nova.conf.sample %{buildroot}%{_sysconfdir}/nova/
-install -p -D -m 640 etc/nova/logging_sample.conf %{buildroot}%{_sysconfdir}/nova/
+for i in etc/nova/*; do
+    install -p -D -m 644 $i  %{buildroot}%{_sysconfdir}/nova/
+done
 
 # Install initscripts for Nova services
 install -p -D -m 755 %{SOURCE10} %{buildroot}%{_initrddir}/%{daemon_prefix}-api
@@ -549,11 +547,7 @@ fi
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/nova
-%attr(-, root, nova) %{_sysconfdir}/nova/nova.conf.sample
-%attr(-, root, nova) %{_sysconfdir}/nova/logging_sample.conf
-%config(noreplace) %attr(-, root, nova) %{_sysconfdir}/nova/rootwrap.conf
-%config(noreplace) %attr(-, root, nova) %{_sysconfdir}/nova/api-paste.ini
-%config(noreplace) %attr(-, root, nova) %{_sysconfdir}/nova/policy.json
+%config(noreplace) %attr(-, root, nova) %{_sysconfdir}/nova/*
 %config(noreplace) %{_sysconfdir}/logrotate.d/openstack-nova
 %config(noreplace) %{_sysconfdir}/sudoers.d/nova
 %config(noreplace) %{_sysconfdir}/polkit-1/localauthority/50-local.d/50-nova.pkla
