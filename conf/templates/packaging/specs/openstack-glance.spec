@@ -158,7 +158,7 @@ install -d -m 755 %{buildroot}%{_sharedstatedir}/glance/images
 # Config file
 install -d -m 755 %{buildroot}%{_sysconfdir}/glance
 for i in etc/*; do
-    install -p -D -m 644 $i  %{buildroot}%{_sysconfdir}/glance/
+    install -p -D -m 640 $i  %{buildroot}%{_sysconfdir}/glance/
 done
 
 # Initscripts
