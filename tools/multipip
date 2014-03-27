@@ -173,19 +173,16 @@ def find_best_match(versioned, scorer_func):
     for combo in iter_combinations(versioned):
         scored.append((combo, scorer_func(combo)))
 
-    # Find the lowest score with the highest number of elements.
-    min_score = sys.maxint
-    for (combo, combo_score) in scored:
-        if combo_score < min_score:
-            min_score = combo_score
-    max_elems = -1
-    best_match = []
-    for (combo, combo_score) in scored:
-        if min_score == combo_score:
-            if len(combo) > max_elems:
-                best_match = combo
-                max_elems = len(combo)
+    def score_cmp(a, b):
+        return cmp(a[1], b[1])
 
+    def combo_len(a):
+        return len(a[0])
+
+    # Find the lowest score with the highest number of elements.
+    scored = sorted(scored, cmp=score_cmp)
+    scored = [(combo, score) for (combo, score) in scored if score == 0]
+    (best_match, score) = max(scored, key=combo_len)
     incompatibles = set()
     for (combo, combo_score) in scored:
         for spec in combo:
