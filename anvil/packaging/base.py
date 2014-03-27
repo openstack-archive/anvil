@@ -293,6 +293,7 @@ class DependencyHandler(object):
             LOG.info("All python dependencies have been already downloaded")
         else:
             def try_download(attempt):
+                LOG.info("Downloading with pip attempt %s...", attempt)
                 output_filename = sh.joinpths(self.log_dir,
                                               "pip-download-attempt-%s.log" % (attempt))
                 pip_helper.download_dependencies(self.download_dir,
