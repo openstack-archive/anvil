@@ -127,6 +127,8 @@ def conflict_scorer(versioned):
         for (op, version2) in versioned:
             if version != version2:
                 score += 1
+            if version == version2 and op != "==":
+                score += 1
     for version in sorted(op_versions.get("!=", [])):
         for (op, version2) in versioned:
             if op in ["!=", ">", "<"]:
