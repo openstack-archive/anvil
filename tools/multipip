@@ -168,7 +168,7 @@ def conflict_scorer(versioned):
     return score
 
 
-def find_best_match(versioned, scorer_func):
+def find_best_match(versioned, counts, scorer_func):
     """Iterates over all combinations of the given version and comparator in
     the provided lists and finds the one with the best score (closest to zero
     with the maximum number of elements).
@@ -176,6 +176,8 @@ def find_best_match(versioned, scorer_func):
     scored = []
     for combo in iter_combinations(versioned):
         scored.append((combo, scorer_func(combo)))
+    if len(scored) == 0:
+        raise ValueError("No version combinations scored")
 
     # Find the lowest score with the highest number of elements.
     min_score = sys.maxint
@@ -183,13 +185,29 @@ def find_best_match(versioned, scorer_func):
         if combo_score < min_score:
             min_score = combo_score
     max_elems = -1
-    best_match = []
+    best_matches = []
     for (combo, combo_score) in scored:
         if min_score == combo_score:
             if len(combo) > max_elems:
-                best_match = combo
+                best_matches = [combo]
                 max_elems = len(combo)
+            if len(combo) == max_elems:
+                best_matches.append(combo)
 
+    if len(best_matches) == 1:
+        best_match = best_matches[0]
+    else:
+        # If equivalent scores, then select the one that has the most requests
+        # for its combinations over ones that have less requests.
+        best_score = -1
+        best_match = None
+        for match in best_matches:
+            match_score = 0
+            for combo in match:
+                match_score += counts.get(combo, 0)
+            if match_score > best_score:
+                best_score = match_score
+                best_match = match
     incompatibles = set()
     for (combo, combo_score) in scored:
         for spec in combo:
@@ -213,7 +231,7 @@ def best_match(req_key, req_list):
     for req in req_list:
         all_specs.extend(fetch_specs(req))
     if not all_specs:
-        return (req_list[0], [])
+        return (req_list, [])
 
     def spec_sort(spec1, spec2):
         (op1, version1) = spec1
@@ -233,14 +251,17 @@ def best_match(req_key, req_list):
         # exact spec, if so then just return that as the requirement, if not
         # create a requirement instead.
         specs = tuple(cleaned_specs)
+        sources = []
         for req in req_list:
             if fetch_specs(req) == specs:
-                return req
-        spec_pieces = []
-        for (op, version) in specs:
-            spec_pieces.append("%s%s" % (op, version))
-        spec = "%s%s" % (req_key, ",".join(spec_pieces))
-        return pip.req.InstallRequirement.from_line(spec, 'compiled')
+                sources.append(req)
+        if not sources:
+            spec_pieces = []
+            for (op, version) in specs:
+                spec_pieces.append("%s%s" % (op, version))
+            spec = "%s%s" % (req_key, ",".join(spec_pieces))
+            sources.append(pip.req.InstallRequirement.from_line(spec, 'compiled'))
+        return sources
 
     def reform_incompatibles(incompatible_specs, versions):
         causes = []
@@ -266,17 +287,19 @@ def best_match(req_key, req_list):
 
     versions = {}
     versioned = set()
+    counts = collections.defaultdict(int)
     for (op, version) in all_specs:
         parsed_version = pkg_resources.parse_version(version)
         versioned.add((op, parsed_version))
         versions[parsed_version] = version
+        counts[(op, parsed_version)] += 1
     versioned = list(sorted(versioned, cmp=spec_sort))
     initial_score = conflict_scorer(versioned)
     if initial_score == 0:
         incompatibles = []
         match = versioned
     else:
-        match, incompatibles = find_best_match(versioned, conflict_scorer)
+        match, incompatibles = find_best_match(versioned, counts, conflict_scorer)
     return (reform(match, versions),
             reform_incompatibles(incompatibles, versions))
 
@@ -324,8 +347,8 @@ def join_requirements(requirements, ignored_requirements):
     for (req_key, req_list) in six.iteritems(requirements):
         if req_key in skip_keys:
             continue
-        match, req_incompatibles = best_match(req_key, req_list)
-        joined_requirements[req_key] = match
+        req_matches, req_incompatibles = best_match(req_key, req_list)
+        joined_requirements[req_key] = req_matches
         if req_incompatibles:
             incompatibles[req_key] = req_incompatibles
     return (joined_requirements, incompatibles)
@@ -334,7 +357,7 @@ def join_requirements(requirements, ignored_requirements):
 def print_requirements(joined_requirements):
     formatted_requirements = []
     for req_key in sorted(six.iterkeys(joined_requirements)):
-        req = joined_requirements[req_key]
+        req = joined_requirements[req_key][0]
         if req.url:
             req = "%s#egg=%s" % (req.url, req.req)
         else:
@@ -351,11 +374,13 @@ def print_incompatibles(incompatibles, joined_requirements):
             continue
         print("%s: incompatible requirements" % (req_key),
               file=sys.stderr)
-        chosen = joined_requirements[req_key]
-        print("Choosing:", file=sys.stderr)
-        print("\t%s: %s" % (chosen.comes_from,
-                            install_requirement_str(chosen)),
-              file=sys.stderr)
+        chosen_reqs = joined_requirements.get(req_key, [])
+        if chosen_reqs:
+            print("Choosing:", file=sys.stderr)
+            for chosen in chosen_reqs:
+                print("\t%s: %s" % (chosen.comes_from,
+                                    install_requirement_str(chosen)),
+                      file=sys.stderr)
         print("Conflicting:", file=sys.stderr)
         for conflicting in req_incompatibles:
             print("\t%s: %s" % (conflicting.comes_from,
