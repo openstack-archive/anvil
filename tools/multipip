@@ -168,7 +168,7 @@ def conflict_scorer(versioned):
     return score
 
 
-def find_best_match(versioned, scorer_func):
+def find_best_match(versioned, counts, scorer_func):
     """Iterates over all combinations of the given version and comparator in
     the provided lists and finds the one with the best score (closest to zero
     with the maximum number of elements).
@@ -176,6 +176,8 @@ def find_best_match(versioned, scorer_func):
     scored = []
     for combo in iter_combinations(versioned):
         scored.append((combo, scorer_func(combo)))
+    if len(scored) == 0:
+        raise ValueError("No version combinations scored")
 
     # Find the lowest score with the highest number of elements.
     min_score = sys.maxint
@@ -183,13 +185,30 @@ def find_best_match(versioned, scorer_func):
         if combo_score < min_score:
             min_score = combo_score
     max_elems = -1
-    best_match = []
+    best_matches = []
     for (combo, combo_score) in scored:
         if min_score == combo_score:
             if len(combo) > max_elems:
-                best_match = combo
+                best_matches = [combo]
                 max_elems = len(combo)
+            if len(combo) == max_elems:
+                best_matches.append(combo)
 
+    best_match = best_matches[0]
+    if len(best_matches) == 1:
+        best_match = best_matches[0]
+    else:
+        # If equivalent scores, then select the one that has the most requests
+        # for its combinations over ones that have less requests.
+        best_score = -1
+        best_match = None
+        for match in best_matches:
+            match_score = 0
+            for combo in match:
+                match_score += counts.get(combo, 0)
+            if match_score > best_score:
+                best_score = match_score
+                best_match = match
     incompatibles = set()
     for (combo, combo_score) in scored:
         for spec in combo:
@@ -266,17 +285,19 @@ def best_match(req_key, req_list):
 
     versions = {}
     versioned = set()
+    counts = collections.defaultdict(int)
     for (op, version) in all_specs:
         parsed_version = pkg_resources.parse_version(version)
         versioned.add((op, parsed_version))
         versions[parsed_version] = version
+        counts[(op, parsed_version)] += 1
     versioned = list(sorted(versioned, cmp=spec_sort))
     initial_score = conflict_scorer(versioned)
     if initial_score == 0:
         incompatibles = []
         match = versioned
     else:
-        match, incompatibles = find_best_match(versioned, conflict_scorer)
+        match, incompatibles = find_best_match(versioned, counts, conflict_scorer)
     return (reform(match, versions),
             reform_incompatibles(incompatibles, versions))
 
