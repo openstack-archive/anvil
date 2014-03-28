@@ -16,6 +16,22 @@
 
 from anvil import shell as sh
 from anvil import test
+from anvil import utils
+
+from nose_parameterized import parameterized
+
+
+def load_examples():
+    try:
+        example_path = sh.joinpths("data", "tests", "requirements.yaml")
+        examples = utils.load_yaml(example_path)
+    except IOError:
+        return []
+    else:
+        # The test generator will use the first element as the test identifer
+        # so provide a index based test identifer to be able to connect test
+        # failures to the example which caused it.
+        return list(enumerate(examples))
 
 
 class TestTools(test.TestCase):
@@ -56,47 +72,11 @@ class TestTools(test.TestCase):
                     pass
         return conflicts
 
-    def test_multipip_ok(self):
-        versions = [
-            "x>1",
-            "x>2",
-        ]
-        (stdout, stderr) = self._run_multipip(versions)
+    @parameterized.expand(load_examples())
+    def test_example(self, _name, example):
+        (stdout, stderr) = self._run_multipip(example['requirements'])
         stdout = stdout.strip()
-        self.assertEqual("x>1,>2", stdout)
-        self.assertEqual({}, self._extract_conflicts(stderr))
-
-    def test_multipip_varied(self):
-        versions = [
-            'x!=2',
-            'x!=3',
-            "y>3",
-        ]
-        (stdout, stderr) = self._run_multipip(versions)
-        stdout = stdout.strip()
-        self.assertEqual({}, self._extract_conflicts(stderr))
-        self.assertEqual("x!=2,!=3\ny>3", stdout)
-
-    def test_multipip_best_pick(self):
-        versions = [
-            "x>1",
-            "x>=2",
-            "x!=2",
-        ]
-        (stdout, stderr) = self._run_multipip(versions)
-        stdout = stdout.strip()
-        self.assertEqual('x>1,!=2', stdout)
-        self.assertEqual(["x>=2"], self._extract_conflicts(stderr)['x'])
-
-    def test_multipip_best_pick_again(self):
-        versions = [
-            "x>1",
-            "x>=2",
-            "x!=2",
-            'x>4',
-            'x>5',
-        ]
-        (stdout, stderr) = self._run_multipip(versions)
-        stdout = stdout.strip()
-        self.assertEqual('x>1,!=2,>4,>5', stdout)
-        self.assertEqual(["x>=2"], self._extract_conflicts(stderr)['x'])
+        self.assertEqual(example['expected'], stdout)
+        if 'conflicts' in example:
+            self.assertEqual(example['conflicts'],
+                             self._extract_conflicts(stderr))
