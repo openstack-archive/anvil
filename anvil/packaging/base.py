@@ -251,7 +251,7 @@ class DependencyHandler(object):
 
     def _examine_download_dir(self, pips_to_download, pip_download_dir):
         pip_names = set([p.key for p in pips_to_download])
-        what_downloaded = sh.listdir(pip_download_dir, files_only=True)
+        what_downloaded = sorted(sh.listdir(pip_download_dir, files_only=True))
         LOG.info("Validating %s files that were downloaded.", len(what_downloaded))
         for filename in what_downloaded:
             pkg_details = pip_helper.get_archive_details(filename)
