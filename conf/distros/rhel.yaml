@@ -169,10 +169,6 @@ components:
             test: anvil.components.glance:GlanceTester
             uninstall: anvil.components.base_install:PkgUninstallComponent
         pips:
-        # warlock requires jsonschema>=0.7,<2
-        # pip downloads jsonschema-2.0 and then ignores warlock's requirement
-        -   name: jsonschema
-            version: ">=0.7,<2"
         # pip setup and download of xattr>=0.7 seems to have problems find cffi
         # so lets just use an restrict the upper bound until this is fixed upstream
         # see: https://github.com/xattr/xattr/issues/16
