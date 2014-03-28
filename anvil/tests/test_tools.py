@@ -16,6 +16,11 @@
 
 from anvil import shell as sh
 from anvil import test
+from anvil import utils
+
+import unittest
+
+TEST_REQS = sh.joinpths("data", "tests", "requirements.yaml")
 
 
 class TestTools(test.TestCase):
@@ -65,6 +70,20 @@ class TestTools(test.TestCase):
         stdout = stdout.strip()
         self.assertEqual("x>1,>2", stdout)
         self.assertEqual({}, self._extract_conflicts(stderr))
+
+    def test_multipip_test_files(self):
+        try:
+            examples = utils.load_yaml(TEST_REQS)
+        except IOError:
+            raise unittest.SkipTest("No test data file found at %s." % (TEST_REQS))
+        else:
+            for example in examples:
+                (stdout, stderr) = self._run_multipip(example['requirements'])
+                stdout = stdout.strip()
+                self.assertEqual(example['expected'], stdout)
+                if 'conflicts' in example:
+                    self.assertEqual(example['conflicts'],
+                                     self._extract_conflicts(stderr))
 
     def test_multipip_varied(self):
         versions = [
