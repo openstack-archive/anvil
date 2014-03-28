@@ -127,6 +127,8 @@ def conflict_scorer(versioned):
         for (op, version2) in versioned:
             if version != version2:
                 score += 1
+            if version == version2 and op != "==":
+                score += 1
     for version in sorted(op_versions.get("!=", [])):
         for (op, version2) in versioned:
             if op in ["!=", ">", "<"]:
@@ -246,11 +248,13 @@ def best_match(req_key, req_list):
         causes = []
         for (op, version) in incompatible_specs:
             matches = 0
+            parsed_version = version
             version = versions[version]
             for req in req_list:
                 matched = False
                 for (op2, version2) in fetch_specs(req):
-                    if (op2, version2) == (op, version):
+                    parsed_version2 = pkg_resources.parse_version(version2)
+                    if (op2, parsed_version2) == (op, parsed_version):
                         matched = True
                         break
                 if matched:
