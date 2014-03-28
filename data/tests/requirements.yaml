@@ -1,0 +1,43 @@
+---
+- expected: a>1
+  requirements:
+    - a>1
+    - a>2
+- expected: a<0.5
+  requirements:
+    # Both are mutually incompat., due to sorting the lower one will be selected first.
+    - a>1
+    - a<0.5
+  conflicts:
+    a: ["a>1"]
+- expected: a>1
+  requirements:
+    # More requests for >1 should then select >1
+    - a>1
+    - a>1
+    - a<0.5
+  conflicts:
+    a: ["a<0.5"]
+- expected: "x!=2,!=3\ny>3"
+  requirements:
+    - "x!=2"
+    - "x!=3"
+    - "y>3"
+- expected: "x>1"
+  requirements:
+    - x>1
+    - x>2
+- expected: 'x>1,!=2'
+  requirements:
+    - x>1
+    - x>=2
+    - x!=2
+- expected: "x>1,!=2"
+  requirements:
+    - x>1
+    - x>=2
+    - x!=2
+    - x>4
+    - x>5
+...
+
