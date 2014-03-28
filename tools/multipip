@@ -16,9 +16,14 @@ import pip.req
 import pkg_resources
 
 
+# Use this for the sorting order of operators
+OP_ORDER = ('!=', '==', '<', '<=', '>', '>=')
+
+# Exit codes that are returned on various issues.
 BAD_REQUIREMENTS = 2
 INCOMPATIBLE_REQUIREMENTS = 3
-logger = logging.getLogger()
+
+LOGGER = logging.getLogger()
 
 
 class RequirementException(Exception):
@@ -69,8 +74,8 @@ def create_parser():
 def setup_logging(options):
     level = logging.DEBUG if options.debug else logging.WARNING
     handler = logging.StreamHandler(sys.stderr)
-    logger.addHandler(handler)
-    logger.setLevel(level)
+    LOGGER.addHandler(handler)
+    LOGGER.setLevel(level)
 
 
 def install_requirement_ensure_req_field(req):
@@ -114,35 +119,54 @@ def iter_combinations(elements, include_empty=False):
 
 
 def conflict_scorer(versioned):
-    """Scores a list of (op, version) tuples, a higher score means more
-    conflicts while a lower score means less conflicts.
+    """Scores a list of (op, version) tuples, a higher score means more likely
+    to cause conflicts while a lower score means less likely to cause
+    conflicts. A zero score means that no conflicts have been detected (aka
+    when installing no version issues will be encountered).
     """
     if len(versioned) == 1:
+        # A single list has no capability to conflict with anything.
         return 0
+    # Group by operator (and the versions that those operators are compatible
+    # with).
     op_versions = collections.defaultdict(list)
     for (op, version) in versioned:
         op_versions[op].append(version)
     score = 0
     for version in sorted(op_versions.get("==", [])):
         for (op, version2) in versioned:
+            # Any request for something not this version is a conflict.
             if version != version2:
                 score += 1
+            # Any request for something is this version, but isn't '=='
+            # is also a conflict.
             if version == version2 and op != "==":
                 score += 1
     for version in sorted(op_versions.get("!=", [])):
         for (op, version2) in versioned:
             if op in ["!=", ">", "<"]:
                 continue
+            # Anything that is includes this version would be a conflict,
+            # thats why we exclude !=, <, and > from the above since
+            # those exclude versions.
             if version2 == version:
                 score += 1
     for version in sorted(op_versions.get(">", [])):
         for (op, version2) in versioned:
             if (op, version2) == (">", version):
                 continue
+            # A request for a lower version than the desired greater than
+            # version is a conflict.
             if op in ["<", "<="] and version2 <= version:
                 score += 1
+            # A request for an inclusive version and matching with this
+            # version is also a conflict (since both can not be satisfied).
             elif op in ["==", ">="] and version2 == version:
                 score += 1
+            # If another request asks for a version less than this version but
+            # also is asking for a greater than operator, that version spans
+            # a wider range of compatible versions and therefore we are in
+            # more of a conflict than that version.
             elif op == ">" and version2 < version:
                 score += 1
             elif op == ">=" and version2 <= version:
@@ -244,11 +268,13 @@ def best_match(req_key, req_list):
         return (req_list, [])
 
     def spec_sort(spec1, spec2):
+        # Ensure there is always a well defined spec ordering so that the
+        # selection of matched specs is also well defined.
         (op1, version1) = spec1
         (op2, version2) = spec2
         c = cmp(version1, version2)
         if c == 0:
-            c = cmp(op1, op2)
+            c = cmp(OP_ORDER.index(op1), OP_ORDER.index(op2))
         return c
 
     def reform(specs, versions):
@@ -405,7 +431,7 @@ def main():
     try:
         requirements, ignored_requirements = parse_requirements(options)
     except RequirementException as ex:
-        logger.error("Requirement failure: %s", ex)
+        LOGGER.error("Requirement failure: %s", ex)
         sys.exit(BAD_REQUIREMENTS)
     else:
         joined_requirements, incompatibles = join_requirements(requirements,
