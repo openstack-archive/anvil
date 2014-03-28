@@ -147,6 +147,8 @@ def conflict_scorer(versioned):
                 continue
             if op in ["<", "<="] and version2 < version:
                 score += 1
+            if op in [">=", ">"] and version2 < version:
+                score += 1
     for version in sorted(op_versions.get("<", [])):
         for (op, version2) in versioned:
             if (op, version2) == ("<", version):
@@ -160,6 +162,8 @@ def conflict_scorer(versioned):
             if (op, version2) == ("<=", version):
                 continue
             if op in [">", ">="] and version2 > version:
+                score += 1
+            if op in ["<=", "<"] and version2 > version:
                 score += 1
     return score
 
