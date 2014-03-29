@@ -3,6 +3,27 @@
   requirements:
     - a>1
     - a>2
+- expected: a>=1.5,<2
+  requirements:
+    - a<1
+    - a<2
+    - a>=1.5
+- expected: a>=1.5,<3
+  requirements:
+    - a==1
+    - a>2
+    - a<3
+    - a>=1.5
+- expected: a!=1
+  requirements:
+    - a==1
+    - a!=1
+- expected: a>3,<=5
+  requirements:
+    - a==1
+    - a<2
+    - a>3
+    - a<=5
 - expected: a<0.5
   requirements:
     # Both are mutually incompat., due to sorting the lower one will be selected first.
@@ -39,5 +60,29 @@
     - x!=2
     - x>4
     - x>5
+- expected: "x>1,<2"
+  requirements:
+    - x>1
+    - x>2
+    - x<2
+    - x>3
+# Some real use-cases in icehouse requirements
+- expected: "keyring>=1.6.1,<2.0"
+  requirements:
+    - keyring>=1.6.1
+    - keyring<2.0
+    - keyring>=2.1
+- expected: "mock>=1.0"
+  requirements:
+    - mock>=1.0
+    - mock>=1.0
+    - mock>=1.0
+    - mock>=0.8.0
+    - mock>=0.8.0
+- expected: "hacking>=0.5.6,<0.8"
+  requirements:
+    - hacking>=0.5.6,<0.8
+    - hacking>=0.5.6,<0.7
+    - hacking>=0.5.6,<0.8
 ...
 
