@@ -46,7 +46,7 @@ class InstallableMixin(base.Component):
                 tgt_fn = self.configurator.target_config(fn)
                 sh.mkdirslist(sh.dirname(tgt_fn), tracewriter=self.tracewriter)
                 (source_fn, contents) = self.configurator.source_config(fn)
-                LOG.debug("Configuring file %s ---> %s.", (source_fn), (tgt_fn))
+                LOG.debug("Configuring file %s ---> %s.", source_fn, tgt_fn)
                 contents = self.configurator.config_param_replace(fn, contents, self.config_params(fn))
                 contents = self.configurator.config_adjust(contents, fn)
                 sh.write_file(tgt_fn, contents, tracewriter=self.tracewriter)
