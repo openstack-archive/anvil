@@ -49,7 +49,7 @@ class NovaConfigurator(base.Configurator):
                                  LOGGING_CONF: self._config_adjust_logging}
         self.source_configs = {PASTE_CONF: 'api-paste.ini',
                                LOGGING_CONF: 'logging_sample.conf',
-                               API_CONF: 'nova.conf.sample'}
+                               API_CONF: ['nova.conf.sample', True]}
         self.tracewriter = self.installer.tracewriter
         self.config_dir = sh.joinpths(self.installer.get_option('app_dir'),
                                       'etc',

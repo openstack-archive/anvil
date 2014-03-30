@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import errno
 import io
 import weakref
 
@@ -63,10 +64,21 @@ class Configurator(object):
 
     def source_config(self, config_fn):
         if self.config_dir:
+            allow_missing = False
             if config_fn in self.source_configs:
-                config_fn = self.source_configs.get(config_fn)
+                config_data = self.source_configs.get(config_fn)
+                if isinstance(config, (tuple, list)):
+                    config_fn, allow_missing = config_data
+                else:
+                    config_fn = config_data
             fn = sh.joinpths(self.config_dir, config_fn)
-            return (fn, sh.load_file(fn))
+            try:
+                return (fn, sh.load_file(fn))
+            except IOError as e:
+                if e.errno == errno.ENOENT and allow_missing:
+                    return (fn, '')
+                else:
+                    raise
         return utils.load_template(self.installer.name, config_fn)
 
     def config_param_replace(self, config_fn, contents, parameters):
