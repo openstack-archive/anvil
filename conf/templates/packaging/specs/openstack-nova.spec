@@ -560,10 +560,13 @@ fi
 %endif
 
 %{_bindir}/nova-clear-rabbit-queues
-# TODO. zmq-receiver may need its own service?
-%{_bindir}/nova-rpc-zmq-receiver
 %{_bindir}/nova-manage
 %{_bindir}/nova-rootwrap
+#end raw
+#if $older_than('2014.1.dev295.g1a91aac')
+%{_bindir}/nova-rpc-zmq-receiver
+#end if
+#raw
 
 %{_datarootdir}/nova
 #%{_mandir}/man1/nova*.1.gz

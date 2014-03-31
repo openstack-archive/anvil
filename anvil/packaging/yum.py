@@ -344,6 +344,40 @@ class YumDependencyHandler(base.DependencyHandler):
                                            tracewriter=self.tracewriter,
                                            jobs=self.jobs)
 
+    def _make_spec_functors(self, downloaded_version):
+        # TODO(harlowja): refactor to just use cmp()
+
+        def newer_than(version):
+            version = pkg_resources.parse_version(version)
+            if downloaded_version > version:
+                return True
+            return False
+
+        def newer_than_eq(version):
+            version = pkg_resources.parse_version(version)
+            if downloaded_version >= version:
+                return True
+            return False
+
+        def older_than(version):
+            version = pkg_resources.parse_version(version)
+            if downloaded_version < version:
+                return True
+            return False
+
+        def older_than_eq(version):
+            version = pkg_resources.parse_version(version)
+            if downloaded_version <= version:
+                return True
+            return False
+
+        return {
+            'older_than_eq': older_than_eq,
+            'older_than': older_than,
+            'newer_than_eq': newer_than_eq,
+            'newer_than': newer_than,
+        }
+
     def _write_spec_file(self, instance, rpm_name, template_name, params):
         requires_what = params.get('requires', [])
         test_requires_what = params.get('test_requires', [])
@@ -363,9 +397,7 @@ class YumDependencyHandler(base.DependencyHandler):
             self.SPEC_TEMPLATE_DIR,
             filename)
         parsed_version = pkg_resources.parse_version(params["version"])
-        params["at_least"] = lambda arg: (
-            pkg_resources.parse_version(arg) <= parsed_version)
-
+        params.update(self._make_spec_functors(parsed_version))
         content = utils.load_template(self.SPEC_TEMPLATE_DIR, template_name)[1]
         spec_filename = sh.joinpths(self.rpmbuild_dir, "SPECS", "%s.spec" % rpm_name)
         sh.write_file(spec_filename, utils.expand_template(content, params),

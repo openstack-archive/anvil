@@ -367,7 +367,7 @@ networks.
 This package contains the neutron plugin that implements virtual
 networks using multiple other neutron plugins.
 
-#if $at_least('2014.1.a146.g79fbeb7')
+#if $newer_than_eq('2014.1.dev146.g79fbeb7')
 %package -n openstack-neutron-vmware-nsx
 Summary:       Neutron VMWare NSX support
 Group:         Applications/System
@@ -779,7 +779,7 @@ fi
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/nec/*.ini
 %endif
 
-#if $at_least('2014.1.a146.g79fbeb7')
+#if $newer_than_eq('2014.1.dev146.g79fbeb7')
 %files -n openstack-neutron-vmware-nsx
 %doc LICENSE
 %{_bindir}/neutron*nsx-*
