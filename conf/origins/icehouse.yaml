@@ -1,0 +1,72 @@
+ceilometer:
+  repo: git://github.com/openstack/ceilometer.git
+  tag: 2014.1.rc1
+ceilometer-client:
+  repo: git://github.com/openstack/python-ceilometerclient.git
+  tag: 1.0.9
+cinder-client:
+  repo: git://github.com/openstack/python-cinderclient.git
+  tag: 1.0.8
+cinder:
+  repo: git://github.com/openstack/cinder.git
+  tag: 2014.1.rc1
+django-openstack-auth:
+  repo: git://github.com/openstack/django_openstack_auth.git
+  tag: 1.1.5
+glance-client:
+  repo: git://github.com/openstack/python-glanceclient.git
+  tag: 0.12.0
+glance:
+  repo: git://github.com/openstack/glance.git
+  tag: 2014.1.b3
+heat:
+  repo: git://github.com/openstack/heat.git
+  tag: 2014.1.rc1
+heat-client:
+  repo: git://github.com/openstack/python-heatclient.git
+  tag: 0.2.8
+horizon:
+  repo: git://github.com/openstack/horizon.git
+  tag: 2014.1.rc1
+keystone-client:
+  repo: git://github.com/openstack/python-keystoneclient.git
+  tag: 0.7.1
+keystone:
+  repo: git://github.com/openstack/keystone.git
+  tag: 2014.1.rc1
+nova-client:
+  repo: git://github.com/openstack/python-novaclient.git
+  tag: 2.17.0
+nova:
+  repo: git://github.com/openstack/nova.git
+  tag: 2014.1.rc1
+novnc:
+  repo: git://github.com/kanaka/noVNC.git
+  branch: master
+openstack-client:
+  repo: git://github.com/openstack/python-openstackclient.git
+  tag: 0.3.1
+oslo-config:
+  repo: git://github.com/openstack/oslo.config.git
+  tag: 1.3.0a0
+oslo-incubator:
+  repo: git://github.com/openstack/oslo-incubator.git
+  tag: 2014.1.b3
+neutron-client:
+  repo: git://github.com/openstack/python-neutronclient.git
+  tag: 2.3.4
+neutron:
+  repo: git://github.com/openstack/neutron.git
+  tag: 2014.1.b3
+swift-client:
+  repo: git://github.com/openstack/python-swiftclient.git
+  tag: 2.0.3
+trove-client:
+  repo: git://github.com/openstack/python-troveclient.git
+  tag: 1.0.4
+trove:
+  repo: git://github.com/openstack/trove.git
+  tag: 2014.1.b3
+oslo-messaging:
+  repo: git://github.com/openstack/oslo.messaging.git
+  tag: 1.3.0a9
