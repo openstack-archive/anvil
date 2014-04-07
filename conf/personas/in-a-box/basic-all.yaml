@@ -7,6 +7,7 @@ components:
 - rabbit-mq
 - oslo-config
 - oslo-messaging
+- pycadf
 - keystone
 - keystone-client
 - glance
