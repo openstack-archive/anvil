@@ -21,6 +21,7 @@
 import collections
 
 from anvil import colorizer
+from anvil import decorators
 from anvil import exceptions as exc
 from anvil import log as logging
 from anvil.packaging.helpers import pip_helper
@@ -75,8 +76,6 @@ class DependencyHandler(object):
         self.forced_packages = []
         # Instances to there app directory (with a setup.py inside)
         self.package_dirs = self._get_package_dirs(instances)
-        # Instantiate this as late as we can.
-        self._python_names = None
         # Track what file we create so they can be cleaned up on uninstall.
         trace_fn = tr.trace_filename(self.root_dir, 'deps')
         self.tracewriter = tr.TraceWriter(trace_fn, break_if_there=False)
@@ -95,17 +94,19 @@ class DependencyHandler(object):
         else:
             self.ignore_pips = set(ignore_pips)
 
+    @decorators.cached_property(ttl=0)
+    def _python_eggs(self):
+        egg_infos = []
+        for i in self.instances:
+            try:
+                egg_infos.append(dict(i.egg_info))
+            except AttributeError:
+                pass
+        return egg_infos
+
     @property
     def python_names(self):
-        if self._python_names is None:
-            names = []
-            for i in self.instances:
-                try:
-                    names.append(i.egg_info['name'])
-                except AttributeError:
-                    pass
-            self._python_names = names
-        return self._python_names
+        return [e['name'] for e in self._python_eggs]
 
     @staticmethod
     def _get_package_dirs(instances):
@@ -117,19 +118,24 @@ class DependencyHandler(object):
         return package_dirs
 
     def package_start(self):
+        create_requirement = pip_helper.create_requirement
+
+        def gather_extras(instance):
+            pips = []
+            for p in instance.get_option("pips", default_value=[]):
+                req = create_requirement(p['name'], p.get('version'))
+                pips.append(str(req))
+            requires_files = list(getattr(instance, 'requires_files', []))
+            if instance.get_bool_option('use_tests_requires', default_value=True):
+                requires_files.extend(getattr(instance, 'test_requires_files', []))
+            return (pips, requires_files)
+
         requires_files = []
         extra_pips = []
         for i in self.instances:
-            requires_files.extend(getattr(i, 'requires_files', ()))
-            if i.get_bool_option('use_tests_requires', default_value=True):
-                requires_files.extend(getattr(i, 'test_requires_files', ()))
-
-            # Ensure we include any extra pips that are desired.
-            i_extra_pips = i.get_option("pips") or []
-            for i_pip in i_extra_pips:
-                extra_req = pip_helper.create_requirement(i_pip['name'],
-                                                          i_pip.get('version'))
-                extra_pips.append(str(extra_req))
+            instance_pips, instance_requires_files = gather_extras(i)
+            extra_pips.extend(instance_pips)
+            requires_files.extend(instance_requires_files)
         requires_files = filter(sh.isfile, requires_files)
         self._gather_pips_to_install(requires_files, sorted(set(extra_pips)))
         self._clean_pip_requires(requires_files)
@@ -192,6 +198,10 @@ class DependencyHandler(object):
         Updates `self.forced_packages` and `self.pips_to_install`.
         Writes requirements to `self.gathered_requires_filename`.
         """
+
+        def sort_req(r1, r2):
+            return cmp(r1.key, r2.key)
+
         extra_pips = extra_pips or []
         cmdline = [self.multipip_executable]
         cmdline = cmdline + extra_pips + ["-r"] + requires_files
@@ -205,7 +215,9 @@ class DependencyHandler(object):
         stdout, stderr = sh.execute(cmdline, check_exit_code=False)
         self.pips_to_install = list(utils.splitlines_not_empty(stdout))
         sh.write_file(self.gathered_requires_filename, "\n".join(self.pips_to_install))
-        utils.log_iterable(sorted(self.pips_to_install), logger=LOG,
+        pips_to_install = pip_helper.read_requirement_files([self.gathered_requires_filename])
+        pips_to_install = sorted(pips_to_install, cmp=sort_req)
+        utils.log_iterable(pips_to_install, logger=LOG,
                            header="Full known python dependency list")
 
         incompatibles = collections.defaultdict(list)
@@ -234,12 +246,17 @@ class DependencyHandler(object):
 
         # Translate those that we altered requirements for into a set of forced
         # requirements file (and associated list).
-        self.forced_packages = []
+        self.forced_packages = [e['req'] for e in self._python_eggs]
+        forced_packages_keys = [e.key for e in self.forced_packages]
         for req in [pip_helper.extract_requirement(line) for line in self.pips_to_install]:
-            if req.key in incompatibles:
+            if req.key in incompatibles and req.key not in forced_packages_keys:
                 self.forced_packages.append(req)
-        sh.write_file(self.forced_requires_filename,
-                      "\n".join([str(req) for req in self.forced_packages]))
+                forced_packages_keys.append(req.key)
+        self.forced_packages = sorted(self.forced_packages, cmp=sort_req)
+        forced_packages = [str(req) for req in self.forced_packages]
+        utils.log_iterable(forced_packages, logger=LOG,
+                           header="Forced python dependencies")
+        sh.write_file(self.forced_requires_filename, "\n".join(forced_packages))
 
     def _filter_download_requires(self):
         """Shrinks the pips that were downloaded into a smaller set.
