@@ -6,6 +6,7 @@ components:
 - rabbit-mq
 - oslo-config
 - oslo-messaging
+- pycadf
 - keystone
 # Client used by many components
 - keystone-client

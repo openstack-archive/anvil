@@ -73,3 +73,6 @@ trove-client:
 trove:
   repo: git://github.com/openstack/trove.git
   branch: master
+pycadf:
+  repo: git://github.com/openstack/pycadf.git
+  tag: master

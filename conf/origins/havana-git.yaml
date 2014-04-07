@@ -72,3 +72,5 @@ trove:
   branch: stable/havana
 oslo-messaging:
   disabled: True
+pycadf:
+  disabled: True

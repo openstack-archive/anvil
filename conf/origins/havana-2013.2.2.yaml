@@ -69,3 +69,5 @@ trove:
   tag: 2013.2.2
 oslo-messaging:
   disabled: True
+pycadf:
+  disabled: True
