@@ -15,16 +15,18 @@
 #    under the License.
 
 import ConfigParser
+from ConfigParser import DEFAULTSECT
 from ConfigParser import NoOptionError
 from ConfigParser import NoSectionError
 from StringIO import StringIO
 
 import iniparse
+from iniparse import ini
+
 import re
 
 from anvil import log as logging
 from anvil import utils
-from iniparse import ini
 
 LOG = logging.getLogger(__name__)
 
@@ -125,6 +127,7 @@ class AnvilConfigParser(iniparse.RawConfigParser):
     2. Override set option behavior to insert option right
     after same commented option, if present, otherwise insert
     in the section beginning.
+    3. Includes [DEFAULT] section if present (but not present in original).
     """
 
     # commented option regexp
@@ -141,6 +144,11 @@ class AnvilConfigParser(iniparse.RawConfigParser):
             $       # then line ends
         """, re.VERBOSE)
 
+    def __init__(self, defaults=None, dict_type=dict, include_defaults=True):
+        super(AnvilConfigParser, self).__init__(defaults=defaults,
+                                                dict_type=dict_type)
+        self._include_defaults = include_defaults
+
     def readfp(self, fp, filename=None):
         super(AnvilConfigParser, self).readfp(fp, filename)
         self._on_after_file_read()
@@ -151,6 +159,44 @@ class AnvilConfigParser(iniparse.RawConfigParser):
             self._set_section_option(self.data[section], option, value)
         except KeyError:
             raise NoSectionError(section)
+
+    def _sections(self):
+        """Gets all the underlying sections (including DEFAULT). The underlying
+        iniparse library seems to exclude the DEFAULT section which makes it
+        hard to tell if we should include the DEFAULT section in output or
+        whether the library will include it for us (which it will do if the
+        origin data had a DEFAULT section).
+        """
+        sections = set()
+        for x in self.data._data.contents:
+            if isinstance(x, ini.LineContainer):
+                sections.add(x.name)
+        return sections
+
+    def write(self, fp):
+        """Writes sections to the provided file object, and also includes the
+        default section if it is not present in the origin data but should be
+        present in the output data.
+        """
+        if self.data._bom:
+            fp.write(u'\ufeff')
+        default_added = False
+        if self._include_defaults and DEFAULTSECT not in self._sections():
+            try:
+                sect = self.data[DEFAULTSECT]
+            except KeyError:
+                pass
+            else:
+                default_added = True
+                fp.write("%s\n" % (ini.SectionLine(DEFAULTSECT)))
+                for lines in sect._lines:
+                    fp.write("%s\n" % (lines))
+        data = "%s" % (self.data._data)
+        if default_added and data:
+            # Remove extra spaces since we added a section before this.
+            data = data.lstrip()
+            data = "\n" + data
+        fp.write(data)
 
     def _on_after_file_read(self):
         """This function is called after reading config file
@@ -233,7 +279,7 @@ class DefaultConf(object):
     a large DEFAULT section.
     """
 
-    current_section = "DEFAULT"
+    current_section = DEFAULTSECT
 
     def __init__(self, backing, current_section=None):
         self.backing = backing
