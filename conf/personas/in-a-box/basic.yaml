@@ -4,21 +4,21 @@ components:
 - general
 - db
 - rabbit-mq
+# Oslo libraries
 - oslo-config
 - oslo-messaging
 - pycadf
+# Core components
 - keystone
+- glance
+- cinder
+- nova
 # Client used by many components
 - keystone-client
-- glance
-# Client used by cinder
 - swift-client
-- cinder
-# Clients used by nova (+ others)
 - glance-client
 - cinder-client
 - neutron-client
-- nova
 - nova-client
 options:
     nova:

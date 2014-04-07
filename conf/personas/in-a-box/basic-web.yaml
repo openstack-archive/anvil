@@ -4,12 +4,19 @@ components:
 - general
 - db
 - rabbit-mq
+# Oslo libraries
 - oslo-config
+- oslo-messaging
+- pycadf
+# Core components
 - keystone
+- glance
+- neutron
+- cinder
+- nova
+- horizon
 # Client used by many components
 - keystone-client
-- glance
-# Clients used by nova (+ others)
 - ceilometer-client
 - cinder-client
 - glance-client
@@ -17,13 +24,10 @@ components:
 - neutron-client
 - swift-client
 - trove-client
-- openvswitch
-- neutron
-- cinder
-- nova
 - nova-client
+# Additional libraries
+- openvswitch
 - django-openstack-auth
-- horizon
 options:
     general:
         install-all-deps: false

@@ -4,21 +4,25 @@ components:
 - general
 - db
 - rabbit-mq
+# Oslo libraries
 - oslo-config
+- oslo-messaging
+- pycadf
+# Core components
 - keystone
+- glance
+- neutron
+- cinder
+- nova
 # Client used by many components
 - keystone-client
-- glance
-# Clients used by nova (+ others)
 - glance-client
 - cinder-client
 - neutron-client
 - swift-client
-- openvswitch
-- neutron
-- cinder
-- nova
 - nova-client
+# Additional libraries
+- openvswitch
 options:
     nova:
         db-sync: true
