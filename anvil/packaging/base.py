@@ -138,7 +138,7 @@ class DependencyHandler(object):
             requires_files.extend(instance_requires_files)
         requires_files = filter(sh.isfile, requires_files)
         self._gather_pips_to_install(requires_files, sorted(set(extra_pips)))
-        self._clean_pip_requires(requires_files)
+        self._scan_pip_requires(requires_files)
 
     def package_instance(self, instance):
         pass
@@ -168,40 +168,101 @@ class DependencyHandler(object):
                 sh.deldir(d)
             sh.unlink(self.tracereader.filename())
 
-    def _clean_pip_requires(self, requires_files):
-        # Fixup incompatible dependencies
-        if not (requires_files and self.forced_packages):
+    def _scan_pip_requires(self, requires_files):
+
+        def validate_requirement(filename, source_req):
+            install_egg = None
+            for egg_info in self._python_eggs:
+                if egg_info['name'] == source_req.key:
+                    install_egg = egg_info
+                    break
+            if not install_egg:
+                return
+            # Ensure what we are about to install/create will actually work
+            # with the desired version. If it is not compatible then we should
+            # abort and someone should update the tag/branch in the origin
+            # file (or fix it via some other mechanism).
+            if install_egg['version'] not in source_req:
+                msg = ("Can not satisfy '%s' with '%s', version"
+                       " conflict found in %s")
+                raise exc.DependencyException(msg % (source_req,
+                                                     install_egg['req'],
+                                                     filename))
+
+        if not requires_files:
             return
         utils.log_iterable(sorted(requires_files),
                            logger=LOG,
-                           header="Adjusting %s pip 'requires' files" % (len(requires_files)))
+                           header="Scanning %s pip 'requires' files" % (len(requires_files)))
         forced_by_key = dict((pkg.key, pkg) for pkg in self.forced_packages)
-        for fn in requires_files:
+        mutations = 0
+        for fn in sorted(requires_files):
             old_lines = sh.load_file(fn).splitlines()
             new_lines = []
-            mutated_lines = 0
+            alterations = []
             for i, line in enumerate(old_lines):
                 try:
                     source_req = pip_helper.extract_requirement(line)
                 except (ValueError, TypeError):
                     pass
                 else:
+                    validate_requirement(fn, source_req)
                     try:
                         replace_req = forced_by_key[source_req.key]
                     except KeyError:
                         pass
                     else:
-                        LOG.debug("Replacing %s in %s (line number %s) with %s",
-                                  source_req, fn, i + 1, replace_req)
-                        line = str(replace_req)
-                        mutated_lines += 1
+                        replace_req = str(replace_req)
+                        source_req = str(source_req)
+                        if replace_req != source_req:
+                            line = replace_req
+                            alterations.append("%s => %s"
+                                               % (colorizer.quote(source_req),
+                                                  colorizer.quote(replace_req)))
                 new_lines.append(line)
-            if mutated_lines > 0:
+            if alterations:
                 contents = "# Cleaned on %s\n\n%s\n" % (utils.iso8601(), "\n".join(new_lines))
                 sh.write_file_and_backup(fn, contents)
+                mutations += len(alterations)
+                utils.log_iterable(alterations,
+                                   logger=LOG,
+                                   header="Replaced %s requirements in %s"
+                                          % (len(alterations), fn),
+                                   color=None)
         # NOTE(imelnikov): after updating requirement lists we should re-fetch
         # data from them again, so we drop pip helper caches here.
-        pip_helper.drop_caches()
+        if mutations > 0:
+            pip_helper.drop_caches()
+
+    def _call_multipip(self, requires_pips, requires_files, ignore_pips):
+        cmdline = [self.multipip_executable]
+        if requires_files:
+            cmdline.append("-r")
+            cmdline.extend(requires_files)
+        if ignore_pips:
+            cmdline.append("--ignore-package")
+            cmdline.extend(ignore_pips)
+        if requires_pips:
+            cmdline.append("--")
+            cmdline.extend(requires_pips)
+        (stdout, stderr) = sh.execute(cmdline, check_exit_code=False)
+        compatibles = list(utils.splitlines_not_empty(stdout))
+        incompatibles = collections.defaultdict(list)
+        current_name = ''
+        for line in stderr.strip().splitlines():
+            if line.endswith(": incompatible requirements"):
+                current_name = line.split(":", 1)[0].lower().strip()
+                if current_name not in incompatibles:
+                    incompatibles[current_name] = []
+            else:
+                incompatibles[current_name].append(line)
+        cleaned_incompatibles = dict()
+        for (req_name, lines) in incompatibles.iteritems():
+            req_name = req_name.strip()
+            if not req_name:
+                continue
+            cleaned_incompatibles[req_name] = lines
+        return (compatibles, cleaned_incompatibles)
 
     def _gather_pips_to_install(self, requires_files, extra_pips=None):
         """Analyze requires_files and extra_pips.
@@ -213,52 +274,32 @@ class DependencyHandler(object):
         def sort_req(r1, r2):
             return cmp(r1.key, r2.key)
 
-        extra_pips = extra_pips or []
-        cmdline = [self.multipip_executable]
-        cmdline = cmdline + extra_pips + ["-r"] + requires_files
-
-        ignore_pip_names = set(self.python_names)
-        ignore_pip_names.update(self.ignore_pips)
-        if ignore_pip_names:
-            cmdline.extend(["--ignore-package"])
-            cmdline.extend(ignore_pip_names)
-
-        stdout, stderr = sh.execute(cmdline, check_exit_code=False)
-        self.pips_to_install = list(utils.splitlines_not_empty(stdout))
+        ignore_pips = set(self.python_names)
+        ignore_pips.update(self.ignore_pips)
+        compatibles, incompatibles = self._call_multipip(extra_pips,
+                                                         requires_files,
+                                                         ignore_pips)
+        self.pips_to_install = compatibles
         sh.write_file(self.gathered_requires_filename, "\n".join(self.pips_to_install))
         pips_to_install = pip_helper.read_requirement_files([self.gathered_requires_filename])
         pips_to_install = sorted(pips_to_install, cmp=sort_req)
         utils.log_iterable(pips_to_install, logger=LOG,
                            header="Full known python dependency list")
 
-        incompatibles = collections.defaultdict(list)
-        if stderr:
-            current_name = ''
-            for line in stderr.strip().splitlines():
-                if line.endswith(": incompatible requirements"):
-                    current_name = line.split(":", 1)[0].lower().strip()
-                    if current_name not in incompatibles:
-                        incompatibles[current_name] = []
-                else:
-                    incompatibles[current_name].append(line)
-            for (name, lines) in incompatibles.items():
-                if not name:
-                    continue
-                LOG.warn("Incompatible requirements found for %s",
-                         colorizer.quote(name, quote_color='red'))
-                for line in lines:
-                    LOG.warn(line)
+        for (name, lines) in incompatibles.items():
+            LOG.warn("Incompatible requirements found for %s",
+                     colorizer.quote(name, quote_color='red'))
+            for line in lines:
+                LOG.warn(line)
 
         if not self.pips_to_install:
-            LOG.error("No dependencies for OpenStack found."
-                      "Something went wrong. Please check:")
-            LOG.error("'%s'" % "' '".join(cmdline))
-            raise exc.DependencyException("No dependencies for OpenStack found")
+            LOG.error("No valid dependencies found. Something went wrong.")
+            raise exc.DependencyException("No valid dependencies found")
 
         # Translate those that we altered requirements for into a set of forced
         # requirements file (and associated list).
-        self.forced_packages = [e['req'] for e in self._python_eggs]
-        forced_packages_keys = [e.key for e in self.forced_packages]
+        self.forced_packages = []
+        forced_packages_keys = []
         for req in [pip_helper.extract_requirement(line) for line in self.pips_to_install]:
             if req.key in incompatibles and req.key not in forced_packages_keys:
                 self.forced_packages.append(req)
