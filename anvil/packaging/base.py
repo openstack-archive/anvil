@@ -179,6 +179,7 @@ class DependencyHandler(object):
         for fn in requires_files:
             old_lines = sh.load_file(fn).splitlines()
             new_lines = []
+            mutated_lines = 0
             for i, line in enumerate(old_lines):
                 try:
                     source_req = pip_helper.extract_requirement(line)
@@ -193,9 +194,11 @@ class DependencyHandler(object):
                         LOG.debug("Replacing %s in %s (line number %s) with %s",
                                   source_req, fn, i + 1, replace_req)
                         line = str(replace_req)
+                        mutated_lines += 1
                 new_lines.append(line)
-            contents = "# Cleaned on %s\n\n%s\n" % (utils.iso8601(), "\n".join(new_lines))
-            sh.write_file_and_backup(fn, contents)
+            if mutated_lines > 0:
+                contents = "# Cleaned on %s\n\n%s\n" % (utils.iso8601(), "\n".join(new_lines))
+                sh.write_file_and_backup(fn, contents)
         # NOTE(imelnikov): after updating requirement lists we should re-fetch
         # data from them again, so we drop pip helper caches here.
         pip_helper.drop_caches()
