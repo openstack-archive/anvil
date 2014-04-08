@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+import collections
 import distutils.spawn
 import email.parser
 import logging
@@ -386,6 +387,96 @@ def trim_zeroes(version):
 
 
 _DOT_ZEROES_TAIL = '.0' * 10
+_CAND_MAP = {
+    'final-': 'f',
+    '@': 'd',
+}
+
+
+def version_release(version):
+
+    # Unformats the parsed versions zero fill.
+    def undo_zfill(piece):
+        piece = piece.lstrip("0")
+        if not piece:
+            piece = '0'
+        return piece
+
+    # Translate usage of pre-release versions into
+    # version and release since rpm will have conflicts
+    # when trying to compare against pre-release versions.
+    parsed_version = pkg_resources.parse_version(version)
+    skip_start = -1
+    for i, piece in enumerate(parsed_version):
+        if piece.startswith("*"):
+            skip_start = i
+            break
+    if skip_start == -1 or parsed_version[skip_start] == '*final':
+        return (version, None)
+    version = []
+    for v in list(parsed_version)[0:skip_start]:
+        version.append(undo_zfill(v))
+    version = ".".join(version)
+    if not version:
+        version = "0"
+    release = []
+    candidates = collections.deque(parsed_version[skip_start:])
+    while len(candidates):
+        v = candidates.popleft()
+        if v == '*final':
+            continue
+        # TODO(harlowja): this will likely require some more work as the
+        # way python and rpm compare release versions is not the same, but the
+        # usage of these types is limited so should not be a major problem.
+        piece = []
+        if v.startswith("*"):
+            v = v[1:]
+            v = _CAND_MAP.get(v, v)
+            piece.append(v)
+        while len(candidates):
+            v = candidates.popleft()
+            if not v.isdigit():
+                candidates.appendleft(v)
+                break
+            else:
+                piece.append(undo_zfill(v))
+        release.append("".join(piece))
+    release = ".".join(release)
+    if not release:
+        return (version, None)
+    else:
+        return (version, release)
+
+
+def format_version(req, version):
+    # NOTE(harlowja): adjust the usage of pre-release versions.
+    version, release = version_release(version)
+    try:
+        version = "%s:%s" % (epoch_map[req.key], version)
+    except KeyError:
+        pass
+    # NOTE(imelnikov): rpm and pip compare versions differently, and
+    # this used to lead to lots problems, pain and sorrows. The most
+    # visible outcome of the difference is that from rpm's point of
+    # view version '2' != '2.0', as well as '2.0' != '2.0.0', but for
+    # pip it's same version.
+    #
+    # Current workaround for this works as follows: if python module
+    # requires module of some version, (like 2.0.0), the actual rpm
+    # version of the module will have the same non-zero beginning and
+    # some '.0's at the end ('2', '2.0', '2.0.0', '2.0.0.0' ...). Thus,
+    # we can calculate lower bound for requirement by trimming '.0'
+    # from the version (we get '2'), and then set upper bound to lower
+    # bound + tail of '.0' repeated several times.  Luckily, '2.0' and
+    # '2.00' is the same version for rpm.
+    lower_version = trim_zeroes(version)
+    upper_version = '%s%s' % (lower_version, _DOT_ZEROES_TAIL)
+    # Attach on the release (if any)
+    if release:
+        version = version + "-" + release
+        lower_version = lower_version + "-" + release
+        upper_version = upper_version + "-" + release
+    return (version, lower_version, upper_version)
 
 
 def requires_and_conflicts(req_list, skip_req_names=()):
@@ -405,27 +496,7 @@ def requires_and_conflicts(req_list, skip_req_names=()):
             rpm_mapping[rpm_name] = req
             continue
         for kind, version in req.specs:
-            try:
-                version = "%s:%s" % (epoch_map[req.key], version)
-            except KeyError:
-                pass
-            # NOTE(imelnikov): rpm and pip compare versions differently, and
-            # this used to lead to lots problems, pain and sorrows. The most
-            # visible outcome of the difference is that from rpm's point of
-            # view version '2' != '2.0', as well as '2.0' != '2.0.0', but for
-            # pip it's same version.
-            #
-            # Current workaround for this works as follows: if python module
-            # requires module of some version, (like 2.0.0), the actual rpm
-            # version of the module will have the same non-zero beginning and
-            # some '.0's at the end ('2', '2.0', '2.0.0', '2.0.0.0' ...). Thus,
-            # we can calculate lower bound for requirement by trimming '.0'
-            # from the version (we get '2'), and then set upper bound to lower
-            # bound + tail of '.0' repeated several times.  Luckily, '2.0' and
-            # '2.00' is the same version for rpm.
-
-            lower_version = trim_zeroes(version)
-            upper_version = '%s%s' % (lower_version, _DOT_ZEROES_TAIL)
+            version, lower_version, upper_version = format_version(req, version)
             if kind == "!=":
                 # NOTE(imelnikov): we can't conflict with ranges, so we
                 # put version as is and with trimmed zeroes just in case
