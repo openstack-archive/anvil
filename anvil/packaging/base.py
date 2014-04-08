@@ -181,11 +181,19 @@ class DependencyHandler(object):
             new_lines = []
             for line in old_lines:
                 try:
-                    req = pip_helper.extract_requirement(line)
-                    new_lines.append(str(forced_by_key[req.key]))
-                except Exception:
-                    # we don't force the package or it has a bad format
-                    new_lines.append(line)
+                    source_req = pip_helper.extract_requirement(line)
+                except (ValueError, TypeError):
+                    pass
+                else:
+                    try:
+                        replace_req = forced_by_key[source_req.key]
+                    except KeyError:
+                        pass
+                    else:
+                        LOG.debug("Replacing %s in %s with %s", source_req, fn,
+                                  replace_req)
+                        line = str(replace_req)
+                new_lines.append(line)
             contents = "# Cleaned on %s\n\n%s\n" % (utils.iso8601(), "\n".join(new_lines))
             sh.write_file_and_backup(fn, contents)
         # NOTE(imelnikov): after updating requirement lists we should re-fetch
