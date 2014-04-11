@@ -39,7 +39,8 @@ class StopAction(action.Action):
             action.PhaseFunctors(
                 start=lambda i: LOG.info('Stopping %s.', colorizer.quote(i.name)),
                 run=lambda i: i.stop(),
-                end=lambda i, result: LOG.info("Stopped %s items.", colorizer.quote(result)),
+                end=lambda i, result: LOG.info("Stopped %s application(s).",
+                                               colorizer.quote(result)),
             ),
             component_order,
             instances,

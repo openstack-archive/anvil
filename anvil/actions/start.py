@@ -44,9 +44,11 @@ class StartAction(action.Action):
         removals.extend(states.reverts('start'))
         self._run_phase(
             action.PhaseFunctors(
-                start=lambda i: LOG.info('Starting %s.', i.name),
+                start=lambda i: LOG.info('Starting %s.',
+                                         colorizer.quote(i.name)),
                 run=lambda i: i.start(),
-                end=lambda i, result: LOG.info("Start %s applications", colorizer.quote(result)),
+                end=lambda i, result: LOG.info("Started %s application(s).",
+                                               colorizer.quote(result)),
             ),
             component_order,
             instances,
@@ -56,7 +58,8 @@ class StartAction(action.Action):
         removals.extend(states.reverts('post-start'))
         self._run_phase(
             action.PhaseFunctors(
-                start=lambda i: LOG.info('Post-starting %s.', colorizer.quote(i.name)),
+                start=lambda i: LOG.info('Post-starting %s.',
+                                         colorizer.quote(i.name)),
                 run=lambda i: i.post_start(),
                 end=None,
             ),
