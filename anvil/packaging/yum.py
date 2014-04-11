@@ -279,12 +279,15 @@ class YumDependencyHandler(base.DependencyHandler):
             # Organize by repo
             repos = collections.defaultdict(list)
             for (req, rpm_name, version, repo) in satisfied_list:
-                repos[repo].append("%s as %s-%s" % (req, rpm_name, version))
+                rpm_found = '%s-%s' % (rpm_name, version)
+                repos[repo].append("%s as %s" % (colorizer.quote(req),
+                                                 colorizer.quote(rpm_found)))
             for r in sorted(repos.keys()):
                 header = ("%s Python packages are already available "
                           "as RPMs from repository %s")
                 header = header % (len(repos[r]), colorizer.quote(r))
-                utils.log_iterable(sorted(repos[r]), logger=LOG, header=header)
+                utils.log_iterable(sorted(repos[r]), logger=LOG, header=header,
+                                   color=None)
         return pips_to_download
 
     def _build_dependencies(self):
