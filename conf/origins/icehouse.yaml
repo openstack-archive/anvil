@@ -39,7 +39,7 @@ nova-client:
   tag: 2.17.0
 nova:
   repo: git://github.com/openstack/nova.git
-  tag: 2014.1.rc1
+  tag: 2014.1.rc2
 novnc:
   repo: git://github.com/kanaka/noVNC.git
   branch: master
