@@ -195,10 +195,8 @@ run_smithy()
 
 puke()
 {
-    cleaned_force=$(echo "$FORCE" | sed -e 's/\([A-Z]\)/\L\1/g;s/\s//g')
-    if [ "$cleaned_force" == "yes" ]; then
-        run_smithy
-    else
+    local cleaned_force=$(echo "$FORCE" | sed -e 's/\([A-Z]\)/\L\1/g;s/\s//g')
+    if [ "$cleaned_force" != "yes" ]; then
         echo -e "To run anyway set FORCE=yes and rerun." >&2
         exit 1
     fi
@@ -326,13 +324,21 @@ fi
 if [ ! -f "$BSCONF_FILE" ]; then
     echo "Anvil has not been tested on distribution '$OSNAME'" >&2
     puke
+else
+    MIN_RELEASE=${MIN_RELEASE:?"Error: MIN_RELEASE is undefined!"}
+    SHORTNAME=${SHORTNAME:?"Error: SHORTNAME is undefined!"}
+    if [ "$RELEASE" != "$(greatest_version "$RELEASE" "$MIN_RELEASE")" ]; then
+        echo "This script must be run on $SHORTNAME $MIN_RELEASE+ and not $SHORTNAME $RELEASE." >&2
+        puke
+    fi
 fi
 
-MIN_RELEASE=${MIN_RELEASE:?"Error: MIN_RELEASE is undefined!"}
-SHORTNAME=${SHORTNAME:?"Error: SHORTNAME is undefined!"}
-if [ "$RELEASE" != "$(greatest_version "$RELEASE" "$MIN_RELEASE")" ]; then
-    echo "This script must be run on $SHORTNAME $MIN_RELEASE+ and not $SHORTNAME $RELEASE." >&2
-    puke
+# If we got here then we must be in force mode, setup with the default configuration
+# file for unknown distros...
+if [ ! -f "$BSCONF_FILE" ]; then
+    BSCONF_FILE="$BSCONF_DIR/Unknown"
+    SHORTNAME="$OSDIST"
+    source "$BSCONF_FILE"
 fi
 
 echo "Bootstrapping $SHORTNAME $RELEASE"

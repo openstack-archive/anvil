@@ -1,0 +1,2 @@
+# -*- sh -*-
+STEPS="virtualenv"
