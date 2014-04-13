@@ -39,13 +39,13 @@ def create_parser():
         nargs="*",
         default=[],
         metavar="<file>",
-        help="Install all the packages listed in the given requirements file")
+        help="Analyze all the packages listed in the given requirements file")
     parser.add_argument(
         "requirement_specs",
         nargs="*",
         default=[],
         metavar="<requirement specifier>",
-        help="Install specified package")
+        help="Analyze specified package")
     parser.add_argument(
         # A regex to be used to skip requirements
         "--skip-requirements-regex",

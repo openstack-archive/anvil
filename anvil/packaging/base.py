@@ -18,12 +18,11 @@
 # R0921: Abstract class not referenced
 #pylint: disable=R0902,R0921
 
-import collections
-
 from anvil import colorizer
 from anvil import decorators
 from anvil import exceptions as exc
 from anvil import log as logging
+from anvil.packaging.helpers import multipip_helper
 from anvil.packaging.helpers import pip_helper
 from anvil import shell as sh
 from anvil import trace as tr
@@ -69,8 +68,7 @@ class DependencyHandler(object):
         self.gathered_requires_filename = sh.joinpths(self.deps_dir, "pip-requires")
         self.forced_requires_filename = sh.joinpths(self.deps_dir, "forced-requires")
         self.download_requires_filename = sh.joinpths(self.deps_dir, "download-requires")
-        # Executables we require to operate
-        self.multipip_executable = sh.which("multipip", ["tools/"])
+        self.multipip = multipip_helper.Helper()
         # List of requirements
         self.pips_to_install = []
         self.forced_packages = []
@@ -235,36 +233,6 @@ class DependencyHandler(object):
         if mutations > 0:
             pip_helper.drop_caches()
 
-    def _call_multipip(self, requires_pips, requires_files, ignore_pips):
-        cmdline = [self.multipip_executable]
-        if requires_files:
-            cmdline.append("-r")
-            cmdline.extend(requires_files)
-        if ignore_pips:
-            cmdline.append("--ignore-package")
-            cmdline.extend(ignore_pips)
-        if requires_pips:
-            cmdline.append("--")
-            cmdline.extend(requires_pips)
-        (stdout, stderr) = sh.execute(cmdline, check_exit_code=False)
-        compatibles = list(utils.splitlines_not_empty(stdout))
-        incompatibles = collections.defaultdict(list)
-        current_name = ''
-        for line in stderr.strip().splitlines():
-            if line.endswith(": incompatible requirements"):
-                current_name = line.split(":", 1)[0].lower().strip()
-                if current_name not in incompatibles:
-                    incompatibles[current_name] = []
-            else:
-                incompatibles[current_name].append(line)
-        cleaned_incompatibles = dict()
-        for (req_name, lines) in incompatibles.iteritems():
-            req_name = req_name.strip()
-            if not req_name:
-                continue
-            cleaned_incompatibles[req_name] = lines
-        return (compatibles, cleaned_incompatibles)
-
     def _gather_pips_to_install(self, requires_files, extra_pips=None):
         """Analyze requires_files and extra_pips.
 
@@ -277,9 +245,9 @@ class DependencyHandler(object):
 
         ignore_pips = set(self.python_names)
         ignore_pips.update(self.ignore_pips)
-        compatibles, incompatibles = self._call_multipip(extra_pips,
-                                                         requires_files,
-                                                         ignore_pips)
+        compatibles, incompatibles = self.multipip.resolve(extra_pips,
+                                                           requires_files,
+                                                           ignore_pips)
         self.pips_to_install = compatibles
         sh.write_file(self.gathered_requires_filename, "\n".join(self.pips_to_install))
         pips_to_install = pip_helper.read_requirement_files([self.gathered_requires_filename])
