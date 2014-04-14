@@ -89,6 +89,10 @@ class DependencyException(AnvilException):
     pass
 
 
+class DuplicateException(AnvilException):
+    "Raised when a duplicate entry is found."
+
+
 class ProcessExecutionError(IOError):
     MESSAGE_TPL = (
         '%(description)s\n'
