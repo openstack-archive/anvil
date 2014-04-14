@@ -23,6 +23,7 @@ import urlparse
 
 from anvil import colorizer
 from anvil import downloader as down
+from anvil import exceptions as exc
 from anvil import importer
 from anvil import log
 from anvil import shell as sh
@@ -73,13 +74,6 @@ SKIP_CHECKS = [
 
 # File extensions we will skip over (typically of content hashes)
 BAD_EXTENSIONS = ['md5', 'sha', 'sfv']
-
-
-def _hash_it(content, hash_algo='md5'):
-    hasher = hashlib.new(hash_algo)
-    hasher.update(content)
-    digest = hasher.hexdigest()
-    return digest
 
 
 class Unpacker(object):
@@ -245,132 +239,50 @@ class Unpacker(object):
         raise IOError(msg)
 
 
-class Registry(object):
+class Cache(object):
+    """Represents an image cache."""
 
-    def __init__(self, client):
-        self.client = client
+    def __init__(self, cache_dir, url):
+        self._cache_dir = cache_dir
+        self._url = url
+        hashed_url = self._hash(self._url)
+        self._cache_path = sh.joinpths(self._cache_dir, hashed_url)
+        self._details_path = sh.joinpths(self._cache_dir,
+                                         hashed_url + ".details")
 
-    def _extract_names(self):
-        names = dict()
-        images = self.client.images.list()
-        for image in images:
-            name = image.name
-            names[name] = image.id
-        return names
+    @staticmethod
+    def _hash(data, alg='md5'):
+        """Hash data with a given algorithm."""
+        hasher = hashlib.new(alg)
+        hasher.update(data)
+        return hasher.hexdigest()
 
-    def __contains__(self, name):
-        names = self._extract_names()
-        if name in names:
-            return True
-        else:
-            return False
+    def load_details(self):
+        """Load cached image details."""
+        return utils.load_yaml_text(sh.load_file(self._details_path))
 
+    def save_details(self, details):
+        """Save cached image details."""
+        sh.write_file(self._details_path, utils.prettify_yaml(details))
 
-class Image(object):
+    @property
+    def path(self):
+        return self._cache_path
 
-    def __init__(self, client, url, is_public, cache_dir):
-        self.client = client
-        self.registry = Registry(client)
-        self.url = url
-        self.parsed_url = urlparse.urlparse(url)
-        self.is_public = is_public
-        self.cache_dir = cache_dir
-
-    def _check_name(self, name):
-        LOG.info("Checking if image %s already exists already in glance.", colorizer.quote(name))
-        if name in self.registry:
-            raise IOError("Image named %s already exists." % (name))
-
-    def _register(self, image_name, location):
-
-        # Upload the kernel, if we have one
-        kernel = location.pop('kernel', None)
-        kernel_id = ''
-        if kernel:
-            kernel_image_name = "%s-vmlinuz" % (image_name)
-            self._check_name(kernel_image_name)
-            LOG.info('Adding kernel %s to glance.', colorizer.quote(kernel_image_name))
-            LOG.info("Please wait installing...")
-            args = {
-                'container_format': kernel['container_format'],
-                'disk_format': kernel['disk_format'],
-                'name': kernel_image_name,
-                'is_public': self.is_public,
-            }
-            with open(kernel['file_name'], 'r') as fh:
-                resource = self.client.images.create(data=fh, **args)
-                kernel_id = resource.id
-
-        # Upload the ramdisk, if we have one
-        initrd = location.pop('ramdisk', None)
-        initrd_id = ''
-        if initrd:
-            ram_image_name = "%s-initrd" % (image_name)
-            self._check_name(ram_image_name)
-            LOG.info('Adding ramdisk %s to glance.', colorizer.quote(ram_image_name))
-            LOG.info("Please wait installing...")
-            args = {
-                'container_format': initrd['container_format'],
-                'disk_format': initrd['disk_format'],
-                'name': ram_image_name,
-                'is_public': self.is_public,
-            }
-            with open(initrd['file_name'], 'r') as fh:
-                resource = self.client.images.create(data=fh, **args)
-                initrd_id = resource.id
-
-        # Upload the root, we must have one...
-        LOG.info('Adding image %s to glance.', colorizer.quote(image_name))
-        self._check_name(image_name)
-        args = {
-            'name': image_name,
-            'container_format': location['container_format'],
-            'disk_format': location['disk_format'],
-            'is_public': self.is_public,
-            'properties': {},
-        }
-        if kernel_id or initrd_id:
-            if kernel_id:
-                args['properties']['kernel_id'] = kernel_id
-            if initrd_id:
-                args['properties']['ramdisk_id'] = initrd_id
-        LOG.info("Please wait installing...")
-        with open(location['file_name'], 'r') as fh:
-            resource = self.client.images.create(data=fh, **args)
-            img_id = resource.id
-
-        return img_id
-
-    def _generate_img_name(self, url_fn):
-        name = url_fn
-        for look_for in NAME_CLEANUPS:
-            name = name.replace(look_for, '')
-        return name
-
-    def _extract_url_fn(self):
-        return sh.basename(self.parsed_url.path)
-
-    def _is_url_local(self):
-        return (sh.exists(self.url) or (self.parsed_url.scheme == '' and self.parsed_url.netloc == ''))
-
-    def _cached_paths(self):
-        digest = _hash_it(self.url)
-        path = sh.joinpths(self.cache_dir, digest)
-        details_path = sh.joinpths(self.cache_dir, digest + ".details")
-        return (path, details_path)
-
-    def _validate_cache(self, cache_path, details_path):
-        for path in [cache_path, details_path]:
+    @property
+    def is_valid(self):
+        """Check if cache is valid."""
+        for path in (self._cache_path, self._details_path):
             if not sh.exists(path):
                 return False
         check_files = []
         try:
-            unpack_info = utils.load_yaml_text(sh.load_file(details_path))
-            check_files.append(unpack_info['file_name'])
-            if 'kernel' in unpack_info:
-                check_files.append(unpack_info['kernel']['file_name'])
-            if 'ramdisk' in unpack_info:
-                check_files.append(unpack_info['ramdisk']['file_name'])
+            image_details = self.load_details()
+            check_files.append(image_details['file_name'])
+            if 'kernel' in image_details:
+                check_files.append(image_details['kernel']['file_name'])
+            if 'ramdisk' in image_details:
+                check_files.append(image_details['ramdisk']['file_name'])
         except Exception:
             return False
         for path in check_files:
@@ -378,41 +290,146 @@ class Image(object):
                 return False
         return True
 
+
+class Image(object):
+    """Represents an image with its own cache."""
+
+    def __init__(self, client, url, is_public, cache_dir):
+        self._client = client
+        self._url = url
+        self._parsed_url = urlparse.urlparse(url)
+        self._is_public = is_public
+        self._cache = Cache(cache_dir, url)
+
+    def _check_name(self, image_name):
+        """Check if image already present in glance."""
+        for image in self._client.images.list():
+            if image_name == image.name:
+                raise exc.DuplicateException(
+                    "Image %s already exists in glance." %
+                    colorizer.quote(image_name)
+                )
+
+    def _create(self, file_name, **kwargs):
+        """Create image in glance."""
+        with open(file_name, 'r') as fh:
+            image = self._client.images.create(data=fh, **kwargs)
+            return image.id
+
+    def _register(self, image_name, location):
+        """Register image in glance."""
+        # Upload the kernel, if we have one
+        kernel = location.pop('kernel', None)
+        kernel_id = ''
+        if kernel:
+            kernel_image_name = "%s-vmlinuz" % (image_name)
+            self._check_name(kernel_image_name)
+            LOG.info('Adding kernel %s to glance.',
+                     colorizer.quote(kernel_image_name))
+            LOG.info("Please wait installing...")
+            conf = {
+                'container_format': kernel['container_format'],
+                'disk_format': kernel['disk_format'],
+                'name': kernel_image_name,
+                'is_public': self._is_public,
+            }
+            kernel_id = self._create(kernel['file_name'], **conf)
+
+        # Upload the ramdisk, if we have one
+        initrd = location.pop('ramdisk', None)
+        initrd_id = ''
+        if initrd:
+            ram_image_name = "%s-initrd" % (image_name)
+            self._check_name(ram_image_name)
+            LOG.info('Adding ramdisk %s to glance.',
+                     colorizer.quote(ram_image_name))
+            LOG.info("Please wait installing...")
+            conf = {
+                'container_format': initrd['container_format'],
+                'disk_format': initrd['disk_format'],
+                'name': ram_image_name,
+                'is_public': self._is_public,
+            }
+            initrd_id = self._create(initrd['file_name'], **conf)
+
+        # Upload the root, we must have one
+        LOG.info('Adding image %s to glance.', colorizer.quote(image_name))
+        self._check_name(image_name)
+        conf = {
+            'name': image_name,
+            'container_format': location['container_format'],
+            'disk_format': location['disk_format'],
+            'is_public': self._is_public,
+            'properties': {},
+        }
+        if kernel_id or initrd_id:
+            if kernel_id:
+                conf['properties']['kernel_id'] = kernel_id
+            if initrd_id:
+                conf['properties']['ramdisk_id'] = initrd_id
+        LOG.info("Please wait installing...")
+        image_id = self._create(location['file_name'], **conf)
+
+        return image_id
+
+    def _generate_image_name(self, url_fn):
+        """Generate image name from a url name."""
+        name = url_fn
+        for look_for in NAME_CLEANUPS:
+            name = name.replace(look_for, '')
+        return name
+
+    def _extract_url_fn(self):
+        """Extract filename from a given image url."""
+        return sh.basename(self._parsed_url.path)
+
+    def _is_url_local(self):
+        """Check if url is local."""
+        return sh.exists(self._url) or (self._parsed_url.scheme == '' and
+                                        self._parsed_url.netloc == '')
+
     def install(self):
+        """Process image installation."""
         url_fn = self._extract_url_fn()
         if not url_fn:
-            raise IOError("Can not determine file name from url: %r" % (self.url))
-        (cache_path, details_path) = self._cached_paths()
-        use_cached = self._validate_cache(cache_path, details_path)
-        if use_cached:
-            LOG.info("Found valid cached image + metadata at: %s", colorizer.quote(cache_path))
-            unpack_info = utils.load_yaml_text(sh.load_file(details_path))
+            raise IOError("Can not determine file name from url: %r" %
+                          self._url)
+
+        if self._cache.is_valid:
+            LOG.info("Found valid cached image+metadata at: %s",
+                     colorizer.quote(self._cache.path))
+            image_details = self._cache.load_details()
         else:
-            sh.mkdir(cache_path)
+            sh.mkdir(self._cache.path)
             if not self._is_url_local():
-                (fetched_fn, bytes_down) = down.UrlLibDownloader(self.url,
-                                                                 sh.joinpths(cache_path, url_fn)).download()
-                LOG.debug("For url %s we downloaded %s bytes to %s", self.url, bytes_down, fetched_fn)
+                fetched_fn, bytes_down = down.UrlLibDownloader(
+                    self._url,
+                    sh.joinpths(self._cache.path, url_fn)).download()
+                LOG.debug("For url %s we downloaded %s bytes to %s", self._url,
+                          bytes_down, fetched_fn)
             else:
-                fetched_fn = self.url
-            unpack_info = Unpacker().unpack(url_fn, fetched_fn, cache_path)
-            sh.write_file(details_path, utils.prettify_yaml(unpack_info))
-        tgt_image_name = self._generate_img_name(url_fn)
-        img_id = self._register(tgt_image_name, unpack_info)
-        return (tgt_image_name, img_id)
+                fetched_fn = self._url
+            image_details = Unpacker().unpack(url_fn, fetched_fn,
+                                              self._cache.path)
+            self._cache.save_details(image_details)
+
+        image_name = self._generate_image_name(url_fn)
+        image_id = self._register(image_name, image_details)
+        return image_name, image_id
 
 
 class UploadService(object):
 
-    def __init__(self, glance, keystone, cache_dir='/usr/share/anvil/glance/cache', is_public=True):
-        self.glance_params = glance
-        self.keystone_params = keystone
-        self.cache_dir = cache_dir
-        self.is_public = is_public
+    def __init__(self, glance, keystone,
+                 cache_dir='/usr/share/anvil/glance/cache', is_public=True):
+        self._glance_params = glance
+        self._keystone_params = keystone
+        self._cache_dir = cache_dir
+        self._is_public = is_public
 
     def _get_token(self, kclient_v2):
         LOG.info("Getting your keystone token so that image uploads may proceed.")
-        k_params = self.keystone_params
+        k_params = self._keystone_params
         client = kclient_v2.Client(username=k_params['admin_user'],
                                    password=k_params['admin_password'],
                                    tenant_name=k_params['admin_tenant'],
@@ -423,7 +440,7 @@ class UploadService(object):
         am_installed = 0
         try:
             # Done at a function level since this module may be used
-            # before these libraries actually exist...
+            # before these libraries actually exist.
             gclient_v1 = importer.import_module('glanceclient.v1.client')
             gexceptions = importer.import_module('glanceclient.common.exceptions')
             kclient_v2 = importer.import_module('keystoneclient.v2_0.client')
@@ -433,10 +450,10 @@ class UploadService(object):
             return am_installed
         if urls:
             try:
-                # Ensure all services ok
-                for params in [self.glance_params, self.keystone_params]:
+                # Ensure all services are up
+                for params in (self._glance_params, self._keystone_params):
                     utils.wait_for_url(params['endpoints']['public']['uri'])
-                g_params = self.glance_params
+                g_params = self._glance_params
                 client = gclient_v1.Client(endpoint=g_params['endpoints']['public']['uri'],
                                            token=self._get_token(kclient_v2))
             except (RuntimeError, gexceptions.ClientException,
@@ -448,11 +465,14 @@ class UploadService(object):
             for url in urls:
                 try:
                     img_handle = Image(client, url,
-                                       is_public=self.is_public,
-                                       cache_dir=self.cache_dir)
+                                       is_public=self._is_public,
+                                       cache_dir=self._cache_dir)
                     (name, img_id) = img_handle.install()
-                    LOG.info("Installed image named %s with image id %s.", colorizer.quote(name), colorizer.quote(img_id))
+                    LOG.info("Installed image %s with id %s.",
+                             colorizer.quote(name), colorizer.quote(img_id))
                     am_installed += 1
+                except exc.DuplicateException as e:
+                    LOG.warning(e)
                 except (IOError,
                         tarfile.TarError,
                         gexceptions.ClientException,
