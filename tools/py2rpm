@@ -26,9 +26,12 @@ arch_dependent = set()
 epoch_map = {}
 
 requirements_section_re = re.compile(r'\[(.*?)\]')
-version_re = re.compile(r"^(.*[^.0])(\.0+)*$")
 setup_py = "setup.py"
 
+CAND_MAP = {
+    'final-': 'f',
+    '@': 'd',
+}
 DEFAULT_SCRIPTS = {
     "prep":
     """%setup -n %{pkg_name}-%{unmangled_version} -n %{pkg_name}-%{unmangled_version}""",
@@ -379,18 +382,30 @@ exec(compile(open(__file__).read().replace('\\r\\n', '\\n'), __file__, 'exec'))
 
 
 def trim_zeroes(version):
-    """Trim zeroes from the and of a version"""
-    match = version_re.match(version)
-    if match:
-        return match.group(1)
-    return version
+    """Trim zeroes from the end of a version"""
+    version = version.split(".")
+    while len(version):
+        try:
+            v = int(version[-1])
+            if v == 0:
+                version.pop()
+            else:
+                break
+        except ValueError:
+            break
+    if not version:
+        # Nothing left :(
+        return (1, '0')
+    else:
+        return (len(version), ".".join(version))
 
 
-_DOT_ZEROES_TAIL = '.0' * 10
-_CAND_MAP = {
-    'final-': 'f',
-    '@': 'd',
-}
+def fill_zeros(version, zero_fill):
+    """Fills zeroes from the end of a version"""
+    version = version.split(".")
+    while len(version) < zero_fill:
+        version.append("0")
+    return ".".join(version)
 
 
 def version_release(version):
@@ -431,7 +446,7 @@ def version_release(version):
         piece = []
         if v.startswith("*"):
             v = v[1:]
-            v = _CAND_MAP.get(v, v)
+            v = CAND_MAP.get(v, v)
             piece.append(v)
         while len(candidates):
             v = candidates.popleft()
@@ -447,10 +462,6 @@ def version_release(version):
 
 def format_version(req, version):
     version, release = version_release(version)
-    try:
-        version = "%s:%s" % (epoch_map[req.key], version)
-    except KeyError:
-        pass
     # NOTE(imelnikov): rpm and pip compare versions differently, and
     # this used to lead to lots problems, pain and sorrows. The most
     # visible outcome of the difference is that from rpm's point of
@@ -465,8 +476,14 @@ def format_version(req, version):
     # from the version (we get '2'), and then set upper bound to lower
     # bound + tail of '.0' repeated several times.  Luckily, '2.0' and
     # '2.00' is the same version for rpm.
-    lower_version = trim_zeroes(version)
-    upper_version = '%s%s' % (lower_version, _DOT_ZEROES_TAIL)
+    pieces, lower_version = trim_zeroes(version)
+    upper_version = fill_zeros(lower_version, max(pieces + 1, 3))
+    try:
+        epoch = epoch_map[req.key]
+        lower_version = "%s:%s" % (epoch, lower_version)
+        upper_version = "%s:%s" % (epoch, upper_version)
+    except KeyError:
+        pass
     # Attach on the release (if any)
     if release:
         version = version + "-" + release
@@ -639,7 +656,6 @@ def build_rpm(options, filename):
             print >> spec_file, test_rpm_conflicts
             print >> spec_file, "\n%description tests"
             print >> spec_file, "Tests for %{name}"
-
 
         for script in "prep", "build", "install", "clean":
             print >> spec_file, "\n\n%%%s" % script
