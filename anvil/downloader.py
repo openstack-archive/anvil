@@ -159,7 +159,7 @@ class UrlLibDownloader(Downloader):
         try:
             with contextlib.closing(urllib2.urlopen(self._uri, timeout=self.timeout)) as conn:
                 c_len = conn.headers.get('content-length')
-                if c_len is not None:
+                if c_len is not None and not self.quiet:
                     try:
                         p_bar = self._make_bar(int(c_len))
                         p_bar.start()
