@@ -46,6 +46,7 @@ class YamlMergeLoader(object):
         trace_dir = sh.joinpths(component_dir, 'traces')
         app_dir = sh.joinpths(component_dir, 'app')
         return utils.OrderedDict([
+            ('blbhba', app_dir),#stuff
             ('app_dir', app_dir),
             ('component_dir', component_dir),
             ('root_dir', self._root_dir),
