@@ -1,0 +1,37 @@
+#!/usr/bin/python
+# vim: tabstop=4 shiftwidth=4 softtabstop=4
+
+#    Copyright (C) 2012 Yahoo! Inc. All Rights Reserved.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+sudo pip install six -d . --no-use-wheel
+mv six-1.6.1.tar.gz  six_1.6.1.orig.tar.gz
+tar xf six_1.6.1.orig.tar.gz
+cd six-1.6.1/
+ mkdir debian
+dch --create -v 1.6.1 --package hithere
+echo "9" >> debian/compat
+
+open up debian/control
+Source: python setup.py --name
+Maintainer: Lars Wirzenius <liw@liw.fi> python setup.py --maintainer <--maintainer-email>
+Section: misc
+Priority: optional one of 'required', 'important', 'standard', 'optional' or 'extra'
+Standards-Version: 3.9.2
+Build-Depends: debhelper (>= 9)
+
+Package: hithere
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: greet user
+ hithere greets the user, or the world.
