@@ -2,7 +2,6 @@
 *.pyc
 /build/
 /dist/
-/tools/yyoomc
 *.egg-info
 
 doc/source/sourcecode
