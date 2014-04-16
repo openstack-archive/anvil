@@ -3,6 +3,7 @@
 /build/
 /dist/
 /tools/yyoomc
+/tools/py2deb.py
 *.egg-info
 
 doc/source/sourcecode
