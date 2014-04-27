@@ -43,7 +43,7 @@ extra_flags: ""
 
 # If using a flat manager (not dhcp) then you probably want this on
 flat_injected: False
-flat_interface: eth0
+flat_interface: p2p1
 flat_network_bridge: br100
 
 # A floating network will be created for you (unless disabled)
@@ -89,7 +89,7 @@ multi_host: False
 network_manager: nova.network.manager.FlatDHCPManager
 
 # Interface for public IP addresses
-public_interface: eth0
+public_interface: p2p1
 
 neutron:
   api_host: "$(neutron:api_host)"

@@ -1,7 +1,7 @@
 ---
-# RedHat Enterprise Linux 6.0+
-name: rhel
-platform_pattern: redhat(.*)|centos(.*)
+# RedHat distros or variants (centos, rhel, fedora)...
+name: redhat
+platform_pattern: redhat(.*)|centos(.*)|fedora(.*)
 install_helper: anvil.packaging.yum:YumInstallHelper
 dependency_handler:
     name: anvil.packaging.yum:YumDependencyHandler
