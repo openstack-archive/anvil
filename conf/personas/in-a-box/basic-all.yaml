@@ -94,5 +94,5 @@ subsystems:
     - compute
     - central
 supports:
-- rhel
+- redhat
 ...

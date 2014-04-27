@@ -56,5 +56,5 @@ subsystems:
     - scheduler
     - volume
 supports:
-- rhel
+- redhat
 ...

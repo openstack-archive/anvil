@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import six
+
 from anvil import exceptions
 from anvil import log as logging
 from anvil import shell as sh
@@ -285,8 +287,8 @@ class NovaConfigurator(base.Configurator):
 
         # The value for vlan_interface may default to the the current value
         # of public_interface. We'll grab the value and keep it handy.
-        public_interface = self.installer.get_option('public_interface')
-        vlan_interface = self.installer.get_option('vlan_interface', default_value=public_interface)
+        public_interface = self._select_and_verify_interface('public_interface')
+        vlan_interface = self._select_and_verify_interface('vlan_interface', default_value=public_interface)
         nova_conf.add('public_interface', public_interface)
         nova_conf.add('vlan_interface', vlan_interface)
 
@@ -296,9 +298,8 @@ class NovaConfigurator(base.Configurator):
         # Special virt driver network settings
         nova_conf.add('flat_network_bridge', self.installer.get_option('flat_network_bridge', default_value='br100'))
         nova_conf.add('flat_injected', self.installer.get_bool_option('flat_injected'))
-        flat_interface = self.installer.get_option('flat_interface')
-        if flat_interface:
-            nova_conf.add('flat_interface', flat_interface)
+        flat_interface = self._select_and_verify_interface('flat_interface', default_value=public_interface)
+        nova_conf.add('flat_interface', flat_interface)
 
     # Enables multihost (??)
     def _configure_multihost(self, nova_conf):
@@ -321,21 +322,26 @@ class NovaConfigurator(base.Configurator):
         else:
             nova_conf.add('firewall_driver', self.installer.get_option('basic_firewall_driver'))
 
+    def _select_and_verify_interface(self, option_name, default_value=None):
+        interfaces = self.installer.get_option(option_name, default_value=default_value)
+        if not interfaces:
+            raise exceptions.ConfigException("Could not find a value for option '%s'" % (option_name))
+        if isinstance(interfaces, six.string_types):
+            interfaces = [interfaces]
+        valid_interfaces = list(utils.get_interfaces())
+        LOG.debug("Checking if any of %s interfaces are valid (comparing against interfaces %s)",
+                  interfaces, valid_interfaces)
+        matches = []
+        for name in interfaces:
+            if name in valid_interfaces:
+                matches.append(name)
+        if not matches:
+            raise exceptions.ConfigException("Interfaces %s (under key '%s') do not match any known"
+                                             " interfaces %s" % (interfaces, option_name, valid_interfaces))
+        return matches[0]
+
     def verify(self):
         # Do a little check to make sure actually have that interface/s
-        public_interface = self.installer.get_option('public_interface')
-        vlan_interface = self.installer.get_option('vlan_interface', default_value=public_interface)
-        known_interfaces = utils.get_interfaces()
-        if public_interface not in known_interfaces:
-            msg = "Public interface %r is not a known interface (is it one of %s??)" % (public_interface, ", ".join(known_interfaces))
-            raise exceptions.ConfigException(msg)
-        if vlan_interface not in known_interfaces:
-            msg = "VLAN interface %r is not a known interface (is it one of %s??)" % (vlan_interface, ", ".join(known_interfaces))
-            raise exceptions.ConfigException(msg)
-        # Driver specific interface checks
-        drive_canon = utils.canon_virt_driver(self.installer.get_option('virt_driver'))
-        if drive_canon == 'libvirt':
-            flat_interface = self.installer.get_option('flat_interface')
-            if flat_interface and flat_interface not in known_interfaces:
-                msg = "Libvirt flat interface %s is not a known interface (is it one of %s??)" % (flat_interface, ", ".join(known_interfaces))
-                raise exceptions.ConfigException(msg)
+        public_interface = self._select_and_verify_interface('public_interface')
+        self._select_and_verify_interface('vlan_interface', default_value=public_interface)
+        self._select_and_verify_interface('flat_interface', default_value=public_interface)
