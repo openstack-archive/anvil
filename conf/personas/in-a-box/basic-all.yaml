@@ -100,5 +100,5 @@ no-origin:
 - rabbit-mq
 - openvswitch
 supports:
-- rhel
+- redhat
 ...

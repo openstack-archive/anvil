@@ -61,5 +61,5 @@ no-origin:
 - db
 - qpid
 supports:
-- rhel
+- redhat
 ...

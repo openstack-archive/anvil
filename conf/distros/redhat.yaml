@@ -1,0 +1,432 @@
+---
+# RedHat distros or variants (centos, rhel, fedora)...
+name: redhat
+platform_pattern: redhat(.*)|centos(.*)|fedora(.*)
+install_helper: anvil.packaging.yum:YumInstallHelper
+dependency_handler:
+    name: anvil.packaging.yum:YumDependencyHandler
+    epoch_map:
+        flask: 2
+        wsme: 2
+    package_map:
+        distribute: python-setuptools
+        django: Django
+        IPy: python-IPy
+        m2crypto: m2crypto
+        mysql-python: MySQL-python
+        numpy: numpy
+        pam: python-pam
+        pastedeploy: python-paste-deploy
+        pycrypto: python-crypto
+        pyflakes: pyflakes
+        pylint: pylint
+        pyopenssl: pyOpenSSL
+        pyparsing: pyparsing
+        pysendfile: pysendfile
+        pytz: pytz
+        sqlalchemy-migrate: python-migrate
+        qpid-python: python-qpid # Why is this one backwards :-/
+        PyYAML: PyYAML
+        pyzmq: python-zmq
+    ignoreable_pips:
+    - distribute # distribute has been replaced by setuptools
+    arch_dependent:
+    - PuLP
+    - cryptography
+    - selenium
+    - xattr
+commands:
+    service:
+        restart: service $NAME restart
+        start: service $NAME start
+        status: service $NAME status
+        stop: service $NAME stop
+    apache:
+        daemon: httpd
+    libvirt:
+        restart: service libvirtd restart
+        status: service libvirtd status
+        # This is just used to check that libvirt will work with a given protocol
+        verify: virsh -c $VIRT_PROTOCOL uri
+    mysql:
+        # NOTE: we aren't stopping any sql injection...
+        create_db: mysql --user=$USER --password=$PASSWORD -e
+                   "CREATE DATABASE $DB CHARACTER SET $CHARACTER_SET;"
+        drop_db: mysql --user=$USER --password=$PASSWORD -e
+                 "DROP DATABASE IF EXISTS $DB;"
+        grant_all: mysql --user=$USER --password=$PASSWORD -e
+                   "GRANT ALL PRIVILEGES ON *.* TO '$USER'@'%' IDENTIFIED BY '$PASSWORD'; FLUSH PRIVILEGES;"
+        restart: service mysqld restart
+        set_pwd: mysql --user=$USER --password=$OLD_PASSWORD -e
+                 "USE mysql; UPDATE user SET password=PASSWORD('$NEW_PASSWORD') WHERE User='$USER';  FLUSH PRIVILEGES;"
+        daemon: mysqld
+    openvswitch:
+        add_bridge: ovs-vsctl --may-exist add-br $NAME
+        del_bridge: ovs-vsctl --if-exists del-br $NAME
+    # Where component symlinks will go, the component name will become a directory
+    # under this directory where its configuration files will be connected to there
+    # actual location.
+    base_link_dir: /etc
+    qpid:
+        # See: http://qpid.apache.org/books/trunk/AMQP-Messaging-Broker-CPP-Book/html/chap-Messaging_User_Guide-Security.html
+        create_user: saslpasswd2 -c -p -f /var/lib/qpidd/qpidd.sasldb -u QPID $USER
+        delete_user: saslpasswd2 -d -f /var/lib/qpidd/qpidd.sasldb -u QPID $USER
+        daemon: qpidd
+    rabbit-mq:
+        change_password: rabbitmqctl change_password
+        restart: service rabbitmq-server restart
+        start: service rabbitmq-server start
+        status: service rabbitmq-server status
+        stop: service rabbitmq-server stop
+components:
+    ceilometer-client:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+    cinder:
+        action_classes:
+            install: anvil.components.cinder:CinderInstaller
+            running: anvil.components.base_runtime:OpenStackRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+        daemon_to_package:
+            all: openstack-cinder
+            volume: openstack-cinder
+            scheduler: openstack-cinder
+            api: openstack-cinder
+        pips:
+        -   name: hp3parclient
+    cinder-client:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+    db:
+        action_classes:
+            install: anvil.distros.rhel:DBInstaller
+            running: anvil.components.db:DBRuntime
+            coverage: anvil.components.base_testing:EmptyTestingComponent
+            test: anvil.components.base_testing:EmptyTestingComponent
+            uninstall: anvil.components.db:DBUninstaller
+        packages:
+        -   name: mysql
+        -   name: mysql-server
+    general:
+        action_classes:
+            install: anvil.components.pkglist:Installer
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:EmptyTestingComponent
+            coverage: anvil.components.base_testing:EmptyTestingComponent
+            uninstall: anvil.components.pkglist:Uninstaller
+        build-requires:
+        # Build time dependencies
+        -   name: libxml2-devel
+            removable: false
+        -   name: libxslt-devel
+            removable: false
+        -   name: mysql-devel
+            removable: false
+        -   name: postgresql-devel
+            removable: false
+        -   name: openldap-devel
+            removable: false
+        -   name: psmisc
+            removable: false
+        -   name: sudo
+            removable: false
+        -   name: tcpdump
+            removable: false
+        -   name: unzip
+            removable: false
+        -   name: wget
+            removable: false
+        # Shared python packages
+        -   name: python
+            removable: false
+        -   name: python-devel
+            removable: false
+        -   name: python-distutils-extra
+            removable: false
+        -   name: python-setuptools<0.7
+            removable: false
+        -   name: sqlite-devel
+            removable: false
+        requires:
+        -   name: MySQL-python
+        # Require extra packages needed to run tests
+        pips:
+            - name: "nose"
+              version: ">=1.3.0"
+            - name: "coverage"
+    glance:
+        action_classes:
+            install: anvil.components.glance:GlanceInstaller
+            running: anvil.components.glance:GlanceRuntime
+            coverage: anvil.components.glance:GlanceTester
+            test: anvil.components.glance:GlanceTester
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+        pips:
+        # pip setup and download of xattr>=0.7 seems to have problems find cffi
+        # so lets just use an restrict the upper bound until this is fixed upstream
+        # see: https://github.com/xattr/xattr/issues/16
+        -   name: xattr
+            version: ">=0.6.0,<0.7"
+        daemon_to_package:
+            api: openstack-glance
+            registry: openstack-glance
+            scrubber: openstack-glance
+    glance-client:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.glance_client:GlanceClientTester
+            coverage: anvil.components.glance_client:GlanceClientTester
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+    heat-client:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+    horizon:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.horizon:HorizonRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+        packages:
+        -   name: openstack-dashboard
+    django-openstack-auth:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:EmptyTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+    keystone:
+        action_classes:
+            install: anvil.components.keystone:KeystoneInstaller
+            running: anvil.components.keystone:KeystoneRuntime
+            test: anvil.components.keystone:KeystoneTester
+            coverage: anvil.components.keystone:KeystoneTester
+            uninstall: anvil.components.keystone:KeystoneUninstaller
+        daemon_to_package:
+            all: openstack-keystone
+    keystone-client:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+    neutron-client:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+    nova:
+        action_classes:
+            install: anvil.components.nova:NovaInstaller
+            running: anvil.components.nova:NovaRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.nova:NovaUninstaller
+        pips:
+        # This seems to be a core dependency for a 'cas' tool
+        # so don't try to remove it since it will also remove
+        # said 'cas' tool, unfortunately the version of paramiko
+        # installed in rhel uses a old version of crypto which
+        # other components actually can't use. This sucks...
+        -   name: paramiko
+        test_requires:
+        # NOTE(imelnikov): nova testcases require importlib, which was not part
+        # of python standard library as of python 2.6.
+        - importlib
+        daemon_to_package:
+            api: openstack-nova-api
+            conductor: openstack-nova-conductor
+            consoleauth: openstack-nova-console
+            dhcpbridge: openstack-nova-network
+            network: openstack-nova-network
+            novncproxy: openstack-nova-novncproxy
+            scheduler: openstack-nova-scheduler
+            spicehtml5proxy: openstack-nova-console
+            xvpvncproxy: openstack-nova-console
+    nova-client:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+    novnc:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:EmptyTestingComponent
+            coverage: anvil.components.base_testing:EmptyTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+    openstack-client:
+        action_classes:
+            install: anvil.components.openstack_client:OpenStackClientInstaller
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.openstack_client:OpenStackClientTester
+            coverage: anvil.components.openstack_client:OpenStackClientTester
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+    openvswitch:
+        action_classes:
+            install: anvil.components.openvswitch:OpenvswitchInstaller
+            running: anvil.components.openvswitch:OpenvswitchRuntime
+            test: anvil.components.base_testing:EmptyTestingComponent
+            uninstall: anvil.components.openvswitch:OpenvswitchUninstaller
+        packages:
+        -   name: openvswitch
+    oslo-config:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+    oslo-incubator:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+    pycadf:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+    oslo-messaging:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+    neutron:
+        action_classes:
+            install: anvil.components.neutron:NeutronInstaller
+            running: anvil.components.neutron:NeutronRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.neutron:NeutronUninstaller
+        daemon_to_package:
+            dhcp-agent: openstack-neutron
+            l3-agent: openstack-neutron
+            linuxbridge-agent: openstack-neutron-linuxbridge
+            metadata-agent: openstack-neutron
+            openvswitch-agent: openstack-neutron-openvswitch
+            ovs-cleanup: openstack-neutron-openvswitch
+            rpc-zmq-receiver: openstack-neutron
+            server: openstack-neutron
+    qpid:
+        action_classes:
+          install: anvil.components.qpid:QpidInstaller
+          test: anvil.components.base_testing:EmptyTestingComponent
+          uninstall: anvil.components.qpid:QpidUninstaller
+          running: anvil.components.qpid:QpidRuntime
+        packages:
+          -   name: qpid-cpp-client
+          -   name: qpid-tools
+          -   name: qpid-cpp-server
+              # Disable rabbitmq as these rabbitmq & qpidd conflict
+              pre-install:
+              -   cmd:
+                  - service
+                  - rabbitmq-server
+                  - stop
+                  ignore_failure: true
+              # Also stop it from starting on boot (if rebooted)
+              -   cmd:
+                  - chkconfig
+                  - rabbitmq-server
+                  - 'off'
+                  ignore_failure: true
+    rabbit-mq:
+        action_classes:
+            install: anvil.components.rabbit:RabbitInstaller
+            running: anvil.distros.rhel:RabbitRuntime
+            test: anvil.components.base_testing:EmptyTestingComponent
+            coverage: anvil.components.base_testing:EmptyTestingComponent
+            uninstall: anvil.components.rabbit:RabbitUninstaller
+        packages:
+        -   name: rabbitmq-server
+            # Disable qpidd as these rabbitmq & qpidd conflict
+            pre-install:
+            -   cmd:
+                - service
+                - qpidd
+                - stop
+                ignore_failure: true
+            # Also stop it from starting on boot (if rebooted)
+            -   cmd:
+                - chkconfig
+                - qpidd
+                - 'off'
+                ignore_failure: true
+    swift-client:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+    trove:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+    trove-client:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+    heat:
+        action_classes:
+            install: anvil.components.heat:HeatInstaller
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:EmptyTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+        daemon_to_package:
+            api: openstack-heat-api
+            api-cfn: openstack-heat-api-cfn
+            api-cloudwatch: openstack-heat-api-cloudwatch
+            engine: openstack-heat-engine
+    global-requirements:
+        action_classes:
+            install: anvil.components.global_requirements:GlobalRequirements
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+    ceilometer:
+        action_classes:
+            install: anvil.components.ceilometer:CeilometerInstaller
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:EmptyTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+        daemon_to_package:
+            api: openstack-ceilometer-api
+            central: openstack-ceilometer-central
+            collector: openstack-ceilometer-collector
+            compute: openstack-ceilometer-compute
+...
