@@ -115,6 +115,7 @@ Components common to all OpenStack Heat services
 %dir %attr(0755,heat,root) %{_localstatedir}/log/heat
 %dir %attr(0755,heat,root) %{_sharedstatedir}/heat
 %dir %attr(0755,heat,root) %{_sysconfdir}/heat
+%dir %attr(0755,heat,root) /var/run/heat
 %config(noreplace) %{_sysconfdir}/heat/heat.conf
 %config(noreplace)/%{_sysconfdir}/heat/heat-api-paste.ini
 %config(noreplace) %{_sysconfdir}/logrotate.d/heat
