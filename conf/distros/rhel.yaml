@@ -5,6 +5,8 @@ platform_pattern: redhat(.*)|centos(.*)
 install_helper: anvil.packaging.yum:YumInstallHelper
 dependency_handler:
     name: anvil.packaging.yum:YumDependencyHandler
+    epoch_map:
+        flask: 2
     package_map:
         distribute: python-setuptools
         django: Django

@@ -90,8 +90,11 @@ class YumDependencyHandler(base.DependencyHandler):
 
     @property
     def py2rpm_helper(self):
-        epoch_map = dict([(name, self.OPENSTACK_EPOCH)
-                          for name in self.python_names or []])
+        epoch_map = self.distro.get_dependency_config("epoch_map")
+        if not epoch_map:
+            epoch_map = {}
+        epoch_map.update(dict([(name, self.OPENSTACK_EPOCH)
+                              for name in self.python_names or []]))
         package_map = self.distro.get_dependency_config("package_map")
         arch_dependent = self.distro.get_dependency_config("arch_dependent")
         return py2rpm_helper.Helper(epoch_map=epoch_map,
