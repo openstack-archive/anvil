@@ -30,14 +30,32 @@ class Persona(object):
         self.wanted_components = components or []
         self.wanted_subsystems = kargs.get('subsystems') or {}
         self.component_options = kargs.get('options') or {}
+        self.no_origins = kargs.get('no-origin') or []
 
     def verify(self, distro, origins_fn):
         # Filter out components that are disabled in origins file
+        origins = utils.load_yaml(origins_fn)
+        for c in self.wanted_components:
+            if c not in origins:
+                if c in self.no_origins:
+                    LOG.info("Automatically enabling component %s, not"
+                             " present in origins file %s but present in"
+                             " desired persona %s (origin not required)",
+                             c, origins_fn, self.source)
+                    origins[c] = {
+                        'disabled': False,
+                    }
+                else:
+                    LOG.warn("Automatically disabling %s, not present in"
+                             " origins file %s but present in desired"
+                             " persona %s (origin required)",
+                             c, origins_fn, self.source)
+                    origins[c] = {
+                        'disabled': True,
+                    }
         disabled_components = set(key
-                                  for key, value in six.iteritems(
-                                      utils.load_yaml(origins_fn))
+                                  for key, value in six.iteritems(origins)
                                   if value.get('disabled'))
-
         self.wanted_components = [c for c in self.wanted_components
                                   if c not in disabled_components]
 
