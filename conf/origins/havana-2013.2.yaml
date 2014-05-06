@@ -67,7 +67,3 @@ trove-client:
 trove:
   repo: git://github.com/openstack/trove.git
   tag: 2013.2
-oslo-messaging:
-  disabled: True
-pycadf:
-  disabled: True

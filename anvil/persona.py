@@ -33,11 +33,18 @@ class Persona(object):
 
     def verify(self, distro, origins_fn):
         # Filter out components that are disabled in origins file
+        origins = utils.load_yaml(origins_fn)
+        for c in self.wanted_components:
+            if c not in origins:
+                LOG.warn("Automatically disabling %s, not present in origins"
+                         " file %s but present in desired persona %s",
+                         c, origins_fn, self.source)
+                origins[c] = {
+                    'disabled': True,
+                }
         disabled_components = set(key
-                                  for key, value in six.iteritems(
-                                      utils.load_yaml(origins_fn))
+                                  for key, value in six.iteritems(origins)
                                   if value.get('disabled'))
-
         self.wanted_components = [c for c in self.wanted_components
                                   if c not in disabled_components]
 
