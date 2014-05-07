@@ -59,8 +59,8 @@ Requires:         ${i}
 # Requires for some of the packages are wrong
 Requires:         python-wsme >= 0.5b5
 Requires:         python-wsme < 05.b6
-Requires:         python-flask >= 0.10
-Requires:         python-flask < 1
+Requires:         python-flask >= 2:0.10
+Requires:         python-flask < 2:1
 
 %description -n   python-ceilometer
 OpenStack ceilometer provides services to measure and
