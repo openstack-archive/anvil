@@ -15,14 +15,13 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import binascii
 import getpass
-import os
 
 from keyring.backend import CryptedFileKeyring
 from keyring.backend import UncryptedFileKeyring
 
 from anvil import log as logging
+from anvil import utils
 
 LOG = logging.getLogger(__name__)
 RAND_PW_LEN = 20
@@ -95,9 +94,7 @@ class RandomPassword(object):
     def generate_random(self, length):
         """Returns a randomly generated password of the specified length."""
         LOG.debug("Generating a pseudo-random secret of %d characters", length)
-        if length <= 0:
-            return ''
-        return binascii.hexlify(os.urandom((length + 1) / 2))[:length]
+        return utils.get_random_string(length)
 
     def get_password(self, option, length):
         return self.generate_random(int(length))
