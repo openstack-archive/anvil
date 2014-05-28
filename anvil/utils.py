@@ -17,6 +17,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import binascii
 import contextlib
 import glob
 import json
@@ -139,6 +140,13 @@ def expand_template_deep(root, params):
             n_set.add(expand_template_deep(v, params))
         return n_set
     return root
+
+
+def get_random_string(length):
+    """Get a random hex string of the specified length."""
+    if length <= 0:
+        return ''
+    return binascii.hexlify(os.urandom((length + 1) / 2))[:length]
 
 
 def parse_json(text):
