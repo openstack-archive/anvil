@@ -30,7 +30,6 @@ import collections
 import functools
 import json
 import logging
-import os
 import pkg_resources
 import subprocess
 import sys
@@ -54,7 +53,7 @@ ACTION_TYPE_MAP = {
 
 
 def _write_output(data, where):
-    """Dump given object as pretty json"""
+    """Dump given object as pretty json."""
     where.write(json.dumps(data, indent=4,
                            separators=(',', ': '),
                            sort_keys=True) + '\n')
@@ -136,7 +135,7 @@ def _package_info(pkg, **kwargs):
 
 
 class _RPMCallback(yum.rpmtrans.RPMBaseCallback):
-    """Listen to events from RPM transactions"""
+    """Listen to events from RPM transactions."""
 
     def event(self, package, action, te_current, te_total,
               ts_current, ts_total):
@@ -217,7 +216,7 @@ def build_yum_map(base):
 
 
 def _find_packages(yum_map, pkg_req):
-    """Find suitable packages in YUM packages map"""
+    """Find suitable packages in YUM packages map."""
     req = pkg_resources.Requirement.parse(pkg_req)
     matches = [rpm
                for (version, rpm) in yum_map.get(req.unsafe_name, [])
@@ -261,7 +260,7 @@ def _run(yum_base, options):
 
 
 def _list(yum_base, options):
-    """Handler of `list` command"""
+    """Handler of `list` command."""
     pkgnarrow = options.what[0] if len(options.what) == 1 else 'all'
     lists = yum_base.doPackageLists(pkgnarrow=pkgnarrow, showdups=True)
     LOG.debug("Got packages for '%s': %s installed, %s available,"
@@ -285,7 +284,7 @@ def _list(yum_base, options):
 
 
 def _cleanall(yum_base, options):
-    """Handler of `cleanall` command"""
+    """Handler of `cleanall` command."""
     LOG.info("Running yum cleanup")
     code = sum((
         _run_yum_api('packages clean up', yum_base.cleanPackages),
@@ -366,7 +365,6 @@ def _parse_arguments(args):
 
 
 def _setup_logging(verbose=True, quiet=False):
-    """Initialize logging"""
     handler = logging.StreamHandler(sys.stderr)
     handler.setFormatter(logging.Formatter('YYOOM %(levelname)s: %(message)s'))
     if quiet:
