@@ -67,7 +67,7 @@ class YumDependencyHandler(base.DependencyHandler):
         "anvil-deps": "anvil-deps-source",
     }
     REPOS = ["anvil-deps", "anvil"]
-    JOBS = 2
+    JOBS = 3
 
     def __init__(self, distro, root_dir, instances, opts):
         super(YumDependencyHandler, self).__init__(distro, root_dir, instances, opts)
