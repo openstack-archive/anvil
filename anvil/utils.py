@@ -118,7 +118,12 @@ class ExponentialBackoff(object):
 def expand_template(contents, params):
     if not params:
         params = {}
-    return Template(str(contents), searchList=[params]).respond()
+    tpl = Template(source=str(contents),
+                   searchList=[params],
+                   compilerSettings={
+                       'useErrorCatcher': True,
+                   })
+    return tpl.respond()
 
 
 def expand_template_deep(root, params):
