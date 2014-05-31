@@ -63,8 +63,10 @@ Heat provides AWS CloudFormation and CloudWatch functionality for OpenStack.
 
 %install
 %{__python} setup.py install -O1 --skip-build --root=%{buildroot}
+#if $older_than_eq('2014.1')
 sed -i -e '/^#!/,1 d' %{buildroot}/%{python_sitelib}/heat/db/sqlalchemy/manage.py
 sed -i -e '/^#!/,1 d' %{buildroot}/%{python_sitelib}/heat/db/sqlalchemy/migrate_repo/manage.py
+#end if
 mkdir -p %{buildroot}/var/log/heat/
 mkdir -p %{buildroot}/var/run/heat/
 
