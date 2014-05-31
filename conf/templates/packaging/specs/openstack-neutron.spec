@@ -180,6 +180,24 @@ networks.
 This package contains the neutron plugin that implements virtual
 networks using Microsoft Hyper-V.
 
+#if $newer_than_eq('2014.1.dev146.g79fbeb7')
+%package -n openstack-neutron-ibm
+Summary:        Neutron IBM plugin
+Group:          Applications/System
+
+Provides:       openstack-quantum-ibm = %{epoch}:%{version}-%{release}
+Obsoletes:      openstack-quantum-ibm < %{epoch}:%{version}-%{release}
+
+Requires:       openstack-neutron = %{epoch}:%{version}-%{release}
+
+
+%description -n openstack-neutron-ibm
+Neutron provides an API to dynamically request and configure virtual
+networks.
+
+This package contains the neutron plugin that implements virtual
+networks using IBM.
+#end if
 
 %package -n openstack-neutron-linuxbridge
 Summary:	Neutron linuxbridge plugin
@@ -276,6 +294,24 @@ networks.
 This package contains the neutron plugin that implements virtual
 networks using Nicira NVP.
 
+#if $newer_than_eq('2014.1.dev146.g79fbeb7')
+%package -n openstack-neutron-ofagent
+Summary:        Neutron ofagent plugin
+Group:          Applications/System
+
+Provides:       openstack-quantum-ofagent = %{epoch}:%{version}-%{release}
+Obsoletes:      openstack-quantum-ofagent < %{epoch}:%{version}-%{release}
+
+Requires:       openstack-neutron = %{epoch}:%{version}-%{release}
+
+
+%description -n openstack-neutron-ofagent
+Neutron provides an API to dynamically request and configure virtual
+networks.
+
+This package contains the neutron plugin that implements virtual
+networks using ofagent.
+#end if
 
 %package -n openstack-neutron-openvswitch
 Summary:	Neutron openvswitch plugin
@@ -295,6 +331,24 @@ networks.
 This package contains the neutron plugin that implements virtual
 networks using Open vSwitch.
 
+#if $newer_than_eq('2014.1.dev146.g79fbeb7')
+%package -n openstack-neutron-oneconvergence-nvsd
+Summary:        Neutron oneconvergence plugin
+Group:          Applications/System
+
+Provides:       openstack-quantum-oneconvergence-nvsd = %{epoch}:%{version}-%{release}
+Obsoletes:      openstack-quantum-oneconvergence-nvsd < %{epoch}:%{version}-%{release}
+
+Requires:       openstack-neutron = %{epoch}:%{version}-%{release}
+
+
+%description -n openstack-neutron-oneconvergence-nvsd
+Neutron provides an API to dynamically request and configure virtual
+networks.
+
+This package contains the neutron plugin that implements virtual
+networks using oneconvergence nvsd.
+#end if
 
 %package -n openstack-neutron-plumgrid
 Summary:	Neutron PLUMgrid plugin
@@ -617,12 +671,23 @@ fi
 %exclude %{python_sitelib}/neutron/plugins/openvswitch
 %exclude %{python_sitelib}/neutron/plugins/plumgrid
 %exclude %{python_sitelib}/neutron/plugins/ryu
+#if $newer_than_eq('2014.1.dev146.g79fbeb7')
+%exclude %{python_sitelib}/neutron/plugins/ibm
+%exclude %{python_sitelib}/neutron/plugins/ofagent
+%exclude %{python_sitelib}/neutron/plugins/oneconvergence
+%exclude %{python_sitelib}/neutron/plugins/vmware
+#end if
+
 %{python_sitelib}/neutron-*.egg-info
 
 
 %files -n openstack-neutron-bigswitch
 %doc LICENSE
 %doc neutron/plugins/bigswitch/README
+#if $newer_than_eq('2014.1.dev146.g79fbeb7')
+%doc %{_sysconfdir}/neutron/plugins/bigswitch/README
+%{_bindir}/neutron-restproxy-agent
+#end if
 %{python_sitelib}/neutron/plugins/bigswitch
 %exclude %{python_sitelib}/neutron/plugins/bigswitch/tests
 
@@ -667,6 +732,18 @@ fi
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/hyperv/*.ini
 %endif
 
+#if $newer_than_eq('2014.1.dev146.g79fbeb7')
+%doc LICENSE
+%files -n openstack-neutron-ibm
+%doc neutron/plugins/ibm/README
+%{_bindir}/*-ibm-agent
+%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/ibm/*.ini
+%{python_sitelib}/neutron/plugins/ibm
+
+%if ! 0%{?usr_only}
+%dir %{_sysconfdir}/neutron/plugins/ibm
+%endif
+#end if
 
 %files -n openstack-neutron-linuxbridge
 %doc LICENSE
@@ -714,7 +791,9 @@ fi
 
 %files -n openstack-neutron-nicira
 %doc LICENSE
+#if $older_than_eq('2014.1.dev146.g79fbeb7')
 %doc neutron/plugins/nicira/README
+#end if
 %{_bindir}/*-check-nvp-config
 %{python_sitelib}/neutron/plugins/nicira
 
@@ -723,6 +802,22 @@ fi
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/nicira/*.ini
 %endif
 
+#if $newer_than_eq('2014.1.dev146.g79fbeb7')
+%files -n openstack-neutron-ofagent
+%doc LICENSE
+%{_bindir}/*-ofagent-agent
+%doc neutron/plugins/ofagent/README
+%{python_sitelib}/neutron/plugins/ofagent
+#end if
+
+#if $newer_than_eq('2014.1.dev146.g79fbeb7')
+%files -n openstack-neutron-oneconvergence-nvsd
+%doc LICENSE
+%doc neutron/plugins/oneconvergence/README
+%{_bindir}/*-nvsd-agent
+%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/oneconvergence/*.ini
+%{python_sitelib}/neutron/plugins/oneconvergence
+#end if
 
 %files -n openstack-neutron-openvswitch
 %doc LICENSE
@@ -740,7 +835,6 @@ fi
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/openvswitch/*.ini
 %endif
 
-
 %files -n openstack-neutron-plumgrid
 %doc LICENSE
 %doc neutron/plugins/plumgrid/README
@@ -750,7 +844,6 @@ fi
 %dir %{_sysconfdir}/neutron/plugins/plumgrid
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/plumgrid/*.ini
 %endif
-
 
 %files -n openstack-neutron-ryu
 %doc LICENSE
@@ -764,7 +857,6 @@ fi
 %dir %{_sysconfdir}/neutron/plugins/ryu
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/ryu/*.ini
 %endif
-
 
 %files -n openstack-neutron-nec
 %doc LICENSE
