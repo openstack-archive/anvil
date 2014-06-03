@@ -20,6 +20,9 @@ Source12:         openstack-ceilometer-compute.init
 Source13:         openstack-ceilometer-central.init
 Source14:         openstack-ceilometer-alarm-notifier.init
 Source15:         openstack-ceilometer-alarm-evaluator.init
+#if $newer_than_eq('2014.1')
+Source16:         openstack-ceilometer-agent-notification.init
+#end if
 
 Source20:          ceilometer-dist.conf
 Source21:          ceilometer.logrotate
@@ -163,6 +166,22 @@ collect metrics from OpenStack components.
 This package contains the ceilometer alarm notification
 and evaluation services.
 
+#if $newer_than_eq('2014.1')
+%package notification
+Summary:          OpenStack ceilometer notifier services
+Group:            Applications/System
+
+Requires:         %{name}-common = %{version}-%{release}
+Requires:         python-ceilometerclient
+
+%description notification
+OpenStack ceilometer provides services to measure and
+collect metrics from OpenStack components.
+
+This package contains the ceilometer alarm notification
+and evaluation services.
+#end if
+
 %files -n python-ceilometer
 %{python_sitelib}/ceilometer
 %{python_sitelib}/ceilometer-%{os_version}*.egg-info
@@ -244,6 +263,9 @@ install -p -D -m 755 %{SOURCE12} %{buildroot}%{_initrddir}/%{name}-compute
 install -p -D -m 755 %{SOURCE13} %{buildroot}%{_initrddir}/%{name}-central
 install -p -D -m 755 %{SOURCE14} %{buildroot}%{_initrddir}/%{name}-alarm-notifier
 install -p -D -m 755 %{SOURCE15} %{buildroot}%{_initrddir}/%{name}-alarm-evaluator
+#if $newer_than_eq('2014.1')
+install -p -D -m 755 %{SOURCE16} %{buildroot}%{_initrddir}/%{name}-agent-notification
+#end if
 
 #Fix for bin path for central and compute
 sed -i "s#/usr/bin/ceilometer-compute#/usr/bin/ceilometer-agent-compute#" %{buildroot}%{_initrddir}/%{name}-compute
@@ -317,6 +339,13 @@ exit 0
 %{_bindir}/ceilometer-alarm-evaluator
 %{_initrddir}/%{name}-alarm-notifier
 %{_initrddir}/%{name}-alarm-evaluator
+
+#if $newer_than_eq('2014.1')
+%files notification
+%{_bindir}/ceilometer-agent-notification
+%{_bindir}/ceilometer-send-sample
+%{_initrddir}/%{name}-agent-notification
+#end if
 
 %changelog
 
