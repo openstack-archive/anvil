@@ -559,7 +559,9 @@ fi
 %dir %attr(0755, nova, root) %{_localstatedir}/run/nova
 %endif
 
+#if $newer_than('2014.1')
 %{_bindir}/nova-clear-rabbit-queues
+#end if
 %{_bindir}/nova-manage
 %{_bindir}/nova-rootwrap
 #end raw
