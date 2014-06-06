@@ -43,7 +43,7 @@ Networking
 
 Since networking can affect how your cloud runs please check out this link:
 
-http://docs.openstack.org/trunk/openstack-compute/admin/content/configuring-networking-on-the-compute-node.html
+http://docs.openstack.org/admin-guide-cloud/content/section_networking-nova.html
 
 Check out the root article and the sub-chapters there to understand more
 of what these settings mean.
@@ -139,7 +139,6 @@ We’ll grab the latest version of ANVIL via git:
 
     $ git clone git://github.com/stackforge/anvil.git
     $ cd anvil
-    $ git fetch origin <stable/version>
 
 
 Configuration
