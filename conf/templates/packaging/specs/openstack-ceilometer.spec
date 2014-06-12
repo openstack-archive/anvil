@@ -35,7 +35,7 @@ BuildRoot:        %{_tmppath}/%{name}-%{version}-%{release}
 
 BuildArch:        noarch
 BuildRequires:    intltool
-BuildRequires:    python-sphinx10
+BuildRequires:    python-sphinx
 BuildRequires:    python-setuptools
 BuildRequires:    python-pbr
 BuildRequires:    python-d2to1
@@ -58,12 +58,6 @@ Group:            Applications/System
 #for $i in $requires
 Requires:         ${i}
 #end for
-
-# Requires for some of the packages are wrong
-Requires:         python-wsme >= 0.5b5
-Requires:         python-wsme < 05.b6
-Requires:         python-flask >= 2:0.10
-Requires:         python-flask < 2:1
 
 %description -n   python-ceilometer
 OpenStack ceilometer provides services to measure and
@@ -193,7 +187,7 @@ Group:            Documentation
 
 # Required to build module documents
 BuildRequires:    python-eventlet
-BuildRequires:    python-sqlalchemy0.7
+BuildRequires:    python-sqlalchemy
 BuildRequires:    python-webob
 # while not strictly required, quiets the build down when building docs.
 BuildRequires:    python-migrate
