@@ -81,6 +81,7 @@ class YumDependencyHandler(base.DependencyHandler):
         self.rpm_sources_dir = sh.joinpths(self.rpmbuild_dir, "SOURCES")
         self.anvil_repo_dir = sh.joinpths(self.root_dir, "repo")
         self.build_requires_filename = sh.joinpths(self.deps_dir, "build-requires")
+        self.yum_satisfies_filename = sh.joinpths(self.deps_dir, "yum-satisfiable")
         # Executables we require to operate
         self.rpmbuild_executable = sh.which("rpmbuild")
         self.specprint_executable = sh.which('specprint', ["tools/"])
@@ -266,8 +267,8 @@ class YumDependencyHandler(base.DependencyHandler):
         pkgs.extend(self.helper.list_available())
         pkgs.extend(self.helper.list_installed())
         for pkg in pkgs:
-            for provides in pkg['provides']:
-                yum_map[provides[0]].append((pkg['version'], pkg['repo']))
+            for provides in pkg.get('provides', []):
+                yum_map[provides[0]].append(pkg)
         # Note(harlowja): this is done to remove the default lists
         # that each entry would previously provide, converting the defaultdict
         # into a normal dict.
@@ -276,10 +277,11 @@ class YumDependencyHandler(base.DependencyHandler):
     @staticmethod
     def _find_yum_match(yum_map, req, rpm_name):
         yum_versions = yum_map.get(rpm_name, [])
-        for (version, repo) in yum_versions:
+        for pkg in yum_versions:
+            version = pkg['version']
             if version in req:
-                return (version, repo)
-        return (None, None)
+                return pkg
+        return None
 
     def _filter_download_requires(self):
         yum_map = self._get_known_yum_packages()
@@ -297,26 +299,35 @@ class YumDependencyHandler(base.DependencyHandler):
         satisfied_list = []
         for req in req_to_install:
             rpm_name = rpm_names[req.key]
-            (version, repo) = self._find_yum_match(yum_map, req, rpm_name)
-            if not repo:
+            rpm_info = self._find_yum_match(yum_map, req, rpm_name)
+            if not rpm_info:
                 # We need the source requirement in case it's a url.
                 pips_to_download.append(pip_origins[req.key])
             else:
-                satisfied_list.append((req, rpm_name, version, repo))
+                satisfied_list.append((req, rpm_name, rpm_info))
 
+        yum_buff = six.StringIO()
         if satisfied_list:
             # Organize by repo
             repos = collections.defaultdict(list)
-            for (req, rpm_name, version, repo) in satisfied_list:
-                rpm_found = '%s-%s' % (rpm_name, version)
+            for (req, rpm_name, rpm_info) in satisfied_list:
+                repo = rpm_info['repo']
+                rpm_found = '%s-%s' % (rpm_name, rpm_info['version'])
                 repos[repo].append("%s as %s" % (colorizer.quote(req),
                                                  colorizer.quote(rpm_found)))
+                dep_info = {
+                    'requirement': str(req),
+                    'rpm': rpm_info,
+                }
+                yum_buff.write(json.dumps(dep_info))
+                yum_buff.write("\n")
             for r in sorted(repos.keys()):
                 header = ("%s Python packages are already available "
                           "as RPMs from repository %s")
                 header = header % (len(repos[r]), colorizer.quote(r))
                 utils.log_iterable(sorted(repos[r]), logger=LOG, header=header,
                                    color=None)
+        sh.write_file(self.yum_satisfies_filename, yum_buff.getvalue())
         return pips_to_download
 
     def _build_dependencies(self):
@@ -336,6 +347,7 @@ class YumDependencyHandler(base.DependencyHandler):
             package_reqs.append((filename, package_details['req']))
 
         def _filter_package_files():
+            yum_provided = []
             req_names = [req.key for (filename, req) in package_reqs]
             package_rpm_names = self.py2rpm_helper.names_to_rpm_names(req_names)
             filtered_files = []
@@ -350,19 +362,30 @@ class YumDependencyHandler(base.DependencyHandler):
                     continue
                 # See if pip tried to download it but we already can satisfy
                 # it via yum and avoid building it in the first place...
-                (_version, repo) = self._find_yum_match(yum_map, req, rpm_name)
-                if not repo:
+                rpm_info = self._find_yum_match(yum_map, req, rpm_name)
+                if not rpm_info:
                     filtered_files.append(filename)
                 else:
+                    yum_provided.append((req, rpm_info))
                     LOG.info(("Dependency %s was downloaded additionally "
                              "but it can be satisfied by %s from repository "
                              "%s instead."), colorizer.quote(req),
                              colorizer.quote(rpm_name),
-                             colorizer.quote(repo))
-            return filtered_files
+                             colorizer.quote(rpm_info['repo']))
+            return (filtered_files, yum_provided)
 
         LOG.info("Filtering %s downloaded files.", len(package_files))
-        filtered_package_files = _filter_package_files()
+        filtered_package_files, yum_provided = _filter_package_files()
+        if yum_provided:
+            yum_buff = six.StringIO()
+            for (req, rpm_info) in yum_provided:
+                dep_info = {
+                    'requirement': str(req),
+                    'rpm': rpm_info,
+                }
+                yum_buff.write(json.dumps(dep_info))
+                yum_buff.write("\n")
+            sh.append_file(self.yum_satisfies_filename, yum_buff.getvalue())
         if not filtered_package_files:
             LOG.info("No SRPM package dependencies to build.")
             return
@@ -431,6 +454,7 @@ class YumDependencyHandler(base.DependencyHandler):
 
             requires_what.extend(ei_names('dependencies'))
             test_requires_what.extend(ei_names('test_dependencies'))
+
         params["requires"] = requires_what
         params["test_requires"] = test_requires_what
         params["epoch"] = self.OPENSTACK_EPOCH
