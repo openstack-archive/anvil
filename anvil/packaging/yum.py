@@ -16,10 +16,13 @@
 
 import collections
 import contextlib
+import errno
 import json
 import pkg_resources
 import sys
 import tarfile
+
+import six
 
 from anvil import colorizer
 from anvil import exceptions as excp
@@ -77,6 +80,7 @@ class YumDependencyHandler(base.DependencyHandler):
         self.deps_src_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps-sources")
         self.rpm_sources_dir = sh.joinpths(self.rpmbuild_dir, "SOURCES")
         self.anvil_repo_dir = sh.joinpths(self.root_dir, "repo")
+        self.build_requires_filename = sh.joinpths(self.deps_dir, "build-requires")
         # Executables we require to operate
         self.rpmbuild_executable = sh.which("rpmbuild")
         self.specprint_executable = sh.which('specprint', ["tools/"])
@@ -88,13 +92,35 @@ class YumDependencyHandler(base.DependencyHandler):
         except (TypeError, ValueError):
             self.jobs = self.JOBS
 
-    @property
-    def py2rpm_helper(self):
+    def _fetch_epoch_mapping(self):
         epoch_map = self.distro.get_dependency_config("epoch_map", quiet=True)
         if not epoch_map:
             epoch_map = {}
-        epoch_map.update(dict([(name, self.OPENSTACK_EPOCH)
-                              for name in self.python_names or []]))
+        # Exclude names from the epoch map that we never downloaded in the
+        # first place (since these are not useful and should not be set in
+        # the first place).
+        try:
+            raw_downloaded = sh.load_file(self.build_requires_filename)
+            downloaded_reqs = pip_helper.parse_requirements(raw_downloaded)
+        except IOError as e:
+            if e.errno != errno.ENOENT:
+                raise
+        else:
+            downloaded_names = set([req.key for req in downloaded_reqs])
+            tmp_epoch_map = {}
+            for (name, epoch) in six.iteritems(epoch_map):
+                if name.lower() in downloaded_names:
+                    tmp_epoch_map[name] = epoch
+                else:
+                    LOG.info("Discarding %s:%s from the epoch mapping since"
+                             " it was not part of the downloaded build"
+                             " requirements", name, epoch)
+            epoch_map = tmp_epoch_map
+        return epoch_map
+
+    @property
+    def py2rpm_helper(self):
+        epoch_map = self._fetch_epoch_mapping()
         package_map = self.distro.get_dependency_config("package_map")
         arch_dependent = self.distro.get_dependency_config("arch_dependent")
         return py2rpm_helper.Helper(epoch_map=epoch_map,
@@ -304,17 +330,16 @@ class YumDependencyHandler(base.DependencyHandler):
         no_pips.extend(self.ignore_pips)
         yum_map = self._get_known_yum_packages()
         pips_keys = set([p.key for p in pips_downloaded])
+        package_reqs = []
+        for filename in package_files:
+            package_details = pip_helper.get_archive_details(filename)
+            package_reqs.append((filename, package_details['req']))
 
-        def _filter_package_files(package_files):
-            package_reqs = []
-            for filename in package_files:
-                package_details = pip_helper.get_archive_details(filename)
-                package_reqs.append(package_details['req'])
-            package_rpm_names = self.py2rpm_helper.names_to_rpm_names(
-                [req.key for req in package_reqs])
-
+        def _filter_package_files():
+            req_names = [req.key for (filename, req) in package_reqs]
+            package_rpm_names = self.py2rpm_helper.names_to_rpm_names(req_names)
             filtered_files = []
-            for filename, req in zip(package_files, package_reqs):
+            for filename, req in package_reqs:
                 rpm_name = package_rpm_names[req.key]
                 if req.key in no_pips:
                     LOG.info(("Dependency %s was downloaded additionally "
@@ -337,15 +362,21 @@ class YumDependencyHandler(base.DependencyHandler):
             return filtered_files
 
         LOG.info("Filtering %s downloaded files.", len(package_files))
-        filtered_package_files = _filter_package_files(package_files)
+        filtered_package_files = _filter_package_files()
         if not filtered_package_files:
             LOG.info("No SRPM package dependencies to build.")
             return
         for filename in package_files:
             if filename not in filtered_package_files:
                 sh.unlink(filename)
-        package_files = sorted(filtered_package_files)
+        build_requires = six.StringIO()
+        for (filename, req) in package_reqs:
+            if filename in filtered_package_files:
+                build_requires.write("%s # %s\n" % (req, sh.basename(filename)))
+        sh.write_file(self.build_requires_filename, build_requires.getvalue())
+
         # Now build them into SRPM rpm files.
+        package_files = sorted(filtered_package_files)
         self.py2rpm_helper.build_all_srpms(package_files=package_files,
                                            tracewriter=self.tracewriter,
                                            jobs=self.jobs)
@@ -389,9 +420,14 @@ class YumDependencyHandler(base.DependencyHandler):
         test_requires_what = params.get('test_requires', [])
         egg_info = getattr(instance, 'egg_info', None)
         if egg_info:
+
             def ei_names(key):
-                requires_python = [str(req) for req in egg_info[key]]
-                return self.py2rpm_helper.names_to_rpm_requires(requires_python)
+                try:
+                    requires_python = [str(req) for req in egg_info[key]]
+                except KeyError:
+                    return []
+                else:
+                    return self.py2rpm_helper.names_to_rpm_requires(requires_python)
 
             requires_what.extend(ei_names('dependencies'))
             test_requires_what.extend(ei_names('test_dependencies'))
@@ -579,11 +615,10 @@ class YumDependencyHandler(base.DependencyHandler):
                                                   template_name, params)
             self._build_from_spec(instance, spec_filename, patches)
         else:
-            self.py2rpm_helper.build_srpm(
-                source=instance.get_option("app_dir"),
-                log_filename=instance.name,
-                release=params.get("release"),
-                with_tests=not params.get("no_tests"))
+            self.py2rpm_helper.build_srpm(source=instance.get_option("app_dir"),
+                                          log_filename=instance.name,
+                                          release=params.get("release"),
+                                          with_tests=not params.get("no_tests"))
 
     def _get_rpm_names(self, from_deps=True, from_instances=True):
         desired_rpms = []
