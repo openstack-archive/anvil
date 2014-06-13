@@ -107,7 +107,7 @@ class YumDependencyHandler(base.DependencyHandler):
 
     def _package_parameters(self, instance):
         params = {}
-        params["release"] = instance.get_option("release", default_value="1")
+        params["release"] = str(instance.get_option("release", default_value=1))
         if '-' in params["release"]:
             # NOTE(imelnikov): "-" is prohibited in RPM releases
             raise ValueError("Malformed package release: %r" % params["release"])
