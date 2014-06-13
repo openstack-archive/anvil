@@ -54,7 +54,8 @@ class Action(object):
 
         # Yamls are loaded (with its reference links) using this instance at the
         # given component directory where component configuration will be found.
-        self.config_loader = cfg.YamlMergeLoader(root_dir)
+        self.config_loader = cfg.YamlMergeLoader(root_dir,
+                                                 cli_opts['origins_fn'])
 
         # Keyring/pw settings + cache
         self.passwords = {}
@@ -62,6 +63,7 @@ class Action(object):
         self.keyring_encrypted = cli_opts.pop('keyring_encrypted')
         self.prompt_for_passwords = cli_opts.pop('prompt_for_passwords', False)
         self.store_passwords = cli_opts.pop('store_passwords', True)
+
         # Stored for components to get any options
         self.cli_opts = cli_opts
 

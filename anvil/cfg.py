@@ -28,6 +28,7 @@ class YamlMergeLoader(object):
     Merge order is:
       * Directory options (app_dir, component_dir...).
       * Distro matched options (from `distros` directory).
+      * Origins matched options (from `origins` directory)
       * General component options (from `general.yaml`).
       * Persona general options (from personas/basic*.yaml with `general:` key).
       * Specific component options (from `component_name.yaml`).
@@ -37,9 +38,10 @@ class YamlMergeLoader(object):
     All merging is done to right with overwriting existing options (keys)
     """
 
-    def __init__(self, root_dir):
+    def __init__(self, root_dir, origins_path):
         self._root_dir = root_dir
         self._base_loader = YamlRefLoader(settings.COMPONENT_CONF_DIR)
+        self._origins_path = origins_path
 
     def _get_dir_opts(self, component):
         component_dir = sh.joinpths(self._root_dir, component)
@@ -70,6 +72,10 @@ class YamlMergeLoader(object):
 
         dir_opts = self._get_dir_opts(component)
         distro_opts = distro.options
+        try:
+            origins_opts = utils.load_yaml(self._origins_path)[component]
+        except KeyError:
+            origins_opts = {}
         general_component_opts = self._base_loader.load('general')
         component_specific_opts = self._base_loader.load(component)
 
@@ -77,10 +83,10 @@ class YamlMergeLoader(object):
         merged_opts = utils.merge_dicts(
             dir_opts,
             distro_opts,
+            origins_opts,
             general_component_opts,
             component_specific_opts,
         )
-
         return merged_opts
 
 
