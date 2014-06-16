@@ -182,7 +182,7 @@ class _OutputtingRPMCallback(_RPMCallback):
 
     def yyoom_on_missing_package(self, pkg_req):
         if not self._skip_missing:
-            raise yum.Errors.InstallError("The '%s' package not found." % pkg_req)
+            raise yum.Errors.InstallError("The package '%s' was not found." % pkg_req)
         req = pkg_resources.Requirement.parse(pkg_req)
         self._missing.append(_package_info(req.unsafe_name,
                                            action_type="missing",
