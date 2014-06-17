@@ -1,0 +1,111 @@
+---
+# Persona that includes all known components
+components:
+# Order matters here!
+- general
+- db
+- rabbit-mq
+# Oslo libraries
+- oslo-config
+- oslo-messaging
+- pycadf
+# Core components
+- keystone
+- glance
+- ceilometer
+- cinder
+- heat
+- horizon
+- neutron
+- nova
+- trove
+- ironic
+# Client used by components
+- ceilometer-client
+- cinder-client
+- glance-client
+- heat-client
+- keystone-client
+- neutron-client
+- nova-client
+- swift-client
+- trove-client
+- ironic-client
+# Additional libraries
+- openvswitch
+- django-openstack-auth
+options:
+    general:
+        install-all-deps: false
+    nova:
+        db-sync: true
+        do-network-init: true
+        enable-cells: false
+        enable-spice: false
+        local-conductor: false
+        mq-type: rabbit
+        neutron-enabled: true
+    glance:
+        db-sync: true
+        load-images: true
+    keystone:
+        db-sync: true
+        do-init: true
+        enable-pki: false
+    heat: {}
+    ironic:
+        db-sync: true
+    ceilometer:
+        db-sync: true
+    horizon:
+        make-blackhole: true
+    cinder:
+        db-sync: true
+        mq-type: rabbit
+    neutron:
+        db-sync: true
+        mq-type: rabbit
+subsystems:
+    glance:
+    - api
+    - registry
+    keystone:
+    - all
+    nova:
+    - api
+    - cert
+    - compute
+    - conductor
+    - scheduler
+    neutron:
+    - server
+    - agent
+    - l3-agent
+    - metadata-agent
+    - dhcp-agent
+    cinder:
+    - api
+    - scheduler
+    - volume
+    heat:
+    - api
+    - api-cfn
+    - api-cloudwatch
+    - engine
+    ceilometer:
+    - api
+    - collector
+    - compute
+    - central
+    ironic:
+    - api
+    - conductor
+no-origin:
+# These components don't need an origin to be enabled
+- general
+- db
+- rabbit-mq
+- openvswitch
+supports:
+- rhel
+...
