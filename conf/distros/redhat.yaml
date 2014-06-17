@@ -329,4 +329,20 @@ components:
             central: openstack-ceilometer-central
             collector: openstack-ceilometer-collector
             compute: openstack-ceilometer-compute
+    ironic:
+        action_classes:
+            install: anvil.components.ironic:IronicInstaller
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:EmptyTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
+        daemon_to_package:
+            api: openstack-ironic-api
+            conductor: openstack-ironic-conductor
+    ironic-client:
+        action_classes:
+            install: anvil.components.base_install:PythonInstallComponent
+            running: anvil.components.base_runtime:EmptyRuntime
+            test: anvil.components.base_testing:PythonTestingComponent
+            coverage: anvil.components.base_testing:PythonTestingComponent
+            uninstall: anvil.components.base_install:PkgUninstallComponent
 ...
