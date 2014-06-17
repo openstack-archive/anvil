@@ -28,6 +28,12 @@ heat-client:
 horizon:
   repo: git://github.com/openstack/horizon.git
   tag: 2014.1
+ironic:
+  repo: git://github.com/openstack/ironic.git
+  tag: 2014.1
+ironic-client:
+  repo: git://github.com/openstack/python-ironicclient.git
+  tag: 0.1.4
 keystone-client:
   repo: git://github.com/openstack/python-keystoneclient.git
   tag: 0.7.1
