@@ -97,6 +97,12 @@ class YumDependencyHandler(base.DependencyHandler):
         epoch_map = self.distro.get_dependency_config("epoch_map", quiet=True)
         if not epoch_map:
             epoch_map = {}
+        built_epochs = {}
+        for name in self.python_names:
+            if name in epoch_map:
+                built_epochs[name] = epoch_map.pop(name)
+            else:
+                built_epochs[name] = self.OPENSTACK_EPOCH
         # Exclude names from the epoch map that we never downloaded in the
         # first place (since these are not useful and should not be set in
         # the first place).
@@ -117,6 +123,7 @@ class YumDependencyHandler(base.DependencyHandler):
                               " it was not part of the downloaded build"
                               " requirements", name, epoch)
             epoch_map = tmp_epoch_map
+        epoch_map.update(built_epochs)
         return epoch_map
 
     @property
