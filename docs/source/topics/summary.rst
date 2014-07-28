@@ -7,30 +7,139 @@ Summary
 Anvil is a forging tool to help build OpenStack components and their
 dependencies into a complete package-oriented system.
 
-It automates the git checkouts of the OpenStack components, analyzes & builds their
-dependencies and the components themselves into packages. It can then install
-from the package repositories it created, perform configuration and start, stop,
-restart and uninstall the components and their dependencies as a complete system.
+It automates the git checkouts of the OpenStack components, analyzes & builds
+their dependencies and the components themselves into packages. It can then
+install from the package repositories it created, perform configuration and
+start, stop, restart and uninstall the components and their dependencies as a
+complete system.
 
-It allows a developer to setup an environment using the automatically created packages
-(and dependencies) with the help of anvil configuring the components to work
-correctly for the developer's needs. After the developer has tested out their
-features or changes they can stop the OpenStack components, uninstall the
-packages and bring back their system to a pre-installation/pre-anvil state.
+It allows a developer to setup an environment using the automatically created
+packages (and dependencies, ex. ``RPMs``) with the help of anvil configuring
+the components to work correctly for the developer's needs. After the developer
+has tested out their features or changes they can stop the OpenStack
+components, uninstall the packages and bring back their system to a
+pre-installation/pre-anvil state.
 
 The distinguishing part from devstack_ (besides being written in Python and not
-shell), is that after building those packages  (currently RPMs) the same packages
-can be used later (or at the same time) to  actually deploy at a larger scale using
-tools such as chef_, salt_, or puppet_ (to name a few).
+shell), is that after building those packages (currently ``RPMs``) the same
+packages can be used later (or at the same time) to  actually deploy at a
+larger scale using tools such as `chef`_, `salt`_, or `puppet`_ (to name a few).
 
-----
+--------
+Features
+--------
 
-.. toctree::
+Configurations
+--------------
 
-   features
+A set of configuration files (in `yaml`_ format) that is used for
+common, component, distribution, code origins configuration...
+
+All the `yaml`_ configuration files could be found in:
+
+* ``conf/templates/keystone/``
+* ``conf/components/``
+* ``conf/distros/``
+* ``conf/origins/``
+* subdirectories of ``conf/personas/``
 
 
+Installing
+----------
+
+* Automatically downloading source from git and performing tag/branch checkouts.
+* Automatically verifying and translating requirement files to
+  known `pypi`_/`rpm`_ packages.
+* Automatically installing and building missing dependencies (`pypi`_
+  and `rpm`_) for you.
+* Automatically configuring the needed files, symlinks, adjustments, and
+  any patches.
+
+Testing
+-------
+
+Automatically running each component unit tests.
+
+Starting
+--------
+
+Starting of the components sub-programs with the needed configuration via the
+common `sysvinit`_ model.
+
+Stopping
+--------
+
+Stopping of the previously started components.
+
+Uninstalling
+------------
+
+Getting you back to an initial 'clean' state:
+
+* Removing installed configuration.
+* Undoing of installed files/directories.
+* Removing of packages installed.
+
+Packaging
+---------
+
+* Ceating a basic set of packages that matches the components selected.
+* Supports automatic injection of dependencies.
+
+Status
+------
+
+* Checking the status of the running components sub-programs
+
+Pythonic
+--------
+
+Written in **python** so it matches the style of other `OpenStack`_ components.
+
+Code decoupling
+---------------
+
+* Components & actions are isolated as individual classes.
+* Supports installation personas that define what is to be installed, thus decoupling the 'what' from the 'how'.
+
+.. note::
+
+    This encouraging re-use by others...
+
+Resumption
+----------
+
+Install/start/stop resumption so that when you install you can ``ctrl+c`` and
+resume later (where applicable).
+
+Extensive logging
+-----------------
+
+* All commands executed are logged in standard output, all configuration files
+  read/written (and so on).
+
+.. note::
+
+    Debug mode can be activated with ``-v`` option...
+
+Package tracking and building
+-----------------------------
+
+* Creation of a single rpm set for your installation.
+
+  * This freezes what is needed for that release to a known set of
+    packages and dependencies.
+
+* Automatically building and/or including all needed dependencies.
+* Includes your distributions *existing* native packages (when applicable).
+
+.. _OpenStack: http://openstack.org/
+.. _chef: http://www.opscode.com/chef/
+.. _daemon: http://en.wikipedia.org/wiki/Daemon_(computing)
 .. _devstack: http://www.devstack.org/
 .. _puppet: http://puppetlabs.com/
-.. _chef: http://www.opscode.com/chef/
+.. _pypi: http://pypi.python.org/pypi
+.. _rpm: http://www.rpm.org/
 .. _salt: http://saltstack.com/
+.. _sysvinit: http://en.wikipedia.org/wiki/Init
+.. _yaml: http://www.yaml.org/
