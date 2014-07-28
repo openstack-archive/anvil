@@ -40,3 +40,12 @@ CONFLICTS='
     python-sphinx10
     python-webob1.0
 '
+
+SCL_REQUIRES='
+    scl-utils
+    scl-utils-build
+'
+
+SCL_PACKAGES='
+    python27'
+'
