@@ -4,7 +4,8 @@
 ANVIL Documentation
 =====================
 
-.. rubric:: Everything about ANVIL, a set of **python** scripts and utilities to forge raw openstack into a productive tool! 
+.. rubric:: Everything about ANVIL, a set of **python** scripts and utilities
+to forge raw openstack into a productive tool!
 
 
 ----
@@ -13,9 +14,9 @@ ANVIL Documentation
    :maxdepth: 2
 
    topics/summary
+   topics/architecture
    topics/gettingstarted
    topics/docs
    topics/qanda
    topics/bugshugscode
    topics/examples
-
