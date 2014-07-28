@@ -11,6 +11,7 @@ VERBOSE="${VERBOSE:-0}"
 YUM_OPTS="--assumeyes --nogpgcheck"
 YUM_CONFIG_MANAGER_OPTS=""
 CURL_OPTS=""
+RPM_IGNORE_DEPS="--nodeps"
 
 # Give access to the system packages so that when clients get installed
 # after installation that the virtualenv can access them to do things like
@@ -104,6 +105,22 @@ clean_anvil_deps()
     yum-config-manager $YUM_CONFIG_MANAGER_OPTS --disable anvil-deps
 }
 
+bootstrap_scl()
+{
+    [ -z "$SCL_RPM_URL" ] && return 0
+    echo "Installing scl rpm from $SCL_RPM_URL"
+    # We are using centos to test, and for subscription 
+    # issues, so we need to install with no deps
+    NO_DEPS=True
+    cache_and_install_rpm_url "$SCL_RPM_URL" $NO_DEPS
+    [ -z "$SCL_GPG_URL" ] && return 0
+    echo "Installing key for scl from $SCL_GPG_URL"
+    # If urls were provided but no directory, that's bad.
+    [ -z "$SCL_PATH_TO_GPG" ] && return 1
+    wget $SCL_GPG_URL --output-document $SCL_PATH_TO_GPG
+    return $?
+}
+
 clean_pip()
 {
     # See: https://github.com/pypa/pip/issues/982
@@ -119,7 +136,7 @@ bootstrap_epel()
     # about what is epel.
     [ -z "$EPEL_RPM_URL" ] && return 0
     echo "Installing epel rpm from $EPEL_RPM_URL"
-    cache_and_install_rpm_url "$EPEL_RPM_URL"
+    cache_and_install_rpm_url "$EPEL_RPM_URL" $
     return $?
 }
 
@@ -236,18 +253,25 @@ cache_and_install_rpm_url()
 {
     # Downloads an rpm from a url and then installs it (if it's not already
     # installed).
+    echo "cache and install funciton called"
     url=${1:?"Error: rpm url is undefined!"}
     cachedir=${RPM_CACHEDIR:-'/tmp'}
     rpm=$(basename "$url")
     if rpm_is_installed "$rpm"; then
+        echo "already installed $rpm"
         return 0
     fi
+    echo $rpm "not already isntalled"
     if [ ! -f "$cachedir/$rpm" ]; then
         echo -e "Downloading ${rpm} to ${cachedir}"
         curl $CURL_OPTS "$url" -o "$cachedir/$rpm" || return 1
     fi
     echo -e "Installing $cachedir/$rpm"
-    yum_install "$cachedir/$rpm"
+    if [ $2 = "True" ]; then
+        rpm -i "$cachedir/$rpm" --nodeps;
+    else
+        yum_install "$cachedir/$rpm";
+    fi
     return $?
 }
 
