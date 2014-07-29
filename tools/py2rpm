@@ -366,7 +366,10 @@ def replacement_run(self):
     self.find_sources()
     if self.distribution.tests_require:
         with open(os.path.join(self.egg_info, 'test-requires.txt'), 'w') as f:
-            f.write('\\n'.join(self.distribution.tests_require))
+            test_requirements = []
+            for r in self.distribution.tests_require:
+                test_requirements.extend(r)
+            f.write('\\n'.join(test_requirements))
 egg_info.egg_info.run = replacement_run
 exec(compile(open(__file__).read().replace('\\r\\n', '\\n'), __file__, 'exec'))
 """
