@@ -1,0 +1,9 @@
+Verified+2: Jenkins
+Workflow+1: Joshua Harlow <harlowja@yahoo-inc.com>
+Code-Review+2: Kris Lindgren <klindgren@godaddy.com>
+Workflow+1: Kris Lindgren <klindgren@godaddy.com>
+Submitted-by: Jenkins
+Submitted-at: Wed, 30 Jul 2014 19:26:35 +0000
+Reviewed-on: https://review.openstack.org/110093
+Project: stackforge/anvil
+Branch: refs/heads/master
