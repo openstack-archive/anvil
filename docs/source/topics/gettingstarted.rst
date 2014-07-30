@@ -1,14 +1,10 @@
 .. _getting-started:
 
 ===============
-Getting Started
+Getting started
 ===============
 
-
-Simple setup!
-=============
-
-Made to be as simple as possible, but not too simple.
+Made to be as simple as possible, but not too simple...
 
 Prerequisites
 =============
@@ -21,8 +17,8 @@ Read the great documentation for developers/admins at
 - http://docs.openstack.org/developer/
 - http://docs.openstack.org/
 
-This will vastly help you understand what the
-configurations and options do when ANVIL configures them.
+This will vastly help you understand what the configurations and options do
+when ANVIL configures them.
 
 Linux
 -----
@@ -48,12 +44,13 @@ http://docs.openstack.org/admin-guide-cloud/content/section_networking-nova.html
 Check out the root article and the sub-chapters there to understand more
 of what these settings mean.
 
-**This is typically one of the hardest aspects of OpenStack to configure and get right!**
+**This is typically one of the hardest aspects of OpenStack to configure
+and get right!**
 
 --------------
 
-The following settings in ``conf/components/nova.yaml``  are an example of settings that will
-affect the configuration of your compute nodes network.
+The following settings in ``conf/components/nova.yaml``  are an example of
+settings that will affect the configuration of your compute nodes network.
 
 ::
 
@@ -146,18 +143,28 @@ Configuration
 
 Any configuration to be updated should now be done.
 
-Please edit the corresponding yaml files in ``conf/components/`` or ``conf/components/personas``
-to fit your desired configuration of nova/glance and the other OpenStack components.
-You can use ``-p <conf/components/required_file.yaml>`` option with following commands
-to use configuration files.
+Please edit the corresponding yaml files in ``conf/components/`` or
+``conf/components/personas`` to fit your desired configuration of nova/glance
+and the other OpenStack components.
 
-To specify which versions of OpenStack components you want to install select or edit origins configuration
-file from ``<conf/origins/>`` and use it as follows ``-o <conf/origins/origins_file.yaml>``.
+.. note::
+
+    You can use ``-p <conf/components/required_file.yaml>`` to specify a
+    different persona.
+
+To specify which versions of OpenStack components you want to install select
+or edit an origins configuration file from ``<conf/origins/>``.
+
+.. note::
+
+    You can use ``-o <conf/origins/origins_file.yaml>`` to specify this
+    different origins file.
 
 Networking notes for those on RedHat/CentOS/Fedora
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-If you are planning on using the `FlatManager`_ then you might want to read and follow:
+If you are planning on using the `FlatManager`_ then you might want to read
+and follow:
 
 * http://www.techotopia.com/index.php/Creating_an_RHEL_5_KVM_Networked_Bridge_Interface
 
@@ -169,15 +176,17 @@ To enable the needed repositories for various requirements please also run::
     sudo subscription-manager repos --enable rhel-6-server-optional-rpms
 
 You can also include the `RDO`_ repositories (which has even more of the needed
-requirements). This will ensure that anvil has to build less dependencies overall.
+requirements). This will ensure that anvil has to build less dependencies
+overall.
 
 * http://openstack.redhat.com/Repositories
 
 Pre-installing
 --------------
 
-In order to ensure that anvil will have its correct dependencies you need to first run the
-bootstrapping code that will setup said dependencies for your operating system.
+In order to ensure that anvil will have its correct dependencies you need to
+first run the bootstrapping code that will setup said dependencies for your
+operating system.
 
 ::
 
@@ -194,7 +203,8 @@ Now prepare *OpenStacks* components by running the following:
 
 You should see a corresponding OpenStack repositories getting downloaded using
 git, python setups occurring and configuration files being written as well as
-source rpm packages being built and a repository setup from those components [#verbose]_.
+source rpm packages being built and a repository setup from those
+components [#verbose]_.
 
 Building
 --------
@@ -206,9 +216,10 @@ Now build *OpenStacks* components by running the following:
     sudo ./smithy -a build
 
 You should see a corresponding OpenStack components and dependencies at this
-stage being packaged into rpm files and two repositories being setup for you [#verbose]_.
-One repository will be the dependencies that the OpenStack components need to run and the
-other will be the OpenStack components themselves.
+stage being packaged into rpm files and two repositories being setup for
+you [#verbose]_. One repository will be the dependencies that the OpenStack
+components need to run and th other will be the OpenStack components
+themselves.
 
 Installing
 ----------
@@ -227,9 +238,11 @@ step [#verbose]_.
 **Note:** You can specify conf file just like in the ``prepare`` action.
 Without a specified conf file the command will execute with ``conf/personas/in-a-box/basic.yaml``
 
-**Note:** Also to avoid qemu errors please follow the solution @ https://bugs.launchpad.net/anvil/+bug/985786
-which will ensure that the ``qemu`` user can write to your instances directory. If needed edit ``conf/components/nova.yaml``
-and also adjust the ``instances_path`` option.
+**Note:** Also to avoid qemu errors please follow the
+solution @ https://bugs.launchpad.net/anvil/+bug/985786
+which will ensure that the ``qemu`` user can write to your instances
+directory. If needed edit ``conf/components/nova.yaml`` and also adjust
+the ``instances_path`` option.
 
 Also as documented at http://docs.openstack.org/essex/openstack-compute/admin/content/qemu.html#fixes-rhel-qemu
 please run the following (**after** installation).
@@ -244,13 +257,15 @@ please run the following (**after** installation).
 Testing
 ----------
 
-Now (if you choose) you can run each *OpenStack* components unit tests by running the following:
+Now (if you choose) you can run each *OpenStack* components unit tests by
+running the following:
 
 ::
 
     sudo ./smithy -a test
 
-You should see a set of unit tests being ran (ideally with zero failures) [#verbose]_.
+You should see a set of unit tests being ran (ideally with zero
+failures) [#verbose]_.
 
 Starting
 --------
@@ -311,16 +326,17 @@ First run the following to check the status of each component [#verbose]_.
     sudo ./smithy -a status
 
 If you do not see all green status then you should run the following and see
-if any of the ``/var/log/nova,glance,keystone,cinder,...`` log files will give you more information
-about what is occuring.
+if any of the ``/var/log/nova,glance,keystone,cinder,...`` log files will give
+you more information about what is occuring.
 
 ::
 
     sudo ./smithy -a status --show
     
 This will dump out those files (truncated to not be to verbose) so that anything
-peculaliar can be seen. If nothing can be then go to the installation directory (typically ``~/openstack``)
-and check the ``traces`` directory of each component and check if anything looks fishy.
+peculaliar can be seen. If nothing can be then go to the installation
+directory (typically ``~/openstack``) and check the ``traces`` directory of
+each component and check if anything looks fishy.
 
 Stopping
 --------
@@ -335,7 +351,8 @@ the following:
 You should see a set of stop actions happening [#verbose]_. This
 ensures the above a daemon that was started is now killed. 
 
-**Note:** A good way to check if it killed everything correctly is to run the following.
+**Note:** A good way to check if it killed everything correctly is to run
+the following.
 
 ::
 
@@ -345,8 +362,8 @@ ensures the above a daemon that was started is now killed.
 There should be no entries like ``nova``, ``glance``, ``apache``,
 ``httpd``. If there are then the stop may have not occurred correctly.
 If this is the case run again with a ``-v`` or a ``-vv`` or check the
-``/var/log/nova,glance,keystone,cinder,...`` files for any useful information on what
-is happening.
+``/var/log/nova,glance,keystone,cinder,...`` files for any useful information
+on what is happening.
 
 Uninstalling
 ------------
