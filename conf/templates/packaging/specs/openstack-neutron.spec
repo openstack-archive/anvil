@@ -679,6 +679,7 @@ fi
 %exclude %{python_sitelib}/neutron/plugins/bigswitch
 %exclude %{python_sitelib}/neutron/plugins/brocade
 %exclude %{python_sitelib}/neutron/plugins/cisco
+%exclude %{python_sitelib}/neutron/plugins/embrane
 %exclude %{python_sitelib}/neutron/plugins/hyperv
 %exclude %{python_sitelib}/neutron/plugins/linuxbridge
 %exclude %{python_sitelib}/neutron/plugins/metaplugin
@@ -687,6 +688,7 @@ fi
 %exclude %{python_sitelib}/neutron/plugins/ml2
 %exclude %{python_sitelib}/neutron/plugins/mlnx
 %exclude %{python_sitelib}/neutron/plugins/nicira
+%exclude %{python_sitelib}/neutron/plugins/nuage
 %exclude %{python_sitelib}/neutron/plugins/openvswitch
 %exclude %{python_sitelib}/neutron/plugins/plumgrid
 %exclude %{python_sitelib}/neutron/plugins/ryu
