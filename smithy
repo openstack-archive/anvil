@@ -9,6 +9,7 @@ cd "$(dirname "$0")"
 
 VERBOSE="${VERBOSE:-0}"
 YUM_OPTS="--assumeyes --nogpgcheck"
+YUM_CONFIG_MANAGER_OPTS=""
 CURL_OPTS=""
 
 # Give access to the system packages so that when clients get installed
@@ -92,6 +93,15 @@ bootstrap_rpm_packages()
         fi
     fi
     return 0
+}
+
+clean_anvil_deps()
+{
+    # A previously failed anvil build which is not fully cleaned
+    # up has the potential for leaving broken packages.  We disable
+    # the anvil-deps repo on bootstrap to avoid subsequent yum failures
+    # when pulling packages from this repo during bootstrap.
+    yum-config-manager $YUM_CONFIG_MANAGER_OPTS --disable anvil-deps
 }
 
 clean_pip()
@@ -307,6 +317,8 @@ fi
 if ! needs_bootstrap; then
     clean_pip
     run_smithy
+else
+    clean_anvil_deps
 fi
 
 if [ "$BOOTSTRAP" == "false" ]; then
