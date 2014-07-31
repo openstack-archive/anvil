@@ -560,7 +560,7 @@ fi
 %endif
 
 #end raw
-#if $older_than_eq('2014.1')
+#if $older_than_eq('2014.1.99999')
 %{_bindir}/nova-clear-rabbit-queues
 #end if
 #raw
