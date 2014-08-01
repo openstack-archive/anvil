@@ -168,6 +168,28 @@ This package contains the neutron plugin that implements virtual
 networks using Cisco UCS and Nexus.
 
 
+#if $newer_than_eq('2014.1')
+%package -n openstack-neutron-embrane
+Summary:	Neutron Embrane plugin
+Group:		Applications/System
+
+Provides:       openstack-neutron-embrane = %{epoch}:%{version}-%{release}
+Obsoletes:      openstack-neutron-embrane < %{epoch}:%{version}-%{release}
+Obsoletes:      openstack-quantum-embrane < %{epoch}:%{version}-%{release}
+
+Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
+Requires:	python-configobj
+
+
+%description -n openstack-neutron-embrane
+Neutron provides an API to dynamically request and configure virtual
+networks.
+
+This package contains the neutron plugin that implements virtual
+networks using Embrane heleos platform.
+#end if
+
+
 %package -n openstack-neutron-hyperv
 Summary:	Neutron Hyper-V plugin
 Group:		Applications/System
@@ -305,6 +327,29 @@ networks.
 This package contains the neutron plugin that implements virtual
 networks using Nicira NVP.
 #end if
+
+
+#if $newer_than_eq('2014.1')
+%package -n openstack-neutron-nuage
+Summary:	Neutron Nuage plugin
+Group:		Applications/System
+
+Provides:       openstack-neutron-nuage = %{epoch}:%{version}-%{release}
+Obsoletes:      openstack-neutron-nuage < %{epoch}:%{version}-%{release}
+Obsoletes:      openstack-quantum-nuage < %{epoch}:%{version}-%{release}
+
+Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
+Requires:	python-configobj
+
+
+%description -n openstack-neutron-nuage
+Neutron provides an API to dynamically request and configure virtual
+networks.
+
+This package contains the neutron plugin that implements virtual
+networks using Nuage Networks’ Virtual Service Platform (VSP).
+#end if
+
 
 #if $newer_than_eq('2014.1')
 %package -n openstack-neutron-ofagent
@@ -690,6 +735,10 @@ fi
 %exclude %{python_sitelib}/neutron/plugins/openvswitch
 %exclude %{python_sitelib}/neutron/plugins/plumgrid
 %exclude %{python_sitelib}/neutron/plugins/ryu
+#if $newer_than_eq('2014.1')
+%exclude %{python_sitelib}/neutron/plugins/embrane
+%exclude %{python_sitelib}/neutron/plugins/nuage
+#end if
 #if $newer_than_eq('2014.1.dev146.g79fbeb7')
 %exclude %{python_sitelib}/neutron/plugins/ibm
 %exclude %{python_sitelib}/neutron/plugins/ofagent
@@ -737,6 +786,18 @@ fi
 %dir %{_sysconfdir}/neutron/plugins/cisco
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/cisco/*.ini
 %endif
+
+#if $newer_than_eq('2014.1')
+%files -n openstack-neutron-embrane
+%doc LICENSE
+%doc neutron/plugins/embrane/README
+%{python_sitelib}/neutron/plugins/embrane
+
+%if ! 0%{?usr_only}
+%dir %{_sysconfdir}/neutron/plugins/embrane
+%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/embrane/*.ini
+%endif
+#end if
 
 
 %files -n openstack-neutron-hyperv
@@ -820,6 +881,17 @@ fi
 %dir %{_sysconfdir}/neutron/plugins/nicira
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/nicira/*.ini
 %endif
+
+#if $newer_than_eq('2014.1')
+%files -n openstack-neutron-nuage
+%doc LICENSE
+%{python_sitelib}/neutron/plugins/nuage
+
+%if ! 0%{?usr_only}
+%dir %{_sysconfdir}/neutron/plugins/nuage
+%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/nuage/*.ini
+%endif
+#end if
 
 #if $newer_than_eq('2014.1.dev146.g79fbeb7')
 %files -n openstack-neutron-ofagent
