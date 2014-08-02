@@ -120,16 +120,38 @@ find . -name "django*.po" -exec rm -f '{}' \;
 cp openstack_dashboard/local/local_settings.py.example openstack_dashboard/local/local_settings.py
 
 #NOTE(aababilov): temporarily drop dependency on OpenStack client packages during RPM building
+#end raw
+#if $older_than('2014.1')
 mkdir tmp_settings
 cp openstack_dashboard/settings.py* tmp_settings/
+#raw
 sed -i -e '/import exceptions/d' -e '/exceptions\./d' \
     -e '/import policy/d' -e '/policy\./d' \
     openstack_dashboard/settings.py
+#end raw
+#end if
+#if $newer_than_eq('2014.1')
+mkdir -p tmp_settings/utils
+cp openstack_dashboard/settings.py* tmp_settings/
+cp openstack_dashboard/utils/settings.py* tmp_settings/utils/settings.py
+#raw
+sed -i -e '/exceptions/d' openstack_dashboard/utils/settings.py
+sed -i -e '/import exceptions/d' -e '/exceptions\.[A-Z][A-Z]/d' openstack_dashboard/settings.py
+#end raw
+#end if
+#raw
 %{__python} manage.py collectstatic --noinput
 %{__python} manage.py compress --force
+#end raw
+#if $older_than('2014.1')
 mv tmp_settings/* openstack_dashboard/
+#end if
+#if $newer_than_eq('2014.1')
+mv tmp_settings/settings.py* openstack_dashboard/
+mv tmp_settings/utils/settings.py* openstack_dashboard/utils/settings.py
+#end if
 rm -rf tmp_settings
-
+#raw
 
 export PYTHONPATH="$PWD:$PYTHONPATH"
 %if 0%{?with_doc}
