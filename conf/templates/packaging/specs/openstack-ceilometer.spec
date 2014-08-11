@@ -21,7 +21,7 @@ Source13:         openstack-ceilometer-central.init
 Source14:         openstack-ceilometer-alarm-notifier.init
 Source15:         openstack-ceilometer-alarm-evaluator.init
 #if $newer_than_eq('2014.1')
-Source16:         openstack-ceilometer-agent-notification.init
+Source16:         openstack-ceilometer-notification.init
 #end if
 
 Source20:          ceilometer-dist.conf
@@ -258,13 +258,15 @@ install -p -D -m 755 %{SOURCE13} %{buildroot}%{_initrddir}/%{name}-central
 install -p -D -m 755 %{SOURCE14} %{buildroot}%{_initrddir}/%{name}-alarm-notifier
 install -p -D -m 755 %{SOURCE15} %{buildroot}%{_initrddir}/%{name}-alarm-evaluator
 #if $newer_than_eq('2014.1')
-install -p -D -m 755 %{SOURCE16} %{buildroot}%{_initrddir}/%{name}-agent-notification
+install -p -D -m 755 %{SOURCE16} %{buildroot}%{_initrddir}/%{name}-notification
 #end if
 
 #Fix for bin path for central and compute
 sed -i "s#/usr/bin/ceilometer-compute#/usr/bin/ceilometer-agent-compute#" %{buildroot}%{_initrddir}/%{name}-compute
 sed -i "s#/usr/bin/ceilometer-central#/usr/bin/ceilometer-agent-central#" %{buildroot}%{_initrddir}/%{name}-central
-
+#if $newer_than_eq('2014.1')
+sed -i "s#/usr/bin/ceilometer-notification#/usr/bin/ceilometer-agent-notification#" %{buildroot}%{_initrddir}/%{name}-notification
+#end if
 # Install logrotate
 install -p -D -m 644 %{SOURCE21} %{buildroot}%{_sysconfdir}/logrotate.d/%{name}
 
@@ -338,7 +340,7 @@ exit 0
 %files notification
 %{_bindir}/ceilometer-agent-notification
 %{_bindir}/ceilometer-send-sample
-%{_initrddir}/%{name}-agent-notification
+%{_initrddir}/%{name}-notification
 #end if
 
 %changelog
