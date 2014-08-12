@@ -116,6 +116,40 @@ chmod 0755 %{buildroot}%{_bindir}/%{pkg_name}-make-test-env
 """
 }
 
+EGG_INFO_SCRIPT_TPL = """
+__file__ = __SETUP_PY__
+
+from setuptools.command import egg_info
+import pkg_resources
+import os
+
+# This is a fixed up run method that works better, it will be activated
+# when the following (or equivalent) is ran $ python setup.py egg_info
+def replacement_run(self):
+    self.mkpath(self.egg_info)
+    installer = self.distribution.fetch_build_egg
+    if self.distribution.has_ext_modules():
+        # TODO(harlowja): does this need to be better??
+        ext_modules_path = os.path.join(self.egg_info, 'ext_modules.txt')
+        self.write_file("extension modules", ext_modules_path, "")
+    for ep in pkg_resources.iter_entry_points('egg_info.writers'):
+        writer = ep.load(require=False)
+        if writer:
+            writer(self, ep.name, os.path.join(self.egg_info, ep.name))
+    self.find_sources()
+    if self.distribution.tests_require:
+        test_requires_path = os.path.join(self.egg_info, 'test-requires.txt')
+        test_requires = []
+        for line in pkg_resources.yield_lines(self.distribution.tests_require):
+            test_requires.append(line)
+        self.write_file("test requirements", test_requires_path,
+                        '\\n'.join(test_requires))
+
+egg_info.egg_info.run = replacement_run
+exec(compile(open(__file__).read().replace('\\r\\n', '\\n'), __file__, 'exec'))
+"""
+
+
 class InstallationError(Exception):
     pass
 
@@ -347,33 +381,7 @@ def build_map(arguments):
 
 
 def run_egg_info(source_dir, options):
-    script = """
-__file__ = __SETUP_PY__
-from setuptools.command import egg_info
-import pkg_resources
-import os
-def replacement_run(self):
-    self.mkpath(self.egg_info)
-    installer = self.distribution.fetch_build_egg
-    if self.distribution.has_ext_modules():
-        with open("%s/ext_modules.txt" % self.egg_info, "w") as f:
-            pass
-    for ep in pkg_resources.iter_entry_points('egg_info.writers'):
-        # require=False is the change we're making:
-        writer = ep.load(require=False)
-        if writer:
-            writer(self, ep.name, os.path.join(self.egg_info,ep.name))
-    self.find_sources()
-    if self.distribution.tests_require:
-        with open(os.path.join(self.egg_info, 'test-requires.txt'), 'w') as f:
-            test_requirements = []
-            for r in self.distribution.tests_require:
-                test_requirements.extend(r)
-            f.write('\\n'.join(test_requirements))
-egg_info.egg_info.run = replacement_run
-exec(compile(open(__file__).read().replace('\\r\\n', '\\n'), __file__, 'exec'))
-"""
-    script = script.replace('__SETUP_PY__', "'setup.py'")
+    script = EGG_INFO_SCRIPT_TPL.replace('__SETUP_PY__', "'setup.py'")
     egg_info_dir = os.path.join(source_dir, 'pip-egg-info')
     if not os.path.exists(egg_info_dir):
         os.makedirs(egg_info_dir)
