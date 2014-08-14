@@ -25,9 +25,7 @@ Source11:         openstack-heat-api-cfn.init
 Source12:         openstack-heat-engine.init
 Source13:         openstack-heat-api-cloudwatch.init
 
-Source20:         heat.conf
-Source21:         heat-api-paste.ini
-Source22:         heat.logrotate
+Source20:         heat.logrotate
 
 #for $idx, $fn in enumerate($patches)
 Patch$idx: $fn
@@ -92,9 +90,12 @@ mkdir -p %{buildroot}/etc/heat/
 rm -rf %{buildroot}/var/lib/heat/.dummy
 rm -f %{buildroot}/usr/bin/cinder-keystone-setup
 
-install -p -D -m 640 %{SOURCE20} %{buildroot}/%{_sysconfdir}/heat/heat.conf
-install -p -D -m 640 %{SOURCE21} %{buildroot}/%{_sysconfdir}/heat/heat-api-paste.ini
-install -p -D -m 640 %{SOURCE22} %{buildroot}/%{_sysconfdir}/logrotate.d/heat
+cp etc/heat/heat.conf.sample etc/heat/heat.conf
+
+install -p -D -m 640 etc/heat/heat.conf %{buildroot}/%{_sysconfdir}/heat/heat.conf
+install -p -D -m 640 etc/heat/api-paste.ini %{buildroot}/%{_sysconfdir}/heat/api-paste.ini
+install -p -D -m 640 etc/heat/policy.json %{buildroot}/%{_sysconfdir}/heat/policy.json
+install -p -D -m 640 %{SOURCE20} %{buildroot}/%{_sysconfdir}/logrotate.d/heat
 #end raw
 
 %package common
@@ -120,8 +121,9 @@ Components common to all OpenStack Heat services
 %dir %attr(0755,heat,root) %{_sharedstatedir}/heat
 %dir %attr(0755,heat,root) %{_sysconfdir}/heat
 %dir %attr(0755,heat,root) /var/run/heat
-%config(noreplace) %{_sysconfdir}/heat/heat.conf
-%config(noreplace)/%{_sysconfdir}/heat/heat-api-paste.ini
+%config(noreplace) %attr(0640, root, heat) %{_sysconfdir}/heat/heat.conf
+%config(noreplace) %attr(0640, root, heat) %{_sysconfdir}/heat/api-paste.ini
+%config(noreplace) %attr(0640, root, heat) %{_sysconfdir}/heat/policy.json
 %config(noreplace) %{_sysconfdir}/logrotate.d/heat
 
 %pre common
