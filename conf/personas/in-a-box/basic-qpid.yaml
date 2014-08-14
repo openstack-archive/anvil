@@ -4,10 +4,6 @@ components:
 - general
 - db
 - qpid
-# Oslo libraries
-- oslo-config
-- oslo-messaging
-- pycadf
 # Core components
 - keystone
 - glance

@@ -46,9 +46,6 @@ novnc:
 openstack-client:
   repo: git://github.com/openstack/python-openstackclient.git
   tag: 0.2.2
-oslo-config:
-  repo: git://github.com/openstack/oslo.config.git
-  tag: 1.2.1
 oslo-incubator:
   repo: git://github.com/openstack/oslo-incubator.git
   tag: 2013.2.3

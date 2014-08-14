@@ -46,9 +46,6 @@ novnc:
 openstack-client:
   repo: git://github.com/openstack/python-openstackclient.git
   tag: 0.3.1
-oslo-config:
-  repo: git://github.com/openstack/oslo.config.git
-  tag: 1.3.0
 oslo-incubator:
   repo: git://github.com/openstack/oslo-incubator.git
   tag: 2014.1
@@ -67,9 +64,3 @@ trove-client:
 trove:
   repo: git://github.com/openstack/trove.git
   tag: 2014.1
-oslo-messaging:
-  repo: git://github.com/openstack/oslo.messaging.git
-  tag: 1.3.0
-pycadf:
-  repo: git://github.com/openstack/pycadf.git
-  tag: 0.5

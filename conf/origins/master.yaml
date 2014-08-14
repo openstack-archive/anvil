@@ -49,14 +49,8 @@ novnc:
 openstack-client:
   repo: git://github.com/openstack/python-openstackclient.git
   branch: master
-oslo-config:
-  repo: git://github.com/openstack/oslo.config.git
-  branch: master
 oslo-incubator:
   repo: git://github.com/openstack/oslo-incubator.git
-  branch: master
-oslo-messaging:
-  repo: git://github.com/openstack/oslo.messaging.git
   branch: master
 neutron-client:
   repo: git://github.com/openstack/python-neutronclient.git
@@ -73,6 +67,3 @@ trove-client:
 trove:
   repo: git://github.com/openstack/trove.git
   branch: master
-pycadf:
-  repo: git://github.com/openstack/pycadf.git
-  tag: master
