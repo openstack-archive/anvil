@@ -35,4 +35,5 @@ class BuildAction(action.Action):
                                                       self.root_dir,
                                                       instances.values(),
                                                       self.cli_opts)
+        dependency_handler.build_prerequisites()
         dependency_handler.build_binary()

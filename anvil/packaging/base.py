@@ -147,6 +147,9 @@ class DependencyHandler(object):
     def build_binary(self):
         pass
 
+    def build_prerequisites(self):
+        pass
+
     def install(self, general):
         pass
 
