@@ -181,11 +181,14 @@ class YumDependencyHandler(base.DependencyHandler):
         if not sh.isdir(target_dir):
             sh.mkdirslist(target_dir, tracewriter=self.tracewriter)
         if not sh.isdir(source_dir):
-            return
+            return 0
+        moved = 0
         for filename in sh.listdir(source_dir, recursive=True, files_only=True):
             if not filename.lower().endswith(".rpm"):
                 continue
             sh.move(filename, target_dir, force=True)
+            moved += 1
+        return moved
 
     def build_binary(self):
         def is_src_rpm(path):
@@ -202,6 +205,18 @@ class YumDependencyHandler(base.DependencyHandler):
             if sh.isdir(path):
                 path_files = sh.listdir(path, filter_func=is_src_rpm)
             return sorted(path_files)
+
+        def move_rpms(repo_name):
+            repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)
+            search_dirs = [
+                sh.joinpths(self.rpmbuild_dir, "RPMS"),
+            ]
+            for sub_dir in sh.listdir(self.rpmbuild_dir, dirs_only=True):
+                search_dirs.append(sh.joinpths(sub_dir, "RPMS"))
+            moved = 0
+            for d in search_dirs:
+                moved += self._move_rpm_files(d, repo_dir)
+            return moved
 
         build_requirements = self.requirements.get("build-requires")
         if build_requirements:
@@ -226,21 +241,25 @@ class YumDependencyHandler(base.DependencyHandler):
                 rpmbuild_flags += " --define 'usr_only 1'"
             with sh.remove_before_after(self.rpmbuild_dir):
                 self._create_rpmbuild_subdirs()
-                self.py2rpm_helper.build_all_binaries(repo_name, src_repo_dir,
-                                                      rpmbuild_flags, self.tracewriter,
-                                                      self.jobs)
-                repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)
-                for d in sh.listdir(self.rpmbuild_dir, dirs_only=True):
-                    self._move_rpm_files(sh.joinpths(d, "RPMS"), repo_dir)
-                self._move_rpm_files(sh.joinpths(self.rpmbuild_dir, "RPMS"), repo_dir)
-            self._create_repo(repo_name)
+                try:
+                    self.py2rpm_helper.build_all_binaries(repo_name,
+                                                          src_repo_dir,
+                                                          rpmbuild_flags,
+                                                          self.tracewriter,
+                                                          self.jobs)
+                finally:
+                    # If we made any rpms (even if a failure happened, make
+                    # sure that we move them to the right target repo).
+                    if move_rpms(repo_name) > 0:
+                        self._create_repo(repo_name)
 
     def _move_srpms(self, repo_name, rpmbuild_dir=None):
         if rpmbuild_dir is None:
             rpmbuild_dir = self.rpmbuild_dir
         src_repo_name = self.SRC_REPOS[repo_name]
         src_repo_dir = sh.joinpths(self.anvil_repo_dir, src_repo_name)
-        self._move_rpm_files(sh.joinpths(rpmbuild_dir, "SRPMS"), src_repo_dir)
+        return self._move_rpm_files(sh.joinpths(rpmbuild_dir, "SRPMS"),
+                                    src_repo_dir)
 
     def _create_repo(self, repo_name):
         repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)
