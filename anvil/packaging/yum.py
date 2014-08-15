@@ -49,6 +49,7 @@ ENSURE_NOT_MISSING = [
     'CONTRIBUTING.rst',
     'LICENSE',
 ]
+_DEFAULT_SKIP_EPOCHS = ['0']
 
 
 class YumInstallHelper(base.InstallHelper):
@@ -97,15 +98,46 @@ class YumDependencyHandler(base.DependencyHandler):
         epoch_map = self.distro.get_dependency_config("epoch_map", quiet=True)
         if not epoch_map:
             epoch_map = {}
+        epoch_skips = self.distro.get_dependency_config("epoch_skips",
+                                                        quiet=True)
+        if not epoch_skips:
+            epoch_skips = ''
+        if not isinstance(epoch_skips, (list, tuple)):
+            epoch_skips = [i.strip() for i in epoch_skips.split(",")]
+        if not epoch_skips:
+            epoch_skips = _DEFAULT_SKIP_EPOCHS
         built_epochs = {}
         for name in self.python_names:
             if name in epoch_map:
                 built_epochs[name] = epoch_map.pop(name)
             else:
                 built_epochs[name] = self.OPENSTACK_EPOCH
+        # Ensure epochs set by a yum searching (that are not in the list of
+        # epochs to provide) are correctly set when building dependent
+        # packages...
+        keep_names = set()
+        try:
+            yum_satisfies = sh.load_file(self.yum_satisfies_filename)
+        except IOError as e:
+            if e.errno != errno.ENOENT:
+                raise
+        else:
+            for line in yum_satisfies.splitlines():
+                raw_req_rpm = utils.parse_json(line)
+                req = pip_helper.extract_requirement(raw_req_rpm['requirement'])
+                if req.key in epoch_map:
+                    continue
+                rpm_info = raw_req_rpm['rpm']
+                rpm_epoch = rpm_info.get('epoch')
+                if rpm_epoch and rpm_epoch not in epoch_skips:
+                    LOG.debug("Adding in yum satisfiable package %s for"
+                              " requirement '%s' with epoch %s from repo %s",
+                              rpm_info['name'], req, rpm_epoch, rpm_info['repo'])
+                    keep_names.add(req.key)
+                    epoch_map[req.key] = rpm_epoch
         # Exclude names from the epoch map that we never downloaded in the
-        # first place (since these are not useful and should not be set in
-        # the first place).
+        # first place or that we did not just set automatically (since these
+        # are not useful and should not be set in the first place).
         try:
             raw_downloaded = sh.load_file(self.build_requires_filename)
             downloaded_reqs = pip_helper.parse_requirements(raw_downloaded)
@@ -116,12 +148,13 @@ class YumDependencyHandler(base.DependencyHandler):
             downloaded_names = set([req.key for req in downloaded_reqs])
             tmp_epoch_map = {}
             for (name, epoch) in six.iteritems(epoch_map):
-                if name.lower() in downloaded_names:
+                name = name.lower()
+                if name in downloaded_names or name in keep_names:
                     tmp_epoch_map[name] = epoch
                 else:
                     LOG.debug("Discarding %s:%s from the epoch mapping since"
-                              " it was not part of the downloaded build"
-                              " requirements", name, epoch)
+                              " it was not part of the downloaded (or automatically"
+                              " included) build requirements", name, epoch)
             epoch_map = tmp_epoch_map
         epoch_map.update(built_epochs)
         return epoch_map
