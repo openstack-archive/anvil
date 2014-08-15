@@ -187,19 +187,12 @@ def execute_save_output(cmd, file_name, **kwargs):
 
 
 @contextlib.contextmanager
-def remove_before_after(path):
-
-    def delete_it(path):
-        if isdir(path):
-            deldir(path)
-        if isfile(path):
-            unlink(path)
-
-    delete_it(path)
-    try:
-        yield path
-    finally:
-        delete_it(path)
+def remove_before(path):
+    if isdir(path):
+        deldir(path)
+    if isfile(path):
+        unlink(path)
+    yield path
 
 
 def gzip(file_name, gz_archive_name=None):

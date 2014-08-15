@@ -163,7 +163,7 @@ class YumDependencyHandler(base.DependencyHandler):
             sh.mkdirslist(dirname, tracewriter=self.tracewriter)
 
     def package_instance(self, instance):
-        with sh.remove_before_after(self.rpmbuild_dir):
+        with sh.remove_before(self.rpmbuild_dir):
             self._create_rpmbuild_subdirs()
             if instance.name in ["general"]:
                 self._build_dependencies()
@@ -224,7 +224,7 @@ class YumDependencyHandler(base.DependencyHandler):
             rpmbuild_flags = "--rebuild"
             if self.opts.get("usr_only", False):
                 rpmbuild_flags += " --define 'usr_only 1'"
-            with sh.remove_before_after(self.rpmbuild_dir):
+            with sh.remove_before(self.rpmbuild_dir):
                 self._create_rpmbuild_subdirs()
                 self.py2rpm_helper.build_all_binaries(repo_name, src_repo_dir,
                                                       rpmbuild_flags, self.tracewriter,
