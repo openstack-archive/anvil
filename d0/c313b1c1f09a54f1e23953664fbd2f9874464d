@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Code-Review+1: Shraddha Pandhe <shraddha.pandhe@yahoo.com>
+Code-Review+2: Kris Lindgren <klindgren@godaddy.com>
+Workflow+1: Kris Lindgren <klindgren@godaddy.com>
+Code-Review+2: Pranesh Pandurangan <praneshpg@gmail.com>
+Submitted-by: Jenkins
+Submitted-at: Tue, 19 Aug 2014 17:04:01 +0000
+Reviewed-on: https://review.openstack.org/113416
+Project: stackforge/anvil
+Branch: refs/heads/master
