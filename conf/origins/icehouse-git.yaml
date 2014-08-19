@@ -1,6 +1,7 @@
 ceilometer:
   repo: git://github.com/openstack/ceilometer.git
   branch: stable/icehouse
+  use_tests_requires: False
 ceilometer-client:
   repo: git://github.com/openstack/python-ceilometerclient.git
   tag: 1.0.9
@@ -67,6 +68,7 @@ trove-client:
 trove:
   repo: git://github.com/openstack/trove.git
   branch: stable/icehouse
+  use_tests_requires: False
 oslo-messaging:
   repo: git://github.com/openstack/oslo.messaging.git
   tag: 1.3.0
