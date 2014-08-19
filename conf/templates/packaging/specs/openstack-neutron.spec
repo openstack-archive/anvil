@@ -754,7 +754,6 @@ fi
 %doc LICENSE
 %doc neutron/plugins/bigswitch/README
 #if $newer_than_eq('2014.1.dev146.g79fbeb7')
-%doc %{_sysconfdir}/neutron/plugins/bigswitch/README
 %{_bindir}/neutron-restproxy-agent
 #end if
 %{python_sitelib}/neutron/plugins/bigswitch
@@ -762,6 +761,7 @@ fi
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/bigswitch
+%doc %{_sysconfdir}/neutron/plugins/bigswitch/README
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/bigswitch/*.ini
 %endif
 
@@ -818,11 +818,11 @@ fi
 %files -n openstack-neutron-ibm
 %doc neutron/plugins/ibm/README
 %{_bindir}/*-ibm-agent
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/ibm/*.ini
 %{python_sitelib}/neutron/plugins/ibm
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/ibm
+%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/ibm/*.ini
 %endif
 #end if
 
@@ -907,8 +907,12 @@ fi
 %doc LICENSE
 %doc neutron/plugins/oneconvergence/README
 %{_bindir}/*-nvsd-agent
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/oneconvergence/*.ini
 %{python_sitelib}/neutron/plugins/oneconvergence
+
+%if ! 0%{?usr_only}
+%dir %{_sysconfdir}/neutron/plugins/oneconvergence
+%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/oneconvergence/*.ini
+%endif
 #end if
 
 %files -n openstack-neutron-openvswitch
@@ -968,12 +972,15 @@ fi
 %doc LICENSE
 %{_bindir}/neutron*nsx-*
 %{_bindir}/*-check-nvp-config
+%{python_sitelib}/neutron/plugins/vmware
+
+%if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/vmware
 %dir %{_sysconfdir}/neutron/plugins/nicira
-
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/vmware/*.ini
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/nicira/*.ini
-%{python_sitelib}/neutron/plugins/vmware
+%endif
+
 #end if
 
 %files -n openstack-neutron-metaplugin
