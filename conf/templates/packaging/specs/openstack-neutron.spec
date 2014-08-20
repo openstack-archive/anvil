@@ -208,7 +208,7 @@ networks.
 This package contains the neutron plugin that implements virtual
 networks using Microsoft Hyper-V.
 
-#if $newer_than_eq('2014.1.dev146.g79fbeb7')
+#if $newer_than_eq('2014.1.b1')
 %package -n openstack-neutron-ibm
 Summary:        Neutron IBM plugin
 Group:          Applications/System
@@ -389,7 +389,7 @@ networks.
 This package contains the neutron plugin that implements virtual
 networks using Open vSwitch.
 
-#if $newer_than_eq('2014.1.dev146.g79fbeb7')
+#if $newer_than_eq('2014.1.b1')
 %package -n openstack-neutron-oneconvergence-nvsd
 Summary:        Neutron oneconvergence plugin
 Group:          Applications/System
@@ -483,7 +483,7 @@ networks.
 This package contains the neutron plugin that implements virtual
 networks using multiple other neutron plugins.
 
-#if $newer_than_eq('2014.1.dev146.g79fbeb7')
+#if $newer_than_eq('2014.1.b1')
 %package -n openstack-neutron-vmware
 Summary:       Neutron VMWare NSX support
 Group:         Applications/System
@@ -740,7 +740,7 @@ fi
 %exclude %{python_sitelib}/neutron/plugins/embrane
 %exclude %{python_sitelib}/neutron/plugins/nuage
 #end if
-#if $newer_than_eq('2014.1.dev146.g79fbeb7')
+#if $newer_than_eq('2014.1.b1')
 %exclude %{python_sitelib}/neutron/plugins/ibm
 %exclude %{python_sitelib}/neutron/plugins/ofagent
 %exclude %{python_sitelib}/neutron/plugins/oneconvergence
@@ -753,7 +753,7 @@ fi
 %files -n openstack-neutron-bigswitch
 %doc LICENSE
 %doc neutron/plugins/bigswitch/README
-#if $newer_than_eq('2014.1.dev146.g79fbeb7')
+#if $newer_than_eq('2014.1.b1')
 %{_bindir}/neutron-restproxy-agent
 #end if
 %{python_sitelib}/neutron/plugins/bigswitch
@@ -812,7 +812,7 @@ fi
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/hyperv/*.ini
 %endif
 
-#if $newer_than_eq('2014.1.dev146.g79fbeb7')
+#if $newer_than_eq('2014.1.b1')
 %doc LICENSE
 %files -n openstack-neutron-ibm
 %doc neutron/plugins/ibm/README
@@ -893,7 +893,7 @@ fi
 %endif
 #end if
 
-#if $newer_than_eq('2014.1.dev146.g79fbeb7')
+#if $newer_than_eq('2014.1.b1')
 %files -n openstack-neutron-ofagent
 %doc LICENSE
 %{_bindir}/*-ofagent-agent
@@ -901,7 +901,7 @@ fi
 %{python_sitelib}/neutron/plugins/ofagent
 #end if
 
-#if $newer_than_eq('2014.1.dev146.g79fbeb7')
+#if $newer_than_eq('2014.1.b1')
 %files -n openstack-neutron-oneconvergence-nvsd
 %doc LICENSE
 %doc neutron/plugins/oneconvergence/README
@@ -966,7 +966,7 @@ fi
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/nec/*.ini
 %endif
 
-#if $newer_than_eq('2014.1.dev146.g79fbeb7')
+#if $newer_than_eq('2014.1.b1')
 %files -n openstack-neutron-vmware
 %doc LICENSE
 %{_bindir}/neutron*nsx-*
