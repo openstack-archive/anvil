@@ -762,6 +762,9 @@ fi
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/bigswitch
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/bigswitch/*.ini
+#if $newer_than_eq('2014.1.dev146.g79fbeb7')
+%doc %{_sysconfdir}/neutron/plugins/bigswitch/README
+#end if
 %endif
 
 
