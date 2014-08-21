@@ -567,7 +567,7 @@ fi
 %{_bindir}/nova-manage
 %{_bindir}/nova-rootwrap
 #end raw
-#if $older_than('2014.1.dev295.g1a91aac')
+#if $older_than('2014.1')
 %{_bindir}/nova-rpc-zmq-receiver
 #end if
 #raw
