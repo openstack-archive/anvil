@@ -66,7 +66,6 @@ Requires:	python-neutron = %{epoch}:%{version}-%{release}
 Requires:       python-keystone
 
 Provides:       openstack-neutron = %{epoch}:%{version}-%{release}
-Obsoletes:      openstack-neutron < %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum < %{epoch}:%{version}-%{release}
 
 %if ! 0%{?usr_only}
@@ -92,7 +91,6 @@ Summary:	Neutron Python libraries
 Group:		Applications/System
 
 Provides:       python-neutron = %{epoch}:%{version}-%{release}
-Obsoletes:      python-neutron < %{epoch}:%{version}-%{release}
 Obsoletes:      python-quantum < %{epoch}:%{version}-%{release}
 
 Requires:	sudo
@@ -113,7 +111,6 @@ Summary:	Neutron Big Switch plugin
 Group:		Applications/System
 
 Provides:       openstack-neutron-bigswitch = %{epoch}:%{version}-%{release}
-Obsoletes:      openstack-neutron-bigswitch < %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-bigswitch < %{epoch}:%{version}-%{release}
 
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
@@ -133,7 +130,6 @@ Summary:	Neutron Brocade plugin
 Group:		Applications/System
 
 Provides:       openstack-neutron-brocade = %{epoch}:%{version}-%{release}
-Obsoletes:      openstack-neutron-brocade < %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-brocade < %{epoch}:%{version}-%{release}
 
 
@@ -153,7 +149,6 @@ Summary:	Neutron Cisco plugin
 Group:		Applications/System
 
 Provides:       openstack-neutron-cisco = %{epoch}:%{version}-%{release}
-Obsoletes:      openstack-neutron-cisco < %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-cisco < %{epoch}:%{version}-%{release}
 
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
@@ -174,7 +169,6 @@ Summary:	Neutron Embrane plugin
 Group:		Applications/System
 
 Provides:       openstack-neutron-embrane = %{epoch}:%{version}-%{release}
-Obsoletes:      openstack-neutron-embrane < %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-embrane < %{epoch}:%{version}-%{release}
 
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
@@ -195,7 +189,6 @@ Summary:	Neutron Hyper-V plugin
 Group:		Applications/System
 
 Provides:       openstack-neutron-hyperv = %{epoch}:%{version}-%{release}
-Obsoletes:      openstack-neutron-hyperv < %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-hyperv < %{epoch}:%{version}-%{release}
 
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
@@ -214,7 +207,6 @@ Summary:        Neutron IBM plugin
 Group:          Applications/System
 
 Provides:       openstack-neutron-ibm = %{epoch}:%{version}-%{release}
-Obsoletes:      openstack-neutron-ibm < %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-ibm < %{epoch}:%{version}-%{release}
 
 Requires:       openstack-neutron = %{epoch}:%{version}-%{release}
@@ -233,7 +225,6 @@ Summary:	Neutron linuxbridge plugin
 Group:		Applications/System
 
 Provides:       openstack-neutron-linuxbridge = %{epoch}:%{version}-%{release}
-Obsoletes:      openstack-neutron-linuxbridge < %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-linuxbridge < %{epoch}:%{version}-%{release}
 
 Requires:	bridge-utils
@@ -254,7 +245,6 @@ Summary:	Neutron MidoNet plugin
 Group:		Applications/System
 
 Provides:       openstack-neutron-midonet = %{epoch}:%{version}-%{release}
-Obsoletes:      openstack-neutron-midonet < %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-midonet < %{epoch}:%{version}-%{release}
 
 
@@ -274,7 +264,6 @@ Summary:	Neutron ML2 plugin
 Group:		Applications/System
 
 Provides:       openstack-neutron-ml2 = %{epoch}:%{version}-%{release}
-Obsoletes:      openstack-neutron-ml2 < %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-ml2 < %{epoch}:%{version}-%{release}
 
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
@@ -295,7 +284,6 @@ Summary:	Neutron Mellanox plugin
 Group:		Applications/System
 
 Provides:       openstack-neutron-mlnx = %{epoch}:%{version}-%{release}
-Obsoletes:      openstack-neutron-mlnx < %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-mlnx < %{epoch}:%{version}-%{release}
 
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
@@ -314,7 +302,7 @@ HCA.
 Summary:	Neutron Nicira plugin
 Group:		Applications/System
 
-Provides:       openstack-quantum-nicira = %{epoch}:%{version}-%{release}
+Provides:       openstack-neutron-nicira = %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-nicira < %{epoch}:%{version}-%{release}
 
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
@@ -335,7 +323,6 @@ Summary:	Neutron Nuage plugin
 Group:		Applications/System
 
 Provides:       openstack-neutron-nuage = %{epoch}:%{version}-%{release}
-Obsoletes:      openstack-neutron-nuage < %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-nuage < %{epoch}:%{version}-%{release}
 
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
@@ -357,7 +344,6 @@ Summary:        Neutron ofagent plugin
 Group:          Applications/System
 
 Provides:       openstack-neutron-ofagent = %{epoch}:%{version}-%{release}
-Obsoletes:      openstack-neutron-ofagent < %{epoch}:%{version}-%{release}
 
 Requires:       openstack-neutron = %{epoch}:%{version}-%{release}
 
@@ -375,7 +361,6 @@ Summary:	Neutron openvswitch plugin
 Group:		Applications/System
 
 Provides:       openstack-neutron-openvswitch = %{epoch}:%{version}-%{release}
-Obsoletes:      openstack-neutron-openvswitch < %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-openvswitch < %{epoch}:%{version}-%{release}
 
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
@@ -395,7 +380,6 @@ Summary:        Neutron oneconvergence plugin
 Group:          Applications/System
 
 Provides:       openstack-neutron-oneconvergence-nvsd = %{epoch}:%{version}-%{release}
-Obsoletes:      openstack-neutron-oneconvergence-nvsd < %{epoch}:%{version}-%{release}
 
 Requires:       openstack-neutron = %{epoch}:%{version}-%{release}
 
@@ -413,7 +397,6 @@ Summary:	Neutron PLUMgrid plugin
 Group:		Applications/System
 
 Provides:       openstack-neutron-plumgrid = %{epoch}:%{version}-%{release}
-Obsoletes:      openstack-neutron-plumgrid < %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-plumgrid < %{epoch}:%{version}-%{release}
 
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
@@ -432,7 +415,6 @@ Summary:	Neutron Ryu plugin
 Group:		Applications/System
 
 Provides:       openstack-neutron-ryu = %{epoch}:%{version}-%{release}
-Obsoletes:      openstack-neutron-ryu < %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-ryu < %{epoch}:%{version}-%{release}
 
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
@@ -451,7 +433,6 @@ Summary:	Neutron NEC plugin
 Group:		Applications/System
 
 Provides:       openstack-neutron-nec = %{epoch}:%{version}-%{release}
-Obsoletes:      openstack-neutron-nec < %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-nec < %{epoch}:%{version}-%{release}
 
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
@@ -470,7 +451,6 @@ Summary:	Neutron meta plugin
 Group:		Applications/System
 
 Provides:       openstack-neutron-metaplugin = %{epoch}:%{version}-%{release}
-Obsoletes:      openstack-neutron-metaplugin < %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-metaplugin < %{epoch}:%{version}-%{release}
 
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
@@ -490,7 +470,6 @@ Group:         Applications/System
 
 Requires:      openstack-neutron = %{epoch}:%{version}-%{release}
 Provides:      openstack-neutron-nicira = %{epoch}:%{version}-%{release}
-Obsoletes:     openstack-neutron-nicira < %{epoch}:%{version}-%{release}
 Obsoletes:     openstack-neutron-nicera < %{epoch}:%{version}-%{release}
 
 %description -n openstack-neutron-vmware
