@@ -762,6 +762,9 @@ fi
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/bigswitch
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/bigswitch/*.ini
+#if $newer_than_eq('2014.1.dev146.g79fbeb7')
+%doc %{_sysconfdir}/neutron/plugins/bigswitch/*
+#end if
 %endif
 
 
@@ -787,7 +790,7 @@ fi
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/cisco/*.ini
 %endif
 
-#if $newer_than_eq('2014.1')
+#if $newer_than_eq('2014.1.1')
 %files -n openstack-neutron-embrane
 %doc LICENSE
 %doc neutron/plugins/embrane/README
@@ -886,7 +889,9 @@ fi
 %files -n openstack-neutron-nuage
 %doc LICENSE
 %{python_sitelib}/neutron/plugins/nuage
+#end if
 
+#if $newer_than_eq('2014.1.1')
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/nuage
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/nuage/*.ini
