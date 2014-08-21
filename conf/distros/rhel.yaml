@@ -35,6 +35,7 @@ dependency_handler:
     - cryptography
     - selenium
     - xattr
+    - numpy
 commands:
     service:
         restart: service $NAME restart
