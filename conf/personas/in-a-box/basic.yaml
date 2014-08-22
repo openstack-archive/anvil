@@ -61,5 +61,5 @@ no-origin:
 - db
 - rabbit-mq
 supports:
-- rhel
+- redhat
 ...
