@@ -29,6 +29,12 @@ class BuildAction(action.Action):
     def lookup_name(self):
         return 'install'
 
+    def _entry_point_creator(self, component_name, component_options):
+        if component_options.get('python'):
+            return 'anvil.components.base_install:PythonInstallComponent'
+        else:
+            return 'anvil.components.pkglist:Installer'
+
     def _run(self, persona, component_order, instances):
         dependency_handler_class = self.distro.dependency_handler_class
         dependency_handler = dependency_handler_class(self.distro,
