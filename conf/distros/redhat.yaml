@@ -80,19 +80,12 @@ commands:
         stop: service rabbitmq-server stop
 components:
     ceilometer-client:
-        action_classes:
-            install: anvil.components.base_install:PythonInstallComponent
-            running: anvil.components.base_runtime:EmptyRuntime
-            test: anvil.components.base_testing:PythonTestingComponent
-            coverage: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PkgUninstallComponent
+        python_entrypoints: True
     cinder:
+        python_entrypoints: True
         action_classes:
             install: anvil.components.cinder:CinderInstaller
             running: anvil.components.base_runtime:OpenStackRuntime
-            test: anvil.components.base_testing:PythonTestingComponent
-            coverage: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PkgUninstallComponent
         daemon_to_package:
             all: openstack-cinder
             volume: openstack-cinder
@@ -101,28 +94,17 @@ components:
         pips:
         -   name: hp3parclient
     cinder-client:
-        action_classes:
-            install: anvil.components.base_install:PythonInstallComponent
-            running: anvil.components.base_runtime:EmptyRuntime
-            test: anvil.components.base_testing:PythonTestingComponent
-            coverage: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PkgUninstallComponent
+        python_entrypoints: True
     db:
         action_classes:
             install: anvil.distros.rhel:DBInstaller
             running: anvil.components.db:DBRuntime
-            coverage: anvil.components.base_testing:EmptyTestingComponent
-            test: anvil.components.base_testing:EmptyTestingComponent
             uninstall: anvil.components.db:DBUninstaller
         packages:
         -   name: mysql
         -   name: mysql-server
     general:
         action_classes:
-            install: anvil.components.pkglist:Installer
-            running: anvil.components.base_runtime:EmptyRuntime
-            test: anvil.components.base_testing:EmptyTestingComponent
-            coverage: anvil.components.base_testing:EmptyTestingComponent
             uninstall: anvil.components.pkglist:Uninstaller
         build-requires:
         # Build time dependencies
@@ -165,12 +147,12 @@ components:
               version: ">=1.3.0"
             - name: "coverage"
     glance:
+        python_entrypoints: True
         action_classes:
             install: anvil.components.glance:GlanceInstaller
             running: anvil.components.glance:GlanceRuntime
             coverage: anvil.components.glance:GlanceTester
             test: anvil.components.glance:GlanceTester
-            uninstall: anvil.components.base_install:PkgUninstallComponent
         pips:
         # pip setup and download of xattr>=0.7 seems to have problems find cffi
         # so lets just use an restrict the upper bound until this is fixed upstream
@@ -182,35 +164,22 @@ components:
             registry: openstack-glance
             scrubber: openstack-glance
     glance-client:
+        python_entrypoints: True
         action_classes:
-            install: anvil.components.base_install:PythonInstallComponent
-            running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.glance_client:GlanceClientTester
             coverage: anvil.components.glance_client:GlanceClientTester
-            uninstall: anvil.components.base_install:PkgUninstallComponent
     heat-client:
-        action_classes:
-            install: anvil.components.base_install:PythonInstallComponent
-            running: anvil.components.base_runtime:EmptyRuntime
-            test: anvil.components.base_testing:PythonTestingComponent
-            coverage: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PkgUninstallComponent
+        python_entrypoints: True
     horizon:
+        python_entrypoints: True
         action_classes:
-            install: anvil.components.base_install:PythonInstallComponent
             running: anvil.components.horizon:HorizonRuntime
-            test: anvil.components.base_testing:PythonTestingComponent
-            coverage: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PkgUninstallComponent
         packages:
         -   name: openstack-dashboard
     django-openstack-auth:
-        action_classes:
-            install: anvil.components.base_install:PythonInstallComponent
-            running: anvil.components.base_runtime:EmptyRuntime
-            test: anvil.components.base_testing:EmptyTestingComponent
-            uninstall: anvil.components.base_install:PkgUninstallComponent
+        python_entrypoints: True
     keystone:
+        python_entrypoints: True
         action_classes:
             install: anvil.components.keystone:KeystoneInstaller
             running: anvil.components.keystone:KeystoneRuntime
@@ -220,25 +189,14 @@ components:
         daemon_to_package:
             all: openstack-keystone
     keystone-client:
-        action_classes:
-            install: anvil.components.base_install:PythonInstallComponent
-            running: anvil.components.base_runtime:EmptyRuntime
-            test: anvil.components.base_testing:PythonTestingComponent
-            coverage: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PkgUninstallComponent
+        python_entrypoints: True
     neutron-client:
-        action_classes:
-            install: anvil.components.base_install:PythonInstallComponent
-            running: anvil.components.base_runtime:EmptyRuntime
-            test: anvil.components.base_testing:PythonTestingComponent
-            coverage: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PkgUninstallComponent
+        python_entrypoints: True
     nova:
+        python_entrypoints: True
         action_classes:
             install: anvil.components.nova:NovaInstaller
             running: anvil.components.nova:NovaRuntime
-            test: anvil.components.base_testing:PythonTestingComponent
-            coverage: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.nova:NovaUninstaller
         pips:
         # This seems to be a core dependency for a 'cas' tool
@@ -262,68 +220,35 @@ components:
             spicehtml5proxy: openstack-nova-console
             xvpvncproxy: openstack-nova-console
     nova-client:
-        action_classes:
-            install: anvil.components.base_install:PythonInstallComponent
-            running: anvil.components.base_runtime:EmptyRuntime
-            test: anvil.components.base_testing:PythonTestingComponent
-            coverage: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PkgUninstallComponent
+        python_entrypoints: True
     novnc:
-        action_classes:
-            install: anvil.components.base_install:PythonInstallComponent
-            running: anvil.components.base_runtime:EmptyRuntime
-            test: anvil.components.base_testing:EmptyTestingComponent
-            coverage: anvil.components.base_testing:EmptyTestingComponent
-            uninstall: anvil.components.base_install:PkgUninstallComponent
+        python_entrypoints: True
     openstack-client:
+        python_entrypoints: True
         action_classes:
             install: anvil.components.openstack_client:OpenStackClientInstaller
-            running: anvil.components.base_runtime:EmptyRuntime
             test: anvil.components.openstack_client:OpenStackClientTester
             coverage: anvil.components.openstack_client:OpenStackClientTester
-            uninstall: anvil.components.base_install:PkgUninstallComponent
     openvswitch:
         action_classes:
             install: anvil.components.openvswitch:OpenvswitchInstaller
             running: anvil.components.openvswitch:OpenvswitchRuntime
-            test: anvil.components.base_testing:EmptyTestingComponent
             uninstall: anvil.components.openvswitch:OpenvswitchUninstaller
         packages:
         -   name: openvswitch
     oslo-config:
-        action_classes:
-            install: anvil.components.base_install:PythonInstallComponent
-            running: anvil.components.base_runtime:EmptyRuntime
-            test: anvil.components.base_testing:PythonTestingComponent
-            coverage: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PkgUninstallComponent
+        python_entrypoints: True
     oslo-incubator:
-        action_classes:
-            install: anvil.components.base_install:PythonInstallComponent
-            running: anvil.components.base_runtime:EmptyRuntime
-            test: anvil.components.base_testing:PythonTestingComponent
-            coverage: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PkgUninstallComponent
+        python_entrypoints: True
     pycadf:
-        action_classes:
-            install: anvil.components.base_install:PythonInstallComponent
-            running: anvil.components.base_runtime:EmptyRuntime
-            test: anvil.components.base_testing:PythonTestingComponent
-            coverage: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PkgUninstallComponent
+        python_entrypoints: True
     oslo-messaging:
-        action_classes:
-            install: anvil.components.base_install:PythonInstallComponent
-            running: anvil.components.base_runtime:EmptyRuntime
-            test: anvil.components.base_testing:PythonTestingComponent
-            coverage: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PkgUninstallComponent
+        python_entrypoints: True
     neutron:
+        python_entrypoints: True
         action_classes:
             install: anvil.components.neutron:NeutronInstaller
             running: anvil.components.neutron:NeutronRuntime
-            test: anvil.components.base_testing:PythonTestingComponent
-            coverage: anvil.components.base_testing:PythonTestingComponent
             uninstall: anvil.components.neutron:NeutronUninstaller
         daemon_to_package:
             dhcp-agent: openstack-neutron
@@ -337,7 +262,6 @@ components:
     qpid:
         action_classes:
           install: anvil.components.qpid:QpidInstaller
-          test: anvil.components.base_testing:EmptyTestingComponent
           uninstall: anvil.components.qpid:QpidUninstaller
           running: anvil.components.qpid:QpidRuntime
         packages:
@@ -361,8 +285,6 @@ components:
         action_classes:
             install: anvil.components.rabbit:RabbitInstaller
             running: anvil.distros.rhel:RabbitRuntime
-            test: anvil.components.base_testing:EmptyTestingComponent
-            coverage: anvil.components.base_testing:EmptyTestingComponent
             uninstall: anvil.components.rabbit:RabbitUninstaller
         packages:
         -   name: rabbitmq-server
@@ -380,50 +302,28 @@ components:
                 - 'off'
                 ignore_failure: true
     swift-client:
-        action_classes:
-            install: anvil.components.base_install:PythonInstallComponent
-            running: anvil.components.base_runtime:EmptyRuntime
-            test: anvil.components.base_testing:PythonTestingComponent
-            coverage: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PkgUninstallComponent
+        python_entrypoints: True
     trove:
-        action_classes:
-            install: anvil.components.base_install:PythonInstallComponent
-            running: anvil.components.base_runtime:EmptyRuntime
-            test: anvil.components.base_testing:PythonTestingComponent
-            coverage: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PkgUninstallComponent
+        python_entrypoints: True
     trove-client:
-        action_classes:
-            install: anvil.components.base_install:PythonInstallComponent
-            running: anvil.components.base_runtime:EmptyRuntime
-            test: anvil.components.base_testing:PythonTestingComponent
-            coverage: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PkgUninstallComponent
+        python_entrypoints: True
     heat:
+        python_entrypoints: True
         action_classes:
             install: anvil.components.heat:HeatInstaller
-            running: anvil.components.base_runtime:EmptyRuntime
-            test: anvil.components.base_testing:EmptyTestingComponent
-            uninstall: anvil.components.base_install:PkgUninstallComponent
         daemon_to_package:
             api: openstack-heat-api
             api-cfn: openstack-heat-api-cfn
             api-cloudwatch: openstack-heat-api-cloudwatch
             engine: openstack-heat-engine
     global-requirements:
+        python_entrypoints: True
         action_classes:
             install: anvil.components.global_requirements:GlobalRequirements
-            running: anvil.components.base_runtime:EmptyRuntime
-            test: anvil.components.base_testing:PythonTestingComponent
-            coverage: anvil.components.base_testing:PythonTestingComponent
-            uninstall: anvil.components.base_install:PkgUninstallComponent
     ceilometer:
+        python_entrypoints: True
         action_classes:
             install: anvil.components.ceilometer:CeilometerInstaller
-            running: anvil.components.base_runtime:EmptyRuntime
-            test: anvil.components.base_testing:EmptyTestingComponent
-            uninstall: anvil.components.base_install:PkgUninstallComponent
         daemon_to_package:
             api: openstack-ceilometer-api
             central: openstack-ceilometer-central

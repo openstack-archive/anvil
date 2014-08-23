@@ -23,6 +23,8 @@ import platform
 import re
 import shlex
 
+import six
+
 from anvil import exceptions as excp
 from anvil import importer
 from anvil import log as logging
@@ -106,19 +108,30 @@ class Distro(object):
         """Return a dependency handler that will work for this distro."""
         return importer.import_entry_point(self._dependency_handler["name"])
 
-    def extract_component(self, name, action):
+    def extract_component(self, name, action, default_entry_point_creator=None):
         """Return the class + component info to use for doing the action w/the component."""
         try:
             # Use a copy instead of the original since we will be
             # modifying this dictionary which may not be wanted for future
             # usages of this dictionary (so keep the original clean)...
             component_info = copy.deepcopy(self._components[name])
-            action_classes = component_info.pop('action_classes')
+        except KeyError:
+            component_info = {}
+        action_classes = component_info.pop('action_classes', {})
+        if default_entry_point_creator is not None:
+            default_action_classes = default_entry_point_creator(name,
+                                                                 copy.deepcopy(component_info))
+            if default_action_classes:
+                for (an_action, entry_point) in six.iteritems(default_action_classes):
+                    if an_action not in action_classes:
+                        action_classes[an_action] = entry_point
+        try:
             entry_point = action_classes.pop(action)
+        except KeyError:
+            raise RuntimeError('No entrypoint configured/generated for'
+                               ' %r %r for distribution %r' % (action, name, self.name))
+        else:
             return Component(entry_point, component_info, action_classes)
-        except (KeyError, ValueError):
-            raise RuntimeError('No class configured to %r %r on %r' %
-                               (action, name, self.name))
 
 
 def _match_distros(distros):

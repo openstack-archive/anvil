@@ -31,6 +31,19 @@ from anvil import utils
 from anvil.utils import OrderedDict
 
 LOG = logging.getLogger(__name__)
+BASE_ENTRYPOINTS = {
+    'coverage': 'anvil.components.base_testing:EmptyTestingComponent',
+    'install': 'anvil.components.pkglist:Installer',
+    'running': 'anvil.components.base_runtime:EmptyRuntime',
+    'test': 'anvil.components.base_testing:EmptyTestingComponent',
+    'uninstall': 'anvil.components.base_install:PkgUninstallComponent',
+}
+BASE_PYTHON_ENTRYPOINTS = dict(BASE_ENTRYPOINTS)
+BASE_PYTHON_ENTRYPOINTS.update({
+    'coverage': 'anvil.components.base_testing:PythonTestingComponent',
+    'install': 'anvil.components.base_install:PythonInstallComponent',
+    'test': 'anvil.components.base_testing:PythonTestingComponent',
+})
 
 
 class PhaseFunctors(object):
@@ -111,6 +124,11 @@ class Action(object):
         """
         raise NotImplementedError()
 
+    def _make_default_entry_points(self, component_name, component_options):
+        if component_options.get('python_entrypoints'):
+            return BASE_PYTHON_ENTRYPOINTS.copy()
+        return BASE_ENTRYPOINTS.copy()
+
     def _order_components(self, components):
         """Returns the components in the order they should be processed.
         """
@@ -158,7 +176,8 @@ class Action(object):
         # right set of siblings....
         sibling_instances = {}
         for c in wanted_components:
-            d_component = self.distro.extract_component(c, self.lookup_name)
+            d_component = self.distro.extract_component(
+                c, self.lookup_name, default_entry_point_creator=self._make_default_entry_points)
             LOG.debug("Constructing component %r (%s)", c, d_component.entry_point)
             d_subsystems = d_component.options.pop('subsystems', {})
             sibling_params = {}
