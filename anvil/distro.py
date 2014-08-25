@@ -18,11 +18,11 @@
 import collections
 import copy
 import glob
+import os
 import platform
 import re
 import shlex
 
-from anvil import colorizer
 from anvil import exceptions as excp
 from anvil import importer
 from anvil import log as logging
@@ -121,19 +121,16 @@ class Distro(object):
                                (action, name, self.name))
 
 
-def _match_distro(distros):
+def _match_distros(distros):
     plt = platform.platform()
-    distro_matched = None
+    matches = []
     for d in distros:
         if d.supports_platform(plt):
-            distro_matched = d
-            break
-    if not distro_matched:
+            matches.append(d)
+    if not matches:
         raise excp.ConfigException('No distro matched for platform %r' % plt)
     else:
-        LOG.info('Matched distro %s for platform %s',
-                 colorizer.quote(distro_matched.name), colorizer.quote(plt))
-        return distro_matched
+        return matches
 
 
 def load(path):
@@ -147,5 +144,9 @@ def load(path):
             cls_kvs = utils.load_yaml(fn)
         except Exception as err:
             LOG.warning('Could not load distro definition from %r: %s', fn, err)
-        distro_possibles.append(Distro(**cls_kvs))
-    return _match_distro(distro_possibles)
+        else:
+            if 'name' not in cls_kvs:
+                name, _ext = os.path.splitext(sh.basename(fn))
+                cls_kvs['name'] = name
+            distro_possibles.append(Distro(**cls_kvs))
+    return _match_distros(distro_possibles)
