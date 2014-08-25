@@ -3,5 +3,7 @@ components:
 - general
 - global-requirements
 supports:
-- redhat
+- rhel
+- fedora
+- centos
 ...

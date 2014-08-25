@@ -18,6 +18,7 @@
 import collections
 import copy
 import glob
+import os
 import platform
 import re
 import shlex
@@ -147,5 +148,9 @@ def load(path):
             cls_kvs = utils.load_yaml(fn)
         except Exception as err:
             LOG.warning('Could not load distro definition from %r: %s', fn, err)
-        distro_possibles.append(Distro(**cls_kvs))
+        else:
+            if 'name' not in cls_kvs:
+                name, _ext = os.path.splitext(sh.basename(fn))
+                cls_kvs['name'] = name
+            distro_possibles.append(Distro(**cls_kvs))
     return _match_distro(distro_possibles)
