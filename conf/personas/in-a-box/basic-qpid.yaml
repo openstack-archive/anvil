@@ -62,4 +62,7 @@ no-origin:
 - qpid
 supports:
 - redhat
+- rhel
+- fedora
+- centos
 ...

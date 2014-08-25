@@ -4,4 +4,7 @@ components:
 - global-requirements
 supports:
 - redhat
+- rhel
+- fedora
+- centos
 ...

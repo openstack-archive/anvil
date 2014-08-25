@@ -101,4 +101,7 @@ no-origin:
 - openvswitch
 supports:
 - redhat
+- rhel
+- fedora
+- centos
 ...
