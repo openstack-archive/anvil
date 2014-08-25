@@ -86,5 +86,7 @@ no-origin:
 - rabbit-mq
 - openvswitch
 supports:
-- redhat
+- rhel
+- fedora
+- centos
 ...

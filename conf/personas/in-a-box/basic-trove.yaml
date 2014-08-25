@@ -63,5 +63,7 @@ no-origin:
 - db
 - rabbit-mq
 supports:
-- redhat
+- rhel
+- fedora
+- centos
 ...
