@@ -470,7 +470,7 @@ Group:         Applications/System
 
 Requires:      openstack-neutron = %{epoch}:%{version}-%{release}
 Provides:      openstack-neutron-nicira = %{epoch}:%{version}-%{release}
-Obsoletes:     openstack-neutron-nicera < %{epoch}:%{version}-%{release}
+Obsoletes:     openstack-neutron-nicira < %{epoch}:%{version}-%{release}
 
 %description -n openstack-neutron-vmware
 Neutron provides an API to dynamically request and configure virtual
