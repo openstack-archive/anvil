@@ -35,17 +35,24 @@ BuildRoot:        %{_tmppath}/%{name}-%{version}-%{release}
 
 BuildArch:        noarch
 BuildRequires:    intltool
+
+#Rhel6 requires
+%if ! (0%{?fedora} < 12 || 0%{?rhel} < 6)
 BuildRequires:    python-sphinx10
+# These are required to build due to the requirements check added
+BuildRequires:    python-sqlalchemy0.7
+%endif
+
+#rhel7 requires
+%if ! (0%{?fedora} > 12 || 0%{?rhel} > 6)
+BuildRequires:    python-sqlalchemy
+BuildRequires:    python-webob1.2
+%endif
+
 BuildRequires:    python-setuptools
 BuildRequires:    python-pbr
 BuildRequires:    python-d2to1
 BuildRequires:    python2-devel
-
-BuildRequires:    openstack-utils
-
-# These are required to build due to the requirements check added
-BuildRequires:    python-sqlalchemy0.7
-BuildRequires:    python-webob1.2
 
 %description
 OpenStack ceilometer provides services to measure and
@@ -70,7 +77,6 @@ Summary:          Components common to all OpenStack ceilometer services
 Group:            Applications/System
 
 Requires:         python-ceilometer
-Requires:         openstack-utils
 
 Requires(pre):    shadow-utils
 
@@ -187,7 +193,14 @@ Group:            Documentation
 
 # Required to build module documents
 BuildRequires:    python-eventlet
+%if ! (0%{?fedora} <= 12 || 0%{?rhel} <= 6)
 BuildRequires:    python-sqlalchemy0.7
+%endif
+
+%if ! (0%{?fedora} > 12 || 0%{?rhel} > 6)
+BuildRequires:    python-sqlalchemy
+%endif
+
 BuildRequires:    python-webob
 # while not strictly required, quiets the build down when building docs.
 BuildRequires:    python-migrate
@@ -344,4 +357,3 @@ exit 0
 #end if
 
 %changelog
-
