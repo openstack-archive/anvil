@@ -23,6 +23,8 @@ import sys
 import time
 import traceback as tb
 
+import six
+
 sys.path.insert(0, os.path.join(os.path.abspath(os.pardir)))
 sys.path.insert(0, os.path.abspath(os.getcwd()))
 
@@ -40,6 +42,8 @@ from anvil import utils
 
 
 LOG = logging.getLogger()
+SETTINGS_FILE = "/etc/anvil/settings.yaml"
+ANVIL_DIRS = tuple(["/etc/anvil/", '/usr/share/anvil/'])
 
 
 def run(args):
@@ -129,10 +133,7 @@ def run(args):
 def load_previous_settings():
     settings_prev = None
     try:
-        # Don't use sh here so that we always
-        # read this (even if dry-run)
-        with open("/etc/anvil/settings.yaml", 'r') as fh:
-            settings_prev = utils.load_yaml_text(fh.read())
+        settings_prev = utils.load_yaml(SETTINGS_FILE)
     except Exception:
         # Errors could be expected on format problems
         # or on the file not being readable....
@@ -141,7 +142,7 @@ def load_previous_settings():
 
 
 def ensure_anvil_dirs(root_dir):
-    wanted_dirs = ["/etc/anvil/", '/usr/share/anvil/']
+    wanted_dirs = list(ANVIL_DIRS)
     if root_dir and root_dir not in wanted_dirs:
         wanted_dirs.append(root_dir)
     for d in wanted_dirs:
@@ -158,13 +159,14 @@ def store_current_settings(c_settings):
         for k in ['action', 'verbose']:
             if k in c_settings:
                 to_save.pop(k, None)
-        with open("/etc/anvil/settings.yaml", 'w') as fh:
-            fh.write("# Anvil last used settings\n")
-            fh.write(utils.add_header("/etc/anvil/settings.yaml",
-                     utils.prettify_yaml(to_save)))
-            fh.flush()
+        buf = six.StringIO()
+        buf.write("# Anvil last used settings\n")
+        buf.write(utils.add_header(SETTINGS_FILE,
+                                   utils.prettify_yaml(to_save),
+                                   adjusted=sh.isfile(SETTINGS_FILE)))
+        sh.write_file(SETTINGS_FILE, buf.getvalue())
     except Exception as e:
-        LOG.debug("Failed writing to %s due to %s", "/etc/anvil/settings.yaml", e)
+        LOG.debug("Failed writing to %s due to %s", SETTINGS_FILE, e)
 
 
 def ensure_perms():
