@@ -33,7 +33,7 @@ class Persona(object):
         self.component_options = kargs.get('options') or {}
         self.no_origins = kargs.get('no-origin') or []
 
-    def verify(self, distro, origins_fn):
+    def match(self, distros, origins_fn):
         # Filter out components that are disabled in origins file
         origins = utils.load_yaml(origins_fn)
         for c in self.wanted_components:
@@ -60,13 +60,26 @@ class Persona(object):
         self.wanted_components = [c for c in self.wanted_components
                                   if c not in disabled_components]
 
-        # Some sanity checks against the given distro/persona
-        d_name = distro.name
-        if d_name not in self.distro_support:
-            raise RuntimeError("Persona does not support the loaded distro")
-        for c in self.wanted_components:
-            if not distro.known_component(c):
-                raise RuntimeError("Persona provided component %s but its not supported by the loaded distro" % (c))
+        # Pick which of potentially many distros will work...
+        distro_names = set()
+        selected_distro = None
+        for distro in distros:
+            distro_names.add(distro.name)
+            if distro.name not in self.distro_support:
+                continue
+            will_work = True
+            for component in self.wanted_components:
+                if not distro.known_component(component):
+                    will_work = False
+                    break
+            if will_work:
+                selected_distro = distro
+                break
+        if selected_distro is None:
+            raise RuntimeError("Persona does not support any of the loaded"
+                               " distros: %s" % list(distro_names))
+        else:
+            return selected_distro
 
 
 def load(fn):

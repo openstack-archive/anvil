@@ -95,15 +95,18 @@ def run(args):
     # Ensure the anvil dirs are there if others are about to use it...
     ensure_anvil_dirs(root_dir)
 
-    # Load the distro
-    dist = distro.load(settings.DISTRO_DIR)
+    # Load the distro/s
+    possible_distros = distro.load(settings.DISTRO_DIR)
 
-    # Load + verify the person
+    # Load + match the persona to the possible distros...
     try:
         persona_obj = persona.load(persona_fn)
-        persona_obj.verify(dist, args['origins_fn'])
     except Exception as e:
         raise excp.OptionException("Error loading persona file: %s due to %s" % (persona_fn, e))
+    else:
+        dist = persona_obj.match(possible_distros, args['origins_fn'])
+        LOG.info('Persona selected distro: %s from %s possible distros',
+                 colorizer.quote(dist.name), len(possible_distros))
 
     # Get the object we will be running with...
     runner = runner_cls(distro=dist,
