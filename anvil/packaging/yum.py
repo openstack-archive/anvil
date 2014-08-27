@@ -28,6 +28,7 @@ from anvil import colorizer
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil.packaging import base
+from anvil.packaging.helpers import envra_helper
 from anvil.packaging.helpers import pip_helper
 from anvil.packaging.helpers import py2rpm_helper
 from anvil.packaging.helpers import yum_helper
@@ -90,6 +91,7 @@ class YumDependencyHandler(base.DependencyHandler):
         self.specprint_executable = sh.which('specprint', ["tools/"])
         # We inspect yum for packages, this helper allows us to do this.
         self.helper = yum_helper.Helper(self.log_dir, self.REPOS)
+        self.envra_helper = envra_helper.Helper()
         # See if we are requested to run at a higher make parallelism level
         try:
             self.jobs = max(self.JOBS, int(self.opts.get('jobs')))
@@ -299,8 +301,10 @@ class YumDependencyHandler(base.DependencyHandler):
             for repo_name in self.REPOS:
                 repo_dir = sh.joinpths(self.anvil_repo_dir, self.SRC_REPOS[repo_name])
                 matched_paths = []
-                for path in list_src_rpms(repo_dir):
-                    package_name = sh.basename(path)[0:-len('.src.rpm')]
+                paths = list_src_rpms(repo_dir)
+                envra_details = self.envra_helper.explode(*paths)
+                for (path, envra_detail) in zip(paths, envra_details):
+                    package_name = envra_detail.get('name')
                     if package_name in build_requirements:
                         matched_paths.append(path)
                         build_requirements.discard(package_name)

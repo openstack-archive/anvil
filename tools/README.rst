@@ -109,6 +109,16 @@ it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
 
+explode_envra
+-------------
+
+`specprint` uses the rpm API to provide a interface to printing the details
+of an rpm filename in a easy to parse format (aka the envra format). It writes results of its
+work to standard output in JSON (which is much easier to use from other programs)::
+
+    $ ./tools/explode_envra 'gtk3-3.10.9-1.fc20.x86_64.rpm' 'libxslt-1.1.28-5.fc20.x86_64.src.rpm'
+    {"release": "1.fc20", "epoch": "", "version": "3.10.9", "arch": "x86_64", "name": "gtk3"}
+    {"release": "5.fc20.x86_64", "epoch": "", "version": "1.1.28", "arch": "src", "name": "libxslt"}
 
 specprint
 ---------
