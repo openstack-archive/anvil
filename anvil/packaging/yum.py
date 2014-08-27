@@ -612,11 +612,13 @@ class YumDependencyHandler(base.DependencyHandler):
         cmdline = [self.specprint_executable]
         cmdline.extend(['-f', spec_filename])
         spec_details = json.loads(sh.execute(cmdline)[0])
-        try:
-            rpm_requires = spec_details['headers']['requires']
-        except (KeyError, TypeError):
-            pass
-        else:
+        rpm_requires = []
+        for k in ('requires', 'requirenevrs'):
+            try:
+                rpm_requires.extend(spec_details['headers'][k])
+            except (KeyError, TypeError):
+                pass
+        if rpm_requires:
             buff = six.StringIO()
             buff.write("# %s\n" % instance.name)
             if rpm_requires:
