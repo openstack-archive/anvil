@@ -32,12 +32,16 @@ Provides:   django-horizon = %{epoch}:%{version}-%{release}
 BuildRequires: python-devel
 BuildRequires: python-setuptools
 
-# $newer_than_eq('2014.1')
+#if $newer_than_eq('2014.1')
 BuildRequires: python-oslo-config
 BuildRequires: python-django-compressor
 BuildRequires: python-eventlet
 BuildRequires: python-iso8601
-# end if
+%if ! (0%{?fedora} > 12 || 0%{?rhel} > 6)
+BuildRequires: python-requests
+BuildRequires: python-netaddr
+%endif
+#end if
 
 #for $i in $requires
 Requires:         ${i}
