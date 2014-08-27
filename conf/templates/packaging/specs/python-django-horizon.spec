@@ -37,6 +37,10 @@ BuildRequires: python-oslo-config
 BuildRequires: python-django-compressor
 BuildRequires: python-eventlet
 BuildRequires: python-iso8601
+%if ! (0%{?fedora} > 12 || 0%{?rhel} > 6)
+BuildRequires: python-requests
+BuildRequires: python-netaddr
+%endif
 #end if
 
 #for $i in $requires
