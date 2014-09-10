@@ -11,6 +11,7 @@ VERBOSE="${VERBOSE:-0}"
 YUM_OPTS="--assumeyes --nogpgcheck"
 YUM_CONFIG_MANAGER_OPTS=""
 CURL_OPTS=""
+USE_SCL="${USE_SCL:-0}"  # Eventually this flag might branch for py27 and py33.
 
 # Give access to the system packages so that when clients get installed
 # after installation that the virtualenv can access them to do things like
@@ -18,8 +19,23 @@ CURL_OPTS=""
 VENV_OPTS="--system-site-packages"
 VENV_DIR="$PWD/.venv"
 VENV_ACTIVATE="$VENV_DIR/bin/activate"
-PIP="$VENV_DIR/bin/pip"
 YYOOM_CMD="$PWD/tools/yyoom"
+
+# Set the command used to create virtualenvs and invoke pip.
+VIRTUALENV_CMD="virtualenv"
+PIP_CMD="source $VENV_ACTIVATE && pip"
+PYTHON_CMD="source $VENV_ACTIVATE && python"
+if [ "$USE_SCL" != "0" ] ; then
+    # Note: The use of scl introduces some complications. The chain of
+    # environment variables set by the scl environment must be inherited
+    # by the virtualenv.  In addition, the use of && to chain commands
+    # requires that we pass this string to eval so that command splitting
+    # can happen after parameter expansion.
+    SCL_ENABLE="source /opt/rh/python27/enable"
+    VIRTUALENV_CMD="$SCL_ENABLE && $VIRTUALENV_CMD"
+    PIP_CMD="$SCL_ENABLE && $PIP_CMD"
+    PYTHON_CMD="$SCL_ENABLE && $PYTHON_CMD"
+fi
 
 if [ "$VERBOSE" == "0" ]; then
     YUM_OPTS="$YUM_OPTS -q"
@@ -104,6 +120,76 @@ clean_anvil_deps()
     yum-config-manager $YUM_CONFIG_MANAGER_OPTS --disable anvil-deps
 }
 
+bootstrap_scl()
+{
+    # Read scl variables.
+    source "tools/bootstrap/SCLRepo"
+    # Create the repo configuration file if it doesn't already exist.
+    if [ ! -s $SCL_REPO_FN ] ; then
+        touch $SCL_REPO_FN
+        if [ $? -ne 0 ] ; then
+            echo "Unable to create $SCL_REPO_FN"
+            return 1
+        fi
+        echo "$SCL_REPO_FN_DATA" > $SCL_REPO_FN
+        if [ ! -s $SCL_REPO_FN ] ; then
+            echo "Unable to write to $SCL_REPO_FN"
+            return 1
+        fi
+        chmod 444 $SCL_REPO_FN
+    fi
+    # Install the repo gpg key if it doesn't already exist.
+    if [ ! -s $SCL_REPO_GPG_KEY_FN ] ; then
+        wget $SCL_REPO_GPG_KEY_URL --output-document $SCL_REPO_GPG_KEY_FN
+        if [ $? -ne 0 ] ; then
+            echo "Fail from $SCL_REPO_GPG_KEY_URL to $SCL_REPO_GPG_KEY_FN"
+            return 1
+        fi
+    fi
+    # Install and remove scl specific packages.
+    # I wish this code were better, but here is why it isn't:
+    # bootstrap_rpm_packages uses global variables to obtain lists of
+    # packages to install and remove.  Save the state of those lists to
+    # temporary variables in order to be able to reuse the code in
+    # bootstrap_rpm_packages when bootstrapping scl.
+    OLD_REQUIRES="$REQUIRES"
+    REQUIRES="$SCL_REQUIRES_PYTHON27"
+    OLD_CONFLICTS="$CONFLICTS_PYTHON27"
+    CONFLICTS="$SCL_CONFLICTS"
+    bootstrap_rpm_packages
+    if [ $? -ne 0 ] ; then
+        echo "Unable to bootstrap scl required packages"
+        return 1
+    fi
+    REQUIRES="$OLD_REQUIRES"
+    CONFLICTS="$OLD_CONFLICTS"
+    # Build and install pbr rpm for bootstrap.
+    # Requires scl to be installed on system so can't be run until after
+    # system is bootstrapped with scl package requirements during previous step.
+    CLEANUP_SCL_PBR_DIR=0
+    if [ ! -d $SCL_PBR_DIR ] ; then
+        mkdir $SCL_PBR_DIR
+        CLEANUP_SCL_PBR_DIR=1
+    fi
+    BUILD_SCL_PBR_RPM="tools/build-pbr-for-scl-python27.py"
+    ($SCL_ENABLE && $BUILD_SCL_PBR_RPM --pbr-url $SCL_PBR_URL --rpm-fn $SCL_PBR_RPM --pip-dirn $SCL_PBR_DIR)
+    if [ $? -ne 0 ] ; then
+        echo "Fail to build pbr rpm for bootstrap."
+        return 1
+    fi
+    yum install $YUM_OPTS $SCL_PBR_RPM 
+    if [ $? -ne 0 ] ; then
+        echo "Fail to install pbr rpm for bootstrap."
+        return 1
+    fi
+    if [ -d $SCL_PBR_DIR ] ; then
+        if [ $CLEANUP_SCL_PBR_DIR -ne 0 ] ; then
+            rm -rf $SCL_PBR_DIR
+        fi
+    fi
+    return 0
+}
+
 clean_pip()
 {
     # See: https://github.com/pypa/pip/issues/982
@@ -166,8 +252,9 @@ unsudo()
 bootstrap_virtualenv()
 {
     # Creates a virtualenv and then installs anvils requirements in it.
+    # Use subshells to avoid polluting environment vars in calling process.
     echo "Setting up virtualenv in $VENV_DIR"
-    virtualenv $VENV_OPTS "$VENV_DIR" || return 1
+    eval "($VIRTUALENV_CMD $VENV_OPTS $VENV_DIR || return 1)"
     unsudo $VENV_DIR
     local deps=$(cat requirements.txt | grep -v '^$\|^\s*\#' | sort)
     if [ -n "$deps" ]; then
@@ -175,9 +262,9 @@ bootstrap_virtualenv()
         dump_list $deps
         echo "Please wait..."
         if [ "$VERBOSE" == "0" ]; then
-            $PIP install -r requirements.txt > /dev/null 2>&1
+            eval "($PIP_CMD install -r requirements.txt)" > /dev/null 2>&1
         else
-            $PIP install -v -r requirements.txt
+            eval "($PIP_CMD install -v -r requirements.txt)"
         fi
         if [ "$?" != "0" ]; then
             return 1
@@ -198,9 +285,9 @@ bootstrap_selinux()
 
 run_smithy()
 {
-    source "$VENV_ACTIVATE"
-    local python=$(which python)
-    exec "$python" anvil $ARGS
+    # We used to exec to python, but prolly not good with eval.
+    eval "($PYTHON_CMD anvil $ARGS)"
+    exit $?
 }
 
 puke()
@@ -218,7 +305,7 @@ needs_bootstrap()
     if [ "$BOOTSTRAP" == "true" ]; then
         return 0
     fi
-    if [ ! -d "$VENV_DIR" -o ! -f "$VENV_ACTIVATE" -o ! -f "$PIP" ]; then
+    if [ ! -d "$VENV_DIR" -o ! -f "$VENV_ACTIVATE" -o ! -f "$VENV_DIR/bin/pip" ]; then
         return 0
     fi
     return 1
@@ -242,12 +329,17 @@ cache_and_install_rpm_url()
     if rpm_is_installed "$rpm"; then
         return 0
     fi
+    echo $rpm "not already installed"
     if [ ! -f "$cachedir/$rpm" ]; then
         echo -e "Downloading ${rpm} to ${cachedir}"
         curl $CURL_OPTS "$url" -o "$cachedir/$rpm" || return 1
     fi
     echo -e "Installing $cachedir/$rpm"
-    yum_install "$cachedir/$rpm"
+    if [ $2 = "True" ]; then
+        rpm -i "$cachedir/$rpm" --nodeps;
+    else
+        yum_install "$cachedir/$rpm";
+    fi
     return $?
 }
 
@@ -351,6 +443,11 @@ if [ ! -f "$BSCONF_FILE" ]; then
     BSCONF_FILE="$BSCONF_DIR/Unknown"
     SHORTNAME="$OSDIST"
     source "$BSCONF_FILE"
+fi
+
+if [ "$USE_SCL" != "0" ] ; then
+    echo "Prepending scl to bootstrap: $STEPS"
+    STEPS="scl $STEPS"
 fi
 
 echo "Bootstrapping $SHORTNAME $RELEASE"

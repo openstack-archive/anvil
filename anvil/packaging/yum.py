@@ -269,6 +269,8 @@ class YumDependencyHandler(base.DependencyHandler):
             rpmbuild_flags = "--rebuild"
             if self.opts.get("usr_only", False):
                 rpmbuild_flags += " --define 'usr_only 1'"
+            if self.opts.get('build_for_scl_python27', False):
+                rpmbuild_flags += " --define 'scl python27' "
             with sh.remove_before(self.rpmbuild_dir):
                 self._create_rpmbuild_subdirs()
                 try:
@@ -573,6 +575,11 @@ class YumDependencyHandler(base.DependencyHandler):
         spec_filename = sh.joinpths(self.rpmbuild_dir, "SPECS", "%s.spec" % rpm_name)
         sh.write_file(spec_filename, utils.expand_template(content, params),
                       tracewriter=self.tracewriter)
+        if self.opts.get('build_for_scl_python27', False):
+            # When building for scl, make specfile "scl ready" using spec2scl.
+            # spec2scl is installed by pip as part of anvil requirements.txt.
+            cmd = ['spec2scl', '-m', '-i', spec_filename]
+            sh.execute(cmd=cmd, shell=False, stdin_fh=None)
         return spec_filename
 
     def _copy_startup_scripts(self, instance, spec_details):
@@ -631,6 +638,7 @@ class YumDependencyHandler(base.DependencyHandler):
                 for req in rpm_requires:
                     buff.write("%s\n" % req)
                 buff.write("\n")
+            # TODO(mmorais): confirm file properly picks up scl package names
             sh.append_file(self.rpm_build_requires_filename, buff.getvalue())
         self._copy_startup_scripts(instance, spec_details)
         cmdline = [
