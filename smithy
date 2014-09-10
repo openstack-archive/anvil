@@ -72,6 +72,7 @@ yum_remove()
 
 bootstrap_rpm_packages()
 {
+    # TODO(mmorais): for scl builds need to yum install python27-build
     if [ -n "$REQUIRES" ]; then
         echo -e "Installing system packages:"
         dump_list $REQUIRES

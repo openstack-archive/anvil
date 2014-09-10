@@ -141,6 +141,10 @@ def parse(previous_settings=None):
                       dest="store_passwords",
                       default=True,
                       help="do not save the users passwords into the users keyring")
+    parser.add_option("--build-for-scl-python27",
+                      action="store_true",
+                      default=False,
+                      help="create rpms which depend on python 2.7 from SCL")
 
     # Install/start/stop/uninstall specific options
     base_group = OptionGroup(parser, "Action specific options")
@@ -233,4 +237,5 @@ def parse(previous_settings=None):
     values['keyring_path'] = options.keyring_path
     values['keyring_encrypted'] = options.keyring_encrypted
     values['ignore_test_failures'] = options.ignore_test_failures
+    values['build_for_scl_python27'] = options.build_for_scl_python27
     return values

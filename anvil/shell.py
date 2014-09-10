@@ -78,6 +78,7 @@ def execute(cmd,
             cwd=None,
             shell=False,
             env_overrides=None,
+            stdin_fh=subprocess.PIPE,
             stdout_fh=subprocess.PIPE,
             stderr_fh=subprocess.PIPE):
     """Helper method to execute a command through subprocess.
@@ -92,6 +93,7 @@ def execute(cmd,
     :param shell:           Specifies whether to use the shell as the program
                             to execute.
     :param env_overrides:   Process environment parameters to override.
+    :param stdin_fh:        Stdin file handler.
     :param stdout_fh:       Stdout file handler.
     :param stderr_fh:       Stderr file handler.
     :returns:               A tuple, (stdout, stderr) from the spawned process.
@@ -126,7 +128,7 @@ def execute(cmd,
 
     # Run command process.
     exec_kwargs = {
-        'stdin': subprocess.PIPE,
+        'stdin': stdin_fh,
         'stdout': stdout_fh,
         'stderr': stderr_fh,
         'close_fds': True,
