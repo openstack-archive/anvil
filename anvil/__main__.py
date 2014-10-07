@@ -95,8 +95,13 @@ def run(args):
     # Ensure the anvil dirs are there if others are about to use it...
     ensure_anvil_dirs(root_dir)
 
+    # Collect distro overrides.
+    distro_overrides = dict([(k, args.get(k)) for k in
+                             ['install_helper', 'dependency_handler']
+                             if k in args])
+
     # Load the distro/s
-    possible_distros = distro.load(settings.DISTRO_DIR)
+    possible_distros = distro.load(settings.DISTRO_DIR, **distro_overrides)
 
     # Load + match the persona to the possible distros...
     try:

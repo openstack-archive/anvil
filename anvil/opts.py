@@ -201,6 +201,25 @@ def parse(previous_settings=None):
                            default=False,
                            help=("when packaging only store /usr directory"
                                  " (default: %default)"))
+    build_group.add_option("--no-test-requires",
+                           action="store_true",
+                           dest="no_test_requires",
+                           default=False,
+                           help=("ignore the value of the use_tests_requires "
+                                 "setting for all components in origins file"))
+    build_group.add_option("--is-venv-build",
+                           action="store_true",
+                           dest="is_venv_build",
+                           default=False,
+                           help="build for deploying as virtualenv")
+    build_group.add_option("--venv-deploy-dir",
+                           action="store",
+                           type="string",
+                           dest="venv_deploy_dir",
+                           default=None,
+                           help=("for virtualenv builds, make the virtualenv "
+                                 "relocatable to a directory different from "
+                                 "build directory"))
     parser.add_option_group(build_group)
 
     test_group = OptionGroup(parser, "Test specific options")
@@ -227,6 +246,15 @@ def parse(previous_settings=None):
     values['origins_fn'] = options.origins_fn
     values['verbose'] = options.verbose
     values['usr_only'] = options.usr_only
+    values['no_test_requires'] = options.no_test_requires
+    values['is_venv_build'] = options.is_venv_build
+    values['install_helper'] = (
+        'anvil.packaging.venv:VenvInstallHelper'
+        if options.is_venv_build else None)
+    values['dependency_handler'] = (
+        'anvil.packaging.venv:VenvDependencyHandler'
+        if options.is_venv_build else None)
+    values['venv_deploy_dir'] = options.venv_deploy_dir
     values['prompt_for_passwords'] = options.prompt_for_passwords
     values['show_amount'] = max(0, options.show_amount)
     values['store_passwords'] = options.store_passwords

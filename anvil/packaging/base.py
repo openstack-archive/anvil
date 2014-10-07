@@ -124,8 +124,11 @@ class DependencyHandler(object):
                 req = create_requirement(p['name'], p.get('version'))
                 pips.append(str(req))
             requires_files = list(getattr(instance, 'requires_files', []))
-            if instance.get_bool_option('use_tests_requires', default_value=True):
-                requires_files.extend(getattr(instance, 'test_requires_files', []))
+            if (not self.opts.get('no_test_requires', False) and
+                instance.get_bool_option('use_tests_requires',
+                                         default_value=True)):
+                requires_files.extend(getattr(instance, 'test_requires_files',
+                                              []))
             return (pips, requires_files)
 
         requires_files = []

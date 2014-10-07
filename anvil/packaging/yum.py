@@ -473,8 +473,8 @@ class YumDependencyHandler(base.DependencyHandler):
                 else:
                     yum_provided.append((req, rpm_info))
                     LOG.info(("Dependency %s was downloaded additionally "
-                             "but it can be satisfied by %s from repository "
-                             "%s instead."), colorizer.quote(req),
+                              "but it can be satisfied by %s from repository "
+                              "%s instead."), colorizer.quote(req),
                              colorizer.quote(rpm_name),
                              colorizer.quote(rpm_info['repo']))
             return (filtered_files, yum_provided)
