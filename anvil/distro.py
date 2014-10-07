@@ -45,7 +45,10 @@ class Distro(object):
         self.name = name
         self._platform_pattern = re.compile(platform_pattern, re.IGNORECASE)
         self._install_helper = install_helper
-        self._dependency_handler = dependency_handler
+        if isinstance(dependency_handler, six.string_types):
+            self._dependency_handler = {'name': dependency_handler}
+        else:
+            self._dependency_handler = dependency_handler
         self._commands = commands
         self._components = components
 
@@ -146,7 +149,12 @@ def _match_distros(distros):
         return matches
 
 
-def load(path):
+def load(path, **kwargs):
+    """Load configuration for all distros found in path.
+
+    :param path: path containing distro configuration in yaml format
+    :param kwargs: overrides used to replace configuration read from file
+    """
     distro_possibles = []
     input_files = glob.glob(sh.joinpths(path, '*.yaml'))
     if not input_files:
@@ -155,6 +163,7 @@ def load(path):
         LOG.debug("Attempting to load distro definition from %r", fn)
         try:
             cls_kvs = utils.load_yaml(fn)
+            cls_kvs.update(**kwargs)
         except Exception as err:
             LOG.warning('Could not load distro definition from %r: %s', fn, err)
         else:
