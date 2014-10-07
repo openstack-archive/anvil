@@ -122,6 +122,7 @@ def execute(cmd,
     if env_overrides and len(env_overrides):
         process_env = env.get()
         for k, v in env_overrides.items():
+            LOG.debug("Using environment override '%s' => '%s'", k, v)
             process_env[k] = str(v)
 
     # Run command process.
