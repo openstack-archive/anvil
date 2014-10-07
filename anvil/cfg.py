@@ -14,6 +14,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import jsonpatch
 import re
 
 from anvil import exceptions
@@ -66,7 +67,7 @@ class YamlMergeLoader(object):
                 persona_specific = persona.component_options.get(component, {})
                 self._base_loader.update_cache(conf, persona_specific)
 
-    def load(self, distro, component, persona=None):
+    def load(self, distro, component, persona=None, origins_patch=None):
         # NOTE (vnovikov): applying takes place before loading reference links
         self._apply_persona(component, persona)
 
@@ -75,7 +76,11 @@ class YamlMergeLoader(object):
         origins_opts = {}
         if self._origins_path:
             try:
-                origins_opts = utils.load_yaml(self._origins_path)[component]
+                origins = utils.load_yaml(self._origins_path)
+                if origins_patch:
+                    patch = jsonpatch.JsonPatch(origins_patch)
+                    patch.apply(origins, in_place=True)
+                origins_opts = origins[component]
             except KeyError:
                 pass
         general_component_opts = self._base_loader.load('general')

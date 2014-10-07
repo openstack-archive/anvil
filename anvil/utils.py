@@ -121,8 +121,7 @@ def expand_template(contents, params):
     tpl = Template(source=str(contents),
                    searchList=[params],
                    compilerSettings={
-                       'useErrorCatcher': True,
-                   })
+                       'useErrorCatcher': True})
     return tpl.respond()
 
 

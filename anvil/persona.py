@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import jsonpatch
+
 import six
 
 from anvil import colorizer
@@ -33,9 +35,13 @@ class Persona(object):
         self.component_options = kargs.get('options') or {}
         self.no_origins = kargs.get('no-origin') or []
 
-    def match(self, distros, origins_fn):
+    def match(self, distros, origins_fn, origins_patch=None):
         # Filter out components that are disabled in origins file
         origins = utils.load_yaml(origins_fn)
+        # Apply any user specified patches to origins file
+        if origins_patch:
+            patch = jsonpatch.JsonPatch(origins_patch)
+            patch.apply(origins, in_place=True)
         for c in self.wanted_components:
             if c not in origins:
                 if c in self.no_origins:
