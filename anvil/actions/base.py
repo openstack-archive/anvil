@@ -192,7 +192,9 @@ class Action(object):
             sibling_params['siblings'] = {}  # This gets adjusted during construction
             sibling_params['passwords'] = self.passwords
             sibling_params['distro'] = self.distro
-            sibling_params['options'] = self.config_loader.load(d_component, c)
+            sibling_params['options'] = self.config_loader.load(
+                distro=d_component, component=c,
+                origins_patch=self.cli_opts.get('origins_patch'))
 
             LOG.debug("Constructing %r %s siblings...", c, len(d_component.siblings))
             my_siblings = self._construct_siblings(c, d_component.siblings, sibling_params, sibling_instances)
@@ -201,8 +203,9 @@ class Action(object):
             # siblings get...
             instance_params = dict(sibling_params)
             instance_params['instances'] = instances
-            instance_params['options'] = self.config_loader.load(d_component, c,
-                                                                 persona)
+            instance_params['options'] = self.config_loader.load(
+                distro=d_component, component=c, persona=persona,
+                origins_patch=self.cli_opts.get('origins_patch'))
             instance_params['siblings'] = my_siblings
             instance_params = utils.merge_dicts(instance_params, self.cli_opts, preserve=True)
             instances[c] = importer.construct_entry_point(d_component.entry_point, **instance_params)
