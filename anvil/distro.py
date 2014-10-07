@@ -18,6 +18,7 @@
 import collections
 import copy
 import glob
+import jsonpatch
 import os
 import platform
 import re
@@ -146,8 +147,14 @@ def _match_distros(distros):
         return matches
 
 
-def load(path):
+def load(path, distros_patch=None):
+    """Load configuration for all distros found in path.
+
+    :param path: path containing distro configuration in yaml format
+    :param distros_patch: distros file patch, jsonpath format (rfc6902)
+    """
     distro_possibles = []
+    patch = jsonpatch.JsonPatch(distros_patch) if distros_patch else None
     input_files = glob.glob(sh.joinpths(path, '*.yaml'))
     if not input_files:
         raise excp.ConfigException('Did not find any distro definition files in %r' % path)
@@ -155,6 +162,9 @@ def load(path):
         LOG.debug("Attempting to load distro definition from %r", fn)
         try:
             cls_kvs = utils.load_yaml(fn)
+            # Apply any user specified patches to distros file
+            if patch:
+                patch.apply(cls_kvs, in_place=True)
         except Exception as err:
             LOG.warning('Could not load distro definition from %r: %s', fn, err)
         else:

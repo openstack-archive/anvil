@@ -16,6 +16,7 @@
 
 from StringIO import StringIO
 
+import json
 import multiprocessing
 import textwrap
 
@@ -165,6 +166,20 @@ def parse(previous_settings=None):
                           metavar="FILE",
                           help="yaml file describing where to get openstack sources "
                                "from (default: %default)")
+    base_group.add_option("--origins-patch",
+                          action="store",
+                          type="string",
+                          dest="origins_patch_fn",
+                          default=None,
+                          metavar="FILE",
+                          help="origins file patch, jsonpath format (rfc6902)")
+    base_group.add_option("--distros-patch",
+                          action="store",
+                          type="string",
+                          dest="distros_patch_fn",
+                          default=None,
+                          metavar="FILE",
+                          help="distros file patch, jsonpath format (rfc6902)")
     base_group.add_option("-j", "--jobs",
                           action="store",
                           type="int",
@@ -201,6 +216,14 @@ def parse(previous_settings=None):
                            default=False,
                            help=("when packaging only store /usr directory"
                                  " (default: %default)"))
+    build_group.add_option("--venv-deploy-dir",
+                           action="store",
+                           type="string",
+                           dest="venv_deploy_dir",
+                           default=None,
+                           help=("for virtualenv builds, make the virtualenv "
+                                 "relocatable to a directory different from "
+                                 "build directory"))
     parser.add_option_group(build_group)
 
     test_group = OptionGroup(parser, "Test specific options")
@@ -227,6 +250,13 @@ def parse(previous_settings=None):
     values['origins_fn'] = options.origins_fn
     values['verbose'] = options.verbose
     values['usr_only'] = options.usr_only
+    if options.origins_patch_fn:
+        with open(options.origins_patch_fn) as fp:
+            values['origins_patch'] = json.load(fp)
+    if options.distros_patch_fn:
+        with open(options.distros_patch_fn) as fp:
+            values['distros_patch'] = json.load(fp)
+    values['venv_deploy_dir'] = options.venv_deploy_dir
     values['prompt_for_passwords'] = options.prompt_for_passwords
     values['show_amount'] = max(0, options.show_amount)
     values['store_passwords'] = options.store_passwords
