@@ -113,7 +113,9 @@ Requires:         iscsi-initiator-utils
 Requires:         iptables iptables-ipv6
 Requires:         vconfig
 # tunctl is needed where `ip tuntap` is not available
+%if ! (0%{?fedora} > 12 || 0%{?rhel} > 6)
 Requires:         tunctl
+%endif
 Requires:         libguestfs-mount >= 1.7.17
 # The fuse dependency should be added to libguestfs-mount
 Requires:         fuse
@@ -145,7 +147,9 @@ Requires:         bridge-utils
 Requires:         dnsmasq-utils
 Requires:         dnsmasq
 # tunctl is needed where `ip tuntap` is not available
+%if ! (0%{?fedora} > 12 || 0%{?rhel} > 6)
 Requires:         tunctl
+%endif
 
 %description network
 OpenStack Compute (codename Nova) is open source software designed to
