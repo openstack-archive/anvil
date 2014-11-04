@@ -106,7 +106,9 @@ Group:           System Environment/Base
 Requires:         ${i}
 #end for
 
+%if ! 0%{?usr_only}
 Requires(pre):   shadow-utils
+%endif
 
 %description common
 Components common to all OpenStack Heat services
@@ -117,6 +119,7 @@ Components common to all OpenStack Heat services
 %{_bindir}/heat-keystone-setup
 %{_bindir}/heat-manage
 %{python_sitelib}/heat*
+%if ! 0%{?usr_only}
 %dir %attr(0755,heat,root) %{_localstatedir}/log/heat
 %dir %attr(0755,heat,root) %{_sharedstatedir}/heat
 %dir %attr(0755,heat,root) %{_sysconfdir}/heat
@@ -125,7 +128,9 @@ Components common to all OpenStack Heat services
 %config(noreplace) %attr(0640, root, heat) %{_sysconfdir}/heat/api-paste.ini
 %config(noreplace) %attr(0640, root, heat) %{_sysconfdir}/heat/policy.json
 %config(noreplace) %{_sysconfdir}/logrotate.d/heat
+%endif
 
+%if ! 0%{?usr_only}
 %pre common
 # 187:187 for heat - rhbz#845078
 getent group heat >/dev/null || groupadd -r --gid 187 heat
@@ -133,6 +138,7 @@ getent passwd heat  >/dev/null || \
 useradd --uid 187 -r -g heat -d %{_sharedstatedir}/heat -s /sbin/nologin \
 -c "OpenStack Heat Daemons" heat
 exit 0
+%endif
 
 %package engine
 Summary:         The Heat engine
@@ -146,7 +152,9 @@ OpenStack API for starting CloudFormation templates on OpenStack
 %files engine
 %doc README.rst LICENSE
 %{_bindir}/heat-engine
+%if ! 0%{?usr_only}
 %{_initrddir}/openstack-heat-engine
+%endif
 
 %package api
 Summary: The Heat API
@@ -160,7 +168,9 @@ OpenStack-native ReST API to the Heat Engine
 %files api
 %doc README.rst LICENSE
 %{_bindir}/heat-api
+%if ! 0%{?usr_only}
 %{_initrddir}/openstack-heat-api
+%endif
 
 %package api-cfn
 Summary: Heat CloudFormation API
@@ -174,7 +184,9 @@ AWS CloudFormation-compatible API to the Heat Engine
 %files api-cfn
 %doc README.rst LICENSE
 %{_bindir}/heat-api-cfn
+%if ! 0%{?usr_only}
 %{_initrddir}/openstack-heat-api-cfn
+%endif
 
 
 %package api-cloudwatch
@@ -189,6 +201,8 @@ AWS CloudWatch-compatible API to the Heat Engine
 
 %files api-cloudwatch
 %{_bindir}/heat-api-cloudwatch
+%if ! 0%{?usr_only}
 %{_initrddir}/openstack-heat-api-cloudwatch
+%endif
 
 %changelog
