@@ -67,6 +67,7 @@ sed -i -e '/^#!/,1 d' %{buildroot}/%{python_sitelib}/heat/db/sqlalchemy/manage.p
 sed -i -e '/^#!/,1 d' %{buildroot}/%{python_sitelib}/heat/db/sqlalchemy/migrate_repo/manage.py
 #end if
 #raw
+%if ! 0%{?usr_only}
 mkdir -p %{buildroot}/var/log/heat/
 mkdir -p %{buildroot}/var/run/heat/
 
@@ -88,7 +89,9 @@ mkdir -p %{buildroot}/etc/heat/
 #popd
 
 rm -rf %{buildroot}/var/lib/heat/.dummy
+%endif
 rm -f %{buildroot}/usr/bin/cinder-keystone-setup
+%if ! 0%{?usr_only}
 
 cp etc/heat/heat.conf.sample etc/heat/heat.conf
 
@@ -97,6 +100,7 @@ install -p -D -m 640 etc/heat/api-paste.ini %{buildroot}/%{_sysconfdir}/heat/api
 install -p -D -m 640 etc/heat/policy.json %{buildroot}/%{_sysconfdir}/heat/policy.json
 install -p -D -m 640 %{SOURCE20} %{buildroot}/%{_sysconfdir}/logrotate.d/heat
 #end raw
+%endif
 
 %package common
 Summary:         Heat common
@@ -106,7 +110,9 @@ Group:           System Environment/Base
 Requires:         ${i}
 #end for
 
+%if ! 0%{?usr_only}
 Requires(pre):   shadow-utils
+%endif
 
 %description common
 Components common to all OpenStack Heat services
@@ -117,6 +123,7 @@ Components common to all OpenStack Heat services
 %{_bindir}/heat-keystone-setup
 %{_bindir}/heat-manage
 %{python_sitelib}/heat*
+%if ! 0%{?usr_only}
 %dir %attr(0755,heat,root) %{_localstatedir}/log/heat
 %dir %attr(0755,heat,root) %{_sharedstatedir}/heat
 %dir %attr(0755,heat,root) %{_sysconfdir}/heat
@@ -125,7 +132,9 @@ Components common to all OpenStack Heat services
 %config(noreplace) %attr(0640, root, heat) %{_sysconfdir}/heat/api-paste.ini
 %config(noreplace) %attr(0640, root, heat) %{_sysconfdir}/heat/policy.json
 %config(noreplace) %{_sysconfdir}/logrotate.d/heat
+%endif
 
+%if ! 0%{?usr_only}
 %pre common
 # 187:187 for heat - rhbz#845078
 getent group heat >/dev/null || groupadd -r --gid 187 heat
@@ -133,6 +142,7 @@ getent passwd heat  >/dev/null || \
 useradd --uid 187 -r -g heat -d %{_sharedstatedir}/heat -s /sbin/nologin \
 -c "OpenStack Heat Daemons" heat
 exit 0
+%endif
 
 %package engine
 Summary:         The Heat engine
@@ -146,7 +156,9 @@ OpenStack API for starting CloudFormation templates on OpenStack
 %files engine
 %doc README.rst LICENSE
 %{_bindir}/heat-engine
+%if ! 0%{?usr_only}
 %{_initrddir}/openstack-heat-engine
+%endif
 
 %package api
 Summary: The Heat API
@@ -160,7 +172,9 @@ OpenStack-native ReST API to the Heat Engine
 %files api
 %doc README.rst LICENSE
 %{_bindir}/heat-api
+%if ! 0%{?usr_only}
 %{_initrddir}/openstack-heat-api
+%endif
 
 %package api-cfn
 Summary: Heat CloudFormation API
@@ -174,7 +188,9 @@ AWS CloudFormation-compatible API to the Heat Engine
 %files api-cfn
 %doc README.rst LICENSE
 %{_bindir}/heat-api-cfn
+%if ! 0%{?usr_only}
 %{_initrddir}/openstack-heat-api-cfn
+%endif
 
 
 %package api-cloudwatch
@@ -189,6 +205,8 @@ AWS CloudWatch-compatible API to the Heat Engine
 
 %files api-cloudwatch
 %{_bindir}/heat-api-cloudwatch
+%if ! 0%{?usr_only}
 %{_initrddir}/openstack-heat-api-cloudwatch
+%endif
 
 %changelog
