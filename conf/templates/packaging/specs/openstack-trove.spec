@@ -24,8 +24,14 @@ Vendor:         Openstack Foundation
 Group:          Applications/System
 
 Source0:        %{python_name}-%{os_version}.tar.gz
+
+%if ! 0%{?rhel} > 6
 Source1:        openstack-trove-server.init
 Source2:        openstack-trove-api.init
+%else
+Source1:        openstack-trove-server.service
+Source2:        openstack-trove-api.service
+%endif
 
 #for $idx, $fn in enumerate($patches)
 Patch$idx: $fn
@@ -152,8 +158,13 @@ install -d -m 755 %{buildroot}%{_localstatedir}/log/trove
 install -d -m 755 %{buildroot}%{_localstatedir}/run/trove
 
 # Initscripts
+%if ! 0%{?rhel} > 6
 install -p -D -m 755 %{SOURCE1} %{buildroot}%{_initrddir}/%{daemon_prefix}-api
-install -p -D -m 755 %{SOURCE1} %{buildroot}%{_initrddir}/%{daemon_prefix}-server
+install -p -D -m 755 %{SOURCE2} %{buildroot}%{_initrddir}/%{daemon_prefix}-server
+%else
+install -p -D -m 755 %{SOURCE1} %{buildroot}%{_unitdir}/%{daemon_prefix}-api.service
+install -p -D -m 755 %{SOURCE2} %{buildroot}%{_unitdir}/%{daemon_prefix}-server.service
+%endif
 %endif
 
 %__rm -rf %{buildroot}%{py_sitelib}/{doc,tools}
@@ -178,20 +189,42 @@ useradd -r -g trove -d %{_sharedstatedir}/trove -s /sbin/nologin \
 exit 0
 
 
+%if 0%{?rhel} > 6
+%post
+if [ \$1 -eq 1 ] ; then
+    # Initial installation
+    /usr/bin/systemctl preset %{daemon_prefix}-api.service
+    /usr/bin/systemctl preset %{daemon_prefix}-server.service
+fi
+%endif
+
+
 %preun
 if [ $1 = 0 ] ; then
+%if ! 0%{?rhel} > 6
     /sbin/service %{daemon_prefix}-api stop &>/dev/null
     /sbin/chkconfig --del %{daemon_prefix}-api
     /sbin/service %{daemon_prefix}-server stop &>/dev/null
     /sbin/chkconfig --del %{daemon_prefix}-server
+%else
+    /usr/bin/systemctl --no-reload disable %{daemon_prefix}-api.service > /dev/null 2>&1 || :
+    /usr/bin/systemctl stop %{daemon_prefix}-api.service > /dev/null 2>&1 || :
+    /usr/bin/systemctl --no-reload disable %{daemon_prefix}-server.service > /dev/null 2>&1 || :
+    /usr/bin/systemctl stop %{daemon_prefix}-server.service > /dev/null 2>&1 || :
+%endif
     exit 0
 fi
 
 %postun
 if [ $1 -ge 1 ] ; then
     # Package upgrade, not uninstall
+%if ! 0%{?rhel} > 6
     /sbin/service %{daemon_prefix}-api condrestart &>/dev/null
     /sbin/service %{daemon_prefix}-server condrestart &>/dev/null
+%else
+    /usr/bin/systemctl try-restart %{daemon_prefix}-api.service #>/dev/null 2>&1 || :
+    /usr/bin/systemctl try-restart %{daemon_prefix}-server.service #>/dev/null 2>&1 || :
+%endif
     exit 0
 fi
 %endif
@@ -207,7 +240,11 @@ fi
 %dir %attr(0755, trove, nobody) %{_sharedstatedir}/trove
 %dir %attr(0755, trove, nobody) %{_localstatedir}/log/trove
 %dir %attr(0755, trove, nobody) %{_localstatedir}/run/trove
+%if ! 0%{?rhel} > 6
 %{_initrddir}/*
+%else
+%{_unitdir}/*
+%endif
 %endif
 
 %if 0%{?with_doc}

@@ -14,14 +14,27 @@ License:          ASL 2.0
 URL:              https://wiki.openstack.org/wiki/Ceilometer
 Source0:          %{python_name}-%{os_version}.tar.gz
 
+%if ! 0%{?rhel} > 6
 Source10:         openstack-ceilometer-api.init
 Source11:         openstack-ceilometer-collector.init
 Source12:         openstack-ceilometer-compute.init
 Source13:         openstack-ceilometer-central.init
 Source14:         openstack-ceilometer-alarm-notifier.init
 Source15:         openstack-ceilometer-alarm-evaluator.init
+%else
+Source10:         openstack-ceilometer-api.service
+Source11:         openstack-ceilometer-collector.service
+Source12:         openstack-ceilometer-compute.service
+Source13:         openstack-ceilometer-central.service
+Source14:         openstack-ceilometer-alarm-notifier.service
+Source15:         openstack-ceilometer-alarm-evaluator.service
+%endif
 #if $newer_than_eq('2014.1')
+%if ! 0%{?rhel} > 6
 Source16:         openstack-ceilometer-notification.init
+%else
+Source16:         openstack-ceilometer-notification.service
+%endif
 #end if
 
 Source20:          ceilometer-dist.conf
@@ -263,6 +276,7 @@ install -p -D -m 640 etc/ceilometer/policy.json %{buildroot}%{_sysconfdir}/ceilo
 install -p -D -m 640 etc/ceilometer/sources.json %{buildroot}%{_sysconfdir}/ceilometer/sources.json
 install -p -D -m 640 etc/ceilometer/pipeline.yaml %{buildroot}%{_sysconfdir}/ceilometer/pipeline.yaml
 
+%if ! 0%{?rhel} > 6
 # Install initscripts for services
 install -p -D -m 755 %{SOURCE10} %{buildroot}%{_initrddir}/%{name}-api
 install -p -D -m 755 %{SOURCE11} %{buildroot}%{_initrddir}/%{name}-collector
@@ -270,15 +284,36 @@ install -p -D -m 755 %{SOURCE12} %{buildroot}%{_initrddir}/%{name}-compute
 install -p -D -m 755 %{SOURCE13} %{buildroot}%{_initrddir}/%{name}-central
 install -p -D -m 755 %{SOURCE14} %{buildroot}%{_initrddir}/%{name}-alarm-notifier
 install -p -D -m 755 %{SOURCE15} %{buildroot}%{_initrddir}/%{name}-alarm-evaluator
+%else
+install -p -D -m 755 %{SOURCE10} %{buildroot}%{_unitdir}/%{name}-api.service
+install -p -D -m 755 %{SOURCE11} %{buildroot}%{_unitdir}/%{name}-collector.service
+install -p -D -m 755 %{SOURCE12} %{buildroot}%{_unitdir}/%{name}-compute.service
+install -p -D -m 755 %{SOURCE13} %{buildroot}%{_unitdir}/%{name}-central.service
+install -p -D -m 755 %{SOURCE14} %{buildroot}%{_unitdir}/%{name}-alarm-notifier.service
+install -p -D -m 755 %{SOURCE15} %{buildroot}%{_unitdir}/%{name}-alarm-evaluator.service
+%endif
 #if $newer_than_eq('2014.1')
+%if ! 0%{?rhel} > 6
 install -p -D -m 755 %{SOURCE16} %{buildroot}%{_initrddir}/%{name}-notification
+%else
+install -p -D -m 755 %{SOURCE16} %{buildroot}%{_unitdir}/%{name}-notification.service
+%endif
 #end if
 
 #Fix for bin path for central and compute
+%if ! 0%{?rhel} > 6
 sed -i "s#/usr/bin/ceilometer-compute#/usr/bin/ceilometer-agent-compute#" %{buildroot}%{_initrddir}/%{name}-compute
 sed -i "s#/usr/bin/ceilometer-central#/usr/bin/ceilometer-agent-central#" %{buildroot}%{_initrddir}/%{name}-central
+%else
+sed -i "s#/usr/bin/ceilometer-compute#/usr/bin/ceilometer-agent-compute#" %{buildroot}%{_unitdir}/%{name}-compute.service
+sed -i "s#/usr/bin/ceilometer-central#/usr/bin/ceilometer-agent-central#" %{buildroot}%{_unitdir}/%{name}-central.service
+%endif
 #if $newer_than_eq('2014.1')
+%if ! 0%{?rhel} > 6
 sed -i "s#/usr/bin/ceilometer-notification#/usr/bin/ceilometer-agent-notification#" %{buildroot}%{_initrddir}/%{name}-notification
+%else
+sed -i "s#/usr/bin/ceilometer-notification#/usr/bin/ceilometer-agent-notification#" %{buildroot}%{_unitdir}/%{name}-notification.service
+%endif
 #end if
 # Install logrotate
 install -p -D -m 644 %{SOURCE21} %{buildroot}%{_sysconfdir}/logrotate.d/%{name}
@@ -328,32 +363,193 @@ exit 0
 
 %files compute
 %{_bindir}/ceilometer-agent-compute
+%if ! 0%{?rhel} > 6
 %{_initrddir}/%{name}-compute
+%else
+%{_unitdir}/%{name}-compute.service
+%endif
+
+%if 0%{?rhel} > 6
+%post compute
+if [ $1 -eq 1 ] ; then
+        # Initial installation
+        /usr/bin/systemctl preset %{name}-compute.service
+fi
+
+%preun compute
+if [ $1 -eq 0 ] ; then
+        # Package removal, not upgrade
+        /usr/bin/systemctl --no-reload disable %{name}-compute.service > /dev/null 2>&1 || :
+        /usr/bin/systemctl stop %{name}-compute.service > /dev/null 2>&1 || :
+fi
+
+%postun compute
+/usr/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+if [ $1 -ge 1 ] ; then
+        # Package upgrade, not uninstall
+        /usr/bin/systemctl try-restart %{name}-compute.service #>/dev/null 2>&1 || :
+fi
+%endif
 
 %files collector
 %{_bindir}/ceilometer-collector*
+%if ! 0%{?rhel} > 6
 %{_initrddir}/%{name}-collector
+%else
+%{_unitdir}/%{name}-collector.service
+%endif
+
+%if 0%{?rhel} > 6
+%post collector
+if [ $1 -eq 1 ] ; then
+        # Initial installation
+        /usr/bin/systemctl preset %{name}-collector.service
+fi
+
+%preun collector
+if [ $1 -eq 0 ] ; then
+        # Package removal, not upgrade
+        /usr/bin/systemctl --no-reload disable %{name}-collector.service > /dev/null 2>&1 || :
+        /usr/bin/systemctl stop %{name}-collector.service > /dev/null 2>&1 || :
+fi
+
+%postun collector
+/usr/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+if [ $1 -ge 1 ] ; then
+        # Package upgrade, not uninstall
+        /usr/bin/systemctl try-restart %{name}-collector.service #>/dev/null 2>&1 || :
+fi
+%endif
 
 %files api
 %doc ceilometer/api/v1/static/LICENSE.*
 %{_bindir}/ceilometer-api
+%if ! 0%{?rhel} > 6
 %{_initrddir}/%{name}-api
+%else
+%{_unitdir}/%{name}-api.service
+%endif
+
+%if 0%{?rhel} > 6
+%post api
+if [ $1 -eq 1 ] ; then
+        # Initial installation
+        /usr/bin/systemctl preset %{name}-api.service
+fi
+
+%preun api
+if [ $1 -eq 0 ] ; then
+        # Package removal, not upgrade
+        /usr/bin/systemctl --no-reload disable %{name}-api.service > /dev/null 2>&1 || :
+        /usr/bin/systemctl stop %{name}-api.service > /dev/null 2>&1 || :
+fi
+
+%postun api
+/usr/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+if [ $1 -ge 1 ] ; then
+        # Package upgrade, not uninstall
+        /usr/bin/systemctl try-restart %{name}-api.service #>/dev/null 2>&1 || :
+fi
+%endif
 
 %files central
 %{_bindir}/ceilometer-agent-central
+%if ! 0%{?rhel} > 6
 %{_initrddir}/%{name}-central
+%else
+%{_unitdir}/%{name}-central.service
+%endif
+
+%if 0%{?rhel} > 6
+%post central
+if [ $1 -eq 1 ] ; then
+        # Initial installation
+        /usr/bin/systemctl preset %{name}-central.service
+fi
+
+%preun central
+if [ $1 -eq 0 ] ; then
+        # Package removal, not upgrade
+        /usr/bin/systemctl --no-reload disable %{name}-central.service > /dev/null 2>&1 || :
+        /usr/bin/systemctl stop %{name}-central.service > /dev/null 2>&1 || :
+fi
+
+%postun central
+/usr/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+if [ $1 -ge 1 ] ; then
+        # Package upgrade, not uninstall
+        /usr/bin/systemctl try-restart %{name}-central.service #>/dev/null 2>&1 || :
+fi
+%endif
 
 %files alarm
 %{_bindir}/ceilometer-alarm-notifier
 %{_bindir}/ceilometer-alarm-evaluator
+%if ! 0%{?rhel} > 6
 %{_initrddir}/%{name}-alarm-notifier
 %{_initrddir}/%{name}-alarm-evaluator
+%else
+%{_unitdir}/%{name}-alarm-notifier.service
+%{_unitdir}/%{name}-alarm-evaluator.service
+%endif
+
+%if 0%{?rhel} > 6
+%post alarm
+if [ $1 -eq 1 ] ; then
+        # Initial installation
+        /usr/bin/systemctl preset %{name}-alarm-notifier.service
+        /usr/bin/systemctl preset %{name}-alarm-evaluator.service
+fi
+
+%preun alarm
+if [ $1 -eq 0 ] ; then
+        # Package removal, not upgrade
+        /usr/bin/systemctl --no-reload disable %{name}-alarm-notifier.service > /dev/null 2>&1 || :
+        /usr/bin/systemctl stop %{name}-alarm-notifier.service > /dev/null 2>&1 || :
+        /usr/bin/systemctl --no-reload disable %{name}-alarm-evaluator.service > /dev/null 2>&1 || :
+        /usr/bin/systemctl stop %{name}-alarm-evaluator.service > /dev/null 2>&1 || :
+fi
+
+%postun alarm
+/usr/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+if [ $1 -ge 1 ] ; then
+        # Package upgrade, not uninstall
+        /usr/bin/systemctl try-restart %{name}-alarm-notifier.service #>/dev/null 2>&1 || :
+        /usr/bin/systemctl try-restart %{name}-alarm-evaluator.service #>/dev/null 2>&1 || :
+fi
+%endif
 
 #if $newer_than_eq('2014.1')
 %files notification
 %{_bindir}/ceilometer-agent-notification
 %{_bindir}/ceilometer-send-sample
+%if ! 0%{?rhel} > 6
 %{_initrddir}/%{name}-notification
+%else
+%{_unitdir}/%{name}-notification.service
+%endif
 #end if
+
+%if 0%{?rhel} > 6
+%post notification
+if [ $1 -eq 1 ] ; then
+        # Initial installation
+        /usr/bin/systemctl preset %{name}-notification.service
+fi
+
+%preun notification
+if [ $1 -eq 0 ] ; then
+        # Package removal, not upgrade
+        /usr/bin/systemctl --no-reload disable %{name}-notification.service > /dev/null 2>&1 || :
+        /usr/bin/systemctl stop %{name}-notification.service > /dev/null 2>&1 || :
+fi
+
+%postun notification
+/usr/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+if [ $1 -ge 1 ] ; then
+        # Package upgrade, not uninstall
+        /usr/bin/systemctl try-restart %{name}-notification.service #>/dev/null 2>&1 || :
+fi
+%endif
 
 %changelog

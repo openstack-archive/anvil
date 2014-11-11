@@ -20,10 +20,17 @@ Vendor:           Openstack Foundation
 URL:              http://www.openstack.org
 Source0:          %{python_name}-%{os_version}.tar.gz
 
+%if ! 0%{?rhel} > 6
 Source10:         openstack-heat-api.init
 Source11:         openstack-heat-api-cfn.init
 Source12:         openstack-heat-engine.init
 Source13:         openstack-heat-api-cloudwatch.init
+%else
+Source10:         openstack-heat-api.service
+Source11:         openstack-heat-api-cfn.service
+Source12:         openstack-heat-engine.service
+Source13:         openstack-heat-api-cloudwatch.service
+%endif
 
 Source20:         heat.logrotate
 
@@ -72,10 +79,17 @@ mkdir -p %{buildroot}/var/log/heat/
 mkdir -p %{buildroot}/var/run/heat/
 
 # install init files
+%if ! 0%{?rhel} > 6
 install -p -D -m 755 %{SOURCE10} %{buildroot}%{_initrddir}/openstack-heat-api
 install -p -D -m 755 %{SOURCE11} %{buildroot}%{_initrddir}/openstack-heat-api-cfn
 install -p -D -m 755 %{SOURCE12} %{buildroot}%{_initrddir}/openstack-heat-engine
 install -p -D -m 755 %{SOURCE13} %{buildroot}%{_initrddir}/openstack-heat-api-cloudwatch
+%else
+install -p -D -m 755 %{SOURCE10} %{buildroot}%{_unitdir}/openstack-heat-api.service
+install -p -D -m 755 %{SOURCE11} %{buildroot}%{_unitdir}/openstack-heat-api-cfn.service
+install -p -D -m 755 %{SOURCE12} %{buildroot}%{_unitdir}/openstack-heat-engine.service
+install -p -D -m 755 %{SOURCE13} %{buildroot}%{_unitdir}/openstack-heat-api-cloudwatch.service
+%endif
 
 mkdir -p %{buildroot}/var/lib/heat/
 mkdir -p %{buildroot}/etc/heat/
@@ -157,8 +171,35 @@ OpenStack API for starting CloudFormation templates on OpenStack
 %doc README.rst LICENSE
 %{_bindir}/heat-engine
 %if ! 0%{?usr_only}
+%if ! 0%{?rhel} > 6
 %{_initrddir}/openstack-heat-engine
+%else
+%{_unitdir}/openstack-heat-engine.service
 %endif
+%endif
+
+%if 0%{?rhel} > 6
+%post engine
+if [ $1 -eq 1 ] ; then
+        # Initial installation
+        /usr/bin/systemctl preset %{name}-engine.service
+fi
+
+%preun engine
+if [ $1 -eq 0 ] ; then
+        # Package removal, not upgrade
+        /usr/bin/systemctl --no-reload disable %{name}-engine.service > /dev/null 2>&1 || :
+        /usr/bin/systemctl stop %{name}-engine.service > /dev/null 2>&1 || :
+fi
+
+%postun engine
+/usr/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+if [ $1 -ge 1 ] ; then
+        # Package upgrade, not uninstall
+        /usr/bin/systemctl try-restart %{name}-engine.service #>/dev/null 2>&1 || :
+fi
+%endif
+
 
 %package api
 Summary: The Heat API
@@ -173,8 +214,35 @@ OpenStack-native ReST API to the Heat Engine
 %doc README.rst LICENSE
 %{_bindir}/heat-api
 %if ! 0%{?usr_only}
+%if ! 0%{?rhel} > 6
 %{_initrddir}/openstack-heat-api
+%else
+%{_unitdir}/openstack-heat-api.service
 %endif
+%endif
+
+%if 0%{?rhel} > 6
+%post api
+if [ $1 -eq 1 ] ; then
+        # Initial installation
+        /usr/bin/systemctl preset %{name}-api.service
+fi
+
+%preun api
+if [ $1 -eq 0 ] ; then
+        # Package removal, not upgrade
+        /usr/bin/systemctl --no-reload disable %{name}-api.service > /dev/null 2>&1 || :
+        /usr/bin/systemctl stop %{name}-api.service > /dev/null 2>&1 || :
+fi
+
+%postun api
+/usr/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+if [ $1 -ge 1 ] ; then
+        # Package upgrade, not uninstall
+        /usr/bin/systemctl try-restart %{name}-api.service #>/dev/null 2>&1 || :
+fi
+%endif
+
 
 %package api-cfn
 Summary: Heat CloudFormation API
@@ -189,7 +257,33 @@ AWS CloudFormation-compatible API to the Heat Engine
 %doc README.rst LICENSE
 %{_bindir}/heat-api-cfn
 %if ! 0%{?usr_only}
+%if ! 0%{?rhel} > 6
 %{_initrddir}/openstack-heat-api-cfn
+%else
+%{_unitdir}/openstack-heat-api-cfn.service
+%endif
+%endif
+
+%if 0%{?rhel} > 6
+%post api-cfn
+if [ $1 -eq 1 ] ; then
+        # Initial installation
+        /usr/bin/systemctl preset %{name}-api-cfn.service
+fi
+
+%preun api-cfn
+if [ $1 -eq 0 ] ; then
+        # Package removal, not upgrade
+        /usr/bin/systemctl --no-reload disable %{name}-api-cfn.service > /dev/null 2>&1 || :
+        /usr/bin/systemctl stop %{name}-api-cfn.service > /dev/null 2>&1 || :
+fi
+
+%postun api-cfn
+/usr/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+if [ $1 -ge 1 ] ; then
+        # Package upgrade, not uninstall
+        /usr/bin/systemctl try-restart %{name}-api-cfn.service #>/dev/null 2>&1 || :
+fi
 %endif
 
 
@@ -206,7 +300,33 @@ AWS CloudWatch-compatible API to the Heat Engine
 %files api-cloudwatch
 %{_bindir}/heat-api-cloudwatch
 %if ! 0%{?usr_only}
+%if ! 0%{?rhel} > 6
 %{_initrddir}/openstack-heat-api-cloudwatch
+%else
+%{_unitdir}/openstack-heat-api-cloudwatch.service
+%endif
+%endif
+
+%if 0%{?rhel} > 6
+%post api-cloudwatch
+if [ $1 -eq 1 ] ; then
+        # Initial installation
+        /usr/bin/systemctl preset %{name}-api-cloudwatch.service
+fi
+
+%preun api-cloudwatch
+if [ $1 -eq 0 ] ; then
+        # Package removal, not upgrade
+        /usr/bin/systemctl --no-reload disable %{name}-api-cloudwatch.service > /dev/null 2>&1 || :
+        /usr/bin/systemctl stop %{name}-api-cloudwatch.service > /dev/null 2>&1 || :
+fi
+
+%postun api-cloudwatch
+/usr/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+if [ $1 -ge 1 ] ; then
+        # Package upgrade, not uninstall
+        /usr/bin/systemctl try-restart %{name}-api-cloudwatch.service #>/dev/null 2>&1 || :
+fi
 %endif
 
 %changelog
