@@ -24,9 +24,15 @@ License:          ASL 2.0
 Vendor:           OpenStack Foundation
 URL:              http://glance.openstack.org
 Source0:          %{python_name}-%{os_version}.tar.gz
+%if ! (0%{?rhel} > 6)
 Source1:          openstack-glance-api.init
 Source2:          openstack-glance-registry.init
 Source3:          openstack-glance-scrubber.init
+%else
+Source1:          openstack-glance-api.service
+Source2:          openstack-glance-registry.service
+Source3:          openstack-glance-scrubber.service
+%endif
 Source4:          openstack-glance.logrotate
 
 #for $idx, $fn in enumerate($patches)
@@ -162,9 +168,15 @@ for i in etc/*; do
 done
 
 # Initscripts
+%if ! (0%{?rhel} > 6)
 install -p -D -m 755 %{SOURCE1} %{buildroot}%{_initrddir}/%{daemon_prefix}-api
 install -p -D -m 755 %{SOURCE2} %{buildroot}%{_initrddir}/%{daemon_prefix}-registry
 install -p -D -m 755 %{SOURCE3} %{buildroot}%{_initrddir}/%{daemon_prefix}-scrubber
+%else
+install -p -D -m 755 %{SOURCE1} %{buildroot}%{_unitdir}/%{daemon_prefix}-api.service
+install -p -D -m 755 %{SOURCE2} %{buildroot}%{_unitdir}/%{daemon_prefix}-registry.service
+install -p -D -m 755 %{SOURCE3} %{buildroot}%{_unitdir}/%{daemon_prefix}-scrubber.service
+%endif
 
 # Logrotate config
 install -p -D -m 644 %{SOURCE4} %{buildroot}%{_sysconfdir}/logrotate.d/openstack-glance
@@ -194,12 +206,28 @@ useradd -r -g glance -d %{_sharedstatedir}/glance -s /sbin/nologin \
 -c "OpenStack Glance Daemons" glance
 exit 0
 
+%if 0%{?rhel} > 6
+%post
+if [ $1 -eq 1 ] ; then
+  # Initial installation
+  for svc in api registry scrubber; do
+    /usr/bin/systemctl preset %{daemon_prefix}-${svc}.service
+  done
+fi
+%endif
+
 
 %preun
 if [ $1 = 0 ] ; then
+    # Package removal, not upgrade
     for svc in api registry scrubber; do
+%if ! (0%{?rhel} > 6)
         /sbin/service %{daemon_prefix}-${svc} stop &>/dev/null
         /sbin/chkconfig --del %{daemon_prefix}-${svc}
+%else
+        /usr/bin/systemctl --no-reload disable %{daemon_prefix}-${svc}.service > /dev/null 2>&1 || :
+        /usr/bin/systemctl stop %{daemon_prefix}-${svc}.service > /dev/null 2>&1 || :
+%endif
     done
     exit 0
 fi
@@ -208,8 +236,15 @@ fi
 %postun
 if [ $1 -ge 1 ] ; then
     # Package upgrade, not uninstall
+%if 0%{?rhel} > 6
+    /usr/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+%endif
     for svc in api registry scrubber; do
+%if ! (0%{?rhel} > 6)
         /sbin/service %{daemon_prefix}-${svc} condrestart &>/dev/null
+%else
+        /usr/bin/systemctl try-restart %{daemon_prefix}-${svc}.service #>/dev/null 2>&1 || :
+%endif
     done
     exit 0
 fi
@@ -223,7 +258,11 @@ fi
 %exclude %{_bindir}/glance-make-test-env
 
 %if ! 0%{?usr_only}
+%if ! (0%{?rhel} > 6)
 %{_initrddir}/*
+%else
+%{_unitdir}/*
+%endif
 %dir %{_sysconfdir}/glance
 %config(noreplace) %attr(-, root, glance) %{_sysconfdir}/glance/*
 %config(noreplace) %attr(-, root, glance) %{_sysconfdir}/logrotate.d/openstack-glance

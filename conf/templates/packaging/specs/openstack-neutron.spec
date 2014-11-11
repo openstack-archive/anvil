@@ -32,6 +32,7 @@ Source0:        %{python_name}-%{os_version}.tar.gz
 Source1:	neutron.logrotate
 Source2:	neutron-sudoers
 
+%if ! (0%{?rhel} > 6)
 Source10:	neutron-server.init
 Source11:	neutron-linuxbridge-agent.init
 Source12:	neutron-openvswitch-agent.init
@@ -43,6 +44,19 @@ Source17:	neutron-ovs-cleanup.init
 Source18:	neutron-hyperv-agent.init
 Source19:	neutron-rpc-zmq-receiver.init
 Source20:	neutron-metadata-agent.init
+%else
+Source10:      neutron-server.service
+Source11:      neutron-linuxbridge-agent.service
+Source12:      neutron-openvswitch-agent.service
+Source13:      neutron-ryu-agent.service
+Source14:      neutron-nec-agent.service
+Source15:      neutron-dhcp-agent.service
+Source16:      neutron-l3-agent.service
+Source17:      neutron-ovs-cleanup.service
+Source18:      neutron-hyperv-agent.service
+Source19:      neutron-rpc-zmq-receiver.service
+Source20:      neutron-metadata-agent.service
+%endif
 
 #for $idx, $fn in enumerate($patches)
 Patch$idx: $fn
@@ -584,6 +598,7 @@ install -p -D -m 644 %{SOURCE1} %{buildroot}%{_sysconfdir}/logrotate.d/openstack
 install -p -D -m 440 %{SOURCE2} %{buildroot}%{_sysconfdir}/sudoers.d/neutron
 
 # Install sysv init scripts
+%if ! (0%{?rhel} > 6)
 install -p -D -m 755 %{SOURCE10} %{buildroot}%{_initrddir}/%{daemon_prefix}-server
 install -p -D -m 755 %{SOURCE11} %{buildroot}%{_initrddir}/%{daemon_prefix}-linuxbridge-agent
 install -p -D -m 755 %{SOURCE12} %{buildroot}%{_initrddir}/%{daemon_prefix}-openvswitch-agent
@@ -595,6 +610,19 @@ install -p -D -m 755 %{SOURCE17} %{buildroot}%{_initrddir}/%{daemon_prefix}-ovs-
 install -p -D -m 755 %{SOURCE18} %{buildroot}%{_initrddir}/%{daemon_prefix}-hyperv-agent
 install -p -D -m 755 %{SOURCE19} %{buildroot}%{_initrddir}/%{daemon_prefix}-rpc-zmq-receiver
 install -p -D -m 755 %{SOURCE20} %{buildroot}%{_initrddir}/%{daemon_prefix}-metadata-agent
+%else
+install -p -D -m 755 %{SOURCE10} %{buildroot}%{_unitdir}/%{daemon_prefix}-server.service
+install -p -D -m 755 %{SOURCE11} %{buildroot}%{_unitdir}/%{daemon_prefix}-linuxbridge-agent.service
+install -p -D -m 755 %{SOURCE12} %{buildroot}%{_unitdir}/%{daemon_prefix}-openvswitch-agent.service
+install -p -D -m 755 %{SOURCE13} %{buildroot}%{_unitdir}/%{daemon_prefix}-ryu-agent.service
+install -p -D -m 755 %{SOURCE14} %{buildroot}%{_unitdir}/%{daemon_prefix}-nec-agent.service
+install -p -D -m 755 %{SOURCE15} %{buildroot}%{_unitdir}/%{daemon_prefix}-dhcp-agent.service
+install -p -D -m 755 %{SOURCE16} %{buildroot}%{_unitdir}/%{daemon_prefix}-l3-agent.service
+install -p -D -m 755 %{SOURCE17} %{buildroot}%{_unitdir}/%{daemon_prefix}-ovs-cleanup.service
+install -p -D -m 755 %{SOURCE18} %{buildroot}%{_unitdir}/%{daemon_prefix}-hyperv-agent.service
+install -p -D -m 755 %{SOURCE19} %{buildroot}%{_unitdir}/%{daemon_prefix}-rpc-zmq-receiver.service
+install -p -D -m 755 %{SOURCE20} %{buildroot}%{_unitdir}/%{daemon_prefix}-metadata-agent.service
+%endif
 
 # Setup directories
 install -d -m 755 %{buildroot}%{_sharedstatedir}/neutron
@@ -631,11 +659,27 @@ exit 0
 #set $daemon_map = {"": ["server", "dhcp-agent", "l3-agent"], "linuxbridge": ["linuxbridge-agent"], "openvswitch": ["openvswitch-agent", "ovs-cleanup"], "ryu": ["ryu-agent"], "nec": ["nec-agent"]}
 #for $key, $value in $daemon_map.iteritems()
 #set $daemon_list = " ".join($value) if $value else $key
+
+%if 0%{?rhel} > 6
+%post $key
+if [ \$1 -eq 1 ] ; then
+    # Initial installation
+    for svc in $daemon_list; do
+        /usr/bin/systemctl preset %{daemon_prefix}-\${svc}.service
+    done
+fi
+%endif
+
 %preun $key
 if [ \$1 -eq 0 ] ; then
     for svc in $daemon_list; do
+%if ! (0%{?rhel} > 6)
         /sbin/service %{daemon_prefix}-\${svc} stop &>/dev/null
         /sbin/chkconfig --del %{daemon_prefix}-\${svc}
+%else
+        /usr/bin/systemctl --no-reload disable %{daemon_prefix}-\${svc}.service > /dev/null 2>&1 || :
+        /usr/bin/systemctl stop %{daemon_prefix}-\${svc}.service > /dev/null 2>&1 || :
+%endif
     done
     exit 0
 fi
@@ -644,7 +688,11 @@ fi
 if [ \$1 -ge 1 ] ; then
     # Package upgrade, not uninstall
     for svc in $daemon_list; do
+%if ! (0%{?rhel} > 6)
         /sbin/service %{daemon_prefix}-\${svc} condrestart &>/dev/null
+%else
+        /usr/bin/systemctl try-restart %{daemon_prefix}-\${svc}.service #>/dev/null 2>&1 || :
+%endif
     done
     exit 0
 fi
@@ -676,11 +724,19 @@ fi
 %exclude %{_datarootdir}/neutron/rootwrap/nec-plugin.filters
 
 %if ! 0%{?usr_only}
+%if ! (0%{?rhel} > 6)
 %{_initrddir}/%{daemon_prefix}-server
 %{_initrddir}/%{daemon_prefix}-dhcp-agent
 %{_initrddir}/%{daemon_prefix}-l3-agent
 %{_initrddir}/%{daemon_prefix}-metadata-agent
 %{_initrddir}/%{daemon_prefix}-rpc-zmq-receiver
+%else
+%{_unitdir}/%{daemon_prefix}-server.service
+%{_unitdir}/%{daemon_prefix}-dhcp-agent.service
+%{_unitdir}/%{daemon_prefix}-l3-agent.service
+%{_unitdir}/%{daemon_prefix}-metadata-agent.service
+%{_unitdir}/%{daemon_prefix}-rpc-zmq-receiver.service
+%endif
 %dir %{_sysconfdir}/neutron
 %{_sysconfdir}/neutron/release
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/policy.json
@@ -789,7 +845,11 @@ fi
 %exclude %{python_sitelib}/neutron/plugins/hyperv/agent
 
 %if ! 0%{?usr_only}
+%if ! (0%{?rhel} > 6)
 %{_initrddir}/%{daemon_prefix}-hyperv-agent
+%else
+%{_unitdir}/%{daemon_prefix}-hyperv-agent.service
+%endif
 %dir %{_sysconfdir}/neutron/plugins/hyperv
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/hyperv/*.ini
 %endif
@@ -816,7 +876,11 @@ fi
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/linuxbridge
+%if ! (0%{?rhel} > 6)
 %{_initrddir}/%{daemon_prefix}-linuxbridge-agent
+%else
+%{_unitdir}/%{daemon_prefix}-linuxbridge-agent.service
+%endif
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/linuxbridge/*.ini
 %endif
 
@@ -908,8 +972,13 @@ fi
 %{python_sitelib}/neutron/plugins/openvswitch
 
 %if ! 0%{?usr_only}
+%if ! (0%{?rhel} > 6)
 %{_initrddir}/%{daemon_prefix}-openvswitch-agent
 %{_initrddir}/%{daemon_prefix}-ovs-cleanup
+%else
+%{_unitdir}/%{daemon_prefix}-openvswitch-agent.service
+%{_unitdir}/%{daemon_prefix}-ovs-cleanup.service
+%endif
 %dir %{_sysconfdir}/neutron/plugins/openvswitch
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/openvswitch/*.ini
 %endif
@@ -932,7 +1001,11 @@ fi
 %{_datarootdir}/neutron/rootwrap/ryu-plugin.filters
 
 %if ! 0%{?usr_only}
+%if ! (0%{?rhel} > 6)
 %{_initrddir}/%{daemon_prefix}-ryu-agent
+%else
+%{_unitdir}/%{daemon_prefix}-ryu-agent.service
+%endif
 %dir %{_sysconfdir}/neutron/plugins/ryu
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/ryu/*.ini
 %endif
@@ -945,7 +1018,11 @@ fi
 %{_datarootdir}/neutron/rootwrap/nec-plugin.filters
 
 %if ! 0%{?usr_only}
+%if ! (0%{?rhel} > 6)
 %{_initrddir}/%{daemon_prefix}-nec-agent
+%else
+%{_unitdir}/%{daemon_prefix}-nec-agent.service
+%endif
 %dir %{_sysconfdir}/neutron/plugins/nec
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/nec/*.ini
 %endif

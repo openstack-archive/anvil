@@ -595,6 +595,26 @@ class YumDependencyHandler(base.DependencyHandler):
             sh.write_file(target_filename,
                           utils.expand_template(common_init_content, params))
 
+    def _copy_systemd_scripts(self, instance, spec_details):
+        common_init_content = utils.load_template("packaging",
+                                                  "common.service")[1]
+        daemon_args = instance.get_option('daemon_args', default_value={})
+        for src in spec_details.get('sources', []):
+            script = sh.basename(src)
+            if not (script.endswith(".service")):
+                continue
+            target_filename = sh.joinpths(self.rpm_sources_dir, script)
+            if sh.isfile(target_filename):
+                continue
+            bin_name = utils.strip_prefix_suffix(script, "openstack-", ".service")
+            params = {
+                "bin": bin_name,
+                "package": bin_name.split("-", 1)[0],
+                "daemon_args": daemon_args.get(bin_name, ''),
+            }
+            sh.write_file(target_filename,
+                          utils.expand_template(common_init_content, params))
+
     def _copy_sources(self, instance):
         other_sources_dir = sh.joinpths(settings.TEMPLATE_DIR,
                                         "packaging", "sources", instance.name)
@@ -633,6 +653,7 @@ class YumDependencyHandler(base.DependencyHandler):
                 buff.write("\n")
             sh.append_file(self.rpm_build_requires_filename, buff.getvalue())
         self._copy_startup_scripts(instance, spec_details)
+        self._copy_systemd_scripts(instance, spec_details)
         cmdline = [
             self.rpmbuild_executable,
             "-bs",

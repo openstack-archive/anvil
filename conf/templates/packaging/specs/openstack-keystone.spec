@@ -24,7 +24,11 @@ Vendor:         Openstack Foundation
 Group:          Applications/System
 
 Source0:        %{python_name}-%{os_version}.tar.gz
+%if ! (0%{?rhel} > 6)
 Source1:        openstack-keystone-all.init
+%else
+Source1:        openstack-keystone-all.service
+%endif
 
 #for $idx, $fn in enumerate($patches)
 Patch$idx: $fn
@@ -143,7 +147,11 @@ install -d -m 755 %{buildroot}%{_sharedstatedir}/keystone
 install -d -m 755 %{buildroot}%{_localstatedir}/log/keystone
 install -d -m 755 %{buildroot}%{_localstatedir}/run/keystone
 
+%if ! (0%{?rhel} > 6)
 install -p -D -m 755 %{SOURCE1} %{buildroot}%{_initrddir}/%{daemon_prefix}
+%else
+install -p -D -m 755 %{SOURCE1} %{buildroot}%{_unitdir}/%{daemon_prefix}.service
+%endif
 %endif
 
 %__rm -rf %{buildroot}%{py_sitelib}/{doc,tools}
@@ -168,17 +176,35 @@ useradd -r -g keystone -d %{_sharedstatedir}/keystone -s /sbin/nologin \
 exit 0
 
 
+%if 0%{?rhel} > 6
+%post
+if [ $1 -eq 1 ] ; then
+        # Initial installation
+        /usr/bin/systemctl preset %{daemon_prefix}.service
+fi
+%endif
+
+
 %preun
 if [ $1 = 0 ] ; then
+%if ! (0%{?rhel} > 6)
     /sbin/service %{daemon_prefix} stop &>/dev/null
     /sbin/chkconfig --del %{daemon_prefix}
+%else
+    /usr/bin/systemctl --no-reload disable %{daemon_prefix}.service > /dev/null 2>&1 || :
+    /usr/bin/systemctl stop %{daemon_prefix}.service > /dev/null 2>&1 || :
+%endif
     exit 0
 fi
 
 %postun
 if [ $1 -ge 1 ] ; then
     # Package upgrade, not uninstall
+%if ! (0%{?rhel} > 6)
     /sbin/service %{daemon_prefix} condrestart &>/dev/null
+%else
+    /usr/bin/systemctl try-restart %{daemon_prefix}.service #>/dev/null 2>&1 || :
+%endif
     exit 0
 fi
 %endif
@@ -194,7 +220,11 @@ fi
 %dir %attr(0755, keystone, nobody) %{_sharedstatedir}/keystone
 %dir %attr(0755, keystone, nobody) %{_localstatedir}/log/keystone
 %dir %attr(0755, keystone, nobody) %{_localstatedir}/run/keystone
+%if ! (0%{?rhel} > 6)
 %{_initrddir}/*
+%else
+%{_unitdir}/*
+%endif
 %endif
 
 %if ! 0%{?no_tests}

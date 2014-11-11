@@ -28,6 +28,7 @@ Vendor:           OpenStack Foundation
 URL:              http://openstack.org/projects/compute/
 Source0:          %{python_name}-%{os_version}.tar.gz
 
+%if ! (0%{?rhel} > 6)
 Source10:         openstack-nova-api.init
 Source11:         openstack-nova-cert.init
 Source12:         openstack-nova-compute.init
@@ -41,6 +42,21 @@ Source25:         openstack-nova-metadata-api.init
 Source26:         openstack-nova-conductor.init
 Source27:         openstack-nova-cells.init
 Source28:         openstack-nova-spicehtml5proxy.init
+%else
+Source10:         openstack-nova-api.service
+Source11:         openstack-nova-cert.service
+Source12:         openstack-nova-compute.service
+Source13:         openstack-nova-network.service
+Source14:         openstack-nova-objectstore.service
+Source15:         openstack-nova-scheduler.service
+Source18:         openstack-nova-xvpvncproxy.service
+Source19:         openstack-nova-console.service
+Source20:         openstack-nova-consoleauth.service
+Source25:         openstack-nova-metadata-api.service
+Source26:         openstack-nova-conductor.service
+Source27:         openstack-nova-cells.service
+Source28:         openstack-nova-spicehtml5proxy.service
+%endif
 
 Source50:         nova-ifc-template
 Source51:         nova.logrotate
@@ -425,6 +441,7 @@ for i in etc/nova/*; do
 done
 
 # Install initscripts for Nova services
+%if ! (0%{?rhel} > 6)
 install -p -D -m 755 %{SOURCE10} %{buildroot}%{_initrddir}/%{daemon_prefix}-api
 install -p -D -m 755 %{SOURCE11} %{buildroot}%{_initrddir}/%{daemon_prefix}-cert
 install -p -D -m 755 %{SOURCE12} %{buildroot}%{_initrddir}/%{daemon_prefix}-compute
@@ -441,6 +458,21 @@ install -p -D -m 755 %{SOURCE28} %{buildroot}%{_initrddir}/%{daemon_prefix}-spic
 
 #fix metadata-api bin name
 sed -i s?exec=\"/usr/bin/nova-metadata-api\"?exec=\"/usr/bin/nova-api-metadata\"? %{buildroot}%{_initrddir}/%{daemon_prefix}-metadata-api
+%else
+install -p -D -m 755 %{SOURCE10} %{buildroot}%{_unitdir}/%{daemon_prefix}-api.service
+install -p -D -m 755 %{SOURCE11} %{buildroot}%{_unitdir}/%{daemon_prefix}-cert.service
+install -p -D -m 755 %{SOURCE12} %{buildroot}%{_unitdir}/%{daemon_prefix}-compute.service
+install -p -D -m 755 %{SOURCE13} %{buildroot}%{_unitdir}/%{daemon_prefix}-network.service
+install -p -D -m 755 %{SOURCE14} %{buildroot}%{_unitdir}/%{daemon_prefix}-objectstore.service
+install -p -D -m 755 %{SOURCE15} %{buildroot}%{_unitdir}/%{daemon_prefix}-scheduler.service
+install -p -D -m 755 %{SOURCE18} %{buildroot}%{_unitdir}/%{daemon_prefix}-xvpvncproxy.service
+install -p -D -m 755 %{SOURCE19} %{buildroot}%{_unitdir}/%{daemon_prefix}-console.service
+install -p -D -m 755 %{SOURCE20} %{buildroot}%{_unitdir}/%{daemon_prefix}-consoleauth.service
+install -p -D -m 755 %{SOURCE25} %{buildroot}%{_unitdir}/%{daemon_prefix}-metadata-api.service
+install -p -D -m 755 %{SOURCE26} %{buildroot}%{_unitdir}/%{daemon_prefix}-conductor.service
+install -p -D -m 755 %{SOURCE27} %{buildroot}%{_unitdir}/%{daemon_prefix}-cells.service
+install -p -D -m 755 %{SOURCE28} %{buildroot}%{_unitdir}/%{daemon_prefix}-spicehtml5proxy.service
+%endif
 
 # Install sudoers
 install -p -D -m 440 %{SOURCE53} %{buildroot}%{_sysconfdir}/sudoers.d/nova
@@ -523,11 +555,26 @@ exit 0
 #set $daemon_map = {"api": ["api", "metadata-api"], "cells": [], "cert": [], "compute": [], "console": ["console", "consoleauth", "xvpvncproxy"], "network": [], "objectstore": [], "scheduler": []}
 #for $key, $value in $daemon_map.iteritems()
 #set $daemon_list = " ".join($value) if $value else $key
+%if 0%{?rhel} > 6
+%post $key
+if [ \$1 -eq 1 ] ; then
+    # Initial installation
+    for svc in $daemon_list; do
+        /usr/bin/systemctl preset %{daemon_prefix}-\${svc}.service
+    done
+fi
+%endif
+
 %preun $key
 if [ \$1 -eq 0 ] ; then
     for svc in $daemon_list; do
+%if ! (0%{?rhel} > 6)
         /sbin/service %{daemon_prefix}-\${svc} stop &>/dev/null
         /sbin/chkconfig --del %{daemon_prefix}-\${svc}
+%else
+        /usr/bin/systemctl --no-reload disable %{daemon_prefix}-\${svc}.service > /dev/null 2>&1 || :
+        /usr/bin/systemctl stop %{daemon_prefix}-\${svc}.service > /dev/null 2>&1 || :
+%endif
     done
     exit 0
 fi
@@ -536,7 +583,11 @@ fi
 if [ \$1 -ge 1 ] ; then
     # Package upgrade, not uninstall
     for svc in $daemon_list; do
+%if ! (0%{?rhel} > 6)
         /sbin/service %{daemon_prefix}-\${svc} condrestart &>/dev/null
+%else
+        /usr/bin/systemctl try-restart %{daemon_prefix}-\${svc}.service #>/dev/null 2>&1 || :
+%endif
     done
     exit 0
 fi
@@ -598,7 +649,11 @@ fi
 %{_datarootdir}/nova/rootwrap/compute.filters
 
 %if ! 0%{?usr_only}
+%if ! (0%{?rhel} > 6)
 %{_initrddir}/%{daemon_prefix}-compute
+%else
+%{_unitdir}/%{daemon_prefix}-compute.service
+%endif
 %endif
 
 
@@ -608,7 +663,11 @@ fi
 %{_datarootdir}/nova/rootwrap/network.filters
 
 %if ! 0%{?usr_only}
+%if ! (0%{?rhel} > 6)
 %{_initrddir}/%{daemon_prefix}-network
+%else
+%{_unitdir}/%{daemon_prefix}-network.service
+%endif
 %endif
 
 
@@ -616,14 +675,22 @@ fi
 %{_bindir}/nova-scheduler
 
 %if ! 0%{?usr_only}
+%if ! (0%{?rhel} > 6)
 %{_initrddir}/%{daemon_prefix}-scheduler
+%else
+%{_unitdir}/%{daemon_prefix}-scheduler.service
+%endif
 %endif
 
 
 %files cert
 %{_bindir}/nova-cert
 %if ! 0%{?usr_only}
+%if ! (0%{?rhel} > 6)
 %{_initrddir}/%{daemon_prefix}-cert
+%else
+%{_unitdir}/%{daemon_prefix}-cert.service
+%endif
 %defattr(-, nova, nova, -)
 %dir %{_sharedstatedir}/nova/CA/
 %dir %{_sharedstatedir}/nova/CA/certs
@@ -648,7 +715,11 @@ fi
 %{_datarootdir}/nova/rootwrap/api-metadata.filters
 
 %if ! 0%{?usr_only}
+%if ! (0%{?rhel} > 6)
 %{_initrddir}/openstack-nova-*api
+%else
+%{_unitdir}/%{daemon_prefix}-*api.service
+%endif
 %endif
 
 
@@ -656,14 +727,22 @@ fi
 %{_bindir}/nova-conductor
 
 %if ! 0%{?usr_only}
+%if ! (0%{?rhel} > 6)
 %{_initrddir}/openstack-nova-conductor
+%else
+%{_unitdir}/%{daemon_prefix}-conductor.service
+%endif
 %endif
 
 
 %files objectstore
 %{_bindir}/nova-objectstore
 %if ! 0%{?usr_only}
+%if ! (0%{?rhel} > 6)
 %{_initrddir}/%{daemon_prefix}-objectstore
+%else
+%{_unitdir}/%{daemon_prefix}-objectstore.service
+%endif
 %endif
 
 
@@ -673,16 +752,26 @@ fi
 %{_bindir}/nova-spicehtml5proxy
 
 %if ! 0%{?usr_only}
+%if ! (0%{?rhel} > 6)
 %{_initrddir}/openstack-nova-console*
 %{_initrddir}/openstack-nova-xvpvncproxy
 %{_initrddir}/openstack-nova-spicehtml5proxy
+%else
+%{_unitdir}/%{daemon_prefix}-console*.service
+%{_unitdir}/%{daemon_prefix}-xvpvncproxy.service
+%{_unitdir}/%{daemon_prefix}-spicehtml5proxy.service
+%endif
 %endif
 
 %files cells
 %{_bindir}/nova-cells
 
 %if ! 0%{?usr_only}
+%if ! (0%{?rhel} > 6)
 %{_initrddir}/openstack-nova-cells
+%else
+%{_unitdir}/%{daemon_prefix}-cells.service
+%endif
 %endif
 
 %files -n python-nova

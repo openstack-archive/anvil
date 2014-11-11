@@ -28,10 +28,17 @@ Source1:          cinder-sudoers
 Source2:          cinder.logrotate
 Source3:          cinder-tgt.conf
 
+%if ! (0%{?rhel} > 6)
 Source10:         openstack-cinder-api.init
 Source11:         openstack-cinder-scheduler.init
 Source12:         openstack-cinder-volume.init
 Source13:         openstack-cinder-all.init
+%else
+Source10:         openstack-cinder-api.service
+Source11:         openstack-cinder-scheduler.service
+Source12:         openstack-cinder-volume.service
+Source13:         openstack-cinder-all.service
+%endif
 
 #for $idx, $fn in enumerate($patches)
 Patch$idx: $fn
@@ -195,10 +202,17 @@ for i in etc/cinder/*; do
 done
 
 # Install initscripts for services
+%if ! (0%{?rhel} > 6)
 install -p -D -m 755 %{SOURCE10} %{buildroot}%{_initrddir}/%{daemon_prefix}-api
 install -p -D -m 755 %{SOURCE11} %{buildroot}%{_initrddir}/%{daemon_prefix}-scheduler
 install -p -D -m 755 %{SOURCE12} %{buildroot}%{_initrddir}/%{daemon_prefix}-volume
 install -p -D -m 755 %{SOURCE13} %{buildroot}%{_initrddir}/%{daemon_prefix}-all
+%else
+install -p -D -m 755 %{SOURCE10} %{buildroot}%{_unitdir}/%{daemon_prefix}-api.service
+install -p -D -m 755 %{SOURCE11} %{buildroot}%{_unitdir}/%{daemon_prefix}-scheduler.service
+install -p -D -m 755 %{SOURCE12} %{buildroot}%{_unitdir}/%{daemon_prefix}-volume.service
+install -p -D -m 755 %{SOURCE13} %{buildroot}%{_unitdir}/%{daemon_prefix}-all.service
+%endif
 
 # Install sudoers
 install -p -D -m 440 %{SOURCE1} %{buildroot}%{_sysconfdir}/sudoers.d/cinder
@@ -231,11 +245,26 @@ useradd -r -g cinder -d %{_sharedstatedir}/cinder -s /sbin/nologin \
 exit 0
 
 
+%if 0%{?rhel} > 6
+%post
+if [ \$1 -eq 1 ] ; then
+    # Initial installation
+    for svc in all volume api scheduler; do
+        /usr/bin/systemctl preset %{daemon_prefix}-\${svc}.service
+    done
+fi
+%endif
+
 %preun
 if [ $1 -eq 0 ] ; then
     for svc in all volume api scheduler; do
+%if ! (0%{?rhel} > 6)
         /sbin/chkconfig --del %{daemon_prefix}-${svc} &>/dev/null
         /sbin/service %{daemon_prefix}-${svc} stop &>/dev/null
+%else
+        /usr/bin/systemctl --no-reload disable %{daemon_prefix}-\${svc}.service > /dev/null 2>&1 || :
+        /usr/bin/systemctl stop %{daemon_prefix}-\${svc}.service > /dev/null 2>&1 || :
+%endif
     done
     exit 0
 fi
@@ -244,7 +273,11 @@ fi
 if [ $1 -ge 1 ] ; then
     # Package upgrade, not uninstall
     for svc in all volume api scheduler; do
+%if ! (0%{?rhel} > 6)
         /sbin/service %{daemon_prefix}-${svc} condrestart &>/dev/null
+%else
+        /usr/bin/systemctl try-restart %{daemon_prefix}-\${svc}.service #>/dev/null 2>&1 || :
+%endif
     done
     exit 0
 fi
@@ -260,7 +293,11 @@ fi
 %endif
 
 %if ! 0%{?usr_only}
+%if ! (0%{?rhel} > 6)
 %{_initrddir}/*
+%else
+%{_unitdir}/*
+%endif
 
 %dir %{_sysconfdir}/cinder
 %config(noreplace) %attr(-, root, cinder) %{_sysconfdir}/cinder/*
