@@ -17,7 +17,7 @@ prog=openstack-$bin
 exec="/usr/bin/$bin"
 pidfile="/var/run/$package/\$prog.pid"
 daemon_user=$package
-daemon_args=$daemon_args
+daemon_args='$daemon_args'
 
 #raw
 [ -e /etc/sysconfig/$prog ] && . /etc/sysconfig/$prog
