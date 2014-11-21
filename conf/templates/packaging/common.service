@@ -5,7 +5,8 @@ After=syslog.target network.target
 [Service]
 Type=simple
 User=$package
-ExecStart=/usr/bin/$bin
+ExecStart=/usr/bin/$bin $daemon_args
+StandardOutput=null
 
 [Install]
 WantedBy=multi-user.target
