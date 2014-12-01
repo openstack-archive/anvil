@@ -1,0 +1,12 @@
+[
+    {
+        "path": "/install_helper",
+        "value": "anvil.packaging.venv:VenvInstallHelper",
+        "op": "replace"
+    },
+    {
+        "path": "/dependency_handler",
+        "value": { "name": "anvil.packaging.venv:VenvDependencyHandler" },
+        "op": "replace"
+    }
+]
