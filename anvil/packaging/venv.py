@@ -15,8 +15,10 @@
 #    under the License.
 
 import contextlib
+import functools
 import itertools
 import os
+import re
 import tarfile
 
 import six
@@ -89,11 +91,14 @@ class VenvDependencyHandler(base.DependencyHandler):
             return True
         return False
 
-    def _replace_deployment_paths(self, root_dirn, pattstr):
-        for root, _, filenames in os.walk(root_dirn):
-            for fn in filenames:
-                cmd = ['sed', '--in-place', pattstr, os.path.join(root, fn)]
-                sh.execute(cmd=cmd, shell=False)
+    def _replace_deployment_paths(self, root_dir, replacer):
+        total_replacements = 0
+        for path in sh.listdir(root_dir, recursive=True, files_only=True):
+            new_contents, replacements = replacer(sh.load_file(path))
+            if replacements:
+                sh.write_file(path, new_contents)
+                total_replacements += replacements
+        return total_replacements
 
     def package_finish(self):
         super(VenvDependencyHandler, self).package_finish()
@@ -104,13 +109,16 @@ class VenvDependencyHandler(base.DependencyHandler):
 
             # Replace paths with virtualenv deployment directory.
             if self.opts.get('venv_deploy_dir'):
-                deploy_dir = os.path.join(self.opts.get('venv_deploy_dir'),
-                                          instance.name)
-                pattstr = ('s#{searchstr}#{replacestr}#g'.format(
-                           searchstr=instance.get_option('component_dir'),
-                           replacestr=deploy_dir))
-                bin_dir = os.path.join(venv_dir, 'bin')
-                self._replace_deployment_paths(bin_dir, pattstr)
+                deploy_dir = sh.joinpths(self.opts.get('venv_deploy_dir'),
+                                         instance.name)
+                replacer = functools.partial(
+                    re.subn, re.escape(instance.get_option('component_dir')),
+                    deploy_dir)
+                bin_dir = sh.joinpths(venv_dir, 'bin')
+                adjustments = self._replace_deployment_paths(bin_dir, replacer)
+                if adjustments:
+                    LOG.info("Adjusted deployment path(s) in %s files",
+                             adjustments)
 
             # Create a tarball containing the virtualenv.
             tar_filename = sh.joinpths(venv_dir, '%s-venv.tar.gz' % instance.name)
