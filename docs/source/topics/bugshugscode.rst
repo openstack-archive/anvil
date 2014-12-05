@@ -53,7 +53,7 @@ Help and developer work/time is always much appreciated!
 
 .. _apache version 2.0 license: http://www.apache.org/licenses/LICENSE-2.0.html
 .. _bug: http://bugs.launchpad.net/anvil
-.. _contribute: http://wiki.openstack.org/wiki/How_To_Contribute
+.. _contribute: http://docs.openstack.org/infra/manual/developers.html
 .. _freenode: http://freenode.net/irc_servers.shtml
 .. _hacking guidelines: http://github.com/stackforge/anvil/blob/master/HACKING.md
 .. _havana: http://wiki.openstack.org/wiki/Releases
