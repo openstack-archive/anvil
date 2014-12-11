@@ -29,6 +29,7 @@ components:
 - nova-client
 - swift-client
 - trove-client
+- openstack-client
 # Additional libraries
 - openvswitch
 - django-openstack-auth

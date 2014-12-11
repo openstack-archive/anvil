@@ -226,7 +226,6 @@ components:
     openstack-client:
         python_entrypoints: True
         action_classes:
-            install: anvil.components.openstack_client:OpenStackClientInstaller
             test: anvil.components.openstack_client:OpenStackClientTester
             coverage: anvil.components.openstack_client:OpenStackClientTester
     openvswitch:
