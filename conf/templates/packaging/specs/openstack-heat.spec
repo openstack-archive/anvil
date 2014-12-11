@@ -135,6 +135,9 @@ Components common to all OpenStack Heat services
 %doc LICENSE
 %{_bindir}/heat-db-setup
 %{_bindir}/heat-keystone-setup
+#if $newer_than('2014.2')
+%{_bindir}/heat-keystone-setup-domain
+#end if
 %{_bindir}/heat-manage
 %{python_sitelib}/heat*
 %if ! 0%{?usr_only}
