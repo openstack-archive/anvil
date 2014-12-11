@@ -36,6 +36,15 @@ Source16:         openstack-ceilometer-notification.init
 Source16:         openstack-ceilometer-notification.service
 %endif
 #end if
+#if $newer_than_eq('2014.2')
+%if ! (0%{?rhel} > 6)
+Source17:         openstack-ceilometer-ipmi.init
+%else
+Source17:         openstack-ceilometer-ipmi.service
+%endif
+Source18:         ceilometer-rootwrap-sudoers
+#end if
+
 
 Source20:          ceilometer-dist.conf
 Source21:          ceilometer.logrotate
@@ -65,7 +74,15 @@ BuildRequires:    python-setuptools
 BuildRequires:    python-pbr
 BuildRequires:    python-d2to1
 BuildRequires:    python2-devel
+#Rhel6 requires
+%if ! (0%{?fedora} <= 12 || 0%{?rhel} <= 6)
 BuildRequires:    python-webob1.2
+%endif
+
+#rhel7 requires
+%if ! (0%{?fedora} > 12 || 0%{?rhel} > 6)
+BuildRequires:    python-webob
+%endif
 
 %description
 OpenStack ceilometer provides services to measure and
@@ -199,6 +216,29 @@ and evaluation services.
 %{python_sitelib}/ceilometer
 %{python_sitelib}/ceilometer-%{os_version}*.egg-info
 
+#if $newer_than_eq('2014.2')
+%package ipmi
+Summary:          OpenStack ceilometer ipmi agent
+Group:            Applications/System
+
+Requires:         %{name}-common = %{version}-%{release}
+
+Requires:         python-novaclient
+Requires:         python-keystoneclient
+Requires:         python-neutronclient
+Requires:         python-tooz
+Requires:         python-oslo-rootwrap
+Requires:         ipmitool
+
+%description ipmi
+OpenStack ceilometer provides services to measure and
+collect metrics from OpenStack components.
+
+This package contains the ipmi agent to be run on OpenStack
+nodes from which IPMI sensor data is to be collected directly,
+by-passing Ironic's management of baremetal.
+#end if
+
 %if 0%{?with_doc}
 %package doc
 Summary:          Documentation for OpenStack ceilometer
@@ -267,14 +307,30 @@ popd
 install -d -m 755 %{buildroot}%{_sharedstatedir}/ceilometer
 install -d -m 755 %{buildroot}%{_sharedstatedir}/ceilometer/tmp
 install -d -m 755 %{buildroot}%{_localstatedir}/log/ceilometer
+#if $newer_than_eq('2014.2')
+install -d -m 755 %{buildroot}%{_sharedstatedir}/ceilometer/rootwrap.d
+#end if
 
 # Install config files
 install -d -m 755 %{buildroot}%{_sysconfdir}/ceilometer
+#if $older_than('2014.2')
 install -p -D -m 640 %{SOURCE20} %{buildroot}%{_datadir}/ceilometer/ceilometer-dist.conf
 install -p -D -m 640 etc/ceilometer/ceilometer.conf.sample %{buildroot}%{_sysconfdir}/ceilometer/ceilometer.conf
+
 install -p -D -m 640 etc/ceilometer/policy.json %{buildroot}%{_sysconfdir}/ceilometer/policy.json
 install -p -D -m 640 etc/ceilometer/sources.json %{buildroot}%{_sysconfdir}/ceilometer/sources.json
 install -p -D -m 640 etc/ceilometer/pipeline.yaml %{buildroot}%{_sysconfdir}/ceilometer/pipeline.yaml
+#else
+#raw
+for i in etc/ceilometer/*; do
+    if [ -f $i ] ; then
+        install -p -D -m 640 $i  %{buildroot}%{_sysconfdir}/ceilometer
+    fi
+done
+#end raw
+mkdir -p %{buildroot}%{_sysconfdir}/ceilometer/rootwrap.d/
+install -p -D -m 644 etc/ceilometer/rootwrap.d/* %{buildroot}%{_sysconfdir}/ceilometer/rootwrap.d/
+#end if
 
 %if ! (0%{?rhel} > 6)
 # Install initscripts for services
@@ -297,6 +353,13 @@ install -p -D -m 755 %{SOURCE15} %{buildroot}%{_unitdir}/%{name}-alarm-evaluator
 install -p -D -m 755 %{SOURCE16} %{buildroot}%{_initrddir}/%{name}-notification
 %else
 install -p -D -m 755 %{SOURCE16} %{buildroot}%{_unitdir}/%{name}-notification.service
+%endif
+#end if
+#if $newer_than_eq('2014.2')
+%if ! (0%{?rhel} > 6)
+install -p -D -m 755 %{SOURCE17} %{buildroot}%{_initrddir}/%{name}-ipmi
+%else
+install -p -D -m 755 %{SOURCE17} %{buildroot}%{_unitdir}/%{name}-ipmi.service
 %endif
 #end if
 
@@ -339,13 +402,17 @@ exit 0
 %files common
 %doc LICENSE
 %dir %{_sysconfdir}/ceilometer
+#if $older_than('2014.2')
 %attr(-, root, ceilometer) %{_datadir}/ceilometer/ceilometer-dist.conf
 %config(noreplace) %attr(-, root, ceilometer) %{_sysconfdir}/ceilometer/ceilometer.conf
 %config(noreplace) %attr(-, root, ceilometer) %{_sysconfdir}/ceilometer/policy.json
 %config(noreplace) %attr(-, root, ceilometer) %{_sysconfdir}/ceilometer/sources.json
 %config(noreplace) %attr(-, root, ceilometer) %{_sysconfdir}/ceilometer/pipeline.yaml
-%config(noreplace) %{_sysconfdir}/logrotate.d/%{name}
+#else
+%config(noreplace) %attr(-, root, ceilometer) %{_sysconfdir}/ceilometer/*
+#end if
 
+%config(noreplace) %{_sysconfdir}/logrotate.d/%{name}
 %dir %attr(0755, ceilometer, root) %{_localstatedir}/log/ceilometer
 %dir %attr(0755, ceilometer, root) %{_localstatedir}/run/ceilometer
 
@@ -422,7 +489,9 @@ fi
 %endif
 
 %files api
+#if $older_than('2014.2')
 %doc ceilometer/api/v1/static/LICENSE.*
+#end if
 %{_bindir}/ceilometer-api
 %if ! (0%{?rhel} > 6)
 %{_initrddir}/%{name}-api
@@ -528,7 +597,6 @@ fi
 %else
 %{_unitdir}/%{name}-notification.service
 %endif
-#end if
 
 %if 0%{?rhel} > 6
 %post notification
@@ -551,5 +619,40 @@ if [ $1 -ge 1 ] ; then
         /usr/bin/systemctl try-restart %{name}-notification.service #>/dev/null 2>&1 || :
 fi
 %endif
+#end if
 
+#if $newer_than_eq('2014.2')
+%files ipmi
+%config(noreplace) %attr(-, root, ceilometer) %{_sysconfdir}/ceilometer/rootwrap.d/ipmi.filters
+%{_bindir}/ceilometer-agent-ipmi
+%{_bindir}/ceilometer-rootwrap
+%if 0%{?rhel} && 0%{?rhel} <= 6
+%{_initrddir}/%{name}-ipmi
+%else
+%{_unitdir}/%{name}-ipmi.service
+%endif
+
+
+%if 0%{?rhel} > 6
+%post ipmi
+if [ $1 -eq 1 ] ; then
+        # Initial installation
+        /usr/bin/systemctl preset %{name}-ipmi.service
+fi
+
+%preun ipmi
+if [ $1 -eq 0 ] ; then
+        # Package removal, not upgrade
+        /usr/bin/systemctl --no-reload disable %{name}-ipmi.service > /dev/null 2>&1 || :
+        /usr/bin/systemctl stop %{name}-ipmi.service > /dev/null 2>&1 || :
+fi
+
+%postun ipmi
+/usr/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+if [ $1 -ge 1 ] ; then
+        # Package upgrade, not uninstall
+        /usr/bin/systemctl try-restart %{name}-ipmi.service #>/dev/null 2>&1 || :
+fi
+%endif
+#end if
 %changelog
