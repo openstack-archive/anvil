@@ -42,8 +42,19 @@ Source15:	neutron-dhcp-agent.init
 Source16:	neutron-l3-agent.init
 Source17:	neutron-ovs-cleanup.init
 Source18:	neutron-hyperv-agent.init
+#if $older_than('2014.2')
 Source19:	neutron-rpc-zmq-receiver.init
+#end if
 Source20:	neutron-metadata-agent.init
+#if $newer_than('2014.2')
+Source21:       neutron-lbaas-agent.init
+Source22:       neutron-mlnx-agent.init
+Source23:       neutron-vpn-agent.init
+Source24:       neutron-metering-agent.init
+Source25:       neutron-sriov-nic-agent.init
+Source26:       neutron-cisco-cfg-agent.init
+Source27:       neutron-netns-cleanup.init
+#end if
 %else
 Source10:      neutron-server.service
 Source11:      neutron-linuxbridge-agent.service
@@ -54,8 +65,19 @@ Source15:      neutron-dhcp-agent.service
 Source16:      neutron-l3-agent.service
 Source17:      neutron-ovs-cleanup.service
 Source18:      neutron-hyperv-agent.service
+#if $older_than('2014.2')
 Source19:      neutron-rpc-zmq-receiver.service
+#end if
 Source20:      neutron-metadata-agent.service
+#if $newer_than('2014.2')
+Source21:      neutron-lbaas-agent.service
+Source22:      neutron-mlnx-agent.service
+Source23:      neutron-vpn-agent.service
+Source24:      neutron-metering-agent.service
+Source25:      neutron-sriov-nic-agent.service
+Source26:      neutron-cisco-cfg-agent.service
+Source27:      neutron-netns-cleanup.service
+#end if
 %endif
 
 #for $idx, $fn in enumerate($patches)
@@ -253,6 +275,19 @@ networks.
 This package contains the neutron plugin that implements virtual
 networks as VLANs using Linux bridging.
 
+#if $newer_than('2014.2')
+%package -n openstack-neutron-metering-agent
+Summary:        Neutron bandwidth metering agent
+Group:          Applications/System
+
+Requires:       openstack-neutron = %{version}-%{release}
+
+%description -n openstack-neutron-metering-agent
+Neutron provides an API to measure bandwidth utilization
+
+This package contains the Neutron agent responsible for generating bandwidth
+utilization notifications.
+#end if
 
 %package -n openstack-neutron-midonet
 Summary:	Neutron MidoNet plugin
@@ -370,6 +405,19 @@ This package contains the neutron plugin that implements virtual
 networks using ofagent.
 #end if
 
+#if $newer_than('2014.2')
+%package -n openstack-neutron-opencontrail
+Summary:        Neutron OpenContrail plugin
+Group:          Applications/system
+
+Requires:       openstack-neutron = %{version}-%{release}
+
+
+%description -n openstack-neutron-opencontrail
+This plugin implements Neutron v2 APIs with support for the OpenContrail
+plugin.
+#end if
+
 %package -n openstack-neutron-openvswitch
 Summary:	Neutron openvswitch plugin
 Group:		Applications/System
@@ -441,6 +489,20 @@ networks.
 This package contains the neutron plugin that implements virtual
 networks using the Ryu Network Operating System.
 
+#if $newer_than('2014.2')
+%package -n openstack-neutron-sriov-nic-agent
+Summary:        Neutron SR-IOV NIC agent
+Group:          Applications/system
+
+Requires:       openstack-neutron = %{version}-%{release}
+
+
+%description -n openstack-neutron-sriov-nic-agent
+Neutron allows to run virtual instances using SR-IOV NIC hardware
+
+This package contains the Neutron agent to support advanced features of
+SR-IOV network cards.
+#end if
 
 %package -n openstack-neutron-nec
 Summary:	Neutron NEC plugin
@@ -493,6 +555,19 @@ networks.
 This package adds VMWare NSX support for Neutron,
 #end if
 
+#if $newer_than('2014.2')
+%package -n openstack-neutron-vpn-agent
+Summary:        Neutron VPNaaS agent
+Group:          Applications/System
+
+Requires:       openstack-neutron = %{version}-%{release}
+
+%description -n openstack-neutron-vpn-agent
+Neutron provides an API to implement VPN as a service
+
+This package contains the Neutron agent responsible for implementing VPNaaS with
+IPSec.
+#end if
 
 %if ! 0%{?no_tests}
 %package -n python-%{python_name}-tests
@@ -597,6 +672,7 @@ install -p -D -m 644 %{SOURCE1} %{buildroot}%{_sysconfdir}/logrotate.d/openstack
 # Install sudoers
 install -p -D -m 440 %{SOURCE2} %{buildroot}%{_sysconfdir}/sudoers.d/neutron
 
+#end raw
 # Install sysv init scripts
 %if ! (0%{?rhel} > 6)
 install -p -D -m 755 %{SOURCE10} %{buildroot}%{_initrddir}/%{daemon_prefix}-server
@@ -608,8 +684,19 @@ install -p -D -m 755 %{SOURCE15} %{buildroot}%{_initrddir}/%{daemon_prefix}-dhcp
 install -p -D -m 755 %{SOURCE16} %{buildroot}%{_initrddir}/%{daemon_prefix}-l3-agent
 install -p -D -m 755 %{SOURCE17} %{buildroot}%{_initrddir}/%{daemon_prefix}-ovs-cleanup
 install -p -D -m 755 %{SOURCE18} %{buildroot}%{_initrddir}/%{daemon_prefix}-hyperv-agent
+#if $older_than('2014.2')
 install -p -D -m 755 %{SOURCE19} %{buildroot}%{_initrddir}/%{daemon_prefix}-rpc-zmq-receiver
+#end if
 install -p -D -m 755 %{SOURCE20} %{buildroot}%{_initrddir}/%{daemon_prefix}-metadata-agent
+#if $newer_than('2014.2')
+install -p -D -m 755 %{SOURCE21} %{buildroot}%{_initrddir}/%{daemon_prefix}-lbaas-agent
+install -p -D -m 755 %{SOURCE22} %{buildroot}%{_initrddir}/%{daemon_prefix}-mlnx-agent
+install -p -D -m 755 %{SOURCE23} %{buildroot}%{_initrddir}/%{daemon_prefix}-vpn-agent
+install -p -D -m 755 %{SOURCE24} %{buildroot}%{_initrddir}/%{daemon_prefix}-metering-agent
+install -p -D -m 755 %{SOURCE25} %{buildroot}%{_initrddir}/%{daemon_prefix}-sriov-nic-agent
+install -p -D -m 755 %{SOURCE26} %{buildroot}%{_initrddir}/%{daemon_prefix}-cisco-cfg-agent
+install -p -D -m 755 %{SOURCE27} %{buildroot}%{_initrddir}/%{daemon_prefix}-netns-cleanup
+#end if
 %else
 install -p -D -m 755 %{SOURCE10} %{buildroot}%{_unitdir}/%{daemon_prefix}-server.service
 install -p -D -m 755 %{SOURCE11} %{buildroot}%{_unitdir}/%{daemon_prefix}-linuxbridge-agent.service
@@ -620,8 +707,19 @@ install -p -D -m 755 %{SOURCE15} %{buildroot}%{_unitdir}/%{daemon_prefix}-dhcp-a
 install -p -D -m 755 %{SOURCE16} %{buildroot}%{_unitdir}/%{daemon_prefix}-l3-agent.service
 install -p -D -m 755 %{SOURCE17} %{buildroot}%{_unitdir}/%{daemon_prefix}-ovs-cleanup.service
 install -p -D -m 755 %{SOURCE18} %{buildroot}%{_unitdir}/%{daemon_prefix}-hyperv-agent.service
+#if $older_than('2014.2')
 install -p -D -m 755 %{SOURCE19} %{buildroot}%{_unitdir}/%{daemon_prefix}-rpc-zmq-receiver.service
+#end if
 install -p -D -m 755 %{SOURCE20} %{buildroot}%{_unitdir}/%{daemon_prefix}-metadata-agent.service
+#if $newer_than('2014.2')
+install -p -D -m 755 %{SOURCE21} %{buildroot}%{_unitdir}/%{daemon_prefix}-lbaas-agent.service
+install -p -D -m 755 %{SOURCE22} %{buildroot}%{_unitdir}/%{daemon_prefix}-mlnx-agent.service
+install -p -D -m 755 %{SOURCE23} %{buildroot}%{_unitdir}/%{daemon_prefix}-vpn-agent.service
+install -p -D -m 755 %{SOURCE24} %{buildroot}%{_unitdir}/%{daemon_prefix}-metering-agent.service
+install -p -D -m 755 %{SOURCE25} %{buildroot}%{_unitdir}/%{daemon_prefix}-sriov-nic-agent.service
+install -p -D -m 755 %{SOURCE26} %{buildroot}%{_unitdir}/%{daemon_prefix}-cisco-cfg-agent.service
+install -p -D -m 755 %{SOURCE27} %{buildroot}%{_unitdir}/%{daemon_prefix}-netns-cleanup.service
+#end if
 %endif
 
 # Setup directories
@@ -630,6 +728,7 @@ install -d -m 755 %{buildroot}%{_localstatedir}/log/neutron
 install -d -m 755 %{buildroot}%{_localstatedir}/lock/neutron
 install -d -m 755 %{buildroot}%{_localstatedir}/run/neutron
 
+#raw
 # Install version info file
 cat > %{buildroot}%{_sysconfdir}/neutron/release <<EOF
 [Neutron]
@@ -655,8 +754,12 @@ exit 0
 
 # Do not autostart daemons in %post since they are not configured yet
 #end raw
-
+#if $older_than('2014.2')
 #set $daemon_map = {"": ["server", "dhcp-agent", "l3-agent"], "linuxbridge": ["linuxbridge-agent"], "openvswitch": ["openvswitch-agent", "ovs-cleanup"], "ryu": ["ryu-agent"], "nec": ["nec-agent"]}
+#end if
+#if $newer_than_eq('2014.2')
+#set $daemon_map = {"": ["server", "dhcp-agent", "l3-agent", "lbaas-agent", "netns-cleanup"], "linuxbridge": ["linuxbridge-agent"], "openvswitch": ["openvswitch-agent", "ovs-cleanup"], "ryu": ["ryu-agent"], "nec": ["nec-agent"], "mlnx": ["mlnx-agent"], "vpn-agent": ["vpn-agent"], "metering-agent": ["metering-agent"], "sriov-nic-agent": ["sriov-nic-agent"], "cisco": ["cisco-cfg-agent"]}
+#end if
 #for $key, $value in $daemon_map.iteritems()
 #set $daemon_list = " ".join($value) if $value else $key
 
@@ -708,14 +811,23 @@ fi
 %{_bindir}/*-l3-agent
 %{_bindir}/*-lbaas-agent
 %{_bindir}/*-metadata-agent
+#if $older_than('2014.2')
 %{_bindir}/*-metering-agent
+#end if
 %{_bindir}/*-netns-cleanup
 %{_bindir}/*-ns-metadata-proxy
 %{_bindir}/*-rootwrap
+#if $older_than('2014.2')
 %{_bindir}/*-rpc-zmq-receiver
+#end if
 %{_bindir}/*-server
 %{_bindir}/*-usage-audit
+#if $older_than('2014.2')
 %{_bindir}/*-vpn-agent
+#end if
+#if $newer_than('2014.2')
+%{_bindir}/neutron-sanity-check
+#end if
 
 %{_datarootdir}/neutron
 %exclude %{_datarootdir}/neutron/rootwrap/linuxbridge-plugin.filters
@@ -729,13 +841,25 @@ fi
 %{_initrddir}/%{daemon_prefix}-dhcp-agent
 %{_initrddir}/%{daemon_prefix}-l3-agent
 %{_initrddir}/%{daemon_prefix}-metadata-agent
+#if $older_than('2014.2')
 %{_initrddir}/%{daemon_prefix}-rpc-zmq-receiver
+#end if
+#if $newer_than('2014.2')
+%{_initrddir}/%{daemon_prefix}-lbaas-agent
+%{_initrddir}/%{daemon_prefix}-netns-cleanup
+#end if
 %else
 %{_unitdir}/%{daemon_prefix}-server.service
 %{_unitdir}/%{daemon_prefix}-dhcp-agent.service
 %{_unitdir}/%{daemon_prefix}-l3-agent.service
 %{_unitdir}/%{daemon_prefix}-metadata-agent.service
+#if $older_than('2014.2')
 %{_unitdir}/%{daemon_prefix}-rpc-zmq-receiver.service
+#end if
+#if $newer_than('2014.2')
+%{_unitdir}/%{daemon_prefix}-lbaas-agent.service
+%{_unitdir}/%{daemon_prefix}-netns-cleanup.service
+#end if
 %endif
 %dir %{_sysconfdir}/neutron
 %{_sysconfdir}/neutron/release
@@ -755,7 +879,9 @@ fi
 %files -n python-neutron
 %doc LICENSE
 %{python_sitelib}/neutron
+#if $older_than('2014.2')
 %{python_sitelib}/quantum
+#end if
 %exclude %{python_sitelib}/neutron/tests
 %exclude %{python_sitelib}/neutron/plugins/bigswitch
 %exclude %{python_sitelib}/neutron/plugins/brocade
@@ -767,7 +893,9 @@ fi
 %exclude %{python_sitelib}/neutron/plugins/nec
 %exclude %{python_sitelib}/neutron/plugins/ml2
 %exclude %{python_sitelib}/neutron/plugins/mlnx
+#if $older_than('2014.2')
 %exclude %{python_sitelib}/neutron/plugins/nicira
+#end if
 %exclude %{python_sitelib}/neutron/plugins/openvswitch
 %exclude %{python_sitelib}/neutron/plugins/plumgrid
 %exclude %{python_sitelib}/neutron/plugins/ryu
@@ -781,7 +909,9 @@ fi
 %exclude %{python_sitelib}/neutron/plugins/oneconvergence
 %exclude %{python_sitelib}/neutron/plugins/vmware
 #end if
-
+#if $newer_than_eq('2014.2')
+%exclude %{python_sitelib}/neutron/plugins/opencontrail
+#end if
 %{python_sitelib}/neutron-*.egg-info
 
 
@@ -798,7 +928,7 @@ fi
 %dir %{_sysconfdir}/neutron/plugins/bigswitch
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/bigswitch/*.ini
 #if $newer_than_eq('2014.1.dev146.g79fbeb7')
-%doc %{_sysconfdir}/neutron/plugins/bigswitch/*
+%doc %{_sysconfdir}/neutron/plugins/bigswitch/ssl/*
 #end if
 %endif
 
@@ -819,10 +949,20 @@ fi
 %doc LICENSE
 %doc neutron/plugins/cisco/README
 %{python_sitelib}/neutron/plugins/cisco
+#if $newer_than('2014.2')
+%{_bindir}/neutron-cisco-cfg-agent
+#end if
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/cisco
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/cisco/*.ini
+#if $newer_than('2014.2')
+%if ! (0%{?rhel} > 6)
+%{_initrddir}/%{daemon_prefix}-cisco-cfg-agent
+%else
+%{_unitdir}/%{daemon_prefix}-cisco-cfg-agent.service
+%endif
+#end if
 %endif
 
 #if $newer_than_eq('2014.1.1')
@@ -884,6 +1024,20 @@ fi
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/linuxbridge/*.ini
 %endif
 
+#if $newer_than('2014.2')
+%files -n openstack-neutron-metering-agent
+%doc LICENSE
+%{_bindir}/neutron-metering-agent
+
+%if ! 0%{?usr_only}
+%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/metering_agent.ini
+%if ! (0%{?rhel} > 6)
+%{_initrddir}/%{daemon_prefix}-metering-agent
+%else
+%{_unitdir}/%{daemon_prefix}-metering-agent.service
+%endif
+%endif
+#end if
 
 %files -n openstack-neutron-midonet
 %doc LICENSE
@@ -913,6 +1067,13 @@ fi
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/mlnx
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/mlnx/*.ini
+#if $newer_than('2014.2')
+%if ! (0%{?rhel} > 6)
+%{_initrddir}/%{daemon_prefix}-mlnx-agent
+%else
+%{_unitdir}/%{daemon_prefix}-mlnx-agent.service
+%endif
+#end if
 %endif
 
 #if $older_than('2014.1')
@@ -921,12 +1082,12 @@ fi
 %doc neutron/plugins/nicira/README
 %{_bindir}/*-check-nvp-config
 %{python_sitelib}/neutron/plugins/nicira
-#end if
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/nicira
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/nicira/*.ini
 %endif
+#end if
 
 #if $newer_than_eq('2014.1')
 %files -n openstack-neutron-nuage
@@ -947,6 +1108,17 @@ fi
 %{_bindir}/*-ofagent-agent
 %doc neutron/plugins/ofagent/README
 %{python_sitelib}/neutron/plugins/ofagent
+#end if
+
+#if $newer_than('2014.2')
+%files -n openstack-neutron-opencontrail
+%doc LICENSE
+#%doc neutron/plugins/opencontrail/README
+%dir %{_sysconfdir}/neutron/plugins/opencontrail
+
+%if ! 0%{?usr_only}
+%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/opencontrail/*.ini
+%endif
 #end if
 
 #if $newer_than_eq('2014.1.b1')
@@ -1010,6 +1182,20 @@ fi
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/ryu/*.ini
 %endif
 
+#if $newer_than('2014.2')
+%files -n openstack-neutron-sriov-nic-agent
+%doc LICENSE
+%{_bindir}/neutron-sriov-nic-agent
+
+%if ! 0%{?usr_only}
+%if ! (0%{?rhel} > 6)
+%{_initrddir}/%{daemon_prefix}-sriov-nic-agent
+%else
+%{_unitdir}/%{daemon_prefix}-sriov-nic-agent.service
+%endif
+%endif
+#end if
+
 %files -n openstack-neutron-nec
 %doc LICENSE
 %doc neutron/plugins/nec/README
@@ -1031,16 +1217,19 @@ fi
 %files -n openstack-neutron-vmware
 %doc LICENSE
 %{_bindir}/neutron*nsx-*
+#if $older_than('2014.2')
 %{_bindir}/*-check-nvp-config
+#end if
 %{python_sitelib}/neutron/plugins/vmware
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/vmware
+#if $older_than('2014.2')
 %dir %{_sysconfdir}/neutron/plugins/nicira
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/vmware/*.ini
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/nicira/*.ini
+#end if
+%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/vmware/*.ini
 %endif
-
 #end if
 
 %files -n openstack-neutron-metaplugin
@@ -1058,5 +1247,20 @@ fi
 %{tests_data_dir}
 %{_bindir}/%{python_name}-make-test-env
 %endif
+
+#if $newer_than('2014.2')
+%files -n openstack-neutron-vpn-agent
+%doc LICENSE
+%{_bindir}/neutron-vpn-agent
+%{_datarootdir}/neutron/rootwrap/vpnaas.filters
+%if ! 0%{?usr_only}
+%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/vpn_agent.ini
+%if ! (0%{?rhel} > 6)
+%{_initrddir}/%{daemon_prefix}-vpn-agent
+%else
+%{_unitdir}/%{daemon_prefix}-vpn-agent.service
+%endif
+%endif
+#end if
 
 %changelog

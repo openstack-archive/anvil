@@ -1,0 +1,2 @@
+Defaults:ceilometer !requiretty
+ceilometer ALL = (root) NOPASSWD: /usr/bin/ceilometer-rootwrap /etc/ceilometer/rootwrap.conf *
