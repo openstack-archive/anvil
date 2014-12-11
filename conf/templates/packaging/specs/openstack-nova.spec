@@ -42,6 +42,7 @@ Source25:         openstack-nova-metadata-api.init
 Source26:         openstack-nova-conductor.init
 Source27:         openstack-nova-cells.init
 Source28:         openstack-nova-spicehtml5proxy.init
+Source29:         openstack-nova-serialproxy.init
 %else
 Source10:         openstack-nova-api.service
 Source11:         openstack-nova-cert.service
@@ -56,6 +57,7 @@ Source25:         openstack-nova-metadata-api.service
 Source26:         openstack-nova-conductor.service
 Source27:         openstack-nova-cells.service
 Source28:         openstack-nova-spicehtml5proxy.service
+Source29:         openstack-nova-serialproxy.service
 %endif
 
 Source50:         nova-ifc-template
@@ -316,6 +318,26 @@ standard hardware configurations and seven major hypervisors.
 This package contains the Nova Cells service providing additional
 scaling and (geographic) distribution for compute services.
 
+#if $newer_than_eq('2014.2')
+%package serialproxy
+Summary:          OpenStack Nova serial console access service
+Group:            Applications/System
+
+Requires:         openstack-nova-common = %{epoch}:%{version}-%{release}
+
+%description serialproxy
+OpenStack Compute (codename Nova) is open source software designed to
+provision and manage large networks of virtual machines, creating a
+redundant and scalable cloud computing platform. It gives you the
+software, control panels, and APIs required to orchestrate a cloud,
+including running instances, managing networks, and controlling access
+through users and projects. OpenStack Compute strives to be both
+hardware and hypervisor agnostic, currently supporting a variety of
+standard hardware configurations and seven major hypervisors.
+
+This package contains the Nova services providing the
+serial console access service to Virtual Machines.
+#end if
 
 %package -n       python-nova
 Summary:          Nova Python libraries
@@ -352,6 +374,9 @@ Requires:         %{name}-conductor = %{epoch}:%{version}-%{release}
 Requires:         %{name}-objectstore = %{epoch}:%{version}-%{release}
 Requires:         %{name}-console = %{epoch}:%{version}-%{release}
 Requires:         %{name}-cells = %{epoch}:%{version}-%{release}
+#if $newer_than_eq('2014.2')
+Requires:         %{name}-serialproxy = %{epoch}:%{version}-%{release}
+#end if
 Requires:         python-%{python_name} = %{epoch}:%{version}-%{release}
 
 # Test requirements:
@@ -388,7 +413,6 @@ This package contains documentation files for %{name}.
 #for $idx, $fn in enumerate($patches)
 %patch$idx -p1
 #end for
-#raw
 
 %build
 %{__python} setup.py build
@@ -398,11 +422,12 @@ rm -rf %{buildroot}
 %{__python} setup.py install -O1 --skip-build --root %{buildroot}
 
 %if 0%{?with_doc}
+#raw
 export PYTHONPATH="$PWD:$PYTHONPATH"
 pushd doc
 sphinx-build -b html source build/html
 popd
-
+#end raw
 # Fix hidden-file-or-dir warnings
 rm -fr doc/build/html/.doctrees doc/build/html/.buildinfo
 %endif
@@ -434,12 +459,13 @@ find %{buildroot}%{_sharedstatedir}/nova/CA -name .placeholder -delete
 
 # Install config files
 install -d -m 755 %{buildroot}%{_sysconfdir}/nova
+#raw
 for i in etc/nova/*; do
     if [ -f $i ] ; then
         install -p -D -m 640 $i  %{buildroot}%{_sysconfdir}/nova/
     fi
 done
-
+#end raw
 # Install initscripts for Nova services
 %if ! (0%{?rhel} > 6)
 install -p -D -m 755 %{SOURCE10} %{buildroot}%{_initrddir}/%{daemon_prefix}-api
@@ -455,9 +481,14 @@ install -p -D -m 755 %{SOURCE25} %{buildroot}%{_initrddir}/%{daemon_prefix}-meta
 install -p -D -m 755 %{SOURCE26} %{buildroot}%{_initrddir}/%{daemon_prefix}-conductor
 install -p -D -m 755 %{SOURCE27} %{buildroot}%{_initrddir}/%{daemon_prefix}-cells
 install -p -D -m 755 %{SOURCE28} %{buildroot}%{_initrddir}/%{daemon_prefix}-spicehtml5proxy
+#if $newer_than_eq('2014.2')
+install -p -D -m 755 %{SOURCE29} %{buildroot}%{_initrddir}/%{daemon_prefix}-serialproxy
+#end if
 
+#raw
 #fix metadata-api bin name
 sed -i s?exec=\"/usr/bin/nova-metadata-api\"?exec=\"/usr/bin/nova-api-metadata\"? %{buildroot}%{_initrddir}/%{daemon_prefix}-metadata-api
+#end raw
 %else
 install -p -D -m 755 %{SOURCE10} %{buildroot}%{_unitdir}/%{daemon_prefix}-api.service
 install -p -D -m 755 %{SOURCE11} %{buildroot}%{_unitdir}/%{daemon_prefix}-cert.service
@@ -472,6 +503,9 @@ install -p -D -m 755 %{SOURCE25} %{buildroot}%{_unitdir}/%{daemon_prefix}-metada
 install -p -D -m 755 %{SOURCE26} %{buildroot}%{_unitdir}/%{daemon_prefix}-conductor.service
 install -p -D -m 755 %{SOURCE27} %{buildroot}%{_unitdir}/%{daemon_prefix}-cells.service
 install -p -D -m 755 %{SOURCE28} %{buildroot}%{_unitdir}/%{daemon_prefix}-spicehtml5proxy.service
+#if $newer_than_eq('2014.2')
+install -p -D -m 755 %{SOURCE29} %{buildroot}%{_unitdir}/%{daemon_prefix}-serialproxy.service
+#end if
 %endif
 
 # Install sudoers
@@ -496,7 +530,7 @@ mkdir -p %{buildroot}%{_datarootdir}/nova/rootwrap/
 install -p -D -m 644 etc/nova/rootwrap.d/* %{buildroot}%{_datarootdir}/nova/rootwrap/
 
 # Network configuration templates for injection engine
-install -d -m 755 %{buildroot}%{_datarootdir}/nova/interfaces
+install -d -m 755 %{buildroot}%{_datarootdir}/nova/interfaces/
 install -p -D -m 644 nova/virt/interfaces.template %{buildroot}%{_datarootdir}/nova/interfaces/interfaces.ubuntu.template
 install -p -D -m 644 %{SOURCE50} %{buildroot}%{_datarootdir}/nova/interfaces.template
 
@@ -510,9 +544,7 @@ rm -f %{buildroot}/usr/share/doc/nova/README*
 rm -f %{buildroot}%{_bindir}/nova-novncproxy
 
 %if ! 0%{?no_tests}
-#end raw
 #include $part_fn("install_tests.sh")
-#raw
 %endif
 
 %clean
@@ -550,9 +582,12 @@ fi
 exit 0
 
 # Do not autostart daemons in %post since they are not configured yet
-#end raw
 
+#if $older_than('2014.2')
 #set $daemon_map = {"api": ["api", "metadata-api"], "cells": [], "cert": [], "compute": [], "console": ["console", "consoleauth", "xvpvncproxy"], "network": [], "objectstore": [], "scheduler": []}
+#else
+#set $daemon_map = {"api": ["api", "metadata-api"], "cells": [], "cert": [], "compute": [], "console": ["console", "consoleauth", "xvpvncproxy", "serialproxy"], "network": [], "objectstore": [], "scheduler": []}
+#end if
 #for $key, $value in $daemon_map.iteritems()
 #set $daemon_list = " ".join($value) if $value else $key
 %if 0%{?rhel} > 6
@@ -593,7 +628,6 @@ if [ \$1 -ge 1 ] ; then
 fi
 #end for
 %endif
-#raw
 
 %files
 %doc README* LICENSE* HACKING* ChangeLog AUTHORS
@@ -614,18 +648,16 @@ fi
 %dir %attr(0755, nova, root) %{_localstatedir}/run/nova
 %endif
 
-#end raw
 #if $older_than_eq('2014.1.99999')
 %{_bindir}/nova-clear-rabbit-queues
 #end if
-#raw
+
 %{_bindir}/nova-manage
 %{_bindir}/nova-rootwrap
-#end raw
+
 #if $older_than('2014.1')
 %{_bindir}/nova-rpc-zmq-receiver
 #end if
-#raw
 
 %{_datarootdir}/nova
 #%{_mandir}/man1/nova*.1.gz
@@ -646,6 +678,7 @@ fi
 %{_bindir}/nova-compute
 %{_bindir}/nova-baremetal-deploy-helper
 %{_bindir}/nova-baremetal-manage
+%{_bindir}/nova-idmapshift
 %{_datarootdir}/nova/rootwrap/compute.filters
 
 %if ! 0%{?usr_only}
@@ -763,6 +796,20 @@ fi
 %endif
 %endif
 
+#if $newer_than_eq('2014.2')
+%files serialproxy
+%{_bindir}/nova-serialproxy
+%{_unitdir}/openstack-nova-serialproxy.service
+
+%if ! 0%{?usr_only}
+%if ! (0%{?rhel} > 6)
+%{_initrddir}/%{daemon_prefix}-serialproxy
+%else
+%{_unitdir}/%{daemon_prefix}-serialproxy.service
+%endif
+%endif
+#end if
+
 %files cells
 %{_bindir}/nova-cells
 
@@ -793,4 +840,4 @@ fi
 %endif
 
 %changelog
-#end raw
+

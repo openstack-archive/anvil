@@ -146,6 +146,8 @@ components:
             - name: "nose"
               version: ">=1.3.0"
             - name: "coverage"
+            - name: "testtools"
+              version: "<1.5.0"
     glance:
         python_entrypoints: True
         action_classes:
@@ -219,6 +221,7 @@ components:
             scheduler: openstack-nova-scheduler
             spicehtml5proxy: openstack-nova-console
             xvpvncproxy: openstack-nova-console
+            serialproxy: openstack-nova-serialproxy
     nova-client:
         python_entrypoints: True
     novnc:

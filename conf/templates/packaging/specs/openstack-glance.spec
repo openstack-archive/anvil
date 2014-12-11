@@ -162,9 +162,17 @@ rm -fr doc/build/html/.doctrees doc/build/html/.buildinfo
 install -d -m 755 %{buildroot}%{_sharedstatedir}/glance/images
 
 # Config file
+# Config file
 install -d -m 755 %{buildroot}%{_sysconfdir}/glance
 for i in etc/*; do
-    install -p -D -m 644 $i  %{buildroot}%{_sysconfdir}/glance/
+    if [ -d "$i" ]; then
+        install -d -m 755 %{buildroot}%{_sysconfdir}/glance/
+        for d in $i/*; do
+                install -p -D -m 644 $d  %{buildroot}%{_sysconfdir}/glance/$i
+        done
+    else
+        install -p -D -m 644 $i  %{buildroot}%{_sysconfdir}/glance/
+    fi
 done
 
 # Initscripts
