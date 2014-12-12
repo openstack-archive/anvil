@@ -29,7 +29,8 @@ LOG = logging.getLogger(__name__)
 class Helper(object):
 
     def __init__(self, epoch_map, package_map, arch_dependent,
-                 rpmbuild_dir, download_dir, deps_dir, log_dir):
+                 rpmbuild_dir, download_dir, deps_dir, log_dir,
+                 build_options):
         self._py2rpm_executable = sh.which("py2rpm", ["tools/"])
         self._epoch_map = epoch_map
         self._package_map = package_map
@@ -39,8 +40,21 @@ class Helper(object):
         self._download_dir = download_dir
         self._deps_dir = deps_dir
         self._log_dir = log_dir
+        self._build_options = build_options
 
-    def _start_cmdline(self):
+    @staticmethod
+    def _make_value_escape(value):
+        # Escape things so makefile doesn't puke on us...
+        value = value.replace(" ", "\ ")
+        value = value.replace("$", "$$")
+        value = value.replace("#", "\#")
+        return value
+
+    def _start_cmdline(self, escape_values=False):
+        if escape_values:
+            escape_func = self._make_value_escape
+        else:
+            escape_func = lambda value: value
         cmdline = [
             self._py2rpm_executable,
             "--rpm-base",
@@ -49,13 +63,23 @@ class Helper(object):
         if self._epoch_map:
             cmdline += [
                 "--epoch-map"
-            ] + ["%s==%s" % (key, value)
+            ] + ["%s==%s" % (key, escape_func(value))
                  for key, value in self._epoch_map.iteritems()]
         if self._package_map:
             cmdline += [
                 "--package-map",
-            ] + ["%s==%s" % (key, value)
+            ] + ["%s==%s" % (key, escape_func(value))
                  for key, value in self._package_map.iteritems()]
+        if self._build_options:
+            build_options = []
+            for key, values in self._build_options.iteritems():
+                if values:
+                    for value in values:
+                        build_options.append("%s==%s" % (key,
+                                                         escape_func(value)))
+            if build_options:
+                cmdline.append("--build-options")
+                cmdline.extend(build_options)
         if self._arch_dependent:
             cmdline += [
                 "--arch-dependent",
@@ -117,7 +141,7 @@ class Helper(object):
     def build_all_srpms(self, package_files, tracewriter, jobs):
         (_fn, content) = utils.load_template(sh.joinpths("packaging", "makefiles"), "source.mk")
         scripts_dir = sh.abspth(sh.joinpths(settings.TEMPLATE_DIR, "packaging", "scripts"))
-        cmdline = self._start_cmdline()[1:] + [
+        cmdline = self._start_cmdline(escape_values=True)[1:] + [
             "--scripts-dir", scripts_dir,
             "--source-only",
             "--rpm-base", self._rpmbuild_dir
