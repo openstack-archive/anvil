@@ -35,6 +35,9 @@ dependency_handler:
     - selenium
     - xattr
     - numpy
+    build_options:
+      pylint:
+        - "%global _python_bytecompile_errors_terminate_build 0"
 commands:
     service:
         restart: service $NAME restart
