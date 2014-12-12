@@ -170,13 +170,15 @@ class YumDependencyHandler(base.DependencyHandler):
         epoch_map = self._fetch_epoch_mapping()
         package_map = self.distro.get_dependency_config("package_map")
         arch_dependent = self.distro.get_dependency_config("arch_dependent")
+        build_options = self.distro.get_dependency_config("build_options")
         return py2rpm_helper.Helper(epoch_map=epoch_map,
                                     package_map=package_map,
                                     arch_dependent=arch_dependent,
                                     rpmbuild_dir=self.rpmbuild_dir,
                                     download_dir=self.download_dir,
                                     deps_dir=self.deps_dir,
-                                    log_dir=self.log_dir)
+                                    log_dir=self.log_dir,
+                                    build_options=build_options)
 
     def _package_parameters(self, instance):
         params = {}
