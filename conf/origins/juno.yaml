@@ -80,4 +80,4 @@ oslo-messaging:
   tag: 1.4.1
 pycadf:
   repo: git://github.com/openstack/pycadf.git
-  tag: 0.6
+  tag: 0.6.0
