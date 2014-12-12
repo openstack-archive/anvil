@@ -23,6 +23,18 @@ from anvil.packaging.helpers import pip_helper
 
 LOG = logging.getLogger(__name__)
 
+# Potential files that can hold a projects requirements...
+REQUIREMENT_FILES = [
+    'pip-requires',
+    'requirements.txt',
+    'requirements-py2.txt',
+]
+
+TEST_REQUIREMENT_FILES = [
+    'test-requires',
+    'test-requirements.txt',
+]
+
 
 class InstallableMixin(base.Component):
     def pre_install(self):
@@ -88,17 +100,16 @@ class InstallableMixin(base.Component):
 class PythonComponent(base.BasicComponent):
     def __init__(self, *args, **kargs):
         super(PythonComponent, self).__init__(*args, **kargs)
+        self._origins_fn = kargs['origins_fn']
         app_dir = self.get_option('app_dir')
         tools_dir = sh.joinpths(app_dir, 'tools')
-        self.requires_files = [
-            sh.joinpths(tools_dir, 'pip-requires'),
-            sh.joinpths(app_dir, 'requirements.txt'),
-        ]
-        self.test_requires_files = [
-            sh.joinpths(tools_dir, 'test-requires'),
-            sh.joinpths(app_dir, 'test-requirements.txt'),
-        ]
-        self._origins_fn = kargs['origins_fn']
+        self.requires_files = []
+        self.test_requires_files = []
+        for path in [app_dir, tools_dir]:
+            for req_fn in REQUIREMENT_FILES:
+                self.requires_files.append(sh.joinpths(path, req_fn))
+            for req_fn in TEST_REQUIREMENT_FILES:
+                self.test_requires_files.append(sh.joinpths(path, req_fn))
 
     def config_params(self, config_fn):
         mp = dict(self.params)
