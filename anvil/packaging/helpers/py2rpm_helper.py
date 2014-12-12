@@ -29,7 +29,8 @@ LOG = logging.getLogger(__name__)
 class Helper(object):
 
     def __init__(self, epoch_map, package_map, arch_dependent,
-                 rpmbuild_dir, download_dir, deps_dir, log_dir):
+                 rpmbuild_dir, download_dir, deps_dir, log_dir,
+                 build_options):
         self._py2rpm_executable = sh.which("py2rpm", ["tools/"])
         self._epoch_map = epoch_map
         self._package_map = package_map
@@ -39,6 +40,7 @@ class Helper(object):
         self._download_dir = download_dir
         self._deps_dir = deps_dir
         self._log_dir = log_dir
+        self._build_options = build_options
 
     def _start_cmdline(self):
         cmdline = [
@@ -56,6 +58,11 @@ class Helper(object):
                 "--package-map",
             ] + ["%s==%s" % (key, value)
                  for key, value in self._package_map.iteritems()]
+        if self._build_options:
+            cmdline += [
+                "--build-options",
+            ] + ["%s==%s" % (key, value)
+                 for key, value in self._build_options.iteritems()]
         if self._arch_dependent:
             cmdline += [
                 "--arch-dependent",
