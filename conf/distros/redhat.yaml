@@ -219,6 +219,7 @@ components:
             scheduler: openstack-nova-scheduler
             spicehtml5proxy: openstack-nova-console
             xvpvncproxy: openstack-nova-console
+            serialproxy: openstack-nova-serialproxy
     nova-client:
         python_entrypoints: True
     novnc:
@@ -258,6 +259,13 @@ components:
             ovs-cleanup: openstack-neutron-openvswitch
             rpc-zmq-receiver: openstack-neutron
             server: openstack-neutron
+            vpn-agent: openstack-neutron-vpn-agent
+            sriov-nic-agent: openstack-neutron-sriov-nic-agent
+            mlnx-agent: openstack-neutron-mlnx
+            metering-agent: openstack-neutron-metering-agen
+            cisco-cfg-agent: openstack-neutron-cisco
+            lbaas-agent: openstack-neutron
+            netns-cleanup: openstack-neutron
     qpid:
         action_classes:
           install: anvil.components.qpid:QpidInstaller
@@ -328,6 +336,7 @@ components:
             central: openstack-ceilometer-central
             collector: openstack-ceilometer-collector
             compute: openstack-ceilometer-compute
+            ipmi: openstack-ceilometer-ipmi
     ironic:
         python_entrypoints: True
         action_classes:

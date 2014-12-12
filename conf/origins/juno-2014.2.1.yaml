@@ -1,0 +1,83 @@
+ceilometer:
+  repo: git://github.com/openstack/ceilometer.git
+  tag: 2014.2.1
+  use_tests_requires: False
+ceilometer-client:
+  repo: git://github.com/openstack/python-ceilometerclient.git
+  tag: 1.0.12
+cinder-client:
+  repo: git://github.com/openstack/python-cinderclient.git
+  tag: 1.1.1
+cinder:
+  repo: git://github.com/openstack/cinder.git
+  tag: 2014.2.1
+django-openstack-auth:
+  repo: git://github.com/openstack/django_openstack_auth.git
+  tag: 1.1.7
+glance-client:
+  repo: git://github.com/openstack/python-glanceclient.git
+  tag: 0.14.1
+glance:
+  repo: git://github.com/openstack/glance.git
+  tag: 2014.2.1
+heat:
+  repo: git://github.com/openstack/heat.git
+  tag: 2014.2.1
+heat-client:
+  repo: git://github.com/openstack/python-heatclient.git
+  tag: 0.2.12
+horizon:
+  repo: git://github.com/openstack/horizon.git
+  tag: 2014.2.1
+ironic:
+  repo: git://github.com/openstack/ironic.git
+  tag: 2014.2
+ironic-client:
+  repo: git://github.com/openstack/python-ironicclient.git
+  tag: 0.3.1
+keystone-client:
+  repo: git://github.com/openstack/python-keystoneclient.git
+  tag: 0.11.1
+keystone:
+  repo: git://github.com/openstack/keystone.git
+  tag: 2014.2.1
+nova-client:
+  repo: git://github.com/openstack/python-novaclient.git
+  tag: 2.20.0
+nova:
+  repo: git://github.com/openstack/nova.git
+  tag: 2014.2.1
+novnc:
+  repo: git://github.com/kanaka/noVNC.git
+  branch: master
+openstack-client:
+  repo: git://github.com/openstack/python-openstackclient.git
+  tag: 0.4.1
+oslo-config:
+  repo: git://github.com/openstack/oslo.config.git
+  tag: 1.4.0
+oslo-incubator:
+  repo: git://github.com/openstack/oslo-incubator.git
+  tag: 2014.2
+neutron-client:
+  repo: git://github.com/openstack/python-neutronclient.git
+  tag: 2.3.9
+neutron:
+  repo: git://github.com/openstack/neutron.git
+  tag: 2014.2.1
+swift-client:
+  repo: git://github.com/openstack/python-swiftclient.git
+  tag: 2.3.1
+trove-client:
+  repo: git://github.com/openstack/python-troveclient.git
+  tag: 1.0.7
+trove:
+  repo: git://github.com/openstack/trove.git
+  tag: 2014.2
+  use_tests_requires: False
+oslo-messaging:
+  repo: git://github.com/openstack/oslo.messaging.git
+  tag: 1.4.1
+pycadf:
+  repo: git://github.com/openstack/pycadf.git
+  tag: 0.6.0
