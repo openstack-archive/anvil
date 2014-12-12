@@ -321,6 +321,12 @@ def create_parser():
         default=[],
         help="Correspondence between Python and RPM package names")
     parser.add_argument(
+        "--build-options",
+        metavar="<Python package name == Build option>",
+        nargs="+",
+        default=[],
+        help="Correspondence between Python and specific RPM package build options")
+    parser.add_argument(
         "--with-tests",
         action="store_true",
         default=False,
@@ -377,6 +383,24 @@ def build_map(arguments):
             raise InstallationError("Bad specifier: `%s'" % arg)
         else:
             result[key] = value
+    return result
+
+
+def build_map_many(arguments):
+    result = {}
+    for arg in arguments:
+        try:
+            (key, value) = arg.split("==")
+            key = python_name_to_key(key)
+            value = value.strip()
+            assert value
+        except (IndexError, ValueError, AssertionError):
+            raise InstallationError("Bad specifier: `%s'" % arg)
+        else:
+            if key in result:
+                result[key].append(value)
+            else:
+                result[key] = [value]
     return result
 
 
@@ -566,7 +590,7 @@ def one_line(line, max_len=80):
     return line
 
 
-def build_rpm(options, filename):
+def build_rpm(options, filename, build_options):
     if os.path.isfile(filename):
         temp_dir = tempfile.mkdtemp('-unpack', 'py2rpm-')
         pip.util.unpack_file(filename, temp_dir, None, None)
@@ -620,6 +644,11 @@ def build_rpm(options, filename):
             print >> spec_file, ("%define tests_data_dir "
                                  "%{_datarootdir}/%{pkg_name}-tests")
         print >> spec_file, ""
+        pkg_build_options = build_options.get(pkg_key, [])
+        if pkg_build_options:
+            for build_option in pkg_build_options:
+                print >> spec_file, build_option
+            print >> spec_file, ""
         tags = []
         tags.append(("Name", "%{rpm_name}"))
         epoch = epoch_map.get(pkg_key, options.epoch)
@@ -714,6 +743,7 @@ def main():
                          for pkg in options.arch_dependent)
     package_map = build_map(options.package_map)
     epoch_map = build_map(options.epoch_map)
+    build_options = build_map_many(options.build_options)
 
     if options.convert:
         rpm_requires, rpm_conflicts = requires_and_conflicts(options.convert)
@@ -726,7 +756,7 @@ def main():
     failed_pkgs = []
     for src in (os.path.abspath(sdir) for sdir in options.sources):
         try:
-            build_rpm(options, src)
+            build_rpm(options, src, build_options)
         except Exception as ex:
             failed_pkgs.append((src, ex))
             print >> sys.stderr, ex
