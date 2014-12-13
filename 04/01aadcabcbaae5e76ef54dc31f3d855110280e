@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Code-Review+2: Joshua Harlow <harlowja@yahoo-inc.com>
+Workflow+1: Joshua Harlow <harlowja@yahoo-inc.com>
+Submitted-by: Jenkins
+Submitted-at: Sat, 13 Dec 2014 17:33:25 +0000
+Reviewed-on: https://review.openstack.org/141505
+Project: stackforge/anvil
+Branch: refs/heads/master
