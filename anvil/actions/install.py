@@ -56,58 +56,59 @@ class InstallAction(action.Action):
                                header="Wrote to %s %s exports" % (path, len(entries)),
                                logger=LOG)
 
-    def _run(self, persona, component_order, instances):
-        dependency_handler_class = self.distro.dependency_handler_class
-        dependency_handler = dependency_handler_class(self.distro,
-                                                      self.root_dir,
-                                                      instances.values(),
-                                                      self.cli_opts)
-        removals = states.reverts("pre-install")
-        self._run_phase(
-            action.PhaseFunctors(
-                start=lambda i: LOG.info('Preinstalling %s.', colorizer.quote(i.name)),
-                run=lambda i: i.pre_install(),
-                end=None,
-            ),
-            component_order,
-            instances,
-            "pre-install",
-            *removals
-        )
-        removals.extend(states.reverts("package-install"))
-        general_package = "general"
-        self._run_phase(
-            action.PhaseFunctors(
-                start=lambda i: LOG.info("Installing packages"),
-                run=dependency_handler.install,
-                end=None,
-            ),
-            [general_package],
-            {general_package: instances[general_package]},
-            "package-install",
-            *removals
-        )
-        removals.extend(states.reverts("configure"))
-        self._run_phase(
-            action.PhaseFunctors(
-                start=lambda i: LOG.info('Configuring %s.', colorizer.quote(i.name)),
-                run=lambda i: i.configure(),
-                end=None,
-            ),
-            component_order,
-            instances,
-            "configure",
-            *removals
-        )
-        removals.extend(states.reverts("post-install"))
-        self._run_phase(
-            action.PhaseFunctors(
-                start=lambda i: LOG.info('Post-installing %s.', colorizer.quote(i.name)),
-                run=lambda i: i.post_install(),
-                end=None
-            ),
-            component_order,
-            instances,
-            "post-install",
-            *removals
-        )
+    def _run(self, persona, groups):
+        for group, instances in groups:
+            dependency_handler_class = self.distro.dependency_handler_class
+            dependency_handler = dependency_handler_class(self.distro,
+                                                          self.root_dir,
+                                                          instances.values(),
+                                                          self.cli_opts)
+            removals = states.reverts("pre-install")
+            self._run_phase(
+                action.PhaseFunctors(
+                    start=lambda i: LOG.info('Preinstalling %s.', colorizer.quote(i.name)),
+                    run=lambda i: i.pre_install(),
+                    end=None,
+                ),
+                group,
+                instances,
+                "pre-install",
+                *removals
+            )
+            removals.extend(states.reverts("package-install"))
+            general_package = "general"
+            if general_package in instances:
+                self._run_phase(
+                    action.PhaseFunctors(
+                        start=lambda i: LOG.info("Installing packages"),
+                        run=dependency_handler.install,
+                        end=None,
+                    ),
+                    group,
+                    {general_package: instances[general_package]},
+                    "package-install",
+                    *removals
+                )
+            removals.extend(states.reverts("configure"))
+            self._run_phase(
+                action.PhaseFunctors(
+                    start=lambda i: LOG.info('Configuring %s.', colorizer.quote(i.name)),
+                    run=lambda i: i.configure(),
+                    end=None,
+                ),
+                group,
+                instances,
+                "configure",
+                *removals
+            )
+            removals.extend(states.reverts("post-install"))
+            self._run_phase(
+                action.PhaseFunctors(
+                    start=lambda i: LOG.info('Post-installing %s.', colorizer.quote(i.name)),
+                    run=lambda i: i.post_install(),
+                    end=None
+                ),
+                instances,
+                "post-install",
+                *removals
+            )
