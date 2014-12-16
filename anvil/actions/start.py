@@ -28,43 +28,42 @@ class StartAction(action.Action):
     def lookup_name(self):
         return 'running'
 
-    def _run(self, persona, component_order, instances):
-        removals = states.reverts("pre-start")
-        self._run_phase(
-            action.PhaseFunctors(
-                start=None,
-                run=lambda i: i.pre_start(),
-                end=None,
-            ),
-            component_order,
-            instances,
-            "pre-start",
-            *removals
-        )
-        removals.extend(states.reverts('start'))
-        self._run_phase(
-            action.PhaseFunctors(
-                start=lambda i: LOG.info('Starting %s.',
-                                         colorizer.quote(i.name)),
-                run=lambda i: i.start(),
-                end=lambda i, result: LOG.info("Started %s application(s).",
-                                               colorizer.quote(result)),
-            ),
-            component_order,
-            instances,
-            "start",
-            *removals
-        )
-        removals.extend(states.reverts('post-start'))
-        self._run_phase(
-            action.PhaseFunctors(
-                start=lambda i: LOG.info('Post-starting %s.',
-                                         colorizer.quote(i.name)),
-                run=lambda i: i.post_start(),
-                end=None,
-            ),
-            component_order,
-            instances,
-            "post-start",
-            *removals
-        )
+    def _run(self, persona, groups):
+        for group, instances in groups:
+            LOG.info("Starting group %s...", colorizer.quote(group))
+            removals = states.reverts("pre-start")
+            self._run_phase(
+                action.PhaseFunctors(
+                    start=None,
+                    run=lambda i: i.pre_start(),
+                    end=None,
+                ),
+                instances,
+                "pre-start",
+                *removals
+            )
+            removals.extend(states.reverts('start'))
+            self._run_phase(
+                action.PhaseFunctors(
+                    start=lambda i: LOG.info('Starting %s.',
+                                             colorizer.quote(i.name)),
+                    run=lambda i: i.start(),
+                    end=lambda i, result: LOG.info("Started %s application(s).",
+                                                   colorizer.quote(result)),
+                ),
+                instances,
+                "start",
+                *removals
+            )
+            removals.extend(states.reverts('post-start'))
+            self._run_phase(
+                action.PhaseFunctors(
+                    start=lambda i: LOG.info('Post-starting %s.',
+                                             colorizer.quote(i.name)),
+                    run=lambda i: i.post_start(),
+                    end=None,
+                ),
+                instances,
+                "post-start",
+                *removals
+            )
