@@ -25,47 +25,47 @@ LOG = log.getLogger(__name__)
 
 
 class RemoveAction(uninstall.UninstallAction):
-    def _run(self, persona, component_order, instances):
-        super(RemoveAction, self)._run(persona, component_order, instances)
-        dependency_handler_class = self.distro.dependency_handler_class
-        dependency_handler = dependency_handler_class(self.distro,
-                                                      self.root_dir,
-                                                      instances.values(),
-                                                      self.cli_opts)
-        removals = states.reverts("package-destroy")
-        general_package = "general"
-        self._run_phase(
-            action.PhaseFunctors(
-                start=lambda i: LOG.info("Destroying packages"),
-                run=lambda i: dependency_handler.destroy(),
-                end=None,
-            ),
-            [general_package],
-            {general_package: instances[general_package]},
-            "package-destroy",
-            *removals
-        )
-        removals.extend(states.reverts('uninstall'))
-        self._run_phase(
-            action.PhaseFunctors(
-                start=lambda i: LOG.info('Uninstalling %s.', colorizer.quote(i.name)),
-                run=lambda i: i.uninstall(),
-                end=None,
-            ),
-            component_order,
-            instances,
-            'uninstall',
-            *removals
-        )
-        removals.extend(states.reverts('post-uninstall'))
-        self._run_phase(
-            action.PhaseFunctors(
-                start=lambda i: LOG.info('Post-uninstalling %s.', colorizer.quote(i.name)),
-                run=lambda i: i.post_uninstall(),
-                end=None,
-            ),
-            component_order,
-            instances,
-            'post-uninstall',
-            *removals
-        )
+    def _run(self, persona, groups):
+        super(RemoveAction, self)._run(persona, groups)
+        for group, instances in groups:
+            LOG.info("Removing group %s", colorizer.quote(group))
+            dependency_handler_class = self.distro.dependency_handler_class
+            dependency_handler = dependency_handler_class(self.distro,
+                                                          self.root_dir,
+                                                          instances.values(),
+                                                          self.cli_opts)
+            removals = states.reverts("package-destroy")
+            general_package = "general"
+            if general_package in instances:
+                self._run_phase(
+                    action.PhaseFunctors(
+                        start=lambda i: LOG.info("Destroying packages"),
+                        run=lambda i: dependency_handler.destroy(),
+                        end=None,
+                    ),
+                    {general_package: instances[general_package]},
+                    "package-destroy",
+                    *removals
+                )
+            removals.extend(states.reverts('uninstall'))
+            self._run_phase(
+                action.PhaseFunctors(
+                    start=lambda i: LOG.info('Uninstalling %s.', colorizer.quote(i.name)),
+                    run=lambda i: i.uninstall(),
+                    end=None,
+                ),
+                instances,
+                'uninstall',
+                *removals
+            )
+            removals.extend(states.reverts('post-uninstall'))
+            self._run_phase(
+                action.PhaseFunctors(
+                    start=lambda i: LOG.info('Post-uninstalling %s.', colorizer.quote(i.name)),
+                    run=lambda i: i.post_uninstall(),
+                    end=None,
+                ),
+                instances,
+                'post-uninstall',
+                *removals
+            )
