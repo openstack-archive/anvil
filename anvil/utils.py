@@ -18,6 +18,7 @@
 #    under the License.
 
 import binascii
+import collections
 import contextlib
 import glob
 import json
@@ -97,6 +98,12 @@ COWS['unhappy'] = r'''
 LOG = logging.getLogger(__name__)
 
 
+class Group(list):
+    def __init__(self, group):
+        super(Group, self).__init__()
+        self.group = group
+
+
 class ExponentialBackoff(object):
     def __init__(self, attempts=5, start=1.3):
         self.start = start
@@ -164,6 +171,27 @@ def parse_json(text):
         return json.loads(text)
     else:
         return None
+
+
+def group_builds(components):
+    if not components:
+        return []
+    stages = collections.defaultdict(list)
+    for c in components:
+        if isinstance(c, six.string_types):
+            stages[0].append(c)
+        elif isinstance(c, dict):
+            for project_name, stage_id in six.iteritems(c):
+                stage_id = int(stage_id)
+                stages[stage_id].append(project_name)
+        else:
+            raise TypeError("Unexpected group type %s" % type(c))
+    groupings = []
+    for i in sorted(six.iterkeys(stages)):
+        stage = Group(i)
+        stage.extend(stages[i])
+        groupings.append(stage)
+    return groupings
 
 
 def load_yaml(path):
