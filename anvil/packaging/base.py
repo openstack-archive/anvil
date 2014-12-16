@@ -330,14 +330,22 @@ class DependencyHandler(object):
                 self._requirements_satisfied(pips_to_download, self.download_dir)):
             LOG.info("All python dependencies have been already downloaded")
         else:
+            def on_download_finish(time_taken):
+                LOG.info("Took %0.2f seconds to download...", time_taken)
+
             def try_download(attempt):
                 LOG.info("Downloading %s dependencies with pip (attempt %s)...",
                          len(pips_to_download), attempt)
                 output_filename = sh.joinpths(self.log_dir,
                                               "pip-download-attempt-%s.log" % (attempt))
-                pip_helper.download_dependencies(self.download_dir,
-                                                 pips_to_download,
-                                                 output_filename)
+                LOG.info("Please wait this may take a while...")
+                LOG.info("Check %s for download activity details...",
+                         colorizer.quote(output_filename))
+                utils.time_it(on_download_finish,
+                              pip_helper.download_dependencies,
+                              self.download_dir,
+                              pips_to_download,
+                              output_filename)
             utils.retry(self.MAX_PIP_DOWNLOAD_ATTEMPTS,
                         self.PIP_DOWNLOAD_DELAY, try_download)
             # NOTE(harlowja): Mark that we completed downloading successfully
