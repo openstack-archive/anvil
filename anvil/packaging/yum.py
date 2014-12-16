@@ -499,10 +499,32 @@ class YumDependencyHandler(base.DependencyHandler):
         for filename in package_files:
             if filename not in filtered_package_files:
                 sh.unlink(filename)
+
+        ensure_prebuilt = self.distro.get_dependency_config("ensure_prebuilt",
+                                                            quiet=True)
+        if not ensure_prebuilt:
+            ensure_prebuilt = {}
         build_requires = six.StringIO()
+        rpm_build_requires = six.StringIO()
         for (filename, req) in package_reqs:
             if filename in filtered_package_files:
                 build_requires.write("%s # %s\n" % (req, sh.basename(filename)))
+                prebuilt_reqs = []
+                for line in ensure_prebuilt.get(req.key, []):
+                    prebuilt_reqs.append(pip_helper.extract_requirement(line))
+                if prebuilt_reqs:
+                    rpm_build_requires.write("# %s from %s\n" % (req, sh.basename(filename)))
+                    rpm_names = self.py2rpm_helper.names_to_rpm_names(
+                        [r.key for r in prebuilt_reqs])
+                    for r in prebuilt_reqs:
+                        rpm_name = rpm_names[r.key]
+                        LOG.info("Adding %s (%s) as a pre-build time"
+                                 " requirement of %s (%s)", r, rpm_name, req,
+                                 sh.basename(filename))
+                        rpm_build_requires.write("%s # %s\n" % (rpm_name, r))
+                    rpm_build_requires.write("\n")
+
+        sh.append_file(self.rpm_build_requires_filename, rpm_build_requires.getvalue())
         sh.write_file(self.build_requires_filename, build_requires.getvalue())
 
         # Now build them into SRPM rpm files.
