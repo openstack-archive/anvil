@@ -74,8 +74,9 @@ class YumDependencyHandler(base.DependencyHandler):
     REPOS = ["anvil-deps", "anvil"]
     JOBS = 2
 
-    def __init__(self, distro, root_dir, instances, opts):
-        super(YumDependencyHandler, self).__init__(distro, root_dir, instances, opts)
+    def __init__(self, distro, root_dir, instances, opts, group):
+        super(YumDependencyHandler, self).__init__(distro, root_dir,
+                                                   instances, opts, group)
         # Various paths we will use while operating
         self.rpmbuild_dir = sh.joinpths(self.deps_dir, "rpmbuild")
         self.prebuild_dir = sh.joinpths(self.deps_dir, "prebuild")
@@ -83,9 +84,9 @@ class YumDependencyHandler(base.DependencyHandler):
         self.deps_src_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps-sources")
         self.rpm_sources_dir = sh.joinpths(self.rpmbuild_dir, "SOURCES")
         self.anvil_repo_dir = sh.joinpths(self.root_dir, "repo")
-        self.build_requires_filename = sh.joinpths(self.deps_dir, "build-requires")
-        self.yum_satisfies_filename = sh.joinpths(self.deps_dir, "yum-satisfiable")
-        self.rpm_build_requires_filename = sh.joinpths(self.deps_dir, "rpm-build-requires")
+        self.build_requires_filename = sh.joinpths(self.deps_dir, "build-requires-%s" % group)
+        self.yum_satisfies_filename = sh.joinpths(self.deps_dir, "yum-satisfiable-%s" % group)
+        self.rpm_build_requires_filename = sh.joinpths(self.deps_dir, "rpm-build-requires-%s" % group)
         # Executables we require to operate
         self.rpmbuild_executable = sh.which("rpmbuild")
         self.specprint_executable = sh.which('specprint', ["tools/"])
