@@ -14,7 +14,6 @@ components:
 - neutron
 - cinder
 - nova
-- horizon
 # Client used by components
 - ceilometer-client
 - cinder-client
@@ -27,7 +26,11 @@ components:
 - trove-client
 # Additional libraries
 - openvswitch
-- django-openstack-auth
+# Horizon is given a later priority (typically everything is done at the
+# same time in stage zero); in its own stage since it requires basically all
+# the existing things to be pre-built/started... before it can be...
+- horizon: 1
+- django-openstack-auth: 1
 options:
     general:
         install-all-deps: false

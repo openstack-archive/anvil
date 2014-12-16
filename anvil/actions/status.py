@@ -92,14 +92,15 @@ class StatusAction(action.Action):
                 if self.show_amount > 0 and s.details:
                     details_printer(s, 4, self.show_amount)
 
-    def _run(self, persona, component_order, instances):
-        self._run_phase(
-            action.PhaseFunctors(
-                start=None,
-                run=self._fetch_status,
-                end=self._print_status,
-            ),
-            component_order,
-            instances,
-            None,
-        )
+    def _run(self, persona, groups):
+        for group, instances in groups:
+            LOG.info("Getting status of group %s", colorizer.quote(group))
+            self._run_phase(
+                action.PhaseFunctors(
+                    start=None,
+                    run=self._fetch_status,
+                    end=self._print_status,
+                ),
+                instances,
+                None,
+            )

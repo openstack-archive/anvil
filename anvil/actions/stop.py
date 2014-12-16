@@ -33,17 +33,18 @@ class StopAction(action.Action):
         components.reverse()
         return components
 
-    def _run(self, persona, component_order, instances):
-        removals = states.reverts("stopped")
-        self._run_phase(
-            action.PhaseFunctors(
-                start=lambda i: LOG.info('Stopping %s.', colorizer.quote(i.name)),
-                run=lambda i: i.stop(),
-                end=lambda i, result: LOG.info("Stopped %s application(s).",
-                                               colorizer.quote(result)),
-            ),
-            component_order,
-            instances,
-            "stopped",
-            *removals
-        )
+    def _run(self, persona, groups):
+        for group, instances in groups:
+            LOG.info("Stopping group %s", colorizer.quote(group))
+            removals = states.reverts("stopped")
+            self._run_phase(
+                action.PhaseFunctors(
+                    start=lambda i: LOG.info('Stopping %s.', colorizer.quote(i.name)),
+                    run=lambda i: i.stop(),
+                    end=lambda i, result: LOG.info("Stopped %s application(s).",
+                                                   colorizer.quote(result)),
+                ),
+                instances,
+                "stopped",
+                *removals
+            )
