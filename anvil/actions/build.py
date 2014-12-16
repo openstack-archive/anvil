@@ -16,6 +16,7 @@
 
 # pylint: disable=R0915
 from anvil.actions import base as action
+from anvil import colorizer
 from anvil import log
 
 
@@ -29,10 +30,12 @@ class BuildAction(action.Action):
     def lookup_name(self):
         return 'install'
 
-    def _run(self, persona, component_order, instances):
-        dependency_handler_class = self.distro.dependency_handler_class
-        dependency_handler = dependency_handler_class(self.distro,
-                                                      self.root_dir,
-                                                      instances.values(),
-                                                      self.cli_opts)
-        dependency_handler.build_binary()
+    def _run(self, persona, groups):
+        for group, instances in groups:
+            LOG.info("Building group %s...", colorizer.quote(group))
+            dependency_handler_class = self.distro.dependency_handler_class
+            dependency_handler = dependency_handler_class(self.distro,
+                                                          self.root_dir,
+                                                          instances.values(),
+                                                          self.cli_opts)
+            dependency_handler.build_binary()

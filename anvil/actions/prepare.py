@@ -31,49 +31,48 @@ class PrepareAction(action.Action):
     def lookup_name(self):
         return 'install'
 
-    def _run(self, persona, component_order, instances):
-        dependency_handler_class = self.distro.dependency_handler_class
-        dependency_handler = dependency_handler_class(self.distro,
-                                                      self.root_dir,
-                                                      instances.values(),
-                                                      self.cli_opts)
-        removals = states.reverts("download")
-        self._run_phase(
-            action.PhaseFunctors(
-                start=lambda i: LOG.info('Downloading %s.', colorizer.quote(i.name)),
-                run=lambda i: i.download(),
-                end=lambda i, result: LOG.info("Performed %s downloads.", len(result))
-            ),
-            component_order,
-            instances,
-            "download",
-            *removals
-        )
-        removals.extend(states.reverts("download-patch"))
-        self._run_phase(
-            action.PhaseFunctors(
-                start=lambda i: LOG.info('Post-download patching %s.', colorizer.quote(i.name)),
-                run=lambda i: i.patch("download"),
-                end=None,
-            ),
-            component_order,
-            instances,
-            "download-patch",
-            *removals
-        )
-        dependency_handler.package_start()
-        removals.extend(states.reverts("package"))
-        try:
+    def _run(self, persona, groups):
+        for group, instances in groups:
+            LOG.info("Preparing group %s...", colorizer.quote(group))
+            dependency_handler_class = self.distro.dependency_handler_class
+            dependency_handler = dependency_handler_class(self.distro,
+                                                          self.root_dir,
+                                                          instances.values(),
+                                                          self.cli_opts)
+            removals = states.reverts("download")
             self._run_phase(
                 action.PhaseFunctors(
-                    start=lambda i: LOG.info("Packaging %s.", colorizer.quote(i.name)),
-                    run=dependency_handler.package_instance,
-                    end=None,
+                    start=lambda i: LOG.info('Downloading %s.', colorizer.quote(i.name)),
+                    run=lambda i: i.download(),
+                    end=lambda i, result: LOG.info("Performed %s downloads.", len(result))
                 ),
-                component_order,
                 instances,
-                "package",
+                "download",
                 *removals
             )
-        finally:
-            dependency_handler.package_finish()
+            removals.extend(states.reverts("download-patch"))
+            self._run_phase(
+                action.PhaseFunctors(
+                    start=lambda i: LOG.info('Post-download patching %s.', colorizer.quote(i.name)),
+                    run=lambda i: i.patch("download"),
+                    end=None,
+                ),
+                instances,
+                "download-patch",
+                *removals
+            )
+            dependency_handler.package_start()
+            removals.extend(states.reverts("package"))
+            try:
+                self._run_phase(
+                    action.PhaseFunctors(
+                        start=lambda i: LOG.info("Packaging %s.", colorizer.quote(i.name)),
+                        run=dependency_handler.package_instance,
+                        end=None,
+                    ),
+                    instances,
+                    "package",
+                    *removals
+                )
+            finally:
+                dependency_handler.package_finish()

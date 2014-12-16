@@ -61,7 +61,6 @@ class DependencyHandler(object):
         self.opts = opts or {}
         # Various paths we will use while operating
         self.deps_dir = sh.joinpths(self.root_dir, "deps")
-        self.downloaded_flag_file = sh.joinpths(self.deps_dir, "pip-downloaded")
         self.download_dir = sh.joinpths(self.deps_dir, "download")
         self.log_dir = sh.joinpths(self.deps_dir, "output")
         sh.mkdir(self.log_dir, recurse=True)
@@ -249,7 +248,10 @@ class DependencyHandler(object):
                                                            requires_files,
                                                            ignore_pips)
         self.pips_to_install = compatibles
-        sh.write_file(self.gathered_requires_filename, "\n".join(self.pips_to_install))
+        if sh.isfile(self.gathered_requires_filename):
+            sh.append_file(self.gathered_requires_filename, "\n" + "\n".join(self.pips_to_install))
+        else:
+            sh.write_file(self.gathered_requires_filename, "\n".join(self.pips_to_install))
         pips_to_install = pip_helper.read_requirement_files([self.gathered_requires_filename])
         pips_to_install = sorted(pips_to_install, cmp=sort_req)
         utils.log_iterable(pips_to_install, logger=LOG,
@@ -277,7 +279,10 @@ class DependencyHandler(object):
         forced_packages = [str(req) for req in self.forced_packages]
         utils.log_iterable(forced_packages, logger=LOG,
                            header="Forced python dependencies")
-        sh.write_file(self.forced_requires_filename, "\n".join(forced_packages))
+        if sh.isfile(self.forced_requires_filename):
+            sh.append_file(self.forced_requires_filename, "\n" + "\n".join(forced_packages))
+        else:
+            sh.write_file(self.forced_requires_filename, "\n" + "\n".join(forced_packages))
 
     def _filter_download_requires(self):
         """Shrinks the pips that were downloaded into a smaller set.
@@ -320,14 +325,17 @@ class DependencyHandler(object):
         # NOTE(aababilov): do not drop download_dir - it can be reused
         sh.mkdirslist(self.download_dir, tracewriter=self.tracewriter)
         pips_to_download = self._filter_download_requires()
-        sh.write_file(self.download_requires_filename,
-                      "\n".join([str(req) for req in pips_to_download]))
+        if sh.isfile(self.download_requires_filename):
+            sh.append_file(self.download_requires_filename,
+                           "\n" + "\n".join([str(req) for req in pips_to_download]))
+        else:
+            sh.write_file(self.download_requires_filename,
+                          "\n".join([str(req) for req in pips_to_download]))
         if not pips_to_download:
             return ([], [])
         # NOTE(aababilov): user could have changed persona, so,
-        # check that all requirements are downloaded
-        if (sh.isfile(self.downloaded_flag_file) and
-                self._requirements_satisfied(pips_to_download, self.download_dir)):
+        # check that all requirements are downloaded....
+        if self._requirements_satisfied(pips_to_download, self.download_dir):
             LOG.info("All python dependencies have been already downloaded")
         else:
             def on_download_finish(time_taken):
@@ -348,9 +356,6 @@ class DependencyHandler(object):
                               output_filename)
             utils.retry(self.MAX_PIP_DOWNLOAD_ATTEMPTS,
                         self.PIP_DOWNLOAD_DELAY, try_download)
-            # NOTE(harlowja): Mark that we completed downloading successfully
-            sh.touch_file(self.downloaded_flag_file, die_if_there=False,
-                          quiet=True, tracewriter=self.tracewriter)
         pips_downloaded = [pip_helper.extract_requirement(p) for p in pips_to_download]
         what_downloaded = self._examine_download_dir(pips_downloaded, self.download_dir)
         return (pips_downloaded, what_downloaded)
