@@ -23,6 +23,7 @@ from anvil import log as logging
 from anvil import utils
 
 LOG = logging.getLogger(__name__)
+SPECIAL_GROUPS = frozenset(['general'])
 
 
 class Persona(object):
@@ -30,10 +31,11 @@ class Persona(object):
     def __init__(self, supports, components, **kargs):
         self.distro_support = supports or []
         self.source = kargs.get('source')
-        self.wanted_components = components or []
+        self.wanted_components = utils.group_builds(components)
         self.wanted_subsystems = kargs.get('subsystems') or {}
         self.component_options = kargs.get('options') or {}
         self.no_origins = kargs.get('no-origin') or []
+        self.matched_components = []
 
     def match(self, distros, origins_fn, origins_patch=None):
         # Filter out components that are disabled in origins file
@@ -42,29 +44,42 @@ class Persona(object):
         if origins_patch:
             patch = jsonpatch.JsonPatch(origins_patch)
             patch.apply(origins, in_place=True)
-        for c in self.wanted_components:
-            if c not in origins:
-                if c in self.no_origins:
-                    LOG.debug("Automatically enabling component %s, not"
-                              " present in origins file %s but present in"
-                              " desired persona %s (origin not required).",
-                              c, origins_fn, self.source)
-                    origins[c] = {
-                        'disabled': False,
-                    }
-                else:
-                    LOG.warn("Automatically disabling %s, not present in"
-                             " origin file but present in desired"
-                             " persona (origin required).",
-                             colorizer.quote(c, quote_color='red'))
-                    origins[c] = {
-                        'disabled': True,
-                    }
+        for group in self.wanted_components:
+            for c in group:
+                if c not in origins:
+                    if c in self.no_origins:
+                        LOG.debug("Automatically enabling component %s, not"
+                                  " present in origins file %s but present in"
+                                  " desired persona %s (origin not required).",
+                                  c, origins_fn, self.source)
+                        origins[c] = {
+                            'disabled': False,
+                        }
+                    else:
+                        LOG.warn("Automatically disabling %s, not present in"
+                                 " origin file but present in desired"
+                                 " persona (origin required).",
+                                 colorizer.quote(c, quote_color='red'))
+                        origins[c] = {
+                            'disabled': True,
+                        }
         disabled_components = set(key
                                   for key, value in six.iteritems(origins)
                                   if value.get('disabled'))
-        self.wanted_components = [c for c in self.wanted_components
-                                  if c not in disabled_components]
+        self.matched_components = []
+        all_components = set()
+        for group in self.wanted_components:
+            adjusted_group = utils.Group(group.id)
+            for c in group:
+                if c not in disabled_components:
+                    adjusted_group.append(c)
+                    all_components.add(c)
+            if adjusted_group:
+                for c in SPECIAL_GROUPS:
+                    if c not in adjusted_group:
+                        adjusted_group.insert(0, c)
+                        all_components.add(c)
+                self.matched_components.append(adjusted_group)
 
         # Pick which of potentially many distros will work...
         distro_names = set()
@@ -74,7 +89,7 @@ class Persona(object):
             if distro.name not in self.distro_support:
                 continue
             will_work = True
-            for component in self.wanted_components:
+            for component in all_components:
                 if not distro.known_component(component):
                     will_work = False
                     break
