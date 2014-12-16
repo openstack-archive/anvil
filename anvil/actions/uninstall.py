@@ -33,46 +33,49 @@ class UninstallAction(action.Action):
         components.reverse()
         return components
 
-    def _run(self, persona, component_order, instances):
-        dependency_handler_class = self.distro.dependency_handler_class
-        dependency_handler = dependency_handler_class(self.distro,
-                                                      self.root_dir,
-                                                      instances.values(),
-                                                      self.cli_opts)
-        removals = states.reverts("unconfigure")
-        self._run_phase(
-            action.PhaseFunctors(
-                start=lambda i: LOG.info('Unconfiguring %s.', colorizer.quote(i.name)),
-                run=lambda i: i.unconfigure(),
-                end=None,
-            ),
-            component_order,
-            instances,
-            'unconfigure',
-            *removals
-        )
-        removals.extend(states.reverts('pre-uninstall'))
-        self._run_phase(
-            action.PhaseFunctors(
-                start=None,
-                run=lambda i: i.pre_uninstall(),
-                end=None,
-            ),
-            component_order,
-            instances,
-            'pre-uninstall',
-            *removals
-        )
-        removals.extend(states.reverts("package-uninstall"))
-        general_package = "general"
-        self._run_phase(
-            action.PhaseFunctors(
-                start=lambda i: LOG.info("Uninstalling packages"),
-                run=lambda i: dependency_handler.uninstall(),
-                end=None,
-            ),
-            [general_package],
-            {general_package: instances[general_package]},
-            "package-uninstall",
-            *removals
-        )
+    def _run(self, persona, groups):
+        for group, instances in groups:
+            LOG.info("Uninstalling group %s...", colorizer.quote(group))
+            dependency_handler_class = self.distro.dependency_handler_class
+            dependency_handler = dependency_handler_class(self.distro,
+                                                          self.root_dir,
+                                                          instances.values(),
+                                                          self.cli_opts)
+            removals = states.reverts("unconfigure")
+            self._run_phase(
+                action.PhaseFunctors(
+                    start=lambda i: LOG.info('Unconfiguring %s.', colorizer.quote(i.name)),
+                    run=lambda i: i.unconfigure(),
+                    end=None,
+                ),
+                group,
+                instances,
+                'unconfigure',
+                *removals
+            )
+            removals.extend(states.reverts('pre-uninstall'))
+            self._run_phase(
+                action.PhaseFunctors(
+                    start=None,
+                    run=lambda i: i.pre_uninstall(),
+                    end=None,
+                ),
+                group,
+                instances,
+                'pre-uninstall',
+                *removals
+            )
+            removals.extend(states.reverts("package-uninstall"))
+            general_package = "general"
+            if general_package in instances:
+                self._run_phase(
+                    action.PhaseFunctors(
+                        start=lambda i: LOG.info("Uninstalling packages"),
+                        run=lambda i: dependency_handler.uninstall(),
+                        end=None,
+                    ),
+                    group,
+                    {general_package: instances[general_package]},
+                    "package-uninstall",
+                    *removals
+                )

@@ -53,6 +53,15 @@ ENSURE_NOT_MISSING = [
 _DEFAULT_SKIP_EPOCHS = ['0']
 
 
+def _get_lines(filename):
+    lines = []
+    for line in sh.load_file(filename).splitlines():
+        line = line.strip()
+        if line and not line.startswith("#"):
+            lines.append(line)
+    return lines
+
+
 class YumInstallHelper(base.InstallHelper):
     def pre_install(self, pkg, params=None):
         """pre-install is handled in openstack-deps %pre script."""
@@ -74,8 +83,9 @@ class YumDependencyHandler(base.DependencyHandler):
     REPOS = ["anvil-deps", "anvil"]
     JOBS = 2
 
-    def __init__(self, distro, root_dir, instances, opts):
-        super(YumDependencyHandler, self).__init__(distro, root_dir, instances, opts)
+    def __init__(self, distro, root_dir, instances, opts, group):
+        super(YumDependencyHandler, self).__init__(distro, root_dir,
+                                                   instances, opts, group)
         # Various paths we will use while operating
         self.rpmbuild_dir = sh.joinpths(self.deps_dir, "rpmbuild")
         self.prebuild_dir = sh.joinpths(self.deps_dir, "prebuild")
@@ -83,9 +93,10 @@ class YumDependencyHandler(base.DependencyHandler):
         self.deps_src_repo_dir = sh.joinpths(self.deps_dir, "openstack-deps-sources")
         self.rpm_sources_dir = sh.joinpths(self.rpmbuild_dir, "SOURCES")
         self.anvil_repo_dir = sh.joinpths(self.root_dir, "repo")
-        self.build_requires_filename = sh.joinpths(self.deps_dir, "build-requires")
-        self.yum_satisfies_filename = sh.joinpths(self.deps_dir, "yum-satisfiable")
-        self.rpm_build_requires_filename = sh.joinpths(self.deps_dir, "rpm-build-requires")
+        self.generated_srpms_filename = sh.joinpths(self.deps_dir, "generated-srpms-%s" % group)
+        self.build_requires_filename = sh.joinpths(self.deps_dir, "build-requires-%s" % group)
+        self.yum_satisfies_filename = sh.joinpths(self.deps_dir, "yum-satisfiable-%s" % group)
+        self.rpm_build_requires_filename = sh.joinpths(self.deps_dir, "rpm-build-requires-%s" % group)
         # Executables we require to operate
         self.rpmbuild_executable = sh.which("rpmbuild")
         self.specprint_executable = sh.which('specprint', ["tools/"])
@@ -203,18 +214,30 @@ class YumDependencyHandler(base.DependencyHandler):
                         sh.joinpths(self.rpmbuild_dir, "SOURCES")):
             sh.mkdirslist(dirname, tracewriter=self.tracewriter)
 
+    def _record_srpm_files(self, files):
+        if not files:
+            return
+        buf = six.StringIO()
+        for f in files:
+            buf.write(f)
+            buf.write("\n")
+        if sh.isfile(self.generated_srpms_filename):
+            sh.append_file(self.generated_srpms_filename, "\n" + buf.getvalue())
+        else:
+            sh.write_file(self.generated_srpms_filename, buf.getvalue())
+
     def package_instance(self, instance):
         with sh.remove_before(self.rpmbuild_dir):
             self._create_rpmbuild_subdirs()
             if instance.name in ["general"]:
                 self._build_dependencies()
-                self._move_srpms("anvil-deps")
+                self._record_srpm_files(self._move_srpms("anvil-deps"))
             else:
                 # Meta packages don't get built.
                 app_dir = instance.get_option("app_dir")
                 if sh.isdir(app_dir):
                     self._build_openstack_package(instance)
-                    self._move_srpms("anvil")
+                    self._record_srpm_files(self._move_srpms("anvil"))
 
     def _move_rpm_files(self, source_dir, target_dir):
         # NOTE(imelnikov): we should create target_dir even if we have
@@ -222,13 +245,13 @@ class YumDependencyHandler(base.DependencyHandler):
         if not sh.isdir(target_dir):
             sh.mkdirslist(target_dir, tracewriter=self.tracewriter)
         if not sh.isdir(source_dir):
-            return 0
-        moved = 0
+            return []
+        moved = []
         for filename in sh.listdir(source_dir, recursive=True, files_only=True):
             if not filename.lower().endswith(".rpm"):
                 continue
             sh.move(filename, target_dir, force=True)
-            moved += 1
+            moved.append(sh.joinpths(target_dir, sh.basename(filename)))
         return moved
 
     def build_binary(self):
@@ -245,6 +268,22 @@ class YumDependencyHandler(base.DependencyHandler):
             path_files = []
             if sh.isdir(path):
                 path_files = sh.listdir(path, filter_func=is_src_rpm)
+            try:
+                # Leave other groups files alone...
+                restricted = set()
+                for line in sh.load_file(self.generated_srpms_filename).splitlines():
+                    line = line.strip()
+                    if line:
+                        restricted.add(line)
+            except IOError as e:
+                if e.errno != errno.ENOENT:
+                    raise
+            else:
+                filtered = []
+                for path in path_files:
+                    if path in restricted:
+                        filtered.append(path)
+                path_files = filtered
             return sorted(path_files)
 
         def move_rpms(repo_name):
@@ -254,15 +293,18 @@ class YumDependencyHandler(base.DependencyHandler):
             ]
             for sub_dir in sh.listdir(self.rpmbuild_dir, dirs_only=True):
                 search_dirs.append(sh.joinpths(sub_dir, "RPMS"))
-            moved = 0
+            moved = []
             for source_dir in search_dirs:
-                moved += self._move_rpm_files(source_dir, repo_dir)
+                moved.extend(self._move_rpm_files(source_dir, repo_dir))
             return moved
 
-        def build(repo_dir, repo_name, header_tpl):
-            repo_files = list_src_rpms(repo_dir)
+        def build(repo_dir, repo_name, header_tpl, group, built_files):
+            repo_files = []
+            for srpm in list_src_rpms(repo_dir):
+                if srpm not in built_files:
+                    repo_files.append(srpm)
             if not repo_files:
-                return
+                return []
             utils.log_iterable(repo_files,
                                header=header_tpl % (len(repo_files),
                                                     self.SRC_REPOS[repo_name],
@@ -273,17 +315,28 @@ class YumDependencyHandler(base.DependencyHandler):
                 rpmbuild_flags += " --define 'usr_only 1'"
             with sh.remove_before(self.rpmbuild_dir):
                 self._create_rpmbuild_subdirs()
+                # This is needed so that make correctly identifies the right
+                # files and the right *.mark files and so-on; instead of
+                # grabbing all the files (including ones we don't want to
+                # build just yet...)
+                files_dirname = '%s-%s-build' % (repo_name, group)
+                files_dir = sh.joinpths(self.deps_dir, files_dirname)
+                sh.mkdirslist(files_dir)
+                for srpm in repo_files:
+                    sh.copy(srpm, sh.joinpths(files_dir, sh.basename(srpm)))
                 try:
                     self.py2rpm_helper.build_all_binaries(repo_name,
-                                                          repo_dir,
+                                                          files_dir,
                                                           rpmbuild_flags,
                                                           self.tracewriter,
                                                           self.jobs)
                 finally:
                     # If we made any rpms (even if a failure happened, make
                     # sure that we move them to the right target repo).
-                    if move_rpms(repo_name) > 0:
+                    moved_rpms = move_rpms(repo_name)
+                    if len(moved_rpms) > 0:
                         self._create_repo(repo_name)
+            return repo_files
 
         def pre_build():
             build_requirements = self.requirements.get("build-requires")
@@ -293,54 +346,67 @@ class YumDependencyHandler(base.DependencyHandler):
                                    logger=LOG)
                 self.helper.transaction(install_pkgs=build_requirements,
                                         tracewriter=self.tracewriter)
-            build_requirements = ''
+            build_requirements = []
             try:
-                build_requirements = sh.load_file(self.rpm_build_requires_filename)
+                build_requirements.extend(_get_lines(self.rpm_build_requires_filename))
             except IOError as e:
                 if e.errno != errno.ENOENT:
                     raise
-            build_requirements = set(pkg_resources.yield_lines(build_requirements))
+            built_files = []
+            built_requirements = []
             for repo_name in self.REPOS:
                 repo_dir = sh.joinpths(self.anvil_repo_dir, self.SRC_REPOS[repo_name])
                 matched_paths = []
-                paths = list_src_rpms(repo_dir)
-                envra_details = self.envra_helper.explode(*paths)
-                for (path, envra_detail) in zip(paths, envra_details):
+                available_paths = list_src_rpms(repo_dir)
+                envra_path_details = self.envra_helper.explode(*available_paths)
+                for (path, envra_detail) in zip(available_paths, envra_path_details):
                     package_name = envra_detail.get('name')
                     if package_name in build_requirements:
                         matched_paths.append(path)
-                        build_requirements.discard(package_name)
+                        built_requirements.append(package_name)
                 if matched_paths:
                     with sh.remove_before(self.prebuild_dir) as prebuild_dir:
-                        if not sh.isdir(prebuild_dir):
-                            sh.mkdirslist(prebuild_dir, tracewriter=self.tracewriter)
+                        sh.mkdirslist(prebuild_dir, tracewriter=self.tracewriter)
                         for path in matched_paths:
-                            sh.move(path, sh.joinpths(prebuild_dir, sh.basename(path)))
-                        build(prebuild_dir, repo_name,
-                              'Prebuilding %s RPM packages from their SRPMs'
-                              ' for repo %s using %s jobs')
-            return build_requirements
+                            sh.copy(path,
+                                    sh.joinpths(prebuild_dir, sh.basename(path)))
+                        built_files.extend(
+                            build(prebuild_dir, repo_name,
+                                  'Prebuilding %s RPM packages from their'
+                                  ' SRPMs for repo %s using %s jobs',
+                                  "%s-prebuild" % self.group, built_files))
+            leftover_requirements = set()
+            for req in build_requirements:
+                if req not in built_requirements:
+                    leftover_requirements.add(req)
+            return (leftover_requirements, built_files)
 
-        unsatisfied_build_requirements = list(pre_build())
-        if unsatisfied_build_requirements:
-            utils.log_iterable(sorted(unsatisfied_build_requirements),
+        leftover_requirements, built_files = pre_build()
+        if leftover_requirements:
+            utils.log_iterable(sorted(leftover_requirements),
                                header="%s unsatisfied build requirements (these"
                                       " will need to be satisfied by existing"
-                                      " repositories)" % len(unsatisfied_build_requirements),
+                                      " repositories)" % len(leftover_requirements),
                                logger=LOG)
         for repo_name in self.REPOS:
             repo_dir = sh.joinpths(self.anvil_repo_dir, self.SRC_REPOS[repo_name])
-            build(repo_dir, repo_name,
-                  'Building %s RPM packages from their SRPMs for repo %s'
-                  ' using %s jobs')
+            built_files.extend(
+                build(repo_dir, repo_name,
+                      'Building %s RPM packages from their SRPMs for repo %s'
+                      ' using %s jobs', self.group, built_files))
 
     def _move_srpms(self, repo_name, rpmbuild_dir=None):
         if rpmbuild_dir is None:
             rpmbuild_dir = self.rpmbuild_dir
         src_repo_name = self.SRC_REPOS[repo_name]
         src_repo_dir = sh.joinpths(self.anvil_repo_dir, src_repo_name)
-        return self._move_rpm_files(sh.joinpths(rpmbuild_dir, "SRPMS"),
-                                    src_repo_dir)
+        search_dirs = [
+            sh.joinpths(rpmbuild_dir, "SRPMS"),
+        ]
+        moved = []
+        for dir_name in search_dirs:
+            moved.extend(self._move_rpm_files(dir_name, src_repo_dir))
+        return moved
 
     def _create_repo(self, repo_name):
         repo_dir = sh.joinpths(self.anvil_repo_dir, repo_name)
