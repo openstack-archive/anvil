@@ -499,10 +499,23 @@ class YumDependencyHandler(base.DependencyHandler):
         for filename in package_files:
             if filename not in filtered_package_files:
                 sh.unlink(filename)
+        ensure_prebuilt = self.distro.get_dependency_config("ensure_prebuilt")
+        if not ensure_prebuilt:
+            ensure_prebuilt = {}
         build_requires = six.StringIO()
         for (filename, req) in package_reqs:
             if filename in filtered_package_files:
                 build_requires.write("%s # %s\n" % (req, sh.basename(filename)))
+                if req.key in ensure_prebuilt:
+                    buff = six.StringIO()
+                    buff.write("# %s from %s\n" (req, sh.basename(filename)))
+                    for req_req in ensure_prebuilt[req.key]:
+                        LOG.info("Adding %s as a pre-build time requirement of"
+                                 " %s (%s)", colorizer.quote(req_req), req,
+                                 filename)
+                        buff.write("%s\n" % req_req)
+                    buff.write("\n")
+                    sh.append_file(self.rpm_build_requires_filename, buff.getvalue())
         sh.write_file(self.build_requires_filename, build_requires.getvalue())
 
         # Now build them into SRPM rpm files.

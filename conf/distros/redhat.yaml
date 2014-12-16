@@ -35,6 +35,12 @@ dependency_handler:
     - selenium
     - xattr
     - numpy
+    ensure_prebuilt:
+      # For some reason we can't even touch testtools until the following
+      # exists/is-built and we can't seem to get this info from the egg_info
+      # extraction process...
+      - testtools:
+        - "unittest2>=0.8.0"
     build_options:
       pylint:
         - "%global _python_bytecompile_errors_terminate_build 0"
