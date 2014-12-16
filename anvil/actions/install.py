@@ -16,6 +16,8 @@
 
 from StringIO import StringIO
 
+import six
+
 from anvil.actions import base as action
 from anvil.actions import states
 from anvil import colorizer
@@ -32,82 +34,83 @@ class InstallAction(action.Action):
     def lookup_name(self):
         return 'install'
 
-    def _on_finish(self, persona, component_order, instances):
-        action.Action._on_finish(self, persona, component_order, instances)
-        self._write_exports(component_order, instances, sh.joinpths("/etc/anvil",
-                                                                    "%s.rc" % (self.name)))
+    def _on_finish(self, persona, groups):
+        action.Action._on_finish(self, persona, groups)
+        self._write_exports(groups, sh.joinpths("/etc/anvil", "%s.rc" % (self.name)))
 
-    def _write_exports(self, component_order, instances, path):
+    def _write_exports(self, groups, path):
         entries = []
         contents = StringIO()
         contents.write("# Exports for action %s\n\n" % (self.name))
-        for c in component_order:
-            exports = instances[c].env_exports
-            if exports:
-                contents.write("# Exports for %s\n" % (c))
-                for (k, v) in exports.items():
-                    export_entry = "export %s=%s" % (k, sh.shellquote(str(v).strip()))
-                    entries.append(export_entry)
-                    contents.write("%s\n" % (export_entry))
-                contents.write("\n")
+        for _group, instances in groups:
+            for c, instance in six.iteritems(instances):
+                exports = instance.env_exports
+                if exports:
+                    contents.write("# Exports for %s\n" % (c))
+                    for (k, v) in exports.items():
+                        export_entry = "export %s=%s" % (k, sh.shellquote(str(v).strip()))
+                        entries.append(export_entry)
+                        contents.write("%s\n" % (export_entry))
+                    contents.write("\n")
         if entries:
             sh.write_file(path, contents.getvalue())
             utils.log_iterable(entries,
                                header="Wrote to %s %s exports" % (path, len(entries)),
                                logger=LOG)
 
-    def _run(self, persona, component_order, instances):
-        dependency_handler_class = self.distro.dependency_handler_class
-        dependency_handler = dependency_handler_class(self.distro,
-                                                      self.root_dir,
-                                                      instances.values(),
-                                                      self.cli_opts)
-        removals = states.reverts("pre-install")
-        self._run_phase(
-            action.PhaseFunctors(
-                start=lambda i: LOG.info('Preinstalling %s.', colorizer.quote(i.name)),
-                run=lambda i: i.pre_install(),
-                end=None,
-            ),
-            component_order,
-            instances,
-            "pre-install",
-            *removals
-        )
-        removals.extend(states.reverts("package-install"))
-        general_package = "general"
-        self._run_phase(
-            action.PhaseFunctors(
-                start=lambda i: LOG.info("Installing packages"),
-                run=dependency_handler.install,
-                end=None,
-            ),
-            [general_package],
-            {general_package: instances[general_package]},
-            "package-install",
-            *removals
-        )
-        removals.extend(states.reverts("configure"))
-        self._run_phase(
-            action.PhaseFunctors(
-                start=lambda i: LOG.info('Configuring %s.', colorizer.quote(i.name)),
-                run=lambda i: i.configure(),
-                end=None,
-            ),
-            component_order,
-            instances,
-            "configure",
-            *removals
-        )
-        removals.extend(states.reverts("post-install"))
-        self._run_phase(
-            action.PhaseFunctors(
-                start=lambda i: LOG.info('Post-installing %s.', colorizer.quote(i.name)),
-                run=lambda i: i.post_install(),
-                end=None
-            ),
-            component_order,
-            instances,
-            "post-install",
-            *removals
-        )
+    def _run(self, persona, groups):
+        for group, instances in groups:
+            dependency_handler_class = self.distro.dependency_handler_class
+            dependency_handler = dependency_handler_class(self.distro,
+                                                          self.root_dir,
+                                                          instances.values(),
+                                                          self.cli_opts)
+            removals = states.reverts("pre-install")
+            self._run_phase(
+                action.PhaseFunctors(
+                    start=lambda i: LOG.info('Preinstalling %s.', colorizer.quote(i.name)),
+                    run=lambda i: i.pre_install(),
+                    end=None,
+                ),
+                group,
+                instances,
+                "pre-install",
+                *removals
+            )
+            removals.extend(states.reverts("package-install"))
+            general_package = "general"
+            if general_package in instances:
+                self._run_phase(
+                    action.PhaseFunctors(
+                        start=lambda i: LOG.info("Installing packages"),
+                        run=dependency_handler.install,
+                        end=None,
+                    ),
+                    group,
+                    {general_package: instances[general_package]},
+                    "package-install",
+                    *removals
+                )
+            removals.extend(states.reverts("configure"))
+            self._run_phase(
+                action.PhaseFunctors(
+                    start=lambda i: LOG.info('Configuring %s.', colorizer.quote(i.name)),
+                    run=lambda i: i.configure(),
+                    end=None,
+                ),
+                group,
+                instances,
+                "configure",
+                *removals
+            )
+            removals.extend(states.reverts("post-install"))
+            self._run_phase(
+                action.PhaseFunctors(
+                    start=lambda i: LOG.info('Post-installing %s.', colorizer.quote(i.name)),
+                    run=lambda i: i.post_install(),
+                    end=None
+                ),
+                instances,
+                "post-install",
+                *removals
+            )

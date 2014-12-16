@@ -54,20 +54,20 @@ class DependencyHandler(object):
     MAX_PIP_DOWNLOAD_ATTEMPTS = 4
     PIP_DOWNLOAD_DELAY = 10
 
-    def __init__(self, distro, root_dir, instances, opts):
+    def __init__(self, distro, root_dir, instances, opts, group):
         self.distro = distro
         self.root_dir = root_dir
         self.instances = instances
         self.opts = opts or {}
+        self.group = group
         # Various paths we will use while operating
         self.deps_dir = sh.joinpths(self.root_dir, "deps")
-        self.downloaded_flag_file = sh.joinpths(self.deps_dir, "pip-downloaded")
         self.download_dir = sh.joinpths(self.deps_dir, "download")
         self.log_dir = sh.joinpths(self.deps_dir, "output")
         sh.mkdir(self.log_dir, recurse=True)
-        self.gathered_requires_filename = sh.joinpths(self.deps_dir, "pip-requires")
-        self.forced_requires_filename = sh.joinpths(self.deps_dir, "forced-requires")
-        self.download_requires_filename = sh.joinpths(self.deps_dir, "download-requires")
+        self.gathered_requires_filename = sh.joinpths(self.deps_dir, "pip-requires-group-%s" % group)
+        self.forced_requires_filename = sh.joinpths(self.deps_dir, "forced-requires-group-%s" % group)
+        self.download_requires_filename = sh.joinpths(self.deps_dir, "download-requires-group-%s" % group)
         self.multipip = multipip_helper.Helper()
         # List of requirements
         self.pips_to_install = []
@@ -325,9 +325,8 @@ class DependencyHandler(object):
         if not pips_to_download:
             return ([], [])
         # NOTE(aababilov): user could have changed persona, so,
-        # check that all requirements are downloaded
-        if (sh.isfile(self.downloaded_flag_file) and
-                self._requirements_satisfied(pips_to_download, self.download_dir)):
+        # check that all requirements are downloaded....
+        if self._requirements_satisfied(pips_to_download, self.download_dir):
             LOG.info("All python dependencies have been already downloaded")
         else:
             def on_download_finish(time_taken):
@@ -348,9 +347,6 @@ class DependencyHandler(object):
                               output_filename)
             utils.retry(self.MAX_PIP_DOWNLOAD_ATTEMPTS,
                         self.PIP_DOWNLOAD_DELAY, try_download)
-            # NOTE(harlowja): Mark that we completed downloading successfully
-            sh.touch_file(self.downloaded_flag_file, die_if_there=False,
-                          quiet=True, tracewriter=self.tracewriter)
         pips_downloaded = [pip_helper.extract_requirement(p) for p in pips_to_download]
         what_downloaded = self._examine_download_dir(pips_downloaded, self.download_dir)
         return (pips_downloaded, what_downloaded)

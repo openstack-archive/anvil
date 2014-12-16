@@ -46,9 +46,9 @@ class VenvDependencyHandler(base.DependencyHandler):
     # PBR seems needed everywhere...
     _PREQ_PKGS = frozenset(['pbr'])
 
-    def __init__(self, distro, root_dir, instances, opts):
+    def __init__(self, distro, root_dir, instances, opts, group):
         super(VenvDependencyHandler, self).__init__(distro, root_dir,
-                                                    instances, opts)
+                                                    instances, opts, group)
         self.cache_dir = sh.joinpths(self.root_dir, "pip-cache")
 
     def _venv_directory_for(self, instance):
