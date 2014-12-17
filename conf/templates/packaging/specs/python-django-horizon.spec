@@ -42,6 +42,29 @@ BuildRequires: python-requests
 BuildRequires: python-netaddr
 %endif
 #end if
+#if $newer_than_eq('2014.2')
+BuildRequires: python-xstatic
+BuildRequires: python-xstatic-angular
+BuildRequires: python-xstatic-angular-cookies
+BuildRequires: python-xstatic-angular-mock
+BuildRequires: python-xstatic-bootstrap-datepicker
+BuildRequires: python-xstatic-bootstrap-scss
+BuildRequires: python-xstatic-d3
+BuildRequires: python-xstatic-hogan
+BuildRequires: python-xstatic-font-awesome
+BuildRequires: python-xstatic-jasmine
+BuildRequires: python-xstatic-jquery
+BuildRequires: python-xstatic-jquery-migrate
+BuildRequires: python-xstatic-jquery-quicksearch
+BuildRequires: python-xstatic-jquery-tablesorter
+BuildRequires: python-xstatic-jquery-ui
+BuildRequires: python-xstatic-jsencrypt
+BuildRequires: python-xstatic-qunit
+BuildRequires: python-xstatic-rickshaw
+BuildRequires: python-xstatic-spin
+BuildRequires: python-django-pyscss
+BuildRequires: python-scss
+#end if
 
 #for $i in $requires
 Requires:         ${i}
@@ -117,6 +140,9 @@ sed -i -e 's@^BIN_DIR.*$@BIN_DIR = "/usr/bin"@' \
     -e '/^COMPRESS_ENABLED.*$/a COMPRESS_OFFLINE = True' \
     openstack_dashboard/settings.py
 
+#Enable offline compression
+sed -i 's:COMPRESS_OFFLINE.=.False:COMPRESS_OFFLINE = True:' openstack_dashboard/settings.py
+
 # Correct "local_settings.py.example" config file
 sed -i -e 's@^#\?ALLOWED_HOSTS.*$@ALLOWED_HOSTS = ["horizon.example.com", "localhost"]@' \
     -e 's@^LOCAL_PATH.*$@LOCAL_PATH = "/tmp"@' \
@@ -125,7 +151,12 @@ sed -i -e 's@^#\?ALLOWED_HOSTS.*$@ALLOWED_HOSTS = ["horizon.example.com", "local
 # remove unnecessary .po files
 find . -name "django*.po" -exec rm -f '{}' \;
 
+# make doc build compatible with python-oslo-sphinx RPM
+sed -i 's/oslosphinx/oslo.sphinx/' doc/source/conf.py
+
 %build
+cd horizon && django-admin compilemessages && cd ..
+cd openstack_dashboard && django-admin compilemessages && cd ..
 %{__python} setup.py build
 
 cp openstack_dashboard/local/local_settings.py.example openstack_dashboard/local/local_settings.py
@@ -174,11 +205,9 @@ sphinx-build -b html doc/source html
 # Fix hidden-file-or-dir warnings
 rm -fr html/.doctrees html/.buildinfo
 %endif
-
+#end raw
 
 %install
-rm -rf %{buildroot}
-
 %{__python} setup.py install -O1 --skip-build --root %{buildroot}
 
 # drop httpd-conf snippet
@@ -203,6 +232,7 @@ rm -rf %{buildroot}%{python_sitelib}/openstack_dashboard
 mv %{buildroot}%{_datadir}/openstack-dashboard/openstack_dashboard/local/local_settings.py.example %{buildroot}%{_sysconfdir}/openstack-dashboard/local_settings
 ln -s %{_sysconfdir}/openstack-dashboard/local_settings %{buildroot}%{_datadir}/openstack-dashboard/openstack_dashboard/local/local_settings.py
 
+#if $older_than('2014.2')
 %if 0%{?rhel} > 6 || 0%{?fedora} >= 16
 %find_lang django
 %find_lang djangojs
@@ -225,6 +255,7 @@ grep "\/site-packages\/horizon" django.lang > horizon.lang
 %if 0%{?rhel} > 6 || 0%{?fedora} >= 16
 cat djangojs.lang >> horizon.lang
 %endif
+#end if
 
 # copy static files to %{_datadir}/openstack-dashboard/static
 install -d -m 755 %{buildroot}%{_datadir}/openstack-dashboard/static
@@ -255,4 +286,3 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
-#end raw
