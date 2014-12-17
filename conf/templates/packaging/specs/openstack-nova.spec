@@ -799,7 +799,6 @@ fi
 #if $newer_than_eq('2014.2')
 %files serialproxy
 %{_bindir}/nova-serialproxy
-%{_unitdir}/openstack-nova-serialproxy.service
 
 %if ! 0%{?usr_only}
 %if ! (0%{?rhel} > 6)
