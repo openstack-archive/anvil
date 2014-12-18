@@ -140,8 +140,10 @@ sed -i -e 's@^BIN_DIR.*$@BIN_DIR = "/usr/bin"@' \
     -e '/^COMPRESS_ENABLED.*$/a COMPRESS_OFFLINE = True' \
     openstack_dashboard/settings.py
 
+#if $newer_than_eq('2014.2')
 #Enable offline compression
 sed -i 's:COMPRESS_OFFLINE.=.False:COMPRESS_OFFLINE = True:' openstack_dashboard/settings.py
+#end if
 
 # Correct "local_settings.py.example" config file
 sed -i -e 's@^#\?ALLOWED_HOSTS.*$@ALLOWED_HOSTS = ["horizon.example.com", "localhost"]@' \
@@ -151,12 +153,16 @@ sed -i -e 's@^#\?ALLOWED_HOSTS.*$@ALLOWED_HOSTS = ["horizon.example.com", "local
 # remove unnecessary .po files
 find . -name "django*.po" -exec rm -f '{}' \;
 
+#if $newer_than_eq('2014.2')
 # make doc build compatible with python-oslo-sphinx RPM
 sed -i 's/oslosphinx/oslo.sphinx/' doc/source/conf.py
+#end if
 
 %build
+#if $newer_than_eq('2014.2')
 cd horizon && django-admin compilemessages && cd ..
 cd openstack_dashboard && django-admin compilemessages && cd ..
+#end if
 %{__python} setup.py build
 
 cp openstack_dashboard/local/local_settings.py.example openstack_dashboard/local/local_settings.py
