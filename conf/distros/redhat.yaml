@@ -12,6 +12,7 @@ dependency_handler:
         django: Django
         IPy: python-IPy
         m2crypto: m2crypto
+        pyScss: python-scss
         mysql-python: MySQL-python
         numpy: numpy
         pam: python-pam
@@ -187,6 +188,8 @@ components:
             running: anvil.components.horizon:HorizonRuntime
         packages:
         -   name: openstack-dashboard
+        pips:
+          -   name: pyScss
     django-openstack-auth:
         python_entrypoints: True
     keystone:
