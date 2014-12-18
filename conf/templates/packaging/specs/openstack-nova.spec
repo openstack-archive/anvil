@@ -678,7 +678,9 @@ fi
 %{_bindir}/nova-compute
 %{_bindir}/nova-baremetal-deploy-helper
 %{_bindir}/nova-baremetal-manage
+#if $newer_than_eq('2014.2')
 %{_bindir}/nova-idmapshift
+#end if
 %{_datarootdir}/nova/rootwrap/compute.filters
 
 %if ! 0%{?usr_only}
