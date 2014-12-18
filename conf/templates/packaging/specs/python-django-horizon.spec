@@ -155,8 +155,15 @@ find . -name "django*.po" -exec rm -f '{}' \;
 sed -i 's/oslosphinx/oslo.sphinx/' doc/source/conf.py
 
 %build
+
+%if 0%{?rhel}==6
+cd horizon && django-admin.py compilemessages && cd ..
+cd openstack_dashboard && django-admin.py compilemessages && cd ..
+%else
 cd horizon && django-admin compilemessages && cd ..
 cd openstack_dashboard && django-admin compilemessages && cd ..
+%endif
+
 %{__python} setup.py build
 
 cp openstack_dashboard/local/local_settings.py.example openstack_dashboard/local/local_settings.py
