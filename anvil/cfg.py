@@ -14,10 +14,10 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import jsonpatch
 import re
 
 from anvil import exceptions
+from anvil import origins as _origins
 from anvil import settings
 from anvil import shell as sh
 from anvil import utils
@@ -76,10 +76,8 @@ class YamlMergeLoader(object):
         origins_opts = {}
         if self._origins_path:
             try:
-                origins = utils.load_yaml(self._origins_path)
-                if origins_patch:
-                    patch = jsonpatch.JsonPatch(origins_patch)
-                    patch.apply(origins, in_place=True)
+                origins = _origins.load(self._origins_path,
+                                        patch_file=origins_patch)
                 origins_opts = origins[component]
             except KeyError:
                 pass
