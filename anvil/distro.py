@@ -43,14 +43,25 @@ class Distro(object):
     def __init__(self,
                  name, platform_pattern,
                  install_helper, dependency_handler,
-                 commands, components):
+                 commands, components, **kwargs):
         self.name = name
         self._platform_pattern_text = platform_pattern
         self._platform_pattern = re.compile(platform_pattern, re.IGNORECASE)
         self._install_helper = install_helper
-        self._dependency_handler = dependency_handler
+        self._dependency_handler = self._inject_platform(dependency_handler, kwargs)
         self._commands = commands
         self._components = components
+
+    @staticmethod
+    def _inject_platform(merged_into, potential_data):
+        linux_plt = platform.linux_distribution()[0:2]
+        linux_plt = "-".join(linux_plt)
+        linux_plt = linux_plt.replace(" ", "-")
+        linux_plt = linux_plt.lower().strip()
+        if linux_plt in potential_data:
+            return utils.recursive_merge(merged_into,
+                                         potential_data[linux_plt])
+        return merged_into
 
     def pformat(self, item_max_len=None):
         data = {
@@ -150,6 +161,7 @@ class Distro(object):
             self._dependency_handler = utils.recursive_merge(
                 self._dependency_handler,
                 kwargs['dependency_handler'])
+        self._dependency_handler = self._inject_platform(self._dependency_handler, kwargs)
 
 
 def _match_distros(distros):
