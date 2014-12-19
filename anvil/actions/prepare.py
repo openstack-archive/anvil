@@ -32,6 +32,7 @@ class PrepareAction(action.Action):
         return 'install'
 
     def _run(self, persona, groups):
+        prior_groups = []
         for group, instances in groups:
             LOG.info("Preparing group %s...", colorizer.quote(group))
             dependency_handler_class = self.distro.dependency_handler_class
@@ -39,7 +40,7 @@ class PrepareAction(action.Action):
                                                           self.root_dir,
                                                           instances.values(),
                                                           self.cli_opts,
-                                                          group)
+                                                          group, prior_groups)
             removals = states.reverts("download")
             self._run_phase(
                 action.PhaseFunctors(
@@ -80,3 +81,4 @@ class PrepareAction(action.Action):
                 )
             finally:
                 dependency_handler.package_finish()
+            prior_groups.append((group, instances))

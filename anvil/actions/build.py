@@ -31,6 +31,7 @@ class BuildAction(action.Action):
         return 'install'
 
     def _run(self, persona, groups):
+        prior_groups = []
         for group, instances in groups:
             LOG.info("Building group %s...", colorizer.quote(group))
             dependency_handler_class = self.distro.dependency_handler_class
@@ -38,5 +39,6 @@ class BuildAction(action.Action):
                                                           self.root_dir,
                                                           instances.values(),
                                                           self.cli_opts,
-                                                          group)
+                                                          group, prior_groups)
             dependency_handler.build_binary()
+            prior_groups.append((group, instances))

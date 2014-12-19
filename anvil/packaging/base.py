@@ -19,7 +19,6 @@
 #pylint: disable=R0902,R0921
 
 from anvil import colorizer
-from anvil import decorators
 from anvil import exceptions as exc
 from anvil import log as logging
 from anvil.packaging.helpers import multipip_helper
@@ -58,10 +57,12 @@ class DependencyHandler(object):
     MAX_PIP_DOWNLOAD_ATTEMPTS = 4
     PIP_DOWNLOAD_DELAY = 10
 
-    def __init__(self, distro, root_dir, instances, opts, group):
+    def __init__(self, distro, root_dir,
+                 instances, opts, group, prior_groups):
         self.distro = distro
         self.root_dir = root_dir
         self.instances = instances
+        self.prior_groups = prior_groups
         self.opts = opts or {}
         self.group = group
         # Various paths we will use while operating
@@ -95,19 +96,23 @@ class DependencyHandler(object):
             ignore_pips.update(ignore_distro_pips)
         self.ignore_pips = ignore_pips
 
-    @decorators.cached_property(ttl=0)
-    def _python_eggs(self):
+    def _python_eggs(self, priors):
         egg_infos = []
-        for i in self.instances:
-            try:
-                egg_infos.append(dict(i.egg_info))
-            except AttributeError:
-                pass
+        groups = [self.instances]
+        if priors:
+            for _group, prior_instances in self.prior_groups:
+                groups.append(list(prior_instances.values()))
+        for instances in groups:
+            for i in instances:
+                try:
+                    egg_infos.append(dict(i.egg_info))
+                except AttributeError:
+                    pass
         return egg_infos
 
     @property
     def python_names(self):
-        return [e['name'] for e in self._python_eggs]
+        return [e['name'] for e in self._python_eggs(True)]
 
     @staticmethod
     def _get_package_dirs(instances):
@@ -173,7 +178,7 @@ class DependencyHandler(object):
 
         def validate_requirement(filename, source_req):
             install_egg = None
-            for egg_info in self._python_eggs:
+            for egg_info in self._python_eggs(False):
                 if egg_info['name'] == source_req.key:
                     install_egg = egg_info
                     break

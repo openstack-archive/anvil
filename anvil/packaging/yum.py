@@ -83,9 +83,11 @@ class YumDependencyHandler(base.DependencyHandler):
     REPOS = ["anvil-deps", "anvil"]
     JOBS = 2
 
-    def __init__(self, distro, root_dir, instances, opts, group):
+    def __init__(self, distro, root_dir,
+                 instances, opts, group, prior_groups):
         super(YumDependencyHandler, self).__init__(distro, root_dir,
-                                                   instances, opts, group)
+                                                   instances, opts, group,
+                                                   prior_groups)
         # Various paths we will use while operating
         self.rpmbuild_dir = sh.joinpths(self.deps_dir, "rpmbuild")
         self.prebuild_dir = sh.joinpths(self.deps_dir, "prebuild")
