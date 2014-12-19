@@ -280,7 +280,7 @@ networks as VLANs using Linux bridging.
 Summary:        Neutron bandwidth metering agent
 Group:          Applications/System
 
-Requires:       openstack-neutron = %{version}-%{release}
+Requires:       openstack-neutron = %{epoch}:%{version}-%{release}
 
 %description -n openstack-neutron-metering-agent
 Neutron provides an API to measure bandwidth utilization
@@ -410,7 +410,7 @@ networks using ofagent.
 Summary:        Neutron OpenContrail plugin
 Group:          Applications/system
 
-Requires:       openstack-neutron = %{version}-%{release}
+Requires:       openstack-neutron = %{epoch}:%{version}-%{release}
 
 
 %description -n openstack-neutron-opencontrail
@@ -494,7 +494,7 @@ networks using the Ryu Network Operating System.
 Summary:        Neutron SR-IOV NIC agent
 Group:          Applications/system
 
-Requires:       openstack-neutron = %{version}-%{release}
+Requires:       openstack-neutron = %{epoch}:%{version}-%{release}
 
 
 %description -n openstack-neutron-sriov-nic-agent
@@ -560,7 +560,7 @@ This package adds VMWare NSX support for Neutron,
 Summary:        Neutron VPNaaS agent
 Group:          Applications/System
 
-Requires:       openstack-neutron = %{version}-%{release}
+Requires:       openstack-neutron = %{epoch}:%{version}-%{release}
 
 %description -n openstack-neutron-vpn-agent
 Neutron provides an API to implement VPN as a service
