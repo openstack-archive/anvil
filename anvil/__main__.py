@@ -115,8 +115,8 @@ def run(args):
                  colorizer.quote(dist.name), len(possible_distros))
 
     # Update the dist with any other info...
-    dist.merge(**persona_obj.distro_updates)
-    dist.merge(**origins)
+    dist.inject_platform_overrides(persona_obj.distro_updates, source=persona_fn)
+    dist.inject_platform_overrides(origins, source=origins_fn)
 
     # Print it out...
     print(dist.pformat(item_max_len=128))
