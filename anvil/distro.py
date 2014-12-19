@@ -43,14 +43,27 @@ class Distro(object):
     def __init__(self,
                  name, platform_pattern,
                  install_helper, dependency_handler,
-                 commands, components):
+                 commands, components, **kwargs):
         self.name = name
         self._platform_pattern_text = platform_pattern
         self._platform_pattern = re.compile(platform_pattern, re.IGNORECASE)
         self._install_helper = install_helper
-        self._dependency_handler = dependency_handler
+        self._dependency_handler = self._inject_platform(dependency_handler, kwargs)
         self._commands = commands
         self._components = components
+
+    @staticmethod
+    def _inject_platform(merged_into, potential_data):
+        if 'platform_overrides' in potential_data:
+            overrides = potential_data['platform_overrides']
+            d = _linux_distribution()
+            if d in overrides:
+                LOG.info("Merging in 'platform_overrides' that matched distro %s", d)
+                return utils.recursive_merge(merged_into, overrides[d])
+            else:
+                LOG.debug("Distro %s not in 'platform_overrides' (valid are %s)",
+                          d, list(six.iterkeys(overrides)))
+        return merged_into
 
     def pformat(self, item_max_len=None):
         data = {
@@ -146,10 +159,8 @@ class Distro(object):
             return Component(entry_point, component_info, action_classes)
 
     def merge(self, **kwargs):
-        if 'dependency_handler' in kwargs:
-            self._dependency_handler = utils.recursive_merge(
-                self._dependency_handler,
-                kwargs['dependency_handler'])
+        self._dependency_handler = self._inject_platform(self._dependency_handler,
+                                                         kwargs)
 
 
 def _match_distros(distros):
@@ -162,6 +173,14 @@ def _match_distros(distros):
         raise excp.ConfigException('No distro matched for platform %r' % plt)
     else:
         return matches
+
+
+def _linux_distribution():
+    linux_plt = platform.linux_distribution()[0:2]
+    linux_plt = "-".join(linux_plt)
+    linux_plt = linux_plt.replace(" ", "-")
+    linux_plt = linux_plt.lower().strip()
+    return linux_plt
 
 
 def load(path, distros_patch=None):
