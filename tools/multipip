@@ -68,6 +68,12 @@ def create_parser():
         default=[],
         metavar="<requirement specifier>",
         help="Ignore listed packages")
+    parser.add_argument(
+        "--force-packages",
+        nargs="*",
+        default=[],
+        metavar="<requirement specifier>",
+        help="Ignore listed packages")
     return parser
 
 
@@ -250,7 +256,7 @@ def find_best_match(versioned, counts, scorer_func):
     return (best_match, incompatibles)
 
 
-def best_match(req_key, req_list):
+def best_match(req_key, req_list, forced_req=None):
     """Attempts to find the versions which will work the best for the given
     requirement specification list.
     """
@@ -321,23 +327,26 @@ def best_match(req_key, req_list):
                                                                    "compiled conflict"))
         return causes
 
-    versions = {}
-    versioned = set()
-    counts = collections.defaultdict(int)
-    for (op, version) in all_specs:
-        parsed_version = pkg_resources.parse_version(version)
-        versioned.add((op, parsed_version))
-        versions[parsed_version] = version
-        counts[(op, parsed_version)] += 1
-    versioned = list(sorted(versioned, cmp=spec_sort))
-    initial_score = conflict_scorer(versioned)
-    if initial_score == 0:
-        incompatibles = []
-        match = versioned
+    if forced_req is None:
+        versions = {}
+        versioned = set()
+        counts = collections.defaultdict(int)
+        for (op, version) in all_specs:
+            parsed_version = pkg_resources.parse_version(version)
+            versioned.add((op, parsed_version))
+            versions[parsed_version] = version
+            counts[(op, parsed_version)] += 1
+        versioned = list(sorted(versioned, cmp=spec_sort))
+        initial_score = conflict_scorer(versioned)
+        if initial_score == 0:
+            incompatibles = []
+            match = versioned
+        else:
+            match, incompatibles = find_best_match(versioned, counts, conflict_scorer)
+        return (reform(match, versions),
+                reform_incompatibles(incompatibles, versions))
     else:
-        match, incompatibles = find_best_match(versioned, counts, conflict_scorer)
-    return (reform(match, versions),
-            reform_incompatibles(incompatibles, versions))
+        return ([forced_req], req_list)
 
 
 def parse_requirements(options):
@@ -377,17 +386,32 @@ def parse_requirements(options):
             ignored_requirements.append(req)
         except Exception as ex:
             raise RequirementException("Cannot parse `%s': %s" % (req_spec, ex))
-    return (all_requirements, ignored_requirements)
+    forced_requirements = []
+    for req_spec in options.force_packages:
+        try:
+            req = install_requirement_parse(req_spec, "command line")
+            forced_requirements.append(req)
+        except Exception as ex:
+            raise RequirementException("Cannot parse `%s': %s" % (req_spec, ex))
+    return (all_requirements, ignored_requirements, forced_requirements)
 
 
-def join_requirements(requirements, ignored_requirements):
+def join_requirements(requirements, ignored_requirements, forced_requirements):
     skip_keys = set(pkg.req.key for pkg in ignored_requirements)
     incompatibles = {}
     joined_requirements = {}
+    forced = set(pkg.req.key for pkg in forced_requirements)
     for (req_key, req_list) in six.iteritems(requirements):
         if req_key in skip_keys:
             continue
-        req_matches, req_incompatibles = best_match(req_key, req_list)
+        forced_req = None
+        if req_key in forced:
+            forced_matches = [pkg for pkg in forced_requirements
+                              if pkg.req.key == req_key]
+            # Take the last forced match...
+            forced_req = forced_matches[-1]
+        req_matches, req_incompatibles = best_match(req_key, req_list,
+                                                    forced_req=forced_req)
         joined_requirements[req_key] = req_matches
         if req_incompatibles:
             incompatibles[req_key] = req_incompatibles
@@ -433,13 +457,14 @@ def main():
     options = parser.parse_args()
     setup_logging(options)
     try:
-        requirements, ignored_requirements = parse_requirements(options)
+        requirements, ignored_requirements, forced_requirements = parse_requirements(options)
     except RequirementException as ex:
         LOGGER.error("Requirement failure: %s", ex)
         sys.exit(BAD_REQUIREMENTS)
     else:
         joined_requirements, incompatibles = join_requirements(requirements,
-                                                               ignored_requirements)
+                                                               ignored_requirements,
+                                                               forced_requirements)
     print_incompatibles(incompatibles, joined_requirements)
     print_requirements(joined_requirements)
     if incompatibles:

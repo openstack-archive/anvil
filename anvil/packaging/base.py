@@ -31,6 +31,10 @@ from anvil import utils
 LOG = logging.getLogger(__name__)
 
 
+def sort_req(r1, r2):
+    return cmp(r1.key, r2.key)
+
+
 class InstallHelper(object):
     """Run pre and post install for a single package."""
     def __init__(self, distro):
@@ -71,7 +75,7 @@ class DependencyHandler(object):
         self.multipip = multipip_helper.Helper()
         # List of requirements
         self.pips_to_install = []
-        self.forced_packages = []
+        self.forced_pips = []
         # Instances to there app directory (with a setup.py inside)
         self.package_dirs = self._get_package_dirs(instances)
         # Track what file we create so they can be cleaned up on uninstall.
@@ -85,12 +89,6 @@ class DependencyHandler(object):
                 req_set |= set(pkg["name"]
                                for pkg in inst.get_option(key) or [])
             self.requirements[key] = req_set
-        # These pip names we will ignore from being converted/analyzed...
-        ignore_pips = self.distro.get_dependency_config("ignoreable_pips", quiet=True)
-        if not ignore_pips:
-            self.ignore_pips = set()
-        else:
-            self.ignore_pips = set(ignore_pips)
 
     @decorators.cached_property(ttl=0)
     def _python_eggs(self):
@@ -192,7 +190,9 @@ class DependencyHandler(object):
         utils.log_iterable(sorted(requires_files),
                            logger=LOG,
                            header="Scanning %s pip 'requires' files" % (len(requires_files)))
-        forced_by_key = dict((pkg.key, pkg) for pkg in self.forced_packages)
+        forced_by_key = {}
+        for pkg in self.forced_pips:
+            forced_by_key[pkg.key] = pkg
         mutations = 0
         for fn in sorted(requires_files):
             old_lines = sh.load_file(fn).splitlines()
@@ -236,18 +236,21 @@ class DependencyHandler(object):
     def _gather_pips_to_install(self, requires_files, extra_pips=None):
         """Analyze requires_files and extra_pips.
 
-        Updates `self.forced_packages` and `self.pips_to_install`.
+        Updates `self.forced_pips` and `self.pips_to_install`.
         Writes requirements to `self.gathered_requires_filename`.
         """
-
-        def sort_req(r1, r2):
-            return cmp(r1.key, r2.key)
-
         ignore_pips = set(self.python_names)
-        ignore_pips.update(self.ignore_pips)
+        ignore_distro_pips = self.distro.get_dependency_config("ignoreable_pips", quiet=True)
+        if ignore_distro_pips:
+            ignore_pips.update(ignore_distro_pips)
+        forced_pips = set()
+        forced_distro_pips = self.distro.get_dependency_config("forced_pips", quiet=True)
+        if forced_distro_pips:
+            forced_pips.update(forced_distro_pips)
         compatibles, incompatibles = self.multipip.resolve(extra_pips,
                                                            requires_files,
-                                                           ignore_pips)
+                                                           ignore_pips,
+                                                           forced_pips)
         self.pips_to_install = compatibles
         sh.write_file(self.gathered_requires_filename, "\n".join(self.pips_to_install))
         pips_to_install = pip_helper.read_requirement_files([self.gathered_requires_filename])
@@ -267,17 +270,17 @@ class DependencyHandler(object):
 
         # Translate those that we altered requirements for into a set of forced
         # requirements file (and associated list).
-        self.forced_packages = []
-        forced_packages_keys = []
+        self.forced_pips = []
+        forced_pip_keys = []
         for req in [pip_helper.extract_requirement(line) for line in self.pips_to_install]:
-            if req.key in incompatibles and req.key not in forced_packages_keys:
-                self.forced_packages.append(req)
-                forced_packages_keys.append(req.key)
-        self.forced_packages = sorted(self.forced_packages, cmp=sort_req)
-        forced_packages = [str(req) for req in self.forced_packages]
-        utils.log_iterable(forced_packages, logger=LOG,
-                           header="Forced python dependencies")
-        sh.write_file(self.forced_requires_filename, "\n".join(forced_packages))
+            if req.key in incompatibles and req.key not in forced_pip_keys:
+                self.forced_pips.append(req)
+                forced_pip_keys.append(req.key)
+        self.forced_pips = sorted(self.forced_pips, cmp=sort_req)
+        forced_pips = [str(req) for req in self.forced_pips]
+        utils.log_iterable(forced_pips, logger=LOG,
+                           header="Automatically forced python dependencies")
+        sh.write_file(self.forced_requires_filename, "\n".join(forced_pips))
 
     def _filter_download_requires(self):
         """Shrinks the pips that were downloaded into a smaller set.
