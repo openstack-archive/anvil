@@ -79,11 +79,6 @@ commands:
     # under this directory where its configuration files will be connected to there
     # actual location.
     base_link_dir: /etc
-    qpid:
-        # See: http://qpid.apache.org/books/trunk/AMQP-Messaging-Broker-CPP-Book/html/chap-Messaging_User_Guide-Security.html
-        create_user: saslpasswd2 -c -p -f /var/lib/qpidd/qpidd.sasldb -u QPID $USER
-        delete_user: saslpasswd2 -d -f /var/lib/qpidd/qpidd.sasldb -u QPID $USER
-        daemon: qpidd
     rabbit-mq:
         change_password: rabbitmqctl change_password
         restart: service rabbitmq-server restart
@@ -280,28 +275,6 @@ components:
             cisco-cfg-agent: openstack-neutron-cisco
             lbaas-agent: openstack-neutron
             netns-cleanup: openstack-neutron
-    qpid:
-        action_classes:
-          install: anvil.components.qpid:QpidInstaller
-          uninstall: anvil.components.qpid:QpidUninstaller
-          running: anvil.components.qpid:QpidRuntime
-        packages:
-          -   name: qpid-cpp-client
-          -   name: qpid-tools
-          -   name: qpid-cpp-server
-              # Disable rabbitmq as these rabbitmq & qpidd conflict
-              pre-install:
-              -   cmd:
-                  - service
-                  - rabbitmq-server
-                  - stop
-                  ignore_failure: true
-              # Also stop it from starting on boot (if rebooted)
-              -   cmd:
-                  - chkconfig
-                  - rabbitmq-server
-                  - 'off'
-                  ignore_failure: true
     rabbit-mq:
         action_classes:
             install: anvil.components.rabbit:RabbitInstaller
