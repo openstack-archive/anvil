@@ -27,7 +27,8 @@ class Helper(object):
         self._multipip_executable = sh.which("multipip", ["tools/"])
 
     def _call_multipip(self, requirements,
-                       requires_files=None, ignore_requirements=None):
+                       requires_files=None, ignore_requirements=None,
+                       forced_requirements=None):
         cmdline = [self._multipip_executable]
         if requires_files:
             cmdline.append("-r")
@@ -35,6 +36,9 @@ class Helper(object):
         if ignore_requirements:
             cmdline.append("--ignore-package")
             cmdline.extend(ignore_requirements)
+        if forced_requirements:
+            cmdline.append("--force-package")
+            cmdline.extend(forced_requirements)
         if requirements:
             cmdline.append("--")
             cmdline.extend(requirements)
@@ -61,7 +65,9 @@ class Helper(object):
         return (compatibles, incompatibles)
 
     def resolve(self, requirements,
-                requires_files=None, ignore_requirements=None):
+                requires_files=None, ignore_requirements=None,
+                forced_requirements=None):
         return self._call_multipip(requirements,
                                    requires_files=requires_files,
-                                   ignore_requirements=ignore_requirements)
+                                   ignore_requirements=ignore_requirements,
+                                   forced_requirements=forced_requirements)
