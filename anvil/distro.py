@@ -29,6 +29,7 @@ import six
 from anvil import exceptions as excp
 from anvil import importer
 from anvil import log as logging
+from anvil import pprint
 from anvil import shell as sh
 from anvil import utils
 
@@ -44,11 +45,21 @@ class Distro(object):
                  install_helper, dependency_handler,
                  commands, components):
         self.name = name
+        self._platform_pattern_text = platform_pattern
         self._platform_pattern = re.compile(platform_pattern, re.IGNORECASE)
         self._install_helper = install_helper
         self._dependency_handler = dependency_handler
         self._commands = commands
         self._components = components
+
+    def pformat(self, item_max_len=None):
+        data = {
+            'name': self.name,
+            'dependency_handler': self._dependency_handler,
+            'commands': self._commands,
+            'pattern': "/%s/i" % self._platform_pattern_text,
+        }
+        return pprint.pformat(data, item_max_len=item_max_len)
 
     def _fetch_value(self, root, keys, quiet):
         end_key = keys[-1]
@@ -133,6 +144,12 @@ class Distro(object):
                                ' %r %r for distribution %r' % (action, name, self.name))
         else:
             return Component(entry_point, component_info, action_classes)
+
+    def merge(self, **kwargs):
+        if 'dependency_handler' in kwargs:
+            self._dependency_handler = utils.recursive_merge(
+                self._dependency_handler,
+                kwargs['dependency_handler'])
 
 
 def _match_distros(distros):
