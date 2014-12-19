@@ -14,8 +14,6 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-import jsonpatch
-
 import six
 
 from anvil import colorizer
@@ -28,22 +26,17 @@ SPECIAL_GROUPS = frozenset(['general'])
 
 class Persona(object):
 
-    def __init__(self, supports, components, **kargs):
+    def __init__(self, supports, components, **kwargs):
         self.distro_support = supports or []
-        self.source = kargs.get('source')
+        self.source = kwargs.pop('source', None)
         self.wanted_components = utils.group_builds(components)
-        self.wanted_subsystems = kargs.get('subsystems') or {}
-        self.component_options = kargs.get('options') or {}
-        self.no_origins = kargs.get('no-origin') or []
+        self.wanted_subsystems = kwargs.pop('subsystems', {})
+        self.component_options = kwargs.pop('options', {})
+        self.no_origins = kwargs.pop('no-origin', [])
         self.matched_components = []
+        self.distro_updates = kwargs
 
-    def match(self, distros, origins_fn, origins_patch=None):
-        # Filter out components that are disabled in origins file
-        origins = utils.load_yaml(origins_fn)
-        # Apply any user specified patches to origins file
-        if origins_patch:
-            patch = jsonpatch.JsonPatch(origins_patch)
-            patch.apply(origins, in_place=True)
+    def match(self, distros, origins):
         for group in self.wanted_components:
             for c in group:
                 if c not in origins:
@@ -51,7 +44,7 @@ class Persona(object):
                         LOG.debug("Automatically enabling component %s, not"
                                   " present in origins file %s but present in"
                                   " desired persona %s (origin not required).",
-                                  c, origins_fn, self.source)
+                                  c, origins.filename, self.source)
                         origins[c] = {
                             'disabled': False,
                         }

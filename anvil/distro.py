@@ -134,6 +134,12 @@ class Distro(object):
         else:
             return Component(entry_point, component_info, action_classes)
 
+    def merge(self, **kwargs):
+        if 'dependency_handler' in kwargs:
+            self._dependency_handler = utils.recursive_merge(
+                self._dependency_handler,
+                kwargs['dependency_handler'])
+
 
 def _match_distros(distros):
     plt = platform.platform()
