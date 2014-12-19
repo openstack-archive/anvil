@@ -24,11 +24,12 @@ from anvil import exceptions as excp
 from anvil import importer
 from anvil import log as logging
 from anvil import passwords as pw
+from anvil import persona as _persona
 from anvil import phase
 from anvil import shell as sh
 from anvil import utils
 
-from anvil.utils import OrderedDict
+import six
 
 LOG = logging.getLogger(__name__)
 BASE_ENTRYPOINTS = {
@@ -44,6 +45,7 @@ BASE_PYTHON_ENTRYPOINTS.update({
     'install': 'anvil.components.base_install:PythonInstallComponent',
     'test': 'anvil.components.base_testing:PythonTestingComponent',
 })
+SPECIAL_GROUPS = _persona.SPECIAL_GROUPS
 
 
 class PhaseFunctors(object):
@@ -80,7 +82,7 @@ class Action(object):
         # Stored for components to get any options
         self.cli_opts = cli_opts
 
-    def _establish_passwords(self, component_order, instances):
+    def _establish_passwords(self, groups):
         kr = pw.KeyringProxy(self.keyring_path,
                              self.keyring_encrypted,
                              self.prompt_for_passwords,
@@ -89,19 +91,19 @@ class Action(object):
         to_save = {}
         self.passwords.clear()
         already_gotten = set()
-        for c in component_order:
-            instance = instances[c]
-            wanted_passwords = instance.get_option('wanted_passwords')
-            if not wanted_passwords:
-                continue
-            for (name, prompt) in wanted_passwords.items():
-                if name in already_gotten:
+        for _group, instances in groups:
+            for _c, instance in six.iteritems(instances):
+                wanted_passwords = instance.get_option('wanted_passwords')
+                if not wanted_passwords:
                     continue
-                (from_keyring, pw_provided) = kr.read(name, prompt)
-                if not from_keyring and self.store_passwords:
-                    to_save[name] = pw_provided
-                self.passwords[name] = pw_provided
-                already_gotten.add(name)
+                for (name, prompt) in wanted_passwords.items():
+                    if name in already_gotten:
+                        continue
+                    (from_keyring, pw_provided) = kr.read(name, prompt)
+                    if not from_keyring and self.store_passwords:
+                        to_save[name] = pw_provided
+                    self.passwords[name] = pw_provided
+                    already_gotten.add(name)
         if to_save:
             LOG.info("Saving %s passwords using a %s", len(to_save), kr)
             for (name, pw_provided) in to_save.items():
@@ -116,7 +118,7 @@ class Action(object):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def _run(self, persona, component_order, instances):
+    def _run(self, persona, groups):
         """Run the phases of processing for this action.
 
         Subclasses are expected to override this method to
@@ -128,12 +130,6 @@ class Action(object):
         if component_options.get('python_entrypoints'):
             return BASE_PYTHON_ENTRYPOINTS.copy()
         return BASE_ENTRYPOINTS.copy()
-
-    def _order_components(self, components):
-        """Returns the components in the order they should be processed.
-        """
-        # Duplicate the list to avoid problems if it is updated later.
-        return copy.copy(components)
 
     def _merge_subsystems(self, distro_subsystems, desired_subsystems):
         subsystems = {}
@@ -167,70 +163,79 @@ class Action(object):
 
     def _construct_instances(self, persona):
         """Create component objects for each component in the persona."""
-        persona_subsystems = persona.wanted_subsystems or {}
-        wanted_components = persona.wanted_components or []
-        # All siblings for the current persona
-        instances = {}
         # Keeps track of all sibling instances across all components + actions
         # so that each instance or sibling instance will be connected to the
         # right set of siblings....
         sibling_instances = {}
-        for c in wanted_components:
-            d_component = self.distro.extract_component(
-                c, self.lookup_name, default_entry_point_creator=self._make_default_entry_points)
-            LOG.debug("Constructing component %r (%s)", c, d_component.entry_point)
-            d_subsystems = d_component.options.pop('subsystems', {})
-            sibling_params = {}
-            sibling_params['name'] = c
-            # First create its siblings with a 'minimal' set of options
-            # This is done, so that they will work in a minimal state, they do not
-            # get access to the persona options since those are action specific (or could be),
-            # if this is not useful, we can give them full access, unsure if its worse or better...
-            active_subsystems = self._merge_subsystems(distro_subsystems=d_subsystems,
-                                                       desired_subsystems=persona_subsystems.get(c, []))
-            sibling_params['subsystems'] = active_subsystems
-            sibling_params['siblings'] = {}  # This gets adjusted during construction
-            sibling_params['passwords'] = self.passwords
-            sibling_params['distro'] = self.distro
-            sibling_params['options'] = self.config_loader.load(
-                distro=d_component, component=c,
-                origins_patch=self.cli_opts.get('origins_patch'))
+        components_created = set()
+        groups = []
+        for group in persona.matched_components:
+            instances = utils.OrderedDict()
+            for c in group:
+                if c in components_created:
+                    raise RuntimeError("Can not duplicate component %s in a"
+                                       " later group %s" % (c, group.id))
+                d_component = self.distro.extract_component(
+                    c, self.lookup_name, default_entry_point_creator=self._make_default_entry_points)
+                LOG.debug("Constructing component %r (%s)", c, d_component.entry_point)
+                d_subsystems = d_component.options.pop('subsystems', {})
+                sibling_params = {}
+                sibling_params['name'] = c
+                # First create its siblings with a 'minimal' set of options
+                # This is done, so that they will work in a minimal state, they do not
+                # get access to the persona options since those are action specific (or could be),
+                # if this is not useful, we can give them full access, unsure if its worse or better...
+                active_subsystems = self._merge_subsystems(distro_subsystems=d_subsystems,
+                                                           desired_subsystems=persona.wanted_subsystems.get(c, []))
+                sibling_params['subsystems'] = active_subsystems
+                sibling_params['siblings'] = {}  # This gets adjusted during construction
+                sibling_params['passwords'] = self.passwords
+                sibling_params['distro'] = self.distro
+                sibling_params['options'] = self.config_loader.load(
+                    distro=d_component, component=c,
+                    origins_patch=self.cli_opts.get('origins_patch'))
+                LOG.debug("Constructing %r %s siblings...", c, len(d_component.siblings))
+                my_siblings = self._construct_siblings(c, d_component.siblings, sibling_params, sibling_instances)
+                # Now inject the full options and create the target instance
+                # with the full set of options and not the restricted set that
+                # siblings get...
+                instance_params = dict(sibling_params)
+                instance_params['instances'] = instances
+                instance_params['options'] = self.config_loader.load(
+                    distro=d_component, component=c, persona=persona,
+                    origins_patch=self.cli_opts.get('origins_patch'))
+                instance_params['siblings'] = my_siblings
+                instance_params = utils.merge_dicts(instance_params, self.cli_opts, preserve=True)
+                instances[c] = importer.construct_entry_point(d_component.entry_point, **instance_params)
+                if c not in SPECIAL_GROUPS:
+                    components_created.add(c)
+            groups.append((group.id, instances))
+        return groups
 
-            LOG.debug("Constructing %r %s siblings...", c, len(d_component.siblings))
-            my_siblings = self._construct_siblings(c, d_component.siblings, sibling_params, sibling_instances)
-            # Now inject the full options and create the target instance
-            # with the full set of options and not the restricted set that
-            # siblings get...
-            instance_params = dict(sibling_params)
-            instance_params['instances'] = instances
-            instance_params['options'] = self.config_loader.load(
-                distro=d_component, component=c, persona=persona,
-                origins_patch=self.cli_opts.get('origins_patch'))
-            instance_params['siblings'] = my_siblings
-            instance_params = utils.merge_dicts(instance_params, self.cli_opts, preserve=True)
-            instances[c] = importer.construct_entry_point(d_component.entry_point, **instance_params)
-        return instances
+    def _verify_components(self, groups):
+        for group, instances in groups:
+            LOG.info("Verifying that the components of group %s are ready"
+                     " to rock-n-roll.", colorizer.quote(group))
+            for _c, instance in six.iteritems(instances):
+                instance.verify()
 
-    def _verify_components(self, component_order, instances):
-        LOG.info("Verifying that the components are ready to rock-n-roll.")
-        for c in component_order:
-            instances[c].verify()
+    def _warm_components(self, groups):
+        for group, instances in groups:
+            LOG.info("Warming up component configurations of group %s.",
+                     colorizer.quote(group))
+            for _c, instance in six.iteritems(instances):
+                instance.warm_configs()
 
-    def _warm_components(self, component_order, instances):
-        LOG.info("Warming up component configurations.")
-        for c in component_order:
-            instances[c].warm_configs()
-
-    def _on_start(self, persona, component_order, instances):
+    def _on_start(self, persona, groups):
         LOG.info("Booting up your components.")
         LOG.debug("Starting environment settings:")
         utils.log_object(env.get(), logger=LOG, level=logging.DEBUG, item_max_len=64)
         sh.mkdirslist(self.phase_dir)
-        self._establish_passwords(component_order, instances)
-        self._verify_components(component_order, instances)
-        self._warm_components(component_order, instances)
+        self._establish_passwords(groups)
+        self._verify_components(groups)
+        self._warm_components(groups)
 
-    def _on_finish(self, persona, component_order, instances):
+    def _on_finish(self, persona, groups):
         LOG.info("Tearing down your components.")
         LOG.debug("Final environment settings:")
         utils.log_object(env.get(), logger=LOG, level=logging.DEBUG, item_max_len=64)
@@ -244,11 +249,8 @@ class Action(object):
             raise ValueError("Phase name must not be empty")
         return sh.joinpths(self.phase_dir, "%s.phases" % (phase_name))
 
-    def _run_phase(self, functors, component_order, instances, phase_name, *inv_phase_names):
+    def _run_phase(self, functors, group, instances, phase_name, *inv_phase_names):
         """Run a given 'functor' across all of the components, in order."""
-        # All the results for each component end up in here
-        # in the order in which they ran...
-        component_results = OrderedDict()
 
         # This phase recorder will be used to check if a given component
         # and action has ran in the past, if so that components action
@@ -289,13 +291,13 @@ class Action(object):
                 n.unmark(c_name)
 
         # Reset all activations
-        for c in component_order:
-            change_activate(instances[c], False)
+        for c, instance in six.iteritems(instances):
+            change_activate(instance, False)
 
         # Run all components which have not been ran previously (due to phase tracking)
-        for c in component_order:
-            result = None
-            instance = instances[c]
+        for c, instance in six.iteritems(instances):
+            if c in SPECIAL_GROUPS:
+                c = "%s_%s" % (c, group)
             if c in phase_recorder:
                 LOG.debug("Skipping phase named %r for component %r since it already happened.", phase_name, c)
             else:
@@ -305,22 +307,22 @@ class Action(object):
                             functors.start(instance)
                         if functors.run:
                             result = functors.run(instance)
+                        else:
+                            result = None
                         if functors.end:
                             functors.end(instance, result)
                 except excp.NoTraceException:
                     pass
             change_activate(instance, True)
-            component_results[c] = result
             run_inverse_recorders(c)
-        return component_results
 
     def run(self, persona):
-        instances = self._construct_instances(persona)
-        component_order = self._order_components(persona.wanted_components)
+        groups = self._construct_instances(persona)
         LOG.info("Processing components for action %s.", colorizer.quote(self.name))
-        utils.log_iterable(component_order,
-                           header="Activating in the following order",
-                           logger=LOG)
-        self._on_start(persona, component_order, instances)
-        self._run(persona, component_order, instances)
-        self._on_finish(persona, component_order, instances)
+        for group in persona.matched_components:
+            utils.log_iterable(group,
+                               header="Activating group %s in the following order" % colorizer.quote(group.id),
+                               logger=LOG)
+        self._on_start(persona, groups)
+        self._run(persona, groups)
+        self._on_finish(persona, groups)
