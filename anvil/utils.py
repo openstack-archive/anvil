@@ -27,6 +27,7 @@ import re
 import socket
 import sys
 import tempfile
+import time
 import urllib2
 
 try:
@@ -528,6 +529,14 @@ def format_time(secs):
         'seconds': "%.03f" % (secs),
         "minutes": "%.02f" % (secs / 60.0),
     }
+
+
+def time_it(on_finish, func, *args, **kwargs):
+    start_time = time.time()
+    result = func(*args, **kwargs)
+    end_time = time.time()
+    on_finish(max(0, end_time - start_time))
+    return result
 
 
 def joinlinesep(*pieces):
