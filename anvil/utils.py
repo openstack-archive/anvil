@@ -306,6 +306,61 @@ def iso8601():
     return datetime.now().isoformat()
 
 
+def recursive_merge(a, b):
+    # pylint: disable=C0103
+
+    def _merge_lists(a, b):
+        merged = []
+        merged.extend(a)
+        merged.extend(b)
+        return merged
+
+    def _merge_dicts(a, b):
+        merged = {}
+        for k in six.iterkeys(a):
+            if k in b:
+                merged[k] = recursive_merge(a[k], b[k])
+            else:
+                merged[k] = a[k]
+        for k in six.iterkeys(b):
+            if k in merged:
+                continue
+            merged[k] = b[k]
+        return merged
+
+    def _merge_text(a, b):
+        return b
+
+    def _merge_int(a, b):
+        return b
+
+    def _merge_float(a, b):
+        return b
+
+    def _merge_bool(a, b):
+        return b
+
+    mergers = [
+        (list, list, _merge_lists),
+        (list, tuple, _merge_lists),
+        (tuple, tuple, _merge_lists),
+        (tuple, list, _merge_lists),
+        (dict, dict, _merge_dicts),
+        (six.string_types, six.string_types, _merge_text),
+        (int, int, _merge_int),
+        (bool, bool, _merge_bool),
+        (float, float, _merge_float),
+    ]
+    merger = None
+    for (a_type, b_type, func) in mergers:
+        if isinstance(a, a_type) and isinstance(b, b_type):
+            merger = func
+            break
+    if not merger:
+        raise TypeError("Unknown how to merge '%s' with '%s'" % (type(a), type(b)))
+    return merger(a, b)
+
+
 def merge_dicts(*dicts, **kwargs):
     merged = OrderedDict()
     for mp in dicts:

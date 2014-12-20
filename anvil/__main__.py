@@ -34,6 +34,7 @@ from anvil import distro
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import opts
+from anvil import origins as _origins
 from anvil import persona
 from anvil import pprint
 from anvil import settings
@@ -95,6 +96,10 @@ def run(args):
     # Ensure the anvil dirs are there if others are about to use it...
     ensure_anvil_dirs(root_dir)
 
+    # Load the origins...
+    origins = _origins.load(args['origins_fn'],
+                            patch_file=args.get('origins_patch'))
+
     # Load the distro/s
     possible_distros = distro.load(settings.DISTRO_DIR,
                                    distros_patch=args.get('distros_patch'))
@@ -105,10 +110,16 @@ def run(args):
     except Exception as e:
         raise excp.OptionException("Error loading persona file: %s due to %s" % (persona_fn, e))
     else:
-        dist = persona_obj.match(possible_distros, args['origins_fn'],
-                                 origins_patch=args.get('origins_patch'))
+        dist = persona_obj.match(possible_distros, origins)
         LOG.info('Persona selected distro: %s from %s possible distros',
                  colorizer.quote(dist.name), len(possible_distros))
+
+    # Update the dist with any other info...
+    dist.merge(**persona_obj.distro_updates)
+    dist.merge(**origins)
+
+    # Print it out...
+    print(dist.pformat(item_max_len=128))
 
     # Get the object we will be running with...
     runner = runner_cls(distro=dist,
