@@ -119,7 +119,9 @@ def run(args):
     dist.inject_platform_overrides(origins, source=origins_fn)
 
     # Print it out...
-    print(dist.pformat(item_max_len=128))
+    LOG.debug("Distro settings are:")
+    for line in dist.pformat(item_max_len=128).splitlines():
+        LOG.debug(line)
 
     # Get the object we will be running with...
     runner = runner_cls(distro=dist,
