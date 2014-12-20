@@ -548,10 +548,10 @@ def requires_and_conflicts(req_list, skip_req_names=()):
             if kind == "!=":
                 # NOTE(imelnikov): we can't conflict with ranges, so we
                 # put version as is and with trimmed zeroes just in case
-                rpm_conflicts.append('%s == %s' % (rpm_name, version))
+                rpm_conflicts.append('%s = %s' % (rpm_name, version))
                 rpm_mapping[rpm_conflicts[-1]] = req
                 if version != lower_version:
-                    rpm_conflicts.append('%s == %s' % (rpm_name, lower_version))
+                    rpm_conflicts.append('%s = %s' % (rpm_name, lower_version))
                     rpm_mapping[rpm_conflicts[-1]] = req
             elif kind == '==':
                 rpm_requires.extend((
