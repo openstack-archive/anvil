@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Code-Review+2: Kris Lindgren <klindgren@godaddy.com>
+Workflow+1: Kris Lindgren <klindgren@godaddy.com>
+Submitted-by: Jenkins
+Submitted-at: Sat, 20 Dec 2014 02:30:47 +0000
+Reviewed-on: https://review.openstack.org/143211
+Project: stackforge/anvil
+Branch: refs/heads/master
