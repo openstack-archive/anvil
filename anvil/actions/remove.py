@@ -27,13 +27,16 @@ LOG = log.getLogger(__name__)
 class RemoveAction(uninstall.UninstallAction):
     def _run(self, persona, groups):
         super(RemoveAction, self)._run(persona, groups)
+        prior_groups = []
         for group, instances in groups:
             LOG.info("Removing group %s...", colorizer.quote(group))
             dependency_handler_class = self.distro.dependency_handler_class
             dependency_handler = dependency_handler_class(self.distro,
                                                           self.root_dir,
                                                           instances.values(),
-                                                          self.cli_opts)
+                                                          self.cli_opts,
+                                                          group,
+                                                          prior_groups)
             removals = states.reverts("package-destroy")
             general_package = "general"
             if general_package in instances:
@@ -72,3 +75,4 @@ class RemoveAction(uninstall.UninstallAction):
                 'post-uninstall',
                 *removals
             )
+            prior_groups.append((group, instances))

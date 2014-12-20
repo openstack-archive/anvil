@@ -59,12 +59,15 @@ class InstallAction(action.Action):
                                logger=LOG)
 
     def _run(self, persona, groups):
+        prior_groups = []
         for group, instances in groups:
             dependency_handler_class = self.distro.dependency_handler_class
             dependency_handler = dependency_handler_class(self.distro,
                                                           self.root_dir,
                                                           instances.values(),
-                                                          self.cli_opts)
+                                                          self.cli_opts,
+                                                          group,
+                                                          prior_groups)
             removals = states.reverts("pre-install")
             self._run_phase(
                 action.PhaseFunctors(
@@ -114,3 +117,4 @@ class InstallAction(action.Action):
                 "post-install",
                 *removals
             )
+            prior_groups.append((group, instances))

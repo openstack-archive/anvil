@@ -34,13 +34,16 @@ class UninstallAction(action.Action):
         return components
 
     def _run(self, persona, groups):
+        prior_groups = []
         for group, instances in groups:
             LOG.info("Uninstalling group %s...", colorizer.quote(group))
             dependency_handler_class = self.distro.dependency_handler_class
             dependency_handler = dependency_handler_class(self.distro,
                                                           self.root_dir,
                                                           instances.values(),
-                                                          self.cli_opts)
+                                                          self.cli_opts,
+                                                          group,
+                                                          prior_groups)
             removals = states.reverts("unconfigure")
             self._run_phase(
                 action.PhaseFunctors(
@@ -79,3 +82,4 @@ class UninstallAction(action.Action):
                     "package-uninstall",
                     *removals
                 )
+            prior_groups.append((group, instances))
