@@ -113,6 +113,7 @@ class InstallAction(action.Action):
                     run=lambda i: i.post_install(),
                     end=None
                 ),
+                group,
                 instances,
                 "post-install",
                 *removals
