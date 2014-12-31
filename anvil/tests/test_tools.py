@@ -18,6 +18,7 @@ import glob
 import re
 import sys
 
+from anvil.packaging.helpers import pip_helper
 from anvil import shell as sh
 from anvil import test
 from anvil import utils
@@ -82,11 +83,22 @@ class TestTools(test.TestCase):
                     pass
         return conflicts
 
+    def assertEquivalentRequirements(self, expected, created):
+        self.assertEqual(len(expected), len(created))
+        for req in created:
+            self.assertIn(req, expected)
+
     @parameterized.expand(load_examples())
     def test_example(self, _name, example):
         (stdout, stderr) = self._run_multipip(example['requirements'])
-        stdout = stdout.strip()
-        self.assertEqual(example['expected'], stdout)
+        expected_normalized = []
+        for line in example['expected'].strip().splitlines():
+            expected_normalized.append(pip_helper.extract_requirement(line))
+        parsed_normalized = []
+        for line in stdout.strip().splitlines():
+            parsed_normalized.append(pip_helper.extract_requirement(line))
+        self.assertEquivalentRequirements(expected_normalized,
+                                          parsed_normalized)
         if 'conflicts' in example:
             self.assertEqual(example['conflicts'],
                              self._extract_conflicts(stderr))

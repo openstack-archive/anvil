@@ -19,7 +19,12 @@ import pkg_resources
 import re
 
 from pip import req as pip_req
-from pip import util as pip_util
+
+try:
+    from pip import util as pip_util
+except ImportError:
+    # pip >=6 changed this location for some reason...
+    from pip import utils as pip_util
 
 from anvil import log as logging
 from anvil import shell as sh
