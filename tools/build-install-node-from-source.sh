@@ -36,9 +36,9 @@ echo "Name:     nodejs
 
 Version:  $VERSION
 Release:  $RELEASE
-Summary:  Server Side JavaScript Engine	
-URL:      http://nodejs.org	
-Group:    Development/Languages	
+Summary:  Server Side JavaScript Engine
+URL:      http://nodejs.org
+Group:    Development/Languages
 License:  MIT and BSD
 Requires: openssl, zlib, glibc
 
