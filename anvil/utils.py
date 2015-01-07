@@ -104,6 +104,21 @@ class Group(list):
         self.id = id
 
 
+class SafeIncludeLoader(yaml.SafeLoader):
+    def __init__(self, stream):
+        super(SafeIncludeLoader, self).__init__(stream)
+        self._root = os.path.split(stream.name)[0]
+
+    def include(self, node):
+        path = sh.joinpths(self._root, self.construct_scalar(node))
+        contents = six.StringIO(sh.load_file(path))
+        contents.name = path
+        return yaml.load(contents, SafeIncludeLoader)
+
+
+SafeIncludeLoader.add_constructor('!include', SafeIncludeLoader.include)
+
+
 class ExponentialBackoff(object):
     def __init__(self, attempts=5, start=1.3):
         self.start = start
@@ -195,7 +210,9 @@ def group_builds(components):
 
 
 def load_yaml(path):
-    return load_yaml_text(sh.load_file(path))
+    contents = six.StringIO(sh.load_file(path))
+    contents.name = path
+    return yaml.load(contents, SafeIncludeLoader)
 
 
 def load_yaml_text(text):
