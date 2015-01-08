@@ -159,17 +159,10 @@ sed -i 's/oslosphinx/oslo.sphinx/' doc/source/conf.py
 #end if
 
 %build
-
 #if $newer_than_eq('2014.2')
-%if 0%{?rhel}==6
-cd horizon && django-admin.py compilemessages && cd ..
-cd openstack_dashboard && django-admin.py compilemessages && cd ..
-%else
 cd horizon && django-admin compilemessages && cd ..
 cd openstack_dashboard && django-admin compilemessages && cd ..
-%endif
 #end if
-
 %{__python} setup.py build
 
 cp openstack_dashboard/local/local_settings.py.example openstack_dashboard/local/local_settings.py
