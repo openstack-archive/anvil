@@ -57,14 +57,15 @@ class Distro(object):
         d = _linux_distribution()
 
         def merge(merge_into):
-            if 'platform_overrides' in potential_data:
-                overrides = potential_data['platform_overrides']
-                if d in overrides:
+            if not 'platform_overrides' in potential_data:
+                return merge_into
+            overrides = potential_data['platform_overrides']
+            patterns = [(re.compile(k, re.IGNORECASE), override)
+                        for k, v in six.iteritems(overrides)]
+            for pat, override in patterns:
+                if pat.search(d):
                     LOG.info("Merging in 'platform_overrides' that matched distro %s from %s", d, source)
-                    return utils.recursive_merge(merge_into, overrides[d])
-                else:
-                    LOG.debug("Distro %s not in 'platform_overrides' (valid are %s) from %s",
-                              d, list(six.iterkeys(overrides)), source)
+                    merge_into = utils.recursive_merge(merge_into, override)
             return merge_into
 
         self._dependency_handler = merge(self._dependency_handler)
