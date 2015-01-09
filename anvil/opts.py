@@ -149,9 +149,8 @@ def parse(previous_settings=None):
                           action="store",
                           type="string",
                           dest="persona_fn",
-                          default=sh.joinpths(settings.PERSONA_DIR, 'in-a-box', 'basic.yaml'),
                           metavar="FILE",
-                          help="persona yaml file to apply (default: %default)")
+                          help="persona yaml file to apply")
     base_group.add_option("-a", "--action",
                           action="store",
                           type="string",
