@@ -54,17 +54,19 @@ class Distro(object):
         self.inject_platform_overrides(kwargs)
 
     def inject_platform_overrides(self, potential_data, source='??'):
-        d = _linux_distribution()
+        plts = _get_platform_names()
 
         def merge(merge_into):
-            if 'platform_overrides' in potential_data:
-                overrides = potential_data['platform_overrides']
-                if d in overrides:
-                    LOG.info("Merging in 'platform_overrides' that matched distro %s from %s", d, source)
-                    return utils.recursive_merge(merge_into, overrides[d])
-                else:
-                    LOG.debug("Distro %s not in 'platform_overrides' (valid are %s) from %s",
-                              d, list(six.iterkeys(overrides)), source)
+            if not 'platform_overrides' in potential_data:
+                return merge_into
+            overrides = potential_data['platform_overrides']
+            patterns = [(k, re.compile(k, re.IGNORECASE), override)
+                        for k, override in six.iteritems(overrides)]
+            for k, pat, override in patterns:
+                if any(pat.search(plt) for plt in plts):
+                    LOG.info("Merging in 'platform_overrides' that matched"
+                             " platform %s from %s (sub-key %s)", plts, source, k)
+                    merge_into = utils.recursive_merge(merge_into, override)
             return merge_into
 
         self._dependency_handler = merge(self._dependency_handler)
@@ -163,24 +165,27 @@ class Distro(object):
             return Component(entry_point, component_info, action_classes)
 
 
-def _match_distros(distros):
-    plt = platform.platform()
-    matches = []
-    for d in distros:
-        if d.supports_platform(plt):
-            matches.append(d)
-    if not matches:
-        raise excp.ConfigException('No distro matched for platform %r' % plt)
-    else:
-        return matches
-
-
-def _linux_distribution():
+def _get_platform_names():
+    plts = [
+        platform.platform(),
+    ]
     linux_plt = platform.linux_distribution()[0:2]
     linux_plt = "-".join(linux_plt)
     linux_plt = linux_plt.replace(" ", "-")
-    linux_plt = linux_plt.lower().strip()
-    return linux_plt
+    plts.append(linux_plt)
+    return [plt.lower() for plt in plts]
+
+
+def _match_distros(distros):
+    plts = _get_platform_names()
+    matches = []
+    for d in distros:
+        if any(d.supports_platform(plt) for plt in plts):
+            matches.append(d)
+    if not matches:
+        raise excp.ConfigException('No distro matched for platform %s' % plts)
+    else:
+        return matches
 
 
 def load(path, distros_patch=None):
