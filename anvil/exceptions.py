@@ -37,10 +37,6 @@ class DownloadException(AnvilException):
     pass
 
 
-class InstallException(AnvilException):
-    pass
-
-
 class BadParamException(AnvilException):
     pass
 
@@ -53,27 +49,7 @@ class NoReplacementException(AnvilException):
     pass
 
 
-class StartException(AnvilException):
-    pass
-
-
 class PackageException(AnvilException):
-    pass
-
-
-class StopException(AnvilException):
-    pass
-
-
-class RestartException(AnvilException):
-    pass
-
-
-class StatusException(AnvilException):
-    pass
-
-
-class PasswordException(AnvilException):
     pass
 
 
@@ -87,10 +63,6 @@ class ConfigException(AnvilException):
 
 class DependencyException(AnvilException):
     pass
-
-
-class DuplicateException(AnvilException):
-    "Raised when a duplicate entry is found."
 
 
 class ProcessExecutionError(IOError):

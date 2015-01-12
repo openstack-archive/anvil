@@ -8,17 +8,11 @@ Anvil is a forging tool to help build OpenStack components and their
 dependencies into a complete package-oriented system.
 
 It automates the git checkouts of the OpenStack components, analyzes & builds
-their dependencies and the components themselves into packages. It can then
-install from the package repositories it created, perform configuration and
-start, stop, restart and uninstall the components and their dependencies as a
-complete system.
+their dependencies and the components themselves into packages.
 
 It allows a developer to setup an environment using the automatically created
 packages (and dependencies, ex. ``RPMs``) with the help of anvil configuring
-the components to work correctly for the developer's needs. After the developer
-has tested out their features or changes they can stop the OpenStack
-components, uninstall the packages and bring back their system to a
-pre-installation/pre-anvil state.
+the components to work correctly for the developer's needs.
 
 The distinguishing part from devstack_ (besides being written in Python and not
 shell), is that after building those packages (currently ``RPMs``) the same
@@ -44,7 +38,7 @@ All the `yaml`_ configuration files could be found in:
 * subdirectories of ``conf/personas/``
 
 
-Installing
+Packaging
 ----------
 
 * Automatically downloading source from git and performing tag/branch checkouts.
@@ -54,42 +48,6 @@ Installing
   and `rpm`_) for you.
 * Automatically configuring the needed files, symlinks, adjustments, and
   any patches.
-
-Testing
--------
-
-Automatically running each component unit tests.
-
-Starting
---------
-
-Starting of the components sub-programs with the needed configuration via the
-common `sysvinit`_ model.
-
-Stopping
---------
-
-Stopping of the previously started components.
-
-Uninstalling
-------------
-
-Getting you back to an initial 'clean' state:
-
-* Removing installed configuration.
-* Undoing of installed files/directories.
-* Removing of packages installed.
-
-Packaging
----------
-
-* Ceating a basic set of packages that matches the components selected.
-* Supports automatic injection of dependencies.
-
-Status
-------
-
-* Checking the status of the running components sub-programs.
 
 Pythonic
 --------
@@ -106,12 +64,6 @@ Code decoupling
 .. note::
 
     This encouraging re-use by others...
-
-Resumption
-----------
-
-Install/start/stop resumption so that when you install you can ``ctrl+c`` and
-resume later (where applicable).
 
 Extensive logging
 -----------------
