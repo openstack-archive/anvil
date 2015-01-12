@@ -23,13 +23,11 @@ from anvil import trace as tr
 from anvil import type_utils as tu
 from anvil import utils
 
-from anvil.components.configurators import base as conf
-
 LOG = logging.getLogger(__name__)
 
 
 class Component(object):
-    def __init__(self, name, subsystems, instances, options, siblings, distro, passwords, **kwargs):
+    def __init__(self, name, subsystems, instances, options, siblings, distro, **kwargs):
         # Subsystems this was requested with
         self.subsystems = subsystems
 
@@ -50,9 +48,6 @@ class Component(object):
 
         # Turned on and off as phases get activated
         self.activated = False
-
-        # How we get any passwords we need
-        self.passwords = passwords
 
         # Where our binaries will be located
         self.bin_dir = "/usr/bin/"
@@ -139,7 +134,6 @@ class BasicComponent(Component):
         super(BasicComponent, self).__init__(*args, **kargs)
         trace_fn = tr.trace_filename(self.get_option('trace_dir'), 'created')
         self.tracewriter = tr.TraceWriter(trace_fn, break_if_there=False)
-        self.configurator = conf.Configurator(self)
 
     def download(self):
         return []
