@@ -1,9 +1,6 @@
 ---
 components:
 # Order matters here!
-- general
-- db
-- rabbit-mq
 # Oslo libraries
 - oslo-config
 - oslo-messaging
@@ -22,25 +19,6 @@ components:
 - nova-client
 - swift-client
 - heat-client
-options:
-    nova:
-        db-sync: true
-        do-network-init: true
-        enable-cells: false
-        enable-spice: false
-        local-conductor: false
-        mq-type: rabbit
-    glance:
-        db-sync: true
-        load-images: true
-    keystone:
-        db-sync: true
-        do-init: true
-        enable-pki: false
-    cinder:
-        mq-type: rabbit
-        db-sync: true
-    heat: {}
 subsystems:
     glance:
     - api
@@ -63,11 +41,6 @@ subsystems:
     - api-cfn
     - api-cloudwatch
     - engine
-no-origin:
-# These components don't need an origin to be enabled
-- general
-- db
-- rabbit-mq
 supports:
 - rhel
 - fedora
