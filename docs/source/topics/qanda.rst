@@ -58,33 +58,3 @@ An example of this, lets adjust ``nova`` to use the ``stable/essex`` branch.
   If no branch nor tag parameters were specified then ``branch: master`` is used by default.
 
   **Note:** tag overrides branch (so you can't really include both)
-
-
-`OMG` the images take forever to download!
-------------------------------------------
-
-Sometimes the images that will be uploaded to glance take a long time to
-download and extract and upload.
-
-To adjust this edit ``conf/components/glance.yaml`` and change the following:
-
-::
-
-    ...
-    # List of images to download and install into glance.
-    image_urls:
-    - http://launchpad.net/cirros/trunk/0.3.0/+download/cirros-0.3.0-x86_64-uec.tar.gz
-    - http://smoser.brickies.net/ubuntu/ttylinux-uec/ttylinux-uec-amd64-11.2_2.6.35-15_1.tar.gz
-
-To something like the following (shortening that list):
-
-::
-
-    image_urls:
-    - http://launchpad.net/cirros/trunk/0.3.0/+download/cirros-0.3.0-x86_64-uec.tar.gz
-
-This will remove the larger ubuntu image and just use the smaller `cirros`_ image (which should not take to long to upload). 
-Note that repeated downloads occur due to the fact that the files inside the image do not match the name of what is installed
-into glance (this can be avoided by completely disabling the image uploading, see the persona file for the flag for this).
-
-.. _cirros: https://launchpad.net/cirros

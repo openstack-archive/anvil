@@ -51,29 +51,6 @@ Anvil is designed to have the following set of software components:
     * Creation of a binary RPM repository with all built packages and
       dependencies (converting the prepared source RPMs into binary RPMs).
 
-  * Install
-
-    * Configuring.
-    * Pre-installing.
-    * Installing packages from previously prepared repositories.
-    * Post-installing.
-
-  * Uninstall
-
-    * Unconfiguring.
-    * Pre-uninstalling.
-    * Uninstalling previously installed packages.
-    * Post-uninstalling.
-
-  * Starting
-
-    * Pre-starting.
-    * Starting.
-    * Post-starting.
-
-  * Stopping.
-  * Testing.
-
 * **Phases:** a phase is a step of an action which can be tracked as an
   individual unit and can be marked as being completed. In the above install
   action for each component that installed when each step occurs for that

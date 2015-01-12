@@ -20,7 +20,3 @@ from anvil.components import base_install as binstall
 
 class Installer(binstall.PkgInstallComponent):
     pass
-
-
-class Uninstaller(binstall.PkgUninstallComponent):
-    pass
