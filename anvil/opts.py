@@ -34,29 +34,15 @@ from anvil import version
 
 OVERVIEW = """Overview: Anvil is a forging tool to help build OpenStack components
 and their dependencies into a complete system. It git checkouts the components and
-builds them and their dependencies into packages. It can then install components
-from the repositories it created with packages it made, perform configuration
-and then start, stop and uninstall the components and their associated packages."""
+builds them and their dependencies into packages."""
 
 STEPS = """Steps: For smooth experience please make sure you go through the
 following steps when running."""
 
 STEP_SECTIONS = {
-    'installing': [
+    'building': [
         './smithy -a prepare',
         './smithy -a build',
-        './smithy -a install',
-        './smithy -a start',
-        './smithy -a status',
-    ],
-    'uninstalling': [
-        './smithy -a stop',
-        './smithy -a uninstall',
-    ],
-    'purging': [
-        './smithy -a stop',
-        './smithy -a uninstall',
-        './smithy -a purge',
     ],
 }
 
@@ -122,26 +108,6 @@ def parse(previous_settings=None):
                       dest="verbose",
                       default=False,
                       help="make the output logging verbose")
-    parser.add_option('-k', "--keyring",
-                      action="store",
-                      dest="keyring_path",
-                      default="/etc/anvil/passwords.cfg",
-                      help=("read and create passwords using this keyring file (default: %default)"))
-    parser.add_option('-e', "--encrypt",
-                      action="store_true",
-                      dest="keyring_encrypted",
-                      default=False,
-                      help=("use a encrypted keyring file (default: %default)"))
-    parser.add_option("--no-prompt-passwords",
-                      action="store_false",
-                      dest="prompt_for_passwords",
-                      default=True,
-                      help="do not prompt the user for passwords")
-    parser.add_option("--no-store-passwords",
-                      action="store_false",
-                      dest="store_passwords",
-                      default=True,
-                      help="do not save the users passwords into the users keyring")
 
     # Install/start/stop/uninstall specific options
     base_group = OptionGroup(parser, "Action specific options")
@@ -196,19 +162,6 @@ def parse(previous_settings=None):
                           help=("empty root DIR or DIR with existing components (default: %default)"))
     parser.add_option_group(base_group)
 
-    suffixes = ("Known suffixes 'K' (kilobyte, 1024),"
-                " 'M' (megabyte, 1024k), 'G' (gigabyte, 1024M)"
-                " are supported, 'B' is the default and is ignored")
-    status_group = OptionGroup(parser, "Status specific options")
-    status_group.add_option('-s', "--show",
-                            action="callback",
-                            dest="show_amount",
-                            type='string',
-                            metavar="SIZE",
-                            callback=_size_cb,
-                            help="show SIZE 'details' when showing component status. " + suffixes)
-    parser.add_option_group(status_group)
-
     build_group = OptionGroup(parser, "Build specific options")
     build_group.add_option('-u', "--usr-only",
                            action="store_true",
@@ -225,15 +178,6 @@ def parse(previous_settings=None):
                                  "relocatable to a directory different from "
                                  "build directory"))
     parser.add_option_group(build_group)
-
-    test_group = OptionGroup(parser, "Test specific options")
-    test_group.add_option('-i', "--ignore-failures",
-                          action="store_true",
-                          dest="ignore_test_failures",
-                          default=False,
-                          help=("when running tests ignore component test failures"
-                                " (default: %default)"))
-    parser.add_option_group(test_group)
 
     # Extract only what we care about, these will be passed
     # to the constructor of actions as arguments
@@ -257,10 +201,4 @@ def parse(previous_settings=None):
         with open(options.distros_patch_fn) as fp:
             values['distros_patch'] = json.load(fp)
     values['venv_deploy_dir'] = options.venv_deploy_dir
-    values['prompt_for_passwords'] = options.prompt_for_passwords
-    values['show_amount'] = max(0, options.show_amount)
-    values['store_passwords'] = options.store_passwords
-    values['keyring_path'] = options.keyring_path
-    values['keyring_encrypted'] = options.keyring_encrypted
-    values['ignore_test_failures'] = options.ignore_test_failures
     return values

@@ -1,7 +1,4 @@
 # Settings for component keystone-client
 ---
 
-# This code is out of compliance, so skip it...
-use_pep8: False
-
 ...
