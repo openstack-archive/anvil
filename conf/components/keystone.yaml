@@ -1,56 +1,8 @@
 # Settings for component keystone
 ---
 
-# Where is the keystone auth host at?
-auth_host: "$(auto:ip)"
-auth_port: 35357
-auth_proto: http
-
-# Where is the keystone service host at?
-service_host: "$(auto:ip)"
-service_port: 5000
-service_proto: http
-
 # Used for associating the client package with a human understandable
 # name in its package description (not a code-name, like keystone).
 api_name: "Identity"
-
-# Test exclusions...
-#
-# TODO(harlowja) these should probably be bugs...
-exclude_tests:
-  # These 2 seem to require swift, not always installed...
-  - test_swift_auth_middleware
-  - test_s3_token_middleware
-  # Aren't always installing memcache...
-  - test_backend_memcache
-  - test_nomemcache
-  # Aren't always installing ldap...
-  - test_backend_ldap
-
-# Needed when running to setup the right roles/endpoints...
-glance:
-  api_port: "$(glance:api_port)"
-  protocol: "$(glance:protocol)"
-  reg_port: "$(glance:reg_port)"
-
-nova: 
-  api_host: "$(nova:api_host)"
-  api_port: "$(nova:api_port)"
-  s3_host: "$(nova:s3_host)"
-  s3_port: "$(nova:s3_port)"
-  ec2_host: "$(nova:ec2_host)"
-  ec2_port: "$(nova:ec2_port)"
-  ec2_admin_host: "$(nova:ec2_admin_host)"
-  ec2_admin_port: "$(nova:ec2_admin_port)"
-  protocol: "$(nova:protocol)"
-
-neutron:
-  api_host: "$(neutron:api_host)"
-  api_port: "$(neutron:api_port)"
-
-cinder:
-  api_host: "$(cinder:api_host)"
-  api_port: "$(cinder:api_port)"
 
 ...

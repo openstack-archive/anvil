@@ -1,6 +1,5 @@
 ---
 components:
-- general
 - global-requirements
 supports:
 - rhel

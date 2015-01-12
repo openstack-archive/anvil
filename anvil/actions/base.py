@@ -23,7 +23,6 @@ from anvil import env
 from anvil import exceptions as excp
 from anvil import importer
 from anvil import log as logging
-from anvil import passwords as pw
 from anvil import persona as _persona
 from anvil import phase
 from anvil import shell as sh
@@ -33,17 +32,11 @@ import six
 
 LOG = logging.getLogger(__name__)
 BASE_ENTRYPOINTS = {
-    'coverage': 'anvil.components.base_testing:EmptyTestingComponent',
     'install': 'anvil.components.pkglist:Installer',
-    'running': 'anvil.components.base_runtime:EmptyRuntime',
-    'test': 'anvil.components.base_testing:EmptyTestingComponent',
-    'uninstall': 'anvil.components.base_install:PkgUninstallComponent',
 }
 BASE_PYTHON_ENTRYPOINTS = dict(BASE_ENTRYPOINTS)
 BASE_PYTHON_ENTRYPOINTS.update({
-    'coverage': 'anvil.components.base_testing:PythonTestingComponent',
     'install': 'anvil.components.base_install:PythonInstallComponent',
-    'test': 'anvil.components.base_testing:PythonTestingComponent',
 })
 SPECIAL_GROUPS = _persona.SPECIAL_GROUPS
 
@@ -72,42 +65,8 @@ class Action(object):
         self.config_loader = cfg.YamlMergeLoader(root_dir,
                                                  origins_path=cli_opts['origins_fn'])
 
-        # Keyring/pw settings + cache
-        self.passwords = {}
-        self.keyring_path = cli_opts.pop('keyring_path')
-        self.keyring_encrypted = cli_opts.pop('keyring_encrypted')
-        self.prompt_for_passwords = cli_opts.pop('prompt_for_passwords', False)
-        self.store_passwords = cli_opts.pop('store_passwords', True)
-
         # Stored for components to get any options
         self.cli_opts = cli_opts
-
-    def _establish_passwords(self, groups):
-        kr = pw.KeyringProxy(self.keyring_path,
-                             self.keyring_encrypted,
-                             self.prompt_for_passwords,
-                             True)
-        LOG.info("Reading passwords using a %s", kr)
-        to_save = {}
-        self.passwords.clear()
-        already_gotten = set()
-        for _group, instances in groups:
-            for _c, instance in six.iteritems(instances):
-                wanted_passwords = instance.get_option('wanted_passwords')
-                if not wanted_passwords:
-                    continue
-                for (name, prompt) in wanted_passwords.items():
-                    if name in already_gotten:
-                        continue
-                    (from_keyring, pw_provided) = kr.read(name, prompt)
-                    if not from_keyring and self.store_passwords:
-                        to_save[name] = pw_provided
-                    self.passwords[name] = pw_provided
-                    already_gotten.add(name)
-        if to_save:
-            LOG.info("Saving %s passwords using a %s", len(to_save), kr)
-            for (name, pw_provided) in to_save.items():
-                kr.save(name, pw_provided)
 
     @abc.abstractproperty
     @property
@@ -189,7 +148,6 @@ class Action(object):
                                                            desired_subsystems=persona.wanted_subsystems.get(c, []))
                 sibling_params['subsystems'] = active_subsystems
                 sibling_params['siblings'] = {}  # This gets adjusted during construction
-                sibling_params['passwords'] = self.passwords
                 sibling_params['distro'] = self.distro
                 sibling_params['options'] = self.config_loader.load(
                     distro=d_component, component=c,
@@ -231,7 +189,6 @@ class Action(object):
         LOG.debug("Starting environment settings:")
         utils.log_object(env.get(), logger=LOG, level=logging.DEBUG, item_max_len=64)
         sh.mkdirslist(self.phase_dir)
-        self._establish_passwords(groups)
         self._verify_components(groups)
         self._warm_components(groups)
 
