@@ -2,9 +2,6 @@
 # Persona that includes all known components
 components:
 # Order matters here!
-- general
-- db
-- rabbit-mq
 # Oslo libraries
 - oslo-config
 - oslo-messaging
@@ -37,37 +34,6 @@ components:
 # the existing things to be pre-built/started... before it can be...
 - django-openstack-auth: 1
 - horizon: 2
-options:
-    general:
-        install-all-deps: false
-    nova:
-        db-sync: true
-        do-network-init: true
-        enable-cells: false
-        enable-spice: false
-        local-conductor: false
-        mq-type: rabbit
-        neutron-enabled: true
-    glance:
-        db-sync: true
-        load-images: true
-    keystone:
-        db-sync: true
-        do-init: true
-        enable-pki: false
-    heat: {}
-    ironic:
-        db-sync: true
-    ceilometer:
-        db-sync: true
-    horizon:
-        make-blackhole: true
-    cinder:
-        db-sync: true
-        mq-type: rabbit
-    neutron:
-        db-sync: true
-        mq-type: rabbit
 subsystems:
     glance:
     - api
@@ -103,12 +69,8 @@ subsystems:
     ironic:
     - api
     - conductor
-no-origin:
-# These components don't need an origin to be enabled
-- general
-- db
-- rabbit-mq
-- openvswitch
 supports:
 - rhel
+- fedora
+- centos
 ...

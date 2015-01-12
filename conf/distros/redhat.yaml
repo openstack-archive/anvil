@@ -96,9 +96,6 @@ components:
         python_entrypoints: True
     cinder:
         python_entrypoints: True
-        action_classes:
-            install: anvil.components.cinder:CinderInstaller
-            running: anvil.components.base_runtime:OpenStackRuntime
         daemon_to_package:
             all: openstack-cinder
             volume: openstack-cinder
@@ -108,17 +105,7 @@ components:
         -   name: hp3parclient
     cinder-client:
         python_entrypoints: True
-    db:
-        action_classes:
-            install: anvil.distros.rhel:DBInstaller
-            running: anvil.components.db:DBRuntime
-            uninstall: anvil.components.db:DBUninstaller
-        packages:
-        -   name: mysql
-        -   name: mysql-server
     general:
-        action_classes:
-            uninstall: anvil.components.pkglist:Uninstaller
         build-requires:
         # Build time dependencies
         -   name: libxml2-devel
@@ -161,11 +148,6 @@ components:
             - name: "coverage"
     glance:
         python_entrypoints: True
-        action_classes:
-            install: anvil.components.glance:GlanceInstaller
-            running: anvil.components.glance:GlanceRuntime
-            coverage: anvil.components.glance:GlanceTester
-            test: anvil.components.glance:GlanceTester
         pips:
         # pip setup and download of xattr>=0.7 seems to have problems find cffi
         # so lets just use an restrict the upper bound until this is fixed upstream
@@ -178,15 +160,10 @@ components:
             scrubber: openstack-glance
     glance-client:
         python_entrypoints: True
-        action_classes:
-            test: anvil.components.glance_client:GlanceClientTester
-            coverage: anvil.components.glance_client:GlanceClientTester
     heat-client:
         python_entrypoints: True
     horizon:
         python_entrypoints: True
-        action_classes:
-            running: anvil.components.horizon:HorizonRuntime
         packages:
         -   name: openstack-dashboard
         pips:
@@ -195,12 +172,6 @@ components:
         python_entrypoints: True
     keystone:
         python_entrypoints: True
-        action_classes:
-            install: anvil.components.keystone:KeystoneInstaller
-            running: anvil.components.keystone:KeystoneRuntime
-            test: anvil.components.keystone:KeystoneTester
-            coverage: anvil.components.keystone:KeystoneTester
-            uninstall: anvil.components.keystone:KeystoneUninstaller
         daemon_to_package:
             all: openstack-keystone
     keystone-client:
@@ -209,10 +180,6 @@ components:
         python_entrypoints: True
     nova:
         python_entrypoints: True
-        action_classes:
-            install: anvil.components.nova:NovaInstaller
-            running: anvil.components.nova:NovaRuntime
-            uninstall: anvil.components.nova:NovaUninstaller
         pips:
         # This seems to be a core dependency for a 'cas' tool
         # so don't try to remove it since it will also remove
@@ -241,16 +208,6 @@ components:
         python_entrypoints: True
     openstack-client:
         python_entrypoints: True
-        action_classes:
-            test: anvil.components.openstack_client:OpenStackClientTester
-            coverage: anvil.components.openstack_client:OpenStackClientTester
-    openvswitch:
-        action_classes:
-            install: anvil.components.openvswitch:OpenvswitchInstaller
-            running: anvil.components.openvswitch:OpenvswitchRuntime
-            uninstall: anvil.components.openvswitch:OpenvswitchUninstaller
-        packages:
-        -   name: openvswitch
     oslo-config:
         python_entrypoints: True
     oslo-incubator:
@@ -261,10 +218,6 @@ components:
         python_entrypoints: True
     neutron:
         python_entrypoints: True
-        action_classes:
-            install: anvil.components.neutron:NeutronInstaller
-            running: anvil.components.neutron:NeutronRuntime
-            uninstall: anvil.components.neutron:NeutronUninstaller
         daemon_to_package:
             dhcp-agent: openstack-neutron
             l3-agent: openstack-neutron
@@ -281,48 +234,6 @@ components:
             cisco-cfg-agent: openstack-neutron-cisco
             lbaas-agent: openstack-neutron
             netns-cleanup: openstack-neutron
-    qpid:
-        action_classes:
-          install: anvil.components.qpid:QpidInstaller
-          uninstall: anvil.components.qpid:QpidUninstaller
-          running: anvil.components.qpid:QpidRuntime
-        packages:
-          -   name: qpid-cpp-client
-          -   name: qpid-tools
-          -   name: qpid-cpp-server
-              # Disable rabbitmq as these rabbitmq & qpidd conflict
-              pre-install:
-              -   cmd:
-                  - service
-                  - rabbitmq-server
-                  - stop
-                  ignore_failure: true
-              # Also stop it from starting on boot (if rebooted)
-              -   cmd:
-                  - chkconfig
-                  - rabbitmq-server
-                  - 'off'
-                  ignore_failure: true
-    rabbit-mq:
-        action_classes:
-            install: anvil.components.rabbit:RabbitInstaller
-            running: anvil.distros.rhel:RabbitRuntime
-            uninstall: anvil.components.rabbit:RabbitUninstaller
-        packages:
-        -   name: rabbitmq-server
-            # Disable qpidd as these rabbitmq & qpidd conflict
-            pre-install:
-            -   cmd:
-                - service
-                - qpidd
-                - stop
-                ignore_failure: true
-            # Also stop it from starting on boot (if rebooted)
-            -   cmd:
-                - chkconfig
-                - qpidd
-                - 'off'
-                ignore_failure: true
     swift-client:
         python_entrypoints: True
     trove:
@@ -331,8 +242,6 @@ components:
         python_entrypoints: True
     heat:
         python_entrypoints: True
-        action_classes:
-            install: anvil.components.heat:HeatInstaller
         daemon_to_package:
             api: openstack-heat-api
             api-cfn: openstack-heat-api-cfn
@@ -340,12 +249,8 @@ components:
             engine: openstack-heat-engine
     global-requirements:
         python_entrypoints: True
-        action_classes:
-            install: anvil.components.global_requirements:GlobalRequirements
     ceilometer:
         python_entrypoints: True
-        action_classes:
-            install: anvil.components.ceilometer:CeilometerInstaller
         daemon_to_package:
             api: openstack-ceilometer-api
             central: openstack-ceilometer-central
@@ -354,8 +259,6 @@ components:
             ipmi: openstack-ceilometer-ipmi
     ironic:
         python_entrypoints: True
-        action_classes:
-            install: anvil.components.ironic:IronicInstaller
         daemon_to_package:
             api: openstack-ironic-api
             conductor: openstack-ironic-conductor
