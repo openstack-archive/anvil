@@ -19,24 +19,8 @@
 # we can skip states that have already completed as well as redo states when
 # the inverse is applied.
 _INVERSES = {
-    "configure": ["unconfigure"],
     "download": [],
     "download-patch": [],
-    "package": ["package-destroy"],
-    "package-destroy": ["package-install", "install", "package"],
-    "package-install": ["package-uninstall", "uninstall", "package-destroy"],
-    "package-install-all-deps": [],
-    "package-uninstall": ["package-install", "package-install-all-deps"],
-    "post-install": [],
-    "post-start": [],
-    "post-uninstall": ["pre-install", "post-install"],
-    "pre-install": ["pre-uninstall", "post-uninstall"],
-    "pre-start": [],
-    "pre-uninstall": ["post-install"],
-    "start": ["stopped"],
-    "stopped": ["pre-start", "start", "post-start"],
-    "unconfigure": ["configure"],
-    "uninstall": ["prepare", "download", "download-patch"],
 }
 
 

@@ -43,13 +43,13 @@ class Distro(object):
     def __init__(self,
                  name, platform_pattern,
                  install_helper, dependency_handler,
-                 commands, components, **kwargs):
+                 components, **kwargs):
         self.name = name
         self._platform_pattern_text = platform_pattern
         self._platform_pattern = re.compile(platform_pattern, re.IGNORECASE)
         self._install_helper = install_helper
         self._dependency_handler = dependency_handler
-        self._commands = commands
+        self._commands = kwargs.get('commands', {})
         self._components = components
         self.inject_platform_overrides(kwargs)
 

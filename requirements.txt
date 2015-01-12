@@ -1,7 +1,6 @@
 cheetah>=2.4.4
 iniparse
 iso8601>=0.1.8
-keyring>=1.6.1,<2.0
 netifaces>=0.5
 ordereddict
 progressbar

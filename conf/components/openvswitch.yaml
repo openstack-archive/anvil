@@ -1,9 +1,0 @@
-# Settings for component openvswitch
----
-
-# List of bridges to manage
-bridges:
-  - $(neutron:external_bridge)
-  - $(neutron:integration_bridge)
-
-...
