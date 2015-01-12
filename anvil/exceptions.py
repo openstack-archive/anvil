@@ -37,10 +37,6 @@ class DownloadException(AnvilException):
     pass
 
 
-class InstallException(AnvilException):
-    pass
-
-
 class BadParamException(AnvilException):
     pass
 
@@ -53,27 +49,7 @@ class NoReplacementException(AnvilException):
     pass
 
 
-class StartException(AnvilException):
-    pass
-
-
 class PackageException(AnvilException):
-    pass
-
-
-class StopException(AnvilException):
-    pass
-
-
-class RestartException(AnvilException):
-    pass
-
-
-class StatusException(AnvilException):
-    pass
-
-
-class PasswordException(AnvilException):
     pass
 
 
@@ -87,10 +63,6 @@ class ConfigException(AnvilException):
 
 class DependencyException(AnvilException):
     pass
-
-
-class DuplicateException(AnvilException):
-    "Raised when a duplicate entry is found."
 
 
 class ProcessExecutionError(IOError):
@@ -168,13 +140,6 @@ class YamlOptionNotFoundException(YamlException):
               "reference option `{3}` not found." \
               .format(conf, opt, ref_conf, ref_opt)
         super(YamlOptionNotFoundException, self).__init__(msg)
-
-
-class YamlConfigNotFoundException(YamlException):
-    """Raised by YamlRefLoader if config source not found."""
-    def __init__(self, path):
-        msg = "Could not find (open) yaml source {0}.".format(path)
-        super(YamlConfigNotFoundException, self).__init__(msg)
 
 
 class YamlLoopException(YamlException):
