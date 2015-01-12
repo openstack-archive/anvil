@@ -15,28 +15,12 @@
 #    under the License.
 
 from anvil.actions import build
-from anvil.actions import install
 from anvil.actions import prepare
-from anvil.actions import remove
-from anvil.actions import restart
-from anvil.actions import start
-from anvil.actions import status
-from anvil.actions import stop
-from anvil.actions import test
-from anvil.actions import uninstall
 
 
 _NAMES_TO_RUNNER = {
     'build': build.BuildAction,
-    'install': install.InstallAction,
     'prepare': prepare.PrepareAction,
-    'purge': remove.RemoveAction,
-    'restart': restart.RestartAction,
-    'start': start.StartAction,
-    'status': status.StatusAction,
-    'stop': stop.StopAction,
-    'test': test.TestAction,
-    'uninstall': uninstall.UninstallAction,
 }
 _RUNNER_TO_NAMES = dict((v, k) for k, v in _NAMES_TO_RUNNER.items())
 

@@ -239,15 +239,12 @@ class YamlRefLoader(object):
         if conf not in self._cached:
             path = sh.joinpths(self._path, conf + self._conf_ext)
             if not sh.isfile(path):
-                raise exceptions.YamlConfigNotFoundException(path)
-
-            self._cached[conf] = utils.load_yaml(path) or {}
+                self._cached[conf] = {}
+            else:
+                self._cached[conf] = utils.load_yaml(path) or {}
 
     def update_cache(self, conf, dict2update):
         self._cache(conf)
-        #for k, v in dict2update.items():
-        #    self._cached[conf][k] = v
-
         # NOTE (vnovikov): should remove obsolete processed data
         self._cached[conf].update(dict2update)
         self._processed[conf] = {}

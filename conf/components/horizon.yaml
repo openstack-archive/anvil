@@ -1,7 +1,0 @@
-# Settings for component horizon
----
-
-# Instead of naming this components package horizon, it will be named this instead
-build_name: "python-django-horizon"
-
-...
