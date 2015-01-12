@@ -1,3 +1,10 @@
+platform_overrides:
+   redhat-7.*|centos-7.*:
+      epoch_map:
+         sqlalchemy-migrate: 1 #python-migrate.... :-/
+      forced_pips:
+      - "sqlalchemy>=0.9.7,<0.9.99"
+      - "python-ldap>=2.4.6"
 ceilometer:
   repo: git://github.com/openstack/ceilometer.git
   tag: 2014.2.1
