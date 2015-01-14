@@ -21,6 +21,7 @@ REQUIRES='
     python
     python-devel
     libffi-devel
+    libvirt-devel
     openssl-devel
 
     createrepo
