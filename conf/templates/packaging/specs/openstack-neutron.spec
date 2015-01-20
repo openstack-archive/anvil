@@ -1113,10 +1113,9 @@ fi
 #if $newer_than('2014.2')
 %files -n openstack-neutron-opencontrail
 %doc LICENSE
-#%doc neutron/plugins/opencontrail/README
-%dir %{_sysconfdir}/neutron/plugins/opencontrail
 
 %if ! 0%{?usr_only}
+%dir %{_sysconfdir}/neutron/plugins/opencontrail
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/opencontrail/*.ini
 %endif
 #end if
