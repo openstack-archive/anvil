@@ -7,6 +7,8 @@
 
 %global os_version $version
 
+%global with_compression 1
+
 Name:       python-django-horizon
 Version:    %{os_version}$version_suffix
 Release:    $release%{?dist}
@@ -82,9 +84,13 @@ instance VNC console, etc.)
 Summary:    Openstack web user interface reference implementation
 Group:      Applications/System
 
+%if ! 0%{?usr_only}
 Requires:   httpd
 Requires:   mod_wsgi
+%endif
+%if %{?with_compression} > 0
 Requires:   python-lesscpy
+%endif
 Requires:   %{name} = %{epoch}:%{version}-%{release}
 
 BuildRequires: python-devel
@@ -129,9 +135,14 @@ Openstack
 #end for
 #raw
 
+# remove unnecessary .mo files
+# they will be generated later during package build
+find . -name "django*.mo" -exec rm -f '{}' \;
+
 # Don't access the net while building docs
 sed -i '/sphinx.ext.intersphinx/d' doc/source/conf.py
 
+%if ! 0%{?usr_only}
 sed -i -e 's@^BIN_DIR.*$@BIN_DIR = "/usr/bin"@' \
     -e 's@^LOGIN_URL.*$@LOGIN_URL = "/dashboard/auth/login/"@' \
     -e 's@^LOGOUT_URL.*$@LOGOUT_URL = "/dashboard/auth/logout/"@' \
@@ -141,17 +152,19 @@ sed -i -e 's@^BIN_DIR.*$@BIN_DIR = "/usr/bin"@' \
     openstack_dashboard/settings.py
 
 #if $newer_than_eq('2014.2')
-#Enable offline compression
+%if 0%{?with_compression} > 0
+# set COMPRESS_OFFLINE=True
 sed -i 's:COMPRESS_OFFLINE.=.False:COMPRESS_OFFLINE = True:' openstack_dashboard/settings.py
-#end if
+%else
+# set COMPRESS_OFFLINE=False
+sed -i 's:COMPRESS_OFFLINE = True:COMPRESS_OFFLINE = False:' openstack_dashboard/settings.py
+%endif
 
 # Correct "local_settings.py.example" config file
 sed -i -e 's@^#\?ALLOWED_HOSTS.*$@ALLOWED_HOSTS = ["horizon.example.com", "localhost"]@' \
     -e 's@^LOCAL_PATH.*$@LOCAL_PATH = "/tmp"@' \
     openstack_dashboard/local/local_settings.py.example
-
-# remove unnecessary .po files
-find . -name "django*.po" -exec rm -f '{}' \;
+%endif
 
 #if $newer_than_eq('2014.2')
 # make doc build compatible with python-oslo-sphinx RPM
@@ -160,6 +173,7 @@ sed -i 's/oslosphinx/oslo.sphinx/' doc/source/conf.py
 
 %build
 #if $newer_than_eq('2014.2')
+# compile message strings
 cd horizon && django-admin compilemessages && cd ..
 cd openstack_dashboard && django-admin compilemessages && cd ..
 #end if
@@ -189,7 +203,9 @@ sed -i -e '/import exceptions/d' -e '/exceptions\.[A-Z][A-Z]/d' openstack_dashbo
 #end if
 #raw
 %{__python} manage.py collectstatic --noinput
+%if 0%{?with_compression} > 0
 %{__python} manage.py compress --force
+%endif
 #end raw
 #if $older_than('2014.1')
 mv tmp_settings/* openstack_dashboard/
@@ -216,12 +232,14 @@ rm -fr html/.doctrees html/.buildinfo
 %install
 %{__python} setup.py install -O1 --skip-build --root %{buildroot}
 
+%if ! 0%{?usr_only}
 # drop httpd-conf snippet
 %if 0%{?rhel} || 0%{?fedora} <18
 install -m 0644 -D -p %{SOURCE1} %{buildroot}%{_sysconfdir}/httpd/conf.d/openstack-dashboard.conf
 %else
 # httpd-2.4 changed the syntax
 install -m 0644 -D -p %{SOURCE2} %{buildroot}%{_sysconfdir}/httpd/conf.d/openstack-dashboard.conf
+%endif
 %endif
 
 install -d -m 755 %{buildroot}%{_datadir}/openstack-dashboard
@@ -234,9 +252,15 @@ mv %{buildroot}%{python_sitelib}/openstack_dashboard \
 mv manage.py %{buildroot}%{_datadir}/openstack-dashboard
 rm -rf %{buildroot}%{python_sitelib}/openstack_dashboard
 
+# remove unnecessary .po files
+find %{buildroot} -name django.po -exec rm '{}' \;
+find %{buildroot} -name djangojs.po -exec rm '{}' \;
+
+%if ! 0%{?usr_only}
 # Move config to /etc, symlink it back to /usr/share
 mv %{buildroot}%{_datadir}/openstack-dashboard/openstack_dashboard/local/local_settings.py.example %{buildroot}%{_sysconfdir}/openstack-dashboard/local_settings
 ln -s %{_sysconfdir}/openstack-dashboard/local_settings %{buildroot}%{_datadir}/openstack-dashboard/openstack_dashboard/local/local_settings.py
+%endif
 
 #if $older_than('2014.2')
 %if 0%{?rhel} > 6 || 0%{?fedora} >= 16
@@ -272,19 +296,63 @@ cp -a static/* %{buildroot}%{_datadir}/openstack-dashboard/static
 %clean
 rm -rf %{buildroot}
 
-%files
-%doc LICENSE README.rst
-%{python_sitelib}/*
+%files -f horizon.lang
+%doc LICENSE README.rst openstack-dashboard-httpd-logging.conf
+%dir %{python_sitelib}/horizon
+%{python_sitelib}/horizon/*.py*
+%{python_sitelib}/horizon/browsers
+%{python_sitelib}/horizon/conf
+%{python_sitelib}/horizon/contrib
+%{python_sitelib}/horizon/forms
+%{python_sitelib}/horizon/management
+%{python_sitelib}/horizon/static
+%{python_sitelib}/horizon/tables
+%{python_sitelib}/horizon/tabs
+%{python_sitelib}/horizon/templates
+%{python_sitelib}/horizon/templatetags
+%{python_sitelib}/horizon/test
+%{python_sitelib}/horizon/utils
+%{python_sitelib}/horizon/workflows
+%{python_sitelib}/*.egg-info
 
+%files -n openstack-dashboard -f dashboard.lang
+%dir %{_datadir}/openstack-dashboard/
+%{_datadir}/openstack-dashboard/*.py*
+%{_datadir}/openstack-dashboard/static
+%{_datadir}/openstack-dashboard/openstack_dashboard/*.py*
+%{_datadir}/openstack-dashboard/openstack_dashboard/api
+%dir %{_datadir}/openstack-dashboard/openstack_dashboard/dashboards/
+%{_datadir}/openstack-dashboard/openstack_dashboard/dashboards/admin
+%{_datadir}/openstack-dashboard/openstack_dashboard/dashboards/identity
+%{_datadir}/openstack-dashboard/openstack_dashboard/dashboards/project
+%{_datadir}/openstack-dashboard/openstack_dashboard/dashboards/router
+%{_datadir}/openstack-dashboard/openstack_dashboard/dashboards/settings
+%{_datadir}/openstack-dashboard/openstack_dashboard/dashboards/__init__.py*
+%{_datadir}/openstack-dashboard/openstack_dashboard/django_pyscss_fix
+%{_datadir}/openstack-dashboard/openstack_dashboard/enabled
+%{_datadir}/openstack-dashboard/openstack_dashboard/local
+%{_datadir}/openstack-dashboard/openstack_dashboard/management
+%{_datadir}/openstack-dashboard/openstack_dashboard/openstack
+%{_datadir}/openstack-dashboard/openstack_dashboard/static
+%{_datadir}/openstack-dashboard/openstack_dashboard/templates
+%{_datadir}/openstack-dashboard/openstack_dashboard/templatetags
+%{_datadir}/openstack-dashboard/openstack_dashboard/test
+%{_datadir}/openstack-dashboard/openstack_dashboard/usage
+%{_datadir}/openstack-dashboard/openstack_dashboard/utils
+%{_datadir}/openstack-dashboard/openstack_dashboard/wsgi
+%dir %{_datadir}/openstack-dashboard/openstack_dashboard
+%dir %{_datadir}/openstack-dashboard/openstack_dashboard/locale
+%dir %{_datadir}/openstack-dashboard/openstack_dashboard/locale/??
+%dir %{_datadir}/openstack-dashboard/openstack_dashboard/locale/??_??
+%dir %{_datadir}/openstack-dashboard/openstack_dashboard/locale/??/LC_MESSAGES
+%dir %{_datadir}/openstack-dashboard/openstack_dashboard/locale/??_??/LC_MESSAGES
 
-%files -n openstack-dashboard
-%{_datadir}/openstack-dashboard/
-
+%if ! 0%{?usr_only}
 %{_sharedstatedir}/openstack-dashboard
 %dir %attr(0750, root, apache) %{_sysconfdir}/openstack-dashboard
 %config(noreplace) %{_sysconfdir}/httpd/conf.d/openstack-dashboard.conf
 %config(noreplace) %attr(0640, root, apache) %{_sysconfdir}/openstack-dashboard/local_settings
-
+%endif
 
 %if 0%{?with_doc}
 %files doc
