@@ -506,6 +506,10 @@ install -p -D -m 755 %{SOURCE28} %{buildroot}%{_unitdir}/%{daemon_prefix}-spiceh
 #if $newer_than_eq('2014.2')
 install -p -D -m 755 %{SOURCE29} %{buildroot}%{_unitdir}/%{daemon_prefix}-serialproxy.service
 #end if
+#raw
+#fix metadata-api bin name
+sed -i s?ExecStart=\"/usr/bin/nova-metadata-api\"?ExecStart=\"/usr/bin/nova-api-metadata\"? %{buildroot}%{_unitdir}/%{daemon_prefix}-metadata-api
+#end raw
 %endif
 
 # Install sudoers
