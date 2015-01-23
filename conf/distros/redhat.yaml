@@ -6,7 +6,6 @@ dependency_handler:
     name: anvil.packaging.yum:YumDependencyHandler
     epoch_map:
         flask: 2
-        wsme: 2
     package_map:
         distribute: python-setuptools
         django: Django
