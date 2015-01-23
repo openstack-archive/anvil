@@ -508,7 +508,7 @@ install -p -D -m 755 %{SOURCE29} %{buildroot}%{_unitdir}/%{daemon_prefix}-serial
 #end if
 #raw
 #fix metadata-api bin name
-sed -i s?ExecStart=\"/usr/bin/nova-metadata-api\"?ExecStart=\"/usr/bin/nova-api-metadata\"? %{buildroot}%{_unitdir}/%{daemon_prefix}-metadata-api.service
+sed -i s?ExecStart=/usr/bin/nova-metadata-api?ExecStart=/usr/bin/nova-api-metadata? %{buildroot}%{_unitdir}/%{daemon_prefix}-metadata-api.service
 #end raw
 %endif
 
