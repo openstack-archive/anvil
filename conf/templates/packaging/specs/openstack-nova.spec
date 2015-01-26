@@ -138,7 +138,6 @@ Requires:         libguestfs-mount >= 1.7.17
 # The fuse dependency should be added to libguestfs-mount
 Requires:         fuse
 Requires:         libvirt >= 0.8.7
-Requires:         libvirt-python
 Requires(pre):    qemu-kvm
 
 %description compute

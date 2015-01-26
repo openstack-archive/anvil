@@ -10,6 +10,7 @@ dependency_handler:
         distribute: python-setuptools
         django: Django
         IPy: python-IPy
+        libvirt-python: libvirt-python
         m2crypto: m2crypto
         pyScss: python-scss
         mysql-python: MySQL-python
