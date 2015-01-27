@@ -133,16 +133,18 @@ Openstack
 #for $idx, $fn in enumerate($patches)
 %patch$idx -p1
 #end for
-#raw
 
+#raw
 # remove unnecessary .mo files
 # they will be generated later during package build
 find . -name "django*.mo" -exec rm -f '{}' \;
 
 # Don't access the net while building docs
 sed -i '/sphinx.ext.intersphinx/d' doc/source/conf.py
+#end raw
 
 %if ! 0%{?usr_only}
+#raw
 sed -i -e 's@^BIN_DIR.*$@BIN_DIR = "/usr/bin"@' \
     -e 's@^LOGIN_URL.*$@LOGIN_URL = "/dashboard/auth/login/"@' \
     -e 's@^LOGOUT_URL.*$@LOGOUT_URL = "/dashboard/auth/logout/"@' \
@@ -150,25 +152,35 @@ sed -i -e 's@^BIN_DIR.*$@BIN_DIR = "/usr/bin"@' \
     -e 's@^DEBUG.*$@DEBUG = False@' \
     -e '/^COMPRESS_ENABLED.*$/a COMPRESS_OFFLINE = True' \
     openstack_dashboard/settings.py
+#end raw
 
 #if $newer_than_eq('2014.2')
 %if 0%{?with_compression} > 0
+#raw
 # set COMPRESS_OFFLINE=True
 sed -i 's:COMPRESS_OFFLINE.=.False:COMPRESS_OFFLINE = True:' openstack_dashboard/settings.py
+#end raw
 %else
+#raw
 # set COMPRESS_OFFLINE=False
 sed -i 's:COMPRESS_OFFLINE = True:COMPRESS_OFFLINE = False:' openstack_dashboard/settings.py
+#end raw
 %endif
+#end if
 
 # Correct "local_settings.py.example" config file
+#raw
 sed -i -e 's@^#\?ALLOWED_HOSTS.*$@ALLOWED_HOSTS = ["horizon.example.com", "localhost"]@' \
     -e 's@^LOCAL_PATH.*$@LOCAL_PATH = "/tmp"@' \
     openstack_dashboard/local/local_settings.py.example
+#end raw
 %endif
 
 #if $newer_than_eq('2014.2')
+#raw
 # make doc build compatible with python-oslo-sphinx RPM
 sed -i 's/oslosphinx/oslo.sphinx/' doc/source/conf.py
+#end raw
 #end if
 
 %build
@@ -177,12 +189,14 @@ sed -i 's/oslosphinx/oslo.sphinx/' doc/source/conf.py
 cd horizon && django-admin compilemessages && cd ..
 cd openstack_dashboard && django-admin compilemessages && cd ..
 #end if
+
+#raw
 %{__python} setup.py build
 
 cp openstack_dashboard/local/local_settings.py.example openstack_dashboard/local/local_settings.py
+#end raw
 
 #NOTE(aababilov): temporarily drop dependency on OpenStack client packages during RPM building
-#end raw
 #if $older_than('2014.1')
 mkdir tmp_settings
 cp openstack_dashboard/settings.py* tmp_settings/
@@ -253,39 +267,16 @@ mv manage.py %{buildroot}%{_datadir}/openstack-dashboard
 rm -rf %{buildroot}%{python_sitelib}/openstack_dashboard
 
 # remove unnecessary .po files
+#raw
 find %{buildroot} -name django.po -exec rm '{}' \;
 find %{buildroot} -name djangojs.po -exec rm '{}' \;
+#end raw
 
 %if ! 0%{?usr_only}
 # Move config to /etc, symlink it back to /usr/share
 mv %{buildroot}%{_datadir}/openstack-dashboard/openstack_dashboard/local/local_settings.py.example %{buildroot}%{_sysconfdir}/openstack-dashboard/local_settings
 ln -s %{_sysconfdir}/openstack-dashboard/local_settings %{buildroot}%{_datadir}/openstack-dashboard/openstack_dashboard/local/local_settings.py
 %endif
-
-#if $older_than('2014.2')
-%if 0%{?rhel} > 6 || 0%{?fedora} >= 16
-%find_lang django
-%find_lang djangojs
-%else
-# Handling locale files
-# This is adapted from the %%find_lang macro, which cannot be directly
-# used since Django locale files are not located in %%{_datadir}
-#
-# The rest of the packaging guideline still apply -- do not list
-# locale files by hand!
-(cd $RPM_BUILD_ROOT && find . -name 'django*.mo') | %{__sed} -e 's|^.||' |
-%{__sed} -e \
-   's:\(.*/locale/\)\([^/_]\+\)\(.*\.mo$\):%lang(\2) \1\2\3:' \
-      >> django.lang
-%endif
-
-grep "\/usr\/share\/openstack-dashboard" django.lang > dashboard.lang
-grep "\/site-packages\/horizon" django.lang > horizon.lang
-
-%if 0%{?rhel} > 6 || 0%{?fedora} >= 16
-cat djangojs.lang >> horizon.lang
-%endif
-#end if
 
 # copy static files to %{_datadir}/openstack-dashboard/static
 install -d -m 755 %{buildroot}%{_datadir}/openstack-dashboard/static
@@ -296,8 +287,8 @@ cp -a static/* %{buildroot}%{_datadir}/openstack-dashboard/static
 %clean
 rm -rf %{buildroot}
 
-%files -f horizon.lang
-%doc LICENSE README.rst openstack-dashboard-httpd-logging.conf
+%files
+%doc LICENSE README.rst
 %dir %{python_sitelib}/horizon
 %{python_sitelib}/horizon/*.py*
 %{python_sitelib}/horizon/browsers
@@ -315,12 +306,13 @@ rm -rf %{buildroot}
 %{python_sitelib}/horizon/workflows
 %{python_sitelib}/*.egg-info
 
-%files -n openstack-dashboard -f dashboard.lang
+%files -n openstack-dashboard
 %dir %{_datadir}/openstack-dashboard/
 %{_datadir}/openstack-dashboard/*.py*
 %{_datadir}/openstack-dashboard/static
 %{_datadir}/openstack-dashboard/openstack_dashboard/*.py*
 %{_datadir}/openstack-dashboard/openstack_dashboard/api
+%{_datadir}/openstack-dashboard/openstack_dashboard/conf
 %dir %{_datadir}/openstack-dashboard/openstack_dashboard/dashboards/
 %{_datadir}/openstack-dashboard/openstack_dashboard/dashboards/admin
 %{_datadir}/openstack-dashboard/openstack_dashboard/dashboards/identity
