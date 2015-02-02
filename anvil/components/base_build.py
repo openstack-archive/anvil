@@ -35,70 +35,13 @@ TEST_REQUIREMENT_FILES = [
 ]
 
 
-class InstallableMixin(base.Component):
-    def pre_install(self):
-        pkgs = self.packages
-        for p in pkgs:
-            installer = self.distro.install_helper_class(distro=self.distro)
-            installer.pre_install(p, self.params)
-
-    def post_install(self):
-        pkgs = self.packages
-        for p in pkgs:
-            installer = self.distro.install_helper_class(distro=self.distro)
-            installer.post_install(p, self.params)
-
-    def _configure_files(self):
-        config_fns = self.configurator.config_files
-        if config_fns:
-            utils.log_iterable(config_fns, logger=LOG,
-                               header="Configuring %s files" % (len(config_fns)))
-            for fn in config_fns:
-                tgt_fn = self.configurator.target_config(fn)
-                sh.mkdirslist(sh.dirname(tgt_fn), tracewriter=self.tracewriter)
-                (source_fn, contents) = self.configurator.source_config(fn)
-                LOG.debug("Configuring file %s ---> %s.", source_fn, tgt_fn)
-                contents = self.configurator.config_param_replace(fn, contents, self.config_params(fn))
-                contents = self.configurator.config_adjust(contents, fn)
-                sh.write_file(tgt_fn, contents, tracewriter=self.tracewriter)
-        return len(config_fns)
-
-    def configure(self):
-        files = self._configure_files()
-        if sh.isdir(self.cfg_dir):
-            uid = None
-            gid = None
-            try:
-                uid = sh.getuid(self.name)
-                gid = sh.getgid(self.name)
-            except (KeyError, AttributeError):
-                LOG.warn("Unable to find uid & gid for user & group %s", self.name)
-            if uid is not None and gid is not None:
-                try:
-                    sh.chown_r(self.cfg_dir, uid, gid)
-                except Exception as e:
-                    LOG.warn("Failed to change the ownership of %s to %s:%s due to: %s",
-                             self.cfg_dir, uid, gid, e)
-        return files
-
-    @property
-    def packages(self):
-        return self.extended_packages()
-
-    def extended_packages(self):
-        pkg_list = self.get_option('packages', default_value=[])
-        if not pkg_list:
-            pkg_list = []
-        for name, values in self.subsystems.items():
-            if 'packages' in values:
-                LOG.debug("Extending package list with packages for subsystem: %r", name)
-                pkg_list.extend(values.get('packages'))
-        return pkg_list
+class BuildComponent(base.BasicComponent):
+    pass
 
 
-class PythonComponent(base.BasicComponent):
+class PythonBuildComponent(BuildComponent):
     def __init__(self, *args, **kargs):
-        super(PythonComponent, self).__init__(*args, **kargs)
+        super(PythonBuildComponent, self).__init__(*args, **kargs)
         self._origins_fn = kargs['origins_fn']
         app_dir = self.get_option('app_dir')
         tools_dir = sh.joinpths(app_dir, 'tools')
@@ -144,11 +87,3 @@ class PythonComponent(base.BasicComponent):
         egg_info['dependencies'] = pip_helper.read_requirement_files(self.requires_files)[1]
         egg_info['test_dependencies'] = pip_helper.read_requirement_files(self.test_requires_files)[1]
         return egg_info
-
-
-class PkgInstallComponent(base.BasicComponent, InstallableMixin):
-    pass
-
-
-class PythonInstallComponent(PythonComponent, InstallableMixin):
-    pass

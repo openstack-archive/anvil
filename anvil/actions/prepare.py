@@ -29,7 +29,7 @@ class PrepareAction(action.Action):
 
     @property
     def lookup_name(self):
-        return 'install'
+        return 'build'
 
     def _run(self, persona, groups):
         prior_groups = []
