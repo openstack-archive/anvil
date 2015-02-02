@@ -32,11 +32,11 @@ import six
 
 LOG = logging.getLogger(__name__)
 BASE_ENTRYPOINTS = {
-    'install': 'anvil.components.pkglist:Installer',
+    'build': 'anvil.components.base_build:BuildComponent',
 }
 BASE_PYTHON_ENTRYPOINTS = dict(BASE_ENTRYPOINTS)
 BASE_PYTHON_ENTRYPOINTS.update({
-    'install': 'anvil.components.base_install:PythonInstallComponent',
+    'build': 'anvil.components.base_build:PythonBuildComponent',
 })
 SPECIAL_GROUPS = _persona.SPECIAL_GROUPS
 
