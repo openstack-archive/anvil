@@ -1,8 +1,8 @@
 .. _adding_own_distro:
 
-====
+============================
 Adding your own distribution
-====
+============================
 
 This little ``HOWTO`` can be used by those who wish to
 add-on to anvil to be able to support their own distribution

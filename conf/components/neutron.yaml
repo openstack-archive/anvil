@@ -1,23 +1,12 @@
 # Settings for component neutron-client
 ---
 
-# Host and ports for the different neutron services
-api_host: "$(auto:ip)"
-api_port: 9696
-protocol: http
-
 # Used for associating the client package with a human understandable
 # name in its package description (not a code-name, like neutron).
 api_name: "Networking"
 
 core_plugin: openvswitch
 use_namespaces: True
-
-network_vlan_ranges: physnet1:100:299
-physical_interface_mappings: physnet1:100:299
-
-external_bridge: br-ex
-integration_bridge: br-int
 
 # When building a package for the neutron the arguments to the individual daemons
 # will be expanded to include the following runtime arguments.
