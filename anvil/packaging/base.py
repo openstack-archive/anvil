@@ -261,8 +261,8 @@ class DependencyHandler(object):
                                                            forced_pips)
         self.pips_to_install = compatibles
         sh.write_file(self.gathered_requires_filename, "\n".join(self.pips_to_install))
-        pips_to_install = pip_helper.read_requirement_files([self.gathered_requires_filename])
-        pips_to_install = sorted(pips_to_install, cmp=sort_req)
+        pip_requirements, raw_requirements = pip_helper.read_requirement_files([self.gathered_requires_filename])
+        pips_to_install = sorted(raw_requirements, cmp=sort_req)
         utils.log_iterable(pips_to_install, logger=LOG,
                            header="Full known python dependency list")
 
