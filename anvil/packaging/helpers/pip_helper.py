@@ -17,6 +17,7 @@
 from distutils import version as dist_version
 import pkg_resources
 import re
+import tempfile
 
 from pip import req as pip_req
 
@@ -36,8 +37,6 @@ EGGS_DETAILED = {}
 PYTHON_KEY_VERSION_RE = re.compile("^(.+)-([0-9][0-9.a-zA-Z]*)$")
 PIP_VERSION = pkg_resources.get_distribution('pip').version
 PIP_EXECUTABLE = sh.which_first(['pip', 'pip-python'])
-OPENSTACK_TARBALLS_RE = re.compile(r'http://tarballs.openstack.org/([^/]+)/')
-SKIP_LINES = ('#', '-e', '-f', 'http://', 'https://')
 
 
 def create_requirement(name, version=None):
@@ -57,8 +56,26 @@ def create_requirement(name, version=None):
     return pkg_resources.Requirement.parse(name)
 
 
+def _split(line):
+    if line.startswith('-e') or line.startswith('--editable'):
+        if line.startswith('-e'):
+            line = line[2:].strip()
+        else:
+            line = line[len('--editable'):].strip().lstrip('=')
+        if line:
+            return ('-e', line)
+    return (None, line)
+
+
 def extract(line):
-    req = pip_req.InstallRequirement.from_line(line)
+    if line.startswith('-e') or line.startswith('--editable'):
+        if line.startswith('-e'):
+            line = line[2:].strip()
+        else:
+            line = line[len('--editable'):].strip().lstrip('=')
+        req = pip_req.InstallRequirement.from_editable(line, comes_from="??")
+    else:
+        req = pip_req.InstallRequirement.from_line(line, comes_from="??")
     # NOTE(aababilov): req.req.key can look like oslo.config-1.2.0a2,
     # so, split it
     if req.req:
@@ -133,31 +150,22 @@ def get_archive_details(filename):
     return details
 
 
-def _skip_requirement(line):
-    return not len(line) or any(line.startswith(a) for a in SKIP_LINES)
-
-
-def parse_requirements(contents, adjust=False):
-    lines = []
-    for line in contents.splitlines():
-        line = line.strip()
-        if 'http://' in line:
-            m = OPENSTACK_TARBALLS_RE.search(line)
-            if m:
-                line = m.group(1)
-        if not _skip_requirement(line):
-            lines.append(line)
-    return pkg_resources.parse_requirements(lines)
+def parse_requirements(contents):
+    with tempfile.NamedTemporaryFile(suffix=".txt") as tmp_fh:
+        tmp_fh.write(contents)
+        tmp_fh.write("\n")
+        tmp_fh.flush()
+        return read_requirement_files([tmp_fh.name])
 
 
 def read_requirement_files(files):
-    result = []
+    pip_requirements = []
     for filename in files:
         if sh.isfile(filename):
             LOG.debug('Parsing requirements from %s', filename)
-            with open(filename) as f:
-                result.extend(parse_requirements(f.read()))
-    return result
+            pip_requirements.extend(pip_req.parse_requirements(filename))
+    return (pip_requirements,
+            [req.req for req in pip_requirements])
 
 
 def download_dependencies(download_dir, pips_to_download, output_filename):
@@ -191,5 +199,8 @@ def download_dependencies(download_dir, pips_to_download, output_filename):
     # See: https://github.com/pypa/pip/issues/1439
     if dist_version.StrictVersion(PIP_VERSION) >= dist_version.StrictVersion('1.5'):
         cmdline.append("--no-use-wheel")
-    cmdline.extend([str(p) for p in pips_to_download])
+    for p in pips_to_download:
+        for p_seg in _split(p):
+            if p_seg:
+                cmdline.append(p_seg)
     sh.execute_save_output(cmdline, output_filename)
