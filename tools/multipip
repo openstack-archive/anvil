@@ -422,11 +422,14 @@ def print_requirements(joined_requirements):
     formatted_requirements = []
     for req_key in sorted(six.iterkeys(joined_requirements)):
         req = joined_requirements[req_key][0]
+        req_prefix = ""
+        if req.editable:
+            req_prefix = "-e "
         if req.url:
             req = "%s#egg=%s" % (req.url, req.req)
         else:
             req = str(req.req)
-        formatted_requirements.append(req)
+        formatted_requirements.append("%s%s" % (req_prefix, req))
     for req in formatted_requirements:
         print(req)
 
