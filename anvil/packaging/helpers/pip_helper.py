@@ -138,7 +138,8 @@ def _skip_requirement(line):
 
 
 def parse_requirements(contents, adjust=False):
-    lines = []
+    pip_requirements = []
+    raw_requirements = []
     for line in contents.splitlines():
         line = line.strip()
         if 'http://' in line:
@@ -146,18 +147,23 @@ def parse_requirements(contents, adjust=False):
             if m:
                 line = m.group(1)
         if not _skip_requirement(line):
-            lines.append(line)
-    return pkg_resources.parse_requirements(lines)
+            req = pip_req.InstallRequirement.from_line(line)
+            pip_requirements.append(req)
+            raw_requirements.append(req.req)
+    return (pip_requirements, raw_requirements)
 
 
 def read_requirement_files(files):
-    result = []
+    pip_requirements = []
+    raw_requirements = []
     for filename in files:
         if sh.isfile(filename):
             LOG.debug('Parsing requirements from %s', filename)
             with open(filename) as f:
-                result.extend(parse_requirements(f.read()))
-    return result
+                tmp_pip_reqs, tmp_raw_reqs = parse_requirements(f.read())
+                pip_requirements.extend(tmp_pip_reqs)
+                raw_requirements.extend(tmp_raw_reqs)
+    return (pip_requirements, raw_requirements)
 
 
 def download_dependencies(download_dir, pips_to_download, output_filename):
