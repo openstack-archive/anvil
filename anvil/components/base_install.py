@@ -141,9 +141,8 @@ class PythonComponent(base.BasicComponent):
     @property
     def egg_info(self):
         egg_info = pip_helper.get_directory_details(self.get_option('app_dir')).copy()
-        read_reqs = pip_helper.read_requirement_files
-        egg_info['dependencies'] = read_reqs(self.requires_files)
-        egg_info['test_dependencies'] = read_reqs(self.test_requires_files)
+        egg_info['dependencies'] = pip_helper.read_requirement_files(self.requires_files)[1]
+        egg_info['test_dependencies'] = pip_helper.read_requirement_files(self.test_requires_files)[1]
         return egg_info
 
 

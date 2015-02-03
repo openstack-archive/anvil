@@ -159,7 +159,7 @@ class YumDependencyHandler(base.DependencyHandler):
         # are not useful and should not be set in the first place).
         try:
             raw_downloaded = sh.load_file(self.build_requires_filename)
-            downloaded_reqs = pip_helper.parse_requirements(raw_downloaded)
+            _pip_reqs, downloaded_reqs = pip_helper.parse_requirements(raw_downloaded)
         except IOError as e:
             if e.errno != errno.ENOENT:
                 raise
