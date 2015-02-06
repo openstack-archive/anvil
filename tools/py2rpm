@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-import argparse
+from __future__ import print_function
+
 import collections
 import distutils.spawn
 import email.parser
@@ -13,6 +14,7 @@ import subprocess
 import sys
 import tempfile
 
+import argparse
 import six
 
 import pip.util
@@ -148,6 +150,16 @@ def replacement_run(self):
 egg_info.egg_info.run = replacement_run
 exec(compile(open(__file__).read().replace('\\r\\n', '\\n'), __file__, 'exec'))
 """
+
+
+class SpecBuffer(six.StringIO):
+    def write_nl(self, blob=''):
+        self.write(blob)
+        self.write("\n")
+
+    def write_comment(self, blob):
+        for line in blob.splitlines():
+            self.write_nl("# %s" % line)
 
 
 class InstallationError(Exception):
@@ -339,10 +351,11 @@ def call_subprocess(cmd, cwd=None, show_stdout=True, raise_on_returncode=True):
         stdout = None
     else:
         stdout = subprocess.PIPE
-    proc = subprocess.Popen(cmd, cwd=cwd, stderr=None, stdin=None, stdout=stdout)
+    cwd = cwd or os.getcwd()
+    proc = subprocess.Popen(cmd, cwd=cwd,
+                            stderr=None, stdin=None, stdout=stdout)
     ret = proc.communicate()
     if proc.returncode:
-        cwd = cwd or os.getcwd()
         command_desc = " ".join(cmd)
         if raise_on_returncode:
             raise InstallationError(
@@ -417,7 +430,7 @@ def run_egg_info(source_dir, options):
 
 
 def trim_zeroes(version):
-    """Trim zeroes from the end of a version"""
+    """Trim zeroes from the end of a version."""
     version = version.split(".")
     while len(version):
         try:
@@ -436,7 +449,7 @@ def trim_zeroes(version):
 
 
 def fill_zeros(version, zero_fill):
-    """Fills zeroes from the end of a version"""
+    """Fills zeroes from the end of a version."""
     version = version.split(".")
     while len(version) < zero_fill:
         version.append("0")
@@ -590,6 +603,99 @@ def one_line(line, max_len=80):
     return line
 
 
+def show_stage(header, details=''):
+    logger.debug("-" * len(header))
+    logger.debug(header)
+    logger.debug("-" * len(header))
+    if details:
+        logger.debug(details)
+
+
+def build_rpm_spec(pkg_key, pkg_name, options, **kwargs):
+    buf = SpecBuffer()
+    defines = kwargs.get('defines', {})
+    defines_added = 0
+    for n in ['pkg_name', 'pkg_path', 'rpm_name',
+              'version', 'release', 'unmangled_version',
+              'tests_data_dir']:
+        if n in defines:
+            buf.write("%define")
+            buf.write_nl(" %s %s" % (n, defines[n]))
+            defines_added += 1
+    if defines_added:
+        buf.write_nl()
+    build_options = kwargs.get('build_options', {})
+    pkg_build_options = build_options.get(pkg_key, [])
+    if pkg_build_options:
+        for build_option in pkg_build_options:
+            buf.write_nl(build_option)
+        buf.write_nl()
+    tags = kwargs.get('tags', [])
+    if tags:
+        for tag_name, tag_value in tags:
+            if not tag_value:
+                tag_value = 'Unknown'
+            buf.write_nl("%s: %s" % (tag_name,
+                                     one_line(tag_value, max_len=-1)))
+        buf.write_nl()
+    for blob in [kwargs.get('rpm_requires'), kwargs.get('rpm_conflicts')]:
+        if blob:
+            buf.write_nl(blob)
+            buf.write_nl()
+    description = kwargs.get('description', '')
+    buf.write_nl('%description')
+    if description:
+        # Fix how these blobs aren't always formatted so great...
+        tmp_buf = SpecBuffer()
+        for line in description.splitlines():
+            tmp_buf.write_nl(line.strip())
+        description = tmp_buf.getvalue().strip()
+        if description:
+            buf.write_nl()
+            buf.write_nl(description)
+        buf.write_nl()
+    if options.with_tests:
+        buf.write_nl()
+        buf.write_nl("%package tests")
+        buf.write_nl("Group: Development/Libraries")
+        buf.write_nl("Summary: tests for %{name}")
+        for blob in [kwargs.get('test_rpm_requires'),
+                     kwargs.get('test_rpm_conflicts')]:
+            if blob:
+                buf.write_nl(blob)
+                buf.write_nl()
+        buf.write_nl("%description tests")
+        buf.write_nl("Tests for %{name}")
+        buf.write_nl()
+    for script in ["prep", "build", "install", "clean"]:
+        buf.write_nl("%" + script)
+        buf.write_nl()
+        use_defaults = True
+        if options.scripts_dir:
+            script_filename = "%s-%s.sh" % (pkg_key, script)
+            script_path = os.path.join(options.scripts_dir, script_filename)
+            if os.path.isfile(script_path):
+                with open(script_path) as f_in:
+                    buf.write_nl(f_in.read())
+                    use_defaults = False
+        if use_defaults:
+            buf.write_nl(DEFAULT_SCRIPTS[script].strip())
+            if options.with_tests and script in DEFAULT_TESTS_SCRIPTS:
+                buf.write_nl(DEFAULT_TESTS_SCRIPTS[script].strip())
+        buf.write_nl()
+    buf.write_nl("""%files -f INSTALLED_FILES
+
+%defattr(-,root,root)
+""")
+    if options.with_tests:
+        buf.write_nl("""%files tests
+%{_bindir}/%{pkg_name}-make-test-env
+%{tests_data_dir}
+""")
+    buf.write_nl()
+    return buf.getvalue().strip()
+
+
 def build_rpm(options, filename, build_options):
     if os.path.isfile(filename):
         temp_dir = tempfile.mkdtemp('-unpack', 'py2rpm-')
@@ -604,6 +710,7 @@ def build_rpm(options, filename, build_options):
         raise InstallationError(
             "`%s' is not a regular file nor a directory" % filename)
 
+    show_stage("Pre-analyzing path %s" % filename)
     run_egg_info(source_dir, options)
     info = pkg_info(source_dir)
     rpm_requires, rpm_conflicts = requires_and_conflicts(
@@ -618,12 +725,13 @@ def build_rpm(options, filename, build_options):
     build_dir = options.rpm_base
     rpm_name = python_key_to_rpm(pkg_key)
     version = one_line(info["version"])
+    cleaned_version = version.replace('-', '_')
+    spec_name = os.path.join(build_dir, "SPECS", "%s.spec" % rpm_name)
+
     for path in (os.path.join(build_dir, "SPECS"),
                  os.path.join(build_dir, "SOURCES")):
         if not os.path.isdir(path):
             os.makedirs(path)
-    spec_name = os.path.join(build_dir, "SPECS", "%s.spec" % rpm_name)
-
     if not archive_name:
         cmdline = [
             sys.executable, setup_py, "sdist",
@@ -632,92 +740,55 @@ def build_rpm(options, filename, build_options):
         archive_name = "%s/dist/%s-%s.tar.gz" % (source_dir, pkg_name, version)
     shutil.copy(archive_name, os.path.join(build_dir, "SOURCES"))
 
-    cleaned_version = version.replace('-', '_')
+    # Make a spec file blob...
+    defines = {
+        'pkg_name': pkg_name,
+        'pkg_path': os.path.join(*pkg_name.split('.')),
+        'rpm_name': rpm_name,
+        'version': cleaned_version,
+        'release': options.release,
+        'unmangled_version': version,
+    }
+    if options.with_tests:
+        defines['tests_data_dir'] = "%{_datarootdir}/%{pkg_name}-tests"
+    tags = []
+    tags.append(("Name", "%{rpm_name}"))
+    epoch = epoch_map.get(pkg_key, options.epoch)
+    if epoch is not None:
+        tags.append(("Epoch", epoch))
+    tags.append(("Version", "%{version}"))
+    tags.append(("Release", "%{release}"))
+    tags.append(("Summary", info["summary"]))
+    archive_name = os.path.basename(archive_name)
+    if archive_name == ("%s-%s.tar.gz" % (pkg_name, version)):
+        tags.append(("Source0", "%{pkg_name}-%{unmangled_version}.tar.gz"))
+    else:
+        tags.append(("Source0", archive_name))
+    tags.append(("License", info["license"]))
+    tags.append(("Group", "Development/Libraries"))
+    tags.append(("BuildRoot", "%{_tmppath}/%{pkg_name}-%{unmangled_version}-%{release}-buildroot"))
+    tags.append(("Prefix", "%{_prefix}"))
+    if pkg_key not in arch_dependent:
+        if not os.path.exists(egg_info_path(source_dir, "ext_modules.txt")):
+            tags.append(("BuildArch", "noarch"))
+    tags.append(("Vendor", "%s <%s>" % (info["author"], info["author-email"])))
+    tags.append(("Url", info["home-page"]))
+    spec_blob = build_rpm_spec(pkg_key, pkg_name, options,
+                               defines=defines,
+                               build_options=build_options,
+                               tags=tags,
+                               description=info['description'],
+                               rpm_requires=rpm_requires,
+                               rpm_conflicts=rpm_conflicts,
+                               test_rpm_requires=test_rpm_requires,
+                               test_rpm_conflicts=test_rpm_conflicts)
+    show_stage("Writing spec file", details=spec_blob)
     with open(spec_name, "w") as spec_file:
-        print >> spec_file, "%define pkg_name", pkg_name
-        print >> spec_file, "%define pkg_path", os.path.join(*pkg_name.split('.'))
-        print >> spec_file, "%define rpm_name", rpm_name
-        print >> spec_file, "%define version", cleaned_version
-        print >> spec_file, "%define release", options.release
-        print >> spec_file, "%define unmangled_version", version
-        if options.with_tests:
-            print >> spec_file, ("%define tests_data_dir "
-                                 "%{_datarootdir}/%{pkg_name}-tests")
-        print >> spec_file, ""
-        pkg_build_options = build_options.get(pkg_key, [])
-        if pkg_build_options:
-            for build_option in pkg_build_options:
-                print >> spec_file, build_option
-            print >> spec_file, ""
-        tags = []
-        tags.append(("Name", "%{rpm_name}"))
-        epoch = epoch_map.get(pkg_key, options.epoch)
-        if epoch is not None:
-            tags.append(("Epoch", epoch))
-        tags.append(("Version", "%{version}"))
-        tags.append(("Release", "%{release}"))
-        tags.append(("Summary", info["summary"]))
-        archive_name = os.path.basename(archive_name)
-        if archive_name == ("%s-%s.tar.gz" % (pkg_name, version)):
-            tags.append(("Source0", "%{pkg_name}-%{unmangled_version}.tar.gz"))
-        else:
-            tags.append(("Source0", archive_name))
-        tags.append(("License", info["license"]))
-        tags.append(("Group", "Development/Libraries"))
-        tags.append(("BuildRoot", "%{_tmppath}/%{pkg_name}-%{unmangled_version}-%{release}-buildroot"))
-        tags.append(("Prefix", "%{_prefix}"))
-        if pkg_key not in arch_dependent:
-            if not os.path.exists(egg_info_path(source_dir, "ext_modules.txt")):
-                tags.append(("BuildArch", "noarch"))
-        tags.append(("Vendor", "%s <%s>" % (info["author"], info["author-email"])))
-        tags.append(("Url", info["home-page"]))
-        max_name_len = max(len(tag[0]) for tag in tags)
-        for tag_name, tag_value in tags:
-            if not tag_value:
-                tag_value = 'Unknown'
-            print >> spec_file, "%s:" % tag_name, " " * (
-                max_name_len - len(tag_name) + 1), one_line(tag_value, max_len=-1)
-        if rpm_requires:
-            print >> spec_file, rpm_requires
-        if rpm_conflicts:
-            print >> spec_file, rpm_conflicts
-        print >> spec_file, "\n%description\n", info["description"]
+        spec_file.write(spec_blob)
+        if not spec_blob.endswith("\n"):
+            spec_file.write("\n")
 
-        if options.with_tests:
-            print >> spec_file, "\n%package tests"
-            print >> spec_file, "Group: Development/Libraries"
-            print >> spec_file, "Summary: tests for %{name}"
-            for req in ("%{name} = %{epoch}:%{version}-%{release}",
-                        "python-nose",
-                        "python-openstack-nose-plugin",
-                        "python-nose-exclude"):
-                print >> spec_file, "Requires:", req
-            print >> spec_file, test_rpm_requires
-            print >> spec_file, test_rpm_conflicts
-            print >> spec_file, "\n%description tests"
-            print >> spec_file, "Tests for %{name}"
-
-        for script in "prep", "build", "install", "clean":
-            print >> spec_file, "\n\n%%%s" % script
-            if options.scripts_dir:
-                script_filename = "%s/%s-%s.sh" % (options.scripts_dir, pkg_key, script)
-                if os.path.isfile(script_filename):
-                    with open(script_filename) as f_in:
-                        print >> spec_file, f_in.read()
-                    continue
-            print >> spec_file, DEFAULT_SCRIPTS[script]
-            if options.with_tests and script in DEFAULT_TESTS_SCRIPTS:
-                print >> spec_file, DEFAULT_TESTS_SCRIPTS[script]
-        print >> spec_file, """
-
-%files -f INSTALLED_FILES
-%defattr(-,root,root)
-"""
-        if options.with_tests:
-            print >> spec_file, "\n%files tests"
-            print >> spec_file, "%{_bindir}/%{pkg_name}-make-test-env"
-            print >> spec_file, "%{tests_data_dir}"
-
+    show_stage("Building")
     if options.source_only:
         rpmbuild_what = "-bs"
     elif options.binary_only:
@@ -748,9 +819,9 @@ def main():
     if options.convert:
         rpm_requires, rpm_conflicts = requires_and_conflicts(options.convert)
         if rpm_requires:
-            print rpm_requires.strip()
+            print(rpm_requires.strip())
         if rpm_conflicts:
-            print rpm_conflicts.strip()
+            print(rpm_conflicts.strip())
         return
 
     failed_pkgs = []
@@ -759,16 +830,13 @@ def main():
             build_rpm(options, src, build_options)
         except Exception as ex:
             failed_pkgs.append((src, ex))
-            print >> sys.stderr, ex
+            print(ex, file=sys.stderr)
     if failed_pkgs:
-        print >> sys.stderr, "These packages failed to build:"
+        print("These packages failed to build:", file=sys.stderr)
         for descr in failed_pkgs:
-            print >> sys.stderr, "%s:\n\t%s" % descr
+            print("%s:\n\t%s" % descr, file=sys.stderr)
         sys.exit(1)
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except Exception as exp:
-        print >> sys.stderr, exp
+    main()
