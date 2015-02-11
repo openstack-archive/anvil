@@ -163,6 +163,9 @@ def read_requirement_files(files):
     for filename in files:
         if sh.isfile(filename):
             LOG.debug('Parsing requirements from %s', filename)
+            with open(filename, 'rb') as fh:
+                for line in fh:
+                    LOG.debug(">> %s", line.strip())
             pip_requirements.extend(pip_req.parse_requirements(filename))
     return (pip_requirements,
             [req.req for req in pip_requirements])
