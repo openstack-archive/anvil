@@ -158,8 +158,7 @@ class YumDependencyHandler(base.DependencyHandler):
         # first place or that we did not just set automatically (since these
         # are not useful and should not be set in the first place).
         try:
-            raw_downloaded = sh.load_file(self.build_requires_filename)
-            _pip_reqs, downloaded_reqs = pip_helper.parse_requirements(raw_downloaded)
+            _pip_reqs, downloaded_reqs = pip_helper.read_requirement_files([self.build_requires_filename])
         except IOError as e:
             if e.errno != errno.ENOENT:
                 raise
@@ -572,7 +571,7 @@ class YumDependencyHandler(base.DependencyHandler):
         rpm_build_requires = six.StringIO()
         for (filename, req) in package_reqs:
             if filename in filtered_package_files:
-                build_requires.write("%s # %s\n" % (req, sh.basename(filename)))
+                build_requires.write("%s\n" % (req))
                 prebuilt_reqs = []
                 for line in ensure_prebuilt.get(req.key, []):
                     prebuilt_reqs.append(pip_helper.extract_requirement(line))
