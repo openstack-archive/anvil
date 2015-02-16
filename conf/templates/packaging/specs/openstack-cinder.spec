@@ -77,6 +77,10 @@ Requires:	sudo
 Requires:        ${i}
 #end for
 
+#for $i in $conflicts
+Conflicts:       ${i}
+#end for
+
 
 %description -n   python-cinder
 OpenStack Volume (codename Cinder) provides services to manage and

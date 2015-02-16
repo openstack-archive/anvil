@@ -93,9 +93,10 @@ class Helper(object):
 
     def _convert_names_to_rpm(self, python_names, only_name):
         if not python_names:
-            return {}
+            return {}, {}
         cmdline = self._start_cmdline() + ["--convert"] + python_names
         result = collections.defaultdict(set)
+        conflicts = collections.defaultdict(set)
         current_source = None
         for line in sh.execute(cmdline)[0].splitlines():
             # NOTE(harlowja): format is "Requires: rpm-name <=> X" or when
@@ -109,6 +110,9 @@ class Helper(object):
                     if positions:
                         line = line[0:positions[0]]
                 result[current_source].add(line.strip())
+            elif line.startswith("Conflicts:"):
+                line = line[len("Conflicts:"):]
+                conflicts[current_source].add(line.strip())
             elif line.startswith("# Source:"):
                 current_source = line[len("# Source:"):].strip()
 
@@ -120,10 +124,10 @@ class Helper(object):
         if extra_names:
             raise AssertionError("Extra python names were found during conversion: %s"
                                  % ', '.join(sorted(extra_names)))
-        return result
+        return result, conflicts
 
     def names_to_rpm_names(self, python_names):
-        mapping = self._convert_names_to_rpm(python_names, only_name=True)
+        mapping, conflicts = self._convert_names_to_rpm(python_names, only_name=True)
         result = {}
         for k, v in six.iteritems(mapping):
             assert len(v) == 1, ('There should be exactly one RPM name for '
@@ -132,11 +136,13 @@ class Helper(object):
             result[k] = v.pop()
         return result
 
-    def names_to_rpm_requires(self, python_names):
-        mapping = self._convert_names_to_rpm(python_names, only_name=False)
-        return [req
-                for value in six.itervalues(mapping)
-                for req in value]
+    def names_to_rpm_deps(self, python_names):
+        # Given a set of packages in Python namespace, return the equivalent
+        # Requires and Conflicts in RPM namespace.
+        requires, conflicts = self._convert_names_to_rpm(python_names, only_name=False)
+        requires_list = [req for value in six.itervalues(requires) for req in value]
+        conflicts_list = [req for value in six.itervalues(conflicts) for req in value]
+        return requires_list, conflicts_list
 
     def build_all_srpms(self, package_files, tracewriter, jobs):
         (_fn, content) = utils.load_template(sh.joinpths("packaging", "makefiles"), "source.mk")

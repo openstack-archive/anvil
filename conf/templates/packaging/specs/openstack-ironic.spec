@@ -95,6 +95,10 @@ Group: Applications/System
 Requires:        ${i}
 #end for
 
+#for $i in $conflicts
+Conflicts:       ${i}
+#end for
+
 %description -n python-%{python_name}
 This package contains the %{name} Python library.
 

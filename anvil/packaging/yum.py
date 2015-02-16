@@ -632,7 +632,9 @@ class YumDependencyHandler(base.DependencyHandler):
 
     def _write_spec_file(self, instance, rpm_name, template_name, params):
         requires_what = params.get('requires', [])
+        conflicts_what = params.get('conflicts', [])
         test_requires_what = params.get('test_requires', [])
+        test_conflicts_what = params.get('test_conflicts', [])
         egg_info = getattr(instance, 'egg_info', None)
         if egg_info:
 
@@ -640,15 +642,21 @@ class YumDependencyHandler(base.DependencyHandler):
                 try:
                     requires_python = [str(req) for req in egg_info[key]]
                 except KeyError:
-                    return []
+                    return [], []
                 else:
-                    return self.py2rpm_helper.names_to_rpm_requires(requires_python)
+                    return self.py2rpm_helper.names_to_rpm_deps(requires_python)
 
-            requires_what.extend(ei_names('dependencies'))
-            test_requires_what.extend(ei_names('test_dependencies'))
+            rpm_requires, rpm_conflicts = ei_names('dependencies')
+            requires_what.extend(rpm_requires)
+            conflicts_what.extend(rpm_conflicts)
+            rpm_test_requires, rpm_test_conflicts = ei_names('test_dependencies')
+            test_requires_what.extend(rpm_test_requires)
+            test_conflicts_what.extend(rpm_test_conflicts)
 
         params["requires"] = requires_what
+        params["conflicts"] = conflicts_what
         params["test_requires"] = test_requires_what
+        params["test_conflicts"] = test_conflicts_what
         params["epoch"] = self.OPENSTACK_EPOCH
         params["part_fn"] = lambda filename: sh.joinpths(
             settings.TEMPLATE_DIR,

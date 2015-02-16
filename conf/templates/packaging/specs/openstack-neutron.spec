@@ -134,6 +134,9 @@ Requires:	sudo
 Requires:	${i}
 #end for
 
+#for $i in $conflicts
+Conflicts:       ${i}
+#end for
 
 %description -n python-neutron
 Neutron provides an API to dynamically request and configure virtual

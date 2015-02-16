@@ -105,6 +105,10 @@ Group:           Development/Languages/Python
 Requires:        ${i}
 #end for
 
+#for $i in $conflicts
+Conflicts:       ${i}
+#end for
+
 %description -n  python-keystone
 Keystone is a Python implementation of the OpenStack
 (http://www.openstack.org) identity service API.

@@ -87,6 +87,10 @@ Group:           Development/Languages/Python
 Requires:        ${i}
 #end for
 
+#for $i in $conflicts
+Conflicts:       ${i}
+#end for
+
 %description -n  python-trove
 Trove is Database as a Service for Openstack. It's designed to run
 entirely on OpenStack, with the goal of allowing users to quickly and
