@@ -55,6 +55,10 @@ BuildRequires:    make
 Requires:        ${i}
 #end for
 
+#for $i in $conflicts
+Conflicts:       ${i}
+#end for
+
 %description
 This is a client for the OpenStack $apiname API. There's a Python API
 (the ${clientname}client module), and a command-line script (${clientname}).

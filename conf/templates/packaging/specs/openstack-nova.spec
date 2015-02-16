@@ -348,6 +348,10 @@ Requires:         sudo
 Requires:         ${i}
 #end for
 
+#for $i in $conflicts
+Conflicts:       ${i}
+#end for
+
 %description -n   python-nova
 OpenStack Compute (codename Nova) is open source software designed to
 provision and manage large networks of virtual machines, creating a

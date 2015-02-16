@@ -72,6 +72,10 @@ BuildRequires: python-scss
 Requires:         ${i}
 #end for
 
+#for $i in $conflicts
+Conflicts:       ${i}
+#end for
+
 %description
 Horizon is a Django application for providing Openstack UI components.
 It allows performing site administrator (viewing account resource usage,

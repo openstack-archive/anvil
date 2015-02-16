@@ -75,6 +75,10 @@ Group:            Applications/System
 Requires:	  ${i}
 #end for
 
+#for $i in $conflicts
+Conflicts:       ${i}
+#end for
+
 %description -n   python-glance
 OpenStack Image Service (code-named Glance) provides discovery,
 registration, and delivery services for virtual disk images.
