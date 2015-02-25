@@ -117,7 +117,10 @@ bootstrap_epel()
     # Installs the repository that will allow for installation of packages
     # from epel, see https://fedoraproject.org/wiki/EPEL for information
     # about what is epel.
-    [ -z "$EPEL_RPM_URL" ] && return 0
+    SRELEASE=`echo "$RELEASE" | cut -d'.' -f1`
+    EPELVER="EPEL${SRELEASE}_RPM_URL"
+    eval EPEL_RPM_URL=\$$EPELVER
+    [ -z "EPEL_RPM_URL" ] && return 0
     echo "Installing epel rpm from $EPEL_RPM_URL"
     cache_and_install_rpm_url "$EPEL_RPM_URL"
     return $?
@@ -267,7 +270,7 @@ get_os_info()
         if [ -f /etc/redhat-release ] ; then
             PKG="rpm"
             OSNAME=`cat /etc/redhat-release`
-            OSDIST=`cat /etc/redhat-release | sed -e 's/release.*$//g;s/\s//g'`
+            OSDIST=`cat /etc/redhat-release | awk '{print $1}'`
             PSUEDONAME=`cat /etc/redhat-release | sed s/.*\(// | sed s/\)//`
             RELEASE=`cat /etc/redhat-release | sed s/.*release\ // | sed s/\ .*//`
         elif [ -f /etc/debian_version ] ; then

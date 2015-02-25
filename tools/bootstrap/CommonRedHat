@@ -1,6 +1,7 @@
 # -*- sh -*-
 STEPS="selinux epel repos rpm_packages virtualenv"
-EPEL_RPM_URL="http://mirrors.kernel.org/fedora-epel/6/i386/epel-release-6-8.noarch.rpm"
+EPEL6_RPM_URL="http://mirrors.kernel.org/fedora-epel/6/i386/epel-release-6-8.noarch.rpm"
+EPEL7_RPM_URL="http://mirrors.kernel.org/fedora-epel/7/x86_64/e/epel-release-7-5.noarch.rpm"
 REPO_DIR=/etc/yum.repos.d/
 
 ## Uncomment the following to allow for additional dependencies to be found
