@@ -268,6 +268,9 @@ get_os_info()
             PKG="rpm"
             OSNAME=`cat /etc/redhat-release`
             OSDIST=`cat /etc/redhat-release | sed -e 's/release.*$//g;s/\s//g'`
+            if [ "$OSDIST" == "CentOSLinux" ] ; then
+                OSDIST="CentOS"
+            fi
             PSUEDONAME=`cat /etc/redhat-release | sed s/.*\(// | sed s/\)//`
             RELEASE=`cat /etc/redhat-release | sed s/.*release\ // | sed s/\ .*//`
             MAJOR_RELEASE=`cat /etc/redhat-release | sed s/.*release\ // | sed s/\ .*// | cut -f1 -d"."`
