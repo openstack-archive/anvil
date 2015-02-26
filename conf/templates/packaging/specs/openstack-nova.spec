@@ -684,8 +684,10 @@ fi
 
 %files compute
 %{_bindir}/nova-compute
+#if $older_than('2015.1')
 %{_bindir}/nova-baremetal-deploy-helper
 %{_bindir}/nova-baremetal-manage
+#end if
 #if $newer_than_eq('2014.2')
 %{_bindir}/nova-idmapshift
 #end if
