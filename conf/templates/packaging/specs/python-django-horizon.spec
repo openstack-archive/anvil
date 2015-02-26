@@ -31,6 +31,12 @@ Patch$idx: $fn
 # additional provides to be consistent with other django packages
 Provides:   django-horizon = %{epoch}:%{version}-%{release}
 
+%if 0%{?rhel}==6
+BuildRequires: Django14
+%else
+BuildRequires: python-django
+%endif
+
 BuildRequires: python-devel
 BuildRequires: python-setuptools
 
