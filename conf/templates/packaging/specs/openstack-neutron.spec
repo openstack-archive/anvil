@@ -590,6 +590,8 @@ Requires:         %{name}-plumgrid = %{epoch}:%{version}-%{release}
 Requires:         %{name}-ryu = %{epoch}:%{version}-%{release}
 Requires:         %{name}-nec = %{epoch}:%{version}-%{release}
 Requires:         %{name}-metaplugin = %{epoch}:%{version}-%{release}
+Requires:         %{name}-mlnx = %{epoch}:%{version}-%{release}
+Requires:         %{name}-nuage = %{epoch}:%{version}-%{release}
 Requires:         python-%{python_name} = %{epoch}:%{version}-%{release}
 
 # Test requirements:
