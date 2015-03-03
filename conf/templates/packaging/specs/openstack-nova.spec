@@ -684,7 +684,7 @@ fi
 
 %files compute
 %{_bindir}/nova-compute
-#if $older_than('2015.1')
+#if $older_than('2015.0')
 %{_bindir}/nova-baremetal-deploy-helper
 %{_bindir}/nova-baremetal-manage
 #end if
