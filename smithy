@@ -270,11 +270,13 @@ get_os_info()
             OSDIST=`cat /etc/redhat-release | sed -e 's/release.*$//g;s/\s//g'`
             PSUEDONAME=`cat /etc/redhat-release | sed s/.*\(// | sed s/\)//`
             RELEASE=`cat /etc/redhat-release | sed s/.*release\ // | sed s/\ .*//`
+            MAJOR_RELEASE=`cat /etc/redhat-release | sed s/.*release\ // | sed s/\ .*// | cut -f1 -d"."`
         elif [ -f /etc/debian_version ] ; then
             PKG="deb"
             OSDIST=`cat /etc/lsb-release | grep '^DISTRIB_ID' | awk -F= '{ print $2 }'`
             PSUEDONAME=`cat /etc/lsb-release | grep '^DISTRIB_CODENAME' | awk -F= '{ print $2 }'`
             RELEASE=`cat /etc/lsb-release | grep '^DISTRIB_RELEASE' | awk -F= '{ print $2 }'`
+            MAJOR_RELEASE=`cat /etc/lsb-release | grep '^DISTRIB_RELEASE' | awk -F= '{ print $2 }' | cut -f1 -d"."`
             OSNAME="$OSDIST $RELEASE ($PSUEDONAME)"
         fi
     fi
