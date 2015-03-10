@@ -258,6 +258,13 @@ greatest_version()
     done | sort --version-sort --reverse | head -n1
 }
 
+smallest_version()
+{
+    for arg in "$@"; do
+        echo "$arg"
+    done | sort --version-sort | head -n1
+}
+
 ## Identify which bootstrap configuration file to use: either set
 ## explicitly (BSCONF_FILE) or determined based on the os distribution:
 BSCONF_DIR="${BSCONF_DIR:-$(dirname $(readlink -f "$0"))/tools/bootstrap}"
@@ -344,9 +351,19 @@ if [ ! -f "$BSCONF_FILE" ]; then
 else
     MIN_RELEASE=${MIN_RELEASE:?"Error: MIN_RELEASE is undefined!"}
     SHORTNAME=${SHORTNAME:?"Error: SHORTNAME is undefined!"}
-    if [ "$RELEASE" != "$(greatest_version "$RELEASE" "$MIN_RELEASE")" ]; then
-        echo "This script must be run on $SHORTNAME $MIN_RELEASE+ and not $SHORTNAME $RELEASE." >&2
-        puke
+    if [ "$MIN_RELEASE" != "$RELEASE" ]; then
+        if [ "$RELEASE" != "$(greatest_version "$RELEASE" "$MIN_RELEASE")" ]; then
+            echo "This script must be run on $SHORTNAME $MIN_RELEASE and newer and not $SHORTNAME $RELEASE." >&2
+            puke
+        fi
+    fi
+    if [ -n "$MAX_RELEASE" ]; then
+        if [ "$MAX_RELEASE" != "$RELEASE" ]; then
+            if [ "$MAX_RELEASE" == "$(smallest_version "$MAX_RELEASE" "$RELEASE")" ]; then
+                echo "This script must be run on $SHORTNAME $MAX_RELEASE or older and not $SHORTNAME $RELEASE." >&2
+                puke
+            fi
+        fi
     fi
 fi
 
