@@ -267,6 +267,7 @@ class YumDependencyHandler(base.DependencyHandler):
 
         def list_src_rpms(path):
             path_files = []
+            restricted = set()
             if sh.isdir(path):
                 path_files = sh.listdir(path, filter_func=is_src_rpm)
             try:
@@ -275,12 +276,11 @@ class YumDependencyHandler(base.DependencyHandler):
             except IOError as e:
                 if e.errno != errno.ENOENT:
                     raise
-            else:
-                filtered = []
-                for path in path_files:
-                    if path in restricted:
-                        filtered.append(path)
-                path_files = filtered
+            filtered = []
+            for path in path_files:
+                if path in restricted:
+                    filtered.append(path)
+            path_files = filtered
             return sorted(path_files)
 
         def move_rpms(repo_name):
