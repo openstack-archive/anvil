@@ -48,6 +48,8 @@ dependency_handler:
         - "%global _python_bytecompile_errors_terminate_build 0"
       tablib:
         - "%global _python_bytecompile_errors_terminate_build 0"
+      linecache2:
+        - "%global _python_bytecompile_errors_terminate_build 0"
 components:
     ceilometer-client:
         python_entrypoints: True
