@@ -96,7 +96,7 @@ Group:            Applications/System
 Requires:         ${i}
 #end for
 
-#for $i in $conflicts
+#for $i in $conflicts	
 Conflicts:       ${i}
 #end for
 

@@ -128,7 +128,7 @@ Requires:         ${i}
 Requires(pre):   shadow-utils
 %endif
 
-#for $i in $conflicts
+#for $i in $conflicts	
 Conflicts:       ${i}
 #end for
 
