@@ -96,10 +96,6 @@ Group:            Applications/System
 Requires:         ${i}
 #end for
 
-#for $i in $conflicts
-Conflicts:       ${i}
-#end for
-
 %description -n   python-ceilometer
 OpenStack ceilometer provides services to measure and
 collect metrics from OpenStack components.

@@ -134,9 +134,6 @@ Requires:	sudo
 Requires:	${i}
 #end for
 
-#for $i in $conflicts
-Conflicts:       ${i}
-#end for
 
 %description -n python-neutron
 Neutron provides an API to dynamically request and configure virtual
@@ -590,8 +587,6 @@ Requires:         %{name}-plumgrid = %{epoch}:%{version}-%{release}
 Requires:         %{name}-ryu = %{epoch}:%{version}-%{release}
 Requires:         %{name}-nec = %{epoch}:%{version}-%{release}
 Requires:         %{name}-metaplugin = %{epoch}:%{version}-%{release}
-Requires:         %{name}-mlnx = %{epoch}:%{version}-%{release}
-Requires:         %{name}-nuage = %{epoch}:%{version}-%{release}
 Requires:         python-%{python_name} = %{epoch}:%{version}-%{release}
 
 # Test requirements:
@@ -787,19 +782,6 @@ if [ \$1 -eq 0 ] ; then
 %else
         /usr/bin/systemctl --no-reload disable %{daemon_prefix}-\${svc}.service > /dev/null 2>&1 || :
         /usr/bin/systemctl stop %{daemon_prefix}-\${svc}.service > /dev/null 2>&1 || :
-%endif
-    done
-    exit 0
-fi
-
-%postun $key
-if [ \$1 -ge 1 ] ; then
-    # Package upgrade, not uninstall
-    for svc in $daemon_list; do
-%if ! (0%{?rhel} > 6)
-        /sbin/service %{daemon_prefix}-\${svc} condrestart &>/dev/null
-%else
-        /usr/bin/systemctl try-restart %{daemon_prefix}-\${svc}.service #>/dev/null 2>&1 || :
 %endif
     done
     exit 0

@@ -128,10 +128,6 @@ Requires:         ${i}
 Requires(pre):   shadow-utils
 %endif
 
-#for $i in $conflicts
-Conflicts:       ${i}
-#end for
-
 %description common
 Components common to all OpenStack Heat services
 
