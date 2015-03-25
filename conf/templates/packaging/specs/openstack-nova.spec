@@ -349,9 +349,9 @@ Requires:         sudo
 Requires:         ${i}
 #end for
 
-#for $i in $conflicts
-Conflicts:       ${i}
-#end for
+#for $i in $conflicts 		
+Conflicts:       ${i}		
+#end for 
 
 %description -n   python-nova
 OpenStack Compute (codename Nova) is open source software designed to
@@ -622,18 +622,6 @@ if [ \$1 -eq 0 ] ; then
     exit 0
 fi
 
-%postun $key
-if [ \$1 -ge 1 ] ; then
-    # Package upgrade, not uninstall
-    for svc in $daemon_list; do
-%if ! (0%{?rhel} > 6)
-        /sbin/service %{daemon_prefix}-\${svc} condrestart &>/dev/null
-%else
-        /usr/bin/systemctl try-restart %{daemon_prefix}-\${svc}.service #>/dev/null 2>&1 || :
-%endif
-    done
-    exit 0
-fi
 #end for
 %endif
 
@@ -684,10 +672,8 @@ fi
 
 %files compute
 %{_bindir}/nova-compute
-#if $older_than('2015.0')
 %{_bindir}/nova-baremetal-deploy-helper
 %{_bindir}/nova-baremetal-manage
-#end if
 #if $newer_than_eq('2014.2')
 %{_bindir}/nova-idmapshift
 #end if

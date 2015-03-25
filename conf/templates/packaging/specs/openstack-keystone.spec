@@ -105,9 +105,9 @@ Group:           Development/Languages/Python
 Requires:        ${i}
 #end for
 
-#for $i in $conflicts
-Conflicts:       ${i}
-#end for
+#for $i in $conflicts 		
+Conflicts:       ${i}		
+#end for 
 
 %description -n  python-keystone
 Keystone is a Python implementation of the OpenStack
@@ -200,19 +200,7 @@ if [ $1 = 0 ] ; then
 %endif
     exit 0
 fi
-
-%postun
-if [ $1 -ge 1 ] ; then
-    # Package upgrade, not uninstall
-%if ! (0%{?rhel} > 6)
-    /sbin/service %{daemon_prefix} condrestart &>/dev/null
-%else
-    /usr/bin/systemctl try-restart %{daemon_prefix}.service #>/dev/null 2>&1 || :
 %endif
-    exit 0
-fi
-%endif
-
 
 %files
 %defattr(-,root,root,-)

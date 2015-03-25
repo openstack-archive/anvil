@@ -75,9 +75,9 @@ Group:            Applications/System
 Requires:	  ${i}
 #end for
 
-#for $i in $conflicts
-Conflicts:       ${i}
-#end for
+#for $i in $conflicts 		
+Conflicts:       ${i}		
+#end for 
 
 %description -n   python-glance
 OpenStack Image Service (code-named Glance) provides discovery,
@@ -243,22 +243,6 @@ if [ $1 = 0 ] ; then
     exit 0
 fi
 
-
-%postun
-if [ $1 -ge 1 ] ; then
-    # Package upgrade, not uninstall
-%if 0%{?rhel} > 6
-    /usr/bin/systemctl daemon-reload >/dev/null 2>&1 || :
-%endif
-    for svc in api registry scrubber; do
-%if ! (0%{?rhel} > 6)
-        /sbin/service %{daemon_prefix}-${svc} condrestart &>/dev/null
-%else
-        /usr/bin/systemctl try-restart %{daemon_prefix}-${svc}.service #>/dev/null 2>&1 || :
-%endif
-    done
-    exit 0
-fi
 %endif
 
 
