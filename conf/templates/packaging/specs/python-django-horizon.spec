@@ -5,7 +5,10 @@
 # * Alan Pevec <apevec@redhat.com>
 # * Cole Robinson <crobinso@redhat.com>
 
+%global python_name horizon
 %global os_version $version
+%global no_tests $no_tests
+%global tests_data_dir %{_datarootdir}/%{python_name}-tests
 
 %global with_compression 1
 
@@ -115,6 +118,30 @@ Openstack Dashboard is a web user interface for Openstack. The package
 provides a reference implementation using the Django Horizon project,
 mostly consisting of JavaScript and CSS to tie it altogether as a
 standalone site.
+
+%if ! 0%{?no_tests}
+%package -n       python-%{python_name}-tests
+Summary:          Tests for Horizon
+Group:            Development/Libraries
+
+Requires:         %{name} = %{epoch}:%{version}-%{release}
+Requires:         openstack-dashboard = %{epoch}:%{version}-%{release}
+
+# Test requirements:
+#for $i in $test_requires
+Requires:         ${i}
+#end for
+
+%description -n python-%{python_name}-tests
+Horizon is a Django application for providing Openstack UI components.
+It allows performing site administrator (viewing account resource usage,
+configuring users, accounts, quotas, flavors, etc.) and end user
+operations (start/stop/delete instances, create/restore snapshots, view
+instance VNC console, etc.)
+
+This package contains unit and functional tests for Horizon, with
+simple runner (%{python_name}-make-test-env).
+%endif
 
 %if 0%{?with_doc}
 %package doc
@@ -273,7 +300,7 @@ install -d -m 755 %{buildroot}%{_sysconfdir}/openstack-dashboard
 # Copy everything to /usr/share
 mv %{buildroot}%{python_sitelib}/openstack_dashboard \
    %{buildroot}%{_datadir}/openstack-dashboard
-mv manage.py %{buildroot}%{_datadir}/openstack-dashboard
+cp manage.py %{buildroot}%{_datadir}/openstack-dashboard
 rm -rf %{buildroot}%{python_sitelib}/openstack_dashboard
 
 # remove unnecessary .po files
@@ -293,6 +320,11 @@ install -d -m 755 %{buildroot}%{_datadir}/openstack-dashboard/static
 cp -a openstack_dashboard/static/* %{buildroot}%{_datadir}/openstack-dashboard/static
 cp -a horizon/static/* %{buildroot}%{_datadir}/openstack-dashboard/static
 cp -a static/* %{buildroot}%{_datadir}/openstack-dashboard/static
+
+%if ! 0%{?no_tests}
+install -d -m 755 %{buildroot}%{_bindir}
+#include $part_fn("install_tests.sh")
+%endif
 
 %clean
 rm -rf %{buildroot}
@@ -354,6 +386,12 @@ rm -rf %{buildroot}
 %dir %attr(0750, root, apache) %{_sysconfdir}/openstack-dashboard
 %config(noreplace) %{_sysconfdir}/httpd/conf.d/openstack-dashboard.conf
 %config(noreplace) %attr(0640, root, apache) %{_sysconfdir}/openstack-dashboard/local_settings
+%endif
+
+%if ! 0%{?no_tests}
+%files -n python-%{python_name}-tests
+%{tests_data_dir}
+%{_bindir}/%{python_name}-make-test-env
 %endif
 
 %if 0%{?with_doc}
