@@ -133,8 +133,12 @@ Requires:         vconfig
 # tunctl is needed where `ip tuntap` is not available
 %if ! (0%{?fedora} > 12 || 0%{?rhel} > 6)
 Requires:         tunctl
-%endif
 Requires:         libguestfs-mount >= 1.7.17
+%else
+#latest libguestfs-tools for cent7 doesn't provide requires for
+#libguestfs-mount
+Requires:         libguestfs-tools-c >= 1.7.17
+%endif
 # The fuse dependency should be added to libguestfs-mount
 Requires:         fuse
 Requires:         libvirt >= 0.8.7
