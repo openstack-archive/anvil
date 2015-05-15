@@ -1,4 +1,7 @@
 # Settings for component django-openstack-auth
 ---
 
+# Instead of naming this components package django-openstack-auth, it will be named this instead
+build_name: "python-django-openstack-auth"
+
 ...
