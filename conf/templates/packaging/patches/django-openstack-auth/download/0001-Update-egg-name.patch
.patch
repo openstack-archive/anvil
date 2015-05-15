@@ -1,0 +1,27 @@
+From a4868492924512bbd2aaefbcadc914924e1aaa95 Mon Sep 17 00:00:00 2001
+From: lin-hua-cheng <os.lcheng@gmail.com>
+Date: Mon, 15 Jun 2015 12:14:34 -0700
+Subject: [PATCH] Update egg name to use - instead of _
+
+rpm packaging expects egg name of django-openstack-auth when
+building from spec file.
+
+Change-Id: Ibb327f532745fe2972d016437ef65862ab0af55e
+---
+ setup.cfg | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/setup.cfg b/setup.cfg
+index ccc43c3..940ae7f 100644
+--- a/setup.cfg
++++ b/setup.cfg
+@@ -1,5 +1,5 @@
+ [metadata]
+-name = django_openstack_auth
++name = django-openstack-auth
+ summary = Django authentication backend for use with OpenStack Identity
+ description-file =
+     README.rst
+-- 
+1.9.1
+
