@@ -1,0 +1,1 @@
+#include "../openstack-heat.spec"

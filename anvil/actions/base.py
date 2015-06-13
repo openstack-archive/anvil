@@ -52,8 +52,9 @@ class Action(object):
     __meta__ = abc.ABCMeta
     needs_sudo = True
 
-    def __init__(self, name, distro, root_dir, cli_opts):
+    def __init__(self, name, distro, root_dir, cli_opts, origins):
         self.distro = distro
+        self.origins = origins
         self.name = name
         # Root directory where all files/downloads will be based at
         self.root_dir = root_dir
@@ -63,7 +64,7 @@ class Action(object):
         # Yamls are loaded (with its reference links) using this instance at the
         # given component directory where component configuration will be found.
         self.config_loader = cfg.YamlMergeLoader(root_dir,
-                                                 origins_path=cli_opts['origins_fn'])
+                                                 origins_path=origins.filename)
 
         # Stored for components to get any options
         self.cli_opts = cli_opts

@@ -1,0 +1,1 @@
+#include "../openstack-keystone.spec"

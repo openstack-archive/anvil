@@ -1,0 +1,1 @@
+#include "../python-commonclient.spec"

@@ -49,10 +49,10 @@ class VenvDependencyHandler(base.DependencyHandler):
     _PREQ_PKGS = frozenset(['pbr'])
 
     def __init__(self, distro, root_dir,
-                 instances, opts, group, prior_groups):
+                 instances, opts, group, prior_groups, origins):
         super(VenvDependencyHandler, self).__init__(distro, root_dir,
                                                     instances, opts, group,
-                                                    prior_groups)
+                                                    prior_groups, origins)
         self.cache_dir = sh.joinpths(self.root_dir, "pip-cache")
 
     def _venv_directory_for(self, instance):

@@ -58,8 +58,9 @@ class DependencyHandler(object):
     PIP_DOWNLOAD_DELAY = 10
 
     def __init__(self, distro, root_dir,
-                 instances, opts, group, prior_groups):
+                 instances, opts, group, prior_groups, origins):
         self.distro = distro
+        self.origins = origins
         self.root_dir = root_dir
         self.instances = instances
         self.prior_groups = prior_groups
