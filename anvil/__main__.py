@@ -127,7 +127,8 @@ def run(args):
     runner = runner_cls(distro=dist,
                         root_dir=root_dir,
                         name=action,
-                        cli_opts=args)
+                        cli_opts=args,
+                        origins=origins)
 
     # Now that the settings are known to work, store them for next run
     store_current_settings(saved_args)

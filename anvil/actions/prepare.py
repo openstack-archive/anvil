@@ -40,7 +40,8 @@ class PrepareAction(action.Action):
                                                           self.root_dir,
                                                           instances.values(),
                                                           self.cli_opts,
-                                                          group, prior_groups)
+                                                          group, prior_groups,
+                                                          self.origins)
             removals = states.reverts("download")
             self._run_phase(
                 action.PhaseFunctors(

@@ -39,6 +39,7 @@ class BuildAction(action.Action):
                                                           self.root_dir,
                                                           instances.values(),
                                                           self.cli_opts,
-                                                          group, prior_groups)
+                                                          group, prior_groups,
+                                                          self.origins)
             dependency_handler.build_binary()
             prior_groups.append((group, instances))

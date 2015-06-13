@@ -16,6 +16,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import os
+
 import jsonpatch
 
 from anvil import utils
@@ -26,6 +28,7 @@ class Origin(dict):
         super(Origin, self).__init__()
         self.filename = filename
         self.patched = patched
+        self.release = os.path.basename(filename).split("-")[0]
 
 
 def load(filename, patch_file=None):

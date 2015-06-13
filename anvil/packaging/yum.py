@@ -84,10 +84,10 @@ class YumDependencyHandler(base.DependencyHandler):
     JOBS = 2
 
     def __init__(self, distro, root_dir,
-                 instances, opts, group, prior_groups):
+                 instances, opts, group, prior_groups, origins):
         super(YumDependencyHandler, self).__init__(distro, root_dir,
                                                    instances, opts, group,
-                                                   prior_groups)
+                                                   prior_groups, origins)
         # Various paths we will use while operating
         self.rpmbuild_dir = sh.joinpths(self.deps_dir, "rpmbuild")
         self.prebuild_dir = sh.joinpths(self.deps_dir, "prebuild")
@@ -630,6 +630,28 @@ class YumDependencyHandler(base.DependencyHandler):
             'newer_than': newer_than,
         }
 
+    def _find_spec_template(self, instance, template_name):
+        base_path = sh.joinpths(settings.TEMPLATE_DIR,
+                                self.SPEC_TEMPLATE_DIR)
+        maybe_paths = [
+            sh.joinpths(base_path, template_name),
+        ]
+        if self.origins.release:
+            maybe_paths.append(sh.joinpths(base_path,
+                                           self.origins.release,
+                                           template_name))
+            maybe_paths.append(sh.joinpths(base_path,
+                                           self.origins.release,
+                                           instance.name,
+                                           template_name))
+        maybe_paths.reverse()
+        for path in maybe_paths:
+            if sh.isfile(path):
+                return path
+        raise IOError("Unable to find spec template file for %s (%s): looked"
+                      " for files at %s (in that order)"
+                      % (instance.name, template_name, maybe_paths))
+
     def _write_spec_file(self, instance, rpm_name, template_name, params):
         requires_what = params.get('requires', [])
         conflicts_what = params.get('conflicts', [])
@@ -653,6 +675,7 @@ class YumDependencyHandler(base.DependencyHandler):
             test_requires_what.extend(rpm_test_requires)
             test_conflicts_what.extend(rpm_test_conflicts)
 
+        spec_template_filename = self._find_spec_template(instance, template_name)
         params["requires"] = requires_what
         params["conflicts"] = conflicts_what
         params["test_requires"] = test_requires_what
@@ -661,10 +684,10 @@ class YumDependencyHandler(base.DependencyHandler):
         params["part_fn"] = lambda filename: sh.joinpths(
             settings.TEMPLATE_DIR,
             self.SPEC_TEMPLATE_DIR,
-            filename)
+            'helpers', filename)
         parsed_version = pkg_resources.parse_version(params["version"])
         params.update(self._make_spec_functors(parsed_version))
-        content = utils.load_template(self.SPEC_TEMPLATE_DIR, template_name)[1]
+        content = utils.load_template(spec_template_filename)[1]
         spec_filename = sh.joinpths(self.rpmbuild_dir, "SPECS", "%s.spec" % rpm_name)
         sh.write_file(spec_filename, utils.expand_template(content, params),
                       tracewriter=self.tracewriter)
