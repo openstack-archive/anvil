@@ -634,6 +634,10 @@ def build_rpm_spec(pkg_key, pkg_name, options, **kwargs):
             buf.write_nl("%s: %s" % (tag_name,
                                      one_line(tag_value, max_len=-1)))
         buf.write_nl()
+    buf.write_nl('#for $idx, $fn in enumerate($patches)')
+    buf.write_nl('Patch$idx: $fn')
+    buf.write_nl('#end for')
+    buf.write_nl()
     for blob in [kwargs.get('rpm_requires'), kwargs.get('rpm_conflicts')]:
         if blob:
             buf.write_nl(blob)
