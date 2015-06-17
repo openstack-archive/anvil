@@ -186,13 +186,17 @@ components:
             ovs-cleanup: openstack-neutron-openvswitch
             rpc-zmq-receiver: openstack-neutron
             server: openstack-neutron
-            vpn-agent: openstack-neutron-vpn-agent
             sriov-nic-agent: openstack-neutron-sriov-nic-agent
             mlnx-agent: openstack-neutron-mlnx
             metering-agent: openstack-neutron-metering-agen
             cisco-cfg-agent: openstack-neutron-cisco
-            lbaas-agent: openstack-neutron
             netns-cleanup: openstack-neutron
+    neutron-lbaas:
+        python_entrypoints: True
+    neutron-fwaas:
+        python_entrypoints: True
+    neutron-vpnaas:
+        python_entrypoints: True
     swift-client:
         python_entrypoints: True
     trove:
