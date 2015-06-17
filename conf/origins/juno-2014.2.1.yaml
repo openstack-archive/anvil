@@ -72,6 +72,15 @@ neutron-client:
 neutron:
   repo: git://github.com/openstack/neutron.git
   tag: 2014.2.1
+neutron-lbaas:
+  repo: git://github.com/openstack/neutron-lbaas.git
+  tag: 2014.2.1
+neutron-fwaas:
+  repo: git://github.com/openstack/neutron-fwaas.git
+  tag: 2014.2.1
+neutron-vpnaas:
+  repo: git://github.com/openstack/neutron-vpnaas.git
+  tag: 2014.2.1
 swift-client:
   repo: git://github.com/openstack/python-swiftclient.git
   tag: 2.3.1
