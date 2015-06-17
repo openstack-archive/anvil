@@ -107,9 +107,13 @@ rm -rf %{buildroot}/var/lib/heat/.dummy
 rm -f %{buildroot}/usr/bin/cinder-keystone-setup
 %if ! 0%{?usr_only}
 
+#end raw
+#if $older_than('2015.1')
 cp etc/heat/heat.conf.sample etc/heat/heat.conf
 
 install -p -D -m 640 etc/heat/heat.conf %{buildroot}/%{_sysconfdir}/heat/heat.conf
+#end if
+#raw
 install -p -D -m 640 etc/heat/api-paste.ini %{buildroot}/%{_sysconfdir}/heat/api-paste.ini
 install -p -D -m 640 etc/heat/policy.json %{buildroot}/%{_sysconfdir}/heat/policy.json
 install -p -D -m 640 %{SOURCE20} %{buildroot}/%{_sysconfdir}/logrotate.d/heat
@@ -149,7 +153,9 @@ Components common to all OpenStack Heat services
 %dir %attr(0755,heat,root) %{_sharedstatedir}/heat
 %dir %attr(0755,heat,root) %{_sysconfdir}/heat
 %dir %attr(0755,heat,root) /var/run/heat
+#if $older_than('2015.1')
 %config(noreplace) %attr(0640, root, heat) %{_sysconfdir}/heat/heat.conf
+#end if
 %config(noreplace) %attr(0640, root, heat) %{_sysconfdir}/heat/api-paste.ini
 %config(noreplace) %attr(0640, root, heat) %{_sysconfdir}/heat/policy.json
 %config(noreplace) %{_sysconfdir}/logrotate.d/heat

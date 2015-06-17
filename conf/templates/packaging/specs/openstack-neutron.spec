@@ -36,46 +36,66 @@ Source2:	neutron-sudoers
 Source10:	neutron-server.init
 Source11:	neutron-linuxbridge-agent.init
 Source12:	neutron-openvswitch-agent.init
+#if $older_than('2015.1')
 Source13:	neutron-ryu-agent.init
+#end if
 Source14:	neutron-nec-agent.init
 Source15:	neutron-dhcp-agent.init
 Source16:	neutron-l3-agent.init
 Source17:	neutron-ovs-cleanup.init
+#if $older_than('2015.1')
 Source18:	neutron-hyperv-agent.init
+#end if
 #if $older_than('2014.2')
 Source19:	neutron-rpc-zmq-receiver.init
 #end if
 Source20:	neutron-metadata-agent.init
 #if $newer_than('2014.2')
+#if $older_than('2015.1')
 Source21:       neutron-lbaas-agent.init
+#end if
 Source22:       neutron-mlnx-agent.init
+#if $older_than('2015.1')
 Source23:       neutron-vpn-agent.init
+#end if
 Source24:       neutron-metering-agent.init
 Source25:       neutron-sriov-nic-agent.init
+#if $older_than('2015.1')
 Source26:       neutron-cisco-cfg-agent.init
+#end if
 Source27:       neutron-netns-cleanup.init
 #end if
 %else
 Source10:      neutron-server.service
 Source11:      neutron-linuxbridge-agent.service
 Source12:      neutron-openvswitch-agent.service
+#if $older_than('2015.1')
 Source13:      neutron-ryu-agent.service
+#end if
 Source14:      neutron-nec-agent.service
 Source15:      neutron-dhcp-agent.service
 Source16:      neutron-l3-agent.service
 Source17:      neutron-ovs-cleanup.service
+#if $older_than('2015.1')
 Source18:      neutron-hyperv-agent.service
+#end if
 #if $older_than('2014.2')
 Source19:      neutron-rpc-zmq-receiver.service
 #end if
 Source20:      neutron-metadata-agent.service
 #if $newer_than('2014.2')
+#if $older_than('2015.1')
 Source21:      neutron-lbaas-agent.service
+#end if
 Source22:      neutron-mlnx-agent.service
+#if $older_than('2015.1')
 Source23:      neutron-vpn-agent.service
+#end if
 Source24:      neutron-metering-agent.service
 Source25:      neutron-sriov-nic-agent.service
+#if $older_than('2015.1')
 Source26:      neutron-cisco-cfg-agent.service
+#end if
 Source27:      neutron-netns-cleanup.service
 #end if
 %endif
@@ -144,6 +164,20 @@ networks.
 
 This package contains the neutron Python library.
 
+#if $newer_than_eq('2015.1')
+%package -n openstack-neutron-common
+Summary:        Neutron common files
+Group:          Applications/System
+
+Requires:       python-neutron = %{epoch}:%{version}-%{release}
+
+
+%description -n openstack-neutron-common
+Neutron provides an API to dynamically request and configure virtual
+networks.
+
+This package contains Neutron common files.
+#end if
 
 %package -n openstack-neutron-bigswitch
 Summary:	Neutron Big Switch plugin
@@ -152,8 +186,12 @@ Group:		Applications/System
 Provides:       openstack-neutron-bigswitch = %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-bigswitch < %{epoch}:%{version}-%{release}
 
+#if $older_than('2015.1')
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
-
+#end if
+#if $newer_than_eq('2015.1')
+Requires:	openstack-neutron-common = %{epoch}:%{version}-%{release}
+#end if
 
 %description -n openstack-neutron-bigswitch
 Neutron provides an API to dynamically request and configure virtual
@@ -172,7 +210,12 @@ Provides:       openstack-neutron-brocade = %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-brocade < %{epoch}:%{version}-%{release}
 
 
+#if $older_than('2015.1')
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
+#end if
+#if $newer_than_eq('2015.1')
+Requires:	openstack-neutron-common = %{epoch}:%{version}-%{release}
+#end if
 
 
 %description -n openstack-neutron-brocade
@@ -182,7 +225,6 @@ networks.
 This package contains the neutron plugin that implements virtual
 networks using Brocade VCS switches running NOS.
 
-
 %package -n openstack-neutron-cisco
 Summary:	Neutron Cisco plugin
 Group:		Applications/System
@@ -190,7 +232,12 @@ Group:		Applications/System
 Provides:       openstack-neutron-cisco = %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-cisco < %{epoch}:%{version}-%{release}
 
+#if $older_than('2015.1')
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
+#end if
+#if $newer_than_eq('2015.1')
+Requires:	openstack-neutron-common = %{epoch}:%{version}-%{release}
+#end if
 Requires:	python-configobj
 
 
@@ -201,7 +248,6 @@ networks.
 This package contains the neutron plugin that implements virtual
 networks using Cisco UCS and Nexus.
 
-
 #if $newer_than_eq('2014.1')
 %package -n openstack-neutron-embrane
 Summary:	Neutron Embrane plugin
@@ -210,7 +256,12 @@ Group:		Applications/System
 Provides:       openstack-neutron-embrane = %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-embrane < %{epoch}:%{version}-%{release}
 
+#if $older_than('2015.1')
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
+#end if
+#if $newer_than_eq('2015.1')
+Requires:	openstack-neutron-common = %{epoch}:%{version}-%{release}
+#end if
 Requires:	python-configobj
 
 
@@ -222,7 +273,8 @@ This package contains the neutron plugin that implements virtual
 networks using Embrane heleos platform.
 #end if
 
-
+#Upstream bascially rm -rf's this directory now... excuding going forward
+#if $newer_than_eq('2015.1')
 %package -n openstack-neutron-hyperv
 Summary:	Neutron Hyper-V plugin
 Group:		Applications/System
@@ -230,7 +282,12 @@ Group:		Applications/System
 Provides:       openstack-neutron-hyperv = %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-hyperv < %{epoch}:%{version}-%{release}
 
+#if $older_than('2015.1')
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
+#end if
+#if $newer_than_eq('2015.1')
+Requires:	openstack-neutron-common = %{epoch}:%{version}-%{release}
+#end if
 
 
 %description -n openstack-neutron-hyperv
@@ -239,6 +296,7 @@ networks.
 
 This package contains the neutron plugin that implements virtual
 networks using Microsoft Hyper-V.
+#end if
 
 #if $newer_than_eq('2014.1.b1')
 %package -n openstack-neutron-ibm
@@ -267,7 +325,12 @@ Provides:       openstack-neutron-linuxbridge = %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-linuxbridge < %{epoch}:%{version}-%{release}
 
 Requires:	bridge-utils
+#if $older_than('2015.1')
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
+#end if
+#if $newer_than_eq('2015.1')
+Requires:	openstack-neutron-common = %{epoch}:%{version}-%{release}
+#end if
 Requires:	python-pyudev
 
 
@@ -300,7 +363,12 @@ Provides:       openstack-neutron-midonet = %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-midonet < %{epoch}:%{version}-%{release}
 
 
+#if $older_than('2015.1')
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
+#end if
+#if $newer_than_eq('2015.1')
+Requires:	openstack-neutron-common = %{epoch}:%{version}-%{release}
+#end if
 
 
 %description -n openstack-neutron-midonet
@@ -318,7 +386,12 @@ Group:		Applications/System
 Provides:       openstack-neutron-ml2 = %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-ml2 < %{epoch}:%{version}-%{release}
 
+#if $older_than('2015.1')
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
+#end if
+#if $newer_than_eq('2015.1')
+Requires:	openstack-neutron-common = %{epoch}:%{version}-%{release}
+#end if
 Requires:       python-stevedore >= 0.9
 
 
@@ -330,18 +403,33 @@ This package contains a neutron plugin that allows the use of drivers to
 support separately extensible sets of network types and the mechanisms
 for accessing those types.
 
-
+#if $older_than('2015.1')
 %package -n openstack-neutron-mlnx
+#end if
+#if $newer_than_eq('2015.1')
+%package -n openstack-neutron-mellanox
+#end if
 Summary:	Neutron Mellanox plugin
 Group:		Applications/System
 
 Provides:       openstack-neutron-mlnx = %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-mlnx < %{epoch}:%{version}-%{release}
 
+#if $older_than('2015.1')
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
+#end if
+#if $newer_than_eq('2015.1')
+Requires:	openstack-neutron-common = %{epoch}:%{version}-%{release}
+#end if
 
 
+#if $older_than('2015.1')
 %description -n openstack-neutron-mlnx
+#end if
+#if $newer_than_eq('2015.1')
+%description -n openstack-neutron-mellanox
+#end if
+
 Neutron provides an API to dynamically request and configure virtual
 networks.
 
@@ -357,7 +445,12 @@ Group:		Applications/System
 Provides:       openstack-neutron-nicira = %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-nicira < %{epoch}:%{version}-%{release}
 
+#if $older_than('2015.1')
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
+#end if
+#if $newer_than_eq('2015.1')
+Requires:	openstack-neutron-common = %{epoch}:%{version}-%{release}
+#end if
 
 
 %description -n openstack-neutron-nicira
@@ -377,7 +470,12 @@ Group:		Applications/System
 Provides:       openstack-neutron-nuage = %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-nuage < %{epoch}:%{version}-%{release}
 
+#if $older_than('2015.1')
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
+#end if
+#if $newer_than_eq('2015.1')
+Requires:	openstack-neutron-common = %{epoch}:%{version}-%{release}
+#end if
 Requires:	python-configobj
 
 
@@ -397,7 +495,12 @@ Group:          Applications/System
 
 Provides:       openstack-neutron-ofagent = %{epoch}:%{version}-%{release}
 
-Requires:       openstack-neutron = %{epoch}:%{version}-%{release}
+#if $older_than('2015.1')
+Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
+#end if
+#if $newer_than_eq('2015.1')
+Requires:	openstack-neutron-common = %{epoch}:%{version}-%{release}
+#end if
 
 
 %description -n openstack-neutron-ofagent
@@ -413,7 +516,12 @@ networks using ofagent.
 Summary:        Neutron OpenContrail plugin
 Group:          Applications/system
 
-Requires:       openstack-neutron = %{epoch}:%{version}-%{release}
+#if $older_than('2015.1')
+Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
+#end if
+#if $newer_than_eq('2015.1')
+Requires:	openstack-neutron-common = %{epoch}:%{version}-%{release}
+#end if
 
 
 %description -n openstack-neutron-opencontrail
@@ -428,7 +536,12 @@ Group:		Applications/System
 Provides:       openstack-neutron-openvswitch = %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-openvswitch < %{epoch}:%{version}-%{release}
 
+#if $older_than('2015.1')
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
+#end if
+#if $newer_than_eq('2015.1')
+Requires:	openstack-neutron-common = %{epoch}:%{version}-%{release}
+#end if
 Requires:	openvswitch
 
 
@@ -446,7 +559,12 @@ Group:          Applications/System
 
 Provides:       openstack-neutron-oneconvergence-nvsd = %{epoch}:%{version}-%{release}
 
-Requires:       openstack-neutron = %{epoch}:%{version}-%{release}
+#if $older_than('2015.1')
+Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
+#end if
+#if $newer_than_eq('2015.1')
+Requires:	openstack-neutron-common = %{epoch}:%{version}-%{release}
+#end if
 
 
 %description -n openstack-neutron-oneconvergence-nvsd
@@ -457,6 +575,22 @@ This package contains the neutron plugin that implements virtual
 networks using oneconvergence nvsd.
 #end if
 
+#if $newer_than_eq('2015.1')
+%package -n openstack-neutron-ovsvapp
+Summary:	Neutron OVSvApp vSphere plugin
+Group:		Applications/System
+
+Requires:	openstack-neutron-common = %{epoch}:%{version}-%{release}
+
+
+%description ovsvapp
+Neutron provides an API to dynamically request and configure virtual
+networks.
+
+This package contains the Neutron plugin that implements virtual
+networks using OVSvApp vSphere L2 agent.
+#end if
+
 %package -n openstack-neutron-plumgrid
 Summary:	Neutron PLUMgrid plugin
 Group:		Applications/System
@@ -464,7 +598,12 @@ Group:		Applications/System
 Provides:       openstack-neutron-plumgrid = %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-plumgrid < %{epoch}:%{version}-%{release}
 
+#if $older_than('2015.1')
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
+#end if
+#if $newer_than_eq('2015.1')
+Requires:	openstack-neutron-common = %{epoch}:%{version}-%{release}
+#end if
 
 
 %description -n openstack-neutron-plumgrid
@@ -474,7 +613,7 @@ networks.
 This package contains the neutron plugin that implements virtual
 networks using the PLUMgrid platform.
 
-
+#if $older_than('2015.1')
 %package -n openstack-neutron-ryu
 Summary:	Neutron Ryu plugin
 Group:		Applications/System
@@ -484,20 +623,25 @@ Obsoletes:      openstack-quantum-ryu < %{epoch}:%{version}-%{release}
 
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
 
-
 %description -n openstack-neutron-ryu
 Neutron provides an API to dynamically request and configure virtual
 networks.
 
 This package contains the neutron plugin that implements virtual
 networks using the Ryu Network Operating System.
+#end if
 
 #if $newer_than('2014.2')
 %package -n openstack-neutron-sriov-nic-agent
 Summary:        Neutron SR-IOV NIC agent
 Group:          Applications/system
 
-Requires:       openstack-neutron = %{epoch}:%{version}-%{release}
+#if $older_than('2015.1')
+Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
+#end if
+#if $newer_than_eq('2015.1')
+Requires:	openstack-neutron-common = %{epoch}:%{version}-%{release}
+#end if
 
 
 %description -n openstack-neutron-sriov-nic-agent
@@ -514,7 +658,12 @@ Group:		Applications/System
 Provides:       openstack-neutron-nec = %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-nec < %{epoch}:%{version}-%{release}
 
+#if $older_than('2015.1')
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
+#end if
+#if $newer_than_eq('2015.1')
+Requires:	openstack-neutron-common = %{epoch}:%{version}-%{release}
+#end if
 
 
 %description -n openstack-neutron-nec
@@ -532,8 +681,12 @@ Group:		Applications/System
 Provides:       openstack-neutron-metaplugin = %{epoch}:%{version}-%{release}
 Obsoletes:      openstack-quantum-metaplugin < %{epoch}:%{version}-%{release}
 
+#if $older_than('2015.1')
 Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
-
+#end if
+#if $newer_than_eq('2015.1')
+Requires:	openstack-neutron-common = %{epoch}:%{version}-%{release}
+#end if
 
 %description -n openstack-neutron-metaplugin
 Neutron provides an API to dynamically request and configure virtual
@@ -547,7 +700,12 @@ networks using multiple other neutron plugins.
 Summary:       Neutron VMWare NSX support
 Group:         Applications/System
 
-Requires:      openstack-neutron = %{epoch}:%{version}-%{release}
+#if $older_than('2015.1')
+Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
+#end if
+#if $newer_than_eq('2015.1')
+Requires:	openstack-neutron-common = %{epoch}:%{version}-%{release}
+#end if
 Provides:      openstack-neutron-nicira = %{epoch}:%{version}-%{release}
 Obsoletes:     openstack-neutron-nicera < %{epoch}:%{version}-%{release}
 
@@ -559,17 +717,19 @@ This package adds VMWare NSX support for Neutron,
 #end if
 
 #if $newer_than('2014.2')
+#if $older_than('2015.1')
 %package -n openstack-neutron-vpn-agent
 Summary:        Neutron VPNaaS agent
 Group:          Applications/System
 
-Requires:       openstack-neutron = %{epoch}:%{version}-%{release}
+Requires:	openstack-neutron = %{epoch}:%{version}-%{release}
 
 %description -n openstack-neutron-vpn-agent
 Neutron provides an API to implement VPN as a service
 
 This package contains the Neutron agent responsible for implementing VPNaaS with
 IPSec.
+#end if
 #end if
 
 %if ! 0%{?no_tests}
@@ -581,19 +741,30 @@ Requires:         %{name} = %{epoch}:%{version}-%{release}
 Requires:         %{name}-bigswitch = %{epoch}:%{version}-%{release}
 Requires:         %{name}-brocade = %{epoch}:%{version}-%{release}
 Requires:         %{name}-cisco = %{epoch}:%{version}-%{release}
+#if $older_than('2015.1')
 Requires:         %{name}-hyperv = %{epoch}:%{version}-%{release}
+#end if
 Requires:         %{name}-linuxbridge = %{epoch}:%{version}-%{release}
 Requires:         %{name}-midonet = %{epoch}:%{version}-%{release}
 Requires:         %{name}-nicira = %{epoch}:%{version}-%{release}
 Requires:         %{name}-openvswitch = %{epoch}:%{version}-%{release}
 Requires:         %{name}-plumgrid = %{epoch}:%{version}-%{release}
+#if $older_than('2015.1')
 Requires:         %{name}-ryu = %{epoch}:%{version}-%{release}
+#end if
+#if $newer_than('2015.1')
+Requires:         %{name}-ofagent = %{epoch}:%{version}-%{release}
+#end if
 Requires:         %{name}-nec = %{epoch}:%{version}-%{release}
 Requires:         %{name}-metaplugin = %{epoch}:%{version}-%{release}
+#if $older_than('2015.1')
 Requires:         %{name}-mlnx = %{epoch}:%{version}-%{release}
+#end if
 Requires:         %{name}-nuage = %{epoch}:%{version}-%{release}
-Requires:         python-%{python_name} = %{epoch}:%{version}-%{release}
-
+Requires:         python-neutron = %{epoch}:%{version}-%{release}
+#if $newer_than_eq('2015.1')
+Requires:         python-neutron-common = %{epoch}:%{version}-%{release}
+#end if
 # Test requirements:
 #for $i in $test_requires
 Requires:         ${i}
@@ -683,46 +854,62 @@ install -p -D -m 440 %{SOURCE2} %{buildroot}%{_sysconfdir}/sudoers.d/neutron
 install -p -D -m 755 %{SOURCE10} %{buildroot}%{_initrddir}/%{daemon_prefix}-server
 install -p -D -m 755 %{SOURCE11} %{buildroot}%{_initrddir}/%{daemon_prefix}-linuxbridge-agent
 install -p -D -m 755 %{SOURCE12} %{buildroot}%{_initrddir}/%{daemon_prefix}-openvswitch-agent
+#if $older_than('2015.1')
 install -p -D -m 755 %{SOURCE13} %{buildroot}%{_initrddir}/%{daemon_prefix}-ryu-agent
+#end if
 install -p -D -m 755 %{SOURCE14} %{buildroot}%{_initrddir}/%{daemon_prefix}-nec-agent
 install -p -D -m 755 %{SOURCE15} %{buildroot}%{_initrddir}/%{daemon_prefix}-dhcp-agent
 install -p -D -m 755 %{SOURCE16} %{buildroot}%{_initrddir}/%{daemon_prefix}-l3-agent
 install -p -D -m 755 %{SOURCE17} %{buildroot}%{_initrddir}/%{daemon_prefix}-ovs-cleanup
+#if $older_than('2015.1')
 install -p -D -m 755 %{SOURCE18} %{buildroot}%{_initrddir}/%{daemon_prefix}-hyperv-agent
+#end if
 #if $older_than('2014.2')
 install -p -D -m 755 %{SOURCE19} %{buildroot}%{_initrddir}/%{daemon_prefix}-rpc-zmq-receiver
 #end if
 install -p -D -m 755 %{SOURCE20} %{buildroot}%{_initrddir}/%{daemon_prefix}-metadata-agent
 #if $newer_than('2014.2')
+#if $older_than('2015.1')
 install -p -D -m 755 %{SOURCE21} %{buildroot}%{_initrddir}/%{daemon_prefix}-lbaas-agent
-install -p -D -m 755 %{SOURCE22} %{buildroot}%{_initrddir}/%{daemon_prefix}-mlnx-agent
 install -p -D -m 755 %{SOURCE23} %{buildroot}%{_initrddir}/%{daemon_prefix}-vpn-agent
+#end if
+install -p -D -m 755 %{SOURCE22} %{buildroot}%{_initrddir}/%{daemon_prefix}-mlnx-agent
 install -p -D -m 755 %{SOURCE24} %{buildroot}%{_initrddir}/%{daemon_prefix}-metering-agent
 install -p -D -m 755 %{SOURCE25} %{buildroot}%{_initrddir}/%{daemon_prefix}-sriov-nic-agent
+#if $older_than('2015.1')
 install -p -D -m 755 %{SOURCE26} %{buildroot}%{_initrddir}/%{daemon_prefix}-cisco-cfg-agent
+#end if
 install -p -D -m 755 %{SOURCE27} %{buildroot}%{_initrddir}/%{daemon_prefix}-netns-cleanup
 #end if
 %else
 install -p -D -m 755 %{SOURCE10} %{buildroot}%{_unitdir}/%{daemon_prefix}-server.service
 install -p -D -m 755 %{SOURCE11} %{buildroot}%{_unitdir}/%{daemon_prefix}-linuxbridge-agent.service
 install -p -D -m 755 %{SOURCE12} %{buildroot}%{_unitdir}/%{daemon_prefix}-openvswitch-agent.service
+#if $older_than('2015.1')
 install -p -D -m 755 %{SOURCE13} %{buildroot}%{_unitdir}/%{daemon_prefix}-ryu-agent.service
+#end if
 install -p -D -m 755 %{SOURCE14} %{buildroot}%{_unitdir}/%{daemon_prefix}-nec-agent.service
 install -p -D -m 755 %{SOURCE15} %{buildroot}%{_unitdir}/%{daemon_prefix}-dhcp-agent.service
 install -p -D -m 755 %{SOURCE16} %{buildroot}%{_unitdir}/%{daemon_prefix}-l3-agent.service
 install -p -D -m 755 %{SOURCE17} %{buildroot}%{_unitdir}/%{daemon_prefix}-ovs-cleanup.service
+#if $older_than('2015.1')
 install -p -D -m 755 %{SOURCE18} %{buildroot}%{_unitdir}/%{daemon_prefix}-hyperv-agent.service
+#end if
 #if $older_than('2014.2')
 install -p -D -m 755 %{SOURCE19} %{buildroot}%{_unitdir}/%{daemon_prefix}-rpc-zmq-receiver.service
 #end if
 install -p -D -m 755 %{SOURCE20} %{buildroot}%{_unitdir}/%{daemon_prefix}-metadata-agent.service
 #if $newer_than('2014.2')
+#if $older_than('2015.1')
 install -p -D -m 755 %{SOURCE21} %{buildroot}%{_unitdir}/%{daemon_prefix}-lbaas-agent.service
-install -p -D -m 755 %{SOURCE22} %{buildroot}%{_unitdir}/%{daemon_prefix}-mlnx-agent.service
 install -p -D -m 755 %{SOURCE23} %{buildroot}%{_unitdir}/%{daemon_prefix}-vpn-agent.service
+#end if
+install -p -D -m 755 %{SOURCE22} %{buildroot}%{_unitdir}/%{daemon_prefix}-mlnx-agent.service
 install -p -D -m 755 %{SOURCE24} %{buildroot}%{_unitdir}/%{daemon_prefix}-metering-agent.service
 install -p -D -m 755 %{SOURCE25} %{buildroot}%{_unitdir}/%{daemon_prefix}-sriov-nic-agent.service
+#if $older_than('2015.1')
 install -p -D -m 755 %{SOURCE26} %{buildroot}%{_unitdir}/%{daemon_prefix}-cisco-cfg-agent.service
+#end if
 install -p -D -m 755 %{SOURCE27} %{buildroot}%{_unitdir}/%{daemon_prefix}-netns-cleanup.service
 #end if
 %endif
@@ -732,6 +919,34 @@ install -d -m 755 %{buildroot}%{_sharedstatedir}/neutron
 install -d -m 755 %{buildroot}%{_localstatedir}/log/neutron
 install -d -m 755 %{buildroot}%{_localstatedir}/lock/neutron
 install -d -m 755 %{buildroot}%{_localstatedir}/run/neutron
+
+#remove hyperv from linux to match upstream
+#if $newer_than_eq('2015.1')
+rm %{buildroot}/%{_bindir}/neutron-hyperv-agent
+#end if
+
+#if $newer_than_eq('2015.1')
+# Create configuration directories for all services that can be populated by users with custom *.conf files
+mkdir -p %{buildroot}/%{_sysconfdir}/neutron/conf.d/common
+
+#raw
+# Create and populate configuration directory for L3 agent that is not accessible for user modification
+mkdir -p %{buildroot}%{_datadir}/neutron/l3_agent
+ln -s %{_sysconfdir}/neutron/l3_agent.ini %{buildroot}%{_datadir}/neutron/l3_agent/l3_agent.conf
+
+# Create dist configuration directory for neutron-server (may be filled by advanced services)
+mkdir -p %{buildroot}%{_datadir}/neutron/server
+
+# Create configuration directories for all services that can be populated by users with custom *.conf files
+mkdir -p %{buildroot}/%{_sysconfdir}/neutron/conf.d/common
+for service in server ovs-cleanup netns-cleanup; do
+    mkdir -p %{buildroot}/%{_sysconfdir}/neutron/conf.d/neutron-$service
+done
+for service in linuxbridge openvswitch nec dhcp l3 metadata mlnx metering sriov-nic; do
+    mkdir -p %{buildroot}/%{_sysconfdir}/neutron/conf.d/neutron-$service-agent
+done
+#end raw
+#end if
 
 #raw
 # Install version info file
@@ -764,6 +979,9 @@ exit 0
 #end if
 #if $newer_than_eq('2014.2')
 #set $daemon_map = {"": ["server", "dhcp-agent", "l3-agent", "lbaas-agent", "netns-cleanup"], "linuxbridge": ["linuxbridge-agent"], "openvswitch": ["openvswitch-agent", "ovs-cleanup"], "ryu": ["ryu-agent"], "nec": ["nec-agent"], "mlnx": ["mlnx-agent"], "vpn-agent": ["vpn-agent"], "metering-agent": ["metering-agent"], "sriov-nic-agent": ["sriov-nic-agent"], "cisco": ["cisco-cfg-agent"]}
+#end if
+#if $newer_than_eq('2015.1')
+#set $daemon_map = {"": ["server", "dhcp-agent", "l3-agent", "netns-cleanup"], "linuxbridge": ["linuxbridge-agent"], "openvswitch": ["openvswitch-agent", "ovs-cleanup"], "nec": ["nec-agent"], "metering-agent": ["metering-agent"], "sriov-nic-agent": ["sriov-nic-agent"]}
 #end if
 #for $key, $value in $daemon_map.iteritems()
 #set $daemon_list = " ".join($value) if $value else $key
@@ -801,14 +1019,18 @@ fi
 %{_bindir}/*-debug
 %{_bindir}/*-dhcp-agent
 %{_bindir}/*-l3-agent
+#if $older_than('2015.1')
 %{_bindir}/*-lbaas-agent
+#end if
 %{_bindir}/*-metadata-agent
 #if $older_than('2014.2')
 %{_bindir}/*-metering-agent
 #end if
 %{_bindir}/*-netns-cleanup
 %{_bindir}/*-ns-metadata-proxy
+#if $older_than('2015.1')
 %{_bindir}/*-rootwrap
+#end if
 #if $older_than('2014.2')
 %{_bindir}/*-rpc-zmq-receiver
 #end if
@@ -820,11 +1042,18 @@ fi
 #if $newer_than('2014.2')
 %{_bindir}/neutron-sanity-check
 #end if
+#if $newer_than_eq('2015.1')
+%{_bindir}/neutron-keepalived-state-change
+#end if
 
+#if $older_than('2015.1')
 %{_datarootdir}/neutron
+#end if
 %exclude %{_datarootdir}/neutron/rootwrap/linuxbridge-plugin.filters
 %exclude %{_datarootdir}/neutron/rootwrap/openvswitch-plugin.filters
+#if $older_than('2015.1')
 %exclude %{_datarootdir}/neutron/rootwrap/ryu-plugin.filters
+#end if
 %exclude %{_datarootdir}/neutron/rootwrap/nec-plugin.filters
 
 %if ! 0%{?usr_only}
@@ -849,7 +1078,9 @@ fi
 %{_unitdir}/%{daemon_prefix}-rpc-zmq-receiver.service
 #end if
 #if $newer_than('2014.2')
+#if $older_than('2015.1')
 %{_unitdir}/%{daemon_prefix}-lbaas-agent.service
+#end if
 %{_unitdir}/%{daemon_prefix}-netns-cleanup.service
 #end if
 %endif
@@ -858,6 +1089,7 @@ fi
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/policy.json
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/neutron.conf
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/*.ini
+#if $older_than('2015.1')
 %config(noreplace) %{_sysconfdir}/neutron/rootwrap.conf
 %dir %{_sysconfdir}/neutron/plugins
 %config(noreplace) %{_sysconfdir}/logrotate.d/*
@@ -866,12 +1098,25 @@ fi
 %dir %attr(0755, neutron, neutron) %{_localstatedir}/log/neutron
 %dir %attr(0755, neutron, neutron) %{_localstatedir}/lock/neutron
 %dir %attr(0755, neutron, neutron) %{_localstatedir}/run/neutron
+#end if
+#if $newer_than_eq('2015.1')
+%dir %{_datadir}/neutron/l3_agent
+%dir %{_datadir}/neutron/server
+%{_datadir}/neutron/l3_agent/*.conf
+%dir %{_sysconfdir}/neutron/conf.d/neutron-dhcp-agent
+%dir %{_sysconfdir}/neutron/conf.d/neutron-l3-agent
+%dir %{_sysconfdir}/neutron/conf.d/neutron-metadata-agent
+%dir %{_sysconfdir}/neutron/conf.d/neutron-server
+%dir %{_sysconfdir}/neutron/conf.d/neutron-netns-cleanup
+%dir %{_sysconfdir}/neutron/conf.d/neutron-ovs-cleanup
+#end if
 %endif
 
 %files -n python-neutron
 %doc LICENSE
-%{python_sitelib}/neutron
+#if $older_than('2015.1')
 #if $older_than('2014.2')
+%{python_sitelib}/neutron
 %{python_sitelib}/quantum
 #end if
 %exclude %{python_sitelib}/neutron/tests
@@ -904,17 +1149,57 @@ fi
 #if $newer_than_eq('2014.2')
 %exclude %{python_sitelib}/neutron/plugins/opencontrail
 #end if
+#end if
+#if $newer_than_eq('2015.1')
+%{python_sitelib}/neutron
+%exclude %{python_sitelib}/neutron/tests
+#end if
 %{python_sitelib}/neutron-*.egg-info
 
+#if $newer_than_eq('2015.1')
+%files -n python-neutron-tests
+%license LICENSE
+%{python2_sitelib}/neutron/tests
+#endif
+
+#if $newer_than_eq('2015.1')
+%files -n openstack-neutron-common
+%license LICENSE
+%doc README.rst
+%{_bindir}/neutron-rootwrap
+%{_bindir}/neutron-rootwrap-daemon
+%{_bindir}/neutron-rootwrap-xen-dom0
+%dir %{_sysconfdir}/neutron
+%dir %{_sysconfdir}/neutron/conf.d
+%dir %{_sysconfdir}/neutron/conf.d/common
+%dir %{_sysconfdir}/neutron/plugins
+%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/neutron.conf
+%config(noreplace) %{_sysconfdir}/neutron/rootwrap.conf
+%config(noreplace) %{_sysconfdir}/logrotate.d/*
+%{_sysconfdir}/sudoers.d/neutron
+%dir %attr(0755, neutron, neutron) %{_sharedstatedir}/neutron
+%dir %attr(0750, neutron, neutron) %{_localstatedir}/log/neutron
+%dir %{_datarootdir}/neutron
+%dir %{_datarootdir}/neutron/rootwrap
+%{_datarootdir}/neutron/rootwrap/debug.filters
+%{_datarootdir}/neutron/rootwrap/dhcp.filters
+%{_datarootdir}/neutron/rootwrap/ipset-firewall.filters
+%{_datarootdir}/neutron/rootwrap/iptables-firewall.filters
+%{_datarootdir}/neutron/rootwrap/l3.filters
+#end if
 
 %files -n openstack-neutron-bigswitch
 %doc LICENSE
+#if $older_than('2015.1')
 %doc neutron/plugins/bigswitch/README
+#end if
 #if $newer_than_eq('2014.1.b1')
 %{_bindir}/neutron-restproxy-agent
 #end if
 %{python_sitelib}/neutron/plugins/bigswitch
+#if $older_than('2015.1')
 %exclude %{python_sitelib}/neutron/plugins/bigswitch/tests
+#end if
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/bigswitch
@@ -923,7 +1208,6 @@ fi
 %doc %{_sysconfdir}/neutron/plugins/bigswitch/ssl/*
 #end if
 %endif
-
 
 %files -n openstack-neutron-brocade
 %doc LICENSE
@@ -934,6 +1218,9 @@ fi
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/brocade
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/brocade/*.ini
+#if $newer_than_eq('2015.1')
+%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/brocade/vyatta/*.ini
+#end if
 %endif
 
 
@@ -941,19 +1228,27 @@ fi
 %doc LICENSE
 %doc neutron/plugins/cisco/README
 %{python_sitelib}/neutron/plugins/cisco
+#if $older_than('2015.1')
 #if $newer_than('2014.2')
 %{_bindir}/neutron-cisco-cfg-agent
+#end if
+#end if
+#if $newer_than_eq('2015.1')
+%{_bindir}/neutron-cisco-apic-host-agent
+%{_bindir}/neutron-cisco-apic-service-agent
 #end if
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/cisco
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/cisco/*.ini
+#if $older_than('2015.1')
 #if $newer_than('2014.2')
 %if ! (0%{?rhel} > 6)
 %{_initrddir}/%{daemon_prefix}-cisco-cfg-agent
 %else
 %{_unitdir}/%{daemon_prefix}-cisco-cfg-agent.service
 %endif
+#end if
 #end if
 %endif
 
@@ -969,7 +1264,7 @@ fi
 %endif
 #end if
 
-
+#if $older_than('2015.1')
 %files -n openstack-neutron-hyperv
 %doc LICENSE
 %{_bindir}/*-hyperv-agent
@@ -985,10 +1280,11 @@ fi
 %dir %{_sysconfdir}/neutron/plugins/hyperv
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/hyperv/*.ini
 %endif
+#end if
 
 #if $newer_than_eq('2014.1.b1')
-%doc LICENSE
 %files -n openstack-neutron-ibm
+%doc LICENSE
 %doc neutron/plugins/ibm/README
 %{_bindir}/*-ibm-agent
 %{python_sitelib}/neutron/plugins/ibm
@@ -1050,11 +1346,23 @@ fi
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/ml2/*.ini
 %endif
 
+#if $older_than('2015.1')
 %files -n openstack-neutron-mlnx
+#end if
+#if $newer_than_eq('2015.1')
+%files -n openstack-neutron-mellanox
+#end if
 %doc LICENSE
+#if $older_than('2015.1')
 %doc neutron/plugins/mlnx/README
+#end if
+#if $newer_than_eq('2015.1')
+%doc neutron/plugins/ml2/drivers/mlnx/README
+#end if
 %{_bindir}/*-mlnx-agent
+#if $older_than('2015.1')
 %{python_sitelib}/neutron/plugins/mlnx
+#end if
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/mlnx
@@ -1067,6 +1375,7 @@ fi
 %endif
 #end if
 %endif
+#end if
 
 #if $older_than('2014.1')
 %files -n openstack-neutron-nicira
@@ -1097,9 +1406,11 @@ fi
 #if $newer_than_eq('2014.1.b1')
 %files -n openstack-neutron-ofagent
 %doc LICENSE
+#if $older_than('2015.1')
 %{_bindir}/*-ofagent-agent
 %doc neutron/plugins/ofagent/README
 %{python_sitelib}/neutron/plugins/ofagent
+#end if
 #end if
 
 #if $newer_than('2014.2')
@@ -1131,7 +1442,9 @@ fi
 %doc neutron/plugins/openvswitch/README
 %{_bindir}/*-openvswitch-agent
 %{_bindir}/*-ovs-cleanup
+#if $older_than('2015.1')
 %{_bindir}/*-rootwrap-xen-dom0
+#end if
 %{_datarootdir}/neutron/rootwrap/openvswitch-plugin.filters
 %{python_sitelib}/neutron/plugins/openvswitch
 
@@ -1147,6 +1460,17 @@ fi
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/openvswitch/*.ini
 %endif
 
+#if $newer_than_eq('2015.1')
+%files -n openstack-neutron-ovsvapp
+%license LICENSE
+%{_bindir}/neutron-ovsvapp-agent
+
+%if ! 0%{?usr_only}
+%dir %{_sysconfdir}/neutron/plugins/ovsvapp
+%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/ovsvapp/*.ini
+%endif
+#end if
+
 %files -n openstack-neutron-plumgrid
 %doc LICENSE
 %doc neutron/plugins/plumgrid/README
@@ -1157,6 +1481,7 @@ fi
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/plumgrid/*.ini
 %endif
 
+#if $older_than('2015.1')
 %files -n openstack-neutron-ryu
 %doc LICENSE
 %doc neutron/plugins/ryu/README
@@ -1173,6 +1498,7 @@ fi
 %dir %{_sysconfdir}/neutron/plugins/ryu
 %config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/ryu/*.ini
 %endif
+#end if
 
 #if $newer_than('2014.2')
 %files -n openstack-neutron-sriov-nic-agent
@@ -1208,7 +1534,9 @@ fi
 #if $newer_than_eq('2014.1.b1')
 %files -n openstack-neutron-vmware
 %doc LICENSE
+#if $older_than('2015.1')
 %{_bindir}/neutron*nsx-*
+#end if
 #if $older_than('2014.2')
 %{_bindir}/*-check-nvp-config
 #end if
@@ -1241,6 +1569,7 @@ fi
 %endif
 
 #if $newer_than('2014.2')
+#if $older_than('2015.1')
 %files -n openstack-neutron-vpn-agent
 %doc LICENSE
 %{_bindir}/neutron-vpn-agent
@@ -1254,5 +1583,5 @@ fi
 %endif
 %endif
 #end if
-
+#end if
 %changelog

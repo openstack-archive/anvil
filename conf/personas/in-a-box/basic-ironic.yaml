@@ -13,6 +13,9 @@ components:
 - cinder
 - heat
 - neutron
+- neutron-fwaas
+- neutron-lbaas
+- neutron-vpnaas
 - nova
 - trove
 - ironic
