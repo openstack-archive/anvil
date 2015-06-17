@@ -9,6 +9,9 @@ components:
 - keystone
 - glance
 - neutron
+- neutron-fwaas
+- neutron-lbaas
+- neutron-vpnaas
 - cinder
 - nova
 # Client used by components
