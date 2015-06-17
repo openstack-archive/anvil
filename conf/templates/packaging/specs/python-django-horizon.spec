@@ -56,8 +56,10 @@ BuildRequires: python-netaddr
 #if $newer_than_eq('2014.2')
 BuildRequires: python-xstatic
 BuildRequires: python-xstatic-angular
+#if $older_than('2015.1')
 BuildRequires: python-xstatic-angular-cookies
 BuildRequires: python-xstatic-angular-mock
+#end if
 BuildRequires: python-xstatic-bootstrap-datepicker
 BuildRequires: python-xstatic-bootstrap-scss
 BuildRequires: python-xstatic-d3
@@ -72,6 +74,14 @@ BuildRequires: python-xstatic-jquery-ui
 BuildRequires: python-xstatic-jsencrypt
 BuildRequires: python-xstatic-qunit
 BuildRequires: python-xstatic-rickshaw
+#if $newer_than_eq('2015.1')
+BuildRequires: python-xstatic-smart-table
+BuildRequires: python-xstatic-angular-bootstrap
+BuildRequires: python-xstatic-angular-lrdragndrop
+BuildRequires: python-xstatic-magic-search
+BuildRequires: python-xstatic-term-js
+BuildRequires: python-oslo-concurrency
+#end if
 BuildRequires: python-xstatic-spin
 BuildRequires: python-django-pyscss
 BuildRequires: python-scss
@@ -249,6 +259,13 @@ cp openstack_dashboard/settings.py* tmp_settings/
 cp openstack_dashboard/utils/settings.py* tmp_settings/utils/settings.py
 #raw
 sed -i -e '/exceptions/d' openstack_dashboard/utils/settings.py
+#end raw
+#if $newer_than_eq('2015.1')
+#raw
+sed -i -e '/exc_list/d' openstack_dashboard/utils/settings.py
+#end raw
+#end if
+#raw
 sed -i -e '/import exceptions/d' -e '/exceptions\.[A-Z][A-Z]/d' openstack_dashboard/settings.py
 #end raw
 #end if
