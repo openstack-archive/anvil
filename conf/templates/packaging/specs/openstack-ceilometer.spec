@@ -44,7 +44,13 @@ Source17:         openstack-ceilometer-ipmi.service
 %endif
 Source18:         ceilometer-rootwrap-sudoers
 #end if
-
+#if $newer_than_eq('2015.1')
+%if ! (0%{?rhel} > 6)
+Source19:         openstack-ceilometer-polling.init
+%else
+Source19:         openstack-ceilometer-polling.service
+%endif
+#end if
 
 Source20:          ceilometer-dist.conf
 Source21:          ceilometer.logrotate
@@ -216,10 +222,6 @@ This package contains the ceilometer alarm notification
 and evaluation services.
 #end if
 
-%files -n python-ceilometer
-%{python_sitelib}/ceilometer
-%{python_sitelib}/ceilometer-%{os_version}*.egg-info
-
 #if $newer_than_eq('2014.2')
 %package ipmi
 Summary:          OpenStack ceilometer ipmi agent
@@ -241,6 +243,24 @@ collect metrics from OpenStack components.
 This package contains the ipmi agent to be run on OpenStack
 nodes from which IPMI sensor data is to be collected directly,
 by-passing Ironic's management of baremetal.
+#end if
+
+#if $newer_than_eq('2015.1')
+%package polling
+Summary:          OpenStack ceilometer polling agent
+Group:            Applications/System
+
+Requires:         %{name}-common = %{version}-%{release}
+
+%description polling
+Ceilometer aims to deliver a unique point of contact for billing systems to
+aquire all counters they need to establish customer billing, across all
+current and future OpenStack components. The delivery of counters must
+be tracable and auditable, the counters must be easily extensible to support
+new projects, and agents doing data collections should be
+independent of the overall system.
+
+This package contains the polling service.
 #end if
 
 %if 0%{?with_doc}
@@ -366,7 +386,13 @@ install -p -D -m 755 %{SOURCE17} %{buildroot}%{_initrddir}/%{name}-ipmi
 install -p -D -m 755 %{SOURCE17} %{buildroot}%{_unitdir}/%{name}-ipmi.service
 %endif
 #end if
-
+#if $newer_than_eq('2015.1')
+%if ! (0%{?rhel} > 6)
+install -p -D -m 755 %{SOURCE19} %{buildroot}%{_initrddir}/%{name}-polling
+%else
+install -p -D -m 755 %{SOURCE19} %{buildroot}%{_unitdir}/%{name}-polling.service
+%endif
+#end if
 #Fix for bin path for central and compute
 %if ! (0%{?rhel} > 6)
 sed -i "s#/usr/bin/ceilometer-compute#/usr/bin/ceilometer-agent-compute#" %{buildroot}%{_initrddir}/%{name}-compute
@@ -426,6 +452,10 @@ exit 0
 %defattr(-, ceilometer, ceilometer, -)
 %dir %{_sharedstatedir}/ceilometer
 %dir %{_sharedstatedir}/ceilometer/tmp
+
+%files -n python-ceilometer
+%{python_sitelib}/ceilometer
+%{python_sitelib}/ceilometer-%{os_version}*.egg-info
 
 %if 0%{?with_doc}
 %files doc
@@ -659,4 +689,37 @@ if [ $1 -ge 1 ] ; then
 fi
 %endif
 #end if
+
+#if $newer_than_eq('2015.1')
+%files polling
+%{_bindir}/ceilometer-polling
+%if 0%{?rhel} && 0%{?rhel} <= 6
+%{_initrddir}/%{name}-polling
+%else
+%{_unitdir}/%{name}-polling.service
+%endif
+
+%if 0%{?rhel} > 6
+%post polling
+if [ $1 -eq 1 ] ; then
+        # Initial installation
+        /usr/bin/systemctl preset %{name}-polling.service
+fi
+
+%preun polling
+if [ $1 -eq 0 ] ; then
+        # Package removal, not upgrade
+        /usr/bin/systemctl --no-reload disable %{name}-polling.service > /dev/null 2>&1 || :
+        /usr/bin/systemctl stop %{name}-polling.service > /dev/null 2>&1 || :
+fi
+
+%postun polling
+/usr/bin/systemctl daemon-reload >/dev/null 2>&1 || :
+if [ $1 -ge 1 ] ; then
+        # Package upgrade, not uninstall
+        /usr/bin/systemctl try-restart %{name}-polling.service #>/dev/null 2>&1 || :
+fi
+%endif
+#end if
+
 %changelog
