@@ -1,0 +1,96 @@
+platform_overrides:
+   redhat-7.*|centos-7.*:
+      forced_pips:
+      - "sqlalchemy>=0.9.7,<0.9.99"
+      - "python-ldap>=2.4.6"
+      - "django-openstack-auth==1.1.7"
+      - "oslo-config==1.4.0"
+      - "oslo-incubator==2014.2"
+      - "oslo-messaging==1.4.1"
+      - "pycadf==0.6.0"
+      - "python-cinderclient==1.1.1"
+      - "python-ceilometerclient==1.0.12"
+      - "python-glanceclient==0.14.1"
+      - "python-heatclient==0.2.12"
+      - "python-ironicclient==0.3.1"
+      - "python-keystoneclient==0.11.1"
+      - "python-novaclient==2.20.0"
+      - "python-neutronclient==2.3.9"
+      - "python-swiftclient==2.3.1"
+      - "python-troveclient==1.0.7"
+   redhat-6.*|centos-6.*:
+      forced_pips:
+      - "sqlalchemy>=0.9.7,<0.9.99"
+      - "python-ldap>=2.4.6"
+      - "django-openstack-auth==1.1.7"
+      - "oslo-config==1.4.0"
+      - "oslo-incubator==2014.2"
+      - "oslo-messaging==1.4.1"
+      - "pycadf==0.6.0"
+      - "python-cinderclient==1.1.1"
+      - "python-ceilometerclient==1.0.12"
+      - "python-glanceclient==0.14.1"
+      - "python-heatclient==0.2.12"
+      - "python-ironicclient==0.3.1"
+      - "python-keystoneclient==0.11.1"
+      - "python-novaclient==2.20.0"
+      - "python-neutronclient==2.3.9"
+      - "python-swiftclient==2.3.1"
+      - "python-troveclient==1.0.7"
+ceilometer:
+  repo: git://github.com/openstack/ceilometer.git
+  tag: 2014.2.2
+  use_tests_requires: False
+  pips:
+  - name: libvirt-python
+  - name: functools32
+cinder:
+  repo: git://github.com/openstack/cinder.git
+  tag: 2014.2.2
+  pips:
+  - name: functools32
+glance:
+  repo: git://github.com/openstack/glance.git
+  tag: 2014.2.2
+  pips:
+  - name: functools32
+heat:
+  repo: git://github.com/openstack/heat.git
+  tag: 2014.2.2
+  pips:
+  - name: functools32
+horizon:
+  repo: git://github.com/openstack/horizon.git
+  tag: 2014.2.2
+  pips:
+  - name: lesscpy
+  - name: functools32
+ironic:
+  repo: git://github.com/openstack/ironic.git
+  tag: 2014.2.2
+  pips:
+  - name: functools32
+keystone:
+  repo: git://github.com/openstack/keystone.git
+  tag: 2014.2.2
+  pips:
+  - name: functools32
+nova:
+  repo: git://github.com/openstack//nova.git
+  tag: 2014.2.2
+  pips:
+  - name: libvirt-python
+  - name: functools32
+neutron:
+  repo: git://github.com/openstack/neutron.git
+  tag: 2014.2.2
+  pips:
+  - name: pyudev
+  - name: configobj
+  - name: functools32
+trove:
+  repo: git://github.com/openstack/trove.git
+  tag: 2014.2.2
+  use_tests_requires: False
+  pips:
+  - name: functools32
