@@ -1,0 +1,54 @@
+---
+# Persona that only builds top level components for use with the venv patch
+components:
+# Core components
+- keystone
+- glance
+- ceilometer
+- cinder
+- heat
+- neutron
+- nova
+- trove
+# Horizon is given a later priority (typically everything is done at the
+# same time in stage zero); in its own stage since it requires basically all
+# the existing things to be pre-built/started... before it can be...
+- django-openstack-auth: 1
+- horizon: 2
+subsystems:
+    glance:
+    - api
+    - registry
+    keystone:
+    - all
+    nova:
+    - api
+    - cert
+    - compute
+    - conductor
+    - scheduler
+    neutron:
+    - server
+    - agent
+    - l3-agent
+    - metadata-agent
+    - dhcp-agent
+    cinder:
+    - api
+    - scheduler
+    - volume
+    heat:
+    - api
+    - api-cfn
+    - api-cloudwatch
+    - engine
+    ceilometer:
+    - api
+    - collector
+    - compute
+    - central
+supports:
+- rhel
+- fedora
+- centos
+...
