@@ -150,7 +150,7 @@ class VenvDependencyHandler(base.DependencyHandler):
     def package_instance(self, instance):
         # Skip things that aren't python...
         if self._is_buildable(instance):
-            requires_what = self._filter_download_requires()
+            requires_what = []
             requires_keys = set()
             for req in requires_what:
                 if isinstance(req, six.string_types):
