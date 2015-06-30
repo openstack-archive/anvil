@@ -35,6 +35,10 @@ from anvil.packaging.helpers import pip_helper
 LOG = logging.getLogger(__name__)
 
 
+def _on_finish(what, time_taken):
+    LOG.info("%s took %s seconds", what, time_taken)
+
+
 # TODO(harlowja): think we can remove this...
 class VenvInstallHelper(base.InstallHelper):
     def pre_install(self, pkg, params=None):
@@ -148,33 +152,66 @@ class VenvDependencyHandler(base.DependencyHandler):
                 self._install_into_venv(instance, self._PREQ_PKGS)
 
     def package_instance(self, instance):
-        # Skip things that aren't python...
-        if self._is_buildable(instance):
-            requires_what = self._filter_download_requires()
-            requires_keys = set()
-            for req in requires_what:
-                if isinstance(req, six.string_types):
-                    req = pip_helper.extract_requirement(req)
-                requires_keys.add(req.key)
-            egg_info = getattr(instance, 'egg_info', None)
-            if egg_info is not None:
-                # Ensure we have gotten all the things...
-                test_dependencies = (egg_info.get('test_dependencies', [])
-                                     if instance.get_bool_option(
-                                     'use_tests_requires', default_value=True)
-                                     else [])
-                for req in itertools.chain(egg_info.get('dependencies', []),
-                                           test_dependencies):
-                    if isinstance(req, six.string_types):
-                        req = pip_helper.extract_requirement(req)
-                    if req.key not in requires_keys:
-                        requires_what.append(req)
-                        requires_keys.add(req.key)
-            self._install_into_venv(instance, requires_what)
-            self._install_into_venv(instance, [instance.get_option('app_dir')])
-        else:
+        if not self._is_buildable(instance):
+            # Skip things that aren't python...
             LOG.warn("Skipping building %s (not python)",
                      colorizer.quote(instance.name, quote_color='red'))
+            return
+
+        def gather_extras():
+            extra_reqs = []
+            for p in instance.get_option("pips", default_value=[]):
+                req = pip_helper.create_requirement(p['name'], p.get('version'))
+                extra_reqs.append(req)
+            if instance.get_bool_option('use_tests_requires', default_value=True):
+                for p in instance.get_option("test_requires", default_value=[]):
+                    extra_reqs.append(pip_helper.create_requirement(p))
+            return extra_reqs
+
+        all_requires_what = self._filter_download_requires()
+        all_requires_mapping = {}
+        for req in all_requires_what:
+            if isinstance(req, six.string_types):
+                req = pip_helper.extract_requirement(req)
+            all_requires_mapping[req.key] = req
+        direct_requires_what = []
+        direct_requires_keys = set()
+        egg_info = getattr(instance, 'egg_info', None)
+        if egg_info is not None:
+            # Ensure we have gotten all the things...
+            test_dependencies = (egg_info.get('test_dependencies', [])
+                                 if instance.get_bool_option(
+                                 'use_tests_requires', default_value=True)
+                                 else [])
+            for req in itertools.chain(egg_info.get('dependencies', []),
+                                       test_dependencies):
+                if isinstance(req, six.string_types):
+                    req = pip_helper.extract_requirement(req)
+                if req.key not in direct_requires_keys:
+                    direct_requires_what.append(req)
+                    direct_requires_keys.add(req.key)
+        requires_what = []
+        extra_requires_what = gather_extras()
+        for req in extra_requires_what:
+            if req.key in all_requires_mapping:
+                req = all_requires_mapping[req.key]
+            requires_what.append(req)
+            try:
+                direct_requires_keys.remove(req.key)
+            except KeyError:
+                pass
+        for req in direct_requires_what:
+            if req.key not in direct_requires_keys:
+                continue
+            if req.key in all_requires_mapping:
+                req = all_requires_mapping[req.key]
+            requires_what.append(req)
+        utils.time_it(functools.partial(_on_finish, "Dependency installation"),
+                      self._install_into_venv, instance,
+                      requires_what)
+        utils.time_it(functools.partial(_on_finish, "Instance installation"),
+                      self._install_into_venv, instance,
+                      [instance.get_option('app_dir')])
 
     def download_dependencies(self):
         pass
