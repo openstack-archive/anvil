@@ -278,6 +278,7 @@ def retry(attempts, delay, func, *args, **kwargs):
             return func(*args, **kwargs)
         except Exception:
             failures.append(sys.exc_info())
+            LOG.exception("Calling '%s' failed", func_name)
             if attempt < max_attempts and delay > 0:
                 LOG.info("Waiting %s seconds before calling '%s' again",
                          delay, func_name)
