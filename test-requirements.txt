@@ -1,5 +1,5 @@
-pylint==0.25.2
-hacking>=0.8.0,<0.9
+pylint==1.4.1
+hacking>=0.10.0,<0.11
 mock>=1.0
 nose
 testtools>=0.9.34
