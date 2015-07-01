@@ -21,6 +21,8 @@ import os
 import re
 import tarfile
 
+from concurrent import futures
+import futurist
 import six
 
 from anvil import colorizer
@@ -58,6 +60,11 @@ class VenvDependencyHandler(base.DependencyHandler):
                                                     instances, opts, group,
                                                     prior_groups)
         self.cache_dir = sh.joinpths(self.root_dir, "pip-cache")
+        jobs = int(opts.get('jobs', 0))
+        if jobs > 1:
+            self.executor = futurist.ThreadPoolExecutor(max_workers=jobs)
+        else:
+            self.executor = futurist.SynchronousExecutor()
 
     def _venv_directory_for(self, instance):
         return sh.joinpths(instance.get_option('component_dir'), 'venv')
@@ -155,7 +162,21 @@ class VenvDependencyHandler(base.DependencyHandler):
             if self._PREQ_PKGS:
                 self._install_into_venv(instance, self._PREQ_PKGS)
 
-    def package_instance(self, instance):
+    def package_instances(self, instances):
+        if not instances:
+            return []
+        fs = []
+        all_requires_what = self._filter_download_requires()
+        for instance in instances:
+            fs.append(self.executor.submit(self._package_instance,
+                                           instance, all_requires_what))
+        futures.wait(fs)
+        results = []
+        for f in fs:
+            results.append(f.result())
+        return results
+
+    def _package_instance(self, instance, all_requires_what):
         if not self._is_buildable(instance):
             # Skip things that aren't python...
             LOG.warn("Skipping building %s (not python)",
@@ -172,7 +193,6 @@ class VenvDependencyHandler(base.DependencyHandler):
                     extra_reqs.append(pip_helper.create_requirement(p))
             return extra_reqs
 
-        all_requires_what = self._filter_download_requires()
         all_requires_mapping = {}
         for req in all_requires_what:
             if isinstance(req, six.string_types):

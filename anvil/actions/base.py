@@ -206,8 +206,85 @@ class Action(object):
             raise ValueError("Phase name must not be empty")
         return sh.joinpths(self.phase_dir, "%s.phases" % (phase_name))
 
+    def _run_many_phase(self, functors, group, instances, phase_name, *inv_phase_names):
+        """Run a given 'functor' across all of the components, passing *all* instances to run."""
+
+        # This phase recorder will be used to check if a given component
+        # and action has ran in the past, if so that components action
+        # will not be ran again. It will also be used to mark that a given
+        # component has completed a phase (if that phase runs).
+        if not phase_name:
+            phase_recorder = phase.NullPhaseRecorder()
+        else:
+            phase_recorder = phase.PhaseRecorder(self._get_phase_filename(phase_name))
+
+        # These phase recorders will be used to undo other actions activities
+        # ie, when an install completes you want the uninstall phase to be
+        # removed from that actions phase file (and so on). This list will be
+        # used to accomplish that.
+        neg_phase_recs = []
+        if inv_phase_names:
+            for n in inv_phase_names:
+                if not n:
+                    neg_phase_recs.append(phase.NullPhaseRecorder())
+                else:
+                    neg_phase_recs.append(phase.PhaseRecorder(self._get_phase_filename(n)))
+
+        def change_activate(instance, on_off):
+            # Activate/deactivate a component instance and there siblings (if any)
+            #
+            # This is used when you say are looking at components
+            # that have been activated before your component has been.
+            #
+            # Typically this is useful for checking if a previous component
+            # has a shared dependency with your component and if so then there
+            # is no need to reinstall said dependency...
+            instance.activated = on_off
+            for (_name, sibling_instance) in instance.siblings.items():
+                sibling_instance.activated = on_off
+
+        def run_inverse_recorders(c_name):
+            for n in neg_phase_recs:
+                n.unmark(c_name)
+
+        # Reset all activations
+        for c, instance in six.iteritems(instances):
+            change_activate(instance, False)
+
+        # Run all components which have not been ran previously (due to phase tracking)
+        instances_started = utils.OrderedDict()
+        for c, instance in six.iteritems(instances):
+            if c in SPECIAL_GROUPS:
+                c = "%s_%s" % (c, group)
+            if c in phase_recorder:
+                LOG.debug("Skipping phase named %r for component %r since it already happened.", phase_name, c)
+            else:
+                try:
+                    with phase_recorder.mark(c):
+                        if functors.start:
+                            functors.start(instance)
+                        instances_started[c] = instance
+                except excp.NoTraceException:
+                    pass
+        if functors.run:
+            results = functors.run(list(six.itervalues(instances_started)))
+        else:
+            results = [None] * len(instances_started)
+        instances_ran = instances_started
+        for i, (c, instance) in enumerate(six.iteritems(instances_ran)):
+            result = results[i]
+            try:
+                with phase_recorder.mark(c):
+                    if functors.end:
+                        functors.end(instance, result)
+            except excp.NoTraceException:
+                pass
+        for c, instance in six.iteritems(instances_ran):
+            change_activate(instance, True)
+            run_inverse_recorders(c)
+
     def _run_phase(self, functors, group, instances, phase_name, *inv_phase_names):
-        """Run a given 'functor' across all of the components, in order."""
+        """Run a given 'functor' across all of the components, in order individually."""
 
         # This phase recorder will be used to check if a given component
         # and action has ran in the past, if so that components action
