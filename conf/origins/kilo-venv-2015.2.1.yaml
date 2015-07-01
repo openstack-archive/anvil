@@ -76,7 +76,7 @@ keystone:
   pips:
   - name: functools32
 nova:
-  repo: git://github.com/openstack//nova.git
+  repo: git://github.com/openstack/nova.git
   tag: 2015.1.0
   pips:
   - name: libvirt-python
