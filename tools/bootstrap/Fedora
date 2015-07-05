@@ -1,9 +1,10 @@
 # -*- sh -*-
-## Bootstrap for Fedora 19+
 
+## Bootstrap for Fedora 19+
 STEPS="selinux rpm_packages virtualenv"
 SHORTNAME=Fedora
 MIN_RELEASE=19
+VENV_CMD="virtualenv"
 
 ## Bootstrap for Fedora based distros
 REQUIRES='

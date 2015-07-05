@@ -1,6 +1,8 @@
 # -*- sh -*-
+
 STEPS="selinux epel repos rpm_packages virtualenv"
 REPO_DIR=/etc/yum.repos.d/
+VENV_CMD="virtualenv"
 if [ "$MAJOR_RELEASE" = "6" ]; then
     EPEL_RPM_URL="http://mirrors.kernel.org/fedora-epel/6/i386/epel-release-6-8.noarch.rpm"
 elif [ "$MAJOR_RELEASE" = "7" ]; then

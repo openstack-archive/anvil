@@ -209,4 +209,6 @@ def load(path, distros_patch=None):
                 name, _ext = os.path.splitext(sh.basename(fn))
                 cls_kvs['name'] = name
             distro_possibles.append(Distro(**cls_kvs))
-    return _match_distros(distro_possibles)
+    matches = _match_distros(distro_possibles)
+    LOG.debug("Matched distros %s", [m.name for m in matches])
+    return matches

@@ -70,6 +70,20 @@ yum_remove()
     return $?
 }
 
+bootstrap_apt_packages()
+{
+    if [ -n "$REQUIRES" ]; then
+        echo -e "Installing system packages:"
+        dump_list $REQUIRES
+        echo "Please wait..."
+        apt-get -y install $REQUIRES
+        if [ "$?" != "0" ]; then
+            echo -e "Failed installing!"
+            return 1
+        fi
+    fi
+}
+
 bootstrap_rpm_packages()
 {
     if [ -n "$REQUIRES" ]; then
@@ -101,7 +115,10 @@ clean_anvil_deps()
     # up has the potential for leaving broken packages.  We disable
     # the anvil-deps repo on bootstrap to avoid subsequent yum failures
     # when pulling packages from this repo during bootstrap.
-    yum-config-manager $YUM_CONFIG_MANAGER_OPTS --disable anvil-deps
+    yum_config_manager=`which yum-config-manager 2>/dev/null`  || true
+    if [ -n "$yum_config_manager" ]; then
+        $yum_config_manager $YUM_CONFIG_MANAGER_OPTS --disable anvil-deps
+    fi
 }
 
 clean_pip()
@@ -167,7 +184,7 @@ bootstrap_virtualenv()
 {
     # Creates a virtualenv and then installs anvils requirements in it.
     echo "Setting up virtualenv in $VENV_DIR"
-    virtualenv $VENV_OPTS "$VENV_DIR" || return 1
+    $VENV_CMD $VENV_OPTS "$VENV_DIR" || return 1
     unsudo $VENV_DIR
     local deps=$(cat requirements.txt | grep -v '^$\|^\s*\#' | sort)
     if [ -n "$deps" ]; then
@@ -379,7 +396,7 @@ echo "Bootstrapping $SHORTNAME $RELEASE"
 echo "Please wait..."
 clean_pip
 for step in ${STEPS:?"Error: STEPS is undefined!"}; do
-    echo "--- Running bootstrap step $step ---"
+    echo "--- Running bootstrap step '$step' ---"
     "bootstrap_${step}"
     if [ $? != 0 ]; then
         echo "Bootstrapping $SHORTNAME $RELEASE failed." >&2
