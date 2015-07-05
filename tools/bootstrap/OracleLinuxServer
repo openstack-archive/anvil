@@ -1,4 +1,5 @@
 # -*- sh -*-
+
 ## Bootstrap OEL 6.3 <-> 7.0 for Openstack Anvil
 SHORTNAME=OEL
 MIN_RELEASE=6.3
