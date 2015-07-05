@@ -1,0 +1,68 @@
+---
+# Ubuntu distros or variants...
+platform_pattern: ubuntu(.*)
+install_helper: anvil.packaging.venv:VenvInstallHelper
+dependency_handler:
+    name: anvil.packaging.venv:VenvDependencyHandler
+components:
+    general:
+        python_entrypoints: False
+    ceilometer-client:
+        python_entrypoints: True
+    cinder:
+        python_entrypoints: True
+    cinder-client:
+        python_entrypoints: True
+    glance:
+        python_entrypoints: True
+    glance-client:
+        python_entrypoints: True
+    heat:
+        python_entrypoints: True
+    heat-client:
+        python_entrypoints: True
+    horizon:
+        python_entrypoints: True
+    django-openstack-auth:
+        python_entrypoints: True
+    keystone:
+        python_entrypoints: True
+    keystone-client:
+        python_entrypoints: True
+    neutron-client:
+        python_entrypoints: True
+    nova:
+        python_entrypoints: True
+    nova-client:
+        python_entrypoints: True
+    novnc:
+        python_entrypoints: True
+    openstack-client:
+        python_entrypoints: True
+    oslo-config:
+        python_entrypoints: True
+    oslo-incubator:
+        python_entrypoints: True
+    pycadf:
+        python_entrypoints: True
+    oslo-messaging:
+        python_entrypoints: True
+    neutron:
+        python_entrypoints: True
+    swift-client:
+        python_entrypoints: True
+    trove:
+        python_entrypoints: True
+    trove-client:
+        python_entrypoints: True
+    heat:
+        python_entrypoints: True
+    global-requirements:
+        python_entrypoints: True
+    ceilometer:
+        python_entrypoints: True
+    ironic:
+        python_entrypoints: True
+    ironic-client:
+        python_entrypoints: True
+...
