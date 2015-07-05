@@ -1,5 +1,4 @@
 ---
-# Persona that only builds top level components for use with the venv patch
 components:
 # Core components
 - keystone
@@ -10,9 +9,6 @@ components:
 - neutron
 - nova
 - trove
-# Horizon is given a later priority (typically everything is done at the
-# same time in stage zero); in its own stage since it requires basically all
-# the existing things to be pre-built/started... before it can be...
 - horizon
 subsystems:
     glance:
@@ -50,4 +46,5 @@ supports:
 - rhel
 - fedora
 - centos
+- ubuntu
 ...

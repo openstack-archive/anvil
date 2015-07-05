@@ -1,4 +1,5 @@
 # -*- sh -*-
+
 ## Bootstrap for CentOS Linux 6.0 <-> 7.0
 SHORTNAME=CENTOS
 MAX_RELEASE=7.0
