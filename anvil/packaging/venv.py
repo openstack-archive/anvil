@@ -61,10 +61,6 @@ class VenvDependencyHandler(base.DependencyHandler):
                                                     prior_groups)
         self.cache_dir = sh.joinpths(self.root_dir, "pip-cache")
         self.jobs = max(0, int(opts.get('jobs', 0)))
-        if self.jobs >= 1:
-            self.executor = futurist.ThreadPoolExecutor(max_workers=self.jobs)
-        else:
-            self.executor = futurist.SynchronousExecutor()
 
     def _venv_directory_for(self, instance):
         return sh.joinpths(instance.get_option('component_dir'), 'venv')
@@ -78,25 +74,20 @@ class VenvDependencyHandler(base.DependencyHandler):
             'VIRTUAL_ENV': venv_dir,
         }
         sh.mkdirslist(self.cache_dir, tracewriter=self.tracewriter)
-
-        def try_install(attempt, requirements):
-            cmd = list(base_pip) + ['install']
+        cmd = list(base_pip) + ['install']
+        cmd.extend([
+            '--download-cache',
+            self.cache_dir,
+        ])
+        if isinstance(requirements, six.string_types):
             cmd.extend([
-                '--download-cache',
-                self.cache_dir,
+                '--requirement',
+                requirements
             ])
-            if isinstance(requirements, six.string_types):
-                cmd.extend([
-                    '--requirement',
-                    requirements
-                ])
-            else:
-                for req in requirements:
-                    cmd.append(str(req))
-            sh.execute(cmd, env_overrides=env_overrides)
-
-        # Sometimes pip fails downloading things, retry it when this happens...
-        utils.retry(3, 5, try_install, requirements=requirements)
+        else:
+            for req in requirements:
+                cmd.append(str(req))
+        sh.execute(cmd, env_overrides=env_overrides)
 
     def _is_buildable(self, instance):
         app_dir = instance.get_option('app_dir')
@@ -167,15 +158,17 @@ class VenvDependencyHandler(base.DependencyHandler):
             return []
         LOG.info("Packaging %s instances using %s jobs",
                  len(instances), self.jobs)
-        fs = []
         all_requires_what = self._filter_download_requires()
-        for instance in instances:
-            fs.append(self.executor.submit(self._package_instance,
-                                           instance, all_requires_what))
-        futures.wait(fs)
-        results = []
-        for f in fs:
-            results.append(f.result())
+        if self.jobs >= 1:
+            executor = futurist.ThreadPoolExecutor(max_workers=self.jobs)
+        else:
+            executor = futurist.SynchronousExecutor()
+        fs = []
+        with executor:
+            for instance in instances:
+                fs.append(executor.submit(self._package_instance,
+                                          instance, all_requires_what))
+        results = [f.result() for f in fs]
         return results
 
     def _package_instance(self, instance, all_requires_what):
