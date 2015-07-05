@@ -1,0 +1,30 @@
+# -*- sh -*-
+
+## Bootstrap ubuntu (or varient) 14.04+ for Openstack Anvil
+SHORTNAME=Ubuntu
+MIN_RELEASE=14.04
+STEPS="apt_packages virtualenv"
+VENV_CMD="virtualenv-2.7"
+
+REQUIRES='
+    gcc
+    g++
+    make
+    git
+    patch
+
+    python
+
+    python-dev
+    libffi-dev
+    libvirt-dev
+    libssl-dev
+    libsasl2-dev
+    libldap2-dev
+    libmysqlclient-dev
+    libpq-dev
+
+    python-pip
+    python-virtualenv
+    python-six
+'
