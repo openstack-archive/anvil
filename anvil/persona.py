@@ -85,6 +85,9 @@ class Persona(object):
             for component in all_components:
                 if not distro.known_component(component):
                     will_work = False
+                    LOG.warning("Persona specified component '%s' but"
+                                " distro '%s' does not specify it", component,
+                                distro.name)
                     break
             if will_work:
                 selected_distro = distro
