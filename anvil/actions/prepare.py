@@ -68,33 +68,28 @@ class PrepareAction(action.Action):
             dependency_handler.package_start()
             removals.extend(states.reverts("package"))
             if not hasattr(dependency_handler, 'package_instances'):
-                try:
-                    self._run_phase(
-                        action.PhaseFunctors(
-                            start=lambda i: LOG.info("Packaging %s.", colorizer.quote(i.name)),
-                            run=dependency_handler.package_instance,
-                            end=None,
-                        ),
-                        group,
-                        instances,
-                        "package",
-                        *removals
-                    )
-                finally:
-                    dependency_handler.package_finish()
+                self._run_phase(
+                    action.PhaseFunctors(
+                        start=lambda i: LOG.info("Packaging %s.", colorizer.quote(i.name)),
+                        run=dependency_handler.package_instance,
+                        end=None,
+                    ),
+                    group,
+                    instances,
+                    "package",
+                    *removals
+                )
             else:
-                try:
-                    self._run_many_phase(
-                        action.PhaseFunctors(
-                            start=lambda i: LOG.info("Packaging %s.", colorizer.quote(i.name)),
-                            run=dependency_handler.package_instances,
-                            end=None,
-                        ),
-                        group,
-                        instances,
-                        "package",
-                        *removals
-                    )
-                finally:
-                    dependency_handler.package_finish()
+                self._run_many_phase(
+                    action.PhaseFunctors(
+                        start=lambda i: LOG.info("Packaging %s.", colorizer.quote(i.name)),
+                        run=dependency_handler.package_instances,
+                        end=None,
+                    ),
+                    group,
+                    instances,
+                    "package",
+                    *removals
+                )
+            dependency_handler.package_finish()
             prior_groups.append((group, instances))

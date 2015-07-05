@@ -18,6 +18,7 @@ from distutils import version as dist_version
 import pkg_resources
 import re
 import tempfile
+import threading
 
 from pip import req as pip_req
 
@@ -33,7 +34,12 @@ from anvil import utils
 
 LOG = logging.getLogger(__name__)
 
+# Caches and there associated locks...
+REQUIREMENT_FILE_CACHE = {}
+REQUIREMENT_FILE_CACHE_LOCK = threading.RLock()
 EGGS_DETAILED = {}
+EGGS_DETAILED_LOCK = threading.RLock()
+
 PYTHON_KEY_VERSION_RE = re.compile("^(.+)-([0-9][0-9.a-zA-Z]*)$")
 PIP_VERSION = pkg_resources.get_distribution('pip').version
 PIP_EXECUTABLE = sh.which_first(['pip', 'pip-python'])
@@ -96,38 +102,42 @@ def get_directory_details(path):
         raise IOError("Can not detail non-existent directory %s" % (path))
 
     # Check if we already got the details of this dir previously
-    path = sh.abspth(path)
-    cache_key = "d:%s" % (sh.abspth(path))
-    if cache_key in EGGS_DETAILED:
-        return EGGS_DETAILED[cache_key]
+    with EGGS_DETAILED_LOCK:
+        path = sh.abspth(path)
+        cache_key = "d:%s" % (sh.abspth(path))
+        if cache_key in EGGS_DETAILED:
+            return EGGS_DETAILED[cache_key]
 
-    req = extract(path)
-    req.source_dir = path
-    req.run_egg_info()
+        req = extract(path)
+        req.source_dir = path
+        req.run_egg_info()
 
-    dependencies = []
-    for d in req.requirements():
-        if not d.startswith("-e") and d.find("#"):
-            d = d.split("#")[0]
-        d = d.strip()
-        if d:
-            dependencies.append(d)
+        dependencies = []
+        for d in req.requirements():
+            if not d.startswith("-e") and d.find("#"):
+                d = d.split("#")[0]
+            d = d.strip()
+            if d:
+                dependencies.append(d)
 
-    details = {
-        'req': req.req,
-        'dependencies': dependencies,
-        'name': req.name,
-        'pkg_info': req.pkg_info(),
-        'dependency_links': req.dependency_links,
-        'version': req.installed_version,
-    }
+        details = {
+            'req': req.req,
+            'dependencies': dependencies,
+            'name': req.name,
+            'pkg_info': req.pkg_info(),
+            'dependency_links': req.dependency_links,
+            'version': req.installed_version,
+        }
 
-    EGGS_DETAILED[cache_key] = details
-    return details
+        EGGS_DETAILED[cache_key] = details
+        return details
 
 
 def drop_caches():
-    EGGS_DETAILED.clear()
+    with EGGS_DETAILED_LOCK:
+        EGGS_DETAILED.clear()
+    with REQUIREMENT_FILE_CACHE_LOCK:
+        REQUIREMENT_FILE_CACHE.clear()
 
 
 def get_archive_details(filename):
@@ -135,19 +145,20 @@ def get_archive_details(filename):
         raise IOError("Can not detail non-existent file %s" % (filename))
 
     # Check if we already got the details of this file previously
-    cache_key = "f:%s:%s" % (sh.basename(filename), sh.getsize(filename))
-    if cache_key in EGGS_DETAILED:
-        return EGGS_DETAILED[cache_key]
+    with EGGS_DETAILED_LOCK:
+        cache_key = "f:%s:%s" % (sh.basename(filename), sh.getsize(filename))
+        if cache_key in EGGS_DETAILED:
+            return EGGS_DETAILED[cache_key]
 
-    # Get pip to get us the egg-info.
-    with utils.tempdir() as td:
-        filename = sh.copy(filename, sh.joinpths(td, sh.basename(filename)))
-        extract_to = sh.mkdir(sh.joinpths(td, 'build'))
-        pip_util.unpack_file(filename, extract_to, content_type='', link='')
-        details = get_directory_details(extract_to)
+        # Get pip to get us the egg-info.
+        with utils.tempdir() as td:
+            filename = sh.copy(filename, sh.joinpths(td, sh.basename(filename)))
+            extract_to = sh.mkdir(sh.joinpths(td, 'build'))
+            pip_util.unpack_file(filename, extract_to, content_type='', link='')
+            details = get_directory_details(extract_to)
 
-    EGGS_DETAILED[cache_key] = details
-    return details
+        EGGS_DETAILED[cache_key] = details
+        return details
 
 
 def parse_requirements(contents):
@@ -162,11 +173,18 @@ def read_requirement_files(files):
     pip_requirements = []
     for filename in files:
         if sh.isfile(filename):
-            LOG.debug('Parsing requirements from %s', filename)
-            with open(filename, 'rb') as fh:
-                for line in fh:
-                    LOG.debug(">> %s", line.strip())
-            pip_requirements.extend(pip_req.parse_requirements(filename))
+            cache_key = "f:%s:%s" % (sh.abspth(filename), sh.getsize(filename))
+            with REQUIREMENT_FILE_CACHE_LOCK:
+                try:
+                    reqs = REQUIREMENT_FILE_CACHE[cache_key]
+                except KeyError:
+                    LOG.debug('Parsing requirements from %s', filename)
+                    with open(filename, 'rb') as fh:
+                        for line in fh:
+                            LOG.debug(">> %s", line.strip())
+                    reqs = tuple(pip_req.parse_requirements(filename))
+                    REQUIREMENT_FILE_CACHE[cache_key] = reqs
+                pip_requirements.extend(reqs)
     return (pip_requirements,
             [req.req for req in pip_requirements])
 
