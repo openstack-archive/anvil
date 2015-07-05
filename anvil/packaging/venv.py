@@ -19,14 +19,18 @@ import functools
 import itertools
 import os
 import re
+import sys
 import tarfile
+import threading
 
 from concurrent import futures
-import futurist
+
 import six
+from six.moves import queue as compat_queue
 
 from anvil import colorizer
 from anvil import env
+from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import shell as sh
 from anvil import utils
@@ -35,6 +39,35 @@ from anvil.packaging import base
 from anvil.packaging.helpers import pip_helper
 
 LOG = logging.getLogger(__name__)
+TOMBSTONE = object()
+
+
+def _worker(ident, shared_death, queue, futs):
+    while not shared_death.is_set():
+        w = queue.get()
+        if w is TOMBSTONE:
+            queue.put(w)
+            for fut in futs:
+                fut.cancel()
+            break
+        else:
+            func, fut = w
+            if fut.set_running_or_notify_cancel():
+                try:
+                    result = func()
+                except BaseException:
+                    LOG.exception("Worker %s dying...", ident)
+                    exc_type, exc_val, exc_tb = sys.exc_info()
+                    if six.PY2:
+                        fut.set_exception_info(exc_val, exc_tb)
+                    else:
+                        fut.set_exception(exc_val)
+                    # Stop all other workers from doing any more work...
+                    shared_death.set()
+                    for fut in futs:
+                        fut.cancel()
+                else:
+                    fut.set_result(result)
 
 
 def _on_finish(what, time_taken):
@@ -54,6 +87,11 @@ class VenvDependencyHandler(base.DependencyHandler):
     # PBR seems needed everywhere...
     _PREQ_PKGS = frozenset(['pbr'])
 
+    # Sometimes pip fails downloading things, retry it when
+    # this happens...
+    _RETRIES = 3
+    _RETRY_DELAY = 5
+
     def __init__(self, distro, root_dir,
                  instances, opts, group, prior_groups):
         super(VenvDependencyHandler, self).__init__(distro, root_dir,
@@ -61,10 +99,6 @@ class VenvDependencyHandler(base.DependencyHandler):
                                                     prior_groups)
         self.cache_dir = sh.joinpths(self.root_dir, "pip-cache")
         self.jobs = max(0, int(opts.get('jobs', 0)))
-        if self.jobs >= 1:
-            self.executor = futurist.ThreadPoolExecutor(max_workers=self.jobs)
-        else:
-            self.executor = futurist.SynchronousExecutor()
 
     def _venv_directory_for(self, instance):
         return sh.joinpths(instance.get_option('component_dir'), 'venv')
@@ -78,25 +112,20 @@ class VenvDependencyHandler(base.DependencyHandler):
             'VIRTUAL_ENV': venv_dir,
         }
         sh.mkdirslist(self.cache_dir, tracewriter=self.tracewriter)
-
-        def try_install(attempt, requirements):
-            cmd = list(base_pip) + ['install']
+        cmd = list(base_pip) + ['install']
+        cmd.extend([
+            '--download-cache',
+            self.cache_dir,
+        ])
+        if isinstance(requirements, six.string_types):
             cmd.extend([
-                '--download-cache',
-                self.cache_dir,
+                '--requirement',
+                requirements
             ])
-            if isinstance(requirements, six.string_types):
-                cmd.extend([
-                    '--requirement',
-                    requirements
-                ])
-            else:
-                for req in requirements:
-                    cmd.append(str(req))
-            sh.execute(cmd, env_overrides=env_overrides)
-
-        # Sometimes pip fails downloading things, retry it when this happens...
-        utils.retry(3, 5, try_install, requirements=requirements)
+        else:
+            for req in requirements:
+                cmd.append(str(req))
+        sh.execute(cmd, env_overrides=env_overrides)
 
     def _is_buildable(self, instance):
         app_dir = instance.get_option('app_dir')
@@ -150,13 +179,14 @@ class VenvDependencyHandler(base.DependencyHandler):
 
     def package_start(self):
         super(VenvDependencyHandler, self).package_start()
+        base_cmd = env.get_key('VENV_CMD', default_value='virtualenv')
         for instance in self.instances:
             if not self._is_buildable(instance):
                 continue
             # Create a virtualenv...
             venv_dir = self._venv_directory_for(instance)
             sh.mkdirslist(venv_dir, tracewriter=self.tracewriter)
-            cmd = ['virtualenv', '--clear', venv_dir]
+            cmd = [base_cmd, '--clear', venv_dir]
             LOG.info("Creating virtualenv at %s", colorizer.quote(venv_dir))
             sh.execute(cmd)
             if self._PREQ_PKGS:
@@ -165,20 +195,50 @@ class VenvDependencyHandler(base.DependencyHandler):
     def package_instances(self, instances):
         if not instances:
             return []
-        LOG.info("Packaging %s instances using %s jobs",
+        LOG.info("Packaging %s instances using %s threads",
                  len(instances), self.jobs)
-        fs = []
-        all_requires_what = self._filter_download_requires()
-        for instance in instances:
-            fs.append(self.executor.submit(self._package_instance,
-                                           instance, all_requires_what))
-        futures.wait(fs)
-        results = []
-        for f in fs:
-            results.append(f.result())
+        results = [None] * len(instances)
+        if self.jobs >= 1:
+            workers = []
+            futs = []
+            queue = compat_queue.Queue()
+            retryable_exceptions = [
+                excp.ProcessExecutionError,
+            ]
+            try:
+                shared_death = threading.Event()
+                for instance in instances:
+                    fut = futures.Future()
+                    func = functools.partial(utils.retry,
+                                             self._RETRIES, self._RETRY_DELAY,
+                                             self._package_instance,
+                                             instance,
+                                             retryable_exceptions=retryable_exceptions)
+                    queue.put((func, fut))
+                    futs.append(fut)
+                for i in range(0, self.jobs):
+                    w = threading.Thread(target=_worker,
+                                         args=(i + 1, shared_death,
+                                               queue, futs))
+                    w.daemon = True
+                    w.start()
+                    workers.append(w)
+            finally:
+                queue.put(TOMBSTONE)
+                while workers:
+                    w = workers.pop()
+                    w.join()
+                for fut in futs:
+                    if fut.cancelled():
+                        continue
+                    if fut.done():
+                        fut.result()
+        else:
+            for instance in instances:
+                self.package_instance(instance)
         return results
 
-    def _package_instance(self, instance, all_requires_what):
+    def _package_instance(self, instance, attempt):
         if not self._is_buildable(instance):
             # Skip things that aren't python...
             LOG.warn("Skipping building %s (not python)",
@@ -195,7 +255,9 @@ class VenvDependencyHandler(base.DependencyHandler):
                     extra_reqs.append(pip_helper.create_requirement(p))
             return extra_reqs
 
-        LOG.info("Packaging %s", colorizer.quote(instance.name))
+        all_requires_what = self._filter_download_requires()
+        LOG.info("Packaging %s (attempt %s)",
+                 colorizer.quote(instance.name), attempt)
         all_requires_mapping = {}
         for req in all_requires_what:
             if isinstance(req, six.string_types):

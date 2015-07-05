@@ -270,19 +270,25 @@ def retry(attempts, delay, func, *args, **kwargs):
     except AttributeError:
         pass
     failures = []
+    retryable_exceptions = kwargs.pop('retryable_exceptions', [Exception])
+    retryable_exceptions = tuple(retryable_exceptions)
     max_attempts = int(attempts) + 1
     for attempt in range(1, max_attempts):
         LOG.debug("Attempt %s for calling '%s'", attempt, func_name)
         kwargs['attempt'] = attempt
         try:
             return func(*args, **kwargs)
-        except Exception:
+        except retryable_exceptions:
             failures.append(sys.exc_info())
-            LOG.exception("Calling '%s' failed", func_name)
+            LOG.exception("Calling '%s' failed (retryable)", func_name)
             if attempt < max_attempts and delay > 0:
                 LOG.info("Waiting %s seconds before calling '%s' again",
                          delay, func_name)
                 sh.sleep(delay)
+        except BaseException:
+            failures.append(sys.exc_info())
+            LOG.exception("Calling '%s' failed (not retryable)", func_name)
+            break
     exc_type, exc, exc_tb = failures[-1]
     six.reraise(exc_type, exc, exc_tb)
 
