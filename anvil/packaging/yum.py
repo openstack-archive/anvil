@@ -666,6 +666,10 @@ class YumDependencyHandler(base.DependencyHandler):
         params.update(self._make_spec_functors(parsed_version))
         content = utils.load_template(self.SPEC_TEMPLATE_DIR, template_name)[1]
         spec_filename = sh.joinpths(self.rpmbuild_dir, "SPECS", "%s.spec" % rpm_name)
+        LOG.debug("Generating '%s' using template '%s' with params"
+                  " to fill in that template being:", spec_filename,
+                  template_name)
+        utils.log_object(params, logger=LOG, level=logging.DEBUG)
         sh.write_file(spec_filename, utils.expand_template(content, params),
                       tracewriter=self.tracewriter)
         return spec_filename
