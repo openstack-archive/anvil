@@ -29,7 +29,6 @@ import socket
 import sys
 import tempfile
 import time
-import urllib2
 
 try:
     # Only in python 2.7+
@@ -38,8 +37,6 @@ except ImportError:
     from ordereddict import OrderedDict
 
 from datetime import datetime
-
-from urlparse import urlunparse
 
 import netifaces
 import progressbar
@@ -57,21 +54,6 @@ from anvil import version
 
 from anvil.pprint import center_text
 
-# Message queue types to there internal 'canonicalized' name
-MQ_TYPES = {
-    'qpid': 'qpid',
-    'qpidd': 'qpid',
-    'rabbit': 'rabbit',
-    'rabbit-mq': 'rabbit',
-}
-
-# Virt 'canonicalized' name to there computer driver name
-VIRT_DRIVER_MAP = {
-    'libvirt': 'libvirt.LibvirtDriver',
-    'xenserver': 'xenapi.XenAPIDriver',
-    'vmware': 'vmwareapi.VMWareESXDriver',
-    'baremetal': 'baremetal.BareMetalDriver',
-}
 
 MONTY_PYTHON_TEXT_RE = re.compile(r"([a-z0-9A-Z\?!.,'\"]+)")
 
@@ -211,54 +193,6 @@ def has_any(text, *look_for):
     return False
 
 
-def wait_for_url(url, max_attempts=5,
-                 on_start=None, on_wait=None, on_success=None):
-    if max_attempts <= 0:
-        raise ValueError("Wait maximum attempts must be > 0")
-
-    def log_start():
-        LOG.info("Waiting for url %s to become active (max_attempts=%s)",
-                 colorizer.quote(url), max_attempts)
-
-    def log_wait(sleep_secs):
-        LOG.info("Sleeping for %s seconds, %s is still not active.", sleep_secs, colorizer.quote(url))
-        return sleep_secs
-
-    def log_success(attempts):
-        LOG.info("Url %s became active after %s attempts!", colorizer.quote(url), attempts)
-
-    if not on_wait:
-        on_wait = log_wait
-    if not on_success:
-        on_success = log_success
-    if not on_start:
-        on_start = log_start
-
-    failures = []
-    for i, sleep_time in enumerate(ExponentialBackoff(attempts=max_attempts)):
-        if i == 0:
-            on_start()
-        try:
-            with contextlib.closing(urllib2.urlopen(urllib2.Request(url))) as req:
-                req.read()
-                on_success(i + 1)
-                return url
-        except urllib2.HTTPError as e:
-            failures.append(sys.exc_info())
-            if e.code in range(200, 600):
-                # Should be ok, at least its responding...
-                # although potentially incorrectly...
-                on_success(i + 1)
-                return url
-            else:
-                sh.sleep(on_wait(sleep_time))
-        except IOError:
-            failures.append(sys.exc_info())
-            sh.sleep(on_wait(sleep_time))
-    exc_type, exc, exc_tb = failures[-1]
-    six.reraise(exc_type, exc, exc_tb)
-
-
 def retry(attempts, delay, func, *args, **kwargs):
     if delay < 0:
         raise ValueError("delay must be >= 0")
@@ -377,27 +311,6 @@ def merge_dicts(*dicts, **kwargs):
             else:
                 merged[k] = v
     return merged
-
-
-def make_url(scheme, host, port=None, path='', params='', query='', fragment=''):
-
-    pieces = []
-    pieces.append(scheme or '')
-
-    netloc = ''
-    if host:
-        netloc = str(host)
-
-    if port is not None:
-        netloc += ":" + "%s" % (port)
-
-    pieces.append(netloc or '')
-    pieces.append(path or '')
-    pieces.append(params or '')
-    pieces.append(query or '')
-    pieces.append(fragment or '')
-
-    return urlunparse([str(p) for p in pieces])
 
 
 def get_deep(items, path, quiet=True):
@@ -725,18 +638,6 @@ def splitlines_not_empty(text):
         line = line.strip()
         if line:
             yield line
-
-
-def canon_mq_type(mq_type):
-    mq_type = str(mq_type).lower().strip()
-    return MQ_TYPES.get(mq_type, 'rabbit')
-
-
-def canon_virt_driver(virt_driver):
-    virt_driver = str(virt_driver).strip().lower()
-    if not (virt_driver in VIRT_DRIVER_MAP):
-        return 'libvirt'
-    return virt_driver
 
 
 def strip_prefix_suffix(line, prefix=None, suffix=None):
