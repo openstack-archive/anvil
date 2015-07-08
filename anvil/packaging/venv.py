@@ -21,13 +21,10 @@ import os
 import re
 import sys
 import tarfile
-import threading
-
-from concurrent import futures
 
 import six
-from six.moves import queue as compat_queue
 
+from anvil import async
 from anvil import colorizer
 from anvil import env
 from anvil import exceptions as excp
@@ -208,40 +205,24 @@ class VenvDependencyHandler(base.DependencyHandler):
                  len(instances), self.jobs)
         results = [None] * len(instances)
         if self.jobs >= 1:
-            workers = []
-            futs = []
-            queue = compat_queue.Queue()
+            executor = async.ChainedWorkerExecutor(self.jobs)
             retryable_exceptions = [
                 excp.ProcessExecutionError,
             ]
-            try:
-                shared_death = threading.Event()
-                for instance in instances:
-                    fut = futures.Future()
-                    func = functools.partial(utils.retry,
-                                             self._RETRIES, self._RETRY_DELAY,
-                                             self._package_instance,
-                                             instance,
-                                             retryable_exceptions=retryable_exceptions)
-                    queue.put((func, fut))
-                    futs.append(fut)
-                for i in range(0, self.jobs):
-                    w = threading.Thread(target=_worker,
-                                         args=(i + 1, shared_death,
-                                               queue, futs))
-                    w.daemon = True
-                    w.start()
-                    workers.append(w)
-            finally:
-                queue.put(TOMBSTONE)
-                while workers:
-                    w = workers.pop()
-                    w.join()
-                for fut in futs:
-                    if fut.cancelled():
-                        continue
-                    if fut.done():
-                        fut.result()
+            run_funcs = []
+            for instance in instances:
+                func = functools.partial(utils.retry,
+                                         self._RETRIES, self._RETRY_DELAY,
+                                         self._package_instance, instance,
+                                         retryable_exceptions=retryable_exceptions)
+                run_funcs.append(func)
+            futs = executor.run(run_funcs)
+            executor.wait()
+            for fut in futs:
+                if fut.cancelled():
+                    continue
+                if fut.done():
+                    fut.result()
         else:
             for instance in instances:
                 self.package_instance(instance)
