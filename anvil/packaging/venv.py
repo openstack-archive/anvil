@@ -170,10 +170,16 @@ class VenvDependencyHandler(base.DependencyHandler):
                     LOG.info("Adjusted %s deployment path(s) in %s files",
                              adjustments, files_replaced)
 
+            release = str(instance.get_option("release", default_value=1))
+            if release and not release.startswith('-'):
+                release = '-' + release
+            version_full = instance.egg_info['version'] + release
+
             # Create a tarball containing the virtualenv.
-            tar_filename = sh.joinpths(venv_dir, '%s-venv.tar.gz' % instance.name)
-            LOG.info("Making tarball of %s built for %s at %s", venv_dir,
-                     instance.name, tar_filename)
+            tar_filename = sh.joinpths(venv_dir, '%s-%s-venv.tar.gz' % (instance.name,
+                                       version_full))
+            LOG.info("Making tarball of %s built for %s with version %s at %s", venv_dir,
+                     instance.name, version_full, tar_filename)
             utils.time_it(functools.partial(_on_finish, "Tarball creation"),
                           self._make_tarball, venv_dir, tar_filename)
 
