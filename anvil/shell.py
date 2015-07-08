@@ -241,12 +241,6 @@ def pipe_in_out(in_fh, out_fh, chunk_size=1024, chunk_cb=None):
     return bytes_piped
 
 
-def shellquote(text):
-    if text.isalnum():
-        return text
-    return "'%s'" % text.replace("'", "'\\''")
-
-
 def fileperms(path):
     return (os.stat(path).st_mode & 0o777)
 
@@ -476,22 +470,6 @@ def symlink(source, link, force=True, tracewriter=None):
     os.symlink(source, link)
     if tracewriter:
         tracewriter.symlink_made(link)
-
-
-def user_exists(username):
-    all_users = pwd.getpwall()
-    for info in all_users:
-        if info.pw_name == username:
-            return True
-    return False
-
-
-def group_exists(grpname):
-    all_grps = grp.getgrall()
-    for info in all_grps:
-        if info.gr_name == grpname:
-            return True
-    return False
 
 
 def getuser():
