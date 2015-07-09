@@ -17,16 +17,18 @@ REQUIRES='
     patch
 
     python
-
     python-dev
+
     libffi-dev
-    libvirt-dev
-    libssl-dev
-    libsasl2-dev
     libldap2-dev
     libmysqlclient-dev
     libpq-dev
+    libsasl2-dev
     libsqlite3-dev
+    libssl-dev
+    libvirt-dev
+    libxml2-dev
+    libxslt-dev
 
     python-pip
     python-virtualenv
