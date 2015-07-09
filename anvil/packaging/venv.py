@@ -51,8 +51,6 @@ class VenvInstallHelper(base.InstallHelper):
 
 
 class VenvDependencyHandler(base.DependencyHandler):
-    # PBR seems needed everywhere...
-    _PREQ_PKGS = frozenset(['pbr'])
 
     # Sometimes pip fails downloading things, retry it when
     # this happens...
@@ -165,8 +163,6 @@ class VenvDependencyHandler(base.DependencyHandler):
             cmd = [base_cmd, '--clear', venv_dir]
             LOG.info("Creating virtualenv at %s", colorizer.quote(venv_dir))
             sh.execute(cmd)
-            if self._PREQ_PKGS:
-                self._install_into_venv(instance, self._PREQ_PKGS)
 
     def package_instances(self, instances):
         if not instances:
