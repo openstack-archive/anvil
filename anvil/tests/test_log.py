@@ -34,5 +34,5 @@ class TestLog(test.TestCase):
         super(TestLog, self).tearDown()
 
     def test_logger_has_two_handlers(self):
-        log.setupLogging(log.INFO, log_name=self.log_name)
+        log.setupLogging(log.INFO, tee_filename=self.log_name)
         self.assertEqual(len(self.test_logger.handlers), 2)
