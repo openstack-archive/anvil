@@ -51,8 +51,7 @@ class VenvInstallHelper(base.InstallHelper):
 
 
 class VenvDependencyHandler(base.DependencyHandler):
-    # PBR seems needed everywhere...
-    _PREQ_PKGS = frozenset(['pbr'])
+    _PREQ_PKGS = frozenset()
 
     # Sometimes pip fails downloading things, retry it when
     # this happens...
