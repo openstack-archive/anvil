@@ -102,18 +102,19 @@ class TermAdapter(logging.LoggerAdapter):
 
 
 def setupLogging(log_level,
-                 format='%(levelname)s: @%(name)s : %(message)s',
-                 log_name='/var/log/anvil.log'):
+                 term_format='%(levelname)s: @%(name)s : %(message)s',
+                 tee_filename='/var/log/anvil.log',
+                 tee_format='%(asctime)s : %(levelname)s: @%(name)s : %(message)s'):
     root_logger = getLogger().logger
 
-    console_formatter = TermFormatter(format)
+    console_formatter = TermFormatter(term_format)
     console_logger = StreamHandler(sys.stdout)
     console_logger.setLevel(log_level)
     console_logger.setFormatter(console_formatter)
     root_logger.addHandler(console_logger)
 
-    file_formatter = logging.Formatter('%(asctime)s : ' + format)
-    file_logger = FileHandler(log_name)
+    file_formatter = logging.Formatter(tee_format)
+    file_logger = FileHandler(tee_filename)
     file_logger.setFormatter(file_formatter)
     file_logger.setLevel(DEBUG)
     root_logger.addHandler(file_logger)

@@ -236,6 +236,9 @@ puke()
 needs_bootstrap()
 {
     # Checks if we need to perform the bootstrap phase.
+    if [ "$SKIP_BOOTSTRAP" == "yes" ]; then
+        return 1
+    fi
     if [ "$BOOTSTRAP" == "true" ]; then
         return 0
     fi
