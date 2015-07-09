@@ -160,6 +160,13 @@ def parse(previous_settings=None):
                           metavar="DIR",
                           default=_get_default_dir(),
                           help=("empty root DIR or DIR with existing components (default: %default)"))
+    base_group.add_option("--log-file",
+                          action="store",
+                          type="string",
+                          dest="log_file",
+                          metavar="FILE",
+                          default='/var/log/anvil.log',
+                          help=("location to store tee of output (default: %default)"))
     parser.add_option_group(base_group)
 
     build_group = OptionGroup(parser, "Build specific options")
@@ -194,6 +201,7 @@ def parse(previous_settings=None):
     values['origins_fn'] = options.origins_fn
     values['verbose'] = options.verbose
     values['usr_only'] = options.usr_only
+    values['log_file'] = options.log_file
     if options.origins_patch_fn:
         with open(options.origins_patch_fn) as fp:
             values['origins_patch'] = json.load(fp)

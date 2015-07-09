@@ -1,0 +1,9 @@
+---
+components:
+- glance
+supports:
+- rhel
+- fedora
+- centos
+- ubuntu
+...
