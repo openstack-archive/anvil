@@ -94,7 +94,17 @@ def run(args):
     # !!
 
     # Ensure the anvil dirs are there if others are about to use it...
-    ensure_anvil_dirs(root_dir)
+    if not sh.isdir(root_dir):
+        LOG.info("Creating anvil root directory at path: %s", root_dir)
+        sh.mkdir(root_dir)
+    try:
+        for d in ANVIL_DIRS:
+            if sh.isdir(d):
+                continue
+            LOG.info("Creating anvil auxiliary directory at path: %s", d)
+            sh.mkdir(d)
+    except OSError as e:
+        LOG.warn("Failed ensuring auxiliary directories due to %s", e)
 
     # Load the origins...
     origins = _origins.load(args['origins_fn'],
@@ -159,32 +169,21 @@ def load_previous_settings():
     return settings_prev
 
 
-def ensure_anvil_dirs(root_dir):
-    wanted_dirs = list(ANVIL_DIRS)
-    if root_dir and root_dir not in wanted_dirs:
-        wanted_dirs.append(root_dir)
-    for d in wanted_dirs:
-        if sh.isdir(d):
-            continue
-        LOG.info("Creating anvil directory at path: %s", d)
-        sh.mkdir(d)
-
-
 def store_current_settings(c_settings):
+    # Remove certain keys that just shouldn't be saved
+    to_save = dict(c_settings)
+    for k in ['action', 'verbose']:
+        if k in c_settings:
+            to_save.pop(k, None)
+    buf = six.StringIO()
+    buf.write("# Anvil last used settings\n")
+    buf.write(utils.add_header(SETTINGS_FILE,
+                               utils.prettify_yaml(to_save),
+                               adjusted=sh.isfile(SETTINGS_FILE)))
     try:
-        # Remove certain keys that just shouldn't be saved
-        to_save = dict(c_settings)
-        for k in ['action', 'verbose']:
-            if k in c_settings:
-                to_save.pop(k, None)
-        buf = six.StringIO()
-        buf.write("# Anvil last used settings\n")
-        buf.write(utils.add_header(SETTINGS_FILE,
-                                   utils.prettify_yaml(to_save),
-                                   adjusted=sh.isfile(SETTINGS_FILE)))
         sh.write_file(SETTINGS_FILE, buf.getvalue())
-    except Exception as e:
-        LOG.debug("Failed writing to %s due to %s", SETTINGS_FILE, e)
+    except OSError as e:
+        LOG.warn("Failed writing to %s due to %s", SETTINGS_FILE, e)
 
 
 def ensure_perms():
@@ -209,7 +208,7 @@ def main():
     log_level = logging.INFO
     if args['verbose']:
         log_level = logging.DEBUG
-    logging.setupLogging(log_level)
+    logging.setupLogging(log_level, tee_filename=args['log_file'])
     LOG.debug("Log level is: %s" % (logging.getLevelName(log_level)))
 
     def print_exc(exc):
