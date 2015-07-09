@@ -125,6 +125,10 @@ class VenvDependencyHandler(base.DependencyHandler):
                 continue
             venv_dir = sh.abspth(self._venv_directory_for(instance))
 
+            release = str(instance.get_option("release", default_value=1))
+            if release and not release.startswith('-'):
+                release = '-' + release
+
             # Replace paths with virtualenv deployment directory.
             if self.opts.get('venv_deploy_dir'):
                 deploy_dir = sh.joinpths(self.opts.get('venv_deploy_dir'),
@@ -139,13 +143,13 @@ class VenvDependencyHandler(base.DependencyHandler):
                     LOG.info("Adjusted %s deployment path(s) in %s files",
                              adjustments, files_replaced)
 
-            release = str(instance.get_option("release", default_value=1))
-            if release and not release.startswith('-'):
-                release = '-' + release
-            version_full = instance.egg_info['version'] + release
+                tar_path = sh.joinpths(self.opts.get('venv_deploy_dir'), '%s-%s-venv' % (
+                                       instance.name, version_full))
+            else:
+                tar_path = '%s-%s-venv' % (instance.name, version_full)
 
             # Create a tarball containing the virtualenv.
-            tar_path = sh.joinpths(self.opts.get('venv_deploy_dir'), '%s-%s-venv' % (instance.name, version_full))
+            version_full = instance.egg_info['version'] + release
             tar_filename = sh.joinpths(venv_dir, '%s-%s-venv.tar.gz' % (instance.name,
                                        version_full))
             LOG.info("Making tarball of %s built for %s with version %s at %s", venv_dir,
