@@ -19,7 +19,6 @@ import functools
 import itertools
 import os
 import re
-import sys
 import tarfile
 
 import six
@@ -36,35 +35,6 @@ from anvil.packaging import base
 from anvil.packaging.helpers import pip_helper
 
 LOG = logging.getLogger(__name__)
-TOMBSTONE = object()
-
-
-def _worker(ident, shared_death, queue, futs):
-    while not shared_death.is_set():
-        w = queue.get()
-        if w is TOMBSTONE:
-            queue.put(w)
-            for fut in futs:
-                fut.cancel()
-            break
-        else:
-            func, fut = w
-            if fut.set_running_or_notify_cancel():
-                try:
-                    result = func()
-                except BaseException:
-                    LOG.exception("Worker %s dying...", ident)
-                    exc_type, exc_val, exc_tb = sys.exc_info()
-                    if six.PY2:
-                        fut.set_exception_info(exc_val, exc_tb)
-                    else:
-                        fut.set_exception(exc_val)
-                    # Stop all other workers from doing any more work...
-                    shared_death.set()
-                    for fut in futs:
-                        fut.cancel()
-                else:
-                    fut.set_result(result)
 
 
 def _on_finish(what, time_taken):
