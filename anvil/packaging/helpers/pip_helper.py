@@ -128,6 +128,8 @@ def get_directory_details(path):
             'dependency_links': req.dependency_links,
             'version': req.installed_version,
         }
+        LOG.debug("Egg details for %s are:", path)
+        utils.log_object(details, logger=LOG, level=logging.DEBUG)
 
         EGGS_DETAILED[cache_key] = details
         return details
