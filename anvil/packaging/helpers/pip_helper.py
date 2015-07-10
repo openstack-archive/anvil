@@ -17,10 +17,12 @@
 from distutils import version as dist_version
 import pkg_resources
 import re
+import sys
 import tempfile
 import threading
 
 from pip import req as pip_req
+import pkginfo
 
 try:
     from pip import util as pip_util
@@ -97,7 +99,7 @@ def extract_requirement(line):
     return req.req
 
 
-def get_directory_details(path):
+def get_directory_details(path, pbr_version=None):
     if not sh.isdir(path):
         raise IOError("Can not detail non-existent directory %s" % (path))
 
@@ -108,29 +110,31 @@ def get_directory_details(path):
         if cache_key in EGGS_DETAILED:
             return EGGS_DETAILED[cache_key]
 
-        req = extract(path)
-        req.source_dir = path
-        req.run_egg_info()
+        cmd = [sys.executable, 'setup.py', 'egg_info']
+        if pbr_version:
+            env_overrides = {
+                "PBR_VERSION": str(pbr_version),
+            }
+        else:
+            env_overrides = {}
+        sh.execute(cmd, cwd=path, env_overrides=env_overrides)
+        details = pkginfo.get_metadata(path)
+        if not details:
+            raise RuntimeError("No egg detail information discovered"
+                               " at '%s'" % path)
 
-        dependencies = []
-        for d in req.requirements():
-            if not d.startswith("-e") and d.find("#"):
-                d = d.split("#")[0]
-            d = d.strip()
-            if d:
-                dependencies.append(d)
-
-        details = {
-            'req': req.req,
-            'dependencies': dependencies,
-            'name': req.name,
-            'pkg_info': req.pkg_info(),
-            'dependency_links': req.dependency_links,
-            'version': req.installed_version,
+        egg_details = {
+            'req': create_requirement(details.name, version=details.version),
         }
+        for attr_name in ['description', 'author',
+                          'version', 'name', 'summary']:
+            egg_details[attr_name] = getattr(details, attr_name)
 
-        EGGS_DETAILED[cache_key] = details
-        return details
+        LOG.debug("Extracted '%s' egg detail information:", path)
+        utils.log_object(egg_details, logger=LOG, level=logging.DEBUG)
+
+        EGGS_DETAILED[cache_key] = egg_details
+        return egg_details
 
 
 def drop_caches():
@@ -140,7 +144,7 @@ def drop_caches():
         REQUIREMENT_FILE_CACHE.clear()
 
 
-def get_archive_details(filename):
+def get_archive_details(filename, pbr_version=None):
     if not sh.isfile(filename):
         raise IOError("Can not detail non-existent file %s" % (filename))
 
@@ -155,9 +159,10 @@ def get_archive_details(filename):
             filename = sh.copy(filename, sh.joinpths(td, sh.basename(filename)))
             extract_to = sh.mkdir(sh.joinpths(td, 'build'))
             pip_util.unpack_file(filename, extract_to, content_type='', link='')
-            details = get_directory_details(extract_to)
+            egg_details = get_directory_details(extract_to,
+                                                pbr_version=pbr_version)
 
-        EGGS_DETAILED[cache_key] = details
+        EGGS_DETAILED[cache_key] = egg_details
         return details
 
 
