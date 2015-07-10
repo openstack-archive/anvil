@@ -18,6 +18,8 @@
 # R0921: Abstract class not referenced
 #pylint: disable=R0902,R0921
 
+import functools
+
 from anvil import colorizer
 from anvil import exceptions as exc
 from anvil import log as logging
@@ -175,36 +177,9 @@ class DependencyHandler(object):
             sh.unlink(self.tracereader.filename())
 
     def _scan_pip_requires(self, requires_files):
+        own_eggs = self._python_eggs(False)
 
-        def validate_requirement(filename, source_req):
-            install_egg = None
-            for egg_info in self._python_eggs(False):
-                if egg_info['name'] == source_req.key:
-                    install_egg = egg_info
-                    break
-            if not install_egg:
-                return
-            # Ensure what we are about to install/create will actually work
-            # with the desired version. If it is not compatible then we should
-            # abort and someone should update the tag/branch in the origin
-            # file (or fix it via some other mechanism).
-            if install_egg['version'] not in source_req:
-                msg = ("Can not satisfy '%s' with '%s', version"
-                       " conflict found in %s")
-                raise exc.DependencyException(msg % (source_req,
-                                                     install_egg['req'],
-                                                     filename))
-
-        if not requires_files:
-            return
-        utils.log_iterable(sorted(requires_files),
-                           logger=LOG,
-                           header="Scanning %s pip 'requires' files" % (len(requires_files)))
-        forced_by_key = {}
-        for pkg in self.forced_pips:
-            forced_by_key[pkg.key] = pkg
-        mutations = 0
-        for fn in sorted(requires_files):
+        def replace_forced_requirements(fn, forced_by_key):
             old_lines = sh.load_file(fn).splitlines()
             new_lines = []
             alterations = []
@@ -232,12 +207,52 @@ class DependencyHandler(object):
             if alterations:
                 contents = "# Cleaned on %s\n\n%s\n" % (utils.iso8601(), "\n".join(new_lines))
                 sh.write_file_and_backup(fn, contents)
-                mutations += len(alterations)
                 utils.log_iterable(alterations,
                                    logger=LOG,
                                    header="Replaced %s requirements in %s"
                                           % (len(alterations), fn),
                                    color=None)
+            return len(alterations)
+
+        def on_replace_done(fn, time_taken):
+            LOG.info("Replacing potential forced requirements in %s"
+                     " took %s seconds", colorizer.quote(fn), time_taken)
+
+        def validate_requirement(filename, source_req):
+            install_egg = None
+            for egg_info in own_eggs:
+                if egg_info['name'] == source_req.key:
+                    install_egg = egg_info
+                    break
+            if not install_egg:
+                return
+            # Ensure what we are about to install/create will actually work
+            # with the desired version. If it is not compatible then we should
+            # abort and someone should update the tag/branch in the origin
+            # file (or fix it via some other mechanism).
+            if install_egg['version'] not in source_req:
+                msg = ("Can not satisfy '%s' with '%s', version"
+                       " conflict found in %s")
+                raise exc.DependencyException(msg % (source_req,
+                                                     install_egg['req'],
+                                                     filename))
+
+        if not requires_files:
+            return
+        requires_files = sorted(requires_files)
+        utils.log_iterable(requires_files,
+                           logger=LOG,
+                           header="Scanning %s pip 'requires' files" % (len(requires_files)))
+        forced_by_key = {}
+        for pkg in self.forced_pips:
+            forced_by_key[pkg.key] = pkg
+        mutations = 0
+        for fn in requires_files:
+            LOG.info("Replacing any potential forced requirements in %s",
+                     colorizer.quote(fn))
+            mutations += utils.time_it(functools.partial(on_replace_done, fn),
+                                       replace_forced_requirements,
+                                       fn, forced_by_key)
         # NOTE(imelnikov): after updating requirement lists we should re-fetch
         # data from them again, so we drop pip helper caches here.
         if mutations > 0:
