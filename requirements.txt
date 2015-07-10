@@ -2,7 +2,7 @@
 # of appearance. Changing the order has an impact on the overall integration
 # process (and later running processes...).
 
-pip<6
+pip>=6
 pkginfo
 cheetah>=2.4.4
 iniparse
