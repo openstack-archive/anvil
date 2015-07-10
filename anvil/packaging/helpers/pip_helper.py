@@ -21,12 +21,9 @@ import tempfile
 import threading
 
 from pip import req as pip_req
+from pip import utils as pip_util
 
-try:
-    from pip import util as pip_util
-except ImportError:
-    # pip >=6 changed this location for some reason...
-    from pip import utils as pip_util
+from pip.download import PipSession
 
 from anvil import log as logging
 from anvil import shell as sh
@@ -182,7 +179,9 @@ def read_requirement_files(files):
                     with open(filename, 'rb') as fh:
                         for line in fh:
                             LOG.debug(">> %s", line.strip())
-                    reqs = tuple(pip_req.parse_requirements(filename))
+                    session = PipSession()
+                    reqs = tuple(pip_req.parse_requirements(filename,
+                                                            session=session))
                     REQUIREMENT_FILE_CACHE[cache_key] = reqs
                 pip_requirements.extend(reqs)
     return (pip_requirements,
