@@ -5,16 +5,15 @@ from __future__ import print_function
 import collections
 import itertools
 import logging
+import pkg_resources
 import re
 import sys
 
 import argparse
 import six
 
-import pip.index
-import pip.req
-import pkg_resources
-
+from pip import download as pip_download
+from pip import req as pip_req
 
 # Use this for the sorting order of operators
 OP_ORDER = ('!=', '==', '<', '<=', '>', '>=')
@@ -84,21 +83,6 @@ def setup_logging(options):
     LOGGER.setLevel(level)
 
 
-def install_requirement_ensure_req_field(req):
-    if not hasattr(req, 'req') or not req.req:
-        # pip 0.8 or so
-        link = pip.index.Link(req.url)
-        name = link.egg_fragment
-        if not name:
-            raise Exception("Cannot find package name from `%s'" % req.url)
-        req.req = pkg_resources.Requirement.parse(name)
-    return req
-
-
-def install_requirement_str(req):
-    return req.url or str(req.req)
-
-
 def install_requirement_parse(line, comes_from):
     line = line.strip()
     if line.startswith('-e') or line.startswith('--editable'):
@@ -106,11 +90,11 @@ def install_requirement_parse(line, comes_from):
             line = line[2:].strip()
         else:
             line = line[len('--editable'):].strip().lstrip('=')
-        req = pip.req.InstallRequirement.from_editable(
+        req = pip_req.InstallRequirement.from_editable(
             line, comes_from=comes_from)
     else:
-        req = pip.req.InstallRequirement.from_line(line, comes_from)
-    return install_requirement_ensure_req_field(req)
+        req = pip_req.InstallRequirement.from_line(line, comes_from)
+    return req
 
 
 def iter_combinations(elements, include_empty=False):
@@ -302,7 +286,7 @@ def best_match(req_key, req_list, forced_req=None):
             for (op, version) in specs:
                 spec_pieces.append("%s%s" % (op, version))
             spec = "%s%s" % (req_key, ",".join(spec_pieces))
-            sources.append(pip.req.InstallRequirement.from_line(spec, 'compiled'))
+            sources.append(pip_req.InstallRequirement.from_line(spec, 'compiled'))
         return sources
 
     def reform_incompatibles(incompatible_specs, versions):
@@ -323,7 +307,7 @@ def best_match(req_key, req_list, forced_req=None):
             if not matches:
                 spec_pieces = "%s%s" % (op, version)
                 spec = "%s%s" % (req_key, spec_pieces)
-                causes.append(pip.req.InstallRequirement.from_line(spec,
+                causes.append(pip_req.InstallRequirement.from_line(spec,
                                                                    "compiled conflict"))
         return causes
 
@@ -370,10 +354,10 @@ def parse_requirements(options):
             all_requirements.setdefault(req_key(req), []).append(req)
         except Exception as ex:
             raise RequirementException("Cannot parse `%s': %s" % (req_spec, ex))
+    session = pip_download.PipSession()
     for filename in options.requirements:
         try:
-            for req in pip.req.parse_requirements(filename):
-                req = install_requirement_ensure_req_field(req)
+            for req in pip_req.parse_requirements(filename, session=session):
                 if skip_match and skip_match.search(req_key(req)):
                     continue
                 all_requirements.setdefault(req_key(req), []).append(req)
@@ -418,18 +402,18 @@ def join_requirements(requirements, ignored_requirements, forced_requirements):
     return (joined_requirements, incompatibles)
 
 
+def reform_req(req):
+    if req.editable:
+        return "-e " + "%s#egg=%s" % (req.link.url_without_fragment, req.req)
+    else:
+        return str(req.req)
+
+
 def print_requirements(joined_requirements):
     formatted_requirements = []
     for req_key in sorted(six.iterkeys(joined_requirements)):
         req = joined_requirements[req_key][0]
-        req_prefix = ""
-        if req.editable:
-            req_prefix = "-e "
-        if req.url:
-            req = "%s#egg=%s" % (req.url, req.req)
-        else:
-            req = str(req.req)
-        formatted_requirements.append("%s%s" % (req_prefix, req))
+        formatted_requirements.append(reform_req(req))
     for req in formatted_requirements:
         print(req)
 
@@ -446,12 +430,12 @@ def print_incompatibles(incompatibles, joined_requirements):
             print("Choosing:", file=sys.stderr)
             for chosen in chosen_reqs:
                 print("\t%s: %s" % (chosen.comes_from,
-                                    install_requirement_str(chosen)),
+                                    reform_req(chosen)),
                       file=sys.stderr)
         print("Conflicting:", file=sys.stderr)
         for conflicting in req_incompatibles:
             print("\t%s: %s" % (conflicting.comes_from,
-                                install_requirement_str(conflicting)),
+                                reform_req(conflicting)),
                   file=sys.stderr)
 
 
