@@ -15,9 +15,9 @@ import sys
 import tempfile
 
 import argparse
+from pip import utils as pip_util
 import six
 
-import pip.util
 import pkg_resources
 
 
@@ -695,7 +695,7 @@ def build_rpm_spec(pkg_key, pkg_name, options, **kwargs):
 def build_rpm(options, filename, build_options):
     if os.path.isfile(filename):
         temp_dir = tempfile.mkdtemp('-unpack', 'py2rpm-')
-        pip.util.unpack_file(filename, temp_dir, None, None)
+        pip_util.unpack_file(filename, temp_dir, None, None)
         source_dir = temp_dir
         archive_name = filename
     elif os.path.isdir(filename):
@@ -720,7 +720,16 @@ def build_rpm(options, filename, build_options):
     pkg_key = python_name_to_key(pkg_name)
     build_dir = options.rpm_base
     rpm_name = python_key_to_rpm(pkg_key)
-    version = one_line(info["version"])
+
+    # NOTE(harlowja): try not to use info["version"] to get the version, since
+    # currently that is getting normalized by setuptools to be a normalized
+    # version which can be different from the actual version...
+    try:
+        version = setup_py_one_line(source_dir, "--version")
+    except Exception:
+        version = info['version']
+        logger.warning("Failed extracting version, falling back to '%s'",
+                       version, exc_info=True)
     cleaned_version = version.replace('-', '_')
     spec_name = os.path.join(build_dir, "SPECS", "%s.spec" % rpm_name)
 
