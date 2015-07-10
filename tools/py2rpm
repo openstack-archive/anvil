@@ -15,9 +15,9 @@ import sys
 import tempfile
 
 import argparse
+from pip import utils as pip_util
 import six
 
-import pip.util
 import pkg_resources
 
 
@@ -695,7 +695,7 @@ def build_rpm_spec(pkg_key, pkg_name, options, **kwargs):
 def build_rpm(options, filename, build_options):
     if os.path.isfile(filename):
         temp_dir = tempfile.mkdtemp('-unpack', 'py2rpm-')
-        pip.util.unpack_file(filename, temp_dir, None, None)
+        pip_util.unpack_file(filename, temp_dir, None, None)
         source_dir = temp_dir
         archive_name = filename
     elif os.path.isdir(filename):

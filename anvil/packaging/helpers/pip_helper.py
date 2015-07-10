@@ -22,15 +22,12 @@ import sys
 import tempfile
 import threading
 
+from pip import download as pip_download
 from pip import req as pip_req
+from pip import utils as pip_util
+
 import pkginfo
 import six
-
-try:
-    from pip import util as pip_util
-except ImportError:
-    # pip >=6 changed this location for some reason...
-    from pip import utils as pip_util
 
 from anvil import log as logging
 from anvil import shell as sh
@@ -208,6 +205,7 @@ def parse_requirements(contents):
 
 def read_requirement_files(files):
     pip_requirements = []
+    session = pip_download.PipSession()
     for filename in files:
         if sh.isfile(filename):
             cache_key = "f:%s:%s" % (sh.abspth(filename), sh.getsize(filename))
@@ -215,7 +213,8 @@ def read_requirement_files(files):
                 try:
                     reqs = REQUIREMENT_FILE_CACHE[cache_key]
                 except KeyError:
-                    reqs = tuple(pip_req.parse_requirements(filename))
+                    reqs = tuple(pip_req.parse_requirements(filename,
+                                                            session=session))
                     REQUIREMENT_FILE_CACHE[cache_key] = reqs
                 pip_requirements.extend(reqs)
     return (pip_requirements,
