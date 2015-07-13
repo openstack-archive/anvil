@@ -14,6 +14,8 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import six
+
 from anvil import exceptions as excp
 from anvil import log as logging
 from anvil import patcher
@@ -60,6 +62,26 @@ class Component(object):
         if pw_val is None:
             raise excp.PasswordException("Password asked for option %s but none was pre-populated!" % (option))
         return pw_val
+
+    def get_interpolated_option(self, option, default_value=None):
+        tried = [option]
+        while True:
+            option_value = utils.get_deep(self.options, [option])
+            if option_value is None:
+                return default_value
+            else:
+                if not isinstance(option_value, six.string_types):
+                    return option_value
+                if option_value.startswith("$"):
+                    maybe_option = option_value[1:]
+                    if maybe_option in tried:
+                        tried.append(maybe_option)
+                        raise excp.ConfigException("Option loop %s detected" % tried)
+                    else:
+                        tried.append(maybe_option)
+                        option = maybe_option
+                else:
+                    return option_value
 
     def get_option(self, option, *options, **kwargs):
         option_value = utils.get_deep(self.options, [option] + list(options))
