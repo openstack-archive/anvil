@@ -51,8 +51,8 @@ class VenvInstallHelper(base.InstallHelper):
 
 
 class VenvDependencyHandler(base.DependencyHandler):
-    # PBR seems needed everywhere...
-    _PREQ_PKGS = frozenset(['pbr'])
+    PREREQUISITE_PKGS = frozenset(['pbr'])
+    PREREQUISITE_UPGRADE_PKGS = frozenset(['pip'])
 
     # Sometimes pip fails downloading things, retry it when
     # this happens...
@@ -70,7 +70,7 @@ class VenvDependencyHandler(base.DependencyHandler):
     def _venv_directory_for(self, instance):
         return sh.joinpths(instance.get_option('component_dir'), 'venv')
 
-    def _install_into_venv(self, instance, requirements):
+    def _install_into_venv(self, instance, requirements, upgrade=False):
         venv_dir = self._venv_directory_for(instance)
         base_pip = [sh.joinpths(venv_dir, 'bin', 'pip')]
         env_overrides = {
@@ -80,6 +80,8 @@ class VenvDependencyHandler(base.DependencyHandler):
         }
         sh.mkdirslist(self.cache_dir, tracewriter=self.tracewriter)
         cmd = list(base_pip) + ['install']
+        if upgrade:
+            cmd.append("--upgrade")
         cmd.extend([
             '--download-cache',
             self.cache_dir,
@@ -169,8 +171,10 @@ class VenvDependencyHandler(base.DependencyHandler):
             cmd = [base_cmd, '--clear', venv_dir]
             LOG.info("Creating virtualenv at %s", colorizer.quote(venv_dir))
             sh.execute(cmd)
-            if self._PREQ_PKGS:
-                self._install_into_venv(instance, self._PREQ_PKGS)
+            self._install_into_venv(instance, self.PREREQUISITE_PKGS)
+            self._install_into_venv(instance,
+                                    self.PREREQUISITE_UPGRADE_PKGS,
+                                    upgrade=True)
 
     def package_instances(self, instances):
         if not instances:
