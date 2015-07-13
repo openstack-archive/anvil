@@ -34,12 +34,15 @@ TEST_REQUIREMENT_FILES = [
     'test-requirements.txt',
 ]
 
+CFG_VERSION_OVERRIDES = ['pbr_version', 'tag']
+
 
 class BuildComponent(base.BasicComponent):
     pass
 
 
 class PythonBuildComponent(BuildComponent):
+
     def __init__(self, *args, **kargs):
         super(PythonBuildComponent, self).__init__(*args, **kargs)
         self._origins_fn = kargs['origins_fn']
@@ -84,7 +87,12 @@ class PythonBuildComponent(BuildComponent):
     @property
     def egg_info(self):
         app_dir = self.get_option('app_dir')
-        pbr_version = self.get_option('pbr_version')
+        pbr_version = None
+        for cfg_key in CFG_VERSION_OVERRIDES:
+            maybe_pbr_version = self.get_option(cfg_key)
+            if maybe_pbr_version:
+                pbr_version = maybe_pbr_version
+                break
         egg_info = pip_helper.get_directory_details(app_dir, pbr_version=pbr_version)
         egg_info = egg_info.copy()
         egg_info['dependencies'] = pip_helper.read_requirement_files(self.requires_files)[1]
