@@ -70,7 +70,8 @@ class VenvDependencyHandler(base.DependencyHandler):
     def _venv_directory_for(self, instance):
         return sh.joinpths(instance.get_option('component_dir'), 'venv')
 
-    def _install_into_venv(self, instance, requirements, upgrade=False):
+    def _install_into_venv(self, instance, requirements,
+                           upgrade=False, extra_env_overrides=None):
         venv_dir = self._venv_directory_for(instance)
         base_pip = [sh.joinpths(venv_dir, 'bin', 'pip')]
         env_overrides = {
@@ -78,6 +79,8 @@ class VenvDependencyHandler(base.DependencyHandler):
                                      env.get_key('PATH', default_value='')]),
             'VIRTUAL_ENV': venv_dir,
         }
+        if extra_env_overrides:
+            env_overrides.update(extra_env_overrides)
         sh.mkdirslist(self.cache_dir, tracewriter=self.tracewriter)
         cmd = list(base_pip) + ['install']
         if upgrade:
@@ -267,9 +270,13 @@ class VenvDependencyHandler(base.DependencyHandler):
         utils.time_it(functools.partial(_on_finish, "Dependency %s" % what),
                       self._install_into_venv, instance,
                       requires_what)
+        extra_env_overrides = {
+            'PBR_VERSION': instance.egg_info['version'],
+        }
         utils.time_it(functools.partial(_on_finish, "Instance %s" % what),
                       self._install_into_venv, instance,
-                      [instance.get_option('app_dir')])
+                      [instance.get_option('app_dir')],
+                      extra_env_overrides=extra_env_overrides)
 
     def download_dependencies(self):
         pass
