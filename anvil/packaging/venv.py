@@ -149,10 +149,10 @@ class VenvDependencyHandler(base.DependencyHandler):
                     LOG.info("Adjusted %s deployment path(s) in %s files",
                              adjustments, files_replaced)
 
-                tar_path = sh.joinpths(self.opts.get('venv_deploy_dir'), '%s-%s-venv' % (
+                tar_path = sh.joinpths(self.opts.get('venv_deploy_dir'), '%s/%s-%s-venv/venv' % (instance.name,
                                        instance.name, version_full))
             else:
-                tar_path = '%s-%s-venv' % (instance.name, version_full)
+                tar_path = '%s/%s-%s-venv/venv' % (instance.name, instance.name, version_full)
 
             # Create a tarball containing the virtualenv.
             tar_filename = sh.joinpths(venv_dir, '%s-%s-venv.tar.gz' % (instance.name,
