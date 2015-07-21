@@ -694,6 +694,7 @@ class YumDependencyHandler(base.DependencyHandler):
         common_init_content = utils.load_template("packaging",
                                                   "common.service")[1]
         daemon_args = instance.get_option('daemon_args', default_value={})
+        killmode = instance.get_option('killmode', default_value={})
         for src in spec_details.get('sources', []):
             script = sh.basename(src)
             if not (script.endswith(".service")):
@@ -702,11 +703,14 @@ class YumDependencyHandler(base.DependencyHandler):
             if sh.isfile(target_filename):
                 continue
             bin_name = utils.strip_prefix_suffix(script, "openstack-", ".service")
+            kill_mode = killmode.get(bin_name, '') or "control-group"
             params = {
                 "bin": bin_name,
                 "package": bin_name.split("-", 1)[0],
                 "daemon_args": daemon_args.get(bin_name, ''),
+                "killmode": kill_mode,
             }
+
             sh.write_file(target_filename,
                           utils.expand_template(common_init_content, params))
 
