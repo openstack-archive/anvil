@@ -237,11 +237,10 @@ cd horizon && django-admin compilemessages && cd ..
 cd openstack_dashboard && django-admin compilemessages && cd ..
 #end if
 
-#raw
+export PBR_VERSION="${version}"
 %{__python} setup.py build
 
 cp openstack_dashboard/local/local_settings.py.example openstack_dashboard/local/local_settings.py
-#end raw
 
 #NOTE(aababilov): temporarily drop dependency on OpenStack client packages during RPM building
 #if $older_than('2014.1')
@@ -298,6 +297,8 @@ rm -fr html/.doctrees html/.buildinfo
 #end raw
 
 %install
+
+export PBR_VERSION="${version}"
 %{__python} setup.py install -O1 --skip-build --root %{buildroot}
 
 %if ! 0%{?usr_only}

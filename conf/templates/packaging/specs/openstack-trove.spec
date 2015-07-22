@@ -129,10 +129,14 @@ simple runner (%{python_name}-make-test-env).
 #raw
 
 %build
+
+export PBR_VERSION="${version}"
 %{__python} setup.py build
 
 
 %install
+
+export PBR_VERSION="${version}"
 %__rm -rf %{buildroot}
 
 %if 0%{?with_doc}
