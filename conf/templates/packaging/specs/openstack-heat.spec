@@ -9,6 +9,12 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %endif
 
+%if ! 0%{?overwrite_configs}
+%global configfile %config(noreplace)
+%else
+%global configfile %config
+%endif
+
 Name:             openstack-heat
 Summary:          OpenStack Orchestration (heat)
 Version:          %{os_version}$version_suffix
@@ -154,11 +160,11 @@ Components common to all OpenStack Heat services
 %dir %attr(0755,heat,root) %{_sysconfdir}/heat
 %dir %attr(0755,heat,root) /var/run/heat
 #if $older_than('2015.1')
-%config(noreplace) %attr(0640, root, heat) %{_sysconfdir}/heat/heat.conf
+%config%configfile %attr(0640, root, heat) %{_sysconfdir}/heat/heat.conf
 #end if
-%config(noreplace) %attr(0640, root, heat) %{_sysconfdir}/heat/api-paste.ini
-%config(noreplace) %attr(0640, root, heat) %{_sysconfdir}/heat/policy.json
-%config(noreplace) %{_sysconfdir}/logrotate.d/heat
+%config%configfile %attr(0640, root, heat) %{_sysconfdir}/heat/api-paste.ini
+%config%configfile %attr(0640, root, heat) %{_sysconfdir}/heat/policy.json
+%config%configfile %{_sysconfdir}/logrotate.d/heat
 %endif
 
 %if ! 0%{?usr_only}

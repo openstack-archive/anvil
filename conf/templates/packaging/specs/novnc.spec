@@ -1,6 +1,12 @@
 
 %global os_version $version
 
+%if ! 0%{?overwrite_configs}
+%global configfile %config(noreplace)
+%else
+%global configfile %config
+%endif
+
 Name:           novnc
 Summary:        VNC client using HTML5 (Web Sockets, Canvas) with encryption support
 Epoch:          $epoch

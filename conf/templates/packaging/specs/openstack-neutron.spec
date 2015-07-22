@@ -18,6 +18,12 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %endif
 
+%if ! 0%{?overwrite_configs}
+%global configfile %config(noreplace) 
+%else
+%global configfile %config
+%endif
+
 Name:		openstack-neutron
 Version:        %{os_version}$version_suffix
 Release:        $release%{?dist}
@@ -1086,14 +1092,14 @@ fi
 %endif
 %dir %{_sysconfdir}/neutron
 %{_sysconfdir}/neutron/release
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/policy.json
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/neutron.conf
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/*.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/policy.json
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/neutron.conf
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/*.ini
 #if $older_than('2015.1')
-%config(noreplace) %{_sysconfdir}/neutron/rootwrap.conf
+%configfile %{_sysconfdir}/neutron/rootwrap.conf
 %dir %{_sysconfdir}/neutron/plugins
-%config(noreplace) %{_sysconfdir}/logrotate.d/*
-%config(noreplace) %{_sysconfdir}/sudoers.d/neutron
+%configfile %{_sysconfdir}/logrotate.d/*
+%configfile %{_sysconfdir}/sudoers.d/neutron
 %dir %attr(0755, neutron, neutron) %{_sharedstatedir}/neutron
 %dir %attr(0755, neutron, neutron) %{_localstatedir}/log/neutron
 %dir %attr(0755, neutron, neutron) %{_localstatedir}/lock/neutron
@@ -1173,9 +1179,9 @@ fi
 %dir %{_sysconfdir}/neutron/conf.d
 %dir %{_sysconfdir}/neutron/conf.d/common
 %dir %{_sysconfdir}/neutron/plugins
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/neutron.conf
-%config(noreplace) %{_sysconfdir}/neutron/rootwrap.conf
-%config(noreplace) %{_sysconfdir}/logrotate.d/*
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/neutron.conf
+%configfile %{_sysconfdir}/neutron/rootwrap.conf
+%configfile %{_sysconfdir}/logrotate.d/*
 %{_sysconfdir}/sudoers.d/neutron
 %dir %attr(0755, neutron, neutron) %{_sharedstatedir}/neutron
 %dir %attr(0750, neutron, neutron) %{_localstatedir}/log/neutron
@@ -1203,7 +1209,7 @@ fi
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/bigswitch
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/bigswitch/*.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/bigswitch/*.ini
 #if $newer_than_eq('2014.1.dev146.g79fbeb7')
 %doc %{_sysconfdir}/neutron/plugins/bigswitch/ssl/*
 #end if
@@ -1217,9 +1223,9 @@ fi
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/brocade
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/brocade/*.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/brocade/*.ini
 #if $newer_than_eq('2015.1')
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/brocade/vyatta/*.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/brocade/vyatta/*.ini
 #end if
 %endif
 
@@ -1240,7 +1246,7 @@ fi
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/cisco
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/cisco/*.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/cisco/*.ini
 #if $older_than('2015.1')
 #if $newer_than('2014.2')
 %if ! (0%{?rhel} > 6)
@@ -1260,7 +1266,7 @@ fi
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/embrane
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/embrane/*.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/embrane/*.ini
 %endif
 #end if
 
@@ -1278,7 +1284,7 @@ fi
 %{_unitdir}/%{daemon_prefix}-hyperv-agent.service
 %endif
 %dir %{_sysconfdir}/neutron/plugins/hyperv
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/hyperv/*.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/hyperv/*.ini
 %endif
 #end if
 
@@ -1291,7 +1297,7 @@ fi
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/ibm
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/ibm/*.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/ibm/*.ini
 %endif
 #end if
 
@@ -1309,7 +1315,7 @@ fi
 %else
 %{_unitdir}/%{daemon_prefix}-linuxbridge-agent.service
 %endif
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/linuxbridge/*.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/linuxbridge/*.ini
 %endif
 
 #if $newer_than('2014.2')
@@ -1318,7 +1324,7 @@ fi
 %{_bindir}/neutron-metering-agent
 
 %if ! 0%{?usr_only}
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/metering_agent.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/metering_agent.ini
 %if ! (0%{?rhel} > 6)
 %{_initrddir}/%{daemon_prefix}-metering-agent
 %else
@@ -1333,7 +1339,7 @@ fi
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/midonet
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/midonet/*.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/midonet/*.ini
 %endif
 
 %files -n openstack-neutron-ml2
@@ -1343,7 +1349,7 @@ fi
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/ml2
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/ml2/*.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/ml2/*.ini
 %endif
 
 #if $older_than('2015.1')
@@ -1366,7 +1372,7 @@ fi
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/mlnx
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/mlnx/*.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/mlnx/*.ini
 #if $newer_than('2014.2')
 %if ! (0%{?rhel} > 6)
 %{_initrddir}/%{daemon_prefix}-mlnx-agent
@@ -1386,7 +1392,7 @@ fi
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/nicira
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/nicira/*.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/nicira/*.ini
 %endif
 #end if
 
@@ -1399,7 +1405,7 @@ fi
 #if $newer_than_eq('2014.1.1')
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/nuage
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/nuage/*.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/nuage/*.ini
 %endif
 #end if
 
@@ -1420,7 +1426,7 @@ fi
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/opencontrail
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/opencontrail/*.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/opencontrail/*.ini
 %endif
 #end if
 
@@ -1433,7 +1439,7 @@ fi
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/oneconvergence
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/oneconvergence/*.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/oneconvergence/*.ini
 %endif
 #end if
 
@@ -1457,7 +1463,7 @@ fi
 %{_unitdir}/%{daemon_prefix}-ovs-cleanup.service
 %endif
 %dir %{_sysconfdir}/neutron/plugins/openvswitch
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/openvswitch/*.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/openvswitch/*.ini
 %endif
 
 #if $newer_than_eq('2015.1')
@@ -1467,7 +1473,7 @@ fi
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/ovsvapp
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/ovsvapp/*.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/ovsvapp/*.ini
 %endif
 #end if
 
@@ -1478,7 +1484,7 @@ fi
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/plumgrid
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/plumgrid/*.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/plumgrid/*.ini
 %endif
 
 #if $older_than('2015.1')
@@ -1496,7 +1502,7 @@ fi
 %{_unitdir}/%{daemon_prefix}-ryu-agent.service
 %endif
 %dir %{_sysconfdir}/neutron/plugins/ryu
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/ryu/*.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/ryu/*.ini
 %endif
 #end if
 
@@ -1528,7 +1534,7 @@ fi
 %{_unitdir}/%{daemon_prefix}-nec-agent.service
 %endif
 %dir %{_sysconfdir}/neutron/plugins/nec
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/nec/*.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/nec/*.ini
 %endif
 
 #if $newer_than_eq('2014.1.b1')
@@ -1546,9 +1552,9 @@ fi
 %dir %{_sysconfdir}/neutron/plugins/vmware
 #if $older_than('2014.2')
 %dir %{_sysconfdir}/neutron/plugins/nicira
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/nicira/*.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/nicira/*.ini
 #end if
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/vmware/*.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/vmware/*.ini
 %endif
 #end if
 
@@ -1559,7 +1565,7 @@ fi
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/neutron/plugins/metaplugin
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/metaplugin/*.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/plugins/metaplugin/*.ini
 %endif
 
 %if ! 0%{?no_tests}
@@ -1575,7 +1581,7 @@ fi
 %{_bindir}/neutron-vpn-agent
 %{_datarootdir}/neutron/rootwrap/vpnaas.filters
 %if ! 0%{?usr_only}
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/vpn_agent.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/vpn_agent.ini
 %if ! (0%{?rhel} > 6)
 %{_initrddir}/%{daemon_prefix}-vpn-agent
 %else

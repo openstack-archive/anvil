@@ -11,6 +11,12 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %endif
 
+%if ! 0%{?overwrite_configs}
+%global configfile %config(noreplace)
+%else
+%global configfile %config
+%endif
+
 Name:           openstack-%{servicename}
 Version:        %{os_version}$version_suffix
 Release:        $release%{?dist}
@@ -106,7 +112,7 @@ ln -s %{_sysconfdir}/neutron/fwaas_driver.ini %{buildroot}%{_datadir}/neutron/l3
 %license LICENSE
 %doc AUTHORS CONTRIBUTING.rst README.rst
 %if ! 0%{?usr_only}
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/fwaas_driver.ini
+%config%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/fwaas_driver.ini
 %{_datadir}/neutron/l3_agent/*.conf
 %endif
 
