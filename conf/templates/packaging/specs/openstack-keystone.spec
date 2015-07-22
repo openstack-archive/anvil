@@ -120,17 +120,22 @@ This package contains the Keystone Python library.
 #for $idx, $fn in enumerate($patches)
 %patch$idx -p1
 #end for
-#raw
 
 %build
+
+export PBR_VERSION=$version
 %{__python} setup.py build
 
 
 %install
+
+export PBR_VERSION=$version
 %__rm -rf %{buildroot}
 
 %if 0%{?with_doc}
+#raw
 export PYTHONPATH="$PWD:$PYTHONPATH"
+#end raw
 
 pushd doc
 sphinx-build -b html source build/html
@@ -141,7 +146,6 @@ rm -fr doc/build/html/.doctrees doc/build/html/.buildinfo
 %endif
 
 %{__python} setup.py install --prefix=%{_prefix} --root=%{buildroot}
-
 
 %if ! 0%{?usr_only}
 install -d -m 755 %{buildroot}%{_sysconfdir}/keystone
@@ -161,8 +165,8 @@ install -p -D -m 755 %{SOURCE1} %{buildroot}%{_unitdir}/%{daemon_prefix}.service
 %__rm -rf %{buildroot}%{py_sitelib}/{doc,tools}
 
 %if ! 0%{?no_tests}
-#end raw
 #include $part_fn("install_tests.sh")
+
 #raw
 %endif
 
@@ -237,4 +241,4 @@ fi
 %{python_sitelib}/*
 
 %changelog
-#endraw
+#end raw

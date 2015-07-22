@@ -100,15 +100,18 @@ Documentation for %{name}.
 #for $idx, $fn in enumerate($patches)
 %patch$idx -p1
 #end for
-#raw
 
 %build
+
+export PBR_VERSION=$version
 %{__python} setup.py build
 
-
 %install
+
+export PBR_VERSION=$version
 rm -rf %{buildroot}
 
+#raw
 %{__python} setup.py install -O1 --skip-build --root %{buildroot}
 # keystoneclient writes a strange catalog
 rm -rf %{buildroot}/%{_usr}/*client

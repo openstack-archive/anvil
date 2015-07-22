@@ -155,17 +155,23 @@ find cinder -name \*.py -exec sed -i '/\/usr\/bin\/env python/{d;q}' {} +
 # TODO: Have the following handle multi line entries
 sed -i '/setup_requires/d; /install_requires/d; /dependency_links/d' setup.py
 
+#end raw
+
 %build
 
+export PBR_VERSION=$version
 %{__python} setup.py build
 
 %install
+
+export PBR_VERSION=$version
 %{__python} setup.py install -O1 --skip-build --root %{buildroot}
 
 %if ! 0%{?no_tests}
-#end raw
 #include $part_fn("install_tests.sh")
+
 #raw
+
 %endif
 
 # docs generation requires everything to be installed first

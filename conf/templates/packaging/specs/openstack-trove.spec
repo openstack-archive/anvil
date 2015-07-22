@@ -126,17 +126,23 @@ simple runner (%{python_name}-make-test-env).
 #for $idx, $fn in enumerate($patches)
 %patch$idx -p1
 #end for
-#raw
 
 %build
+
+export PBR_VERSION=$version
 %{__python} setup.py build
 
 
 %install
+
+export PBR_VERSION=$version
 %__rm -rf %{buildroot}
 
 %if 0%{?with_doc}
+
+#raw
 export PYTHONPATH="$PWD:$PYTHONPATH"
+#end raw
 
 pushd doc
 sphinx-build -b html source build/html
@@ -174,7 +180,6 @@ install -p -D -m 755 %{SOURCE2} %{buildroot}%{_unitdir}/%{daemon_prefix}-server.
 %__rm -rf %{buildroot}%{py_sitelib}/{doc,tools}
 
 %if ! 0%{?no_tests}
-#end raw
 #include $part_fn("install_tests.sh")
 #raw
 %endif
