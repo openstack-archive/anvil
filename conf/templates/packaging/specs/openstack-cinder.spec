@@ -14,6 +14,12 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %endif
 
+%if ! 0%{?overwrite_configs}
+%global configfile %config(noreplace)
+%else
+%global configfile %config
+%endif
+
 Name:	          openstack-cinder
 Version:          %{os_version}$version_suffix
 Release:          $release%{?dist}
@@ -310,10 +316,10 @@ fi
 %endif
 
 %dir %{_sysconfdir}/cinder
-%config(noreplace) %attr(-, root, cinder) %{_sysconfdir}/cinder/*
-%config(noreplace) %{_sysconfdir}/logrotate.d/openstack-cinder
-%config(noreplace) %{_sysconfdir}/sudoers.d/cinder
-%config(noreplace) %{_sysconfdir}/tgt/conf.d/cinder.conf
+%configfile %attr(-, root, cinder) %{_sysconfdir}/cinder/*
+%configfile %{_sysconfdir}/logrotate.d/openstack-cinder
+%configfile %{_sysconfdir}/sudoers.d/cinder
+%configfile %{_sysconfdir}/tgt/conf.d/cinder.conf
 
 %dir %attr(0755, cinder, root) %{_localstatedir}/log/cinder
 %dir %attr(0755, cinder, root) %{_localstatedir}/run/cinder

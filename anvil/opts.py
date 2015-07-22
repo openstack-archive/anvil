@@ -184,6 +184,13 @@ def parse(previous_settings=None):
                            help=("for virtualenv builds, make the virtualenv "
                                  "relocatable to a directory different from "
                                  "build directory"))
+    build_group.add_option('-c', "--overwrite-configs",
+                           action="store_true",
+                           dest="overwrite_configs",
+                           default=False,
+                           help=("When packaging do you want rpm to mark config "
+                                 "files with %config or treat them as files and "
+                                 "overwrite them each time on rpm install"))
     parser.add_option_group(build_group)
 
     # Extract only what we care about, these will be passed
@@ -202,6 +209,7 @@ def parse(previous_settings=None):
     values['verbose'] = options.verbose
     values['usr_only'] = options.usr_only
     values['tee_file'] = options.tee_file
+    values['overwrite_configs'] = options.overwrite_configs
     if options.origins_patch_fn:
         with open(options.origins_patch_fn) as fp:
             values['origins_patch'] = json.load(fp)
