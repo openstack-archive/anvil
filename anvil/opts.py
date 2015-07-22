@@ -184,6 +184,14 @@ def parse(previous_settings=None):
                            help=("for virtualenv builds, make the virtualenv "
                                  "relocatable to a directory different from "
                                  "build directory"))
+    build_group.add_option("--overwrite-configs",
+                           action="store",
+                           type="string",
+                           dest="overwrite_configs",
+                           default=False,
+                           help=("When packaging do you want rpm to mark config "
+                                 "files with %config or treat them as files and "
+                                 "overwrite them each time on rpm install"))
     parser.add_option_group(build_group)
 
     # Extract only what we care about, these will be passed
