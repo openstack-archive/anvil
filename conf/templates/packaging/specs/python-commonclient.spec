@@ -18,6 +18,12 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %endif
 
+%if ! 0%{?overwrite_configs}
+%global configfile %config(noreplace)
+%else
+%global configfile %config
+%endif
+
 Name:             python-%{python_name}
 Summary:          OpenStack ${clientname.title()} Client
 Version:          %{os_version}$version_suffix

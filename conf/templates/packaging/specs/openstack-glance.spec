@@ -13,6 +13,12 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %endif
 
+%if ! 0%{?overwrite_configs}
+%global configfile %config(noreplace)
+%else
+%global configfile %config
+%endif
+
 Name:             openstack-glance
 Epoch:            $epoch
 Version:          %{os_version}$version_suffix
@@ -267,8 +273,8 @@ fi
 %{_unitdir}/*
 %endif
 %dir %{_sysconfdir}/glance
-%config(noreplace) %attr(-, root, glance) %{_sysconfdir}/glance/*
-%config(noreplace) %attr(-, root, glance) %{_sysconfdir}/logrotate.d/openstack-glance
+%config%configfile %attr(-, root, glance) %{_sysconfdir}/glance/*
+%config%configfile %attr(-, root, glance) %{_sysconfdir}/logrotate.d/openstack-glance
 %dir %attr(0755, glance, nobody) %{_localstatedir}/lib/glance
 %dir %attr(0755, glance, nobody) %{_localstatedir}/lib/glance/images
 %dir %attr(0755, glance, nobody) %{_localstatedir}/log/glance

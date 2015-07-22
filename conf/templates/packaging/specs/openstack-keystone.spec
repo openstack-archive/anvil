@@ -13,6 +13,12 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %endif
 
+%if ! 0%{?overwrite_configs}
+%global configfile %config(noreplace)
+%else
+%global configfile %config
+%endif
+
 Name:           openstack-keystone
 Epoch:          $epoch
 Version:        %{os_version}$version_suffix
@@ -212,7 +218,7 @@ fi
 %{_usr}/bin/*
 
 %if ! 0%{?usr_only}
-%config(noreplace) %{_sysconfdir}/keystone
+%config%configfile %{_sysconfdir}/keystone
 %dir %attr(0755, keystone, nobody) %{_sharedstatedir}/keystone
 %dir %attr(0755, keystone, nobody) %{_localstatedir}/log/keystone
 %dir %attr(0755, keystone, nobody) %{_localstatedir}/run/keystone
