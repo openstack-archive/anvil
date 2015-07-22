@@ -11,6 +11,12 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %endif
 
+%if ! 0%{?overwrite_configs}
+%global configfile %config(noreplace)
+%else
+%global configfile %config
+%endif
+
 Name:           openstack-%{servicename}
 Version:        %{os_version}$version_suffix
 Release:        $release%{?dist}
@@ -171,9 +177,9 @@ fi
 
 
 %if ! 0%{?usr_only}
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/lbaas_agent.ini
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/neutron_lbaas.conf
-%config(noreplace) %attr(0640, root, neutron) %{_sysconfdir}/neutron/services_lbaas.conf
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/lbaas_agent.ini
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/neutron_lbaas.conf
+%configfile %attr(0640, root, neutron) %{_sysconfdir}/neutron/services_lbaas.conf
 %dir %{_sysconfdir}/neutron/conf.d
 %dir %{_sysconfdir}/neutron/conf.d/%{servicename}-agent
 %dir %{_sysconfdir}/neutron/conf.d/%{servicename}v2-agent

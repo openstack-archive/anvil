@@ -15,6 +15,11 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %endif
 
+%if ! 0%{?overwrite_configs}
+%global configfile %config(noreplace)
+%else
+%global configfile %config
+%endif
 
 Name:             openstack-nova
 Summary:          OpenStack Compute (nova)
@@ -642,10 +647,10 @@ fi
 
 %if ! 0%{?usr_only}
 %dir %{_sysconfdir}/nova
-%config(noreplace) %attr(-, root, nova) %{_sysconfdir}/nova/*
-%config(noreplace) %{_sysconfdir}/logrotate.d/openstack-nova
-%config(noreplace) %{_sysconfdir}/sudoers.d/nova
-%config(noreplace) %{_sysconfdir}/polkit-1/localauthority/50-local.d/50-nova.pkla
+%configfile %attr(-, root, nova) %{_sysconfdir}/nova/*
+%configfile %{_sysconfdir}/logrotate.d/openstack-nova
+%configfile %{_sysconfdir}/sudoers.d/nova
+%configfile %{_sysconfdir}/polkit-1/localauthority/50-local.d/50-nova.pkla
 
 %dir %attr(0755, nova, root) %{_localstatedir}/log/nova
 %dir %attr(0755, nova, root) %{_localstatedir}/lock/nova

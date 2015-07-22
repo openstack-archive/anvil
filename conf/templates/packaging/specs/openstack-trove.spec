@@ -13,6 +13,12 @@
 %{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %endif
 
+%if ! 0%{?overwrite_configs}
+%global configfile %config(noreplace)
+%else
+%global configfile %config
+%endif
+
 Name:           openstack-trove
 Epoch:          $epoch
 Version:        %{os_version}$version_suffix
@@ -245,7 +251,7 @@ fi
 %{_usr}/bin/*
 
 %if ! 0%{?usr_only}
-%config(noreplace) %{_sysconfdir}/trove
+%configfile %{_sysconfdir}/trove
 %dir %attr(0755, trove, nobody) %{_sharedstatedir}/trove
 %dir %attr(0755, trove, nobody) %{_localstatedir}/log/trove
 %dir %attr(0755, trove, nobody) %{_localstatedir}/run/trove

@@ -12,6 +12,12 @@
 
 %global with_compression 1
 
+%if ! 0%{?overwrite_configs}
+%global configfile %config(noreplace)
+%else
+%global configfile %config
+%endif
+
 Name:       python-django-horizon
 Version:    %{os_version}$version_suffix
 Release:    $release%{?dist}
@@ -402,8 +408,8 @@ rm -rf %{buildroot}
 %if ! 0%{?usr_only}
 %{_sharedstatedir}/openstack-dashboard
 %dir %attr(0750, root, apache) %{_sysconfdir}/openstack-dashboard
-%config(noreplace) %{_sysconfdir}/httpd/conf.d/openstack-dashboard.conf
-%config(noreplace) %attr(0640, root, apache) %{_sysconfdir}/openstack-dashboard/local_settings
+%configfile %{_sysconfdir}/httpd/conf.d/openstack-dashboard.conf
+%configfile %attr(0640, root, apache) %{_sysconfdir}/openstack-dashboard/local_settings
 %endif
 
 %if ! 0%{?no_tests}

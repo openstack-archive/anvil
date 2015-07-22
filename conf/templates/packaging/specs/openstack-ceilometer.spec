@@ -4,6 +4,12 @@
 %global daemon_prefix openstack-ceilometer
 %global os_version ${version}
 
+%if ! 0%{?overwrite_configs}
+%global configfile %config(noreplace)
+%else
+%global configfile %config
+%endif
+
 Name:             openstack-ceilometer
 Version:          %{os_version}$version_suffix
 Release:          $release%{?dist}
@@ -438,15 +444,15 @@ exit 0
 %dir %{_sysconfdir}/ceilometer
 #if $older_than('2014.2')
 %attr(-, root, ceilometer) %{_datadir}/ceilometer/ceilometer-dist.conf
-%config(noreplace) %attr(-, root, ceilometer) %{_sysconfdir}/ceilometer/ceilometer.conf
-%config(noreplace) %attr(-, root, ceilometer) %{_sysconfdir}/ceilometer/policy.json
-%config(noreplace) %attr(-, root, ceilometer) %{_sysconfdir}/ceilometer/sources.json
-%config(noreplace) %attr(-, root, ceilometer) %{_sysconfdir}/ceilometer/pipeline.yaml
+%configfile %attr(-, root, ceilometer) %{_sysconfdir}/ceilometer/ceilometer.conf
+%configfile %attr(-, root, ceilometer) %{_sysconfdir}/ceilometer/policy.json
+%configfile %attr(-, root, ceilometer) %{_sysconfdir}/ceilometer/sources.json
+%configfile %attr(-, root, ceilometer) %{_sysconfdir}/ceilometer/pipeline.yaml
 #else
-%config(noreplace) %attr(-, root, ceilometer) %{_sysconfdir}/ceilometer/*
+%configfile %attr(-, root, ceilometer) %{_sysconfdir}/ceilometer/*
 #end if
 
-%config(noreplace) %{_sysconfdir}/logrotate.d/%{name}
+%configfile %{_sysconfdir}/logrotate.d/%{name}
 %dir %attr(0755, ceilometer, root) %{_localstatedir}/log/ceilometer
 %dir %attr(0755, ceilometer, root) %{_localstatedir}/run/ceilometer
 
@@ -661,7 +667,7 @@ fi
 
 #if $newer_than_eq('2014.2')
 %files ipmi
-%config(noreplace) %attr(-, root, ceilometer) %{_sysconfdir}/ceilometer/rootwrap.d/ipmi.filters
+%configfile %attr(-, root, ceilometer) %{_sysconfdir}/ceilometer/rootwrap.d/ipmi.filters
 %{_bindir}/ceilometer-agent-ipmi
 %{_bindir}/ceilometer-rootwrap
 %if 0%{?rhel} && 0%{?rhel} <= 6
