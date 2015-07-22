@@ -46,14 +46,15 @@ BuildRequires:    python-sphinx
 %patch$idx -p1
 #end for
 
-#raw
 %build
+
+export PBR_VERSION=$version
 %{__python2} setup.py build
 
 %install
-%{__python2} setup.py install -O1 --skip-build --root=%{buildroot}
 
-#end raw
+export PBR_VERSION=$version
+%{__python2} setup.py install -O1 --skip-build --root=%{buildroot}
 
 # install init files
 mkdir -p %{buildroot}%{_unitdir}
