@@ -103,10 +103,14 @@ Documentation for %{name}.
 #raw
 
 %build
+
+export PBR_VERSION=$version
 %{__python} setup.py build
 
 
 %install
+
+export PBR_VERSION=$version
 rm -rf %{buildroot}
 
 %{__python} setup.py install -O1 --skip-build --root %{buildroot}

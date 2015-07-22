@@ -81,14 +81,16 @@ This package contains Neutron %{type} test files.
 #end for
 
 %build
-#export PBR_VERSION=%{version}
-#export SKIP_PIP_INSTALL=1
+
+export PBR_VERSION=$version
+export SKIP_PIP_INSTALL=1
 %{__python} setup.py build
 
 
 %install
-#export PBR_VERSION=%{version}
-#export SKIP_PIP_INSTALL=1
+
+export PBR_VERSION=$version
+export SKIP_PIP_INSTALL=1
 %{__python} setup.py install -O1 --skip-build --root %{buildroot}
 
 %if ! 0%{?usr_only}
